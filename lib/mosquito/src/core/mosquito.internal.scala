@@ -34,6 +34,7 @@ package mosquito
 
 import scala.annotation.targetName
 import scala.compiletime.*
+import scala.reflect.ClassTag
 
 import anticipation.*
 import gossamer.*
@@ -45,13 +46,64 @@ import symbolism.*
 import vacuous.*
 
 object internal:
-  object Vector:
-    def apply(tuple: Tuple): Vector[Tuple.Union[tuple.type], Tuple.Size[tuple.type]] =
-      // [construction-fresh] the tuple's array is fresh and retained by nobody else
-      new Vector(Array.unsafeFrozen(tuple.toArray.asInstanceOf[scala.Array[Any]]))
+  // Element arithmetic for the inline instances below, dispatched as symbolism's operators
+  // are: an `AddOp` (quantitative's macro-generated, unit-checked operations) first, else the
+  // `Addable` summoned with its result open — quantitative's is a transparent inline given
+  // whose `Result` the macro computes, so it cannot be summoned with the result pinned. Both
+  // bind the instance at its own type, so a primitive's `inline def add` is one instruction.
+  // The cast re-states the result type the instance's own parameter already determined.
+  // The casts on the operands are symbolism's own (see its `+`): a pattern-bound instance's
+  // `Self` and `Operand` are not known to be `a` and `b` — which the backticks keep as the
+  // method's type parameters rather than fresh pattern variables.
+  private[mosquito] inline def plus[a, b, r](left: a, right: b): r = summonFrom:
+    case op: (`a` is AddOp by `b`) =>
+      op.op(left.asInstanceOf, right.asInstanceOf).asInstanceOf[r]
 
-    def take[element](list: List[element], size: Int): Optional[Vector[element, size.type]] =
-      val buffer = Array.allocate[Any](size)
+    case addable: (`a` is Addable by `b`) =>
+      addable.add(left.asInstanceOf, right.asInstanceOf).asInstanceOf[r]
+
+  private[mosquito] inline def minus[a, b, r](left: a, right: b): r = summonFrom:
+    case op: (`a` is SubOp by `b`) =>
+      op.op(left.asInstanceOf, right.asInstanceOf).asInstanceOf[r]
+
+    case subtractable: (`a` is Subtractable by `b`) =>
+      subtractable.subtract(left.asInstanceOf, right.asInstanceOf).asInstanceOf[r]
+
+  private[mosquito] inline def times[a, b, r](left: a, right: b): r = summonFrom:
+    case op: (`a` is MulOp by `b`) =>
+      op.op(left.asInstanceOf, right.asInstanceOf).asInstanceOf[r]
+
+    case multiplicable: (`a` is Multiplicable by `b`) =>
+      multiplicable.multiply(left.asInstanceOf, right.asInstanceOf).asInstanceOf[r]
+
+  private[mosquito] inline def over[a, b, r](left: a, right: b): r = summonFrom:
+    case op: (`a` is DivOp by `b`) =>
+      op.op(left.asInstanceOf, right.asInstanceOf).asInstanceOf[r]
+
+    case divisible: (`a` is Divisible by `b`) =>
+      divisible.divide(left.asInstanceOf, right.asInstanceOf).asInstanceOf[r]
+
+  object Vector:
+    // The elements' common type gives the storage its class: a `Vector(1.0, 2.0)` is a
+    // `double[]`, a vector of quantities (opaquely `Double`) likewise, so element reads and the
+    // arithmetic below never box. A tuple of mixed types has no `ClassTag` and is rejected.
+    def apply(tuple: Tuple)(using ClassTag[Tuple.Union[tuple.type]])
+    :   Vector[Tuple.Union[tuple.type], Tuple.Size[tuple.type]] =
+
+      val buffer = Array.allocate[Tuple.Union[tuple.type]](tuple.size)
+      val iterator = tuple.productIterator
+      var i = 0
+
+      while iterator.hasNext do
+        buffer(i) = iterator.next().asInstanceOf[Tuple.Union[tuple.type]]
+        i += 1
+
+      new Vector(Array.freeze(buffer))
+
+    def take[element: ClassTag](list: List[element], size: Int)
+    :   Optional[Vector[element, size.type]] =
+
+      val buffer = Array.allocate[element](size)
       var i = 0
       var rest = list
 
@@ -67,68 +119,73 @@ object internal:
 
       new Vector[element, size.type](Array.freeze(buffer))
 
-    given addable
+    // The arithmetic instances are inline, and their operations resolve the element's
+    // operation inside the inline body (`plus` and its siblings above) rather than through the
+    // instance received as a parameter: a parameter has the trait's type, through which `add`
+    // is an erased interface call that boxes every element, while the instance found at the
+    // expansion site has its own type — `Addable.DoubleAddition.type`, say — whose `inline def
+    // add` is one instruction. The parameter still decides `result`. So `v + w` on two
+    // `Vector[Double, 3]`s expands to a loop of `daload`, `dadd`, `dastore`.
+    inline given addable
     :   [ value,
           size   <: Int,
           left   <: Vector[value, size],
           value2,
           right  <: Vector[value2, size],
           result ]
-    =>  ( addable: value is Addable by value2 to result )
+    =>  ( addable: value is Addable by value2 to result, classTag: ClassTag[result] )
     =>  left is Addable:
 
       type Operand = right
       type Result = Vector[result, size]
 
-      def add(left: left, right: right): Vector[result, size] =
+      inline def add(left: left, right: right): Vector[result, size] =
         val length = left.data.length
 
-        val arr = Array.build[Any](length): array =>
+        val arr = Array.build[result](length): array =>
           var i = 0
 
           while i < length do
             array(i) =
-              addable.add
-                ( left.data.readUnchecked(i).asInstanceOf[value],
-                  right.data.readUnchecked(i).asInstanceOf[value2] )
+              plus[value, value2, result](left.data.readUnchecked(i), right.data.readUnchecked(i))
 
             i += 1
 
         new Vector[result, size](arr)
 
-    given negatable: [value, size <: Int, vector <: Vector[value, size], result]
-    =>  ( negatable: value is Negatable to result )
+    inline given negatable: [value, size <: Int, vector <: Vector[value, size], result]
+    =>  ( negatable: value is Negatable to result, classTag: ClassTag[result] )
     =>  vector is Negatable:
 
       type Result = Vector[result, size]
 
-      def negate(operand: vector): Vector[result, size] = operand.map(negatable.negate(_))
+      inline def negate(operand: vector): Vector[result, size] =
+        val negation = summonInline[value is Negatable]
+        operand.map(negation.negate(_).asInstanceOf[result])
 
-    given subtractable
+    inline given subtractable
     :   [ value,
           size   <: Int,
           left   <: Vector[value, size],
           value2,
           right  <: Vector[value2, size],
           result ]
-    =>  ( subtractable: value is Subtractable by value2 to result )
+    =>  ( subtractable: value is Subtractable by value2 to result, classTag: ClassTag[result] )
     =>  left is Subtractable:
 
       type Self = left
       type Operand = right
       type Result = Vector[result, size]
 
-      def subtract(left: left, right: right): Vector[result, size] =
+      inline def subtract(left: left, right: right): Vector[result, size] =
         val length = left.data.length
 
-        val arr = Array.build[Any](length): array =>
+        val arr = Array.build[result](length): array =>
           var i = 0
 
           while i < length do
             array(i) =
-              subtractable.subtract
-                ( left.data.readUnchecked(i).asInstanceOf[value],
-                  right.data.readUnchecked(i).asInstanceOf[value2] )
+              minus[value, value2, result](left.data.readUnchecked(i), right.data.readUnchecked(i))
 
             i += 1
 
@@ -145,7 +202,7 @@ object internal:
 
       while index < vector.data.length do
         if index > 0 then builder.append(" ∣ ")
-        builder.append(element.text(vector.data.readUnchecked(index).asInstanceOf[element]).s)
+        builder.append(element.text(vector.data.readUnchecked(index)).s)
         index += 1
 
       builder.append("⟩").toString.tt
@@ -173,14 +230,15 @@ object internal:
     def cross[right](right: Vector[right, 3])
       ( using multiplication: left is Multiplicable by right,
               addition:       multiplication.Result is Addable by multiplication.Result,
-              subtraction:    multiplication.Result is Subtractable by multiplication.Result )
-    :   Vector[addition.Result, 3] =
+              subtraction:    multiplication.Result is Subtractable by multiplication.Result,
+              classTag:       ClassTag[subtraction.Result] )
+    :   Vector[subtraction.Result, 3] =
 
       val first = left.element(1)*right.element(2) - left.element(2)*right.element(1)
       val second = left.element(2)*right.element(0) - left.element(0)*right.element(2)
       val third = left.element(0)*right.element(1) - left.element(1)*right.element(0)
 
-      new Vector[addition.Result, 3](Array[Any](first, second, third))
+      new Vector[subtraction.Result, 3](Array[subtraction.Result](first, second, third))
 
 
   extension [left](left: Vector[left, 7])
@@ -190,8 +248,9 @@ object internal:
               addition:       multiplication.Result is Addable by multiplication.Result,
               subtraction:    multiplication.Result is Subtractable by multiplication.Result,
               addEq:          addition.Result =:= multiplication.Result,
-              subEq:          subtraction.Result =:= multiplication.Result )
-    :   Vector[addition.Result, 7] =
+              subEq:          subtraction.Result =:= multiplication.Result,
+              classTag:       ClassTag[multiplication.Result] )
+    :   Vector[multiplication.Result, 7] =
 
       val a0 = left.element(0); val a1 = left.element(1); val a2 = left.element(2)
       val a3 = left.element(3); val a4 = left.element(4); val a5 = left.element(5)
@@ -223,42 +282,51 @@ object internal:
       val c5 = combine(a6*b1, a1*b6, a0*b4, a4*b0, a2*b3, a3*b2)
       val c6 = combine(a0*b2, a2*b0, a1*b5, a5*b1, a3*b4, a4*b3)
 
-      new Vector[addition.Result, 7](Array[Any](c0, c1, c2, c3, c4, c5, c6))
+      new Vector[multiplication.Result, 7](Array[multiplication.Result](c0, c1, c2, c3, c4, c5, c6))
 
 
   extension [size <: Int, left](left: Vector[left, size])
-    def element(index: Int): left = left.data.readUnchecked(index).asInstanceOf[left]
+    def element(index: Int): left = left.data.readUnchecked(index)
 
-    def apply(index: Int): left = left.data.readUnchecked(index).asInstanceOf[left]
-    def list: List[left] = left.data.to[List].asInstanceOf[List[left]]
-    def iarray(using scala.reflect.ClassTag[left]): Array[left]^{} =
-      Array.from(left.data.stdlib.map(_.asInstanceOf[left]))
+    def apply(index: Int): left = left.data.readUnchecked(index)
+    def list: List[left] = left.data.to[List]
+    def iarray: Array[left]^{} = left.data
     def size(using ValueOf[size]): Int = valueOf[size]
 
 
-    def norm
+    // Inline, with the element arithmetic resolved at the call site (`plus` and `times`), as
+    // the arithmetic instances are: a `Vector[Double, n]` sums its squares without boxing.
+    inline def norm
       ( using multiplicable:  left is Multiplicable by left,
               addable:        multiplicable.Result is Addable by multiplicable.Result
                               to multiplicable.Result,
               rootable:       multiplicable.Result is Rootable[2] to left )
     :   left =
 
-      def recur(sum: multiplicable.Result, i: Int): left =
-        if i == 0 then sum.sqrt else
-          val x2: multiplicable.Result = left.element(i)*left.element(i)
-          recur(addable.add(sum, x2), i - 1)
+      var sum: multiplicable.Result =
+        times[left, left, multiplicable.Result]
+          ( left.data.readUnchecked(0), left.data.readUnchecked(0) )
 
-      recur(left.element(0)*left.element(0), left.data.length - 1)
+      var i = 1
+
+      while i < left.data.length do
+        val x = left.data.readUnchecked(i)
+        sum =
+          plus[multiplicable.Result, multiplicable.Result, multiplicable.Result]
+            ( sum, times[left, left, multiplicable.Result](x, x) )
+        i += 1
+
+      sum.sqrt
 
 
-    def map[left2](fn: left => left2): Vector[left2, size] =
+    def map[left2: ClassTag](fn: left => left2): Vector[left2, size] =
       val length = left.data.length
 
-      val arr = Array.build[Any](length): array =>
+      val arr = Array.build[left2](length): array =>
         var i = 0
 
         while i < length do
-          array(i) = fn(left.data.readUnchecked(i).asInstanceOf[left])
+          array(i) = fn(left.data.readUnchecked(i))
           i += 1
 
       new Vector[left2, size](arr)
@@ -274,33 +342,44 @@ object internal:
       val magnitude: left = left.norm
       val length = left.data.length
 
-      val arr = Array.build[Any](length): array =>
+      val arr = Array.build[Double](length): array =>
         var i = 0
 
         while i < length do
-          array(i) = left.data.readUnchecked(i).asInstanceOf[left]/magnitude
+          array(i) = left.data.readUnchecked(i)/magnitude
           i += 1
 
       new Vector[Double, size](arr)
 
 
-    def dot[right](right: Vector[right, size])
+    inline def dot[right](right: Vector[right, size])
       ( using multiply: left is Multiplicable by right,
               size:     ValueOf[size],
               addable:  multiply.Result is Addable by multiply.Result,
               equality: addable.Result =:= multiply.Result )
     :   multiply.Result =
 
-      def recur(index: Int, sum: multiply.Result): multiply.Result =
-        if index < 0 then sum
-        else recur(index - 1, addable.add(sum, left.element(index)*right.element(index)))
+      var sum: multiply.Result =
+        times[left, right, multiply.Result](left.data.readUnchecked(0), right.data.readUnchecked(0))
 
-      val start = size.value - 1
-      recur(start - 1, left.element(start)*right.element(start))
+      var i = 1
 
-  class Vector[value, size <: Int](val data: Array[Any]^{}):
+      while i < size.value do
+        sum =
+          plus[multiply.Result, multiply.Result, multiply.Result]
+            ( sum,
+              times[left, right, multiply.Result]
+                ( left.data.readUnchecked(i), right.data.readUnchecked(i) ) )
+
+        i += 1
+
+      sum
+
+  class Vector[value, size <: Int](val data: Array[value]^{}):
     override def equals(right: Any): Boolean = right.asMatchable match
-      case that: Vector[?, ?] => Array.same(data, that.data)
+      // The cast is unchecked (the alias erases to `Object`): `same` compares element by
+      // element through the JVM's generic array access, whatever the two element kinds.
+      case that: Vector[?, ?] => Array.same(data, that.data.asInstanceOf[Array[value]^{}])
       case _                  => false
 
     override def hashCode: Int =
