@@ -1,0 +1,52 @@
+tel 1.0
+
+# The documentation fuel compiles and serves (`fuel compile`, then `fuel serve` at
+# http://localhost:8060/): one section per directory, named by its last segment.
+document doc/modules
+document doc/philosophy
+document doc/standards
+document doc/migration
+document doc/roadmap
+document doc/errors
+
+# The classpath the fences are compiled against: the test assembly (`./mill test.assembly`,
+# which `make test` builds), carrying every JVM component and the fork's standard library.
+# Without it the fences are highlighted but not compiled.
+classpath out/test/assembly.dest/out.jar
+
+# The options Soundness's own code compiles with (settings.scalaOptions in build.mill, less
+# the warnings and capture checking a tutorial need not satisfy), with the proscenium predef
+# and the umbrella imported, so a fence can start at its first definition.
+scalac-option -Zalias-captures
+scalac-option -Zdiagnostic-givens
+scalac-option -Zgiven-prefixes
+scalac-option -Zopaque-mutability
+scalac-option -Zpure-iarrays
+scalac-option -Zfrozen-pure
+scalac-option -Zretains-bounds
+scalac-option -Zretains-skolems
+scalac-option -Zspreadable-varargs
+scalac-option -Zunboxed-pure-types
+scalac-option -Zunion-captures
+scalac-option -experimental
+scalac-option -new-syntax
+scalac-option -preview
+scalac-option -Yno-flexible-types
+scalac-option -Yexplicit-nulls
+scalac-option -language:experimental.modularity
+scalac-option -language:experimental.dependent
+scalac-option -language:experimental.genericNumberLiterals
+scalac-option -language:experimental.erasedDefinitions
+scalac-option -language:implicitConversions
+scalac-option -language:experimental.saferExceptions
+scalac-option -language:experimental.subCases
+scalac-option -language:experimental.multiSpreads
+scalac-option -Yno-predef
+scalac-option -Yimports:java.lang,proscenium,soundness
+
+# NOTE the tutorials are written as a REPL session (etc/doccheck.py feeds each file's fences to
+# flame in order): a fence continues the ones before it, may be a bare expression, and says
+# `// does not compile` where it is meant to fail. Fuel compiles each fence as a top-level
+# unit, chained only by an explicit `follows`, so checking them as they stand reports most of
+# them; a document-level sequence mode is the next step on fuel's side before `classpath`
+# here does more than highlight.
