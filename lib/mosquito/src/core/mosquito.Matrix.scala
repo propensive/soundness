@@ -98,7 +98,11 @@ object Matrix:
 
       . join(t"\n")
 
-  given addable
+  // The arithmetic instances are inline and summon the element's instance inside the inline
+  // body: see `Vector.addable` for why — a parameter's type is the trait's, through which the
+  // operation boxes every element, while the instance found at the expansion site inlines to
+  // one instruction. So `m + n` on two `Matrix[Double, 2, 2]`s is a loop of `dadd`s.
+  inline given addable
   :   [ a,
         rows <: Int,
         columns <: Int,
@@ -112,19 +116,22 @@ object Matrix:
     type Operand = right
     type Result = Matrix[result, rows, columns]
 
-    def add(left: left, right: right): Matrix[result, rows, columns] =
+    inline def add(left: left, right: right): Matrix[result, rows, columns] =
       val length = left.elements.length
 
       val arr = Array.build[result](length): array =>
         var i = 0
 
         while i < length do
-          array(i) = addable.add(left.elements.readUnchecked(i), right.elements.readUnchecked(i))
+          array(i) =
+            mosquito.internal.plus[a, b, result]
+              ( left.elements.readUnchecked(i), right.elements.readUnchecked(i) )
+
           i += 1
 
       new Matrix[result, rows, columns](left.rows, left.columns, arr)
 
-  given subtractable
+  inline given subtractable
   :   [ a,
         rows <: Int,
         columns <: Int,
@@ -138,7 +145,7 @@ object Matrix:
     type Operand = right
     type Result = Matrix[result, rows, columns]
 
-    def subtract(left: left, right: right): Matrix[result, rows, columns] =
+    inline def subtract(left: left, right: right): Matrix[result, rows, columns] =
       val length = left.elements.length
 
       val arr = Array.build[result](length): array =>
@@ -146,7 +153,8 @@ object Matrix:
 
         while i < length do
           array(i) =
-            subtractable.subtract(left.elements.readUnchecked(i), right.elements.readUnchecked(i))
+            mosquito.internal.minus[a, b, result]
+              ( left.elements.readUnchecked(i), right.elements.readUnchecked(i) )
 
           i += 1
 
@@ -155,7 +163,7 @@ object Matrix:
   // The three shapes of multiplication — by scalar, by matrix and by vector — are separate
   // instances distinguished by `Operand`; the scalar instance's operand is unconstrained, but
   // it applies only where the elements themselves multiply by it (issue #687).
-  given scalarMultiplicable
+  inline given scalarMultiplicable
   :   [ element, rows <: Int, columns <: Int, left <: Matrix[element, rows, columns], scalar,
         result ]
   =>  ( multiplication: element is Multiplicable by scalar to result, classTag: ClassTag[result] )
@@ -164,14 +172,22 @@ object Matrix:
     type Operand = scalar
     type Result = Matrix[result, rows, columns]
 
-    def multiply(left: left, right: scalar): Matrix[result, rows, columns] =
-      val elements2 = Array.build[result](left.elements.length): array =>
-        left.elements.stdlib.indices.each: index =>
-          array(index) = left.elements.readUnchecked(index)*right
+    inline def multiply(left: left, right: scalar): Matrix[result, rows, columns] =
+      val length = left.elements.length
+
+      // A loop, not `indices.each`: the closure's fresh capability leaks from the expansion.
+      val elements2 = Array.build[result](length): array =>
+        var index = 0
+
+        while index < length do
+          array(index) =
+            mosquito.internal.times[element, scalar, result]
+              ( left.elements.readUnchecked(index), right )
+          index += 1
 
       new Matrix(left.rows, left.columns, elements2)
 
-  given scalarDivisible
+  inline given scalarDivisible
   :   [ element, rows <: Int, columns <: Int, left <: Matrix[element, rows, columns], scalar,
         result ]
   =>  ( division: element is Divisible by scalar to result, classTag: ClassTag[result] )
@@ -180,14 +196,21 @@ object Matrix:
     type Operand = scalar
     type Result = Matrix[result, rows, columns]
 
-    def divide(left: left, right: scalar): Matrix[result, rows, columns] =
-      val elements2 = Array.build[result](left.elements.length): array =>
-        left.elements.stdlib.indices.each: index =>
-          array(index) = left.elements.readUnchecked(index)/right
+    inline def divide(left: left, right: scalar): Matrix[result, rows, columns] =
+      val length = left.elements.length
+
+      val elements2 = Array.build[result](length): array =>
+        var index = 0
+
+        while index < length do
+          array(index) =
+            mosquito.internal.over[element, scalar, result]
+              ( left.elements.readUnchecked(index), right )
+          index += 1
 
       new Matrix(left.rows, left.columns, elements2)
 
-  given matrixMultiplicable
+  inline given matrixMultiplicable
   :   [ element, rows <: Int, columns <: Int, left <: Matrix[element, rows, columns],
         rightElement, rightColumns <: Int, result ]
   =>  ( multiplication: element is Multiplicable by rightElement to result,
@@ -200,12 +223,15 @@ object Matrix:
     type Operand = Matrix[rightElement, columns, rightColumns]
     type Result = Matrix[result, rows, rightColumns]
 
-    def multiply(left: left, right: Matrix[rightElement, columns, rightColumns])
+    inline def multiply(left: left, right: Matrix[rightElement, columns, rightColumns])
     :   Matrix[result, rows, rightColumns] =
 
       val columns2 = valueOf[rightColumns]
       val inner = valueOf[columns]
       val rowCount = left.rows
+      // Read through the typed arrays, not `apply`, whose generic result boxes a primitive.
+      val lefts = left.elements
+      val rights = right.elements
 
       val elements = Array.build[result](rowCount*columns2): array =>
         var row = 0
@@ -214,11 +240,20 @@ object Matrix:
           var column = 0
 
           while column < columns2 do
-            var sum: result = left(row, 0)*right(0, column)
+            var sum: result =
+              mosquito.internal.times[element, rightElement, result]
+                ( lefts.readUnchecked(inner*row), rights.readUnchecked(column) )
+
             var k = 1
 
             while k < inner do
-              sum = sum + left(row, k)*right(k, column)
+              sum =
+                mosquito.internal.plus[result, result, result]
+                  ( sum,
+                    mosquito.internal.times[element, rightElement, result]
+                      ( lefts.readUnchecked(inner*row + k),
+                        rights.readUnchecked(columns2*k + column) ) )
+
               k += 1
 
             array(columns2*row + column) = sum
@@ -228,30 +263,40 @@ object Matrix:
 
       new Matrix(rowCount, columns2, elements)
 
-  given vectorMultiplicable
+  inline given vectorMultiplicable
   :   [ element, rows <: Int, columns <: Int, left <: Matrix[element, rows, columns],
         rightElement, result ]
   =>  ( multiplication: element is Multiplicable by rightElement to result,
         addition:       result is Addable by result to result,
-        columnValue:    ValueOf[columns] )
+        columnValue:    ValueOf[columns],
+        classTag:       ClassTag[result] )
   =>  left is Multiplicable:
 
     type Operand = Vector[rightElement, columns]
     type Result = Vector[result, rows]
 
-    def multiply(left: left, right: Vector[rightElement, columns]): Vector[result, rows] =
+    inline def multiply(left: left, right: Vector[rightElement, columns]): Vector[result, rows] =
       val inner = valueOf[columns]
       val rowCount = left.rows
+      val lefts = left.elements
 
-      val arr = Array.build[Any](rowCount): array =>
+      val arr = Array.build[result](rowCount): array =>
         var row = 0
 
         while row < rowCount do
-          var sum: result = left(row, 0)*right.data.readUnchecked(0).asInstanceOf[rightElement]
+          var sum: result =
+            mosquito.internal.times[element, rightElement, result]
+              ( lefts.readUnchecked(inner*row), right.data.readUnchecked(0) )
+
           var k = 1
 
           while k < inner do
-            sum = sum + left(row, k)*right.data.readUnchecked(k).asInstanceOf[rightElement]
+            sum =
+              mosquito.internal.plus[result, result, result]
+                ( sum,
+                  mosquito.internal.times[element, rightElement, result]
+                    ( lefts.readUnchecked(inner*row + k), right.data.readUnchecked(k) ) )
+
             k += 1
 
           array(row) = sum
@@ -521,7 +566,7 @@ object Matrix:
           x(i) = sum/a(size*i + i)
           i -= 1
 
-        val vectorData = Array.build[Any](size): array =>
+        val vectorData = Array.build[element](size): array =>
           var k = 0
 
           while k < size do
@@ -723,7 +768,7 @@ object Matrix:
 
         if !converged then Unset
         else
-          val eigvalArr = Array.build[Any](dimension): array =>
+          val eigvalArr = Array.build[Double](dimension): array =>
             var i = 0
 
             while i < dimension do
@@ -753,27 +798,28 @@ class Matrix[element, rows <: Int, columns <: Int]
 
   def apply(row: Int, column: Int): element = elements.readUnchecked(columns*row + column)
 
+  // A row or column is a vector over the same element array class as the matrix, which the
+  // matrix's own storage supplies: no `ClassTag` is asked of the caller.
+  private def slice(from: Int, step: Int, count: Int): Array[element]^{} =
+    val source = Array.unsafeJvm(elements)
+
+    val target: scala.Array[element]^ =
+      java.lang.reflect.Array.newInstance(source.getClass.getComponentType.nn, count)
+      . asInstanceOf[scala.Array[element]^]
+
+    var i = 0
+
+    while i < count do
+      target(i) = source(from + step*i)
+      i += 1
+
+    Array.unsafeFrozen(target)
+
   def row(index: Int): Vector[element, columns] =
-    val cols = columns
-
-    val arr = Array.build[Any](cols): array =>
-      var i = 0
-
-      while i < cols do
-        array(i) = elements.readUnchecked(cols*index + i)
-        i += 1
-
-    new Vector[element, columns](arr)
+    new Vector[element, columns](slice(columns*index, 1, columns))
 
   def column(index: Int): Vector[element, rows] =
-    val arr = Array.build[Any](rows): array =>
-      var i = 0
-
-      while i < rows do
-        array(i) = elements.readUnchecked(columns*i + index)
-        i += 1
-
-    new Vector[element, rows](arr)
+    new Vector[element, rows](slice(index, columns, rows))
 
   def transpose(using ClassTag[element]): Matrix[element, columns, rows] =
     val arr = Array.build[element](rows*columns): array =>
