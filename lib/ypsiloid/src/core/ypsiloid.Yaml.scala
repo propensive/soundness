@@ -2042,15 +2042,15 @@ object Yaml extends Yaml2, Dynamic:
     // `parseBlockMappingFromFirstKeyTracked`, `parseFlowSequenceTracked`,
     // `parseFlowMappingTracked`.
     var indexBufferId: Int = -1
-    private val indexBufferPool: ArrayBuffer[ArrayBuffer[Int]] = ArrayBuffer.empty
+    private val indexBufferPool: ArrayBuffer[Scroll[Int]] = ArrayBuffer.empty
 
     // Not `inline`: inline expansion propagates a refinement whose fresh reach capabilities
     // differ per call site, which the capture checker rejects.
-    private update def acquireIndexBuffer(): ArrayBuffer[Int] =
+    private update def acquireIndexBuffer(): Scroll[Int] =
       indexBufferId += 1
 
       if indexBufferPool.length <= indexBufferId then
-        val b = ArrayBuffer.empty[Int]
+        val b = Scroll[Int]()
         indexBufferPool += b
         b
       else
@@ -2170,9 +2170,9 @@ object Yaml extends Yaml2, Dynamic:
     // i-th child / entry, so the i-th child's size is
     // `ends(i) - ends(i-1)`. Mirrors `JsonParser.emitCompositeDescriptor`.
     private update def emitCompositeDescriptor
-      ( indexOut:    ArrayBuffer[Int],
-        scratch:     ArrayBuffer[Int],
-        ends:        ArrayBuffer[Int],
+      ( indexOut:    Scroll[Int],
+        scratch:     Scroll[Int],
+        ends:        Scroll[Int],
         startLine:   Int,
         startColumn: Int,
         startMark:   Long )
@@ -2183,21 +2183,21 @@ object Yaml extends Yaml2, Dynamic:
       val sourceLength = (cursor.position.n0 - startMark).toInt
       val sizeSlot = indexOut.length
 
-      indexOut += 0
-      indexOut += startLine
-      indexOut += startColumn
-      indexOut += sourceLength
-      indexOut += n
+      indexOut.append(0)
+      indexOut.append(startLine)
+      indexOut.append(startColumn)
+      indexOut.append(sourceLength)
+      indexOut.append(n)
 
       val headerSize = 5 + n
       var i = 0
 
       while i < n do
         val childStart = if i == 0 then 0 else ends(i - 1)
-        indexOut += headerSize + childStart
+        indexOut.append(headerSize + childStart)
         i += 1
 
-      indexOut ++= scratch
+      indexOut.append(scratch)
       indexOut(sizeSlot) = indexOut.length - sizeSlot
 
 
@@ -2304,7 +2304,7 @@ object Yaml extends Yaml2, Dynamic:
         if tracking then
           val rootBuf = acquireIndexBuffer()
           emitNullHere(rootBuf)
-          rootIndex = Array.from(rootBuf)
+          rootIndex = rootBuf.freeze
           releaseIndexBuffer()
 
         Yaml.Ast.Null
@@ -2315,7 +2315,7 @@ object Yaml extends Yaml2, Dynamic:
           if tracking then
             val rootBuf = acquireIndexBuffer()
             emitNullHere(rootBuf)
-            rootIndex = Array.from(rootBuf)
+            rootIndex = rootBuf.freeze
             releaseIndexBuffer()
 
           Yaml.Ast.Null
@@ -2324,7 +2324,7 @@ object Yaml extends Yaml2, Dynamic:
             if tracking then
               val rootBuf = acquireIndexBuffer()
               val n = parseNodeTracked(indent, rootBuf)
-              rootIndex = Array.from(rootBuf)
+              rootIndex = rootBuf.freeze
               releaseIndexBuffer()
               n
             else
@@ -2455,7 +2455,7 @@ object Yaml extends Yaml2, Dynamic:
             if explicitStart then
               val rootBuf = acquireIndexBuffer()
               emitNullHere(rootBuf)
-              docs.append((Yaml.Ast.Null, Array.unsafeFrozen(rootBuf.toArray)))
+              docs.append((Yaml.Ast.Null, rootBuf.freeze))
               releaseIndexBuffer()
 
             continue = false
@@ -2463,7 +2463,7 @@ object Yaml extends Yaml2, Dynamic:
             if explicitStart then
               val rootBuf = acquireIndexBuffer()
               emitNullHere(rootBuf)
-              docs.append((Yaml.Ast.Null, Array.unsafeFrozen(rootBuf.toArray)))
+              docs.append((Yaml.Ast.Null, rootBuf.freeze))
               releaseIndexBuffer()
 
             lastDocEndedWithFooter = consumeOptionalDocumentEnd()
@@ -2475,7 +2475,7 @@ object Yaml extends Yaml2, Dynamic:
               if explicitStart then
                 val rootBuf = acquireIndexBuffer()
                 emitNullHere(rootBuf)
-                docs.append((Yaml.Ast.Null, Array.unsafeFrozen(rootBuf.toArray)))
+                docs.append((Yaml.Ast.Null, rootBuf.freeze))
                 releaseIndexBuffer()
 
               lastDocEndedWithFooter = consumeOptionalDocumentEnd()
@@ -2492,7 +2492,7 @@ object Yaml extends Yaml2, Dynamic:
 
               val rootBuf = acquireIndexBuffer()
               val node = parseNodeTracked(indent, rootBuf)
-              val ints = Array.unsafeFrozen(rootBuf.toArray)
+              val ints = rootBuf.freeze
               releaseIndexBuffer()
               docStartLineEnd = savedDocStart
               docs.append((node, ints))
@@ -4749,15 +4749,15 @@ object Yaml extends Yaml2, Dynamic:
     // `startMark` is the absolute byte offset captured at the start of
     // the scalar; the cursor is expected to be at its end.
     private update inline def emitPrimitiveDescriptor
-      ( indexOut: ArrayBuffer[Int], startLine: Int, startColumn: Int, startMark: Long )
+      ( indexOut: Scroll[Int], startLine: Int, startColumn: Int, startMark: Long )
     :   Unit =
 
       syncTo()
       val length = (cursor.position.n0 - startMark).toInt
-      indexOut += 4
-      indexOut += startLine
-      indexOut += startColumn
-      indexOut += length
+      indexOut.append(4)
+      indexOut.append(startLine)
+      indexOut.append(startColumn)
+      indexOut.append(length)
 
     private update inline def captureLineColumn(): (Int, Int) =
       syncTo()
@@ -4771,15 +4771,15 @@ object Yaml extends Yaml2, Dynamic:
     // Emit a 4-int Null descriptor (zero length) at the current cursor
     // position. Used when a node resolves to `Null` without consuming any
     // cells (empty inline value, missing explicit-pair value, etc.).
-    private update inline def emitNullHere(indexOut: ArrayBuffer[Int]): Unit =
+    private update inline def emitNullHere(indexOut: Scroll[Int]): Unit =
       syncTo()
       reconcileLineation()
-      indexOut += 4
-      indexOut += cursor.line.n1
-      indexOut += cursor.column.n1
-      indexOut += 0
+      indexOut.append(4)
+      indexOut.append(cursor.line.n1)
+      indexOut.append(cursor.column.n1)
+      indexOut.append(0)
 
-    private update def parseNodeTracked(indent: Int, indexOut: ArrayBuffer[Int])
+    private update def parseNodeTracked(indent: Int, indexOut: Scroll[Int])
       ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
 
@@ -4791,7 +4791,7 @@ object Yaml extends Yaml2, Dynamic:
       else
         parseNodeHereTracked(indent, indexOut)
 
-    private update def parseNodeHereTracked(indent: Int, indexOut: ArrayBuffer[Int])
+    private update def parseNodeHereTracked(indent: Int, indexOut: Scroll[Int])
       ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
 
@@ -4999,7 +4999,7 @@ object Yaml extends Yaml2, Dynamic:
     // primitive descriptor for the scalar alone.
     private update def maybeBlockMappingFromQuotedKeyTracked
       ( scalar: Yaml.Ast, indent: Int, headTag: Text, headAnchor: Text,
-        indexOut: ArrayBuffer[Int],
+        indexOut: Scroll[Int],
         startLine: Int, startColumn: Int, startMark: Long )
       ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
@@ -5069,7 +5069,7 @@ object Yaml extends Yaml2, Dynamic:
     // composite mapping descriptor (transitions into a block mapping).
     private update def parsePlainOrBlockMappingTracked
       ( indent: Int, headTag: Text, headAnchor: Text,
-        indexOut: ArrayBuffer[Int],
+        indexOut: Scroll[Int],
         startLine: Int, startColumn: Int, startMark: Long )
       ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
@@ -5108,7 +5108,7 @@ object Yaml extends Yaml2, Dynamic:
     // descriptor with one child descriptor per item.
     private update def parseBlockSequenceTracked
       ( indent: Int,
-        indexOut: ArrayBuffer[Int],
+        indexOut: Scroll[Int],
         startLine: Int, startColumn: Int, startMark: Long )
       ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
@@ -5156,7 +5156,7 @@ object Yaml extends Yaml2, Dynamic:
           else
             parseNodeHereTracked(indent + 2, scratch)
 
-        ends += scratch.length
+        ends.append(scratch.length)
         buf += item
 
         skipBlankAndCommentLines()
@@ -5201,7 +5201,7 @@ object Yaml extends Yaml2, Dynamic:
       ( firstKey: Yaml.Ast,
         firstKeyLine: Int, firstKeyColumn: Int, firstKeyLength: Int,
         indent: Int,
-        indexOut: ArrayBuffer[Int],
+        indexOut: Scroll[Int],
         startLine: Int, startColumn: Int, startMark: Long )
       ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
@@ -5215,11 +5215,11 @@ object Yaml extends Yaml2, Dynamic:
       if !more || peek != Colon then errorAt(Issue.ExpectedColonAfterMappingKey)
       advance()
 
-      scratch += firstKeyLine
-      scratch += firstKeyColumn
-      scratch += firstKeyLength
+      scratch.append(firstKeyLine)
+      scratch.append(firstKeyColumn)
+      scratch.append(firstKeyLength)
       val firstValue = parseMappingValueTracked(indent, scratch)
-      ends += scratch.length
+      ends.append(scratch.length)
       buf += firstKey
       buf += firstValue
 
@@ -5239,7 +5239,7 @@ object Yaml extends Yaml2, Dynamic:
     // pair iterated.
     private update def iterateBlockMappingTracked
       ( buf: scala.collection.mutable.ArrayBuffer[Any],
-        scratch: ArrayBuffer[Int], ends: ArrayBuffer[Int],
+        scratch: Scroll[Int], ends: Scroll[Int],
         indent: Int )
       ( using Tactic[Parse.Error] )
     :   Unit =
@@ -5262,7 +5262,7 @@ object Yaml extends Yaml2, Dynamic:
           done = true
         else if isExplicitKeyIndicator then
           val (key, value) = readExplicitPairTracked(indent, scratch)
-          ends += scratch.length
+          ends.append(scratch.length)
           buf += key
           buf += value
         else
@@ -5330,18 +5330,18 @@ object Yaml extends Yaml2, Dynamic:
           if !more || peek != Colon then errorAt(Issue.ExpectedColonAfterMappingKey)
           advance()
 
-          scratch += keyLine
-          scratch += keyColumn
-          scratch += keyLength
+          scratch.append(keyLine)
+          scratch.append(keyColumn)
+          scratch.append(keyLength)
           val value = parseMappingValueTracked(indent, scratch)
-          ends += scratch.length
+          ends.append(scratch.length)
           buf += keyAst
           buf += value
 
     // Tracked variant of `parseFlowSequence`. Emits a composite
     // descriptor with one child descriptor per flow entry.
     private update def parseFlowSequenceTracked
-      ( indexOut: ArrayBuffer[Int],
+      ( indexOut: Scroll[Int],
         startLine: Int, startColumn: Int, startMark: Long )
       ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
@@ -5461,32 +5461,32 @@ object Yaml extends Yaml2, Dynamic:
 
               // Truncate scratch back to firstStart and rebuild as a
               // 1-entry mapping composite.
-              scratch.dropRightInPlace(firstChildSize)
+              scratch.retract(firstChildSize)
               val pairCompositeStart = scratch.length
               // Composite header
-              scratch += 0
-              scratch += entryLine
-              scratch += entryColumn
-              scratch += (cursor.position.n0 - entryMark).toInt
-              scratch += 1
+              scratch.append(0)
+              scratch.append(entryLine)
+              scratch.append(entryColumn)
+              scratch.append((cursor.position.n0 - entryMark).toInt)
+              scratch.append(1)
               // Single entry's offset (5 ints header + 1 offset = 6)
-              scratch += 6
+              scratch.append(6)
               // The entry: keyLine, keyColumn, keyLength, then value descriptor
-              scratch += firstKeyLine
-              scratch += firstKeyColumn
-              scratch += firstKeyLength
+              scratch.append(firstKeyLine)
+              scratch.append(firstKeyColumn)
+              scratch.append(firstKeyLength)
               // Value descriptor: 4-int primitive Null
-              scratch += 4
-              scratch += valLine
-              scratch += valCol
-              scratch += 0
+              scratch.append(4)
+              scratch.append(valLine)
+              scratch.append(valCol)
+              scratch.append(0)
               // Patch composite size
               scratch(pairCompositeStart) = scratch.length - pairCompositeStart
               pair
             else
               first
 
-          ends += scratch.length
+          ends.append(scratch.length)
           buf += entry
           skipFlowWhitespace()
           if !more then errorAt(Issue.UnterminatedFlowSequence)
@@ -5507,7 +5507,7 @@ object Yaml extends Yaml2, Dynamic:
     // Tracked variant of `parseFlowMapping`. Emits a composite mapping
     // descriptor with one entry per flow-mapping pair.
     private update def parseFlowMappingTracked
-      ( indexOut: ArrayBuffer[Int],
+      ( indexOut: Scroll[Int],
         startLine: Int, startColumn: Int, startMark: Long )
       ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
@@ -5563,9 +5563,9 @@ object Yaml extends Yaml2, Dynamic:
           val keyLength = (cursor.position.n0 - keyMark).toInt
 
           skipFlowWhitespace()
-          scratch += keyLine
-          scratch += keyColumn
-          scratch += keyLength
+          scratch.append(keyLine)
+          scratch.append(keyColumn)
+          scratch.append(keyLength)
 
           val value =
             if more && peek == Colon then
@@ -5581,7 +5581,7 @@ object Yaml extends Yaml2, Dynamic:
               emitNullHere(scratch)
               Yaml.Ast.Null
 
-          ends += scratch.length
+          ends.append(scratch.length)
           buf += key
           buf += value
           skipFlowWhitespace()
@@ -5604,7 +5604,7 @@ object Yaml extends Yaml2, Dynamic:
     // and emits a primitive descriptor for scalar/alias cases or a
     // composite descriptor (via the *Tracked composite variants) for
     // flow sequences/mappings.
-    private update def parseFlowNodeTracked(indexOut: ArrayBuffer[Int])
+    private update def parseFlowNodeTracked(indexOut: Scroll[Int])
       ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
 
@@ -5689,7 +5689,7 @@ object Yaml extends Yaml2, Dynamic:
     // with `?` case.
     private update def parseQuestionTracked
       ( indent: Int,
-        indexOut: ArrayBuffer[Int],
+        indexOut: Scroll[Int],
         startLine: Int, startColumn: Int, startMark: Long )
       ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
@@ -5701,7 +5701,7 @@ object Yaml extends Yaml2, Dynamic:
         val savedParentIndent = blockParentIndent
         blockParentIndent = indent
         val (firstKey, firstValue) = readExplicitPairTracked(indent, scratch)
-        ends += scratch.length
+        ends.append(scratch.length)
         buf += firstKey
         buf += firstValue
         iterateBlockMappingTracked(buf, scratch, ends, indent)
@@ -5721,7 +5721,7 @@ object Yaml extends Yaml2, Dynamic:
     // `parsePlainOrBlockMappingTracked` for the plain-scalar case.
     private update def parseMinusTracked
       ( indent: Int,
-        indexOut: ArrayBuffer[Int],
+        indexOut: Scroll[Int],
         startLine: Int, startColumn: Int, startMark: Long )
       ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
@@ -5749,7 +5749,7 @@ object Yaml extends Yaml2, Dynamic:
     // Tracked variant of `readExplicitPair`. Appends the key's position
     // descriptor (3 ints) plus the value's descriptor to `scratch`.
     private update def readExplicitPairTracked
-      ( indent: Int, scratch: ArrayBuffer[Int] )
+      ( indent: Int, scratch: Scroll[Int] )
       ( using Tactic[Parse.Error] )
     :   (Yaml.Ast, Yaml.Ast) =
 
@@ -5830,10 +5830,10 @@ object Yaml extends Yaml2, Dynamic:
       val keyLengthForHeader =
         if scratch.length > keyDescStart + 3 then scratch(keyDescStart + 3) else 0
 
-      scratch.dropRightInPlace(scratch.length - keyDescStart)
-      scratch += keyStartLine
-      scratch += keyStartColumn
-      scratch += keyLengthForHeader
+      scratch.retract(scratch.length - keyDescStart)
+      scratch.append(keyStartLine)
+      scratch.append(keyStartColumn)
+      scratch.append(keyLengthForHeader)
 
       skipBlankAndCommentLines()
       val markerLineStart = pos
@@ -5857,7 +5857,7 @@ object Yaml extends Yaml2, Dynamic:
 
     // Helper: read the size (slot 0) of the descriptor that ends at
     // `scratch.length`. Returns 0 if scratch is empty or malformed.
-    private update inline def keyDescriptorSize(scratch: ArrayBuffer[Int]): Int =
+    private update inline def keyDescriptorSize(scratch: Scroll[Int]): Int =
       // The most-recently-appended descriptor's first int is its size.
       // We don't track its start directly here, so reconstruct from the
       // typical 4-int primitive shape — callers only use this for the
@@ -5897,7 +5897,7 @@ object Yaml extends Yaml2, Dynamic:
     // descriptor.
     private update def parseMappingValueTracked
       ( parentIndent: Int,
-        scratch: ArrayBuffer[Int],
+        scratch: Scroll[Int],
         isExplicitValue: Boolean = false )
       ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
@@ -5939,7 +5939,7 @@ object Yaml extends Yaml2, Dynamic:
     // Null primitive at the rewound position.
     private update def pickValueOrNullTracked
       ( parentIndent: Int, childIndent: Int, lineStart: Int,
-        indexOut: ArrayBuffer[Int] )
+        indexOut: Scroll[Int] )
       ( using Tactic[Parse.Error] )
     :   Yaml.Ast =
 

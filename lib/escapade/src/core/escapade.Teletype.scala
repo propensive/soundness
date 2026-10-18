@@ -213,7 +213,7 @@ object Teletype:
   // TeletypeBuilder → Teletype.Builder
   class Builder(size: Optional[Int] = Unset) extends gossamer.Builder[Teletype]:
     private val builder: StringBuilder = StringBuilder()
-    private val styles: scm.ArrayBuffer[Long] = scm.ArrayBuffer.empty
+    private val styles: Scroll[Long] = Scroll[Long]()
     private val hyperlinks: scm.HashMap[Int, Text] = scm.HashMap()
     private val insertions: scm.TreeMap[Int, Text] = scm.TreeMap()
 
@@ -235,7 +235,7 @@ object Teletype:
       var i = 0
 
       while i < text.plain.length do
-        styles += text.styleAt(i)
+        styles.append(text.styleAt(i))
         i += 1
 
       text.hyperlinks.each: (k, v) => hyperlinks(k + offset) = v
@@ -245,14 +245,14 @@ object Teletype:
 
     protected def putChar(char: Char): Unit =
       builder.append(char)
-      styles += 0L
+      styles.append(0L)
       offset += 1
 
     protected def result(): Teletype =
-      styles += 0L
+      styles.append(0L)
 
       val plainText = builder.toString.tt
-      val denseStyles = Array.unsafeFrozen(styles.toArray)
+      val denseStyles = styles.freeze
       val (newStyles, newBoundaries) = Teletype.compressIfBeneficial(plainText, denseStyles)
 
       Teletype

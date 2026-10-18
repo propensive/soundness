@@ -906,21 +906,23 @@ object Lsp:
       // Offsets of the first character of each line. Lines are delimited by `\n`, `\r\n` or `\r`,
       // per the protocol.
       def lineStarts: scala.Array[Int] = index.or:
-        val buffer = scm.ArrayBuffer[Int](0)
+        // The first line starts at offset 0; each line ending adds the next line's start.
+        val buffer = Scroll[Int]()
+        buffer.append(0)
         val string: String = text.s
         var next: Int = 0
 
         while next < string.length do
           val char = string.charAt(next)
 
-          if char == '\n' then buffer += next + 1
+          if char == '\n' then buffer.append(next + 1)
           else if char == '\r' then
             if next + 1 < string.length && string.charAt(next + 1) == '\n' then next += 1
-            buffer += next + 1
+            buffer.append(next + 1)
 
           next += 1
 
-        buffer.toArray.tap: starts => index = starts
+        Array.unsafeJvm(buffer.freeze).tap: starts => index = starts
 
       // The offset of a protocol position, clamped (as the protocol requires) to the document: a
       // line beyond the end resolves to the end of the text, and a character beyond the end of

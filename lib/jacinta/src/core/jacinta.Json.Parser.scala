@@ -253,11 +253,11 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
   protected var arrayBufferId:       Int = -1
   protected val arrayBuffers:        ArrayBuffer[ArrayBuffer[Any]]  = ArrayBuffer.empty
   protected var bcdLongBufferId:     Int = -1
-  protected val bcdLongBuffers:      ArrayBuffer[ArrayBuffer[Long]] = ArrayBuffer.empty
+  protected val bcdLongBuffers:      ArrayBuffer[Scroll[Long]] = ArrayBuffer.empty
   protected var bcdIntBufferId:      Int = -1
-  protected val bcdIntBuffers:       ArrayBuffer[ArrayBuffer[Int]]  = ArrayBuffer.empty
+  protected val bcdIntBuffers:       ArrayBuffer[Scroll[Int]]  = ArrayBuffer.empty
   protected var indexBufferId:       Int = -1
-  protected val indexBuffers:        ArrayBuffer[ArrayBuffer[Int]]  = ArrayBuffer.empty
+  protected val indexBuffers:        ArrayBuffer[Scroll[Int]]  = ArrayBuffer.empty
 
   // Finalised root-level position index produced by the previous `parse()`
   // call when `tracking` was on. Reset to `null` at the start of every parse.
@@ -509,11 +509,11 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
 
   protected inline update def relinquishArrayBuffer(): Unit = arrayBufferId -= 1
 
-  protected update def getBcdLongBuffer(): ArrayBuffer[Long] =
+  protected update def getBcdLongBuffer(): Scroll[Long] =
     bcdLongBufferId += 1
 
     if bcdLongBuffers.length <= bcdLongBufferId then
-      val newBuffer = ArrayBuffer.empty[Long]
+      val newBuffer = Scroll[Long]()
       bcdLongBuffers += newBuffer
       newBuffer
     else
@@ -535,11 +535,11 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
     try java.lang.Long.parseLong(text)
     catch case _: NumberFormatException => java.lang.Double.parseDouble(text)
 
-  protected update def getBcdIntBuffer(): ArrayBuffer[Int] =
+  protected update def getBcdIntBuffer(): Scroll[Int] =
     bcdIntBufferId += 1
 
     if bcdIntBuffers.length <= bcdIntBufferId then
-      val newBuffer = ArrayBuffer.empty[Int]
+      val newBuffer = Scroll[Int]()
       bcdIntBuffers += newBuffer
       newBuffer
     else
@@ -549,11 +549,11 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
 
   protected inline update def relinquishBcdIntBuffer(): Unit = bcdIntBufferId -= 1
 
-  protected update def getIndexBuffer(): ArrayBuffer[Int] =
+  protected update def getIndexBuffer(): Scroll[Int] =
     indexBufferId += 1
 
     if indexBuffers.length <= indexBufferId then
-      val newBuffer = ArrayBuffer.empty[Int]
+      val newBuffer = Scroll[Int]()
       indexBuffers += newBuffer
       newBuffer
     else
@@ -569,9 +569,9 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
   // for objects). `ends(i)` is the position in `scratch` immediately after
   // the i-th entry, so the i-th entry's size is `ends(i) - ends(i-1)`.
   protected update def emitCompositeDescriptor
-    ( indexOut:    ArrayBuffer[Int],
-      scratch:     ArrayBuffer[Int],
-      ends:        ArrayBuffer[Int],
+    ( indexOut:    Scroll[Int],
+      scratch:     Scroll[Int],
+      ends:        Scroll[Int],
       startLine:   Int,
       startColumn: Int,
       startMark:   Long )
@@ -582,21 +582,21 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
     val sourceLength = (cursorPosition - startMark).toInt
     val sizeSlot = indexOut.length
 
-    indexOut += 0
-    indexOut += startLine
-    indexOut += startColumn
-    indexOut += sourceLength
-    indexOut += n
+    indexOut.append(0)
+    indexOut.append(startLine)
+    indexOut.append(startColumn)
+    indexOut.append(sourceLength)
+    indexOut.append(n)
 
     val headerSize = 5 + n
     var i = 0
 
     while i < n do
       val childStart = if i == 0 then 0 else ends(i - 1)
-      indexOut += headerSize + childStart
+      indexOut.append(headerSize + childStart)
       i += 1
 
-    indexOut ++= scratch
+    indexOut.append(scratch)
     indexOut(sizeSlot) = indexOut.length - sizeSlot
 
   // ──────────────────────────────────────────────────────────────────────────
@@ -1184,7 +1184,7 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
   // routes to the untracked variant since the outer call already owns
   // the descriptor for the full `-N` span.
   private update def parseValueTracked
-    ( indexOut: ArrayBuffer[Int],
+    ( indexOut: Scroll[Int],
       minus:    Boolean = false,
       bcdOnly:  Boolean = false )
     ( using Tactic[Parse.Error] )
@@ -1247,10 +1247,10 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
     if ch != OpenBracket && ch != OpenBrace then
       syncTo()
       val length = (cursorPosition - startMark).toInt
-      indexOut += 4
-      indexOut += startLine
-      indexOut += startColumn
-      indexOut += length
+      indexOut.append(4)
+      indexOut.append(startLine)
+      indexOut.append(startColumn)
+      indexOut.append(length)
 
     result
 
@@ -1270,8 +1270,8 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
     // existing elements re-packed in place. We never widen past the
     // boxed form; once boxed we stay boxed.
     var mode: Int = ModeUndecided
-    var intItems:  ArrayBuffer[Int]  | Null = null
-    var longItems: ArrayBuffer[Long] | Null = null
+    var intItems:  Scroll[Int]  | Null = null
+    var longItems: Scroll[Long] | Null = null
     var anyItems:  ArrayBuffer[Any]  | Null = null
     var first    = true
     var continue = true
@@ -1283,7 +1283,7 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
       var i = 0
 
       while i < n do
-        dst += Bcd.repackBcdIntAsLong(src(i))
+        dst.append(Bcd.repackBcdIntAsLong(src(i)))
         i += 1
 
       relinquishBcdIntBuffer()
@@ -1357,23 +1357,23 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
                   mode = ModeBcdInt
                   val buf = getBcdIntBuffer()
                   intItems = buf
-                  buf += Bcd.packBcdIntFromLong(bcdLong)
+                  buf.append(Bcd.packBcdIntFromLong(bcdLong))
                 else
                   mode = ModeBcdLong
                   val buf = getBcdLongBuffer()
                   longItems = buf
-                  buf += bcdLong
+                  buf.append(bcdLong)
               else
                 (mode: @switch) match
                   case ModeBcdInt =>
                     if nibbles <= Bcd.MaxBcdIntNibbles then
-                      intItems.nn += Bcd.packBcdIntFromLong(bcdLong)
+                      intItems.nn.append(Bcd.packBcdIntFromLong(bcdLong))
                     else
                       migrateIntToLong()
-                      longItems.nn += bcdLong
+                      longItems.nn.append(bcdLong)
 
                   case ModeBcdLong =>
-                    longItems.nn += bcdLong
+                    longItems.nn.append(bcdLong)
 
                   case _ =>
                     // Boxed mode — surface the value as a JsonNumber. For ≤7
@@ -1421,17 +1421,15 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
       (mode: @switch) match
         case ModeBcdInt =>
           val src = intItems.nn
-          val out = Array.allocate[Int](src.length)
-          src.copyToArray(out.raw)
+          val out = src.freeze
           relinquishBcdIntBuffer()
-          Array.freeze(out)
+          out
 
         case ModeBcdLong =>
           val src = longItems.nn
-          val out = Array.allocate[Long](src.length)
-          src.copyToArray(out.raw)
+          val out = src.freeze
           relinquishBcdLongBuffer()
-          Array.freeze(out)
+          out
 
         case _ =>
           // Mixed/boxed array — stored as `Array[Any]^{}` and parity-padded
@@ -1458,7 +1456,7 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
   // `parseValueTracked` for children and emits a composite descriptor
   // into `indexOut` at close.
   private update def parseArrayTracked
-    ( indexOut:    ArrayBuffer[Int],
+    ( indexOut:    Scroll[Int],
       startLine:   Int,
       startColumn: Int,
       startMark:   Long )
@@ -1466,8 +1464,8 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
   :   Raw =
 
     var mode: Int = ModeUndecided
-    var intItems:  ArrayBuffer[Int]  | Null = null
-    var longItems: ArrayBuffer[Long] | Null = null
+    var intItems:  Scroll[Int]  | Null = null
+    var longItems: Scroll[Long] | Null = null
     var anyItems:  ArrayBuffer[Any]  | Null = null
     var first    = true
     var continue = true
@@ -1482,7 +1480,7 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
       var i = 0
 
       while i < n do
-        dst += Bcd.repackBcdIntAsLong(src(i))
+        dst.append(Bcd.repackBcdIntAsLong(src(i)))
         i += 1
 
       relinquishBcdIntBuffer()
@@ -1537,7 +1535,7 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
 
         case _ =>
           val value = parseValueTracked(indexScratch, bcdOnly = true)
-          indexEnds += indexScratch.length
+          indexEnds.append(indexScratch.length)
           skip()
 
           val terminator: Byte = must()
@@ -1557,23 +1555,23 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
                   mode = ModeBcdInt
                   val buf = getBcdIntBuffer()
                   intItems = buf
-                  buf += Bcd.packBcdIntFromLong(bcdLong)
+                  buf.append(Bcd.packBcdIntFromLong(bcdLong))
                 else
                   mode = ModeBcdLong
                   val buf = getBcdLongBuffer()
                   longItems = buf
-                  buf += bcdLong
+                  buf.append(bcdLong)
               else
                 (mode: @switch) match
                   case ModeBcdInt =>
                     if nibbles <= Bcd.MaxBcdIntNibbles then
-                      intItems.nn += Bcd.packBcdIntFromLong(bcdLong)
+                      intItems.nn.append(Bcd.packBcdIntFromLong(bcdLong))
                     else
                       migrateIntToLong()
-                      longItems.nn += bcdLong
+                      longItems.nn.append(bcdLong)
 
                   case ModeBcdLong =>
-                    longItems.nn += bcdLong
+                    longItems.nn.append(bcdLong)
 
                   case _ =>
                     if nibbles <= Bcd.MaxBcdIntNibbles then
@@ -1614,17 +1612,15 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
         (mode: @switch) match
           case ModeBcdInt =>
             val src = intItems.nn
-            val out = Array.allocate[Int](src.length)
-            src.copyToArray(out.raw)
+            val out = src.freeze
             relinquishBcdIntBuffer()
-            Array.freeze(out)
+            out
 
           case ModeBcdLong =>
             val src = longItems.nn
-            val out = Array.allocate[Long](src.length)
-            src.copyToArray(out.raw)
+            val out = src.freeze
             relinquishBcdLongBuffer()
-            Array.freeze(out)
+            out
 
           case _ =>
             val src = anyItems.nn
@@ -1749,7 +1745,7 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
   // key positions, runs values through `parseValueTracked`, and emits a
   // composite descriptor into `indexOut` at close.
   private update def parseObjectTracked
-    ( indexOut:    ArrayBuffer[Int],
+    ( indexOut:    Scroll[Int],
       startLine:   Int,
       startColumn: Int,
       startMark:   Long )
@@ -1786,11 +1782,11 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
             case Colon =>
               advance()
               skip()
-              indexScratch += keyLine
-              indexScratch += keyColumn
-              indexScratch += keyLength
+              indexScratch.append(keyLine)
+              indexScratch.append(keyColumn)
+              indexScratch.append(keyLength)
               val value = parseValueTracked(indexScratch)
-              indexEnds += indexScratch.length
+              indexEnds.append(indexScratch.length)
               skip()
 
               must() match
@@ -1819,11 +1815,11 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
             case Colon =>
               advance()
               skip()
-              indexScratch += keyLine
-              indexScratch += keyColumn
-              indexScratch += keyLength
+              indexScratch.append(keyLine)
+              indexScratch.append(keyColumn)
+              indexScratch.append(keyLength)
               val value = parseValueTracked(indexScratch)
-              indexEnds += indexScratch.length
+              indexEnds.append(indexScratch.length)
               skip()
 
               must() match
@@ -1846,14 +1842,14 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
               reconcileLineation()
               val unsetLine   = cursorLine
               val unsetColumn = cursorColumn
-              indexScratch += keyLine
-              indexScratch += keyColumn
-              indexScratch += keyLength
-              indexScratch += 4
-              indexScratch += unsetLine
-              indexScratch += unsetColumn
-              indexScratch += 0
-              indexEnds += indexScratch.length
+              indexScratch.append(keyLine)
+              indexScratch.append(keyColumn)
+              indexScratch.append(keyLength)
+              indexScratch.append(4)
+              indexScratch.append(unsetLine)
+              indexScratch.append(unsetColumn)
+              indexScratch.append(0)
+              indexEnds.append(indexScratch.length)
               advance()
               items += "\u0000"
               items += Unset
@@ -1864,14 +1860,14 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
               reconcileLineation()
               val unsetLine   = cursorLine
               val unsetColumn = cursorColumn
-              indexScratch += keyLine
-              indexScratch += keyColumn
-              indexScratch += keyLength
-              indexScratch += 4
-              indexScratch += unsetLine
-              indexScratch += unsetColumn
-              indexScratch += 0
-              indexEnds += indexScratch.length
+              indexScratch.append(keyLine)
+              indexScratch.append(keyColumn)
+              indexScratch.append(keyLength)
+              indexScratch.append(4)
+              indexScratch.append(unsetLine)
+              indexScratch.append(unsetColumn)
+              indexScratch.append(0)
+              indexEnds.append(indexScratch.length)
               advance()
               items += "\u0000"
               items += Unset
@@ -1910,7 +1906,7 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
         val r = parseValueTracked(rootBuf)
         // Array.from's result carries a spurious fresh via the mutable source's reach;
         // the copy is immutable — freeze-assert.
-        rootIndex = Array.from(rootBuf).asInstanceOf[Array[Int]^{}]
+        rootIndex = rootBuf.freeze
         relinquishIndexBuffer()
         r
       else
