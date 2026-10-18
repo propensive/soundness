@@ -3209,3 +3209,50 @@ instance form is necessary but not sufficient: a given that takes the element ty
 *parameter* and calls `addable.add` on it boxes regardless — the element instance must be
 `summonInline`d inside an inline body — and the container's storage must be primitive
 (`Matrix` is; `Vector`'s `Array[Any]` and `Complex`'s erased fields are not).
+
+## Inline arithmetic instances for containers: mosquito and baroque (2026-10-18)
+
+Follow-up to the symbolism instances (#2282). `Vector`/`Matrix` (mosquito) and `Complex`
+(baroque) now have inline arithmetic instances whose operations resolve the element's
+arithmetic at the expansion site, so `v + w`, `m*n`, `c*d` on doubles compile to primitive
+loops with no boxing (`javap` on probes: `daload`/`dadd`/`dmul`/`dastore` only; `Complex`'s
+product is four `dmul`, `dsub`, `dadd`, one allocation). What it took, each found the hard way:
+
+- **The element instance must be resolved inside the inline body, not taken as a parameter.**
+  A parameter has the trait's type, through which `add` is an erased interface call that boxes.
+  And it cannot be `summonInline`d with the result pinned (`value is Addable by value2 to
+  result`): quantitative's instance is a transparent inline given whose `Result` the macro
+  computes, so it is only summonable with the result open — and it is a boxing `Function2`
+  anyway; quantities' unboxed arithmetic is their macro-generated `AddOp`. So the bodies
+  dispatch exactly as symbolism's operators do (`internal.plus`/`minus`/`times`/`over` in
+  mosquito, the same four private to `Complex`): `summonFrom { case op: (`a` is AddOp by `b`)
+  => … case addable: (`a` is Addable by `b`) => … }` with the result cast — and the pattern's
+  type parameters **must be backticked**, or they become fresh pattern variables and the
+  `summonFrom` cannot reduce.
+- **An inline given's result types must be type parameters, inferred through its `using`
+  clause**, not the parameters' `Result` members: `type Result = Complex[addition.Result]` in a
+  given's body or head is a projection from the given's instance (or from a constructor
+  parameter, invisible in the class type), and an inline given mints a fresh instance per use,
+  so two uses' results never unify (`Complex[?1.Quotient]` vs `Complex[?2.Quotient]`). Hence
+  `multiplicable: [component, component2, product, sum, difference] => (… to product, … to
+  sum, … to difference) => (Multiplicable { type Result = Complex[sum | difference] })`. Inside
+  the inline member, the parameters are reached through synthesized accessors that are "not a
+  legal path", so class-level aliases of the type parameters serve the body.
+- **Structural inline givens take a bare class head with a refinement**, `(Multiplicable {
+  type Self = …; type Operand = …; type Result = … }):`; the `is … by … to …` chain is "not a
+  class type" there, with or without a refinement.
+- **An opaque type's inline members cannot be expanded outside its scope under cc.** The first
+  `Complex` was `opaque type Complex[c] = Representation`; its inline bodies, typed where the
+  alias is transparent, failed at every call site with `Found: Complex[Sum]; Required:
+  Representation^{}` — the capture checker re-checks the expansion where alias and
+  representation are unrelated, and no placement of casts cured it. `Complex` is therefore a
+  `sealed abstract class` with `Doubles[component]`/`Boxed[component]` subclasses, which also
+  keeps `<: AnyRef` and pattern matching.
+- **An `indices.each` closure inside an inline body leaks its fresh capability at the
+  expansion site** ("Capability `fresh` outlives its scope"); the scalar loops are `while`s.
+- **Reads must go through the typed array**, not a generic accessor: `Matrix.apply(row, column):
+  element` returns a boxed `Object` from a generic class, so the multiplication kernels index
+  `elements` directly. `Vector`'s storage became `Array[value]` (a `ClassTag` at construction;
+  `ClassTag[Quantity[…]]` synthesises to `ClassTag.Double`, so quantities get a `double[]`).
+- `@unchecked` under `-Yno-predef` is the *package* `scala.annotation.unchecked`; write
+  `@scala.unchecked`.
