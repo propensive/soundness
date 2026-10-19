@@ -98,9 +98,8 @@ derives CanEqual
 
 case class Doubles(@field(1) values: List[Double]) derives CanEqual
 
-// The unboxed repeated representation: a frozen array of packable scalars. Read and written
-// through generated parsers and printers only: the derived codecs over such a field do not
-// yet capture-check (the checker fails on the derivation's re-declared field type).
+// The unboxed repeated representation: a frozen array of packable scalars, read and written
+// both through the derived codecs and through generated parsers and printers.
 case class LongArray(@field(1) values: Array[Long]^{}) derives CanEqual
 case class DoubleArray(@field(1) values: Array[Double]^{}) derives CanEqual
 case class ItemArray(@field(1) items: Array[Item]^{}) derives CanEqual
@@ -227,6 +226,20 @@ object Tests extends Suite("protobuf", m"Locomotion Protobuf Tests"):
       test(m"a generic product over a recursive type stays structurally derived"):
         proscenium.Chain(Boxed(tree).in[Protobuf].encode).read[Protobuf].as[Boxed[Tree]]
       . assert(_ == Boxed(tree))
+
+      test(m"a derived codec over a frozen array encodes the packed form"):
+        LongArray(Array[Long](1L, 300L, -1L)).in[Protobuf].encode.to[List]
+      . assert(_ == Longs(Sequence(1L, 300L, -1L)).in[Protobuf].encode.to[List])
+
+      test(m"a derived codec over a frozen array of longs round-trips"):
+        LongArray(Array[Long](1L, 300L, -1L)).in[Protobuf].encode.read[LongArray in Protobuf]
+        . values.to[List]
+      . assert(_ == List(1L, 300L, -1L))
+
+      test(m"a derived codec over a frozen array of doubles round-trips"):
+        DoubleArray(Array[Double](0.5, -2.0)).in[Protobuf].encode.read[DoubleArray in Protobuf]
+        . values.to[List]
+      . assert(_ == List(0.5, -2.0))
 
     suite(m"Optional presence"):
       test(m"a set optional round-trips"):
