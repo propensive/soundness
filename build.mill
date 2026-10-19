@@ -1050,7 +1050,7 @@ object soundness extends Toolchain:
   object tool extends Bundle(anthology.core, degustation.core,
     harlequin.core, harlequin.typed, hellenism.core,
     hyperbole.tasty, hyperbole.core, octogenarian.core, octogenarian.cli, octogenarian.native,
-    octogenarian.http, octogenarian.ssh,
+    octogenarian.http, octogenarian.ssh, octogenarian.sshNative,
     revolution.core, revolution.semver,
     anthology.java,
     harlequin.md, harlequin.ansi, austronesian.core, anthology.linker, anthology.link, anthology.nir,
@@ -1060,7 +1060,7 @@ object soundness extends Toolchain:
     vivisection.core, vivisection.eval, vivisection.dap):
     def summary = "Developer tools: compilers, build tooling, source analysis and version control"
 
-  object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, cataclysm.fonts, coaxial.core, coaxial.jvm, coaxial.dns, syndesis.core, cosmopolite.core, gesticulate.core,
+  object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, cataclysm.fonts, coaxial.core, coaxial.jvm, coaxial.dns, susurration.core, syndesis.core, cosmopolite.core, gesticulate.core,
     honeycomb.core, urticose.core, urticose.url, urticose.ansi, urticose.dns, hallucination.core,
     phoenicia.core,
     punctuation.core, savagery.core, cartouche.core, tasseomancy.core, scintillate.server,
@@ -2864,7 +2864,13 @@ object octogenarian extends Library:
     override def scalaJs = false // transitively JVM-only (process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-  object test extends Tests(core, cli, native, http, ssh, telekinesis.jvm, eucalyptus.core):
+  // Remote repositories over susurration, the native SSH client: `gitTransports.soundnessSsh`.
+  object sshNative extends Component(native, susurration.core):
+    override def scalaJs = false // transitively JVM-only (networking)
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test
+  extends Tests(core, cli, native, http, ssh, sshNative, telekinesis.jvm, eucalyptus.core, coaxial.jvm):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
@@ -3413,6 +3419,19 @@ object surveillance extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
+// An SSH-2 client, written to the RFCs rather than around a spawned `ssh`: the wire encoding, the
+// `known_hosts` and `~/.ssh/config` files, and — to come — the transport, authentication and
+// connection protocols over coaxial's sockets.
+object susurration extends Library:
+  object core extends Component(enigmatic.core, coaxial.core, guillotine.core):
+    override def scalaJs = false // transitively JVM-only, through enigmatic
+    override def scalaNative = false // guillotine has no native variant (process spawning)
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  object test extends Tests(core, coaxial.jvm, guillotine.core, eucalyptus.core):
+    override def scalacOptions = Task:
+      settings.sep(super.scalacOptions())
+
 object symbolism extends Library:
   object core extends Component(prepositional.core):
     override def scalacOptions = Task:
@@ -3942,7 +3961,7 @@ val allLibraries: Seq[Library] = Seq(
   probably, profanity, prophesy,
   proscenium, punctuation, quantitative, querencia, revolution, rudiments, savagery,
   scintillate, sedentary, serpentine, sibylline, spectacular, stenography, stratiform, superlunary,
-  surveillance, symbolism, syndesis, synesthesia, tarantula, tasseomancy, telekinesis, tessellate, turbulence,
+  surveillance, susurration, symbolism, syndesis, synesthesia, tarantula, tasseomancy, telekinesis, tessellate, turbulence,
   typonym,
   ultimatum, ulysses, umbrageous, urticose, vacuous, vexillology, vicarious, virility,
   vivisection,

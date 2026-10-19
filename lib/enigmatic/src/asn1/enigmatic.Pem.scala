@@ -51,21 +51,49 @@ import turbulence.*
 import vacuous.*
 import zephyrine.*
 
-object Pem:
+// The lower-priority lifting: `text.read[Asn1 in Pem]` — and, through distillate's identity
+// decodable, `text.read[Der in Pem]` — reading the armor and decoding its DER payload in one step.
+// It captures its decodable and tactic, like the `Pem` aggregables in the companion. In a parent
+// trait so that `Pem.aggregableInPem`, over a label-aware `Decodable in Pem`, wins for a value
+// that has both.
+trait Pem2:
+  given aggregableIn: [value]
+  =>  ( decodable: (value is Decodable in Der)^ )
+  =>  ( diagnostics: Diagnostics, tactic: Tactic[Pem.Error] )
+  =>  ( ((value in Pem) is Aggregable by Text)^{decodable, tactic} ) =
+
+    new Aggregable:
+      type Self = value in Pem
+      type Operand = Text
+
+      def aggregate(stream: Chain[Text]): value in Pem =
+        // `Cursor` is built from a stdlib `Iterator`, which the opaque `Chain` cannot yield.
+        decode(Pem.parse(Cursor(stream)))
+
+      override def accept(stream: (Stream[Text] over Credit)^): value in Pem =
+        // See `Pem.aggregable`.
+        val neutral: AnyRef = stream.asInstanceOf[AnyRef]
+        decode(Pem.parse(Cursor(neutral.asInstanceOf[(Stream[Text] over Credit)^])))
+
+      private def decode(pem: Pem): value in Pem =
+        decodable.decoded(Der(pem.data)).asInstanceOf[value in Pem]
+
+object Pem extends Pem2:
   // Armor a DER document, e.g. `Pem(Pem.Label.Certificate, certificate.in[Der])`. The label is
   // always given explicitly: it is a fact about the value, not a mode of the encoding.
   def apply(label: Pem.Label, der: Der): Pem = Pem(label, der.data)
 
   // The DER payload of a PEM block, so that `pem.as[Der]` reaches the armored bytes as a document
   // rather than as anonymous `Data`. The label is not checked against the content: every PEM label
-  // this module knows armors DER.
+  // this module knows armors DER, except `OPENSSH PRIVATE KEY`, whose payload is OpenSSH's own
+  // binary format and which `PrivateKey`'s PEM decodable handles by label.
   given derDecodable: Der is Decodable in Pem = pem => Der(pem.data)
 
-  // `text.read[Asn1 in Pem]` — and, through distillate's identity decodable, `text.read[Der in
-  // Pem]` — reading the armor and decoding its DER payload in one step. It captures its decodable
-  // and tactic, like the `Pem` aggregables below.
-  given aggregableIn: [value]
-  =>  ( decodable: (value is Decodable in Der)^ )
+  // `text.read[PrivateKey[Ed25519] in Pem]`: reading the armor and decoding the block in one
+  // step, for a value whose decoding depends on the label. It outranks `Pem2.aggregableIn`, the
+  // same lifting over a `Decodable in Der`, so a value that has both decodes by label.
+  given aggregableInPem: [value]
+  =>  ( decodable: (value is Decodable in Pem)^ )
   =>  ( diagnostics: Diagnostics, tactic: Tactic[Pem.Error] )
   =>  ( ((value in Pem) is Aggregable by Text)^{decodable, tactic} ) =
 
@@ -83,7 +111,7 @@ object Pem:
         decode(parse(Cursor(neutral.asInstanceOf[(Stream[Text] over Credit)^])))
 
       private def decode(pem: Pem): value in Pem =
-        decodable.decoded(Der(pem.data)).asInstanceOf[value in Pem]
+        decodable.decoded(pem).asInstanceOf[value in Pem]
 
   // Streaming, cursor-based parsing: the input is consumed line by line, and
   // the base64 body accumulates in a single builder — nothing else of the
@@ -99,7 +127,8 @@ object Pem:
   // `BEGIN` boundary.
   // A real `using` clause rather than the `raises` sugar: a context-function result would
   // hide the `cursor` parameter, which the separation checker rejects.
-  private def parse[cap^](cursor: Cursor[Text, cap]^)(using Diagnostics, Tactic[Pem.Error]^)
+  private[enigmatic] def parse[cap^](cursor: Cursor[Text, cap]^)
+    ( using Diagnostics, Tactic[Pem.Error]^ )
   :   Pem =
 
     while !cursor.finished &&
@@ -237,7 +266,7 @@ object Pem:
   // PemLabel → Pem.Label
   object Label:
     lazy val index: Map[Text, Pem.Label] =
-      (0 to 17).map(fromOrdinal(_)).indexBy(_.toString.tt.uncamel.map(_.upper).join(t" "))
+      (0 to 18).map(fromOrdinal(_)).indexBy(_.toString.tt.uncamel.map(_.upper).join(t" "))
 
     given showable: Pem.Label is Showable =
       case Proprietary(label) => label
@@ -248,7 +277,8 @@ object Pem:
   enum Label:
     case Certificate, CertificateRequest, NewCertificateRequest, PrivateKey, RsaPrivateKey,
       DsaPrivateKey, EcPrivateKey, EncryptedPrivateKey, PublicKey, Pkcs7, Cms, DhParameters,
-      X509Crl, AttributeCertificate, EncryptedMessage, SignedMessage, RsaPublicKey, DsaPublicKey
+      X509Crl, AttributeCertificate, EncryptedMessage, SignedMessage, RsaPublicKey, DsaPublicKey,
+      OpensshPrivateKey
 
     case Proprietary(label: Text)
 

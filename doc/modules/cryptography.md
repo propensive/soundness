@@ -162,6 +162,69 @@ chainText.read[Chain[Pem]].map(_.label).to[List]   // two public-key labels
 Text that is not part of a block — the `subject=…` lines OpenSSL writes between certificates —
 is skipped, and a source with no blocks at all reads as an empty sequence rather than an error.
 
+### Reading keys
+
+A key that already exists — in `~/.ssh`, or written by `openssl` — reads into a `PrivateKey` of
+the cipher you name, from any of the forms a key file takes: PKCS#8 (`PRIVATE KEY`), PKCS#1 (`RSA
+PRIVATE KEY`), SEC1 (`EC PRIVATE KEY`) or OpenSSH's own container (`OPENSSH PRIVATE KEY`). A
+`Cloak` must be in scope, as for any secret:
+
+```scala
+val keyText = t"""-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+QyNTUxOQAAACARh+kfLi/QMMO/o5yyEp0Lt5IoJSSmMjnCpbwie7/sUgAAAJB+g2KdfoNi
+nQAAAAtzc2gtZWQyNTUxOQAAACARh+kfLi/QMMO/o5yyEp0Lt5IoJSSmMjnCpbwie7/sUg
+AAAEDTzzy05nIC9r9aKtXYNJMgY1F/g5ZiPNyksGUvj8yR6xGH6R8uL9Aww7+jnLISnQu3
+kiglJKYyOcKlvCJ7v+xSAAAADHRlc3RAZXhhbXBsZQE=
+-----END OPENSSH PRIVATE KEY-----"""
+
+val sshKey = keyText.read[PrivateKey[Ed25519] in Pem]
+sshKey.public.verify(t"message", sshKey.sign(t"message"))   // true
+```
+
+The type is checked against the document, not assumed from it: the algorithm identifier, the
+curve and, for RSA, the modulus size must be those of the cipher named, so a 4096-bit key can
+never be read as a `PrivateKey[Rsa[2048]]`. A key that does not match is a `PrivateKey.Error`
+whose `Mismatch` reason names what was found:
+
+<!-- doccheck: skip -->
+```scala
+keyText.read[PrivateKey[Rsa[2048]] in Pem]   // raises PrivateKey.Error: a RSA-2048 key was expected but Ed25519 was found
+```
+
+A passphrase-protected key is reported as `Encrypted`; reading one is not yet supported. Public
+keys read the same way from `PUBLIC KEY` blocks, and from the single-line form OpenSSH keeps in
+`id_*.pub`, `authorized_keys` and `known_hosts`, which `OpenSsh.line` writes back:
+
+```scala
+val line = t"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBGH6R8uL9Aww7+jnLISnQu3kiglJKYyOcKlvCJ7v+xS test@example"
+val sshPublicKey = OpenSsh.publicKey[Ed25519](line)
+OpenSsh.line(sshPublicKey, t"test@example") == line   // true
+```
+
+### Key agreement and authenticated encryption
+
+Two parties who hold each other's public keys can agree on a shared secret with X25519 or ECDH;
+the secret is lent to a block and zeroed afterwards, since a protocol only ever hashes it into
+session keys:
+
+```scala
+val alice = PrivateKey.generate[X25519]()
+val bob = PrivateKey.generate[X25519]()
+alice.agree(bob.public) { secret => secret.length }   // 32
+```
+
+What the key agreement produces is then used with an authenticated cipher. AES-GCM seals a
+message under a nonce, which must never repeat under one key, together with associated data that
+is authenticated but not encrypted, and refuses to open anything that has been tampered with:
+
+```scala
+val sessionKey = SymmetricKey.generate[AesGcm[256]]()
+val nonce: Data = Array.fill[Byte](12)(0)
+val box = sessionKey.seal(nonce, t"header".bytestream, t"message".bytestream)
+sessionKey.unseal(nonce, t"header".bytestream, box).read[Text]   // t"message"
+```
+
 ### ASN.1 and DER
 
 The structures underneath PKIX — certificates, keys, signatures — are

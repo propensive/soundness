@@ -85,6 +85,27 @@ object Crypto:
   trait Mac:
     def mac(key: Data, data: Data): Data
 
+  // A Diffie–Hellman-style key agreement. `generateKeyPair` returns a PKCS#8 private key that
+  // carries its public half (as `SignatureScheme` does), `privateToPublic` recovers that half as
+  // a SubjectPublicKeyInfo, and `agree` is the raw shared secret.
+  trait KeyAgreement:
+    def generateKeyPair(bits: Int): Data
+    def privateToPublic(privateKey: Data): Data
+    def agree(privateKey: Data, publicKey: Data): Data
+
+  // A stream cipher as a keystream: `xor` applies the keystream for the key, nonce and starting
+  // block counter to the data.
+  trait StreamCipher:
+    def generateKey(bits: Int): Data
+    def xor(key: Data, nonce: Data, counter: Int, data: Data): Data
+
+  // Authenticated encryption with associated data. `seal` returns the ciphertext with the tag
+  // appended; `unseal` returns `Unset` when the tag does not verify.
+  trait Aead:
+    def generateKey(bits: Int): Data
+    def seal(key: Data, nonce: Data, associated: Data, plaintext: Data): Data
+    def unseal(key: Data, nonce: Data, associated: Data, ciphertext: Data): Optional[Data]
+
   trait Random:
     def bytes(size: Int): Data
 
@@ -102,6 +123,7 @@ object Crypto:
       case Reason.InvalidKey       => m"the key was not valid for the cipher"
       case Reason.InvalidAlgorithm => m"the algorithm was not available"
       case Reason.IoFailure        => m"data could not be read or written"
+      case Reason.BadTag           => m"the authentication tag did not verify"
 
     enum Reason(val number: Int) extends Clarification:
       case BadPadding       extends Reason(1)
@@ -109,6 +131,7 @@ object Crypto:
       case InvalidKey       extends Reason(3)
       case InvalidAlgorithm extends Reason(4)
       case IoFailure        extends Reason(5)
+      case BadTag           extends Reason(6)
 
   case class Error(reason: Crypto.Error.Reason, detail: Optional[Text] = Unset)
     ( using Diagnostics )

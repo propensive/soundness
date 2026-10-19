@@ -34,6 +34,7 @@ package soundness
 
 export octogenarian.Native
 export octogenarian.Transport
+export octogenarian.SshAddress
 export octogenarian.Peer
 
 package gitBackends:

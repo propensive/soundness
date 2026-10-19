@@ -35,6 +35,8 @@ package enigmatic
 import scala.reflect.Selectable.reflectiveSelectable
 
 import anticipation.*
+import gossamer.*
+import vacuous.*
 import gastronomy.Signing
 
 // ML-DSA (FIPS 204), the module-lattice signature scheme standardized from CRYSTALS-Dilithium,
@@ -48,6 +50,20 @@ object MlDsa:
   =>  ( crypto: Crypto { def mlDsa(level: Int): Crypto.SignatureScheme } )
   =>  MlDsa[level] =
     MlDsa(crypto.mlDsa(valueOf[level]))
+
+  given keyAlgorithm: [level <: 44 | 65 | 87: ValueOf] => MlDsa[level] is KeyAlgorithm =
+    new KeyAlgorithm:
+      type Self = MlDsa[level]
+      def name: Text = t"ML-DSA-${valueOf[level]}"
+      def sshName: Optional[Text] = Unset
+
+      def algorithm: Optional[Asn1] =
+        Asn1.Sequence(List(Asn1.ObjectId(KeyAlgorithm.MlDsa(valueOf[level]))))
+
+      // One identifier per parameter set (RFC 9881), with the parameters absent.
+      def conforms(algorithm: Asn1, material: KeyAlgorithm.Material): Boolean =
+        KeyAlgorithm.identifier(algorithm).lay(false): (arcs, parameters) =>
+          arcs == KeyAlgorithm.MlDsa(valueOf[level]) && parameters.absent
 
 class MlDsa[level <: 44 | 65 | 87: ValueOf](scheme: Crypto.SignatureScheme)
 extends Cipher, Signing:

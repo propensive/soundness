@@ -36,14 +36,12 @@ package soundness
 // aggregates are re-exported by gastronomy (where they now live).
 export
   enigmatic
-  . { Aes, Blowfish, BlockCipher, BlockCipherMode, BlockCipherPadding, Cbc, Cfb, Cipher,
-      Cleartext, cleartext, Cloak, Crypto, Ctr, decrypt, Decryptor,
-      Des, Divulgence,
-      Dsa, Ecb, Ecdsa, encrypt, Encryptor, Encryption,
-      Hmac, hmac, InitializationVector, Iso10126, JavaBaseCrypto,
-      MlDsa, NoPadding, Ofb, Password,
-      Permits, Pkcs7, PrivateKey, PublicKey, Rc2, Rsa, Signature,
-      Symmetric, SymmetricKey, TripleDes, uncloak }
+  . { Aes, AesGcm, agree, Agreeing, Authenticated, BlockCipher, BlockCipherMode,
+      BlockCipherPadding, Blowfish, Cbc, Cfb, ChaCha20, ChaCha20Poly1305, Cipher, Cleartext, cleartext, Cloak, Crypto, Ctr,
+      decrypt, Decryptor, Des, Divulgence, Dsa, Ecb, Ecdh, Ecdsa, Ed25519, encrypt, Encryption,
+      Encryptor, Hmac, hmac, InitializationVector, Iso10126, JavaBaseCrypto, KeyAlgorithm, Keystream, MlDsa,
+      NoPadding, Ofb, OpenSsh, Password, Permits, Pkcs7, Pkcs8, Poly1305, PrivateKey, PublicKey, Rc2,
+      Rsa, seal, Signature, Spki, Symmetric, SymmetricKey, TripleDes, uncloak, unseal, X25519, xor }
 
 package signatureDigests:
   export enigmatic.signatureDigests.{sha256Signature, sha384Signature, sha512Signature}
