@@ -861,47 +861,57 @@ object rationalInternal:
     // Statistical operations skolemize the element type they work over, and `Self` is
     // invariant in a typeclass, so — as `abacist`'s `Quanta` does — the arithmetic givens
     // take any subtype of Q64 as `Self`, with `refine` casting the computed word back.
-    private def refine[self](value: Q64): self = value.asInstanceOf[self]
+    // Inline, so that at `self = Q64` the cast is nothing: a non-inline generic `refine` returned
+    // its result erased, to be unboxed by every inline operation above. Always called with its
+    // type argument explicit: left to inference, a result-only type variable under an expected
+    // type that is itself a type parameter comes out as `Nothing`, and an inline cast to
+    // `Nothing` throws (where the erased cast of the non-inline form silently did not).
+    private inline def refine[self](value: Q64): self = value.asInstanceOf[self]
 
     // The standard arithmetic operators come from symbolism, so `+`, `-`, `*`, `/`, prefix
     // negation and `sqrt` resolve through the generic operators without any Q64-specific
-    // exports.
-    given addable: [self <: Q64] => self is Addable:
+    // exports. The instances are inline with inline operations, so a use that reaches one at
+    // its own type — symbolism's operators, mosquito's and baroque's inline instances — calls
+    // the `Long` arithmetic directly, with no instance call and no boxing of the operands; a use
+    // through the trait type still dispatches, as any instance does.
+    inline given addable: [self <: Q64] => self is Addable:
       type Operand = self
       type Result = self
 
-      def add(augend: self, addend: self): self = refine(sum(augend, addend))
+      inline def add(augend: self, addend: self): self = refine[self](sum(augend, addend))
 
-    given subtractable: [self <: Q64] => self is Subtractable:
+    inline given subtractable: [self <: Q64] => self is Subtractable:
       type Operand = self
       type Result = self
 
-      def subtract(minuend: self, subtrahend: self): self =
-        refine(sum(minuend, negation(subtrahend)))
+      inline def subtract(minuend: self, subtrahend: self): self =
+        refine[self](sum(minuend, negation(subtrahend)))
 
-    given multiplicable: [self <: Q64] => self is Multiplicable:
+    inline given multiplicable: [self <: Q64] => self is Multiplicable:
       type Operand = self
       type Result = self
 
-      def multiply(multiplicand: self, multiplier: self): self =
-        refine(product(multiplicand, multiplier, false))
+      inline def multiply(multiplicand: self, multiplier: self): self =
+        refine[self](product(multiplicand, multiplier, false))
 
     // Division is total: division by zero gives NaR, which propagates like `Double.NaN`.
-    given divisible: [self <: Q64] => self is Divisible:
+    inline given divisible: [self <: Q64] => self is Divisible:
       type Operand = self
       type Result = self
 
-      def divide(dividend: self, divisor: self): self = refine(product(dividend, divisor, true))
+      inline def divide(dividend: self, divisor: self): self = refine[self](product(dividend, divisor, true))
 
-    given negatable: [self <: Q64] => self is Negatable to self =
-      operand => refine(negation(operand))
+    inline given negatable: [self <: Q64] => self is Negatable:
+      type Result = self
+
+      inline def negate(operand: self): self = refine[self](negation(operand))
 
     // The lower bound stops a `(? <: value) is Zeroic` search — as `total` makes —
     // collapsing `self` to `Nothing`, whose `zero` would throw on the cast.
     given zeroic: [self >: Q64 <: Q64] => self is Zeroic:
-      inline def zero: self = refine(Zero)
+      inline def zero: self = refine[self](Zero)
 
-    given unital: [self >: Q64 <: Q64] => self is Unital = () => refine(One)
+    given unital: [self >: Q64 <: Q64] => self is Unital = () => refine[self](One)
 
     // The best representable approximation of the square root: exact whenever the operand
     // is the square of a representable rational, and NaR for negative operands.
@@ -918,52 +928,52 @@ object rationalInternal:
     // Statistical operations divide and rescale by `Double`s — collection sizes, exact
     // halves — which convert to rationals exactly, so `mean`, `median` and `variance` stay
     // exact for exact inputs.
-    given divisibleDouble: [self <: Q64] => self is Divisible:
+    inline given divisibleDouble: [self <: Q64] => self is Divisible:
       type Operand = Double
       type Result = self
 
-      def divide(dividend: self, divisor: Double): self =
-        refine(product(dividend, Q64(divisor), true))
+      inline def divide(dividend: self, divisor: Double): self =
+        refine[self](product(dividend, Q64(divisor), true))
 
-    given multiplicableDouble: [self <: Q64] => self is Multiplicable:
+    inline given multiplicableDouble: [self <: Q64] => self is Multiplicable:
       type Operand = Double
       type Result = self
 
-      def multiply(multiplicand: self, multiplier: Double): self =
-        refine(product(multiplicand, Q64(multiplier), false))
+      inline def multiply(multiplicand: self, multiplier: Double): self =
+        refine[self](product(multiplicand, Q64(multiplier), false))
 
     // Scaling a rational by a whole number is exact for every `Int` — every `Int` but the
     // two extremes is representable, and those clamp to ±(2³¹−2) — and for every `Long` within
     // that same range; larger multipliers clamp, like every other out-of-budget result.
-    given multiplicableInt: [self <: Q64] => self is Multiplicable:
+    inline given multiplicableInt: [self <: Q64] => self is Multiplicable:
       type Operand = Int
       type Result = self
 
-      def multiply(multiplicand: self, multiplier: Int): self =
-        refine(product(multiplicand, Q64(multiplier), false))
+      inline def multiply(multiplicand: self, multiplier: Int): self =
+        refine[self](product(multiplicand, Q64(multiplier), false))
 
-    given multiplicableLong: [self <: Q64] => self is Multiplicable:
+    inline given multiplicableLong: [self <: Q64] => self is Multiplicable:
       type Operand = Long
       type Result = self
 
-      def multiply(multiplicand: self, multiplier: Long): self =
-        refine(product(multiplicand, Q64(multiplier), false))
+      inline def multiply(multiplicand: self, multiplier: Long): self =
+        refine[self](product(multiplicand, Q64(multiplier), false))
 
     // Dividing by a whole number is as exact as multiplying by one, and division by zero
     // gives NaR, as it does for every other operand type.
-    given divisibleInt: [self <: Q64] => self is Divisible:
+    inline given divisibleInt: [self <: Q64] => self is Divisible:
       type Operand = Int
       type Result = self
 
-      def divide(dividend: self, divisor: Int): self =
-        refine(product(dividend, Q64(divisor), true))
+      inline def divide(dividend: self, divisor: Int): self =
+        refine[self](product(dividend, Q64(divisor), true))
 
-    given divisibleLong: [self <: Q64] => self is Divisible:
+    inline given divisibleLong: [self <: Q64] => self is Divisible:
       type Operand = Long
       type Result = self
 
-      def divide(dividend: self, divisor: Long): self =
-        refine(product(dividend, Q64(divisor), true))
+      inline def divide(dividend: self, divisor: Long): self =
+        refine[self](product(dividend, Q64(divisor), true))
 
     // Destructuring through symbolism's `/:` extractor: `case n /: d => …`.
     given quotient: Q64 is Quotient:
@@ -1184,47 +1194,54 @@ object rationalInternal:
     // Statistical operations skolemize the element type they work over, and `Self` is
     // invariant in a typeclass, so — as `abacist`'s `Quanta` does — the arithmetic givens
     // take any subtype of Q32 as `Self`, with `refine` casting the computed word back.
-    private def refine[self](value: Q32): self = value.asInstanceOf[self]
+    // Inline, so that at `self = Q32` the cast is nothing: a non-inline generic `refine` returned
+    // its result erased, to be unboxed by every inline operation above. Always called with its
+    // type argument explicit: left to inference, a result-only type variable under an expected
+    // type that is itself a type parameter comes out as `Nothing`, and an inline cast to
+    // `Nothing` throws (where the erased cast of the non-inline form silently did not).
+    private inline def refine[self](value: Q32): self = value.asInstanceOf[self]
 
     // The standard arithmetic operators come from symbolism, so `+`, `-`, `*`, `/`, prefix
     // negation and `sqrt` resolve through the generic operators without any Q32-specific
     // exports.
-    given addable: [self <: Q32] => self is Addable:
+    inline given addable: [self <: Q32] => self is Addable:
       type Operand = self
       type Result = self
 
-      def add(augend: self, addend: self): self = refine(sum(augend, addend))
+      inline def add(augend: self, addend: self): self = refine[self](sum(augend, addend))
 
-    given subtractable: [self <: Q32] => self is Subtractable:
+    inline given subtractable: [self <: Q32] => self is Subtractable:
       type Operand = self
       type Result = self
 
-      def subtract(minuend: self, subtrahend: self): self =
-        refine(sum(minuend, negation(subtrahend)))
+      inline def subtract(minuend: self, subtrahend: self): self =
+        refine[self](sum(minuend, negation(subtrahend)))
 
-    given multiplicable: [self <: Q32] => self is Multiplicable:
+    inline given multiplicable: [self <: Q32] => self is Multiplicable:
       type Operand = self
       type Result = self
 
-      def multiply(multiplicand: self, multiplier: self): self =
-        refine(product(multiplicand, multiplier, false))
+      inline def multiply(multiplicand: self, multiplier: self): self =
+        refine[self](product(multiplicand, multiplier, false))
 
     // Division is total: division by zero gives NaR, which propagates like `Double.NaN`.
-    given divisible: [self <: Q32] => self is Divisible:
+    inline given divisible: [self <: Q32] => self is Divisible:
       type Operand = self
       type Result = self
 
-      def divide(dividend: self, divisor: self): self = refine(product(dividend, divisor, true))
+      inline def divide(dividend: self, divisor: self): self = refine[self](product(dividend, divisor, true))
 
-    given negatable: [self <: Q32] => self is Negatable to self =
-      operand => refine(negation(operand))
+    inline given negatable: [self <: Q32] => self is Negatable:
+      type Result = self
+
+      inline def negate(operand: self): self = refine[self](negation(operand))
 
     // The lower bound stops a `(? <: value) is Zeroic` search — as `total` makes —
     // collapsing `self` to `Nothing`, whose `zero` would throw on the cast.
     given zeroic: [self >: Q32 <: Q32] => self is Zeroic:
-      inline def zero: self = refine(Zero)
+      inline def zero: self = refine[self](Zero)
 
-    given unital: [self >: Q32 <: Q32] => self is Unital = () => refine(One)
+    given unital: [self >: Q32 <: Q32] => self is Unital = () => refine[self](One)
 
     // The best representable approximation of the square root: exact whenever the operand
     // is the square of a representable rational, and NaR for negative operands.
@@ -1238,51 +1255,51 @@ object rationalInternal:
           val (numerator, denominator) = fractionOf((value & Int.MaxValue).toLong)
           q32(sqrtMagnitude(numerator, denominator, Budget32).toInt)
 
-    given divisibleDouble: [self <: Q32] => self is Divisible:
+    inline given divisibleDouble: [self <: Q32] => self is Divisible:
       type Operand = Double
       type Result = self
 
-      def divide(dividend: self, divisor: Double): self =
-        refine(product(dividend, Q32(divisor), true))
+      inline def divide(dividend: self, divisor: Double): self =
+        refine[self](product(dividend, Q32(divisor), true))
 
-    given multiplicableDouble: [self <: Q32] => self is Multiplicable:
+    inline given multiplicableDouble: [self <: Q32] => self is Multiplicable:
       type Operand = Double
       type Result = self
 
-      def multiply(multiplicand: self, multiplier: Double): self =
-        refine(product(multiplicand, Q32(multiplier), false))
+      inline def multiply(multiplicand: self, multiplier: Double): self =
+        refine[self](product(multiplicand, Q32(multiplier), false))
 
     // Exact for multipliers within ±32766, `Q32`'s integer range; larger ones clamp, like
     // every other out-of-budget result.
-    given multiplicableInt: [self <: Q32] => self is Multiplicable:
+    inline given multiplicableInt: [self <: Q32] => self is Multiplicable:
       type Operand = Int
       type Result = self
 
-      def multiply(multiplicand: self, multiplier: Int): self =
-        refine(product(multiplicand, Q32(multiplier), false))
+      inline def multiply(multiplicand: self, multiplier: Int): self =
+        refine[self](product(multiplicand, Q32(multiplier), false))
 
-    given multiplicableLong: [self <: Q32] => self is Multiplicable:
+    inline given multiplicableLong: [self <: Q32] => self is Multiplicable:
       type Operand = Long
       type Result = self
 
-      def multiply(multiplicand: self, multiplier: Long): self =
-        refine(product(multiplicand, Q32(multiplier), false))
+      inline def multiply(multiplicand: self, multiplier: Long): self =
+        refine[self](product(multiplicand, Q32(multiplier), false))
 
     // Dividing by a whole number is as exact as multiplying by one, and division by zero
     // gives NaR, as it does for every other operand type.
-    given divisibleInt: [self <: Q32] => self is Divisible:
+    inline given divisibleInt: [self <: Q32] => self is Divisible:
       type Operand = Int
       type Result = self
 
-      def divide(dividend: self, divisor: Int): self =
-        refine(product(dividend, Q32(divisor), true))
+      inline def divide(dividend: self, divisor: Int): self =
+        refine[self](product(dividend, Q32(divisor), true))
 
-    given divisibleLong: [self <: Q32] => self is Divisible:
+    inline given divisibleLong: [self <: Q32] => self is Divisible:
       type Operand = Long
       type Result = self
 
-      def divide(dividend: self, divisor: Long): self =
-        refine(product(dividend, Q32(divisor), true))
+      inline def divide(dividend: self, divisor: Long): self =
+        refine[self](product(dividend, Q32(divisor), true))
 
     // Destructuring through symbolism's `/:` extractor: `case n /: d => …`.
     given quotient: Q32 is Quotient:
