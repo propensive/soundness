@@ -86,6 +86,11 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
       Scala.highlight(snippet).lines.to[List].stdlib.flatMap(_.stdlib).flatMap(_.meta.option)
     .assert(_ == Nil)
 
+    test(m"tokenized highlighting survives expressions nested deeper than ten"):
+      Scala.highlight(t"val sum: Int = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12")
+      . lines.to[List].stdlib.flatMap(_.stdlib).count(_.text == t"+")
+    .assert(_ == 11)
+
     test(m"each token carries its line and column position"):
       val tokens = Scala.highlight(t"val n =\n  List").lines.to[List].stdlib.flatMap(_.stdlib)
 

@@ -143,6 +143,7 @@ object SourceCode:
     val context0 = Contexts.ContextBase().initialCtx.fresh.setReporter(Reporter.NoReporter)
 
     context0.setSetting(context0.settings.source, "future")
+    dotty.tools.dotc.HarlequinBase.prime(using context0)
 
     given context: Contexts.Context =
       context0.setCompilationUnit(CompilationUnit(source, false)(using context0))
