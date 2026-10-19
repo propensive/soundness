@@ -50,10 +50,10 @@ object settings:
   // (see rep/DECISIONS.md). It is consumed in one of two modes:
   //
   //   1. Released (the default). Each Proscala release (`SOUNDNESS_SCALA_RELEASE`, default
-  //      `1.0.1`) is built for several upstream Scala versions, and ships each build as a
+  //      `1.0.3`) is built for several upstream Scala versions, and ships each build as a
   //      `proscala-<scala version>.tar.gz` asset whose contents are a `lib` directory of jars.
   //      The build's Scala version is `<upstream>-pro-<release>`: the default is Scala 3.10.0
-  //      (`SOUNDNESS_SCALA_BASE`), so `3.10.0-pro-1.0.1`; `SOUNDNESS_SCALA_BASE=3.9.0` selects
+  //      (`SOUNDNESS_SCALA_BASE`), so `3.10.0-pro-1.0.3`; `SOUNDNESS_SCALA_BASE=3.9.0` selects
   //      the 3.9 build. The `toolchain` module below downloads that asset and extracts it into a
   //      shared cache, exposing its jars to every coursier resolution — no local compiler build
   //      and no publishing step needed. A release from before 1.0.0 (such as `3.9.1-dev-p20`)
@@ -69,7 +69,7 @@ object settings:
   // `scalaVersion` is the *coordinate* version the toolchain force-versions every artifact to; it
   // must match the version string the jars were built with (`compiler.properties`), or
   // coursier/zinc caches poison each other across compilers.
-  val scalaRelease = sys.env.getOrElse("SOUNDNESS_SCALA_RELEASE", "1.0.1")
+  val scalaRelease = sys.env.getOrElse("SOUNDNESS_SCALA_RELEASE", "1.0.3")
   val scalaBase = sys.env.getOrElse("SOUNDNESS_SCALA_BASE", "3.10.0")
   val scalaVersion = sys.env.getOrElse("SOUNDNESS_SCALA_VERSION",
     if scalaRelease.matches("[0-9]+\\.[0-9]+\\.[0-9]+") then s"$scalaBase-pro-$scalaRelease"
