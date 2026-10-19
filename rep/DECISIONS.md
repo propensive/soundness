@@ -3256,3 +3256,23 @@ product is four `dmul`, `dsub`, `dadd`, one allocation). What it took, each foun
   `ClassTag[Quantity[…]]` synthesises to `ClassTag.Double`, so quantities get a `double[]`).
 - `@unchecked` under `-Yno-predef` is the *package* `scala.annotation.unchecked`; write
   `@scala.unchecked`.
+
+## Q64/Q32 inline instances, and a cast to `Nothing` that erasure had been hiding (2026-10-19)
+
+The rationals' arithmetic instances are inline (as symbolism's primitives, #2282), so
+`Vector[Q64]` and `Complex[Q64]` arithmetic is box-free: `laload`, the `Long` kernel through an
+`inline$` accessor, `lastore`. Two things it took:
+
+- `refine[self](value: Q64): self = value.asInstanceOf[self]`, the private cast from the
+  representation to the instance's `self`, had to be inline as well: a non-inline generic
+  `refine` returns its result erased, and every inline operation then unboxed it.
+- Once inline, four baroque tests and then twenty hypotenuse tests threw `Cannot cast to
+  scala.Nothing`: the bare `refine(sum(a, b))` in the instances' bodies had *always* inferred its
+  result-only type variable as `Nothing` (expected type `self`, a type parameter of the given,
+  gives the constraint `? <: self`, which the typer solves with the lower bound), and the
+  non-inline form's erased cast had swallowed it for years. The inline cast is real. Every call
+  is now `refine[self](…)`. Bounding `self` as `[self >: Q64 <: Q64]` (the trick `zeroic` uses
+  against a different `Nothing`) did not help and widened the failure to twenty tests; the
+  bounds are as they were. Lesson: a generic erased cast is a latent `Nothing` whenever the
+  type argument is left to inference under a type-parameter expected type — making it inline
+  is how you find out.
