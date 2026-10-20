@@ -93,6 +93,23 @@ object CodecModeTests extends Suite("xml-codecs", m"Xylophone codec mode tests")
         PWorker(t"Ada", 36).in[Text over Xml]
       . assert(_ == t"<PWorker><name>Ada</name><age>36</age></PWorker>")
 
+      test(m"`codecs.strict` writes and reads a record directly"):
+        import codecs.strict
+
+        given workerSeam: (PWorker is Encodable in Xml) =
+          _ => panic(m"a generated printer encoded a nested record through its Encodable")
+
+        team.in[Text over Xml].read[PTeam in Xml]
+      . assert(_ == team)
+
+      test(m"`codecs.strict` rejects a type with no direct codec"):
+        val errors = demilitarize:
+          import codecs.strict
+          PBoxed(7).in[Text over Xml]
+
+        errors.map(_.message.contains("has no direct codec"))
+      . assert(_ == List(true))
+
       test(m"`derives Xml.Direct` writes and reads without an import"):
         XDeclared(5, t"five").in[Text over Xml].read[XDeclared in Xml]
       . assert(_ == XDeclared(5, t"five"))

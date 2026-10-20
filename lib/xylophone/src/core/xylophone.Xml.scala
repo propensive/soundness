@@ -149,6 +149,28 @@ trait Xml1 extends Xml2:
 
       text.asInstanceOf[anticipation.Text over Xml]
 
+  // The failing halves of the `codecs.strict` pairs in `object Xml`: above `Xml2`'s derived
+  // entries, which they shadow for every type under the mode, and below the pairs, which take
+  // every type with a direct codec first. Inline, so the error is raised after selection, at
+  // the use site, naming the type.
+  inline given aggregableStrictFailure: [value]
+  =>  ( strict: Codecs.Strict )
+  =>  ( (value in Xml) is Aggregable by Data ) =
+
+    Codecs.strictFailure[value]("xylophone")
+
+  inline given aggregableStrictFailureText: [value]
+  =>  ( strict: Codecs.Strict )
+  =>  ( (value in Xml) is Aggregable by anticipation.Text ) =
+
+    Codecs.strictFailure[value]("xylophone")
+
+  inline given encodableOverStrictFailure: [value]
+  =>  ( strict: Codecs.Strict )
+  =>  ( value is Encodable in (anticipation.Text over Xml) ) =
+
+    Codecs.strictFailure[value]("xylophone")
+
 object Xml extends Tag.Container
   ( label = "xml", admissible = Set("head", "body") ), Format, Xml1:
   private[xylophone] type BaseText = anticipation.Text
@@ -193,6 +215,36 @@ object Xml extends Tag.Container
   =>  ( (value is Encodable in (BaseText over Xml))^{encodable} ) =
 
     encodableOver[value]
+
+  // `import codecs.strict`: the direct path, or a compile error, as a pair with `Xml1`'s
+  // `…StrictFailure` givens. These take a direct codec wherever one resolves, outranking
+  // `Xml1`'s direct entries only so that they outrank the failures too; the failures, above
+  // `Xml2`'s derived entries, report a type with no direct codec rather than letting those
+  // resolve, as `codecs.direct` does.
+  given aggregableStrict: [value]
+  =>  ( strict: Codecs.Strict, parsable: (value is Xml.Parsable)^ )
+  =>  ( schema: XmlSchema, scope: Xml.Scope, namespacing: Xml.Namespacing )
+  =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], foci: Foci[Xml.Focus] )
+  =>  ( buffering: Buffering )
+  =>  ( ((value in Xml) is Aggregable by Data)^{parsable, tactic, xmlTactic} ) =
+
+    aggregableParsed[value]
+
+  given aggregableStrictText: [value]
+  =>  ( strict: Codecs.Strict, parsable: (value is Xml.Parsable)^ )
+  =>  ( schema: XmlSchema, scope: Xml.Scope, namespacing: Xml.Namespacing )
+  =>  ( tactic: Tactic[Parse.Error], xmlTactic: Tactic[Xml.Error], foci: Foci[Xml.Focus] )
+  =>  ( buffering: Buffering )
+  =>  ( ((value in Xml) is Aggregable by BaseText)^{parsable, tactic, xmlTactic} ) =
+
+    aggregableParsedText[value]
+
+  given encodableOverStrict: [value]
+  =>  ( strict: Codecs.Strict, printable: (value is Xml.Printable)^ )
+  =>  ( encodable: (value is Encodable in Xml)^, formatting: Xml.Formatting )
+  =>  ( (value is Encodable in (BaseText over Xml))^{printable, encodable} ) =
+
+    encodableOverPrinted[value]
 
   // Controls how an `Xml` tree is serialized. `indent` is the whitespace unit emitted per nesting
   // level when indenting element-only content; `Unset` (the default) keeps everything on a single

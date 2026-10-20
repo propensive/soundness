@@ -360,6 +360,22 @@ trait Cbor1 extends Cbor2:
 
     value => Printable.print(value).asInstanceOf[Data over Cbor]
 
+  // The failing halves of the `codecs.strict` pairs in `object Cbor`: above `Cbor2`'s derived
+  // entries, which they shadow for every type under the mode, and below the pairs, which take
+  // every type with a direct codec first. Inline, so the error is raised after selection, at
+  // the use site, naming the type.
+  inline given aggregableStrictFailure: [value]
+  =>  ( strict: Codecs.Strict )
+  =>  ( (value in Cbor) is Aggregable by Data ) =
+
+    Codecs.strictFailure[value]("breviloquence")
+
+  inline given encodableOverStrictFailure: [value]
+  =>  ( strict: Codecs.Strict )
+  =>  ( value is Encodable in (Data over Cbor) ) =
+
+    Codecs.strictFailure[value]("breviloquence")
+
 object Cbor extends Cbor1, Dynamic:
   // CBOR major-type representation in storage. Arrays are stored as an
   // odd-length `Array[Any]^{}` (sentinel-padded if the logical count is even),
@@ -823,6 +839,24 @@ object Cbor extends Cbor1, Dynamic:
   =>  ( (value is Encodable in (Data over Cbor))^{encodable} ) =
 
     encodableOver[value]
+
+  // `import codecs.strict`: the direct path, or a compile error, as a pair with `Cbor1`'s
+  // `…StrictFailure` givens. These take a direct codec wherever one resolves, outranking
+  // `Cbor1`'s direct entries only so that they outrank the failures too; the failures, above
+  // `Cbor2`'s derived entries, report a type with no direct codec rather than letting those
+  // resolve, as `codecs.direct` does.
+  given aggregableStrict: [value]
+  =>  ( strict: Codecs.Strict, parsable: (value is Cbor.Parsable)^ )
+  =>  ( tactic: Tactic[Cbor.Error] )
+  =>  ( ((value in Cbor) is Aggregable by Data)^{parsable, tactic} ) =
+
+    aggregableParsed[value]
+
+  given encodableOverStrict: [value]
+  =>  ( strict: Codecs.Strict, printable: (value is Cbor.Printable)^ )
+  =>  ( (value is Encodable in (Data over Cbor))^{printable} ) =
+
+    encodableOverPrinted[value]
 
   def unseal(cbor: Cbor): Ast = cbor.root
 

@@ -122,8 +122,10 @@ Person(t"Bob", 40).in[Text over Json]   // written directly
 `Json.Printable.emit` writes the text a block at a time, handing each to a function as it fills.
 A record can generate both instances once, into its companion, with `derives Json.Direct`, and a
 single import selects the path for every record in scope: `import codecs.direct` for a generated
-parser and printer wherever a type is a record, or `import codecs.derived` for the derived codecs
-even where a direct instance exists.
+parser and printer wherever a type is a record, `import codecs.derived` for the derived codecs
+even where a direct instance exists, or `import codecs.strict` for the generated codecs with a
+compile error, naming the type, wherever `read[Foo in Json]` or `in[Text over Json]` would
+otherwise fall back to the tree. The modes are alternatives; import one at a time.
 
 This is not a shorthand for parsing and then decoding. A type with a `Json.Parsable` instance is
 read *directly* from the source: the parser is composed for that type as the code compiles, and

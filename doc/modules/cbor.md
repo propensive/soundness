@@ -131,10 +131,13 @@ single import selects the path for every record in scope:
 ```scala
 import codecs.direct     // a generated parser and printer wherever a type is a record
 import codecs.derived    // the derived codecs, even where a direct instance is in scope
+import codecs.strict     // generated codecs, and a compile error where there is none
 ```
 
 Under `codecs.direct`, a type that is not a record — a generic case class, a sealed hierarchy —
-keeps the derived path unless it has an instance of its own.
+keeps the derived path unless it has an instance of its own. Under `codecs.strict`, it is a
+compile error naming the type instead: `read[Foo in Cbor]` and `in[Data over Cbor]` then never
+fall back to the tree. The modes are alternatives; import one at a time.
 
 ### Tags
 

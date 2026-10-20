@@ -976,6 +976,23 @@ object DirectTests extends Suite("json-direct", m"Jacinta direct parsing and for
         Worker(t"al", 30).in[Text over Json]
       . assert(_ == t"""{"name":"al","age":30}""")
 
+      test(m"`codecs.strict` writes and reads a record directly"):
+        import codecs.strict
+
+        given workerSeam: (Worker is Json.Encodable) =
+          Json.Encodable(() => Morphology.Any)(_ => panic(m"encoded through its Encodable"))
+
+        crew.in[Text over Json].read[Crew in Json]
+      . assert(_ == crew)
+
+      test(m"`codecs.strict` rejects a type with no direct codec"):
+        val errors = demilitarize:
+          import codecs.strict
+          Boxed(7).in[Text over Json]
+
+        errors.map(_.message.contains("has no direct codec"))
+      . assert(_ == List(true))
+
       test(m"`derives Json.Direct` writes and reads without an import"):
         JDeclared(5, t"five").in[Text over Json].read[JDeclared in Json]
       . assert(_ == JDeclared(5, t"five"))

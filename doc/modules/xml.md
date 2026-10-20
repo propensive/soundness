@@ -206,8 +206,10 @@ Worker(t"Alice", 30).in[Text over Xml]   // written directly
 `Xml.Printable.emit` writes the text a block at a time, handing each to a function as it fills.
 A record can generate both instances once, into its companion, with `derives Xml.Direct`, and a
 single import selects the path for every such record in scope: `import codecs.direct` for a
-generated parser and printer, or `import codecs.derived` for the derived codecs even where a
-direct instance exists.
+generated parser and printer, `import codecs.derived` for the derived codecs even where a
+direct instance exists, or `import codecs.strict` for the generated codecs with a compile error,
+naming the type, wherever `read[Foo in Xml]` or `in[Text over Xml]` would otherwise fall back to
+the tree. The modes are alternatives; import one at a time.
 
 A field marked `@attribute` becomes an attribute rather than a child element, and round-trips as
 one:

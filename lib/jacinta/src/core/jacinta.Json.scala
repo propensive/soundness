@@ -744,6 +744,22 @@ trait Json1 extends Json2:
 
       text.asInstanceOf[Text over Json]
 
+  // The failing halves of the `codecs.strict` pairs in `object Json`: above `Json2`'s derived
+  // entries, which they shadow for every type under the mode, and below the pairs, which take
+  // every type with a direct codec first. Inline, so the error is raised after selection, at
+  // the use site, naming the type.
+  inline given aggregableStrictFailure: [value]
+  =>  ( strict: Codecs.Strict )
+  =>  ( (value in Json) is Aggregable by Data ) =
+
+    Codecs.strictFailure[value]("jacinta")
+
+  inline given encodableOverStrictFailure: [value]
+  =>  ( strict: Codecs.Strict )
+  =>  ( value is anticipation.Encodable in (Text over Json) ) =
+
+    Codecs.strictFailure[value]("jacinta")
+
 object Json extends Json1, Dynamic:
   // `import codecs.derived`: the derived codecs, even for a type with a direct instance in
   // scope. Each outranks its direct counterpart in `Json1`, and applies only where that would.
@@ -771,6 +787,25 @@ object Json extends Json1, Dynamic:
   =>  ( (value is anticipation.Encodable in (Text over Json))^{encodable} ) =
 
     encodableOver[value]
+
+  // `import codecs.strict`: the direct path, or a compile error, as a pair with `Json1`'s
+  // `…StrictFailure` givens. These take a direct codec wherever one resolves, outranking
+  // `Json1`'s direct entries only so that they outrank the failures too; the failures, above
+  // `Json2`'s derived entries, report a type with no direct codec rather than letting those
+  // resolve, as `codecs.direct` does.
+  given aggregableStrict: [value]
+  =>  ( strict: Codecs.Strict, parsable: (value is Json.Parsable)^ )
+  =>  ( tactic: Tactic[Parse.Error], tracking: PositionTracking )
+  =>  ( ((value in Json) is Aggregable by Data)^{parsable, tactic} ) =
+
+    aggregableParsed[value]
+
+  given encodableOverStrict: [value]
+  =>  ( strict: Codecs.Strict, printable: (value is Json.Printable)^ )
+  =>  ( encodable: (value is anticipation.Encodable in Json)^, formatting: Json.Formatting )
+  =>  ( (value is anticipation.Encodable in (Text over Json))^{printable, encodable} ) =
+
+    encodableOverPrinted[value]
 
   // Controls how a `Json` value is serialized. `indent` is the whitespace unit per nesting level;
   // `Unset` (the default) produces minimal, single-line JSON. `trailingNewline` appends a final

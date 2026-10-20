@@ -931,6 +931,23 @@ object Tests extends Suite("protobuf", m"Locomotion Protobuf Tests"):
         bytes(batch)
       . assert(_ == reference(4))
 
+      test(m"`codecs.strict` prints and reads a message directly"):
+        import codecs.strict
+
+        given itemSeam: (Item is Decodable in Protobuf) =
+          _ => panic(m"a generated parser decoded a repeated element through its Decodable")
+
+        batch.in[Data over Protobuf].read[Batch in Protobuf]
+      . assert(_ == batch)
+
+      test(m"`codecs.strict` rejects a message with no direct codec"):
+        val errors = demilitarize:
+          import codecs.strict
+          Boxed(7).in[Data over Protobuf]
+
+        errors.map(_.message.contains("has no direct codec"))
+      . assert(_ == List(true))
+
       test(m"`derives Protobuf.Direct` reads directly without an import"):
         given (Declared is Decodable in Protobuf) =
           _ => panic(m"the read decoded the message through its Decodable")

@@ -176,13 +176,17 @@ declaration:
 ```scala
 import codecs.direct     // a generated parser and printer wherever a type is a message or oneof
 import codecs.derived    // the derived codecs, even where a direct instance is in scope
+import codecs.strict     // generated codecs, and a compile error where there is none
 ```
 
 Under `codecs.direct`, a type that is neither a message nor a oneof — a generic case class, a
 collection — keeps the derived path, and a type that derives `Protobuf.Direct` uses the instances
 it generated once rather than generating them again at each use, which costs compile time. The
 results are the same on either path; only the speed, and the positions reported in errors,
-differ.
+differ. `codecs.strict` is `codecs.direct` for code that must not fall back: a `read[Foo in
+Protobuf]`, `in[Data over Protobuf]` on a type with no direct codec is a compile error naming the
+type. (`in[Protobuf]` names the wire value itself, and is not gated.) The modes are alternatives;
+import one at a time.
 
 ### Compatibility
 

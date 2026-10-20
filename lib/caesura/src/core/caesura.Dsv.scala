@@ -77,8 +77,8 @@ trait Dsv2:
 
   // `source.read[Foo in Dsv]` shorthand: decodes a single DSV record (the first
   // row) into `Foo` through the row AST. Held below `aggregableParsed` in
-  // `object Dsv`, so a type with an explicit `Dsv.Parsable` takes the direct
-  // (AST-free) path instead. The `Form` type-tag is added by an `asInstanceOf`
+  // `Dsv1`, so a type with a `Dsv.Parsable` takes the direct (AST-free) path
+  // instead. The `Form` type-tag is added by an `asInstanceOf`
   // cast — `value in Dsv` is just `value { type Form = Dsv }`, so the cast is a
   // no-op at runtime.
   given aggregableIn: [value: Decodable in Dsv] => (format: Dsv.Format)
@@ -98,7 +98,40 @@ trait Dsv2:
         Sheet.parseRows(Dsv.adopted(stream))
         . next().as[value].asInstanceOf[value in Dsv]
 
-object Dsv extends Dsv2:
+trait Dsv1 extends Dsv2:
+  this: Dsv.type =>
+
+  // The direct-read entry, gated on a `Dsv.Parsable` (above the AST-based
+  // `aggregableIn` in `Dsv2`, so an instance switches the path, and below
+  // `object Dsv`, whose `codecs` modes override it). `read[Foo in Dsv]`
+  // parses the first row. Captures the tactic it raises through.
+  given aggregableParsed: [value] => (parsable: value is Dsv.Parsable)
+  =>  ( format: Dsv.Format, tactic: Tactic[Dsv.Error], buffering: Buffering )
+  =>  ( ((value in Dsv) is Aggregable by Text)^{tactic} ) =
+    new Aggregable:
+      type Self = value in Dsv
+      type Operand = Text
+
+      def aggregate(text: Chain[Text]): value in Dsv = accept(Stream(text))
+
+      override def accept(stream: (Stream[Text] over Credit)^): value in Dsv =
+        val reader =
+          Sheet.directReader(adopted(stream))
+
+        if reader.nextRow() then parsable.parse(reader, 0).asInstanceOf[value in Dsv]
+        else tactic.abort(Dsv.Error(format, Dsv.Error.Reason.Absent))
+
+  // The failing halves of the `codecs.strict` pairs in `object Dsv`: above `Dsv2`'s derived
+  // entries, which they shadow for every type under the mode, and below the pairs, which take
+  // every type with a direct codec first. Inline, so the error is raised after selection, at
+  // the use site, naming the type.
+  inline given aggregableStrictFailure: [value]
+  =>  ( strict: Codecs.Strict )
+  =>  ( (value in Dsv) is Aggregable by Text ) =
+
+    Codecs.strictFailure[value]("caesura")
+
+object Dsv extends Dsv1:
   // The stream an `Aggregable`'s `accept` receives, handed on to a consuming parser. `accept`'s
   // signature is pinned non-consuming, so ownership moves through a neutral reference: each
   // call delivers a stream that is used exactly once, by construction.
@@ -235,26 +268,30 @@ object Dsv extends Dsv2:
 
     cells.join(format.delimiter.show)
 
-  // Direct-read entries, gated on an explicit `Dsv.Parsable` (they sit above
-  // the AST-based `aggregableIn` in `Dsv2`, so opting in switches the path).
-  // `read[Foo in Dsv]` parses the first row; `read[List[Foo] in Dsv]` parses
-  // every row. Each captures the tactic it raises through.
-  given aggregableParsed: [value] => (parsable: value is Dsv.Parsable)
+  // `import codecs.derived`: the row decoder, even for a type with a direct instance in
+  // scope. Outranks `Dsv1`'s `aggregableParsed`, and applies only where that would.
+  given aggregableDerived: [value: Decodable in Dsv]
+  =>  ( derived: Codecs.Derived, parsable: value is Dsv.Parsable )
   =>  ( format: Dsv.Format, tactic: Tactic[Dsv.Error], buffering: Buffering )
   =>  ( ((value in Dsv) is Aggregable by Text)^{tactic} ) =
-    new Aggregable:
-      type Self = value in Dsv
-      type Operand = Text
 
-      def aggregate(text: Chain[Text]): value in Dsv = accept(Stream(text))
+    aggregableIn[value]
 
-      override def accept(stream: (Stream[Text] over Credit)^): value in Dsv =
-        val reader =
-          Sheet.directReader(adopted(stream))
+  // `import codecs.strict`: the direct path, or a compile error, as a pair with `Dsv1`'s
+  // `…StrictFailure` givens. These take a direct codec wherever one resolves, outranking
+  // `Dsv1`'s direct entries only so that they outrank the failures too; the failures, above
+  // `Dsv2`'s derived entries, report a type with no direct codec rather than letting those
+  // resolve, as `codecs.direct` does.
+  given aggregableStrict: [value]
+  =>  ( strict: Codecs.Strict, parsable: value is Dsv.Parsable )
+  =>  ( format: Dsv.Format, tactic: Tactic[Dsv.Error], buffering: Buffering )
+  =>  ( ((value in Dsv) is Aggregable by Text)^{tactic} ) =
 
-        if reader.nextRow() then parsable.parse(reader, 0).asInstanceOf[value in Dsv]
-        else tactic.abort(Dsv.Error(format, Dsv.Error.Reason.Absent))
+    aggregableParsed[value]
 
+  // `read[List[Foo] in Dsv]` parses every row. Direct only — a row decoder has no
+  // sheet-level counterpart — so it is neither overridden by `codecs.derived` nor gated by
+  // `codecs.strict`; at this level, it outranks `Dsv1`'s `aggregableStrictFailure`.
   given aggregableParsedList: [value] => (parsable: value is Dsv.Parsable)
   =>  ( format: Dsv.Format, tactic: Tactic[Dsv.Error], buffering: Buffering )
   =>  ( ((List[value] in Dsv) is Aggregable by Text)^{tactic} ) =
@@ -276,11 +313,11 @@ object Dsv extends Dsv2:
   //
   // `Dsv.Parsable` reads a value straight off the `DsvReader` token reader:
   // no per-row `Dsv`, no per-field slice of the cell array. `Parsable` is the
-  // OPT-IN surface (explicit instances and `derives Dsv.Parsable`; no blanket
-  // given), so `read[T in Dsv]` changes behavior only when a type opts in;
-  // `Field` is the operational sibling that always resolves (bridging any
-  // `Decodable in Text`), used in field position by the derivation. Neither
-  // subtypes the other.
+  // OPT-IN surface (explicit instances, `derives Dsv.Parsable`, and the
+  // `codecs.direct` mode), so `read[T in Dsv]` changes behavior only when a
+  // type opts in; `Field` is the operational sibling that always resolves
+  // (bridging any `Decodable in Text`), used in field position by the
+  // derivation. Neither subtypes the other.
   trait Parsing extends distillate.Parsable:
     type Transport = Dsv
     type Reader = DsvReader
@@ -293,10 +330,27 @@ object Dsv extends Dsv2:
 
     def parse(reader: DsvReader^): Self = parse(reader, 0)
 
-  object Parsable:
-    inline def derived[value <: Product: ProductReflection]: value is Dsv.Parsable =
-      val field = ParsableDerivation.derived[value]
+  // `import codecs.direct`: a direct parser for every product, derived where it is needed.
+  // A type that is not a product fails `ProductReflection`, and so takes the row decoder.
+  // Below the companions' own instances, so a type with a `Dsv.Parsable` of its own uses it.
+  // The derivation reads each field through `Dsv.Field`, so a product with a field that is
+  // not `Decodable in Text` does not take the mode gracefully: it fails to derive.
+  trait Parsable2:
+    inline given generated: [value <: Product]
+    =>  ( mode: Codecs.Direct, reflection: ProductReflection[value] )
+    =>  ( value is Dsv.Parsable ) =
 
+      Dsv.Parsable.derived[value]
+
+  object Parsable extends Parsable2:
+    inline def derived[value <: Product: ProductReflection]: value is Dsv.Parsable =
+      fromField(ParsableDerivation.derived[value])
+
+    // A `Field` as a `Parsable`. Not inline: a read of `Foo in Dsv` infers `value` as the
+    // refinement `Foo { type Form = Dsv }`, and an anonymous class expanded with that type
+    // substituted does not override `parse` under capture checking; here `value` stays
+    // abstract.
+    def fromField[value](field: value is Dsv.Field): value is Dsv.Parsable =
       new Parsable:
         type Self = value
         override def width: Int = field.width
