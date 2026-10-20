@@ -195,6 +195,17 @@ t"x,1\ny,2".source[Text].rowsOf[Stat].map(_.count).to(List)   // List(1, 2)
 Fields are matched by header name where the format has a header and positionally where it does
 not, and an `Optional` field that the row does not reach is `Unset` rather than an error.
 
+The same `codecs` import that selects the path for every other format selects it for DSV:
+`import codecs.direct` parses every product type directly, with no instance declared (a type
+that is not a product keeps the row decoder); `import codecs.derived` takes the row decoder even
+where a `Dsv.Parsable` is in scope; and `import codecs.strict` parses directly, with a compile
+error naming the type wherever `read[Foo in Dsv]` would otherwise fall back to the row decoder.
+The modes are alternatives; import one at a time. A `List[Foo] in Dsv` read is direct in every
+mode, since the row decoder has no sheet-level counterpart. Each field of a directly-parsed
+product reads one cell through its `Decodable in Text` (or is a product of such fields), so a
+field with only a `Decodable in Dsv` instance keeps the type on the row decoder, by declaring
+no `Dsv.Parsable` for it and importing no mode.
+
 ### Addressing cells by name
 
 With dynamic access enabled, a cell of a header-bearing row reads as a named member, decoded to

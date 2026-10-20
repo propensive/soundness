@@ -277,6 +277,22 @@ trait Protobuf1 extends Protobuf2:
 
     (data: Data) => parseDirect(ProtobufParser(data), parsable).asInstanceOf[value in Protobuf]
 
+  // The failing halves of the `codecs.strict` pairs in `object Protobuf`: above `Protobuf2`'s
+  // derived entries, which they shadow for every type under the mode, and below the pairs,
+  // which take every type with a direct codec first. Inline, so the error is raised after
+  // selection, at the use site, naming the type.
+  inline given aggregableStrictFailure: [value]
+  =>  ( strict: Codecs.Strict )
+  =>  ( (value in Protobuf) is Aggregable by Data ) =
+
+    Codecs.strictFailure[value]("locomotion")
+
+  inline given encodableOverStrictFailure: [value]
+  =>  ( strict: Codecs.Strict )
+  =>  ( value is Encodable in (Data over Protobuf) ) =
+
+    Codecs.strictFailure[value]("locomotion")
+
 object Protobuf extends Protobuf1:
   // Wraps a complete message payload as a length-delimited wire value — the shape
   // the derivations decode. Used by the `Aggregable` instances backing `read`.
@@ -335,6 +351,26 @@ object Protobuf extends Protobuf1:
 
     summonFrom:
       case given Reflection[`value`] => EncodableDerivation.derived
+
+  // `import codecs.strict`: the direct path, or a compile error, as a pair with `Protobuf1`'s
+  // `…StrictFailure` givens. These take a direct codec wherever one resolves, outranking
+  // `Protobuf1`'s direct entries only so that they outrank the failures too; the failures, above
+  // `Protobuf2`'s derived entries, report a type with no direct codec rather than letting those
+  // resolve, as `codecs.direct` does.
+  // `.in[Protobuf]` is not gated: it names the wire value itself, as `.in[Json]` names the
+  // tree.
+  given aggregableStrict: [value]
+  =>  ( strict: Codecs.Strict, parsable: (value is Protobuf.Parsable)^ )
+  =>  ( tactic: Tactic[Protobuf.Error] )
+  =>  ( ((value in Protobuf) is Aggregable by Data)^{parsable, tactic} ) =
+
+    aggregableParsed[value]
+
+  given encodableOverStrict: [value]
+  =>  ( strict: Codecs.Strict, printable: (value is Protobuf.Printable)^ )
+  =>  ( (value is Encodable in (Data over Protobuf))^{printable} ) =
+
+    encodableOver[value](using encodablePrinted[value])
 
   object Parsable extends Parsable2:
     // The base of generated parsers: generated code is capture-erased, so

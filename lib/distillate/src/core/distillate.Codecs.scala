@@ -42,15 +42,31 @@ package distillate
 //
 //     import codecs.direct     // generated codecs wherever a type is inlinable
 //     import codecs.derived    // the derived codecs, even over a direct instance
+//     import codecs.strict     // generated codecs, and a compile error where there is none
 //
-// With neither in scope, a type takes the direct path exactly when it has a
+// With none in scope, a type takes the direct path exactly when it has a
 // direct instance of its own (an explicit given, or `derives`), and the
 // derived path otherwise. Results are the same on either path; only the speed
 // and the positions in error diagnostics differ.
+//
+// `Strict` is a `Direct`, so a format's generated instances apply under both;
+// strictness is added at the entry points (`read[Foo in F]`, `in[Text over
+// F]`, `in[Data over F]`), which a format gates with `Codecs.strictFailure`
+// where no direct instance resolves, so that nothing falls back to the derived
+// path silently. The modes are alternatives: importing two at once makes their
+// givens ambiguous wherever both would apply.
 object Codecs:
-  final class Direct()
+  class Direct()
   final class Derived()
+  final class Strict() extends Direct()
+
+  // The compile error a format reports under `codecs.strict` for a type with no direct
+  // codec: raised after the given it sits in has been selected, so the error is the
+  // outcome, not a failed candidate the search could pass over.
+  inline def strictFailure[value](inline format: String): Nothing =
+    ${internal.strictFailure[value]('format)}
 
 package codecs:
   given direct: Codecs.Direct = Codecs.Direct()
   given derived: Codecs.Derived = Codecs.Derived()
+  given strict: Codecs.Strict = Codecs.Strict()

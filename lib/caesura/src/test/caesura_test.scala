@@ -104,6 +104,46 @@ object Tests extends Suite("dsv", m"Caesura tests"):
         t"\"1\n2\",x".read[DirectFoo in Dsv]
       . assert(_ == DirectFoo(t"1\n2", t"x"))
 
+      test(m"`codecs.direct` parses a record with no instance of its own directly"):
+        import codecs.direct
+
+        given fooSeam: (Foo is Decodable in Dsv) =
+          _ => panic(m"the read decoded the record through its Decodable")
+
+        t"hello,world".read[Foo in Dsv]
+      . assert(_ == Foo(t"hello", t"world"))
+
+      test(m"`codecs.direct` parses every row of a record with no instance of its own"):
+        import codecs.direct
+        t"a,b\nc,d".read[List[Foo] in Dsv]
+      . assert(_ == List(Foo(t"a", t"b"), Foo(t"c", t"d")))
+
+      test(m"`codecs.derived` decodes even where a direct parser is in scope"):
+        import codecs.derived
+
+        // A sentinel decoder: only the derived path can return it.
+        given (DirectFoo is Decodable in Dsv) = _ => DirectFoo(t"derived", t"")
+
+        t"hello,world".read[DirectFoo in Dsv]
+      . assert(_ == DirectFoo(t"derived", t""))
+
+      test(m"`codecs.strict` reads a record directly"):
+        import codecs.strict
+
+        given fooSeam: (Foo is Decodable in Dsv) =
+          _ => panic(m"the read decoded the record through its Decodable")
+
+        (t"hello,world".read[Foo in Dsv], t"a,b\nc,d".read[List[Foo] in Dsv])
+      . assert(_ == (Foo(t"hello", t"world"), List(Foo(t"a", t"b"), Foo(t"c", t"d"))))
+
+      test(m"`codecs.strict` rejects a type with no direct parser"):
+        val errors = demilitarize:
+          import codecs.strict
+          t"7".read[Int in Dsv]
+
+        errors.map(_.message.contains("has no direct codec"))
+      . assert(_ == List(true))
+
     suite(m"Parsing tests"):
       import dsvFormats.csvFormat
 

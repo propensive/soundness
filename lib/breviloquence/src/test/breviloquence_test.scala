@@ -878,6 +878,15 @@ object Tests extends Suite("cbor", m"Breviloquence Tests"):
         Cbor.Ast.encodable.encoded(Cbor.unseal(team.in[Cbor])).read[Team in Cbor]
       . assert(_ == Team(Person(t"derived", 0), 0))
 
+      test(m"`codecs.strict` writes and reads a record directly"):
+        import codecs.strict
+
+        given personSeam: (Person is Encodable in Cbor) =
+          _ => panic(m"a generated printer encoded a nested record through its Encodable")
+
+        team.in[Data over Cbor].read[Team in Cbor]
+      . assert(_ == team)
+
       test(m"`derives Cbor.Direct` writes and reads without an import"):
         CDeclared(5, t"five").in[Data over Cbor].read[CDeclared in Cbor]
       . assert(_ == CDeclared(5, t"five"))

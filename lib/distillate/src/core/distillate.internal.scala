@@ -40,6 +40,16 @@ import fulminate.*
 import gigantism.*
 
 object internal:
+  def strictFailure[value: Type](format: Expr[String])(using Quotes): Expr[Nothing] =
+    import quotes.reflect.*
+
+    val name = TypeRepr.of[value].dealias.show
+
+    val library = format.valueOrAbort.tt
+
+    halt:
+      m"$library: ${name.tt} has no direct codec, and `codecs.strict` does not take the derived one"
+
   def enumerable[enumeration <: reflect.Enum: Type]: Macro[enumeration is Enumerable] =
     import quotes.reflect.*
 

@@ -40,4 +40,4 @@ export
 package codecs:
   export
     distillate.codecs
-    . { derived, direct }
+    . { derived, direct, strict }
