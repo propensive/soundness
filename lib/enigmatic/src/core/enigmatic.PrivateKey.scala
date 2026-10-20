@@ -32,7 +32,12 @@
                                                                                                   */
 package enigmatic
 
+import scala.caps
+
 import anticipation.*
+import contingency.*
+import distillate.*
+import fulminate.*
 import gastronomy.*, providers.javaBaseProvider
 import gossamer.*
 import monotonous.*
@@ -41,7 +46,80 @@ import rudiments.*
 import spectacular.*
 import vacuous.*
 
+import KeyAlgorithm.Material
+
 object PrivateKey:
+  // Why a key document could not be read as a `PrivateKey` of the requested cipher.
+  object Error:
+    given communicable: Reason is Communicable =
+      case Reason.Malformed(detail)         => m"the key document was malformed: $detail"
+      case Reason.Mismatch(expected, found) => m"a $expected key was expected but $found was found"
+      case Reason.Encrypted                 => m"the key is protected by a passphrase"
+      case Reason.Unsupported(detail)       => m"the key uses an unsupported $detail"
+      case Reason.PublicKeyAbsent           => m"the key does not carry its public key"
+
+    enum Reason(val number: Int) extends Clarification:
+      case Malformed(detail: Text) extends Reason(1)
+      case Mismatch(expected: Text, found: Text) extends Reason(2)
+      case Encrypted extends Reason(3)
+      case Unsupported(detail: Text) extends Reason(4)
+      case PublicKeyAbsent extends Reason(5)
+
+  case class Error(reason: Error.Reason)(using Diagnostics)
+  extends fulminate.Error(597, reason.number)(m"could not read the private key because $reason")
+
+  // A key in PKCS#8 form (RFC 5958's `PrivateKeyInfo`), checked against the cipher the caller
+  // named: the document's algorithm identifier and the key material's size must be those of
+  // `cipher`, or the result would be a `PrivateKey[Rsa[2048]]` over a 4096-bit key. A key whose
+  // public half is neither carried in the document nor derivable from the private half (an EC,
+  // Ed25519 or ML-DSA key written without its optional public-key field) is rejected here, since
+  // `public` would otherwise fail later.
+  //
+  // The decoded bytes are copied into the cloak, which zeroes the copy it is handed; the `Data`
+  // itself, and the ASN.1 values and base64 text the key was read through, are immutable and
+  // cannot be zeroed, so a key read from text is, like a `Password` made from `Text`, only ever
+  // as private as the heap it was read into.
+  given derDecodable: [cipher <: Cipher: KeyAlgorithm]
+  =>  ( cloak: Cloak^, tactic: Tactic[PrivateKey.Error]^, diagnostics: Diagnostics )
+  =>  ( ((PrivateKey[cipher]^{cloak}) is Decodable in Der)^{cloak, tactic, caps.any} ) =
+    der => adopt[cipher](der.data)
+
+  // A key in any of the armored forms: PKCS#8 (`PRIVATE KEY`), PKCS#1 (`RSA PRIVATE KEY`), SEC1
+  // (`EC PRIVATE KEY`) or OpenSSH's own container (`OPENSSH PRIVATE KEY`), each converted to PKCS#8
+  // for the provider. A passphrase-protected key is reported as `Encrypted`.
+  given pemDecodable: [cipher <: Cipher: KeyAlgorithm]
+  =>  ( cloak: Cloak^, tactic: Tactic[PrivateKey.Error]^, diagnostics: Diagnostics )
+  =>  ( ((PrivateKey[cipher]^{cloak}) is Decodable in Pem)^{cloak, tactic, caps.any} ) =
+    pem => pem.label match
+      case Pem.Label.PrivateKey           => adopt[cipher](pem.data)
+      case Pem.Label.RsaPrivateKey        => adopt[cipher](Pkcs8.fromPkcs1(pem.data))
+      case Pem.Label.EcPrivateKey         => adopt[cipher](Pkcs8.fromSec1(pem.data))
+      case Pem.Label.OpensshPrivateKey    => adopt[cipher](OpenSsh.privateKey(pem.data))
+      case Pem.Label.EncryptedPrivateKey  => abort(PrivateKey.Error(Error.Reason.Encrypted))
+
+      case other =>
+        val found = t"a ${Pem.Label.showable.text(other).lower} block"
+        abort(PrivateKey.Error(Error.Reason.Mismatch(t"private", found)))
+
+  private def adopt[cipher <: Cipher](data: Data)
+    ( using algorithm: cipher is KeyAlgorithm, cloak: Cloak^ )
+    ( using Tactic[PrivateKey.Error], Diagnostics )
+  :   PrivateKey[cipher]^{cloak} =
+
+    Pkcs8.unwrap(data) match
+      case Pkcs8(_, identifier, octets, rest) =>
+        val material = Material.Private(octets)
+
+        if !algorithm.conforms(identifier, material)
+        then abort:
+          PrivateKey.Error:
+            Error.Reason.Mismatch(algorithm.name, KeyAlgorithm.describe(identifier, material))
+
+        if !Pkcs8.carriesPublicKey(identifier, octets, rest)
+        then abort(PrivateKey.Error(Error.Reason.PublicKeyAbsent))
+
+        PrivateKey(data)
+
   def generate[cipher <: Cipher]()(using cipher: cipher, cloak: Cloak^)
   :   PrivateKey[cipher]^{cloak} =
 

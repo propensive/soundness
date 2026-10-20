@@ -113,9 +113,12 @@ def main():
                 print(f'{doc}:{number}: unknown name in prose: {name}{hint}')
                 problems += 1
         for start, lines in fences(doc):
+            literal = False   # inside a triple-quoted string spanning lines (a PEM block, say)
             for offset, line in enumerate(lines):
                 number = start + offset
-                code = STRING_OR_COMMENT.sub('', line)
+                opened = literal
+                literal ^= line.count('"""') % 2 == 1
+                code = '' if opened else STRING_OR_COMMENT.sub('', line.split('"""')[0] if literal else line)
                 for pattern, message in RETIRED:
                     if pattern.search(code):
                         print(f'{doc}:{number}: retired vocabulary: {message}')

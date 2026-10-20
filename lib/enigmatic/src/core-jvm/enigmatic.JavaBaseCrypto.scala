@@ -187,6 +187,126 @@ object JavaBaseCrypto extends Crypto:
 
       case _ => panic(m"the EC private key was not a PrivateKeyInfo")
 
+  // Ed25519 (RFC 8032), provided by the JDK from 15 (JEP 339). The key size is fixed by the curve,
+  // so `bits` is ignored. Like ML-DSA, the JDK offers no route from the private scalar to the
+  // public key, so the public key is embedded at generation and stripped before any JCA call.
+  def ed25519: Crypto.SignatureScheme = new Signatory(t"Ed25519", t"Ed25519"):
+    override def sign(data: Data, privateKey: Data): Data =
+      super.sign(data, stripTopLevel(privateKey))
+
+    def generateKeyPair(bits: Int): Data =
+      val generator = js.KeyPairGenerator.getInstance("Ed25519").nn
+      val pair = generator.generateKeyPair().nn
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
+      val privateKey = Array.unsafeFrozen(pair.getPrivate.nn.getEncoded.nn)
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
+      val publicKey = Array.unsafeFrozen(pair.getPublic.nn.getEncoded.nn)
+      embedTopLevel(privateKey, publicKey)
+
+    def privateToPublic(privateKey: Data): Data = extractTopLevel(privateKey)
+
+  // X25519 (RFC 7748), provided by the JDK from 11 (JEP 324). As for Ed25519, the public key is
+  // embedded at generation and stripped before any JCA call; the shared secret is the raw
+  // 32-byte output of the agreement, with no key derivation applied.
+  def x25519: Crypto.KeyAgreement = new Crypto.KeyAgreement:
+    private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("XDH").nn
+
+    def generateKeyPair(bits: Int): Data =
+      val pair = js.KeyPairGenerator.getInstance("X25519").nn.generateKeyPair().nn
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
+      val privateKey = Array.unsafeFrozen(pair.getPrivate.nn.getEncoded.nn)
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
+      val publicKey = Array.unsafeFrozen(pair.getPublic.nn.getEncoded.nn)
+      embedTopLevel(privateKey, publicKey)
+
+    def privateToPublic(privateKey: Data): Data = extractTopLevel(privateKey)
+
+    def agree(privateKey: Data, publicKey: Data): Data =
+      val agreement = jc.KeyAgreement.getInstance("X25519").nn
+      val stripped = Array.unsafeJvm(stripTopLevel(privateKey))
+      agreement.init(keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(stripped)))
+      val peer = keyFactory().generatePublic(jss.X509EncodedKeySpec(Array.unsafeJvm(publicKey)))
+      agreement.doPhase(peer, true)
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
+      Array.unsafeFrozen(agreement.generateSecret().nn)
+
+  // ECDH over the NIST prime curve of the given size, sharing `ecdsa`'s key generation (an EC key
+  // is an EC key) and its RFC 5915 public-key embedding. The shared secret is the x-coordinate of
+  // the agreed point, as RFC 5656 and TLS both use it.
+  def ecdh: Crypto.KeyAgreement = new Crypto.KeyAgreement:
+    private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("EC").nn
+    def generateKeyPair(bits: Int): Data = JavaBaseCrypto.ecdsa(t"SHA256").generateKeyPair(bits)
+    def privateToPublic(privateKey: Data): Data = extractPublicKey(privateKey)
+
+    def agree(privateKey: Data, publicKey: Data): Data =
+      val agreement = jc.KeyAgreement.getInstance("ECDH").nn
+      val own = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(Array.unsafeJvm(privateKey)))
+      agreement.init(own)
+      val peer = keyFactory().generatePublic(jss.X509EncodedKeySpec(Array.unsafeJvm(publicKey)))
+      agreement.doPhase(peer, true)
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
+      Array.unsafeFrozen(agreement.generateSecret().nn)
+
+  // AES-GCM with a 128-bit tag. The JDK refuses to reuse a nonce under one key within a single
+  // `Cipher` instance, so each call takes a fresh instance; the caller's nonce discipline is its
+  // own.
+  def aesGcm: Crypto.Aead = new Crypto.Aead:
+    def generateKey(bits: Int): Data = JavaBaseCrypto.aes.generateKey(bits)
+
+    private def cipher(mode: Int, key: Data, nonce: Data, associated: Data): jc.Cipher =
+      val instance = jc.Cipher.getInstance("AES/GCM/NoPadding").nn
+      val spec = GCMParameterSpec(128, Array.unsafeJvm(nonce))
+      instance.init(mode, SecretKeySpec(Array.unsafeJvm(key), "AES"), spec)
+      instance.updateAAD(Array.unsafeJvm(associated))
+      instance
+
+    def seal(key: Data, nonce: Data, associated: Data, plaintext: Data): Data =
+      val instance = cipher(jc.Cipher.ENCRYPT_MODE, key, nonce, associated)
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
+      Array.unsafeFrozen(instance.doFinal(Array.unsafeJvm(plaintext)).nn)
+
+    def unseal(key: Data, nonce: Data, associated: Data, ciphertext: Data): Optional[Data] =
+      val instance = cipher(jc.Cipher.DECRYPT_MODE, key, nonce, associated)
+
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
+      try Array.unsafeFrozen(instance.doFinal(Array.unsafeJvm(ciphertext)).nn)
+      catch case _: jc.AEADBadTagException => Unset
+
+  // ChaCha20 as a keystream (JEP 329, JDK 11). The JDK refuses to reuse a nonce on one `Cipher`
+  // instance, so each call takes a fresh one.
+  def chaCha20: Crypto.StreamCipher = new Crypto.StreamCipher:
+    def generateKey(bits: Int): Data = JavaBaseCrypto.random.bytes(32)
+
+    def xor(key: Data, nonce: Data, counter: Int, data: Data): Data =
+      val instance = jc.Cipher.getInstance("ChaCha20").nn
+      val spec = ChaCha20ParameterSpec(Array.unsafeJvm(nonce), counter)
+      instance.init(jc.Cipher.ENCRYPT_MODE, SecretKeySpec(Array.unsafeJvm(key), "ChaCha20"), spec)
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
+      Array.unsafeFrozen(instance.doFinal(Array.unsafeJvm(data)).nn)
+
+  // ChaCha20-Poly1305 (RFC 8439), likewise from JDK 11.
+  def chaCha20Poly1305: Crypto.Aead = new Crypto.Aead:
+    def generateKey(bits: Int): Data = JavaBaseCrypto.random.bytes(32)
+
+    private def cipher(mode: Int, key: Data, nonce: Data, associated: Data): jc.Cipher =
+      val instance = jc.Cipher.getInstance("ChaCha20-Poly1305").nn
+      val spec = IvParameterSpec(Array.unsafeJvm(nonce))
+      instance.init(mode, SecretKeySpec(Array.unsafeJvm(key), "ChaCha20"), spec)
+      instance.updateAAD(Array.unsafeJvm(associated))
+      instance
+
+    def seal(key: Data, nonce: Data, associated: Data, plaintext: Data): Data =
+      val instance = cipher(jc.Cipher.ENCRYPT_MODE, key, nonce, associated)
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
+      Array.unsafeFrozen(instance.doFinal(Array.unsafeJvm(plaintext)).nn)
+
+    def unseal(key: Data, nonce: Data, associated: Data, ciphertext: Data): Optional[Data] =
+      val instance = cipher(jc.Cipher.DECRYPT_MODE, key, nonce, associated)
+
+      // [java-boundary] fresh array returned by the JDK, retained by nobody else
+      try Array.unsafeFrozen(instance.doFinal(Array.unsafeJvm(ciphertext)).nn)
+      catch case _: jc.AEADBadTagException => Unset
+
   // ML-DSA (FIPS 204), provided by the JDK from 24 (JEP 497). The parameterized algorithm names
   // pin the parameter set, so a key generated at one strength cannot be used at another. ML-DSA
   // signs the message directly, so no digest participates in the transformation name.
@@ -202,7 +322,7 @@ object JavaBaseCrypto extends Crypto:
 
     def sign(data: Data, privateKey: Data): Data =
       val sig = instance()
-      val spec = jss.PKCS8EncodedKeySpec(Array.unsafeJvm(mlDsaStrip(privateKey)))
+      val spec = jss.PKCS8EncodedKeySpec(Array.unsafeJvm(stripTopLevel(privateKey)))
       sig.initSign(keyFactory().generatePrivate(spec))
       sig.update(Array.unsafeJvm(data))
 
@@ -228,9 +348,9 @@ object JavaBaseCrypto extends Crypto:
       // [java-boundary] fresh array returned by the JDK, retained by nobody else
       val publicKey = Array.unsafeFrozen(pair.getPublic.nn.getEncoded.nn)
 
-      mlDsaEmbed(privateKey, publicKey)
+      embedTopLevel(privateKey, publicKey)
 
-    def privateToPublic(privateKey: Data): Data = mlDsaExtract(privateKey)
+    def privateToPublic(privateKey: Data): Data = extractTopLevel(privateKey)
 
   // A signature that is not even well-formed — the wrong length, a DER structure that does not
   // parse, an ML-DSA hint encoding that is out of range — makes the JDK throw where a merely wrong
@@ -245,16 +365,20 @@ object JavaBaseCrypto extends Crypto:
     try operation catch case error: js.NoSuchAlgorithmException =>
       panic(m"the JDK does not provide ML-DSA; JDK 24 or later is required")
 
-  // An ML-DSA private key offers no JCA route back to its public key, so — as with EC — the
-  // public key is embedded at generation. RFC 5958's `OneAsymmetricKey` reserves `[1]` at the
-  // top level of the `PrivateKeyInfo` sequence for exactly this, though it is written here in
+  // An ML-DSA or Ed25519 private key offers no JCA route back to its public key, so — as with EC
+  // — the public key is embedded at generation. RFC 5958's `OneAsymmetricKey` reserves `[1]` at
+  // the top level of the `PrivateKeyInfo` sequence for exactly this, though it is written here in
   // explicit form (the ASN.1 layer cannot round-trip implicit tags without a schema) and the
-  // version integer is left untouched. The embedded element never reaches the JDK: `mlDsaStrip`
+  // version integer is left untouched. The embedded element never reaches the JDK: `stripTopLevel`
   // reduces the key to its canonical three-element `PrivateKeyInfo` before any JCA call.
-  private def mlDsaEmbed(privateKey: Data, publicKey: Data): Data =
+  //
+  // `extractTopLevel` also accepts the field in its standard implicit form — a primitive `[1]`
+  // whose content octets are the BIT STRING's — which is how OpenSSL writes a key that carries
+  // its public half (RFC 8410 §7), and which the ASN.1 layer decodes as `Unknown`.
+  private def embedTopLevel(privateKey: Data, publicKey: Data): Data =
     val bits = decode(publicKey) match
       case Asn1.Sequence(List(_, bits: Asn1.BitString)) => bits
-      case _                                            => panic(m"the ML-DSA public key was bad")
+      case _ => panic(m"the public key was not a SubjectPublicKeyInfo")
 
     decode(privateKey) match
       case Asn1.Sequence(List(version, algorithm, octets: Asn1.OctetString)) =>
@@ -262,29 +386,31 @@ object JavaBaseCrypto extends Crypto:
         info.in[Der].data
 
       case _ =>
-        panic(m"the ML-DSA private key was not a PrivateKeyInfo")
+        panic(m"the private key was not a PrivateKeyInfo")
 
-  private def mlDsaStrip(privateKey: Data): Data =
+  private def stripTopLevel(privateKey: Data): Data =
     decode(privateKey) match
       case Asn1.Sequence(version :: algorithm :: (octets: Asn1.OctetString) :: _) =>
         val info: Asn1 = Asn1.Sequence(List(version, algorithm, octets))
         info.in[Der].data
 
       case _ =>
-        panic(m"the ML-DSA private key was not a PrivateKeyInfo")
+        panic(m"the private key was not a PrivateKeyInfo")
 
-  private def mlDsaExtract(privateKey: Data): Data =
+  private def extractTopLevel(privateKey: Data): Data =
     decode(privateKey) match
       case Asn1.Sequence(_ :: algorithm :: _ :: rest) =>
         val bits = rest.reap:
-          case Asn1.Tagged(1, _, bits: Asn1.BitString) => bits
+          case Asn1.Tagged(1, _, bits: Asn1.BitString)   => bits
+          // A public key is whole octets, so the BIT STRING's leading unused-bits count is zero.
+          case Asn1.Unknown(Asn1.Context, 1, false, octets) => Asn1.BitString(octets.skip(1), 0)
 
-        bits.lay(panic(m"the ML-DSA private key carried no public key")): bits =>
+        bits.lay(panic(m"the private key carried no public key")): bits =>
           val info: Asn1 = Asn1.Sequence(List(algorithm, bits))
           info.in[Der].data
 
       case _ =>
-        panic(m"the ML-DSA private key was not a PrivateKeyInfo")
+        panic(m"the private key was not a PrivateKeyInfo")
 
   // Key material this module generated itself; a failure to parse it back is a defect, not an
   // input error.

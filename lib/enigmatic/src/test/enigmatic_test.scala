@@ -795,6 +795,352 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
           case _                                                       => false
       . assert(identity)
 
+    suite(m"Key reading"):
+      import KeyFixtures.*
+
+      test(m"An Ed25519 signature verifies against the matching public key"):
+        val key = PrivateKey.generate[Ed25519]()
+        key.public.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"An Ed25519 signature fails against a different key"):
+        val key = PrivateKey.generate[Ed25519]()
+        val other = PrivateKey.generate[Ed25519]()
+        other.public.verify(pangram, key.sign(pangram))
+      . assert(!_)
+
+      test(m"An OpenSSH Ed25519 key reads and signs"):
+        val key = sshEd25519.read[PrivateKey[Ed25519] in Pem]
+        key.public.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"An OpenSSH Ed25519 key's public half is its .pub line"):
+        val key = sshEd25519.read[PrivateKey[Ed25519] in Pem]
+        Array.same(OpenSsh.publicKey[Ed25519](sshEd25519Public).bytes, key.public.bytes)
+      . assert(identity)
+
+      test(m"An OpenSSH ECDSA P-256 key reads and signs"):
+        val key = sshEcdsa256.read[PrivateKey[Ecdsa[256]] in Pem]
+        key.public.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"An OpenSSH ECDSA P-256 key's public half is its .pub line"):
+        val key = sshEcdsa256.read[PrivateKey[Ecdsa[256]] in Pem]
+        Array.same(OpenSsh.publicKey[Ecdsa[256]](sshEcdsa256Public).bytes, key.public.bytes)
+      . assert(identity)
+
+      test(m"An OpenSSH ECDSA P-521 key reads and signs"):
+        val key = sshEcdsa521.read[PrivateKey[Ecdsa[521]] in Pem]
+        key.public.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"An OpenSSH RSA key reads and signs"):
+        val key = sshRsa2048.read[PrivateKey[Rsa[2048]] in Pem]
+        key.public.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"An OpenSSH RSA key's public half is its .pub line"):
+        val key = sshRsa2048.read[PrivateKey[Rsa[2048]] in Pem]
+        Array.same(OpenSsh.publicKey[Rsa[2048]](sshRsa2048Public).bytes, key.public.bytes)
+      . assert(identity)
+
+      test(m"An Ed25519 public key renders back to its OpenSSH line"):
+        OpenSsh.line(OpenSsh.publicKey[Ed25519](sshEd25519Public), t"test@example")
+      . assert(_ == sshEd25519Public)
+
+      test(m"An ECDSA public key renders back to its OpenSSH line"):
+        OpenSsh.line(OpenSsh.publicKey[Ecdsa[256]](sshEcdsa256Public), t"test@example")
+      . assert(_ == sshEcdsa256Public)
+
+      test(m"An RSA public key renders back to its OpenSSH line"):
+        OpenSsh.line(OpenSsh.publicKey[Rsa[2048]](sshRsa2048Public), t"test@example")
+      . assert(_ == sshRsa2048Public)
+
+      test(m"A PKCS#8 RSA key reads and signs"):
+        val key = pkcs8Rsa2048.read[PrivateKey[Rsa[2048]] in Pem]
+        key.public.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"A PKCS#1 RSA key reads and signs"):
+        val key = pkcs1Rsa2048.read[PrivateKey[Rsa[2048]] in Pem]
+        key.public.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"PKCS#1 and PKCS#8 forms of a key have the same public key"):
+        val pkcs1 = pkcs1Rsa2048.read[PrivateKey[Rsa[2048]] in Pem]
+        val pkcs8 = pkcs8Rsa2048.read[PrivateKey[Rsa[2048]] in Pem]
+        Array.same(pkcs1.public.bytes, pkcs8.public.bytes)
+      . assert(identity)
+
+      test(m"A PEM public key is the private key's public half"):
+        val key = pkcs8Rsa2048.read[PrivateKey[Rsa[2048]] in Pem]
+        Array.same(spkiRsa2048.read[PublicKey[Rsa[2048]] in Pem].bytes, key.public.bytes)
+      . assert(identity)
+
+      test(m"A SEC1 EC key reads and signs"):
+        val key = sec1P256.read[PrivateKey[Ecdsa[256]] in Pem]
+        key.public.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"A SEC1 EC key's signature verifies against its PEM public key"):
+        val key = sec1P256.read[PrivateKey[Ecdsa[256]] in Pem]
+        spkiP256.read[PublicKey[Ecdsa[256]] in Pem].verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"A PKCS#8 EC P-384 key reads and signs"):
+        val key = pkcs8P384.read[PrivateKey[Ecdsa[384]] in Pem]
+        key.public.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"A key read as a PEM block, then decoded, is the same key"):
+        val key = pkcs8Rsa2048.read[Pem].as[PrivateKey[Rsa[2048]]]
+        key.public.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"A key read from DER is the same key"):
+        val key = pkcs8Rsa2048.read[Pem].as[Der].as[PrivateKey[Rsa[2048]]]
+        key.public.verify(pangram, key.sign(pangram))
+      . assert(identity)
+
+      test(m"Reading a key as the wrong size is a mismatch"):
+        capture[PrivateKey.Error](pkcs8Rsa2048.read[PrivateKey[Rsa[4096]] in Pem]).reason
+      . assert(_ == PrivateKey.Error.Reason.Mismatch(t"RSA-4096", t"RSA-2048"))
+
+      test(m"Reading a key as the wrong algorithm is a mismatch"):
+        capture[PrivateKey.Error](sshEd25519.read[PrivateKey[Rsa[2048]] in Pem]).reason
+      . assert(_ == PrivateKey.Error.Reason.Mismatch(t"RSA-2048", t"Ed25519"))
+
+      test(m"Reading an EC key over the wrong curve is a mismatch"):
+        capture[PrivateKey.Error](sec1P256.read[PrivateKey[Ecdsa[384]] in Pem]).reason
+      . assert(_ == PrivateKey.Error.Reason.Mismatch(t"ECDSA P-384", t"ECDSA P-256"))
+
+      test(m"Reading a public key as the wrong algorithm is a mismatch"):
+        capture[PublicKey.Error](spkiEd25519.read[PublicKey[Ecdsa[256]] in Pem]).reason
+      . assert(_ == PublicKey.Error.Reason.Mismatch(t"ECDSA P-256", t"Ed25519"))
+
+      test(m"Reading an OpenSSH line as the wrong algorithm is a mismatch"):
+        capture[PublicKey.Error](OpenSsh.publicKey[Rsa[2048]](sshEd25519Public)).reason
+      . assert(_ == PublicKey.Error.Reason.Mismatch(t"RSA-2048", t"Ed25519"))
+
+      test(m"A passphrase-protected OpenSSH key is reported as encrypted"):
+        capture[PrivateKey.Error](sshEd25519Encrypted.read[PrivateKey[Ed25519] in Pem]).reason
+      . assert(_ == PrivateKey.Error.Reason.Encrypted)
+
+      test(m"A PBES2-encrypted PKCS#8 key is reported as encrypted"):
+        capture[PrivateKey.Error](pkcs8Rsa2048Encrypted.read[PrivateKey[Rsa[2048]] in Pem]).reason
+      . assert(_ == PrivateKey.Error.Reason.Encrypted)
+
+      test(m"An Ed25519 PKCS#8 key without its public key is rejected"):
+        capture[PrivateKey.Error](pkcs8Ed25519.read[PrivateKey[Ed25519] in Pem]).reason
+      . assert(_ == PrivateKey.Error.Reason.PublicKeyAbsent)
+
+      test(m"A public-key block read as a private key is a mismatch"):
+        capture[PrivateKey.Error](spkiRsa2048.read[PrivateKey[Rsa[2048]] in Pem]).reason
+      . assert(_ == PrivateKey.Error.Reason.Mismatch(t"private", t"a public key block"))
+
+      test(m"A generated Ed25519 key round-trips through PEM"):
+        val key = PrivateKey.generate[Ed25519]()
+        val read = key.pem(Divulgence).serialize.read[PrivateKey[Ed25519] in Pem]
+        Array.same(read.public.bytes, key.public.bytes)
+      . assert(identity)
+
+      test(m"A generated ECDSA key round-trips through PEM"):
+        val key = PrivateKey.generate[Ecdsa[256]]()
+        val read = key.pem(Divulgence).serialize.read[PrivateKey[Ecdsa[256]] in Pem]
+        Array.same(read.public.bytes, key.public.bytes)
+      . assert(identity)
+
+    suite(m"Key agreement and authenticated encryption"):
+      // RFC 7748 §6.1: Alice's and Bob's keys, and the secret they agree on.
+      val alicePrivate = t"77076D0A7318A57D3C16C17251B26645DF4C2F87EBC0992AB177FBA51DB92C2A"
+      val alicePublic = t"8520F0098930A754748B7DDCB43EF75A0DBF3A0D26381AF4EBA4A98EAA9B4E6A"
+      val bobPrivate = t"5DAB087E624A8A4B79E17F8B83800EE66F3BB1292618B6FD1C2F8B27FF88E0EB"
+      val bobPublic = t"DE9EDB7D7B7DC1B4D35B61C2ECE435373F8343C85B78674DADFC7E146F882B4F"
+      val shared = t"4A5D9D5BA4CE2DE1728E3BF480350F25E07E21C947D19E3376F09B3C1E161742"
+
+      // An X25519 private key in PKCS#8 form carrying its public key, as `PrivateKey.generate`
+      // writes one, from RFC 7748's raw scalar and point.
+      def x25519Key(scalar: Text, point: Text): PrivateKey[X25519] =
+        val seed: Asn1 = Asn1.OctetString(scalar.deserialize[Hex])
+        val public = Asn1.Tagged(1, true, Asn1.BitString(point.deserialize[Hex], 0))
+        val identifier = Asn1.Sequence(List(Asn1.ObjectId(KeyAlgorithm.X25519)))
+        val octets = Asn1.OctetString(seed.in[Der].data)
+        val info: Asn1 = Asn1.Sequence(List(Asn1.Integer(0), identifier, octets, public))
+        info.in[Der].as[PrivateKey[X25519]]
+
+      test(m"Two X25519 keys agree on the same secret"):
+        val alice = PrivateKey.generate[X25519]()
+        val bob = PrivateKey.generate[X25519]()
+        alice.agree(bob.public): one =>
+          bob.agree(alice.public): other =>
+            Array.same(one, other) && one.length == 32
+      . assert(identity)
+
+      test(m"A third X25519 key agrees on a different secret"):
+        val alice = PrivateKey.generate[X25519]()
+        val bob = PrivateKey.generate[X25519]()
+        val eve = PrivateKey.generate[X25519]()
+        alice.agree(bob.public)(one => eve.agree(alice.public)(other => Array.same(one, other)))
+      . assert(!_)
+
+      test(m"X25519 agrees on RFC 7748's shared secret"):
+        val alice = x25519Key(alicePrivate, alicePublic)
+        PublicKey.raw[X25519](bobPublic.deserialize[Hex]).let: bob =>
+          alice.agree(bob)(_.serialize[Hex])
+      . assert(_ == shared)
+
+      test(m"X25519 agrees on RFC 7748's shared secret from Bob's side"):
+        val bob = x25519Key(bobPrivate, bobPublic)
+        PublicKey.raw[X25519](alicePublic.deserialize[Hex]).let: alice =>
+          bob.agree(alice)(_.serialize[Hex])
+      . assert(_ == shared)
+
+      test(m"An X25519 public key's raw form is its 32-byte point"):
+        x25519Key(alicePrivate, alicePublic).public.raw.let(_.serialize[Hex])
+      . assert(_ == alicePublic)
+
+      test(m"A raw public key round-trips through its document form"):
+        val key = PrivateKey.generate[X25519]()
+        val raw = key.public.raw.or(Data())
+        PublicKey.raw[X25519](raw).let(_.bytes).let(Array.same(_, key.public.bytes))
+      . assert(_ == true)
+
+      test(m"Two ECDH P-256 keys agree on the same 32-byte secret"):
+        val alice = PrivateKey.generate[Ecdh[256]]()
+        val bob = PrivateKey.generate[Ecdh[256]]()
+        alice.agree(bob.public): one =>
+          bob.agree(alice.public): other =>
+            Array.same(one, other) && one.length == 32
+      . assert(identity)
+
+      test(m"Two ECDH P-384 keys agree on the same 48-byte secret"):
+        val alice = PrivateKey.generate[Ecdh[384]]()
+        val bob = PrivateKey.generate[Ecdh[384]]()
+        alice.agree(bob.public): one =>
+          bob.agree(alice.public): other =>
+            Array.same(one, other) && one.length == 48
+      . assert(identity)
+
+      test(m"An ECDH public key's raw form is an uncompressed point"):
+        val key = PrivateKey.generate[Ecdh[256]]()
+        key.public.raw.let(raw => raw.length == 65 && raw.readUnchecked(0) == 4)
+      . assert(_ == true)
+
+      test(m"An ECDSA key file reads as an ECDH key too"):
+        import KeyFixtures.sec1P256
+        val key = sec1P256.read[PrivateKey[Ecdh[256]] in Pem]
+        val other = PrivateKey.generate[Ecdh[256]]()
+        key.agree(other.public)(one => other.agree(key.public)(other => Array.same(one, other)))
+      . assert(identity)
+
+      val nonce: Data = Array.fill[Byte](12)(0)
+
+      test(m"AES-GCM seals and opens with associated data"):
+        val key = SymmetricKey.generate[AesGcm[256]]()
+        val box = key.seal(nonce, t"header".bytestream, pangram.bytestream)
+        key.unseal(nonce, t"header".bytestream, box).read[Text]
+      . assert(_ == pangram)
+
+      test(m"AES-GCM's ciphertext is the plaintext plus a 16-byte tag"):
+        val key = SymmetricKey.generate[AesGcm[128]]()
+        key.seal(nonce, Data(), pangram.bytestream).length - pangram.bytestream.length
+      . assert(_ == 16)
+
+      test(m"AES-GCM rejects a tampered ciphertext"):
+        val key = SymmetricKey.generate[AesGcm[256]]()
+        val box = key.seal(nonce, Data(), pangram.bytestream)
+        val tampered = Array.unsafeJvm(box).clone
+        tampered(0) = (tampered(0) ^ 1).toByte
+        capture[Crypto.Error](key.unseal(nonce, Data(), Array.unsafeFrozen(tampered))).reason
+      . assert(_ == Crypto.Error.Reason.BadTag)
+
+      test(m"AES-GCM rejects different associated data"):
+        val key = SymmetricKey.generate[AesGcm[256]]()
+        val box = key.seal(nonce, t"header".bytestream, pangram.bytestream)
+        capture[Crypto.Error](key.unseal(nonce, t"other".bytestream, box)).reason
+      . assert(_ == Crypto.Error.Reason.BadTag)
+
+      test(m"AES-GCM rejects a different nonce"):
+        val key = SymmetricKey.generate[AesGcm[256]]()
+        val box = key.seal(nonce, Data(), pangram.bytestream)
+        val other: Data = Array.fill[Byte](12)(1)
+        capture[Crypto.Error](key.unseal(other, Data(), box)).reason
+      . assert(_ == Crypto.Error.Reason.BadTag)
+
+      // NIST GCM specification test case 2: an all-zero key, nonce and block.
+      test(m"AES-128-GCM matches NIST's test case 2"):
+        val key = SymmetricKey[AesGcm[128]](Array.fill[Byte](16)(0))
+        key.seal(nonce, Data(), Array.fill[Byte](16)(0)).serialize[Hex]
+      . assert(_ == t"0388DACE60B6A392F328C2B971B2FE78AB6E47D42CEC13BDF53A67B21257BDDF")
+
+    suite(m"ChaCha20 and Poly1305"):
+      // RFC 8439's vectors: §2.4.2 (the keystream), §2.5.2 (the authenticator) and §2.8.2 (the AEAD).
+      val sunscreen = t"Ladies and Gentlemen of the class of '99: If I could offer you only one tip for the future, sunscreen would be it."
+
+      test(m"ChaCha20 produces RFC 8439's keystream"):
+        val key = SymmetricKey[ChaCha20](t"000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F".deserialize[Hex])
+        key.xor(t"000000000000004A00000000".deserialize[Hex], 1, sunscreen.bytestream).serialize[Hex]
+      . assert(_ == t"6E2E359A2568F98041BA0728DD0D6981E97E7AEC1D4360C20A27AFCCFD9FAE0BF91B65C5524733AB8F593DABCD62B3571639D624E65152AB8F530C359F0861D807CA0DBF500D6A6156A38E088A22B65E52BC514D16CCF806818CE91AB77937365AF90BBF74A35BE6B40B8EEDF2785E42874D")
+
+      test(m"Applying the keystream twice restores the plaintext"):
+        val key = SymmetricKey.generate[ChaCha20]()
+        val nonce: Data = Array.fill[Byte](12)(7)
+        key.xor(nonce, 1, key.xor(nonce, 1, sunscreen.bytestream)).read[Text]
+      . assert(_ == sunscreen)
+
+      test(m"Poly1305 produces RFC 8439's tag"):
+        val key = t"85D6BE7857556D337F4452FE42D506A80103808AFB0DB2FD4ABFF6AF4149F51B".deserialize[Hex]
+        Poly1305.mac(key, t"Cryptographic Forum Research Group".bytestream).serialize[Hex]
+      . assert(_ == t"A8061DC1305136C6C22B8BAF0C0127A9")
+
+      test(m"Poly1305 of an empty message is the key's second half"):
+        val key = t"85D6BE7857556D337F4452FE42D506A80103808AFB0DB2FD4ABFF6AF4149F51B".deserialize[Hex]
+        Poly1305.mac(key, Data()).serialize[Hex]
+      . assert(_ == t"0103808AFB0DB2FD4ABFF6AF4149F51B")
+
+      test(m"Poly1305 agrees with the JDK's fused ChaCha20-Poly1305 on every length"):
+        // RFC 8439 §2.8: the tag is Poly1305, under block zero of the keystream, over the padded
+        // associated data, the padded ciphertext, and their lengths.
+        val key = SymmetricKey.generate[ChaCha20]()
+        val aead = SymmetricKey[ChaCha20Poly1305](key.data(Divulgence))
+        val nonce: Data = Array.fill[Byte](12)(3)
+
+        def join(parts: Data*): Data =
+          Array.unsafeFrozen(parts.map(Array.unsafeJvm(_)).reduce(_ ++ _))
+
+        def pad(data: Data): Data =
+          if data.length % 16 == 0 then data else join(data, Array.fill[Byte](16 - data.length % 16)(0))
+
+        def le64(value: Long): Data = Array.tabulate[Byte](8)(index => (value >>> (8*index)).toByte)
+
+        (0 until 40).forall: length =>
+          val plaintext: Data = Array.tabulate[Byte](length)(_.toByte)
+          val associated: Data = Array.tabulate[Byte](length % 7)(index => (index + 100).toByte)
+          val box = aead.seal(nonce, associated, plaintext)
+          val ciphertext = box.keep(length)
+          val tag = box.skip(length)
+          val otk = key.xor(nonce, 0, Array.fill[Byte](32)(0))
+          val authenticated =
+            join(pad(associated), pad(ciphertext), le64(associated.length), le64(length))
+          Array.same(Poly1305.mac(otk, authenticated), tag)
+      . assert(identity)
+
+      test(m"ChaCha20-Poly1305 produces RFC 8439's ciphertext and tag"):
+        val key = SymmetricKey[ChaCha20Poly1305](t"808182838485868788898A8B8C8D8E8F909192939495969798999A9B9C9D9E9F".deserialize[Hex])
+        val nonce = t"070000004041424344454647".deserialize[Hex]
+        val associated = t"50515253C0C1C2C3C4C5C6C7".deserialize[Hex]
+        key.seal(nonce, associated, sunscreen.bytestream).serialize[Hex]
+      . assert(_ == t"D31A8D34648E60DB7B86AFBC53EF7EC2A4ADED51296E08FEA9E2B5A736EE62D63DBEA45E8CA9671282FAFB69DA92728B1A71DE0A9E060B2905D6A5B67ECD3B3692DDBD7F2D778B8C9803AEE328091B58FAB324E4FAD675945585808B4831D7BC3FF4DEF08E4B7A9DE576D26586CEC64B61161AE10B594F09E26A7E902ECBD0600691")
+
+      test(m"ChaCha20-Poly1305 rejects a tampered tag"):
+        val key = SymmetricKey.generate[ChaCha20Poly1305]()
+        val nonce: Data = Array.fill[Byte](12)(0)
+        val box = key.seal(nonce, Data(), sunscreen.bytestream)
+        val tampered = Array.unsafeJvm(box).clone
+        tampered(tampered.length - 1) = (tampered(tampered.length - 1) ^ 1).toByte
+        capture[Crypto.Error](key.unseal(nonce, Data(), Array.unsafeFrozen(tampered))).reason
+      . assert(_ == Crypto.Error.Reason.BadTag)
+
     suite(m"X.509 certificates"):
       import java.io as ji
       import java.security as js, js.cert as jsc
@@ -826,6 +1172,11 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
 
       test(m"The JDK parses a generated certificate and checks its signature"):
         val certificate0 = certificate()
+        parse(certificate0).verify(publicKey(certificate0))
+        true
+      test(m"The JDK parses an Ed25519 self-signed certificate and checks its signature"):
+        val key = PrivateKey.generate[Ed25519]()
+        val certificate0 = Certificate.selfSigned(subject, key, period, BigInt(7))
         parse(certificate0).verify(publicKey(certificate0))
         true
       . assert(identity)

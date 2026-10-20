@@ -49,44 +49,10 @@ import zephyrine.*
 object SshCommand:
   import Git.Error.Reason as Reason
 
-  case class Address(user: Optional[Text], host: Text, port: Optional[Int], path: Text)
-
-  def parse(url: Text): Optional[Address] =
-    def userHost(text: Text): (Optional[Text], Text) =
-      val at = text.s.lastIndexOf('@')
-      if at < 0 then (Unset, text) else (text.keep(at), text.skip(at + 1))
-
-    if url.starts(t"ssh://") then
-      val rest = url.skip(6)
-      val slash = rest.s.indexOf('/')
-
-      if slash < 0 then Unset else
-        val authority = rest.keep(slash)
-        val path = rest.skip(slash)
-        val (user, hostPort) = userHost(authority)
-        val colon = hostPort.s.lastIndexOf(':')
-
-        if colon < 0 then Address(user, hostPort, Unset, path)
-        else
-          safely(hostPort.skip(colon + 1).s.toInt) match
-            case port: Int => Address(user, hostPort.keep(colon), port, path)
-            case _         => Unset
-    else if url.s.contains("://") then
-      Unset
-    else
-      // `[user@]host:path`, provided the colon comes before any slash (else it is a local path).
-      val colon = url.s.indexOf(':')
-      val slash = url.s.indexOf('/')
-
-      if colon <= 0 || (slash >= 0 && slash < colon) then Unset
-      else
-        val (user, host) = userHost(url.keep(colon))
-        Address(user, host, Unset, url.skip(colon + 1))
-
   // One `ssh` process per exchange: the server begins by advertising, which is read (and, for an
   // exchange, discarded) before the request is written and the response read. Nothing is kept
   // between exchanges, so a fetch costs a connection for `ls-refs` and one for `fetch`.
-  class Channel(address: Address)
+  class Channel(address: SshAddress)
     ( using working:     WorkingDirectory,
             environment: Environment,
             loggable:    (Exec.Event is Loggable)^ )
@@ -147,10 +113,10 @@ class SshCommand()
           environment: Environment,
           loggable:    (Exec.Event is Loggable)^ )
 extends Transport:
-  def accepts(url: Text): Boolean = SshCommand.parse(url).present
+  def accepts(url: Text): Boolean = SshAddress.parse(url).present
 
   def connect(url: Text)(using Tactic[Git.Error]): Peer^ =
     val address =
-      SshCommand.parse(url)
+      SshAddress.parse(url)
       . or(abort(Git.Error(Git.Error.Reason.Unsupported(t"the transport for $url"))))
     Protocol(SshCommand.Channel(address))
