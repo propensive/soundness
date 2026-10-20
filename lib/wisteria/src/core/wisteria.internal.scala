@@ -733,6 +733,24 @@ object internal:
       case AnnotatedType(under, _)  => productType(under)
       case other                    => other
 
+  // Binds a field's type for `lambda`. A quote type pattern (`case '[field]`) rebuilds the type
+  // it binds without its annotations, so a frozen-array field, `Array[Long]^{}`, would bind as
+  // the bare `Array[Long]`, which the capture checker reads as mutable (#2249). This binds the
+  // member type itself, dealiased beneath its annotations as the pattern dealiases it.
+  private def bindField[result](using Quotes)
+    ( product: quotes.reflect.TypeRepr, field: quotes.reflect.Symbol )
+    ( lambda: [field] => Type[field] -> result )
+  :   result =
+
+    import quotes.reflect.*
+
+    def canonical(repr: TypeRepr): TypeRepr = repr match
+      case AnnotatedType(underlying, annotation) => AnnotatedType(canonical(underlying), annotation)
+      case other                                 => other.dealias
+
+    // The member type of a term field is a value type, so it is a `Type[Any]`.
+    lambda[Any](canonical(product.memberType(field)).asType.asInstanceOf[Type[Any]])
+
   // Construct a product value from its field-value terms via the primary constructor — no
   // `Mirror`, no `fromProduct`. The constructed type is `productType(derivation)` (stripping any
   // `over` carrier refinement). For an inner class the type carries its prefix (`Outer.Inner` /
@@ -826,19 +844,19 @@ object internal:
     val arguments = symbol.caseFields.zipWithIndex.map: (field, index) =>
       val fieldName = field.name
 
-      tpe.memberType(field).asType.absolve match
-        case '[field] =>
-          val indexExpr = Expr(index)
-          val nameExpr = Expr(fieldName)
-          val default = '{Default(wisteria.internal.default[derivation, field]($indexExpr))}
-          val label = '{$nameExpr.tt.aka["label"]}
-          val fieldIndex = '{$indexExpr.asInstanceOf[Int & FieldIndex[field]].aka["index"]}
-          val instance = specificFieldInstance[typeclass, field](context, fieldName)
+      bindField(tpe, field): [field] => binding =>
+        given Type[field] = binding
+        val indexExpr = Expr(index)
+        val nameExpr = Expr(fieldName)
+        val default = '{Default(wisteria.internal.default[derivation, field]($indexExpr))}
+        val label = '{$nameExpr.tt.aka["label"]}
+        val fieldIndex = '{$indexExpr.asInstanceOf[Int & FieldIndex[field]].aka["index"]}
+        val instance = specificFieldInstance[typeclass, field](context, fieldName)
 
-          sharedInstance[typeclass, field](index, instance): (reference, contextual) =>
-            applyLambda[field](lambdaTerm, reference, List(contextual, default, label, fieldIndex))
+        sharedInstance[typeclass, field](index, instance): (reference, contextual) =>
+          applyLambda[field](lambdaTerm, reference, List(contextual, default, label, fieldIndex))
 
-          . asExpr
+        . asExpr
 
     Expr.ofTupleFromSeq(arguments)
 
@@ -855,25 +873,25 @@ object internal:
     val results = tpe.typeSymbol.caseFields.zipWithIndex.map: (field, index) =>
       val fieldName = field.name
 
-      tpe.memberType(field).asType.absolve match
-        case '[field] =>
-          val indexExpr = Expr(index)
-          val nameExpr = Expr(fieldName)
-          val default = '{Default(wisteria.internal.default[derivation, field]($indexExpr))}
-          val label = '{$nameExpr.tt.aka["label"]}
+      bindField(tpe, field): [field] => binding =>
+        given Type[field] = binding
+        val indexExpr = Expr(index)
+        val nameExpr = Expr(fieldName)
+        val default = '{Default(wisteria.internal.default[derivation, field]($indexExpr))}
+        val label = '{$nameExpr.tt.aka["label"]}
 
-          val accessor: Expr[derivation -> field] =
-            '{value => value.asInstanceOf[Product].productElement($indexExpr).asInstanceOf[field]}
+        val accessor: Expr[derivation -> field] =
+          '{value => value.asInstanceOf[Product].productElement($indexExpr).asInstanceOf[field]}
 
-          val dereference = '{$accessor.aka["dereference"]}
-          val fieldIndex = '{$indexExpr.asInstanceOf[Int & FieldIndex[field]].aka["index"]}
-          val instance = specificFieldInstance[typeclass, field](context, fieldName)
+        val dereference = '{$accessor.aka["dereference"]}
+        val fieldIndex = '{$indexExpr.asInstanceOf[Int & FieldIndex[field]].aka["index"]}
+        val instance = specificFieldInstance[typeclass, field](context, fieldName)
 
-          sharedInstance[typeclass, field](index, instance): (reference, contextual) =>
-            val arguments = List(contextual, default, label, dereference, fieldIndex)
-            applyLambda[field](lambdaTerm, reference, arguments)
+        sharedInstance[typeclass, field](index, instance): (reference, contextual) =>
+          val arguments = List(contextual, default, label, dereference, fieldIndex)
+          applyLambda[field](lambdaTerm, reference, arguments)
 
-          . asExprOf[result]
+        . asExprOf[result]
 
     immutableArray[result](results)
 
@@ -890,22 +908,22 @@ object internal:
     val results = tpe.typeSymbol.caseFields.zipWithIndex.map: (field, index) =>
       val fieldName = field.name
 
-      tpe.memberType(field).asType.absolve match
-        case '[field] =>
-          val indexExpr = Expr(index)
-          val nameExpr = Expr(fieldName)
+      bindField(tpe, field): [field] => binding =>
+        given Type[field] = binding
+        val indexExpr = Expr(index)
+        val nameExpr = Expr(fieldName)
 
-          val fieldValue: Expr[Any] =
-            '{$product.asInstanceOf[Product].productElement($indexExpr).asInstanceOf[field]}
+        val fieldValue: Expr[Any] =
+          '{$product.asInstanceOf[Product].productElement($indexExpr).asInstanceOf[field]}
 
-          val instance = specificFieldInstance[typeclass, field](context, fieldName)
-          val contextual = '{$instance.aka["contextual"]}
-          val default = '{Default(wisteria.internal.default[derivation, field]($indexExpr))}
-          val label = '{$nameExpr.tt.aka["label"]}
-          val fieldIndex = '{$indexExpr.asInstanceOf[Int & FieldIndex[field]].aka["index"]}
-          val arguments = List(contextual, default, label, fieldIndex)
+        val instance = specificFieldInstance[typeclass, field](context, fieldName)
+        val contextual = '{$instance.aka["contextual"]}
+        val default = '{Default(wisteria.internal.default[derivation, field]($indexExpr))}
+        val label = '{$nameExpr.tt.aka["label"]}
+        val fieldIndex = '{$indexExpr.asInstanceOf[Int & FieldIndex[field]].aka["index"]}
+        val arguments = List(contextual, default, label, fieldIndex)
 
-          applyLambda[field](lambdaTerm, fieldValue, arguments).asExprOf[result]
+        applyLambda[field](lambdaTerm, fieldValue, arguments).asExprOf[result]
 
     immutableArray[result](results)
 
@@ -951,36 +969,36 @@ object internal:
     symbol.caseFields.zipWithIndex.each: (field, index) =>
       val fieldName = field.name
 
-      tpe.memberType(field).asType.absolve match
-        case '[field] =>
-          val indexExpr = Expr(index)
-          val nameExpr = Expr(fieldName)
-          val fieldType = TypeRepr.of[field]
+      bindField(tpe, field): [field] => binding =>
+        given Type[field] = binding
+        val indexExpr = Expr(index)
+        val nameExpr = Expr(fieldName)
+        val fieldType = TypeRepr.of[field]
 
-          val valueFunction =
-            MethodType(sci.List("value"))(_ => sci.List(fieldType), _ => constructorTuple)
+        val valueFunction =
+          MethodType(sci.List("value"))(_ => sci.List(fieldType), _ => constructorTuple)
 
-          val outer = Lambda(Symbol.spliceOwner, tupleFunction, { (owner, parameters) =>
-            val tupleRef = parameters.head.asInstanceOf[Term]
-            val instance = specificFieldInstance[typeclass, field](context, fieldName)
-            val contextValue: Expr[Any] = instance
-            val contextual = '{$instance.aka["contextual"]}
-            val default = '{Default(wisteria.internal.default[derivation, field]($indexExpr))}
-            val label = '{$nameExpr.tt.aka["label"]}
-            val fieldIndex = '{$indexExpr.asInstanceOf[Int & FieldIndex[field]].aka["index"]}
-            val arguments = List(contextual, default, label, fieldIndex)
-            val monad = applyLambda[field](lambdaTerm, contextValue, arguments)
+        val outer = Lambda(Symbol.spliceOwner, tupleFunction, { (owner, parameters) =>
+          val tupleRef = parameters.head.asInstanceOf[Term]
+          val instance = specificFieldInstance[typeclass, field](context, fieldName)
+          val contextValue: Expr[Any] = instance
+          val contextual = '{$instance.aka["contextual"]}
+          val default = '{Default(wisteria.internal.default[derivation, field]($indexExpr))}
+          val label = '{$nameExpr.tt.aka["label"]}
+          val fieldIndex = '{$indexExpr.asInstanceOf[Int & FieldIndex[field]].aka["index"]}
+          val arguments = List(contextual, default, label, fieldIndex)
+          val monad = applyLambda[field](lambdaTerm, contextValue, arguments)
 
-            val inner = Lambda(owner, valueFunction, { (innerOwner, innerParameters) =>
-              val valueRef = innerParameters.head.asInstanceOf[Term]
-              val prepended = '{${valueRef.asExprOf[field]} *: ${tupleRef.asExprOf[Tuple]}}.asTerm
-              applyPure(tupleType, prepended).changeOwner(innerOwner)
-            })
-
-            applyBind(fieldType, tupleType, monad, inner).changeOwner(owner)
+          val inner = Lambda(owner, valueFunction, { (innerOwner, innerParameters) =>
+            val valueRef = innerParameters.head.asInstanceOf[Term]
+            val prepended = '{${valueRef.asExprOf[field]} *: ${tupleRef.asExprOf[Tuple]}}.asTerm
+            applyPure(tupleType, prepended).changeOwner(innerOwner)
           })
 
-          accumulator = applyBind(tupleType, tupleType, accumulator, outer)
+          applyBind(fieldType, tupleType, monad, inner).changeOwner(owner)
+        })
+
+        accumulator = applyBind(tupleType, tupleType, accumulator, outer)
 
     // Finally reverse the accumulated tuple and construct the product from its elements.
     val derivationFunction =
@@ -994,8 +1012,9 @@ object internal:
 
       // Extract each field from the (reversed) accumulated tuple and pass it to the constructor.
       val arguments = product.typeSymbol.caseFields.zipWithIndex.map: (field, index) =>
-        product.memberType(field).asType.absolve match
-          case '[field] => '{$reversed.productElement(${Expr(index)}).asInstanceOf[field]}.asTerm
+        bindField(product, field): [field] => binding =>
+          given Type[field] = binding
+          '{$reversed.productElement(${Expr(index)}).asInstanceOf[field]}.asTerm
 
       // Cast to `derivation` (possibly a carrier refinement) — see `castConstructed`.
       val constructed0 = constructProduct[derivation](arguments.to(List))
