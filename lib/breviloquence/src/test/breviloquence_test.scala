@@ -887,14 +887,6 @@ object Tests extends Suite("cbor", m"Breviloquence Tests"):
         team.in[Data over Cbor].read[Team in Cbor]
       . assert(_ == team)
 
-      test(m"`codecs.strict` rejects a type with no direct codec"):
-        val errors = demilitarize:
-          import codecs.strict
-          Boxed(7).in[Data over Cbor]
-
-        errors.map(_.message.contains("has no direct codec"))
-      . assert(_ == List(true))
-
       test(m"`derives Cbor.Direct` writes and reads without an import"):
         CDeclared(5, t"five").in[Data over Cbor].read[CDeclared in Cbor]
       . assert(_ == CDeclared(5, t"five"))

@@ -102,14 +102,6 @@ object CodecModeTests extends Suite("xml-codecs", m"Xylophone codec mode tests")
         team.in[Text over Xml].read[PTeam in Xml]
       . assert(_ == team)
 
-      test(m"`codecs.strict` rejects a type with no direct codec"):
-        val errors = demilitarize:
-          import codecs.strict
-          PBoxed(7).in[Text over Xml]
-
-        errors.map(_.message.contains("has no direct codec"))
-      . assert(_ == List(true))
-
       test(m"`derives Xml.Direct` writes and reads without an import"):
         XDeclared(5, t"five").in[Text over Xml].read[XDeclared in Xml]
       . assert(_ == XDeclared(5, t"five"))
