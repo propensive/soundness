@@ -187,9 +187,14 @@ object Subcompiler:
           // checking. A new compiler each run gives independent phase instances.
           val scala3: Compiler = new Compiler()
 
+          // A virtual output directory, private to this run: without one, `outputDir` is the
+          // default `.`, the working directory shared by every compiler in the JVM, and plugins
+          // which write indexes beside the classes (beneficence) race there with any other
+          // sub-compilation, since every one has the same source name (#2244).
           given context0: Context =
             context
             . setReporter(reporter)
+            . setSetting(context.settings.outputDir, io.virtualDirectory("<subcompilation>"))
             . setSetting(context.settings.language, language)
             . setSetting(context.settings.classpath, classpath)
             . setSetting(context.settings.YstopBefore, List("genSJSIR"))

@@ -97,7 +97,7 @@ object GivensWriter:
       if lines.isEmpty then (if target.exists then target.delete(): @annotation.nowarn)
       else
         if !testsDir.exists then testsDir.mkdirs(): @annotation.nowarn
-        val tmp = new File(testsDir, target.getName.nn + ".tmp")
+        val tmp = temporary(testsDir, target.getName.nn)
 
         val writer = new
           BufferedWriter
@@ -122,6 +122,11 @@ object GivensWriter:
             StandardCopyOption.ATOMIC_MOVE )
 
         ()
+
+  // A temporary file unique to this write, beside its target so that the final move is atomic: a
+  // fixed `<name>.tmp` would let two writers of the same index delete each other's (#2244).
+  private def temporary(directory: File, name: String): File =
+    Files.createTempFile(directory.toPath, name + ".", ".tmp").nn.toFile.nn
 
   private def outputRootOrNull(using Context): File | Null =
     ctx.settings.outputDir.value.file
@@ -181,7 +186,7 @@ object GivensWriter:
     val parent = file.getParentFile
     if parent != null && !parent.exists then parent.mkdirs(): @annotation.nowarn
 
-    val tmp = new File(file.getParentFile, file.getName.nn + ".tmp")
+    val tmp = temporary(file.getParentFile.nn, file.getName.nn)
 
     val writer = new
       BufferedWriter
