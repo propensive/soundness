@@ -439,7 +439,19 @@ object internal:
           availableFor(repr, candidateSymbols, initialGas),
           candidates )
 
+    // The search is bounded: a chain of candidates deeper than `maxDepth`, or more than
+    // `budget` searches in all, is reported as missing rather than followed, since every
+    // search ranges over the whole scope and the chains branch at each candidate's
+    // parameters — in a scope with every import of a long REPL session, an unbounded
+    // explanation ran for hours.
+    val maxDepth: Int = 6
+    var budget: Int = 256
+
     def seek(repr: TypeRepr, exclusions: List[Symbol], depth: Int): Result =
+      budget -= 1
+      if depth > maxDepth || budget < 0 then missing(repr, Nil) else seek0(repr, exclusions, depth)
+
+    def seek0(repr: TypeRepr, exclusions: List[Symbol], depth: Int): Result =
       Implicits.searchIgnoring(repr)((self ::: exclusions)*).absolve match
         case success: ImplicitSearchSuccess =>
           Found(t"${stenography.internal.name(repr)}", success.tree.asExpr)
