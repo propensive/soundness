@@ -162,8 +162,9 @@ same filesystem by path; remote ones need a transport, which the `http` and `ssh
 supply: `Native(List(SmartHttp(), SshCommand()))` speaks git's wire protocol over whichever
 `Http.Backend` is in scope and over a spawned `ssh`.
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 import gitTransports.{smartHttp, sshCommand}
 import httpBackends.javaNetHttp
 

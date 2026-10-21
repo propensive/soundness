@@ -30,8 +30,9 @@ identity and secret, and — for the authorization-code flow — its authorizati
 client's redirect URI. Each grant posts to the token endpoint and reads the `Authorization` it
 returns; a refusal raises `OAuth.Error`.
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 val issuer = Issuer(url"https://issuer.example/token", t"client-1", t"s3cret")
 
 val token: Authorization = issuer.clientCredentials(t"read", t"write")
@@ -44,8 +45,9 @@ For the authorization-code flow, `authorizationUrl` builds the URL a user is sen
 scopes, a `state` to check on return and, with a `Pkce`, the S256 challenge; `exchangeCode`
 then exchanges the code the user brings back:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 val flow = Issuer(url"https://issuer.example/token", t"client-1", Unset,
                   url"https://issuer.example/authorize", url"https://app.example/callback")
 
@@ -61,8 +63,9 @@ the scheme calls for: a `Text` for an API key, an `Auth` for HTTP authentication
 `Authorization` for OAuth 2. The [OpenAPI client](openapi.md) finds the credential for each
 scheme an operation requires by its name, and presents it as the scheme dictates:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 given key: ("api_key" is Credential to Text) = Credential(t"…")
 given token: ("petstore_auth" is Credential to Authorization) = issuer.clientCredentials()
 ```

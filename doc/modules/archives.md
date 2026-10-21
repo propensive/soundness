@@ -28,6 +28,7 @@ examples work in a directory of their own:
 
 ```scala
 import soundness.*
+import filesystemOptions.overwritePreexisting
 
 import codepages.utf8Codepage
 import charsets.utf8Charset
@@ -39,8 +40,8 @@ import pathInterfaces.pathOnLinux
 import strategies.throwUnsafely
 import temporaryDirectories.javaBaseTemporaryDirectory
 
-val work = temporaryDirectory[Path on Linux] / "archives"
-work.create[Directory]()
+val work = temporaryDirectory[Path on Linux] / "archives" / Uuid().show
+work.create[Directory](CreateFlag.Parents)
 ```
 
 ### ZIP

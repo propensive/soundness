@@ -36,8 +36,9 @@ import postables.jsonPostable
 `Api` reads a specification from the classpath — JSON or YAML, OpenAPI 3.0 or 3.1 — as the code
 compiles, and the resulting value navigates by path:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 val api = Api(cp"/apis/petstore.json")
 
 api.pets           // the /pets path
@@ -56,8 +57,9 @@ defaults, checked as a URL as the code compiles. A specification whose server is
 (`/api/v3`), or which declares none, must take its base from the caller, which a relative server
 URL then extends:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 val api = Api(cp"/apis/petstore3.json", base = url"https://petstore3.swagger.io")
 ```
 
@@ -71,8 +73,9 @@ An endpoint is invoked with its method, its query and header parameters as named
 request body as a value; `call` executes the request and reads the response as the type asked
 for — which must conform to the response schema the specification declares:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 case class Pet(id: Long, name: Text, tag: Optional[Text] = Unset)
 
 api.pets(42).get.call[Pet]()             // GET /pets/42, decoded per the schema
@@ -98,8 +101,9 @@ media type's carrier, else `Text`, or `Unit` where no body is declared. The oper
 `Api.Response` records the union of them as its `Failure`, so `attempt` yields an `Attempt` over
 exactly the declared errors, and a `match` over it is checked for exhaustiveness by the compiler:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 api.pet(42L).get.attempt[Pet]() match
   case Attempt.Success(pet)                        => pet.name
   case Attempt.Failure(Api.NotFound(()))           => t"no such pet"
@@ -128,8 +132,9 @@ named for the scheme, holding the value the scheme's kind calls for, and an oper
 requires credentials nobody has provided does not compile, the error naming the givens which
 would satisfy each alternative:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 given apiKey: ("api_key" is Credential to Text) = Credential(t"…")
 given basic: ("basicAuth" is Credential to Auth) = Credential(Auth.Basic(t"user", t"pass"))
 given oauth: ("petstore_auth" is Credential to Authorization) = issuer.clientCredentials(t"read:pets")
@@ -154,8 +159,9 @@ carrier's own reader and writer do the work — and every mapping is a contextua
 `construables` family, imported by name, so that nothing is construed without a deliberate
 choice:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 import construables.{jsonConstruable, pngConstruable, plainTextConstruable}
 
 val ticket: Raster in Png = api.tickets(id).qr.get.call()
@@ -180,8 +186,9 @@ A JSON response can be read without a mirror class at all: `record()` yields a
 schema declares, nested objects and references to component schemas as nested records, and an
 array of objects as a `List` of them.
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 val pet = api.pet(42L).get.record()
 pet.name                                // Text
 pet.photoUrls                           // List[Text]

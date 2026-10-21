@@ -1,7 +1,5 @@
 ## ACP
 
-<!-- doccheck: language captureChecking -->
-
 ### About
 
 The [Agent Client Protocol](https://agentclientprotocol.com/) is how an editor — or any program —
@@ -25,12 +23,16 @@ client advertises are derived from those registrations, so the declaration can n
 with the implementation. A connection needs a few capabilities of its own: a way to run the reader
 and writer tasks, an error strategy, a working directory for the agent, and somewhere to print:
 
-```scala
+```scala fuel
+feature experimental.captureChecking
+##
 import soundness.*
+import environments.javaBaseEnvironment
 
 import errorDiagnostics.stackTracesDiagnostics
 import probates.awaitProbate
 import stdios.javaLangSystemStdio
+import termcapDefinitions.basicTermcap
 import strategies.throwUnsafely
 import threads.virtualThreads
 import workingDirectories.javaBaseWorkingDirectory
@@ -83,8 +85,8 @@ def register(using Acp.Registry^): Unit = Acp.updated:
     case Acp.AgentMessageChunk(Acp.TextContent(text, _)) => Out.print(text)
     case Acp.AgentThoughtChunk(Acp.TextContent(text, _)) => Out.print(t"(thinking) $text")
     case Acp.UserMessageChunk(content)   => ()
-    case call: Acp.ToolCall              => Out.println(t"${call.title} (${call.kind})")
-    case update: Acp.ToolCallUpdate      => Out.println(t"${update.toolCallId}: ${update.status}")
+    case call: Acp.ToolCall              => Out.println(t"${call.title} (${call.kind.let(_.show).or(t"unknown")})")
+    case update: Acp.ToolCallUpdate      => Out.println(t"${update.toolCallId}: ${update.status.let(_.show).or(t"unknown")}")
     case Acp.Plan(entries)               => entries.each { entry => Out.println(entry.content) }
     case Acp.AvailableCommandsUpdate(commands) => ()
     case Acp.CurrentModeUpdate(modeId)   => ()

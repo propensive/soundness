@@ -67,12 +67,12 @@ reads the same way through its handle, for the duration of a scope, as any
 
 ```scala
 import filesystemBackends.javaBaseFilesystem
-import filesystemOptions.createNonexistentParents
 import pathInterfaces.pathOnLinux
 import temporaryDirectories.javaBaseTemporaryDirectory
 
-val wavPath = temporaryDirectory[Path on Linux] / "audio" / "tone.wav"
-wavPath.create[File](): handle ?=>
+val audioDirectory = temporaryDirectory[Path on Linux] / "audio" / Uuid().show
+val wavPath = audioDirectory / "tone.wav"
+wavPath.create[File](CreateFlag.Parents): handle ?=>
   handle.write(wav)
 
 wavPath.open[File]()(file.read[Audio in Wave]).frames   // 4
@@ -95,8 +95,8 @@ that to the destination — or handing the audio value itself to the handle, sin
 streams as its encoded bytes:
 
 ```scala
-val aiffPath = temporaryDirectory[Path on Linux] / "audio" / "tone.aiff"
-aiffPath.create[File](): handle ?=>
+val aiffPath = audioDirectory / "tone.aiff"
+aiffPath.create[File](CreateFlag.Parents): handle ?=>
   handle.write(audio.to[Aiff])
 ```
 

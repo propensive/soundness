@@ -51,7 +51,10 @@ val a4 = Pdf.Rect
   ( Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
     Quantity[Points[1]](595.0), Quantity[Points[1]](842.0) )
 
-val path = t"/tmp/tutorial.pdf"
+import pathInterfaces.pathOnLinux
+import temporaryDirectories.javaBaseTemporaryDirectory
+
+val path = temporaryDirectory[Path on Linux] / "tutorial.pdf"
 
 path.create[Pdf](CreateFlag.Replace): doc ?=>
   doc.appendPage(a4)
@@ -81,8 +84,9 @@ PdfFile(path).open(Read & Write): doc ?=>
 An encrypted document is opened by supplying its password, which is checked as the document is
 opened rather than when a string is first decrypted:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 PdfFile(path).open(Password(t"open sesame")):
   pdf.info.title
 ```
@@ -168,8 +172,9 @@ A [TrueType font](fonts.md) — any `Sfnt`, loaded here from a classpath resourc
 with `embedFont`, which writes the program as a `FontFile2` and builds the simple WinAnsi font
 dictionary around it; `addResource` names it on a page so content can select it:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 PdfFile(path).open(Read & Write): doc ?=>
   val font = doc.embedFont(Sfnt(cp"/fonts/text.ttf"), t"MyFont")
   doc.addResource(doc.page(Prim), t"Font", t"F1", font)

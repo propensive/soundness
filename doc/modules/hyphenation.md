@@ -35,18 +35,22 @@ Breaking text at the right points is a pure function of the language's patterns,
 
 `hyphenate` inserts a hyphen character at each permissible break. The default is the Unicode
 [soft hyphen](https://en.wikipedia.org/wiki/Soft_hyphen), which is invisible unless a line
-actually breaks there; passing a visible character shows the break points:
+actually breaks there; passing a visible character shows the break points. `leftMin` and
+`rightMin` keep a minimum number of characters attached before the first break and after the
+last, so a break never strands one or two letters:
 
-```scala
-t"hyphenation".hyphenate(hyphen = '-')    // t"hy-phen-ation"
-t"presentation".hyphenate(hyphen = '-')   // t"pre-sen-ta-tion"
-```
-
-`leftMin` and `rightMin` keep a minimum number of characters attached before the first break and
-after the last, so a break never strands one or two letters:
-
-```scala
-t"hyphenation".hyphenate(hyphen = '-', leftMin = 4)   // t"hyphen-ation"
+```scala fuel
+frame
+  label Every permissible break
+  code
+      t"hyphenation".hyphenate(hyphen = '-')    // t"hy-phen-ation"
+      t"presentation".hyphenate(hyphen = '-')   // t"pre-sen-ta-tion"
+frame
+  label At least four characters before the first
+  code
+      t"hyphenation".hyphenate(hyphen = '-', leftMin = 4)   // t"hyphen-ation"
+      t"presentation".hyphenate(hyphen = '-', leftMin = 4)  // t"presen-ta-tion"
+##
 ```
 
 ### Syllables

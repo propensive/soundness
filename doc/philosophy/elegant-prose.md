@@ -27,7 +27,9 @@ failing, and the prose stops scanning.
 The claim is checkable: read the code aloud and see whether it makes sense to someone who
 knows the domain but not the library.
 
-```scala
+```scala fuel
+parse
+##
 supervise:
   val server = SocketServer(8080).handle:
     request.target match
@@ -42,7 +44,9 @@ that without knowing anything about Soundness.
 
 The same test applied elsewhere:
 
-```scala
+```scala fuel
+parse
+##
 worktree.merge(GitBranch(t"feature"), ff = FastForward.Never, message = t"Merge feature")
 
 path.open[Directory](Read & Exclusive): dir ?=>

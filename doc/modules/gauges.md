@@ -33,6 +33,7 @@ import soundness.*
 import textMetrics.uniformMetric
 import palettes.solarizedDarkGaugePalette
 import stdios.javaLangSystemStdio
+import termcapDefinitions.basicTermcap
 ```
 
 ### Statuses
@@ -142,8 +143,9 @@ says what it means.
 `gauge` builds a pane, taking a `Reading` — a mutable cell holding the current status. Assigning to
 the cell publishes the value and repaints, so a gauge driven from a background task updates itself:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 val progress = Reading(Fraction(0.0))
 val work = List(1, 2, 3, 4, 5)
 
@@ -171,8 +173,9 @@ when nothing is animating.
 Outside a layout, `whilst` shows a gauge at the cursor for the duration of a block and erases it
 afterwards:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 whilst(Reading(Fraction.indeterminate)):
   snooze(2.0*Second)
 ```
@@ -217,8 +220,9 @@ val captioned = gauge(Reading(Captioned(Fraction.indeterminate, t"resolving depe
 A `Sequence[Step]` renders as a checklist, a breadcrumb, a chain of beads, a numbered position or a
 powerline ribbon:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 import processions.checklistProcession
 
 val steps: Sequence[Step] =

@@ -57,6 +57,7 @@ import pathInterfaces.pathOnLinux
 import filesystemOptions.overwritePreexisting
 import filesystemOptions.createNonexistentParents
 import stdios.javaLangSystemStdio
+import termcapDefinitions.basicTermcap
 ```
 
 ### Reading a source
@@ -79,8 +80,9 @@ process's output — so reading a URL as text and reading a file as bytes are th
 `writeTo` sends a value to a destination that knows how to consume it. The source may be text,
 bytes, or a stream of either, and the destination's `Writable` instance receives it:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 val destination = t"/tmp/streams-tutorial.txt".decode[Path on Linux]
 
 source.writeTo(destination)
@@ -117,8 +119,9 @@ side, and the whole chain runs on the consumer's thread as nested refills — no
 queues, no intermediate collections. Each stage takes what the last one produced, which is
 [composability](../philosophy/composability.md) in its most literal form:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 file.stream.via(decompressor).via(decoder)
 ```
 
@@ -128,8 +131,9 @@ present themselves as stages.
 
 A pipeline ends in a *terminal* operation, which drains the endpoint and closes it:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 stream.memoize                                   // drain into one immutable value
 stream.sweep((storage, start, n) => count += n)  // drain, seeing each raw window
 ```
@@ -143,9 +147,41 @@ and `drop`.
 Where a pipeline ends in a *push* chain rather than a value, `pump` is the single point at which
 data crosses from the pull side to the push side:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 stream.pump(intake)
+```
+
+### Parsing with a cursor
+
+A parser does not consume a stream in bulk but one element at a time, looking at the next
+element before deciding what to do with it. A `Cursor` is that view: a position over a
+sequence of `Text` or `Data` blocks — built from an iterator, a `Chain` or a `Stream` — which
+refills from its source as the position advances, so the parser sees one contiguous run of
+characters or bytes however the source was chunked. `peek` shows the current element without
+consuming it, as a `Datum` that compares directly with a `Char` and is `Datum.End` once the
+source is exhausted; `advance()` moves past it; `next()` does the same and reports whether
+anything remains; and `position`, `line` and `column` say where the cursor has reached:
+
+```scala
+val cursor = Cursor(Iterator(t"hello", t"world"))
+
+cursor.peek == 'h'   // true
+cursor.advance()
+cursor.position      // Sec: the second character
+```
+
+A `mark` records a point to return to or to copy from, and `grab` materializes everything
+between two marks as one value, even where it straddles the blocks the source was supplied in.
+Marks may be taken only within `hold`, which keeps the marked region in the buffer until the
+block ends; outside it, the cursor is free to discard what it has already passed:
+
+```scala
+cursor.hold:
+  val start = cursor.mark
+  for i <- 1 to 5 do cursor.next()
+  cursor.grab(start, cursor.mark)   // t"ellow"
 ```
 
 ### Records

@@ -187,8 +187,9 @@ curve and, for RSA, the modulus size must be those of the cipher named, so a 409
 never be read as a `PrivateKey[Rsa[2048]]`. A key that does not match is a `PrivateKey.Error`
 whose `Mismatch` reason names what was found:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 keyText.read[PrivateKey[Rsa[2048]] in Pem]   // raises PrivateKey.Error: a RSA-2048 key was expected but Ed25519 was found
 ```
 

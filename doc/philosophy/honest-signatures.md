@@ -26,7 +26,9 @@ implementations need is exactly where dishonest signatures come from.
 
 A typeclass says only what it abstracts:
 
-```scala
+```scala fuel
+parse
+##
 trait Showable:
   def text(value: Self): Text
 ```
@@ -35,7 +37,9 @@ No error, no context, no capability — because showing a value, in general, nee
 An instance that *does* need something declares it in its own signature, where it is
 true:
 
-```scala
+```scala fuel
+parse
+##
 given (Tactic[CryptoError]) => PrivateKey is Showable = …
 ```
 
@@ -48,7 +52,9 @@ when given a fallible one, and its own signature — honestly — claims neither
 The failure mode is easy to recognise once named. An interface is widened so that the
 most demanding implementation fits:
 
-```scala
+```scala fuel
+parse
+##
 trait Codec:
   def encode(value: Self)(using Online, Tactic[CodecError]): Text
 ```
@@ -67,7 +73,9 @@ collapses.
 
 Because they are minimal, the clauses that *are* present mean something:
 
-```scala
+```scala fuel
+parse
+##
 def fetch(url: HttpUrl)(using Online): Http.Response
 def loadConfiguration(path: Path on Linux): Configuration raises Io.Error
 def install(target: Path on Linux): Unit logs InstallEvent

@@ -12,14 +12,18 @@ The difference shows in composition. Direct-style expressions nest: a fallible c
 sit inside an argument list, inside an interpolated string, inside a condition —
 anywhere an expression can go —
 
-```scala
+```scala fuel
+parse
+##
 val greeting = t"Hello, ${name.as[EmailAddress].localPart}!"
 ```
 
 whereas monadic values compose only through their combinators. The same line, with
 failure as a wrapper type, must be unrolled into named intermediate steps:
 
-```scala
+```scala fuel
+parse
+##
 val greeting = name.decodeEither.map(email => s"Hello, ${email.localPart}!")
 ```
 
@@ -42,7 +46,9 @@ being ordinary.
 The claim is easiest to check on the constructs a monadic encoding has to replace. Each
 of these works unchanged around fallible, asynchronous or resource-holding code:
 
-```scala
+```scala fuel
+parse
+##
 supervise:
   for url <- urls do                          // an ordinary loop
     if shouldFetch(url) then                  // an ordinary condition
@@ -60,7 +66,9 @@ Direct style is not effect-erasure. What an operation needs is in its signature,
 as it would be in the monadic encoding — the difference is that it appears as a
 *requirement* rather than as a wrapper around the result:
 
-```scala
+```scala fuel
+parse
+##
 def fetch(url: HttpUrl)(using Online, Monitor): Text raises HttpError
 ```
 

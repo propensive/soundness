@@ -162,7 +162,7 @@ list items declares itself to produce `"li"` content:
 
 ```scala
 given (List[Text] is Renderable in "li") =
-  list => Html.Fragment(list.map(Li(_)).nodes*)
+  list => Html.Fragment(list.map(Li(_))*)
 ```
 
 With that in scope a `List[Text]` can be rendered directly, placed inside a `<ul>`, or

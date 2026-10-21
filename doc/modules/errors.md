@@ -102,21 +102,28 @@ implementation serves every strategy at once.
 At the point a fallible operation is used, a *strategy* in scope decides what a failure does.
 `throwUnsafely` raises an exception:
 
-```scala
-import strategies.throwUnsafely
+With that strategy, `connect(80)` throws a `PortError` as an ordinary exception. `safely` runs a
+block and turns any failure into an absent result, so a failure becomes `Unset` rather than an
+exception; `unsafely` asserts that no failure will occur; and `capture` returns the error itself,
+for testing that the right failure is produced:
 
-connect(8080)   // Connection(8080)
-```
+```scala fuel
+frame
+  label Thrown, under `throwUnsafely`
+  code
+      import strategies.throwUnsafely
 
-With that strategy, `connect(80)` throws a `PortError` as an ordinary exception.
+      connect(8080)   // Connection(8080)
+      connect(80)     // throws PortError
+frame
+  label Absent under `safely`, or captured
+  code
+      import strategies.throwUnsafely
 
-`safely` runs a block and turns any failure into an absent result, so a failure becomes `Unset`
-rather than an exception; `unsafely` asserts that no failure will occur; and `capture` returns
-the error itself, for testing that the right failure is produced:
-
-```scala
-safely(connect(80))                    // Unset
-capture[PortError](connect(80)).port   // 80
+      connect(8080)                          // Connection(8080)
+      safely(connect(80))                    // Unset
+      capture[PortError](connect(80)).port   // 80
+##
 ```
 
 *Tactic* and *strategy* are the same type, `Tactic`, distinguished only by the scope they are
@@ -129,8 +136,9 @@ Two further declarations widen the choice beyond a scope. An error marked `Unche
 thrown without being handled — it is a marker typeclass with no members, so the given can be
 `erased`:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 case class AsciiError(char: Char)(using Diagnostics)
 extends Error(m"the character $char is not ASCII")
 
@@ -165,8 +173,9 @@ answer several kinds of failure. `mitigate` instead replaces one error with anot
 a low-level failure into the error a caller expects before it propagates. Both compose: a
 `mitigate` inside a `recover` turns one error into another and then handles it:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 case class ServiceError(detail: Text)(using Diagnostics)
 extends Error(m"the service could not start: $detail")
 
@@ -277,8 +286,9 @@ value, or `Unset` if the block recorded an error or aborted — and, unlike `saf
 *within* the ambient tactic rather than installing a new one, so an accruing tactic rolls back
 what the block recorded instead of keeping it:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 def tolerant(json: Json): Optional[Int] raises Json.Error =
   summon[Tactic[Json.Error]].tolerate(json.as[Int])
 ```

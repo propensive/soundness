@@ -18,7 +18,9 @@ deeply parameterised one.
 Each preposition is a type alias that refines one type member. `in` sets `Form`, `on`
 sets `Plane`, `by` sets `Operand`, `to` sets `Result`:
 
-```scala
+```scala fuel
+parse
+##
 infix type in   [refined, form]                             = refined { type Form = form }
 infix type on   [refined <: { type Plane }, plane]          = refined { type Plane = plane }
 infix type by   [refined <: { type Operand }, operand]      = refined { type Operand = operand }
@@ -28,7 +30,9 @@ infix type to   [refined <: { type Result }, result]        = refined { type Res
 That is the whole mechanism. Because each refines a *different* member, they can be
 applied in succession without nesting, and the order does not matter:
 
-```scala
+```scala fuel
+parse
+##
 Text is Decodable in Json
 value is Streamable by Data over Credit
 Html.Element of "ul" over "li" in Whatwg
@@ -42,7 +46,9 @@ always the transport, `by` is always the operand, `on` is always the plane.
 
 The same types, written conventionally:
 
-```scala
+```scala fuel
+parse
+##
 Decodable[Text, Json]
 Streamable[value, Data, Credit]
 Element["ul", "li", Whatwg]

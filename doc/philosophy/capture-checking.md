@@ -9,7 +9,9 @@ What scoping states by structure, capture checking enforces by type.
 What becomes impossible is the family of escape bugs that scoping alone cannot stop —
 each one a value smuggling a dead capability out of its block:
 
-```scala
+```scala fuel
+parse
+##
 // a lazy stream escaping the file that feeds it
 val lines = file.open(_.stream[Text])
 lines.head   // without capture checking: reads from a closed handle
@@ -48,7 +50,9 @@ consume bytes the other expected.
 
 So a `Stream` is an *exclusive* capability, and aliasing one does not compile:
 
-```scala
+```scala fuel
+parse
+##
 val stream = file.stream
 val other = stream          // does not compile: the stream is exclusive
 ```

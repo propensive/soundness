@@ -34,7 +34,12 @@ import argparse, glob, json, os, re, socket, subprocess, sys, time, urllib.reque
 
 FLAME = os.environ.get('FLAME', 'flame')
 IVY = os.path.expanduser('~/.ivy2/local/dev.propensive')
-FENCE_OPEN = re.compile(r'^```scala\s*$')
+FENCE_OPEN = re.compile(r'^```scala(?: fuel)?\s*$')
+FUEL_OPEN = re.compile(r'^```scala fuel\s*$')
+PREAMBLE_END = re.compile(r'^##\s*$')
+MODE = re.compile(r'^(?:parse|typecheck|compile)\s*$')
+ERRORS_SHOWN = re.compile(r'^errors\s+(?:show|ignore)\s*$')
+FEATURE = re.compile(r'^feature\s+(?:experimental\.)?(\w+)\s*$')
 FENCE_CLOSE = re.compile(r'^```\s*$')
 NEGATIVE = re.compile(r"//\s*(?:does\s+not|doesn't|will\s+not|won't|cannot|can't)\s+compile\b", re.I)
 IDENT = re.compile(r'`([^`]+)`')
@@ -150,22 +155,70 @@ def doc_features(path):
     return LANGUAGE_MARKER.findall(open(path, encoding='utf-8').read())
 
 class Fence:
-    def __init__(self, line, code):
+    def __init__(self, line, code, restart=False):
         self.line = line          # markdown line of the fence's first code line
         self.code = code          # the code lines
         self.negatives = []       # (markdown line, code) lines that must be rejected
+        self.restart = restart    # the preamble said `restart`: a fresh session begins here
+
+def preamble_features(path):
+    """Language features a tutorial's fuel preambles ask for, with `feature experimental.X`."""
+    features = []
+    inside = False
+    for line in open(path, encoding='utf-8').read().split('\n'):
+        if FUEL_OPEN.match(line): inside = True
+        elif inside and PREAMBLE_END.match(line): inside = False
+        elif inside:
+            m = FEATURE.match(line.strip())
+            if m: features.append(m.group(1))
+    return features
+
+def split_fuel(buffer, start):
+    """A ```scala fuel fence's body as (preamble lines, [(line, code lines)] frames and trailing
+    code). A fence which names a mode, or expects errors, is checked by fuel and not run here."""
+    preamble, code, i = [], buffer, 0
+    for i, line in enumerate(buffer):
+        if PREAMBLE_END.match(line):
+            preamble, code = buffer[:i], buffer[i + 1:]
+            break
+    else:
+        return [], [(start, buffer)], False, False
+    skip = any(MODE.match(l.strip()) or ERRORS_SHOWN.match(l.strip()) for l in preamble)
+    restart = any(l.strip() == 'restart' for l in preamble)
+    # Each `frame`'s `code` child: the lines indented beneath `  code`, dedented by six.
+    frames, j = [], 0
+    while j < len(preamble):
+        if preamble[j].strip() == 'frame':
+            k = j + 1
+            while k < len(preamble) and preamble[k].startswith('  ') and preamble[k].strip() != 'frame':
+                if preamble[k].strip() == 'code' or preamble[k].startswith('  code '):
+                    inline = preamble[k].strip()[5:]
+                    body = [inline] if inline else []
+                    m = k + 1
+                    while m < len(preamble) and (preamble[m].startswith('      ') or not preamble[m].strip()):
+                        body.append(preamble[m][6:]); m += 1
+                    while body and not body[-1].strip(): body.pop()
+                    frames.append((start + k + 1, body))
+                    k = m; continue
+                k += 1
+            j = k
+        else:
+            j += 1
+    pieces = frames + ([(start + len(preamble) + 1, code)] if any(l.strip() for l in code) else [])
+    return preamble, pieces, skip, restart
 
 def fences(path):
     """The ```scala fences of a tutorial, in order, with `// does not compile` lines split out."""
     result = []
     lines = open(path, encoding='utf-8').read().split('\n')
-    inside, start, buffer, skip = False, 0, [], False
+    inside, start, buffer, skip, fuel = False, 0, [], False, False
     for number, line in enumerate(lines, 1):
         if not inside:
             if line.strip() == '<!-- doccheck: skip -->':
                 skip = True
             elif FENCE_OPEN.match(line):
                 inside, start, buffer = True, number + 1, []
+                fuel = bool(FUEL_OPEN.match(line))
                 if skip:
                     skip = False
                     inside = False
@@ -177,19 +230,24 @@ def fences(path):
                     continue
             continue
         if FENCE_CLOSE.match(line):
-            fence = Fence(start, [])
-            for offset, code in enumerate(buffer):
-                if NEGATIVE.search(code):
-                    fence.negatives.append((start + offset, NEGATIVE.split(code)[0].rstrip().rstrip('/').rstrip()))
-                else:
-                    fence.code.append(code)
-            # Drop leading and trailing blank lines, keep interior ones (they may sit inside a definition).
-            while fence.code and not fence.code[0].strip():
-                fence.code.pop(0); fence.line += 1
-            while fence.code and not fence.code[-1].strip():
-                fence.code.pop()
-            if fence.code or fence.negatives:
-                result.append(fence)
+            pieces, skipped, restart = [(start, buffer)], False, False
+            if fuel:
+                _, pieces, skipped, restart = split_fuel(buffer, start)
+            for piece_start, piece in ([] if skipped else pieces):
+                fence = Fence(piece_start, [], restart)
+                restart = False
+                for offset, code in enumerate(piece):
+                    if NEGATIVE.search(code):
+                        fence.negatives.append((piece_start + offset, NEGATIVE.split(code)[0].rstrip().rstrip('/').rstrip()))
+                    else:
+                        fence.code.append(code)
+                # Drop leading and trailing blank lines, keep interior ones (they may sit inside a definition).
+                while fence.code and not fence.code[0].strip():
+                    fence.code.pop(0); fence.line += 1
+                while fence.code and not fence.code[-1].strip():
+                    fence.code.pop()
+                if fence.code or fence.negatives:
+                    result.append(fence)
             inside = False
         else:
             buffer.append(line)
@@ -308,7 +366,7 @@ def prepare(server, path, jars, args, replay):
     # The language features Soundness itself compiles with (build.mill's `settings.scalaOptions`),
     # as far as flame offers them: an example using `erased`, a bounded numeric literal or a
     # `tracked` parameter needs them switched on in the session.
-    features = ['erasedDefinitions', 'genericNumberLiterals', 'modularity'] + args.language + doc_features(path)
+    features = ['erasedDefinitions', 'genericNumberLiterals', 'modularity'] + args.language + doc_features(path) + preamble_features(path)
     for setting in ['/set experimental'] + [f'/set {s}' for s in args.set] + [f'/language {f}' for f in features]:
         server.eval(session, setting)
     started = time.time()
@@ -374,6 +432,9 @@ def check(server, path, jars, tolerated, args):
         ok = fixture_reply['status'] == 'ran'
         report(0, 'OK' if ok else 'FIXTURE-FAILED', '' if ok else summarise(fixture_reply))
     for fence in fences(path):
+        if fence.restart:
+            replay.clear()
+            session, _ = prepare(server, path, jars, args, replay)
         if fence.code:
             code = '\n'.join(fence.code)
             reply = server.eval(session, code, args.timeout)

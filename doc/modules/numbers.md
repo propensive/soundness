@@ -79,7 +79,7 @@ import arithmeticOptions.checkedOverflow
 import strategies.throwUnsafely
 
 val big: S32 = 2000000000
-big + big   // raises Arithmetic.Error rather than wrapping negative
+safely(big + big)   // Unset: the sum overflows, raising Arithmetic.Error rather than wrapping negative
 ```
 
 Division by zero is checked the same way, by importing `arithmeticOptions.checkedDivision`,

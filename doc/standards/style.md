@@ -88,20 +88,28 @@ are fine — and should follow on from one another: a term with a given name mea
 same thing throughout a document, and a single identifier is never assigned more than
 once.
 
-Every sample is checked mechanically. `make doccheck` evaluates each ` ```scala ` fence of a
-tutorial, in order, through the flame REPL (`etc/doccheck.py`), and checks the names the
-samples use against the source (`etc/doccheck-names.py`); `make doccheck DOC=json` checks
-one tutorial. Two conventions make that possible:
+Every sample is checked mechanically, twice over. `make fuelcheck` compiles each tutorial
+with fuel against `main`'s own test assembly (`.pyrocosm/fuel/config.tel`), every fence
+following the ones before it as one session; `make doccheck` evaluates each fence, in order,
+through the flame REPL (`etc/doccheck.py`) against the latest release, so it runs the samples
+too, and checks the names they use against the source (`etc/doccheck-names.py`); `make
+doccheck DOC=json` checks one tutorial. A few conventions make that possible:
 
-- A line that is meant not to compile carries a trailing `// does not compile` comment (with
-  an optional explanation after a colon). The checker submits it on its own and reports it if
-  it compiles after all.
 - A sample must introduce every name it uses, in a fence of the same tutorial, so the fences
   form one continuous session. Where a tutorial needs a value it cannot sensibly construct
   in prose — a path that must exist, a running service — put the binding in
-  `doc/fixtures/<tutorial>.scala`, which the checker evaluates before the first fence.
-- A fence that cannot run in a REPL session — one that opens a browser, binds a socket, reads a
-  terminal, dispatches a JVM, or is a macro sketch — is preceded by the line
-  `<!-- doccheck: skip -->`. It is still read by the name check, so it keeps every name it uses
-  defined. A tutorial whose samples need a language feature the session lacks asks for it with
-  `<!-- doccheck: language captureChecking -->` anywhere in the document.
+  `doc/fixtures/<tutorial>.scala`, which both checkers compile before the first fence.
+- A line that is meant not to compile carries a trailing `// does not compile` comment (with
+  an optional explanation after a colon). Both checkers compile it on its own and report it
+  if it compiles after all; fuel shows its error as a note on the line.
+- A fence that says more than its code does so in a TEL preamble: it opens with
+  ` ```scala fuel `, and the preamble ends at a line holding `##`. A fence that cannot run in
+  a REPL session — one that opens a browser, binds a socket, reads a terminal, dispatches a
+  JVM — says `typecheck`: fuel compiles it, and the REPL checker leaves it alone. A fence
+  whose point is its error says `errors show`, and the error is rendered beneath it. A sketch
+  that is not meant to compile at all says `parse`. A tutorial whose samples need a language
+  feature says `feature experimental.captureChecking` on the first fence that needs it, and
+  `restart` begins the session afresh at a fence. An animation is a fence of `frame`s, each
+  with its `code` (and perhaps a `label`), of which the last is what later fences follow;
+  use one only where watching the code change from one frame to the next teaches something
+  that two fences side by side would not.
