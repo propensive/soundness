@@ -19,7 +19,7 @@ builds and deploys a working application.
 ## doc-1: every error type has a code and a page
 
 Horizon: near
-Baseline: 40 error types carry no `SN-` code; 241 error pages exist (measured 2026-09-25; 39 and 233 on 2026-08-01)
+Baseline: 41 error types carry no `SN-` code; 247 error pages exist (measured 2026-10-21; 40 and 241 on 2026-09-25; 39 and 233 on 2026-08-01)
 
 The `SN-` scheme covers the macro-raised compile errors; the remaining runtime error types get
 codes and pages under the same never-reuse discipline, and parity between types, codes and
@@ -31,11 +31,11 @@ Done when: the parity check runs in CI and
 
 ## doc-2: the messages standard is written
 
-Horizon: near
+Done: #2306 (2026-10-21)
 
-`doc/standards/messages.md` is a self-declared stub, despite the message convention being
-load-bearing across every module. The standard gets written: register, structure, vocabulary
-and examples for `m"…"` messages and error text. One `Stub` marker remains (2026-09-25).
+`doc/standards/messages.md` was a self-declared stub, despite the message convention being
+load-bearing across every module. The standard is now written: register, structure, vocabulary,
+what a message must not contain, composition through `Communicable`, and log events.
 
 Done when:
 
@@ -51,18 +51,18 @@ mislead. No `lib/*/doc/` directory remains, and the boilerplate phrase matches n
 
 ## doc-4: every module is covered by a topic
 
-Horizon: mid
-Baseline: 99 topics in `doc/modules/`; 1 of 144 libraries uncovered (measured 2026-09-25; 91 topics and 35 uncovered on 2026-08-01)
+Done: #2306 (2026-10-21)
+Baseline was 99 topics in `doc/modules/` and 1 of 144 libraries uncovered (measured 2026-09-25; 91 topics and 35 uncovered on 2026-08-01); 101 topics cover 145 of 145 on 2026-10-21
 
 Every published module is covered by at least one `doc/modules/` topic, and a coverage script
-maps modules to topics so orphans are visible. The script exists — `etc/check-doc-coverage.py`,
-run by `make build` — and passes: burdock, the self-installer's bootstrap, is listed as
-internal (a reader never calls it), and the `COVERED_BY` entry for ziggurat, a library removed
-in 0.66.0, is gone.
+maps modules to topics so orphans are visible: `etc/check-doc-coverage.py`, run by `make
+build`, exits non-zero on an orphan. The last one, burdock, is covered by `packaging.md`; the
+`COVERED_BY` entry that named that topic for ziggurat (a library #1973 removed) now names
+burdock.
 
 Done when:
 
-    python3 etc/check-doc-coverage.py    # 144/144 libraries covered, exit 0
+    python3 etc/check-doc-coverage.py    # every library covered, exit 0
 
 ## doc-5: API documentation is generated and published
 

@@ -29,7 +29,6 @@ INTERNAL = {
     'beneficence', 'umbrageous', 'prescience', 'frontier', 'symbolism', 'denominative',
     'concordance', 'delicious', 'prophesy', 'stenography', 'wisteria', 'polaris',
     'degustation',    # the TASTy reader; its only tutorial was the LIRA topic, retired by dist-10
-    'burdock',        # the self-installer's bootstrap: a launcher runs it; a reader never calls it
 }
 
 # Libraries whose coverage the export-name heuristic cannot see, mapped by hand.
@@ -37,6 +36,7 @@ COVERED_BY = {
     'exegesis': ['lsp.md'],
     'espionage': ['acp.md'],
     'virility': ['cli.md'],
+    'burdock': ['packaging.md'],     # `externalize` and the `repackage` entry point are lowercase
     'digression': ['stack-traces.md'],
     'sibylline': ['llm.md'],
     'murmuration': ['collections.md'],

@@ -75,6 +75,26 @@ private case class UdpCourier(address: jn.InetAddress, port: Int, socket: jn.Dat
 // A bound datagram socket with the size of the buffer each datagram is received into.
 private case class UdpBinding(socket: jn.DatagramSocket, datagramSize: Int)
 
+// A datagram socket joined to a multicast group on each of `interfaces`. Sends to the group select
+// the outgoing interface on the socket, so they are serialised through the binding's monitor.
+private case class MulticastBinding
+  ( socket:       jn.DatagramSocket,
+    group:        jn.InetAddress,
+    port:         Int,
+    interfaces:   List[jn.NetworkInterface],
+    datagramSize: Int )
+
+// The local interfaces behind urticose's descriptions, by index; one no longer present is
+// skipped.
+private def interfacesOf(interfaces: List[NetworkInterface]): List[jn.NetworkInterface] =
+  interfaces match
+    case Nil => Nil
+
+    case head :: tail =>
+      Optional(jn.NetworkInterface.getByIndex(head.index)) match
+        case nic: jn.NetworkInterface => nic :: interfacesOf(tail)
+        case _                        => interfacesOf(tail)
+
 // The `DatagramSize` option, consumed by the backend rather than set on the socket.
 private def datagramSize(options: List[Socket.Option]): Int = options match
   case Nil                                      => 1472
@@ -85,7 +105,7 @@ package socketBackends:
   given scalaNativeSockets: Socket.Backend = new Socket.Backend:
     type ServerSocket = ServerBinding
     type DatagramSocket = UdpBinding
-    type MulticastSocket = Unit
+    type MulticastSocket = MulticastBinding
     type Exchange = ClientExchange
     type Courier = UdpCourier
 
@@ -257,25 +277,71 @@ package socketBackends:
 
     def unbind(binding: UdpBinding): Unit = binding.socket.close()
 
-    //── Multicast (unsupported: javalib has no `MulticastSocket` or `DatagramChannel`) ─────────
+    //── Multicast group membership (`Multicast`) ───────────────────────────────────────────────
+    // Scala Native's javalib has no `DatagramChannel`, but its `DatagramSocket` has the Java 14
+    // `joinGroup(SocketAddress, NetworkInterface)` and the `setOption` the multicast options need,
+    // so the construction is the JVM backend's over a socket rather than a channel.
     def joinMulticast
       ( multicast: Multicast, interfaces: List[NetworkInterface], options: List[Socket.Option] )
-    :   Unit =
+    :   MulticastBinding =
 
-      ()
+      val group = jn.InetAddress.getByAddress(Array.unsafeJvm(multicast.group.bytes)).nn
 
-    def receiveMulticast(socket: Unit): Packet raises Socket.Error =
-      abort(Socket.Error(Socket.Error.Reason.Accept))
+      // Unbound at first, so that reuse takes effect before the bind. Reuse is the design, not an
+      // option: several subscribers on one host share the port.
+      val socket = jn.DatagramSocket(null: jn.SocketAddress | Null)
+      socket.setReuseAddress(true)
+      configure(socket, options)
+      socket.bind(jn.InetSocketAddress(multicast.port.number))
 
-    def sendGroup(socket: Unit, data: Data): Unit raises Socket.Error =
-      abort(Socket.Error(Socket.Error.Reason.Transmit))
+      // The wildcard join picks one interface arbitrarily, so the group is joined on each
+      // interface by name — each interface that has an address of the group's family, since the
+      // OS refuses the others; one it refuses anyway is left out.
+      val suitable = interfaces.filter: nic =>
+        if group.isInstanceOf[jn.Inet4Address] then nic.ipv4 != Nil else nic.ipv6 != Nil
 
-    def sendTo(socket: Unit, destination: Ipv4 | Ipv6, port: Udp.Port, data: Data)
+      val nics = interfacesOf(suitable).filter: nic =>
+        try
+          socket.joinGroup(jn.InetSocketAddress(group, multicast.port.number), nic)
+          true
+        catch case _: ji.IOException => false
+
+      MulticastBinding(socket, group, multicast.port.number, nics, datagramSize(options))
+
+    def receiveMulticast(binding: MulticastBinding): Packet raises Socket.Error =
+      receiveFrom(binding.socket, binding.datagramSize)
+
+    def sendGroup(binding: MulticastBinding, data: Data): Unit raises Socket.Error =
+      val bytes = Array.unsafeJvm(data)
+
+      // An IPv6 link-local group needs the interface as its scope, or there is no route to it.
+      def destination(nic: jn.NetworkInterface): jn.InetSocketAddress =
+        val address = binding.group.absolve match
+          case ipv6: jn.Inet6Address => jn.Inet6Address.getByAddress(null, ipv6.getAddress, nic).nn
+          case other                 => other
+
+        jn.InetSocketAddress(address, binding.port)
+
+      try binding.synchronized:
+        binding.interfaces.each: nic =>
+          binding.socket.setOption(jn.StandardSocketOptions.IP_MULTICAST_IF, nic)
+          val target = destination(nic)
+          val packet = jn.DatagramPacket(bytes, bytes.length, target.getAddress, target.getPort)
+          binding.socket.send(packet)
+      catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Transmit))
+
+    def sendTo(binding: MulticastBinding, destination: Ipv4 | Ipv6, port: Udp.Port, data: Data)
     :   Unit raises Socket.Error =
 
-      abort(Socket.Error(Socket.Error.Reason.Transmit))
+      val address = jn.InetAddress.getByAddress(Array.unsafeJvm(destination.bytes)).nn
+      val bytes = Array.unsafeJvm(data)
 
-    def leaveMulticast(socket: Unit): Unit = ()
+      try binding.synchronized:
+        binding.socket.send(jn.DatagramPacket(bytes, bytes.length, address, port.number))
+      catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Transmit))
+
+    // Closing the socket drops its memberships and unblocks a pending receive.
+    def leaveMulticast(binding: MulticastBinding): Unit = binding.socket.close()
 
     //── One-shot datagram exchange ─────────────────────────────────────────────────────────────
     def exchangeUdp
@@ -439,6 +505,8 @@ private[coaxial] trait Configurable:
   def trafficClass(value: Int): Unit = ()
   def linger(seconds: Int): Unit = ()
   def soTimeout(milliseconds: Int): Unit = ()
+  def multicastLoop(): Unit = ()
+  def multicastHops(count: Int): Unit = ()
 
 private[coaxial] def applyOptions(options: List[Socket.Option])(target: Configurable): Unit =
   options.each:
@@ -447,8 +515,8 @@ private[coaxial] def applyOptions(options: List[Socket.Option])(target: Configur
     case Socket.Option.NoDelay               => target.noDelay()
     case Socket.Option.KeepAlive             => target.keepAlive()
     case Socket.Option.Broadcast             => target.broadcast()
-    case Socket.Option.MulticastLoop         => ()
-    case Socket.Option.MulticastHops(_)      => ()
+    case Socket.Option.MulticastLoop         => target.multicastLoop()
+    case Socket.Option.MulticastHops(n)      => target.multicastHops(n)
     case Socket.Option.DatagramSize(_)       => ()  // consumed by the backend's receive
     case Socket.Option.ReceiveBuffer(n)      => target.receiveBuffer(n)
     case Socket.Option.SendBuffer(n)         => target.sendBuffer(n)
@@ -480,6 +548,13 @@ private[coaxial] def configure(socket: jn.DatagramSocket, options: List[Socket.O
     new Configurable:
       override def reuseAddress(): Unit = socket.setReuseAddress(true)
       override def broadcast(): Unit = socket.setBroadcast(true)
+
+      override def multicastLoop(): Unit =
+        socket.setOption(jn.StandardSocketOptions.IP_MULTICAST_LOOP, Boolean.box(true))
+
+      override def multicastHops(count: Int): Unit =
+        socket.setOption(jn.StandardSocketOptions.IP_MULTICAST_TTL, Int.box(count))
+
       override def receiveBuffer(bytes: Int): Unit = socket.setReceiveBufferSize(bytes)
       override def sendBuffer(bytes: Int): Unit = socket.setSendBufferSize(bytes)
       override def trafficClass(value: Int): Unit = socket.setTrafficClass(value)

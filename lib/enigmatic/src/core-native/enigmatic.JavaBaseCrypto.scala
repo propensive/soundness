@@ -36,25 +36,33 @@ import anticipation.*
 import fulminate.*
 
 // The Scala Native twin of the JVM `JavaBaseCrypto` provider. `javax.crypto` does not exist on
-// Scala Native, so every operation panics: the object exists only so the platform-neutral
-// `Crypto.javaBaseCrypto` given (and code mentioning the provider, like `OpensslCrypto.rsa`'s
-// delegation) compiles unchanged — selecting it *and using it* on native is the error.
+// Scala Native, so the algorithms `SoundnessCrypto` implements in Scala are forwarded to it — which
+// makes `import providers.javaBaseProvider` work unchanged for AES, HMAC, AES-GCM, ChaCha20,
+// X25519 and Ed25519 — and the rest panic: the object exists so that the platform-neutral
+// `Crypto.javaBaseCrypto` given (and code naming the provider, like `OpensslCrypto.rsa`'s
+// delegation) compiles unchanged, and selecting one of those algorithms *and using it* is the error.
 object JavaBaseCrypto extends Crypto:
-  private def unavailable: Nothing =
-    panic(m"the Java standard library's cryptography is unavailable on Scala Native")
+  private def unavailable(algorithm: String): Nothing =
+    panic(m"the Java standard library's $algorithm is unavailable on Scala Native, and SoundnessCrypto does not provide it")
 
-  def random: Crypto.Random = unavailable
-  def aes: Crypto.SymmetricCipher = unavailable
-  def rsa: Crypto.PublicKeyCipher = unavailable
-  def rsaSignature(digest: Text): Crypto.SignatureScheme = unavailable
-  def hmac(algorithm: Text): Crypto.Mac = unavailable
+  def random: Crypto.Random = SoundnessCrypto.random
+  def aes: Crypto.SymmetricCipher = SoundnessCrypto.aes
+  def hmac(algorithm: Text): Crypto.Mac = SoundnessCrypto.hmac(algorithm)
+  def rsa: Crypto.PublicKeyCipher = unavailable("RSA")
+  def rsaSignature(digest: Text): Crypto.SignatureScheme = unavailable("RSA")
+
+  def aesGcm: Crypto.Aead = SoundnessCrypto.aesGcm
+  def chaCha20: Crypto.StreamCipher = SoundnessCrypto.chaCha20
+  def chaCha20Poly1305: Crypto.Aead = SoundnessCrypto.chaCha20Poly1305
+  def x25519: Crypto.KeyAgreement = SoundnessCrypto.x25519
+  def ed25519: Crypto.SignatureScheme = SoundnessCrypto.ed25519
 
   // Structural members exist here only where something references them — `OpensslCrypto`
   // delegates its `ecdsa` to this object, so the stub must carry it (as `dsa`, which nothing
   // delegates, need not be).
-  def ecdsa(digest: Text): Crypto.SignatureScheme = unavailable
+  def ecdsa(digest: Text): Crypto.SignatureScheme = unavailable("ECDSA")
 
-  def des: Crypto.SymmetricCipher = unavailable
-  def tripleDes: Crypto.SymmetricCipher = unavailable
-  def blowfish: Crypto.SymmetricCipher = unavailable
-  def rc2: Crypto.SymmetricCipher = unavailable
+  def des: Crypto.SymmetricCipher = unavailable("DES")
+  def tripleDes: Crypto.SymmetricCipher = unavailable("Triple DES")
+  def blowfish: Crypto.SymmetricCipher = unavailable("Blowfish")
+  def rc2: Crypto.SymmetricCipher = unavailable("RC2")

@@ -54,6 +54,28 @@ Person(t"Alice", 30).in[Text over Yaml].read[Person in Yaml]   // Person(t"Alice
 
 `in[Data over Yaml]` writes the same text as bytes, encoded in the `Codepage` in scope.
 
+### Choosing the path for every type
+
+Both of those go through the tree: the text is parsed to a `Yaml` and decoded, or the value is
+encoded to a `Yaml` and rendered. A record can instead carry a *direct* parser and printer, derived
+once into its companion with `derives Yaml.Direct`, and a single import selects the path for every
+record in scope, as it does for the other formats:
+
+```scala
+import codecs.direct     // a direct parser and printer wherever a type is a record
+import codecs.derived    // the tree codecs, even where a direct instance is in scope
+import codecs.strict     // direct codecs, and a compile error where there is none
+```
+
+A direct printer writes the record's text straight from its fields, with no tree built; the text
+is the same as `show` renders. A direct parser reads the fields straight off the parsed
+document's nodes, with no `Yaml` built around any of them and no codec dispatched per field — but
+the document is still parsed whole first: YAML's anchors and aliases mean a node may refer back
+to any earlier one, so there is no reading a record before the document is held. Under
+`codecs.direct`, a type that is not a product — an enumeration, a sealed hierarchy — keeps the
+tree path unless it has an instance of its own; under `codecs.strict` it is a compile error naming
+the type. The modes are alternatives; import one at a time.
+
 An `Optional` field reads as `Unset` when the mapping omits it or gives `null`, and a value the
 inner decoder rejects is an error; the `optionalityOptions` package varies each answer —
 `strictYamlAbsence`, `strictYamlNulls`, `lenientYamlFaults` — as [decoding](decoding.md)

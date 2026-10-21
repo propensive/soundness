@@ -62,7 +62,7 @@ object Emit:
 // legitimately aliased by everything that reports into its scope — a codec summoned for `as`
 // captures the same tactic that `as` takes as evidence — and raising is not a consuming use, so
 // aliases of one emitter must not read as a separation overlap (rep/sepcheck-probes/p15; the
-// Exclusive classification forced an `unsafeAssumeSeparate` at every such call). What Shared
+// Exclusive classification forced a separation seal at every such call). What Shared
 // gives up is the separation checker's eye on an emitter's own state: a tactic that accrues must
 // be internally sequential, the position `Monitor` already takes. The boundary-based tactics
 // additionally close over a stack `boundary.Label` (`Emit[error]^{label}`). Combinators that

@@ -50,7 +50,7 @@ object Main:
     // parasite (the eager single-threaded JavaScript threading model, #1450): forking, gathering
     // and awaiting must link without reaching any JVM threading primitive.
     locally:
-      import threading.javascriptThreading
+      import threads.javascriptThreads
       import probates.cancelProbate
       val gathered = unsafely(supervise(List(async(6), async(7)).sequence.await()))
       out.println(gathered.toString)

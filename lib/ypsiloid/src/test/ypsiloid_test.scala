@@ -63,6 +63,19 @@ enum YStatus derives CanEqual:
 case class Tree(value: Text, children: List[Tree]) derives CanEqual
 case class Boxed[value](value: value) derives CanEqual
 
+// Fixtures for the direct codecs: every field kind a derived parser and printer handle.
+case class YTeam
+  ( name:    Text,
+    members: List[Person],
+    tags:    Set[Text],
+    counts:  Map[Text, Int],
+    spare:   List[Int],
+    lead:    Optional[Person],
+    note:    Option[Text] )
+derives CanEqual
+
+case class YDeclared(n: Int, name: Text) derives Yaml.Direct, CanEqual
+
 object Tests extends Suite("yaml", m"Ypsiloid Tests"):
   def run(): Unit =
     // A missing `Inspectable` is never a compile error, so coverage is held in place by
@@ -1392,6 +1405,159 @@ object Tests extends Suite("yaml", m"Ypsiloid Tests"):
         val instantiable = summon[Yaml is Instantiable across HttpRequests from Text]
         instantiable(t"name: Jon\nage: 42").as[Person]
       . assert(_ == Person(t"Jon", 42))
+
+    suite(m"Codec modes"):
+      import formatting.blockYamlFormatting
+
+      val person = Person(t"Zoë \"q\"", 30)
+      val outer = NamedOuter(t"n", Inner(7))
+      val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
+      val renamed = YRenamed(t"Ada Lovelace", 1815)
+      val present = WithOptional(t"Ada", 36)
+      val absent = WithOptional(t"Bob", Unset)
+      val option = WithOption(t"Cy", None)
+      val shape: Shape = Shape.Circle(1.5)
+
+      val team =
+        YTeam(t"crew", List(Person(t"al", 1), Person(t"bo", 2)), Set(t"x"), Map(t"k" -> 1),
+            Nil, Unset, Some(t"hi"))
+
+      test(m"`codecs.direct` writes each record as `show` renders it"):
+        import codecs.direct
+
+        ( person.in[Text over Yaml], outer.in[Text over Yaml], tree.in[Text over Yaml],
+          renamed.in[Text over Yaml], present.in[Text over Yaml], absent.in[Text over Yaml],
+          option.in[Text over Yaml], team.in[Text over Yaml] )
+      . assert(_ == (person.in[Yaml].show, outer.in[Yaml].show, tree.in[Yaml].show,
+          renamed.in[Yaml].show, present.in[Yaml].show, absent.in[Yaml].show,
+          option.in[Yaml].show, team.in[Yaml].show))
+
+      test(m"`codecs.direct` reads each record back"):
+        import codecs.direct
+
+        ( person.in[Text over Yaml].read[Person in Yaml],
+          outer.in[Text over Yaml].read[NamedOuter in Yaml],
+          tree.in[Text over Yaml].read[Tree in Yaml],
+          renamed.in[Text over Yaml].read[YRenamed in Yaml],
+          absent.in[Text over Yaml].read[WithOptional in Yaml],
+          team.in[Text over Yaml].read[YTeam in Yaml] )
+      . assert(_ == (person, outer, tree, renamed, absent, team))
+
+      test(m"`codecs.direct` reads flow style too"):
+        import codecs.direct
+        t"{name: Alice, age: 30}".read[Person in Yaml]
+      . assert(_ == Person(t"Alice", 30))
+
+      test(m"`codecs.direct` writes a record with no instance of its own directly"):
+        import codecs.direct
+
+        given innerSeam: (Inner is Encodable in Yaml) =
+          _ => panic(m"a direct printer encoded a nested record through its Encodable")
+
+        outer.in[Text over Yaml]
+      . assert(_ == t"name: n\ninner:\n  n: 7\n")
+
+      test(m"`codecs.direct` reads a record with no instance of its own directly"):
+        import codecs.direct
+
+        given innerSeam: (Inner is Decodable in Yaml) =
+          _ => panic(m"a direct parser decoded a nested record through its Decodable")
+
+        given outerSeam: (NamedOuter is Decodable in Yaml) =
+          _ => panic(m"the read decoded the record through its Decodable")
+
+        t"name: n\ninner:\n  n: 7\n".read[NamedOuter in Yaml]
+      . assert(_ == outer)
+
+      test(m"`codecs.direct` prints a generic record directly too"):
+        import codecs.direct
+
+        given innerSeam: (Boxed[Int] is Encodable in Yaml) =
+          _ => panic(m"the write encoded the record through its Encodable")
+
+        Boxed(7).in[Text over Yaml]
+      . assert(_ == t"value: 7\n")
+
+      test(m"`codecs.direct` leaves an enumeration on the tree path"):
+        import codecs.direct
+        import discriminables.yamlByTypeDiscriminable
+        (shape.in[Text over Yaml], shape.in[Text over Yaml].read[Shape in Yaml])
+      . assert: (text, back) =>
+          import discriminables.yamlByTypeDiscriminable
+          text == shape.in[Yaml].show && back == shape
+
+      test(m"`codecs.direct` reads an absent optional as `Unset`, and a null too"):
+        import codecs.direct
+        ( t"name: Eve".read[WithOptional in Yaml],
+          t"name: Eve\nage: null".read[WithOptional in Yaml] )
+      . assert(_ == (WithOptional(t"Eve", Unset), WithOptional(t"Eve", Unset)))
+
+      test(m"`codecs.direct` reads a strict null as an error"):
+        import codecs.direct
+        import optionalityOptions.strictYamlNulls
+        capture[Yaml.Error](t"name: Eve\nage: null".read[WithOptional in Yaml]).reason
+      . assert(_ == Yaml.Error.Reason.NotType(Yaml.Primitive.Null, Yaml.Primitive.Integer))
+
+      test(m"`codecs.direct` reports a missing field as absent"):
+        import codecs.direct
+        capture[Yaml.Error](t"name: Eve".read[Person in Yaml]).reason
+      . assert(_ == Yaml.Error.Reason.Absent)
+
+      test(m"`codecs.direct` takes a declared default for a missing field"):
+        import codecs.direct
+        t"name: Eve".read[WithDefault in Yaml]
+      . assert(_ == WithDefault(t"Eve", 18))
+
+      test(m"`codecs.derived` encodes even where a direct printer is in scope"):
+        import codecs.derived
+
+        given (Person is Yaml.Printable) =
+          Yaml.Printable.fromEncodable[Person](_ => panic(m"printed directly"))
+
+        Person(t"Ada", 36).in[Text over Yaml]
+      . assert(_ == t"name: Ada\nage: 36\n")
+
+      test(m"`codecs.derived` decodes even where a direct parser is in scope"):
+        import codecs.derived
+        given (Person is Yaml.Parsable) = Yaml.Parsable.derived[Person]
+
+        // A sentinel decoder: only the tree path can return it.
+        given (Person is Decodable in Yaml) = _ => Person(t"derived", 0)
+
+        t"name: Ada\nage: 36".read[Person in Yaml]
+      . assert(_ == Person(t"derived", 0))
+
+      test(m"`codecs.strict` writes and reads a record directly"):
+        import codecs.strict
+
+        given innerSeam: (Inner is Encodable in Yaml) =
+          _ => panic(m"a direct printer encoded a nested record through its Encodable")
+
+        outer.in[Text over Yaml].read[NamedOuter in Yaml]
+      . assert(_ == outer)
+
+      test(m"`derives Yaml.Direct` writes and reads without an import"):
+        given (YDeclared is Decodable in Yaml) =
+          _ => panic(m"the read decoded the record through its Decodable")
+
+        YDeclared(5, t"five").in[Text over Yaml].read[YDeclared in Yaml]
+      . assert(_ == YDeclared(5, t"five"))
+
+      test(m"`derives Yaml.Direct` takes precedence over `codecs.direct`"):
+        import codecs.direct
+        summon[YDeclared is Yaml.Parsable] == summon[Yaml.Direct[YDeclared]].parsable
+      . assert(_ == true)
+
+      test(m"a printed record is written in blocks as it is printed"):
+        given Buffering:
+          def capacity(substrate: Substrate): Int = 8
+          def depth: Int = 2
+
+        given (Tree is Yaml.Printable) = Yaml.Printable.derived[Tree]
+        val blocks = scala.collection.mutable.ListBuffer[Text]()
+        Yaml.Printable.emit(tree, blocks += _)
+        (blocks.length > 1, blocks.toList.join)
+      . assert(_ == (true, tree.in[Yaml].show))
 
     ConformanceTests.all()
 

@@ -44,7 +44,6 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 
-import filesystemBackends.javaBaseFilesystem
 
 // A ref to change on a peer: what it is expected to hold now, and what it should hold.
 case class RefUpdate(ref: Text, expected: Git.Backend.Expectation, to: Optional[Git.Hash])

@@ -115,6 +115,11 @@ object Crypto:
   given javaBaseCrypto(using gastronomy.Provider.JavaBase.type): JavaBaseCrypto.type =
     JavaBaseCrypto
 
+  // The pure-Scala provider, selected with `import providers.soundnessProvider` — gastronomy's
+  // pure-hashing marker, so the one import gives Scala implementations of both.
+  given soundnessCrypto(using gastronomy.SoundnessHashing.type): SoundnessCrypto.type =
+    SoundnessCrypto
+
   // CryptoError → Crypto.Error
   object Error:
     given communicable: Reason is Communicable =

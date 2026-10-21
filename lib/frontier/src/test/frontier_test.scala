@@ -66,8 +66,7 @@ object Tests extends Suite("givens", m"Frontier Tests"):
     object Choice:
       given withPolicy: (Policy) => Choice = new Choice { def name = t"with" }
 
-      given withoutPolicy: scala.util.NotGiven[Policy] => Choice =
-        new Choice { def name = t"without" }
+      given withoutPolicy: Choice prohibits Policy = new Choice { def name = t"without" }
 
     object WithPolicy:
       given policy: Policy = new Policy {}
@@ -251,6 +250,49 @@ object Tests extends Suite("givens", m"Frontier Tests"):
     test(m"a NotGiven guard picks the unguarded given when its subject is absent"):
       Guarded.WithoutPolicy.chosen.name
     . assert(_ == t"without")
+
+    // A `NotGiven[X]` requirement is unwrapped in the tree: `⊘ prohibits X`,
+    // with the `X` that violates it beneath, labelled with the given that
+    // supplied it. A `prohibits` given is a context function, so its failure
+    // is `name.apply(…)`, and the candidate must still be named after the given.
+
+    test(m"a guard spelt with prohibits is selected when its subject is absent"):
+      demilitarize:
+        import frontier.context.explainMissingContext
+        trait Policy
+        trait Choice
+        given withoutPolicy: Choice prohibits Policy = new Choice {}
+        summon[Choice]
+      . filter(_.error).map(_.message)
+    . assert(_ == Nil)
+
+    test(m"a violated prohibits guard is unwrapped to the given that was found"):
+      demilitarize:
+        import frontier.context.explainMissingContext
+        trait Policy
+        trait Choice
+        given policy: Policy = new Policy {}
+        given withoutPolicy: Choice prohibits Policy = new Choice {}
+        summon[Choice]
+      . filter(_.error).map(_.message)
+    . assert: msgs =>
+        msgs.exists: m =>
+          m.contains("candidate") && m.contains("withoutPolicy") && m.contains("prohibits")
+          && m.contains("found") && m.contains("policy") && !m.contains("NotGiven")
+
+    test(m"a violated NotGiven guard is unwrapped to the given that was found"):
+      demilitarize:
+        import frontier.context.explainMissingContext
+        trait Policy
+        trait Choice
+        given policy: Policy = new Policy {}
+        given only: scala.util.NotGiven[Policy] => Choice = new Choice {}
+        summon[Choice]
+      . filter(_.error).map(_.message)
+    . assert: msgs =>
+        msgs.exists: m =>
+          m.contains("candidate") && m.contains("only") && m.contains("prohibits")
+          && m.contains("found") && m.contains("policy") && !m.contains("NotGiven")
 
     test(m"explainMissingContext does not defeat default using arguments"):
       demilitarize:
