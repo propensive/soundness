@@ -130,13 +130,13 @@ private[ypsiloid] object YamlEmitter:
         Nil
 
   // Scalars and empty collections render on one line; non-empty collections span multiple lines.
-  private def inlineable(ast: Yaml.Ast): Boolean = ast.asMatchable match
+  private[ypsiloid] def inlineable(ast: Yaml.Ast): Boolean = ast.asMatchable match
     case xs: (Array[Any]^{}) @unchecked =>
       if (xs.length & 1) == 0 then xs.length == 0 else Yaml.Ast.sequenceLength(xs) == 0
 
     case _ => true
 
-  private def indent(builder: java.lang.StringBuilder, count: Int): Unit =
+  private[ypsiloid] def indent(builder: java.lang.StringBuilder, count: Int): Unit =
     var remaining = count
 
     while remaining > 0 do
@@ -145,25 +145,26 @@ private[ypsiloid] object YamlEmitter:
       remaining -= chunk
 
   // A scalar (or an empty collection), with no surrounding newlines.
-  private def scalar(builder: java.lang.StringBuilder, ast: Yaml.Ast): Unit = ast.asMatchable match
-    case bcd: scala.Array[Double] @unchecked => builder.append(Bcd.adopt(bcd).text)
-    case n: Long                             => builder.append(n)
+  private[ypsiloid] def scalar(builder: java.lang.StringBuilder, ast: Yaml.Ast): Unit =
+    ast.asMatchable match
+      case bcd: scala.Array[Double] @unchecked => builder.append(Bcd.adopt(bcd).text)
+      case n: Long                             => builder.append(n)
 
-    case d: Double =>
-      if d.isNaN then builder.append(".nan")
-      else if d == Double.PositiveInfinity then builder.append(".inf")
-      else if d == Double.NegativeInfinity then builder.append("-.inf")
-      else builder.append(d.toString)
+      case d: Double =>
+        if d.isNaN then builder.append(".nan")
+        else if d == Double.PositiveInfinity then builder.append(".inf")
+        else if d == Double.NegativeInfinity then builder.append("-.inf")
+        else builder.append(d.toString)
 
-    case b: Boolean => builder.append(if b then "true" else "false")
-    case s: String  => string(builder, s)
+      case b: Boolean => builder.append(if b then "true" else "false")
+      case s: String  => string(builder, s)
 
-    case xs: (Array[Any]^{}) @unchecked =>
-      if (xs.length & 1) == 0 then builder.append("{}") else builder.append("[]")
+      case xs: (Array[Any]^{}) @unchecked =>
+        if (xs.length & 1) == 0 then builder.append("{}") else builder.append("[]")
 
-    case _ => builder.append("null")
+      case _ => builder.append("null")
 
-  private def string(builder: java.lang.StringBuilder, string: String): Unit =
+  private[ypsiloid] def string(builder: java.lang.StringBuilder, string: String): Unit =
     if plainSafe(string) then builder.append(string) else
       builder.append('"')
       val length = string.length
