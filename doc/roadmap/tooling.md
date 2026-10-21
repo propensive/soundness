@@ -12,7 +12,7 @@ The pieces are in different states, and the roadmap is honest about which. exege
 synesthesia and vivisection are working modules in this repository. flame, fume and fury are
 separate projects with their own repositories and roadmaps: this track records only what
 Soundness owes each of them, never their own progress. flame and fume are pinned as tools in
-`etc/tools` (0.3.0 and 0.4.1) and configured under `.pyrocosm/`; fume runs this repository's
+`etc/tools` (0.8.0 and 0.8.3) and configured under `.pyrocosm/`; fume runs this repository's
 suites as a front-end and runner over the probably framework, which remains the library.
 fluence is not started. TEL — the configuration language the whole toolchain standardises on —
 is specified and implemented, with stratiform as its reference implementation. The bootstrap
@@ -22,7 +22,7 @@ build.
 ## tool-1: flame tracks current releases
 
 Horizon: near
-Baseline: flame 0.3.0 is pinned in `etc/tools`; the current Soundness release is 0.68.0 (measured 2026-09-25; on 2026-08-01 flame built against 0.62.0 while the release was 0.64.0)
+Baseline: flame 0.8.0 is pinned in `etc/tools`; the current Soundness release is 0.72.0 (measured 2026-10-21; 0.3.0 and 0.68.0 on 2026-09-25; on 2026-08-01 flame built against 0.62.0 while the release was 0.64.0)
 
 A REPL that lags the platform cannot be the platform's front door. flame builds against each
 release as it happens, and staying current becomes a checked property rather than an intention.
@@ -35,14 +35,14 @@ announced until that build is green.
 
 ## tool-2: fume runs the suites
 
-Horizon: near → mid
-Baseline: fume 0.4.1 runs the suite; 1 test suite (orthodoxy) is disabled (measured 2026-09-25; fume did not exist and 3 suites were disabled on 2026-08-01)
+Done: #2091 (2026-09-27), which re-enabled orthodoxy's suite
+Baseline was fume 0.4.1 running the suite with 1 test suite (orthodoxy) disabled (measured 2026-09-25; fume did not exist and 3 suites were disabled on 2026-08-01); fume 0.8.3 runs every suite on 2026-10-21
 
 fume is the testing tool over the probably framework: multiple report formats, live updates in
 the terminal, and results recorded as git notes alongside the existing attestation notes. Its
 first milestone — running this repository's own suites in CI — is reached: `make ci` is
 `fume run` over the umbrella assembly named in `.pyrocosm/fume/config.tel`, and probably no longer
-renders reports of its own. What remains is the disabled suites.
+renders reports of its own. No suite is disabled.
 
 Done when: fume runs the full Soundness suite in CI and
 
@@ -55,8 +55,9 @@ Horizon: near → mid
 exegesis provides the LSP framework; the criterion is lived experience made mechanical: a
 scripted editor session — open, diagnose, complete, navigate — runs against a Soundness project
 in CI. exegesis's own suite already drives an in-process server over JSON-RPC (initialize,
-open, diagnose, hover, incremental change); completion, navigation and a real transport are
-what separate it from the criterion.
+open, diagnose, hover, incremental change, completion, folding, rename and inlay hints), with
+message framing tested over an in-memory `Stdio`; navigation (definition, references) and a
+session against a real project in CI are what separate it from the criterion (2026-10-21).
 
 Done when: the scripted editor-session test passes in CI.
 
@@ -136,18 +137,18 @@ Done when: no ecosystem tool's own configuration surface accepts any format but 
 
 ## tool-10: a debugger that speaks Soundness
 
-Horizon: near → mid
-Baseline: vivisection ships a JDWP core, an expression evaluator and a DAP server; its suite drives a live session end to end; an object still inspects as its JVM class name (measured 2026-09-25)
+Done: #2306 (2026-10-21)
+Baseline was a JDWP core, an expression evaluator and a DAP server whose suite drove a live session end to end, with an object inspecting as its JVM class name and no topic (measured 2026-09-25)
 
 Debugging a running application should feel native, not hosted: breakpoints, stepping and
 inspection through a Debug Adapter Protocol server, with inspected values rendered as their
 Soundness types — the same no-Java-encodings discipline `core-5` applies to traces, applied
 to live state. vivisection is that server: `vivisection.DapServer` handles the request set
 (launch, attach, breakpoints, threads, stack traces, scopes, variables, evaluate, stepping),
-and its suite's `DapClient` drives a live debuggee through breakpoints and inspection in the
-ordinary run. What separates it from the criterion is the rendering — an object snapshot
-inspects as, say, `scala.collection.immutable.List`, which is exactly the encoding `core-5`
-forbids — and a `doc/modules/` topic.
+and its suite's `DapClient` drives a live debuggee through a breakpoint, a `next` step and
+inspection in the ordinary run, with each local rendered through its `Inspectable` instance
+and an object snapshot shown by its simple name and identity rather than a JVM class name. The
+topic is `doc/modules/debugging.md`.
 
 Done when: a scripted DAP session — set a breakpoint, step, inspect a value rendered in
 Soundness terms — passes against a running Soundness application in CI.

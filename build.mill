@@ -3457,6 +3457,7 @@ object syndesis extends Library:
   object core extends Component(urticose.dns, coaxial.core, parasite.core, turbulence.core,
       capricious.core):
     override def scalaJs = false // multicast sockets and a background responder thread
+    override def scalaNative = true // coaxial's native backend joins multicast groups
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, coaxial.jvm, eucalyptus.core):

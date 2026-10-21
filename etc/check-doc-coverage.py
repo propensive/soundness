@@ -36,7 +36,7 @@ COVERED_BY = {
     'exegesis': ['lsp.md'],
     'espionage': ['acp.md'],
     'virility': ['cli.md'],
-    'ziggurat': ['packaging.md'],
+    'burdock': ['packaging.md'],     # `externalize` and the `repackage` entry point are lowercase
     'digression': ['stack-traces.md'],
     'sibylline': ['llm.md'],
     'murmuration': ['collections.md'],

@@ -973,6 +973,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
 
           awaitStability(sci.IndexedSeq(counter))
           val gated = counter.get()
+          // [test-harness] the stalled subscriber is read after the eager one's task, not alongside
           val gatheredB = Gather2().ingest(scala.caps.unsafe.unsafeAssumeSeparate(stalled))
 
           ( gated <= 64L,
