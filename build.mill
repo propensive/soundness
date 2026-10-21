@@ -2149,7 +2149,8 @@ object eucalyptus extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object syslog extends Component(guillotine.core, core):
-    override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
+    override def scalaJs = false // spawns `logger` (`guillotine`), which has no Scala.js variant
+    override def scalaNative = true
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object gcp extends Component(jacinta.core, core):
@@ -2410,8 +2411,15 @@ object graffiti extends Library:
       settings.sep(super.scalacOptions())
 
 object guillotine extends Library:
+  // Process spawning: `ProcessBuilder` has no Scala.js analogue, but Scala Native's javalib has
+  // it, so the module cross-compiles to native with the three pieces the javalib lacks split by
+  // platform — the pseudo-terminal (Panama on the JVM), `startPipeline`, and `java.time` process
+  // info (`core-jvm`/`core-native`).
   object core extends Component(turbulence.core, ambience.core, contextual.core, parasite.core, aperture.core):
-    override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
+    override def scalaJs = false
+    override def scalaNative = true
+    override def sources = Task.Sources(moduleDir, moduleDir / os.up / "core-jvm")
+    override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "core-native")
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, galilei.jvm):
@@ -2611,7 +2619,8 @@ object hypotenuse extends Library:
 
 object imperial extends Library:
   object core extends Component(guillotine.core):
-    override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
+    override def scalaJs = false // transitively JVM-only, through `guillotine` (process spawning)
+    override def scalaNative = true
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
