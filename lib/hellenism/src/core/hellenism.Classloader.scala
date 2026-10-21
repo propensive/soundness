@@ -33,7 +33,6 @@
 package hellenism
 
 import java.io as ji
-import java.net as jn
 
 import anticipation.*
 import beneficence.*
@@ -62,12 +61,6 @@ class Classloader(val java: ClassLoader) extends Findable:
 
     try thread.setContextClassLoader(java) yet block
     finally thread.setContextClassLoader(classloader0)
-
-  // Building a `Classpath` from a `URLClassLoader` produces a galilei-backed `LocalClasspath`, so
-  // `classpath` lives in `hellenism.jvm` (as an extension); `urlClassloader` is exposed to it.
-  private[hellenism] def urlClassloader: Optional[jn.URLClassLoader] = java match
-    case java: jn.URLClassLoader => java
-    case _                       => parent.let(_.urlClassloader)
 
   def on(name: Text): Optional[Class[?]] = Optional(Class.forName(name.s, true, java))
 

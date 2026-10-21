@@ -52,12 +52,13 @@ Native coverage is verified by the real binary link check throughout, not compil
 Done when: the manifest shows no JavaScript or Native exclusion whose reason is not inherent,
 and the Native link check covers every Native-capable module.
 
-Known non-inherent Native gaps, each a candidate leg: guillotine's pseudo-terminal (`Command#pty`
-raises on Native until it is rewritten over posixlib's `posix_openpt`; the JVM one is Panama);
-and hellenism's `servicesFor` (`URLClassLoader`). (coaxial's native backend joins multicast
-groups since 2026-10-21, which brought syndesis to Native; telekinesis's `soundnessHttp` client
-moved into the cross-compiling `telekinesis.sockets` the same day, giving Native an
-`Http.Backend` — HTTP/1.1, over coaxial's OpenSSL connection for `https`.)
+The one known non-inherent Native gap is guillotine's pseudo-terminal: `Command#pty` raises on
+Native until it is rewritten over posixlib's `posix_openpt` (the JVM one is Panama). Closed on
+2026-10-21: coaxial's native backend joins multicast groups (bringing syndesis to Native);
+telekinesis's `soundnessHttp` client moved into the cross-compiling `telekinesis.sockets`, giving
+Native an `Http.Backend` (HTTP/1.1, over coaxial's OpenSSL connection for `https`); and
+hellenism's classloader construction moved into a `core-jvm` source set, so `cp"…"` resources,
+cataclysm's HTML stylesheets and the seven WASI backends compile for Native too.
 
 Cryptography is no longer a JavaScript exclusion: enigmatic's pure-Scala `SoundnessCrypto`
 (AES in every mode, HMAC, AES-GCM, ChaCha20-Poly1305, X25519, Ed25519) backs the Scala.js and

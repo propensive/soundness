@@ -55,7 +55,7 @@ extension (classloader: Classloader)
 extension (classpath: Classpath.type)
   def of(classloader: jn.URLClassLoader): Classpath =
     val entries =
-      classloader.getURLs.nn.iterator.map(_.nn).flatMap(Classpath.Entry(_).option).toList
+      classloader.getURLs.nn.iterator.map(_.nn).flatMap(Loaders.entry(_).option).toList
 
     if entries.exists:
       case _: Classpath.Entry.Url => true
