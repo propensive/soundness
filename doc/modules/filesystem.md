@@ -33,7 +33,6 @@ operations need brought into scope:
 import soundness.*
 import filesystemOptions.dereferenceSymlinks
 import filesystemOptions.moveAtomically
-import serpentine.pathHierarchies.linux
 import environments.javaBaseEnvironment
 import stdios.javaLangSystemStdio
 
