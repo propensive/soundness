@@ -193,8 +193,9 @@ lib/hallucination/src/webp/hallucination.WebpEncoder.scala	0	0	0	0	1	1	0	0	0	0	0
 lib/hallucination/src/webp/hallucination.WebpHuffman.scala	0	0	0	0	0	0	0	0	0	4	0
 lib/hallucination/src/webp/hallucination.WebpLossless.scala	0	0	1	0	0	0	0	0	0	8	0
 lib/harlequin/src/core/dotty.tools.dotc.HarlequinBase.scala	0	0	0	0	0	1	0	0	0	0	0
+lib/hellenism/src/core-jvm/hellenism.Loaders.scala	1	0	0	0	0	0	0	0	0	0	0
 lib/hellenism/src/core/hellenism.Classloader.scala	0	0	0	0	1	0	0	0	0	0	0
-lib/hellenism/src/core/hellenism.Classpath.scala	3	0	0	0	0	0	0	1	0	0	0
+lib/hellenism/src/core/hellenism.Classpath.scala	2	0	0	0	0	0	0	1	0	0	0
 lib/hellenism/src/core/hellenism.Resource.scala	2	2	0	0	0	0	0	0	0	0	0
 lib/hieroglyph/src/core/hieroglyph.Charset.scala	0	0	0	0	0	1	0	0	0	0	0
 lib/hieroglyph/src/core/hieroglyph.Codepage.scala	0	0	0	0	1	0	0	0	0	0	0
