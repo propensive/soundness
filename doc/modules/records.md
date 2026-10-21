@@ -37,8 +37,9 @@ A record typed by its schema at compiletime is [safety by construction](../philo
 A provider object — here a `Json.Provider` built from a JSON Schema document, declared in a file
 of its own — offers a `record` method that turns raw data into a typed record:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 object Catalogue extends Json.Provider(t"""{
   "type": "object",
   "required": ["name", "children"],
@@ -57,8 +58,9 @@ object Catalogue extends Json.Provider(t"""{
 }""".read[Json]):
 ```
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 val input = t"""{"name": "Bicycle", "children": [{"weight": 9.5}]}""".read[Json]
 val record = Catalogue.record(input)
 
@@ -84,8 +86,9 @@ as the schema names it, in the schema's order. Nested objects become nested name
 become lists of them. A named tuple is accessed by name like a record, but it is also an ordinary
 tuple, so it destructures positionally and converts to its unnamed form:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 val tuple = Catalogue.tuple(input)
 tuple.name                        // Text
 val (name, age, children) = tuple // in the schema's order
@@ -145,8 +148,9 @@ object by its type and evaluate its `fields`. The declared return type of `recor
 but what a call actually has is a *structural refinement* of it — for a schema of three fields,
 the type
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 Record { def age: Double; def name: Text; def employed: Boolean }
 ```
 

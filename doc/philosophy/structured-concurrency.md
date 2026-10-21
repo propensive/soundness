@@ -12,7 +12,9 @@ sequential work, and no task outlives the scope that launched it.
 `supervise` opens a scope; `async` spawns within it. The scope does not return until its
 children have settled, whether or not anything awaited them:
 
-```scala
+```scala fuel
+parse
+##
 supervise:
   val first = async(fetch(urlA))
   val second = async(fetch(urlB))
@@ -44,7 +46,9 @@ than an empirical one.
 A scope must decide what to do about a child still running when the parent's body
 finishes, and that decision is explicit rather than assumed. The *probate* names it:
 
-```scala
+```scala fuel
+parse
+##
 import probates.cancelProbate   // unfinished children are cancelled
 import probates.awaitProbate    // the scope waits for them
 ```
@@ -61,7 +65,9 @@ Waiting is an effect, and it appears in the types like any other. Awaiting a tas
 promise, sleeping, and yielding all demand a `Monitor` capability, so a method that can
 block says so in its signature:
 
-```scala
+```scala fuel
+parse
+##
 def fetchAll(urls: List[HttpUrl])(using Monitor): List[Text] = …
 ```
 

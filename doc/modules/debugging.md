@@ -1,7 +1,5 @@
 ## Debugging
 
-<!-- doccheck: language captureChecking -->
-
 ### About
 
 A JVM can be debugged from another JVM over the
@@ -27,7 +25,9 @@ than callbacks to register. Everything comes from the `soundness` package; a ses
 reader as a task, so it needs a [thread model](concurrency.md) in scope and lives inside
 `supervise`:
 
-```scala
+```scala fuel
+feature experimental.captureChecking
+##
 import soundness.*
 
 import probates.awaitProbate
@@ -65,7 +65,8 @@ The VM's threads are listed, named, suspended and resumed individually or togeth
 suspended thread's call stack reads as frames paired with their locations:
 
 ```scala
-def stacks()(using Debug^): Unit = debug.suspend() yet
+def stacks()(using Debug^): Unit =
+  debug.suspend()
   debug.threads().each: thread =>
     debug.frames(thread).each: (frame, location) =>
       Out.println(t"${debug.name(thread)}: ${location.index}")

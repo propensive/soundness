@@ -40,8 +40,9 @@ import textSanitizers.skipSanitizer
 sockets, a packet for UDP — each on its own task. The listener runs for the duration of the block
 it is given, and stops when the block ends:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 def response(request: Data): Data = request
 
 supervise:
@@ -60,8 +61,9 @@ datagram without the handler having to state which it is dealing with.
 A UDP handler receives a `Packet` — the datagram with its sender — and answers with a reply or
 silence:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 supervise:
   Port[Udp]().listen[Data](packet => UdpResponse.Reply(packet.data)):
     ()
@@ -75,8 +77,9 @@ delivers, and lends a `Multicast.Subscription` that can also send to the group u
 shape of a service announcing itself, as mDNS does. A handler answers to the group, to the one
 sender, or not at all:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 import socketOptions.multicastLoopSocketOption   // see our own announcements too
 
 supervise:
@@ -99,8 +102,9 @@ an `Endpoint` of a UDP port, and `query` sends a `Dns.Message` and returns the r
 answers it, or, given a name and a record type (`A` by default), asks the common question
 directly and returns the answering records:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 import socketBackends.javaBaseSockets
 
 val resolver = ip"9.9.9.9" on udp"domain"
@@ -115,8 +119,9 @@ A reply whose ID or question differ from the query's — a stray datagram — is
 A request–response client sends a message and reads the reply stream with `transmit`; a message is
 anything *transmissible* — bytes, text, or any value that encodes to text:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 val reply = DomainSocket(t"/run/service.sock").transmit(t"request")
 ```
 
@@ -125,8 +130,9 @@ state, reply, or conclude — so a client-side protocol is a state machine rathe
 reads and writes. `duplex` opens a persistent bidirectional connection, sending and receiving
 independently, which is the transport beneath [HTTP/2](http-server.md):
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 DomainSocket(t"/run/service.sock").duplex: duplex =>
   duplex.send(Stream(t"request".in[Data]))
   duplex.source   // the read side, a Stream[Data]
@@ -139,8 +145,9 @@ it to the block, and closes it when the block ends. The result type is quantifie
 block, so a value still borrowing the live connection cannot escape it, while a memoized value
 can:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 val endpoint = Endpoint(ip"127.0.0.1", Port[Tcp](8080))
 
 endpoint.session: connection ?=>
@@ -210,8 +217,9 @@ be checked later.
 `Control` saying what happens next. `Continue` carries the new state — or none, leaving it
 unchanged — and `Terminate` ends the conversation:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 endpoint.react(initial)[Text]: state ?=> message =>
   if done(message) then Control.Terminate else Control.Continue(next(state, message))
 ```

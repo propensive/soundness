@@ -51,7 +51,7 @@ there. A temporary directory and a fresh name give a path to work with:
 
 ```scala
 val directory = temporaryDirectory[Path on Linux] / "filesystem" / Uuid().show
-directory.create[Directory]()
+directory.create[Directory](CreateFlag.Parents)
 
 val file = directory / "notes.txt"
 file.create[File]()
@@ -186,7 +186,9 @@ An `Openable` instance relates a target to a *form*, which is why the form is a 
 rather than being implied by the target: the same path opens as a `File`, as a `Directory`, as a
 `Zip` [archive](archives.md), as a [PDF](pdf.md) or as an [image](images.md), and each is a
 different handle with a different repertoire. The form may be omitted where a target has only one
-instance; where it has several, the ambiguity is reported with the alternatives listed.
+instance; where it has several, the ambiguity is reported with the alternatives listed. Behind
+the pattern are the typeclasses `Openable`, `Creatable` and `Sessional`, for `open`, `create` and
+`session`, and the mode the first two take is a combination of `Grant`s.
 
 Three things follow uniformly. The *mode* — `Read`, `Write`, `Exclusive`, `Shared` and their
 combinations — is carried in the handle's type, so the grants requested are the operations

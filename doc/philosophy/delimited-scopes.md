@@ -13,7 +13,9 @@ where the block says it does, and not beyond. This structural confinement is wha
 The same pattern introduces a resource, an error handler, a concurrency context and a
 lent secret. Recognising it once means recognising all of them:
 
-```scala
+```scala fuel
+parse
+##
 path.open[File](Write): handle ?=>       // a file, open for this block
   handle.write(data)
 
@@ -36,7 +38,9 @@ documentation about lifetimes.
 
 The alternative is to construct the capability, use it, and release it:
 
-```scala
+```scala fuel
+parse
+##
 val handle = open(path)
 try handle.write(data) finally handle.close()
 ```
@@ -56,7 +60,9 @@ needs. A given imported at the top of a file configures the file; one declared i
 method configures the method, overriding the wider choice; a `locally` block confines an
 exception to a few lines:
 
-```scala
+```scala fuel
+parse
+##
 import formatting.compactJsonFormatting        // this file
 
 def debugDump(json: Json): Text =

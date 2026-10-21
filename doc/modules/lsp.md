@@ -112,8 +112,9 @@ current state. From any handler, `client` is the channel back to the editor, whi
 a server pushes diagnostics — errors and warnings — rather than waiting to be asked, as the
 `opened` registration above does:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
   opened:
     client.publishDiagnostics
       ( document.uri,
@@ -225,8 +226,9 @@ method name and a `Json => Json` for anything without a combinator of its own. F
 messages there are two more hooks — `rewrite.outbound` and `rewrite.inbound` — each
 returning what should become of the message:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 rewrite.outbound: (method, message) =>
   if method == t"textDocument/inlineValue" then Transit.Drop else Transit.Forward
 ```
@@ -240,8 +242,9 @@ scope as `upstream` throughout the registration block, so a hook may ask a quest
 own — typically for the project state only the server knows — and `rewrite.connected` runs
 once, on a task of its own, as soon as that session is open:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 Lsp.proxy(Lsp.Server(sh"jdtls")):
   val classpath: Promise[Json] = Promise()
 

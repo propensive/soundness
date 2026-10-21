@@ -26,6 +26,16 @@ Everything comes from the `soundness` package:
 
 ```scala
 import soundness.*
+
+import classloaders.threadContextClassloader
+import codepages.utf8Codepage
+import errorDiagnostics.stackTracesDiagnostics
+import internetAccess.online
+import logging.silentLogging
+import probates.awaitProbate
+import strategies.throwUnsafely
+import threads.virtualThreads
+import webserverErrorPages.minimalErrorPage
 ```
 
 ### A server

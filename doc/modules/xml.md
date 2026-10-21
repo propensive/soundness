@@ -62,8 +62,9 @@ Both `read` and `load` take a byte source as readily as text — a file path, an
 body, a classpath resource — and parse the bytes directly, with no character decoding and no
 `Charset` in scope, since the parser reads UTF-8 itself:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 val feed: Path on Linux = temporaryDirectory[Path on Linux] / "feed.xml"
 val document = feed.load[Xml]
 ```
@@ -185,22 +186,26 @@ t"<Worker><name>Alice</name><age>30</age></Worker>".read[Worker in Xml]
 `in[Text over Xml]` is the mirror of `read[Worker in Xml]`, encoding a value straight to its XML
 text:
 
-```scala
-Worker(t"Alice", 30).in[Text over Xml]
-// t"<Worker><name>Alice</name><age>30</age></Worker>"
-```
+`in[Data over Xml]` writes the same text as bytes, encoded in the `Codepage` in scope. A record
+with an `Xml.Printable` is written directly, with no tree built, wherever the formatting is
+compact; indented formatting still renders through the tree. The printer is derived at
+compiletime, for a record with no `@name` or `@attribute` annotations and no namespace, and
+writes the same text:
 
-`in[Data over Xml]` writes the same text as bytes, encoded in the `Codepage` in scope.
+```scala fuel
+frame
+  label Through an XML tree
+  code
+      Worker(t"Alice", 30).in[Text over Xml]
+      // t"<Worker><name>Alice</name><age>30</age></Worker>"
+frame
+  label Written directly, by a derived printer
+  code
+      given Worker is Xml.Printable = Inlinable.printable[Worker]
 
-A record with an `Xml.Printable` is written directly, with no tree built, wherever the formatting
-is compact; indented formatting still renders through the tree. The printer is derived at
-compiletime, for a record with no `@name` or `@attribute` annotations and no namespace, and writes
-the same text:
-
-```scala
-given Worker is Xml.Printable = Inlinable.printable[Worker]
-
-Worker(t"Alice", 30).in[Text over Xml]   // written directly
+      Worker(t"Alice", 30).in[Text over Xml]
+      // t"<Worker><name>Alice</name><age>30</age></Worker>", written directly
+##
 ```
 
 `Xml.Printable.emit` writes the text a block at a time, handing each to a function as it fills.
@@ -355,8 +360,9 @@ the caller's thread and hands each block to a function as it fills — as text w
 or as UTF-8 bytes with `emit[Data]`, escaped and encoded straight from the serializer — which is
 the shape for writing to a file, a socket or an `OutputStream`:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 Xml.emit[Data](document, chunk => socket.write(chunk))
 ```
 
@@ -365,8 +371,9 @@ instead: the consumer sees the writer's own buffer as a `Region`, with a branded
 proves every index in range, valid only for the duration of the call — the same discipline as a
 stream's `lend`:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 Xml.lend(document): region =>
   interval => region.visit(interval)(index => sink.put(region(index)))
 ```
@@ -375,8 +382,9 @@ Where a consumer pulls instead, `Xml.emit(document)` serializes on a fiber and h
 through an iterator, and a `Document[Xml]` is `Streamable` by `Text` on the same terms, under a
 `supervise` block:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 supervise:
   Xml.emit(document).each(chunk => out.write(chunk))
 ```
@@ -425,8 +433,9 @@ provider object holds the schema, and its `record` method turns an `Xml` value i
 one member per child element and attribute of the schema's root element, each read at the type the
 schema declares:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 import classloaders.threadContextClassloader
 
 object PurchaseOrder extends Xml.Provider(cp"/xsd/po.xsd")

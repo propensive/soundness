@@ -55,6 +55,34 @@ A reference dereferences by application, giving back the value:
 box()   // Box(t"alpha")
 ```
 
+### References by key
+
+A reference need not come from a store at all. Where an entity carries its own key — an email
+address, a product code — a `Reference` to it is that key, typed by what it refers to, and a
+`Resolvable` instance says how a key finds its entity. Built from a set of values, it searches
+them by the field marked `@primary`:
+
+```scala
+case class Person(@primary email: Text, name: Text)
+
+val jack = Person(t"jack@example.com", t"Jack")
+val jill = Person(t"jill@example.com", t"Jill")
+
+given Person is Resolvable by Text = Resolvable(Set(jack, jill))
+```
+
+With that in scope, `ref` takes the reference of a value, which holds nothing but its key, and
+applying a reference resolves it back. A reference built from a key that matches nothing raises
+a `Reference.Error` when it is applied, not when it is built:
+
+```scala
+val jillRef = jill.ref   // Reference to Person
+jillRef.key              // t"jill@example.com"
+jillRef()                // jill
+
+safely(Reference[Person](t"nobody@example.com")())   // Unset
+```
+
 ### Relating
 
 References relate with `assign`, unrelate with `unassign`, and traverse with `lookup` — each valid
@@ -87,11 +115,12 @@ database it belongs to, and there is no way to construct one that lies.
 
 ### Querying
 
-`lookup` follows one relation. Where a query must select rather than traverse, a `Listable`
-instance lists the references whose values satisfy a predicate:
+`lookup` follows one relation, and yields every reference of the type it is asked for, so a
+query that must select rather than traverse is a predicate over those references' values:
 
 ```scala
-summon[Box is Listable].list(_.name.starts(t"a"))
+shelf.assign(box)
+shelf.lookup[Box].filter(_().name.starts(t"a"))   // Set(box)
 ```
 
 Because the predicate is an ordinary function over the stored type, a query is written in Scala

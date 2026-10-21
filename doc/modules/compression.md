@@ -57,13 +57,12 @@ side of the disk:
 
 ```scala
 import filesystemBackends.javaBaseFilesystem
-import filesystemOptions.createNonexistentParents
 import pathInterfaces.pathOnLinux
 import temporaryDirectories.javaBaseTemporaryDirectory
 
-val archive = temporaryDirectory[Path on Linux] / "compression" / "fox.txt.gz"
+val archive = temporaryDirectory[Path on Linux] / "compression" / Uuid().show / "fox.txt.gz"
 
-archive.create[File](): handle ?=>
+archive.create[File](CreateFlag.Parents): handle ?=>
   handle.write(payload.stream.compress[Gzip])
 
 archive.open[File]()(file.stream.decompress[Gzip].read[Text])

@@ -47,27 +47,30 @@ The `application` method wraps a program's entry point, giving its body the prog
 and expecting an `Exit` status in return. It takes the arguments as a list of text, which is
 what an `Application` — an abstract class whose `main` method converts the JVM's arguments and
 whose `invoke` method is the body — hands it, so a complete program is one object extending
-`Application`; the examples here spell the call out:
+`Application`; the examples here spell the call out, and the same program is an object
+extending `Application` — which supplies the `main` method and asks only for an `invoke` —
+just as well:
 
-```scala
-def mytool(args: List[Text]): Unit = application(args):
-  Out.println(t"Hello, world!")
-  Exit.Ok
+```scala fuel
+frame
+  label As a function which spells out the call
+  code
+      def mytool(args: List[Text]): Unit = application(args):
+        Out.println(t"Hello, world!")
+        Exit.Ok
+frame
+  label As an object extending `Application`
+  code
+      object MyTool extends Application:
+        def invoke(using Cli): Exit =
+          Out.println(t"Hello, world!")
+          Exit.Ok
+##
 ```
 
-Packaged as an executable JAR whose `Main-Class` is `mytool`, this runs from the shell.
-`Exit.Ok` reports success; `Exit.Fail(1)` — or any positive code — reports failure, and
-the status must be returned, not left implicit.
-
-An application can equally be written as an object extending `Application`, which supplies
-the `main` method and asks only for an `invoke`:
-
-```scala
-object MyTool extends Application:
-  def invoke(using Cli): Exit =
-    Out.println(t"Hello, world!")
-    Exit.Ok
-```
+Packaged as an executable JAR whose `Main-Class` is `mytool` or `MyTool`, this runs from the
+shell. `Exit.Ok` reports success; `Exit.Fail(1)` — or any positive code — reports failure,
+and the status must be returned, not left implicit.
 
 ### Arguments
 
@@ -236,19 +239,47 @@ is invoked and when completions are requested; the `execute` block runs *only* o
 invocation. So the prelude does the argument handling, and the side effects live inside
 `execute`:
 
-```scala
-def mytool2(args: List[Text]): Unit =
-  import executives.completionsExecutive
-  application(args):
-    arguments match
-      case Build() :: _ =>
-        val jobs = Flag[Int](t"jobs", aliases = List('j'))()
-        execute:
-          Out.println(t"building with ${jobs().or(1)} jobs")
-          Exit.Ok
+```scala fuel
+frame
+  label The subcommands, under the direct executive
+  code
+      def tool1(args: List[Text]): Unit =
+        import executives.directExecutive
+        application(args):
+          arguments match
+            case Build() :: _ => Out.println(t"building");  Exit.Ok
+            case Test() :: _  => Out.println(t"testing");   Exit.Ok
+            case _            => Out.println(t"unknown command"); Exit.Fail(1)
+frame
+  label With a flag read in the prelude
+  code
+      def tool2(args: List[Text]): Unit =
+        import executives.directExecutive
+        application(args):
+          arguments match
+            case Build() :: _ =>
+              val jobs: Optional[Int] = Flag[Int](t"jobs", aliases = List('j'))()
+              Out.println(t"building with ${jobs.or(1)} jobs")
+              Exit.Ok
 
-      case _ =>
-        execute(Exit.Fail(1))
+            case _ =>
+              Exit.Fail(1)
+frame
+  label Under the completions executive, the effects inside `execute`
+  code
+      def mytool2(args: List[Text]): Unit =
+        import executives.completionsExecutive
+        application(args):
+          arguments match
+            case Build() :: _ =>
+              val jobs = Flag[Int](t"jobs", aliases = List('j'))()
+              execute:
+                Out.println(t"building with ${jobs().or(1)} jobs")
+                Exit.Ok
+
+            case _ =>
+              execute(Exit.Fail(1))
+##
 ```
 
 Because matching `Build` and declaring the `--jobs` flag happen in the prelude, they run
@@ -353,7 +384,7 @@ suggest values with a `Discoverable` instance, and how to read a chosen value wi
 ```scala
 case class Mode(name: Text)
 
-given Mode is Discoverable = (_, _) => List(t"debug", t"release").map(Suggestion(_))
+given Mode is Discoverable = (_, _) => List(Suggestion(t"debug"), Suggestion(t"release"))
 
 given Mode is Interpretable = new Interpretable:
   type Self = Mode

@@ -151,8 +151,9 @@ them. Binding a stylesheet resource makes its names available at compiletime, an
 stylesheet declares — so a misspelled class name in a template is a compile error, and the right
 attribute is used without saying which:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 import classloaders.threadContextClassloader
 
 given (Styles at "/site.css") = Styles(cp"/site.css")

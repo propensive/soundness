@@ -56,8 +56,9 @@ with `connect`, checking the server's host key against the `Ssh.HostKeys` policy
 with `send` and `receive`. The algorithms offered are `Ssh.Algorithms`, whose default prefers
 Curve25519, Ed25519 and ChaCha20-Poly1305:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 import internetAccess.online, socketBackends.javaBaseSockets, logging.silentLogging
 
 given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
@@ -75,8 +76,9 @@ Everything above is assembled by a session on an `Ssh.Endpoint`: it connects, ch
 key against the `Ssh.HostKeys` policy in scope, authenticates with the endpoint's signers, and
 lends a `Ssh.Session` that runs commands over channels of the connection protocol:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 import cloaks.heapCloak
 
 val key = keyText.read[PrivateKey[Ed25519] in Pem]
@@ -92,8 +94,9 @@ endpoint.session: ssh ?=>
 may be a `Text` the remote shell interprets, or a Guillotine `Command`, whose arguments are
 quoted one by one so that a value with spaces or shell characters stays a single argument:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 val branch = t"feature/one two"
 endpoint.session: ssh ?=>
   ssh.exec(sh"git log -1 --format=%s $branch").stdout.read[Text]
@@ -109,8 +112,9 @@ Octogenarian's native git backend reaches remote repositories through this clien
 against the `Ssh.HostKeys` policy in scope, and the identities come from `Ssh.Credentials` —
 loaded keys, or everything an `ssh-agent` holds:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 import gitBackends.soundnessGit, gitTransports.soundnessSsh
 
 given Ssh.Credentials = Ssh.Credentials.agent(t"/tmp/ssh-agent.sock")
@@ -125,8 +129,9 @@ A connected transport authenticates with public keys (RFC 4252): an `Ssh.Signer`
 `PrivateKey` of a cipher OpenSSH knows, or a key held by an `ssh-agent`, which signs without ever
 releasing the key. The first signer the server accepts wins:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 import cloaks.heapCloak
 
 val key = keyText.read[PrivateKey[Ed25519] in Pem]

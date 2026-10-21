@@ -12,7 +12,9 @@ unchecked version a careless programmer would have written by hand.
 Nothing, in the common case, because they are not there. An opaque type is its underlying
 representation with a different name for the compiler's purposes only:
 
-```scala
+```scala fuel
+parse
+##
 into opaque type Text <: Matchable & caps.Pure = String & caps.Pure
 opaque type Quantity[units <: Measure] = Double
 opaque type Unset <: Matchable & caps.Pure = Null & caps.Pure
@@ -31,7 +33,9 @@ The same reasoning covers the operations. They are `inline`, so a dimensional ca
 becomes the arithmetic instructions the equivalent bare-`Double` code would have produced
 — no wrapper to allocate, no typeclass method to dispatch to:
 
-```scala
+```scala fuel
+parse
+##
 def displacement
     ( initial: Quantity[Metres[1] & Seconds[-1]],
       time:    Quantity[Seconds[1]],
@@ -54,7 +58,9 @@ parses the classfile, walks the instructions of representative calculations, and
 that no virtual or interface dispatch to a typeclass operation survives and that no
 boxing appears:
 
-```scala
+```scala fuel
+parse
+##
 def callsTypeclassOp(bytecode: Bytecode): Boolean =
   val ops = Set(t"negate", t"add", t"subtract", t"multiply", t"divide", t"root", t"op")
   bytecode.instructions.exists: instruction =>

@@ -16,7 +16,9 @@ syntax rather than of semantics — so Soundness solves it with syntax. A
 [lens](../modules/optics.md) takes the update written as an ordinary path assignment and
 does the rebuilding:
 
-```scala
+```scala fuel
+parse
+##
 case class Role(name: Text, count: Int)
 case class Person(name: Text, roles: List[Role])
 case class Company(ceo: Person, name: Text)
@@ -28,7 +30,9 @@ The result is a new `Company`; the original is untouched and any other reference
 still sees what it saw. Several updates apply together, and ones sharing a prefix
 rebuild the shared structure once rather than once each:
 
-```scala
+```scala fuel
+parse
+##
 company.lens
   ( _.ceo.roles = Nil,
     _.ceo.name = t"Bill" )
@@ -86,7 +90,9 @@ yields the value it displaced and `count.since(_ + 1)` the value it installed, s
 can tell whether it, and not somebody else, made the transition — the question that only
 arises once mutation is shared, and the one a `var` cannot answer:
 
-```scala
+```scala fuel
+parse
+##
 if !closed.ere(true) then shutdown()    // true only for the call that closed it
 ```
 

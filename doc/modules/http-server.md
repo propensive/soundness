@@ -44,27 +44,29 @@ A handler that states what it needs and what it may fail with is an [honest sign
 `SocketServer` listens on a port and runs the handler for each request; the returned service stops
 the server when canceled:
 
-```scala
-def hello(): Unit = supervise:
-  val server = SocketServer(8080).handle:
-    Http.Response(Http.Ok)(t"Hello, world!")
-```
-
 The port is bound when `handle` is called, and the service runs on tasks of the enclosing
-`supervise`, so the block lasts as long as the server does.
+`supervise`, so the block lasts as long as the server does. Within the handler, `request` is the
+current request — its method, target, headers, cookies and body — so routing is a `match`:
 
-Within the handler, `request` is the current request — its method, target, headers, cookies and
-body — so routing is a `match`:
+```scala fuel
+frame
+  label One response to every request
+  code
+      def hello(): Unit = supervise:
+        val server = SocketServer(8080).handle:
+          Http.Response(Http.Ok)(t"Hello, world!")
+frame
+  label Routed on the request's target
+  code
+      val homePage = t"<h1>Welcome</h1>"
 
-```scala
-val homePage = t"<h1>Welcome</h1>"
-
-def routed(): Unit = supervise:
-  SocketServer(8080).handle:
-    request.target match
-      case t"/"       => Http.Response(Http.Ok)(homePage)
-      case t"/status" => Http.Response(Http.Ok)(t"OK")
-      case _          => Http.Response(Http.NotFound)(t"No such page")
+      def routed(): Unit = supervise:
+        SocketServer(8080).handle:
+          request.target match
+            case t"/"       => Http.Response(Http.Ok)(homePage)
+            case t"/status" => Http.Response(Http.Ok)(t"OK")
+            case _          => Http.Response(Http.NotFound)(t"No such page")
+##
 ```
 
 ### Responses

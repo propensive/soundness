@@ -68,8 +68,9 @@ notification produces none — and is called from a route handler with the reque
 calling side, `remote` manufactures a client from the same trait, which sends each call as a
 request to the URL:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 val echo = remote[Echo](url"https://api.example.com/rpc")
 echo.call(Ping(t"hello"))   // a JSON-RPC request over HTTP
 ```
@@ -80,8 +81,9 @@ The same trait shape serves gRPC. A `Grpc.Channel` opens over an [HTTP/2](http-s
 connection, and `Grpc.remote` derives the stub — a method returning a value makes a unary call,
 one returning a `Stream` a server-streaming call — with payloads as Protocol Buffers messages:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 import threads.platformThreads
 
 supervise:
@@ -133,8 +135,9 @@ records back as values, and the schemas are derived from the two types once, whe
 is framed, not per message. One end's `Framed from Reply to Request` meets the other's
 `Framed from Request to Reply`:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 case class Request(id: Int, text: Text)
 case class Reply(id: Int, length: Int)
 

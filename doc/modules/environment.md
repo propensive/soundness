@@ -121,6 +121,22 @@ Xdg.dataDirs[Path on Linux]     // the search path, in order
 Using these rather than a hard-coded `~/.myapp` is what makes a program's files land where the
 user's backup, sync and cleanup tools expect them.
 
+The conventional layout of a Unix system is typed too. `Home` and `Base` are each a
+`BaseLayout`: a tree of nested objects naming the directories under the user's home and under
+the filesystem root — `Home.Config`, `Home.Local.Share`, `Base.Var.Log`, `Base.Usr.Bin` — and
+applying one, with the path type as its type argument, resolves it against the `Environment`
+and `System` in scope. Each layout also knows whether it is meant to be written to: `readOnly`
+is `true` for `/usr` and everything beneath it, so a program can check before it tries.
+
+```scala
+Home.Config[Path on Linux]()        // ~/.config
+Home.Local.Share[Path on Linux]()   // ~/.local/share
+Base.Var.Log[Path on Linux]()       // /var/log
+
+Base.Usr.Bin.readOnly               // true
+Base.Etc.readOnly                   // false
+```
+
 A temporary directory comes from `temporaryDirectory`, and the directory the program was launched
 in from `workingDirectory`, each resolved to the path type asked for.
 

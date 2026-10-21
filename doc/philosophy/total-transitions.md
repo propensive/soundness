@@ -28,7 +28,9 @@ three honest ways to make it total, and one dishonest one.
 **Widen the return type to admit absence.** A lookup that may find nothing returns an
 `Optional`, so "not found" is a value rather than an exception or a `null`:
 
-```scala
+```scala fuel
+parse
+##
 enumerable.value(t"North")    // Optional[Direction]
 tracked.locate(pointer)       // Optional[Position] — an unresolved path is not an error
 ```
@@ -36,7 +38,9 @@ tracked.locate(pointer)       // Optional[Position] — an unresolved path is no
 **Widen it to admit failure.** Where the caller should know *why*, the operation raises a
 typed error and the response is chosen at the call site:
 
-```scala
+```scala fuel
+parse
+##
 def parsePort(text: Text): Port raises PortError raises NumberError
 ```
 
@@ -53,12 +57,24 @@ propagates.
 The most valuable consequence of treating exhaustivity warnings as errors is not that
 today's matches are complete. It is what happens tomorrow, when a case is added:
 
-```scala
-enum Connection:
-  case Open(socket: Socket)
-  case Failed(reason: Text)
-  case Closed
-  case Draining          // added today
+```scala fuel
+parse
+frame
+  label Yesterday
+  code
+      enum Connection:
+        case Open(socket: Socket)
+        case Failed(reason: Text)
+        case Closed
+frame
+  label Today
+  code
+      enum Connection:
+        case Open(socket: Socket)
+        case Failed(reason: Text)
+        case Closed
+        case Draining
+##
 ```
 
 Every match on `Connection` that has not considered `Draining` now fails to compile, and
@@ -76,7 +92,9 @@ Some matches genuinely cannot be exhaustive, usually because the compiler cannot
 invariant the code has already established. Suppressing the warning would hide the
 accidental cases along with the deliberate one, so the assertion is marked instead:
 
-```scala
+```scala fuel
+parse
+##
 expr.absolve match
   case '{ $value: Int } => …
 ```

@@ -75,8 +75,9 @@ and plain text when output is not a terminal at all, so logs never fill with esc
 `interactive` opens a raw-mode session, within which the terminal's events — keypresses, window
 resizes, focus changes, pastes — arrive as typed values:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 def handle(char: Char): Unit = ()
 def finish(): Unit = ()
 def resize(rows: Int, cols: Int): Unit = ()
@@ -120,8 +121,9 @@ A line of input, with cursor movement and editing keys handled, is a `LineEditor
 options is a `SelectMenu`. Each is a pure state machine — an event in, a new state out — asked for
 its result in one call:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 interactive: terminal ?=>
   LineEditor().ask: text =>
     Out.println(t"You entered: $text")
@@ -134,8 +136,9 @@ interactive widgets, `strip` and `stack` to arrange them in columns and rows, an
 them. `form` runs the arrangement — full-screen on the alternate buffer, or *inline*, as a live
 block at the cursor that leaves scrollback intact:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 interactive: terminal ?=>
   val pages = List(t"Home", t"Settings", t"About")
   val sidebar = border(BorderStyle.rounded)(menu(pages, pages.prim.or(t""), maxWidth = 20))

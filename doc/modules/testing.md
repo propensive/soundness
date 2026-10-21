@@ -79,8 +79,9 @@ A suite has a title and an *id*. The id is what a selection and a path know the 
 it is either given, as a string literal before the title, or derived from the title: its
 letters and digits in lower case, with a `-` for each run of anything else.
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 object Tests extends Suite("parser", m"Parser tests")   // `fume run parser`
 object Tests extends Suite(m"Parser tests")             // `fume run parser-tests`
 ```
@@ -95,15 +96,28 @@ block passes the same topic on. So the compiler knows, of every test it compiles
 is declared for, and it refuses a `test` which is declared for none. Tests written in a method
 of their own name the suite, by its id, in the method's signature:
 
-```scala
-object Tests extends Suite("parser", m"Parser tests"):
-  def run(): Unit =
-    suite(m"Numbers")(numbers())
+```scala fuel
+frame
+  label The test declared inline, in `run`
+  code
+      object Tests extends Suite(m"Parser tests"):
+        def run(): Unit =
+          suite(m"Numbers"):
+            test(m"a decimal integer parses"):
+              t"42".as[Int]
+            . assert(_ == 42)
+frame
+  label The suite named by its id, and the test in a method declared for it
+  code
+      object Tests extends Suite("parser", m"Parser tests"):
+        def run(): Unit =
+          suite(m"Numbers")(numbers())
 
-  def numbers()(using Testable of "parser"): Unit =
-    test(m"a decimal integer parses"):
-      t"42".as[Int]
-    . assert(_ == 42)
+        def numbers()(using Testable of "parser"): Unit =
+          test(m"a decimal integer parses"):
+            t"42".as[Int]
+          . assert(_ == 42)
+##
 ```
 
 A suite whose id is derived has no literal to name it by, so its tests are written in its
@@ -185,8 +199,9 @@ down to the field that changed, rather than as two unrelated entries the reader 
 `demilitarize` compiles the code it encloses and, instead of failing the build, delivers the
 compile errors as values:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 import classloaders.threadContextClassloader
 
 test(m"a malformed version literal is rejected"):
@@ -223,8 +238,9 @@ set, so every kind renders the same way and charts the same way.
 A `Bench` measures speed. Its body is a quoted expression, [staged](staging.md) and dispatched in
 its own JVM, so the measurement is not distorted by the rest of the suite:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 val bench = Bench()
 
 bench(m"decode directly")(target = 1*Second, operationSize = 1000*Byte):
@@ -236,8 +252,9 @@ live set retained under sustained concurrency. It runs for a wall-clock target a
 concurrency, and may be given a constrained heap or a CPU limit, so a design can be shown to hold
 up where it matters:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 val stress = Stress()
 val constrained = Stress(heap = t"128m")
 
@@ -248,8 +265,9 @@ stress(m"cross-thread hand-off")(target = 2*Second, concurrency = 16):
 A `Profile` answers where the time went, rendering a histogram of the hottest methods by self
 time from JFR execution samples, colored by package:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 val profile = Profile()
 
 profile(m"pipeline hotspots")(target = 5*Second):

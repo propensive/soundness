@@ -62,8 +62,9 @@ A session is opened on a provider with `session`, and inside the block the `llm`
 it. `ask` sends a message and returns the model's `Reply`; the session records both, so a second
 `ask` continues the conversation:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 val reply: Llm.Reply = claude.session:
   llm.ask(t"What is the tallest mountain in Estonia?")
   llm.ask(t"And how tall is it?")
@@ -87,8 +88,9 @@ deltas. When the stream has been consumed, `reply()` assembles the complete repl
 partial consumption, since the remainder is read on demand — and commits the turn to the
 history. A stream that is abandoned commits nothing, so a failed turn is simply retried:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 claude.session:
   val response = llm.stream(t"Write a limerick about Tallinn.")
   response.text.each(Out.print(_))
@@ -122,8 +124,9 @@ the iteration limit is reached. A tool that fails, or a call with malformed argu
 reported to the model as an error result it can recover from, rather than aborting the
 conversation:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 claude.session:
   given Toolkit = broker
   llm.ask(t"Compare AAPL and MSFT.")   // calls price twice, then answers
@@ -148,8 +151,9 @@ structured-output mode:
 case class Verdict(ticker: Text, rating: Text, confidence: Double)
 ```
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 local.session:
   llm.solicit[Verdict](t"Summarize your recommendation for AAPL.")
 ```
@@ -166,8 +170,9 @@ an identifier of the caller's choosing — checked by `Llm.Id.request` before an
 and returns a batch: a pure record of its identifier, status and counts, whose answers are
 decoded to the named type once it has ended:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 val requests = List
   ( Llm.Request(Llm.Id.request(t"aapl"), t"Summarize your recommendation for AAPL."),
     Llm.Request(Llm.Id.request(t"msft"), t"Summarize your recommendation for MSFT.") )
@@ -219,8 +224,9 @@ Every failure is a `Llm.Error` whose reason is one of a fixed set — `Unreachab
 maps to none of them, so the wire's own error is never lost. A rate limit or an overload is
 retried automatically, honoring the delay the provider asks for, before it is raised:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 recover:
   case Llm.Error(Llm.Error.Reason.Unauthorized, detail) => Out.println(t"check the API key")
   case Llm.Error(Llm.Error.Reason.TooLarge, detail)     => Out.println(t"shorten the conversation")
@@ -233,8 +239,9 @@ recover:
 Anthropic reports the token count of a prospective conversation without running it, which is
 how a program decides whether a document fits before sending it:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 claude.countTokens(List(question), system = t"Be terse.")   // the input tokens it would cost
 ```
 

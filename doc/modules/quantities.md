@@ -304,27 +304,44 @@ A unit that measures something the SI does not have a dimension for needs both a
 units type. Suppose FLOPS, a processor's floating-point instructions per second. Written as a bare
 value, `1.0/Second` is usable in arithmetic but says nothing about what it counts:
 
-```scala
-val SimpleFlop = 1.0/Second
-```
-
 Wrapping it as a `MetricUnit` at least makes the metric prefixes apply, so `Mega(Flop)` becomes
 writable — but the result is still just a number in units of inverse seconds. Giving it a
-dimension of its own makes it distinct from every frequency:
+dimension of its own makes it distinct from every frequency; the `power` parameter is required,
+and is bounded by `Nat` — an alias for `Int & Singleton`. With these, `Mega(Flop)*Minute` has
+the type `Quantity[Flops[1] & Seconds[1]]`, and a `Designation` gives it a symbol for display:
 
-```scala
-trait CpuPerformance extends Dimension
-trait Flops[power <: Nat] extends Units[power, CpuPerformance]
+```scala fuel
+frame
+  label A bare rate, in inverse seconds
+  code
+      val SimpleFlop = 1.0/Second
+frame
+  label A metric unit, so that the prefixes apply
+  code
+      val PrefixableFlop: MetricUnit[Seconds[-1]] = MetricUnit(1)
 
-val Flop: MetricUnit[Flops[1]] = MetricUnit(1)
-```
+      Mega(PrefixableFlop)
+frame
+  label A dimension of its own
+  code
+      trait CpuPerformance extends Dimension
+      trait Flops[power <: Nat] extends Units[power, CpuPerformance]
 
-The `power` parameter is required, and is bounded by `Nat` — an alias for `Int & Singleton`. With
-these, `Mega(Flop)*Minute` has the type `Quantity[Flops[1] & Seconds[1]]`, and a
-`Designation` gives it a symbol for display:
+      val Flop: MetricUnit[Flops[1]] = MetricUnit(1)
 
-```scala
-given Designation[Flops[1]] = () => t"FLOPS"
+      Mega(Flop)*Minute
+frame
+  label With a symbol for display
+  code
+      trait CpuPerformance extends Dimension
+      trait Flops[power <: Nat] extends Units[power, CpuPerformance]
+
+      val Flop: MetricUnit[Flops[1]] = MetricUnit(1)
+
+      given Designation[Flops[1]] = () => t"FLOPS"
+
+      Mega(Flop)*Minute
+##
 ```
 
 Both traits may be `sealed`, since nothing implements them at runtime.

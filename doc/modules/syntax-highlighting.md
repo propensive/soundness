@@ -54,8 +54,9 @@ only part of harlequin that depends on the compiler wrapper) runs the frontend, 
 identifier carries the type the compiler gave it — the difference between coloring `xs` as an
 identifier and knowing it is a `List[Int]`:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
 given LocalClasspath = LocalClasspath()
 import highlighting.typecheckedScala
