@@ -43,6 +43,7 @@ import executives.completionsExecutive
 import interpreters.posixInterpreter
 import probates.awaitProbate
 import stdios.javaLangSystemStdio
+import termcapDefinitions.basicTermcap
 import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 import threads.virtualThreads

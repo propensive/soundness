@@ -33,6 +33,7 @@ import soundness.*
 import textMetrics.uniformMetric
 import palettes.solarizedDarkGaugePalette
 import stdios.javaLangSystemStdio
+import termcapDefinitions.basicTermcap
 ```
 
 ### Statuses

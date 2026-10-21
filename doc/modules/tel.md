@@ -28,6 +28,7 @@ to Scala. Everything comes from the `soundness` package:
 
 ```scala
 import soundness.*
+import threads.virtualThreads
 import strategies.throwUnsafely
 import codepages.utf8Codepage
 ```

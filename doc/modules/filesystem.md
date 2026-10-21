@@ -35,6 +35,7 @@ import filesystemOptions.dereferenceSymlinks
 import filesystemOptions.moveAtomically
 import environments.javaBaseEnvironment
 import stdios.javaLangSystemStdio
+import termcapDefinitions.basicTermcap
 
 import charsets.utf8Charset
 import codepages.utf8Codepage

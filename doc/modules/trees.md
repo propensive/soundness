@@ -25,6 +25,7 @@ Everything comes from the `soundness` package:
 import soundness.*
 import treeStyles.squareTreeStyle
 import stdios.javaLangSystemStdio
+import termcapDefinitions.basicTermcap
 ```
 
 ### Trees

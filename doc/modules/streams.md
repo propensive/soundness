@@ -57,6 +57,7 @@ import pathInterfaces.pathOnLinux
 import filesystemOptions.overwritePreexisting
 import filesystemOptions.createNonexistentParents
 import stdios.javaLangSystemStdio
+import termcapDefinitions.basicTermcap
 ```
 
 ### Reading a source

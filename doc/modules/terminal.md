@@ -26,6 +26,7 @@ session is a scoped block that restores the terminal however it exits. Everythin
 ```scala
 import soundness.*
 import stdios.javaLangSystemStdio
+import termcapDefinitions.basicTermcap
 ```
 
 A raw-mode session as a scoped block that restores the terminal however it exits is [delimited scopes](../philosophy/delimited-scopes.md) applied to the terminal.

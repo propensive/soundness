@@ -33,6 +33,7 @@ import soundness.*
 import probates.awaitProbate
 import strategies.throwUnsafely
 import stdios.javaLangSystemStdio
+import termcapDefinitions.basicTermcap
 import threads.virtualThreads
 ```
 

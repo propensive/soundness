@@ -29,6 +29,7 @@ backend, network access and logging a client needs:
 import soundness.*
 import errorDiagnostics.stackTracesDiagnostics
 import stdios.javaLangSystemStdio
+import termcapDefinitions.basicTermcap
 import httpBackends.javaNetHttp
 import internetAccess.online
 import logging.silentLogging

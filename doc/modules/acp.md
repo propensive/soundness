@@ -32,6 +32,7 @@ import environments.javaBaseEnvironment
 import errorDiagnostics.stackTracesDiagnostics
 import probates.awaitProbate
 import stdios.javaLangSystemStdio
+import termcapDefinitions.basicTermcap
 import strategies.throwUnsafely
 import threads.virtualThreads
 import workingDirectories.javaBaseWorkingDirectory
