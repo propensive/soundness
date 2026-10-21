@@ -58,8 +58,8 @@ fed one measurement at a time needs. Several series are any collection of them �
 
 ### Chart kinds
 
-A chart kind is a value: `Bars`, `StackedBars`, `Lines`, `Scatter`, `Pie`, `Histogram` or
-`Boxes`. The `chart` method pairs data with a kind, and compiles only where the kind can draw the
+A chart kind is a value: `Bars`, `StackedBars`, `Lines`, `Scatter`, `Pie`, `Histogram`,
+`Boxes` or `Doughnut`. The `chart` method pairs data with a kind, and compiles only where the kind can draw the
 data's shape:
 
 ```scala
@@ -245,3 +245,40 @@ runs.chart(Boxes()).fit.summaries.size   // 2
 ```
 
 Both accept any collection of sample sets, as the other kinds accept collections of series.
+
+### Doughnuts
+
+A `Doughnut` draws a dependency graph — a `Dag` from [acyclicity](graphs.md) — as concentric
+bands: the nodes that depend on nothing in the innermost band, each further band the nodes one
+rank further out, so that a build fills in from the centre outwards. Each node is a sector of its
+band, sweeping an angle proportional to its size within the rank, and a band is as thick as its
+rank's share of the total size. A node's size and its progress, from `0.0` to `1.0`, come from
+two typeclasses on the node type, `Sized` and `Progressive`; the sector fills clockwise as far as
+the node is complete, with the remainder in a subdued tint of the rank's colour. A doughnut has
+no labels and no legend; each band is a `rank-0`, `rank-1`, … group and each sector a
+`sector-0`, `sector-1`, … path, with the unfinished part of a sector in `sector-0-rest`.
+
+A node carries its progress, so a doughnut is revised like any chart, with new data: the fit
+survives any graph of the same shape and sizes, and only the bands whose sectors have filled
+further are replaced:
+
+```scala
+case class Step(name: Text, size: Double, done: Double)
+given Step is Sized = _.size
+given Step is Progressive = _.done
+
+val parse = Step(t"parse", 2.0, 1.0)
+val typecheck = Step(t"typecheck", 3.0, 0.5)
+val emit = Step(t"emit", 1.0, 0.0)
+val doughnut = Dag(typecheck -> parse, emit -> typecheck).chart(Doughnut())
+doughnut.fit.bands.size                          // 3: one band per rank
+
+val typechecked = typecheck.copy(done = 1.0)
+doughnut.revise(Dag(typechecked -> parse, emit -> typechecked))(1).size   // 1: a Replace of `rank-1`
+```
+
+`Chart.Standard(hole = 0.3)` hollows the centre, `sectorGap` and `bandGap` are the widths of the
+grout between sectors and between bands, and `Doughnut.Style` has `sector` and `remainder` for
+the two parts of a sector. The
+ranking is acyclicity's: `import rankings.balancedRanking` draws each node as close to its
+dependents as it can be, rather than as close to the centre.
