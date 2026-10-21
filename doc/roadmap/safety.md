@@ -2,8 +2,8 @@
 
 Honest signatures are only as honest as their enforcement. Capture checking makes a signature's
 promises about effects verifiable; separation checking makes mutation safe by construction; the
-`raises` mechanism makes failure visible in types. All three are already the default — 370 of
-the build's 464 modules compile with separation checking — but defaults are not the same as
+`raises` mechanism makes failure visible in types. All three are already the default — 435 of
+the build's 447 modules compile with separation checking — but defaults are not the same as
 guarantees. Every `caps.unsafe` call is a place where the checker was overruled by hand, and
 each one is a standing IOU against the safety claim.
 
@@ -38,7 +38,7 @@ the named wrappers (`Array.unsafeFrozen` 283, `Array.unsafeJvm` 205, `Array.froz
 ## safety-1: retire `untrackedCaptures`
 
 Horizon: near
-Baseline: 484 occurrences (measured 2026-10-08 after the first class conversion; 507 on 2026-10-07; 468 on 2026-09-25; 288 on 2026-08-01)
+Baseline: 385 occurrences (measured 2026-10-21; 484 on 2026-10-08; 507 on 2026-10-07; 468 on 2026-09-25; 288 on 2026-08-01)
 
 The retirement recipe is documented and mechanical: the annotated class becomes `caps.Mutable`,
 mutating methods become `update def`, consumers hold `X^`, and mutual back-references are
@@ -64,8 +64,8 @@ Done when:
 
 ## safety-2: every remaining hatch names its reason
 
-Horizon: near
-Baseline: 419 `unsafeAssumeSeparate`, 511 `unsafeAssumePure`, 50 `unsafeErasedValue` (measured 2026-10-07; 416, 502 and 50 on 2026-09-25; 323, 273 and 45 on 2026-08-01); 37 of them cite `rep/` at all, 2 by case
+Done: #NNNN (2026-10-21)
+Baseline was 419 `unsafeAssumeSeparate`, 511 `unsafeAssumePure`, 50 `unsafeErasedValue` (measured 2026-10-07; 416, 502 and 50 on 2026-09-25; 323, 273 and 45 on 2026-08-01); 37 of them cited `rep/` at all, 2 by case. On 2026-10-21 the hatches number 219, 289, 35 and 381 `untrackedCaptures`, every one tagged; `etc/check-escape-count.py --tags` reads the residue per tag, and its ratchet holds `untagged` at zero.
 
 Each occurrence is either fixable now or blocked on something named. The triage makes the
 distinction explicit with a closed vocabulary of reason tags, defined in the capabilities
@@ -77,7 +77,7 @@ standard (`safety-12`) and each mapped to a `rep/` case or a section of the stan
 untagged site once the untagged count has been ratcheted to zero.
 
 Done when: every remaining `caps.unsafe` occurrence in `lib/` carries a reason tag, verified by
-the census script reporting zero untagged occurrences.
+the census script reporting zero untagged occurrences — `python3 etc/check-escape-count.py --tags`.
 
 ## safety-3: `rep/` runs on the pinned toolchain
 
@@ -100,7 +100,7 @@ probe suite and every calibrated case run green-as-expected from a clean checkou
 
 Horizon: mid → long
 Needs: safety-8, safety-10
-Baseline: 1485 occurrences in total (measured 2026-10-07; 1436 on 2026-09-25; 929 on 2026-08-01)
+Baseline: 930 occurrences in total (measured 2026-10-21; 1485 on 2026-10-07; 1436 on 2026-09-25; 929 on 2026-08-01)
 
 With the blockers fixed, the residue burns down to nothing. The grep is the signal.
 
@@ -130,23 +130,17 @@ Done when: a CI test consumes published Soundness artifacts from a mainline-Scal
 ## safety-6: separation checking without exemption
 
 Horizon: long
-Baseline: 81 of 464 modules compile without separation checking — 40 components, 26 test
-suites, 11 of the 23 benchmark modules and 4 internal modules — and 2 benches opt for
-`settings.cc` alone (measured 2026-10-07 after `Benchmarks` defaulted to `settings.sep`; 93 that
-morning; 87 of 424 on 2026-09-25)
+Baseline: 12 of 447 modules opt down from `settings.sep` — 11 to plain options, 1 to
+`settings.cc` — each with a reason comment in `build.mill` (measured 2026-10-21; 81 of 464 on
+2026-10-07; 87 of 424 on 2026-09-25)
 
-Separation checking is opted *into*: `Component`, `Tests` and `Benchmarks` default to plain
-`settings.scalaOptions`, so a module that never mentions `settings.sep` is not checked at all.
-Of the 93, only nine say why (praxinoscope's Pike VM, probably's event bridge, the wasm guest,
-polyvinyl's record selection, enigmatic's padding given, four benchmarks that compile against
-rival libraries which cannot take explicit nulls); the rest — every other benchmark, 22 test
-suites, the staged and compiler-tooling components, the WASI backends, the JVM backends of
-galilei and telekinesis — are unchecked by omission. The end-state has no such module. `Benchmarks` now
-defaults to `settings.sep` like a library (nine benches opt down, each naming the one shape —
-a suite object holding exclusive payload arrays as fields — that blocks them); every other
-unreasoned module is to be flipped in a single-shot probe (`rep/probe-suite.sh`,
-`rep/probe-core.sh`), and each one that stays red carries a comment in `build.mill` naming its
-reason tag and a `rep/` case for the class.
+Separation checking is now the default: since #2202 `Component`, `Tests` and `Benchmarks` all
+compile with `settings.sep` unless they override `checking`, so a module is unchecked only by
+declaration, never by omission. The twelve that remain each name their blocker — a suite object
+holding exclusive payload arrays as fields (the rival-library benchmarks), the WASI backends
+re-checked under a suppressed origin, orthodoxy's `NoPadding` tests — and the end-state has none.
+Each is flipped by the single-shot probe (`rep/probe-suite.sh`, `rep/probe-core.sh`) once its
+`rep/` case is green.
 
 Done when: no component in `build.mill` compiles with anything weaker than `settings.sep`.
 
@@ -175,12 +169,14 @@ break it listed in `doc/standards/naming.md`.
 The gate exists: `etc/check-escape-count.py`, run by `make build` (and `make check-escapes`),
 keeps a per-file baseline in `etc/escape-baseline.tsv` of the four `caps.unsafe` hatches, the
 array wrappers that hide a capture (`Array.unsafeFrozen`, `Array.unsafeJvm`, `Array.frozen`,
-the `!!` erased-evidence operator), and the hatches that carry no reason tag — with the same
-`--update`/`--totals` semantics as `check-while-count.py`, plus `--tags` for the residue per
-reason tag (`safety-2`), whose closed vocabulary lives in the script. Seeded 2026-10-09:
-assumePure 366, assumeSeparate 261, untracked 397, erasedValue 50, unsafeFrozen 339, unsafeJvm
-211, frozen 156, mutability 46, erasedEvidence 293; 1068 hatches untagged. What remains of this item is folding the
-`while` and `.stdlib` ratchets into it.
+the `!!` erased-evidence operator), the casts that move a capability past the checker, and the
+hatches that carry no reason tag — with the same `--update`/`--totals` semantics as
+`check-while-count.py`, plus `--tags` for the residue per reason tag (`safety-2`), whose closed
+vocabulary lives in the script. Seeded 2026-10-09 (assumePure 366, assumeSeparate 261,
+untracked 397, erasedValue 50; 1068 hatches untagged) and re-seeded 2026-10-21 (assumePure 280,
+assumeSeparate 219, untracked 381, erasedValue 35, unsafeFrozen 325, unsafeJvm 292,
+erasedEvidence 84, anyRefCast 362, captureCast 383; untagged 0). What remains of this item is
+folding the `while` and `.stdlib` ratchets into it.
 
 Done when: the census is recorded on every release, `safety-1`, `safety-2` and `safety-4` read
 their baselines from it rather than from a hand-run grep, and the per-file gate has replaced
@@ -188,7 +184,7 @@ their baselines from it rather than from a hand-run grep, and the per-file gate 
 
 ## safety-8: tactics are shared capabilities
 
-Horizon: near
+Done: #2195 (2026-10-07); the grep's last hit, a comment in `Emit.scala` describing the old seals, was reworded in #NNNN
 Needs: safety-3
 Baseline: ~60 exclusive-tactic overlap seals in `lib/*/src/core`, 3 of them in contingency; 103 derivation anchors and ~125 sealed codec givens downstream (measured 2026-10-07)
 
@@ -228,8 +224,8 @@ Done when: `Emit extends caps.SharedCapability`; `git grep -c 'unsafeAssumeSepar
 
 ## safety-9: test harnesses do not seal
 
-Horizon: near-mid
-Baseline: 236 `unsafeAssumeSeparate` in `lib/*/src/test` (measured 2026-10-07): exoskeleton 63, zephyrine 50, facsimile 38, galilei 29, turbulence 19
+Done: #2224 (2026-10-09), after #2212 and #2217
+Baseline was 236 `unsafeAssumeSeparate` in `lib/*/src/test` (measured 2026-10-07): exoskeleton 63, zephyrine 50, facsimile 38, galilei 29, turbulence 19
 
 More than half of all `unsafeAssumeSeparate` sites are in test suites, almost none commented,
 in a handful of shapes: the tmux completion drivers (`Bash.tmux()(Tmux.completions(…))`),
@@ -245,7 +241,7 @@ Done when: `git grep -c unsafeAssumeSeparate -- 'lib/*/src/test'` is 0.
 
 Horizon: mid
 Needs: safety-3
-Baseline: ~46 pure-thunk seals (jacinta, spectacular, gastronomy, turbulence; measured 2026-10-07)
+Baseline: 61 hatches tagged `[by-name-capture]` (measured 2026-10-21; ~46 pure-thunk seals in jacinta, spectacular, gastronomy and turbulence on 2026-10-07)
 
 A by-name parameter (`inner: => (X is Codec)^`) is not a stable reference, so a given whose
 instance retains it cannot declare `^{inner}` and is sealed to a pure `() -> …` thunk instead —
