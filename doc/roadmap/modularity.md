@@ -457,8 +457,13 @@ Horizon: mid — after mod-4, so nothing moves twice.
   refactor, parameterising the bound — worth doing, but it is a hot loop, so it wants
   `make bench` for protobuf either side of the change rather than being done on sight.
 - **Checksums into ~~gastronomy~~ `corpuscular`**: a fast non-`Digestion` CRC-32/CRC-64/Adler-32
-  API. **Partly done.** The shared implementations and their golden-vector tests have landed in
-  `corpuscular`, and hallucination's PNG codec has migrated.
+  API. **Done** (2026-10-21): `corpuscular_core.scala` holds the only `Crc32`, `Crc64` and
+  `Adler32` table generation in `lib/`, and every former donor reads them from there; zeppelin
+  keeps `java.util.zip.CRC32`, as decided below. The Huffman builders (five decode-side in
+  pneumatic's Inflater and Brotli, hallucination's WebP and JPEG, telekinesis's HPACK; four
+  encode-side) and the varint loops (stratiform, locomotion's three, rudiments' `Scribe`,
+  degustation, ethereal's launcher, gastronomy's multihash, pneumatic's XZ container,
+  octogenarian's packfiles) are all still in their donors, and corpuscular has neither.
 
   Not gastronomy: `gastronomy.core` sits on 45 modules where `pneumatic.core` sits on 24, and
   neither pneumatic nor hallucination depends on gastronomy, so putting fast checksums there
@@ -582,9 +587,10 @@ Migration is one format per PR — xylophone, locomotion, jacinta, breviloquence
 stratiform (staged and binaryStaged together) — each verified with `make attest`,
 `make build` and `make bench` for that format.
 
-Progress (2026-09-25): none. All six engines still define `macroClassloader`,
-`currentOutputDirectory`, `definedInCurrentRun`, `innerClasspath` and `summonViaStaging` in
-their own `*stagedInternal.scala` or `bintelInternal.scala`, prescience's proto-copy makes a
+Progress (2026-10-21): none. All six engines still define `macroClassloader`,
+`currentOutputDirectory`, `definedInCurrentRun` and `innerClasspath` — four of them now in a
+`*.InlinableStager.scala` (216–265 lines each), stratiform's two in `stagedInternal.scala` and
+`bintelInternal.scala` (which also keep `summonViaStaging`) — prescience's proto-copy makes a
 seventh, and `prescience.staged` does not exist.
 
 Done when: no `.staged` module contains its own copy of the expansion environment, and the
@@ -857,10 +863,12 @@ After mod-8/9/10, this is the residual spine's only soft point.
 
 Done when: `parasite.core` declares no `mercator.core` edge and `turbulence.core` no
 `capricious.core` edge, and `gossamer.core`'s closure holds no more than 23 components. The
-gossamer, distillate and digression legs landed in #1760 (2026-08-10); the parasite and
-turbulence legs are what remain, and both edges are still declared (2026-09-25).
-`gossamer.core`'s closure counts 25 by a hand parse of `build.mill` — distillate and wisteria
-still arrive through spectacular.
+gossamer, distillate and digression legs landed in #1760 (2026-08-10). The turbulence edge is
+gone: `turbulence.core` no longer lists `capricious.core`, and `shred` takes its chunk size as
+a by-name `Int` (2026-10-21). The parasite leg is what remains — `parasite.core` still declares
+`mercator.core` for the `Monad[Task]` given — and `gossamer.core`'s closure counts 26 by a walk
+of `build.mill` (including the implicit `beneficence.core` and `proscenium.core`): distillate,
+wisteria, kaleidoscope and spectacular are all still in it.
 
 ## Second-audit shape
 

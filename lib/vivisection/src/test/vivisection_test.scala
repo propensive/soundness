@@ -1065,6 +1065,51 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
 
     . assert(_ == (true, true))
 
+    // Stepping over the wire: from the breakpoint on `Paced`'s marker line, a `next` request
+    // lands on the following line and reports the stop with reason `step`, so a frontend can
+    // walk a Soundness program line by line through the adapter alone.
+    test(m"a DAP client steps over a line from a breakpoint"):
+      import dynamicAccess.dynamicJson
+      val classpathText = fixtureClasspath()
+
+      supervise:
+        dapScenario: client ?=>
+          client.request(t"initialize")
+          client.awaitResponse(t"initialize")
+
+          val launchArgs =
+            Json.make(mainClass = t"vivisection.Paced".in[Json], classpath = classpathText.in[Json])
+
+          client.request(t"launch", launchArgs)
+          client.awaitResponse(t"launch")
+
+          val source = Json.make(path = t"vivisection.Paced.scala".in[Json])
+          val points = List(Json.make(line = 40.in[Json]))
+          val setArgs = Json.make(source = source, breakpoints = j"[$points*]")
+
+          client.request(t"setBreakpoints", setArgs)
+          client.awaitResponse(t"setBreakpoints")
+          client.request(t"configurationDone")
+          client.awaitResponse(t"configurationDone")
+
+          val stopped = client.awaitEvent(t"stopped")
+          val thread = stopped.body.threadId.as[Int]
+
+          client.request(t"next", Json.make(threadId = thread.in[Json]))
+          client.awaitResponse(t"next")
+          val stepped = client.awaitEvent(t"stopped")
+
+          client.request(t"stackTrace", Json.make(threadId = thread.in[Json]))
+          val trace = client.awaitResponse(t"stackTrace")
+          val lines = trace.body.stackFrames.as[List[Json]].map(_.line.as[Int])
+
+          client.request(t"disconnect")
+          client.awaitResponse(t"disconnect")
+
+          (stopped.body.reason.as[Text], stepped.body.reason.as[Text], lines.stdlib.contains(41))
+
+    . assert(_ == (t"breakpoint", t"step", true))
+
     // Evaluation and assignment over the wire: evaluate an expression against a stopped frame,
     // then set a variable and read it back.
     test(m"a DAP client evaluates and assigns over a stopped frame"):
