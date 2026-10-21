@@ -95,7 +95,9 @@ object LocalClasspath:
     new LocalClasspath(entries.toList.to(List), entries.to(Set))
 
 
-  def apply[path: Abstractable across Paths to Text]
+  // The classpath of one entry, by its path: `of`, not `apply`, since a single `Classpath.Entry`
+  // is itself a path, and `LocalClasspath(entry)` would be ambiguous with the entries' `apply`.
+  def of[path: Abstractable across Paths to Text]
     ( path: path )
     ( using Tactic[Path.Error],
             Tactic[Io.Error],

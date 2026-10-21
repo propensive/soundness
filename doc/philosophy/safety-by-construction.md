@@ -12,7 +12,9 @@ literals are parsed against that grammar at compiletime, by the same parser that
 handle runtime input. A malformed literal is a compile error pointing at the offending
 character:
 
-```scala
+```scala fuel
+parse
+##
 url"https://example.com/api"    // checked against the URL grammar
 r"[a-z]+(suffix"                // does not compile: unclosed group
 media"application/jsom"         // does not compile: did you mean application/json?
@@ -34,7 +36,9 @@ The property that makes this trustworthy is that the compiletime and runtime pat
 compiletime against a literal, giving a compile error, and at runtime against dynamic
 input, giving a typed error:
 
-```scala
+```scala fuel
+parse
+##
 url"https://example.com/api"          // checked as the code compiles
 text.as[HttpUrl]                      // checked as the program runs
 ```
@@ -53,7 +57,9 @@ An interpolator's prefix method is `transparent inline`, so it may return someth
 specific than its declared type. This is what allows a literal to carry what it *is* into
 the type system rather than merely validating itself:
 
-```scala
+```scala fuel
+parse
+##
 p"/home/user/data.csv"                // a Path, on a specific platform
 n"worker"                             // a Name, valid for its plane
 % / "foo" / "bar"                     // Path of ("bar", "foo") — the elements in the type

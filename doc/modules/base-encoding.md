@@ -66,10 +66,26 @@ t"SGVsbG8=".deserialize[Base64]   // the bytes of "Hello"
 The alphabet in scope decides the exact characters. `base64Standard` and `base64Url` are the common
 choices — the URL-safe form avoids `+` and `/`, which have meaning in a URL:
 
-```scala
-import alphabets.base64Url
-
-bytes.serialize[Base64]   // URL-safe characters
+```scala fuel
+frame
+  label The standard alphabet
+  code
+      locally:
+        import alphabets.base64Standard
+        bytes.serialize[Base64]   // t"SGVsbG8="
+frame
+  label The URL-safe alphabet
+  code
+      locally:
+        import alphabets.base64Url
+        bytes.serialize[Base64]   // t"SGVsbG8=", with `-` and `_` where the standard has `+` and `/`
+frame
+  label Hexadecimal
+  code
+      locally:
+        import alphabets.hexLowerCase
+        bytes.serialize[Hex]      // t"48656c6c6f"
+##
 ```
 
 A *strict* alphabet accepts only its own characters when decoding, while a tolerant one also accepts

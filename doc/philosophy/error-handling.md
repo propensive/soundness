@@ -14,29 +14,39 @@ errors themselves are [expressive, immutable values](expressive-errors.md).
 An operation says what it can fail with, in its return type, and says nothing about what
 should happen:
 
-```scala
+```scala fuel
+parse
+##
 def loadConfiguration(path: Path on Linux): Configuration raises Io.Error raises JsonError
 ```
 
 The caller supplies the response, as a contextual value. The same body serves every
 response, because the body never mentioned one:
 
-```scala
+```scala fuel
+parse
+##
 import strategies.throwUnsafely       // throw: fine while prototyping
 ```
 
-```scala
+```scala fuel
+parse
+##
 safely(loadConfiguration(path)).or(Configuration.default)   // fall back
 ```
 
-```scala
+```scala fuel
+parse
+##
 recover:
   case Io.Error(path, _, _) => Configuration.default
   case error: JsonError    => abort(StartupError(error))
 . protect(loadConfiguration(path))                          // handle each case
 ```
 
-```scala
+```scala fuel
+parse
+##
 accrue(Invalid(Nil))((all, error) => all.add(error)):
   case error => ()
 . protect(validateEverything(form))                         // collect them all
@@ -73,7 +83,9 @@ Two verbs, and the distinction is what makes accrual possible.
 error and continues with a supplied fallback — which is what lets a validation pass check
 every field rather than stopping at the first:
 
-```scala
+```scala fuel
+parse
+##
 def parseAge(text: Text): Int raises NumberError =
   text.as[Int]                       // aborts if it cannot parse
 
@@ -91,7 +103,9 @@ A fallback value flows onwards, and downstream code cannot tell it from a real o
 consistency check fed a placeholder raises spurious *cascade* errors. `venture` and
 `guard` make the dependency structure explicit instead:
 
-```scala
+```scala fuel
+parse
+##
 def decodePerson(json: Json): Person raises Json.Error =
   val name: Venture[Text] = venture(json.name.as[Text])
   val role: Venture[Role] = venture(json.role.as[Role])

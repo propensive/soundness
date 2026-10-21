@@ -51,8 +51,9 @@ everything logged within that scope. Its two type parameters say which events it
 for all of them — and the form they are rendered through. A logger writing to standard output is
 enough to see log output:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 supervise:
   given Logger[Any, Message] = Logger(Out)
   Log.info(m"the logger is in scope")   // written to standard output, with a timestamp
@@ -69,8 +70,9 @@ omits the timestamp, and `ansiTimestampedLogFormat` colors the level for a termi
 
 A threshold drops everything below a chosen level:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 supervise:
   given Logger[Any, Message] = Logger(Out, level = Level.Warn)
   Log.info(m"not written")

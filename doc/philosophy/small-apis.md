@@ -13,7 +13,9 @@ of types it ranges over, not from the number of methods it offers.
 no `fromCsv` — the type argument says what is wanted, and an instance for that type does
 the work:
 
-```scala
+```scala fuel
+parse
+##
 source.read[Json]
 source.read[Xml]
 source.read[Markdown of Layout]
@@ -28,7 +30,9 @@ The same holds throughout. `as` decodes, `show` renders for a person, `inspect` 
 for a programmer, `in` encodes into a format, `stream` exposes a value as a stream,
 `digest` hashes, `serialize` renders bytes in a base encoding:
 
-```scala
+```scala fuel
+parse
+##
 t"2024-01-15".as[Date]
 t"example.com".as[Hostname]
 

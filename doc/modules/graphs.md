@@ -1,7 +1,5 @@
 ## Graphs
 
-<!-- doccheck: language captureChecking -->
-
 ### About
 
 A [directed acyclic graph](https://en.wikipedia.org/wiki/Directed_acyclic_graph) — a set of nodes
@@ -30,7 +28,9 @@ A graph that cannot be constructed with a cycle is an [impossible state](../phil
 A `Dag` is a value: immutable, transformable, and acyclic by construction, so its topological
 order has no failure mode. Everything comes from the `soundness` package:
 
-```scala
+```scala fuel
+feature experimental.captureChecking
+##
 import soundness.*
 import strategies.throwUnsafely
 ```
@@ -188,8 +188,9 @@ topology.linearized          // List(core, lib, app)
 
 An edge that would close a cycle is refused with a `Dag.Error`, and the graph is left as it was:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 topology.add(t"core", t"app")   // raises Dag.Error
 ```
 

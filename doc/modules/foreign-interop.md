@@ -38,8 +38,9 @@ An `Interface` binds an ecosystem to a definition file on the classpath, read as
 compiles, so the file must be on the compiler's classpath. Each supported grammar — TypeScript
 declarations, C headers, WebIDL, WIT — is a `Dialect` the ecosystem names:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 given (Interface in Typescript at "/definitions.ts") =
   Interface[Typescript](cp"/definitions.ts")
 ```
@@ -50,8 +51,9 @@ A `Foreign` value stands for a value of a foreign type, and its members navigate
 foreign declarations were Scala. Each step's type comes from the declarations, so the refinement
 tracks exactly what the foreign type system says:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 val foo: Foreign of "Foo" from Typescript = Foreign["Foo", Typescript]
 
 val bar: Foreign of "Bar" from Typescript = foo.bar   // Foo declares bar: Bar
@@ -73,8 +75,9 @@ are read at compiletime, and a *facade* wraps a live value so that its members a
 though they were Scala's — each access materializing as a direct, statically-typed JVM call, with
 no reflection and no wrapper object. With the Kotlin standard library on the classpath:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 val pair = make[kotlin.Pair[Text, Text]](t"a", t"b")
 val first: Text = pair.first
 
@@ -92,8 +95,9 @@ setters Kotlin generated; assigning to a `val` does not compile. A Kotlin functi
 takes an ordinary Scala lambda, whose own parameter is a facade over the Kotlin type, so the
 value inside it navigates too:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 regex.replace(t"a1b2", (m: Facade over kotlin.text.MatchResult) => t"<${m.value}>")
 // t"a<1>b<2>"
 ```

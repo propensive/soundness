@@ -35,8 +35,9 @@ Code that is checked here and run elsewhere is [safety by construction](../philo
 
 The syntax is Scala's own, and it is worth restating what it means. In a macro:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 def say(user: String)(using Quotes): Expr[Unit] =
   val name: Expr[String] = Expr(user)
   '{ Out.println("Hello "+${name}) }
@@ -61,6 +62,9 @@ out. Everything comes from the `soundness` package:
 ```scala
 import scala.quoted.*
 import soundness.*
+import environments.javaBaseEnvironment
+import workingDirectories.javaBaseWorkingDirectory
+import classloaders.threadContextClassloader
 import embeddings.automaticEmbedding
 import strategies.throwUnsafely
 import systems.javaBaseSystem
@@ -105,8 +109,9 @@ Two rigs come provided. `Jvm` compiles the block and runs it in a fresh JVM subp
 isolation, at process-startup cost — while `Isolation` runs it in the same process under an
 isolated classloader, cheap and contained:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 Isolation.dispatch:
   '{ t"computed in an isolated classloader" }
 ```

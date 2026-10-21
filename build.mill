@@ -3503,7 +3503,7 @@ object tasseomancy extends Library:
   // aviation and quantitative supply the time and unit axes, phoenicia measures text.
   object core extends Component(savagery.core, cataclysm.fonts, hypotenuse.core, gossamer.core, quantitative.core,
       quantitative.units, aviation.core, spectacular.core, phoenicia.core, distillate.core,
-      murmuration.core, cartouche.core):
+      murmuration.core, cartouche.core, acyclicity.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, quantitative.units):

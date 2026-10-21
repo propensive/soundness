@@ -28,7 +28,9 @@ which is the trade naming should always make.
 A name is chosen for how it reads *in position*, not in isolation. The test is whether
 the resulting expression can be read aloud:
 
-```scala
+```scala fuel
+parse
+##
 5.25.pm on 2018-Aug-11
 key.uncloak(message.decrypt.as[Text])
 worktree.merge(GitBranch(t"feature"), ff = FastForward.Never)
@@ -43,7 +45,9 @@ less than `on` and reads far worse.
 The same applies to contextual values, which are named for what they *select* rather
 than for their type, since the import is what a reader sees:
 
-```scala
+```scala fuel
+parse
+##
 import strategies.throwUnsafely
 import codepages.utf8Codepage
 import dateFormats.iso8601DateFormat
@@ -55,16 +59,20 @@ that code from the import line alone.
 
 ## Type parameters as words
 
-The convention is easiest to judge by comparison. A signature in the conventional style:
+The convention is easiest to judge by comparison, on one signature written first in the
+conventional style and then in the Soundness style:
 
-```scala
-def read[T](using R: Readable[S, T]): T
-```
-
-and the same signature in the Soundness style:
-
-```scala
-def read[result](using readable: value is Readable to result): result
+```scala fuel
+parse
+frame
+  label The conventional style
+  code
+      def read[T](using R: Readable[S, T]): T
+frame
+  label The Soundness style
+  code
+      def read[result](using readable: value is Readable to result): result
+##
 ```
 
 The second says what the pieces *are*: `result` is what is produced, `value` what it is

@@ -116,8 +116,9 @@ The same path syntax that writes an update can name a position without going the
 maps paths to values, which is how a derived typeclass is overridden at one field rather than for
 a whole type:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 case class Org(ceo: Person, cto: Person)
 
 val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
@@ -133,8 +134,9 @@ a path that does not exist is a compile error, and each value must have the righ
 field it names. The result is an ordinary map keyed by the path, which a derivation consults as it
 visits each field:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 orgSpecific.instances.keys   // Set("cto.name", "ceo.name")
 ```
 

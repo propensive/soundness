@@ -33,8 +33,9 @@ import soundness.*
 A browser session launches the driver, opens a session, and closes both when the block ends —
 whether it returns or throws. Within it, the session navigates and queries:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 WebDriver.Chrome.headless.session:
   browser.navigateTo(url"https://example.com/")
   browser.title()
@@ -55,8 +56,9 @@ Elements are located by typed criteria — a CSS selector list, a validated DOM 
 an HTML tag — with `\` returning every match and `element` exactly one. Elements found within
 elements descend the tree:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 WebDriver.Chrome.headless.session:
   val heading = browser.element(H1)                    // by tag
   val items = browser \ SelectorList.read(t"nav li")   // by CSS selector
@@ -80,8 +82,9 @@ error code the driver reported, its message and the browser-side stack trace.
 Most of what makes browser automation flaky is timing, and the protocol helps with only part of
 it. WebDriver's *implicit* timeout covers find commands, and is set once for the session:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 browser.timeouts(WebDriver.Session.Timeouts(`implicit` = 5000L))
 ```
 
@@ -89,8 +92,9 @@ Nothing else has a server-side notion of waiting. For a button that becomes enab
 whose text changes, `awaitElement`, `awaitElements` and `awaitUntil` poll under the retry policy
 in scope:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 import retryTenacities.exponentialTenTimesTenacity
 
 browser.awaitElement(Name[DomId](t"result"))

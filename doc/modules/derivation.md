@@ -300,19 +300,38 @@ from the input should take the default the author wrote rather than fail. Within
 calling `default` yields an `Optional[field]` â€” the declared default, or `Unset` where the field
 has none. A parser that tolerates missing trailing columns:
 
-```scala
-object LenientParsing extends ProductDerivation[Parsing]:
-  inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
-    text =>
-      val columns = text.cut(t",")
-      build[derivation]:
-        [field] => parsing =>
-          columns(Ordinal.zerary(index)).let(parsing.parse(_))
-          . or(default.or(panic(m"no column and no default for $label")))
+```scala fuel
+frame
+  label Every column must be present
+  code
+      object StrictParsing extends ProductDerivation[Parsing]:
+        given Parsing[Text] = identity(_)
+        given Parsing[Int] = _.s.toInt
 
-case class Settings(name: Text, retries: Int = 3)
+        inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
+          text =>
+            val columns = text.cut(t",")
+            build[derivation]:
+              [field] => parsing => parsing.parse(columns(Ordinal.zerary(index)).or(t""))
+frame
+  label A missing column takes the field's default
+  code
+      object LenientParsing extends ProductDerivation[Parsing]:
+        given Parsing[Text] = identity(_)
+        given Parsing[Int] = _.s.toInt
 
-LenientParsing.derived[Settings].parse(t"primary")   // Settings(t"primary", 3)
+        inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
+          text =>
+            val columns = text.cut(t",")
+            build[derivation]:
+              [field] => parsing =>
+                columns(Ordinal.zerary(index)).let(parsing.parse(_))
+                . or(default.or(panic(m"no column and no default for $label")))
+
+      case class Settings(name: Text, retries: Int = 3)
+
+      LenientParsing.derived[Settings].parse(t"primary")   // Settings(t"primary", 3)
+##
 ```
 
 ### Deriving beyond codecs
@@ -406,8 +425,9 @@ Occasionally one field of one type needs a different instance from the default â
 for one column, an override for one path. `specifically` builds such an override map by naming the
 paths, checked against the type's actual structure:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 case class Org(cto: Person, ceo: Person)
 
 val custom: Org is Specific over (Codec in Json) =

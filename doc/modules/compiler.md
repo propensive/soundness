@@ -26,7 +26,13 @@ from the `soundness` package:
 
 ```scala
 import soundness.*
+
+import environments.javaBaseEnvironment
+import probates.awaitProbate
 import strategies.throwUnsafely
+import systems.javaBaseSystem
+import threads.virtualThreads
+import workingDirectories.javaBaseWorkingDirectory
 ```
 
 A compilation described as a value and run by a toolchain is [direct style](../philosophy/direct-style.md): the build is code, checked like any other.
@@ -53,11 +59,12 @@ a result:
 ```scala
 supervise:
   val process = compiler(classpath)(Map(t"hello.scala" -> source), outputPath)
+  val result = process.complete()   // CompileResult.Success, Failure, or Crash
 
   process.notices.each: notice =>
     report(notice.importance, notice.file, notice.message)
 
-  process.complete()   // CompileResult.Success, Failure, or Crash
+  result
 ```
 
 Each `Notice` carries its importance — info, warning or error — its file and its span, so a tool
@@ -91,7 +98,7 @@ The single-type-argument form targets the classfile universe, and `targeting` se
 explicitly:
 
 ```scala
-val forJs = Scalac[3.8](options).targeting[Universe.Sjsir]
+val forJs = compiler.targeting[Universe.Sjsir]
 ```
 
 Each universe beyond the JVM's has runtime prerequisites, supplied on the classpath like any
@@ -109,13 +116,14 @@ are tools. Producing an artifact is path search: `produce` takes what you have, 
 want, and an output location, and runs each tool on the path between them:
 
 ```scala
-Toolchain(jarEdges()).produce
-  ( Deliverable.Emission(output, classpath),
-    Universe.Classfile,
-    Artifact.Jar,
-    destination,
-    List(jarOptions.name(t"app.jar")),
-    List(EntryPoint(fqcn"com.example.Main")) )
+supervise:
+  Toolchain(jarEdges()).produce
+    ( Deliverable.Emission(outputPath, classpath),
+      Universe.Classfile,
+      Artifact.Jar,
+      destination,
+      List(jarOptions.name(t"app.jar")),
+      List(EntryPoint(fqcn"com.example.Main")) )
 ```
 
 From classfiles come an executable `Artifact.Jar`, a `Dex` archive of Dalvik bytecode, a complete,
@@ -146,8 +154,9 @@ The node set is open, too. `Artifact`, `Tool` and `Edge` are ordinary public typ
 edge for a format Soundness has never heard of extends the graph, and a format can be declared as
 data, by its kind and name, as a registry read at run time declares it:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 val proto = Artifact.source(t"proto")
 val descriptor = Artifact(Artifact.Kind.Ir, t"descriptor")
 ```
@@ -165,7 +174,7 @@ at an application format.
 The path itself can be asked for directly, which is how a tool reports what it is about to run:
 
 ```scala
-toolchain.path(Universe.Classfile, Apk).map(_.target.id)   // List(t"dex", t"apk")
+Toolchain(jarEdges(), dexEdges(), apkEdges()).path(Universe.Classfile, Apk).map(_.target.id)   // List(t"dex", t"apk")
 ```
 
 The path is the *unique shortest* one. Where none exists, `path` raises `NoPath`; where two are
@@ -181,16 +190,17 @@ that sequence is written into the APK tool.
 
 A staging rig, which must fold its own running classpath into the JARs it produces, pairs
 `Bundler.applicationClasspath` — the running application's classpath, introspected from the
-thread-context classloader — with its compiled output:
+classloader that loaded the application itself — with its compiled output:
 
 ```scala
-Toolchain(jarEdges()).produce
-  ( Deliverable.Emission(out, Bundler.applicationClasspath),
-    Universe.Classfile,
-    Artifact.Jar,
-    out,
-    List(jarOptions.name(t"$uuid.jar")),
-    List(EntryPoint(executor)) )
+def stage(out: Path on Linux, uuid: Uuid, executor: Fqcn)(using Monitor): Path on Linux =
+  Toolchain(jarEdges()).produce
+    ( Deliverable.Emission(out, Bundler.applicationClasspath),
+      Universe.Classfile,
+      Artifact.Jar,
+      out,
+      List(jarOptions.name(t"$uuid.jar")),
+      List(EntryPoint(executor)) )
 ```
 
 ### Settings
@@ -223,11 +233,14 @@ present, obtainable only through the probing constructor `WasiToolchain()`; and 
 naming the directory of WIT packages and the world to link against:
 
 ```scala
-given WasiToolchain = WasiToolchain()
-given Wasi.World = Wasi.World(witDirectory, t"my-world")
+def component(witDirectory: Path on Linux, emission: Deliverable, destination: Path on Linux)
+:   Path on Linux =
+  given WasiToolchain = WasiToolchain()
+  given Wasi.World = Wasi.World(witDirectory, t"my-world")
 
-val toolchain = Toolchain(sjsEdges(), List(sjsEdges.wasi()), ociEdges())
-toolchain.produce(emission, Universe.Sjsir, OciImage, destination)
+  supervise:
+    Toolchain(sjsEdges(), List(sjsEdges.wasi()), ociEdges())
+    . produce(emission, Universe.Sjsir, OciImage, destination)
 ```
 
 WASI generations are separate nodes because they determine an artifact's ABI: `Wasip1` is a flat,
@@ -246,15 +259,14 @@ raises `Toolchain.Error` if either is missing. It takes the triples to target, d
 build host's own:
 
 ```scala
-val toolchain = Toolchain(nativeEdges(Triple.Arm64MacOs, Triple.X64Linux))
-
-toolchain.produce
-  ( emission,
-    Universe.Nir,
-    Artifact.Binary(Triple.X64Linux),
-    destination,
-    List(nativeOptions.mode.releaseFast, nativeOptions.gc.commix),
-    List(EntryPoint(fqcn"com.example.Main")) )
+def binary(emission: Deliverable, destination: Path on Linux): Path on Linux = supervise:
+  Toolchain(nativeEdges(Triple.Arm64MacOs, Triple.X64Linux)).produce
+    ( emission,
+      Universe.Nir,
+      Artifact.Binary(Triple.X64Linux),
+      destination,
+      List(nativeOptions.mode.releaseFast, nativeOptions.gc.commix),
+      List(EntryPoint(fqcn"com.example.Main")) )
 ```
 
 Each triple is its own node, rendered as an LLVM target triple such as `aarch64-apple-darwin` or
@@ -272,9 +284,9 @@ options — `-Werror`, `-jvm-target`, explicit API mode, and the rest — under 
 version-checked in the same way:
 
 ```scala
-supervise:
+def kotlin(kotlinSource: Text, out: Path on Linux): CompileResult = supervise:
   val kotlinc = Kotlinc[2.4](List(kotlincOptions.warnings.asErrors, kotlincOptions.jvmTarget(17)))
-  val process = kotlinc(classpath)(Map(t"demo/Greeting.kt" -> source), outputPath)
+  val process = kotlinc(classpath)(Map(t"demo/Greeting.kt" -> kotlinSource), out)
   process.complete()
 ```
 

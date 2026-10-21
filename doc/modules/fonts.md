@@ -35,8 +35,9 @@ The name is the format's own: an *sfnt* is the table container that both TrueTyp
 share, and the two specializations are told apart by their tables — a `CFF ` table means
 PostScript outlines, so the font is an `Opentype`; otherwise it is a `Truetype`:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 val font: Sfnt = Sfnt(cp"/fonts/text.ttf")
 
 font match
@@ -121,8 +122,9 @@ font falls back to another, and a PDF viewer substitutes. A provision closes tha
 instance of `Typesettable` for the typeface *in a medium*, saying how that medium obtains the
 font and which faces it can then set, and it is declared once, as a given:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 object fonts:
   val interFile: Sfnt = Sfnt(cp"/fonts/Inter-Variable.ttf")
 
@@ -147,8 +149,9 @@ typeface it does not carry — and only for a face the provision covers, so aski
 file for italics, or a font without `onum` for oldstyle numerals, is a `Font.Error` at the
 pairing rather than a synthesized or silently ignored rendering:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 import fonts.inter
 
 val label: Font in Web = Web.font(inter.bold)
@@ -164,8 +167,9 @@ a PDF embeds the file or names one of its standard fourteen fonts.
 A font file on the classpath can be checked before anything runs. A provision made from a
 classpath resource keeps the resource's path as its `Locus`:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 given inter: ((Typeface of "Inter") is Typesettable in Medium at "/fonts/Inter.ttf") =
   Typesettable.embedded(cp"/fonts/Inter.ttf")
 ```

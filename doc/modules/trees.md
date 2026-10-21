@@ -25,6 +25,7 @@ Everything comes from the `soundness` package:
 import soundness.*
 import treeStyles.squareTreeStyle
 import stdios.javaLangSystemStdio
+import termcapDefinitions.basicTermcap
 ```
 
 ### Trees
@@ -110,18 +111,22 @@ labels in another, and the widths still computed correctly.
 A tree can be given in two ways. `TreeDiagram.by` takes a function from node to children, which
 suits a structure that is already in hand:
 
-```scala
-TreeDiagram.by[Taxon](_.children)(animalia)
-```
-
 `TreeDiagram.apply` instead takes roots and finds children through an `Expandable` instance on the
 node type, which suits a node type whose children are what it means by children — a filesystem
 path, a dependency, a syntax node:
 
-```scala
-given Taxon is Expandable = _.children
+```scala fuel
+frame
+  label The children named at the call
+  code
+      TreeDiagram.by[Taxon](_.children)(animalia)
+frame
+  label The children known to the node type
+  code
+      given Taxon is Expandable = _.children
 
-TreeDiagram(animalia)
+      TreeDiagram(animalia)
+##
 ```
 
 The lines are produced lazily, so a large or deep tree is drawn as far as it is consumed rather

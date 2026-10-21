@@ -15,7 +15,9 @@ Exit status is 1 if anything is reported.
 """
 import glob, os, re, sys
 
-FENCE_OPEN = re.compile(r'^```scala\s*$')
+FENCE_OPEN = re.compile(r'^```scala(?: fuel)?\s*$')
+FUEL_OPEN = re.compile(r'^```scala fuel\s*$')
+PREAMBLE_END = re.compile(r'^##\s*$')
 FENCE_CLOSE = re.compile(r'^```\s*$')
 CHOICE_IMPORT = re.compile(r'^\s*import\s+([a-z]\w*)\.([a-zA-Z]\w*)\s*$')
 CHOICE_IMPORTS = re.compile(r'^\s*import\s+([a-z]\w*)\.\{([^}]*)\}\s*$')
@@ -43,15 +45,42 @@ Nil List Set Map Text Data Optional Unset Chain Progression Expr Type Quotes Tup
 Benchmarks Suite Tests
 '''.split())
 
+def code_of(buffer, start, fuel):
+    """A fence's code: all of it, or for a ```scala fuel fence the `code` of each frame in its
+    preamble and whatever follows the `##`, since the preamble itself is TEL, not Scala."""
+    if not fuel:
+        return [(start, buffer)]
+    for i, line in enumerate(buffer):
+        if PREAMBLE_END.match(line):
+            preamble, code = buffer[:i], buffer[i + 1:]
+            break
+    else:
+        return [(start, buffer)]
+    pieces, k = [], 0
+    while k < len(preamble):
+        stripped = preamble[k].strip()
+        if preamble[k].startswith('  ') and (stripped == 'code' or stripped.startswith('code ')):
+            inline = stripped[5:]
+            body, m = ([inline] if inline else []), k + 1
+            while m < len(preamble) and (preamble[m].startswith('      ') or not preamble[m].strip()):
+                body.append(preamble[m][6:]); m += 1
+            pieces.append((start + k + 1, body)); k = m
+        else:
+            k += 1
+    if any(l.strip() for l in code):
+        pieces.append((start + len(preamble) + 1, code))
+    return pieces
+
 def fences(path):
     lines = open(path, encoding='utf-8').read().split('\n')
-    inside, start, buffer = False, 0, []
+    inside, start, buffer, fuel = False, 0, [], False
     for number, line in enumerate(lines, 1):
         if not inside:
             if FENCE_OPEN.match(line):
-                inside, start, buffer = True, number + 1, []
+                inside, start, buffer, fuel = True, number + 1, [], bool(FUEL_OPEN.match(line))
         elif FENCE_CLOSE.match(line):
-            yield start, buffer
+            for piece_start, piece in code_of(buffer, start, fuel):
+                yield piece_start, piece
             inside = False
         else:
             buffer.append(line)

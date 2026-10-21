@@ -14,7 +14,9 @@ The claim is worth making concrete. In a program built on Soundness — each lin
 with the relevant module's names in scope — the following are compile errors rather than
 possibilities:
 
-```scala
+```scala fuel
+parse
+##
 2012-Feb-30                            // a date that does not exist
 Eur(3.01) + Gbp(2.50)                  // money in mismatched currencies
 url"https:/example.com"                // a malformed URL

@@ -59,23 +59,37 @@ t"hello world".absolve match
 
 ### Capturing
 
-A capturing group written with `$name(…)` binds the text it matches to `name`:
+A capturing group written with `$name(…)` binds the text it matches to `name`, and several
+groups bind several variables:
 
-```scala
-t"hello world" match
-  case r"$first(hello) world" => first
-  case _                      => t""
-// t"hello"
+```scala fuel
+frame
+  label A literal pattern, matched or not
+  code
+      t"hello world" match
+        case r"hello world" => true
+        case _              => false
+      // true
+frame
+  label One group, bound to `first`
+  code
+      t"hello world" match
+        case r"$first(hello) world" => first
+        case _                      => t""
+      // t"hello"
+frame
+  label Two groups, bound to `first` and `second`
+  code
+      t"hello world" match
+        case r"$first(hello) $second(world)" => List(first, second)
+        case _                               => Nil
+      // List(t"hello", t"world")
+##
 ```
 
-Several groups bind several variables, and groups nest:
+Groups nest:
 
 ```scala
-t"hello world" match
-  case r"$first(hello) $second(world)" => List(first, second)
-  case _                               => Nil
-// List(t"hello", t"world")
-
 t"hello world" match
   case r"(($first(hello)) world)" => first
   case _                          => t""
@@ -163,8 +177,9 @@ A pattern can also bind on the left of a definition, where it stands for an
 extraction that the code asserts will succeed. This pulls several captures out of
 one expression at once:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 val r"$prefix([a-z0-9._%+-]+)@$domain([a-z0-9.-]+)\.$tld([a-z]{2,6})" =
   t"test@example.com": @unchecked
 

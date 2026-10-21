@@ -13,7 +13,9 @@ unencumbered. In Soundness, `null` is treated as both unrepresentable and unnece
 An `Optional[Text]` *is* a `Text`, or it is `Unset`. There is no `Some` to allocate and
 no `Some` to unwrap:
 
-```scala
+```scala fuel
+parse
+##
 val name: Optional[Text] = t"Ada"
 val missing: Optional[Text] = Unset
 
@@ -26,7 +28,9 @@ leaves an absent one alone; `lay` supplies a fallback and a transformation toget
 `present` and `absent` ask directly; and `vouch` asserts presence where the surrounding
 code has already established it:
 
-```scala
+```scala fuel
+parse
+##
 name.let(_.upper)              // Optional[Text]
 name.lay(t"nobody")(_.upper)   // Text, either way
 name.present                   // true
@@ -63,7 +67,9 @@ to something already optional would merge two absences that were meant to be dis
 a generic method taking an `Optional[value]` needs evidence that `value` is a definite
 type, and the evidence appears in the signature:
 
-```scala
+```scala fuel
+parse
+##
 def firstOrElse[value: Concrete](values: List[Optional[value]], fallback: value): value =
   values.compact.prim.or(fallback)
 ```
@@ -79,7 +85,9 @@ carried through the program in a wrapper that every later step must accommodate.
 Other libraries return `Option`, and a Soundness value sometimes has to become one. The
 conversion is explicit in both directions and confined to the boundary:
 
-```scala
+```scala fuel
+parse
+##
 name.option              // Some(t"Ada"): Option[Text]
 Some(t"Ada").optional    // t"Ada": Optional[Text]
 ```

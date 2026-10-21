@@ -41,8 +41,9 @@ An advertisement is a loan: the instance is probed for, claimed (renamed `Gondor
 host holds the name), and announced; it stays advertised for the block, and a goodbye is sent
 when the block ends — or when the `Monitor` is cancelled, which unwinds it.
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 import socketBackends.javaBaseSockets
 import discoveryBackends.mdnsSockets
 
@@ -59,8 +60,9 @@ A browse is a loan too, lending a `Discovery.Browser` whose `events` are the ins
 and leaving the link, as they happen, and whose `instances` are those currently known. Resolving
 an instance yields its host name, port, TXT record and addresses, within a timeout:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 supervise:
   fury.browse:
     summon[Discovery.Browser].events.each:

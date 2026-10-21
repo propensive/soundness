@@ -238,9 +238,11 @@ object Chart:
       smoothing:     Double         = 0.0,
       barGap:        Double         = 0.25,
       boxGap:        Double         = 0.25,
-      hole:          Double         = 0.0 )
+      hole:          Double         = 0.0,
+      sectorGap:     Double         = 2.0,
+      bandGap:       Double         = 2.0 )
   extends Bars.Style, StackedBars.Style, Histogram.Style, Lines.Style, Scatter.Style, Boxes.Style,
-    Pie.Style
+    Pie.Style, Doughnut.Style
 
   object Drawing:
     // The whole drawing as one SVG, as `drawing.in[Svg]`.
