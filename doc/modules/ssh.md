@@ -9,6 +9,7 @@ authentication, and the connection protocol that runs commands.
 
 ```scala
 import soundness.*
+import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 import providers.javaBaseProvider
 import alphabets.base64Standard

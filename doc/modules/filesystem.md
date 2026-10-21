@@ -31,6 +31,11 @@ operations need brought into scope:
 
 ```scala
 import soundness.*
+import filesystemOptions.dereferenceSymlinks
+import filesystemOptions.moveAtomically
+import serpentine.pathHierarchies.linux
+import environments.javaBaseEnvironment
+import stdios.javaLangSystemStdio
 
 import charsets.utf8Charset
 import codepages.utf8Codepage

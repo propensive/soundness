@@ -27,6 +27,8 @@ backend, network access and logging a client needs:
 
 ```scala
 import soundness.*
+import errorDiagnostics.stackTracesDiagnostics
+import stdios.javaLangSystemStdio
 import httpBackends.javaNetHttp
 import internetAccess.online
 import logging.silentLogging

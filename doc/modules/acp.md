@@ -27,6 +27,7 @@ and writer tasks, an error strategy, a working directory for the agent, and some
 feature experimental.captureChecking
 ##
 import soundness.*
+import environments.javaBaseEnvironment
 
 import errorDiagnostics.stackTracesDiagnostics
 import probates.awaitProbate

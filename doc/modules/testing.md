@@ -23,6 +23,7 @@ first-class test subjects. Everything comes from the `soundness` package:
 
 ```scala
 import soundness.*
+import environments.javaBaseEnvironment
 import strategies.throwUnsafely
 ```
 

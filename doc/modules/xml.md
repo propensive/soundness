@@ -27,6 +27,7 @@ package, with a schema and an error strategy in scope:
 
 ```scala
 import soundness.*
+import temporaryDirectories.javaBaseTemporaryDirectory
 import strategies.throwUnsafely
 import xmlSchemas.freeformXmlSchema
 ```

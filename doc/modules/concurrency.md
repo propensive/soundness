@@ -37,7 +37,7 @@ have settled, so concurrent work has a clear boundary:
 
 ```scala
 supervise:
-  // tasks spawned here are owned by this scope
+  ()  // tasks spawned here are owned by this scope
 ```
 
 ### Spawning a task
@@ -225,6 +225,7 @@ for `Schedulable` are reported as ambiguous:
 import abstractables.epochMillisecondsAbstractable
 
 supervise:
+  ()
   snooze(200L)  // does not compile: a Long is both a duration and an instant here
 ```
 

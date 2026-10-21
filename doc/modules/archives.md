@@ -28,6 +28,7 @@ examples work in a directory of their own:
 
 ```scala
 import soundness.*
+import filesystemOptions.overwritePreexisting
 
 import codepages.utf8Codepage
 import charsets.utf8Charset

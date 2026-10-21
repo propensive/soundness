@@ -62,6 +62,8 @@ out. Everything comes from the `soundness` package:
 ```scala
 import scala.quoted.*
 import soundness.*
+import workingDirectories.javaBaseWorkingDirectory
+import classloaders.threadContextClassloader
 import embeddings.automaticEmbedding
 import strategies.throwUnsafely
 import systems.javaBaseSystem
