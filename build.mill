@@ -3457,6 +3457,7 @@ object syndesis extends Library:
   object core extends Component(urticose.dns, coaxial.core, parasite.core, turbulence.core,
       capricious.core):
     override def scalaJs = false // multicast sockets and a background responder thread
+    override def scalaNative = true // coaxial's native backend joins multicast groups
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, coaxial.jvm, eucalyptus.core):
@@ -3525,10 +3526,26 @@ object telekinesis extends Library:
   object forms extends Component(core, legerdemain.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
+  // The HTTP/1.1 client over coaxial's sockets (`httpBackends.soundnessHttp`): the one
+  // `Http.Backend` that runs wherever coaxial has a `Socket.Backend` — the JVM and Scala Native.
+  // Its `https` exchange is platform-split: `sockets-jvm` negotiates ALPN and drives `http2`;
+  // `sockets-native` speaks HTTP/1.1 over coaxial's OpenSSL connection. `http2` and `coaxial.jvm`
+  // serve the JVM half; `nativeDeps` drops them from the native cross.
+  object sockets
+      extends Component(core, coaxial.core, coaxial.jvm, http2, zephyrine.core, turbulence.core,
+        gossamer.core, contingency.core, parasite.core):
+    override def scalaJs = false // no Scala.js socket backend
+    override def scalaNative = true
+    override def sources = Task.Sources(moduleDir, moduleDir / os.up / "sockets-jvm")
+    override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "sockets-native")
+    // Not `settings.sep`, like `jvm`, whose sources these were: the client has not yet adopted
+    // separation checking.
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
   // JVM-only transports split out of `core` so the platform-agnostic HTTP model and client can
   // cross-compile to Scala.js: the `java.net.http` `Http.Backend` (`httpBackends.javaNetHttp`)
   // and the `coaxial` domain-socket client.
-  object jvm extends Component(core, http2, coaxial.jvm):
+  object jvm extends Component(core, http2, sockets, coaxial.jvm):
     override def scalaJs = false
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
@@ -3548,7 +3565,7 @@ object telekinesis extends Library:
     override def scalaNative = false // declares its WIT `Interface` with hellenism's JVM/JS-only `cp"…"`
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
-  object test extends Tests(core, jvm, http2, eucalyptus.core):
+  object test extends Tests(core, jvm, http2, sockets, eucalyptus.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
 
