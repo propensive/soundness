@@ -37,6 +37,7 @@ import corpuscular.*
 import gastronomy.*
 import gossamer.*
 import prepositional.*
+import vacuous.*
 import gastronomy.Concession
 
 extension [encodable: Encodable in Data](value: encodable)
@@ -115,3 +116,21 @@ private[enigmatic] def securityException(error: Throwable, name: String): Boolea
     cls != null && (cls.nn.getName == name || recur(cls.nn.getSuperclass))
 
   recur(error.getClass)
+
+// The `Crypto.Error.Reason` a provider's failure stands for: the pure-Scala provider's
+// `CryptoFailure` carries its reason; a JVM provider's `javax.crypto`/`java.security` exceptions
+// are matched by class name (`AEADBadTagException` is a `BadPaddingException`, so the
+// superclass-walking match preserves the order below); anything else is not a provider failure.
+private[enigmatic] def failureReason(error: Throwable): Optional[Crypto.Error.Reason] = error match
+  case failure: CryptoFailure => failure.reason
+
+  case _ =>
+    if securityException(error, "javax.crypto.BadPaddingException")
+    then Crypto.Error.Reason.BadPadding
+    else if securityException(error, "javax.crypto.IllegalBlockSizeException")
+    then Crypto.Error.Reason.IllegalBlockSize
+    else if securityException(error, "java.security.InvalidKeyException")
+    then Crypto.Error.Reason.InvalidKey
+    else if securityException(error, "java.security.GeneralSecurityException")
+    then Crypto.Error.Reason.IoFailure
+    else Unset
