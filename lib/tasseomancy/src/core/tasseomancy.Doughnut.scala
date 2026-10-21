@@ -64,14 +64,22 @@ object Doughnut:
   private val evenOdd: Css.Style = Css.Style.of(List(t"fill-rule" -> t"evenodd"))
 
   // The components of a doughnut: each node's sector, given as the path operations of the part
-  // completed and of the remainder, in the colour of its rank and a subdued tint of it. `hole`
-  // hollows the centre to that fraction of the radius, and `sectorGap` and `bandGap` are the
-  // widths in pixels of the grout between neighbouring sectors and between neighbouring bands.
-  // A doughnut has no labels and no legend.
+  // completed and of the remainder, in a colour shaded by where the sector lies and a subdued
+  // tint of it. `hole` hollows the centre to that fraction of the radius, and `sectorGap` and
+  // `bandGap` are the widths in pixels of the grout between neighbouring sectors and between
+  // neighbouring bands. A doughnut has no labels and no legend.
   trait Style extends Chart.Style:
     def hole: Double
     def sectorGap: Double
     def bandGap: Double
+
+    // The colour of the sector whose midpoint lies at (`x`, `y`), each from -1 at the left or
+    // the bottom of the doughnut to 1 at the right or the top, from the palette's first colour:
+    // its hue turns through thirty degrees from left to right, and from bottom to top it passes
+    // from a fifth darker, through the pure hue at the middle, to a fifth lighter.
+    def shade(x: Double, y: Double, base: Color in Srgb): Color in Srgb =
+      val pure = base.to[Hsv].pure.rotate(Angle.degrees(15.0*x))
+      (if y < 0.0 then pure.shade(-0.2*y) else pure.tint(0.2*y)).to[Srgb]
 
     def sector(ops: List[Stroke], color: Color in Srgb, rank: Int, index: Int): List[Figure] =
       List(Outline(ops, style = filled(color) + evenOdd, id = Svg.Id(t"sector-$index")))
@@ -271,10 +279,14 @@ object Doughnut:
           val inner = hole + band.inner*usable + (if first then 0.0 else style.bandGap/2.0)
           val rim = hole + band.outer*usable - (if last then 0.0 else style.bandGap/2.0)
           val outer = rim.max(inner + 1.0)
-          val color = palette.color(band.rank)
-          val muted = palette.subdue(color, 0.7)
 
           val figures = band.sectors.fold(List[Figure]()): (acc, sector) =>
+            val bearing = (sector.start + sector.end)/2.0
+            val reach = (inner + outer)/2.0/radius
+            val x = reach*sin(bearing).double
+            val y = reach*cos(bearing).double
+            val color = style.shade(x, y, palette.color(0))
+            val muted = palette.subdue(color, 0.7)
             val whole = sector.end - sector.start >= 2.0*π - Scale.tolerance
             val start = sector.start
             val end = sector.end

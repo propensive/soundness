@@ -254,7 +254,9 @@ rank further out, so that a build fills in from the centre outwards. Each node i
 band, sweeping an angle proportional to its size within the rank, and a band is as thick as its
 rank's share of the total size. A node's size and its progress, from `0.0` to `1.0`, come from
 two typeclasses on the node type, `Sized` and `Progressive`; the sector fills clockwise as far as
-the node is complete, with the remainder in a subdued tint of the rank's colour. A doughnut has
+the node is complete, with the remainder in a subdued tint of the sector's colour, which is the
+palette's first colour shaded by where the sector lies: its hue turning through thirty degrees
+from left to right, and darker below the middle and lighter above it. A doughnut has
 no labels and no legend; each band is a `rank-0`, `rank-1`, … group and each sector a
 `sector-0`, `sector-1`, … path, with the unfinished part of a sector in `sector-0-rest`.
 
@@ -278,7 +280,7 @@ doughnut.revise(Dag(typechecked -> parse, emit -> typechecked))(1).size   // 1: 
 ```
 
 `Chart.Standard(hole = 0.3)` hollows the centre, `sectorGap` and `bandGap` are the widths of the
-grout between sectors and between bands, and `Doughnut.Style` has `sector` and `remainder` for
-the two parts of a sector. The
+grout between sectors and between bands, and `Doughnut.Style` has `shade` for a sector's colour
+from its position and `sector` and `remainder` for its two parts. The
 ranking is acyclicity's: `import rankings.balancedRanking` draws each node as close to its
 dependents as it can be, rather than as close to the centre.
