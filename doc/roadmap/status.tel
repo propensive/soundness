@@ -21,7 +21,7 @@ item
   track core
   horizon near
   status open
-  baseline  32 files use sorted/ordered stdlib collections (2026-09-25; 16 on 2026-08-01)
+  baseline  31 files use sorted/ordered stdlib collections (2026-10-21; 32 on 2026-09-25; 16 on 2026-08-01)
   criterion  git grep -lE 'TreeMap|TreeSet|TrieMap|SortedMap|SortedSet' -- lib | grep -v '^lib/proscenium/' | wc -l == 0
 
 item
@@ -40,7 +40,7 @@ item
   horizon near-mid
   status open
   needs core-1
-  baseline  228 files import scala.collection, 106 of them scala.collection.mutable (2026-09-25; 219 and 170 on 2026-08-01)
+  baseline  239 files import scala.collection, 115 of them scala.collection.mutable (2026-10-21; 228 and 106 on 2026-09-25; 219 and 170 on 2026-08-01)
   criterion  git grep -l 'import scala.collection' -- lib | grep -v '^lib/proscenium/' | wc -l == 0
 
 item
@@ -48,7 +48,7 @@ item
   track core
   horizon mid
   status open
-  baseline  1606 while loops, 476 readUnchecked, 507 charAt in lib core (2026-09-25; 1597, 482, 509 on 2026-09-14)
+  baseline  1669 while loops, 993 readUnchecked, 514 charAt in lib core (2026-10-21, after #2274 made the frozen Array the only immutable array; 1606, 476, 507 on 2026-09-25)
   criterion  no collection exposes a partial indexed apply (issue #1666); every remaining while is a shape doc/standards/loops.md sanctions, with a comment naming its invariant
 
 item
@@ -70,15 +70,16 @@ item
   track safety
   horizon near
   status open
-  baseline  484 untrackedCaptures occurrences (2026-10-08 after the first class conversion; 507 on 2026-10-07; 468 on 2026-09-25; 288 on 2026-08-01)
+  baseline  385 untrackedCaptures occurrences (2026-10-21; 484 on 2026-10-08; 507 on 2026-10-07; 468 on 2026-09-25; 288 on 2026-08-01)
   criterion  git grep -o untrackedCaptures -- lib | wc -l == 0
 
 item
   id safety-2
   track safety
   horizon near
-  status open
-  baseline  419 unsafeAssumeSeparate, 511 unsafeAssumePure, 50 unsafeErasedValue; 37 cite rep/, 2 by case (2026-10-07; 416, 502, 50 on 2026-09-25; 323, 273, 45 on 2026-08-01)
+  status done
+  done  #2306 (2026-10-21)
+  baseline  218 unsafeAssumeSeparate, 289 unsafeAssumePure, 35 unsafeErasedValue, 381 untrackedCaptures; 0 untagged, ratcheted by etc/check-escape-count.py (2026-10-21; 419, 511, 50 and 2 untagged on 2026-10-07; 416, 502, 50 on 2026-09-25; 323, 273, 45 on 2026-08-01)
   criterion  every remaining caps.unsafe occurrence carries a reason tag; the census reports zero untagged
 
 item
@@ -95,7 +96,7 @@ item
   status open
   needs safety-8
   needs safety-10
-  baseline  1485 caps.unsafe occurrences in total (2026-10-07; 1436 on 2026-09-25; 929 on 2026-08-01)
+  baseline  928 caps.unsafe occurrences in total (2026-10-21; 1485 on 2026-10-07; 1436 on 2026-09-25; 929 on 2026-08-01)
   criterion  git grep -oE 'unsafeAssumeSeparate|untrackedCaptures|unsafeAssumePure|unsafeErasedValue' -- lib | wc -l == 0
 
 item
@@ -110,7 +111,7 @@ item
   track safety
   horizon long
   status open
-  baseline  81 of 464 modules compile without separation checking: 40 components, 26 test suites, 11 of 23 benchmark modules, 4 internal modules; 2 benches opt for settings.cc alone (2026-10-07 after Benchmarks defaulted to settings.sep; 93 that morning; 87 of 424 on 2026-09-25)
+  baseline  12 of 447 modules opt down from settings.sep, the default for every module since #2202: 11 to plain options and 1 to settings.cc, each with a reason comment (2026-10-21; 81 of 464 on 2026-10-07; 87 of 424 on 2026-09-25)
   criterion  no component in build.mill compiles with anything weaker than settings.sep
 
 item
@@ -124,7 +125,8 @@ item
   id safety-8
   track safety
   horizon near
-  status open
+  status done
+  done  #2195 (2026-10-07)
   needs safety-3
   baseline  ~60 exclusive-tactic overlap seals in lib/*/src/core, 3 in contingency; 103 derivation anchors and ~125 sealed codec givens downstream (2026-10-07)
   criterion  Emit extends caps.SharedCapability; git grep -c unsafeAssumeSeparate -- lib/contingency == 0; no [tactic-overlap] tag remains
@@ -133,7 +135,8 @@ item
   id safety-9
   track safety
   horizon near-mid
-  status open
+  status done
+  done  #2224 (2026-10-09)
   baseline  236 unsafeAssumeSeparate in lib/*/src/test: exoskeleton 63, zephyrine 50, facsimile 38, galilei 29, turbulence 19 (2026-10-07)
   criterion  git grep -c unsafeAssumeSeparate -- 'lib/*/src/test' == 0
 
@@ -143,7 +146,7 @@ item
   horizon mid
   status open
   needs safety-3
-  baseline  ~46 pure-thunk seals for by-name codec parameters (2026-10-07)
+  baseline  61 hatches tagged [by-name-capture] (2026-10-21; ~46 pure-thunk seals on 2026-10-07)
   criterion  rep/byname-capture compiles under the pinned release and no [by-name-capture] tag remains
 
 item
@@ -165,8 +168,8 @@ item
   id plat-1
   track platforms
   horizon near
-  status open
-  baseline  101 of 144 rows build for JavaScript, 35 excluded with reasons; nothing regenerates or checks the file (2026-09-25; 94 of 132 on 2026-08-01)
+  status done
+  baseline  104 of 145 rows build for JavaScript, 108 for Native, 34 JavaScript exclusions with reasons; etc/check-compatibility.py regenerates and checks the file in make build (2026-10-21; 101 of 144 on 2026-09-25; 94 of 132 on 2026-08-01)
   criterion  CI regenerates doc/compatibility.tsv, fails on divergence, and no exclusion lacks a reason
 
 item
@@ -261,15 +264,16 @@ item
   track documentation
   horizon near
   status open
-  baseline  40 error types carry no SN code; 241 error pages; no parity script (2026-09-25; 39 and 233 on 2026-08-01)
+  baseline  41 error types carry no SN code; 247 error pages; no parity script (2026-10-21; 40 and 241 on 2026-09-25; 39 and 233 on 2026-08-01)
   criterion  parity check in CI; git grep -hE 'extends +Error\((m"|[a-z])' -- lib | wc -l == 0
 
 item
   id doc-2
   track documentation
   horizon near
-  status open
-  baseline  1 Stub marker remains (2026-09-25)
+  status done
+  done  #2306 (2026-10-21)
+  baseline  1 Stub marker remained (2026-09-25)
   criterion  grep -c 'Stub' doc/standards/messages.md == 0
 
 item
@@ -285,9 +289,10 @@ item
   id doc-4
   track documentation
   horizon mid
-  status open
-  baseline  99 topics in doc/modules/; 1 of 144 libraries (burdock) uncovered, and the script exits non-zero (2026-09-25; 91 topics and 35 uncovered on 2026-08-01)
-  criterion  python3 etc/check-doc-coverage.py reports 144/144 libraries covered and exits 0
+  status done
+  done  #2306 (2026-10-21)
+  baseline  101 topics in doc/modules/; 145 of 145 libraries covered (2026-10-21; 1 of 144 uncovered on 2026-09-25; 91 topics and 35 uncovered on 2026-08-01)
+  criterion  python3 etc/check-doc-coverage.py reports every library covered and exits 0
 
 item
   id doc-5
@@ -325,15 +330,16 @@ item
   track tooling
   horizon near
   status open
-  baseline  flame 0.3.0 pinned in etc/tools; current release 0.68.0; no per-release flame build (2026-09-25)
+  baseline  flame 0.8.0 pinned in etc/tools; current release 0.72.0; no per-release flame build (2026-10-21; 0.3.0 and 0.68.0 on 2026-09-25)
   criterion  flame CI builds against every new release before it is announced
 
 item
   id tool-2
   track tooling
   horizon near-mid
-  status open
-  baseline  fume 0.4.1 runs the suite in CI; 1 suite disabled: orthodoxy (2026-09-25)
+  status done
+  done  #2091 (2026-09-27)
+  baseline  fume 0.8.3 runs the suite in CI; no suite disabled (2026-10-21; fume 0.4.1 and orthodoxy disabled on 2026-09-25)
   criterion  fume runs the full suite in CI; grep -c 'enabled = false' build.mill == 0
 
 item
@@ -341,7 +347,7 @@ item
   track tooling
   horizon near-mid
   status open
-  baseline  exegesis's suite drives an in-process server over JSON-RPC: initialize, open, diagnose, hover, change; no completion, navigation or transport (2026-09-25)
+  baseline  exegesis's suite drives an in-process server over JSON-RPC: initialize, open, diagnose, hover, change, completion, with framing over an in-memory Stdio; no definition or references, no CI session (2026-10-21; no completion or transport on 2026-09-25)
   criterion  scripted LSP editor-session test passes in CI
 
 item
@@ -393,8 +399,9 @@ item
   id tool-10
   track tooling
   horizon near-mid
-  status open
-  baseline  vivisection ships a JDWP core, evaluator and DAP server with a scripted live-session suite; objects inspect as JVM class names; no topic (2026-09-25)
+  status done
+  done  #2306 (2026-10-21)
+  baseline  the scripted DAP suite breaks, steps and inspects values through their Inspectable instances; topic doc/modules/debugging.md (2026-10-21; objects inspected as JVM class names and no topic on 2026-09-25)
   criterion  scripted DAP session (breakpoint, step, inspect with Soundness-rendered values) passes against a running application in CI
 
 item
@@ -426,7 +433,7 @@ item
   track distribution
   horizon near
   status open
-  baseline  doc/migration.md and 0.65.0.md–0.68.0.md exist; the migration directive in etc/release gates the release; no pull-request check (2026-09-25)
+  baseline  doc/migration.md and 0.65.0.md–0.73.0.md exist; the migration directive in etc/release gates the release; no pull-request check (2026-10-21; notes to 0.68.0 on 2026-09-25)
   criterion  doc/migration.md exists; the release (the migration directive in etc/release) refuses to tag without doc/migration/<version>.md; a CI check fails any pull request that changes lib/**/src without touching the unreleased doc/migration/<version>.md
 
 item
@@ -567,6 +574,7 @@ item
   horizon mid
   status open
   needs mod-4
+  baseline  CRC in corpuscular only; 9 Huffman builders and about 9 varint loops remain, none in corpuscular (2026-10-21)
   criterion  each algorithm has exactly one implementation, verified by grep for the signature patterns (CRC tables, Huffman builders, varint loops)
 
 item
@@ -604,4 +612,5 @@ item
   track modularity
   horizon near
   status open
+  baseline  turbulence.core no longer depends on capricious.core; parasite.core still depends on mercator.core; gossamer.core's closure holds 26 components (2026-10-21)
   criterion  parasite.core declares no mercator.core edge and turbulence.core no capricious.core edge; gossamer.core's closure holds no more than 23 components

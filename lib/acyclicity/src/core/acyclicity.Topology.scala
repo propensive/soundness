@@ -69,6 +69,7 @@ object Topology:
   // Freezing consumes the handle: `consume` statically retires every writer, so the surviving
   // reference can drop its exclusivity without copying — the launder only forgets a capability
   // that is no longer exercisable. This is the only producer of a `Topology[node]^{}`.
+  // [construction-fresh] the consumed handle's exclusivity is retired at its one factory
   def freeze[node](consume topology: Topology[node]^): Topology[node]^{} =
     caps.unsafe.unsafeAssumePure(topology)
 

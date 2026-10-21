@@ -20,7 +20,7 @@ proscenium itself.
 ## core-1: sorted and ordered collections have Soundness equivalents
 
 Horizon: near
-Baseline: 32 files (measured 2026-09-25; 16 on 2026-08-01)
+Baseline: 31 files (measured 2026-10-21; 32 on 2026-09-25; 16 on 2026-08-01)
 
 Files using `TreeMap`, `TreeSet`, `TrieMap`, `SortedMap` or `SortedSet` have no opaque type to
 drain to; the equivalents must exist before the drain can take them. The count doubled in
@@ -46,7 +46,7 @@ follow the program — quote boundaries and index arithmetic — through `attest
 
 Horizon: near → mid
 Needs: core-1
-Baseline: 228 files, of which 106 import `scala.collection.mutable` (measured 2026-09-25; 219 and 170 on 2026-08-01)
+Baseline: 239 files, of which 115 import `scala.collection.mutable` (measured 2026-10-21; 228 and 106 on 2026-09-25; 219 and 170 on 2026-08-01)
 
 Importing `scala.collection` bypasses the prelude's curation entirely. The mutable imports are
 the larger share, and their replacement is not immutability but *safe* mutability:
@@ -59,8 +59,11 @@ Done when:
 ## core-4: indexed access is total by construction
 
 Horizon: mid
-Baseline: 1606 `while` loops, 476 `readUnchecked` and 507 `.charAt(` in `lib/*/src/core`
-(comment- and string-stripped, measured 2026-09-25; 1597, 482 and 509 on 2026-09-14)
+Baseline: 1669 `while` loops, 993 `readUnchecked` and 514 `.charAt(` in `lib/*/src/core`
+(comment- and string-stripped, measured 2026-10-21; 1606, 476 and 507 on 2026-09-25). The
+`readUnchecked` count doubled when #2274 removed the stdlib `IArray` and every frozen-array
+read went through the one accessor; it is a different population from the September figure,
+not a regression of the same one
 
 The `var i = 0; while i < length` pattern is maximally efficient and maximally unsafe: the
 index is just an `Int`, unconstrained by the collection it indexes. The design in

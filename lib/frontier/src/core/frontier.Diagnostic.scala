@@ -89,6 +89,9 @@ object Diagnostic:
     case Diagnostic.Propose(name, label, _) =>
       e" \e[38;5;75m$Bold(▸)\e[0m propose \e[38;5;117m$Italic($name)\e[0m${labelled(label)}"
 
+    case Diagnostic.Prohibits(name, label, _) =>
+      e" \e[38;5;208m$Bold(⊘)\e[0m prohibits \e[38;5;114m$Italic($name)\e[0m${labelled(label)}"
+
     case Diagnostic.Resolving(name, label, _) =>
       e" \e[38;5;88m$Bold(■)\e[0m resolving \e[38;5;208m$Italic($name)\e[0m${labelled(label)}"
 
@@ -103,6 +106,11 @@ enum Diagnostic(val name: Text, val label: Optional[Text], val children: List[Di
   extends Diagnostic(text, annotation, nodes)
 
   case Propose(text: Text, annotation: Optional[Text], nodes: List[Diagnostic])
+  extends Diagnostic(text, annotation, nodes)
+
+  // A `NotGiven[X]` requirement, unwrapped to `X`: its child is the `Found`
+  // that violates it, or it has none and the label `absent` when it holds.
+  case Prohibits(text: Text, annotation: Optional[Text], nodes: List[Diagnostic])
   extends Diagnostic(text, annotation, nodes)
 
   case Found(text: Text, annotation: Optional[Text], nodes: List[Diagnostic])

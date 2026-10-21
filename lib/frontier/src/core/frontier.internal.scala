@@ -97,14 +97,25 @@ object internal:
       case quotes: runtime.impl.QuotesImpl => quotes.ctx
 
     case class Candidate(name: Text, symbol: Symbol, missing: List[Result]) extends Result
-    case class Available(name: Text, requirements: List[Missing]) extends Result
+    case class Available(name: Text, requirements: List[Result]) extends Result
 
     case class Missing(name: Text, available: List[Available], candidates: List[Candidate])
     extends Result
 
     case class Found(name: Text, expr: Expr[Any]) extends Result
 
+    // A `NotGiven[X]` requirement, unwrapped: `found` is the `X` that violates
+    // it, if one is in scope.
+    case class Prohibited(name: Text, found: Option[Found]) extends Result
+
     val initialGas = 3
+
+    val notGiven = TypeRepr.of[scala.util.NotGiven[?]].typeSymbol
+
+    object Prohibition:
+      def unapply(repr: TypeRepr): Option[TypeRepr] = repr.dealias match
+        case AppliedType(tycon, List(inner)) if tycon.typeSymbol == notGiven => Some(inner)
+        case _                                                               => None
 
     def resultOf(t: TypeRepr): TypeRepr = t match
       case PolyType(_, _, body)   => resultOf(body)
@@ -141,9 +152,13 @@ object internal:
       dedupeExportsByCanonical(matched).map: m =>
         val requirements =
           if gas <= 0 then Nil
-          else usingTypesInstantiated(m).map: paramType =>
-            val nextAvailable = availableFor(paramType, m.symbol :: exclusions, gas - 1)
-            Missing(stenography.internal.name(paramType), nextAvailable, Nil)
+          else usingTypesInstantiated(m).map:
+            case Prohibition(inner) =>
+              prohibited(inner, m.symbol :: exclusions)
+
+            case paramType =>
+              val nextAvailable = availableFor(paramType, m.symbol :: exclusions, gas - 1)
+              Missing(stenography.internal.name(paramType), nextAvailable, Nil)
 
         Available(formatProposal(m), requirements)
 
@@ -439,6 +454,19 @@ object internal:
           availableFor(repr, candidateSymbols, initialGas),
           candidates )
 
+    // A `NotGiven[X]` requirement is never searched as such (the catch-all
+    // is a candidate for it, and dotty would invert the result); `X` is
+    // searched instead, and the requirement holds when that search fails.
+    def prohibited(inner: TypeRepr, exclusions: List[Symbol]): Prohibited =
+      val name = stenography.internal.name(inner)
+
+      Implicits.searchIgnoring(inner)((self ::: exclusions)*).absolve match
+        case success: ImplicitSearchSuccess =>
+          Prohibited(name, Some(Found(name, success.tree.asExpr)))
+
+        case _: ImplicitSearchFailure =>
+          Prohibited(name, None)
+
     // The search is bounded: a chain of candidates deeper than `maxDepth`, or more than
     // `budget` searches in all, is reported as missing rather than followed, since every
     // search ranges over the whole scope and the chains branch at each candidate's
@@ -449,9 +477,17 @@ object internal:
 
     def seek(repr: TypeRepr, exclusions: List[Symbol], depth: Int): Result =
       budget -= 1
-      if depth > maxDepth || budget < 0 then missing(repr, Nil) else seek0(repr, exclusions, depth)
 
-    def seek0(repr: TypeRepr, exclusions: List[Symbol], depth: Int): Result =
+      if depth > maxDepth || budget < 0 then missing(repr, Nil) else repr match
+        case Prohibition(inner) => prohibited(inner, exclusions)
+        case _                  => search(repr, exclusions, depth)
+
+    // Whether `tpe` is a `scala.ContextFunctionN`, the type of a given written
+    // `result prohibits prohibited`.
+    def isContextFunction(tpe: TypeRepr): Boolean =
+      tpe.widen.dealias.typeSymbol.fullName.matches("scala\\.ContextFunction[0-9]+")
+
+    def search(repr: TypeRepr, exclusions: List[Symbol], depth: Int): Result =
       Implicits.searchIgnoring(repr)((self ::: exclusions)*).absolve match
         case success: ImplicitSearchSuccess =>
           Found(t"${stenography.internal.name(repr)}", success.tree.asExpr)
@@ -487,18 +523,26 @@ object internal:
             case apply: Apply @unchecked =>
               try apply match
                 case Apply(function, arguments) =>
+                  // A given of context-function type fails as `name.apply(…)`:
+                  // the candidate is the given, and its parameter types come
+                  // from the application (where the function's type arguments
+                  // are instantiated), not from `ContextFunctionN.apply`.
+                  val (symbol, info) = function match
+                    case Select(qualifier, "apply") if isContextFunction(qualifier.tpe) =>
+                      (underlyingSymbol(qualifier), function.tpe.widen)
+
+                    case _ =>
+                      (function.symbol, function.symbol.info)
+
                   def resolve(methodType: TypeRepr): Missing = methodType match
                     case PolyType(_, _, _) =>
                       resolve(function.tpe.simplified)
 
                     case MethodType(_, types, more) =>
                       val candidate =
-                        Candidate
-                          ( renderSymbol(function.symbol),
-                            function.symbol,
-                            types.map(seek(_, Nil, depth + 1)) )
+                        Candidate(renderSymbol(symbol), symbol, types.map(seek(_, Nil, depth + 1)))
 
-                      val candidates = seek(repr, function.symbol :: exclusions, depth) match
+                      val candidates = seek(repr, symbol :: exclusions, depth) match
                         case Missing(_, _, candidates) => candidate :: candidates
                         case _                         => Nil
 
@@ -507,7 +551,7 @@ object internal:
                     case _ =>
                       missing(repr, Nil)
 
-                  resolve(function.symbol.info)
+                  resolve(info)
 
               catch case _: Throwable => missing(repr, Nil)
 
@@ -529,6 +573,21 @@ object internal:
       case Missing(name, available, candidates) =>
         val children = available.map(toDiagnostic) ++ candidates.map(toDiagnostic)
         Diagnostic.Requires(name, Unset, children.to(proscenium.List))
+
+      // The violating `Found` is labelled with the given that satisfied it,
+      // which is the one the user has to remove (or guard against).
+      case Prohibited(name, Some(Found(_, expr))) =>
+        val label: Optional[Text] =
+          try
+            val symbol = underlyingSymbol(expr.asTerm)
+            if symbol.isNoSymbol || !symbol.isTerm then Unset else renderSymbol(symbol)
+          catch case _: Throwable => Unset
+
+        val found = Diagnostic.Found(name, label, proscenium.Nil)
+        Diagnostic.Prohibits(name, Unset, proscenium.List(found))
+
+      case Prohibited(name, None) =>
+        Diagnostic.Prohibits(name, t"absent", proscenium.Nil)
 
     // Build the diagnostic tree rooted at the type Frontier was asked to
     // resolve, with its tried candidates and proposed alternatives beneath it.
@@ -557,11 +616,10 @@ object internal:
     // It must *succeed* instead: the inversion then fails the candidate
     // (discarding its typer state, so nothing is committed) and the search
     // falls through to `NotGiven.amb1`/`amb2`/`default`, which implement the
-    // negation correctly in both directions.
-    val notGiven = TypeRepr.of[scala.util.NotGiven[?]].typeSymbol
-
-    TypeRepr.of[target].dealias match
-      case AppliedType(tycon, _) if tycon.typeSymbol == notGiven =>
+    // negation correctly in both directions. So a `NotGiven` at the top level
+    // gets no tree; one in requirement position is unwrapped by `seek`.
+    TypeRepr.of[target] match
+      case Prohibition(_) =>
         '{scala.util.NotGiven.value}.asExprOf[target]
 
       case _ =>

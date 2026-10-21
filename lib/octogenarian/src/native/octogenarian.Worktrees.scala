@@ -45,7 +45,6 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 
-import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.createNonexistentParents
 import filesystemOptions.deleteRecursively
 import filesystemOptions.moveAtomically

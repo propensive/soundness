@@ -16,17 +16,19 @@ the manifest. When the only reasons left are inherent ones, the parity statement
 ## plat-1: the platform manifest is enforced
 
 Horizon: near
-Baseline: 101 of 144 rows build for JavaScript; 35 are excluded, and every exclusion carries a reason (measured 2026-09-25; 94 of 132 on 2026-08-01)
+Baseline: 104 of 145 rows build for JavaScript, 108 for Native; 34 JavaScript exclusions, every one with a reason (measured 2026-10-21; 101 of 144 on 2026-09-25; 94 of 132 on 2026-08-01)
 
-`doc/compatibility.tsv` already records the matrix, and its header says it is generated from
-`build.mill` — but nothing in the build regenerates or checks it, so it is a report, and a
-stale one whenever a module is added. Enforcement makes it a contract: CI regenerates it and
-fails on any regression, and every exclusion carries a stated reason.
+`doc/compatibility.tsv` records the matrix, and `etc/check-compatibility.py` (run by `make
+build`) regenerates its platform columns from `build.mill` — each component's `scalaJs`/
+`scalaNative` flags and `sources`/`jsSources`/`nativeSources` source sets — and fails on any
+divergence from the committed copy or on an exclusion with no reason in `notes`. The matrix is
+therefore a contract: a module added without a row, or a flag flipped without the file, fails
+the build, and the only hand-written content is the reason for every `no` or `core` cell.
 
 Done when: the ordinary build regenerates the manifest, fails on divergence from the committed
-copy, and no exclusion row has an empty reason. Interim gauge:
+copy, and no exclusion row has an empty reason — met by `etc/check-compatibility.py`. Interim gauge:
 
-    grep -v '^#' doc/compatibility.tsv | awk -F'\t' '$3=="yes"{n++} END{print n}'    # 101 → 144 minus inherent exclusions
+    grep -v '^#' doc/compatibility.tsv | awk -F'\t' '$3=="yes"{n++} END{print n}'    # 104 → 145 minus inherent exclusions
 
 ## plat-2: Android in the ordinary build
 
@@ -49,6 +51,29 @@ Native coverage is verified by the real binary link check throughout, not compil
 
 Done when: the manifest shows no JavaScript or Native exclusion whose reason is not inherent,
 and the Native link check covers every Native-capable module.
+
+The one known non-inherent Native gap is guillotine's pseudo-terminal: `Command#pty` raises on
+Native until it is rewritten over posixlib's `posix_openpt` (the JVM one is Panama). Closed on
+2026-10-21: coaxial's native backend joins multicast groups (bringing syndesis to Native);
+telekinesis's `soundnessHttp` client moved into the cross-compiling `telekinesis.sockets`, giving
+Native an `Http.Backend` (HTTP/1.1, over coaxial's OpenSSL connection for `https`); and
+hellenism's classloader construction moved into a `core-jvm` source set, so `cp"…"` resources,
+cataclysm's HTML stylesheets and the seven WASI backends compile for Native too.
+
+Cryptography is no longer a JavaScript exclusion: enigmatic's pure-Scala `SoundnessCrypto`
+(AES in every mode, HMAC, AES-GCM, ChaCha20-Poly1305, X25519, Ed25519) backs the Scala.js and
+Scala Native builds, and `import providers.soundnessProvider` selects it anywhere. What it does
+not cover — RSA, DSA, ECDSA, ML-DSA — stays with the JDK and OpenSSL. A provider over the
+browser's Web Crypto API is gated on JSPI: `crypto.subtle` is Promise-only and the `Crypto`
+contract is synchronous, so it needs the fork's `js.async`/`js.await` proven under the Wasm
+backend first (plat-6); with that, Web Crypto slots in as an alternative provider for the
+primitives it has, without an API change.
+
+The link check itself needs reviving before it can be widened: `mill nativelink.testSuites` is
+outside `make attest`, two of its three enrolled suites (denominative, monotonous) no longer
+compile natively, and `nativelink.binary` itself — like any binary reaching
+`contingency.ThrowTactic` — fails to link because the Native scalalib has no
+`scala.caps.SharedUnscoped` (measured 2026-10-21, while enrolling imperial).
 
 ## plat-4: WASI beyond the first seven backends
 
