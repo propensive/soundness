@@ -45,7 +45,6 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 
-import filesystemBackends.javaBaseFilesystem
 import sortingAlgorithms.timsort
 
 // Revisions and history: resolving `gitrevisions(7)` expressions, walking commits in date order,

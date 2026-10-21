@@ -401,8 +401,8 @@ object Git:
   // `1700000000 +0130`. Kept apart from any calendar type so that it round-trips byte-for-byte.
   object Timestamp:
     def now(): Timestamp =
-      val now = java.time.ZonedDateTime.now().nn
-      Timestamp(now.toEpochSecond, now.getOffset.nn.getTotalSeconds/60)
+      val (seconds, offsetMinutes) = SystemClock.now()
+      Timestamp(seconds, offsetMinutes)
 
     def parse(seconds: Text, offset: Text): Optional[Timestamp] =
       val epoch: Optional[Long] = safely(seconds.as[Long])

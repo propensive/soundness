@@ -43,7 +43,6 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 
-import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.dereferenceSymlinks
 
 // `.gitignore` semantics: a pattern with a slash (other than a trailing one) is anchored to the
