@@ -1141,6 +1141,239 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
         capture[Crypto.Error](key.unseal(nonce, Data(), Array.unsafeFrozen(tampered))).reason
       . assert(_ == Crypto.Error.Reason.BadTag)
 
+    suite(m"Pure-Scala provider (SoundnessCrypto)"):
+      // The pure-Scala provider is checked two ways: against the standards' published vectors, and
+      // against the JDK provider, in both directions, so that a ciphertext, tag, key or signature
+      // made by one is accepted by the other.
+      val pure = SoundnessCrypto
+      val jdk = JavaBaseCrypto
+      val sunscreen = t"Ladies and Gentlemen of the class of '99: If I could offer you only one tip for the future, sunscreen would be it."
+
+      def bytes(length: Int, seed: Int): Data = Array.tabulate[Byte](length)(index => (index*7 + seed).toByte)
+
+      test(m"AES-128 encrypts FIPS 197's appendix C.1 block"):
+        val key = t"000102030405060708090A0B0C0D0E0F".deserialize[Hex]
+        val plaintext = t"00112233445566778899AABBCCDDEEFF".deserialize[Hex]
+        pure.aes.encrypt(t"AES/ECB/NoPadding", key, Unset, plaintext).serialize[Hex]
+      . assert(_ == t"69C4E0D86A7B0430D8CDB78070B4C55A")
+
+      test(m"AES-256 encrypts FIPS 197's appendix C.3 block"):
+        val key = t"000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F".deserialize[Hex]
+        val plaintext = t"00112233445566778899AABBCCDDEEFF".deserialize[Hex]
+        pure.aes.encrypt(t"AES/ECB/NoPadding", key, Unset, plaintext).serialize[Hex]
+      . assert(_ == t"8EA2B7CA516745BFEAFC49904B496089")
+
+      test(m"AES-256 decrypts FIPS 197's appendix C.3 block"):
+        val key = t"000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F".deserialize[Hex]
+        pure.aes.decrypt(t"AES/ECB/NoPadding", key, Unset, t"8EA2B7CA516745BFEAFC49904B496089".deserialize[Hex]).serialize[Hex]
+      . assert(_ == t"00112233445566778899AABBCCDDEEFF")
+
+      val modes = List(t"CBC", t"ECB", t"CTR", t"CFB", t"OFB")
+      val paddings = List(t"PKCS5Padding", t"ISO10126Padding", t"NoPadding")
+      val keySizes = List(16, 24, 32)
+      val lengths = List(0, 1, 15, 16, 17, 31, 32, 33, 100)
+
+      // `NoPadding` needs whole blocks in the block-structured modes, and the JDK refuses to pad
+      // CTR at all (which the pure provider mirrors).
+      def aligned(mode: Text, padding: Text, length: Int): Boolean =
+        (padding != t"NoPadding" || !(mode == t"CBC" || mode == t"ECB") || length%16 == 0)
+        && (mode != t"CTR" || padding == t"NoPadding")
+
+      def ivOf(mode: Text): Optional[Data] = if mode == t"ECB" then Unset else bytes(16, 3)
+      def ivSize(mode: Text): Optional[Int] = if mode == t"ECB" then Unset else 16
+
+      test(m"Every AES mode, padding and key size the JDK decrypts matches the pure provider's"):
+        modes.all: mode =>
+          paddings.all: padding =>
+            keySizes.all: keySize =>
+              lengths.filter(aligned(mode, padding, _)).all: length =>
+                val transformation = t"AES/$mode/$padding"
+                val key = bytes(keySize, 11)
+                val plaintext = bytes(length, 5)
+                val ciphertext = pure.aes.encrypt(transformation, key, ivOf(mode), plaintext)
+                val decrypted = jdk.aes.decrypt(transformation, key, ivSize(mode), ciphertext)
+                val reverse = pure.aes.decrypt(transformation, key, ivSize(mode), jdk.aes.encrypt(transformation, key, ivOf(mode), plaintext))
+                Array.same(decrypted, plaintext) && Array.same(reverse, plaintext)
+      . assert(identity)
+
+      test(m"Deterministic AES paddings produce the JDK's exact ciphertext"):
+        modes.all: mode =>
+          List(t"PKCS5Padding", t"NoPadding").all: padding =>
+            lengths.filter(aligned(mode, padding, _)).all: length =>
+              val transformation = t"AES/$mode/$padding"
+              val key = bytes(32, 13)
+              val plaintext = bytes(length, 9)
+              val ours = pure.aes.encrypt(transformation, key, ivOf(mode), plaintext)
+              val theirs = jdk.aes.encrypt(transformation, key, ivOf(mode), plaintext)
+              Array.same(ours, theirs)
+      . assert(identity)
+
+      test(m"AES streaming sessions match the whole-value form for every chunking"):
+        modes.all: mode =>
+          paddings.filter(_ != t"ISO10126Padding").filter(aligned(mode, _, 96)).all: padding =>
+            List(1, 5, 16, 17, 64).all: chunk =>
+              val transformation = t"AES/$mode/$padding"
+              val key = bytes(16, 17)
+              val plaintext = bytes(96, 21)
+              val whole = pure.aes.encrypt(transformation, key, ivOf(mode), plaintext)
+              val session = pure.aes.stream(transformation, key, ivOf(mode))
+              val parts = (0 until 96 by chunk).map { start => session.update(plaintext.skip(start).keep(chunk)) }
+              val prefix = ivOf(mode).lay(scala.collection.immutable.Seq[Data]())(scala.collection.immutable.Seq(_))
+              val streamed = SoundnessBlockCipher.join((prefix ++ parts :+ session.finish())*)
+              val decrypting = pure.aes.decryptStream(transformation, key, ivOf(mode))
+              val body = whole.skip(ivSize(mode).or(0))
+              val decryptedParts = (0 until body.length by chunk).map { start => decrypting.update(body.skip(start).keep(chunk)) }
+              val unstreamed = SoundnessBlockCipher.join((decryptedParts :+ decrypting.finish())*)
+              Array.same(streamed, whole) && Array.same(unstreamed, plaintext)
+      . assert(identity)
+
+      test(m"The pure provider rejects corrupted PKCS#7 padding as BadPadding"):
+        val key = bytes(16, 1)
+        val ciphertext = pure.aes.encrypt(t"AES/CBC/PKCS5Padding", key, bytes(16, 2), bytes(20, 3))
+        val tampered = Array.unsafeJvm(ciphertext).clone
+        tampered(tampered.length - 1) = (tampered(tampered.length - 1) ^ 0x55).toByte
+        try
+          pure.aes.decrypt(t"AES/CBC/PKCS5Padding", key, 16, Array.unsafeFrozen(tampered))
+          Unset
+        catch case error: Exception => failureReason(error)
+      . assert(_ == Crypto.Error.Reason.BadPadding)
+
+      test(m"HMAC-SHA-256 produces RFC 4231's first test case"):
+        pure.hmac(t"HmacSHA256").mac(Array.fill[Byte](20)(0x0b), t"Hi There".bytestream).serialize[Hex]
+      . assert(_ == t"B0344C61D8DB38535CA8AFCEAF0BF12B881DC200C9833DA726E9376C2E32CFF7")
+
+      test(m"HMAC-SHA-512 produces RFC 4231's seventh test case (a long key)"):
+        val key = Array.fill[Byte](131)(0xaa.toByte)
+        val message = t"This is a test using a larger than block-size key and a larger than block-size data. The key needs to be hashed before being used by the HMAC algorithm.".bytestream
+        pure.hmac(t"HmacSHA512").mac(key, message).serialize[Hex]
+      . assert(_ == t"E37B6A775DC87DBAA4DFA9F96E5E3FFDDEBD71F8867289865DF5A32D20CDC944B6022CAC3C4982B10D5EEB55C3E4DE15134676FB6DE0446065C97440FA8C6A58")
+
+      test(m"Every HMAC matches the JDK's for short, block-sized and long keys"):
+        List(t"HmacMD5", t"HmacSHA1", t"HmacSHA224", t"HmacSHA256", t"HmacSHA384", t"HmacSHA512").all: name =>
+          List(1, 20, 63, 64, 65, 127, 128, 129, 300).all: keyLength =>
+            val key = bytes(keyLength, 2)
+            Array.same(pure.hmac(name).mac(key, sunscreen.bytestream), jdk.hmac(name).mac(key, sunscreen.bytestream))
+      . assert(identity)
+
+      test(m"AES-GCM produces NIST's test case 2"):
+        val zeros16 = Array.fill[Byte](16)(0)
+        pure.aesGcm.seal(zeros16, Array.fill[Byte](12)(0), Data(), zeros16).serialize[Hex]
+      . assert(_ == t"0388DACE60B6A392F328C2B971B2FE78AB6E47D42CEC13BDF53A67B21257BDDF")
+
+      test(m"AES-GCM produces NIST's test case 4 (associated data, partial block)"):
+        val key = t"FEFFE9928665731C6D6A8F9467308308".deserialize[Hex]
+        val nonce = t"CAFEBABEFACEDBADDECAF888".deserialize[Hex]
+        val plaintext = t"D9313225F88406E5A55909C5AFF5269A86A7A9531534F7DA2E4C303D8A318A721C3C0C95956809532FCF0E2449A6B525B16AEDF5AA0DE657BA637B39".deserialize[Hex]
+        val associated = t"FEEDFACEDEADBEEFFEEDFACEDEADBEEFABADDAD2".deserialize[Hex]
+        pure.aesGcm.seal(key, nonce, associated, plaintext).serialize[Hex]
+      . assert(_ == t"42831EC2217774244B7221B784D0D49CE3AA212F2C02A4E035C17E2329ACA12E21D514B25466931C7D8F6A5AAC84AA051BA30B396A0AAC973D58E091" + t"5BC94FBC3221A5DB94FAE95AE7121A47")
+
+      test(m"AES-GCM interoperates with the JDK in both directions, and rejects tampering"):
+        List(16, 32).all: keySize =>
+          List(0, 1, 15, 16, 17, 40).all: length =>
+            val key = bytes(keySize, 4)
+            val nonce = bytes(12, 6)
+            val associated = bytes(length%7, 8)
+            val plaintext = bytes(length, 10)
+            val ours = pure.aesGcm.seal(key, nonce, associated, plaintext)
+            val theirs = jdk.aesGcm.seal(key, nonce, associated, plaintext)
+            val tampered = Array.unsafeJvm(ours).clone
+            tampered(0) = (tampered(0) ^ 1).toByte
+            Array.same(ours, theirs)
+            && jdk.aesGcm.unseal(key, nonce, associated, ours).lay(false)(Array.same(_, plaintext))
+            && pure.aesGcm.unseal(key, nonce, associated, theirs).lay(false)(Array.same(_, plaintext))
+            && pure.aesGcm.unseal(key, nonce, associated, Array.unsafeFrozen(tampered)).absent
+      . assert(identity)
+
+      test(m"The pure ChaCha20 produces RFC 8439's keystream"):
+        val key = t"000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F".deserialize[Hex]
+        pure.chaCha20.xor(key, t"000000000000004A00000000".deserialize[Hex], 1, sunscreen.bytestream).serialize[Hex]
+      . assert(_ == t"6E2E359A2568F98041BA0728DD0D6981E97E7AEC1D4360C20A27AFCCFD9FAE0BF91B65C5524733AB8F593DABCD62B3571639D624E65152AB8F530C359F0861D807CA0DBF500D6A6156A38E088A22B65E52BC514D16CCF806818CE91AB77937365AF90BBF74A35BE6B40B8EEDF2785E42874D")
+
+      test(m"The pure ChaCha20-Poly1305 produces RFC 8439's ciphertext and tag"):
+        val key = t"808182838485868788898A8B8C8D8E8F909192939495969798999A9B9C9D9E9F".deserialize[Hex]
+        val nonce = t"070000004041424344454647".deserialize[Hex]
+        val associated = t"50515253C0C1C2C3C4C5C6C7".deserialize[Hex]
+        pure.chaCha20Poly1305.seal(key, nonce, associated, sunscreen.bytestream).serialize[Hex]
+      . assert(_ == t"D31A8D34648E60DB7B86AFBC53EF7EC2A4ADED51296E08FEA9E2B5A736EE62D63DBEA45E8CA9671282FAFB69DA92728B1A71DE0A9E060B2905D6A5B67ECD3B3692DDBD7F2D778B8C9803AEE328091B58FAB324E4FAD675945585808B4831D7BC3FF4DEF08E4B7A9DE576D26586CEC64B61161AE10B594F09E26A7E902ECBD0600691")
+
+      test(m"ChaCha20-Poly1305 interoperates with the JDK in both directions"):
+        List(0, 1, 15, 16, 17, 64, 65).all: length =>
+          val key = bytes(32, 12)
+          val nonce = bytes(12, 14)
+          val associated = bytes(length%5, 16)
+          val plaintext = bytes(length, 18)
+          val ours = pure.chaCha20Poly1305.seal(key, nonce, associated, plaintext)
+          val theirs = jdk.chaCha20Poly1305.seal(key, nonce, associated, plaintext)
+          Array.same(ours, theirs)
+          && jdk.chaCha20Poly1305.unseal(key, nonce, associated, ours).lay(false)(Array.same(_, plaintext))
+          && pure.chaCha20Poly1305.unseal(key, nonce, associated, theirs).lay(false)(Array.same(_, plaintext))
+      . assert(identity)
+
+      // RFC 7748 §6.1's keys, in the PKCS#8 and SubjectPublicKeyInfo forms the provider contract uses.
+      def pkcs8(oid: List[Int], secret: Text, public: Text): Data =
+        val seed: Asn1 = Asn1.OctetString(secret.deserialize[Hex])
+        val tagged = Asn1.Tagged(1, true, Asn1.BitString(public.deserialize[Hex], 0))
+        val identifier = Asn1.Sequence(List(Asn1.ObjectId(oid)))
+        val info: Asn1 = Asn1.Sequence(List(Asn1.Integer(0), identifier, Asn1.OctetString(seed.in[Der].data), tagged))
+        info.in[Der].data
+
+      def spki(oid: List[Int], public: Text): Data =
+        val info: Asn1 = Asn1.Sequence(List(Asn1.Sequence(List(Asn1.ObjectId(oid))), Asn1.BitString(public.deserialize[Hex], 0)))
+        info.in[Der].data
+
+      test(m"The pure X25519 agrees on RFC 7748's shared secret"):
+        val alice = pkcs8(KeyAlgorithm.X25519, t"77076D0A7318A57D3C16C17251B26645DF4C2F87EBC0992AB177FBA51DB92C2A", t"8520F0098930A754748B7DDCB43EF75A0DBF3A0D26381AF4EBA4A98EAA9B4E6A")
+        val bob = spki(KeyAlgorithm.X25519, t"DE9EDB7D7B7DC1B4D35B61C2ECE435373F8343C85B78674DADFC7E146F882B4F")
+        pure.x25519.agree(alice, bob).serialize[Hex]
+      . assert(_ == t"4A5D9D5BA4CE2DE1728E3BF480350F25E07E21C947D19E3376F09B3C1E161742")
+
+      test(m"The pure X25519 derives RFC 7748's public key from the private scalar"):
+        val alice = pkcs8(KeyAlgorithm.X25519, t"77076D0A7318A57D3C16C17251B26645DF4C2F87EBC0992AB177FBA51DB92C2A", t"8520F0098930A754748B7DDCB43EF75A0DBF3A0D26381AF4EBA4A98EAA9B4E6A")
+        Array.same(pure.x25519.privateToPublic(alice), spki(KeyAlgorithm.X25519, t"8520F0098930A754748B7DDCB43EF75A0DBF3A0D26381AF4EBA4A98EAA9B4E6A"))
+      . assert(identity)
+
+      test(m"Pure and JDK X25519 keys agree with each other"):
+        val ours = pure.x25519.generateKeyPair(256)
+        val theirs = jdk.x25519.generateKeyPair(256)
+        val one = pure.x25519.agree(ours, jdk.x25519.privateToPublic(theirs))
+        val other = jdk.x25519.agree(theirs, pure.x25519.privateToPublic(ours))
+        Array.same(one, other) && one.length == 32 && Array.same(jdk.x25519.privateToPublic(ours), pure.x25519.privateToPublic(ours))
+      . assert(identity)
+
+      test(m"The pure Ed25519 produces RFC 8032's first test signature"):
+        val key = pkcs8(KeyAlgorithm.Ed25519, t"9D61B19DEFFD5A60BA844AF492EC2CC44449C5697B326919703BAC031CAE7F60", t"D75A980182B10AB7D54BFED3C964073A0EE172F3DAA62325AF021A68F707511A")
+        pure.ed25519.sign(Data(), key).serialize[Hex]
+      . assert(_ == t"E5564300C360AC729086E2CC806E828A84877F1EB8E5D974D873E065224901555FB8821590A33BACC61E39701CF9B46BD25BF5F0595BBE24655141438E7A100B")
+
+      test(m"The pure Ed25519 produces RFC 8032's second test signature and derives its public key"):
+        val key = pkcs8(KeyAlgorithm.Ed25519, t"4CCD089B28FF96DA9DB6C346EC114E0F5B8A319F35ABA624DA8CF6ED4FB8A6FB", t"3D4017C3E843895A92B70AA74D1B7EBC9C982CCF2EC4968CC0CD55F12AF4660C")
+        val public = spki(KeyAlgorithm.Ed25519, t"3D4017C3E843895A92B70AA74D1B7EBC9C982CCF2EC4968CC0CD55F12AF4660C")
+        val message = t"72".deserialize[Hex]
+        val signature = pure.ed25519.sign(message, key)
+        signature.serialize[Hex] == t"92A009A9F0D4CAB8720E820B5F642540A2B27B5416503F8FB3762223EBDB69DA085AC1E43E15996E458F3613D0F11D8C387B2EAEB4302AEEB00D291612BB0C00"
+        && Array.same(pure.ed25519.privateToPublic(key), public)
+        && pure.ed25519.verify(message, signature, public)
+        && !pure.ed25519.verify(t"73".deserialize[Hex], signature, public)
+      . assert(identity)
+
+      test(m"Pure and JDK Ed25519 signatures verify under each other"):
+        val ours = pure.ed25519.generateKeyPair(256)
+        val theirs = jdk.ed25519.generateKeyPair(256)
+        val message = sunscreen.bytestream
+        jdk.ed25519.verify(message, pure.ed25519.sign(message, ours), pure.ed25519.privateToPublic(ours))
+        && pure.ed25519.verify(message, jdk.ed25519.sign(message, theirs), jdk.ed25519.privateToPublic(theirs))
+        && pure.ed25519.verify(message, jdk.ed25519.sign(message, ours), jdk.ed25519.privateToPublic(ours))
+        && Array.same(jdk.ed25519.privateToPublic(ours), pure.ed25519.privateToPublic(ours))
+      . assert(identity)
+
+      test(m"The typed API runs on the pure provider through `providers.soundnessProvider`"):
+        given SoundnessCrypto.type = SoundnessCrypto
+        val key = SymmetricKey.generate[AesGcm[256]]()
+        val nonce: Data = Array.fill[Byte](12)(1)
+        key.unseal(nonce, Data(), key.seal(nonce, Data(), sunscreen.bytestream)).read[Text]
+      . assert(_ == sunscreen)
+
     suite(m"X.509 certificates"):
       import java.io as ji
       import java.security as js, js.cert as jsc

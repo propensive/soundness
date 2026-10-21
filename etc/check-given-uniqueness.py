@@ -82,8 +82,19 @@ for path in glob.glob('lib/*/src/*/soundness_*.scala'):
         for match in GIVEN.finditer(block):   # hand-written delegating givens
             export_leaves[match.group('name')].add(path)
 
+# A component's platform source sets (`core-jvm`/`core-js`/`core-native`, or `jvm`/`js`/`native`)
+# are alternatives, never on one classpath together, so the same given declared or exported in
+# each of them is one given with several implementations — as `cloaks.heapCloak` is — not a clash.
+def platform_key(path):
+    path = re.sub(r'/src/(\w+)-(jvm|js|native)/', r'/src/\1-PLATFORM/', path)
+    path = re.sub(r'/src/(jvm|js|native)/', r'/src/PLATFORM/', path)
+    return re.sub(r'_(jvm|js|native)\.scala$', '_PLATFORM.scala', path)
+
+def several(paths):
+    return len({platform_key(path) for path in paths}) > 1
+
 failed = False
-dups = {leaf: paths for leaf, paths in declared.items() if len(paths) > 1}
+dups = {leaf: paths for leaf, paths in declared.items() if several(paths)}
 print(f'{len(declared)} distinct family-given names declared in {len(families)} families')
 if dups:
     failed = True
@@ -92,7 +103,7 @@ if dups:
         for path in sorted(dups[leaf]):
             print(f'  {leaf}  <-  {path}')
 
-exp_dups = {leaf: paths for leaf, paths in export_leaves.items() if len(paths) > 1}
+exp_dups = {leaf: paths for leaf, paths in export_leaves.items() if several(paths)}
 if exp_dups:
     failed = True
     print(f'ERROR: {len(exp_dups)} leaf name(s) exported from more than one place:')

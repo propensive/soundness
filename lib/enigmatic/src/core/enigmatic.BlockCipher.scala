@@ -275,15 +275,10 @@ extends Duct[Data, Data]:
           import unsafeExceptions.canThrowAny
           // The aborts are assumed separate: the error message closes over this duct only to
           // render the detail text; there is no aliased writer.
-          if securityException(error, "javax.crypto.BadPaddingException")
-          // [by-name-receiver] abort message closes over duct holding the tactic
-          then scala.caps.unsafe.unsafeAssumeSeparate:
-            tactic.abort(Crypto.Error(Crypto.Error.Reason.BadPadding, detail(error)))
-          else if securityException(error, "javax.crypto.IllegalBlockSizeException")
-          // [by-name-receiver]
-          then scala.caps.unsafe.unsafeAssumeSeparate:
-            tactic.abort(Crypto.Error(Crypto.Error.Reason.IllegalBlockSize, detail(error)))
-          else throw error
+          failureReason(error).lay(throw error): reason =>
+            // [by-name-receiver] abort message closes over duct holding the tactic
+            scala.caps.unsafe.unsafeAssumeSeparate:
+              tactic.abort(Crypto.Error(reason, detail(error)))
 
       case null =>
         inner = begin().asInstanceOf[CipherDuct]

@@ -57,6 +57,15 @@ raises on Native until it is rewritten over posixlib's `posix_openpt`; the JVM o
 coaxial's multicast (`joinMulticast` raises, which keeps syndesis off); hellenism's `servicesFor`
 (`URLClassLoader`); and a native `Http.Backend` for telekinesis, whose model now cross-compiles.
 
+Cryptography is no longer a JavaScript exclusion: enigmatic's pure-Scala `SoundnessCrypto`
+(AES in every mode, HMAC, AES-GCM, ChaCha20-Poly1305, X25519, Ed25519) backs the Scala.js and
+Scala Native builds, and `import providers.soundnessProvider` selects it anywhere. What it does
+not cover — RSA, DSA, ECDSA, ML-DSA — stays with the JDK and OpenSSL. A provider over the
+browser's Web Crypto API is gated on JSPI: `crypto.subtle` is Promise-only and the `Crypto`
+contract is synchronous, so it needs the fork's `js.async`/`js.await` proven under the Wasm
+backend first (plat-6); with that, Web Crypto slots in as an alternative provider for the
+primitives it has, without an API change.
+
 The link check itself needs reviving before it can be widened: `mill nativelink.testSuites` is
 outside `make attest`, two of its three enrolled suites (denominative, monotonous) no longer
 compile natively, and `nativelink.binary` itself — like any binary reaching

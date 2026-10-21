@@ -64,7 +64,7 @@ dissonance	yes	yes	yes	js
 distillate	yes	yes	yes	js		
 diuretic	yes	no	no	no		`java.*` type interop: `java.io.File`/`nio.file.Path` are absent from the Scala.js javalib, `java.net.URL`/`java.time` from Scala Native's
 embarcadero	yes	core	core	core	backends: oci-jvm; JVM-only: containerd	opening an image from a filesystem path (`oci-jvm`) needs `bitumen.jvm`
-enigmatic	yes	no	yes	no	backends: core-jvm+core-native; JVM-only: cose; everywhere: asn1	`javax.crypto` has no JS analogue; the Native build uses the OpenSSL provider (`openssl`); `asn1` is pure
+enigmatic	yes	yes	yes	js	backends: core-js+core-jvm+core-native; Native-only: openssl	the pure-Scala `SoundnessCrypto` (AES, HMAC, AES-GCM, ChaCha20, X25519, Ed25519) backs JS and Native; RSA, DSA, ECDSA, ML-DSA and the legacy ciphers are JVM/OpenSSL-only, and `openssl` is a C FFI
 escapade	yes	yes	yes	js		
 escritoire	yes	yes	yes	js		
 espionage	yes	no	no	no		transitively JVM-only through `obligatory.json`

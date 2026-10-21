@@ -1995,23 +1995,22 @@ object enigmatic extends Library:
   // the `JavaBaseCrypto` provider and PKCS#12 keystores compile against `javax.crypto`/
   // `java.security` on the JVM (`core-jvm`) and against panicking stubs on native (`core-native`,
   // where the OpenSSL provider is the real implementation).
+  // `core-jvm` also holds the off-heap/encrypting cloaks (`java.lang.foreign`). On Scala.js and
+  // Scala Native the `JavaBaseCrypto` twins forward to the pure-Scala `SoundnessCrypto` for the
+  // algorithms it implements (AES, HMAC, AES-GCM, ChaCha20, X25519, Ed25519) and panic for the
+  // rest (RSA, the legacy ciphers); the OpenSSL provider is native's full-strength alternative.
   object core extends Component(anticipation.path, aperture.core, gastronomy.core, asn1):
-    override def scalaJs = false // `javax.crypto` has no JS analogue (and no OpenSSL either)
-    override def scalaNative = true // but native has the OpenSSL provider
-    // `core-jvm` also holds the off-heap/encrypting cloaks (`java.lang.foreign`).
     override def sources = Task.Sources(moduleDir, moduleDir / os.up / "core-jvm")
+    override def jsSources = Task.Sources(moduleDir, moduleDir / os.up / "core-js")
     override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "core-native")
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // X.509 certificates: ASN.1 assembly over `core`'s ciphers, plus aviation for validity periods,
   // whose transitive dependencies nothing that only wants ciphers and PEM should have to carry.
   object x509 extends Component(core, aviation.core):
-    override def scalaJs = false // transitively JVM-only, through `core`
-    override def scalaNative = true
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object cose extends Component(core, breviloquence.core):
-    override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // One shared source, two FFI backends: the JVM variant materializes `invoke` through Panama
@@ -4131,7 +4130,7 @@ object jslink extends ScalaJSModule, Toolchain:
       mvn"io.github.scala-wasm:scalajs-sbt-test-adapter_2.13:${settings.scalaJsVersion}",
       mvn"io.github.scala-wasm:scalajs-linker_2.13:${settings.scalaJsVersion}")
       ++ scalaJSJsEnvMvnDeps())
-  override def moduleDeps = Seq(gossamer.core.js, jacinta.core.js, wisteria.core.js, ypsiloid.core.js, hypotenuse.core.js, spectacular.core.js, aviation.core.js, parasite.core.js, xenophile.typescript.js, xenophile.js.js)
+  override def moduleDeps = Seq(gossamer.core.js, jacinta.core.js, wisteria.core.js, ypsiloid.core.js, hypotenuse.core.js, spectacular.core.js, aviation.core.js, parasite.core.js, enigmatic.core.js, xenophile.typescript.js, xenophile.js.js)
 
 // The Scala Native counterpart of `jslink`: `nativelink.binary` links a representative slice of the
 // Native-capable modules (`nativelink/src`) into a real executable via the `tools` linker, so any
