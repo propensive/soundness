@@ -120,11 +120,9 @@ class Process private (java: ProcessHandle) extends Process.Ref, anticipation.Du
   def startTime[instantiable: Instantiable across Instants from Long as instant0]
   :   Optional[instantiable] =
 
-    val instant = java.info.nn.startInstant.nn
-    if instant.isPresent then instant0.apply(instant.get.nn.toEpochMilli) else Unset
+    ProcessInfo.startMillis(java).let(instant0.apply(_))
 
   def cpuUsage[instantiable: Instantiable across Durations from Long as duration0]
   :   Optional[instantiable] =
 
-    val duration = java.info.nn.totalCpuDuration.nn
-    if duration.isPresent then duration0.apply(duration.get.nn.toNanos) else Unset
+    ProcessInfo.cpuNanos(java).let(duration0.apply(_))

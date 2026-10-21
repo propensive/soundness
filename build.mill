@@ -2149,7 +2149,8 @@ object eucalyptus extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object syslog extends Component(guillotine.core, core):
-    override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
+    override def scalaJs = false // spawns `logger` (`guillotine`), which has no Scala.js variant
+    override def scalaNative = true
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object gcp extends Component(jacinta.core, core):
@@ -2410,8 +2411,15 @@ object graffiti extends Library:
       settings.sep(super.scalacOptions())
 
 object guillotine extends Library:
+  // Process spawning: `ProcessBuilder` has no Scala.js analogue, but Scala Native's javalib has
+  // it, so the module cross-compiles to native with the three pieces the javalib lacks split by
+  // platform — the pseudo-terminal (Panama on the JVM), `startPipeline`, and `java.time` process
+  // info (`core-jvm`/`core-native`).
   object core extends Component(turbulence.core, ambience.core, contextual.core, parasite.core, aperture.core):
-    override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
+    override def scalaJs = false
+    override def scalaNative = true
+    override def sources = Task.Sources(moduleDir, moduleDir / os.up / "core-jvm")
+    override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "core-native")
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, galilei.jvm):
@@ -2611,7 +2619,8 @@ object hypotenuse extends Library:
 
 object imperial extends Library:
   object core extends Component(guillotine.core):
-    override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
+    override def scalaJs = false // transitively JVM-only, through `guillotine` (process spawning)
+    override def scalaNative = true
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
@@ -2833,33 +2842,46 @@ object octogenarian extends Library:
   // The model, the repository and worktree handles, and the `Git.Backend` typeclass they drive:
   // no process-spawning here, so a consumer of the native backend never compiles guillotine.
   object core extends Component(galilei.core, urticose.core, anticipation.url, dissonance.core):
-    override def scalaJs = false // JVM-only (filesystem access, real-path resolution)
+    override def scalaJs = false // filesystem access; no Scala.js filesystem backend
+    override def scalaNative = true // `java.time` (the commit clock) is split out in `core-jvm`/`core-native`
+    override def sources = Task.Sources(moduleDir, moduleDir / os.up / "core-jvm")
+    override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "core-native")
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The backend that runs the `git` command: `gitBackends.commandlineGit`.
   object cli extends Component(core, guillotine.core, galilei.jvm):
-    override def scalaJs = false // transitively JVM-only (process)
+    override def scalaJs = false // transitively JS-incapable (process spawning, filesystem)
+    override def scalaNative = true
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The backend that reads and writes the repository's files itself: `gitBackends.soundnessGit`.
+  // The filesystem backend it reads and writes through is selected by source set: galilei's
+  // `java.nio.file` backend (`native-jvm`) or Scala Native's javalib (`native-native`); the
+  // `galilei.jvm` dependency serves the former and `nativeDeps` drops it from the native cross.
   object native extends Component(core, galilei.jvm, pneumatic.flate, gastronomy.core):
-    override def scalaJs = false // JVM-only (filesystem access)
+    override def scalaJs = false // filesystem access; no Scala.js filesystem backend
+    override def scalaNative = true
+    override def sources = Task.Sources(moduleDir, moduleDir / os.up / "native-jvm")
+    override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "native-native")
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // Remote repositories over smart HTTP(S), protocol version 2: `gitTransports.smartHttp`.
   object http extends Component(native, telekinesis.core):
-    override def scalaJs = false // transitively JVM-only (filesystem access)
+    override def scalaJs = false // transitively JS-incapable (filesystem access)
+    override def scalaNative = true
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // Remote repositories over a spawned `ssh`, and signing through `ssh-keygen`:
   // `gitTransports.sshCommand`.
   object ssh extends Component(native, guillotine.core):
-    override def scalaJs = false // transitively JVM-only (process)
+    override def scalaJs = false // transitively JS-incapable (process spawning)
+    override def scalaNative = true
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // Remote repositories over susurration, the native SSH client: `gitTransports.soundnessSsh`.
   object sshNative extends Component(native, susurration.core):
-    override def scalaJs = false // transitively JVM-only (networking)
+    override def scalaJs = false // transitively JS-incapable (filesystem access, crypto)
+    override def scalaNative = true
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test
@@ -3413,8 +3435,8 @@ object surveillance extends Library:
 // connection protocols over coaxial's sockets.
 object susurration extends Library:
   object core extends Component(enigmatic.core, coaxial.core, guillotine.core):
-    override def scalaJs = false // transitively JVM-only, through enigmatic
-    override def scalaNative = false // guillotine has no native variant (process spawning)
+    override def scalaJs = false // transitively JS-incapable, through `enigmatic` (no JS crypto provider)
+    override def scalaNative = true
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, coaxial.jvm, guillotine.core, eucalyptus.core):

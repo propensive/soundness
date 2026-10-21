@@ -69,7 +69,7 @@ escapade	yes	yes	yes	js
 escritoire	yes	yes	yes	js		
 espionage	yes	no	no	no		transitively JVM-only through `obligatory.json`
 ethereal	yes	no	no	no		transitively JVM-only (networking/crypto/fs/process)
-eucalyptus	yes	yes	yes	js	JVM-only: syslog	`syslog` spawns `logger` (`guillotine`)
+eucalyptus	yes	yes	yes	js	Native-only: syslog	`syslog` spawns `logger` (`guillotine`), which has no Scala.js variant
 exegesis	yes	no	no	no		LSP server; depends on JVM-only `ethereal`/`exoskeleton`
 exoskeleton	yes	yes	yes	js	JVM-only: completions, manpage	`completions`/`manpage` spawn shells and install files (`guillotine`, `galilei.jvm`); `completions` also trips a Scala.js backend bug with `(erased Effectful) ?=>` closures
 facsimile	yes	no	no	no		memory-mapped random-access reads (`galilei.jvm` `Ram`), JCE
@@ -83,7 +83,7 @@ gigantism	yes	yes	yes	js
 gnossienne	yes	yes	yes	js		
 gossamer	yes	yes	yes	js		
 graffiti	yes	yes	yes	js		
-guillotine	yes	no	no	no		process spawning: `ProcessBuilder` has no Scala.js analogue; on Scala Native, `PtyProcess` needs Panama and `ProcessBuilder.startPipeline` is absent from the javalib
+guillotine	yes	no	yes	no	backends: core-jvm+core-native	`ProcessBuilder` has no Scala.js analogue; on Scala Native the pseudo-terminal (`pty`) raises `Exec.Error` until a posixlib implementation lands, and `Process#startTime`/`cpuUsage` are `Unset` (no `java.time`)
 hallucination	yes	yes	yes	js	backends: core-jvm+core-native	
 harlequin	yes	no	no	no		syntax highlighting via `anthology.scala` (the compiler)
 hellenism	yes	core	no	core	JVM-only: jvm	`servicesFor` needs `URLClassLoader`/`java.net.URL`, absent from Scala Native's javalib; `jvm` is the filesystem-backed classpath
@@ -91,7 +91,7 @@ hieroglyph	yes	yes	yes	js	backends: core-jvm+core-native
 honeycomb	yes	yes	yes	js		
 hyperbole	yes	no	no	no		depends on JVM-only `harlequin.ansi`; JVM-only submodule(s): stacks
 hypotenuse	yes	yes	yes	js		
-imperial	yes	no	no	no		XDG directories resolved through `guillotine` (JVM-only)
+imperial	yes	no	yes	no		transitively JS-incapable through `guillotine`
 inimitable	yes	yes	yes	js		
 iridescence	yes	yes	yes	js		
 jacinta	yes	yes	yes	js	JVM-only: schema, staged	`schema` fetches schemas over `telekinesis.jvm`
@@ -107,7 +107,7 @@ mosquito	yes	yes	yes	js
 murmuration	yes	yes	yes	js		
 nomenclature	yes	yes	yes	js		
 obligatory	yes	yes	yes	js	JVM-only: json, grpc	`json` is over `jacinta.schema` (`telekinesis.jvm`); `grpc` is over `telekinesis.http2`
-octogenarian	yes	no	no	no		filesystem access through `galilei.jvm` (`javaBaseFilesystem`) and `java.time`; `cli`/`ssh` spawn processes (`guillotine`)
+octogenarian	yes	no	yes	no	backends: core-jvm+core-native	no Scala.js filesystem backend; on Scala Native commits are stamped in UTC (no `java.time`), and `cli`/`ssh` need `guillotine`
 orthodoxy	yes	no	no	no		`java.security.SecureRandom`, absent from both javalibs; `server` is over `telekinesis.jvm`
 panopticon	yes	yes	yes	js		
 parasite	yes	core	yes	core	backends: core-jvm+core-native; JVM-only: jvm	`jvm` is `java.lang.management` heap/GC introspection; Scala.js has no threads for the supervisors to fork
@@ -140,7 +140,7 @@ stenography	yes	yes	yes	js
 stratiform	yes	yes	yes	js	JVM-only: binaryStaged, staged	
 superlunary	yes	no	no	no		JVM runtime staging backend (`anthology.scala`, `guillotine`)
 surveillance	yes	no	no	no		file watching: `java.nio.file.WatchService` is absent from Scala.js and stubbed on Scala Native
-susurration	yes	no	no	no		SSH-2 over `enigmatic.core` (no JS crypto provider) and `guillotine` (no Scala Native variant yet)
+susurration	yes	no	yes	no		SSH-2 over `enigmatic.core`, which has no JS crypto provider
 symbolism	yes	yes	yes	js		
 syndesis	yes	no	no	no		multicast UDP: coaxial's Native and WASI backends raise on `joinMulticast`; no sockets on Scala.js
 synesthesia	yes	no	no	no	everywhere: content	`core` serves MCP over stdio/HTTP (`obligatory.json`, `scintillate.server`); `content` is pure

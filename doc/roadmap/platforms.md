@@ -52,6 +52,17 @@ Native coverage is verified by the real binary link check throughout, not compil
 Done when: the manifest shows no JavaScript or Native exclusion whose reason is not inherent,
 and the Native link check covers every Native-capable module.
 
+Known non-inherent Native gaps, each a candidate leg: guillotine's pseudo-terminal (`Command#pty`
+raises on Native until it is rewritten over posixlib's `posix_openpt`; the JVM one is Panama);
+coaxial's multicast (`joinMulticast` raises, which keeps syndesis off); hellenism's `servicesFor`
+(`URLClassLoader`); and a native `Http.Backend` for telekinesis, whose model now cross-compiles.
+
+The link check itself needs reviving before it can be widened: `mill nativelink.testSuites` is
+outside `make attest`, two of its three enrolled suites (denominative, monotonous) no longer
+compile natively, and `nativelink.binary` itself — like any binary reaching
+`contingency.ThrowTactic` — fails to link because the Native scalalib has no
+`scala.caps.SharedUnscoped` (measured 2026-10-21, while enrolling imperial).
+
 ## plat-4: WASI beyond the first seven backends
 
 Horizon: mid → long

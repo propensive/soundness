@@ -51,7 +51,6 @@ import vacuous.*
 
 import alphabets.hexLowerCase
 import cryptoPermits.permitDeprecatedCrypto
-import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.createNonexistentParents
 import filesystemOptions.deleteRecursively
 import filesystemOptions.dereferenceSymlinks

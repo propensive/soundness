@@ -46,7 +46,6 @@ import turbulence.*
 import urticose.*
 import vacuous.*
 
-import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.createNonexistentParents
 import filesystemOptions.deleteRecursively
 import filesystemOptions.dereferenceSymlinks
