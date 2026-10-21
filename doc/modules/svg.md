@@ -133,8 +133,9 @@ scope. The font's declarations join the element's inline style, and the SVG writ
 `@font-face` rules for every typeface its lettering names into its definitions, so the drawing
 renders alike wherever it is shown:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 given (Typeface of "Menlo") is Typesettable in Web = Web.local()
 
 Lettering((50, 70), t"time", font = Font(Typeface["Menlo"].bold))

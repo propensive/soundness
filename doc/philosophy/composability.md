@@ -13,7 +13,9 @@ A [stream](../modules/streams.md) pipeline is the clearest case. Each stage take
 stream and yields a stream, so stages chain without adapters and in any order that makes
 sense:
 
-```scala
+```scala fuel
+parse
+##
 file.stream.decompress[Gzip].via(decoder).records
 ```
 
@@ -27,7 +29,9 @@ a function that decides which stages a particular job needs.
 An [infix type](infix-types.md) adds one clause without nesting a bracket, so a precise
 type is built up the way an English description is:
 
-```scala
+```scala fuel
+parse
+##
 Path on Linux
 Raster by Rgba in Png
 Text is Decodable in Json
@@ -44,7 +48,9 @@ Two capabilities in scope are two capabilities; there is no combined type to con
 and no ordering to choose. Fallible, asynchronous and logging code compose by being
 written next to each other:
 
-```scala
+```scala fuel
+parse
+##
 supervise:
   recover:
     case error: HttpError => fallback
@@ -61,7 +67,9 @@ decision at all.
 
 Because a capability is introduced by a block, and blocks nest, resource lifetimes nest:
 
-```scala
+```scala fuel
+parse
+##
 archive.open[Zip](): zip ?=>
   target.open[File](Write): handle ?=>
     handle.write(zip.entries.head.stream)

@@ -31,6 +31,7 @@ import textMetrics.uniformMetric
 import columnAttenuation.ignoreAttenuation
 import hyphenations.englishHyphenation
 import stdios.javaLangSystemStdio
+import termcapDefinitions.basicTermcap
 import strategies.throwUnsafely
 ```
 

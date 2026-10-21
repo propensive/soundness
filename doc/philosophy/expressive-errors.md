@@ -12,7 +12,9 @@ distinct causes are the cases of a `Reason` enumeration, and the values that exp
 failure are fields — so handling code deconstructs the error rather than parsing its
 message:
 
-```scala
+```scala fuel
+parse
+##
 recover:
   case Io.Error(path, _, Io.Error.Reason.Nonexistent, _)      => create(path)
   case Io.Error(_, _, Io.Error.Reason.PermissionDenied, _)    => escalate()
@@ -31,7 +33,9 @@ The shape is consistent enough to be worth stating. An error is a case class car
 values that explain it, its distinct causes are a `Reason` enumeration, and its message is
 built with the `m"…"` interpolator from those same values:
 
-```scala
+```scala fuel
+parse
+##
 object IpAddressError:
   enum Reason(val number: Int) extends Clarification:
     case Ipv4ByteOutOfRange(byte: Int)        extends Reason(1)
@@ -69,7 +73,9 @@ A `Message` is not a `Text`. It is a structured value built from interpolated pa
 that anything `Communicable` can be embedded and rendered consistently wherever the
 message is shown:
 
-```scala
+```scala fuel
+parse
+##
 m"the port $text is not valid because $reason"
 ```
 
@@ -102,7 +108,9 @@ for one.
 
 Whether an error captures a trace is therefore a contextual choice:
 
-```scala
+```scala fuel
+parse
+##
 import errorDiagnostics.stackTracesDiagnostics   // capture, for debugging
 import errorDiagnostics.emptyDiagnostics         // omit, where the error is expected
 ```

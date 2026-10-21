@@ -315,17 +315,22 @@ policy. Soundness does not pick one silently; the policy is a given the calling
 code must supply. Clamping lands on the last valid day; overflowing spills into the
 next month:
 
-```scala
-locally:
-  import monthEnds.clampMonthEnd
-  2024-Jan-31 + 1*Month   // 2024-Feb-29
-  2024-Feb-29 + 1*Year    // 2025-Feb-28
-```
-
-```scala
-locally:
-  import monthEnds.overflowMonthEnd
-  2024-Jan-31 + 1*Month   // 2024-Mar-2
+```scala fuel
+frame
+  label Clamping to the last valid day
+  code
+      locally:
+        import monthEnds.clampMonthEnd
+        2024-Jan-31 + 1*Month   // 2024-Feb-29
+        2024-Feb-29 + 1*Year    // 2025-Feb-28
+frame
+  label Overflowing into the next month
+  code
+      locally:
+        import monthEnds.overflowMonthEnd
+        2024-Jan-31 + 1*Month   // 2024-Mar-2
+        2024-Feb-29 + 1*Year    // 2025-Mar-1
+##
 ```
 
 Subtracting one date from another counts the days between them:
@@ -733,12 +738,16 @@ fixes the convention for the whole scope:
 val date = 2025-Apr-7
 ```
 
-```scala
-val iso = { import dateFormats.iso8601DateFormat; date.show }   // 2025-04-07
-```
-
-```scala
-val american = { import dateFormats.americanDateFormat; date.show }   // 04/07/2025
+```scala fuel
+frame
+  label ISO 8601
+  code
+      val shown = { import dateFormats.iso8601DateFormat; date.show }   // 2025-04-07
+frame
+  label The American convention
+  code
+      val shown = { import dateFormats.americanDateFormat; date.show }   // 04/07/2025
+##
 ```
 
 Times offer the same range, from the twenty-four-hour form to the twelve-hour form:
@@ -747,14 +756,16 @@ Times offer the same range, from the twenty-four-hour form to the twelve-hour fo
 val time = Clockface(14, 30, 59)
 ```
 
-```scala
-import timeFormats.militaryTimeFormat
-time.show   // 1430
-```
-
-```scala
-import timeFormats.civilianTimeFormat
-time.show   // 02:30 PM
+```scala fuel
+frame
+  label Twenty-four hours
+  code
+      val clock = { import timeFormats.militaryTimeFormat; time.show }   // 1430
+frame
+  label Twelve hours
+  code
+      val clock = { import timeFormats.civilianTimeFormat; time.show }   // 02:30 PM
+##
 ```
 
 For finer control, a format is composed from independent choices — the order of the

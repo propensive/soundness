@@ -13,7 +13,9 @@ top of a file configures the file; one declared inside a block configures only t
 block, overriding any wider choice; and a `locally` block confines an exception to a few
 lines:
 
-```scala
+```scala fuel
+parse
+##
 import formatting.compactJsonFormatting     // the file's default
 
 def debugDump(json: Json): Text =
@@ -45,7 +47,9 @@ The range is worth seeing at once, because the uniformity is the point. A single
 mechanism carries choices that other designs would spread across constructor arguments,
 global settings, builder methods and runtime flags:
 
-```scala
+```scala fuel
+parse
+##
 import strategies.throwUnsafely            // what a failure does
 import codepages.utf8Codepage            // how text becomes bytes
 import formatting.compactJsonFormatting    // how JSON is rendered

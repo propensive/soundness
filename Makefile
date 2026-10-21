@@ -84,6 +84,14 @@ doccheck:
 	python3 etc/doccheck-names.py $(DOC)
 	python3 etc/doccheck.py $(DOC)
 
+# Compile every tutorial's fences with fuel, each document as one session, against the test
+# assembly `.pyrocosm/fuel/config.tel` names (`./mill test.assembly` builds it). Fuel is not yet
+# a released tool, so it is not pinned in etc/tools: `make install` in a fuel checkout puts it on
+# the PATH, or FUEL names it. Exit status 4 means a fence did not do as its preamble said.
+FUEL ?= fuel
+fuelcheck:
+	$(FUEL) compile
+
 attest:
 	./etc/ci/attest.sh
 
@@ -162,4 +170,4 @@ matrix:
 	    $(foreach scala,3.6.1 3.6.2 3.6.3 3.6.4 3.7.0 3.7.1 3.7.1 main, \
 			    $(MAKE) bootstrap/$(scala):$(jdk);))
 
-.PHONY: publishLocal build dev ci check-givens check-stdlib check-while unsafety wasm-e2e doccheck test bench matrix attest verify-attest push release sync-deps tools snapshot snapshot-prune xek-fetch
+.PHONY: publishLocal build dev ci check-givens check-stdlib check-while unsafety wasm-e2e doccheck fuelcheck test bench matrix attest verify-attest push release sync-deps tools snapshot snapshot-prune xek-fetch

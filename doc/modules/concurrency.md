@@ -37,7 +37,7 @@ have settled, so concurrent work has a clear boundary:
 
 ```scala
 supervise:
-  // tasks spawned here are owned by this scope
+  ()  // tasks spawned here are owned by this scope
 ```
 
 ### Spawning a task
@@ -143,27 +143,32 @@ A task is canceled with `cancel`, and a cancellable task cooperates by pausing a
 can be interrupted. A `snooze` is such a point, so a task sleeping on one wakes to its cancellation
 rather than running on:
 
-```scala
-supervise:
-  val task = async:
-    snooze(10.0*Second)
-    expensiveComputation()
-  task.cancel()   // the snoozing task is interrupted
-```
-
 Work that does not pause has to volunteer its own cancellation points. `relent()` is that
 point: while the task is running normally it does nothing, and if the task has been canceled it
 stops there, without producing a value. A task whose body never calls `relent()` and never pauses
 cannot be canceled at all, and must run to completion.
 
-```scala
-supervise:
-  val task = async:
-    for i <- 0 to 10 do
-      sleep(0.1*Second)
-      relent()
-      written += 1
-  task.cancel()
+```scala fuel
+frame
+  label Interrupted where it pauses
+  code
+      supervise:
+        val task = async:
+          snooze(10.0*Second)
+          expensiveComputation()
+        task.cancel()   // the snoozing task is interrupted
+frame
+  label Stopped where it relents
+  code
+      supervise:
+        val task = async:
+          for i <- 0 to 10 do
+            sleep(0.1*Second)
+            relent()
+            written += 1
+        task.cancel()
+      written   // 11
+##
 ```
 
 Cancelled at the `relent()`, this task never reaches the increment on the next line. It does
@@ -220,6 +225,7 @@ for `Schedulable` are reported as ambiguous:
 import abstractables.epochMillisecondsAbstractable
 
 supervise:
+  ()
   snooze(200L)  // does not compile: a Long is both a duration and an instant here
 ```
 

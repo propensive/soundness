@@ -23,7 +23,9 @@ leaving the two definitions free to disagree.
 A third module defines a *marker* and a pair of typeclasses saying how any type converts
 to and from a common representation:
 
-```scala
+```scala fuel
+parse
+##
 sealed trait Instants   // the marker: "this conversion is about instants"
 
 given Long is Abstractable across Instants to Long

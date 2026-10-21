@@ -112,8 +112,9 @@ reported against a character within a fragment resolves to that character's posi
 rather than to the start of the expression. The media-type interpolator's instance, in outline,
 hands both to a macro:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 inline given interpolable: MediaType is Interpolable:
   transparent inline def interpolate[parts <: Tuple, origins <: Tuple](inline insertions: Any*)
   :   MediaType =

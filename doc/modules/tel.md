@@ -28,6 +28,7 @@ to Scala. Everything comes from the `soundness` package:
 
 ```scala
 import soundness.*
+import threads.virtualThreads
 import strategies.throwUnsafely
 import codepages.utf8Codepage
 ```
@@ -87,8 +88,9 @@ or as UTF-8 bytes with `emit[Data]` — which is the shape for writing to a file
 `OutputStream`; where a consumer pulls instead, `Tel.emit(document)` serializes on a fiber and
 hands out the text through an iterator, and a `Tel` is `Streamable` by `Text` on the same terms:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 Tel.emit[Data](document, chunk => socket.write(chunk))
 Tel.lend(document)(region => interval => …)   // each block lent, not copied
 
@@ -258,13 +260,15 @@ built-in `String`, `Identifier`, `TypeName` and `Sigil` are provided, and a cust
 reads through a given of the same label in scope where `record` is called, such as
 `given ("handle" is Intensional in Tel.Provider from Tel to Handle) = Intensional(…)`:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 object ContactRecords extends Tel.Provider(Tels.tels[Person](t"person"))
 ```
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 val record = ContactRecords.record(t"name Alice\nage 30\n".read[Tel])
 record.name       // t"Alice", per the schema
 record.age        // 30
@@ -315,8 +319,9 @@ like included if the writer holds them, named by a prefix of their hash. The mes
 TEL, so it travels as text, as BinTEL (framed, or the bare document root for an embedding that
 already knows what it is carrying), or as a single BASE-256 word:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 val acceptance = Tel.Acceptance
   ( Tel.Acceptance.Alternative
       ( Tel.Acceptance.Signature(contact.signature(List(t"with-address"))),
@@ -338,8 +343,9 @@ writer decodes the signatures a reader sends. A writer holding a value under som
 serves the first alternative it can, with the richest composition the alternative permits, and
 the reader takes the first alternative whose schema the arriving document's is a subtype of:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 val served = Tel.Acceptance.serve(acceptance, contact, composition, element)   // the writer
 
 served.let: served =>
@@ -354,8 +360,9 @@ supertype can address.
 Where the formats are Scala types, the acceptance and its reading are derived. A tuple names the
 accepted types in order of preference, and what arrives decodes to their union:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 val accepting = Tel.Acceptance[(Contact, ContactV1)]()
 send(accepting.acceptance.framed)
 
@@ -369,8 +376,9 @@ atoms, so two types that agree on their required fields interoperate however the
 fields differ. A field can instead be offered as part of a named layer. A layer is declared once,
 as an object whose name is part of its type, and a field is assigned to it with `@assign`:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 object withPhone extends Tel.Layer("with-phone")
 
 case class Contact(name: Text, email: Optional[Text], @assign(withPhone) phone: Optional[Text])
@@ -382,8 +390,9 @@ sealed trait, annotated `@retract` remains a variant of the base, and the named 
 so a reader accepting that layer says it will never receive the case. A case may be retracted
 from several layers, though a layer cannot retract every case of a sum:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 object lean extends Tel.Layer("lean")
 
 enum Message:

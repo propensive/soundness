@@ -149,8 +149,9 @@ notice: a shell prints no prompt, `stty` fails, a line editor never starts. `pty
 on a fresh pseudo-terminal of the given size instead, so it finds a terminal on its input, output
 and error, as it would if a person had typed it:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 sh"stty size".pty(100, 30).exec[Text]().trim   // t"30 100"
 ```
 
@@ -162,8 +163,9 @@ anything streamable can be typed at it with `writeTo`. A terminal has no end of 
 a program reading until the end is sent the end-of-file character, `^D`, rather than having its
 input closed:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 sh"sh -c 'read line; stty size'".pty().session: terminal ?=>
   terminal.resize(132, 50)   // the program receives SIGWINCH
   t"\r".writeTo(terminal)    // press Return
@@ -180,8 +182,9 @@ full-screen program does before it draws, and `Termios.cooked` turns them all on
 given to `pty` is set before the command starts, and a running command's terminal can be read
 and changed through its `Job`:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 sh"head -c 2".pty(termios = Termios.raw).session: terminal ?=>
   t"hi".writeTo(terminal)      // delivered at once, without a newline
   terminal.mode.canonical      // false

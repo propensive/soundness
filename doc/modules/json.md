@@ -102,21 +102,27 @@ t"""{"rowers":[{"name":"Bob","age":40}],"cox":{"name":"Carol","age":25}}"""
 Writing has the mirror form: `in[Text over Json]` encodes a value straight to its JSON text, in
 the `Json.Formatting` in scope, as `show` renders it:
 
-```scala
-import formatting.compactJsonFormatting
-Person(t"Bob", 40).in[Text over Json]   // t"""{"name":"Bob","age":40}"""
-```
+`in[Data over Json]` writes the same text as bytes, encoded in the `Codepage` in scope. A type
+with a `Json.Printable` is written directly, with no `Json` tree built, wherever the formatting
+is compact; indented formatting still renders through the tree. The printer is derived at
+compiletime as the parser is, and writes the same text:
 
-`in[Data over Json]` writes the same text as bytes, encoded in the `Codepage` in scope.
+```scala fuel
+frame
+  label Through a `Json` tree
+  code
+      import formatting.compactJsonFormatting
 
-A type with a `Json.Printable` is written directly, with no `Json` tree built, wherever the
-formatting is compact; indented formatting still renders through the tree. The printer is
-derived at compiletime as the parser is, and writes the same text:
+      Person(t"Bob", 40).in[Text over Json]   // t"""{"name":"Bob","age":40}"""
+frame
+  label Written directly, by a derived printer
+  code
+      import formatting.compactJsonFormatting
 
-```scala
-given Person is Json.Printable = Inlinable.printable[Person]
+      given Person is Json.Printable = Inlinable.printable[Person]
 
-Person(t"Bob", 40).in[Text over Json]   // written directly
+      Person(t"Bob", 40).in[Text over Json]   // t"""{"name":"Bob","age":40}""", written directly
+##
 ```
 
 `Json.Printable.emit` writes the text a block at a time, handing each to a function as it fills.
@@ -229,22 +235,30 @@ form and the Scala name can differ.
 
 A discriminator field alongside the case's own fields is only one of the conventions in use, and
 the others are chosen by a `Discriminable` given rather than by writing a codec. A *wrapper*
-encoding puts the whole variant inside a single-key object named for the case:
+encoding puts the whole variant inside a single-key object named for the case, and an
+*envelope* encoding names the tag field and the payload field:
 
-```scala
-given Shape is Discriminable in Json = Json.DiscriminantWrapper()
+```scala fuel
+frame
+  label A discriminator field beside the case's own
+  code
+      (Shape.Circle(1.0): Shape).in[Json].show
+      // t"""{"radius":1.0,"kind":"Circle"}"""
+frame
+  label A wrapper: the variant inside an object named for the case
+  code
+      given Shape is Discriminable in Json = Json.DiscriminantWrapper()
 
-(Shape.Circle(1.0): Shape).in[Json].show
-// t"""{"Circle":{"radius":1.0}}"""
-```
+      (Shape.Circle(1.0): Shape).in[Json].show
+      // t"""{"Circle":{"radius":1.0}}"""
+frame
+  label An envelope: a tag field and a payload field
+  code
+      given Shape is Discriminable in Json = Json.DiscriminantEnvelope(t"type", t"value")
 
-An *envelope* encoding names the tag field and the payload field:
-
-```scala
-given Shape is Discriminable in Json = Json.DiscriminantEnvelope(t"type", t"value")
-
-(Shape.Square(2.0): Shape).in[Json].show
-// t"""{"type":"Square","value":{"side":2.0}}"""
+      (Shape.Circle(1.0): Shape).in[Json].show
+      // t"""{"type":"Circle","value":{"radius":1.0}}"""
+##
 ```
 
 Each works both through the tree and through [direct parsing](#case-classes-and-enumerations),
@@ -400,8 +414,9 @@ block to a function as it fills — as text with `emit[Text]`, or as UTF-8 bytes
 encoded straight from the serializer — which is the shape for writing to a file, a socket or an
 `OutputStream`:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 Json.emit[Data](json, chunk => socket.write(chunk))
 ```
 
@@ -410,8 +425,9 @@ instead: the consumer sees the writer's own buffer as a `Region`, with a branded
 proves every index in range, valid only for the duration of the call — the same discipline as a
 stream's `lend`:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 Json.lend(json): region =>
   interval => region.visit(interval)(index => sink.put(region(index)))
 ```
@@ -420,8 +436,9 @@ Where a consumer pulls instead, `Json.emit(json)` serializes on a fiber and hand
 through an iterator, and a `Json` is `Streamable` by `Text` on the same terms, under a
 `supervise` block:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 supervise:
   Json.emit(json).each(chunk => out.write(chunk))
 ```
@@ -691,8 +708,9 @@ schema declares — a string as `Text`, a number as `Double`, a `format: "email"
 as an email address, a `pattern` field as a checked `Text` — and a field the schema does
 not describe is a compile error:
 
-<!-- doccheck: skip -->
-```scala
+```scala fuel
+typecheck
+##
 object Catalogue extends Json.Provider(t"""{
   "type": "object",
   "required": ["name", "children"],

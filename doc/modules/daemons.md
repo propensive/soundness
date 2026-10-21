@@ -149,7 +149,7 @@ def ask(): Unit = cli:
   execute:
     val name = resident.cooked:
       Out.println(t"Name?")
-      In.read[Text]
+      java.io.BufferedReader(java.io.InputStreamReader(summon[Stdio].in)).readLine().nn.tt
     Out.println(t"Hello, $name")
     Exit.Ok
 ```
@@ -237,7 +237,7 @@ xek sign --key release-keys/myapp.seed --in dist/myapp --out dist/myapp.signed
 ```
 
 That output is simultaneously a valid executable and a valid upgrade candidate. The application
-stages one by passing `Upgrade.stage` any source of bytes — a URL, a file, a response body. It
+stages one by passing `Upgrade.stage` any source of bytes — a file, an HTTP response, a stream. It
 writes the candidate as `.pending` in the application's data directory and returns; the launcher
 verifies it at the start of the next invocation, swaps it into place, and starts a new daemon in
 place of the old one, so nothing is interrupted:
@@ -247,12 +247,14 @@ import environments.javaBaseEnvironment
 import systems.javaBaseSystem
 import errorDiagnostics.stackTracesDiagnostics
 import internetAccess.online
+import httpBackends.javaNetHttp
+import strategies.throwUnsafely
 
 def upgrade(): Text raises Upgrade.Error =
   if !Upgrade.enabled then t"this build cannot be upgraded"
   else if Upgrade.pending then t"the upgrade will be applied the next time the command is run"
   else
-    Upgrade.stage(url"https://releases.example.com/myapp.signed")
+    Upgrade.stage(url"https://releases.example.com/myapp.signed".fetch())
     t"the upgrade will be applied the next time the command is run"
 ```
 

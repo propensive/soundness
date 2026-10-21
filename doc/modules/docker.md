@@ -173,13 +173,16 @@ bound to a namespace. Because the connection holds background work, it lives ins
 supervised scope:
 
 ```scala
-def report(endpoint: Grpc.Channel^): Unit = supervise:
+import probates.awaitProbate
+import threads.virtualThreads
+
+def report[endpoint](endpoint: Http2.Endpoint[endpoint]): Unit = supervise:
   val client = Containerd(endpoint, t"default")
   client.version()
 ```
 
-Here `endpoint` is a [gRPC](rpc.md) channel over containerd's Unix socket, established through
-Soundness's HTTP/2 and [socket](sockets.md) support. Every call to the daemon may fail — the
+Here `endpoint` is an HTTP/2 endpoint over containerd's Unix socket, established through
+Soundness's HTTP/2 and [socket](sockets.md) support, which the client speaks [gRPC](rpc.md) over. Every call to the daemon may fail — the
 socket, the protocol, or the request itself — so the calls draw on the error strategy in scope.
 
 ### Containers, images and namespaces
