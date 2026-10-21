@@ -121,15 +121,9 @@ extension (data: Data)
         // match.)
         import unsafeExceptions.canThrowAny
 
-        if securityException(error, "javax.crypto.BadPaddingException")
-        then abort(Crypto.Error(Crypto.Error.Reason.BadPadding, detail(error)))
-        else if securityException(error, "javax.crypto.IllegalBlockSizeException")
-        then abort(Crypto.Error(Crypto.Error.Reason.IllegalBlockSize, detail(error)))
-        else if securityException(error, "java.security.InvalidKeyException")
-        then abort(Crypto.Error(Crypto.Error.Reason.InvalidKey, detail(error)))
-        else if securityException(error, "java.security.GeneralSecurityException")
-        then abort(Crypto.Error(Crypto.Error.Reason.IoFailure, detail(error)))
-        else throw error
+        failureReason(error) match
+          case reason: Crypto.Error.Reason => abort(Crypto.Error(reason, detail(error)))
+          case _                           => throw error
 
     decodable.decoded(plaintext)
 

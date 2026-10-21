@@ -32,10 +32,6 @@
                                                                                                   */
 package hellenism
 
-import java.io as ji
-import java.net as jn
-import java.util as ju
-
 import scala.caps
 
 import anticipation.*
@@ -47,7 +43,6 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import turbulence.*
-import vacuous.*
 import zephyrine.*
 
 object Classpath extends Root(t""):
@@ -105,58 +100,6 @@ object Classpath extends Root(t""):
 
       Streamable.inputStream.contramap: path => classloader.inputStream(path.encode)
 
-  def servicesFor[service](classpath: Classpath, cls: Class[service]): Set[service] =
-    val parent = Optional(cls.getClassLoader).or(ClassLoader.getSystemClassLoader.nn)
-
-    val entryUrls: List[jn.URL] = classpath.entries.flatMap:
-      case Classpath.Entry.JavaRuntime => Nil
-      case other                       => List(other.javaUrl)
-
-    // `scala.Array.from` demands an `IterableOnce`, which the opaque `List` is not.
-    val urls: scala.Array[jn.URL | Null] = scala.Array.from(entryUrls.stdlib)
-
-    val loader = jn.URLClassLoader(urls, parent)
-    val seen = scala.collection.mutable.Set.empty[Class[?]]
-    val result = scala.collection.mutable.Set.empty[service]
-
-    ju.ServiceLoader.load(cls, loader).nn.stream.nn.forEach: provider =>
-      val provider0 = provider.nn
-      if seen.add(provider0.`type`.nn) then result += provider0.get.nn
-
-    result.to(Set)
-
-  // Defined here, rather than inline in `Classpath#classloader`, so the anonymous
-  // `URLClassLoader` subclass carries no outer reference to a `Classpath` instance and so
-  // does not spuriously capture it under capture checking.
-  private[hellenism] def delegatingClassloader
-    ( urls: scala.Array[jn.URL | Null], parent: ClassLoader, delegation: Classloader.Delegation )
-  :   jn.URLClassLoader =
-
-    // The loader's only capture is the read view of the freshly-built URL array, laundered
-    // here.
-    // [java-boundary] uRL array passed to Java URLClassLoader
-    scala.caps.unsafe.unsafeAssumePure:
-      delegation match
-        case Classloader.Delegation.Deferential => new jn.URLClassLoader(urls, parent)
-
-        // Child-first delegation must still honour the `ClassLoader` contract: consult
-        // `findLoadedClass` under the per-name loading lock before defining. Without the
-        // check, a second request for an already-loaded class — or two threads racing on the
-        // same name, as concurrent test workers routinely do — reaches `defineClass` twice and
-        // dies with a `LinkageError: attempted duplicate class definition`.
-        case Classloader.Delegation.Preferential =>
-          new jn.URLClassLoader(urls, parent):
-            override def loadClass(name: String | Null, resolve: Boolean): Class[?] | Null =
-              getClassLoadingLock(name).nn.synchronized:
-                val loaded = findLoadedClass(name)
-
-                if loaded != null then
-                  if resolve then resolveClass(loaded)
-                  loaded
-                else
-                  try findClass(name) catch case error: ClassNotFoundException =>
-                    super.loadClass(name, resolve)
-
   // ClasspathEntry → Classpath.Entry
   object Entry:
     case class Directory(path: Text) extends Classpath.Entry:
@@ -171,23 +114,9 @@ object Classpath extends Root(t""):
 
     case object JavaRuntime extends Classpath.Entry
 
-    def apply(url: jn.URL): Optional[Classpath.Entry] = url.getProtocol.nn.tt match
-      case t"jrt"             => Classpath.Entry.JavaRuntime
-      case t"http" | t"https" => Classpath.Entry.Url(url.toString.tt)
-
-      case t"file" =>
-        val path: Text = url.getPath.nn.tt
-        if path.ends(t"/") then Classpath.Entry.Directory(path) else Classpath.Entry.Jar(path)
-
-      case _ =>
-        Unset
-
-  sealed trait Entry:
-    def javaUrl: jn.URL = this match
-      case Classpath.Entry.Directory(path) => ji.File(path.s).toURI.nn.toURL.nn
-      case Classpath.Entry.Jar(path)       => ji.File(path.s).toURI.nn.toURL.nn
-      case Classpath.Entry.Url(url)        => jn.URI(url.s).toURL().nn
-      case Classpath.Entry.JavaRuntime     => jn.URI("jrt:/").toURL().nn
+  // The `java.net.URL` conversions (`Loaders.entry(url)`, `Entry#javaUrl`) live in `core-jvm`:
+  // Scala Native's javalib has no `URL`.
+  sealed trait Entry
 
   // ClasspathError → Classpath.Error
   case class Error(resource: Text)(using Diagnostics)
@@ -203,25 +132,8 @@ object Classpath extends Root(t""):
     case ResourceLoaded(path: Text) extends Classpath.Event, Log.Runtime, Log.Resource
     case ResourceMissing(path: Text) extends Classpath.Event, Log.Runtime, Log.Resource
 
+// Building a classloader over the classpath (`classloader`) and enumerating its services
+// (`services`) are extensions in `core-jvm`: they need `URLClassLoader` and `ServiceLoader`,
+// which Scala Native has no use for — its classpath is linked into the binary.
 trait Classpath:
   def entries: List[Classpath.Entry]
-
-  // The Java runtime is omitted: a `jrt:/` URL means nothing to a `URLClassLoader`, and the
-  // platform loader, at the root of every parent chain, supplies the JDK's classes anyway.
-  private def array: scala.Array[jn.URL | Null] =
-    val urls: List[jn.URL] = entries.flatMap:
-      case Classpath.Entry.JavaRuntime => Nil
-      case other                       => List(other.javaUrl)
-
-    // `scala.Array.from` demands an `IterableOnce`, which the opaque `List` is not.
-    scala.Array.from(urls.stdlib)
-
-  def classloader
-    ( delegation: Classloader.Delegation,
-      parent: Classloader = classloaders.platformClassloader )
-  :   Classloader =
-
-    new Classloader(Classpath.delegatingClassloader(array, parent.java, delegation))
-
-  inline def services[service]: Set[service] =
-    Classpath.servicesFor[service](this, reflectClass[service])

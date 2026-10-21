@@ -55,7 +55,6 @@ import filesystemOptions.overwritePreexisting
 
 import gitCommands.searchpathGitCommand
 
-import filesystemBackends.javaBaseFilesystem
 import denominative.dysasymptotics.linearSize
 
 object Tests extends Suite("git", m"Octogenarian Tests"):
