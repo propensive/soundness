@@ -49,7 +49,7 @@ cataclysm	yes	yes	yes	js	JS-only: html	`html` reads stylesheets from the classpa
 charisma	yes	yes	yes	js		
 chiaroscuro	yes	yes	yes	js		
 clavichord	yes	yes	yes	js		
-coaxial	yes	core	yes	wasi	backends: native; JVM-only: jvm; JS-only: wasi	no Scala.js socket backend (`jvm` is `java.net`; `native` is Scala Native's POSIX sockets); multicast is JVM-only (native/wasi raise)
+coaxial	yes	core	yes	wasi	backends: native; JVM-only: jvm; JS-only: wasi	no Scala.js socket backend (`jvm` is `java.net`; `native` is Scala Native's javalib sockets, multicast included); WASI sockets are TCP-only
 concordance	yes	yes	yes	js		
 contextual	yes	yes	yes	js		
 contingency	yes	yes	yes	js		
@@ -142,7 +142,7 @@ superlunary	yes	no	no	no		JVM runtime staging backend (`anthology.scala`, `guill
 surveillance	yes	no	no	no		file watching: `java.nio.file.WatchService` is absent from Scala.js and stubbed on Scala Native
 susurration	yes	no	yes	no		SSH-2 over `enigmatic.core`, which has no JS crypto provider
 symbolism	yes	yes	yes	js		
-syndesis	yes	no	no	no		multicast UDP: coaxial's Native and WASI backends raise on `joinMulticast`; no sockets on Scala.js
+syndesis	yes	no	yes	no		mDNS over multicast UDP and a background responder: no sockets or threads on Scala.js
 synesthesia	yes	no	no	no	everywhere: content	`core` serves MCP over stdio/HTTP (`obligatory.json`, `scintillate.server`); `content` is pure
 tarantula	yes	no	no	no		browser automation; depends on JVM-only `guillotine`/`telekinesis.jvm`
 tasseomancy	yes	yes	yes	js		

@@ -54,8 +54,9 @@ and the Native link check covers every Native-capable module.
 
 Known non-inherent Native gaps, each a candidate leg: guillotine's pseudo-terminal (`Command#pty`
 raises on Native until it is rewritten over posixlib's `posix_openpt`; the JVM one is Panama);
-coaxial's multicast (`joinMulticast` raises, which keeps syndesis off); hellenism's `servicesFor`
-(`URLClassLoader`); and a native `Http.Backend` for telekinesis, whose model now cross-compiles.
+hellenism's `servicesFor` (`URLClassLoader`); and a native `Http.Backend` for telekinesis, whose
+model now cross-compiles. (coaxial's native backend joins multicast groups since 2026-10-21,
+which brought syndesis to Native.)
 
 Cryptography is no longer a JavaScript exclusion: enigmatic's pure-Scala `SoundnessCrypto`
 (AES in every mode, HMAC, AES-GCM, ChaCha20-Poly1305, X25519, Ed25519) backs the Scala.js and
