@@ -84,6 +84,12 @@ final class unexported() extends StaticAnnotation
 @targetName("partialFn")
 infix type ~> [-domain, +range] = PartialFunction[domain, range]
 
+// A given of this type is selected for `result` and, on selection, has its
+// `NotGiven[prohibited]` resolved at the use site, so
+// `given choice: Choice prohibits Policy = …` reads as the guard it is. The
+// arrow is pure so that an ordinary object can hold the given as a field.
+infix type prohibits[result, prohibited] = scala.util.NotGiven[prohibited] ?-> result
+
 export scala.EmptyTuple as Zero
 
 object Mono:
