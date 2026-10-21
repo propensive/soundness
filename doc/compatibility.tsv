@@ -146,7 +146,7 @@ syndesis	yes	no	no	no		multicast UDP: coaxial's Native and WASI backends raise o
 synesthesia	yes	no	no	no	everywhere: content	`core` serves MCP over stdio/HTTP (`obligatory.json`, `scintillate.server`); `content` is pure
 tarantula	yes	no	no	no		browser automation; depends on JVM-only `guillotine`/`telekinesis.jvm`
 tasseomancy	yes	yes	yes	js		
-telekinesis	yes	core	core	wasi	JVM-only: jvm, http2; JS-only: wasi	no Scala.js or Scala Native HTTP transport: `jvm` is `java.net.http`, `http2` is over `coaxial.jvm`, `wasi` is `wasi:http`
+telekinesis	yes	core	core	wasi	JVM-only: jvm, http2; JS-only: wasi; Native-only: sockets	no Scala.js transport: `jvm` is `java.net.http`, `http2` is over `coaxial.jvm`, `wasi` is `wasi:http`; `sockets` (HTTP/1.1 over coaxial, `soundnessHttp`) is the JVM and Scala Native client
 tessellate	yes	yes	yes	js		
 turbulence	yes	yes	yes	wasi	JS-only: wasi	
 typonym	yes	yes	yes	js		
