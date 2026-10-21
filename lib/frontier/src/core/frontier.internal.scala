@@ -467,9 +467,20 @@ object internal:
         case _: ImplicitSearchFailure =>
           Prohibited(name, None)
 
-    def seek(repr: TypeRepr, exclusions: List[Symbol], depth: Int): Result = repr match
-      case Prohibition(inner) => prohibited(inner, exclusions)
-      case _                  => search(repr, exclusions, depth)
+    // The search is bounded: a chain of candidates deeper than `maxDepth`, or more than
+    // `budget` searches in all, is reported as missing rather than followed, since every
+    // search ranges over the whole scope and the chains branch at each candidate's
+    // parameters — in a scope with every import of a long REPL session, an unbounded
+    // explanation ran for hours.
+    val maxDepth: Int = 6
+    var budget: Int = 256
+
+    def seek(repr: TypeRepr, exclusions: List[Symbol], depth: Int): Result =
+      budget -= 1
+
+      if depth > maxDepth || budget < 0 then missing(repr, Nil) else repr match
+        case Prohibition(inner) => prohibited(inner, exclusions)
+        case _                  => search(repr, exclusions, depth)
 
     // Whether `tpe` is a `scala.ContextFunctionN`, the type of a given written
     // `result prohibits prohibited`.
