@@ -524,6 +524,67 @@ object Tests extends Suite("charts", m"Tasseomancy tests"):
         Category(42).label
       . assert(_ == t"42")
 
+    suite(m"Doughnuts"):
+      case class Step(name: Text, size: Double, done: Double = 0.0)
+      given Step is Sized = _.size
+      given Step is Progressive = _.done
+      val a = Step(t"a", 1.0)
+      val b = Step(t"b", 2.0, 0.5)
+      val c = Step(t"c", 2.0)
+      val d = Step(t"d", 4.0, 1.0)
+      val diamond: Dag[Step] = Dag(a -> b, a -> c, b -> d, c -> d)
+      val turn = 2.0*π
+
+      test(m"a diamond's ranks are its depths of dependency"):
+        diamond.chart(Doughnut()).fit.bands.map(_.sectors.map(_.node.name).to[Set])
+      . assert(_ == List(Set(t"d"), Set(t"b", t"c"), Set(t"a")))
+
+      test(m"each rank's sectors sweep a full turn"):
+        diamond.chart(Doughnut()).fit.bands.all: band =>
+          (band.sectors.fold(0.0) { (acc, sector) => acc.max(sector.end) } - turn).abs < 1e-9
+      . assert(_ == true)
+
+      test(m"a band's thickness is its rank's share of the size"):
+        diamond.chart(Doughnut()).fit.bands.map { band => (band.outer*9.0 + 0.5).toInt }
+      . assert(_ == List(4, 8, 9))
+
+      test(m"a dependent sits over its dependency"):
+        val (p, q, x, y) = (Step(t"p", 1.0), Step(t"q", 1.0), Step(t"x", 1.0), Step(t"y", 1.0))
+        val crossed: Dag[Step] = Dag(p -> y, q -> x)
+        val bands = crossed.chart(Doughnut()).fit.bands
+        val inner = bands.at(Prim).let(_.sectors).or(Nil)
+        val outer = bands.at(Sec).let(_.sectors).or(Nil)
+        outer.all: sector =>
+          val middle = (sector.start + sector.end)/2.0
+          val dependency = if sector.node == p then y else x
+          inner.exists: over => over.node == dependency && over.start <= middle && middle <= over.end
+      . assert(_ == true)
+
+      test(m"every sector is drawn in the parts it has"):
+        val text = rendered(diamond.chart(Doughnut()))
+        (occurrences(text, t"<path"), text.contains(t"""id="rank-0""""),
+         text.contains(t"""id="sector-0""""), text.contains(t"""id="sector-0-rest""""))
+      . assert(_ == (5, true, true, false))
+
+      test(m"a hollow doughnut draws the same sectors"):
+        given Chart.Standard = Chart.Standard(hole = 0.3)
+        occurrences(rendered(diamond.chart(Doughnut())), t"<path")
+      . assert(_ == 5)
+
+      test(m"unchanged progress revises nothing"):
+        val chart = diamond.chart(Doughnut())
+        chart.revise(chart.data)(1)
+      . assert(_ == Nil)
+
+      test(m"progress on a node replaces only its band"):
+        val done = b.copy(done = 1.0)
+        diamond.chart(Doughnut()).revise(Dag(a -> done, a -> c, done -> d, c -> d))(1).map(describe)
+      . assert(_ == List(t"replace rank-1"))
+
+      test(m"a graph of another shape redraws the doughnut"):
+        diamond.chart(Doughnut()).revise(Dag(a -> d))(1).map(describe)
+      . assert(_ == List(t"redraw"))
+
     suite(m"Compatibility"):
       test(m"a categorical series cannot be a line chart"):
         demilitarize:
@@ -540,5 +601,17 @@ object Tests extends Suite("charts", m"Tasseomancy tests"):
       test(m"samples cannot be bars"):
         demilitarize:
           Samples(t"s")(1.0, 2.0).chart(Bars())
+        . exists(_.error)
+      . assert(_ == true)
+
+      test(m"a graph of nodes without a size or a progress cannot be a doughnut"):
+        demilitarize:
+          Dag(1 -> 2).chart(Doughnut())
+        . exists(_.error)
+      . assert(_ == true)
+
+      test(m"series cannot be a doughnut"):
+        demilitarize:
+          sales.chart(Doughnut())
         . exists(_.error)
       . assert(_ == true)
