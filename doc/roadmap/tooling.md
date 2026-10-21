@@ -137,7 +137,7 @@ Done when: no ecosystem tool's own configuration surface accepts any format but 
 
 ## tool-10: a debugger that speaks Soundness
 
-Done: #NNNN (2026-10-21)
+Done: #2306 (2026-10-21)
 Baseline was a JDWP core, an expression evaluator and a DAP server whose suite drove a live session end to end, with an object inspecting as its JVM class name and no topic (measured 2026-09-25)
 
 Debugging a running application should feel native, not hosted: breakpoints, stepping and

@@ -78,8 +78,8 @@ item
   track safety
   horizon near
   status done
-  done  #NNNN (2026-10-21)
-  baseline  219 unsafeAssumeSeparate, 289 unsafeAssumePure, 35 unsafeErasedValue, 381 untrackedCaptures; 0 untagged, ratcheted by etc/check-escape-count.py (2026-10-21; 419, 511, 50 and 2 untagged on 2026-10-07; 416, 502, 50 on 2026-09-25; 323, 273, 45 on 2026-08-01)
+  done  #2306 (2026-10-21)
+  baseline  218 unsafeAssumeSeparate, 289 unsafeAssumePure, 35 unsafeErasedValue, 381 untrackedCaptures; 0 untagged, ratcheted by etc/check-escape-count.py (2026-10-21; 419, 511, 50 and 2 untagged on 2026-10-07; 416, 502, 50 on 2026-09-25; 323, 273, 45 on 2026-08-01)
   criterion  every remaining caps.unsafe occurrence carries a reason tag; the census reports zero untagged
 
 item
@@ -96,7 +96,7 @@ item
   status open
   needs safety-8
   needs safety-10
-  baseline  930 caps.unsafe occurrences in total (2026-10-21; 1485 on 2026-10-07; 1436 on 2026-09-25; 929 on 2026-08-01)
+  baseline  928 caps.unsafe occurrences in total (2026-10-21; 1485 on 2026-10-07; 1436 on 2026-09-25; 929 on 2026-08-01)
   criterion  git grep -oE 'unsafeAssumeSeparate|untrackedCaptures|unsafeAssumePure|unsafeErasedValue' -- lib | wc -l == 0
 
 item
@@ -272,7 +272,7 @@ item
   track documentation
   horizon near
   status done
-  done  #NNNN (2026-10-21)
+  done  #2306 (2026-10-21)
   baseline  1 Stub marker remained (2026-09-25)
   criterion  grep -c 'Stub' doc/standards/messages.md == 0
 
@@ -290,7 +290,7 @@ item
   track documentation
   horizon mid
   status done
-  done  #NNNN (2026-10-21)
+  done  #2306 (2026-10-21)
   baseline  101 topics in doc/modules/; 145 of 145 libraries covered (2026-10-21; 1 of 144 uncovered on 2026-09-25; 91 topics and 35 uncovered on 2026-08-01)
   criterion  python3 etc/check-doc-coverage.py reports every library covered and exits 0
 
@@ -400,7 +400,7 @@ item
   track tooling
   horizon near-mid
   status done
-  done  #NNNN (2026-10-21)
+  done  #2306 (2026-10-21)
   baseline  the scripted DAP suite breaks, steps and inspects values through their Inspectable instances; topic doc/modules/debugging.md (2026-10-21; objects inspected as JVM class names and no topic on 2026-09-25)
   criterion  scripted DAP session (breakpoint, step, inspect with Soundness-rendered values) passes against a running application in CI
 

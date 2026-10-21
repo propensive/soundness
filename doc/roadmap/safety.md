@@ -64,8 +64,8 @@ Done when:
 
 ## safety-2: every remaining hatch names its reason
 
-Done: #NNNN (2026-10-21)
-Baseline was 419 `unsafeAssumeSeparate`, 511 `unsafeAssumePure`, 50 `unsafeErasedValue` (measured 2026-10-07; 416, 502 and 50 on 2026-09-25; 323, 273 and 45 on 2026-08-01); 37 of them cited `rep/` at all, 2 by case. On 2026-10-21 the hatches number 219, 289, 35 and 381 `untrackedCaptures`, every one tagged; `etc/check-escape-count.py --tags` reads the residue per tag, and its ratchet holds `untagged` at zero.
+Done: #2306 (2026-10-21)
+Baseline was 419 `unsafeAssumeSeparate`, 511 `unsafeAssumePure`, 50 `unsafeErasedValue` (measured 2026-10-07; 416, 502 and 50 on 2026-09-25; 323, 273 and 45 on 2026-08-01); 37 of them cited `rep/` at all, 2 by case. On 2026-10-21 the hatches number 218, 289, 35 and 381 `untrackedCaptures`, every one tagged; `etc/check-escape-count.py --tags` reads the residue per tag, and its ratchet holds `untagged` at zero.
 
 Each occurrence is either fixable now or blocked on something named. The triage makes the
 distinction explicit with a closed vocabulary of reason tags, defined in the capabilities
@@ -100,7 +100,7 @@ probe suite and every calibrated case run green-as-expected from a clean checkou
 
 Horizon: mid → long
 Needs: safety-8, safety-10
-Baseline: 930 occurrences in total (measured 2026-10-21; 1485 on 2026-10-07; 1436 on 2026-09-25; 929 on 2026-08-01)
+Baseline: 928 occurrences in total (measured 2026-10-21; 1485 on 2026-10-07; 1436 on 2026-09-25; 929 on 2026-08-01)
 
 With the blockers fixed, the residue burns down to nothing. The grep is the signal.
 
@@ -174,7 +174,7 @@ hatches that carry no reason tag — with the same `--update`/`--totals` semanti
 `check-while-count.py`, plus `--tags` for the residue per reason tag (`safety-2`), whose closed
 vocabulary lives in the script. Seeded 2026-10-09 (assumePure 366, assumeSeparate 261,
 untracked 397, erasedValue 50; 1068 hatches untagged) and re-seeded 2026-10-21 (assumePure 280,
-assumeSeparate 219, untracked 381, erasedValue 35, unsafeFrozen 325, unsafeJvm 292,
+assumeSeparate 218, untracked 381, erasedValue 35, unsafeFrozen 333, unsafeJvm 336,
 erasedEvidence 84, anyRefCast 362, captureCast 383; untagged 0). What remains of this item is
 folding the `while` and `.stdlib` ratchets into it.
 
@@ -184,7 +184,7 @@ their baselines from it rather than from a hand-run grep, and the per-file gate 
 
 ## safety-8: tactics are shared capabilities
 
-Done: #2195 (2026-10-07); the grep's last hit, a comment in `Emit.scala` describing the old seals, was reworded in #NNNN
+Done: #2195 (2026-10-07); the grep's last hit, a comment in `Emit.scala` describing the old seals, was reworded in #2306
 Needs: safety-3
 Baseline: ~60 exclusive-tactic overlap seals in `lib/*/src/core`, 3 of them in contingency; 103 derivation anchors and ~125 sealed codec givens downstream (measured 2026-10-07)
 

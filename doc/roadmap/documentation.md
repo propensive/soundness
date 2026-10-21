@@ -31,7 +31,7 @@ Done when: the parity check runs in CI and
 
 ## doc-2: the messages standard is written
 
-Done: #NNNN (2026-10-21)
+Done: #2306 (2026-10-21)
 
 `doc/standards/messages.md` was a self-declared stub, despite the message convention being
 load-bearing across every module. The standard is now written: register, structure, vocabulary,
@@ -51,7 +51,7 @@ mislead. No `lib/*/doc/` directory remains, and the boilerplate phrase matches n
 
 ## doc-4: every module is covered by a topic
 
-Done: #NNNN (2026-10-21)
+Done: #2306 (2026-10-21)
 Baseline was 99 topics in `doc/modules/` and 1 of 144 libraries uncovered (measured 2026-09-25; 91 topics and 35 uncovered on 2026-08-01); 101 topics cover 145 of 145 on 2026-10-21
 
 Every published module is covered by at least one `doc/modules/` topic, and a coverage script
