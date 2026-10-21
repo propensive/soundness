@@ -61,6 +61,7 @@ build:
 	$(MAKE) check-iarray
 	python3 etc/check-given-uniqueness.py
 	python3 etc/check-doc-coverage.py
+	python3 etc/check-compatibility.py
 	./etc/check-stdlib-count.sh
 	python3 etc/check-while-count.py
 	python3 etc/check-escape-count.py

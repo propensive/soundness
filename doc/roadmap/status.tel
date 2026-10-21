@@ -165,8 +165,8 @@ item
   id plat-1
   track platforms
   horizon near
-  status open
-  baseline  101 of 144 rows build for JavaScript, 35 excluded with reasons; nothing regenerates or checks the file (2026-09-25; 94 of 132 on 2026-08-01)
+  status done
+  baseline  104 of 145 rows build for JavaScript, 108 for Native, 34 JavaScript exclusions with reasons; etc/check-compatibility.py regenerates and checks the file in make build (2026-10-21; 101 of 144 on 2026-09-25; 94 of 132 on 2026-08-01)
   criterion  CI regenerates doc/compatibility.tsv, fails on divergence, and no exclusion lacks a reason
 
 item

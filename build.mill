@@ -1583,7 +1583,6 @@ object breviloquence extends Library:
     )
   // The media type `Cbor` construes
   object http extends Component(core, telekinesis.core):
-    override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, staged, sedentary.core, eucalyptus.core)
@@ -1626,7 +1625,6 @@ object cacophony extends Library:
 
 object caduceus extends Library:
   object core extends Component(gesticulate.core, turbulence.core, urticose.url):
-    override def scalaNative = false // not yet verified on Scala Native
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object resend
@@ -2185,7 +2183,6 @@ object exoskeleton extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object core extends Component(args, escritoire.core, galilei.core, digression.ansi):
-    override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object completions extends Component(core, eucalyptus.core, guillotine.core, galilei.jvm):
@@ -2406,7 +2403,6 @@ object gossamer extends Library:
 
 object graffiti extends Library:
   object core extends Component(honeycomb.core, cataclysm.core, parasite.core):
-    override def scalaNative = false // not yet verified on Scala Native
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
@@ -2654,7 +2650,6 @@ object jacinta extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object http extends Component(core, telekinesis.core):
-    override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object schema extends Component(core, telekinesis.jvm):
@@ -2716,7 +2711,6 @@ object legerdemain extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object core extends Component(honeycomb.core, anamnesis.core, query):
-    override def scalaNative = false // not yet verified on Scala Native
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, query, scintillate.server):
@@ -2758,7 +2752,6 @@ object locomotion extends Library:
     )
   // The media type `Protobuf` construes
   object http extends Component(core, telekinesis.core):
-    override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, staged):
@@ -3099,9 +3092,8 @@ object probably extends Library:
   // The BinTEL serialization bridge for the `TestEvent` stream: `Streamer` runs a suite with an
   // event sink and writes a schema fingerprint plus length-prefixed BinTEL frames to a host's
   // `OutputStream` -- the API an in-process (or, later, forked) test runner such as fume calls.
-  // JVM-only: it writes to a host `java.io.OutputStream`.
+  // `java.io.OutputStream` is in every platform's javalib, so it cross-compiles everywhere.
   object events extends Component(cli, stratiform.core, stratiform.base256):
-    override def scalaJs = false
     // Not `sep`-checked: the module's whole job is driving stratiform's inline schema/codec
     // derivations, whose generated code is not separation-clean (the same reason
     // `stratiform.test`, which exercises them, stays off `sep`). Tracked by `safety-6`.
@@ -3127,7 +3119,6 @@ object profanity extends Library:
 
 object punctuation extends Library:
   object core extends Component(honeycomb.core):
-    override def scalaNative = false // not yet verified on Scala Native
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object html extends Component(core):
@@ -3160,7 +3151,8 @@ object revolution extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object core extends Component(semver, turbulence.core, digression.core):
-    override def scalaJs = false // JAR manifests (`java.util.jar`)
+    override def scalaJs = false // JAR manifests: `java.util.jar` is absent from the Scala.js javalib
+    override def scalaNative = true // but present in Scala Native's
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
@@ -3198,7 +3190,6 @@ object rudiments extends Library:
 object archimedes extends Library:
   object core extends Component(xylophone.core, honeycomb.core, contextual.core, gigantism.core,
     quantitative.core, baroque.core, mosquito.core):
-    override def scalaNative = false // not yet verified on Scala Native
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, quantitative.units):
@@ -3208,7 +3199,6 @@ object archimedes extends Library:
 object savagery extends Library:
   object core extends Component(cataclysm.core, cataclysm.fonts, xylophone.core, geodesy.angle,
     iridescence.core, cardinality.core, mosquito.core):
-    override def scalaNative = false // not yet verified on Scala Native
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core):
@@ -3364,7 +3354,6 @@ object stratiform extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object http extends Component(core, telekinesis.core):
-    override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // BinTEL messages in a length-prefixed framing over a coaxial `Duplex` (`Framed`): the glue
@@ -3496,7 +3485,6 @@ object tasseomancy extends Library:
   object core extends Component(savagery.core, cataclysm.fonts, hypotenuse.core, gossamer.core, quantitative.core,
       quantitative.units, aviation.core, spectacular.core, phoenicia.core, distillate.core,
       murmuration.core, cartouche.core):
-    override def scalaNative = false // not yet verified on Scala Native
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, quantitative.units):
@@ -3506,16 +3494,14 @@ object tasseomancy extends Library:
 object telekinesis extends Library:
   object core extends Component(gesticulate.core, monotonous.core, legerdemain.query,
       turbulence.core, urticose.url, inimitable.core):
-    // HTTP: would need a native sockets/HTTP backend (there is none yet — the JVM
-    // `java.net.http` transport lives in `telekinesis.jvm`). The HTML half, which was the other
-    // reason this could not cross-compile, is now in `telekinesis.forms`.
-    override def scalaNative = false
+    // The HTTP model and client cross-compile to Scala.js and Scala Native alike; a transport
+    // (`Http.Backend`) is supplied per platform — `telekinesis.jvm` on the JVM, `telekinesis.wasi`
+    // in a Wasm component — and Scala Native has none yet, so a native consumer brings its own.
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // Rendering a `Submission` as an HTML form, and the `Orchestrate` request/render cycle: the
   // only part of telekinesis that needs honeycomb and legerdemain's widgets.
   object forms extends Component(core, legerdemain.core):
-    override def scalaNative = false // not yet verified on Scala Native
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // JVM-only transports split out of `core` so the platform-agnostic HTTP model and client can
@@ -3832,7 +3818,6 @@ object xylophone extends Library:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The HTTP-facing contextual values: the media types `Xml` construes, and its `Postable`
   object http extends Component(core, telekinesis.core):
-    override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   // The in-macro staging compiler that evaluates user-written `Inlinable`
@@ -3871,7 +3856,6 @@ object ypsiloid extends Library:
 
   // The media type `Yaml` construes
   object http extends Component(core, telekinesis.core):
-    override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object test extends Tests(core, jacinta.core):

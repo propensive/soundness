@@ -16,17 +16,19 @@ the manifest. When the only reasons left are inherent ones, the parity statement
 ## plat-1: the platform manifest is enforced
 
 Horizon: near
-Baseline: 101 of 144 rows build for JavaScript; 35 are excluded, and every exclusion carries a reason (measured 2026-09-25; 94 of 132 on 2026-08-01)
+Baseline: 104 of 145 rows build for JavaScript, 108 for Native; 34 JavaScript exclusions, every one with a reason (measured 2026-10-21; 101 of 144 on 2026-09-25; 94 of 132 on 2026-08-01)
 
-`doc/compatibility.tsv` already records the matrix, and its header says it is generated from
-`build.mill` — but nothing in the build regenerates or checks it, so it is a report, and a
-stale one whenever a module is added. Enforcement makes it a contract: CI regenerates it and
-fails on any regression, and every exclusion carries a stated reason.
+`doc/compatibility.tsv` records the matrix, and `etc/check-compatibility.py` (run by `make
+build`) regenerates its platform columns from `build.mill` — each component's `scalaJs`/
+`scalaNative` flags and `sources`/`jsSources`/`nativeSources` source sets — and fails on any
+divergence from the committed copy or on an exclusion with no reason in `notes`. The matrix is
+therefore a contract: a module added without a row, or a flag flipped without the file, fails
+the build, and the only hand-written content is the reason for every `no` or `core` cell.
 
 Done when: the ordinary build regenerates the manifest, fails on divergence from the committed
-copy, and no exclusion row has an empty reason. Interim gauge:
+copy, and no exclusion row has an empty reason — met by `etc/check-compatibility.py`. Interim gauge:
 
-    grep -v '^#' doc/compatibility.tsv | awk -F'\t' '$3=="yes"{n++} END{print n}'    # 101 → 144 minus inherent exclusions
+    grep -v '^#' doc/compatibility.tsv | awk -F'\t' '$3=="yes"{n++} END{print n}'    # 104 → 145 minus inherent exclusions
 
 ## plat-2: Android in the ordinary build
 
