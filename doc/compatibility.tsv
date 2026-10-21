@@ -39,6 +39,7 @@ caesura	yes	yes	yes	js
 camouflage	yes	yes	yes	js	
 capricious	yes	yes	yes	wasi	backends: core+wasi
 cardinality	yes	yes	yes	js	
+cartouche	yes	yes	yes	js	
 cataclysm	yes	yes	no	js	
 charisma	yes	yes	yes	js	
 chiaroscuro	yes	yes	yes	js	
@@ -134,6 +135,7 @@ stenography	yes	yes	yes	js
 stratiform	yes	yes	yes	js	JVM-only submodule(s): binary, binaryStaged, http, staged
 superlunary	yes	no	no	no	backends: core+jvm; JVM runtime staging backend
 surveillance	yes	no	no	no	file watching (`java.nio.file` WatchService)
+susurration	yes	no	no	no	transitively JVM-only (networking/crypto/fs/process)
 symbolism	yes	yes	yes	js	
 syndesis	yes	no	no	no	mDNS over multicast UDP sockets and a background responder
 synesthesia	yes	no	no	no	transitively JVM-only (networking/crypto/fs/process)

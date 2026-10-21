@@ -21,6 +21,7 @@ caesura: csv tsv dsv spreadsheet sheet delimited-values
 camouflage: cache lru-cache memoization
 capricious: random rng probability gaussian gamma distribution sampling seed
 cardinality: refinement-types numeric-range bounded-numbers ranges
+cartouche: label-placement captions obstacles arranger collision-avoidance chart-labels
 cataclysm: css stylesheet selectors keyframes media-queries fonts typesafe-css
 charisma: chemistry periodic-table chemical-equation molecule chemical-formula
 chiaroscuro: diff comparison contrast similarity test-assertions decomposition
@@ -58,7 +59,7 @@ gesticulate: mime media-types multipart content-type assets
 gigantism: macros metaprogramming compile-time scala-compiler-internals
 gnossienne: reference foreign-key entity-reference resolvable
 gossamer: text strings text-utilities decimal-formatting bidi unicode joining
-graffiti: templates text-templates interpolation html-templates
+graffiti: page archetype html-page hero masthead breadcrumbs colophon favicon dashboard
 guillotine: shell process subprocess command-execution posix sh
 hallucination: image png jpeg gif bmp raster image-io
 harlequin: syntax-highlighting source-code tokenization scala-parser
@@ -116,6 +117,7 @@ stenography: typename qualified-names imports symbol-rendering scala-types
 stratiform: tel configuration-language records schema binary-tel
 superlunary: staging remote-execution multi-stage-programming distributed-computing
 surveillance: file-watcher filesystem file-events directory-monitoring nio
+susurration: ssh ssh-client known-hosts identity transport session remote-commands
 symbolism: operators arithmetic typeclass operator-overloading algebra
 syndesis: mdns dns-sd zeroconf bonjour service-discovery multicast
 synesthesia: mcp model-context-protocol llm ai-protocol

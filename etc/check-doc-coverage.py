@@ -29,6 +29,7 @@ INTERNAL = {
     'beneficence', 'umbrageous', 'prescience', 'frontier', 'symbolism', 'denominative',
     'concordance', 'delicious', 'prophesy', 'stenography', 'wisteria', 'polaris',
     'degustation',    # the TASTy reader; its only tutorial was the LIRA topic, retired by dist-10
+    'burdock',        # the self-installer's bootstrap: a launcher runs it; a reader never calls it
 }
 
 # Libraries whose coverage the export-name heuristic cannot see, mapped by hand.
@@ -36,7 +37,6 @@ COVERED_BY = {
     'exegesis': ['lsp.md'],
     'espionage': ['acp.md'],
     'virility': ['cli.md'],
-    'ziggurat': ['packaging.md'],
     'digression': ['stack-traces.md'],
     'sibylline': ['llm.md'],
     'murmuration': ['collections.md'],
@@ -74,6 +74,7 @@ def main():
 
     docs = {}
     for path in sorted(glob.glob('doc/modules/*.md')):
+        if os.path.basename(path) == 'overview.md': continue   # an index of the others, not a topic
         docs[os.path.basename(path)] = set(re.findall(r'\b[A-Z][A-Za-z0-9]{2,}\b', open(path, encoding='utf-8').read()))
 
     coverage = {}

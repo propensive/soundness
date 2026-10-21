@@ -56,9 +56,9 @@ Baseline: 99 topics in `doc/modules/`; 1 of 144 libraries uncovered (measured 20
 
 Every published module is covered by at least one `doc/modules/` topic, and a coverage script
 maps modules to topics so orphans are visible. The script exists — `etc/check-doc-coverage.py`,
-run by `make build` — and reports burdock as the one library no tutorial mentions, plus a
-`COVERED_BY` entry naming a `packaging.md` that has not been written; both make it exit
-non-zero today.
+run by `make build` — and passes: burdock, the self-installer's bootstrap, is listed as
+internal (a reader never calls it), and the `COVERED_BY` entry for ziggurat, a library removed
+in 0.66.0, is gone.
 
 Done when:
 
