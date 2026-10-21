@@ -74,6 +74,7 @@ def main():
 
     docs = {}
     for path in sorted(glob.glob('doc/modules/*.md')):
+        if os.path.basename(path) == 'overview.md': continue   # an index of the others, not a topic
         docs[os.path.basename(path)] = set(re.findall(r'\b[A-Z][A-Za-z0-9]{2,}\b', open(path, encoding='utf-8').read()))
 
     coverage = {}
