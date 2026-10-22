@@ -2570,14 +2570,15 @@ object hieroglyph extends Library:
 object hyperbole extends Library:
   // The TASTy data model and its byte-level reader — no compiler `Context`, no classpath, no
   // filesystem: `Tasty.parse` takes raw bytes, so a debugger can feed it TASTy fetched over a
-  // wire. The compiler dependency (the unpickler's classes) is compile-only; the caller's
-  // runtime classpath supplies the compiler it drives, as for `anthology`.
+  // wire. It reads through `tasty-core` alone (the format's constants, byte reader and header
+  // check; no compiler), which the fork publishes for every platform, so the component crosses
+  // to Scala.js and Scala Native; the platform-suffixed coordinate resolves to each.
   object tasty extends Component(digression.core, gossamer.core, rudiments.core):
-    override def scalaJs = false // drives the JVM compiler's TASTy unpickler
+    override def scalaJs = false // awaits Proscala 1.0.4's `tasty-core_sjs1_3`/`_native0.5_3`
     override def scalaNative = false
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-    def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+    def mvnDeps = Seq(mvn"org.scala-lang::tasty-core::${scalaVersion()}")
 
   object core extends Component(tasty, harlequin.core, escapade.core, escritoire.core,
       dendrology.tree):
@@ -2588,8 +2589,7 @@ object hyperbole extends Library:
 
   // Resolves the frames of a runtime stack trace against the TASTy written beside the classfiles,
   // naming the source definitions the compiled names were derived from. Split from `core` because
-  // it reads TASTy files rather than introspecting trees during macro expansion, but it shares
-  // `core`'s dependency on the compiler, which supplies the header and name-table readers.
+  // it reads TASTy files (through `tasty`) rather than introspecting trees during macro expansion.
   object stacks extends Component(core, ambience.core, galilei.jvm, hellenism.jvm, mandible.core):
     override def scalaJs = false // depends on JVM-only `hyperbole.core` and the filesystem
     override def scalacOptions = Task:
