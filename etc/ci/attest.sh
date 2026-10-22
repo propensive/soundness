@@ -151,12 +151,20 @@ if [[ "${SOUNDNESS_CI_SKIP_BUILD:-0}" != "1" ]]; then
     # whole Scala.js-capable surface under `-scalajs`, which the JVM pipeline can't
     # catch — gating it here stops `main` from silently drifting into `-scalajs`-only
     # capture-checking breakage (there are no JS tests to run; compiling is the check).
-    # `make wasm-e2e` then links the `.wasi` backends into a real Wasm component and runs
-    # its scenarios under wasmtime — the only stage that exercises the WIT ABI at runtime.
+    # `nativelink.binary` links a representative slice of the Native-capable modules into a
+    # real executable and runs it (the FFI, filesystem, sockets, supervisors, pseudo-terminal
+    # and OpenSSL scenarios), and `nativelink.testSuites` links and runs the enrolled test
+    # suites natively: the only stages that catch a `java.*` API Scala Native lacks, or a
+    # platform twin that compiles but misbehaves. `make wasm-e2e` then links the `.wasi`
+    # backends into a real Wasm component and runs its scenarios under wasmtime — the only
+    # stage that exercises the WIT ABI at runtime.
     make xek-fetch \
       && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false soundness.all.compile \
       && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false soundness.js.compile \
       && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false soundness.native.compile \
+      && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false nativelink.binary \
+      && ./out/nativelink/binary.dest/soundness-native \
+      && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false nativelink.testSuites \
       && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false test.assembly \
       && make ci \
       && wasm_e2e
@@ -201,6 +209,8 @@ statement = {
             "./mill --no-daemon -j 6 --ticker false soundness.all.compile",
             "./mill --no-daemon -j 6 --ticker false soundness.js.compile",
             "./mill --no-daemon -j 6 --ticker false soundness.native.compile",
+            "./mill --no-daemon -j 6 --ticker false nativelink.binary && ./out/nativelink/binary.dest/soundness-native",
+            "./mill --no-daemon -j 6 --ticker false nativelink.testSuites",
             "./mill --no-daemon -j 6 --ticker false test.assembly",
             "make ci",
             wasm_step,

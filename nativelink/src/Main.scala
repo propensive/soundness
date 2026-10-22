@@ -136,6 +136,19 @@ object Main:
         val second = async(21)
         out.println("parasite: async sum = "+(first.await() + second.await()))
 
+    // guillotine: a command run on a pseudo-terminal through the posixlib `PtyProcess` — the child
+    // must see a terminal on its standard streams, and the window size set on the master must be
+    // what `stty` reports inside it.
+    locally:
+      import workingDirectories.javaBaseWorkingDirectory
+      import environments.javaBaseEnvironment
+      import contingency.strategies.throwUnsafely
+      given (Exec.Event is Loggable) = Loggable.silent[Exec.Event]
+      val terminal = sh"sh -c '[ -t 0 ] && [ -t 1 ] && [ -t 2 ] && echo terminal'".pty().exec[Text]()
+      out.println("pty: child sees a terminal = "+(terminal.trim == t"terminal"))
+      val size = sh"stty size".pty(100, 30).exec[Text]()
+      out.println("pty: stty size = "+size.trim.s+" (expected 30 100)")
+
     // enigmatic: OpenSSL crypto through xenophile's cross-compiled C navigation — the same
     // `OpensslCrypto` source that runs on the JVM via Panama, here materialized as direct C
     // calls. The HMAC is checked against RFC 4231-style known output, and AES/CBC round-trips.

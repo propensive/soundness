@@ -52,8 +52,9 @@ Native coverage is verified by the real binary link check throughout, not compil
 Done when: the manifest shows no JavaScript or Native exclusion whose reason is not inherent,
 and the Native link check covers every Native-capable module.
 
-The one known non-inherent Native gap is guillotine's pseudo-terminal: `Command#pty` raises on
-Native until it is rewritten over posixlib's `posix_openpt` (the JVM one is Panama). Closed on
+No known non-inherent Native gap remains. Closed on 2026-10-22: guillotine's pseudo-terminal,
+rewritten over Scala Native's C interop (`posix_openpt`, `posix_spawn`, `poll`; the JVM one is
+Panama), so `Command#pty` runs real terminals on Native. Closed on
 2026-10-21: coaxial's native backend joins multicast groups (bringing syndesis to Native);
 telekinesis's `soundnessHttp` client moved into the cross-compiling `telekinesis.sockets`, giving
 Native an `Http.Backend` (HTTP/1.1, over coaxial's OpenSSL connection for `https`); and
@@ -69,11 +70,12 @@ contract is synchronous, so it needs the fork's `js.async`/`js.await` proven und
 backend first (plat-6); with that, Web Crypto slots in as an alternative provider for the
 primitives it has, without an API change.
 
-The link check itself needs reviving before it can be widened: `mill nativelink.testSuites` is
-outside `make attest`, two of its three enrolled suites (denominative, monotonous) no longer
-compile natively, and `nativelink.binary` itself — like any binary reaching
-`contingency.ThrowTactic` — fails to link because the Native scalalib has no
-`scala.caps.SharedUnscoped` (measured 2026-10-21, while enrolling imperial).
+The link check links again (2026-10-22): `nativelink.shim` compiles Proscala's
+`scala.caps.SharedUnscoped` to NIR — the fork publishes its supplementary `proscala-library` for
+the JVM and Scala.js but not yet as `proscala-library_native0.5_3`, which is the durable fix and
+retires the shim. `nativelink.binary` runs on every attest, exercising the FFI, filesystem,
+sockets, supervisors, the pseudo-terminal and OpenSSL; widening it to every Native-capable module
+(and reviving `nativelink.testSuites`) remains.
 
 ## plat-4: WASI beyond the first seven backends
 

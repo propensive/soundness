@@ -4150,6 +4150,17 @@ object jslink extends ScalaJSModule, Toolchain:
 // an `app` cross-module compiled to NIR plus a `linker` driver (`nativelink/linker`) run in its own
 // JVM. Requires `clang` on the PATH.
 object nativelink extends Module:
+  // The fork's supplementary library (`proscala-library`) exists for the JVM and Scala.js but not
+  // as NIR, so the one member Soundness's Native code reaches at link time — `caps.SharedUnscoped`,
+  // the marker on `contingency.ThrowTactic` — is compiled to NIR here and placed on every link
+  // classpath. See `nativelink/shim`.
+  object shim extends ScalaModule, Toolchain:
+    def scalaVersion = settings.scalaVersion
+    def scalacOptions = Task:
+      settings.scalaOptions :+ s"-Xplugin:${nativeToolchain.nscplugin().path}"
+    def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "nativelink" / "shim")
+    def compileMvnDeps = nativeToolchain.runtimeDeps
+
   object app extends ScalaModule, Toolchain:
     def scalaVersion = settings.scalaVersion
     def scalacOptions = Task:
@@ -4162,7 +4173,7 @@ object nativelink extends Module:
     def compileResources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "nativelink" / "res")
     def compileMvnDeps = nativeToolchain.runtimeDeps
     override def mainClass = Some("nativelink.Main")
-    override def moduleDeps = Seq(
+    override def moduleDeps = Seq(shim, guillotine.core.native) ++ Seq(
       vacuous.core.native, xenophile.scalanative.native, gossamer.core.native,
       hypotenuse.core.native, spectacular.core.native, aviation.core.native, galilei.core.native,
       ambience.core.native, coaxial.core.native, enigmatic.openssl.native, parasite.core.native)
@@ -4179,7 +4190,7 @@ object nativelink extends Module:
     def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "nativelink" / "crypto")
     def compileMvnDeps = nativeToolchain.runtimeDeps
     override def mainClass = Some("nativecrypto.Main")
-    override def moduleDeps = Seq(
+    override def moduleDeps = Seq(shim) ++ Seq(
       xenophile.scalanative.native, gossamer.core.native, gastronomy.core.native,
       enigmatic.openssl.native)
 
@@ -4203,7 +4214,7 @@ object nativelink extends Module:
   // plugin, excluded from the native cross, so its `CompileError` values cannot exist at native
   // link time). To enrol a suite, add its module name here and its mapping in
   // `NativeSuite.testModule`.
-  object suite extends Cross[NativeSuite]("hypotenuse", "denominative", "monotonous")
+  object suite extends Cross[NativeSuite]("hypotenuse", "denominative", "monotonous", "imperial")
 
   // The JVM test module's sources compiled with the same `Tests`-trait flags (larceny and
   // beneficence plugins, `settings.sep`) plus `nscplugin` for NIR, against the `.native` variants
@@ -4214,10 +4225,11 @@ object nativelink extends Module:
       case "hypotenuse"   => hypotenuse.test
       case "denominative" => denominative.test
       case "monotonous"   => monotonous.test
+      case "imperial"     => imperial.test
 
     def scalaVersion = settings.scalaVersion
     def scalacOptions = Task:
-      settings.sep(settings.scalaOptions)
+      settings.sep(settings.scalaOptions ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
         :+ s"-Xplugin:${larceny.plugin.assembly().path}"
         :+ s"-Xplugin:${beneficence.plugin.assembly().path}"
         :+ s"-Xplugin:${nativeToolchain.nscplugin().path}"
@@ -4238,8 +4250,14 @@ object nativelink extends Module:
            |import anticipation.*
            |
            |object NativeMain:
-           |  def main(arguments: Array[String]): Unit =
-           |    val terms: String = arguments.mkString("\\n")
+           |  def main(arguments: scala.Array[String]): Unit =
+           |    val builder = java.lang.StringBuilder()
+           |    var index = 0
+           |    while index < arguments.length do
+           |      if index > 0 then builder.append('\\n')
+           |      builder.append(arguments(index))
+           |      index += 1
+           |    val terms: String = builder.toString.nn
            |    val status: Int = ${crossValue}.Tests.invoke(terms.tt, { (event: probably.TestEvent) => () })
            |    java.lang.System.exit(status)
            |""".stripMargin,
@@ -4248,7 +4266,7 @@ object nativelink extends Module:
       Seq(PathRef(Task.dest))
 
     override def mainClass = Some("nativemain.NativeMain")
-    override def moduleDeps = nativeDeps(testModule.moduleDeps)
+    override def moduleDeps = shim +: nativeDeps(testModule.moduleDeps)
 
     def binary: T[PathRef] = Task:
       // The union of both classpaths: `compileClasspath` carries the Scala Native runtime jars
