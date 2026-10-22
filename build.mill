@@ -69,7 +69,7 @@ object settings:
   // `scalaVersion` is the *coordinate* version the toolchain force-versions every artifact to; it
   // must match the version string the jars were built with (`compiler.properties`), or
   // coursier/zinc caches poison each other across compilers.
-  val scalaRelease = sys.env.getOrElse("SOUNDNESS_SCALA_RELEASE", "1.0.3")
+  val scalaRelease = sys.env.getOrElse("SOUNDNESS_SCALA_RELEASE", "1.0.4")
   val scalaBase = sys.env.getOrElse("SOUNDNESS_SCALA_BASE", "3.10.0")
   val scalaVersion = sys.env.getOrElse("SOUNDNESS_SCALA_VERSION",
     if scalaRelease.matches("[0-9]+\\.[0-9]+\\.[0-9]+") then s"$scalaBase-pro-$scalaRelease"
@@ -87,8 +87,10 @@ object settings:
   // Scala Native cross-compilation. The stock published `nscplugin`/`scala3lib_native` for the
   // upstream base version work unchanged with the fork compiler (the plugin is keyed to the base
   // Scala version, and the fork stays TASTy/plugin-compatible), so — unlike the Scala.js stdlib —
-  // no fork-republished Native artifacts are needed. `scalaNativeScalaVersion` is the *base*
-  // version those artifacts are published for (the fork's `-propensive` suffix is dropped).
+  // the Native stdlib needs no fork republication; only the fork's own additions do (its
+  // `proscala-library_native0.5_3` and `tasty-core_native0.5_3`, served from `toolchain.repo`).
+  // `scalaNativeScalaVersion` is the *base* version the stock artifacts are published for (the
+  // fork's `-propensive` suffix is dropped).
   val scalaNativeVersion = "0.5.12"
   // On 3.9, the nearest published base version (no RC4 Native artifacts yet; TASTy-identical
   // to RC4). The plugin is built against compiler internals, so the 3.10 stream needs the
@@ -290,6 +292,14 @@ object toolchain extends Module:
         (sl, "scala-library", v))),
       (sl, "scala3-interfaces", "scala3-interfaces.jar", v, Seq()),
       (sl, "tasty-core_3", "tasty-core.jar", v, Seq((sl, "scala-library", v))),
+      // The compiler-free TASTy reader for the other two platforms (`hyperbole.tasty` reads
+      // through it), and the fork's additions as NIR (`scala.caps.SharedUnscoped`, which every
+      // Native link reaches through `contingency.ThrowTactic`; see `nativeToolchain.runtimeDeps`).
+      // Their stdlib dependencies are resolved by `.js`/`.native` modules through their own deps,
+      // so, like `proscala-library_sjs1_3`, they declare none here.
+      (sl, "tasty-core_sjs1_3", "tasty-core_sjs1.jar", v, Seq((sl, "scala-library", v))),
+      (sl, "tasty-core_native0.5_3", "tasty-core_native0.5.jar", v, Seq((sl, "scala-library", v))),
+      (sl, "proscala-library_native0.5_3", "proscala-library_native0.5.jar", v, Seq()),
       (sl, "scala3-compiler_3", "scala3-compiler.jar", v, Seq(
         (sl, "scala3-interfaces", v),
         (sl, "tasty-core_3", v),
@@ -530,6 +540,9 @@ object nativeToolchain extends mill.javalib.CoursierModule:
   // once — routing them through `unmanagedClasspath`/`mvnDeps` instead multiplies the C runtime
   // across the module graph and the C linker then rejects the duplicate symbols.
   val runtimeDeps: Seq[mill.javalib.Dep] = Seq(
+    // The fork's standard-library additions as NIR, from the Proscala release (`toolchain.repo`):
+    // `contingency.ThrowTactic` extends `scala.caps.SharedUnscoped`, so every Native link needs it.
+    mvn"org.scala-lang:proscala-library_native0.5_3:${settings.scalaVersion}",
     mvn"org.scala-native:scala3lib_native0.5_3:$snsv+$snv",
     mvn"org.scala-native:javalib_native0.5_3:$snv",
     mvn"org.scala-native:auxlib_native0.5_3:$snv",
@@ -2574,8 +2587,6 @@ object hyperbole extends Library:
   // check; no compiler), which the fork publishes for every platform, so the component crosses
   // to Scala.js and Scala Native; the platform-suffixed coordinate resolves to each.
   object tasty extends Component(digression.core, gossamer.core, rudiments.core):
-    override def scalaJs = false // awaits Proscala 1.0.4's `tasty-core_sjs1_3`/`_native0.5_3`
-    override def scalaNative = false
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
     def mvnDeps = Seq(mvn"org.scala-lang::tasty-core::${scalaVersion()}")
@@ -4150,17 +4161,6 @@ object jslink extends ScalaJSModule, Toolchain:
 // an `app` cross-module compiled to NIR plus a `linker` driver (`nativelink/linker`) run in its own
 // JVM. Requires `clang` on the PATH.
 object nativelink extends Module:
-  // The fork's supplementary library (`proscala-library`) exists for the JVM and Scala.js but not
-  // as NIR, so the one member Soundness's Native code reaches at link time — `caps.SharedUnscoped`,
-  // the marker on `contingency.ThrowTactic` — is compiled to NIR here and placed on every link
-  // classpath. See `nativelink/shim`.
-  object shim extends ScalaModule, Toolchain:
-    def scalaVersion = settings.scalaVersion
-    def scalacOptions = Task:
-      settings.scalaOptions :+ s"-Xplugin:${nativeToolchain.nscplugin().path}"
-    def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "nativelink" / "shim")
-    def compileMvnDeps = nativeToolchain.runtimeDeps
-
   object app extends ScalaModule, Toolchain:
     def scalaVersion = settings.scalaVersion
     def scalacOptions = Task:
@@ -4173,7 +4173,7 @@ object nativelink extends Module:
     def compileResources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "nativelink" / "res")
     def compileMvnDeps = nativeToolchain.runtimeDeps
     override def mainClass = Some("nativelink.Main")
-    override def moduleDeps = Seq(shim, guillotine.core.native) ++ Seq(
+    override def moduleDeps = Seq(guillotine.core.native) ++ Seq(
       vacuous.core.native, xenophile.scalanative.native, gossamer.core.native,
       hypotenuse.core.native, spectacular.core.native, aviation.core.native, galilei.core.native,
       ambience.core.native, coaxial.core.native, enigmatic.openssl.native, parasite.core.native)
@@ -4190,7 +4190,7 @@ object nativelink extends Module:
     def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "nativelink" / "crypto")
     def compileMvnDeps = nativeToolchain.runtimeDeps
     override def mainClass = Some("nativecrypto.Main")
-    override def moduleDeps = Seq(shim) ++ Seq(
+    override def moduleDeps = Seq(
       xenophile.scalanative.native, gossamer.core.native, gastronomy.core.native,
       enigmatic.openssl.native)
 
@@ -4266,7 +4266,7 @@ object nativelink extends Module:
       Seq(PathRef(Task.dest))
 
     override def mainClass = Some("nativemain.NativeMain")
-    override def moduleDeps = shim +: nativeDeps(testModule.moduleDeps)
+    override def moduleDeps = nativeDeps(testModule.moduleDeps)
 
     def binary: T[PathRef] = Task:
       // The union of both classpaths: `compileClasspath` carries the Scala Native runtime jars

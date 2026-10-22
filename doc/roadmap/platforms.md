@@ -70,12 +70,14 @@ contract is synchronous, so it needs the fork's `js.async`/`js.await` proven und
 backend first (plat-6); with that, Web Crypto slots in as an alternative provider for the
 primitives it has, without an API change.
 
-The link check links again (2026-10-22): `nativelink.shim` compiles Proscala's
-`scala.caps.SharedUnscoped` to NIR — the fork publishes its supplementary `proscala-library` for
-the JVM and Scala.js but not yet as `proscala-library_native0.5_3`, which is the durable fix and
-retires the shim. `nativelink.binary` runs on every attest, exercising the FFI, filesystem,
-sockets, supervisors, the pseudo-terminal and OpenSSL; widening it to every Native-capable module
-(and reviving `nativelink.testSuites`) remains.
+The link check links again (2026-10-22): Proscala 1.0.4 publishes its supplementary library as
+`proscala-library_native0.5_3`, so `scala.caps.SharedUnscoped` (which every Native link reaches
+through `contingency.ThrowTactic`) has NIR from the toolchain itself, through
+`nativeToolchain.runtimeDeps`; the one-trait `nativelink.shim` that bridged the gap is gone. The
+same release carries `tasty-core` for Scala.js and Scala Native, which is what lets
+`hyperbole.tasty` read TASTy on both without the compiler. `nativelink.binary` runs on every
+attest, exercising the FFI, filesystem, sockets, supervisors, the pseudo-terminal and OpenSSL;
+widening it to every Native-capable module (and reviving `nativelink.testSuites`) remains.
 
 ## plat-4: WASI beyond the first seven backends
 
