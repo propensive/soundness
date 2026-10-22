@@ -108,6 +108,10 @@ object Tests extends Suite("typenames", m"Stenography Tests"):
       Syntax.name[Double & Int & String]
     . assert(_ == t"Double & Int & String")
 
+    test(m"Show a named tuple"):
+      Syntax.name[(name: String, age: Int)]
+    . assert(_ == t"(name: String, age: Int)")
+
     test(m"Show `List[Int]`"):
       Syntax.name[scala.collection.immutable.List[Int]]
     . assert(_ == t"collection.immutable.List[Int]")
