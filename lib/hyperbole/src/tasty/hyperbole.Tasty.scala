@@ -42,9 +42,9 @@ import StackTrace.Frame.Kind
 import rudiments.sortingAlgorithms.timsort
 
 // The TASTy data model: what a `.tasty` file says about the definitions it holds. Reading a
-// file into this model needs the compiler's unpickler classes at runtime — supplied by the
-// caller's classpath, as for `anthology` — but no compiler `Context`, no classpath and no
-// filesystem: `parse` takes raw bytes, so a debugger can feed it TASTy fetched over a wire.
+// file into this model needs only `tasty-core` — the format's constants and byte reader, not the
+// compiler — so no compiler `Context`, no classpath and no filesystem: `parse` takes raw bytes,
+// so a debugger can feed it TASTy fetched over a wire.
 // Presentation (the `Teletypeable` renderings of symbols and trees) lives in `hyperbole.core`,
 // above this component's dependencies.
 object Tasty:
