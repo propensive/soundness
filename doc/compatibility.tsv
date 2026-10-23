@@ -55,7 +55,7 @@ contextual	yes	yes	yes	js
 contingency	yes	yes	yes	js		
 corpuscular	yes	yes	yes	js		
 cosmopolite	yes	yes	yes	js		
-degustation	yes	no	no	no		wraps the Scala compiler's TASTy unpickler
+degustation	yes	no	no	no	everywhere: tasty	`core` wraps the Scala compiler's TASTy unpickler, which roadmap plat-7 is replacing with the compiler-free `tasty` component; `tasty` crosses everywhere
 delicious	yes	yes	yes	js	JVM-only: compiler, scala, ansi	`scala`/`ansi` wrap the compiler
 dendrology	yes	yes	yes	js		
 denominative	yes	yes	yes	js		

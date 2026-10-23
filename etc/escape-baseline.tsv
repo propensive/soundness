@@ -463,3 +463,4 @@ lib/zephyrine/src/test/zephyrine_test.scala	0	26	1	0	1	0	0	0	3	2	0
 lib/zeppelin/src/core/zeppelin.Zip.scala	0	0	0	0	1	2	0	3	0	0	0
 lib/zeppelin/src/core/zeppelin.Zipfile.scala	0	0	0	0	2	0	0	0	0	0	0
 lib/zeppelin/src/test/zeppelin_test.scala	0	0	0	0	1	7	0	0	0	0	0
+lib/degustation/src/tasty/degustation.Unpickler.scala	0	0	0	0	0	1	0	0	0	0	0
