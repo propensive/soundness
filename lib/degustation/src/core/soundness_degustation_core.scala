@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export degustation.{Atomizer, Inspection, ScalaAtom, ScalaReference}
+export degustation.Inspection
