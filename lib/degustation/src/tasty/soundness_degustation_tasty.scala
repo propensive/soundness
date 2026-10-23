@@ -32,4 +32,8 @@
                                                                                                   */
 package soundness
 
-export degustation.{Pickled, Unpickler}
+// unexported: Classfile, Kind, Member, Resolution, Scope, Universe (their simple names belong to
+// mandible, honeycomb, polyvinyl, aviation, orthodoxy and anthology in the umbrella; they are
+// reached as `degustation.Universe` and the like)
+export degustation.{ClassInfo, ClassSource, Degustation, Erasure, Pickled, ScalaAtom, ScalaReference,
+    Unpickler}

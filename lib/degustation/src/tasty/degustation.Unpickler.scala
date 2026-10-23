@@ -56,9 +56,10 @@ import Pickled.*
 // `TreeUnpickler` departs from it to build symbols or re-type nodes, this reader keeps what the
 // file says, which is all a structural reading needs.
 object Unpickler:
-  // The ASTs of one file: its top-level statements, and every definition node by address, so a
-  // local reference (`TERMREFdirect` and friends) can be followed to the definition it names.
-  case class File(statements: List[Tree], definitions: Map[Int, Tree])
+  // The ASTs of one file: its top-level statements, every definition node by address, so a local
+  // reference (`TERMREFdirect` and friends) can be followed to the definition it names, and every
+  // binder — a methodic or recursive type — by address, for `PARAMtype` and `RECthis` references.
+  case class File(statements: List[Tree], definitions: Map[Int, Tree], binders: Map[Int, Type])
 
   def apply(data: Data): File =
     val bytes = new scala.Array[Byte](data.length)
@@ -68,7 +69,7 @@ object Unpickler:
     val names = readNames(reader)
     val sections = readSections(reader, names)
 
-    sections.at(TastyFormat.ASTsSection.tt).lay(File(List(), Map())): section =>
+    sections.at(TastyFormat.ASTsSection.tt).lay(File(List(), Map(), Map())): section =>
       Trees(section, names).readFile()
 
   // The name table, decoded into structured names; entries may refer back to earlier entries.
@@ -156,7 +157,13 @@ object Unpickler:
 
     def readFile(): File =
       val statements = until(endAddr)(readTopLevel())
-      File(statements.to(List), definitions.to(Map))
+
+      val binders = types.collect:
+        case (address, binder @ (Type.Method(_, _, _, _, _) | Type.Poly(_, _, _, _)
+            | Type.Lambda(_, _, _, _) | Type.Recursive(_, _))) =>
+          address -> binder
+
+      File(statements.to(List), definitions.to(Map), binders.to(Map))
 
     private def name(): Name = names(readNameRef().index)
     private def text(): Text = name().text
@@ -768,10 +775,13 @@ object Unpickler:
             Tree.Repeated(until(end)(readTree()).to(List), tpt)
 
           case BIND =>
+            // A pattern binding defines a symbol that `TERMREFdirect`s elsewhere refer to.
             val name = text()
             val tpe = readType()
             val pattern = readTree()
-            Tree.Bind(start, name, tpe, pattern, readModifiers(end))
+            val bind = Tree.Bind(start, name, tpe, pattern, readModifiers(end))
+            definitions(start) = bind
+            bind
 
           case ALTERNATIVE => Tree.Alternative(until(end)(readTree()).to(List))
 

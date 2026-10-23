@@ -76,6 +76,13 @@ object Pickled:
     case BodyRetainer(underlying: Name)
     case Signed(original: Name, target: Optional[Name], result: Text, params: List[ParamSig])
 
+    // The name as the compiler's `fullName` spells it: `text`, except that a constructor's default
+    // getter keeps `<init>` unmangled there (`<init>$default$1`).
+    def spelled: Text = this match
+      case DefaultGetter(method, index) if method.text == t"<init>" => t"<init>$Dollar${"default"}$Dollar${index + 1}"
+      case Signed(original, _, _, _)                                 => original.spelled
+      case other                                                     => other.text
+
     // The name without its signature, if it had one.
     def unsigned: Name = this match
       case Signed(original, _, _, _) => original
@@ -104,17 +111,27 @@ object Pickled:
         val fresh = if separator == Dollar then t"$Dollar$number$Dollar" else t"$separator$number"
         original.lay(fresh): name => t"${name.text}$separator$number"
 
+      // A constructor's default getter is `$lessinit$greater$default$1` as a member name, though
+      // the compiler's `fullName` spells it `<init>$default$1` (see `Universe.index`).
       case DefaultGetter(method, index) =>
         val prefix =
           if method.text == t"<init>" then t"${Dollar}lessinit${Dollar}greater" else method.text
 
         t"$prefix${Dollar}default$Dollar${index + 1}"
 
-      case SuperAccessor(underlying)  => t"super$Dollar${underlying.text}"
-      case InlineAccessor(underlying) => t"inline$Dollar${underlying.text}"
+      // A prefix or suffix kind renders on the last part of a qualified name (`qualToString`):
+      // `C$$inline$f`, not `inline$C$$f`.
+      case SuperAccessor(underlying)  => qualified(underlying, last => t"super$Dollar$last")
+      case InlineAccessor(underlying) => qualified(underlying, last => t"inline$Dollar$last")
       case ObjectClass(underlying)    => t"${underlying.text}$Dollar"
-      case BodyRetainer(underlying)   => t"${underlying.text}${Dollar}retainedBody"
+      case BodyRetainer(underlying)   => qualified(underlying, last => t"$last${Dollar}retainedBody")
       case Signed(original, _, _, _)  => original.text
+
+    private def qualified(name: Name, last: Text => Text): Text = name match
+      case Qualified(prefix, selector)    => t"${prefix.text}.${last(selector)}"
+      case Expanded(prefix, selector)     => t"${prefix.text}$Dollar$Dollar${last(selector)}"
+      case ExpandPrefix(prefix, selector) => t"${prefix.text}$Dollar${last(selector)}"
+      case other                          => last(other.text)
 
   enum Constant:
     case UnitValue
@@ -185,10 +202,23 @@ object Pickled:
     case ByName(underlying: Type)
     case Param(binder: Int, number: Int)
     case Method(address: Int, names: List[Text], params: List[Type], result: Type, clause: Clause)
+    // Not pickled: the type of a term application whose function's type has yet to be resolved,
+    // kept for the atomizer to apply once it has.
+    case AppliedTerms(function: Type, arguments: List[Type])
     case Poly(address: Int, names: List[Text], bounds: List[Type], result: Type)
     case Lambda(address: Int, names: List[Text], bounds: List[Type], result: Type)
     case Literal(constant: Constant)
     case Bind(address: Int, name: Text, bounds: Type)
+    // Not a pickled form: an opaque type's right-hand side as `typeOf` reads it, the alias with
+    // the bounds it is seen through from outside its scope.
+    case Opaque(alias: Type, bounds: Type)
+    // Not a pickled form: a type lambda as a lambda type *tree* spells it, binding its parameters
+    // as definitions (by address) that its body refers to as local types.
+    case Abstraction(params: List[Int], names: List[Text], bounds: List[Type], result: Type)
+    // Not a pickled form: a type pinned to the file it was read from, so that its local references
+    // resolve there when it is carried into another file's types — a type argument substituted
+    // into an alias, say.
+    case Foreign(path: Text, tpe: Type)
 
   // A modifier flag, named as the format's tags are.
   enum Flag:
@@ -197,6 +227,9 @@ object Pickled:
     case Synthetic, Artifact, Mutable, FieldAccessor, CaseAccessor, Covariant, Contravariant
     case HasDefault, Stable, Extension, ParamSetter, ParamAlias, Exported, Open, Invisible
     case Transparent, Infix, Tracked, Into, AbsOverride
+    // Not a TASTy modifier: marks a class parameter among its class's members, as the compiler's
+    // `ParamAccessor` flag does.
+    case ParamAccessor
 
   case class Annotation(tpe: Type, tree: Tree)
 
