@@ -1890,14 +1890,14 @@ object degustation extends Library:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
     def mvnDeps = Seq(mvn"org.scala-lang::tasty-core::${scalaVersion()}")
 
-  object core extends Component(anticipation.codec, contingency.core, fulminate.core,
+  // The filesystem face of `tasty`: atomizes `.tasty` files on disk against a classpath of
+  // directories and jars. Compiler-free since plat-7; JVM-only for `java.util.zip` and the JDK's
+  // classes, which the Scala library's types ultimately rest on.
+  object core extends Component(tasty, anticipation.codec, contingency.core, fulminate.core,
       gossamer.core, vacuous.core):
-    override def scalaJs = false // wraps the Scala compiler's TASTy unpickler
+    override def scalaJs = false // reads classpath directories and jars from the filesystem
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
-    def compileMvnDeps = Seq(
-      mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
-      mvn"org.scala-lang:scala3-tasty-inspector_3:${scalaVersion()}")
 
   object test extends Tests(core, eucalyptus.core, anthology.`scala`, hellenism.jvm,
       imperial.core):

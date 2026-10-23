@@ -28,20 +28,16 @@
 ┃    either express or implied. See the License for the specific language governing permissions    ┃
 ┃    and limitations under the License.                                                            ┃
 ┃                                                                                                  ┃
-
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-
 package degustation
 
 import java.nio.charset.StandardCharsets
 
-import scala.collection.immutable.Set
 import scala.collection.mutable
 
 import anticipation.*
 import gossamer.*
-import murmuration.*
 import vacuous.*
 
 import Pickled.*
@@ -50,6 +46,7 @@ import Pickled.*
 // supertypes, and its members' names and descriptors — which, for a Java member, already *are*
 // its erased signature. Nothing generic is read: a Java type parameter erases to its bound, which
 // the descriptor spells out, and the erasure of a Scala reference to a Java class is the class.
+@unexported
 object Classfile:
   case class Method(name: Text, descriptor: Text, flags: Int)
   case class Field(name: Text, descriptor: Text, flags: Int)
@@ -72,6 +69,7 @@ object Classfile:
 
   // Reads the constant pool, the class header and the member tables; attributes are skipped.
   def apply(data: Data): Class =
+    // [java-boundary] the constant pool's UTF-8 entries are decoded by `String(bytes, …)`
     val bytes = Array.unsafeJvm(data)
     var position = 0
 

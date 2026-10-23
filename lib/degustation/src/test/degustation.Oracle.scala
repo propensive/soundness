@@ -36,8 +36,6 @@ import scala.quoted.Quotes
 import scala.tasty.inspector as sti
 
 import anticipation.*
-import contingency.*
-import fulminate.*
 import gossamer.*
 import vacuous.*
 

@@ -79,9 +79,11 @@ object Pickled:
     // The name as the compiler's `fullName` spells it: `text`, except that a constructor's default
     // getter keeps `<init>` unmangled there (`<init>$default$1`).
     def spelled: Text = this match
-      case DefaultGetter(method, index) if method.text == t"<init>" => t"<init>$Dollar${"default"}$Dollar${index + 1}"
-      case Signed(original, _, _, _)                                 => original.spelled
-      case other                                                     => other.text
+      case DefaultGetter(method, index) if method.text == t"<init>" =>
+        t"<init>$Dollar${"default"}$Dollar${index + 1}"
+
+      case Signed(original, _, _, _) => original.spelled
+      case other                     => other.text
 
     // The name without its signature, if it had one.
     def unsigned: Name = this match
@@ -124,7 +126,10 @@ object Pickled:
       case SuperAccessor(underlying)  => qualified(underlying, last => t"super$Dollar$last")
       case InlineAccessor(underlying) => qualified(underlying, last => t"inline$Dollar$last")
       case ObjectClass(underlying)    => t"${underlying.text}$Dollar"
-      case BodyRetainer(underlying)   => qualified(underlying, last => t"$last${Dollar}retainedBody")
+
+      case BodyRetainer(underlying) =>
+        qualified(underlying, last => t"$last${Dollar}retainedBody")
+
       case Signed(original, _, _, _)  => original.text
 
     private def qualified(name: Name, last: Text => Text): Text = name match
@@ -330,7 +335,7 @@ object Pickled:
 
     // Whether this is a type tree (one the compiler would read with `readTpt`).
     def isTypeTree: Boolean = this match
-      case IdentTpt(_, _) | SelectTpt(_, _) | SingletonTpt(_) | RefinedTpt(_, _)    => true
-      case AppliedTpt(_, _) | LambdaTpt(_, _) | BoundsTpt(_, _, _)                   => true
-      case AnnotatedTpt(_, _) | MatchTpt(_, _, _) | ByNameTpt(_) | ExplicitTpt(_)    => true
-      case _                                                                         => false
+      case IdentTpt(_, _) | SelectTpt(_, _) | SingletonTpt(_) | RefinedTpt(_, _)  => true
+      case AppliedTpt(_, _) | LambdaTpt(_, _) | BoundsTpt(_, _, _)                => true
+      case AnnotatedTpt(_, _) | MatchTpt(_, _, _) | ByNameTpt(_) | ExplicitTpt(_) => true
+      case _                                                                      => false

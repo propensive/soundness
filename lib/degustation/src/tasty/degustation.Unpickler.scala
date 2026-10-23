@@ -438,7 +438,7 @@ object Unpickler:
 
     // A compact annotation pickles its type where a full annotation tree would otherwise go.
     private def isCompactAnnotationType(tag: Int): Boolean = tag match
-      case APPLIEDtype | SHAREDtype | TYPEREF | TYPEREFdirect | TYPEREFsymbol | TYPEREFin  => true
+      case APPLIEDtype | SHAREDtype | TYPEREF | TYPEREFdirect | TYPEREFsymbol | TYPEREFin   => true
       case _                                                                                => false
 
     private def nothingButModifiers(end: TastyBuffer.Addr): Boolean =

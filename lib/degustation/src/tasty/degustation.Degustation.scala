@@ -28,10 +28,8 @@
 ┃    either express or implied. See the License for the specific language governing permissions    ┃
 ┃    and limitations under the License.                                                            ┃
 ┃                                                                                                  ┃
-
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-
 package degustation
 
 import scala.collection.immutable.Set
@@ -80,8 +78,7 @@ object Degustation:
     val universe = Universe(ClassSource(module, dependencies))
     val session = Session(universe)
 
-    files.each: (path, _) =>
-      universe.scope(path).let(session.file(_))
+    files.each: (path, _) => universe.scope(path).let(session.file(_))
 
     session.result
 
@@ -107,13 +104,20 @@ object Degustation:
         case -1    => if name.endsWith("$") then name.length else -1
         case index => index + 1
 
-      if cut < 0 then name
-      else name.substring(0, cut).nn.replace('<', '$').nn.replace('>', '$').nn + name.substring(cut).nn
+      if cut < 0 then
+        name
+      else
+        val prefix = name.substring(0, cut).nn.replace('<', '$').nn.replace('>', '$').nn
+        prefix + name.substring(cut).nn
 
     private def utf8(out: Scribe[Byte], text: String): Unit =
       val bytes = text.getBytes("UTF-8").nn
       uvarint(out, bytes.length.toLong)
-      out.append(Data.build(bytes.length) { array => java.lang.System.arraycopy(bytes, 0, array, 0, bytes.length) })
+
+      val data = Data.build(bytes.length): array =>
+        java.lang.System.arraycopy(bytes, 0, array, 0, bytes.length)
+
+      out.append(data)
 
     private def tag(out: Scribe[Byte], char: Char): Unit = out.append(char.toByte)
 
@@ -141,25 +145,32 @@ object Degustation:
       case Tree.Ident(name, tpe) =>
         try symbolOfType(tpe, name.unsigned.text, scope)
         catch case error: Unencodable =>
-          throw Unencodable(t"${error.getMessage.nn} [identifier ${name.text}: ${tpe.toString.take(240).nn}]")
+          val detail = tpe.toString.take(240).nn
+          throw Unencodable(t"${error.getMessage.nn} [identifier ${name.text}: $detail]")
 
       case Tree.IdentTpt(name, tpe) => symbolOfType(tpe, name, scope)
       case Tree.Path(tpe)           => symbolOfType(tpe, t"", scope)
 
       case Tree.Select(name, qualifier) =>
         val prefix = Universe.termType(qualifier)
+
         try select(name, prefix, scope)
         catch case error: Unencodable =>
-          throw Unencodable(t"${error.getMessage.nn} [selection ${name.text} on ${prefix.toString.take(900).nn}]")
+          val detail = prefix.toString.take(900).nn
+          throw Unencodable(t"${error.getMessage.nn} [selection ${name.text} on $detail]")
 
-      case Tree.SelectTpt(name, qualifier)       => selectType(name, Universe.termType(qualifier), scope)
+      case Tree.SelectTpt(name, qualifier) =>
+        selectType(name, Universe.termType(qualifier), scope)
+
       case Tree.SelectIn(name, qualifier, owner) => selectIn(name, owner, scope)
       case Tree.QualifiedThis(qualifier)         => symbolOf(qualifier, scope)
       case Tree.Typed(expression, _)             => symbolOf(expression, scope)
       case Tree.Inlined(expression, _, _)        => symbolOf(expression, scope)
       case Tree.Apply(function, _)               => symbolOf(function, scope)
       case Tree.TypeApply(function, _)           => symbolOf(function, scope)
-      case other                                 => throw Unencodable(t"symbol of ${other.getClass.getSimpleName.nn}")
+
+      case other =>
+        throw Unencodable(t"symbol of ${other.getClass.getSimpleName.nn}")
 
     private def symbolOfType(tpe: Type, name: Text, scope: Scope): Symbol = tpe match
       case Type.TermRefDirect(address)     => local(address, scope)
@@ -173,9 +184,9 @@ object Degustation:
       case Type.TermRefPkg(name)           => packageSymbol(name)
       case Type.TypeRefPkg(name)           => packageSymbol(name).copy(isType = true)
       // The compiler gives a type symbol the signature of a non-method.
-      case Type.This(cls)                => symbolOfType(cls, name, scope)
-      case Type.Annotated(underlying, _) => symbolOfType(underlying, name, scope)
-      case Type.Applied(constructor, _)  => symbolOfType(constructor, name, scope)
+      case Type.This(cls)                  => symbolOfType(cls, name, scope)
+      case Type.Annotated(underlying, _)   => symbolOfType(underlying, name, scope)
+      case Type.Applied(constructor, _)    => symbolOfType(constructor, name, scope)
 
       case Type.Foreign(path, inner) =>
         universe.scope(path).lay(symbolOfType(inner, name, scope))(symbolOfType(inner, name, _))
@@ -186,7 +197,9 @@ object Degustation:
       case Type.Abstraction(_, _, _, result) => symbolOfType(result, name, scope)
       case Type.Opaque(alias, _)             => symbolOfType(alias, name, scope)
       case Type.Bounds(low, high, _)         => symbolOfType(high.or(low), name, scope)
-      case other                             => throw Unencodable(t"symbol of type ${other.getClass.getSimpleName.nn}")
+
+      case other =>
+        throw Unencodable(t"symbol of type ${other.getClass.getSimpleName.nn}")
 
     // A definition in one of the module's files, by address.
     private def local(address: Int, scope: Scope): Symbol =
@@ -236,7 +249,8 @@ object Degustation:
           case pkg: Text => pkg
           case _         => name
 
-      else name
+      else
+        name
 
     private def ownerKeyOf(info: ClassInfo): Text =
       if isCarrier(info.fullName) then info.pkg else info.fullName
@@ -254,7 +268,8 @@ object Degustation:
         // The compiler joins the refinement with the parent's member of that name, whose symbol
         // the selection then carries; a refinement of a name the parent lacks — a polymorphic
         // function's `apply` — has no symbol at all.
-        val owner = universe.classOf(parent, scope).or(throw Unencodable(t"refined class of $refined"))
+        val owner = universe.classOf(parent, scope).or:
+          throw Unencodable(t"refined class of $refined")
 
         if universe.termsIn(owner, refined).nil
         then Symbol(t"<none>", t"", false, false, t"()", Unset, Unset)
@@ -269,7 +284,7 @@ object Degustation:
       // result with the type and term arguments in place of its parameters, which is where a
       // dependent result (`t.Operand`) comes to refer to the argument.
       case Type.Applied(Type.TermRef(_, _) | Type.TermRefIn(_, _, _) | Type.TermRefDirect(_)
-          | Type.TermRefLocal(_, _) | Type.AppliedTerms(_, _), _) | Type.AppliedTerms(_, _) =>
+        | Type.TermRefLocal(_, _) | Type.AppliedTerms(_, _), _) | Type.AppliedTerms(_, _) =>
         val (applied, appliedScope) = universe.applicationType(prefix, scope)
         if applied == prefix then throw Unencodable(t"application of ${name.text}'s prefix")
         select(name, applied, appliedScope.or(scope))
@@ -292,10 +307,14 @@ object Degustation:
     private def select0(name: Name, prefix: Type, scope: Scope): Symbol =
       universe.resolve(prefix, scope) match
         // A term's members are those of its declared type, refinements and all.
-        case Resolution.Term(declared, termScope)         => select(name, declared, termScope.or(scope))
-        case Resolution.Alias(0, apply, aliasScope, _, _) => select(name, apply(List()), aliasScope.or(scope))
-        case Resolution.Abstract(high, boundScope)        => select(name, high, boundScope.or(scope))
-        case Resolution.Class(info, _, _)                 => memberSymbol(info, name)
+        case Resolution.Term(declared, termScope) =>
+          select(name, declared, termScope.or(scope))
+
+        case Resolution.Alias(0, apply, aliasScope, _, _) =>
+          select(name, apply(List()), aliasScope.or(scope))
+
+        case Resolution.Abstract(high, boundScope) => select(name, high, boundScope.or(scope))
+        case Resolution.Class(info, _, _)          => memberSymbol(info, name)
 
         case Resolution.Package(path) =>
           // A term in a package is an object, a top-level definition in a carrier, or a package.
@@ -314,7 +333,9 @@ object Degustation:
               carried.let { pair => memberSymbol(pair(0), name) }.or:
                 universe.resolve(Type.TermRef(name, prefix), scope) match
                   case Resolution.Package(sub) => packageSymbol(sub)
-                  case other                   => throw Unencodable(t"member ${name.text} of package $path: $other")
+
+                  case other =>
+                    throw Unencodable(t"member ${name.text} of package $path: $other")
 
         case other => throw Unencodable(t"prefix of ${name.text}: $other")
 
@@ -324,7 +345,9 @@ object Degustation:
         case other                        => throw Unencodable(t"owner of ${name.text}: $other")
 
     private def memberSymbol(info: ClassInfo, name: Name): Symbol =
-      universe.choose(info, name).lay(throw Unencodable(t"no member ${name.text} in ${info.fullName}")): pair =>
+      def missing: Symbol = throw Unencodable(t"no member ${name.text} in ${info.fullName}")
+
+      universe.choose(info, name).lay(missing): pair =>
         val (owner, member) = pair
         // A Java class's statics belong to its module class.
         val static = owner.java && member.flags.contains(Flag.Static)
@@ -333,25 +356,29 @@ object Degustation:
         val inline = member.flags.contains(Flag.Inline) || member.flags.contains(Flag.Macro)
         val address: Optional[Int] = if member.address < 0 then Unset else member.address
 
-        Symbol(t"$ownerName.${member.name}", ownerKey, false, inline, erasure.signature(owner, member),
-            address, owner.scope)
+        val signature = erasure.signature(owner, member)
+        val fullName = t"$ownerName.${member.name}"
+        Symbol(fullName, ownerKey, false, inline, signature, address, owner.scope)
 
     private def selectType(name: Text, prefix: Type, scope: Scope): Symbol =
       def typeMember(owner: ClassInfo, member: Member): Symbol =
-        Symbol(qualifiedMember(owner, name), ownerKeyOf(owner), true, false, t"()", Unset, owner.scope)
+        val fullName = qualifiedMember(owner, name)
+        Symbol(fullName, ownerKeyOf(owner), true, false, t"()", Unset, owner.scope)
 
       def noSymbol: Symbol = Symbol(t"<none>", t"", true, false, t"()", Unset, Unset)
 
       def general(): Symbol = universe.parts(prefix, scope) match
         // A member of an intersection comes from whichever part has it.
         case (left: Type, right: Type) =>
-          try selectType(name, left, scope) catch case _: Unencodable => selectType(name, right, scope)
+          try selectType(name, left, scope)
+          catch case _: Unencodable => selectType(name, right, scope)
 
         case _ => universe.resolve(prefix, scope) match
           // A term's type members are its declared type's, refinements and all.
-          case Resolution.Term(declared, termScope) => selectType(name, declared, termScope.or(scope))
+          case Resolution.Term(declared, termScope) =>
+            selectType(name, declared, termScope.or(scope))
 
-          case _                                    => dealias(prefix, scope) match
+          case _ => dealias(prefix, scope) match
             // An alias's members are its expansion's, a refinement's in particular.
             case expansion: Type => selectType(name, expansion, scope)
             case _               => selectType0(name, prefix, scope)
@@ -359,7 +386,9 @@ object Degustation:
       prefix match
         // A refinement's type member has no symbol unless the parent declares it too.
         case Type.Refined(parent, refined, _) if refined == name =>
-          universe.classOf(parent, scope).let(universe.memberIn(_, name, Set(Kind.Type, Kind.Class)))
+          val kinds = Set(Kind.Type, Kind.Class)
+
+          universe.classOf(parent, scope).let(universe.memberIn(_, name, kinds))
             . lay(noSymbol): pair => typeMember(pair(0), pair(1))
 
         case Type.Refined(parent, _, _)    => selectType(name, parent, scope)
@@ -380,7 +409,8 @@ object Degustation:
 
     private def selectType0(name: Text, prefix: Type, scope: Scope): Symbol =
       def typeMember(owner: ClassInfo, member: Member): Symbol =
-        Symbol(qualifiedMember(owner, name), ownerKeyOf(owner), true, false, t"()", Unset, owner.scope)
+        val fullName = qualifiedMember(owner, name)
+        Symbol(fullName, ownerKeyOf(owner), true, false, t"()", Unset, owner.scope)
 
       universe.owner(prefix, scope) match
         case Resolution.Class(info, _, _) =>
@@ -390,8 +420,12 @@ object Degustation:
             else universe.classOf(t"${info.fullName}$$$name").let: nested =>
               Symbol(nested.fullName, ownerKeyOf(nested), true, false, t"()", Unset, Unset)
 
+          def missing: Symbol =
+            val detail = prefix.toString.take(200).nn
+            throw Unencodable(t"no type $name in ${info.fullName} [prefix $detail]")
+
           universe.memberIn(info, name, Set(Kind.Type, Kind.Class))
-            . lay(javaNested.or(throw Unencodable(t"no type $name in ${info.fullName} [prefix ${prefix.toString.take(200).nn}]"))): pair =>
+            . lay(javaNested.or(missing)): pair =>
               val (owner, member) = pair
               typeMember(owner, member)
 
@@ -403,15 +437,17 @@ object Degustation:
           if fullName == t"scala.AnyRef" || Universe.impureFunction(fullName).present then
             Symbol(fullName, path, true, false, t"()", Unset, Unset)
 
-          else universe.classOf(fullName) match
-            case info: ClassInfo => Symbol(info.fullName, ownerKeyOf(info), true, false, t"()", Unset, info.scope)
+          else
+            universe.classOf(fullName) match
+              case info: ClassInfo =>
+                Symbol(info.fullName, ownerKeyOf(info), true, false, t"()", Unset, info.scope)
 
-            case _ =>
-              val carried: Optional[(ClassInfo, Member)] =
-                universe.packageObjectMember(path, name, Set(Kind.Type, Kind.Class))
+              case _ =>
+                val carried: Optional[(ClassInfo, Member)] =
+                  universe.packageObjectMember(path, name, Set(Kind.Type, Kind.Class))
 
-              carried.let: pair => typeMember(pair(0), pair(1))
-                . or(throw Unencodable(t"no type $fullName"))
+                carried.let: pair => typeMember(pair(0), pair(1))
+                  . or(throw Unencodable(t"no type $fullName"))
 
         case other => throw Unencodable(t"prefix of type $name: $other")
 
@@ -425,7 +461,7 @@ object Degustation:
     private def isWithin(symbol: Symbol, enclosing: Int, scope: Scope): Boolean =
       symbol.address.lay(false): address =>
         symbol.scope.lay(false)(_.path == scope.path) &&
-        (address == enclosing || scope.within(address, enclosing))
+          (address == enclosing || scope.within(address, enclosing))
 
     // --- types --------------------------------------------------------------------------------
 
@@ -465,7 +501,7 @@ object Degustation:
       val name = annotationName(annotation, scope)
 
       name == t"scala.annotation.retains" || name == t"scala.annotation.retainsCap" ||
-      name == t"scala.annotation.retainsByName"
+        name == t"scala.annotation.retainsByName"
 
     // A type with its capture annotations stripped, as a plain type map leaves it.
     private def strip(tpe: Type, scope: Scope): Type =
@@ -490,6 +526,7 @@ object Degustation:
           dealias(underlying, scope) match
             case dealiased: Type =>
               val inner = recur(dealiased)
+
               if retains then inner
               else if inner == dealiased then tpe
               else Type.Annotated(inner, annotation)
@@ -502,14 +539,17 @@ object Degustation:
             Type.Foreign(path, follow(inner, inner2))
 
         case Type.Applied(_, _) | Type.TypeRef(_, _) | Type.TypeRefIn(_, _, _) | Type.TypeRefPkg(_)
-            | Type.TypeRefDirect(_) | Type.TypeRefLocal(_, _) =>
+          | Type.TypeRefDirect(_) | Type.TypeRefLocal(_, _) =>
           dealias(tpe, scope) match
             case dealiased: Type =>
               val followed = recur(dealiased)
               if followed == dealiased then tpe else followed
 
             case _ => tpe match
-              case Type.Applied(constructor, arguments) => Type.Applied(constructor, arguments.map(recur))
+
+              case Type.Applied(constructor, arguments) =>
+                Type.Applied(constructor, arguments.map(recur))
+
               case _                                    => tpe
 
         case other => Universe.mapChildren(other)(recur)
@@ -529,7 +569,7 @@ object Degustation:
         case Type.Applied(constructor, arguments) =>
           universe.resolve(constructor, scope) match
             case Resolution.Alias(arity, apply, aliasScope, body, false)
-                if arity > 0 && arity == arguments.size =>
+              if arity > 0 && arity == arguments.size =>
               val pinnedArguments = Universe.pin(arguments, scope)
               val bodyScope = aliasScope.or(scope)
 
@@ -538,7 +578,8 @@ object Degustation:
                   Universe.substitute(strip(result, bodyScope), address, pinnedArguments)
 
                 case Type.Abstraction(params, _, _, result) =>
-                  Universe.replace(strip(result, bodyScope), params.stdlib.zip(pinnedArguments.stdlib))
+                  val stripped = strip(result, bodyScope)
+                  Universe.replace(stripped, params.stdlib.zip(pinnedArguments.stdlib))
 
                 case _ => strip(apply(pinnedArguments), bodyScope)
 
@@ -546,7 +587,8 @@ object Degustation:
 
             case _ => Unset
 
-        case Type.TypeRef(_, _) | Type.TypeRefIn(_, _, _) | Type.TypeRefDirect(_) | Type.TypeRefLocal(_, _) =>
+        case Type.TypeRef(_, _) | Type.TypeRefIn(_, _, _) | Type.TypeRefDirect(_)
+          | Type.TypeRefLocal(_, _) =>
           universe.resolve(tpe, scope) match
             case Resolution.Alias(0, apply, aliasScope, _, false) =>
               pinned(strip(apply(List()), aliasScope.or(scope)), aliasScope)
@@ -571,7 +613,8 @@ object Degustation:
     private def privateLeaks(tpe: Type, scope: Scope): Type =
       def hidden(address: Int): Boolean = scope.definition(address) match
         case Tree.TypeDef(_, _, rhs, modifiers) =>
-          !rhs.isInstanceOf[Tree.Template] && modifiers.has(Flag.Private) && !modifiers.has(Flag.Opaque)
+          !rhs.isInstanceOf[Tree.Template] && modifiers.has(Flag.Private) &&
+            !modifiers.has(Flag.Opaque)
 
         case _ => false
 
@@ -579,7 +622,11 @@ object Degustation:
         universe.resolve(reference, scope) match
           case Resolution.Alias(arity, apply, aliasScope, _, false) if arity == arguments.size =>
             val expansion = foldAndOr(apply(Universe.pin(arguments, scope)), aliasScope.or(scope))
-            privateLeaks(aliasScope.lay(expansion) { aliasScope => Type.Foreign(aliasScope.path, expansion) }, scope)
+
+            val pinned = aliasScope.lay(expansion): aliasScope =>
+              Type.Foreign(aliasScope.path, expansion)
+
+            privateLeaks(pinned, scope)
 
           case _ => if arguments.nil then reference else Type.Applied(reference, arguments)
 
@@ -587,11 +634,15 @@ object Degustation:
         case Type.Applied(reference @ Type.TypeRefDirect(address), arguments) if hidden(address) =>
           expand(reference, address, arguments)
 
-        case Type.Applied(reference @ Type.TypeRefLocal(address, _), arguments) if hidden(address) =>
+        case Type.Applied(reference @ Type.TypeRefLocal(address, _), arguments)
+          if hidden(address) =>
           expand(reference, address, arguments)
 
-        case reference @ Type.TypeRefDirect(address) if hidden(address)   => expand(reference, address, List())
-        case reference @ Type.TypeRefLocal(address, _) if hidden(address) => expand(reference, address, List())
+        case reference @ Type.TypeRefDirect(address) if hidden(address) =>
+          expand(reference, address, List())
+
+        case reference @ Type.TypeRefLocal(address, _) if hidden(address) =>
+          expand(reference, address, List())
 
     // A method parameter's type as `MethodType.fromSymbols` adapts it: followed, a repeated
     // parameter's `@Repeated Seq[T]` made `<repeated>[T]`, and a `consume` annotation on the
@@ -603,17 +654,20 @@ object Degustation:
       // synthetic member's parameter — is `into[T]` again, by its external name.
       def reveal(tpe: Type): Type = tpe match
         case Type.Annotated(underlying, annotation)
-            if annotationName(annotation, scope) == t"scala.annotation.internal.$$into" =>
-          val into = Type.TypeRef(t"into", Type.TermRef(Name.Simple(t"Conversion"), Type.TermRefPkg(t"scala")))
+          if annotationName(annotation, scope) == t"scala.annotation.internal.$$into" =>
+          val conversion = Type.TermRef(Name.Simple(t"Conversion"), Type.TermRefPkg(t"scala"))
+          val into = Type.TypeRef(t"into", conversion)
           Type.Applied(into, List(reveal(underlying)))
 
-        case Type.Annotated(underlying, annotation) => Type.Annotated(reveal(underlying), annotation)
-        case Type.ByName(underlying)                => Type.ByName(reveal(underlying))
-        case other                                  => other
+        case Type.Annotated(underlying, annotation) =>
+          Type.Annotated(reveal(underlying), annotation)
+
+        case Type.ByName(underlying) => Type.ByName(reveal(underlying))
+        case other                   => other
 
       val repeated = reveal(followed) match
         case Type.Annotated(Type.Applied(_, arguments), annotation)
-            if annotationName(annotation, scope) == t"scala.annotation.internal.Repeated" =>
+          if annotationName(annotation, scope) == t"scala.annotation.internal.Repeated" =>
           Type.Applied(Type.TypeRef(t"<repeated>", Type.TermRefPkg(t"scala")), arguments)
 
         case other => other
@@ -623,7 +677,9 @@ object Degustation:
         case other                   => Type.Annotated(other, annotation)
 
       param.modifiers.annotations.stdlib
-        . find: annotation => annotationName(annotation.tree, scope) == t"scala.caps.internal$$.consume"
+        . find: annotation =>
+            annotationName(annotation.tree, scope) == t"scala.caps.internal$$.consume"
+
         . fold(repeated): consume => annotate(repeated, consume.tree)
 
     // The class of an annotation: its tree may name the class through an alias (`proscenium`
@@ -635,9 +691,11 @@ object Degustation:
           case other                        => other
 
         universe.resolve(head, scope) match
-          case Resolution.Alias(0, apply, aliasScope, _, false) => classOf(apply(List()), aliasScope.or(scope))
-          case Resolution.Class(info, _, _)                     => info.fullName
-          case _                                                => symbolOfType(head, t"", scope).fullName
+          case Resolution.Alias(0, apply, aliasScope, _, false) =>
+            classOf(apply(List()), aliasScope.or(scope))
+
+          case Resolution.Class(info, _, _) => info.fullName
+          case _                            => symbolOfType(head, t"", scope).fullName
 
       classOf(Universe.annotationType(annotation), scope)
 
@@ -649,6 +707,7 @@ object Degustation:
     private def clauseAddresses(address: Int, names: List[Text], scope: Scope, typeClause: Boolean)
 
     :   scala.List[Int] =
+
       universe.clauseAddresses(address, names, scope, typeClause)
 
     // The compiler's `typeSymbol` of a `this` type is its class's self type's: the class itself
@@ -722,7 +781,7 @@ object Degustation:
           utf8(out, spelled(symbolOfType(tpe, t"", scope).fullName.s))
 
         case Type.TermRef(_, _) | Type.TermRefIn(_, _, _) | Type.TermRefLocal(_, _)
-            | Type.TermRefPkg(_) =>
+          | Type.TermRefPkg(_) =>
           tag(out, 'S')
           utf8(out, spelled(termTypeSymbol(tpe, scope).s))
 
@@ -786,14 +845,16 @@ object Degustation:
           tag(out, 'M')
           if clause != Clause.Plain then tag(out, 'i')
           uvarint(out, names.size.toLong)
-          val inner = Binder(address, clauseAddresses(address, names, scope, typeClause = false)) :: binders
+          val addresses = clauseAddresses(address, names, scope, typeClause = false)
+          val inner = Binder(address, addresses) :: binders
           params.each(recur(_, inner))
           recur(result, inner)
 
         case Type.Poly(address, names, bounds, result) =>
           tag(out, 'P')
           uvarint(out, names.size.toLong)
-          val inner = Binder(address, clauseAddresses(address, names, scope, typeClause = true)) :: binders
+          val addresses = clauseAddresses(address, names, scope, typeClause = true)
+          val inner = Binder(address, addresses) :: binders
           bounds.each(recur(_, inner))
           recur(result, inner)
 
@@ -835,6 +896,9 @@ object Degustation:
 
         case Type.Flexible(underlying) => recur(underlying)
 
+        // A term application stands in for a type only while a selection on it is resolved.
+        case Type.AppliedTerms(_, _) => throw Unencodable(t"a term application as a type")
+
         case Type.Match(bound, scrutinee, cases) =>
           tag(out, 'X')
           recur(bound)
@@ -874,7 +938,8 @@ object Degustation:
           // as the alias of a refinement, which becomes the wildcard's bounds.
           case _ if arguments.exists(wildcardArgument) =>
             universe.resolve(constructor, scope) match
-              case Resolution.Alias(arity, apply, aliasScope, _, false) if arity == arguments.size =>
+              case Resolution.Alias(arity, apply, aliasScope, _, false)
+                if arity == arguments.size =>
                 reduceWildcards(apply(pinned)).let: reduced =>
                   aliasScope.lay(reduced): aliasScope => Type.Foreign(aliasScope.path, reduced)
 
@@ -885,7 +950,7 @@ object Degustation:
               // An alias whose body applies a `scala.compiletime.ops` type reduces like an
               // eta-expansion does.
               case Resolution.Alias(arity, apply, aliasScope, body, false)
-                  if arity > 0 && (etaExpansion(body) || compiletimeApplication(body, aliasScope.or(scope))) =>
+                if arity > 0 && reducible(body, aliasScope.or(scope)) =>
                 val folded = foldAndOr(apply(pinned), aliasScope.or(scope))
                 aliasScope.lay(folded): aliasScope => Type.Foreign(aliasScope.path, folded)
 
@@ -910,6 +975,11 @@ object Degustation:
 
       case _ => expansion
 
+    // Whether an alias body reduces when applied: an eta-expansion or a `compiletime.ops`
+    // application.
+    private def reducible(body: Optional[Type], scope: Scope): Boolean =
+      etaExpansion(body) || compiletimeApplication(body, scope)
+
     private def wildcardArgument(tpe: Type): Boolean = tpe match
       case Type.Bounds(_, _, _)   => true
       case Type.Foreign(_, inner) => wildcardArgument(inner)
@@ -924,7 +994,8 @@ object Degustation:
         case _                      => false
 
       val normalized = Universe.transform(expansion):
-        case Type.Refined(parent, name, Type.Bounds(low, high, _)) if high == low && wildcard(low) =>
+        case Type.Refined(parent, name, Type.Bounds(low, high, _))
+          if high == low && wildcard(low) =>
           Type.Refined(parent, name, low)
 
       var replaced = true
@@ -944,7 +1015,9 @@ object Degustation:
 
           bounds(info)
 
-        case other => Universe.mapChildren(other) { child => check(child, false); child }
+        case other => Universe.mapChildren(other): child =>
+          check(child, false)
+          child
 
       check(normalized, false)
       if replaced then normalized else Unset
@@ -963,13 +1036,13 @@ object Degustation:
     private def etaExpansion(body: Optional[Type]): Boolean = body match
       case Type.Lambda(address, names, _, Type.Applied(_, arguments)) =>
         arguments.size == names.size &&
-        arguments.stdlib.zipWithIndex.forall:
+          arguments.stdlib.zipWithIndex.forall:
           case (Type.Param(binder, number), index) => binder == address && number == index
           case _                                   => false
 
       case Type.Abstraction(params, _, _, Type.Applied(_, arguments)) =>
         arguments.size == params.size &&
-        arguments.stdlib.zip(params.stdlib).forall:
+          arguments.stdlib.zip(params.stdlib).forall:
           case (Type.TypeRefDirect(address), param)   => address == param
           case (Type.TypeRefLocal(address, _), param) => address == param
           case _                                      => false
@@ -982,7 +1055,7 @@ object Degustation:
     private def termTypeSymbol(tpe: Type, scope: Scope): Text =
       def symbol(tpe: Type, scope: Scope): Text = tpe match
         case Type.TypeRef(_, _) | Type.TypeRefIn(_, _, _) | Type.TypeRefPkg(_)
-            | Type.TypeRefDirect(_) | Type.TypeRefLocal(_, _) =>
+          | Type.TypeRefDirect(_) | Type.TypeRefLocal(_, _) =>
           symbolOfType(tpe, t"", scope).fullName
 
         case Type.Applied(constructor, _) =>
@@ -1012,7 +1085,9 @@ object Degustation:
               symbol(declared, termScope.or(scope))
 
             case Resolution.Class(info, _, _) => info.fullName
-            case _                            => throw Unencodable(t"type symbol of ${other.getClass.getSimpleName.nn}")
+
+            case _ =>
+              throw Unencodable(t"type symbol of ${other.getClass.getSimpleName.nn}")
 
       symbol(tpe, scope)
 
@@ -1048,7 +1123,9 @@ object Degustation:
 
     private def requiresFormat(char: Char): Boolean = char match
       case '\b' | '\t' | '\n' | '\f' | '\r' | '"' | '\'' | '\\' => true
-      case _ => char < ' ' || char == '\u007f' || Character.isISOControl(char)
+
+      case _ =>
+        char < ' ' || char == '\u007f' || Character.isISOControl(char)
 
     private def escaped(builder: java.lang.StringBuilder, char: Char): Unit =
       val replacement = char match
@@ -1085,8 +1162,13 @@ object Degustation:
     // `exported` flag is deliberately absent (`tasty.md` §9): an `export` forwarder atomizes
     // identically to the equivalent hand-written forwarder, so converting between them is a
     // non-event.
-    private def flagBits(modifiers: Modifiers, deferred: Boolean, module: Boolean = false,
-        moduleValue: Boolean = false): Long =
+    private def flagBits
+      ( modifiers:   Modifiers,
+        deferred:    Boolean,
+        module:      Boolean = false,
+        moduleValue: Boolean = false )
+    :   Long =
+
       val flags = modifiers.flags
 
       val bits = scala.List(
@@ -1100,8 +1182,8 @@ object Degustation:
         flags.contains(Flag.Protected), flags.contains(Flag.Sealed), flags.contains(Flag.Trait),
         flags.contains(Flag.Transparent))
 
-      bits.zipWithIndex.foldLeft(0L): (acc, pair) =>
-        if pair(0) then acc | (1L << pair(1)) else acc
+      def fold(acc: Long, bit: (Boolean, Int)): Long = if bit(0) then acc | (1L << bit(1)) else acc
+      bits.zipWithIndex.foldLeft(0L)(fold)
 
     // Whether a definition is deferred: a term with no right-hand side (a parameter is not, nor
     // a constructor), or a type known only by bounds.
@@ -1155,7 +1237,9 @@ object Degustation:
     private def signatureText(tree: Tree, scope: Scope, owner: Optional[ClassInfo]): Text =
       erasure.signature(tree, scope, owner)
 
-    private def keyOf(ownerKey: Text, tree: Tree, scope: Scope, owner: Optional[ClassInfo]): String =
+    private def keyOf(ownerKey: Text, tree: Tree, scope: Scope, owner: Optional[ClassInfo])
+    :   String =
+
       s"${spelled(ownerKey.s)}.${nameOf(tree)}${signatureText(tree, scope, owner)}"
 
     private def excluded(tree: Tree): Boolean =
@@ -1243,7 +1327,7 @@ object Degustation:
 
         val normalizedTerms =
           if termClauses.headOption.exists(leads(_, Flag.Implicit)) then List[Tree]() :: termClauses
-          else if termClauses.forall { clause => leads(clause, Flag.Given) } then termClauses :+ List[Tree]()
+          else if termClauses.forall(leads(_, Flag.Given)) then termClauses :+ List[Tree]()
           else termClauses
 
         typeClauses ++ normalizedTerms
@@ -1255,12 +1339,13 @@ object Degustation:
     // type: each clause of a method is a binder over its parameters' addresses.
     private def clauseBinders(tree: Tree): scala.List[Binder] = tree match
       case Tree.DefDef(address, _, clauses, _, _, _) =>
-        clauses.stdlib.map: clause =>
-          Binder(address, clause.stdlib.map(addressOf))
+        clauses.stdlib.map: clause => Binder(address, clause.stdlib.map(addressOf))
 
       case _ => scala.Nil
 
-    private def termAtom(ownerKey: Text, tree: Tree, scope: Scope, owner: Optional[ClassInfo]): Unit =
+    private def termAtom(ownerKey: Text, tree: Tree, scope: Scope, owner: Optional[ClassInfo])
+    :   Unit =
+
       val modifiers = modifiersOf(tree)
 
       // The value of an object is final and lazy to the compiler, whatever its definition says.
@@ -1326,7 +1411,8 @@ object Degustation:
                   trees.foreach:
                     case param: Tree.Param =>
                       val info = selections(parameterInfo(param, scope))
-                      val leaked = if modifiers.has(Flag.Synthetic) then info else privateLeaks(info, scope)
+                      val synthetic = modifiers.has(Flag.Synthetic)
+                      val leaked = if synthetic then info else privateLeaks(info, scope)
                       encodeType(out, leaked, inner, scope)
 
                     case _ => ()
@@ -1346,13 +1432,16 @@ object Degustation:
         // Integrating the parameters into the method type maps every reference to them, and a
         // type selected on a parameter — `instantiable.Self` — then reduces (`derivedSelect`,
         // `lookupRefined`) to the alias the parameter's type refines it with, if any.
-        def paramAddresses = clauses.stdlib.flatMap(_.stdlib).collect { case Tree.Param(a, _, _, _) => a }
+        def paramAddresses = clauses.stdlib.flatMap(_.stdlib).collect:
+          case Tree.Param(address, _, _, _) => address
 
         def selections(tpe: Type): Type = Universe.transform(tpe):
-          case selected @ Type.TypeRef(member, Type.TermRefDirect(address)) if paramAddresses.contains(address) =>
+          case selected @ Type.TypeRef(member, Type.TermRefDirect(address))
+            if paramAddresses.contains(address) =>
             refinedAlias(address, member).or(selected)
 
-          case selected @ Type.TypeRef(member, Type.TermRefLocal(address, _)) if paramAddresses.contains(address) =>
+          case selected @ Type.TypeRef(member, Type.TermRefLocal(address, _))
+            if paramAddresses.contains(address) =>
             refinedAlias(address, member).or(selected)
 
         def refinedAlias(address: Int, member: Text): Optional[Type] =
@@ -1383,12 +1472,14 @@ object Degustation:
               val cls = scope.enclosingClass(address).or(throw Unencodable(t"constructor's class"))
 
               val typeParams = clauses.stdlib.headOption.toList.flatMap: clause =>
-                clause.stdlib.collect { case Tree.TypeParam(address, _, _, _) => Type.TypeRefDirect(address) }
+                clause.stdlib.collect:
+                  case Tree.TypeParam(address, _, _, _) => Type.TypeRefDirect(address)
 
               if typeParams.isEmpty then Type.TypeRefDirect(cls)
               else Type.Applied(Type.TypeRefDirect(cls), typeParams.to(List))
 
-            else Universe.typeOf(returns)
+            else
+              Universe.typeOf(returns)
 
           // A given method's tracked parameters would refine its result too, but only when the
           // reader has the modularity feature enabled, which the atomizer's compiler never did.
@@ -1405,7 +1496,8 @@ object Degustation:
 
       // A class parameter's accessor is mapped like a parameter; a synthetic value's declared type
       // reaches its symbol as it stands.
-      case Tree.Param(_, _, tpt, _) => encodeType(out, follow(Universe.typeOf(tpt), scope), scala.Nil, scope)
+      case Tree.Param(_, _, tpt, _) =>
+        encodeType(out, follow(Universe.typeOf(tpt), scope), scala.Nil, scope)
 
       case other =>
         val synthetic = modifiersOf(other).has(Flag.Synthetic)
@@ -1418,7 +1510,9 @@ object Degustation:
 
         encodeType(out, mapped, scala.Nil, scope)
 
-    private def inlineAtom(ownerKey: Text, tree: Tree, scope: Scope, owner: Optional[ClassInfo]): Unit =
+    private def inlineAtom(ownerKey: Text, tree: Tree, scope: Scope, owner: Optional[ClassInfo])
+    :   Unit =
+
       // The body of an inline or macro definition is copied into consumers at their compile
       // time: a replaceable atom (LIRA §10.2), keyed by the declaration, whose value is the
       // canonical encoding of the body tree — local names alpha-normalized, every outward
@@ -1496,9 +1590,10 @@ object Degustation:
 
             val named = stripped match
               case Type.TypeRef(_, _) | Type.TypeRefIn(_, _, _) | Type.TypeRefPkg(_)
-                  | Type.TypeRefDirect(_) | Type.TypeRefLocal(_, _) | Type.TermRef(_, _)
+                | Type.TypeRefDirect(_) | Type.TypeRefLocal(_, _) | Type.TermRef(_, _)
                   | Type.TermRefIn(_, _, _) | Type.TermRefPkg(_) | Type.TermRefDirect(_)
-                  | Type.TermRefLocal(_, _) | Type.This(_) => true
+                  | Type.TermRefLocal(_, _) | Type.This(_) =>
+                true
 
               case _ => false
 
@@ -1758,7 +1853,9 @@ object Degustation:
           case Type.TermRefLocal(_, prefix) =>
             val symbol = symbolOfType(tpe, t"", scope)
 
-            if isStatic(symbol) || isWithin(symbol, definitionAddress, scope) || elidable(prefix, symbol) then
+            val local = isWithin(symbol, definitionAddress, scope)
+
+            if isStatic(symbol) || local || elidable(prefix, symbol) then
               tag(out, 'x')
               name(symbol)
 
@@ -1791,8 +1888,10 @@ object Degustation:
           // A prefix that is a static object: `Variable.generic`, whichever class declares
           // `generic`.
           case Type.TermRef(_, _) | Type.TermRefIn(_, _, _) | Type.TermRefLocal(_, _)
-              | Type.TermRefDirect(_) =>
-            val module = try symbolOfType(prefix, t"", scope).fullName catch case _: Unencodable => t""
+            | Type.TermRefDirect(_) =>
+            val module =
+              try symbolOfType(prefix, t"", scope).fullName catch case _: Unencodable => t""
+
             universe.classOf(t"$module$$").lay(false)(isStaticOwner)
 
           case _ => false
@@ -1808,7 +1907,8 @@ object Degustation:
         def isStatic(symbol: Symbol): Boolean =
           symbol.ownerKey == t"" || symbol.ownerKey.s.indexOf('.') < 0 ||
             universe.classOf(symbol.ownerKey).lay(true)(_.isObject) ||
-            universe.classOf(t"${symbol.ownerKey}$$").present && universe.classOf(symbol.ownerKey).absent
+            universe.classOf(t"${symbol.ownerKey}$$").present &&
+            universe.classOf(symbol.ownerKey).absent
 
         // The compiler drops an empty argument list applied to a parameterless method that
         // overrides a Java or `Any` member (`x.toString()`).
@@ -1888,17 +1988,25 @@ object Degustation:
 
         declarations.foreach: member =>
           if !excluded(member) && !modifiersOf(member).has(Flag.Case) then member match
-            case nested @ Tree.TypeDef(_, _, inner: Tree.Template, _)  => classAtoms(nested, inner, scope)
-            case Tree.TypeDef(_, _, _, _) | Tree.TypeParam(_, _, _, _) => typeMemberAtom(ownerKey, member, scope)
+            case nested @ Tree.TypeDef(_, _, inner: Tree.Template, _) =>
+              classAtoms(nested, inner, scope)
 
-            case Tree.DefDef(_, _, _, _, _, _) | Tree.ValDef(_, _, _, _, _) | Tree.Param(_, _, _, _) =>
+            case Tree.TypeDef(_, _, _, _) | Tree.TypeParam(_, _, _, _) =>
+              typeMemberAtom(ownerKey, member, scope)
+
+            case Tree.DefDef(_, _, _, _, _, _) | Tree.ValDef(_, _, _, _, _)
+              | Tree.Param(_, _, _, _) =>
               termAtom(ownerKey, member, scope, info)
 
             case _ => ()
 
           else if !excluded(member) then member match
-            case nested @ Tree.TypeDef(_, _, inner: Tree.Template, _) => classAtoms(nested, inner, scope)
-            case Tree.DefDef(_, _, _, _, _, _)                        => termAtom(ownerKey, member, scope, info)
+            case nested @ Tree.TypeDef(_, _, inner: Tree.Template, _) =>
+              classAtoms(nested, inner, scope)
+
+            case Tree.DefDef(_, _, _, _, _, _) =>
+              termAtom(ownerKey, member, scope, info)
+
             case _                                                    => ()
 
         // A nested class with constructor proxies to offer but no companion, and no term of its
@@ -1907,7 +2015,7 @@ object Degustation:
         // class with `Any` as its parent, its value, and the proxies.
         template.body.each:
           case nested @ Tree.TypeDef(_, nestedName, _: Tree.Template, nestedModifiers)
-              if !nestedName.s.endsWith("$") && proxiesNeeded(nestedModifiers) =>
+            if !nestedName.s.endsWith("$") && proxiesNeeded(nestedModifiers) =>
             val companionName = t"$nestedName$$"
 
             val hasCompanion = template.body.exists:
@@ -1931,7 +2039,7 @@ object Degustation:
 
       template.body.each:
         case Tree.TypeDef(_, name, rhs, modifiers)
-            if !rhs.isInstanceOf[Tree.Template] && modifiers.has(Flag.Exported) =>
+          if !rhs.isInstanceOf[Tree.Template] && modifiers.has(Flag.Exported) =>
           underlyingClass(Universe.typeOf(rhs), scope).let: cls =>
             val proxies = !cls.java && proxiesNeeded(Modifiers(cls.flags, Unset, List()))
             val phantom = universe.classOf(t"${cls.fullName}$$").absent
@@ -1939,7 +2047,7 @@ object Degustation:
 
             val hasTerm =
               info.lay(false)(!universe.termsIn(_, name).nil) ||
-              template.body.exists:
+                template.body.exists:
                 case Tree.TypeDef(_, `companionName`, _: Tree.Template, _) => true
                 case _                                                     => false
 
@@ -1959,17 +2067,21 @@ object Degustation:
     // The class an alias ultimately names (`underlyingClassRef`): through eta-expansions,
     // annotations, applications and further aliases, but not refinements, bounds or opaque types.
     private def underlyingClass(tpe: Type, scope: Scope): Optional[ClassInfo] = tpe match
-      case Type.Abstraction(_, _, _, Type.Applied(head, _)) if etaExpansion(tpe) => underlyingClass(head, scope)
-      case Type.Lambda(_, _, _, Type.Applied(head, _)) if etaExpansion(tpe)      => underlyingClass(head, scope)
-      case Type.Annotated(underlying, _)                                         => underlyingClass(underlying, scope)
-      case Type.Applied(head, _)                                                 => underlyingClass(head, scope)
-      case Type.Bounds(low, Unset, _)                                            => underlyingClass(low, scope)
+      case Type.Abstraction(_, _, _, Type.Applied(head, _)) if etaExpansion(tpe) =>
+        underlyingClass(head, scope)
+
+      case Type.Lambda(_, _, _, Type.Applied(head, _)) if etaExpansion(tpe) =>
+        underlyingClass(head, scope)
+
+      case Type.Annotated(underlying, _) => underlyingClass(underlying, scope)
+      case Type.Applied(head, _)         => underlyingClass(head, scope)
+      case Type.Bounds(low, Unset, _)    => underlyingClass(low, scope)
 
       case Type.Foreign(path, inner) =>
         universe.scope(path).lay(underlyingClass(inner, scope))(underlyingClass(inner, _))
 
       case Type.TypeRef(_, _) | Type.TypeRefIn(_, _, _) | Type.TypeRefPkg(_) | Type.TypeRefDirect(_)
-          | Type.TypeRefLocal(_, _) =>
+        | Type.TypeRefLocal(_, _) =>
         universe.resolve(tpe, scope) match
           case Resolution.Class(info, _, _) => info
 
@@ -2029,7 +2141,8 @@ object Degustation:
             scope.definition(owner).let:
               case Tree.TypeDef(_, _, outer: Tree.Template, _) =>
                 outer.body.stdlib.collectFirst:
-                  case candidate @ Tree.TypeDef(_, `companionName`, _: Tree.Template, _) => candidate
+                  case candidate @ Tree.TypeDef(_, `companionName`, _: Tree.Template, _) =>
+                    candidate
 
                 . getOrElse(Unset)
 
@@ -2048,8 +2161,7 @@ object Degustation:
             . getOrElse(Unset)
 
         companion.let: companion =>
-          val hasApply = info.lay(false): info =>
-            !universe.termsIn(info, t"apply").nil
+          val hasApply = info.lay(false): info => !universe.termsIn(info, t"apply").nil
 
           if proxiesNeeded(companion.modifiers) && !hasApply then
             constructorProxies(companion, scope.names.at(module.address).or(t""), scope)
@@ -2059,8 +2171,8 @@ object Degustation:
       val flags = modifiers.flags
 
       !flags.contains(Flag.Abstract) && !flags.contains(Flag.Trait) && !flags.contains(Flag.Case) &&
-      !flags.contains(Flag.Synthetic) && !flags.contains(Flag.Object) &&
-      !flags.contains(Flag.Invisible)
+        !flags.contains(Flag.Synthetic) && !flags.contains(Flag.Object) &&
+        !flags.contains(Flag.Invisible)
 
     // The `apply` proxies for each constructor of `companion`, as members of the module `ownerKey`.
     private def constructorProxies(companion: Tree.TypeDef, ownerKey: Text, scope: Scope): Unit =
@@ -2070,12 +2182,12 @@ object Degustation:
 
           classTemplate.body.each:
             case constructor @ Tree.DefDef(_, name, clauses, returns, _, modifiers)
-                if name.text == t"<init>" && !excluded(constructor) =>
-              val proxyModifiers = Modifiers(
-                Set(Flag.Synthetic, Flag.Inline) ++ modifiers.flags.filter(f => f == Flag.Private ||
-                    f == Flag.Protected || f == Flag.Local),
+              if name.text == t"<init>" && !excluded(constructor) =>
+              val visibility = modifiers.flags.filter: flag =>
+                flag == Flag.Private || flag == Flag.Protected || flag == Flag.Local
 
-                modifiers.privateWithin, List())
+              val proxyFlags = Set(Flag.Synthetic, Flag.Inline) ++ visibility
+              val proxyModifiers = Modifiers(proxyFlags, modifiers.privateWithin, List())
 
               val encoded = Array.collect[Byte](): out =>
                 tag(out, 'd')
@@ -2112,7 +2224,11 @@ object Degustation:
 
         case _ => ()
 
-    private def templateAtom(tree: Tree.TypeDef, template: Tree.Template, fullName: Text, scope: Scope)
+    private def templateAtom
+      ( tree:     Tree.TypeDef,
+        template: Tree.Template,
+        fullName: Text,
+        scope:    Scope )
     :   Unit =
 
       val modifiers = tree.modifiers
@@ -2148,7 +2264,8 @@ object Degustation:
             case Tree.Apply(_, _) | Tree.TypeApply(_, _) | Tree.Block(_, _) =>
               val bare = tpe match
                 case Type.TypeRef(_, _) | Type.TypeRefIn(_, _, _) | Type.TypeRefDirect(_)
-                    | Type.TypeRefLocal(_, _) => dealias(tpe, scope).or(tpe)
+                  | Type.TypeRefLocal(_, _) =>
+                  dealias(tpe, scope).or(tpe)
 
                 case _ => tpe
 
@@ -2188,7 +2305,7 @@ object Degustation:
           val children = modifiers.annotations.stdlib.flatMap: annotation =>
             Universe.annotationType(annotation.tree) match
               case Type.Applied(constructor, List(child))
-                  if Universe.className(constructor).lay(false)(_ == t"scala.annotation.internal.Child") =>
+                if Universe.className(constructor).or(t"") == t"scala.annotation.internal.Child" =>
                 scala.List(symbolOfType(child, t"", scope).fullName.s)
 
               case _ => scala.Nil
@@ -2225,7 +2342,8 @@ object Degustation:
             val constructors = info.scope.let(_.definition(info.address)).lay(scala.Nil):
               case Tree.TypeDef(_, _, Tree.Template(_, _, _, _, body), _) =>
                 body.stdlib.collect:
-                  case constructor @ Tree.DefDef(_, name, _, _, _, _) if name.text == t"<init>" => constructor
+                  case constructor @ Tree.DefDef(_, name, _, _, _, _) if name.text == t"<init>" =>
+                    constructor
 
               case _ => scala.Nil
 
@@ -2239,7 +2357,8 @@ object Degustation:
               . map: constructor =>
                 termClauses(constructor).zip(argumentClauses).flatMap: (params, arguments) =>
                   params.stdlib.zip(arguments.stdlib).collect:
-                    case (Tree.Param(_, paramName, _, modifiers), argument) if modifiers.has(Flag.Tracked) =>
+                    case (Tree.Param(_, paramName, _, modifiers), argument)
+                      if modifiers.has(Flag.Tracked) =>
                       (paramName.text, Universe.termType(argument))
 
               . getOrElse(scala.Nil)
@@ -2250,14 +2369,19 @@ object Degustation:
         Type.Refined(result, refinement(0), refinement(1))
 
     private def isTerm(tree: Tree): Boolean = tree match
-      case Tree.DefDef(_, _, _, _, _, _) | Tree.ValDef(_, _, _, _, _) | Tree.Param(_, _, _, _) => true
-      case _                                                                                   => false
+      case Tree.DefDef(_, _, _, _, _, _) | Tree.ValDef(_, _, _, _, _) | Tree.Param(_, _, _, _) =>
+        true
+
+      case _ => false
 
     // --- roots --------------------------------------------------------------------------------
     def file(scope: Scope): Unit =
       def walk(tree: Tree): Unit = tree match
         case Tree.Package(_, statements)                              => statements.each(walk)
-        case typeDef @ Tree.TypeDef(_, _, template: Tree.Template, _) => classAtoms(typeDef, template, scope)
+
+        case typeDef @ Tree.TypeDef(_, _, template: Tree.Template, _) =>
+          classAtoms(typeDef, template, scope)
+
         case _                                                        => ()
 
       scope.file.statements.each(walk)

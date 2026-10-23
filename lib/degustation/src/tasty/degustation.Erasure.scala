@@ -28,10 +28,8 @@
 ┃    either express or implied. See the License for the specific language governing permissions    ┃
 ┃    and limitations under the License.                                                            ┃
 ┃                                                                                                  ┃
-
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-
 package degustation
 
 import scala.collection.immutable.Set
@@ -41,7 +39,7 @@ import gossamer.*
 import murmuration.*
 import denominative.dysasymptotics.linearSize
 import denominative.{nil, size}
-import rudiments.{all, at, each, prim}
+import rudiments.{at, prim}
 import vacuous.*
 
 import Pickled.*
@@ -107,7 +105,7 @@ class Erasure(universe: Universe):
         if typeClause(clause) then scala.List(clause.size.toString.tt)
         else clause.stdlib.collect:
           case Tree.Param(_, _, tpt, modifiers)
-              if !modifiers.has(Flag.Erased) && !erasedParam(Universe.typeOf(tpt), scope) =>
+            if !modifiers.has(Flag.Erased) && !erasedParam(Universe.typeOf(tpt), scope) =>
             sigName(Universe.typeOf(tpt), scope)
 
       // A method with no clause at all has an expression type, whose signature names no result;
@@ -118,16 +116,19 @@ class Erasure(universe: Universe):
           // A constructor's result is its class applied to its own type parameters, which erases
           // as the class does — to its underlying type for a value class, to `Object` for `Array`.
           owner.lay(t"scala.Unit"): info =>
-            // A class read from TASTy is referred to by its address; `classRef` spells a binary name.
+            // A class read from TASTy is referred to by its address; `classRef` spells a binary
+            // name.
             val reference =
-              if info.address >= 0 then Type.TypeRefDirect(info.address) else Universe.classRef(info.fullName)
+              if info.address >= 0 then Type.TypeRefDirect(info.address)
+              else Universe.classRef(info.fullName)
 
             val self =
               if info.typeParamAddresses.nil then reference
               else Type.Applied(reference, info.typeParamAddresses.map(Type.TypeRefDirect(_)))
 
             render(erase(self, info.scope, vc = true))
-        else resultSigName(Universe.typeOf(returns), scope)
+        else
+          resultSigName(Universe.typeOf(returns), scope)
 
       t"(${parts.to(List).join(t",")})$result"
 
@@ -164,8 +165,11 @@ class Erasure(universe: Universe):
   // A Java member's signature from its descriptor types, which are already erased.
   def javaSignature(params: List[Type], result: Type): Text =
     def render(tpe: Type): Text = tpe match
-      case Type.Applied(_, arguments) if arguments.size == 1 => t"${render(arguments.stdlib.head)}[]"
-      case other                                             => Universe.className(other).or(t"java.lang.Object")
+      case Type.Applied(_, arguments) if arguments.size == 1 =>
+        t"${render(arguments.stdlib.head)}[]"
+
+      case other =>
+        Universe.className(other).or(t"java.lang.Object")
 
     t"(${params.map(render).join(t",")})${render(result)}"
 
@@ -219,7 +223,10 @@ class Erasure(universe: Universe):
         case Resolution.Alias(_, apply, aliasScope, _, _) => erase(apply(List()), aliasScope, vc)
         case Resolution.Abstract(high, boundScope)        => erase(high, boundScope, vc)
         case Resolution.Term(underlying, termScope)       => erase(underlying, termScope, vc)
-        case Resolution.Package(path)                     => throw Unresolved(t"package $path applied")
+
+        case Resolution.Package(path) =>
+          throw Unresolved(t"package $path applied")
+
         case Resolution.Unknown(reason)                   => throw Unresolved(reason))
 
     case Type.ByName(_)                => Erased.Ref(t"scala.Function0")
@@ -254,13 +261,15 @@ class Erasure(universe: Universe):
       erasedLub(erase(left, scope, vc), erase(right, scope, vc))
 
     case Type.Refined(parent, name, info) =>
-      val polyFunction = universe.classOf(parent, scope).lay(false)(_.fullName == t"scala.PolyFunction")
+      val polyFunction = universe.classOf(parent, scope).lay(false): info =>
+        info.fullName == t"scala.PolyFunction"
+
       if polyFunction && name == t"apply" then Erased.Ref(functionClass(arity(info, scope)))
       else erase(parent, scope, vc)
 
     case Type.Literal(constant) =>
-      universe.classOf(constant.className).lay(Erased.Ref(constant.className)):
-        classErasure(_, List(), vc)
+      val unresolved = Erased.Ref(constant.className)
+      universe.classOf(constant.className).lay(unresolved)(classErasure(_, List(), vc))
 
     case other => universe.resolve(other, scope) match
       case Resolution.Class(info, arguments, _) => classErasure(info, arguments, vc)
@@ -268,7 +277,8 @@ class Erasure(universe: Universe):
       case Resolution.Alias(arity, apply, aliasScope, _, _) =>
         // An unapplied alias of a type lambda erases as its body does, with its parameters
         // standing for themselves.
-        erase(apply(List.fill(arity)(Type.TypeRef(t"Any", Type.TermRefPkg(t"scala")))), aliasScope, vc)
+        val any = Type.TypeRef(t"Any", Type.TermRefPkg(t"scala"))
+        erase(apply(List.fill(arity)(any)), aliasScope, vc)
 
       case Resolution.Abstract(high, boundScope)  => erase(high, boundScope, vc)
       case Resolution.Term(underlying, termScope) => erase(underlying, termScope, vc)
@@ -286,8 +296,7 @@ class Erasure(universe: Universe):
         case arity: Int if arity >= 0 => Erased.Ref(functionClass(arity))
 
         case _ =>
-          if vc && info.isValueClass then valueClassErasure(info, arguments)
-          else Erased.Ref(name)
+          if vc && info.isValueClass then valueClassErasure(info, arguments) else Erased.Ref(name)
 
   // A derived value class erases to the erasure of its underlying type, with the class's type
   // arguments substituted; a primitive underlying that the class declares generically is boxed.
@@ -327,8 +336,8 @@ class Erasure(universe: Universe):
 
       case _ => Unset
 
-    def arrayUpperBound(tpe: Type, scope: Optional[Scope]): Optional[Text] = andOr(tpe, scope).lay(arrayUpperBound0(tpe, scope)):
-      arrayUpperBound0(_, scope)
+    def arrayUpperBound(tpe: Type, scope: Optional[Scope]): Optional[Text] =
+      andOr(tpe, scope).lay(arrayUpperBound0(tpe, scope))(arrayUpperBound0(_, scope))
 
     def arrayUpperBound0(tpe: Type, scope: Optional[Scope]): Optional[Text] = tpe match
       case Type.Foreign(path, inner) => arrayUpperBound(inner, universe.scope(path))
@@ -379,10 +388,15 @@ class Erasure(universe: Universe):
       case Type.Foreign(path, inner)     => abstractElement(inner, universe.scope(path))
       case Type.Annotated(underlying, _) => abstractElement(underlying, scope)
       case Type.Flexible(underlying)     => abstractElement(underlying, scope)
-      case Type.And(left, right)         => abstractElement(left, scope) || abstractElement(right, scope)
-      case Type.Or(left, right)          => abstractElement(left, scope) || abstractElement(right, scope)
-      case Type.Bounds(_, _, _)          => true
-      case Type.Param(_, _)              => true
+
+      case Type.And(left, right) =>
+        abstractElement(left, scope) || abstractElement(right, scope)
+
+      case Type.Or(left, right) =>
+        abstractElement(left, scope) || abstractElement(right, scope)
+
+      case Type.Bounds(_, _, _) => true
+      case Type.Param(_, _)     => true
 
       // An applied opaque type constructor is a higher-kinded abstraction to the compiler
       // (`isLambdaSub`), generic unless its expansion fits a JVM array; an applied transparent
@@ -535,6 +549,7 @@ class Erasure(universe: Universe):
       else
         val real1 = !isTrait(first)
         val real2 = !isTrait(second)
+
         if real1 && real2 then compareClasses
         else if real1 then -1
         else if real2 then 1
@@ -544,15 +559,16 @@ class Erasure(universe: Universe):
   // join elementwise, and two classes join at the last minimal common base class, preferring
   // classes over traits — or `Object`.
   def erasedLub(left: Erased, right: Erased): Erased = (left, right) match
-    case (Erased.Ref(first), other) if first == t"scala.Nothing"   => other
-    case (other, Erased.Ref(second)) if second == t"scala.Nothing" => other
+    case (Erased.Ref(first), other) if first == t"scala.Nothing"                            => other
+    case (other, Erased.Ref(second)) if second == t"scala.Nothing"                          => other
     // `Null | C` is `C` only for a `C` that derives from `Object`: a universal trait does not.
     case (Erased.Ref(first), other) if first == t"scala.Null" && derivesFromObject(other)   => other
     case (other, Erased.Ref(second)) if second == t"scala.Null" && derivesFromObject(other) => other
 
     case (Erased.Array(first), Erased.Array(second)) =>
       (first, second) match
-        case (Erased.Ref(a), Erased.Ref(b)) if Universe.primitives.contains(a) || Universe.primitives.contains(b) =>
+        case (Erased.Ref(a), Erased.Ref(b))
+          if Universe.primitives.contains(a) || Universe.primitives.contains(b) =>
           if a == b then Erased.Array(first) else Erased.Ref(Object)
 
         case _ => Erased.Array(erasedLub(first, second))
@@ -568,17 +584,21 @@ class Erasure(universe: Universe):
       def takeUntil(remaining: scala.List[Text], taken: scala.List[Text]): scala.List[Text] =
         remaining.headOption match
           case Some(head) =>
-            if isTrait(head) then (head :: taken).reverse else takeUntil(remaining.tail, head :: taken)
+            if isTrait(head) then (head :: taken).reverse
+            else takeUntil(remaining.tail, head :: taken)
 
           case None => taken.reverse
 
       val candidates = takeUntil(superclasses.stdlib, scala.List())
 
       val minimums = candidates.filter: candidate =>
-        candidate != t"scala.*:" && candidates.forall: x => !isSubClass(x, candidate) || x == candidate
+        candidate != t"scala.*:" && candidates.forall: x =>
+          !isSubClass(x, candidate) || x == candidate
 
       minimums.lastOption match
-        case Some(lub) => universe.classOf(lub).lay(Erased.Ref(lub))(classErasure(_, List(), vc = true))
+        case Some(lub) =>
+          universe.classOf(lub).lay(Erased.Ref(lub))(classErasure(_, List(), vc = true))
+
         case None      => Erased.Ref(Object)
 
   private def derivesFromObject(erased: Erased): Boolean = erased match
@@ -589,5 +609,6 @@ class Erasure(universe: Universe):
 
   private def isReference(erased: Erased): Boolean = erased match
     case Erased.Array(_)  => true
-    case Erased.Ref(name) => !Universe.primitives.contains(name) && name != t"scala.Nothing" && name != t"scala.Null"
 
+    case Erased.Ref(name) =>
+      !Universe.primitives.contains(name) && name != t"scala.Nothing" && name != t"scala.Null"

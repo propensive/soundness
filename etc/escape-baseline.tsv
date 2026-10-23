@@ -69,6 +69,8 @@ lib/contingency/src/core/contingency.Recovery.scala	0	0	0	0	0	0	0	0	1	0	0
 lib/contingency/src/core/contingency.Venture.scala	0	0	0	0	0	0	0	0	1	0	0
 lib/corpuscular/src/core/corpuscular_core.scala	0	0	0	0	0	6	0	0	0	0	0
 lib/corpuscular/src/test/corpuscular_test.scala	0	0	0	0	0	13	0	0	0	0	0
+lib/degustation/src/tasty/degustation.Classfile.scala	0	0	0	0	0	1	0	0	0	0	0
+lib/degustation/src/tasty/degustation.Unpickler.scala	0	0	0	0	0	1	0	0	0	0	0
 lib/degustation/src/test/degustation.Atomizer.scala	0	0	0	0	1	0	0	0	0	0	0
 lib/denominative/src/core/denominative.Terminable.scala	0	0	0	0	0	1	0	0	0	0	0
 lib/diuretic/src/core/diuretic.JavaIoFile.scala	0	0	0	1	0	0	0	0	0	0	0
@@ -463,4 +465,3 @@ lib/zephyrine/src/test/zephyrine_test.scala	0	26	1	0	1	0	0	0	3	2	0
 lib/zeppelin/src/core/zeppelin.Zip.scala	0	0	0	0	1	2	0	3	0	0	0
 lib/zeppelin/src/core/zeppelin.Zipfile.scala	0	0	0	0	2	0	0	0	0	0	0
 lib/zeppelin/src/test/zeppelin_test.scala	0	0	0	0	1	7	0	0	0	0	0
-lib/degustation/src/tasty/degustation.Unpickler.scala	0	0	0	0	0	1	0	0	0	0	0

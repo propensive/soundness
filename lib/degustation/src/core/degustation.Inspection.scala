@@ -39,7 +39,6 @@ import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 import anticipation.*
 import contingency.*
-import denominative.nil
 import fulminate.*
 import gossamer.*
 import murmuration.*
@@ -59,9 +58,9 @@ object Inspection:
   def atomize(tastyFiles: List[Text], classpath: List[Text])
   :   List[ScalaAtom] raises Inspection.Error =
 
-    val entries = classpath.map(entry => jnf.Paths.get(entry.s).nn)
+    val entries = classpath.map: entry => jnf.Paths.get(entry.s).nn
     val directories = entries.filter(jnf.Files.isDirectory(_))
-    val jars = entries.filter(entry => !jnf.Files.isDirectory(entry)).map(Jar(_))
+    val jars = entries.filter(!jnf.Files.isDirectory(_)).map(Jar(_))
     val sources: List[ClassSource] = directories.map(Directory(_)) + jars + List(Platform)
 
     try
@@ -74,24 +73,34 @@ object Inspection:
 
     catch
       case error: Degustation.Unencodable =>
-        if error.construct.s.startsWith("duplicate key ")
-        then abort(Inspection.Error(Reason.DuplicateKey(error.construct.s.drop("duplicate key ".length).tt)))
-        else abort(Inspection.Error(Reason.Unencodable(error.construct)))
+        val duplicate = "duplicate key "
 
-      case error: Erasure.Unresolved  => abort(Inspection.Error(Reason.Unencodable(error.detail)))
-      case error: Classfile.Malformed => abort(Inspection.Error(Reason.InspectionFailed(error.detail)))
+        val reason =
+          if error.construct.s.startsWith(duplicate)
+          then Reason.DuplicateKey(error.construct.s.drop(duplicate.length).tt)
+          else Reason.Unencodable(error.construct)
+
+        abort(Inspection.Error(reason))
+
+      case error: Erasure.Unresolved =>
+        abort(Inspection.Error(Reason.Unencodable(error.detail)))
+
+      case error: Classfile.Malformed =>
+        abort(Inspection.Error(Reason.InspectionFailed(error.detail)))
 
       case error: java.io.IOException =>
         abort(Inspection.Error(Reason.InspectionFailed(error.getMessage.nn.tt)))
 
-    finally jars.each(_.close())
+    finally
+      jars.each(_.close())
 
   // A file's classpath-relative path: relative to the classpath directory containing it when one
   // does, else its package's directory (read from the file itself) and its own name.
   private def relativePath(file: jnf.Path, data: Data, directories: List[jnf.Path]): Text =
-    directories.seek(directory => file.startsWith(directory)) match
+    directories.seek(file.startsWith(_)) match
       case directory: jnf.Path =>
-        directory.relativize(file).nn.toString.replace(jnf.FileSystems.getDefault.nn.getSeparator.nn, "/").nn.tt
+        val separator = jnf.FileSystems.getDefault.nn.getSeparator.nn
+        directory.relativize(file).nn.toString.replace(separator, "/").nn.tt
 
       case _ =>
         val scope = Universe.index(t"", Unpickler(data))
@@ -99,13 +108,15 @@ object Inspection:
         val name = file.getFileName.nn.toString.tt
 
         packages.prim match
-          case pkg: Text if pkg != t"" && pkg != t"<empty>" => t"${pkg.s.replace('.', '/').nn}/$name"
-          case _                                           => name
+          case pkg: Text if pkg != t"" && pkg != t"<empty>" =>
+            t"${pkg.s.replace('.', '/').nn}/$name"
+
+          case _ => name
 
   private def read(path: jnf.Path): Data = data(jnf.Files.readAllBytes(path).nn)
 
   private def data(bytes: scala.Array[Byte]): Data =
-    Data.build(bytes.length)(array => java.lang.System.arraycopy(bytes, 0, array, 0, bytes.length))
+    Data.build(bytes.length): array => java.lang.System.arraycopy(bytes, 0, array, 0, bytes.length)
 
   private class Directory(root: jnf.Path) extends ClassSource:
     def read(path: Text): Optional[Data] =
@@ -117,9 +128,11 @@ object Inspection:
 
       if jnf.Files.isDirectory(dir) then
         val stream = jnf.Files.list(dir).nn
+
         try List.from(stream.iterator.nn.asScala.map(_.nn.getFileName.nn.toString.tt))
         finally stream.close()
-      else List()
+      else
+        List()
 
   private class Jar(path: jnf.Path) extends ClassSource:
     private val zip = juz.ZipFile(path.toFile)
@@ -127,12 +140,13 @@ object Inspection:
     private lazy val entries: Map[Text, List[Text]] =
       val names = List.from(zip.entries.nn.asScala.map(_.nn.getName.nn))
 
-      names.group: name =>
-        name.lastIndexOf('/') match
-          case -1    => t""
-          case index => name.substring(0, index).nn.tt
-      . map: group =>
-          group.map(name => name.substring(name.lastIndexOf('/') + 1).nn.tt)
+      def directoryOf(name: String): Text = name.lastIndexOf('/') match
+        case -1    => t""
+        case index => name.substring(0, index).nn.tt
+
+      def simpleName(name: String): Text = name.substring(name.lastIndexOf('/') + 1).nn.tt
+
+      names.group(directoryOf).map(_.map(simpleName))
 
     def read(path: Text): Optional[Data] =
       Optional(zip.getEntry(path.s)).let: entry =>
