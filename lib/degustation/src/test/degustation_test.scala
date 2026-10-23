@@ -377,7 +377,14 @@ object Tests extends Suite("atoms", m"Degustation Tests"):
         . filter { path => path.toString.endsWith(".tasty") }
         . map { path => Text(path.toString) }
 
-      val corpusClasspath = (Text(corpus.toString) :: libraryPaths).to(List)
+      // The module's dependencies are resolved from the build's own output, which carries every
+      // library the corpus module refers to.
+      val outputs = Files.walk(Paths.get(Workspace.root, "out").nn, 4).nn.iterator.nn.asScala.to(scala.List)
+        . filter { path => path.endsWith("compile.dest/classes") && Files.isDirectory(path) }
+        . filter { path => !path.toString.contains("/test/") }
+        . map { path => Text(path.toString) }
+
+      val corpusClasspath = (outputs ++ libraryPaths).to(List)
 
       test(m"a real module's TASTy atomizes without vocabulary gaps"):
         Inspection.atomize(corpusTasty.to(List), corpusClasspath).stdlib.size
