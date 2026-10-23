@@ -211,6 +211,15 @@ item
   criterion  the soundness.dev front-end ships as Soundness-compiled Scala.js with all web API access through generated typed facades, in the ordinary build
 
 item
+  id plat-7
+  track platforms
+  horizon mid
+  status open
+  needs plat-3
+  baseline  degustation.core (1,179 lines) drives scala3-tasty-inspector over the compiler's reflection; JVM-only (2026-10-23)
+  criterion  degustation.core depends on tasty-core, not the compiler; builds for JavaScript and Native; atomizes the Soundness corpus identically to the compiler-driven atomizer; tasty.md describes tasty/2
+
+item
   id api-1
   track api
   horizon near
