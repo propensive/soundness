@@ -177,9 +177,19 @@ verification is differential: run the new atomizer and the compiler-driven one o
 "a real module's TASTy atomizes" tests are the seed of that corpus — before the compiler-driven
 one is retired.
 
+Progress (2026-10-23, branch `degustation-tasty`): option 1 built. `degustation.tasty` holds the
+data model, the reader, the classpath `Universe`, `Erasure` and `Degustation.atomize`, and
+crosses to all three platforms; `degustation.core` keeps `Inspection.atomize` as its filesystem
+face (directories and jars through `java.util.zip`, the JDK's classes through the platform
+class loader) and is JVM-only for that reason, with no compiler dependency. Over the 147 build
+modules the atoms are byte-identical to the compiler-driven atomizer's except where the
+compiler's output was an artifact of the run (`tasty.md` §16); the compiler-driven atomizer is
+the test suite's oracle. `tasty.md` describes `tasty/2`.
+
 Done when: `degustation.core` depends on `tasty-core` and not on the compiler, builds for
-JavaScript and Native, and atomizes the Soundness corpus identically to the compiler-driven
-atomizer it replaces; `tasty.md` describes `tasty/2`.
+JavaScript and Native (or its filesystem face is shown to be the only JVM residue, and a
+Native build tool can supply the JDK's classes as a jar), and atomizes the Soundness corpus
+identically to the compiler-driven atomizer it replaces; `tasty.md` describes `tasty/2`.
 
 ## plat-6: the browser is a first-class application target
 
