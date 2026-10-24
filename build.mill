@@ -69,7 +69,7 @@ object settings:
   // `scalaVersion` is the *coordinate* version the toolchain force-versions every artifact to; it
   // must match the version string the jars were built with (`compiler.properties`), or
   // coursier/zinc caches poison each other across compilers.
-  val scalaRelease = sys.env.getOrElse("SOUNDNESS_SCALA_RELEASE", "1.0.3")
+  val scalaRelease = sys.env.getOrElse("SOUNDNESS_SCALA_RELEASE", "1.0.4")
   val scalaBase = sys.env.getOrElse("SOUNDNESS_SCALA_BASE", "3.10.0")
   val scalaVersion = sys.env.getOrElse("SOUNDNESS_SCALA_VERSION",
     if scalaRelease.matches("[0-9]+\\.[0-9]+\\.[0-9]+") then s"$scalaBase-pro-$scalaRelease"
@@ -87,8 +87,10 @@ object settings:
   // Scala Native cross-compilation. The stock published `nscplugin`/`scala3lib_native` for the
   // upstream base version work unchanged with the fork compiler (the plugin is keyed to the base
   // Scala version, and the fork stays TASTy/plugin-compatible), so — unlike the Scala.js stdlib —
-  // no fork-republished Native artifacts are needed. `scalaNativeScalaVersion` is the *base*
-  // version those artifacts are published for (the fork's `-propensive` suffix is dropped).
+  // the Native stdlib needs no fork republication; only the fork's own additions do (its
+  // `proscala-library_native0.5_3` and `tasty-core_native0.5_3`, served from `toolchain.repo`).
+  // `scalaNativeScalaVersion` is the *base* version the stock artifacts are published for (the
+  // fork's `-propensive` suffix is dropped).
   val scalaNativeVersion = "0.5.12"
   // On 3.9, the nearest published base version (no RC4 Native artifacts yet; TASTy-identical
   // to RC4). The plugin is built against compiler internals, so the 3.10 stream needs the
@@ -290,6 +292,14 @@ object toolchain extends Module:
         (sl, "scala-library", v))),
       (sl, "scala3-interfaces", "scala3-interfaces.jar", v, Seq()),
       (sl, "tasty-core_3", "tasty-core.jar", v, Seq((sl, "scala-library", v))),
+      // The compiler-free TASTy reader for the other two platforms (`hyperbole.tasty` reads
+      // through it), and the fork's additions as NIR (`scala.caps.SharedUnscoped`, which every
+      // Native link reaches through `contingency.ThrowTactic`; see `nativeToolchain.runtimeDeps`).
+      // Their stdlib dependencies are resolved by `.js`/`.native` modules through their own deps,
+      // so, like `proscala-library_sjs1_3`, they declare none here.
+      (sl, "tasty-core_sjs1_3", "tasty-core_sjs1.jar", v, Seq((sl, "scala-library", v))),
+      (sl, "tasty-core_native0.5_3", "tasty-core_native0.5.jar", v, Seq((sl, "scala-library", v))),
+      (sl, "proscala-library_native0.5_3", "proscala-library_native0.5.jar", v, Seq()),
       (sl, "scala3-compiler_3", "scala3-compiler.jar", v, Seq(
         (sl, "scala3-interfaces", v),
         (sl, "tasty-core_3", v),
@@ -530,6 +540,9 @@ object nativeToolchain extends mill.javalib.CoursierModule:
   // once — routing them through `unmanagedClasspath`/`mvnDeps` instead multiplies the C runtime
   // across the module graph and the C linker then rejects the duplicate symbols.
   val runtimeDeps: Seq[mill.javalib.Dep] = Seq(
+    // The fork's standard-library additions as NIR, from the Proscala release (`toolchain.repo`):
+    // `contingency.ThrowTactic` extends `scala.caps.SharedUnscoped`, so every Native link needs it.
+    mvn"org.scala-lang:proscala-library_native0.5_3:${settings.scalaVersion}",
     mvn"org.scala-native:scala3lib_native0.5_3:$snsv+$snv",
     mvn"org.scala-native:javalib_native0.5_3:$snv",
     mvn"org.scala-native:auxlib_native0.5_3:$snv",
@@ -1868,14 +1881,23 @@ object dendrology extends Library:
       settings.sep(super.scalacOptions())
 
 object degustation extends Library:
-  object core extends Component(anticipation.codec, contingency.core, fulminate.core,
+  // The TASTy data model, its reader over `tasty-core`, the classpath universe and erasure — the
+  // compiler-free semantic layer the atomizer is being moved onto (roadmap plat-7). Crosses to
+  // every platform; the platform-suffixed `tasty-core` coordinate resolves to each variant.
+  object tasty extends Component(anticipation.codec, contingency.core, fulminate.core,
       gossamer.core, vacuous.core):
-    override def scalaJs = false // wraps the Scala compiler's TASTy unpickler
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
-    def compileMvnDeps = Seq(
-      mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
-      mvn"org.scala-lang:scala3-tasty-inspector_3:${scalaVersion()}")
+    def mvnDeps = Seq(mvn"org.scala-lang::tasty-core::${scalaVersion()}")
+
+  // The filesystem face of `tasty`: atomizes `.tasty` files on disk against a classpath of
+  // directories and jars. Compiler-free since plat-7; JVM-only for `java.util.zip` and the JDK's
+  // classes, which the Scala library's types ultimately rest on.
+  object core extends Component(tasty, anticipation.codec, contingency.core, fulminate.core,
+      gossamer.core, vacuous.core):
+    override def scalaJs = false // reads classpath directories and jars from the filesystem
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
 
   object test extends Tests(core, eucalyptus.core, anthology.`scala`, hellenism.jvm,
       imperial.core):
@@ -2570,14 +2592,13 @@ object hieroglyph extends Library:
 object hyperbole extends Library:
   // The TASTy data model and its byte-level reader — no compiler `Context`, no classpath, no
   // filesystem: `Tasty.parse` takes raw bytes, so a debugger can feed it TASTy fetched over a
-  // wire. The compiler dependency (the unpickler's classes) is compile-only; the caller's
-  // runtime classpath supplies the compiler it drives, as for `anthology`.
+  // wire. It reads through `tasty-core` alone (the format's constants, byte reader and header
+  // check; no compiler), which the fork publishes for every platform, so the component crosses
+  // to Scala.js and Scala Native; the platform-suffixed coordinate resolves to each.
   object tasty extends Component(digression.core, gossamer.core, rudiments.core):
-    override def scalaJs = false // drives the JVM compiler's TASTy unpickler
-    override def scalaNative = false
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
-    def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+    def mvnDeps = Seq(mvn"org.scala-lang::tasty-core::${scalaVersion()}")
 
   object core extends Component(tasty, harlequin.core, escapade.core, escritoire.core,
       dendrology.tree):
@@ -2588,8 +2609,7 @@ object hyperbole extends Library:
 
   // Resolves the frames of a runtime stack trace against the TASTy written beside the classfiles,
   // naming the source definitions the compiled names were derived from. Split from `core` because
-  // it reads TASTy files rather than introspecting trees during macro expansion, but it shares
-  // `core`'s dependency on the compiler, which supplies the header and name-table readers.
+  // it reads TASTy files (through `tasty`) rather than introspecting trees during macro expansion.
   object stacks extends Component(core, ambience.core, galilei.jvm, hellenism.jvm, mandible.core):
     override def scalaJs = false // depends on JVM-only `hyperbole.core` and the filesystem
     override def scalacOptions = Task:
@@ -4162,7 +4182,7 @@ object nativelink extends Module:
     def compileResources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "nativelink" / "res")
     def compileMvnDeps = nativeToolchain.runtimeDeps
     override def mainClass = Some("nativelink.Main")
-    override def moduleDeps = Seq(
+    override def moduleDeps = Seq(guillotine.core.native) ++ Seq(
       vacuous.core.native, xenophile.scalanative.native, gossamer.core.native,
       hypotenuse.core.native, spectacular.core.native, aviation.core.native, galilei.core.native,
       ambience.core.native, coaxial.core.native, enigmatic.openssl.native, parasite.core.native)
@@ -4203,7 +4223,7 @@ object nativelink extends Module:
   // plugin, excluded from the native cross, so its `CompileError` values cannot exist at native
   // link time). To enrol a suite, add its module name here and its mapping in
   // `NativeSuite.testModule`.
-  object suite extends Cross[NativeSuite]("hypotenuse", "denominative", "monotonous")
+  object suite extends Cross[NativeSuite]("hypotenuse", "denominative", "monotonous", "imperial")
 
   // The JVM test module's sources compiled with the same `Tests`-trait flags (larceny and
   // beneficence plugins, `settings.sep`) plus `nscplugin` for NIR, against the `.native` variants
@@ -4214,10 +4234,11 @@ object nativelink extends Module:
       case "hypotenuse"   => hypotenuse.test
       case "denominative" => denominative.test
       case "monotonous"   => monotonous.test
+      case "imperial"     => imperial.test
 
     def scalaVersion = settings.scalaVersion
     def scalacOptions = Task:
-      settings.sep(settings.scalaOptions)
+      settings.sep(settings.scalaOptions ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
         :+ s"-Xplugin:${larceny.plugin.assembly().path}"
         :+ s"-Xplugin:${beneficence.plugin.assembly().path}"
         :+ s"-Xplugin:${nativeToolchain.nscplugin().path}"
@@ -4238,8 +4259,14 @@ object nativelink extends Module:
            |import anticipation.*
            |
            |object NativeMain:
-           |  def main(arguments: Array[String]): Unit =
-           |    val terms: String = arguments.mkString("\\n")
+           |  def main(arguments: scala.Array[String]): Unit =
+           |    val builder = java.lang.StringBuilder()
+           |    var index = 0
+           |    while index < arguments.length do
+           |      if index > 0 then builder.append('\\n')
+           |      builder.append(arguments(index))
+           |      index += 1
+           |    val terms: String = builder.toString.nn
            |    val status: Int = ${crossValue}.Tests.invoke(terms.tt, { (event: probably.TestEvent) => () })
            |    java.lang.System.exit(status)
            |""".stripMargin,

@@ -120,6 +120,19 @@ object Tests extends Suite("atoms", m"Degustation Tests"):
       . map { atom => (atom.key, atom.encoding.serialize[Hex]) }
       . sortBy(_(0).s)
 
+    // The same source atomized by the compiler-driven oracle (`tasty/1`'s reference
+    // implementation), for the differential tests: key, class, encoding and references.
+    def oracleListing(source: Text): scala.List[(Text, Boolean, Text, scala.List[Text])] =
+      compileWith(source, classpath, libraryPaths, false): (tastyFiles, classpath0) =>
+        degustation.Oracle.atomize(tastyFiles, classpath0).stdlib
+        . map { atom => (atom.key, atom.replaceable, atom.encoding.serialize[Hex], atom.references.stdlib.map(_.toString.tt)) }
+        . sortBy(_(0).s)
+
+    def fullListing(source: Text): scala.List[(Text, Boolean, Text, scala.List[Text])] =
+      atomize(source)
+      . map { atom => (atom.key, atom.replaceable, atom.encoding.serialize[Hex], atom.references.stdlib.map(_.toString.tt)) }
+      . sortBy(_(0).s)
+
     lazy val baseline = listing(fixture)
     lazy val keys = baseline.map(_(0).s).toSet
 
@@ -291,6 +304,60 @@ object Tests extends Suite("atoms", m"Degustation Tests"):
        nestedRefs.exists { ref => ref.startsWith("own:refs.outer(") && ref.endsWith("[inline]") })
     . assert(_ == (true, true, true))
 
+    // The compiler-free atomizer must produce exactly what the compiler-driven oracle produces:
+    // every key, class, encoding and reference list, over each fixture the suite uses.
+    val differentialFixtures: scala.List[(String, Text)] = scala.List(
+      "fixture" -> fixture,
+      "qualified-private" -> t"""|package fixture
+          |
+          |class Scoped:
+          |  private[fixture] def limited: Int = 0
+          |  private def hidden: Int = 0
+          |""".s.stripMargin.tt,
+      "export forwarder" -> t"""|package fixture
+          |
+          |object Impl:
+          |  def value: Int = 3
+          |
+          |object Front:
+          |  export Impl.value
+          |""".s.stripMargin.tt,
+      "inline references" -> t"""|package refs
+          |
+          |def helper(n: Int): Int = n + 1
+          |inline def outer(n: Int): Int = helper(n) * 2
+          |inline def nested(n: Int): Int = outer(n) + 1
+          |""".s.stripMargin.tt,
+      "typeclasses and refinements" -> t"""|package shapes
+          |
+          |trait Show:
+          |  type Self
+          |  def show(value: Self): String
+          |
+          |object Show:
+          |  given int: Show { type Self = Int } = new Show:
+          |    type Self = Int
+          |    def show(value: Int): String = value.toString
+          |
+          |enum Colour:
+          |  case Red, Green
+          |
+          |class Box[+element](val value: element):
+          |  def map[result](lambda: element => result): Box[result] = Box(lambda(value))
+          |
+          |inline def render[value](value: value)(using show: Show { type Self = value }): String =
+          |  show.show(value)
+          |
+          |def first(values: Array[Int] | Null): Int = 0
+          |""".s.stripMargin.tt)
+
+    differentialFixtures.foreach: (name, source) =>
+      test(m"the compiler-free atomizer agrees with the compiler oracle: $name"):
+        val ours = fullListing(source)
+        val theirs = oracleListing(source)
+        ours.zip(theirs).find(_ != _).map(_.toString.take(600)).getOrElse(s"${ours.length}/${theirs.length}")
+      . assert(_ == s"${oracleListing(source).length}/${oracleListing(source).length}")
+
     test(m"adding a sealed child changes the sealed template's atom"):
       val extended = Text(fixture.s.replace("object Beta extends Choice",
           "object Beta extends Choice\ncase class Gamma(y: Int) extends Choice").nn)
@@ -310,7 +377,14 @@ object Tests extends Suite("atoms", m"Degustation Tests"):
         . filter { path => path.toString.endsWith(".tasty") }
         . map { path => Text(path.toString) }
 
-      val corpusClasspath = (Text(corpus.toString) :: libraryPaths).to(List)
+      // The module's dependencies are resolved from the build's own output, which carries every
+      // library the corpus module refers to.
+      val outputs = Files.walk(Paths.get(Workspace.root, "out").nn, 4).nn.iterator.nn.asScala.to(scala.List)
+        . filter { path => path.endsWith("compile.dest/classes") && Files.isDirectory(path) }
+        . filter { path => !path.toString.contains("/test/") }
+        . map { path => Text(path.toString) }
+
+      val corpusClasspath = (outputs ++ libraryPaths).to(List)
 
       test(m"a real module's TASTy atomizes without vocabulary gaps"):
         Inspection.atomize(corpusTasty.to(List), corpusClasspath).stdlib.size

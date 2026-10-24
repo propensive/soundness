@@ -32,10 +32,7 @@
                                                                                                   */
 package hyperbole
 
-import dotty.tools.dotc.core.tasty.TastyUnpickler
-
 import anticipation.*
-import rudiments.*
 import vacuous.*
 
 private[hyperbole] object TastyFiles:
@@ -46,19 +43,13 @@ private[hyperbole] object TastyFiles:
     try
       val bytes = new scala.Array[Byte](data.length)
       System.arraycopy(Array.unsafeJvm(data), 0, bytes, 0, data.length)
-      // The compiler's unpickler takes a pure array; `bytes` is freshly allocated just above.
-      // [java-boundary] fresh array passed to compiler's unpickler
-      val unpickler = TastyUnpickler(scala.caps.unsafe.unsafeAssumePure(bytes))
-      val positions = unpickler.unpickle(stacksInternal.PositionSection())
+      // `tasty-core`'s reader takes a pure array; `bytes` is freshly allocated just above.
+      // [java-boundary] fresh array passed to tasty-core's reader
+      val unpickler = stacksInternal.Unpickler(scala.caps.unsafe.unsafeAssumePure(bytes))
 
-      positions.map: positions =>
-        val definitions =
-          unpickler.unpickle(stacksInternal.DefinitionSection(positions)).getOrElse(Nil)
-
-        val path = unpickler.unpickle(stacksInternal.AttributeSection()).getOrElse(Unset)
-
+      unpickler.unpickle(stacksInternal.PositionSection()).let: positions =>
+        val definitions = unpickler.unpickle(stacksInternal.DefinitionSection(positions)).or(Nil)
+        val path: Optional[Text] = unpickler.unpickle(stacksInternal.AttributeSection())
         Tasty.File(path, definitions)
-
-      . getOrElse(Unset)
 
     catch case error: Throwable => Unset

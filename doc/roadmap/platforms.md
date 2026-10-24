@@ -52,8 +52,9 @@ Native coverage is verified by the real binary link check throughout, not compil
 Done when: the manifest shows no JavaScript or Native exclusion whose reason is not inherent,
 and the Native link check covers every Native-capable module.
 
-The one known non-inherent Native gap is guillotine's pseudo-terminal: `Command#pty` raises on
-Native until it is rewritten over posixlib's `posix_openpt` (the JVM one is Panama). Closed on
+No known non-inherent Native gap remains. Closed on 2026-10-22: guillotine's pseudo-terminal,
+rewritten over Scala Native's C interop (`posix_openpt`, `posix_spawn`, `poll`; the JVM one is
+Panama), so `Command#pty` runs real terminals on Native. Closed on
 2026-10-21: coaxial's native backend joins multicast groups (bringing syndesis to Native);
 telekinesis's `soundnessHttp` client moved into the cross-compiling `telekinesis.sockets`, giving
 Native an `Http.Backend` (HTTP/1.1, over coaxial's OpenSSL connection for `https`); and
@@ -69,11 +70,14 @@ contract is synchronous, so it needs the fork's `js.async`/`js.await` proven und
 backend first (plat-6); with that, Web Crypto slots in as an alternative provider for the
 primitives it has, without an API change.
 
-The link check itself needs reviving before it can be widened: `mill nativelink.testSuites` is
-outside `make attest`, two of its three enrolled suites (denominative, monotonous) no longer
-compile natively, and `nativelink.binary` itself — like any binary reaching
-`contingency.ThrowTactic` — fails to link because the Native scalalib has no
-`scala.caps.SharedUnscoped` (measured 2026-10-21, while enrolling imperial).
+The link check links again (2026-10-22): Proscala 1.0.4 publishes its supplementary library as
+`proscala-library_native0.5_3`, so `scala.caps.SharedUnscoped` (which every Native link reaches
+through `contingency.ThrowTactic`) has NIR from the toolchain itself, through
+`nativeToolchain.runtimeDeps`; the one-trait `nativelink.shim` that bridged the gap is gone. The
+same release carries `tasty-core` for Scala.js and Scala Native, which is what lets
+`hyperbole.tasty` read TASTy on both without the compiler. `nativelink.binary` runs on every
+attest, exercising the FFI, filesystem, sockets, supervisors, the pseudo-terminal and OpenSSL;
+widening it to every Native-capable module (and reviving `nativelink.testSuites`) remains.
 
 ## plat-4: WASI beyond the first seven backends
 
@@ -110,6 +114,82 @@ manifest's reasons are themselves the completion signal.
 
 Done when: every exclusion reason in `doc/compatibility.tsv` describes an inherent platform
 limitation, and a reason vocabulary check in CI enforces the distinction.
+
+## plat-7: degustation atomizes TASTy without the compiler
+
+Horizon: mid
+Needs: plat-3
+Baseline: `degustation.core` (1,179 lines) drives `scala3-tasty-inspector` over the compiler's reflection; JVM-only, with `scala3-compiler_3` on its classpath (measured 2026-10-23)
+
+degustation — the `tasty/1` atomizer behind LIRA's Scala discipline — is the last module
+kept off JavaScript and Native by the compiler for a reason that is not inherent: the
+discipline is *defined* over the compiler's semantic model (`tasty.md` §4), so the atomizer
+pattern-matches `quotes.reflect` types and asks symbols for their `fullName`, `signature`,
+`children` and flags. Proscala 1.0.4 publishes `tasty-core` for all three platforms, and
+`hyperbole.tasty` already reads TASTy through it, so the question is what degustation needs
+beyond the bytes. Scoped on 2026-10-23:
+
+- **Structural, and free from raw TASTy**: modifiers (`tasty/1`'s whole flag set,
+  `PRIVATEqualified` for the visibility rule, `ARTIFACT`/`SYNTHETIC`), annotations (including
+  the `@Child` annotations that are the sealed/enum child list, in declaration order), a
+  template's parents, self type, type parameters and declarations, every member's declared
+  type (parameter and result `tpt`s, bounds, aliases), inline and macro bodies as trees with
+  local symbols addressable for alpha-normalization, package-qualified references
+  (`TERMREFpkg`/`TYPEREFpkg`), and — on the *referencing* side — the erased signature itself,
+  which every `TERMREF` to an overloaded member carries in its `SIGNED` name. The compiler's
+  `LazyRef` placeholders, which §7 has to special-case, do not exist in the file.
+- **Semantic, and needing a model of the dependency classpath**: two things only. (1) The
+  erased-signature disambiguator of a *declaration*'s key (§6): erasing a declared parameter
+  type means dealiasing it, erasing an opaque type and a value class to their underlying
+  types, a type-parameter reference to its bound, and an intersection by the class/trait
+  distinction of its parts — each of which asks what a referenced type *is*, in a dependency's
+  TASTy or a Java classfile. (2) The declaring owner of a selected member (§6 "keying is by
+  declaration", `TastyDiscipline`): `foo.bar` pickles as `bar`'s signed name against `foo`'s
+  type, and finding that `bar` is declared in `Base` is a member lookup along `Foo`'s parents.
+  Neither needs subtyping, type inference, as-seen-from substitution or completion order; both
+  need the classpath loaded lazily, which is what `tasty-query` exists to do.
+
+Three ways to close it:
+
+1. **Own semantic layer over `tasty-core`** (recommended): a tree unpickler into plain data
+   (~2,000 lines; `hyperbole.tasty` contributes the header and name table), a lazy classpath
+   loader over directories and jars with a Java classfile reader for class kind, type
+   parameters and member descriptors (~1,200), Scala 3 erasure and signature spelling (~900,
+   after dotc's `TypeErasure` and `Signature`), member lookup along parents (~300), and the
+   atomizer re-expressed over the data model (~1,200, the encoding rules unchanged). Roughly
+   6,000 lines against `tasty-query`'s 19,000, because degustation needs none of its
+   subtyping, type maps or Scala 2 pickle reader.
+2. **Depend on `tasty-query`**: ~1,000 lines changed, but a 19,000-line dependency published
+   for the JVM and Scala.js only — Native would need a cross-build published by us, as
+   Proscala now does for `tasty-core` — whose erasure and member resolution are its own
+   reimplementation of the compiler's, with the same coupling to each Scala release.
+3. **Leave it on the compiler** and classify the exclusion as inherent: atomization runs at
+   assembly and publish time, where a JVM is at hand. Honest today, but it rules out
+   atomizing from a Native or Wasm build tool, which is the reason to want it.
+
+Either of the first two is a new discipline, `tasty/2` (`tasty.md` §1: any change to the
+canonicalization is a new discipline): §4 extraction over raw TASTy instead of the compiler's
+model; §6, §11 and §12 spelling erasure as the discipline defines it rather than "as the
+compiler computes it"; §7 losing the `LazyRef` clause; §14's promise becoming checkable in
+fact, since two toolchains can no longer disagree about a model only one of them builds. The
+verification is differential: run the new atomizer and the compiler-driven one over every
+`.tasty` Soundness publishes and demand identical (key, class, value) listings — the existing
+"a real module's TASTy atomizes" tests are the seed of that corpus — before the compiler-driven
+one is retired.
+
+Progress (2026-10-23, branch `degustation-tasty`): option 1 built. `degustation.tasty` holds the
+data model, the reader, the classpath `Universe`, `Erasure` and `Degustation.atomize`, and
+crosses to all three platforms; `degustation.core` keeps `Inspection.atomize` as its filesystem
+face (directories and jars through `java.util.zip`, the JDK's classes through the platform
+class loader) and is JVM-only for that reason, with no compiler dependency. Over the 147 build
+modules the atoms are byte-identical to the compiler-driven atomizer's except where the
+compiler's output was an artifact of the run (`tasty.md` §16); the compiler-driven atomizer is
+the test suite's oracle. `tasty.md` describes `tasty/2`.
+
+Done when: `degustation.core` depends on `tasty-core` and not on the compiler, builds for
+JavaScript and Native (or its filesystem face is shown to be the only JVM residue, and a
+Native build tool can supply the JDK's classes as a jar), and atomizes the Soundness corpus
+identically to the compiler-driven atomizer it replaces; `tasty.md` describes `tasty/2`.
 
 ## plat-6: the browser is a first-class application target
 

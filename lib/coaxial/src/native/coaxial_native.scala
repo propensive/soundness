@@ -95,6 +95,11 @@ private def interfacesOf(interfaces: List[NetworkInterface]): List[jn.NetworkInt
         case nic: jn.NetworkInterface => nic :: interfacesOf(tail)
         case _                        => interfacesOf(tail)
 
+// The wildcard address of either family, for binds: Scala Native's `InetSocketAddress(port)`
+// constructor leaves the host name null, which its `bind` then rejects.
+private def wildcard(ipv6: Boolean): jn.InetAddress =
+  jn.InetAddress.getByAddress(new scala.Array[Byte](if ipv6 then 16 else 4)).nn
+
 // The `DatagramSize` option, consumed by the backend rather than set on the socket.
 private def datagramSize(options: List[Socket.Option]): Int = options match
   case Nil                                      => 1472
@@ -206,7 +211,9 @@ package socketBackends:
       // (Selecting the multicast interface needs `DatagramSocket.setOption`, absent from Scala
       // Native's javalib; unsupported for now — `interface` is ignored for UDP.)
 
-      socket.bind(jn.InetSocketAddress(port.number))
+      // The explicit wildcard address: Scala Native's `InetSocketAddress(port)` leaves the host
+      // name null, which its `bind` then rejects.
+      socket.bind(jn.InetSocketAddress(wildcard(false), port.number))
       UdpBinding(socket, datagramSize(options))
 
     def receive(binding: UdpBinding): Packet raises Socket.Error =
@@ -279,8 +286,11 @@ package socketBackends:
 
     //── Multicast group membership (`Multicast`) ───────────────────────────────────────────────
     // Scala Native's javalib has no `DatagramChannel`, but its `DatagramSocket` has the Java 14
-    // `joinGroup(SocketAddress, NetworkInterface)` and the `setOption` the multicast options need,
-    // so the construction is the JVM backend's over a socket rather than a channel.
+    // `joinGroup(SocketAddress, NetworkInterface)`, so the construction is the JVM backend's over
+    // a socket rather than a channel. It declares `setOption` but does not implement it (the
+    // linker finds no body), so the outgoing interface cannot be selected per send and the
+    // multicast options are not applied: a send to the group goes once, by the kernel's default
+    // multicast route, rather than once per joined interface.
     def joinMulticast
       ( multicast: Multicast, interfaces: List[NetworkInterface], options: List[Socket.Option] )
     :   MulticastBinding =
@@ -292,7 +302,8 @@ package socketBackends:
       val socket = jn.DatagramSocket(null: jn.SocketAddress | Null)
       socket.setReuseAddress(true)
       configure(socket, options)
-      socket.bind(jn.InetSocketAddress(multicast.port.number))
+      val anyAddress = wildcard(group.isInstanceOf[jn.Inet6Address])
+      socket.bind(jn.InetSocketAddress(anyAddress, multicast.port.number))
 
       // The wildcard join picks one interface arbitrarily, so the group is joined on each
       // interface by name — each interface that has an address of the group's family, since the
@@ -322,12 +333,15 @@ package socketBackends:
 
         jn.InetSocketAddress(address, binding.port)
 
+      // Scoped to the first joined interface when the group is link-local IPv6; the kernel picks
+      // the outgoing interface (see `joinMulticast`).
+      val target = binding.interfaces match
+        case nic :: _ => destination(nic)
+        case _        => jn.InetSocketAddress(binding.group, binding.port)
+
       try binding.synchronized:
-        binding.interfaces.each: nic =>
-          binding.socket.setOption(jn.StandardSocketOptions.IP_MULTICAST_IF, nic)
-          val target = destination(nic)
-          val packet = jn.DatagramPacket(bytes, bytes.length, target.getAddress, target.getPort)
-          binding.socket.send(packet)
+        val packet = jn.DatagramPacket(bytes, bytes.length, target.getAddress, target.getPort)
+        binding.socket.send(packet)
       catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Transmit))
 
     def sendTo(binding: MulticastBinding, destination: Ipv4 | Ipv6, port: Udp.Port, data: Data)
@@ -549,12 +563,9 @@ private[coaxial] def configure(socket: jn.DatagramSocket, options: List[Socket.O
       override def reuseAddress(): Unit = socket.setReuseAddress(true)
       override def broadcast(): Unit = socket.setBroadcast(true)
 
-      override def multicastLoop(): Unit =
-        socket.setOption(jn.StandardSocketOptions.IP_MULTICAST_LOOP, Boolean.box(true))
-
-      override def multicastHops(count: Int): Unit =
-        socket.setOption(jn.StandardSocketOptions.IP_MULTICAST_TTL, Int.box(count))
-
+      // `MulticastLoop` and `MulticastHops` need `DatagramSocket.setOption`, which Scala Native's
+      // javalib declares but does not implement; they are left at the kernel's defaults (loopback
+      // on, one hop).
       override def receiveBuffer(bytes: Int): Unit = socket.setReceiveBufferSize(bytes)
       override def sendBuffer(bytes: Int): Unit = socket.setSendBufferSize(bytes)
       override def trafficClass(value: Int): Unit = socket.setTrafficClass(value)
