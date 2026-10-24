@@ -444,6 +444,15 @@ object Syntax:
           Unset
 
 
+  // Whether a type constructor is `NamedTuple.NamedTuple`, by its symbol. A subtype check
+  // against the unpickled type asserts (`NoDenotation.owner`) outside a macro expansion for an
+  // applied type whose head is an opaque type seen from outside its scope — proscenium's
+  // `List`, `Map` and `Optional`, say, from a tool rendering a classpath's signatures — so the
+  // type is recognised without one.
+  private def isNamedTuple(using Quotes)(base: quotes.reflect.TypeRepr): Boolean =
+    val symbol = base.typeSymbol
+    !symbol.isNoSymbol && symbol.name == "NamedTuple" && symbol.owner.name == "NamedTuple$"
+
   def apply(using Quotes)(using bindings: Bindings = Bindings())
     ( repr: quotes.reflect.TypeRepr, retry: Boolean = true )
   :   Syntax =
@@ -583,7 +592,7 @@ object Syntax:
           else if defn.isTupleClass(base.typeSymbol)
           then
             Sequence('(', (arguments0.map(apply(_))).to(List))
-          else if base <:< TypeRepr.of[NamedTuple.NamedTuple]
+          else if isNamedTuple(base)
           then
             arguments0(0).absolve match
               case AppliedType(_, names) => apply(arguments0(1)).absolve match
