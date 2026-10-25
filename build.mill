@@ -1060,7 +1060,7 @@ object soundness extends Toolchain:
     superlunary.core, yossarian.core, probably.core, probably.cli, probably.events, superlunary.jvm, mandible.core):
     def summary = "Testing: suites, assertions, generators and browser automation"
 
-  object tool extends Bundle(anthology.core, degustation.core,
+  object tool extends Bundle(anthology.core, degustation.core, degustation.tasty,
     harlequin.core, harlequin.typed, hellenism.core,
     hyperbole.tasty, hyperbole.core, octogenarian.core, octogenarian.cli, octogenarian.native,
     octogenarian.http, octogenarian.ssh, octogenarian.sshNative,
@@ -1078,7 +1078,8 @@ object soundness extends Toolchain:
     phoenicia.core,
     punctuation.core, savagery.core, cartouche.core, tasseomancy.core, scintillate.server,
     scintillate.servlet,
-    telekinesis.jvm, plutocrat.core, eucalyptus.gcp, punctuation.html, perihelion.core,
+    telekinesis.jvm, telekinesis.sockets, plutocrat.core, eucalyptus.gcp, punctuation.html,
+    perihelion.core,
     legerdemain.core, legerdemain.query, telekinesis.forms, jacinta.optics, caduceus.core,
     caduceus.resend,
     orthodoxy.core, orthodoxy.server,
