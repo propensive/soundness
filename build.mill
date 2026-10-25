@@ -1892,15 +1892,18 @@ object degustation extends Library:
     def mvnDeps = Seq(mvn"org.scala-lang::tasty-core::${scalaVersion()}")
 
   // The filesystem face of `tasty`: atomizes `.tasty` files on disk against a classpath of
-  // directories and jars. Compiler-free since plat-7; JVM-only for `java.util.zip` and the JDK's
-  // classes, which the Scala library's types ultimately rest on.
+  // directories (galilei's backend) and jars (zeppelin). The JDK's own classes come from the
+  // running JVM's class loader in `core-jvm`; on Native they must be on the classpath as a jar.
   object core extends Component(tasty, anticipation.codec, contingency.core, fulminate.core,
-      gossamer.core, vacuous.core):
-    override def scalaJs = false // reads classpath directories and jars from the filesystem
+      gossamer.core, vacuous.core, galilei.core, zeppelin.core):
+    override def scalaJs = false // galilei has no Scala.js filesystem backend to read files with
+    override def scalaNative = true
+    override def sources = Task.Sources(moduleDir, moduleDir / os.up / "core-jvm")
+    override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "core-native")
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
 
-  object test extends Tests(core, eucalyptus.core, anthology.`scala`, hellenism.jvm,
+  object test extends Tests(core, galilei.jvm, eucalyptus.core, anthology.`scala`, hellenism.jvm,
       imperial.core):
     def mvnDeps = Seq(
       mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
