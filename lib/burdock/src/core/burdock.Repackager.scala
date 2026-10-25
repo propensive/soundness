@@ -58,6 +58,8 @@ import parasite.threads.virtualThreads
 import denominative.*
 import denominative.dysasymptotics.linearSize
 
+import filesystemBackends.javaBaseFilesystem
+
 // The repackager. Reads the dependency hashes embedded by the compile-time macro
 // and partitions them: a hash that resolves to a public URL is externalized (a
 // `Burdock-Require` reference, fetched at runtime); anything else is inlined by

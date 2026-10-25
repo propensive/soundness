@@ -37,7 +37,7 @@ baroque	yes	yes	yes	js
 beneficence	yes	yes	yes	js	JVM-only: plugin	
 bitumen	yes	core	core	core	JVM-only: jvm	the filesystem-backed archive operations (`jvm`) read and write a real filesystem through `galilei.jvm`
 breviloquence	yes	yes	yes	js	JVM-only: staged	
-burdock	yes	no	no	no		packaging; depends on JVM-only `zeppelin`/`telekinesis`
+burdock	yes	no	no	no		packaging; depends on JVM-only `telekinesis.jvm` and `galilei.jvm`
 cacophony	yes	no	no	no		audio (`javax.sound.sampled`)
 caduceus	yes	yes	yes	js	JVM-only: resend	`resend` is over `telekinesis.jvm`
 caesura	yes	yes	yes	js		
@@ -111,7 +111,7 @@ octogenarian	yes	no	yes	no	backends: core-jvm+core-native	no Scala.js filesystem
 orthodoxy	yes	no	no	no		`java.security.SecureRandom`, absent from both javalibs; `server` is over `telekinesis.jvm`
 panopticon	yes	yes	yes	js		
 parasite	yes	core	yes	core	backends: core-jvm+core-native; JVM-only: jvm	`jvm` is `java.lang.management` heap/GC introspection; Scala.js has no threads for the supervisors to fork
-perihelion	yes	no	no	no		depends on JVM-only `zeppelin`, `exoskeleton.core` and `telekinesis.jvm`
+perihelion	yes	no	no	no		depends on JVM-only `exoskeleton.core` and `telekinesis.jvm`
 phoenicia	yes	yes	yes	js		
 plutocrat	yes	yes	yes	js		
 pneumatic	yes	yes	yes	js		
@@ -165,4 +165,4 @@ xylophone	yes	yes	yes	js	JVM-only: staged
 yossarian	yes	yes	yes	js		
 ypsiloid	yes	yes	yes	js		
 zephyrine	yes	yes	yes	js	backends: core-jvm+core-portable	
-zeppelin	yes	no	no	no		zip archives over `galilei.jvm` and `java.util.zip` (absent from the Scala.js javalib; `java.time` is absent from Scala Native's)
+zeppelin	yes	yes	yes	js		

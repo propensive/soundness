@@ -32,12 +32,6 @@
                                                                                                   */
 package zeppelin
 
-import java.io as ji
-import java.nio as jn
-import java.nio.channels as jnc
-import java.nio.file as jnf
-import java.util.zip as juz
-
 import scala.caps
 
 import anticipation.*
@@ -84,11 +78,15 @@ object Zip:
     def decode(text: Text): %.type raises Path.Error = %
     def encode(root: %.type): Text = t""
 
-  // Anchored here so `path.open[Zip]()` and `data.open[Zip]()` resolve with no import.
-  given openable: [path: Abstractable across Paths to Text]
-  =>  Tactic[Zip.Error]
-  =>  Zip.Openable[path] =
-    Zip.Openable[path]
+  // Anchored here so `path.open[Zip]()` and `data.open[Zip]()` resolve with no import. A path
+  // is read through the filesystem backend in scope, so archives open on every platform with
+  // one.
+  given openable: [plane: Filesystem, path <: Path on plane]
+  =>  ( backend:   FilesystemBackend on plane,
+        zipTactic: Tactic[Zip.Error],
+        ioTactic:  Tactic[Io.Error] )
+  =>  Zip.Openable[plane, path] =
+    Zip.Openable[plane, path]
 
   given dataOpenable: Tactic[Zip.Error] => Zip.DataOpenable = Zip.DataOpenable()
 
@@ -161,7 +159,9 @@ object Zip:
   object Compression:
     given default: Compression = Compression.Deflate(-1)
 
-  // The contextual policy consulted when an `Entry` is created from raw content.
+  // The contextual policy consulted when an `Entry` is created from raw content. Deflation is
+  // pneumatic's, which has one compression level: `Deflate(0)` stores, as zlib's level 0 would,
+  // and every other level deflates alike.
   enum Compression:
     case Stored
     case Deflate(level: Int)
@@ -197,8 +197,10 @@ object Zip:
       compression match
         case Compression.Stored => stored
 
-        case Compression.Deflate(level) =>
-          val deflated = deflate(raw, level)
+        case Compression.Deflate(0) => stored
+
+        case Compression.Deflate(_) =>
+          val deflated = deflate(raw)
 
           if deflated.length >= raw.length then stored
           else Entry(ref, Method.Deflate, crc, uncompressed, deflated.length.toLong,
@@ -366,36 +368,34 @@ object Zip:
 
     value
 
+  // The DOS date and time of an instant, in UTC: a ZIP timestamp records no zone, and UTC keeps
+  // an archive the same wherever it is written. The civil date is Hinnant's `civil_from_days`;
+  // an instant before 1980, which DOS cannot represent, is recorded as 1980's first second.
   private[zeppelin] def dosDateTime(epochMillis: Long): (Int, Int) =
-    import java.time as jt
+    val millisPerDay = 86400000L
+    val days = Math.floorDiv(epochMillis, millisPerDay)
+    val secondOfDay = (Math.floorMod(epochMillis, millisPerDay)/1000L).toInt
+    val shifted = days + 719468L
+    val era = Math.floorDiv(shifted, 146097L)
+    val dayOfEra = shifted - era*146097L
+    val yearOfEra = (dayOfEra - dayOfEra/1460L + dayOfEra/36524L - dayOfEra/146096L)/365L
+    val dayOfYear = dayOfEra - (365L*yearOfEra + yearOfEra/4L - yearOfEra/100L)
+    val shiftedMonth = (5L*dayOfYear + 2L)/153L
+    val day = (dayOfYear - (153L*shiftedMonth + 2L)/5L + 1L).toInt
+    val month = (if shiftedMonth < 10L then shiftedMonth + 3L else shiftedMonth - 9L).toInt
+    val year = (yearOfEra + era*400L + (if month <= 2 then 1L else 0L)).toInt
 
-    val instant = jt.Instant.ofEpochMilli(epochMillis)
-    val ldt = jt.LocalDateTime.ofInstant(instant, jt.ZoneId.systemDefault()).nn
-    val year = (ldt.getYear - 1980).max(0)
-    val date = (year << 9) | (ldt.getMonthValue << 5) | ldt.getDayOfMonth
-    val time = (ldt.getHour << 11) | (ldt.getMinute << 5) | (ldt.getSecond/2)
+    if year < 1980 then (epochTime, epochDate) else
+      val date = ((year - 1980) << 9) | (month << 5) | day
+      val time = ((secondOfDay/3600) << 11) | (((secondOfDay/60)%60) << 5) | ((secondOfDay%60)/2)
+      (time, date)
 
-    (time, date)
+  private[zeppelin] def crc32(data: Data): Int = corpuscular.Crc32.checksum(data)
 
-  private[zeppelin] def crc32(data: Data): Int =
-    val crc = juz.CRC32()
-    crc.update(Array.unsafeJvm(data))
-    crc.getValue.toInt
-
-  // Raw RFC-1951 DEFLATE of a single buffer (the algorithm primitive, not the ZIP container).
-  private[zeppelin] def deflate(data: Data, level: Int): Data =
-    val deflater = juz.Deflater(level, true)
-    deflater.setInput(Array.unsafeJvm(data))
-    deflater.finish()
-    val buffer = new scala.Array[Byte](8192)
-
-    val deflated = Array.collect[Byte](): out =>
-      while !deflater.finished()
-      do out.append(Array.unsafeFrozen(buffer), 0, deflater.deflate(buffer))
-
-    deflater.end()
-
-    deflated
+  // Raw RFC-1951 DEFLATE of a single buffer (the algorithm primitive, not the ZIP container),
+  // through pneumatic's pure-Scala deflater.
+  private[zeppelin] def deflate(data: Data): Data =
+    summon[Data is Aggregable by Data].accept(Stream(Deflate.compression.compress(Chain(data))))
 
   // ZipError -> Zip.Error
   object Error:
@@ -438,9 +438,10 @@ object Zip:
 
   // ZipHandle -> Zip.Handle
   // The scoped capability provided by opening an archive as `Zip`: `path.open[Zip]()`. Unlike a
-  // detached `Zipfile` (whose `FileSource` re-opens the file for every read), a `Zip.Handle` reads
-  // through a single channel held open for the duration of the block, so entry payloads resolve
-  // with no per-read open/close cost — and, correspondingly, must be consumed within the scope.
+  // detached `Zipfile` (whose source re-opens the file for every read), a `Zip.Handle` reads
+  // through one view of the file held open by the filesystem backend for the duration of the
+  // block, so entry payloads resolve with no per-read open/close cost — and, correspondingly,
+  // must be consumed within the scope.
   // (Zeppelin is not yet capture-checked, so the confinement is enforced only for callers
   // compiled with capture checking; the annotations sharpen when the module joins the rollout.)
   class Handle private[zeppelin] (private[zeppelin] val zipfile: Zipfile)
@@ -456,7 +457,9 @@ object Zip:
   // consistency with every other form of `Zip` target.
 
   // ZipOpenable → Zip.Openable
-  class Openable[path: Abstractable across Paths to Text](using Tactic[Zip.Error])
+  class Openable[plane: Filesystem, path <: Path on plane]
+    ( using backend: FilesystemBackend on plane, zipTactic: Tactic[Zip.Error],
+            ioTactic: Tactic[Io.Error] )
   extends aperture.Openable:
 
     type Self = path
@@ -471,13 +474,8 @@ object Zip:
 
       if mode.atoms.has(Write) then abort(Zip.Error(Zip.Error.Reason.WriteUnsupported))
 
-      val channel =
-        jnc.FileChannel.open(jnf.Path.of(value.generic.s), jnf.StandardOpenOption.READ).nn
-
-      try
-        val zipfile = Zipfile.parse(Zipfile.ChannelSource(channel))
-        block(using new Zip.Handle(zipfile) with Granting[grants] {})
-      finally channel.close()
+      backend.expanse(value): view =>
+        block(using new Zip.Handle(Zipfile.parse(view)) with Granting[grants] {})
 
   // ZipDataOpenable → Zip.DataOpenable
   class DataOpenable(using Tactic[Zip.Error]) extends aperture.Openable:

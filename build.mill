@@ -1433,7 +1433,7 @@ object anthology extends Library:
   // Assembles a complete, installable Android application package: binary manifest (`Axml`),
   // zip-aligned archive (`zeppelin`), and APK v2 signature (`gastronomy` digests + `java.security`
   // RSA) — reusing `dex` for the code, and needing no Android SDK build tool.
-  object apk extends Component(dex, gastronomy.core):
+  object apk extends Component(dex, gastronomy.core, galilei.jvm):
     override def scalaJs = false // packages Android applications (`java.security`, `zeppelin`)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
@@ -1615,10 +1615,10 @@ object burdock extends Library:
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
   object core
-      extends Component(zeppelin.core, exoskeleton.core, revolution.core, telekinesis.jvm,
+      extends Component(zeppelin.core, galilei.jvm, exoskeleton.core, revolution.core, telekinesis.jvm,
                        jacinta.core, eucalyptus.core, fulminate.print, hellenism.core, boot,
                        ultimatum.gauges):
-    override def scalaJs = false // packaging; depends on JVM-only `zeppelin`/`telekinesis`
+    override def scalaJs = false // packaging; depends on JVM-only `telekinesis.jvm` and `galilei.jvm`
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
@@ -2116,7 +2116,7 @@ object espionage extends Library:
       settings.maxInlines(settings.sep(super.scalacOptions()), "48")
 
 object ethereal extends Library:
-  object core extends Component(surveillance.core, eucalyptus.syslog, hellenism.core, exoskeleton.core, coaxial.jvm, quantitative.units, gastronomy.core, zeppelin.core, stratiform.core, parasite.core):
+  object core extends Component(surveillance.core, eucalyptus.syslog, hellenism.core, exoskeleton.core, coaxial.jvm, quantitative.units, gastronomy.core, zeppelin.core, galilei.jvm, stratiform.core, parasite.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -3960,11 +3960,12 @@ object zephyrine extends Library:
     override def checking: Seq[String] => Seq[String] = identity
 
 object zeppelin extends Library:
-  object core extends Component(galilei.jvm, zephyrine.core, turbulence.core, pneumatic.flate):
-    override def scalaJs = false // zip archives (`java.util.zip`, `galilei`)
+  // Archives are read through galilei's `FilesystemBackend`, so a path opens wherever a backend
+  // is in scope; in-memory archives need none, and zeppelin crosses to every platform.
+  object core extends Component(galilei.core, zephyrine.core, turbulence.core, pneumatic.flate):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium")
-  object test extends Tests(core, imperial.core, diuretic.core, eucalyptus.core):
+  object test extends Tests(core, galilei.jvm, imperial.core, diuretic.core, eucalyptus.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions())
   object bench extends Benchmarks(core, gastronomy.core, monotonous.core, breviloquence.core):

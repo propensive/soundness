@@ -161,6 +161,24 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
         Zip.Entry(zipRef(t"a.txt"), (t"abcd"*64).in[Data]).method
       . assert(_ == Zip.Method.Stored)
 
+      test(m"a compression level of zero stores the entry"):
+        given Zip.Compression = Zip.Compression.Deflate(0)
+        Zip.Entry(zipRef(t"a.txt"), (t"abcd"*64).in[Data]).method
+      . assert(_ == Zip.Method.Stored)
+
+      test(m"a modification time is recorded as its UTC date and time"):
+        import abstractables.epochMillisecondsAbstractable
+        // 13:45:30 on 29 February 2024, UTC.
+        val stamped = Zip.Entry.at(zipRef(t"a.txt"), t"x".in[Data], 1709214330000L)
+        (stamped.dosDate, stamped.dosTime)
+      . assert(_ == (((2024 - 1980) << 9) | (2 << 5) | 29, (13 << 11) | (45 << 5) | (30/2)))
+
+      test(m"a modification time before 1980 is recorded as 1980's first second"):
+        import abstractables.epochMillisecondsAbstractable
+        val stamped = Zip.Entry.at(zipRef(t"a.txt"), t"x".in[Data], 0L)
+        (stamped.dosDate, stamped.dosTime)
+      . assert(_ == (0x0021, 0))
+
       test(m"an aligned entry's data begins on its byte boundary"):
         given Zip.Compression = Zip.Compression.Stored
         // "hello.txt" is 9 bytes, so unaligned data would begin at 30+9 = 39; alignment to 4

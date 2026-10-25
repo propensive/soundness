@@ -32,13 +32,10 @@
                                                                                                   */
 package zeppelin
 
-import java.nio.channels as jnc
-import java.nio.file as jnf
-
 import anticipation.*
 import aperture.*
 import contingency.*
-import denominative.*
+import galilei.*
 import gossamer.*
 import hieroglyph.*, codepages.utf8Codepage
 import prepositional.*
@@ -78,7 +75,9 @@ object Jar:
 
   // A named class rather than an anonymous given instance, for the reasons documented on
   // galilei's `FileOpenable`. Like `Zip`, archives open read-only for now.
-  class JarOpenable[path: Abstractable across Paths to Text](using Tactic[Zip.Error])
+  class JarOpenable[plane: Filesystem, path <: Path on plane]
+    ( using backend: FilesystemBackend on plane, zipTactic: Tactic[Zip.Error],
+            ioTactic: Tactic[Io.Error] )
   extends Openable:
 
     type Self = path
@@ -93,13 +92,8 @@ object Jar:
 
       if mode.atoms.has(Write) then abort(Zip.Error(Zip.Error.Reason.WriteUnsupported))
 
-      val channel =
-        jnc.FileChannel.open(jnf.Path.of(value.generic.s), jnf.StandardOpenOption.READ).nn
-
-      try
-        val zipfile = Zipfile.parse(Zipfile.ChannelSource(channel))
-        block(using new JarHandle(zipfile) with Granting[grants] {})
-      finally channel.close()
+      backend.expanse(value): view =>
+        block(using new JarHandle(Zipfile.parse(view)) with Granting[grants] {})
 
   class JarDataOpenable(using Tactic[Zip.Error]) extends Openable:
     type Self = Data
@@ -115,10 +109,12 @@ object Jar:
       if mode.atoms.has(Write) then abort(Zip.Error(Zip.Error.Reason.WriteUnsupported))
       block(using new JarHandle(Zipfile.parse(Zipfile.DataSource(value))) with Granting[grants] {})
 
-  given openable: [path: Abstractable across Paths to Text]
-  =>  Tactic[Zip.Error]
-  =>  JarOpenable[path] =
-    JarOpenable[path]
+  given openable: [plane: Filesystem, path <: Path on plane]
+  =>  ( backend:   FilesystemBackend on plane,
+        zipTactic: Tactic[Zip.Error],
+        ioTactic:  Tactic[Io.Error] )
+  =>  JarOpenable[plane, path] =
+    JarOpenable[plane, path]
 
   given dataOpenable: Tactic[Zip.Error] => JarDataOpenable = JarDataOpenable()
 
