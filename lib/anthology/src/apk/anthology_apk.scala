@@ -50,6 +50,8 @@ import serpentine.*
 import turbulence.*
 import zeppelin.*
 
+import filesystemBackends.javaBaseFilesystem
+
 object apkOptions:
   private def apk(edit: Apk.Configuration => Apk.Configuration): Toolchain.Setting =
     Toolchain.Setting[Apk.Configuration](_ == Apk)(edit)

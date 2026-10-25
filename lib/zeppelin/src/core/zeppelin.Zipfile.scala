@@ -32,12 +32,6 @@
                                                                                                   */
 package zeppelin
 
-import java.io as ji
-import java.nio as jn
-import java.nio.channels as jnc
-import java.nio.charset as jncs
-import java.nio.file as jnf
-
 import scala.math
 
 import anticipation.*
@@ -46,6 +40,7 @@ import denominative.*
 import denominative.dysasymptotics.linearSize
 import distillate.*
 import fulminate.*
+import galilei.*
 import gossamer.*
 import hieroglyph.*, codepages.utf8Codepage
 import nomenclature.*
@@ -65,11 +60,12 @@ object Zipfile:
   given streamable: Tactic[Zip.Error] => Zipfile is Streamable by Data over Credit =
     zipfile => zipfile.serialize
 
-  def read[path: Abstractable across Paths to Text](path: path)
+  def read[plane: Filesystem](path: Path on plane)
+    ( using backend: FilesystemBackend on plane, ioTactic: Tactic[Io.Error] )
   :   Zipfile logs Zip.Event raises Zip.Error =
 
-    val zipfile = parse(FileSource(path.generic))
-    Log.info(Zip.Event.Read(path.generic, zipfile.entries.size))
+    val zipfile = parse(BackendSource(path))
+    Log.info(Zip.Event.Read(path.encode, zipfile.entries.size))
     zipfile
 
   def read(data: Data): Zipfile raises Zip.Error = parse(DataSource(data))
@@ -83,11 +79,11 @@ object Zipfile:
   // the record's physical position, but the JDK's follows it blindly and then declines to open the
   // archive at all, with no diagnostic. `rebase` shifts the pointer by `delta`; an archive with no
   // ZIP64 locator — anything under 0xffff entries, which is nearly everything — is left untouched.
-  def rebase[path: Abstractable across Paths to Text](path: path, delta: Long)
+  def rebase[plane: Filesystem](path: Path on plane, delta: Long)
+    ( using backend: FilesystemBackend on plane, ioTactic: Tactic[Io.Error] )
   :   Unit raises Zip.Error =
 
-    val filename: Text = path.generic
-    val source = FileSource(filename)
+    val source = BackendSource(path)
     val (_, _, eocdOffset) = findEocd(source)
 
     if eocdOffset >= 20 then
@@ -101,13 +97,8 @@ object Zipfile:
         else
           val update: Data = Data.build(8): array => Zip.putU64(array, 0, rebased)
 
-          val channel =
-            jnc.FileChannel.open(jnf.Path.of(filename.s), jnf.StandardOpenOption.WRITE).nn
-
-          try
-            val buffer = jn.ByteBuffer.wrap(update.asInstanceOf[scala.Array[Byte]]).nn
-            while buffer.hasRemaining do channel.write(buffer, eocdOffset - 12 + buffer.position)
-          finally channel.close()
+          backend.slice(path, eocdOffset - 12, 8, List(OpenFlag.Write)): window =>
+            window.writeTo(0, update)
 
   private def checkDuplicates(entries: List[Zip.Entry]): Unit raises Zip.Error =
     val seen = scala.collection.mutable.HashSet[Text]()
@@ -125,48 +116,17 @@ object Zipfile:
     def read(offset: Long, length: Int): Data =
       data.segment((offset.toInt).z till (offset.toInt + length).z)
 
-  // Re-opens the file for each read, so entries stay detached and reusable with no held handle.
-  private class FileSource(filename: Text) extends Expanse:
-    private def open(): jnc.FileChannel =
-      jnc.FileChannel.open(jnf.Path.of(filename.s), jnf.StandardOpenOption.READ).nn
-
-    def size: Long =
-      val channel = open()
-      try channel.size finally channel.close()
+  // Re-opens the file through the filesystem backend for each read, so entries stay detached and
+  // reusable with no held handle.
+  private class BackendSource[plane: Filesystem](path: Path on plane)
+    ( using backend: FilesystemBackend on plane, ioTactic: Tactic[Io.Error] )
+  extends Expanse:
+    def size: Long = backend.expanse(path)(_.size)
 
     def read(offset: Long, length: Int): Data =
-      if length == 0 then Array.empty[Byte] else
-        val channel = open()
+      if length == 0 then Array.empty[Byte] else backend.expanse(path)(_.read(offset, length))
 
-        try
-          val buffer = jn.ByteBuffer.allocate(length).nn
-          var position = offset
-          var eof = false
-
-          while buffer.hasRemaining && !eof do
-            val count = channel.read(buffer, position)
-            if count < 0 then eof = true else position += count
-
-          Array.unsafeFrozen(buffer.array.nn)
-        finally channel.close()
-
-  // Positional reads against a channel held open for the lifetime of a `Zip.Handle`'s scope —
-  // unlike `FileSource`, which re-opens per read so detached `Zipfile` entries stay usable
-  // beyond it.
-  private[zeppelin] class ChannelSource(channel: jnc.FileChannel) extends Expanse:
-    def size: Long = channel.size
-
-    def read(offset: Long, length: Int): Data =
-      if length == 0 then Array.empty[Byte] else
-        val buffer = jn.ByteBuffer.allocate(length).nn
-        var position = offset
-        var eof = false
-
-        while buffer.hasRemaining && !eof do
-          val count = channel.read(buffer, position)
-          if count < 0 then eof = true else position += count
-
-        Array.unsafeFrozen(buffer.array.nn)
+  // The end-of-central-directory.array.nn)
 
   // The end-of-central-directory trailer is the archive's last record, but a comment of up to
   // 0xffff bytes may follow it, so it is found by scanning back for its signature. Returns the
