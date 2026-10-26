@@ -82,7 +82,7 @@ object Tests extends Suite("watch", m"Surveillance tests") uses surveillance.Wat
       directory.open[Watch](): watcher ?=>
         (directory/leaf).create[File]()
 
-        watcher.stream.stdlib.head match
+        watcher.stream.head match
           case NewFile(_, file) => file == leaf
           case _                => false
 

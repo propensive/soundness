@@ -736,7 +736,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
           scala.caps.unsafe.unsafeAssumeSeparate(doc.addLink(doc.page(Prim), rect, uri = t"https://soundness.dev/"))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.page(Prim).annotations.stdlib.head match
+          pdf.page(Prim).annotations.head match
             case Annotation.Link(_, _, uri, _) => uri
             case _                             => Unset
       . assert(_ == t"https://soundness.dev/")
@@ -1888,7 +1888,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
             . in[Data] )
 
         PdfFile(doc).open():
-          pdf.page(Prim).annotations.stdlib.head match
+          pdf.page(Prim).annotations.head match
             case Annotation.Link(rect, _, uri, _) => (rect.height, uri)
             case _                                => (Quantity[Points[1]](0.0), Unset)
       . assert(_ == (Quantity[Points[1]](20.0), t"https://x.com"))
@@ -1901,7 +1901,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
             t"<< /Subtype /Text /Rect [0 0 5 5] /Contents (Remember) /Open true >>".in[Data] )
 
         PdfFile(doc).open():
-          pdf.page(Prim).annotations.stdlib.head match
+          pdf.page(Prim).annotations.head match
             case Annotation.Note(_, contents, open, _) => (contents, open)
             case _                                     => (Unset, false)
       . assert(_ == (t"Remember", true))

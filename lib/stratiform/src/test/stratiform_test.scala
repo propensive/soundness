@@ -1870,30 +1870,32 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
 
       test(m"Construct picks inline atoms for simple values"):
         val c = Mutation.construct(t"name", t"Alice")
-        c.atoms.stdlib.head match
+        c.atoms.head match
           case Tel.Atom.Inline(text, _) => text
           case _                        => t""
       . assert(_ == t"Alice")
 
       test(m"Construct picks a source atom for multi-line values"):
         val c = Mutation.construct(t"note", t"first line\nsecond line")
-        c.atoms.stdlib.head match
+        c.atoms.head match
           case _: Tel.Atom.Source  => "source"
           case _: Tel.Atom.Inline  => "inline"
           case _: Tel.Atom.Literal => "literal"
+          case _                   => "absent"
       . assert(_ == "source")
 
       test(m"Construct falls back to literal for blank-line payloads"):
         val c = Mutation.construct(t"note", t"first\n\nsecond\n")
-        c.atoms.stdlib.head match
+        c.atoms.head match
           case _: Tel.Atom.Literal => "literal"
           case _: Tel.Atom.Source  => "source"
           case _: Tel.Atom.Inline  => "inline"
+          case _                   => "absent"
       . assert(_ == "literal")
 
       test(m"Construct's inline atom uses one preceding space"):
         val c = Mutation.construct(t"name", t"Alice")
-        c.atoms.stdlib.head match
+        c.atoms.head match
           case Tel.Atom.Inline(_, sp) => sp
           case _                       => -1
       . assert(_ == 1)
@@ -1902,17 +1904,18 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         // A trailing LF is unrepresentable as a source atom (Convention A,
         // §14), so the value must be carried by a literal atom.
         val c = Mutation.construct(t"note", t"single line\n")
-        c.atoms.stdlib.head match
+        c.atoms.head match
           case _: Tel.Atom.Literal => "literal"
           case _: Tel.Atom.Source  => "source"
           case _: Tel.Atom.Inline  => "inline"
+          case _                   => "absent"
       . assert(_ == "literal")
 
       test(m"Construct's inline atom uses two preceding spaces for a spaced value"):
         // §22.3: a value containing a space is emitted with a hard-space
         // separator so its soft spaces survive as content (§10.3).
         val c = Mutation.construct(t"name", t"Jon Pretty")
-        c.atoms.stdlib.head match
+        c.atoms.head match
           case Tel.Atom.Inline(_, sp) => sp
           case _                       => -1
       . assert(_ == 2)
@@ -1921,15 +1924,16 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         // The remark risk (§11.2) is only a *leading* sigil-then-space; an
         // internal `<space><sigil>` is content in hard-space mode.
         val c = Mutation.construct(t"note", t"see #3")
-        c.atoms.stdlib.head match
+        c.atoms.head match
           case _: Tel.Atom.Inline  => "inline"
           case _: Tel.Atom.Source  => "source"
           case _: Tel.Atom.Literal => "literal"
+          case _                   => "absent"
       . assert(_ == "inline")
 
       test(m"Construct escalates a leading sigil-then-space value off inline (§22.2)"):
         val c = Mutation.construct(t"note", t"# heading")
-        c.atoms.stdlib.head match
+        c.atoms.head match
           case _: Tel.Atom.Inline  => "inline"
           case _                    => "escalated"
       . assert(_ == "escalated")
@@ -1942,20 +1946,22 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val tel    = doc("note text\n")
         val ptr    = Tel.Pointer.of(t"note")
         val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, t"line\n"))
-        result.childCompounds.stdlib.head.atoms.stdlib.head match
+        result.childCompounds.head.let(_.atoms.head) match
           case _: Tel.Atom.Literal => "literal"
           case _: Tel.Atom.Source  => "source"
           case _: Tel.Atom.Inline  => "inline"
+          case _                   => "absent"
       . assert(_ == "literal")
 
       test(m"UpdateAtom escalates an inline atom to a source atom for a multi-line value"):
         val tel    = doc("note text\n")
         val ptr    = Tel.Pointer.of(t"note")
         val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, t"line one\nline two"))
-        result.childCompounds.stdlib.head.atoms.stdlib.head match
+        result.childCompounds.head.let(_.atoms.head) match
           case _: Tel.Atom.Source  => "source"
           case _: Tel.Atom.Inline  => "inline"
           case _: Tel.Atom.Literal => "literal"
+          case _                   => "absent"
       . assert(_ == "source")
 
       test(m"UpdateAtom never downgrades a literal atom to inline (§22.3)"):
@@ -1963,10 +1969,11 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val tel    = doc("note\n      ===\nnow literal\n      ===\n")
         val ptr    = Tel.Pointer.of(t"note")
         val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, t"now simple"))
-        result.childCompounds.stdlib.head.atoms.stdlib.head match
+        result.childCompounds.head.let(_.atoms.head) match
           case _: Tel.Atom.Literal => "literal"
           case _: Tel.Atom.Source  => "source"
           case _: Tel.Atom.Inline  => "inline"
+          case _                   => "absent"
       . assert(_ == "literal")
 
       // A top-level literal atom's delimiter line is six spaces plus the
@@ -1978,7 +1985,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val tel    = doc("note x\n")
         val ptr    = Tel.Pointer.of(t"note")
         val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, crCollision))
-        result.childCompounds.stdlib.head.atoms.stdlib.head match
+        result.childCompounds.head.let(_.atoms.head) match
           case Tel.Atom.Literal(delimiter, _) => delimiter
           case _                              => t""
       . assert(_ == t"----")
@@ -1987,7 +1994,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val tel    = doc("note x\n")
         val ptr    = Tel.Pointer.of(t"note")
         val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, crCollision))
-        result.show.read[Tel].childCompounds.stdlib.head.atoms.stdlib.head match
+        result.show.read[Tel].childCompounds.head.let(_.atoms.head) match
           case Tel.Atom.Literal(_, text) => text
           case _                         => t""
       . assert(_ == crCollision)
@@ -2033,10 +2040,11 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val tel    = doc("note text\n")
         val ptr    = Tel.Pointer.of(t"note")
         val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, t"line1\t\nline2"))
-        result.childCompounds.stdlib.head.atoms.stdlib.head match
+        result.childCompounds.head.let(_.atoms.head) match
           case _: Tel.Atom.Literal => "literal"
           case _: Tel.Atom.Source  => "source"
           case _: Tel.Atom.Inline  => "inline"
+          case _                   => "absent"
       . assert(_ == "literal")
 
       test(m"InsertAfter a tabulated row opens a new block after the table (§22.2)"):
