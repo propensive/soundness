@@ -33,6 +33,8 @@
 package stratiform
 import adversaria.*
 import anticipation.*
+import contingency.*
+import denominative.*
 import distillate.*
 import gossamer.*
 import prepositional.*
@@ -75,23 +77,98 @@ object TelSchematic:
   case class Definitions
     ( records: List[Tels.RecordDefinition], selects: List[Tels.SelectDefinition] )
 
+  // The identity of a derived definition — a product's record or a sum's select — as its type: the
+  // type's simple name, which the definition takes when no other type in the schema shares it, and
+  // the names of the packages, objects and classes enclosing the type, innermost first. Keying
+  // on the type rather than the name is what tells `Phrase.Code` from `Element.Code` while still
+  // recognising one type reached by several paths.
+  case class Identity(name: Text, enclosing: List[Text]):
+
+    // The name qualified by the innermost `depth - 1` enclosing names, each as a TypeName
+    // (§20.7): `PhraseCode` for `Phrase.Code` at depth 2.
+    def qualified(depth: Int): Text =
+      def prefix(enclosing: List[Text], depth: Int): Text = enclosing match
+        case segment :: rest if depth > 1 => prefix(rest, depth - 1) + Identity.typeName(segment)
+        case _                            => t""
+
+      prefix(enclosing, depth) + name
+
+  object Identity:
+    // A segment as part of a TypeName: its ASCII letters and digits, capitalised, so that a package
+    // qualifies as `Pkg`. Anything else (an anonymous scope) contributes nothing.
+    private def typeName(segment: Text): Text =
+      segment.s.filter { char => char < 128 && char.isLetterOrDigit }.capitalize.tt
+
+  // How the definitions of a schema are named. A type whose simple name no other type in the
+  // schema shares keeps it, so a schema without clashes is unchanged by naming; the members of a
+  // group of distinct types sharing one name are each qualified by their enclosing types, to the
+  // shallowest depth that tells them apart, so a name depends only on which types the schema
+  // reaches, never on the order it reaches them. Names which coincide even so are `ambiguous`,
+  // and make the schema invalid (E210).
+  class Naming(names: Map[Identity, Text], val ambiguous: List[Text]):
+    def apply(identity: Identity): Text = names(identity).or(identity.name)
+
+  object Naming:
+    // Every type by its simple name.
+    val simple: Naming = new Naming(Map(), Nil)
+
+    def apply(identities: List[Identity]): Naming =
+      val types: List[Identity] = identities.distinct
+
+      // Deepening the qualification until the names differ, or until no name changes any more.
+      def resolve(group: List[Identity], depth: Int): List[(Identity, Text)] =
+        val names: List[Text] = group.map(_.qualified(depth))
+        val deeper: List[Text] = group.map(_.qualified(depth + 1))
+
+        if names.distinct == names || deeper == names then group.zip(names)
+        else resolve(group, depth + 1)
+
+      val clashing: List[List[Identity]] = types.group(_.name).values.filter:
+        case _ :: _ :: _ => true
+        case _           => false
+
+      val renamed: Map[Identity, Text] = clashing.bind(resolve(_, 2)).to[Map]
+      val taken: List[Text] = types.map { identity => renamed(identity).or(identity.name) }
+      val ambiguous: List[Text] = taken.filter { name => taken.count(_ == name) > 1 }.distinct
+
+      new Naming(renamed, ambiguous)
+
   // The `TelSchematic` refinements of a member's schematic, which may be a plain `Schematic`.
-  def fieldTypeOf(schematic: Schematic over Tels.Type): Tels.Type = schematic match
-    case schematic: TelSchematic => schematic.fieldType
+  def schemaOf(schematic: Schematic over Tels.Type, naming: Naming): Tels.Type = schematic match
+    case schematic: TelSchematic => schematic.schema(naming)
     case other                   => other.schema()
 
-  def definitionsOf(schematic: Schematic over Tels.Type, seen: scala.collection.immutable.Set[Text])
+  def fieldTypeOf(schematic: Schematic over Tels.Type, naming: Naming): Tels.Type =
+    schematic match
+      case schematic: TelSchematic => schematic.fieldType(naming)
+      case other                   => other.schema()
+
+  def identitiesOf
+    ( schematic: Schematic over Tels.Type, seen: scala.collection.immutable.Set[Identity] )
+  :   List[Identity] =
+
+    schematic match
+      case schematic: TelSchematic => schematic.identities(seen)
+      case _                       => Nil
+
+  def definitionsOf
+    ( schematic: Schematic over Tels.Type,
+      seen:      scala.collection.immutable.Set[Identity],
+      naming:    Naming )
   :   Definitions =
 
     schematic match
-      case schematic: TelSchematic => schematic.definitions(seen)
+      case schematic: TelSchematic => schematic.definitions(seen, naming)
       case _                       => Definitions(Nil, Nil)
 
-  def layersOf(schematic: Schematic over Tels.Type, seen: scala.collection.immutable.Set[Text])
+  def layersOf
+    ( schematic: Schematic over Tels.Type,
+      seen:      scala.collection.immutable.Set[Identity],
+      naming:    Naming )
   :   List[Tels.Layer] =
 
     schematic match
-      case schematic: TelSchematic => schematic.layers(seen)
+      case schematic: TelSchematic => schematic.layers(seen, naming)
       case _                       => Nil
 
   // Layers of the same name, contributed by several fields or nested records, merged into one,
@@ -160,29 +237,49 @@ trait TelSchematic extends Schematic:
   def polarity: Tels.Polarity = Tels.Polarity.Implicit
   def repeatable: Tels.Polarity = Tels.Polarity.Implicit
 
+  // The schema with the definitions it references named by `naming`; `schema()` names each type
+  // by its simple name, as a schema without clashes does.
+  def schema(naming: TelSchematic.Naming): Tels.Type = schema()
+
   // The type a member of this type is declared with: the schema itself, or for a product, a
   // reference to its registered record — TELS names definitions, never nests structs.
-  def fieldType: Tels.Type = schema()
+  def fieldType(naming: TelSchematic.Naming): Tels.Type = schema(naming)
 
   // Named `select` definitions a sum type contributes to the schema's namespace
   // (a select is referenced by name, never inlined). Empty for scalars and
   // products; a sum returns its own `SelectDefinition` here while `schema()`
   // returns a `Reference` to it.
-  def selectDefinitions: List[Tels.SelectDefinition] = Nil
+  def selectDefinitions(naming: TelSchematic.Naming): List[Tels.SelectDefinition] = Nil
+
+  // The identities of every definition this type and the types it references contribute, with
+  // `seen` cutting off the recursion through a recursive type. `Tels.tels` names them all
+  // together, so that two types sharing a simple name are told apart before any is built.
+  def identities(seen: scala.collection.immutable.Set[TelSchematic.Identity])
+  :   List[TelSchematic.Identity] =
+
+    Nil
 
   // Every definition this type and the types it references contribute — its own record (for a
-  // product) or select (for a sum), and those of its fields or variants — with `seen` cutting
-  // off the recursion through a recursive type.
-  def definitions(seen: scala.collection.immutable.Set[Text]): TelSchematic.Definitions =
-    TelSchematic.Definitions(Nil, selectDefinitions)
+  // product) or select (for a sum), and those of its fields or variants — named by `naming`, with
+  // `seen` cutting off the recursion through a recursive type.
+  def definitions
+    ( seen: scala.collection.immutable.Set[TelSchematic.Identity], naming: TelSchematic.Naming )
+  :   TelSchematic.Definitions =
+
+    TelSchematic.Definitions(Nil, selectDefinitions(naming))
 
   // The layers a product's `@layer`-annotated fields form, as a *nested* record contributes them:
   // each layer refining the record by the fields it groups; `seen` cuts off the recursion through
   // a recursive type, as for `definitions`.
-  def layers(seen: scala.collection.immutable.Set[Text]): List[Tels.Layer] = Nil
+  def layers
+    ( seen: scala.collection.immutable.Set[TelSchematic.Identity], naming: TelSchematic.Naming )
+  :   List[Tels.Layer] =
+
+    Nil
 
   // The same layers as the *root* document contributes them: its own fields in the overlay.
-  def rootLayers: List[Tels.Layer] = layers(scala.collection.immutable.Set())
+  def rootLayers(naming: TelSchematic.Naming): List[Tels.Layer] =
+    layers(scala.collection.immutable.Set(), naming)
 
 object Tels2:
   // Reifies a codec's format-neutral `Morphology` (carried by `Tel.Encodable` /
@@ -258,13 +355,26 @@ trait Tels2:
       type Self = value
       def schema(): Tels.Type = schematic.schema()
       override def polarity: Tels.Polarity = Polarity.Loose
-      override def fieldType: Tels.Type = TelSchematic.fieldTypeOf(schematic)
+      override def schema(naming: TelSchematic.Naming): Tels.Type =
+        TelSchematic.schemaOf(schematic, naming)
 
-      override def layers(seen: scala.collection.immutable.Set[Text]): List[Tels.Layer] =
-        TelSchematic.layersOf(schematic, seen)
+      override def fieldType(naming: TelSchematic.Naming): Tels.Type =
+        TelSchematic.fieldTypeOf(schematic, naming)
 
-      override def definitions(seen: scala.collection.immutable.Set[Text]) =
-        TelSchematic.definitionsOf(schematic, seen)
+      override def identities(seen: scala.collection.immutable.Set[TelSchematic.Identity]) =
+        TelSchematic.identitiesOf(schematic, seen)
+
+      override def layers
+        ( seen: scala.collection.immutable.Set[TelSchematic.Identity], naming: TelSchematic.Naming )
+      :   List[Tels.Layer] =
+
+        TelSchematic.layersOf(schematic, seen, naming)
+
+      override def definitions
+        ( seen: scala.collection.immutable.Set[TelSchematic.Identity], naming: TelSchematic.Naming )
+      :   TelSchematic.Definitions =
+
+        TelSchematic.definitionsOf(schematic, seen, naming)
 
   // A `List`/`Set` field is a repeatable field whose type is the element's schema
   // (TEL repeats the field rather than wrapping it), so the schema node is the
@@ -276,13 +386,26 @@ trait Tels2:
       def schema(): Tels.Type = schematic.schema()
       override def polarity: Tels.Polarity = Polarity.Loose
       override def repeatable: Tels.Polarity = Polarity.Loose
-      override def fieldType: Tels.Type = TelSchematic.fieldTypeOf(schematic)
+      override def schema(naming: TelSchematic.Naming): Tels.Type =
+        TelSchematic.schemaOf(schematic, naming)
 
-      override def layers(seen: scala.collection.immutable.Set[Text]): List[Tels.Layer] =
-        TelSchematic.layersOf(schematic, seen)
+      override def fieldType(naming: TelSchematic.Naming): Tels.Type =
+        TelSchematic.fieldTypeOf(schematic, naming)
 
-      override def definitions(seen: scala.collection.immutable.Set[Text]) =
-        TelSchematic.definitionsOf(schematic, seen)
+      override def identities(seen: scala.collection.immutable.Set[TelSchematic.Identity]) =
+        TelSchematic.identitiesOf(schematic, seen)
+
+      override def layers
+        ( seen: scala.collection.immutable.Set[TelSchematic.Identity], naming: TelSchematic.Naming )
+      :   List[Tels.Layer] =
+
+        TelSchematic.layersOf(schematic, seen, naming)
+
+      override def definitions
+        ( seen: scala.collection.immutable.Set[TelSchematic.Identity], naming: TelSchematic.Naming )
+      :   TelSchematic.Definitions =
+
+        TelSchematic.definitionsOf(schematic, seen, naming)
 
   given set: [value: Schematic over Tels.Type as schematic]
   =>  Set[value] is TelSchematic over Tels.Type =
@@ -291,13 +414,26 @@ trait Tels2:
       def schema(): Tels.Type = schematic.schema()
       override def polarity: Tels.Polarity = Polarity.Loose
       override def repeatable: Tels.Polarity = Polarity.Loose
-      override def fieldType: Tels.Type = TelSchematic.fieldTypeOf(schematic)
+      override def schema(naming: TelSchematic.Naming): Tels.Type =
+        TelSchematic.schemaOf(schematic, naming)
 
-      override def layers(seen: scala.collection.immutable.Set[Text]): List[Tels.Layer] =
-        TelSchematic.layersOf(schematic, seen)
+      override def fieldType(naming: TelSchematic.Naming): Tels.Type =
+        TelSchematic.fieldTypeOf(schematic, naming)
 
-      override def definitions(seen: scala.collection.immutable.Set[Text]) =
-        TelSchematic.definitionsOf(schematic, seen)
+      override def identities(seen: scala.collection.immutable.Set[TelSchematic.Identity]) =
+        TelSchematic.identitiesOf(schematic, seen)
+
+      override def layers
+        ( seen: scala.collection.immutable.Set[TelSchematic.Identity], naming: TelSchematic.Naming )
+      :   List[Tels.Layer] =
+
+        TelSchematic.layersOf(schematic, seen, naming)
+
+      override def definitions
+        ( seen: scala.collection.immutable.Set[TelSchematic.Identity], naming: TelSchematic.Naming )
+      :   TelSchematic.Definitions =
+
+        TelSchematic.definitionsOf(schematic, seen, naming)
 
   given sequence: [value: Schematic over Tels.Type as schematic]
   =>  Sequence[value] is TelSchematic over Tels.Type =
@@ -306,13 +442,26 @@ trait Tels2:
       def schema(): Tels.Type = schematic.schema()
       override def polarity: Tels.Polarity = Polarity.Loose
       override def repeatable: Tels.Polarity = Polarity.Loose
-      override def fieldType: Tels.Type = TelSchematic.fieldTypeOf(schematic)
+      override def schema(naming: TelSchematic.Naming): Tels.Type =
+        TelSchematic.schemaOf(schematic, naming)
 
-      override def layers(seen: scala.collection.immutable.Set[Text]): List[Tels.Layer] =
-        TelSchematic.layersOf(schematic, seen)
+      override def fieldType(naming: TelSchematic.Naming): Tels.Type =
+        TelSchematic.fieldTypeOf(schematic, naming)
 
-      override def definitions(seen: scala.collection.immutable.Set[Text]) =
-        TelSchematic.definitionsOf(schematic, seen)
+      override def identities(seen: scala.collection.immutable.Set[TelSchematic.Identity]) =
+        TelSchematic.identitiesOf(schematic, seen)
+
+      override def layers
+        ( seen: scala.collection.immutable.Set[TelSchematic.Identity], naming: TelSchematic.Naming )
+      :   List[Tels.Layer] =
+
+        TelSchematic.layersOf(schematic, seen, naming)
+
+      override def definitions
+        ( seen: scala.collection.immutable.Set[TelSchematic.Identity], naming: TelSchematic.Naming )
+      :   TelSchematic.Definitions =
+
+        TelSchematic.definitionsOf(schematic, seen, naming)
 
   // A map's `entries` struct has no record of its own to reference, so it stays inline: a
   // schema document cannot name it, and `Tels.Renderer` reports it as such.
@@ -321,9 +470,11 @@ trait Tels2:
     new TelSchematic:
       type Self = Map[key, value]
 
-      def schema(): Tels.Type =
-        val keyType = TelSchematic.fieldTypeOf(keys)
-        val valueType = TelSchematic.fieldTypeOf(values)
+      def schema(): Tels.Type = schema(TelSchematic.Naming.simple)
+
+      override def schema(naming: TelSchematic.Naming): Tels.Type =
+        val keyType = TelSchematic.fieldTypeOf(keys, naming)
+        val valueType = TelSchematic.fieldTypeOf(values, naming)
 
         val entry =
           Tels.Struct
@@ -336,9 +487,16 @@ trait Tels2:
           ( Array(Tels.Field(Polarity.Implicit, Polarity.Loose, t"entries", entry, Unset)),
             Array.empty )
 
-      override def definitions(seen: scala.collection.immutable.Set[Text]) =
-        val left = TelSchematic.definitionsOf(keys, seen)
-        val right = TelSchematic.definitionsOf(values, seen)
+      override def identities(seen: scala.collection.immutable.Set[TelSchematic.Identity]) =
+        val left = TelSchematic.identitiesOf(keys, seen)
+        left.reverse.unwind(TelSchematic.identitiesOf(values, seen))
+
+      override def definitions
+        ( seen: scala.collection.immutable.Set[TelSchematic.Identity], naming: TelSchematic.Naming )
+      :   TelSchematic.Definitions =
+
+        val left = TelSchematic.definitionsOf(keys, seen, naming)
+        val right = TelSchematic.definitionsOf(values, seen, naming)
 
         TelSchematic.Definitions
           ( left.records.reverse.unwind(right.records),
@@ -351,15 +509,28 @@ trait Tels2:
   // `value`, registering any `select` definitions the type contributes. A top-level
   // sum's schema is a `Reference`, so its document root is a struct with a single
   // select member referencing the registered `SelectDefinition`.
-  def tels[value](name: Text)(using schematic: value is TelSchematic over Tels.Type): Tels =
-    val definitions = schematic.definitions(scala.collection.immutable.Set())
+  //
+  // Definitions are named by type: a type whose simple name is its own keeps it, and the types
+  // of a group sharing one are qualified by their enclosing types (`PhraseCode`, `ElementCode`).
+  // Two types the qualification cannot tell apart would be one definition, so the schema is
+  // rejected as E210 here, where the types are known, rather than when a value fails to write
+  // under it; and the assembled schema is checked as a hand-written one would be.
+  def tels[value](name: Text)(using schematic: value is TelSchematic over Tels.Type)
+  :   Tels raises Tel.Error =
+
+    val naming = TelSchematic.Naming(schematic.identities(scala.collection.immutable.Set()))
+    if !naming.ambiguous.nil then abort(Tel.Error(Tel.Error.Reason.DuplicateDefinition))
+
+    val definitions = schematic.definitions(scala.collection.immutable.Set(), naming)
+
+    // A type reached by several paths contributes its definition once per path.
     val records0 = TelSchematic.distinct(definitions.records, _.name)
     val selects = TelSchematic.distinct(definitions.selects, _.name)
-    val layers = schematic.rootLayers
+    val layers = schematic.rootLayers(naming)
 
     // The root type's own record is registered only when some member references it — a
     // recursive type — since the document struct already declares its members.
-    val rootRecord: Optional[Text] = schematic.fieldType match
+    val rootRecord: Optional[Text] = schematic.fieldType(naming) match
       case Tels.Reference(reference) => reference
       case _                         => Unset
 
@@ -384,7 +555,7 @@ trait Tels2:
     val records = records0.filter: record =>
       rootRecord != record.name || references.has(record.name)
 
-    schematic.schema().absolve match
+    val schema = schematic.schema(naming).absolve match
       case struct: Tels.Struct =>
         Tels
           ( name, struct, layers.to[Array], Unset, records.to[Array], Array.empty,
@@ -395,10 +566,15 @@ trait Tels2:
         val root   = Tels.Struct(Array(member), Array.empty)
         Tels(name, root, layers.to[Array], Unset, records.to[Array], Array.empty, selects.to[Array])
 
+    Tels.Validation.checkBase(schema)
+    schema
+
 object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
-  // One derived field: its declaration, the layer it is annotated with, and the definitions and
-  // layers its own type contributes.
-  private case class Member(field: Tels.Field, layer: Optional[Text], schematic: TelSchematic):
+  import TelSchematic.{Identity, Naming}
+
+  // One derived field: its keyword, the layer it is annotated with, and the schematic of its type,
+  // which gives the field's declaration and the definitions and layers the type contributes.
+  private case class Member(keyword: Text, layer: Optional[Text], schematic: TelSchematic):
 
     // Plain members rather than `Optional`'s extensions, which applied inside a traversal's
     // lambda trip the compiler's `wildApprox` assertion (scala/scala3#24824).
@@ -410,28 +586,33 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
       case name: Text => name
       case _          => t""
 
+    def field(naming: Naming): Tels.Field =
+      Tels.Field
+        ( schematic.polarity, schematic.repeatable, keyword, schematic.fieldType(naming), Unset )
+
   // The members a layer groups, by the layer's name.
   private case class Group(name: Text, members: List[Member])
 
-  private def structOf(members: List[Member]): Tels.Struct =
-    val fields: List[Tels.Member] = members.map: member => member.field
+  private def structOf(members: List[Member], naming: Naming): Tels.Struct =
+    val fields: List[Tels.Member] = members.map: member => member.field(naming)
     Tels.Struct(fields.to[Array], Array.empty)
 
   // A group's layer as a nested record contributes it: refining the record by the grouped fields.
-  private def recordLayer(record: Text, group: Group): Tels.Layer =
-    val definition = Tels.RecordDefinition(record, structOf(group.members).members, Array.empty)
+  private def recordLayer(record: Text, group: Group, naming: Naming): Tels.Layer =
+    val members = structOf(group.members, naming).members
+    val definition = Tels.RecordDefinition(record, members, Array.empty)
     val definitions: Array[Tels.RecordDefinition]^{} = Array(definition)
     val overlay = Tels.Struct(Array.empty, Array.empty)
     Tels.Layer(group.name, overlay, definitions, Array.empty, Array.empty)
 
   // A group's layer as the root document contributes it: the grouped fields in the overlay.
-  private def overlayLayer(group: Group): Tels.Layer =
-    Tels.Layer(group.name, structOf(group.members), Array.empty, Array.empty, Array.empty)
+  private def overlayLayer(group: Group, naming: Naming): Tels.Layer =
+    Tels.Layer(group.name, structOf(group.members, naming), Array.empty, Array.empty, Array.empty)
 
   // The schematic of a product, whose `schema()` is the struct of its unlayered fields, whose
   // `fieldType` is a reference to its record, and whose `@assign`-annotated fields form layers.
   // A plain `def` (not the inline body) so the anonymous class is compiled once.
-  private def productSchematic(name: Text, members0: () -> List[Member])
+  private def productSchematic(identity: Identity, members0: () -> List[Member])
   :   TelSchematic over Tels.Type =
 
     new TelSchematic:
@@ -441,14 +622,22 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
       private lazy val base: List[Member] = members.filter(_.unlayered)
       private lazy val layered: List[Member] = members.filter(!_.unlayered)
 
-      def schema(): Tels.Type = structOf(base)
-      override def fieldType: Tels.Type = Tels.Reference(name)
+      def schema(): Tels.Type = schema(Naming.simple)
+      override def schema(naming: Naming): Tels.Type = structOf(base, naming)
+      override def fieldType(naming: Naming): Tels.Type = Tels.Reference(naming(identity))
 
-      override def definitions(seen: scala.collection.immutable.Set[Text]) =
-        if seen.contains(name) then TelSchematic.Definitions(Nil, Nil)
+      override def identities(seen: scala.collection.immutable.Set[Identity]): List[Identity] =
+        if seen.contains(identity) then Nil
+        else identity :: members.bind(_.schematic.identities(seen + identity))
+
+      override def definitions(seen: scala.collection.immutable.Set[Identity], naming: Naming)
+      :   TelSchematic.Definitions =
+
+        if seen.contains(identity) then TelSchematic.Definitions(Nil, Nil)
         else
-          val record = Tels.RecordDefinition(name, structOf(base).members, Array.empty)
-          val nested = members.map(_.schematic.definitions(seen + name))
+          val members1 = structOf(base, naming).members
+          val record = Tels.RecordDefinition(naming(identity), members1, Array.empty)
+          val nested = members.map(_.schematic.definitions(seen + identity, naming))
 
           TelSchematic.Definitions
             ( record :: nested.bind(_.records),
@@ -457,19 +646,23 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
       // Grouped by layer name in order of first appearance.
       private def grouped: List[Group] =
         val named: List[Text] = layered.map(_.layerName)
-        val names: List[Text] = TelSchematic.distinct[Text](named, identity)
+        val names: List[Text] = TelSchematic.distinct[Text](named, name => name)
         names.map: layerName => Group(layerName, layered.filter(_.layerName == layerName))
 
-      override def layers(seen: scala.collection.immutable.Set[Text]): List[Tels.Layer] =
-        if seen.contains(name) then Nil
+      override def layers(seen: scala.collection.immutable.Set[Identity], naming: Naming)
+      :   List[Tels.Layer] =
+
+        if seen.contains(identity) then Nil
         else
-          val own: List[Tels.Layer] = grouped.map: group => recordLayer(name, group)
-          val nested = members.bind(_.schematic.layers(seen + name))
+          val record = naming(identity)
+          val own: List[Tels.Layer] = grouped.map: group => recordLayer(record, group, naming)
+          val nested = members.bind(_.schematic.layers(seen + identity, naming))
           TelSchematic.merge(own.reverse.unwind(nested))
 
-      override def rootLayers: List[Tels.Layer] =
-        val own: List[Tels.Layer] = grouped.map: group => overlayLayer(group)
-        val nested = members.bind(_.schematic.layers(scala.collection.immutable.Set(name)))
+      override def rootLayers(naming: Naming): List[Tels.Layer] =
+        val own: List[Tels.Layer] = grouped.map: group => overlayLayer(group, naming)
+        val seen = scala.collection.immutable.Set(identity)
+        val nested = members.bind(_.schematic.layers(seen, naming))
         TelSchematic.merge(own.reverse.unwind(nested))
 
   // The layer a field's `@assign` annotation names, if it carries one. A plain method, so the
@@ -487,21 +680,22 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
   private[stratiform] inline def retractions[sum]: scala.List[(Text, Text)] =
     ${stratiform.internal.retractions[sum]}
 
+  // The identity of the type a definition derives from, read at compile time.
+  private[stratiform] inline def identityOf[derivation]: Identity =
+    ${stratiform.internal.identityOf[derivation]}
+
   // One field's `Member`, built outside the polymorphic lambda `contexts` types the fields
   // under, where the closures it holds would be typed against live type variables.
   private def member
     ( schematic: TelSchematic, keyword: Text, layerName: Optional[Text] )
   :   Member =
 
-    val field =
-      Tels.Field(schematic.polarity, schematic.repeatable, keyword, schematic.fieldType, Unset)
-
-    Member(field, layerName, schematic)
+    Member(keyword, layerName, schematic)
 
   inline def conjunction[derivation <: Product: ProductReflection]
   :   derivation is TelSchematic over Tels.Type =
 
-    val name: Text = wisteria.internal.sumName[derivation]
+    val identity: Identity = TelsDerivation.identityOf[derivation]
     val renames: Map[Text, Text] = relabelling[derivation, Tel]
     val grouping: scala.List[(Text, Text)] = TelsDerivation.assignments[derivation]
 
@@ -514,41 +708,60 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
 
       array.to[proscenium.List]
 
-    productSchematic(name, () => members).asInstanceOf[derivation is TelSchematic over Tels.Type]
+    productSchematic(identity, () => members)
+    . asInstanceOf[derivation is TelSchematic over Tels.Type]
 
   // The schematic for a sum: `schema()` indirects to the named select; the select
   // itself is surfaced through `selectDefinitions` for registration, and the
   // definitions of its variants' types through `definitions`. A plain `def`
   // (not the inline body) so the anonymous class is compiled once, not per call site.
   private def selectSchematic
-    ( select: Tels.SelectDefinition, nested: List[TelSchematic], own: List[Tels.Layer] )
+    ( identity: Identity, variants: List[(Text, TelSchematic)], retractions: scala.List[(Text, Text)] )
   :   TelSchematic over Tels.Type =
 
     new TelSchematic:
-      def schema(): Tels.Type = Tels.Reference(select.name)
-      override def selectDefinitions: List[Tels.SelectDefinition] = List(select)
+      private def select(naming: Naming): Tels.SelectDefinition =
+        val declared: List[Tels.Variant] = variants.map: variant =>
+          Tels.Variant(variant(0), variant(1).fieldType(naming))
+
+        Tels.SelectDefinition(naming(identity), declared.to[Array], Array.empty)
+
+      def schema(): Tels.Type = schema(Naming.simple)
+      override def schema(naming: Naming): Tels.Type = Tels.Reference(naming(identity))
+
+      override def selectDefinitions(naming: Naming): List[Tels.SelectDefinition] =
+        List(select(naming))
+
+      override def identities(seen: scala.collection.immutable.Set[Identity]): List[Identity] =
+        if seen.contains(identity) then Nil
+        else identity :: variants.bind(_(1).identities(seen + identity))
 
       // The layers that retract this sum's cases, and those its variants' types contribute.
-      override def layers(seen: scala.collection.immutable.Set[Text]): List[Tels.Layer] =
-        if seen.contains(select.name) then Nil
+      override def layers(seen: scala.collection.immutable.Set[Identity], naming: Naming)
+      :   List[Tels.Layer] =
+
+        if seen.contains(identity) then Nil
         else
-          val below = nested.bind(_.layers(seen + select.name))
+          val own = retractionLayers(naming(identity), retractions)
+          val below = variants.bind(_(1).layers(seen + identity, naming))
           TelSchematic.merge(own.reverse.unwind(below))
 
-      override def definitions(seen: scala.collection.immutable.Set[Text]) =
-        if seen.contains(select.name) then TelSchematic.Definitions(Nil, Nil)
+      override def definitions(seen: scala.collection.immutable.Set[Identity], naming: Naming)
+      :   TelSchematic.Definitions =
+
+        if seen.contains(identity) then TelSchematic.Definitions(Nil, Nil)
         else
-          val below = nested.map(_.definitions(seen + select.name))
-          TelSchematic.Definitions(below.bind(_.records), select :: below.bind(_.selects))
+          val below = variants.map(_(1).definitions(seen + identity, naming))
+          TelSchematic.Definitions(below.bind(_.records), select(naming) :: below.bind(_.selects))
 
   // A sum derives to a named `SelectDefinition` (its variants) registered in the
   // namespace, with `schema()` returning a `Reference` to it — the indirected form
   // `Tel.Type.assign` and BinTEL resolve. Mirrors the codec's discriminator. A product
   // variant's type is a reference to its record, registered through `definitions`.
-  // One variant and the definitions its type contributes, built outside the polymorphic lambda
+  // One variant's keyword and the schematic of its type, built outside the polymorphic lambda
   // `choices` types the variants under.
-  private def variant(schematic: TelSchematic, keyword: Text): (Tels.Variant, TelSchematic) =
-    (Tels.Variant(keyword, schematic.fieldType), schematic)
+  private def variant(schematic: TelSchematic, keyword: Text): (Text, TelSchematic) =
+    (keyword, schematic)
 
   // The layers a sum's `@retract` annotations form, in order of first appearance: each a `select`
   // of the sum's name which excludes the variants retracted from that layer.
@@ -556,7 +769,7 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
   :   List[Tels.Layer] =
 
     val layers: List[Text] =
-      TelSchematic.distinct[Text](proscenium.List.from(retractions.map(_(1))), identity)
+      TelSchematic.distinct[Text](proscenium.List.from(retractions.map(_(1))), name => name)
 
     layers.map: layer =>
       val excludes: scala.List[Text] =
@@ -571,7 +784,7 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
   inline def disjunction[derivation: SumReflection]
   :   derivation is TelSchematic over Tels.Type =
 
-    val name: Text = wisteria.internal.sumName[derivation]
+    val identity: Identity = TelsDerivation.identityOf[derivation]
 
     val variants =
       val array =
@@ -581,7 +794,5 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
 
       array.to[proscenium.List]
 
-    val select = Tels.SelectDefinition(name, variants.map(_(0)).to[Array], Array.empty)
-    val layers = retractionLayers(name, TelsDerivation.retractions[derivation])
-    selectSchematic(select, variants.map(_(1)), layers)
+    selectSchematic(identity, variants, TelsDerivation.retractions[derivation])
     . asInstanceOf[derivation is TelSchematic over Tels.Type]

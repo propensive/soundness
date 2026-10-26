@@ -195,6 +195,12 @@ document — the schema language is TEL:
 val schema = Tels.tels[Person](t"person")
 ```
 
+Each record or select in a derived schema is named after its type's simple name, unless two
+different types reached from the root share one — `Phrase.Code` and `Element.Code`, say — in which
+case each is qualified by its enclosing type, as `PhraseCode` and `ElementCode`; a derived schema
+whose names cannot be told apart is rejected (E210), as a hand-written one with two definitions of
+one name is.
+
 `Tel.Type.assign` types a document against a schema, validating it and reporting failures as typed
 errors with a path to the offending element; under an accruing strategy every fault in a document is
 collected and reported together.

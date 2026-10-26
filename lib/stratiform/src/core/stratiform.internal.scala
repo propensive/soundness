@@ -99,6 +99,41 @@ object internal:
 
     symbols.flatMap(_.annotations).filter(_.tpe <:< annotation)
 
+  // The identity of the definition `derivation` derives to: its simple name, as wisteria names the
+  // definition, and the names of the packages, objects and classes enclosing it, innermost first.
+  // Two types of one simple name are told apart by it, and a type reached twice is recognised.
+  def identityOf[derivation: Type](using Quotes): Expr[TelSchematic.Identity] =
+    import quotes.reflect.*
+
+    // The type is derived at an intersection or refinement of its class (a sum's variant is
+    // derived as `variant & sum`), resolved as wisteria resolves the name.
+    def resolve(repr: TypeRepr): TypeRepr = repr.dealias match
+      case AndType(left, right) =>
+        val parent = left.termSymbol.isNoSymbol && left.typeSymbol.children.nonEmpty
+        if parent then resolve(right) else resolve(left)
+
+      case Refinement(base, _, _)  => resolve(base)
+      case AnnotatedType(under, _) => resolve(under)
+      case other                   => other
+
+    val resolved = resolve(TypeRepr.of[derivation])
+
+    val symbol =
+      if resolved.termSymbol.isNoSymbol then resolved.typeSymbol else resolved.termSymbol
+
+    def root(symbol: Symbol): Boolean =
+      symbol.isNoSymbol || symbol == defn.RootClass || symbol == defn.RootPackage
+      || symbol == defn.EmptyPackageClass
+
+    // An object's class is named with a trailing `$`, which is not part of the name a user wrote.
+    def enclosing(symbol: Symbol): scala.List[String] =
+      if root(symbol) then Nil else symbol.name.stripSuffix("$") :: enclosing(symbol.owner)
+
+    val name = Expr(symbol.name.stripSuffix("$"))
+    val segments = Varargs(enclosing(symbol.owner).map { segment => '{${Expr(segment)}.tt} })
+
+    '{TelSchematic.Identity($name.tt, proscenium.List($segments*))}
+
   // The `@assign` layer of each field of `product` that has one, as (field, layer) pairs. A
   // field's annotation may sit on the constructor parameter or on the field, so both are read.
   def assignments[product: Type](using Quotes): Expr[scala.List[(Text, Text)]] =

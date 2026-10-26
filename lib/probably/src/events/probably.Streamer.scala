@@ -61,7 +61,8 @@ object Streamer:
   def queued: Boolean = true
 
   // The derived BinTEL schema for `TestEvent`, computed once; every event encodes under it.
-  private lazy val schema: Tels = Tels.tels[TestEvent](t"test-event")
+  // Deriving it cannot fail: no two of `TestEvent`'s types share a simple name.
+  private lazy val schema: Tels = unsafely(Tels.tels[TestEvent](t"test-event"))
 
   // A canonical structural rendering of the derived schema — name, document structure, and
   // select definitions with their variants, in declaration order — hashed with BLAKE3. This is

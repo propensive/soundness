@@ -2258,7 +2258,7 @@ object Tel extends Tel2:
       // A further, less preferred format.
       inline def otherwise[format]
         ( using Tactic[Bintel.Error], Tactic[Tels.Renderer.Error], Tactic[Tels.Resolution.Error],
-                Tactic[Error] )
+                Tactic[Error], Tactic[Tel.Error] )
       :   Typed[Tuple.Append[formats, format]] =
 
         val schematic = summonInline[format is TelSchematic over Tels.Type]
@@ -2322,7 +2322,7 @@ object Tel extends Tel2:
     // The lineage a type's derived schema forms for acceptances (`Tels.Atoms.split`): the
     // base is its required members, and its optional members are atoms of the lineage.
     def lineage[value](name: Text)(using schematic: value is TelSchematic over Tels.Type)
-      ( using Tactic[Bintel.Error], Tactic[Tels.Renderer.Error] )
+      ( using Tactic[Bintel.Error], Tactic[Tels.Renderer.Error], Tactic[Tel.Error] )
     :   SchemaSignature.Lineage =
 
       val (base, atoms) = Tels.Atoms.split(Tels.tels[value](name))
@@ -2360,7 +2360,7 @@ object Tel extends Tel2:
     inline def apply[formats <: Tuple]
       ( selfContained: Boolean = false, anyPublished: Boolean = false )
       ( using Tactic[Bintel.Error], Tactic[Tels.Renderer.Error], Tactic[Tels.Resolution.Error],
-              Tactic[Error] )
+              Tactic[Error], Tactic[Tel.Error] )
     :   Typed[formats] =
 
       val lineages = Acceptance.lineages[formats]
@@ -2369,7 +2369,7 @@ object Tel extends Tel2:
 
     // The lineages of a tuple of types, in order.
     inline def lineages[formats <: Tuple]
-      ( using Tactic[Bintel.Error], Tactic[Tels.Renderer.Error] )
+      ( using Tactic[Bintel.Error], Tactic[Tels.Renderer.Error], Tactic[Tel.Error] )
     :   List[SchemaSignature.Lineage] =
 
       inline erasedValue[formats] match

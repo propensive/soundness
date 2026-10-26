@@ -75,6 +75,33 @@ object TypedAcceptanceTests extends Suite("tel-typed-acceptance", m"Stratiform t
   case class Invoice(number: Text, total: Int)
   case class Node(label: Text, child: Optional[Node])
 
+  // Two sums whose cases share a simple name (#2319): each `Code` derives to a record of its own.
+  enum Phrase derives CanEqual:
+    case Code(language: Text, tokens: List[Text])
+    case Plain(text: Text)
+
+  enum Element derives CanEqual:
+    case Code(language: Text, lines: List[Text], start: Int)
+    case Para(content: List[Phrase])
+
+  case class Sheet(elements: List[Element]) derives CanEqual
+
+  // Two products whose simple names clash, under one root.
+  object Alpha:
+    case class Item(label: Text) derives CanEqual
+
+  object Beta:
+    case class Item(count: Int) derives CanEqual
+
+  case class Both(alpha: Alpha.Item, beta: Beta.Item) derives CanEqual
+
+  // One type reached by two paths.
+  case class Pair(left: Address, right: Address)
+
+  // A type whose own name is the one the clashing `Code`s qualify to.
+  case class PhraseCode(code: Text)
+  case class Clash(phrase: Phrase, element: Element, named: PhraseCode)
+
   private def keywords(struct: Tels.Struct): List[Text] =
     proscenium.List.from(struct.members.stdlib.toList).map:
       case field: Tels.Field      => field.keyword
@@ -148,6 +175,39 @@ object TypedAcceptanceTests extends Suite("tel-typed-acceptance", m"Stratiform t
         val (base2, layers2) = SchemaSignature.componentHashes(schema, Tels.Axiom.tels)
         hex(base) == hex(base2) && layers.map(hex) == layers2.map(hex)
       . assert(identity)
+
+    suite(m"Definition names of derived schemas"):
+      lazy val sheet = Tels.tels[Sheet](t"sheet")
+
+      test(m"two types sharing a simple name are both kept, qualified by their enclosing types"):
+        sheet.records.stdlib.toList.map(_.name)
+      . assert(_ == scala.List(t"ElementCode", t"Para", t"PhraseCode", t"Plain"))
+
+      test(m"a variant of a qualified record references it by its qualified name"):
+        sheet.selects.stdlib.toList.flatMap(_.variants.stdlib.toList).map(_.variantType)
+      . assert(_ == scala.List(Tels.Reference(t"ElementCode"), Tels.Reference(t"Para"),
+                               Tels.Reference(t"PhraseCode"), Tels.Reference(t"Plain")))
+
+      test(m"two products sharing a simple name are qualified by their enclosing objects"):
+        Tels.tels[Both](t"both").records.stdlib.toList.map(_.name)
+      . assert(_ == scala.List(t"AlphaItem", t"BetaItem"))
+
+      test(m"a value of clashing types round-trips through BinTEL"):
+        Bintel.read[Both](Both(Alpha.Item(t"one"), Beta.Item(2)).bintel)
+      . assert(_ == Both(Alpha.Item(t"one"), Beta.Item(2)))
+
+      test(m"a type reached by several paths yields one definition"):
+        Tels.tels[Pair](t"pair").records.stdlib.toList.map(_.name)
+      . assert(_ == scala.List(t"Address"))
+
+      test(m"a type with no clashes is named as before"):
+        val schema = Tels.tels[Envelope](t"envelope")
+        (schema.records.stdlib.toList.map(_.name), schema.selects.stdlib.toList.map(_.name))
+      . assert(_ == (scala.List(t"Ping", t"Data", t"Stop"), scala.List(t"Message")))
+
+      test(m"a clash the qualification cannot resolve is E210"):
+        capture[Tel.Error](Tels.tels[Clash](t"clash")).reason
+      . assert(_ == Tel.Error.Reason.DuplicateDefinition)
 
     suite(m"Layers named by objects"):
       test(m"a layer's name is read from its type"):
