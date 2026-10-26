@@ -968,7 +968,7 @@ object Tels extends Tels2:
       checkBase(schema)
       checkComposed(Layers.compose(schema, selection))
 
-    private def checkBase(schema: Tels): Unit raises Tel.Error =
+    private[stratiform] def checkBase(schema: Tels): Unit raises Tel.Error =
       // E207: the schema sigil must be sigil-valid per §6. (An invalid
       // *pragma* sigil is E105 at parse time; this covers the schema
       // model itself, however it was constructed.)
