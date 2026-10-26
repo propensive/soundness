@@ -299,9 +299,9 @@ object Tests extends Suite("mime", m"Gesticulate tests"):
     // Every suffix must survive being written and read back: the hyphenated ones did not,
     // because the whole suffix was capitalized (`Json-seq`) rather than each word.
     test(m"every suffix round-trips through its rendered form"):
-      Array.unsafeFrozen(Media.Suffix.values).stdlib.toList.map: suffix =>
+      Array.unsafeFrozen(Media.Suffix.values).to[List].map: suffix =>
         t"application/thing+${suffix.name}".as[MediaType].suffixes
-    . assert(_ == Array.unsafeFrozen(Media.Suffix.values).stdlib.toList.map(List(_)))
+    . assert(_ == Array.unsafeFrozen(Media.Suffix.values).to[List].map(List(_)))
 
     test(m"parse a hyphenated suffix"):
       t"application/thing+json-seq".as[MediaType].suffixes

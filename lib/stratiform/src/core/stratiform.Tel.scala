@@ -2066,7 +2066,7 @@ object Tel extends Tel2:
     // (3), every scalar carrying BASE-256 text.
     def apply(element: Tel.Element)(using Tactic[Error]): Acceptance = element match
       case Tel.Element.Node(_, _, children) =>
-        Acceptance(children.stdlib.to(List).map(alternative))
+        Acceptance(children.to[List].map(alternative))
 
       case _ =>
         abort(Error(Error.Reason.Malformed))

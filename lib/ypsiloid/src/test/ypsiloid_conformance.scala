@@ -326,15 +326,15 @@ object Conformance:
 
     case Yaml.Ast.Sequence(items) =>
       val converted: Array[Any] =
-        Array.from(items.stdlib.map(item => Json.unseal(yamlAstToJson(item)).asInstanceOf[Any]))
+        items.map(item => Json.unseal(yamlAstToJson(item)).asInstanceOf[Any]).to[Array]
       Json.ast(Json.Ast.arr(converted))
 
     case Yaml.Ast.Mapping(entries) =>
       val pairs = entries.sweep:
         case (Yaml.Ast.Str(s), v) => (s.s, Json.unseal(yamlAstToJson(v)))
 
-      val keys: Array[String] = Array.from(pairs.stdlib.map(_._1))
-      val values: Array[Any] = Array.from(pairs.stdlib.map(_._2.asInstanceOf[Any]))
+      val keys: Array[String] = pairs.map(_._1).to[Array]
+      val values: Array[Any] = pairs.map(_._2.asInstanceOf[Any]).to[Array]
       Json.ast(Json.Ast.obj(keys, values))
 
   private def jsonString(json: Json): String =

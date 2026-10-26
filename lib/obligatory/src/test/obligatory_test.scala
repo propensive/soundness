@@ -176,17 +176,17 @@ object Tests extends Suite("rpc", m"Obligatory Tests"):
 
       test(m"round-trip a single message"):
         val framed = Grpc.Framing.encode(ascii(t"hello"))
-        Chain(framed).iterator.frames[Grpc.Framing].to(List).map(_.stdlib.to(List))
+        Chain(framed).iterator.frames[Grpc.Framing].to(List).map(_.to[List])
       . assert(_ == List(ascii(t"hello").to[List]))
 
       test(m"split two concatenated messages"):
         val framed = Array.from(Grpc.Framing.encode(ascii(t"one")).stdlib ++ Grpc.Framing.encode(ascii(t"two")).stdlib)
-        Chain(framed).iterator.frames[Grpc.Framing].to(List).map(_.stdlib.to(List))
+        Chain(framed).iterator.frames[Grpc.Framing].to(List).map(_.to[List])
       . assert(_ == List(ascii(t"one").to[List], ascii(t"two").to[List]))
 
       test(m"gzip-compressed message round-trips"):
         val framed = Grpc.Framing.encode(ascii(t"compress me please"), compress = true)
-        Chain(framed).iterator.frames[Grpc.Framing].to(List).map(_.stdlib.to(List))
+        Chain(framed).iterator.frames[Grpc.Framing].to(List).map(_.to[List])
       . assert(_ == List(ascii(t"compress me please").to[List]))
 
       test(m"status code maps to the canonical name"):

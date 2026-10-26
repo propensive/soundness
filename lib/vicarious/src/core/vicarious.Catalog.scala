@@ -58,7 +58,7 @@ case class Catalog[key, value: ClassTag](values: Array[value]^{}) extends Findab
     values(accessor(using Proxy(0)).id.or(panic(m"the Proxy phantom always assigns an id")))
 
   def map[value2: ClassTag](lambda: value => value2): Catalog[key, value2] =
-    Catalog(Array.from(values.stdlib.map(lambda)))
+    Catalog(values.map(lambda))
 
 
   def tie[result](using proxy: Proxy[key, value, 0])

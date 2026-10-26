@@ -286,4 +286,4 @@ trait Tel4:
       else tel
 
     def repeated(name: Text, tel: Tel)(using Tactic[Tel.Provider.Error]): List[Tel] =
-      tel.fields(name).stdlib.to(List)
+      tel.fields(name).to[List]

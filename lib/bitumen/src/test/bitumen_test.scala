@@ -1109,9 +1109,8 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
       test(m"re-serialising a parsed archive reproduces the original bytes"):
         val original = arArchive(List(arEntry(t"a.txt", t"aaa"), arEntry(t"b.txt", t"bb")))
-        Arfile.from(original.source[Data]).source[Data].memoize.stdlib.to(List)
-      . assert(_ == arArchive(List(arEntry(t"a.txt", t"aaa"), arEntry(t"b.txt", t"bb"))).stdlib
-          .to(List))
+        Arfile.from(original.source[Data]).source[Data].memoize.to[List]
+      . assert(_ == arArchive(List(arEntry(t"a.txt", t"aaa"), arEntry(t"b.txt", t"bb"))).to[List])
 
     suite(m"AR: chunk boundaries"):
       // The reader pulls off a shared cursor, so a chunking that splits headers and bodies at

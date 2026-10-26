@@ -323,7 +323,7 @@ object Launcher:
         def text(field: Int): Text = optional(field).or(abort(Launcher.Mismatch()))
 
         def texts(field: Int): List[Text] =
-          children.stdlib.toList.collect { case Tel.Element.Value(`field`, _, text) => text }
+          children.to[List].sweep { case Tel.Element.Value(`field`, _, text) => text }
           . to(List)
 
         def flag(field: Int): Boolean = children.exists:
@@ -336,7 +336,7 @@ object Launcher:
         def optionalLong(field: Int): Optional[Long] = optional(field).let(_.as[Long])
 
         def descriptors: List[Descriptor] =
-          children.stdlib.toList.collect:
+          children.to[List].sweep:
             case Tel.Element.Node(16, _, fields) =>
               def field(index: Int): Optional[Text] = fields.stdlib.collectFirst:
                 case Tel.Element.Value(`index`, _, text) => text
@@ -352,7 +352,7 @@ object Launcher:
           . to(List)
 
         def raws: List[Raw] =
-          children.stdlib.toList.collect:
+          children.to[List].sweep:
             case Tel.Element.Node(17, _, fields) =>
               def field(index: Int): Optional[Text] = fields.stdlib.collectFirst:
                 case Tel.Element.Value(`index`, _, text) => text

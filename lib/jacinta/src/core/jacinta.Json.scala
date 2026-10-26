@@ -339,7 +339,7 @@ trait Json2 extends Json3:
       Json.Decodable({
         val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
-          . pipe { array => array.stdlib.to(List) } // freshens the array
+          . to[List]
 
         Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })
       }):
@@ -621,7 +621,7 @@ trait Json2 extends Json3:
       Json.Encodable({ () =>
         val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
-          . pipe { array => array.stdlib.to(List) } // freshens the array
+          . to[List]
 
         Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })
       }):
@@ -3119,8 +3119,8 @@ object Json extends Json1, Dynamic:
     Json.Encodable(shape): map =>
       val keys: List[key] = map.keys.to[List]
       // `Array.from` takes an `IterableOnce`, so the mappings stay on the stdlib view.
-      val values = Array.from(keys.stdlib.map(map(_).encode.root))
-      val keysArr = Array.from(keys.stdlib.map(_.encode.s))
+      val values = keys.map(map(_).encode.root).to[Array]
+      val keysArr = keys.map(_.encode.s).to[Array]
 
       Json.ast
         ( Json.Ast.obj(keysArr.asInstanceOf[Array[String]^{}], values.asInstanceOf[Array[Any]^{}]) )

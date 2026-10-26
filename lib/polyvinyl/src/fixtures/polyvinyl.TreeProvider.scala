@@ -112,7 +112,7 @@ abstract class TreeProvider(val fields: List[(Text, Member)]) extends Specificat
     case Tree.Absent   => t"absent"
 
   override def pairs(tree: Tree)(using Tactic[TreeError]): List[(Text, Tree)] = tree match
-    case Tree.Node(children) => List.from(children.stdlib.toList)
+    case Tree.Node(children) => children.to[List]
     case _                   => List()
 
   override def entries(name: Text, tree: Tree)(using Tactic[TreeError]): List[(Text, Tree)] =

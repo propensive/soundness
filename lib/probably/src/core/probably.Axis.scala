@@ -115,7 +115,7 @@ object Axis:
     val words: List[Text] = evidence.name.cut(t" ")
     val parts: List[Text] = words.prim.or(t"").cut(t".")
     val label = parts.reverse.prim.or(t"").lower
-    new Axis(label, evidence.values.stdlib.to(List))
+    new Axis(label, evidence.values.to[List])
 
   def apply(label: Text)(range: scala.Range): Axis[Int] = new Axis(label, range.to(List))
 

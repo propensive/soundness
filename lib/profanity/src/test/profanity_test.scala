@@ -229,7 +229,7 @@ object Tests extends Suite("terminal", m"Profanity Tests"):
               // The third option ("third") must appear exactly once. If the renderer
               // miscounts visual rows for the wrapped second option, the menu drifts
               // on subsequent re-renders and stale copies of "third" pile up.
-              mid.screen.stdlib.toList.count(_.contains(t"third"))
+              mid.screen.to[List].count(_.contains(t"third"))
           . check(_ == 1)
 
       // Pure state-transition tests, bypassing terminal IO. These exercise the
@@ -492,9 +492,9 @@ object Tests extends Suite("terminal", m"Profanity Tests"):
 
       suite(m"Windows console events"):
         test(m"every event decodes from its short name"):
-          Array.unsafeFrozen(WindowsSignal.values).stdlib.toList.map: signal =>
+          Array.unsafeFrozen(WindowsSignal.values).to[List].map: signal =>
             safely(signal.shortName.as[WindowsSignal])
-        . assert(_ == Array.unsafeFrozen(WindowsSignal.values).stdlib.toList)
+        . assert(_ == Array.unsafeFrozen(WindowsSignal.values).to[List])
 
         test(m"the close event is named as the launcher names it"):
           WindowsSignal.Close.shortName
@@ -525,10 +525,10 @@ object Tests extends Suite("terminal", m"Profanity Tests"):
         test(m"SIGSYS is 31") (Interrupt.Sys.id)   .assert(_ == 31)
 
         test(m"every signal id is positive"):
-          Array.unsafeFrozen(Interrupt.values).stdlib.toList.map(_.id).all(_ > 0)
+          Array.unsafeFrozen(Interrupt.values).to[List].map(_.id).all(_ > 0)
         . assert(identity(_))
 
         test(m"signal ids are distinct"):
-          val ids = Array.unsafeFrozen(Interrupt.values).stdlib.toList.map(_.id)
+          val ids = Array.unsafeFrozen(Interrupt.values).to[List].map(_.id)
           ids.size == ids.distinct.size
         . assert(identity(_))

@@ -181,7 +181,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
           producer.put(Data.fill(3)(_.toByte))
           producer.put(Data.fill(5)(i => (i + 10).toByte))
           producer.finish()
-          unsafely(output.await()).flatMap(_.stdlib.to(List))
+          unsafely(output.await()).bind(_.to[List])
       . assert(_.map(_.toInt) == List(0, 1, 2, 10, 11, 12, 13, 14))
 
       test(m"Synchronous text collection joins puts"):
@@ -221,7 +221,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
             i += 1
 
           producer.finish()
-          unsafely(output.await()).flatMap(_.stdlib.to(List))
+          unsafely(output.await()).bind(_.to[List])
       . assert(_ == (0 until 10).map(_.toByte).to(List))
 
       test(m"Push chars (synchronous text)"):
@@ -912,7 +912,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
         intake.put(Array[Byte](1, 2))
         intake.finish()
         // [pump-overlap] read after a consuming pump, lend or duct
-        scala.caps.unsafe.unsafeAssumeSeparate(gather.data).stdlib.to(List)
+        scala.caps.unsafe.unsafeAssumeSeparate(gather.data).to[List]
       . assert(_.map(_.toInt) == List(1, 2, 99))
 
       test(m"duct flush emits terminal state at end of a pulled stream"):
@@ -1173,7 +1173,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
       . assert(_ == "abcde")
 
       test(m"truncate limits a stream to its first elements"):
-        small.stream.truncate(3).memoize.stdlib.to(List)
+        small.stream.truncate(3).memoize.to[List]
       . assert(_.map(_.toInt) == List(1, 2, 3))
 
       test(m"truncate across chunk boundaries"):

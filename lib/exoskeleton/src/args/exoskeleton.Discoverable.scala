@@ -43,7 +43,7 @@ object Discoverable:
   def noSuggestions[operand]: operand is Discoverable = (_, _) => Nil
 
   given enumerable: [value: {Enumerable, Identifiable}] => value is Discoverable = (_, _) =>
-    value.values.stdlib.toList
+    value.values.to[List]
     . map: element => value.encode(value.name(element))
     . map(Suggestion(_))
     . to(List)

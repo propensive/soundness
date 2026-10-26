@@ -125,7 +125,7 @@ object SchemaSignature:
 
     val layerHashes: List[Data] =
       layerStruct.let: ls =>
-        val hashes = layerChildren.stdlib.to(List).map: layer =>
+        val hashes = layerChildren.to[List].map: layer =>
           val layerChildren = layer.asInstanceOf[Tel.Element.Node].children
           val layerRoot     = Tel.Element.Node(Unset, ls, layerChildren)
           Blake3.hashOf(layerRoot.bintel(axiom), cadence.hashSize)
@@ -243,7 +243,7 @@ object SchemaSignature:
 
     val base = hash(Tels.Renderer.element(schema.copy(layers = Array.empty), axiom), axiom)
 
-    val layers = schema.layers.stdlib.to(List).map: layer =>
+    val layers = schema.layers.to[List].map: layer =>
       hash(Tels.Renderer.layer(layer, axiom), axiom)
 
     (base, layers)
@@ -268,7 +268,7 @@ object SchemaSignature:
 
       val base = hash(Tels.Renderer.element(schema.copy(layers = Array.empty), axiom), axiom)
 
-      val layers = schema.layers.stdlib.to(List).map: layer =>
+      val layers = schema.layers.to[List].map: layer =>
         Component(hash(Tels.Renderer.layer(layer, axiom), axiom), layer.name, layer)
 
       // Atoms are deduplicated by hash: an atom that occurs in two groups, or twice in one, is

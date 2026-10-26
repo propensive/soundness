@@ -744,14 +744,14 @@ object Tests extends Suite("streams", m"Turbulence tests"):
         val sink = summon[(ji.ByteArrayOutputStream is Sink by Data over Credit)^]
         source.stream(input).pump(sink.intake(output))
         Array.unsafeFrozen(output.toByteArray.nn).to[List]
-      . assert(_ == payload.stdlib.to(List))
+      . assert(_ == payload.to[List])
 
       test(m"in-memory data source flows to output stream sink"):
         val output = ji.ByteArrayOutputStream()
         val sink = summon[(ji.ByteArrayOutputStream is Sink by Data over Credit)^]
         summon[Data is Streamable by Data over Credit].stream(payload).pump(sink.intake(output))
         Array.unsafeFrozen(output.toByteArray.nn).to[List]
-      . assert(_ == payload.stdlib.to(List))
+      . assert(_ == payload.to[List])
 
       val original = t"The quick brown fox jumps over the lazy dog"*100
 

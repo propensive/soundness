@@ -64,7 +64,7 @@ object Program:
       case Program.Op.Jump(-1) => Program.Op.Jump(target)
       case other               => other
 
-    def bounds(ranges: Ranges): Array[Int] = Array.from(ranges.spans.stdlib)
+    def bounds(ranges: Ranges): Array[Int] = ranges.spans.to[Array]
 
     // Emits the code for one node. Fragments are contiguous and fall through to whatever is
     // emitted next, so a consuming op's `next` is always its own pc + 1; only loops and
@@ -227,7 +227,7 @@ case class Program(ops: Array[Program.Op], slots: Int, captures: Int):
         merged = merged.union(Ranges(lo, hi))
         todo = rest
 
-    Array.from(merged.spans.stdlib)
+    merged.spans.to[Array]
 
   // The longest literal every match must begin with (UTF-16-encoded, capped at 32 chars), or
   // empty if the first consuming op is not unique and single-valued. Seeking jumps between

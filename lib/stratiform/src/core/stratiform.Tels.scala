@@ -1926,7 +1926,7 @@ object Tels extends Tels2:
 
     // The schema's groups: the base, then each layer in declaration order.
     def decompose(schema: Tels): List[Group] =
-      base(schema) :: schema.layers.stdlib.to(List).map(layer)
+      base(schema) :: schema.layers.to[List].map(layer)
 
     def base(schema: Tels): Group =
       val head = Atom.Head(schema.name, schema.sigil)

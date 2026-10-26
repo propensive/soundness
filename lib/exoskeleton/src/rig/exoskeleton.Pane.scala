@@ -149,7 +149,7 @@ object Pane:
         enter(' ')
         enter(text)
         attend(Ht)
-        screenshot().screen.filter(!_.starts(t"> ")).stdlib.toSeq.join(t"\n").trim
+        screenshot().screen.filter(!_.starts(t"> ")).to[List].join(t"\n").trim
 
 
   def progress(text: Text, decorate: Char => Text = char => t"^")

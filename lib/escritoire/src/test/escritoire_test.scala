@@ -450,7 +450,7 @@ object Tests extends Suite("table", m"Escritoire tests"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.ignoreAttenuation
       val tabulation = scaffold.tabulate(people)
-      tabulation.layout(40).widths.stdlib.to(List) == tabulation.grid(40).sections.prim.let(_.widths.stdlib.to(List)).or(Nil)
+      tabulation.layout(40).widths.to[List] == tabulation.grid(40).sections.prim.let(_.widths.to[List]).or(Nil)
     . assert(_ == true)
 
     // ─── Attenuation ────────────────────────────────────────────────────────
