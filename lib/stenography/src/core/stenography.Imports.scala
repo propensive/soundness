@@ -108,10 +108,17 @@ object Imports:
 
 // `aliases` maps a refined member's name to the infix type alias in scope which refines it,
 // for `Syntax.text` to prefer; empty unless resolved against a compiler context.
+//
+// `pureFuns` records whether the code being written to has pure functions enabled (which
+// capture checking implies). It decides how a function type with no capture set is written:
+// as `->` when pure functions are on, and as `=>` when they are off, since `A => B` desugars to
+// `ImpureFunctionN` only in the former case. Without a compiler context to consult, the
+// pure-functions reading is assumed, so that `->` and `=>` at least stay distinguishable.
 case class Imports
   ( designators: sci.Set[Designator],
     direct:      sci.Set[Designator],
-    aliases:     sci.Map[String, Text] = sci.Map() ):
+    aliases:     sci.Map[String, Text] = sci.Map(),
+    pureFuns:    Boolean               = true ):
 
   def has(designator: Designator): Boolean = designators.contains(designator)
   def hasDirect(designator: Designator): Boolean = direct.contains(designator)

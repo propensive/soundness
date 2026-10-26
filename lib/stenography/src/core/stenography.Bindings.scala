@@ -34,25 +34,16 @@ package stenography
 
 import java.util.IdentityHashMap
 
-import scala.collection.immutable as sci
 import scala.collection.mutable as scm
 
 import anticipation.*
 
-// `pureFuns` records whether the code the macro is expanding into has pure functions enabled
-// (which capture checking implies). It decides how a bare `FunctionN` is rendered: as `->`
-// when pure functions are on, and as `=>` when they are off, since `A => B` desugars to
-// `ImpureFunctionN` only in the former case. Without a compiler context to consult we assume
-// the pure-functions reading, so `->` and `=>` at least stay distinguishable.
-//
-// `infixAliases` maps a refinement member's name to the infix type alias which refines it, so
-// that `Foo { type Form = Bar }` can be written back as `Foo in Bar`. It is keyed by member
-// name because that is what a refinement carries once the alias has been expanded away. Only
-// `internal.name` populates it, from the aliases which are in scope at the expansion site;
-// every other caller gets an empty map and hence the refinement form.
-final class Bindings
-  ( val pureFuns:     Boolean = true,
-    val infixAliases: sci.Map[String, Text] = sci.Map() ):
+// The state shared by the construction of `Syntax` trees: the names given to the binders of
+// recursive types, and a cache of the trees already built. Nothing in it depends on where a tree
+// will be written, since every choice which does (the qualification of names, the arrows of
+// function types, and infix type aliases) is made by `Syntax.text` against an `Imports`; so
+// `internal.name` shares one `Bindings` across a compilation run.
+final class Bindings():
   private val names = IdentityHashMap[AnyRef, Text]()
   private val counters = scm.HashMap[Text, Int]()
   private[stenography] val cache = scm.HashMap[Any, Syntax]()

@@ -209,6 +209,88 @@ object Tests extends Suite("typenames", m"Stenography Tests"):
       refined.text(using Imports(scala.collection.immutable.Set(), scala.collection.immutable.Set(), scala.collection.immutable.Map("Operand" -> t"by")))
     . assert(_ == t"Addable by Int")
 
+    val nothing = scala.collection.immutable.Set[Designator]()
+
+    def aliases(pairs: (String, Text)*): scala.collection.immutable.Map[String, Text] =
+      scala.collection.immutable.Map(pairs*)
+
+    test(m"Write only the aliased later member of a refinement infix"):
+      val refined: Syntax =
+        Syntax.Structural
+          ( Syntax.Simple(Designator("Addable")),
+            Ledger
+              ( (t"Operand", Syntax.Simple(Designator("Int"))),
+                (t"Result", Syntax.Simple(Designator("Double"))) ),
+            Ledger() )
+
+      refined.text(using Imports(nothing, nothing, aliases("Result" -> t"to")))
+    . assert(_ == t"Addable { type Operand = Int } to Double")
+
+    test(m"Write only the aliased earlier member of a refinement infix"):
+      val refined: Syntax =
+        Syntax.Structural
+          ( Syntax.Simple(Designator("Addable")),
+            Ledger
+              ( (t"Operand", Syntax.Simple(Designator("Int"))),
+                (t"Result", Syntax.Simple(Designator("Double"))) ),
+            Ledger() )
+
+      refined.text(using Imports(nothing, nothing, aliases("Operand" -> t"by")))
+    . assert(_ == t"Addable by Int { type Result = Double }")
+
+    test(m"A bounded member is not written with an infix alias"):
+      val bounded = Syntax.Infix(Syntax.Symbolic(t"?"), t"<:", Syntax.Simple(Designator("Int")))
+
+      val refined: Syntax =
+        Syntax.Structural
+          ( Syntax.Simple(Designator("Addable")),
+            Ledger((t"Operand", Syntax.Declaration(false, Nil, bounded))),
+            Ledger() )
+
+      refined.text(using Imports(nothing, nothing, aliases("Operand" -> t"by")))
+    . assert(_ == t"Addable { type Operand = ? <: Int }")
+
+    test(m"An infix alias applies only where it is in scope"):
+      val refined: Syntax =
+        Syntax.Structural
+          ( Syntax.Simple(Designator("Addable")),
+            Ledger((t"Operand", Syntax.Simple(Designator("Int")))),
+            Ledger() )
+
+      refined.text(using Imports(nothing, nothing))
+    . assert(_ == t"Addable { type Operand = Int }")
+
+    val function: Syntax =
+      Syntax.Function
+        ( Syntax.Simple(Designator("scala#Int")),
+          false,
+          false,
+          Nil,
+          Syntax.Simple(Designator("anticipation#Text")) )
+
+    val scope = scala.collection.immutable.Set(Designator("scala"), Designator("anticipation"))
+
+    test(m"A pure function is written -> with pure functions in scope"):
+      function.text(using Imports(scope, nothing))
+    . assert(_ == t"Int -> Text")
+
+    test(m"A pure function is written => without pure functions in scope"):
+      function.text(using Imports(scope, nothing, aliases(), false))
+    . assert(_ == t"Int => Text")
+
+    test(m"A pure by-name type is written => without pure functions in scope"):
+      Syntax.Prefix(t"->", Syntax.Simple(Designator("scala#Int")))
+      . text(using Imports(scope, nothing, aliases(), false))
+    . assert(_ == t"=> Int")
+
+    test(m"Equal designators are interned as one instance"):
+      Designator(t"a.b#C") eq Designator(t"a.b#C")
+    . assert(identity(_))
+
+    test(m"A designator made by its case constructor equals an interned one"):
+      Designator.Term(Designator.Type(Designator.Top("a"), "b"), "C") == Designator(t"a.b#C")
+    . assert(identity(_))
+
     test(m"Show typeclass type"):
       Syntax.name[Addable by Int to Double]
     . assert(_ == t"Addable by Int to Double")

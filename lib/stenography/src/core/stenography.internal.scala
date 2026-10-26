@@ -33,11 +33,13 @@
 package stenography
 
 import scala.collection.immutable as sci
+import scala.collection.mutable as scm
 import scala.collection.immutable.{List, Nil, ::}
 import scala.quoted.*
 
 import anticipation.*
 import gigantism.*
+import rudiments.*
 import vacuous.*
 
 object internal:
@@ -49,25 +51,60 @@ object internal:
     import quotes.reflect.*
     name(TypeRepr.of[designator])
 
+  // What stays the same between calls to `name` in one compilation run: the trees of the
+  // types already rendered, which depend on nothing but the type (`Bindings`); each scope's
+  // summary (`scopeInfo`), which depends only on the scope's symbol; and the union of the
+  // summaries of each list of scopes a call site sees, which, within one macro expansion, is the
+  // same for every name. Without them, every call re-walked the declarations of every wildcard
+  // import in scope, so that explaining a missing given in a large scope, which names thousands
+  // of types, took hours (#2318). A type is only valid in the run which made it, so none of this
+  // is carried into the next run.
+  private final class RunCache(val id: Int):
+    val bindings: Bindings = Bindings()
+
+    val scopes: scm.HashMap[core.Symbols.Symbol, (List[Designator], List[(String, Text)])] =
+      scm.HashMap()
+
+    val summaries
+    :   scm.HashMap
+          [ List[core.Symbols.Symbol], (sci.Set[Designator], sci.Map[String, Text]) ] =
+      scm.HashMap()
+
+  // One cache for each compiler, keyed by its `ContextBase` together with the run id: a run id
+  // alone is not enough, because a warm session which replaces its `Compiler` after a crash
+  // starts counting runs again. Only the latest run of each base is kept. The values are held
+  // softly because they reach their own key (types hold symbols, and symbols not yet completed
+  // hold the context which will complete them), so a strongly-held value would keep a
+  // discarded compiler alive; a soft one is cleared once it goes unused, and before memory runs
+  // out.
+  private val runCaches
+  :   java.util.WeakHashMap
+        [ core.Contexts.ContextBase, java.lang.ref.SoftReference[RunCache] ] =
+    java.util.WeakHashMap()
+
+  private def runCache(using context: core.Contexts.Context): RunCache = runCaches.synchronized:
+    val id = context.runId
+    val cached = runCaches.get(context.base)
+    val current = if cached == null then null else cached.get()
+
+    if current != null && current.id == id then current else
+      val fresh = RunCache(id)
+      runCaches.put(context.base, java.lang.ref.SoftReference(fresh))
+      fresh
+
   def name(using Quotes)(typeRepr: quotes.reflect.TypeRepr): Text =
-    // Whether `A => B` desugars to `ImpureFunctionN` at the use site, and hence whether a bare
-    // `FunctionN` should be rendered `->` or `=>`.
-    val pureFuns: Boolean = quotes.absolve match
-      case quotes: runtime.impl.QuotesImpl =>
-        try config.Feature.pureFunsEnabled(using quotes.ctx) catch case _: Exception => true
-
-      case _ => true
-
-    // The bindings the scan below runs with. They carry no infix aliases: the scan renders
-    // nothing but bare `TypeRef`s, for which the aliases it is in the middle of discovering
-    // could not matter. The type itself is rendered with alias-carrying bindings at the end.
-    given Bindings = Bindings(pureFuns)
-
-    val outer: List[Designator] = quotes.absolve match
+    quotes.absolve match
       case quotes: runtime.impl.QuotesImpl =>
         given context: core.Contexts.Context = quotes.ctx
+        val cache = runCache
+        given Bindings = cache.bindings
 
-        context.compilationUnit.tpdTree.absolve match
+        // Whether `A => B` desugars to `ImpureFunctionN` at the use site, and hence whether a
+        // bare `FunctionN` should be rendered `->` or `=>`.
+        val pureFuns: Boolean =
+          try config.Feature.pureFunsEnabled catch case _: Exception => true
+
+        val outer: List[Designator] = context.compilationUnit.tpdTree.absolve match
           case ast.tpd.PackageDef(root, statements) =>
             Designator(root.show) :: statements.collect:
               case ast.tpd.Import(name, _) => Designator(name.show)
@@ -75,32 +112,27 @@ object internal:
           case _ =>
             Nil
 
-      case _ => Nil
+        // Deliberate stdlib opt-out: this file's import-graph bookkeeping is stdlib throughout
+        // (`sci.Set`/`sci.Map`).
+        val imports: sci.Set[Designator] =
+          metaprogramming.imports.stdlib.map(_.term).map(Syntax.term(_)).toSet
 
-    // Deliberate stdlib opt-out: this file's import-graph bookkeeping is stdlib throughout
-    // (`sci.Set`/`sci.Map`).
-    val imports: sci.Set[Designator] =
-      metaprogramming.imports.stdlib.map(_.term).map(Syntax.term(_)).toSet
-
-    // Drill into every scope whose members are reachable unqualified from here — each wildcard
-    // import that's in scope (including the REPL-accumulated ones across earlier lines,
-    // captured by `metaprogramming.imports`) and this unit's own package — and harvest two
-    // things from a single pass over its declarations. (`Imports.exports` is the same harvest
-    // of the first, for a scope named from outside any macro.)
-    //
-    // The `direct` set holds type aliases carrying the `Exported` flag. Those aliases' *target*
-    // types are reachable via just their leaf in the current scope, so we render them that way.
-    //
-    // The `aliases` map holds the infix type aliases which refine a single type member, keyed
-    // by that member's name, so `Foo { type Form = Bar }` can be written back as `Foo in Bar`.
-    // Scanning scopes rather than the whole classpath is what keeps the rendering honest: an
-    // alias is only worth preferring where it is in scope to be written.
-    val (direct, aliases) = quotes.absolve match
-      case quotes: runtime.impl.QuotesImpl =>
-        given context: core.Contexts.Context = quotes.ctx
-
+        // Drill into every scope whose members are reachable unqualified from here — each
+        // wildcard import that's in scope (including the REPL-accumulated ones across earlier
+        // lines, captured by `metaprogramming.imports`) and this unit's own package — and
+        // harvest two things from a single pass over its declarations. (`Imports.exports` is the
+        // same harvest of the first, for a scope named from outside any macro.)
+        //
+        // The `direct` set holds type aliases carrying the `Exported` flag. Those aliases'
+        // *target* types are reachable via just their leaf in the current scope, so we render
+        // them that way.
+        //
+        // The `aliases` map holds the infix type aliases which refine a single type member,
+        // keyed by that member's name, so `Foo { type Form = Bar }` can be written back as
+        // `Foo in Bar`. Scanning scopes rather than the whole classpath is what keeps the
+        // rendering honest: an alias is only worth preferring where it is in scope to be written.
         val imported = metaprogramming.imports.stdlib.filter(_.wildcard).map: imp =>
-          imp.term.asInstanceOf[core.Types.Type].termSymbol(using context)
+          imp.term.asInstanceOf[core.Types.Type].termSymbol
 
         // This unit's own package, so that a module's aliases apply within the module which
         // declares them, without it having to import itself.
@@ -108,22 +140,32 @@ object internal:
           case ast.tpd.PackageDef(root, _) => List(root.symbol)
           case _                           => Nil
 
-        val harvested = (imported ++ own).filter(_.exists).map(scopeInfo)
+        val scopes = (imported ++ own).filter(_.exists)
 
-        // Where two aliases claim the same member, choose by name, so that the rendering does
-        // not depend on the order the scopes happened to be walked in.
-        val aliases = harvested.flatMap(_(1)).groupBy(_(0)).view.mapValues: candidates =>
-          candidates.map(_(1).s).min.tt
+        val (direct, aliases) = cache.summaries.establish(scopes):
+          val harvested = scopes.map: scope =>
+            cache.scopes.establish(scope)(scopeInfo(scope))
 
-        (harvested.flatMap(_(0)).toSet, aliases.toMap)
+          // Where two aliases claim the same member, choose by name, so that the rendering
+          // does not depend on the order the scopes happened to be walked in.
+          val aliases = harvested.flatMap(_(1)).groupBy(_(0)).view.mapValues: candidates =>
+            candidates.map(_(1).s).min.tt
+
+          (harvested.flatMap(_(0)).toSet, aliases.toMap)
+
+        val designators =
+          sci.Set(Designator("scala"), Designator("scala.Predef")) ++ imports ++ outer
+
+        Syntax(typeRepr).text(using Imports(designators, direct, aliases, pureFuns))
 
       case _ =>
-        (sci.Set.empty[Designator], sci.Map.empty[String, Text])
+        given Bindings = Bindings()
 
-    given Imports =
-      Imports(sci.Set(Designator("scala"), Designator("scala.Predef")) ++ imports ++ outer, direct)
+        val imports: sci.Set[Designator] =
+          metaprogramming.imports.stdlib.map(_.term).map(Syntax.term(_)).toSet
 
-    Syntax(using quotes)(using Bindings(pureFuns, aliases))(typeRepr).text
+        val designators = sci.Set(Designator("scala"), Designator("scala.Predef")) ++ imports
+        Syntax(typeRepr).text(using Imports(designators, sci.Set()))
 
   // Everything worth knowing about one scope whose members are reachable unqualified: the
   // targets of its `Exported` aliases, and the infix type aliases it declares which refine a
