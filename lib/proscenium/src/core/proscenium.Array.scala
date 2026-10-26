@@ -69,6 +69,43 @@ object Array:
     // [construction-fresh] the iterator's fresh array is aliased by no writer
     unsafeFrozen(elements.iterator.toArray)
 
+  // A literal length is a proof of length: these overloads brand the result `Sized[n]`, and
+  // overloading resolution prefers them for a literal argument (the singleton-bounded
+  // parameter is more specific than `Int`) and cannot apply them to a variable. The
+  // `DummyImplicit` only keeps their erased signatures distinct from the unproven forms.
+  def fill[element: ClassTag, length <: Int & Singleton](count: length)(element: => element)
+    ( using DummyImplicit )
+  :   Array[element]^{} & Sized[length] =
+
+    fill[element](count: Int)(element).asInstanceOf[Array[element]^{} & Sized[length]]
+
+  def tabulate[element: ClassTag, length <: Int & Singleton](count: length)
+    ( lambda: Int => element )
+    ( using DummyImplicit )
+  :   Array[element]^{} & Sized[length] =
+
+    tabulate[element](count: Int)(lambda).asInstanceOf[Array[element]^{} & Sized[length]]
+
+  // Concatenation; with two proven lengths the result's length is their sum, decided at the
+  // type level when both are literals and carried symbolically otherwise.
+  def concat[element: ClassTag]
+    ( left: Array[element]^{caps.any.rd}, right: Array[element]^{caps.any.rd} )
+  :   Array[element]^{} =
+
+    val array: Array[element]^ = allocate[element](left.length + right.length)
+    array.place(left)
+    array.place(right, left.length)
+    freeze(array)
+
+  def concat[element: ClassTag, left <: Int, right <: Int]
+    ( leftArray:  Array[element]^{caps.any.rd} & Sized[left],
+      rightArray: Array[element]^{caps.any.rd} & Sized[right] )
+    ( using DummyImplicit )
+  :   Array[element]^{} & Sized[scala.compiletime.ops.int.+[left, right]] =
+
+    concat[element](leftArray, rightArray)
+    . asInstanceOf[Array[element]^{} & Sized[scala.compiletime.ops.int.+[left, right]]]
+
   def fill[element: ClassTag](count: Int)(element: => element): Array[element]^{} =
     val array: Array[element]^ = allocate[element](count)
     var index = 0

@@ -42,6 +42,11 @@ object Data:
     lambda(array)
     array.asInstanceOf[Data]
 
+  // A literal length brands the result `Sized[n]`, as `Array.fill` does.
+  def fill[length <: Int & Singleton](count: length)(lambda: Int => Byte)(using DummyImplicit)
+  :   Data & Sized[length] =
+    fill(count: Int)(lambda).asInstanceOf[Data & Sized[length]]
+
   def fill(count: Int)(lambda: Int => Byte): Data = build(count): array =>
     var index = 0
 

@@ -37,11 +37,11 @@ import prepositional.*
 import vacuous.*
 
 final val Prim: Ordinal = Ordinal.zerary(0)
-final val Sec: Ordinal  = Ordinal.zerary(1)
-final val Ter: Ordinal  = Ordinal.zerary(2)
+final val Sec: Ordinal = Ordinal.zerary(1)
+final val Ter: Ordinal = Ordinal.zerary(2)
 final val Quat: Ordinal = Ordinal.zerary(3)
 final val Quin: Ordinal = Ordinal.zerary(4)
-final val Sen: Ordinal  = Ordinal.zerary(5)
+final val Sen: Ordinal = Ordinal.zerary(5)
 final val Sept: Ordinal = Ordinal.zerary(6)
 
 extension (inline cardinal: Int)
