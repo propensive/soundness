@@ -9,14 +9,14 @@ is missing, insufficient, or present but unused, and it is where a simplistic or
 (a `toString` where a `show` was meant, a round trip through `String` that drops an encoding)
 creeps in unreviewed. The same is true of a `given Conversion` written to paper over a mismatch.
 
-`flair assess plumbing` finds them. The rule `plumbing` in `.pyrocosm/flair/config.tel` names
-the model, the criteria below with their weights, and this file as the rubric; flair gathers the
+`flare assess plumbing` finds them. The rule `plumbing` in `.pyrocosm/flare/config.tel` names
+the model, the criteria below with their weights, and this file as the rubric; flare gathers the
 candidate definitions from the parse tree, has the model answer the criteria in batches, and
-records each verdict as BinTEL in git notes under `refs/notes/flair-assess/plumbing`. A
+records each verdict as BinTEL in git notes under `refs/notes/flare-assess/plumbing`. A
 definition is identified by its *locus* — path, enclosing definitions and signature, never a
 line — and its verdict is keyed by a digest of its normalised text, so a definition is judged
 once for as long as its text, this rubric, the criteria and the model stand. `make plumbing`
-runs it; `flair assess plumbing --show HEAD` prints the ranking recorded for a commit.
+runs it; `flare assess plumbing --show HEAD` prints the ranking recorded for a commit.
 
 ## What replaces what
 
@@ -115,7 +115,7 @@ Return a JSON array, one object per candidate, in the order given, and nothing e
 ```
 <!-- rubric:end -->
 
-flair recomputes the score from the booleans (a small model's arithmetic is not trusted), adds
+flare recomputes the score from the booleans (a small model's arithmetic is not trusted), adds
 its own signals, and validates `replacement` against the vocabulary, so a hallucinated API cannot
 enter the census. The signals are the rule's `signal` lines: local `def` +2, `private` +1; one
 call site in scope +2, two +1, four or more −1; a body duplicated verbatim (parameters renamed)

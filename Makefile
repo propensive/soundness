@@ -44,17 +44,17 @@ check-escapes:
 check-iarray:
 	! grep -rnw --include='*.scala' --include='build.mill' IArray lib src tests build.mill
 
-# The unsafety census: the counts of every rule in .pyrocosm/flair/config.tel, over the sources,
-# as `flair metrics` records them in git notes commit by commit. Reports only: nothing here fails.
+# The unsafety census: the counts of every rule in .pyrocosm/flare/config.tel, over the sources,
+# as `flare metrics` records them in git notes commit by commit. Reports only: nothing here fails.
 unsafety:
-	flair metrics --dry-run
+	flare metrics --dry-run
 
 # The coercion-helper census: small defs that only re-wrap a value, found from the parse tree and
 # judged by a model against doc/standards/plumbing.md, recorded in git notes under
-# refs/notes/flair-assess/plumbing (rule `plumbing` in .pyrocosm/flair/config.tel). Needs the
+# refs/notes/flare-assess/plumbing (rule `plumbing` in .pyrocosm/flare/config.tel). Needs the
 # `anthropic` credential in Pyrocosm's cascade; nothing here fails.
 plumbing:
-	flair assess plumbing $(PLUMBING_ARGS)
+	flare assess plumbing $(PLUMBING_ARGS)
 
 build:
 	./mill groupCheck.validate
@@ -120,12 +120,12 @@ release:
 	@exit 1
 
 # Install every library pinned in etc/refs (none: Soundness depends on nothing propensive) and
-# the jars of every tool pinned in etc/tools (the flair compiler plugin) into the local ivy
+# the jars of every tool pinned in etc/tools (the flare compiler plugin) into the local ivy
 # repository, as CI does.
 sync-deps:
 	./etc/shared sync-deps.sh
 
-# Install the commands pinned in etc/tools (fume, flair) through their releases' installers.
+# Install the commands pinned in etc/tools (fume, flare) through their releases' installers.
 tools:
 	./etc/shared tools.sh
 

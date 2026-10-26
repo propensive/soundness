@@ -129,21 +129,21 @@ A representative entry:
 
 Soundness sits at the bottom of the stack and depends on nothing propensive: `etc/refs`, where
 a repository pins the libraries its jars are compiled against, is empty here. What Soundness
-*runs* is pinned in `etc/tools`: the flair compiler plugin, `dev.propensive:flair-plugin`, which
-every library compiles with (`-P:flair:` options in `flairToolchain`), and fume, which runs the
+*runs* is pinned in `etc/tools`: the flare compiler plugin, `dev.propensive:flare-plugin`, which
+every library compiles with (`-P:flare:` options in `flareToolchain`), and fume, which runs the
 tests. The `xek` *builder* is pinned separately, by version and SHA-256, in `etc/xek.tsv`.
-Downstream — Pyrocosm, then fume, flame and flair — pins Soundness in its `etc/refs`.
+Downstream — Pyrocosm, then fume, flame and flare — pins Soundness in its `etc/refs`.
 
 A tool is always a **release**, never a snapshot. A tool appears in no POM, so it is not part
 of the transitive closure and does not gate a release; that is what keeps the release graph
-free of cycles (flair depends on Pyrocosm, which depends on Soundness — were the plugin a
+free of cycles (flare depends on Pyrocosm, which depends on Soundness — were the plugin a
 dependency of Soundness, none of the three could be released first).
 
 ### Rules
 
-1. Never satisfy the plugin pin with a `publishLocal` or a snapshot from a flair checkout: the
+1. Never satisfy the plugin pin with a `publishLocal` or a snapshot from a flare checkout: the
    build then compiles against bytes CI cannot see, and `deps.py` rejects a snapshot in
-   `etc/tools` anyway. A plugin change Soundness needs is *released* from flair first, and the
+   `etc/tools` anyway. A plugin change Soundness needs is *released* from flare first, and the
    pin bumped to that release. `make sync-deps` installs the plugin's jars (and repairs a jar
    whose digest differs); `make tools` installs the commands. Run `make sync-deps` after
    editing either file.

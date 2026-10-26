@@ -5,5 +5,5 @@
 # build reads this file (`deps` in build.mill); `make sync-deps` and CI install what it names.
 # See propensive/.github for the whole flow.
 #
-# Soundness depends on nothing propensive. The flair plugin it compiles with is a tool: see
+# Soundness depends on nothing propensive. The flare plugin it compiles with is a tool: see
 # etc/tools.

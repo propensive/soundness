@@ -1,8 +1,8 @@
 tel 1.0
 
-# Flair's configuration for Soundness: Consequent Style over every library, with the project's
+# Flare's configuration for Soundness: Consequent Style over every library, with the project's
 # unsafety gate, and the constructs the codebase watches the size of, defined as rules so that
-# `flair metrics` records their counts in git notes commit by commit.
+# `flare metrics` records their counts in git notes commit by commit.
 
 # ── Rules ────────────────────────────────────────────────────────────────────────────────────
 
@@ -46,7 +46,7 @@ rule partial
   invokes head
   invokes apply
 
-# The model `flair assess` consults, and where its credential comes from: the Pyrocosm cascade
+# The model `flare assess` consults, and where its credential comes from: the Pyrocosm cascade
 # (`credential anthropic` in ~/.config/pyrocosm/credentials.tel, or ANTHROPIC_API_KEY).
 model haiku
   provider   anthropic
@@ -57,8 +57,8 @@ model haiku
   mode       batches
 
 # The coercion-helper census (doc/standards/plumbing.md): small definitions that only re-wrap a
-# value, judged by the model against the rubric there. `flair assess plumbing` records the
-# verdicts under refs/notes/flair-assess/plumbing; nothing here fails.
+# value, judged by the model against the rubric there. `flare assess plumbing` records the
+# verdicts under refs/notes/flare-assess/plumbing; nothing here fails.
 rule plumbing
   assess def
   model  haiku
@@ -110,7 +110,7 @@ profile default
   exclude lib/anticipation/src/text/**
   assess plumbing
 
-  # The `-language` features every library compiles with, so flair parses the sources exactly
+  # The `-language` features every library compiles with, so flare parses the sources exactly
   # as the build does (capture and separation checking are syntax, too).
   language implicitConversions
   language experimental.modularity

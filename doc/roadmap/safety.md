@@ -154,13 +154,13 @@ before anyone recompiled the grep. Two ratchets cover a slice of the surface pro
 file and enforced — `etc/check-while-count.py` for `while`, `readUnchecked` and `charAt`, and
 `etc/check-stdlib-count.sh` for the `.stdlib` bridge — and the rest is unmeasured.
 
-The flair plugin (pinned in `etc/tools`, configured by `.pyrocosm/flair/config.tel`, enabled
-on every checked component by the `-P:flair:` options in `flairToolchain`) provides the
+The flare plugin (pinned in `etc/tools`, configured by `.pyrocosm/flare/config.tel`, enabled
+on every checked component by the `-P:flare:` options in `flareToolchain`) provides the
 census: every rule in the configuration counted over the sources — the declared escapes
 (`unsafely`, the `caps.unsafe` family, every `unsafe`-prefixed name, every method gated by the
 token), the compiler-trust bypasses (`asInstanceOf`, `.nn`, `@unchecked`, `???`, catch-all
 clauses), the partial reads, and the imperative constructs the streaming kernel is meant to
-confine. `make unsafety` runs `flair metrics --dry-run` and prints it; `flair metrics` records
+confine. `make unsafety` runs `flare metrics --dry-run` and prints it; `flare metrics` records
 it in git notes, commit by commit, so the trend lives in git rather than in a roadmap
 paragraph. One rule already gates: `S1.1`, a method taking `(using Unsafe)` must be named
 `unsafe…`, fails the build; its converse `S1.2` is advisory, with the ten definitions that

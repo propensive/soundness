@@ -13,11 +13,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Unsafety census
 
-- Every checked component compiles with the flair plugin (`dev.propensive:flair-plugin`, a tool pinned
-  in `etc/tools`; see AGENTS.md), configured by the `-P:flair:` options in `flairToolchain`. The
+- Every checked component compiles with the flare plugin (`dev.propensive:flare-plugin`, a tool pinned
+  in `etc/tools`; see AGENTS.md), configured by the `-P:flare:` options in `flareToolchain`. The
   census of unsafety indicators is no longer written by the build: `make unsafety` runs
-  `flair metrics --dry-run`, which counts every rule in `.pyrocosm/flair/config.tel` over the
-  sources; `flair metrics` records the census in git notes, commit by commit. It reports only —
+  `flare metrics --dry-run`, which counts every rule in `.pyrocosm/flare/config.tel` over the
+  sources; `flare metrics` records the census in git notes, commit by commit. It reports only —
   nothing fails on a count.
 - The rule `S1.1` **is** strict: a method taking `(using Unsafe)` must be named `unsafe…`, or
   the build fails. `S1.2` (an `unsafe…` name must take the token) is advisory; ten definitions
@@ -91,8 +91,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - No coercion helpers: a small private or local `def` (or a `given Conversion`) that only
   re-wraps a value into the type the next line wants is a missing abstraction, not a fix; use the
   typeclass or bridge, or add one. `doc/standards/plumbing.md` has the rubric and the replacement
-  table; `make plumbing` (`flair assess plumbing`) has a model score the candidates and records
-  the verdicts in git notes under `refs/notes/flair-assess/plumbing`, keyed by each definition's
+  table; `make plumbing` (`flare assess plumbing`) has a model score the candidates and records
+  the verdicts in git notes under `refs/notes/flare-assess/plumbing`, keyed by each definition's
   locus and digest rather than by line.
 
 ### Given placement (issue #1632)

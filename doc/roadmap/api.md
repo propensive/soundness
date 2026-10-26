@@ -59,7 +59,7 @@ Horizon: mid
 The naming standards in `doc/standards/naming.md` and `doc/standards/given-naming.md` gain a
 conformance sweep, so that drift back into incoherence is caught mechanically rather than in
 review. `etc/check-given-uniqueness.py`, run by `make build`, covers the given-naming half;
-nothing checks `naming.md`, though flair's `S1.1` rule enforces its one `unsafe…` clause.
+nothing checks `naming.md`, though flare's `S1.1` rule enforces its one `unsafe…` clause.
 
 Done when: a checked-in sweep script reports zero deviations from the naming standards, and
 runs in the ordinary build.

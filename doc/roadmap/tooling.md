@@ -130,7 +130,7 @@ Horizon: long
 
 Every ecosystem tool that needs configuration reads TEL, with stratiform as the reference
 implementation. No tool in the ecosystem asks for YAML, JSON or HOCON configuration. The three
-tools this repository runs — flair, flame and fume — already read theirs from
+tools this repository runs — flare, flame and fume — already read theirs from
 `.pyrocosm/<tool>/config.tel`.
 
 Done when: no ecosystem tool's own configuration surface accepts any format but TEL.
@@ -161,7 +161,7 @@ Needs: tool-2
 probably's own scoverage reader went with its report renderer when fume took over reporting;
 coverage returns as a fume concern, a tracked property rather than a one-off report: unit-test
 coverage recorded for every commit, stored in git notes alongside the test reports, so the
-trend is queryable and a regression is visible at review time. flair's unsafety census
+trend is queryable and a regression is visible at review time. flare's unsafety census
 (`safety-7`) already keeps its record this way, and is the pattern to follow.
 
 Done when: every CI run records coverage in a git note, and a single command reports the
