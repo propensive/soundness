@@ -103,10 +103,7 @@ object List:
   def from[element](elements: IterableOnce[element]^): List[element] =
     of(sci.List.from(elements))
 
-  // Subtype-parametric so a branded scrutinee (`List[e] & Populated`, as `cut` returns) still
-  // binds its element type in `case List(a, b) =>`.
-  def unapplySeq[element, list <: List[element]](list: list): Option[Seq[element]] =
-    Some((list: List[element]).stdlib)
+  def unapplySeq[element](list: List[element]): Option[Seq[element]] = Some(list.stdlib)
 
   def fill[element](count: Int)(element: => element): List[element] =
     of(sci.List.fill(count)(element))

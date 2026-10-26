@@ -137,10 +137,13 @@ extension [textual](text: textual)
   // trailing empties and can leave nothing.
   def cut[delimiter](delimiter: delimiter, limit: Int = Int.MaxValue)
     ( using cuttable: textual is Cuttable by delimiter )
-  :   List[textual] & Populated =
+  :   List[textual] { type Occupied = true } =
 
+    // The proof is spelt as a refinement of the list rather than `& Populated` (the same type,
+    // one subtype further down): pattern inference binds `case List(a, b) =>` on a refinement
+    // but approximates an intersection scrutinee's element to `Any`.
     cuttable.cut(text, delimiter, if limit <= 0 then Int.MaxValue else limit)
-    . asInstanceOf[List[textual] & Populated]
+    . asInstanceOf[List[textual] { type Occupied = true }]
 
 // One `Traversable`-driven block serves every receiver: the native shapes (`List`, `Chain`,
 // `Sequence`, …) through their own instances, and external `Iterable`s through the blanket
