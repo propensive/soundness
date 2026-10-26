@@ -31,9 +31,6 @@ keywords:
 check-givens:
 	python3 etc/check-given-uniqueness.py
 
-check-stdlib:
-	./etc/check-stdlib-count.sh
-
 check-while:
 	python3 etc/check-while-count.py
 
@@ -62,7 +59,6 @@ build:
 	python3 etc/check-given-uniqueness.py
 	python3 etc/check-doc-coverage.py
 	python3 etc/check-compatibility.py
-	./etc/check-stdlib-count.sh
 	python3 etc/check-while-count.py
 	python3 etc/check-escape-count.py
 	./mill soundness.all
@@ -170,4 +166,4 @@ matrix:
 	    $(foreach scala,3.6.1 3.6.2 3.6.3 3.6.4 3.7.0 3.7.1 3.7.1 main, \
 			    $(MAKE) bootstrap/$(scala):$(jdk);))
 
-.PHONY: publishLocal build dev ci check-givens check-stdlib check-while unsafety wasm-e2e doccheck fuelcheck test bench matrix attest verify-attest push release sync-deps tools snapshot snapshot-prune xek-fetch
+.PHONY: publishLocal build dev ci check-givens check-while check-escapes unsafety wasm-e2e doccheck fuelcheck test bench matrix attest verify-attest push release sync-deps tools snapshot snapshot-prune xek-fetch

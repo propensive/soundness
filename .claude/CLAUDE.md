@@ -25,10 +25,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   Read them from the census as `unsafe-ungated`, not from the build log: a `S1.2` **warning**
   is silently dropped when the compiler has already reported something at an enclosing
   position in that file, which is why the count exists.
-- The gates that do fail are the older per-construct ratchets: `etc/check-while-count.py`
-  (per-file, for `while`/`readUnchecked`/`charAt`, and it requires a comment on every
-  `unsafeAttested` call) and `etc/check-stdlib-count.sh`. Roadmap item `safety-7` folds them
-  into the census.
+- The gates that do fail are the per-file ratchets: `etc/check-escape-count.py` (the four
+  `caps.unsafe` hatches, the array wrappers and casts that hide a capture, the `.stdlib` bridge
+  in core *and* test sources with its gate-bypass/round-trip/iterator shapes, and direct
+  `import scala.collection` lines; `--tags` and `--stdlib` read the residue as a queue) and
+  `etc/check-while-count.py` (`while`/`readUnchecked`/`charAt`, and it requires a comment on
+  every `unsafeAttested` call). Roadmap item `safety-7` folds the latter into the former.
 
 ## Benchmarks
 

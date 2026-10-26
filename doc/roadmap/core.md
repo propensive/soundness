@@ -52,6 +52,12 @@ Importing `scala.collection` bypasses the prelude's curation entirely. The mutab
 the larger share, and their replacement is not immutability but *safe* mutability:
 separation-checked structures in the style of `proscenium.Array`.
 
+Gauge: the `collectionImport` column of `etc/check-escape-count.py` (run by `make build`)
+ratchets the import lines per file, core and test sources alike, so a drained file cannot
+regrow one; `--totals` prints the count. The `.stdlib` bridge, the other way of reaching the
+stdlib API from a native collection, is ratcheted and read by shape (`--stdlib`) by the same
+script (`safety-7`).
+
 Done when:
 
     git grep -l 'import scala.collection' -- lib | grep -v '^lib/proscenium/' | wc -l    # 0

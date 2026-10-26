@@ -148,11 +148,12 @@ Done when: no component in `build.mill` compiles with anything weaker than `sett
 
 Horizon: near
 
-The escape hatches this track burns down are counted by hand, from baselines that go stale
+The escape hatches this track burns down were counted by hand, from baselines that went stale
 between measurements: `safety-4`'s 929 was measured in August 2026 and had drifted past 1400
-before anyone recompiled the grep. Two ratchets cover a slice of the surface properly, per
+before anyone recompiled the grep. Two ratchets covered a slice of the surface properly, per
 file and enforced — `etc/check-while-count.py` for `while`, `readUnchecked` and `charAt`, and
-`etc/check-stdlib-count.sh` for the `.stdlib` bridge — and the rest is unmeasured.
+`etc/check-stdlib-count.sh` for the `.stdlib` bridge, as one aggregate number over core sources
+only — and the rest was unmeasured.
 
 The flare plugin (pinned in `etc/tools`, configured by `.pyrocosm/flare/config.tel`, enabled
 on every checked component by the `-P:flare:` options in `flareToolchain`) provides the
@@ -175,12 +176,19 @@ hatches that carry no reason tag — with the same `--update`/`--totals` semanti
 vocabulary lives in the script. Seeded 2026-10-09 (assumePure 366, assumeSeparate 261,
 untracked 397, erasedValue 50; 1068 hatches untagged) and re-seeded 2026-10-21 (assumePure 280,
 assumeSeparate 218, untracked 381, erasedValue 35, unsafeFrozen 333, unsafeJvm 336,
-erasedEvidence 84, anyRefCast 362, captureCast 383; untagged 0). What remains of this item is
-folding the `while` and `.stdlib` ratchets into it.
+erasedEvidence 84, anyRefCast 362, captureCast 383; untagged 0). The `.stdlib` ratchet was
+folded in on 2026-10-26: the bridge is counted per file over core and test sources alike (the
+old script excluded tests, where 1000 of the uses were, and missed the `. stdlib` continuation
+form), benchmarks excepted, with three shape columns that read the residue as a queue — the
+dysasymptotic gate bypasses (`stdlibGate`: `.stdlib.head`, `.stdlib(i)`, the size reads),
+the round trips (`stdlibRound`: `.stdlib.toList`, `Array.from(xs.stdlib)`) and
+`stdlibIterator` — plus `collectionImport` for `core-3`'s direct `scala.collection` imports;
+`--stdlib` lists the residue by what follows the bridge. Seeded at stdlib 1859 (gate 464,
+round 310, iterator 62), collectionImport 340. What remains is folding the `while` ratchet in.
 
 Done when: the census is recorded on every release, `safety-1`, `safety-2` and `safety-4` read
 their baselines from it rather than from a hand-run grep, and the per-file gate has replaced
-`etc/check-while-count.py` and `etc/check-stdlib-count.sh`.
+`etc/check-while-count.py`.
 
 ## safety-8: tactics are shared capabilities
 
