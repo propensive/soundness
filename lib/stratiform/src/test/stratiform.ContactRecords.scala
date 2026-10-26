@@ -163,3 +163,19 @@ object ProfileRecords extends Tel.Provider(ProfileSchemaFixture.tels)
 
 // A user type for the custom `handle` validator, read through a given at the call site
 case class Handle(name: Text)
+
+// A required sigil, read by the provider's `sigil` reader
+object SigilSchemaFixture:
+  val tels: Tels = Tels(
+    name     = t"marks",
+    document = Struct(
+      members = Array(
+        Field(Polarity.Implicit, Polarity.Implicit, t"mark", Scalar(Array(t"sigil")), Unset)),
+      validators = Array.empty),
+    layers   = Array.empty,
+    sigil    = Unset,
+    records  = Array.empty,
+    scalars  = Array.empty,
+    selects  = Array.empty)
+
+object SigilRecords extends Tel.Provider(SigilSchemaFixture.tels)

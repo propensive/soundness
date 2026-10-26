@@ -43,15 +43,29 @@ import prepositional.*
 import murmuration.*
 import denominative.*
 import probably.*
+import rudiments.`:+`
 import turbulence.*
 import vacuous.*
 
 import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
+import denominative.dysasymptotics.linearSize
 import codepages.utf8Codepage
 import denominative.dysasymptotics.linearSize
 
+case class TelViolations(reasons: List[Tel.Provider.Error.Reason])(using Diagnostics)
+extends Error(m"${reasons.size} violations")
+
 object RecordsTests extends Suite("tel-records", m"Stratiform Records tests"):
+  // Every `Tel.Provider.Error` raised in `body`, in order, each under its own `venture`
+  private inline def collect(inline body: Unit raises Tel.Provider.Error tracks Pointer)
+  :   TelViolations =
+
+    Validate[TelViolations, [r] =>> r raises Tel.Provider.Error, Pointer]
+      ( TelViolations(Nil),
+        { case error: Tel.Provider.Error => TelViolations(accrual.reasons :+ error.reason) } )
+    . protect(body)
+
   def run(): Unit =
     suite(m"Tel.Provider field access"):
       test(m"required String field is accessed as Text"):
@@ -164,12 +178,46 @@ object RecordsTests extends Suite("tel-records", m"Stratiform Records tests"):
       . assert(_ == (false, true, Unset))
 
       test(m"a missing required field fails when read"):
-        capture[Tel.Error](ProfileRecords.record(t"handle @x\n".read[Tel]).`first-name`).reason
-      . assert(_ == Tel.Error.Reason.Absent)
+        capture[Tel.Provider.Error]:
+          ProfileRecords.record(t"handle @x\n".read[Tel]).`first-name`
+        . reason
+      . assert(_ == Tel.Provider.Error.Reason.Absent(t"first-name"))
 
       test(m"a missing required nested record fails when read"):
-        capture[Tel.Error](TeamRecords.record(t"name Solo\n".read[Tel]).lead).reason
-      . assert(_ == Tel.Error.Reason.Absent)
+        capture[Tel.Provider.Error](TeamRecords.record(t"name Solo\n".read[Tel]).lead).reason
+      . assert(_ == Tel.Provider.Error.Reason.Absent(t"lead"))
+
+    suite(m"Tel.Provider errors through the caller's tactic"):
+      given handle: ("handle" is Intensional in Tel.Provider from Tel to Handle) =
+        Intensional { tel => Handle(tel.primaryAtom) }
+
+      test(m"a missing required field fails through attempt"):
+        attempt[Tel.Provider.Error](ProfileRecords.record(t"handle @x\n".read[Tel]).`first-name`)
+        . absolve match
+            case Attempt.Failure(error) => error.reason
+      . assert(_ == Tel.Provider.Error.Reason.Absent(t"first-name"))
+
+      test(m"an atom which is not a sigil fails through attempt"):
+        attempt[Tel.Provider.Error](SigilRecords.record(t"mark ab\n".read[Tel]).mark).absolve match
+          case Attempt.Failure(error) => error.reason
+      . assert(_ == Tel.Provider.Error.Reason.NotSigil(t"ab"))
+
+      test(m"a sigil reads as a character"):
+        SigilRecords.record(t"mark #\n".read[Tel]).mark
+      . assert(_ == '#')
+
+      test(m"every missing field in a document is collected"):
+        val record = ProfileRecords.record(t"note hello\n".read[Tel])
+
+        collect:
+          venture(record.`first-name`)
+          venture(record.handle)
+          ()
+        . reasons
+      . assert:
+          _ == List
+                ( Tel.Provider.Error.Reason.Absent(t"first-name"),
+                  Tel.Provider.Error.Reason.Absent(t"handle") )
 
     suite(m"Tel.Provider compiletime checks"):
       test(m"a field the schema does not declare does not compile"):

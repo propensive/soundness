@@ -35,8 +35,24 @@ package polyvinyl
 import soundness.*
 
 import strategies.throwUnsafely
+import errorDiagnostics.stackTracesDiagnostics
+import denominative.dysasymptotics.linearSize
+
+case class Failures(reasons: List[Text])(using Diagnostics)
+extends Error(m"${reasons.size} failures")
 
 object Tests extends Suite("records", m"Polyvinyl tests"):
+  // Every `TreeError` raised in `body`, in order, each under its own `venture`
+  private inline def collect(inline body: Unit raises TreeError tracks Pointer): Failures =
+    Validate[Failures, [r] =>> r raises TreeError, Pointer]
+      ( Failures(Nil), { case TreeError(reason) => Failures(accrual.reasons :+ reason) } )
+    . protect(body)
+
+  val counts: Tree = Tree.Node(Map(
+    t"first"  -> Tree.Leaf(t"one"),
+    t"second" -> Tree.Leaf(t"2"),
+    t"third"  -> Tree.Items(List(Tree.Leaf(t"3"), Tree.Leaf(t"four"))),
+    t"kind"   -> Tree.Node(Map())))
   val alice: Tree = Tree.Node(Map(
     t"name"   -> Tree.Leaf(t"Alice"),
     t"size"   -> Tree.Leaf(t"12345"),
@@ -90,7 +106,7 @@ object Tests extends Suite("records", m"Polyvinyl tests"):
       . assert(_ == alice)
 
       test(m"selectDynamic dispatches on the field name"):
-        PersonRecords.record(alice).selectDynamic("name")
+        PersonRecords.record(alice).selectDynamic("name").asInstanceOf[Text raises TreeError]
       . assert(_ == t"Alice")
 
     suite(m"Member parameters"):
@@ -182,7 +198,7 @@ object Tests extends Suite("records", m"Polyvinyl tests"):
       test(m"a union's other alternative is a nested record"):
         ShapeRecords.record(shapes2).id match
           case text: Text => text
-          case record: Record => record.selectDynamic("name")
+          case record: Record => record.selectDynamic("name").asInstanceOf[Text raises TreeError]
       . assert(_ == t"n1")
 
       test(m"a union has the union of its alternatives' types"):
@@ -281,6 +297,47 @@ object Tests extends Suite("records", m"Polyvinyl tests"):
         demilitarize(PersonRecords.tuple(Tree.Absent).nope)
       . assert(_.exists(_.reason == CompileError.Reason.NotAMember))
 
+    suite(m"Failures through the caller's tactic"):
+      test(m"a failing field raises through attempt, not by throwing"):
+        attempt[TreeError](CountRecords.record(counts).first) match
+          case Attempt.Failure(error) => error.reason
+          case Attempt.Success(_)     => t"read"
+      . assert(_ == t"not a number")
+
+      test(m"a field which reads cleanly succeeds under attempt"):
+        attempt[TreeError](CountRecords.record(counts).second) match
+          case Attempt.Success(value) => value
+          case Attempt.Failure(_)     => -1
+      . assert(_ == 2)
+
+      test(m"a union's unoffered kind raises through the tactic"):
+        attempt[TreeError](CountRecords.record(counts).kind) match
+          case Attempt.Failure(error) => error.reason
+          case Attempt.Success(_)     => t"read"
+      . assert(_ == t"its kind, node, is not one the union offers")
+
+      test(m"every failing field of a record is collected"):
+        val record = CountRecords.record(counts)
+
+        collect:
+          venture(record.first)
+          venture(record.second)
+          venture(record.third)
+          venture(record.kind)
+          ()
+        . reasons
+      . assert:
+          _ == List
+                ( t"not a number",
+                  t"not a number",
+                  t"its kind, node, is not one the union offers" )
+
+      test(m"a tuple's failing field raises through the tactic where it is built"):
+        attempt[TreeError](CountRecords.tuple(counts)) match
+          case Attempt.Failure(error) => error.reason
+          case Attempt.Success(_)     => t"built"
+      . assert(_ == t"not a number")
+
     suite(m"Compiletime checks"):
       test(m"an undeclared field does not compile"):
         demilitarize(PersonRecords.record(Tree.Absent).nope)
@@ -298,6 +355,10 @@ object Tests extends Suite("records", m"Polyvinyl tests"):
       test(m"an instance is chosen by its exact label"):
         demilitarize(MiscasedRecords.record(Tree.Absent))
       . assert(_.exists(_.message.contains("with type Text")))
+
+      test(m"an instance raising another error than the specification's is a compile error"):
+        demilitarize(MismatchedRecords.record(Tree.Absent))
+      . assert(_.exists(_.message.contains("not the specification's")))
 
       test(m"a nested record does not expose its parent's fields"):
         demilitarize(NestedRecords.record(Tree.Absent).owner.tags)

@@ -40,12 +40,70 @@ import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 import textSanitizers.skipSanitizer
 import xmlSchemas.freeformXmlSchema
+import denominative.dysasymptotics.linearSize
+
+case class XmlViolations(reasons: List[Xml.Provider.Error.Reason])(using Diagnostics)
+extends Error(m"${reasons.size} violations")
 
 object ProviderTests extends Suite("xml-provider", m"Xylophone type provider tests"):
 
   import Xml.Provider.Error.Reason.*
 
+  // Every `Xml.Provider.Error` raised in `body`, in order, each under its own `venture`
+  private inline def collect(inline body: Unit raises Xml.Provider.Error tracks Pointer)
+  :   XmlViolations =
+
+    Validate[XmlViolations, [r] =>> r raises Xml.Provider.Error, Pointer]
+      ( XmlViolations(Nil),
+        { case error: Xml.Provider.Error => XmlViolations(accrual.reasons :+ error.reason) } )
+    . protect(body)
+
   def run(): Unit =
+    suite(m"Errors through the caller's tactic"):
+      val address = t"<name>a</name><street>b</street><city>c</city><state>d</state><zip>1</zip>"
+
+      def order(item: Text, shipTo: Text = address): Xml =
+        t"""<purchaseOrder><shipTo>$shipTo</shipTo><billTo>$address</billTo><items>$item</items></purchaseOrder>""".read[Xml]
+
+      test(m"a pattern violation fails through attempt"):
+        val item = t"""<item partNum="nope"><productName>p</productName><quantity>1</quantity><USPrice>1</USPrice></item>"""
+
+        attempt[Xml.Provider.Error](PurchaseOrder.record(order(item)).items.item.map(_.partNum))
+        . absolve match
+            case Attempt.Failure(error) => error.reason
+      . assert(_ == PatternMismatch(t"nope", t"\\d{3}-[A-Z]{2}"))
+
+      test(m"a missing required element fails through attempt"):
+        val record = PurchaseOrder.record(order(t"", t"<name>a</name>"))
+
+        attempt[Xml.Provider.Error](record.shipTo.city).absolve match
+          case Attempt.Failure(error) => error.reason
+      . assert(_ == Absent(t"city"))
+
+      test(m"a value which is not a number fails through attempt"):
+        val record = PurchaseOrder.record(order(t"", t"<name>a</name><zip>none</zip>"))
+
+        attempt[Xml.Provider.Error](record.shipTo.zip).absolve match
+          case Attempt.Failure(error) => error.reason
+      . assert:
+          case Malformed(value, _) => value == t"none"
+          case _                   => false
+
+      test(m"every violation in a document is collected"):
+        val record = PurchaseOrder.record(order(t"", t"<name>a</name><zip>none</zip>"))
+
+        collect:
+          venture(record.shipTo.street)
+          venture(record.shipTo.city)
+          venture(record.shipTo.zip)
+          ()
+        . reasons
+        . map:
+            case Absent(name)        => name
+            case Malformed(value, _) => value.or(t"?")
+            case other               => t"other"
+      . assert(_ == List(t"street", t"city", t"none"))
+
     suite(m"The purchase order"):
       val order = cp"/xsd/po.xml".read[Xml]
       val record = PurchaseOrder.record(order)

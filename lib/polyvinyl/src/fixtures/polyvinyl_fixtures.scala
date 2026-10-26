@@ -71,6 +71,13 @@ object ShapeRecords extends TreeProvider(List(
   t"owners" -> Member.Record(List(t"name" -> Member.Value(t"text"))).keyed,
   t"rows"   -> Member.Union(List(t"items" -> Member.Value(t"text").many)).many))
 
+// Fields which fail as they are read, through the reader's `Tactic`
+object CountRecords extends TreeProvider(List(
+  t"first"  -> Member.Value(t"number"),
+  t"second" -> Member.Value(t"number"),
+  t"third"  -> Member.Value(t"number").many,
+  t"kind"   -> Member.Union(List(t"leaf" -> Member.Value(t"number")))))
+
 // The remaining specifications are ill-formed: each compiles, but expanding its `record` macro
 // fails, which the compiletime tests check.
 
@@ -85,3 +92,6 @@ object MultiplicityRecords extends TreeProvider(List(
 
 // Instances are keyed by the exact label: `"Text"` is not `"text"`
 object MiscasedRecords extends TreeProvider(List(t"name" -> Member.Value(t"Text")))
+
+// A field read by an instance raising an error which is not the specification's `Failure`
+object MismatchedRecords extends TreeProvider(List(t"odd" -> Member.Value(t"mismatched")))

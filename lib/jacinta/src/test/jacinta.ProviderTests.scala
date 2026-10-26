@@ -39,6 +39,10 @@ import emailAddressInterfaces.soundnessEmailAddress
 import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 import urlInterfaces.soundnessUrl
+import denominative.dysasymptotics.linearSize
+
+case class Violations(reasons: List[Json.Provider.Error.Reason])(using Diagnostics)
+extends Error(m"${reasons.size} violations")
 
 // Records over real-world JSON Schema documents (`ProviderSchemas.scala`) and over small schemas
 // each exercising one feature (`FeatureSchemas.scala`), read from valid and invalid documents.
@@ -47,7 +51,55 @@ object ProviderTests extends Suite("json-provider", m"JSON Provider tests"):
 
   def json(text: Text): Json = text.read[Json]
 
+  // A field selected by name, as one must be when its name is that of a JVM `Object` method: its
+  // reading, applied to the `Tactic` in scope
+  def field[value](record: Record, name: String): value raises Json.Provider.Error =
+    record.selectDynamic(name).asInstanceOf[value raises Json.Provider.Error]
+
+  // Every `Json.Provider.Error` raised in `body`, in order, each under its own `venture`
+  private inline def collect(inline body: Unit raises Json.Provider.Error tracks Pointer)
+  :   Violations =
+
+    Validate[Violations, [r] =>> r raises Json.Provider.Error, Pointer]
+      ( Violations(Nil),
+        { case error: Json.Provider.Error => Violations(accrual.reasons :+ error.reason) } )
+    . protect(body)
+
   def run(): Unit =
+    suite(m"Errors through the caller's tactic"):
+      test(m"a value outside an enum fails through attempt"):
+        attempt[Json.Provider.Error]:
+          PrettierSchema.record(json(t"""{"arrowParens": "sometimes"}""")).arrowParens
+        . absolve match
+            case Attempt.Failure(error) => error.reason
+      . assert(_ == NotPermitted(t"sometimes", List(t"always", t"avoid")))
+
+      test(m"a missing required field fails through attempt"):
+        attempt[Json.Provider.Error](AddressSchema.record(json(t"""{}""")).region).absolve match
+          case Attempt.Failure(error) => error.reason
+      . assert(_ == MissingValue(t"region"))
+
+      test(m"a value of the wrong JSON type fails through attempt"):
+        attempt[Json.Provider.Error](AddressSchema.record(json(t"""{"region": 7}""")).region)
+        . absolve match
+            case Attempt.Failure(error) => error.reason
+      . assert(_ == JsonType(Json.Primitive.String, Json.Primitive.Number))
+
+      test(m"every violation in a document is collected"):
+        val record = AddressSchema.record(json(t"""{"locality": 7, "country-name": true}"""))
+
+        collect:
+          venture(record.locality)
+          venture(record.region)
+          venture(record.`country-name`)
+          ()
+        . reasons
+      . assert:
+          _ == List
+                ( JsonType(Json.Primitive.String, Json.Primitive.Number),
+                  MissingValue(t"region"),
+                  JsonType(Json.Primitive.String, Json.Primitive.Boolean) )
+
     suite(m"json-schema.org: address"):
       val full = json(t"""{
         "post-office-box": "PO Box 1", "extended-address": "Suite 2",
@@ -70,14 +122,17 @@ object ProviderTests extends Suite("json-provider", m"JSON Provider tests"):
       . assert(_ == Unset)
 
       test(m"a missing required field fails when read"):
-        capture[Json.Error](AddressSchema.record(json(t"""{"region": "Oxon"}""")).locality).reason
-      . assert(_ == Json.Error.Reason.Absent)
+        capture[Json.Provider.Error]:
+          AddressSchema.record(json(t"""{"region": "Oxon"}""")).locality
+        . reason
+      . assert(_ == MissingValue(t"locality"))
 
       test(m"a required field of the wrong type fails when read"):
-        capture[Json.Error](AddressSchema.record(json(t"""{"locality": 7}""")).locality).reason
+        capture[Json.Provider.Error](AddressSchema.record(json(t"""{"locality": 7}""")).locality)
+        . reason
       . assert:
-          case Json.Error.Reason.NotType(_, _) => true
-          case _                              => false
+          case JsonType(_, _) => true
+          case _              => false
 
       test(m"a tuple reads every field at once"):
         val tuple = AddressSchema.tuple(minimal)
@@ -353,8 +408,8 @@ object ProviderTests extends Suite("json-provider", m"JSON Provider tests"):
       . assert(_ == (t"npm test": Optional[Text]))
 
       test(m"a missing required nested object fails when read"):
-        capture[Json.Error](HuskySchema.record(json(t"""{}""")).hooks).reason
-      . assert(_ == Json.Error.Reason.Absent)
+        capture[Json.Provider.Error](HuskySchema.record(json(t"""{}""")).hooks).reason
+      . assert(_ == MissingValue(t"hooks"))
 
       val jsdoc = json(t"""{"sourceType": "module", "tags": {"dictionaries": ["jsdoc", "closure"]}, "templates": {"default": {"staticFiles": {"include": ["static"]}}}}""")
 
@@ -405,9 +460,9 @@ object ProviderTests extends Suite("json-provider", m"JSON Provider tests"):
         // `notify` is a method of every JVM object, so the `notify` property is only reachable
         // through `selectDynamic`; see the limitation test below.
         CodecovSchema.record(codecov).coverage.let: coverage =>
-          coverage.selectDynamic("notify").asInstanceOf[Optional[Record]].let: notify =>
-            notify.selectDynamic("email").asInstanceOf[Optional[Record]].let: email =>
-              email.selectDynamic("+to").asInstanceOf[List[Text]]
+          field[Optional[Record]](coverage, "notify").let: notify =>
+            field[Optional[Record]](notify, "email").let: email =>
+              field[List[Text]](email, "+to")
       . assert(_ == (List(t"a@example.org"): Optional[List[Text]]))
 
       test(m"a property named after a JVM Object method is not selectable by name"):
@@ -616,7 +671,7 @@ object ProviderTests extends Suite("json-provider", m"JSON Provider tests"):
       . assert(_ == (t"t", (t"c": Optional[Text]), (t"text/plain": Optional[Text]), (t"i": Optional[Text])))
 
       test(m"a property named toString is read through selectDynamic"):
-        AwkwardNamesSchema.record(awkward).selectDynamic("toString")
+        field[Optional[Boolean]](AwkwardNamesSchema.record(awkward), "toString")
       . assert(_ == (true: Optional[Boolean]))
 
       test(m"a tuple over awkward names"):
@@ -646,7 +701,7 @@ object ProviderTests extends Suite("json-provider", m"JSON Provider tests"):
 
       test(m"a string-or-object union reads the object as a record"):
         UnionsSchema.record(other).exec match
-          case record: Record => record.selectDynamic("command")
+          case record: Record => field[Text](record, "command")
           case other          => other
       . assert(_ == t"make")
 
@@ -681,11 +736,10 @@ object ProviderTests extends Suite("json-provider", m"JSON Provider tests"):
       . assert(_ == IntOutOfRange(0, 1, Unset))
 
       test(m"a value of a kind the union does not offer fails when read"):
-        try
-          UnionsSchema.record(json(t"""{"id": true}""")).id
-          t"no failure"
-        catch case panic: Panic => panic.message.text
-      . assert(_.s.contains("boolean"))
+        capture[Json.Provider.Error](UnionsSchema.record(json(t"""{"id": true}""")).id).reason
+      . assert:
+          case UnexpectedKind(found, _) => found == t"boolean"
+          case _                        => false
 
       test(m"alternatives of the same kind cannot be told apart and read as raw JSON"):
         UnionsSchema.record(other).shapes.let(_(t"radius").as[Double])
