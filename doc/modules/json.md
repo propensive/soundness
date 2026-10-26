@@ -741,7 +741,7 @@ resource is bound directly, `object Catalogue extends Json.Provider(cp"/schemas/
 the code compiles.
 
 A property named in the schema's `required` list reads at its type, and fails with a
-`Json.Error` when the document omits it; any other property, or one whose type admits
+`Json.Provider.Error` when the document omits it; any other property, or one whose type admits
 `null`, reads as an `Optional`, `Unset` where the document omits it or gives `null`. An
 `array` property reads as a `List` of its `items` schema's type, an `object` property with
 `properties` as a nested record, and a property named with a hyphen or a keyword through a
@@ -752,7 +752,9 @@ The provider follows the schema's own structure. A `$ref` into the same document
 `allOf` of objects merges their properties. A string's `enum` (or `const`), `pattern`,
 `minLength` and `maxLength`, and a number's `minimum`, `maximum`, `exclusiveMinimum` and
 `exclusiveMaximum` (in draft 4's boolean form or the later numeric one) are checked as the
-field is read, raising a `Json.Provider.Error`. An `enum` without a `type` is read at the
+field is read, raising a `Json.Provider.Error`, as is a value of the wrong JSON type. Every
+error is raised through the `Tactic` of the code reading the field, so `validate`, with a
+`venture` per field, collects every problem in a document. An `enum` without a `type` is read at the
 type of its values, and a `oneOf` or `anyOf` whose alternatives are all strings reads as one
 string — an `enum` of all their values, where each alternative is one.
 
@@ -773,7 +775,8 @@ itself. A schema whose root is not an object with properties — an array, a bar
 reference to another document — is a compile error; where the root offers alternatives of
 which one is such an object, the provider reads that object form. A property whose name is a
 method of every JVM object (`notify`, `wait`, `toString`, `hashCode`, …) cannot be selected by
-name and is read through `record.selectDynamic("notify")`.
+name and is read through `record.selectDynamic("notify")`, whose result is the field's reading:
+cast it to `Record.Field[T, Json.Provider.Error]`, and it is applied to the `Tactic` in scope.
 
 A format naming a network or identity type — `email`, `hostname`, `ipv4`, `ipv6`, `uri`,
 `uuid` — reads as whichever type represents that domain at the call site, chosen by importing

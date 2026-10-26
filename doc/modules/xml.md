@@ -472,7 +472,9 @@ first.
 
 A restriction's facets — `enumeration`, `pattern`, the inclusive and exclusive bounds, the length
 facets and the digit facets — are checked as the field is read, raising `Xml.Provider.Error` with
-the reason. The provider matches a document's elements by resolved name: a child is expected in the
+the reason, as are a missing required element and a value its type cannot read. Every error is
+raised through the `Tactic` of the code reading the field, so `validate`, with a `venture` per
+field, collects every problem in a document. The provider matches a document's elements by resolved name: a child is expected in the
 schema's target namespace when the schema qualifies it (`elementFormDefault`, a `form`, or a `ref`
 to a global element) and in no namespace otherwise, whatever prefixes the document uses; an element
 in another namespace is absent.
