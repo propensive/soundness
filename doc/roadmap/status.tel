@@ -401,7 +401,7 @@ item
   track tooling
   horizon long
   status open
-  baseline  flair, flame and fume read .pyrocosm/<tool>/config.tel (2026-09-25)
+  baseline  flare, flame and fume read .pyrocosm/<tool>/config.tel (2026-09-25)
   criterion  no ecosystem tool accepts any configuration format but TEL
 
 item
