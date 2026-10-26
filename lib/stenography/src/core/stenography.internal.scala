@@ -93,6 +93,10 @@ object internal:
       fresh
 
   def name(using Quotes)(typeRepr: quotes.reflect.TypeRepr): Text =
+    // Deliberate stdlib opt-out: this file's import-graph bookkeeping is stdlib throughout
+    // (`sci.Set`/`sci.Map`).
+    val importsInScope = metaprogramming.imports.stdlib
+
     quotes.absolve match
       case quotes: runtime.impl.QuotesImpl =>
         given context: core.Contexts.Context = quotes.ctx
@@ -104,6 +108,8 @@ object internal:
         val pureFuns: Boolean =
           try config.Feature.pureFunsEnabled catch case _: Exception => true
 
+        val imports: sci.Set[Designator] = importsInScope.map(_.term).map(Syntax.term(_)).toSet
+
         val outer: List[Designator] = context.compilationUnit.tpdTree.absolve match
           case ast.tpd.PackageDef(root, statements) =>
             Designator(root.show) :: statements.collect:
@@ -111,11 +117,6 @@ object internal:
 
           case _ =>
             Nil
-
-        // Deliberate stdlib opt-out: this file's import-graph bookkeeping is stdlib throughout
-        // (`sci.Set`/`sci.Map`).
-        val imports: sci.Set[Designator] =
-          metaprogramming.imports.stdlib.map(_.term).map(Syntax.term(_)).toSet
 
         // Drill into every scope whose members are reachable unqualified from here — each
         // wildcard import that's in scope (including the REPL-accumulated ones across earlier
@@ -131,7 +132,7 @@ object internal:
         // keyed by that member's name, so `Foo { type Form = Bar }` can be written back as
         // `Foo in Bar`. Scanning scopes rather than the whole classpath is what keeps the
         // rendering honest: an alias is only worth preferring where it is in scope to be written.
-        val imported = metaprogramming.imports.stdlib.filter(_.wildcard).map: imp =>
+        val imported = importsInScope.filter(_.wildcard).map: imp =>
           imp.term.asInstanceOf[core.Types.Type].termSymbol
 
         // This unit's own package, so that a module's aliases apply within the module which
@@ -160,10 +161,7 @@ object internal:
 
       case _ =>
         given Bindings = Bindings()
-
-        val imports: sci.Set[Designator] =
-          metaprogramming.imports.stdlib.map(_.term).map(Syntax.term(_)).toSet
-
+        val imports = importsInScope.map(_.term).map(Syntax.term(_)).toSet
         val designators = sci.Set(Designator("scala"), Designator("scala.Predef")) ++ imports
         Syntax(typeRepr).text(using Imports(designators, sci.Set()))
 
