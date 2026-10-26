@@ -123,7 +123,20 @@ object Teletype:
   val empty: Teletype =
     new Teletype(t"", Array(0L), Map.empty, TreeMap.empty, Array.empty[Int])
 
-  given joinable: Teletype is Joinable = _.fold(empty)(_ + _)
+  // Each `append` copies both of its operands, so a left fold over n parts copies the
+  // first part n times, which made joining a long diagnostic quadratic (#2318). Splitting the
+  // parts in halves copies each one only log n times. `append` is associative and drops
+  // empty parts, so this is the left fold's result exactly; prepending `empty` keeps that
+  // true when every part is empty.
+  given joinable: Teletype is Joinable = parts =>
+    val indexed = scala.collection.immutable.Vector.from(parts)
+
+    def recur(from: Int, until: Int): Teletype =
+      if until - from == 1 then indexed(from) else
+        val middle = (from + until) >>> 1
+        recur(from, middle).append(recur(middle, until))
+
+    if indexed.isEmpty then empty else empty.append(recur(0, indexed.length))
   given printable: Teletype is Printable = _.render(_)
 
   given cuttable: Teletype is Cuttable by Text = (text, delimiter, limit) =>
