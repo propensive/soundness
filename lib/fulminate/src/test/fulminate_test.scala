@@ -112,11 +112,11 @@ object Tests extends Suite("messages", m"Fulminate Tests"):
       . assert(_ == 3)
 
       test(m"newline escape decodes to a literal newline"):
-        m"line1\nline2".texts.stdlib.head.s.indexOf('\n')
+        m"line1\nline2".texts.prim.let(_.s.indexOf('\n'))
       . assert(_ == 5)
 
       test(m"backslash escape decodes to a literal backslash"):
-        m"a\\b".texts.stdlib.head
+        m"a\\b".texts.prim
       . assert(_ == t"a\\b")
 
     suite(m"Backtick-delimited nesting"):
@@ -130,11 +130,11 @@ object Tests extends Suite("messages", m"Fulminate Tests"):
       . assert(_ == t"hello \u001B[3mworld\u001B[0m today")
 
       test(m"backticks at start of string"):
-        m"`x` y".messages.stdlib.head.texts
+        m"`x` y".messages.prim.let(_.texts)
       . assert(_ == List(t"x"))
 
       test(m"backticks at end of string"):
-        m"y `x`".messages.stdlib.head.texts
+        m"y `x`".messages.prim.let(_.texts)
       . assert(_ == List(t"x"))
 
       test(m"substitution inside backtick region attaches to inner message"):

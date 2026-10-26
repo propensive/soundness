@@ -279,7 +279,7 @@ object Tests extends Suite("mdns", m"Syndesis tests"):
 
             fury.advertise(description)(using a):
               fury.browse(using b):
-                summon[Discovery.Browser].events.stdlib.head
+                summon[Discovery.Browser].events.prim
       . assert(_ == Discovery.Event.Found(gondor))
 
       test(m"A found instance resolves to its port, TXT and addresses"):

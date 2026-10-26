@@ -1924,7 +1924,7 @@ object Tests extends Suite("time", m"Aviation Tests"):
       test(m"Period.union of disjoint periods is two periods"):
         val a = Instant(0L) ~ Instant(1000L)
         val b = Instant(2000L) ~ Instant(3000L)
-        a.union(b).stdlib.size
+        a.union(b).size
       . assert(_ == 2)
 
       test(m"Period.has is true for a point inside"):

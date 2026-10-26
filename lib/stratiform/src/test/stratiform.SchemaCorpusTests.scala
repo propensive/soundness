@@ -106,7 +106,7 @@ object SchemaCorpusTests extends Suite("tel-schema-corpus", m"Stratiform schema 
     suite(m"Negative corpus (E2xx schema validity, E3xx validation)"):
       CorpusLoader.negative.each: testcase =>
         val codes = CorpusLoader.expectedCodes(testcase)
-        if codes.stdlib.nonEmpty && codes.stdlib.forall(_ >= 200)
+        if !codes.nil && codes.stdlib.forall(_ >= 200)
             && codes.stdlib.exists(implemented.contains)
         then
           test(m"raises an expected error on ${testcase.stem}"):
@@ -119,4 +119,4 @@ object SchemaCorpusTests extends Suite("tel-schema-corpus", m"Stratiform schema 
       CorpusLoader.positive.each: testcase =>
         test(m"no schema or validation errors on ${testcase.stem}"):
           collectCodes(testcase, t"pos")
-        . assert(_.stdlib.isEmpty)
+        . assert(_.nil)

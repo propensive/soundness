@@ -162,5 +162,5 @@ object Tests extends Suite("audio", m"Cacophony Tests"):
       if feed.supports[Monaural](8000.0*Hertz, 16) then
         test(m"Scoped capture from a feed produces audio chunks"):
           feed.open[Pcm across Monaural](Read, PcmFlag.Rate(8000), PcmFlag.Chunk(1024)):
-            input ?=> input.stream.stdlib.head.channels
+            input ?=> input.stream.prim.let(_.channels)
         . assert(_ == 1)

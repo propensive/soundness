@@ -35,6 +35,7 @@ package tarantula
 import scala.language.experimental.pureFunctions
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suites read list sizes; the cost is irrelevant here
 
 import charsets.utf8Charset
 import codepages.utf8Codepage
@@ -91,9 +92,9 @@ class FakeDriver(route: (Http.Method, Text, Int) -> Http.Response) extends Http.
   :   Http.Response =
 
     val data = body().memoize
-    val sent = if data.stdlib.isEmpty then Unset else data.read[Text]
+    val sent = if data.nil then Unset else data.read[Text]
     val path = url.skip(t"http://localhost:4444".length)
-    val attempt = exchanges.stdlib.size
+    val attempt = exchanges.size
     exchanges ::= FakeDriver.Exchange(method, path, sent)
 
     route(method, path, attempt)

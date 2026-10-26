@@ -33,6 +33,7 @@
 package proscenium
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suites read list sizes; the cost is irrelevant here
 
 object Tests extends Suite("prelude", m"Proscenium Tests"):
   def run(): Unit =
@@ -204,7 +205,7 @@ object Tests extends Suite("prelude", m"Proscenium Tests"):
       . assert(_ == (0 until 32).toList)
 
       test(m"an empty ledger has no entries"):
-        Ledger.empty[Text, Int].stdlib.size
+        Ledger.empty[Text, Int].size
       . assert(_ == 0)
 
       test(m"a ledger looks up by key"):

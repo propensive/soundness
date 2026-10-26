@@ -33,6 +33,7 @@
 package sibylline
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suites read list sizes; the cost is irrelevant here
 
 import dynamicAccess.dynamicJson
 import errorDiagnostics.stackTracesDiagnostics
@@ -117,7 +118,7 @@ object ToolkitTests extends Suite("llm-tools", m"Toolkit and tool-loop tests"):
 
       val handle = session(dialect)
       handle.ask(t"Price AAPL?")
-      handle.history.stdlib.size
+      handle.history.size
     . assert(_ == 4)
 
     test(m"malformed arguments become an is_error result the model can see"):

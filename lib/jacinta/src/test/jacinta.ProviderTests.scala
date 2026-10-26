@@ -33,6 +33,7 @@
 package jacinta
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suites read list sizes; the cost is irrelevant here
 
 import codepages.utf8Codepage
 import emailAddressInterfaces.soundnessEmailAddress
@@ -644,7 +645,7 @@ object ProviderTests extends Suite("json-provider", m"JSON Provider tests"):
       . assert(_ == List(true, true))
 
       test(m"a tuple-typed array reads as a List of raw JSON"):
-        ContainersSchema.record(containers).pair.stdlib.size
+        ContainersSchema.record(containers).pair.size
       . assert(_ == 2)
 
       test(m"an array of arrays reads as a List of Lists"):

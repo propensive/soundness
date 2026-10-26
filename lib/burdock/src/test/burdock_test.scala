@@ -36,6 +36,7 @@ import java.util.concurrent as juc
 import juc.atomic as juca
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suites read list sizes; the cost is irrelevant here
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
@@ -64,7 +65,7 @@ object Tests extends Suite("bootstrap", m"Burdock Tests"):
         content.cut(t"\n").filter(_ != t"")
 
       test(m"embeds a non-empty set of dependency hashes as a resource"):
-        hashes.stdlib.length
+        hashes.size
       .assert(_ > 0)
 
       test(m"every hash is 64-character SHA-256 hex"):
@@ -86,12 +87,12 @@ object Tests extends Suite("bootstrap", m"Burdock Tests"):
 
       test(m"a published hash becomes a remote requirement"):
         val (requirements, inlined) = Repackager.partition(List(t"aaa"), resolve, cached)
-        (requirements.stdlib.length, inlined.stdlib.length)
+        (requirements.size, inlined.size)
       .assert(_ == (1, 0))
 
       test(m"an unpublished but cached hash is inlined"):
         val (requirements, inlined) = Repackager.partition(List(t"bbb"), resolve, cached)
-        (requirements.stdlib.length, inlined.stdlib.length)
+        (requirements.size, inlined.size)
       .assert(_ == (0, 1))
 
       test(m"a hash that is neither published nor cached is rejected"):
@@ -126,7 +127,7 @@ object Tests extends Suite("bootstrap", m"Burdock Tests"):
         val monotonic = juca.AtomicBoolean(true)
 
         val progress: Repackager.Progress = (done, total) =>
-          if done < last.get || total != hashes.stdlib.length then monotonic.set(false)
+          if done < last.get || total != hashes.size then monotonic.set(false)
           last.set(done)
 
         Repackager.partition(hashes, _ => Unset, emptyCache, progress)

@@ -1025,7 +1025,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
       test(m"reader recovers all 10 segments"):
         Tarfile.read(bytes.stdlib.iterator.stream).toList.head match
-          case sp: Tar.Entry.Sparse => sp.segments.stdlib.length
+          case sp: Tar.Entry.Sparse => sp.segments.size
           case _                   => 0
       . assert(_ == 10)
 

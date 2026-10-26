@@ -33,6 +33,7 @@
 package sibylline
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suites read list sizes; the cost is irrelevant here
 
 import scala.collection.mutable as scm
 
@@ -81,7 +82,7 @@ object Tests extends Suite("llm", m"Sibylline tests"):
         val dialect = Scripted(List(Scripted.reply(t"Suur Munamägi")))
         val handle = session(dialect)
         handle.ask(t"Tallest mountain in Estonia?")
-        handle.history.stdlib.length
+        handle.history.size
       . assert(_ == 2)
 
       test(m"a second ask sends the accumulated history"):
@@ -89,7 +90,7 @@ object Tests extends Suite("llm", m"Sibylline tests"):
         val handle = session(dialect)
         handle.ask(t"first")
         handle.ask(t"second")
-        dialect.calls.last.history.stdlib.length
+        dialect.calls.last.history.size
       . assert(_ == 3)
 
       test(m"usage folds across turns"):
@@ -108,7 +109,7 @@ object Tests extends Suite("llm", m"Sibylline tests"):
         handle.record(Message(Role.User, t"context"))
         handle.record(Message(Role.Assistant, t"noted"))
         handle.ask(t"question")
-        (dialect.calls.last.history.stdlib.length, handle.usage.input)
+        (dialect.calls.last.history.size, handle.usage.input)
       . assert(_ == (3, 3))
 
       test(m"the system prompt reaches the dialect out-of-band"):
@@ -184,14 +185,14 @@ object Tests extends Suite("llm", m"Sibylline tests"):
         val dialect = Scripted(scripts = List(script(t"fjord")))
         val handle = session(dialect)
         handle.stream(t"go").reply()
-        (handle.history.stdlib.length, handle.usage)
+        (handle.history.size, handle.usage)
       . assert(_ == (2, Usage(2, 9)))
 
       test(m"an abandoned stream commits nothing"):
         val dialect = Scripted(scripts = List(script(t"fjord")))
         val handle = session(dialect)
         handle.stream(t"go")
-        handle.history.stdlib.length
+        handle.history.size
       . assert(_ == 0)
 
       test(m"the streamed reply carries its id and model"):

@@ -33,6 +33,7 @@
 package locomotion
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suites read list sizes; the cost is irrelevant here
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
@@ -159,7 +160,7 @@ object Tests extends Suite("protobuf", m"Locomotion Protobuf Tests"):
       test(m"a nested payload over 127 bytes takes a two-byte length"):
         // Person: tag, 2-byte length, 200 bytes of name, then age = 1: 205 bytes.
         val bytes = wire(Envelope(Person("x".repeat(200).nn.tt, 1)))
-        (bytes.stdlib.take(3), bytes.stdlib.length, bytes.stdlib.takeRight(2))
+        (bytes.stdlib.take(3), bytes.size, bytes.stdlib.takeRight(2))
       . assert:
           _ == (scala.List(0x0a, 0xcd, 0x01), 208, scala.List(0x10, 0x01))
 

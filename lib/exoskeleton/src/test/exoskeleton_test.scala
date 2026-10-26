@@ -33,6 +33,7 @@
 package exoskeleton
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suites read list sizes; the cost is irrelevant here
 import soundness.collationComparable
 import soundness.collations.codepointCollation
 import soundness.sortingAlgorithms.timsort
@@ -552,7 +553,7 @@ object Tests extends Suite("cli", m"Exoskeleton Tests"):
                 Pane.enter(t"cd ${fixture.encode}")
                 Pane.enter('\r')
                 Pane.completions(t"files verify ")
-            .check { out => out.cut(t"one.txt").stdlib.length == 2 && out.cut(t"src/").stdlib.length == 2 }
+            .check { out => out.cut(t"one.txt").size == 2 && out.cut(t"src/").size == 2 }
 
           // yossarian, which renders the panes on a pseudo-terminal the tests above use, checked
           // against tmux, an independent terminal emulator: each scenario is typed into a pane of

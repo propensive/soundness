@@ -39,7 +39,7 @@ import anticipation.*
 import distillate.*
 import gossamer.*
 import prepositional.*
-import rudiments.{prim, reverse}
+import rudiments.{prim, reverse, to}
 import spectacular.*
 
 import decimalizers.fourDecimalPlaces

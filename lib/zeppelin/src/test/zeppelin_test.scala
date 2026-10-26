@@ -275,17 +275,17 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
         val payload: Data = Array.tabulate(512)(i => (i%256).toByte)
         val path = workDir/t"bin.zip"
         path.write(Zipfile(List(Zip.Entry(zipRef(t"blob"), payload))))
-        readEntries(path).stdlib.head.read[Data].to[List]
+        readEntries(path).prim.let(_.read[Data].to[List])
       . assert(_ == Array.tabulate(512)(i => (i%256).toByte).to[List])
 
       test(m"reads back an entry with empty content"):
-        readEntries(writeZip(t"emptyfile.zip", entry(t"empty", t""))).stdlib.head.read[Text]
+        readEntries(writeZip(t"emptyfile.zip", entry(t"empty", t""))).prim.let(_.read[Text])
       . assert(_ == t"")
 
       test(m"reads a large, highly-compressible payload"):
         val path = workDir/t"big.zip"
         path.write(Zipfile(List(Zip.Entry(zipRef(t"big.txt"), (t"soundness "*4096).in[Data]))))
-        readEntries(path).stdlib.head.read[Text]
+        readEntries(path).prim.let(_.read[Text])
       . assert(_ == t"soundness "*4096)
 
       test(m"looking up an absent entry raises NotFound"):
@@ -394,7 +394,7 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
       . assert(_ == List(t"one.txt", t"two.txt"))
 
       test(m"reads content from an externally (JDK) written archive"):
-        readEntries(writeRawZip(t"foreign2.zip", t"solo.txt")).stdlib.head.read[Text]
+        readEntries(writeRawZip(t"foreign2.zip", t"solo.txt")).prim.let(_.read[Text])
       . assert(_ == t"data")
 
       test(m"an entry name with a forbidden character raises InvalidName"):
@@ -414,11 +414,11 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
       target.write(Zipfile(List(reused)))
 
       test(m"a reused entry preserves its content"):
-        Zipfile.read(target).entries.stdlib.head.read[Text]
+        Zipfile.read(target).entries.prim.let(_.read[Text])
       . assert(_ == t"reuse me "*32)
 
       test(m"a reused entry is not recompressed (identical compressed size)"):
-        Zipfile.read(target).entries.stdlib.head.compressedSize
+        Zipfile.read(target).entries.prim.let(_.compressedSize)
       . assert(_ == reused.compressedSize)
 
     suite(m"ZIP64"):
@@ -442,7 +442,7 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
       . assert(_ == 66000)
 
       test(m"the native reader counts all entries in a ZIP64 archive"):
-        Zipfile.read(path).entries.stdlib.length
+        Zipfile.read(path).entries.size
       . assert(_ == 66000)
 
       // Concatenation, rather than a `Zipfile` with a `prefix`: an Ethereal launcher is built by
@@ -469,7 +469,7 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
 
       test(m"the native reader tolerates a stale ZIP64 locator"):
         val stale = concatenate(t"zip64-stale2.zip", stub, bytesOf(path))
-        Zipfile.read(stale).entries.stdlib.length
+        Zipfile.read(stale).entries.size
       . assert(_ == 66000)
 
       test(m"rebasing a concatenated ZIP64 archive restores the JDK reader"):
@@ -550,11 +550,11 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
       . assert(_ == true)
 
       test(m"a parsed entry exposes the general-purpose flags"):
-        readEntries(foreign).stdlib.head.flags
+        readEntries(foreign).prim.let(_.flags)
       . assert(_ == 0x808)
 
       test(m"a parsed streamed entry records its zeroed local sizes"):
-        readEntries(foreign).stdlib.head.localSizes
+        readEntries(foreign).prim.let(_.localSizes)
       . assert(_ == false)
 
       test(m"a parsed entry exposes both version fields"):
@@ -594,7 +594,7 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
 
       test(m"a streamed entry without local sizes reads back through zeppelin"):
         val streamed = entry(t"s.txt", t"stream me "*16).withHeaders(flags = 0x808, localSizes = false)
-        readEntries(writeZip(t"streamed5.zip", streamed)).stdlib.head.read[Text]
+        readEntries(writeZip(t"streamed5.zip", streamed)).prim.let(_.read[Text])
       . assert(_ == t"stream me "*16)
 
       test(m"Unix attributes and the version made by round-trip"):

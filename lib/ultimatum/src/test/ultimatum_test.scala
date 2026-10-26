@@ -1380,9 +1380,9 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
 
       test(m"every bar renders one row"):
         scala.List
-         ( bars.smoothBar.rows(Fraction(0.5), Tick.zero, 20).stdlib.length,
-           bars.segmentedBar.rows(Fraction(0.5), Tick.zero, 20).stdlib.length,
-           bars.percentageBar.rows(Fraction(0.5), Tick.zero, 20).stdlib.length )
+         ( bars.smoothBar.rows(Fraction(0.5), Tick.zero, 20).size,
+           bars.segmentedBar.rows(Fraction(0.5), Tick.zero, 20).size,
+           bars.percentageBar.rows(Fraction(0.5), Tick.zero, 20).size )
       . assert(_ == scala.List(1, 1, 1))
 
       test(m"a bar's output is stable for a fixed tick"):
@@ -1684,11 +1684,11 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       . assert(_ == Some(80L))
 
       test(m"a layout of static panels arms no wake at all"):
-        wakes(panel()(Out.print(t"still"))).stdlib.length
+        wakes(panel()(Out.print(t"still"))).size
       . assert(_ == 0)
 
       test(m"a bar alone does not animate"):
-        wakes(gauge(Reading(Fraction(0.5)))(using bars.smoothBar)).stdlib.length
+        wakes(gauge(Reading(Fraction(0.5)))(using bars.smoothBar)).size
       . assert(_ == 0)
 
       test(m"the shortest period wins when several gauges animate"):

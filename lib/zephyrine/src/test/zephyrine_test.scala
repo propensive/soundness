@@ -35,6 +35,7 @@ package zephyrine
 import java.util.concurrent.atomic.{AtomicInteger, AtomicLong, AtomicReference}
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suites read list sizes; the cost is irrelevant here
 
 import randomization.unseededRandomization
 
@@ -888,7 +889,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
         gather.credit = 10
         // [pump-overlap] read after a consuming pump, lend or duct
         scala.caps.unsafe.unsafeAssumeSeparate(recorder.viaDuct(Doubler()).pump(gather))
-        recorder.demands.stdlib.last
+        recorder.demands.last
       . assert(_ == 5L)
 
       test(m"accepting reports translated demand"):
@@ -1473,7 +1474,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
         scala.caps.unsafe.unsafeAssumeSeparate:
           recorder.viaDuct(Doubler()).viaDuct(Doubler()).pump(gather)
 
-        recorder.demands.stdlib.last
+        recorder.demands.last
       . assert(_ == 5L)
 
       test(m"a terminal sweep demands the transfer credit from its source"):
@@ -1484,7 +1485,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
           recorder.drain: region =>
             range => ()
 
-        recorder.demands.stdlib.last
+        recorder.demands.last
       . assert(_ == summon[Buffering].transfer(Substrate.Bytes).toLong)
 
     suite(m"Handoff backpressure tests"):

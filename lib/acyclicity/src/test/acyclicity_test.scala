@@ -188,11 +188,11 @@ object Tests extends Suite("dag", m"Acyclicity Tests"):
       . assert(_ == true)
 
       test(m"the only source comes first"):
-        diamond.linearized.stdlib.head
+        diamond.linearized.prim
       . assert(_ == t"d")
 
       test(m"the only sink comes last"):
-        diamond.linearized.stdlib.last
+        diamond.linearized.last
       . assert(_ == t"a")
 
       test(m"the order is the order nodes were given, where that is valid"):
@@ -425,7 +425,7 @@ object Tests extends Suite("dag", m"Acyclicity Tests"):
       . assert(_ == Set(t"e"))
 
       test(m"adding an edge makes its target a node"):
-        diamond.add(t"d", t"e").linearized.stdlib.head
+        diamond.add(t"d", t"e").linearized.prim
       . assert(_ == t"e")
 
       test(m"adding an edge that would close a cycle is refused"):
@@ -487,7 +487,7 @@ object Tests extends Suite("dag", m"Acyclicity Tests"):
 
     suite(m"Exploration"):
       test(m"exploring materialises the graph beneath a node"):
-        12.explore(n => (1 until n).filter(n%_ == 0)).acyclic.linearized.stdlib.last
+        12.explore(n => (1 until n).filter(n%_ == 0)).acyclic.linearized.last
       . assert(_ == 12)
 
     // The mutable form is driven here, in the suite body, and its results captured as values:

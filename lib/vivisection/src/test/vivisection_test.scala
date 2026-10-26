@@ -609,7 +609,7 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
 
         Debugger(Attach(clientSide)).session: debug ?=>
           debug.breakpoint(location, Jdwp.SuspendPolicy.All)
-          debug.events.stdlib.head.events
+          debug.events.prim.let(_.events)
 
     . assert:
         case Jdwp.Event.Breakpoint(request, thread, where) :: Nil =>
@@ -882,7 +882,7 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
 
     test(m"a long array reports full length but a bounded prefix"):
       valueOf(t"many") match
-        case Variable.Snapshot.Arr(_, _, length, prefix) => (length, prefix.stdlib.length)
+        case Variable.Snapshot.Arr(_, _, length, prefix) => (length, prefix.size)
         case _                                           => (-1, -1)
     . assert(_ == (13, 10))
 

@@ -38,6 +38,7 @@ import java.nio.file as jnf
 import java.util.concurrent as juc
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suites read list sizes; the cost is irrelevant here
 
 // The suite's own classloader for the `Enclave` rig: under fume the suite lives in an
 // isolating classloader, and the system loader knows only fume.
@@ -888,7 +889,7 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
                 Pane.enter(t"kittiwake")
                 Pane.enter('\r')
                 val delivered = awaitScreen(_.contains(t"[kittiwake]"))
-                val echoed = Pane.screenshot().screen.filter(_.contains(t"kittiwake")).stdlib.length > 1
+                val echoed = Pane.screenshot().screen.filter(_.contains(t"kittiwake")).size > 1
                 (delivered, echoed)
 
             . check(_ == (true, false))
@@ -929,7 +930,7 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
                 snooze(0.5*Second)
                 Pane.enter(t"harrier")
                 snooze(0.5*Second)
-                Pane.screenshot().screen.filter(_.contains(t"harrier")).stdlib.length > 0
+                Pane.screenshot().screen.filter(_.contains(t"harrier")).size > 0
 
             . check(_ == false)
 

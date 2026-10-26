@@ -241,17 +241,17 @@ object Tests extends Suite("stacktrace", m"Digression Tests"):
       . assert(_ == List((122, 123)))
 
       test(m"A line beyond the inlined run answers nothing"):
-        smap.let(_.sites(t"Util.scala", 5).stdlib.isEmpty)
+        smap.let(_.sites(t"Util.scala", 5).nil)
 
       . assert(_ == true)
 
       test(m"The generated file's own lines are not sites"):
-        smap.let(_.sites(t"Main.scala", 3).stdlib.isEmpty)
+        smap.let(_.sites(t"Main.scala", 3).nil)
 
       . assert(_ == true)
 
       test(m"A file foreign to the SMAP answers nothing"):
-        smap.let(_.sites(t"Nowhere.scala", 3).stdlib.isEmpty)
+        smap.let(_.sites(t"Nowhere.scala", 3).nil)
 
       . assert(_ == true)
 

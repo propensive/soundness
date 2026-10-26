@@ -38,6 +38,7 @@ import scala.collection.immutable as sci
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suites read list sizes; the cost is irrelevant here
 
 import galilei.Linux.pathOnLinux
 import logging.silentLogging
@@ -189,7 +190,7 @@ object Tests extends Suite("diagnostics", m"Delicious Tests"):
 
     test(m"A semantic message finds nested type markers"):
       val typed = mark(t"type", List(t"tasty" -> t"QUJD"), t"List[Int]")
-      SemanticMessage.parse(t"Found: ${mark(t"name", Nil, t"value of $typed")}").types.stdlib.length
+      SemanticMessage.parse(t"Found: ${mark(t"name", Nil, t"value of $typed")}").types.size
     . assert(_ == 1)
 
     test(m"A message without markers is not marked"):

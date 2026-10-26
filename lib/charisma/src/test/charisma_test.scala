@@ -33,6 +33,7 @@
 package charisma
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suites read list sizes; the cost is irrelevant here
 
 import PeriodicTable.*
 
@@ -77,7 +78,7 @@ object Tests extends Suite("chemistry", m"Charisma Tests"):
       . assert(_ == true)
 
       test(m"Every element has a distinct symbol"):
-        PeriodicTable.symbols.stdlib.size
+        PeriodicTable.symbols.size
       . assert(_ == 118)
 
       test(m"An element is shown as its symbol"):

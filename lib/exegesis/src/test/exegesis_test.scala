@@ -39,6 +39,7 @@ import java.io as ji
 import java.util.concurrent as juc
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suites read list sizes; the cost is irrelevant here
 
 import codepages.utf8Codepage
 import errorDiagnostics.stackTracesDiagnostics
@@ -386,7 +387,7 @@ object Tests extends Suite("lsp", m"Exegesis Tests"):
           . as[Json]
 
         TestServer.dispatch(request).let: response =>
-          response.as[JsonRpc.Response].result.as[List[DocumentHighlight]].stdlib.head.kind
+          response.as[JsonRpc.Response].result.as[List[DocumentHighlight]].prim.let(_.kind)
       . assert(_ == DocumentHighlightKind.Write)
 
       test(m"a folding-range request is answered with the folding ranges"):
@@ -395,7 +396,7 @@ object Tests extends Suite("lsp", m"Exegesis Tests"):
           . as[Json]
 
         TestServer.dispatch(request).let: response =>
-          response.as[JsonRpc.Response].result.as[List[FoldingRange]].stdlib.head.endLine
+          response.as[JsonRpc.Response].result.as[List[FoldingRange]].prim.let(_.endLine)
       . assert(_ == 4)
 
       test(m"a prepareRename request decodes a position and returns a range"):
@@ -412,7 +413,7 @@ object Tests extends Suite("lsp", m"Exegesis Tests"):
           . as[Json]
 
         TestServer.dispatch(request).let: response =>
-          response.as[JsonRpc.Response].result.as[List[CallHierarchyIncomingCall]].stdlib.head.from.name
+          response.as[JsonRpc.Response].result.as[List[CallHierarchyIncomingCall]].prim.let(_.from.name)
       . assert(_ == t"foo")
 
       test(m"an inlayHint request encodes its kind as a protocol number"):
@@ -501,7 +502,7 @@ object Tests extends Suite("lsp", m"Exegesis Tests"):
       . assert(_ == "recv,send")
 
       test(m"an inbound message is observed as its body, without the framing"):
-        traffic.stdlib.head._2
+        traffic.prim.let(_._2)
       . assert(_ == TrafficFixture.request)
 
       test(m"an outbound message is observed as the response to the request"):

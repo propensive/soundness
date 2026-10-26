@@ -33,6 +33,7 @@
 package sibylline
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suites read list sizes; the cost is irrelevant here
 
 import codepages.utf8Codepage
 import dynamicAccess.dynamicJson
@@ -112,7 +113,7 @@ object OpenAITests extends Suite("openai", m"OpenAI dialect tests"):
     test(m"a keyless compatible target sends no authorization header"):
       given fake: FakeModel = FakeModel((_, _, _) => answer(t"yes"))
       OpenAI.compatible(url"http://model.test/v1", t"llama").session(llm.ask(t"Ready?"))
-      fake.exchanges.stdlib.reverse.head.headers.filter(_.key == t"authorization").stdlib.size
+      fake.exchanges.stdlib.reverse.head.headers.filter(_.key == t"authorization").size
     . assert(_ == 0)
 
     test(m"the system prompt becomes a leading system message"):

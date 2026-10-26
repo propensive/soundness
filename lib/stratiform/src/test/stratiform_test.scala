@@ -326,7 +326,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
     suite(m"Streaming parser — negative corpus (E1xx)"):
       CorpusLoader.negative.each: testcase =>
         val codes = CorpusLoader.expectedCodes(testcase)
-        if codes.stdlib.nonEmpty && codes.stdlib.forall(_ < 200) then
+        if !codes.nil && codes.stdlib.forall(_ < 200) then
           test(m"streaming raises an expected E1xx error on ${testcase.stem}"):
             codes.has:
               capture[Tel.Error](Tel.Parser.parse(Cursor[Data](testcase.source)))
@@ -360,7 +360,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
       // is the same whatever the chunk boundaries.
       CorpusLoader.negative.each: testcase =>
         val codes = CorpusLoader.expectedCodes(testcase)
-        if codes.stdlib.nonEmpty && codes.stdlib.forall(_ < 200) then
+        if !codes.nil && codes.stdlib.forall(_ < 200) then
           test(m"all chunk sizes raise the same error on ${testcase.stem}"):
             val baseline =
               capture[Tel.Error](Tel.Parser.parse(Cursor[Data](testcase.source))).reason.number
@@ -391,15 +391,15 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         . assert(_ == CheckFormat.parseStream(testcase.check).map(_.tree))
 
       test(m"two documents yield a list of two"):
-        CorpusLoader.caseByStem(t"stream", t"two-documents").source.read[List[Tel]].stdlib.length
+        CorpusLoader.caseByStem(t"stream", t"two-documents").source.read[List[Tel]].size
       . assert(_ == 2)
 
       test(m"a trailing separator yields no empty trailing document"):
-        CorpusLoader.caseByStem(t"stream", t"trailing-separator").source.read[List[Tel]].stdlib.length
+        CorpusLoader.caseByStem(t"stream", t"trailing-separator").source.read[List[Tel]].size
       . assert(_ == 1)
 
       test(m"two consecutive separators yield an empty document between them"):
-        CorpusLoader.caseByStem(t"stream", t"empty-between").source.read[List[Tel]].stdlib.length
+        CorpusLoader.caseByStem(t"stream", t"empty-between").source.read[List[Tel]].size
       . assert(_ == 3)
 
       test(m"a malformed document in a stream raises (fail-fast)"):
@@ -466,7 +466,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
 
       test(m"a sum encodes its variant as a child keyed by the variant name"):
         val shape: Tests.Shape2 = Tests.Shape2.Circle(7)
-        shape.encode.childCompounds.stdlib.head.keyword
+        shape.encode.childCompounds.prim.let(_.keyword)
       . assert(_ == t"circle")
 
       test(m"a single-field sum variant round-trips"):
@@ -771,7 +771,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
     suite(m"tel\"…\" interpolator"):
       test(m"simple literal"):
         val parsed = tel"hello"
-        parsed.childCompounds.stdlib.headOption.map(_.keyword).getOrElse(t"")
+        parsed.childCompounds.prim.let(_.keyword).or(t"")
       . assert(_ == t"hello")
 
       test(m"keyword with atom and hole"):
@@ -786,7 +786,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val parsed = tel"""parent
   child
 """
-        parsed.childCompounds.stdlib.headOption.map(_.keyword).getOrElse(t"")
+        parsed.childCompounds.prim.let(_.keyword).or(t"")
       . assert(_ == t"parent")
 
     suite(m"tel\"…\" extractor"):
@@ -2153,7 +2153,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
     suite(m".read[Tel] from Text"):
       test(m"reading a Text value gives a Tel"):
         val tel = t"name Alice\n".read[Tel]
-        tel.childCompounds.stdlib.headOption.map(_.keyword).getOrElse(t"")
+        tel.childCompounds.prim.let(_.keyword).or(t"")
       . assert(_ == t"name")
 
     suite(m".load[Tel] returns Document[Tel] with metadata"):
@@ -2169,14 +2169,14 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
 
       test(m"Document[Tel].root parses the content"):
         val doc = t"name Alice\n".load[Tel]
-        doc.root.childCompounds.stdlib.headOption.map(_.keyword).getOrElse(t"")
+        doc.root.childCompounds.prim.let(_.keyword).or(t"")
       . assert(_ == t"name")
 
       test(m"bytes load as a document, with the pragma"):
         val bytes: Data = Array.unsafeFrozen("tel 1.0\nname Alice\n".getBytes("UTF-8").nn)
         val doc = bytes.load[Tel]
         ( doc.metadata.pragma.let(_.version).or((0, 0)),
-          doc.root.childCompounds.stdlib.headOption.map(_.keyword).getOrElse(t"") )
+          doc.root.childCompounds.prim.let(_.keyword).or(t"") )
       . assert(_ == ((1, 0), t"name"))
 
       test(m"a document ending at end of input has no continuation"):
@@ -2509,7 +2509,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         // present; the captured error must be one of them, since fixture
         // filenames sometimes describe a scenario while the reference
         // parser surfaces a different code first (e.g. e118 → E117).
-        if codes.stdlib.nonEmpty && codes.stdlib.forall(_ < 200) then
+        if !codes.nil && codes.stdlib.forall(_ < 200) then
           test(m"raises an expected E1xx error on ${testcase.stem}"):
             codes.has(capture[Tel.Error](testcase.source.read[Tel]).reason.number)
           . assert(_ == true)
@@ -2574,7 +2574,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
       . assert(_ == scala.collection.immutable.List((1, 0x20), (3, 0x1f600)))
 
       test(m"permissive decode counts a supplementary character as one character"):
-        Base256.decode(Text("A" + new String(Character.toChars(0x1f600)))).stdlib.length
+        Base256.decode(Text("A" + new String(Character.toChars(0x1f600)))).size
       . assert(_ == 2)
 
       // §11 normative test vectors.
@@ -3201,7 +3201,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
       val h2 = synthetic(3)
 
       test(m"single-component signature length is 33 (32 + 1 cadence byte)"):
-        SchemaSignature.encode(List(h0)).stdlib.length
+        SchemaSignature.encode(List(h0)).size
       . assert(_ == 33)
 
       test(m"single-component signature begins with the component hash"):
@@ -3209,11 +3209,11 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
       . assert(_ == true)
 
       test(m"two-component signature length is 37 (32 + 4 + 1)"):
-        SchemaSignature.encode(List(h0, h1)).stdlib.length
+        SchemaSignature.encode(List(h0, h1)).size
       . assert(_ == 37)
 
       test(m"three-component signature length is 39 (32 + 4 + 2 + 1)"):
-        SchemaSignature.encode(List(h0, h1, h2)).stdlib.length
+        SchemaSignature.encode(List(h0, h1, h2)).size
       . assert(_ == 39)
 
       test(m"empty hash list raises BadSignatureLength"):
@@ -3427,7 +3427,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
                         selfContained().length + dataDoc.read[Tel].bintelDocument(
                           Tels.Layers.compose(schemaDoc.read[Tel].as[Tels]),
                           SchemaSignature.fromDocument(schemaDoc.read[Tel], Tels.Axiom.tels))
-                          .stdlib.length))
+                          .size))
 
       test(m"decodeWholeDocumentSelfContained rejects a continuation as B08"):
         val self   = selfContained()
