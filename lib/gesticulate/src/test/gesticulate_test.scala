@@ -35,7 +35,7 @@ package gesticulate
 import scala.math
 
 import soundness.*
-import denominative.dysasymptotics.linearSize // the suites read list sizes; the cost is irrelevant here
+import denominative.dysasymptotics.{linearSize, unboundedSize} // the suites measure parsed chains; the cost is irrelevant here
 
 import codepages.utf8Codepage
 import strategies.throwUnsafely
