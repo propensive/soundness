@@ -47,7 +47,83 @@ import rudiments.*
 import turbulence.read
 import vacuous.*
 
-import strategies.throwUnsafely
+// The decoding shared by `Xml.Provider`'s readers, in a module of its own: one nested in the
+// provider would make each reader capture it.
+private[xylophone] object Xml4:
+  import Xml.Provider.Error.Reason.{Absent, Malformed}
+
+  // The `Tactic` for an `Xml.Error` met while reading a field, raising it through the field's
+  // own `Tactic` as `Xml.Provider.Error`, so that every field of a record fails in one way
+  def decoding(using tactic: Tactic[Xml.Provider.Error]): Tactic[Xml.Error]^{tactic} =
+    tactic.contramap: error =>
+      val reason = error.reason match
+        case Xml.Error.Reason.Malformed(text, expected)     => Malformed(text, expected)
+        case Xml.Error.Reason.Untextual(expected)           => Malformed(Unset, expected)
+        case Xml.Error.Reason.Absent(expected)              => Absent(expected)
+        case Xml.Error.Reason.AbsentProduct(product)        => Absent(product)
+        case Xml.Error.Reason.AbsentVariant(sum)            => Absent(sum)
+        case Xml.Error.Reason.UnknownVariant(variant, sum)  => Malformed(variant, sum)
+        case Xml.Error.Reason.Empty                         => Malformed(Unset, t"text")
+        case Xml.Error.Reason.Missing                       => Absent(t"value")
+
+      Xml.Provider.Error(reason)(using error.diagnostics)
+
+  // The text content of a leaf: an element's text nodes concatenated, or an attribute's value
+  // as a `Xml.Text`; `Unset` for the absent sentinel
+  def content(xml: Xml): Optional[Text] = xml match
+    case _ if xml eq Xml.Absent       => Unset
+    case Xml.Text(text)               => text
+    case Xml.Fragment(node: Xml.Node) => content(node)
+
+    case element: Xml.Element =>
+      val builder = StringBuilder()
+
+      element.children.extent.each: index =>
+        element.children(index) match
+          case Xml.Text(text)  => builder.append(text.s)
+          case Xml.Cdata(text) => builder.append(text.s)
+          case _               => ()
+
+      builder.toString.tt
+
+    case _ =>
+      Unset
+
+  // A value's text, or the value read as a builtin type, failing as `decoding` does. A
+  // decoder for `Xml` captures the `Tactic` it is given, so each is found at its own type, where
+  // `decoding` is in scope, rather than summoned at an abstract one. Text is read directly: the
+  // decoder for it is the generic one, which cannot be given a tracked `Tactic`.
+  def text(xml: Xml)(using Tactic[Xml.Provider.Error]): Text =
+    if xml eq Xml.Absent then abort(Xml.Provider.Error(Absent(t"value")))
+    else content(xml).or(abort(Xml.Provider.Error(Malformed(Unset, t"text"))))
+
+  def boolean(xml: Xml)(using Tactic[Xml.Provider.Error]): Boolean =
+    given Tactic[Xml.Error] = decoding
+    xml.as[Boolean]
+
+  def int(xml: Xml)(using Tactic[Xml.Provider.Error]): Int =
+    given Tactic[Xml.Error] = decoding
+    xml.as[Int]
+
+  def long(xml: Xml)(using Tactic[Xml.Provider.Error]): Long =
+    given Tactic[Xml.Error] = decoding
+    xml.as[Long]
+
+  def short(xml: Xml)(using Tactic[Xml.Provider.Error]): Short =
+    given Tactic[Xml.Error] = decoding
+    xml.as[Short]
+
+  def byte(xml: Xml)(using Tactic[Xml.Provider.Error]): Byte =
+    given Tactic[Xml.Error] = decoding
+    xml.as[Byte]
+
+  def double(xml: Xml)(using Tactic[Xml.Provider.Error]): Double =
+    given Tactic[Xml.Error] = decoding
+    xml.as[Double]
+
+  def float(xml: Xml)(using Tactic[Xml.Provider.Error]): Float =
+    given Tactic[Xml.Error] = decoding
+    xml.as[Float]
 
 // The lowest layer of `Xml`'s companion, holding the type provider over an XML Schema. It
 // contributes no givens for `Xml` itself.
@@ -75,99 +151,62 @@ trait Xml4:
   // interface (`instantInterfaces.…`, `urlInterfaces.soundnessUrl`) is in scope to instantiate
   // them
   trait Provider2:
-    given dateTimeText: ("dateTime" is Intensional in Xml.Provider from Xml to Text) =
-      Intensional(_.as[Text])
+    // Every reader which can fail is a `Reader`, raising `Xml.Provider.Error` through the
+    // `Tactic` of the code reading the field. A reader's givens are declared at that class type:
+    // see `Intensional.Reading`.
+    type Reader[label <: Label, result] =
+      Intensional.Reading[label, Xml.Provider, Xml, result, Xml.Provider.Error]
 
-    given dateText: ("date" is Intensional in Xml.Provider from Xml to Text) =
-      Intensional(_.as[Text])
-
-    given timeText: ("time" is Intensional in Xml.Provider from Xml to Text) =
-      Intensional(_.as[Text])
-
-    given durationText: ("duration" is Intensional in Xml.Provider from Xml to Text) =
-      Intensional(_.as[Text])
-
-    given anyUriText: ("anyURI" is Intensional in Xml.Provider from Xml to Text) =
-      Intensional(_.as[Text])
+    given dateTimeText: Reader["dateTime", Text] = Intensional.Reading((xml, _) => Xml4.text(xml))
+    given dateText: Reader["date", Text] = Intensional.Reading((xml, _) => Xml4.text(xml))
+    given timeText: Reader["time", Text] = Intensional.Reading((xml, _) => Xml4.text(xml))
+    given durationText: Reader["duration", Text] = Intensional.Reading((xml, _) => Xml4.text(xml))
+    given anyUriText: Reader["anyURI", Text] = Intensional.Reading((xml, _) => Xml4.text(xml))
 
   object Provider extends Provider2:
-    // The text content of a leaf: an element's text nodes concatenated, or an attribute's value
-    // as a `Xml.Text`; `Unset` for the absent sentinel
-    private def text(xml: Xml): Optional[Text] = xml match
-      case _ if xml eq Xml.Absent       => Unset
-      case Xml.Text(text)               => text
-      case Xml.Fragment(node: Xml.Node) => text(node)
 
-      case element: Xml.Element =>
-        val builder = StringBuilder()
-
-        element.children.extent.each: index =>
-          element.children(index) match
-            case Xml.Text(text)  => builder.append(text.s)
-            case Xml.Cdata(text) => builder.append(text.s)
-            case _               => ()
-
-        builder.toString.tt
-
-      case _ =>
-        Unset
-
-    private def content(xml: Xml): Text = text(xml).or(t"")
-
-    given string: ("string" is Intensional in Xml.Provider from Xml to Text) =
-      Intensional(_.as[Text])
-
-    given boolean: ("boolean" is Intensional in Xml.Provider from Xml to Boolean) =
-      Intensional(_.as[Boolean])
-
-    given int: ("int" is Intensional in Xml.Provider from Xml to Int) = Intensional(_.as[Int])
-    given long: ("long" is Intensional in Xml.Provider from Xml to Long) = Intensional(_.as[Long])
-
-    given short: ("short" is Intensional in Xml.Provider from Xml to Short) =
-      Intensional(_.as[Short])
-
-    given byte: ("byte" is Intensional in Xml.Provider from Xml to Byte) = Intensional(_.as[Byte])
-
-    given double: ("double" is Intensional in Xml.Provider from Xml to Double) =
-      Intensional(_.as[Double])
-
-    given float: ("float" is Intensional in Xml.Provider from Xml to Float) =
-      Intensional(_.as[Float])
+    given string: Reader["string", Text] = Intensional.Reading((xml, _) => Xml4.text(xml))
+    given boolean: Reader["boolean", Boolean] = Intensional.Reading((xml, _) => Xml4.boolean(xml))
+    given int: Reader["int", Int] = Intensional.Reading((xml, _) => Xml4.int(xml))
+    given long: Reader["long", Long] = Intensional.Reading((xml, _) => Xml4.long(xml))
+    given short: Reader["short", Short] = Intensional.Reading((xml, _) => Xml4.short(xml))
+    given byte: Reader["byte", Byte] = Intensional.Reading((xml, _) => Xml4.byte(xml))
+    given double: Reader["double", Double] = Intensional.Reading((xml, _) => Xml4.double(xml))
+    given float: Reader["float", Float] = Intensional.Reading((xml, _) => Xml4.float(xml))
 
     // `xs:decimal` reads as a `Double` for now
-    given decimal: ("decimal" is Intensional in Xml.Provider from Xml to Double) =
-      Intensional(_.as[Double])
+    given decimal: Reader["decimal", Double] = Intensional.Reading((xml, _) => Xml4.double(xml))
 
     given xml: ("xml" is Intensional in Xml.Provider from Xml to Xml) = Intensional(identity(_))
 
     // An `xs:list` type: whitespace-separated tokens
     given tokens: ("tokens" is Intensional in Xml.Provider from Xml to List[Text]) =
-      Intensional: xml => splitTokens(content(xml))
+      Intensional: xml => splitTokens(Xml4.content(xml).or(t""))
 
     private def splitTokens(text: Text): List[Text] =
       val words = text.s.trim.nn.split("\\s+").nn
       val parts = scala.collection.immutable.ArraySeq.unsafeWrapArray(words)
       List.from(parts.toList.filter(_.nn.nonEmpty).map(_.nn.tt))
 
+    // The temporal and URI builtins read their text through the domain type's `Instantiable`,
+    // found where the record is read, so a value it rejects fails through the `Tactic` its
+    // interface was given there
     given dateTime: [instant: Instantiable across Instants from Text]
-    =>  ( "dateTime" is Intensional in Xml.Provider from Xml to instant ) =
-      Intensional(_.as[Text].instantiate)
+    =>  Reader["dateTime", instant] =
+      Intensional.Reading((xml, _) => Xml4.text(xml).instantiate)
 
-    given date: [date: Instantiable across Dates from Text]
-    =>  ( "date" is Intensional in Xml.Provider from Xml to date ) =
-      Intensional(_.as[Text].instantiate)
+    given date: [date: Instantiable across Dates from Text] => Reader["date", date] =
+      Intensional.Reading((xml, _) => Xml4.text(xml).instantiate)
 
-    given time: [time: Instantiable across Times from Text]
-    =>  ( "time" is Intensional in Xml.Provider from Xml to time ) =
-      Intensional(_.as[Text].instantiate)
+    given time: [time: Instantiable across Times from Text] => Reader["time", time] =
+      Intensional.Reading((xml, _) => Xml4.text(xml).instantiate)
 
     given duration: [duration: Instantiable across Durations from Text]
-    =>  ( "duration" is Intensional in Xml.Provider from Xml to duration ) =
-      Intensional(_.as[Text].instantiate)
+    =>  Reader["duration", duration] =
+      Intensional.Reading((xml, _) => Xml4.text(xml).instantiate)
 
-    given anyUri: [url: Instantiable across Urls from Text]
-    =>  ( "anyURI" is Intensional in Xml.Provider from Xml to url ) =
-      Intensional(_.as[Text].instantiate)
+    given anyUri: [url: Instantiable across Urls from Text] => Reader["anyURI", url] =
+      Intensional.Reading((xml, _) => Xml4.text(xml).instantiate)
 
     private def fail(reason: Xml.Provider.Error.Reason)(using Tactic[Xml.Provider.Error]): Nothing =
       abort(Xml.Provider.Error(reason))
@@ -260,7 +299,7 @@ trait Xml4:
       type Error = Xml.Provider.Error
 
       def transform(xml: Xml, params: List[Text])(using Tactic[Xml.Provider.Error]): Text =
-        val value = xml.as[Text]
+        val value = Xml4.text(xml)
         Facets(params).textual(value)
         value
 
@@ -272,8 +311,8 @@ trait Xml4:
       type Error = Xml.Provider.Error
 
       def transform(xml: Xml, params: List[Text])(using Tactic[Xml.Provider.Error]): Int =
-        val text = xml.as[Text]
-        val value = xml.as[Int]
+        val text = Xml4.text(xml)
+        val value = Xml4.int(xml)
         val facets = Facets(params)
         facets.textual(text)
         facets.bounds(text, value, _.s.trim.nn.toInt)
@@ -288,8 +327,8 @@ trait Xml4:
       type Error = Xml.Provider.Error
 
       def transform(xml: Xml, params: List[Text])(using Tactic[Xml.Provider.Error]): Long =
-        val text = xml.as[Text]
-        val value = xml.as[Long]
+        val text = Xml4.text(xml)
+        val value = Xml4.long(xml)
         val facets = Facets(params)
         facets.textual(text)
         facets.bounds(text, value, _.s.trim.nn.toLong)
@@ -304,8 +343,8 @@ trait Xml4:
       type Error = Xml.Provider.Error
 
       def transform(xml: Xml, params: List[Text])(using Tactic[Xml.Provider.Error]): Double =
-        val text = xml.as[Text]
-        val value = xml.as[Double]
+        val text = Xml4.text(xml)
+        val value = Xml4.double(xml)
         val facets = Facets(params)
         facets.textual(text)
         facets.bounds(text, value, _.s.trim.nn.toDouble)
@@ -691,7 +730,11 @@ trait Xml4:
       =>  ( Conversion[source, Schema]^{readable} ) =
         source => Schema.parse(source.read[Text](using readable))
 
+    // A schema is read as the provider object is made, where a schema it cannot read is a
+    // compile error rather than a value to report, so its parsing throws.
     object Schema extends Schema2:
+      import strategies.throwUnsafely
+
       private[Provider] def parse(text: Text): Schema = Schema(Xsd.parse(text))
 
       given xsd: Conversion[Xsd, Schema] = Schema(_)
@@ -715,6 +758,7 @@ trait Xml4:
         extends Reason(5)
 
         case Absent(name: Text)                                      extends Reason(6)
+        case Malformed(value: Optional[Text], expected: Text)        extends Reason(7)
 
       given communicable: Reason is Communicable =
         case Reason.OutOfRange(value, minimum, maximum) =>
@@ -740,6 +784,10 @@ trait Xml4:
         case Reason.Absent(name) =>
           m"the element or attribute $name is required"
 
+        case Reason.Malformed(value, expected) =>
+          value.lay(m"the value has no text to read as $expected"): value =>
+            m"the text $value is not a valid $expected"
+
     case class Error(reason: Xml.Provider.Error.Reason)(using Diagnostics)
     extends fulminate.Error(993, reason.number)
       ( m"the XML did not conform to its schema because $reason" )
@@ -748,6 +796,7 @@ trait Xml4:
   extends Specification:
     type Origin = Xml
     type Form = Xml.Provider
+    type Failure = Xml.Provider.Error
 
     val xsd: Xsd = schema0.xsd
 
@@ -810,22 +859,24 @@ trait Xml4:
 
       Xml.Text(builder.toString.tt)
 
-    def access(name: Text, xml: Xml): Xml = elementOf(xml).lay(Xml.Absent): parent =>
-      if name.starts(t"#") then ownText(parent)
-      else if name.starts(t"@") then
-        attributeOf(parent, name.skip(1)).lay(Xml.Absent)(Xml.Text(_))
-      else
-        children(parent, name).prim match
-          case child: Xml.Element => if nil(child) then Xml.Absent else child
+    def access(name: Text, xml: Xml)(using Tactic[Xml.Provider.Error]): Xml =
+      elementOf(xml).lay(Xml.Absent): parent =>
+        if name.starts(t"#") then ownText(parent)
+        else if name.starts(t"@") then
+          attributeOf(parent, name.skip(1)).lay(Xml.Absent)(Xml.Text(_))
+        else
+          children(parent, name).prim match
+            case child: Xml.Element => if nil(child) then Xml.Absent else child
 
-          case _ =>
-            val fallback = if name == t"text" then ownText(parent) else Xml.Absent
-            attributeOf(parent, name).lay(fallback)(Xml.Text(_))
+            case _ =>
+              val fallback = if name == t"text" then ownText(parent) else Xml.Absent
+              attributeOf(parent, name).lay(fallback)(Xml.Text(_))
 
     def absent(xml: Xml): Boolean = xml eq Xml.Absent
 
-    override def required(name: Text, xml: Xml): Xml =
+    override def required(name: Text, xml: Xml)(using Tactic[Xml.Provider.Error]): Xml =
       if absent(xml) then abort(Xml.Provider.Error(Xml.Provider.Error.Reason.Absent(name))) else xml
 
-    def repeated(name: Text, xml: Xml): List[Xml] = elementOf(xml).lay(Nil): parent =>
-      children(parent, name).filter(!nil(_)).map(identity[Xml](_))
+    def repeated(name: Text, xml: Xml)(using Tactic[Xml.Provider.Error]): List[Xml] =
+      elementOf(xml).lay(Nil): parent =>
+        children(parent, name).filter(!nil(_)).map(identity[Xml](_))

@@ -103,12 +103,18 @@ that field is accessed, and a field accessed twice is converted twice. A tuple i
 field is read once, when the tuple is built, and the tuple holds the converted values. A malformed
 field therefore fails the construction of the tuple, whether or not the program ever reads it.
 
-This changes how fallible fields are typed. A specification may declare a field's type as, say,
-`Int raises Json.Provider.Error`, meaning reading it can fail. In a record, that is the field's
-type, and each access needs a handler in scope. In a tuple, the failure can only happen during
-construction, so the element's type is plainly `Int`, and the handler must be in scope where the
-tuple is built: a `raises` clause is discharged there, by whichever `Tactic` the call site
-provides, and the call does not compile without one.
+This changes how fields are typed. Every field can fail as it is read — a required value which
+is absent, a value of the wrong kind, one which breaks the schema's constraints — and fails with
+the specification's own error, such as `Json.Provider.Error`, through the `Tactic` of the code
+which reads it. In a record, a field reads as `Record.Field[Int, Json.Provider.Error]`, a context
+function over that `Tactic`, applied wherever the field is selected, so each access needs a
+handler in scope. In a tuple, the failure can only happen during construction, so the element's
+type is plainly `Int`, and the handler must be in scope where the tuple is built: the call does
+not compile without one.
+
+Since every failure goes through the caller's `Tactic`, a reader can choose how to meet them:
+`attempt` or `recover` one field, or `validate` and `track` a whole record with a `venture` per
+field, which collects every problem in a document before reporting them together.
 
 ### Defining a specification
 
@@ -128,15 +134,20 @@ own, so a single-alternative union nests one multiplicity inside another. A form
 unions or dictionaries provides the further hooks `kind`, `elements`, `pairs` and `entries`;
 one which does not leaves their defaults.
 
+A provider names the error its fields fail with as its `Failure` type, and the primitives which
+can fail — `access`, `repeated`, `entries`, `elements` and `pairs` — take the `Tactic` for it.
 A fourth primitive, `required`, has a default: it is applied to the value of a field read under
-`Multiplicity.One`, and a provider overrides it to fail in its own way when the value is absent.
+`Multiplicity.One`, and a provider overrides it to fail when the value is absent. A fifth,
+`unoffered`, is applied to a value of a kind which no alternative of a union offers.
 One typeclass completes the picture: an `Intensional` instance for each scalar type name the
 schema can declare, saying what Scala type it becomes and how to read a single value of it.
 `Intensional(accessor)` makes one from a function; `Intensional.parametric` from a function
 which also takes the member's parameters, for a type such as a bounded integer. A reading which
-can fail — a value outside its bounds, a string not matching its pattern — is an
-`Intensional.Fallible`, whose `transform` takes the `Tactic` for its `Error`: the field then
-reads as `Result raises Error`, and the tactic is supplied where the field is read. The
+can fail — a value of the wrong kind, a value outside its bounds, a string not matching its
+pattern — is an `Intensional.Fallible`, whose `transform` takes the `Tactic` for its `Error`,
+and `Intensional.Reading` makes one from a function of the value, its parameters and that
+`Tactic`. Its `Error` must be the provider's `Failure` or a subtype of it, so that every field
+fails in one way; an instance which raises anything else is a compile error. The
 instances live in the provider's companion, so they are found without an import. A provider
 over XML, for instance, would fetch a child element by its label, find a field absent where no
 such child exists, and repeat over every child with the label.

@@ -50,6 +50,22 @@ object Intensional:
 
     def transform(data: Origin, params: List[Text])(using Tactic[Error]): Result
 
+  // A fallible instance over a pure function of the value, its parameters and the `Tactic` it
+  // raises through. Being a class, it lets a format declare each of its fallible readers as a
+  // given of a class type: a given at the refined `Fallible` type would be a field capturing
+  // `any`, making the object holding it a capability.
+  final class Reading[label <: Label, form, origin, result, error <: Hazard]
+    ( read: (origin, List[Text]) -> Tactic[error] ?-> result )
+  extends Fallible:
+    type Self = label
+    type Form = form
+    type Origin = origin
+    type Result = result
+    type Error = error
+
+    def transform(data: origin, params: List[Text])(using tactic: Tactic[error]): result =
+      read(data, params)(using tactic)
+
   // An instance which ignores its parameters. The instance retains the accessor, so it captures
   // whatever the accessor does: an instance over a pure function is itself pure.
   def apply[name <: Label, form, origin, value](accessor: origin => value)
