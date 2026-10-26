@@ -34,6 +34,7 @@
 package murmuration
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suite reads list sizes; the cost is irrelevant here
 
 import murmuration.subsumes
 
