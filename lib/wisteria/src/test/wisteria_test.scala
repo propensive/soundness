@@ -37,7 +37,7 @@ import scala.{compiletime, math}
 import soundness.*
 
 import scala.language.dynamics
-import denominative.dysasymptotics.{linearAccess, linearSize} // the derivation fixtures index small lists
+import denominative.dysasymptotics.linearSize
 
 object Tests extends Suite("derivation", m"Wisteria tests"):
 
@@ -83,7 +83,7 @@ object Tests extends Suite("derivation", m"Wisteria tests"):
           build[derivation]:
             [field] =>
               readable =>
-                array.pick(index.z)(i => readable.read(array(i).tt)).or(default.or(???))
+                if index < array.size then readable.read(array.stdlib(index).tt) else default.or(???)
 
     inline def disjunction[derivation: SumReflection]: Readable[derivation] = text =>
       Array.unsafeFrozen(text.s.split(":").nn).to[List].map(_.nn.tt).absolve match
