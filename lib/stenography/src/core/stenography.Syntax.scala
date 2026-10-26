@@ -364,10 +364,11 @@ object Syntax:
 
     import quotes.reflect.*
 
-    // Without pure functions in scope at the use site, `A => B` is a bare `FunctionN` and
-    // there is no such thing as a pure function type to distinguish it from.
+    // Whether pure functions are in scope at the use site is not decided here, so that the
+    // tree depends on the type alone: without them `A => B` is a bare `FunctionN`, and `text`
+    // writes every function arrow as `=>`.
     def impure(base: TypeRepr): Boolean =
-      universal || !bindings.pureFuns || base.typeSymbol.name.startsWith("Impure")
+      universal || base.typeSymbol.name.startsWith("Impure")
 
     repr.absolve match
       case typ@Refinement(base, "apply", method: MethodType) if typ.isFunctionType =>
@@ -423,27 +424,6 @@ object Syntax:
       case _ =>
         Unset
 
-  // A refinement of a single type member can be written with an infix type alias, where one
-  // which refines that member is in scope: `Foo { type Form = Bar }` is `Foo in Bar`. Only an
-  // alias member qualifies; `Foo { type Form <: Bar }` is not what `Foo in Bar` expands to, so
-  // it stays a refinement rather than acquiring a wildcard operand.
-  private def infixAlias(using Quotes)(using bindings: Bindings)
-    ( base: quotes.reflect.TypeRepr, name: String, member: quotes.reflect.TypeRepr )
-  :   Optional[Syntax] =
-
-    import quotes.reflect.*
-
-    if !bindings.infixAliases.contains(name) then Unset else
-      val operator = bindings.infixAliases(name)
-
-      member match
-        case TypeBounds(lower, upper) if lower == upper =>
-          Infix(apply(base), operator, apply(lower))
-
-        case _ =>
-          Unset
-
-
   // Whether a type constructor is `NamedTuple.NamedTuple`, by its symbol. A subtype check
   // against the unpickled type asserts (`NoDenotation.owner`) outside a macro expansion for an
   // applied type whose head is an opaque type seen from outside its scope — proscenium's
@@ -465,11 +445,11 @@ object Syntax:
       repr.absolve match
         case ThisType(ref) =>
           apply(ref) match
-            case Simple(Designator.Type(parent, name)) => Simple(Designator.Term(parent, name))
+            case Simple(Designator.Type(parent, name)) => Simple(Designator.term(parent, name))
             case syntax                                => syntax
 
         case typeRef@TypeRef(NoPrefix(), name) =>
-          Simple(Designator.Top(name))
+          Simple(Designator.top(name))
 
         // A type member selected from a skolem, `?1.Alias`, is what the type the skolem stands
         // for says it is: the member's alias, where that type aliases it, and otherwise, where
@@ -488,13 +468,13 @@ object Syntax:
           val name2 = if module then name.dropRight(1) else name
 
           if prefix.typeSymbol.flags.is(Flags.Package)
-          then Simple(Designator.Type(Designator(prefix.show.tt), name2))
+          then Simple(Designator.member(Designator(prefix.show.tt), name2))
           else apply(prefix) match
             case value@Value(designator) =>
-              if isPackage(name2) then value else Simple(Designator.Type(designator, name2))
+              if isPackage(name2) then value else Simple(Designator.member(designator, name2))
 
             case simple@Simple(designator) =>
-              if isPackage(name2) then simple else Simple(Designator.Type(designator, name2))
+              if isPackage(name2) then simple else Simple(Designator.member(designator, name2))
 
             case refined@Structural(base, members, defs) =>
               members(name.tt).or(Projection(refined, name.tt))
@@ -513,18 +493,18 @@ object Syntax:
               memberAlias(typeRef).lay(Projection(other, name.tt))(apply(_))
 
         case termRef@TermRef(NoPrefix(), name) =>
-          Value(Designator.Top(name))
+          Value(Designator.top(name))
 
         case termRef@TermRef(ThisType(TypeRef(NoPrefix(), "<root>")), name) =>
-          Value(Designator.Top(name))
+          Value(Designator.top(name))
 
         case termRef@TermRef(prefix, name) =>
           apply(prefix) match
             case value@Value(designator) =>
-              if isPackage(name) then value else Value(Designator.Term(designator, name))
+              if isPackage(name) then value else Value(Designator.term(designator, name))
 
             case simple@Simple(designator) =>
-              if isPackage(name) then simple else Value(Designator.Term(designator, name))
+              if isPackage(name) then simple else Value(Designator.term(designator, name))
 
             case refined@Structural(base, members, defs) =>
               members(name.tt).or(Projection(refined, name.tt))
@@ -567,7 +547,8 @@ object Syntax:
           Infix(apply(left), "&", apply(right))
 
         // An impure by-name type, `=> T`, carries a `@retainsByName` annotation; without it the
-        // type is the pure by-name type, `-> T`.
+        // type is the pure by-name type, `-> T`, which `text` writes `=> T` where pure functions
+        // are not in scope.
         case ByNameType(tpe) =>
           tpe.absolve match
             case AnnotatedType(tpe, annotation)
@@ -575,7 +556,7 @@ object Syntax:
               Prefix("=>", apply(tpe))
 
             case _ =>
-              Prefix(if bindings.pureFuns then "->" else "=>", apply(tpe))
+              Prefix("->", apply(tpe))
 
         case FlexibleType(tpe) =>
           Suffix(apply(tpe), "?")
@@ -634,25 +615,36 @@ object Syntax:
         case typ@Refinement(base, "apply", member) =>
           functionSyntax(typ, Nil, false).or(apply(member))
 
+        // A type member which is an alias, `type Form = Bar`, is kept as the bare type it
+        // aliases rather than as a `Declaration`, which is how `text` knows that an infix type
+        // alias in scope could write it: `Foo { type Form = Bar }` as `Foo in Bar`. Whether one
+        // is in scope is decided there, so that the tree depends on the type alone. A bounded
+        // member, `type Form <: Bar`, is not what `Foo in Bar` expands to, so it stays a
+        // `Declaration`.
         case Refinement(base, name, member) =>
           if name == "Self" then Infix(apply(member), "is", apply(base))
-          else infixAlias(base, name, member).or:
+          else
             val refined: Structural = apply(base) match
               case refined@Structural(base, members, defs) => refined
 
               case other =>
                 Structural(other, Ledger(), Ledger())
 
-            signature(name, member) match
-              case signature@Declaration(method, _, _) =>
-                if method then refined.copy(terms = refined.terms.define(name, signature))
-                else refined.copy(types = refined.types.define(name, signature))
+            member match
+              case TypeBounds(lower, upper) if lower == upper =>
+                refined.copy(types = refined.types.define(name, apply(lower)))
+
+              case _ =>
+                signature(name, member) match
+                  case signature@Declaration(method, _, _) =>
+                    if method then refined.copy(terms = refined.terms.define(name, signature))
+                    else refined.copy(types = refined.types.define(name, signature))
 
         case TypeBounds(lower, upper) =>
           typeBounds(Symbolic("?"), lower, upper)
 
         case method: MethodType =>
-          methodSyntax(method, Nil, !bindings.pureFuns)
+          methodSyntax(method, Nil, false)
 
         case typ@PolyType(arguments0, types, result) =>
           val arguments = arguments0.zip(types).map:
@@ -785,6 +777,7 @@ enum Syntax:
     case Symbolic(text)          => text
     case Primitive(text)         => text
     case Selection(left, right)  => s"${left.text}.${right}"
+    case Prefix("->", base) if !imports.pureFuns => s"=> ${base.text}".tt
     case Prefix(prefix, base)    => s"$prefix ${base.text}".tt
     case Suffix(base, suffix)    => s"${base.text}$suffix".tt
     case Sequence('(', elements) => s"(${joined(elements.map(_.text), ", ")})".tt
@@ -813,7 +806,8 @@ enum Syntax:
       val left = if wrap then Sequence('(', List(parameters)) else parameters
       val right = if result.precedence < precedence then Sequence('(', List(result)) else result
       val set = if refs.nil then "" else joined(refs.map(_.text), ", ", "{", "}")
-      val arrow = s"${if contextual then "?" else ""}${if impure then "=>" else "->"}$set"
+      val impure2 = impure || !imports.pureFuns
+      val arrow = s"${if contextual then "?" else ""}${if impure2 then "=>" else "->"}$set"
 
       s"${left.text} $arrow ${right.text}".tt
 
@@ -828,25 +822,35 @@ enum Syntax:
         case infix: Infix => infix.text
         case _            => left.text+joined(elements.map(_.text), ", ", "[", "]").tt
 
-    // A refinement of type members which are each aliased by an infix type alias in scope
-    // (`imports.aliases`, harvested by `Imports.resolve`) is written with those aliases:
-    // `Foo { type Form = Bar }` as `Foo in Bar`. A bounded member is not what an alias
-    // expands to, so any such member keeps the whole refinement in its written form. This is
-    // the render-time counterpart of the alias preference applied when a `Syntax` is built
-    // inside a macro, for a `Syntax` built elsewhere and rendered against a scope.
+    // A refinement's type members which are aliases, where an infix type alias in scope
+    // (`imports.aliases`) refines them, are written with those aliases: `Foo { type Form = Bar }`
+    // as `Foo in Bar`. A bounded member is kept as a `Declaration`, which is not what an alias
+    // expands to, so it stays in the refinement. Members are taken in order, as the compiler
+    // nests them, so `Foo { type A = X; type B = Y }`, with an alias only for `B`, is
+    // `Foo { type A = X } by Y`, and with one only for `A`, `Foo in X { type B = Y }`.
     case Structural(base, members, defs) =>
+      def aliasable(name: Text, syntax: Syntax): Boolean =
+        imports.aliases.contains(name.s) && (syntax match
+          case Declaration(_, _, _) => false
+          case _                    => true)
+
       val entries = members.to[List]
 
-      val aliased: Boolean =
-        defs.nil && !entries.nil && entries.all: (name, syntax) =>
-          imports.aliases.contains(name.s) && (syntax match
-            case Declaration(_, _, _) => false
-            case _                    => true)
+      if entries.exists(aliasable(_, _)) then
+        val written = entries.fold(base): (left, entry) =>
+          val (name, syntax) = entry
 
-      if aliased then
-        entries
-        . fold(base) { case (left, (name, syntax)) => Infix(left, imports.aliases(name.s), syntax) }
-        . text
+          if aliasable(name, syntax) then Infix(left, imports.aliases(name.s), syntax)
+          else left match
+            case Structural(base, types, terms) => Structural(base, types.define(name, syntax), terms)
+            case other                          => Structural(other, Ledger(name -> syntax), Ledger())
+
+        val written2 =
+          if defs.nil then written else written match
+            case Structural(base, types, terms) => Structural(base, types, terms + defs)
+            case other                          => Structural(other, Ledger(), defs)
+
+        written2.text
       else
         val members2: List[Text] = members.remap: (name, syntax) =>
           s"type $name = ${syntax.text}".tt

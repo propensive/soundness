@@ -461,6 +461,25 @@ object Tests extends Suite("ansi", m"Escapade tests"):
         (e"a" + e"b").plain
       . assert(_ == t"ab")
 
+    suite(m"Teletype: join"):
+      val parts: List[Teletype] =
+        List.tabulate(3000): index =>
+          if index%3 == 0 then e"$Bold(b$index)" else if index%3 == 1 then e"" else e"p$index"
+
+      val folded = parts.stdlib.foldLeft(Teletype.empty)(_.append(_))
+
+      test(m"joining many parts gives the left fold's plain text"):
+        parts.join.plain
+      . assert(_ == folded.plain)
+
+      test(m"joining many parts gives the left fold's rendering"):
+        emit(parts.join)
+      . assert(_ == emit(folded))
+
+      test(m"joining only empty parts gives the empty teletype"):
+        emit(List(e"", e"").join)
+      . assert(_ == emit(Teletype.empty))
+
     suite(m"Teletype: dropChars and takeChars"):
       test(m"dropChars from start"):
         e"abcdef".dropChars(2).plain

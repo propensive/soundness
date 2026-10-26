@@ -34,9 +34,11 @@ package frontier
 
 import anticipation.*
 import dendrology.*
+import denominative.*
 import escapade.*
 import gossamer.*
 import proscenium.*
+import rudiments.*
 import symbolism.*
 import vacuous.*
 
@@ -58,20 +60,48 @@ object Diagnostic:
   // `Resolving` node, which supplies the "■ resolving …" headline; its
   // children form the tree below. The default headline matches the legacy
   // Frontier wording; callers (e.g. Wisteria) may override it.
-  def render(diagnostic: Diagnostic, headline: Text = t"contextual value not found"): Text =
+  //
+  // At most `limit` lines of the tree are shown, followed by a count of those
+  // omitted, and a subtree identical to one already shown is written as its
+  // first line alone, marked `as above`: an explanation in a large scope can
+  // otherwise run to many thousands of lines, which nobody can read (#2318).
+  def render
+    ( diagnostic: Diagnostic,
+      headline:   Text = t"contextual value not found",
+      limit:      Int  = 100 )
+  :   Text =
+
     diagnostic match
       case Diagnostic.Resolving(name, label, children) =>
-        TreeDiagram[Diagnostic](children*).render(line)
+        val seen = scala.collection.mutable.HashSet[Diagnostic]()
+        var total = 0
+
+        def collapse(node: Diagnostic): Diagnostic =
+          total += 1
+
+          if node.children.nil then node
+          else if !seen.add(node)
+          then node.rebuild(node.label.lay(t"as above")(label => t"$label, as above"), Nil)
+          else node.rebuild(node.label, node.children.map(collapse))
+
+        val collapsed = children.map(collapse)
+        val omitted = total - limit
+
+        val ending =
+          if omitted <= 0 then e"\n"
+          else e"\n \e[38;5;243m… $omitted more\e[0m\n"
+
+        TreeDiagram[Diagnostic](collapsed*).render(line).keep(limit)
         . join
           ( e"$headline\n\n \e[38;5;88m$Bold(■)\e[0m resolving " +
             e"\e[38;5;208m$Italic($name)\e[0m${labelled(label)}\n",
             e"\n",
-            e"\n" )
+            ending )
 
         . render(termcapDefinitions.xterm256Termcap)
 
       case other =>
-        render(Diagnostic.Resolving(other.name, Unset, List(other)), headline)
+        render(Diagnostic.Resolving(other.name, Unset, List(other)), headline, limit)
 
   private def labelled(label: Optional[Text]): Teletype =
     label.lay(e""): text => e" \e[38;5;243m($Italic($text))\e[0m"
@@ -96,6 +126,15 @@ object Diagnostic:
       e" \e[38;5;88m$Bold(■)\e[0m resolving \e[38;5;208m$Italic($name)\e[0m${labelled(label)}"
 
 enum Diagnostic(val name: Text, val label: Optional[Text], val children: List[Diagnostic]):
+  // The same kind of node, with the same name, but a new label and children.
+  def rebuild(label: Optional[Text], children: List[Diagnostic]): Diagnostic = this match
+    case Resolving(name, _, _) => Resolving(name, label, children)
+    case Candidate(name, _, _) => Candidate(name, label, children)
+    case Requires(name, _, _)  => Requires(name, label, children)
+    case Propose(name, _, _)   => Propose(name, label, children)
+    case Prohibits(name, _, _) => Prohibits(name, label, children)
+    case Found(name, _, _)     => Found(name, label, children)
+
   case Resolving(text: Text, annotation: Optional[Text], nodes: List[Diagnostic])
   extends Diagnostic(text, annotation, nodes)
 
