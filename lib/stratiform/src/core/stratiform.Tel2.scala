@@ -398,7 +398,7 @@ trait Tel2 extends Tel3:
           // goes through the stdlib view.
 
             contexts[derivation](): [field] => context => (label, context.shape())
-            . to[List]
+            . pipe { array => array.stdlib.to(List) } // freshens the array, as jacinta\'s does
 
         Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })
       }):
@@ -524,7 +524,7 @@ trait Tel2 extends Tel3:
             // the array.
 
             contexts[derivation](): [field] => context => (label, context.shape())
-            . to[List]
+            . pipe { array => array.stdlib.to(List) } // freshens the array, as jacinta\'s does
 
           Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })
 

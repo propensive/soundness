@@ -37,7 +37,7 @@ import scala.{compiletime, math}
 import soundness.*
 
 import scala.language.dynamics
-import denominative.dysasymptotics.linearSize
+import denominative.dysasymptotics.{linearAccess, linearSize} // the derivation fixtures index small lists
 
 object Tests extends Suite("derivation", m"Wisteria tests"):
 
@@ -142,7 +142,10 @@ object Tests extends Suite("derivation", m"Wisteria tests"):
           [in, out] => _.flatMap,
           [monadic] => Some(_),
           [field] => context =>
-            inputArr.pick(index.z)(i => context.parse(inputArr(i))).or(None)
+            // The confined read cannot narrow inside this inline lambda (its `Applicable`
+            // evidence is left unresolved), so the bounds check stays explicit.
+            if index < inputArr.length then context.parse(inputArr.stdlib(index))
+            else None
         )
 
   // ===== Typeclass: Show =====

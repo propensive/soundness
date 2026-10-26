@@ -182,7 +182,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
           producer.put(Data.fill(3)(_.toByte))
           producer.put(Data.fill(5)(i => (i + 10).toByte))
           producer.finish()
-          unsafely(output.await()).bind(_.to[List])
+          unsafely(output.await()).to[List].bind(_.to[List])
       . assert(_.map(_.toInt) == List(0, 1, 2, 10, 11, 12, 13, 14))
 
       test(m"Synchronous text collection joins puts"):
@@ -222,7 +222,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
             i += 1
 
           producer.finish()
-          unsafely(output.await()).bind(_.to[List])
+          unsafely(output.await()).to[List].bind(_.to[List])
       . assert(_ == (0 until 10).map(_.toByte).to(List))
 
       test(m"Push chars (synchronous text)"):
