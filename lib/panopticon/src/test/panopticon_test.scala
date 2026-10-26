@@ -134,9 +134,8 @@ object Tests extends Suite("optics", m"Panopticon tests"):
           _.depts(Prim).lead.addr.postcode = "ZZ9",
           _.depts(Prim).lead.role.name     = "Lead",
           _.depts(Prim).lead.role.count    = 999 )
-      . depts.head.let(_.lead)
-    . assert: lead =>
-        lead.addr == Address("1 Way", "Newville", "ZZ9") && lead.role == Role("Lead", 999)
+      . depts.head.let(dept => (dept.lead.addr, dept.lead.role))
+    . assert(_ == (Address("1 Way", "Newville", "ZZ9"), Role("Lead", 999)))
 
     test(m"4 updates, mixed shared and disjoint"):
       val r = org.lens
