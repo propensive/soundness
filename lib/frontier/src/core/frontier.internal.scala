@@ -110,6 +110,16 @@ object internal:
 
     val initialGas = 3
 
+    // The search is bounded: a chain of candidates deeper than `maxDepth`, or more than
+    // `budget` steps in all, is reported as missing rather than followed, since every
+    // search ranges over the whole scope and the chains branch at each candidate's
+    // parameters — in a scope with every import of a long REPL session, an unbounded
+    // explanation ran for hours. The budget is shared: each implicit search in `seek` and
+    // each expansion of classpath proposals in `availableFor` is charged to it, so the
+    // explanation as a whole is bounded, not just the chain of searches (#2318).
+    val maxDepth: Int = 6
+    var budget: Int = 256
+
     val notGiven = TypeRepr.of[scala.util.NotGiven[?]].typeSymbol
 
     object Prohibition:
@@ -130,6 +140,13 @@ object internal:
 
     val givensCache = scala.collection.mutable.Map.empty[TypeRepr, List[Symbol]]
 
+    // The same requirement recurs throughout an explanation (several candidates sharing a
+    // parameter type, say), so its proposals are computed once for each set of exclusions and
+    // depth, and a repeat costs nothing from the budget.
+    val availableCache =
+      scala.collection.mutable.Map.empty
+        [ (TypeRepr, scala.collection.immutable.Set[Symbol], Int), List[Available] ]
+
     def cachedGivens(repr: TypeRepr): List[Symbol] =
       givensCache.getOrElseUpdate(repr, beneficence.givens(repr))
 
@@ -142,25 +159,34 @@ object internal:
       // Compare exclusions by canonical (de-exported) symbol so that excluding
       // `gossamer.foo` also filters out any re-export like `soundness.foo`.
       val excludedCanonicals = exclusions.map(canonical).filterNot(_.isNoSymbol).toSet
+      val key = (repr, excludedCanonicals, gas)
 
-      val matched =
-        cachedGivens(repr)
-        . filterNot: s => excludedCanonicals.contains(canonical(s))
-        . filter(respectsOpaqueScope(_, repr))
-        . flatMap(matchAgainst(_, repr))
+      availableCache.get(key).getOrElse:
+        budget -= 1
 
-      dedupeExportsByCanonical(matched).map: m =>
-        val requirements =
-          if gas <= 0 then Nil
-          else usingTypesInstantiated(m).map:
-            case Prohibition(inner) =>
-              prohibited(inner, m.symbol :: exclusions)
+        val result =
+          if budget < 0 then Nil else
+            val matched =
+              cachedGivens(repr)
+              . filterNot: s => excludedCanonicals.contains(canonical(s))
+              . filter(respectsOpaqueScope(_, repr))
+              . flatMap(matchAgainst(_, repr))
 
-            case paramType =>
-              val nextAvailable = availableFor(paramType, m.symbol :: exclusions, gas - 1)
-              Missing(stenography.internal.name(paramType), nextAvailable, Nil)
+            dedupeExportsByCanonical(matched).map: m =>
+              val requirements =
+                if gas <= 0 then Nil
+                else usingTypesInstantiated(m).map:
+                  case Prohibition(inner) =>
+                    prohibited(inner, m.symbol :: exclusions)
 
-        Available(formatProposal(m), requirements)
+                  case paramType =>
+                    val nextAvailable = availableFor(paramType, m.symbol :: exclusions, gas - 1)
+                    Missing(stenography.internal.name(paramType), nextAvailable, Nil)
+
+              Available(formatProposal(m), requirements)
+
+        availableCache(key) = result
+        result
 
     // A symbol introduced via `export X.y` carries the `Exported` flag and its
     // tree's body forwards to the original. Walk through forwarders to find
@@ -466,14 +492,6 @@ object internal:
 
         case _: ImplicitSearchFailure =>
           Prohibited(name, None)
-
-    // The search is bounded: a chain of candidates deeper than `maxDepth`, or more than
-    // `budget` searches in all, is reported as missing rather than followed, since every
-    // search ranges over the whole scope and the chains branch at each candidate's
-    // parameters — in a scope with every import of a long REPL session, an unbounded
-    // explanation ran for hours.
-    val maxDepth: Int = 6
-    var budget: Int = 256
 
     def seek(repr: TypeRepr, exclusions: List[Symbol], depth: Int): Result =
       budget -= 1
