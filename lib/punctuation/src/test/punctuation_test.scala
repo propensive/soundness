@@ -100,13 +100,13 @@ object Tests extends Suite("markdown", m"Punctuation tests"):
         Parser.parse(Parser.parse(markdown).show)
 
       test(m"simple heading"):
-        roundTrip(t"# Title\n").children.prim
+        roundTrip(t"# Title\n").children.head
       . assert:
           case Layout.Heading(_, 1, Prose.Textual(t"Title")) => true
           case _                                             => false
 
       test(m"emphasis and strong"):
-        roundTrip(t"Hello **bold** and *em* here.\n").children.prim
+        roundTrip(t"Hello **bold** and *em* here.\n").children.head
       . assert:
           case Layout.Paragraph(_, prose*) =>
             prose.exists:
@@ -130,28 +130,28 @@ object Tests extends Suite("markdown", m"Punctuation tests"):
 
       test(m"link with title"):
         val src = t"See [docs](https://example.org \"Docs\") here.\n"
-        Parser.parse(Parser.parse(src).show).children.prim
+        Parser.parse(Parser.parse(src).show).children.head
       . assert:
           case Layout.Paragraph(_, _, Prose.Link(t"https://example.org", t"Docs", _*), _*) => true
           case _                                                                          => false
 
       test(m"blockquote nests paragraph"):
         val src = t"> hello\n"
-        Parser.parse(Parser.parse(src).show).children.prim
+        Parser.parse(Parser.parse(src).show).children.head
       . assert:
           case Layout.BlockQuote(_, Layout.Paragraph(_, Prose.Textual(t"hello"))) => true
           case _                                                                  => false
 
       test(m"bullet list with two items"):
         val src = t"- one\n- two\n"
-        Parser.parse(Parser.parse(src).show).children.prim
+        Parser.parse(Parser.parse(src).show).children.head
       . assert:
           case Layout.BulletList(_, true, items*) if items.size == 2 => true
           case _                                                     => false
 
       test(m"ordered list with two items"):
         val src = t"1. one\n2. two\n"
-        Parser.parse(Parser.parse(src).show).children.prim
+        Parser.parse(Parser.parse(src).show).children.head
       . assert:
           case Layout.OrderedList(_, 1, true, _, items*) if items.size == 2 => true
           case _                                                            => false

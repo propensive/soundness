@@ -36,7 +36,7 @@ import denominative.size
 import denominative.z
 import iridescence.*
 import prepositional.*
-import rudiments.{at, prim}
+import rudiments.{at, head}
 import vacuous.{let, or}
 
 object Gradient:
@@ -52,7 +52,7 @@ case class Gradient(stops: Sequence[Color in Srgb]):
   def apply(position: Double): Color in Srgb =
     val count = stops.size
 
-    if count <= 1 then stops.prim.or(Srgb(0.0, 0.0, 0.0)) else
+    if count <= 1 then stops.head.or(Srgb(0.0, 0.0, 0.0)) else
       val scaled = position.max(0.0).min(1.0)*(count - 1)
       val index = scaled.toInt.min(count - 2)
       val balance = scaled - index

@@ -161,7 +161,7 @@ private[octogenarian] object Sequencer:
 
     Revwalk.peel(context.objects, hash)
 
-  private def subject(message: Text): Text = message.cut(t"\n").prim.or(t"")
+  private def subject(message: Text): Text = message.cut(t"\n").head
 
   private def writeCommit
     ( context: Context,
@@ -375,7 +375,7 @@ private[octogenarian] object Sequencer:
 
     val ours = headCommit(context)
     val picked = Revwalk.commit(context.objects, commit)
-    val parent = picked.parents.prim
+    val parent = picked.parents.head
     val short = commit.text.keep(7)
 
     val label =
@@ -906,7 +906,7 @@ private[octogenarian] object Sequencer:
 
     val stashHash = stashEntry(context, entry)
     val stashCommit = Revwalk.commit(context.objects, stashHash)
-    val base = stashCommit.parents.prim.or(abort(Git.Error(Reason.NoSuchStash)))
+    val base = stashCommit.parents.head.or(abort(Git.Error(Reason.NoSuchStash)))
     val indexCommit = Refstore.nth(stashCommit.parents, 1)
     val untrackedCommit = Refstore.nth(stashCommit.parents, 2)
     val contents = Index.read(context.gitDir)
@@ -988,7 +988,7 @@ private[octogenarian] object Sequencer:
         file.write(Objects.bytes(t"${kept.join(t"\n")}\n"))
 
         val newest =
-          kept.reverse.prim.let(_.cut(t" ")).let(Refstore.nth(_, 1)).or(Git.Hash.zero.text)
+          kept.reverse.head.let(_.cut(t" ")).let(Refstore.nth(_, 1)).or(Git.Hash.zero.text)
 
         lockFile.write(Objects.bytes(t"$newest\n"))
 

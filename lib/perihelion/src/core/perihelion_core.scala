@@ -258,7 +258,7 @@ given wsClient: ( online:            Online,
       given accept: ("secWebsocketAccept" is Directive of Text) = identity(_)
       val expected: Text = t"$key${Websocket.magic}".digest[Sha1].serialize[Base64].keep(28)
 
-      if response.headers.secWebsocketAccept.prim != expected then
+      if response.headers.secWebsocketAccept.head != expected then
         abort
           ( Websocket.Error
               ( Websocket.Error.Reason.Handshake(t"the Sec-WebSocket-Accept was wrong") ) )

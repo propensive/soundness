@@ -732,7 +732,7 @@ val input = t"""{"name": "Bicycle", "children": [{"weight": 9.5}]}""".read[Json]
 
 val record = Catalogue.record(input)
 record.name                       // t"Bicycle", a Text per the schema
-record.children.prim.let(_.weight)   // 9.5, a Double per the schema
+record.children.head.let(_.weight)   // 9.5, a Double per the schema
 ```
 
 The provider takes its schema as anything readable as JSON, so a schema kept as a classpath

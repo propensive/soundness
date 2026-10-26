@@ -213,7 +213,7 @@ extends Rig:
 
       val hotspots =
         Hotspots
-          ( results.prim.let{ line => safely(line.as[Long]) }.or(0L),
+          ( results.head.let{ line => safely(line.as[Long]) }.or(0L),
             results.skip(1).map: line =>
               line.cut(t"\t") match
                 case count :: className :: method :: Nil =>

@@ -68,7 +68,7 @@ object Windows:
 
     def decode(text: Text): Drive raises Path.Error =
       if text.length >= 3 && text(Sec) == ':' && text(Ter) == '\\'
-      then text.prim.let(Drive(_)).or(abort(Path.Error(_.InvalidRoot)))
+      then text.head.let(Drive(_)).or(abort(Path.Error(_.InvalidRoot)))
       else abort(Path.Error(_.InvalidRoot))
 
     def length(text: Text): Int raises Path.Error = 3

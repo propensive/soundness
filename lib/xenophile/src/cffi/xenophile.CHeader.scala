@@ -171,7 +171,7 @@ object CHeader:
         else if applied.constructor == t"const" then
           // A `const` wrapper always carries its one operand; the `Optional` head is bound to a
           // typed local before it is read (`wildApprox`).
-          val inner: Optional[Foreign.Type] = applied.arguments.prim
+          val inner: Optional[Foreign.Type] = applied.arguments.head
           inner.lay(typed)(project(_))
         else
           Foreign.Type.Applied(applied.constructor, applied.arguments.map(project(_)))
@@ -185,7 +185,7 @@ object CHeader:
       case applied: Foreign.Type.Applied =>
         // `const` and `ptr` always carry their one operand; the `Optional` head is bound to a
         // typed local before it is read (`wildApprox`).
-        val operand: Optional[Foreign.Type] = applied.arguments.prim
+        val operand: Optional[Foreign.Type] = applied.arguments.head
 
         if applied.constructor == t"const" then operand.lay((t"*", 0))(unwrap(_))
         else if applied.constructor == t"ptr" then operand.lay((t"*", 0)): argument =>

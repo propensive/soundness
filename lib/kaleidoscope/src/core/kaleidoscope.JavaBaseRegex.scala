@@ -123,7 +123,7 @@ object JavaBaseRegex:
                   do submatches ::= submatcher.toMatchResult.nn.group(0).nn.tt
 
                   if group.quantifier == Regex.Quantifier.Between(0, 1)
-                  then submatches.prim :: matches
+                  then submatches.head :: matches
                   else submatches.reverse :: matches
 
               else

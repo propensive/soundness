@@ -59,7 +59,7 @@ object DemoAcpClient:
               case other                                   => ()
 
           permission:
-            options.filter(_.kind == PermissionOptionKind.AllowOnce).prim
+            options.filter(_.kind == PermissionOptionKind.AllowOnce).head
             . lay(Cancelled): option => Selected(option.optionId)
 
         . apply:

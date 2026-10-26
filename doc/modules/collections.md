@@ -65,7 +65,7 @@ and `ter` read the first few directly:
 ```scala
 letters(Sec)                  // t"b"
 letters(Ordinal.zerary(7))    // Unset
-numbers.prim                  // 3
+numbers.head                  // 3
 ```
 
 Indexing a `List` by position is a walk from its head, so it, and the accessors that walk more
@@ -240,7 +240,7 @@ naturals.skip(10).keep(2)          // Chain(10, 11)
 Chain.continually(7).keep(3)       // Chain(7, 7, 7)
 
 def evens: Chain[Int] = naturals.filter(_%2 == 0)
-evens.prim                         // 0
+evens.head                         // 0
 ```
 
 Because a chain may be unbounded, `size` is not defined on it unless the program acknowledges

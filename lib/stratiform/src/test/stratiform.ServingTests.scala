@@ -57,7 +57,7 @@ object ServingTests extends Suite("tel-serving", m"Stratiform acceptance serving
   private lazy val request: Tel.Acceptance = resourceText("acceptance-request.tel").as[Tel.Acceptance]
 
   private lazy val first: Tel.Acceptance.Alternative =
-    request.alternatives.prim.or(panic(m"no alternative"))
+    request.alternatives.head.or(panic(m"no alternative"))
 
   private val peopleSource: Text = Text("""|tel 1.0
     |

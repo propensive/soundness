@@ -65,7 +65,7 @@ val input = t"""{"name": "Bicycle", "children": [{"weight": 9.5}]}""".read[Json]
 val record = Catalogue.record(input)
 
 record.name                  // Text, because the schema says string
-record.children.prim.let(_.weight)  // Double, because the schema says number
+record.children.head.let(_.weight)  // Double, because the schema says number
 record.age                   // Optional[Int]: not required by the schema
 record.nope                  // does not compile: the schema has no nope
 ```

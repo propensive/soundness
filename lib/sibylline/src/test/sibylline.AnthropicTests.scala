@@ -164,7 +164,7 @@ object AnthropicTests extends Suite("anthropic", m"Anthropic dialect tests"):
     fake.exchanges.stdlib.reverse.head.body.option.get.read[Json]
 
   def header(fake: FakeModel, name: Text): Optional[Text] =
-    fake.exchanges.stdlib.reverse.head.headers.filter(_.key == name).prim.let(_.value)
+    fake.exchanges.stdlib.reverse.head.headers.filter(_.key == name).head.let(_.value)
 
   def run(): Unit =
     test(m"a one-shot ask decodes the reply"):

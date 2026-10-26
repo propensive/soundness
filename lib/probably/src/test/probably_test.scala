@@ -178,7 +178,7 @@ object Tests extends Suite("testing", m"Probably Tests"):
       test(m"a suite's id heads the paths of its tests, and its title is still its name"):
         val id = impromptu(test(m"probe"))
         val ref = TestEvent.Ref.of(id)
-        (ref.path.prim, TestEvent.Ref.of(Tests.id).name, TestEvent.Ref.of(Tests.id).moniker)
+        (ref.path.head, TestEvent.Ref.of(Tests.id).name, TestEvent.Ref.of(Tests.id).moniker)
       . assert(_ == (t"testing", t"Probably Tests", t"testing"))
 
       test(m"a suite's id selects its tests, with or without a hyphen in it"):

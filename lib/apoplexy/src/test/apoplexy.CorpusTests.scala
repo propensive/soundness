@@ -130,7 +130,7 @@ object CorpusTests extends Suite("openapi-corpus", m"OpenAPI corpus tests"):
       test(m"a referenced query parameter resolves in a YAML 3.1 document"):
         given OpenApi = museum
 
-        museum.paths(t"/museum-hours").let(_.get).let(_.parameters.prim).let(_()).let(_.`in`)
+        museum.paths(t"/museum-hours").let(_.get).let(_.parameters.head).let(_()).let(_.`in`)
       . assert(_ == OpenApi.Parameter.In.Query)
 
       test(m"a map schema keeps the schema of its values"):

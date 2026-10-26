@@ -34,7 +34,7 @@ another `StackTrace`:
 val exception = Exception("boom")
 val trace = exception.stackTrace
 
-trace.frames.prim.let(_.method)   // the topmost method, demangled
+trace.frames.head.let(_.method)   // the topmost method, demangled
 trace.cause                       // an Optional[StackTrace]
 ```
 
@@ -72,7 +72,7 @@ definition's own source name, and what kind of definition it is. `displayClass` 
 where they are not, so a renderer needs no branch of its own:
 
 ```scala
-trace.frames.prim.let: frame =>
+trace.frames.head.let: frame =>
   frame.displayClass         // the enclosing definitions, in source terms
   frame.displayMethod        // the definition's own name
   frame.source.let(_.kind)   // Kind.Method, Kind.Lambda, Kind.Constructor, …

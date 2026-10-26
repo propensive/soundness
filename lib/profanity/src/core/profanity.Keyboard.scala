@@ -77,7 +77,7 @@ object Keyboard:
     val fields: Sequence[Text] = text.cut(t";").to[Sequence]
 
     def number(index: Int, default: Int): Int =
-      val field: Optional[Text] = fields.at(index.z).let(_.cut(t":")).let(_.prim)
+      val field: Optional[Text] = fields.at(index.z).let(_.cut(t":")).let(_.head)
       safely(Integer.parseInt(field.or(t"").s)).or(default)
 
     val bitmask: Int = (number(1, 1) - 1).max(0)

@@ -125,7 +125,7 @@ object Tests extends Suite("optics", m"Panopticon tests"):
       org.lens
         ( _.depts(Prim).lead.addr.city     = "Newville",
           _.depts(Prim).lead.addr.postcode = "ZZ9" )
-      . depts.prim.let(_.lead.addr)
+      . depts.head.let(_.lead.addr)
     . assert(_ == Address("1 Way", "Newville", "ZZ9"))
 
     test(m"4 updates sharing depth-2 prefix"):
@@ -134,7 +134,7 @@ object Tests extends Suite("optics", m"Panopticon tests"):
           _.depts(Prim).lead.addr.postcode = "ZZ9",
           _.depts(Prim).lead.role.name     = "Lead",
           _.depts(Prim).lead.role.count    = 999 )
-      . depts.prim.let(_.lead)
+      . depts.head.let(_.lead)
     . assert: lead =>
         lead.addr == Address("1 Way", "Newville", "ZZ9") && lead.role == Role("Lead", 999)
 
@@ -207,7 +207,7 @@ object Tests extends Suite("optics", m"Panopticon tests"):
       // foldLeft path. Result still correct.
       org.lens
        ( _.depts(Prim).members(Filter[Employee](_.age > 35)).age = 99 )
-      . depts.prim.let(_.members.map(_.age))
+      . depts.head.let(_.members.map(_.age))
     . assert(_ == List(30, 99))  // emp1 age 30, emp2 age 40 → only emp2 changed
 
     test(m"two Each updates after non-fusable, still correct"):

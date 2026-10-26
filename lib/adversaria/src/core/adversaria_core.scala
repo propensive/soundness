@@ -67,11 +67,11 @@ inline def relabelling[self, format]: Map[Text, Text] =
   // coincides with the callers' documented fallback: the field's own name.
   val general:  Map[Text, Text] =
     fieldAnnotations[self, name[Any]].remap: (field, set) =>
-      field -> set.occupied.lay(field)(_.head.name)
+      field -> set.head.let(_.name).or(field)
 
   val specific: Map[Text, Text] =
     fieldAnnotations[self, name[format]].remap: (field, set) =>
-      field -> set.occupied.lay(field)(_.head.name)
+      field -> set.head.let(_.name).or(field)
 
   general + specific
 
@@ -92,10 +92,10 @@ inline def variantRelabelling[self, format]: Map[Text, Text] =
   // As in `relabelling`, the `lay` default is unreachable but semantically apt.
   val general:  Map[Text, Text] =
     subtypeAnnotations[self, name[Any]].remap: (variant, set) =>
-      variant -> set.occupied.lay(variant)(_.head.name)
+      variant -> set.head.let(_.name).or(variant)
 
   val specific: Map[Text, Text] =
     subtypeAnnotations[self, name[format]].remap: (variant, set) =>
-      variant -> set.occupied.lay(variant)(_.head.name)
+      variant -> set.head.let(_.name).or(variant)
 
   general + specific

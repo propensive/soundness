@@ -64,7 +64,7 @@ private def xmlNodes(xml: Xml): Array[Xml.Node]^{} = xml match
 
 private def firstNode(xml: Xml, fallback: Xml.Node): Xml.Node =
   val nodes = xmlNodes(xml)
-  nodes.prim.or(fallback)
+  nodes.head.or(fallback)
 
 private def replaceNamedChild(xml: Xml, name: String, value: Xml)(using Xml.Scope): Xml =
   xml match

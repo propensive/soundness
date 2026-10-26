@@ -210,7 +210,7 @@ extends caps.ExclusiveCapability:
       case expansion: digression.Smap.Expansion =>
         val callSite: Optional[(Text, Int)] = expansion.line.let: line => (source, line)
 
-        expansion.inlined.prim match
+        expansion.inlined.head match
           case origin: digression.Smap.Origin => ((origin.file, origin.line), callSite)
           case _                              => ((source, expansion.line.or(line)), Unset)
 
@@ -231,7 +231,7 @@ extends caps.ExclusiveCapability:
     // The thread stands suspended at request time, so its top frame gives the starting
     // logical reading.
     val start: Optional[((Text, Int), Optional[(Text, Int)])] =
-      connection.frames(thread, 0, 1).prim match
+      connection.frames(thread, 0, 1).head match
         case (_, location: Jdwp.Location) => logical(location)
         case _                            => Unset
 
@@ -310,7 +310,7 @@ extends caps.ExclusiveCapability:
   def pause(thread: ThreadId)(using Tactic[Debugger.Error]): Halt =
     connection.suspendThread(thread)
 
-    val location = connection.frames(thread, 0, 1).prim.let(_(1)).or:
+    val location = connection.frames(thread, 0, 1).head.let(_(1)).or:
       Jdwp.Location(Jdwp.TypeTag.Class, Jdwp.Ref.empty, Jdwp.Ref.empty, 0L)
 
     // [construction-fresh] new Halt instance laundered at construction
@@ -375,7 +375,7 @@ extends caps.ExclusiveCapability:
     if !capable then Unset else
       val signature = t"L${className.s.replace('.', '/').nn};"
 
-      connection.classesBySignature(signature).prim match
+      connection.classesBySignature(signature).head match
         case info: Jdwp.ClassInfo =>
           connection.fields(info.cls).seek(_.name == field) match
             case fieldInfo: Jdwp.FieldInfo =>

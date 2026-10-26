@@ -258,7 +258,7 @@ object Tests extends Suite("table", m"Escritoire tests"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.ignoreAttenuation
       given TableRelabelling[Person] = () => Map(t"name" -> t"Full Name")
-      summon[Person is Tabulable[Text]].tabulate(people).grid(40).render.to[List].prim.or(t"")
+      summon[Person is Tabulable[Text]].tabulate(people).grid(40).render.to[List].head.or(t"")
     . assert(_ == t"╭───────────┬─────╮")
 
     test(m"A sequence of integers can be tabulated directly"):
@@ -450,7 +450,7 @@ object Tests extends Suite("table", m"Escritoire tests"):
       import tableStyles.thinRoundedTableStyle
       import columnAttenuation.ignoreAttenuation
       val tabulation = scaffold.tabulate(people)
-      tabulation.layout(40).widths.to[List] == tabulation.grid(40).sections.prim.let(_.widths.to[List]).or(Nil)
+      tabulation.layout(40).widths.to[List] == tabulation.grid(40).sections.head.let(_.widths.to[List]).or(Nil)
     . assert(_ == true)
 
     // ─── Attenuation ────────────────────────────────────────────────────────

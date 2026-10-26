@@ -148,7 +148,7 @@ archive.open[Image](): handle ?=>
   handle.index                                        // the top-level index
   handle.manifest                                     // the manifest it names
   handle.imageConfig                                  // the image configuration
-  handle.manifest.layers.prim.let(handle.verified(_))  // a layer, digest-checked
+  handle.manifest.layers.head.let(handle.verified(_))  // a layer, digest-checked
 ```
 
 Reaching a layer three ways makes the cost explicit: `compressed` yields the stored bytes

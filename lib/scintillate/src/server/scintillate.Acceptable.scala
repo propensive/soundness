@@ -55,7 +55,7 @@ object Acceptable:
       case _: MediaType.Error => Multipart.Error(Multipart.Error.Reason.MediaType)
 
     . protect:
-        val contentType = request.headers.contentType.prim.or:
+        val contentType = request.headers.contentType.head.or:
           abort(Multipart.Error(Multipart.Error.Reason.MediaType))
 
         if contentType.base == media"multipart/form-data" then

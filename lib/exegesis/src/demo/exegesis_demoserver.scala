@@ -73,7 +73,7 @@ object DemoLspServer:
                     CompletionItem(label = t"soundness", kind = CompletionItemKind.Keyword) ) )
 
           command(t"demo.reverse"):
-            arguments.let(_.prim).let: argument =>
+            arguments.let(_.head).let: argument =>
               val text: Text = argument.as[Text]
               Text(StringBuilder(text.s).reverse.toString).in[Json]
 

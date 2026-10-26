@@ -80,7 +80,7 @@ object Path:
       Path(root, (parts2.reverse.map(filesystem.unescape(_))).to(List))
 
   given nominable: [filesystem] => (Path on filesystem) is Nominable = path =>
-    path.descent.to(List).prim.or(path.root)
+    path.descent.to(List).head.or(path.root)
 
   given trustedInstantiable: [filesystem: Filesystem]
   =>  ( radical: Tactic[Path.Error] ?=> Radical on filesystem )
@@ -197,7 +197,7 @@ object Path:
 case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
   type Topic <: Tuple
 
-  def name: Text = descent.to(List).prim.or(root)
+  def name: Text = descent.to(List).head.or(root)
   def nil: Boolean = descent.isEmpty
 
   inline def knownElementTypes: Boolean = inline scala.compiletime.erasedValue[Topic] match
@@ -290,7 +290,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
 
   transparent inline def rename(lambda: (Text aka "prior") ?=> Text): Optional[Path] =
     parent.let: parent =>
-      descent.to(List).prim.let: prior => parent / lambda(using prior.aka["prior"])
+      descent.to(List).head.let: prior => parent / lambda(using prior.aka["prior"])
 
   def relative: Relative of Topic on Plane under 0 =
     Relative[Plane, Topic, 0](0, descent*)

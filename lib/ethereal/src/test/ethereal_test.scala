@@ -1468,7 +1468,7 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
         test(m"a raw record round-trips, bytes and all"):
           val raw = Launcher.Raw(t"argument", 1, bytes(0x61, 0xff, 0x62))
           Launcher.decode(Launcher.encode(init.copy(raws = List(raw)))) match
-            case init2: Launcher.Message.Init => init2.raws.prim match
+            case init2: Launcher.Message.Init => init2.raws.head match
               case raw2: Launcher.Raw => (raw2.kind, raw2.index, raw2.bytes.stdlib.map(_ & 0xff).toList)
               case _                  => (t"", Unset, Nil)
             case _ => (t"", Unset, Nil)

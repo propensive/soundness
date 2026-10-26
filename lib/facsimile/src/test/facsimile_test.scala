@@ -717,7 +717,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
           doc.setBookmarks(List(Bookmark(t"Start", Destination.Fit(Prim), Nil)))
 
         PdfFile(fileBytes(path)).open[Pdf]():
-          pdf.bookmarks.prim.let(_.destination)
+          pdf.bookmarks.head.let(_.destination)
       . assert(_ == Destination.Fit(Prim))
 
       test(m"adding a link annotation round-trips"):
@@ -1865,7 +1865,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
             t"<< /Title (One) /Parent 4 0 R /Dest [3 0 R /Fit] >>".in[Data] )
 
         PdfFile(doc).open():
-          pdf.bookmarks.prim.let(_.destination)
+          pdf.bookmarks.head.let(_.destination)
       . assert(_ == Destination.Fit(Prim))
 
       test(m"a cyclic outline terminates"):

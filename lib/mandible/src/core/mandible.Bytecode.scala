@@ -1560,7 +1560,7 @@ case class Bytecode
 
         // The size check discharges the positional read below.
         if pre.size <= argCount then Unset
-        else pre.skip(argCount).prim match
+        else pre.skip(argCount).head match
           case Bytecode.Frame.L(name) if name == owner => instr.offset
           case _                                       => Unset
 

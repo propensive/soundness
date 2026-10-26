@@ -169,7 +169,7 @@ components:
     .assert(_ == t"listPets")
 
     test(m"the path parameter location is decoded as Path"):
-      fromJson.paths(t"/pets/{id}").let(_.get).let(_.parameters.prim)
+      fromJson.paths(t"/pets/{id}").let(_.get).let(_.parameters.head)
     .assert:
       case parameter: OpenApi.Parameter => parameter.in == OpenApi.Parameter.In.Path
       case _                            => false
@@ -200,14 +200,14 @@ components:
     val refstore = cp"/openapi/local/refstore.json".read[Text].read[OpenApi]
 
     test(m"a referenced parameter decodes as a Ref"):
-      refstore.paths(t"/items").let(_.get).let(_.parameters.prim)
+      refstore.paths(t"/items").let(_.get).let(_.parameters.head)
     .assert:
       case OpenApi.Ref(pointer) => pointer.encode == t"#/components/parameters/limit"
       case _                    => false
 
     test(m"a referenced parameter resolves through the components"):
       given OpenApi = refstore
-      refstore.paths(t"/items").let(_.get).let(_.parameters.prim).let(_()).let(_.name)
+      refstore.paths(t"/items").let(_.get).let(_.parameters.head).let(_()).let(_.name)
     .assert(_ == t"limit")
 
     test(m"a referenced response resolves through the components"):
@@ -221,7 +221,7 @@ components:
     .assert(_.reason == OpenApi.Error.Reason.UnsupportedRef(t"#/paths/x"))
 
     test(m"a server URL resolves its variables to their defaults"):
-      refstore.servers.prim.let(_.resolved)
+      refstore.servers.head.let(_.resolved)
     .assert(_ == t"/v2")
 
     test(m"an operation requiring a credential nobody provides does not compile"):

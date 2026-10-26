@@ -188,7 +188,7 @@ object Tests extends Suite("dag", m"Acyclicity Tests"):
       . assert(_ == true)
 
       test(m"the only source comes first"):
-        diamond.linearized.prim
+        diamond.linearized.head
       . assert(_ == t"d")
 
       test(m"the only sink comes last"):
@@ -425,7 +425,7 @@ object Tests extends Suite("dag", m"Acyclicity Tests"):
       . assert(_ == Set(t"e"))
 
       test(m"adding an edge makes its target a node"):
-        diamond.add(t"d", t"e").linearized.prim
+        diamond.add(t"d", t"e").linearized.head
       . assert(_ == t"e")
 
       test(m"adding an edge that would close a cycle is refused"):

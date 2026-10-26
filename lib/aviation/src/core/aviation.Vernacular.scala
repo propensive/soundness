@@ -140,7 +140,7 @@ object Vernacular:
       t"$count ${if count == 1 then word(unit)(0) else word(unit)(1)}"
 
     def everyDuration(span: Timespan): Text =
-      val first = Vernacular.components(span).prim.let(_(1)).or(TimeUnit.Days)
+      val first = Vernacular.components(span).head.let(_(1)).or(TimeUnit.Days)
       t"${article(first)} ${conjoin(durations(span))}"
 
     def everyUnit(interval: Int, unit: TimeUnit): Text =

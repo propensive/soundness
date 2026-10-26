@@ -138,7 +138,10 @@ extension [plane <: Searchpath](path: Path on plane)
     ( using filesystem: stems.Target is Filesystem )
   :   Path on stems.Target =
 
-    Searchpaths.resolve[stems.Target](stems.stems.head, path)
+    // The companion's read, not the adapting `head`: on a list of the refinement type
+    // `Path on stems.Target` the `Traversable` instance's list parameter is left
+    // uninstantiated and `head` cannot narrow. The read is total: `stems` is `Populated`.
+    Searchpaths.resolve[stems.Target](List.head(stems.stems), path)
 
 // A `Relative` or literal path written against `Linux` conventions may be reinterpreted on a
 // searchpath plane; library-qualified and top-level, since neither subject's companion can

@@ -121,10 +121,10 @@ audio in chunks until it is stopped. A machine may have no feeds at all, so the 
 an `Optional`:
 
 ```scala
-Feed.list.prim.let: feed =>
+Feed.list.head.let: feed =>
   if feed.supports[Stereo](44100.0*Hertz, 16) then
     val recording = feed.record[Stereo](44100.0*Hertz, bits = 16)
-    val firstChunk: Optional[Audio across Stereo] = recording.stream.prim
+    val firstChunk: Optional[Audio across Stereo] = recording.stream.head
     recording.stop()
 ```
 
@@ -139,7 +139,7 @@ a `Playback` that runs in the background; `await` blocks until it finishes, and 
 ends it early:
 
 ```scala
-Outlet.list.prim.let: outlet =>
+Outlet.list.head.let: outlet =>
   val playback = outlet.play(audio)
   playback.await()
 ```
@@ -156,11 +156,11 @@ and configuration are given as the form and its flags — `PcmFlag.Rate`, `PcmFl
 `PcmFlag.Chunk`:
 
 ```scala
-Feed.list.prim.let: feed =>
+Feed.list.head.let: feed =>
   feed.open[Pcm across Stereo](Read, PcmFlag.Rate(48000), PcmFlag.Chunk(1024)): input ?=>
-    input.stream.prim
+    input.stream.head
 
-Outlet.list.prim.let: outlet =>
+Outlet.list.head.let: outlet =>
   outlet.open[Pcm](Write): out ?=>
     out.play(audio)
 ```

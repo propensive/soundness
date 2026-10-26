@@ -639,13 +639,13 @@ object Pdf:
 
       // The sole operand of a one-number operator; `numbers` has already checked the arity, so
       // the head is present and the fallback is unreachable.
-      def number: Double = numbers(1).prim.or(malformed)
+      def number: Double = numbers(1).head.or(malformed)
 
       // No operator reads beyond the second operand position, so the first two accessors serve
       // in place of general indexing into a linked list.
-      def name: Text = operands.prim.lay(malformed)(_.name.or(malformed))
+      def name: Text = operands.head.lay(malformed)(_.name.or(malformed))
 
-      def chars: Data = operands.prim.lay(malformed)(_.chars.or(malformed))
+      def chars: Data = operands.head.lay(malformed)(_.chars.or(malformed))
 
       def matrix: Matrix = numbers(6) match
         case List(a, b, c, d, e, f) => Matrix(a, b, c, d, e, f)
@@ -655,7 +655,8 @@ object Pdf:
         val value = number.toInt
         if value < 0 || value >= limit then malformed else value
 
-      def pair: Optional[Cos] = operands.sec
+      import denominative.dysasymptotics.linearAccess // the second element: a two-cell walk
+      def pair: Optional[Cos] = operands.at(Sec)
 
       operator.s match
         // Graphics state (ISO 32000-2 §8.4.4)
@@ -1450,7 +1451,7 @@ extends caps.ExclusiveCapability:
         case Cos.Dictionary(entries) => entries(t"Name").let(_.name)
 
         case Cos.Sequence(elements) =>
-          elements.flatMap(_.dictionary.let(_(t"Name")).let(_.name).lay(List())(List(_))).prim
+          elements.flatMap(_.dictionary.let(_(t"Name")).let(_.name).lay(List())(List(_))).head
             . or(Unset)
         case _                       => Unset
 

@@ -94,7 +94,7 @@ object Tests extends Suite("mime", m"Gesticulate tests"):
         . assert(_ == 1)
 
         test(m"Single part: name at block size $blockSize"):
-          Multipart.parse(chunks(singlePart, blockSize)).parts.prim.let(_.name.or(t""))
+          Multipart.parse(chunks(singlePart, blockSize)).parts.head.let(_.name.or(t""))
 
         . assert(_ == t"field1")
 
@@ -119,17 +119,17 @@ object Tests extends Suite("mime", m"Gesticulate tests"):
         . assert(_ == Chain(t"value1", t"value2"))
 
       test(m"Filename extraction"):
-        Multipart.parse(chunks(partsWithFilename, 4096)).parts.prim.let(_.filename.or(t""))
+        Multipart.parse(chunks(partsWithFilename, 4096)).parts.head.let(_.filename.or(t""))
 
       . assert(_ == t"hello.txt")
 
       test(m"Disposition is FormData"):
-        Multipart.parse(chunks(singlePart, 4096)).parts.prim.let(_.disposition)
+        Multipart.parse(chunks(singlePart, 4096)).parts.head.let(_.disposition)
 
       . assert(_ == Multipart.Disposition.FormData)
 
       test(m"Headers map preserved"):
-        Multipart.parse(chunks(partsWithFilename, 4096)).parts.prim.let(_.headers.at(t"Content-Type").or(t""))
+        Multipart.parse(chunks(partsWithFilename, 4096)).parts.head.let(_.headers.at(t"Content-Type").or(t""))
 
       . assert(_ == t"text/plain")
 

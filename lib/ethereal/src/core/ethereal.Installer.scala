@@ -138,7 +138,7 @@ object Installer:
           val fileSize = resident.executable.filesize()
           val prefixSize = fileSize - payloadSize - jarSize
 
-          val installDirectory: Path on Linux = target.or(candidateTargets().prim).or:
+          val installDirectory: Path on Linux = target.or(candidateTargets().head).or:
             abort(Install.Error(Install.Error.Reason.Environment))
 
           val file: Path on Linux = installDirectory/command

@@ -148,36 +148,3 @@ extension [self](value: self)(using applicable: Applicable { type Self = self })
 extension [key, value](map: scala.collection.Map[key, value])
   inline def defines(key: key): Boolean = map.contains(key)
   inline def bijection: Bijection[key, value] = Bijection(map.to(scala.collection.immutable.Map))
-
-extension [self](inline value: self)
-  ( using applicable: Applicable { type Self = self; type Operand = Ordinal } )
-  inline def prim: Optional[applicable.Result] = value.at(Prim)
-  inline def sec: Optional[applicable.Result] = value.at(Sec)
-  inline def ter: Optional[applicable.Result] = value.at(Ter)
-
-extension [element](sequence: List[element])
-
-  // Deliberately NOT `inline`: an `inline def` returning the union `Optional[element]` re-infers
-  // the expanded body's type at each call site, where capture checking stamps a fresh `^` capture
-  // variable on the union — which is spurious (and an error) when `element` is a pure type such as
-  // `Text`. A plain method keeps the declared `Optional[element]` result and stays capture-clean.
-  // `prim`/`sec`/`ter` get these ungated `List` special cases because their walk is bounded (at
-  // most three cells), so they are not dysasymptotic; positional access at an arbitrary ordinal
-  // goes through the `Dysasymptotic.LinearAccess`-gated `Applicable` route.
-  def prim: Optional[element] = if List.nil(sequence) then Unset else List.head(sequence)
-
-  def sec: Optional[element] =
-    val rest = List.drop(sequence, 1)
-    if List.nil(rest) then Unset else List.head(rest)
-
-  def ter: Optional[element] =
-    val rest = List.drop(sequence, 2)
-    if List.nil(rest) then Unset else List.head(rest)
-
-extension [element](chain: Chain[element])
-  // `Chain` gets an ungated `prim` for the same reason as `List` above (and the same
-  // non-`inline` rationale): the walk is bounded at one cell, so it is not dysasymptotic, and
-  // on the lazy shape it forces only the first node. `sec`/`ter` are deliberately absent —
-  // positional access into a lazy stream beyond its head is a consumption pattern, better
-  // served by a `#::` match.
-  def prim: Optional[element] = if Chain.nil(chain) then Unset else Chain.head(chain)

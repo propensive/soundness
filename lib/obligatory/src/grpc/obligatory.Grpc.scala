@@ -141,7 +141,7 @@ object Grpc:
     ( connection: Http2.Connection^, authority: Text, defaults: Grpc.Metadata = Grpc.Metadata() ):
     // The `:authority` pseudo-header is supplied to `fetch` separately; the request's
     // `Host` is unused by the HTTP/2 transport, so the hostname is parsed leniently.
-    private val host: Host = unsafely(authority.cut(t":").prim.or(authority).as[Host])
+    private val host: Host = unsafely(authority.cut(t":").head.as[Host])
 
     // Build the gRPC HTTP/2 request: POST to `/package.Service/Method` with the
     // mandatory content-type and `te: trailers`, plus any custom metadata, and a body

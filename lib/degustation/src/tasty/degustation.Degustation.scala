@@ -40,7 +40,7 @@ import gossamer.*
 import murmuration.*
 import denominative.dysasymptotics.linearSize
 import denominative.{nil, size}
-import rudiments.{Scribe, at, collect, each, prim}
+import rudiments.{Scribe, at, collect, each, head}
 import vacuous.*
 
 import Pickled.*
@@ -1315,11 +1315,11 @@ object Degustation:
       case Tree.DefDef(_, name, clauses, _, _, _) if name.text == t"<init>" =>
         val all = clauses.stdlib
 
-        def isTypeClause(clause: List[Tree]): Boolean = clause.prim match
+        def isTypeClause(clause: List[Tree]): Boolean = clause.head match
           case Tree.TypeParam(_, _, _, _) => true
           case _                          => false
 
-        def leads(clause: List[Tree], flag: Flag): Boolean = clause.prim match
+        def leads(clause: List[Tree], flag: Flag): Boolean = clause.head match
           case Tree.Param(_, _, _, modifiers) => modifiers.has(flag)
           case _                              => false
 
@@ -2349,7 +2349,7 @@ object Degustation:
 
             def termClauses(constructor: Tree.DefDef): scala.List[List[Tree]] =
               constructor.clauses.stdlib.filter: clause =>
-                clause.prim match
+                clause.head match
                   case Tree.Param(_, _, _, _) => true
                   case _                      => false
 

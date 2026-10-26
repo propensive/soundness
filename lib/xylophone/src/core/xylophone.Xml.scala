@@ -5127,7 +5127,7 @@ object Xml extends Tag.Container
     // the way to read an attribute selected by path: `xml.selectText(xp"//a/@href")`.
     def selectText(xpath: XPath)(using Tactic[XPath.Error]): Optional[BaseText] =
       XPathEngine.evaluate(xml, xpath.expression, Map(), xpath.scope) match
-        case XPath.Value.NodeSet(loci) => loci.prim.let(_.stringValue)
+        case XPath.Value.NodeSet(loci) => loci.head.let(_.stringValue)
 
         case value =>
           value.text

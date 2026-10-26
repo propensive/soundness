@@ -85,7 +85,7 @@ object Sheet:
     def table(dsv: Sheet): Scaffold[Dsv, Text] =
       val columns: List[Text] =
         dsv.columns.let(_.to[List]).or:
-          dsv.rows.prim.let: head => (1 to head.data.length).to(List).map(_.show)
+          dsv.rows.head.let: head => (1 to head.data.length).to(List).map(_.show)
 
         . or(Nil)
 
@@ -110,7 +110,7 @@ object Sheet:
       private def sheet(iterator: Iterator[Dsv]^): Sheet =
         val rows = Array.from(iterator)
 
-        if format.header then Sheet(rows, format, rows.prim.let(_.header)) else Sheet(rows, format)
+        if format.header then Sheet(rows, format, rows.head.let(_.header)) else Sheet(rows, format)
 
   given showable: Dsv.Format => Sheet is Showable = _.rows.to[List].map(_.show).join(t"\n")
 

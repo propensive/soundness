@@ -1336,7 +1336,7 @@ object KotlinFacade:
     val candidates = KotlinDialect.members(className, field).filter: member =>
       !member.property && !member.parameters.nil
 
-    val member = candidates.prim.or(halt(m"xenophile: $className.$field takes no named arguments"))
+    val member = candidates.head.or(halt(m"xenophile: $className.$field takes no named arguments"))
 
     val positions: Map[Text, Int] =
       member.parameters.indexed.map { (name, ordinal) => (name, ordinal.n0) }.to[Map]

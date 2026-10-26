@@ -466,7 +466,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
 
       test(m"a sum encodes its variant as a child keyed by the variant name"):
         val shape: Tests.Shape2 = Tests.Shape2.Circle(7)
-        shape.encode.childCompounds.prim.let(_.keyword)
+        shape.encode.childCompounds.head.let(_.keyword)
       . assert(_ == t"circle")
 
       test(m"a single-field sum variant round-trips"):
@@ -771,7 +771,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
     suite(m"tel\"…\" interpolator"):
       test(m"simple literal"):
         val parsed = tel"hello"
-        parsed.childCompounds.prim.let(_.keyword).or(t"")
+        parsed.childCompounds.head.let(_.keyword).or(t"")
       . assert(_ == t"hello")
 
       test(m"keyword with atom and hole"):
@@ -786,7 +786,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val parsed = tel"""parent
   child
 """
-        parsed.childCompounds.prim.let(_.keyword).or(t"")
+        parsed.childCompounds.head.let(_.keyword).or(t"")
       . assert(_ == t"parent")
 
     suite(m"tel\"…\" extractor"):
@@ -2153,7 +2153,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
     suite(m".read[Tel] from Text"):
       test(m"reading a Text value gives a Tel"):
         val tel = t"name Alice\n".read[Tel]
-        tel.childCompounds.prim.let(_.keyword).or(t"")
+        tel.childCompounds.head.let(_.keyword).or(t"")
       . assert(_ == t"name")
 
     suite(m".load[Tel] returns Document[Tel] with metadata"):
@@ -2169,14 +2169,14 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
 
       test(m"Document[Tel].root parses the content"):
         val doc = t"name Alice\n".load[Tel]
-        doc.root.childCompounds.prim.let(_.keyword).or(t"")
+        doc.root.childCompounds.head.let(_.keyword).or(t"")
       . assert(_ == t"name")
 
       test(m"bytes load as a document, with the pragma"):
         val bytes: Data = Array.unsafeFrozen("tel 1.0\nname Alice\n".getBytes("UTF-8").nn)
         val doc = bytes.load[Tel]
         ( doc.metadata.pragma.let(_.version).or((0, 0)),
-          doc.root.childCompounds.prim.let(_.keyword).or(t"") )
+          doc.root.childCompounds.head.let(_.keyword).or(t"") )
       . assert(_ == ((1, 0), t"name"))
 
       test(m"a document ending at end of input has no continuation"):
@@ -3106,7 +3106,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
 
       def firstName(document: Bintel.Document): Text = document.root match
         case Tel.Element.Node(_, _, children) =>
-          children.to[List].sweep { case Tel.Element.Value(_, _, t) => t }.prim.or(t"?")
+          children.to[List].sweep { case Tel.Element.Value(_, _, t) => t }.head.or(t"?")
         case _ => t"?"
 
       test(m"decodeDocument reports the continuation offset"):

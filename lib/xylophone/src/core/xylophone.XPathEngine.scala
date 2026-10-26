@@ -318,7 +318,7 @@ private[xylophone] object XPathEngine:
 
   private def siblingLoci(locus: Locus, following: Boolean): List[Locus] =
     if attributeIndexOf(locus) >= 0 then Nil else locus.path.last.lay(Nil): mine =>
-      parentLocus(locus).prim.lay(Nil): parent =>
+      parentLocus(locus).head.lay(Nil): parent =>
         // Every child's path ends in its own index, so `last` is present; the
         // absent case cannot arise and excludes the candidate.
         val all = childLoci(parent)
@@ -543,7 +543,7 @@ private[xylophone] object XPathEngine:
       case _                   => abort(Error(Reason.NotNodeSet))
 
     def defaulted: Value =
-      arguments.prim.lay(Value.NodeSet(List(context.locus)))(identity(_))
+      arguments.head.lay(Value.NodeSet(List(context.locus)))(identity(_))
 
     name.s match
       case "last" =>
@@ -568,13 +568,13 @@ private[xylophone] object XPathEngine:
           if arguments.nil then List(context.locus) else nodeSetArgument(args.head)
 
         if name.s == "namespace-uri" then
-          val uri = loci.prim.let: locus =>
+          val uri = loci.head.let: locus =>
             if attributeIndexOf(locus) >= 0 then attributeNamespace(locus)
             else qualifiedName(locus).let(_.namespace)
 
           Value.Textual(uri.or(t""))
         else
-          val qualified = loci.prim.let(nodeNameOf(_)).or(t"")
+          val qualified = loci.head.let(nodeNameOf(_)).or(t"")
 
           if name.s == "name" then Value.Textual(qualified)
           else Value.Textual(Xml.Name.split(qualified)(1))
@@ -702,7 +702,7 @@ private[xylophone] object XPathEngine:
               Nil
 
         Value.Truth:
-          declared.prim.let: language => language == wanted || language.starts(t"$wanted-")
+          declared.head.let: language => language == wanted || language.starts(t"$wanted-")
           . or(false)
 
       case "number" =>

@@ -258,7 +258,7 @@ object Fragment:
     walk(code)(Nil: List[Char])(_ => false): (stack, _, char, _) =>
       char match
         case '(' | '[' | '{'       => closer(char) :: stack
-        case ')' | ']' | '}'       => if stack.nil then stack else stack.tail
+        case ')' | ']' | '}'       => stack.tail.or(Nil)
         case _                     => stack
 
   // The offset of the first character of `code` at bracket depth zero — outside every

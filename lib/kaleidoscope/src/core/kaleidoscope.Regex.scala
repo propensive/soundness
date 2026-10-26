@@ -168,7 +168,7 @@ object Regex:
                     matched
                   else
                     val body = regex.pattern.s.substring(group.start, group.end).nn.tt
-                    if optional then rescan(body, matched).prim else rescan(body, matched)
+                    if optional then rescan(body, matched).head else rescan(body, matched)
 
                 recur(groups, rest, value :: values)
 

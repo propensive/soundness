@@ -289,7 +289,7 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
         else Nil
 
       val nullable: scala.Boolean = flag(t"nullable") || types.has(t"null")
-      val kind: Optional[Text] = types.filter(_ != t"null").prim
+      val kind: Optional[Text] = types.filter(_ != t"null").head
 
       // Draft 4 (and OpenAPI 3.0) write `exclusiveMinimum: true` to qualify `minimum`; later
       // drafts give it a number of its own. Both read to the same model.

@@ -865,7 +865,7 @@ trait Xml4:
         else if name.starts(t"@") then
           attributeOf(parent, name.skip(1)).lay(Xml.Absent)(Xml.Text(_))
         else
-          children(parent, name).prim match
+          children(parent, name).head match
             case child: Xml.Element => if nil(child) then Xml.Absent else child
 
             case _ =>

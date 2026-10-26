@@ -878,7 +878,7 @@ object Tests extends Suite("internet", m"Urticose tests"):
       . assert(_ == true)
 
       test(m"An escaped dot is part of its label"):
-        Dns.Name.parse(t"Jon\\.Printer._ipp._tcp.local").labels.prim
+        Dns.Name.parse(t"Jon\\.Printer._ipp._tcp.local").labels.head
       . assert(_ == t"Jon.Printer")
 
       test(m"Showing a name re-escapes dots and backslashes"):
@@ -886,7 +886,7 @@ object Tests extends Suite("internet", m"Urticose tests"):
       . assert(_ == t"Jon\\.Printer\\\\._ipp._tcp.local")
 
       test(m"A decimal escape yields its character"):
-        Dns.Name.parse(t"a\\032b.c").labels.prim
+        Dns.Name.parse(t"a\\032b.c").labels.head
       . assert(_ == t"a b")
 
       test(m"A malformed escape is rejected"):
@@ -1030,7 +1030,7 @@ object Tests extends Suite("internet", m"Urticose tests"):
         val bytes =
           hex"""0000 8400 0000 0001 0000 0000
                 06 676f6e646f72 05 6c6f63616c 00 0021 0001 00000078 0008 0000 0000 1f90 c00c"""
-        bytes.as[Dns.Message].answers.prim.let(_.rdata)
+        bytes.as[Dns.Message].answers.head.let(_.rdata)
       . assert(_ == Dns.Rdata.Srv(0, 0, 8080, host))
 
       test(m"A pointer to itself is rejected"):
@@ -1115,13 +1115,13 @@ object Tests extends Suite("internet", m"Urticose tests"):
 
       test(m"An OPT record keeps its payload size and flags through the wire"):
         val message = Dns.Message(1, Dns.Flags(), Nil, Nil, Nil, List(Dns.Record.opt(4096, true)))
-        message.in[Data].as[Dns.Message].additional.prim
+        message.in[Data].as[Dns.Message].additional.head
       . assert: record =>
           record.udpPayload == 4096 && record.dnssecOk == true && record.flush == false
 
       test(m"A TTL with its top bit set reads as zero"):
         hex"0000 8400 0000 0001 0000 0000 00 0001 0001 ffffffff 0004 c0a80102".as[Dns.Message]
-        . answers.prim.let(_.ttl)
+        . answers.head.let(_.ttl)
       . assert(_ == 0)
 
       test(m"Record data in canonical form is uncompressed"):

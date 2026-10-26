@@ -41,7 +41,7 @@ import gossamer.*
 import murmuration.*
 import nomenclature.*
 import prepositional.*
-import rudiments.{at, prim, seek, to}
+import rudiments.{at, head, seek, to}
 import serpentine.*
 import symbolism.*
 import turbulence.*
@@ -128,7 +128,7 @@ object Inspection:
         val packages = scope.owners.values.sweep { case pkg: Text => pkg }
         val name = encoded.s.drop(encoded.s.lastIndexOf('/') + 1).tt
 
-        packages.prim match
+        packages.head match
           case pkg: Text if pkg != t"" && pkg != t"<empty>" =>
             t"${pkg.s.replace('.', '/').nn}/$name"
 

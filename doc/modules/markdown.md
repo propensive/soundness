@@ -73,7 +73,7 @@ The document's `children` are `Layout` nodes, and each carries its inline conten
 document can be inspected or transformed by matching on the tree:
 
 ```scala
-document.children.prim match
+document.children.head match
   case Layout.Heading(_, level, Prose.Textual(text)) => (level, text)
   case _                                             => (0, t"")
 // (1, t"Title")

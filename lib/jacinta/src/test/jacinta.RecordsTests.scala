@@ -107,17 +107,17 @@ object RecordsTests extends Suite("json-records", m"Jacinta records tests"):
     . assert()
 
     test(m"Get the head of an array"):
-      record.children.prim
+      record.children.head
     . assert()
 
     test(m"Get a nested value"):
-      record.children.prim.let(_.weight)
+      record.children.head.let(_.weight)
     . assert(_ == (0.8: Optional[Double]))
 
     test(m"A bad pattern-checked value throws an exception"):
       capture[Json.Provider.Error]:
         // The blueprint error escapes `let`: the lambda runs eagerly on a present value.
-        record.children.prim.let(_.color)
+        record.children.head.let(_.color)
     . assert
         ( _ == Json.Provider.Error
                   ( Json.Provider.Error.Reason.PatternMismatch(t"green", r"#[0-9a-f]{6}") ) )
@@ -180,7 +180,7 @@ object RecordsTests extends Suite("json-records", m"Jacinta records tests"):
     . assert(_ == (t"Jim", true))
 
     test(m"A nested array becomes a list of tuples"):
-      RecordsExampleSchema.tuple(valid).children.prim.let(_.color)
+      RecordsExampleSchema.tuple(valid).children.head.let(_.color)
     . assert(_ == t"#ff0000")
 
     test(m"A fallible element has its successful type"):

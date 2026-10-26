@@ -221,7 +221,7 @@ object AcceptanceTests extends Suite("tel-acceptance", m"Stratiform acceptance t
       . assert(_ == List((false, false, 2), (true, false, 0)))
 
       test(m"the first alternative names a base with one layer"):
-        parsed.alternatives.prim.let(_.schema.count)
+        parsed.alternatives.head.let(_.schema.count)
       . assert(_ == 2)
 
       test(m"the second alternative names the base alone"):
@@ -231,7 +231,7 @@ object AcceptanceTests extends Suite("tel-acceptance", m"Stratiform acceptance t
       . assert(_ == 1)
 
       test(m"the components are four-byte prefixes"):
-        parsed.alternatives.prim.let: alternative =>
+        parsed.alternatives.head.let: alternative =>
           alternative.components.map { component => (component.prefix.length, component.full) }
       . assert(_ == List((4, false), (4, false)))
 
@@ -276,14 +276,14 @@ object AcceptanceTests extends Suite("tel-acceptance", m"Stratiform acceptance t
 
       test(m"a document with no schema identification is read as an acceptance"):
         val text = t"accept ${Tel.Acceptance.signature} self-contained\n"
-        text.as[Tel.Acceptance].alternatives.prim.let(_.selfContained)
+        text.as[Tel.Acceptance].alternatives.head.let(_.selfContained)
       . assert(_ == true)
 
       test(m"components may be written as compound children"):
         val text =
           t"${header}accept ${Tel.Acceptance.signature}\n  component ḀḁЂЃ\n  component ĄąĆć\n"
 
-        text.as[Tel.Acceptance].alternatives.prim.let(_.components.map(_.text))
+        text.as[Tel.Acceptance].alternatives.head.let(_.components.map(_.text))
       . assert(_ == List(t"ḀḁЂЃ", t"ĄąĆć"))
 
     suite(m"Rejections"):

@@ -73,7 +73,7 @@ object TestClient:
           updates.synchronized(updates.append(t"${sessionId}:other"))
 
     permission:
-      options.filter(_.kind == PermissionOptionKind.AllowOnce).prim
+      options.filter(_.kind == PermissionOptionKind.AllowOnce).head
       . lay(Cancelled): option => Selected(option.optionId)
 
     readFile:
@@ -493,7 +493,7 @@ object Tests extends Suite("acp", m"Espionage Tests"):
                   log.synchronized(log.append(t"other"))
 
             permission:
-              options.filter(_.kind == PermissionOptionKind.AllowOnce).prim
+              options.filter(_.kind == PermissionOptionKind.AllowOnce).head
               . lay(Cancelled): option => Selected(option.optionId)
 
           . apply:
@@ -536,7 +536,7 @@ object Tests extends Suite("acp", m"Espionage Tests"):
 
           Acp.connect(Acp.Agent.streams(clientIn, toAgent)):
             permission:
-              options.filter(_.kind == PermissionOptionKind.AllowOnce).prim
+              options.filter(_.kind == PermissionOptionKind.AllowOnce).head
               . lay(Cancelled): option => Selected(option.optionId)
 
           . apply:

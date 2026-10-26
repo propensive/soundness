@@ -609,7 +609,7 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
 
         Debugger(Attach(clientSide)).session: debug ?=>
           debug.breakpoint(location, Jdwp.SuspendPolicy.All)
-          debug.events.prim.let(_.events)
+          debug.events.head.let(_.events)
 
     . assert:
         case Jdwp.Event.Breakpoint(request, thread, where) :: Nil =>

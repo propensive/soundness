@@ -53,7 +53,7 @@ package teletypeFormattables:
       type Self = "scala"
 
       def format(meta: List[Text], content: Text): Optional[Teletype] =
-        if meta.prim != t"scala" then Unset
+        if meta.head != t"scala" then Unset
         else
           import syntaxHighlighting.unnumberedTeletypeable
           Scala.highlight(content).teletype
@@ -63,7 +63,7 @@ package teletypeFormattables:
       type Self = "java"
 
       def format(meta: List[Text], content: Text): Optional[Teletype] =
-        if meta.prim != t"java" then Unset
+        if meta.head != t"java" then Unset
         else
           import syntaxHighlighting.unnumberedTeletypeable
           Java.highlight(content).teletype

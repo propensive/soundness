@@ -324,13 +324,13 @@ object Completions:
   :   Installation.InstallResult =
 
     val home = safely(Environment[Text](t"HOME")).or(Directories.homeText)
-    val fpath = answer.let(_.prim).or(Nil).bind(path(_).lay(Nil)(List(_)))
+    val fpath = answer.let(_.head).or(Nil).bind(path(_).lay(Nil)(List(_)))
     val writable = fpath.filter: dir => dir.existent() && dir.writable()
     val own = writable.filter(_.encode.starts(t"$home/"))
     val scriptName = unsafely(Name[Linux](t"_$command"))
     val zshFallback: Path on Linux = Xdg.dataHome[Path on Linux]/"zsh"/"site-functions"
 
-    (own + writable).prim.lay(place(Shell.Zsh, command, scriptName, zshFallback, false)): dir =>
+    (own + writable).head.lay(place(Shell.Zsh, command, scriptName, zshFallback, false)): dir =>
       place(Shell.Zsh, command, scriptName, dir, true)
 
   // Into bash-completion's user directory, which is never on a path the user must configure, but
@@ -346,7 +346,7 @@ object Completions:
       safely(Environment[Text](t"BASH_COMPLETION_USER_DIR")).let(path(_))
       . or(Xdg.dataHome[Path on Linux]/"bash-completion")
 
-    val loaded = answer.let(_.prim).lay(false)(_.exists(_ != t""))
+    val loaded = answer.let(_.head).lay(false)(_.exists(_ != t""))
     place(Shell.Bash, command, unsafely(Name[Linux](command)), base/"completions", loaded)
 
   // Into the `completions` directory of fish's configuration directory, which fish always
@@ -359,10 +359,10 @@ object Completions:
   :   Installation.InstallResult =
 
     val configuration: Path on Linux =
-      answer.let(_.prim).let(_.prim).let(path(_)).or(Xdg.configHome[Path on Linux]/"fish")
+      answer.let(_.head).let(_.head).let(path(_)).or(Xdg.configHome[Path on Linux]/"fish")
 
     val directory = configuration/"completions"
-    val searched = answer.lay(Nil)(List.drop(_, 1)).prim.or(Nil)
+    val searched = answer.lay(Nil)(List.drop(_, 1)).head.or(Nil)
     val scriptName = unsafely(Name[Linux](t"$command.fish"))
     place(Shell.Fish, command, scriptName, directory, searched.has(directory.encode))
 
@@ -375,7 +375,7 @@ object Completions:
 
     val unwritable = Installation.InstallResult.NoWritableLocation(Shell.Powershell)
 
-    answer.let(_.prim).let(_.prim).lay(unwritable): (location: Text) =>
+    answer.let(_.head).let(_.head).lay(unwritable): (location: Text) =>
       safely:
         val profile = location.as[Path on Linux]
         val marker = t"# $command tab-completions"

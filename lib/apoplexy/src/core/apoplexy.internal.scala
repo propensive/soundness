@@ -488,7 +488,7 @@ object Apoplexy:
 
   // A media type as a specification writes it (`application/json; charset=utf-8`), reduced to
   // the name a `Construable` is keyed by
-  private def normalise(media: Text): Text = media.cut(t";").prim.or(media).trim.lower
+  private def normalise(media: Text): Text = media.cut(t";").head.trim.lower
 
   // The type which carries a media type, if a `Construable` for it is in scope at the expansion.
   // A structured-syntax suffix (`application/problem+json`) falls back to the type it names
@@ -507,7 +507,7 @@ object Apoplexy:
           Unset
 
     search(media).or:
-      val group = media.cut(t"/").prim.or(t"application")
+      val group = media.cut(t"/").head
       media.offsetOf(t"+", Rtl).let: plus => search(t"$group/${media.after(plus)}")
 
   // The media types a body may take, in order of preference: `application/json` first, then by
@@ -525,7 +525,7 @@ object Apoplexy:
   :   Optional[Text] =
 
     val names = medias(content)
-    names.seek(construable(_).present).or(names.prim)
+    names.seek(construable(_).present).or(names.head)
 
   // A media type the spec names, as a `MediaType` value in the generated code, if it parses
   private def mediaTypeExpr(using Quotes)(media: Text): Optional[Expr[MediaType]] =
@@ -682,7 +682,7 @@ object Apoplexy:
 
     if statuses.has(t"200") then t"200"
     else if statuses.has(t"201") then t"201"
-    else statuses.order(_.s).prim
+    else statuses.order(_.s).head
 
   // The content an operation's success response declares, if any
   private def responseContent(using Quotes)(doc: OpenApi, operation: OpenApi.Operation)
@@ -717,7 +717,7 @@ object Apoplexy:
 
     val names =
       doc.paths.values.flatMap(_.operations.values).to[List].bind: operation =>
-        responseContent(doc, operation).let(medias(_).prim).lay(List[Text]())(List(_))
+        responseContent(doc, operation).let(medias(_).head).lay(List[Text]())(List(_))
 
     names.to[Set].to[List] match
       case List(name) => construable(name).or(TypeRepr.of[Json])
@@ -984,7 +984,7 @@ object Apoplexy:
       members(t"Locus").lay(halt(m"apoplexy: the resource has no `Locus` path"))(stringOf(_))
 
     val doc = spec(source)
-    val server = doc.servers.prim.lay(t"")(_.resolved)
+    val server = doc.servers.head.lay(t"")(_.resolved)
     val serverExpr = Expr(server.s)
 
     // A plain match: a quote inside an inline argument (`lay`'s lambda) crashes the pickler

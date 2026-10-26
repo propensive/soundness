@@ -514,7 +514,7 @@ object Xsd:
     private def groupParticle(element: Xml.Element): Particle =
       attribute(element, "ref") match
         case ref: Text => Particle.Group(qname(element, ref), occurs(element))
-        case _         => particles(element).prim.or(Particle.Sequence(Nil, occurs(element)))
+        case _         => particles(element).head.or(Particle.Sequence(Nil, occurs(element)))
 
     private def complexType(element: Xml.Element): ComplexType =
       var content: Content = Content.Empty
@@ -545,7 +545,7 @@ object Xsd:
 
     // The `extension` or `restriction` inside `simpleContent` or `complexContent`
     private def derivedContent(element: Xml.Element, simple: Boolean): Content =
-      val derivation = children(element).filter(!isAnnotation(_)).prim.or:
+      val derivation = children(element).filter(!isAnnotation(_)).head.or:
         unexpected(element, element.localName.s)
 
       val base = TypeRef.Named(qname(derivation, required(derivation, "base")))
@@ -555,7 +555,7 @@ object Xsd:
         val content = children(derivation).filter: child =>
           !isAnnotation(child) && !isAttributeUse(child)
 
-        content.prim.let: child =>
+        content.head.let: child =>
           compositor(child).or(if simple then Unset else unexpected(child, derivation.localName.s))
 
       derivation.qualified.local.s match
@@ -609,7 +609,7 @@ object Xsd:
       List.from(all)
 
     private def simpleDecl(element: Xml.Element): SimpleDecl =
-      val definition = children(element).filter(!isAnnotation(_)).prim match
+      val definition = children(element).filter(!isAnnotation(_)).head match
         case child: Xml.Element => simpleType(child)
         case _                  => unexpected(element, "simpleType")
 
@@ -644,7 +644,7 @@ object Xsd:
 
     // The inline `simpleType` a `restriction` or `list` without a `base`/`itemType` carries
     private def inlineType(element: Xml.Element, within: String): TypeRef =
-      children(element).filter(_.qualified == name("simpleType")).prim match
+      children(element).filter(_.qualified == name("simpleType")).head match
         case child: Xml.Element => TypeRef.Inline(simpleDecl(child).definition)
         case _                  => unexpected(element, within)
 

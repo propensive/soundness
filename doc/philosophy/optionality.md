@@ -71,7 +71,7 @@ type, and the evidence appears in the signature:
 parse
 ##
 def firstOrElse[value: Concrete](values: List[Optional[value]], fallback: value): value =
-  values.compact.prim.or(fallback)
+  values.compact.head.or(fallback)
 ```
 
 The second is that `Optional` is not a monad and does not pretend to be one. There is no

@@ -171,7 +171,7 @@ trait Tel4:
     :   Member =
 
       def scalar(validators: Array[Text]^{}): Member =
-        Member.Value(validators.prim.or(t"string"), Nil, multiplicity)
+        Member.Value(validators.head.or(t"string"), Nil, multiplicity)
 
       fieldType match
         case s: Tels.Scalar => scalar(s.validators)

@@ -147,11 +147,11 @@ case class Relative(ascent: Int, descent: List[Text] = Nil) extends Planar, Topi
     import denominative.dysasymptotics.linearSize
     descent.size - ascent
 
-  def name: Optional[Text] = descent.prim
+  def name: Optional[Text] = descent.head
   def self: Boolean = ascent == 0 && descent == Nil
 
   transparent inline def rename(lambda: (Text aka "prior") ?=> Text): Optional[Relative] =
-    descent.prim.let: prior => parent / lambda(using prior.aka["prior"])
+    descent.head.let: prior => parent / lambda(using prior.aka["prior"])
 
   private inline def check[topic, filesystem](path: List[Text]): Unit =
     inline scala.compiletime.erasedValue[topic] match

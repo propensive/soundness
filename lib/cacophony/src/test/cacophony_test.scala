@@ -125,7 +125,7 @@ object Tests extends Suite("audio", m"Cacophony Tests"):
       Feed.list.size
     . assert(_ >= 0)
 
-    Feed.list.prim.let: feed =>
+    Feed.list.head.let: feed =>
       if feed.supports[Monaural](8000.0*Hertz, 16) then
         test(m"Recording from a feed produces audio chunks"):
           val recording = feed.record[Monaural](8000.0*Hertz, 16, chunkBytes = 1024)
@@ -158,9 +158,9 @@ object Tests extends Suite("audio", m"Cacophony Tests"):
       . map(_.message)
     . assert(_ == Nil)
 
-    Feed.list.prim.let: feed =>
+    Feed.list.head.let: feed =>
       if feed.supports[Monaural](8000.0*Hertz, 16) then
         test(m"Scoped capture from a feed produces audio chunks"):
           feed.open[Pcm across Monaural](Read, PcmFlag.Rate(8000), PcmFlag.Chunk(1024)):
-            input ?=> input.stream.prim.let(_.channels)
+            input ?=> input.stream.head.let(_.channels)
         . assert(_ == 1)

@@ -388,35 +388,35 @@ object Tests extends Suite("terminal", m"Profanity Tests"):
     suite(m"Keyboard decoding"):
       test(m"Shift+Enter is decoded from its CSI-u sequence"):
         supervise:
-          Keyboard.Standard().process(Chain('\u001B', '[', '1', '3', ';', '2', 'u')).prim
+          Keyboard.Standard().process(Chain('\u001B', '[', '1', '3', ';', '2', 'u')).head
       . assert:
           case Keypress.Shift(Keypress.Enter) => true
           case _                              => false
 
       test(m"plain Enter is decoded from its CSI-u sequence"):
         supervise:
-          Keyboard.Standard().process(Chain('\u001B', '[', '1', '3', 'u')).prim
+          Keyboard.Standard().process(Chain('\u001B', '[', '1', '3', 'u')).head
       . assert:
           case Keypress.Enter => true
           case _              => false
 
       test(m"Escape is decoded from its CSI-u sequence"):
         supervise:
-          Keyboard.Standard().process(Chain('\u001B', '[', '2', '7', 'u')).prim
+          Keyboard.Standard().process(Chain('\u001B', '[', '2', '7', 'u')).head
       . assert:
           case Keypress.Escape => true
           case _               => false
 
       test(m"Ctrl+C is decoded from its CSI-u sequence"):
         supervise:
-          Keyboard.Standard().process(Chain('\u001B', '[', '9', '9', ';', '5', 'u')).prim
+          Keyboard.Standard().process(Chain('\u001B', '[', '9', '9', ';', '5', 'u')).head
       . assert:
           case Keypress.Ctrl('C') => true
           case _                  => false
 
       test(m"a plain letter is decoded from its CSI-u sequence"):
         supervise:
-          Keyboard.Standard().process(Chain('\u001B', '[', '9', '7', 'u')).prim
+          Keyboard.Standard().process(Chain('\u001B', '[', '9', '7', 'u')).head
       . assert:
           case Keypress.CharKey('a') => true
           case _                     => false
@@ -425,7 +425,7 @@ object Tests extends Suite("terminal", m"Profanity Tests"):
       // it as an anchor reply when the resize trap queued one.
       test(m"a plain CPR decodes to a WindowSize"):
         supervise:
-          Keyboard.Standard().process(Chain('\u001B', '[', '1', '2', ';', '3', '4', 'R')).prim
+          Keyboard.Standard().process(Chain('\u001B', '[', '1', '2', ';', '3', '4', 'R')).head
       . assert:
           case Terminal.Info.WindowSize(12, 34) => true
           case _                               => false
@@ -452,7 +452,7 @@ object Tests extends Suite("terminal", m"Profanity Tests"):
 
       test(m"a malformed report is dropped and the stream continues"):
         supervise:
-          Keyboard.Standard().process(Chain('\u001B', '[', '?', ';', 'R', 'z')).prim
+          Keyboard.Standard().process(Chain('\u001B', '[', '?', ';', 'R', 'z')).head
       . assert:
           case Keypress.CharKey('z') => true
           case _                     => false

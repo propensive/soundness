@@ -87,7 +87,7 @@ object Keystore:
 
         // A missing password loads without an integrity check, per `KeyStore.load`. The
         // cleartext is lent as a mutable `Char` array, zeroed when the block exits.
-        flags.prim.lay(loadKeystore(keystore, in, null)): password =>
+        flags.head.lay(loadKeystore(keystore, in, null)): password =>
           password.uncloak(loadKeystore(keystore, in, cleartext.chars))
 
         block(using new KeystoreHandle(keystore) with Granting[grants] {})

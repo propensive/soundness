@@ -275,17 +275,17 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
         val payload: Data = Array.tabulate(512)(i => (i%256).toByte)
         val path = workDir/t"bin.zip"
         path.write(Zipfile(List(Zip.Entry(zipRef(t"blob"), payload))))
-        readEntries(path).prim.let(_.read[Data].to[List])
+        readEntries(path).head.let(_.read[Data].to[List])
       . assert(_ == Array.tabulate(512)(i => (i%256).toByte).to[List])
 
       test(m"reads back an entry with empty content"):
-        readEntries(writeZip(t"emptyfile.zip", entry(t"empty", t""))).prim.let(_.read[Text])
+        readEntries(writeZip(t"emptyfile.zip", entry(t"empty", t""))).head.let(_.read[Text])
       . assert(_ == t"")
 
       test(m"reads a large, highly-compressible payload"):
         val path = workDir/t"big.zip"
         path.write(Zipfile(List(Zip.Entry(zipRef(t"big.txt"), (t"soundness "*4096).in[Data]))))
-        readEntries(path).prim.let(_.read[Text])
+        readEntries(path).head.let(_.read[Text])
       . assert(_ == t"soundness "*4096)
 
       test(m"looking up an absent entry raises NotFound"):
@@ -394,7 +394,7 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
       . assert(_ == List(t"one.txt", t"two.txt"))
 
       test(m"reads content from an externally (JDK) written archive"):
-        readEntries(writeRawZip(t"foreign2.zip", t"solo.txt")).prim.let(_.read[Text])
+        readEntries(writeRawZip(t"foreign2.zip", t"solo.txt")).head.let(_.read[Text])
       . assert(_ == t"data")
 
       test(m"an entry name with a forbidden character raises InvalidName"):
@@ -414,11 +414,11 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
       target.write(Zipfile(List(reused)))
 
       test(m"a reused entry preserves its content"):
-        Zipfile.read(target).entries.prim.let(_.read[Text])
+        Zipfile.read(target).entries.head.let(_.read[Text])
       . assert(_ == t"reuse me "*32)
 
       test(m"a reused entry is not recompressed (identical compressed size)"):
-        Zipfile.read(target).entries.prim.let(_.compressedSize)
+        Zipfile.read(target).entries.head.let(_.compressedSize)
       . assert(_ == reused.compressedSize)
 
     suite(m"ZIP64"):
@@ -550,11 +550,11 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
       . assert(_ == true)
 
       test(m"a parsed entry exposes the general-purpose flags"):
-        readEntries(foreign).prim.let(_.flags)
+        readEntries(foreign).head.let(_.flags)
       . assert(_ == 0x808)
 
       test(m"a parsed streamed entry records its zeroed local sizes"):
-        readEntries(foreign).prim.let(_.localSizes)
+        readEntries(foreign).head.let(_.localSizes)
       . assert(_ == false)
 
       test(m"a parsed entry exposes both version fields"):
@@ -594,7 +594,7 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
 
       test(m"a streamed entry without local sizes reads back through zeppelin"):
         val streamed = entry(t"s.txt", t"stream me "*16).withHeaders(flags = 0x808, localSizes = false)
-        readEntries(writeZip(t"streamed5.zip", streamed)).prim.let(_.read[Text])
+        readEntries(writeZip(t"streamed5.zip", streamed)).head.let(_.read[Text])
       . assert(_ == t"stream me "*16)
 
       test(m"Unix attributes and the version made by round-trip"):

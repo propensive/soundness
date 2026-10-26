@@ -81,7 +81,7 @@ object Caption:
   // The answer before any arrangement has happened: the label where it was asked for, on its
   // first-choice side. This is what the first pass of an `arrange` body receives.
   def provisional(caption: Caption): Position =
-    val attachment = caption.sides.prim.or(Attachment.East)
+    val attachment = caption.sides.head.or(Attachment.East)
     val (x, y) = caption.anchor(attachment, 0.0, 0.0)
     Position(x, y, attachment, caption.footprint(x, y, attachment), Unset, true)
 

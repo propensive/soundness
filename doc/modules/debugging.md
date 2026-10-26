@@ -115,7 +115,7 @@ source reads — into the inlined body, line by line — rather than as the byte
 ```scala
 def stepOver(thread: ThreadId)(using Debug^): Unit =
   debug.step(thread, Jdwp.StepDepth.Over): stop ?=>
-    stop.frames().prim.let: (frame, location) =>
+    stop.frames().head.let: (frame, location) =>
       Out.println(stop.describe(location)(0))
 ```
 

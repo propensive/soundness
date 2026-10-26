@@ -50,7 +50,7 @@ import murmuration.has
 import pneumatic.*
 import prepositional.*
 import rudiments.map
-import rudiments.{each, prim}
+import rudiments.{each, head}
 import serpentine.*
 import spectacular.*
 import symbolism.*
@@ -189,7 +189,7 @@ object Image:
     // (for layers: compressed) chunks — undecoded and unverified.
     private def body(digest: Text)(using Tactic[Oci.Error]): Archive.Body =
       if !digest.s.startsWith("sha256:")
-      then abort(Oci.Error(Oci.Error.Reason.UnsupportedDigest(digest.cut(t":").prim.or(t""))))
+      then abort(Oci.Error(Oci.Error.Reason.UnsupportedDigest(digest.cut(t":").head)))
 
       val name = t"blobs/sha256/${digest.s.stripPrefix("sha256:").tt}"
 
@@ -224,7 +224,7 @@ object Image:
     // digest-verified against its descriptor before decoding.
     def manifest(using Tactic[Oci.Error]): Oci.Manifest =
       val descriptor =
-        index.manifests.prim.or(abort(Oci.Error(Oci.Error.Reason.NoManifest)))
+        index.manifests.head.or(abort(Oci.Error(Oci.Error.Reason.NoManifest)))
 
       manifest(descriptor)
 

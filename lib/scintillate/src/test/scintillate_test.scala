@@ -253,7 +253,7 @@ object Tests extends Suite("httpd", m"Scintillate tests"):
           val port = server.port
           val response = rawRequest(port, t"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n")
           server.cancel()
-          response.cut(t"\r\n").prim
+          response.cut(t"\r\n").head
 
       . assert(_ == t"HTTP/1.1 404 Not Found")
 

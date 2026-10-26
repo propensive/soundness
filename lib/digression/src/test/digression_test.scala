@@ -73,7 +73,7 @@ object Tests extends Suite("stacktrace", m"Digression Tests"):
 
     suite(m"Capturing a stack trace"):
       test(m"A captured frame keeps the compiled names it was built from"):
-        Exception("boom").stackTrace.frames.prim.let(_.jvmClass)
+        Exception("boom").stackTrace.frames.head.let(_.jvmClass)
 
       . assert(_.let(_.starts(t"digression.Tests")) == true)
 
@@ -83,7 +83,7 @@ object Tests extends Suite("stacktrace", m"Digression Tests"):
       . assert(_ == Set(Unset))
 
       test(m"An unresolved frame displays its demangled names"):
-        Exception("boom").stackTrace.frames.prim.let: frame =>
+        Exception("boom").stackTrace.frames.head.let: frame =>
           (frame.displayClass, frame.displayMethod)
 
       . assert: value =>

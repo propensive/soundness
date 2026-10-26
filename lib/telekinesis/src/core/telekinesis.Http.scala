@@ -280,7 +280,7 @@ object Http:
 
       Ledger[Text, Text](
         t"content" ->
-          ( safely(request.headers.contentType.prim.or(media"application/octet-stream").show)
+          ( safely(request.headers.contentType.head.or(media"application/octet-stream").show)
             . or(t"?") ),
         t"method"   -> request.method.show,
         t"query"    -> request.query.show,
@@ -532,7 +532,7 @@ object Http:
             case _ =>
               val parsed =
                 safely(text.as[Host]).or:
-                  safely(text.cut(t":").prim.or(text).as[Host]).or:
+                  safely(text.cut(t":").head.as[Host]).or:
                     abort(Http.Request.Error(Http.Request.Error.Reason.Host(text)))
 
               hostMemo = (text, parsed)
@@ -759,7 +759,7 @@ object Http:
         val name2 = name.tt.uncamel.kebab.lower
         textHeaders.filter(_.key.lower == name2).map(_.value.as)
 
-    lazy val contentType: Optional[MediaType] = safely(headers.contentType.prim)
+    lazy val contentType: Optional[MediaType] = safely(headers.contentType.head)
 
     lazy val textCookies: Map[Text, Text] =
       headers.cookie.bind: (cookie: List[Cookie.Value]) =>
@@ -1158,7 +1158,7 @@ object Http:
         header.key.lower == t"transfer-encoding" && header.value.lower.contains(t"chunked")
 
       val length: Optional[Int] =
-        headerList.filter(_.key.lower == t"content-length").prim.let(_.value)
+        headerList.filter(_.key.lower == t"content-length").head.let(_.value)
         . lay(Unset: Optional[Int]): text => safely(text.trim.as[Int])
 
       // The body spring lends the framed view as a SINGLE-OWNER stream: each

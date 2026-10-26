@@ -182,28 +182,28 @@ object Tests extends Suite("email", m"Caduceus tests"):
         given courier: TestCourier = TestCourier()
         given sender: Sender = Sender(jack)
         t"hello".send(subject = t"Greetings", to = jill)
-        courier.envelopes.prim.let(_.subject)
+        courier.envelopes.head.let(_.subject)
       . assert(_ == t"Greetings")
 
       test(m"Sending records the sender"):
         given courier: TestCourier = TestCourier()
         given sender: Sender = Sender(jack)
         t"hello".send(subject = t"Greetings", to = jill)
-        courier.envelopes.prim.let(_.from)
+        courier.envelopes.head.let(_.from)
       . assert(_ == jack)
 
       test(m"Sending records a single recipient"):
         given courier: TestCourier = TestCourier()
         given sender: Sender = Sender(jack)
         t"hello".send(subject = t"Greetings", to = jill)
-        courier.envelopes.prim.let(_.to)
+        courier.envelopes.head.let(_.to)
       . assert(_ == List(jill))
 
       test(m"Sending records several recipients"):
         given courier: TestCourier = TestCourier()
         given sender: Sender = Sender(jack)
         t"hello".send(subject = t"Greetings", to = soundness.List(jill, jane).asInstanceOf[soundness.List[soundness.EmailAddress]])
-        courier.envelopes.prim.let(_.to)
+        courier.envelopes.head.let(_.to)
       . assert(_ == List(jill, jane))
 
       test(m"Copied and blind-copied recipients are recorded"):
@@ -226,7 +226,7 @@ object Tests extends Suite("email", m"Caduceus tests"):
         given courier: TestCourier = TestCourier()
         given sender: Sender = Sender(jack)
         t"hello".send(subject = t"Greetings", to = jill)
-        courier.emails.prim.let(_.text)
+        courier.emails.head.let(_.text)
       . assert(_ == t"hello")
 
     suite(m"Error message tests"):

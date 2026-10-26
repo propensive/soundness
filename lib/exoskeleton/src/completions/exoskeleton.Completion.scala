@@ -115,7 +115,7 @@ extends Cli:
       // first case the focused argument is the operand itself (the `--flag=operand` form); in
       // the second the focus is the flag, with the cursor on the following word — the flag's
       // operand at that position, or empty if the word has not been started.
-      if operands.prim == argument then
+      if operands.head == argument then
         val allSuggestions = discoverable.discover(argument(), tab)
         if allSuggestions != Nil then cursorSuggestions = allSuggestions
 
@@ -236,7 +236,7 @@ extends Cli:
 
             val prefix2 = if prefix.nil then sh"" else sh"-p $prefix"
             val suffix2 = if suffix.nil then sh"" else sh"-s $suffix"
-            val core = if shortFlag then aliases.prim.or(core0) else core0
+            val core = if shortFlag then aliases.head.or(core0) else core0
 
             // What the menu shows, where that differs from what is inserted — a clustered short
             // flag inserts one character behind a hidden prefix but is still named in full

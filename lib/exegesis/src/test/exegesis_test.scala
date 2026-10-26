@@ -387,7 +387,7 @@ object Tests extends Suite("lsp", m"Exegesis Tests"):
           . as[Json]
 
         TestServer.dispatch(request).let: response =>
-          response.as[JsonRpc.Response].result.as[List[DocumentHighlight]].prim.let(_.kind)
+          response.as[JsonRpc.Response].result.as[List[DocumentHighlight]].head.let(_.kind)
       . assert(_ == DocumentHighlightKind.Write)
 
       test(m"a folding-range request is answered with the folding ranges"):
@@ -396,7 +396,7 @@ object Tests extends Suite("lsp", m"Exegesis Tests"):
           . as[Json]
 
         TestServer.dispatch(request).let: response =>
-          response.as[JsonRpc.Response].result.as[List[FoldingRange]].prim.let(_.endLine)
+          response.as[JsonRpc.Response].result.as[List[FoldingRange]].head.let(_.endLine)
       . assert(_ == 4)
 
       test(m"a prepareRename request decodes a position and returns a range"):
@@ -413,7 +413,7 @@ object Tests extends Suite("lsp", m"Exegesis Tests"):
           . as[Json]
 
         TestServer.dispatch(request).let: response =>
-          response.as[JsonRpc.Response].result.as[List[CallHierarchyIncomingCall]].prim.let(_.from.name)
+          response.as[JsonRpc.Response].result.as[List[CallHierarchyIncomingCall]].head.let(_.from.name)
       . assert(_ == t"foo")
 
       test(m"an inlayHint request encodes its kind as a protocol number"):
@@ -502,7 +502,7 @@ object Tests extends Suite("lsp", m"Exegesis Tests"):
       . assert(_ == "recv,send")
 
       test(m"an inbound message is observed as its body, without the framing"):
-        traffic.prim.let(_._2)
+        traffic.head.let(_._2)
       . assert(_ == TrafficFixture.request)
 
       test(m"an outbound message is observed as the response to the request"):

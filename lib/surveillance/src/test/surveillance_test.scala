@@ -105,6 +105,6 @@ object Tests extends Suite("watch", m"Surveillance tests") uses surveillance.Wat
 
       burstDirectory.open[Watch](): watcher ?=>
         leaves.each(_.create[File]())
-        watcher.batches(0.5*Second).prim.let(_.paths[Path on Local].to[Set])
+        watcher.batches(0.5*Second).head.let(_.paths[Path on Local].to[Set])
 
     . assert(_ == leaves.to[Set])

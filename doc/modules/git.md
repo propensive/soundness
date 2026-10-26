@@ -202,7 +202,7 @@ and its hunks, each hunk a list of edits.
 directory.open[Git.Worktree](Read & Write): worktree ?=>
   (worktree / "notes.txt").overwrite(t"Remember the milk and the eggs")
   val files = worktree.diff().value
-  files.prim.let(_.changeKind)   // ChangeKind.Modified
+  files.head.let(_.changeKind)   // ChangeKind.Modified
 ```
 
 `diffStaged` compares the index with HEAD, `diffAgainst` the working files with a revision, and

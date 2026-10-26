@@ -187,11 +187,11 @@ object Tests extends Suite("core", m"Rudiments Tests"):
       . assert(_ == 3)
 
       test(m"prim reads the head of an infinite chain"):
-        Chain.iterate(1)(_ + 1).prim
+        Chain.iterate(1)(_ + 1).head
       . assert(_ == 1)
 
       test(m"prim of an empty chain is Unset"):
-        Chain[Int]().prim
+        Chain[Int]().head
       . assert(_ == Unset)
 
     suite(m"Size and count tests"):
@@ -380,22 +380,22 @@ object Tests extends Suite("core", m"Rudiments Tests"):
       // cells, so they are not dysasymptotic on `List` and stay ungated.
       test(m"sec on a list is ungated"):
         val xs: List[Int] = List(10, 20, 30)
-        xs.sec
+        xs.at(Sec)
       . assert(_ == 20)
 
       test(m"ter on a list is ungated"):
         val xs: List[Int] = List(10, 20, 30)
-        xs.ter
+        xs.at(Ter)
       . assert(_ == 30)
 
       test(m"sec on a single-element list is unset"):
         val xs: List[Int] = List(10)
-        xs.sec
+        xs.at(Sec)
       . assert(_ == Unset)
 
       test(m"ter on a two-element list is unset"):
         val xs: List[Int] = List(10, 20)
-        xs.ter
+        xs.at(Ter)
       . assert(_ == Unset)
 
     suite(m"Attested tests"):
@@ -1018,7 +1018,7 @@ object Tests extends Suite("core", m"Rudiments Tests"):
 
       // test(m"Index unique numbers by their first letter"):
       //   safely:
-      //     numbers.indexBy(_.prim)
+      //     numbers.indexBy(_.head)
       // .assert(_ == Map('o' -> t"one", 't' -> t"two", 'f' -> t"four", 's' -> t"six", 'e' -> t"eight", 'n' -> t"nine"))
 
       //test(m"Index unique numbers by their length"):

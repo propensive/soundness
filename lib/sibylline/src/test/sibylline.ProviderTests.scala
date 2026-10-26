@@ -107,7 +107,7 @@ object OpenAITests extends Suite("openai", m"OpenAI dialect tests"):
       val exchange = fake.exchanges.stdlib.reverse.head
 
       ( exchange.path,
-        exchange.headers.filter(_.key == t"authorization").prim.let(_.value) )
+        exchange.headers.filter(_.key == t"authorization").head.let(_.value) )
     . assert(_ == (t"/v1/chat/completions", t"Bearer sk-test"))
 
     test(m"a keyless compatible target sends no authorization header"):
@@ -281,7 +281,7 @@ object GeminiTests extends Suite("gemini", m"Gemini dialect tests"):
       val exchange = fake.exchanges.stdlib.reverse.head
 
       ( exchange.path,
-        exchange.headers.filter(_.key == t"x-goog-api-key").prim.let(_.value) )
+        exchange.headers.filter(_.key == t"x-goog-api-key").head.let(_.value) )
     . assert(_ == (t"/v1beta/models/gemini-test:generateContent", t"g-key"))
 
     test(m"the streamed endpoint asks for SSE"):

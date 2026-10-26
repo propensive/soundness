@@ -42,7 +42,7 @@ import gossamer.*
 import murmuration.exists
 import prepositional.*
 import rudiments.each
-import rudiments.{`:+`, at, prim, seek}
+import rudiments.{`:+`, at, head, seek}
 import vacuous.*
 
 // TELP, the TEL Path companion specification: a schema-aware textual path
@@ -351,7 +351,7 @@ case class Telp(components: List[Text]) derives CanEqual:
                 pendingType = slot.slotType
                 pendingOccurrences = occurrences
               else
-                occurrences.prim.let { child => current = child }
+                occurrences.head.let { child => current = child }
 
               . or(abort(Telp.Error(Telp.Error.Reason.AbsentMember, i)))
 
