@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Ratchet on the capture-checking escape surface (roadmap safety-2 and safety-7).
+"""Ratchet on the escape surface (roadmap safety-2, safety-7 and core-3).
 
 Counts, per file, every place the capture checker is overruled by hand — the four
 `caps.unsafe` hatches — and the array conversions that hide a capture behind a helper
@@ -17,6 +17,15 @@ of the three lines above it: `// [pump-overlap] the pump consumes the intake …
 which blocker the hatch is waiting on, so the residue can be read as a queue (`--tags`) rather
 than a number. Untagged hatches are ratcheted like the rest: the count may only go down.
 
+It also counts the `.stdlib` bridge — the view of a Soundness collection as the Scala
+collection beneath it, which leaves every guarantee of the native API behind — in core and test
+sources alike, but not in benchmarks, whose rival-side code uses it on purpose. Three shape
+columns read that residue as a queue: the dysasymptotic gate bypasses (`.stdlib.head`,
+`.stdlib(i)` and the size reads on a `List`, which should open the gate explicitly or use `prim`),
+the round trips that convert and convert straight back (`.stdlib.toList`, `Array.from(xs.stdlib)`),
+and `.stdlib.iterator`; `--stdlib` lists the residue by what follows the bridge. The direct
+`import scala.collection` lines (roadmap core-3) are counted the same way.
+
 Per-file rather than aggregate, so a file that regresses is caught even when another improves
 by the same amount. Strings and comments are stripped before counting hatches, so a comment
 that mentions `unsafeAssumePure` does not inflate the number it is meant to describe.
@@ -25,6 +34,7 @@ that mentions `unsafeAssumePure` does not inflate the number it is meant to desc
   python3 etc/check-escape-count.py --update   # lower (or seed) the baseline
   python3 etc/check-escape-count.py --totals   # the gauge, one line
   python3 etc/check-escape-count.py --tags     # the residue per reason tag
+  python3 etc/check-escape-count.py --stdlib   # the `.stdlib` residue per shape
 """
 
 import re, glob, sys, os
@@ -50,7 +60,19 @@ WRAPPERS = [
 # type is often nested (`asInstanceOf[(Stream[Text] over Credit)^]`).
 CASTS = ['anyRefCast', 'captureCast']
 
-COLUMNS = [name for name, _ in HATCHES+WRAPPERS]+CASTS+['untagged']
+# The `.stdlib` bridge and its shapes. A continuation line writes the bridge as `. stdlib`, so
+# the dot and the name may be separated by spaces. The shapes overlap neither each other nor
+# anything above; a bridge that fits none of them counts in `stdlib` alone.
+BRIDGE = re.compile(r'\.\s*stdlib\b')
+GATE = re.compile(r'\.\s*stdlib\s*(?:\.\s*(?:head|last|headOption|length|size|isEmpty|nonEmpty)\b|\()')
+ROUND = re.compile(r'\.\s*stdlib\s*\.\s*to(?:\(|List\b|Vector\b|Set\b|Seq\b|Map\b|Array\b)|\bfrom\([^()]*\.\s*stdlib\b')
+ITERATOR = re.compile(r'\.\s*stdlib\s*\.\s*iterator\b')
+SHAPE = re.compile(r'\.\s*stdlib\b\s*(\.\s*\w+|\()?')
+IMPORT = re.compile(r'^\s*import\s+scala\.collection\b')
+
+STDLIB = ['stdlib', 'stdlibGate', 'stdlibRound', 'stdlibIterator', 'collectionImport']
+
+COLUMNS = [name for name, _ in HATCHES+WRAPPERS]+CASTS+STDLIB+['untagged']
 
 # The closed vocabulary. Each tag names a blocker; `rep/DECISIONS.md` has the case behind it.
 TAGS = {
@@ -127,10 +149,23 @@ def census(path):
   code, raw = lines(path)
   row = dict.fromkeys(COLUMNS, 0)
   tags = {}
+  shapes = {}
+  bench = '/src/bench/' in path
 
   for index, line in enumerate(code):
     line = strip(line)
     for name, pattern in WRAPPERS: row[name] += len(re.findall(pattern, line))
+
+    if not bench:
+      row['stdlib'] += len(BRIDGE.findall(line))
+      row['stdlibGate'] += len(GATE.findall(line))
+      row['stdlibRound'] += len(ROUND.findall(line))
+      row['stdlibIterator'] += len(ITERATOR.findall(line))
+      row['collectionImport'] += 1 if IMPORT.match(line) else 0
+
+      for match in SHAPE.finditer(line):
+        shape = '.stdlib'+re.sub(r'\s+', '', match.group(1) or '')
+        shapes[shape] = shapes.get(shape, 0) + 1
 
     for target in casts(line):
       if target.strip() == 'AnyRef': row['anyRefCast'] += 1
@@ -143,7 +178,7 @@ def census(path):
       if tag is None: row['untagged'] += found
       else: tags[tag] = tags.get(tag, 0) + found
 
-  return row, tags
+  return row, tags, shapes
 
 
 def baseline():
@@ -167,7 +202,7 @@ def write(current):
 
 paths = sorted(glob.glob(SOURCES, recursive=True))
 results = {path: census(path) for path in paths}
-current = {path: row for path, (row, _) in results.items()}
+current = {path: row for path, (row, _, _) in results.items()}
 totals = {name: sum(row[name] for row in current.values()) for name in COLUMNS}
 
 
@@ -181,13 +216,28 @@ if '--totals' in sys.argv:
 
 if '--tags' in sys.argv:
   counts = {}
-  for _, tags in results.values():
+  for _, tags, _ in results.values():
     for tag, count in tags.items(): counts[tag] = counts.get(tag, 0) + count
 
   for tag, count in sorted(counts.items(), key=lambda item: -item[1]):
     print(f'{count:5}  [{tag}]  {TAGS[tag]}')
 
   print(f'{totals["untagged"]:5}  untagged')
+  raise SystemExit(0)
+
+if '--stdlib' in sys.argv:
+  # Each shape with the share of it that is test code, since the test suites hold most of the
+  # residue and the two are drained differently.
+  counts, tests = {}, {}
+  for path, (_, _, shapes) in results.items():
+    for shape, count in shapes.items():
+      counts[shape] = counts.get(shape, 0) + count
+      if '/src/test/' in path: tests[shape] = tests.get(shape, 0) + count
+
+  for shape, count in sorted(counts.items(), key=lambda item: -item[1]):
+    print(f'{count:5}  {shape:28} {tests.get(shape, 0):5} in tests')
+
+  print(f'{totals["stdlib"]:5}  {"total":28} {sum(tests.values()):5} in tests')
   raise SystemExit(0)
 
 if '--update' in sys.argv:
@@ -212,13 +262,14 @@ for path, name, was, now in risen:
   print(f'error: {path}: {name} rose from {was} to {now}', file=sys.stderr)
 
 for path in unlisted:
-  print(f'error: {path} is not in {BASELINE} but overrules the capture checker', file=sys.stderr)
+  print(f'error: {path} is not in {BASELINE} but overrules the checker or bridges to the stdlib', file=sys.stderr)
 
 if risen or unlisted:
   print('', file=sys.stderr)
-  print('Remove the escape, or — if it is unavoidable — tag it with the blocker it waits on', file=sys.stderr)
+  print('Remove the escape, or — if it is unavoidable — tag a hatch with the blocker it waits on', file=sys.stderr)
   print(f'(the vocabulary is in {sys.argv[0]}), raise its row in {BASELINE}, and say why in', file=sys.stderr)
-  print('the PR description.', file=sys.stderr)
+  print('the PR description. A `.stdlib` bridge has no tag: prefer the native API, or open the', file=sys.stderr)
+  print('dysasymptotic gate explicitly when the cost is the point.', file=sys.stderr)
   raise SystemExit(1)
 
 if fallen:
