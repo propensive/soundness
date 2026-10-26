@@ -76,6 +76,28 @@ object Tests extends Suite("givens", m"Frontier Tests"):
       val chosen: Choice = summon[Choice]
 
   def run(): Unit =
+    suite(m"Rendering a diagnostic"):
+      def found(name: Text): Diagnostic = Diagnostic.Found(name, Unset, Nil)
+
+      test(m"a diagnostic longer than the limit ends with a count of the rest"):
+        val leaves = List.tabulate(150)(index => found(t"Leaf$index"))
+        val text = Diagnostic.render(Diagnostic.Resolving(t"Root", Unset, leaves)).s
+        (text.split("✓").nn.length - 1, text.contains("… 50 more"))
+      . assert(_ == (100, true))
+
+      test(m"a diagnostic within the limit has no count of the rest"):
+        val leaves = List.tabulate(100)(index => found(t"Leaf$index"))
+        Diagnostic.render(Diagnostic.Resolving(t"Root", Unset, leaves)).s.contains("more")
+      . assert(_ == false)
+
+      test(m"a repeated subtree is written once, then as above"):
+        val shared = Diagnostic.Requires(t"Shared", Unset, List(found(t"Inner")))
+        val first = Diagnostic.Candidate(t"First", Unset, List(shared))
+        val second = Diagnostic.Candidate(t"Second", Unset, List(shared))
+        val text = Diagnostic.render(Diagnostic.Resolving(t"Root", Unset, List(first, second))).s
+        (text.split("Inner").nn.length - 1, text.split("as above").nn.length - 1)
+      . assert(_ == (1, 1))
+
     test(m"every[X] returns empty Every when no givens in scope"):
       NoPlugs.explicit
     . assert(_ == 0)
