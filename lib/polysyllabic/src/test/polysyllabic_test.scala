@@ -76,19 +76,19 @@ object Tests extends Suite("hyphenation", m"Polysyllabic tests"):
         val (word, offsets) = TexPatterns.parseException(t"as-so-ciate")
         (word, offsets.to[List])
 
-      . assert(_ == ((t"associate", Seq(2, 4))))
+      . assert(_ == ((t"associate", List(2, 4))))
 
       test(m"single break: ta-ble decomposes to (table, [2])"):
         val (word, offsets) = TexPatterns.parseException(t"ta-ble")
         (word, offsets.to[List])
 
-      . assert(_ == ((t"table", Seq(2))))
+      . assert(_ == ((t"table", List(2))))
 
       test(m"no breaks: present decomposes to (present, [])"):
         val (word, offsets) = TexPatterns.parseException(t"present")
         (word, offsets.to[List])
 
-      . assert(_ == ((t"present", Seq())))
+      . assert(_ == ((t"present", List())))
 
     suite(m"Liang algorithm with English patterns"):
       test(m"hyphenation breaks as hy-phen-ation"):
