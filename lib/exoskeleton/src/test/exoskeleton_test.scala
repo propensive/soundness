@@ -843,7 +843,7 @@ object Tests extends Suite("cli", m"Exoskeleton Tests"):
 
       test(m"Local help for a leaf renders its section with ancestor globals"):
         HelpApp.tree.local(List(t"useradd")).let: local =>
-          summon[Help is Printable].print(local, stdios.muteStdio.termcap).cut(t"\n")
+          summon[Help is Printable].print(local, stdios.muteStdio.termcap).cut(t"\n"): List[Text]
         . or(Nil)
       .assert:
         _ == List
@@ -865,7 +865,7 @@ object Tests extends Suite("cli", m"Exoskeleton Tests"):
 
       test(m"Local help for a non-leaf renders its subcommands"):
         HelpApp.tree.local(List(t"distribution")).let: local =>
-          summon[Help is Printable].print(local, stdios.muteStdio.termcap).cut(t"\n")
+          summon[Help is Printable].print(local, stdios.muteStdio.termcap).cut(t"\n"): List[Text]
         . or(Nil)
       .assert:
         _ == List

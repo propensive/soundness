@@ -1115,9 +1115,9 @@ object Tests extends Suite("internet", m"Urticose tests"):
 
       test(m"An OPT record keeps its payload size and flags through the wire"):
         val message = Dns.Message(1, Dns.Flags(), Nil, Nil, Nil, List(Dns.Record.opt(4096, true)))
-        message.in[Data].as[Dns.Message].additional.head
-      . assert: record =>
-          record.udpPayload == 4096 && record.dnssecOk == true && record.flush == false
+        message.in[Data].as[Dns.Message].additional.head.let: record =>
+          (record.udpPayload, record.dnssecOk, record.flush)
+      . assert(_ == (4096, true, false))
 
       test(m"A TTL with its top bit set reads as zero"):
         hex"0000 8400 0000 0001 0000 0000 00 0001 0001 ffffffff 0004 c0a80102".as[Dns.Message]

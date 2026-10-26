@@ -729,7 +729,7 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
       LocalClasspath.of(Classloader[Tests.type])()
       . cut(java.io.File.pathSeparator.nn.tt)
       . filter(_.contains(t"kotlin-stdlib"))
-      . prim
+      . head
 
   // Locates the cached `lib` directory of the proscala release whose compiler this suite embeds,
   // which carries the fork standard library and the Scala.js runtime JARs; the compiler's own

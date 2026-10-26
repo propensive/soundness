@@ -327,7 +327,7 @@ object Tests extends Suite("webdriver", m"Tarantula tests"):
 
       test(m"timeouts are sent in the W3C shape, not the JSON Wire pair"):
         sent(browser.timeouts(WebDriver.Session.Timeouts(`implicit` = 5000L)))
-        . prim.let(_.body.or(t""))
+        . head.let(_.body.or(t""))
       . assert(_ == t"""{"implicit":5000}""")
 
       test(m"accepting an alert uses the W3C path"):

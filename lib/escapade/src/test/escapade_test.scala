@@ -544,7 +544,7 @@ object Tests extends Suite("ansi", m"Escapade tests"):
       . assert(_ == t"hello")
 
       test(m"tail"):
-        e"hello".tail.plain
+        e"hello".tail.let(_.plain)
       . assert(_ == t"ello")
 
       test(m"init"):

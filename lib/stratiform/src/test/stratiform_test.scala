@@ -43,6 +43,7 @@ import anticipation.*
 import aperture.*
 import contingency.*
 import denominative.*
+import denominative.dysasymptotics.linearSize // the suite reads list sizes; the cost is irrelevant here
 import fulminate.*
 import larceny.*
 import gastronomy.*

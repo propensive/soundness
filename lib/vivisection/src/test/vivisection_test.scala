@@ -35,6 +35,7 @@ package vivisection
 // `Variable` is excluded so it resolves to this package's `vivisection.Variable` rather than the
 // `ambience.Variable` (an environment variable) which `soundness` also publishes.
 import soundness.{Variable as _, *}
+import denominative.dysasymptotics.linearSize // the suite reads list sizes; the cost is irrelevant here
 
 import errorDiagnostics.stackTracesDiagnostics
 import threads.platformThreads

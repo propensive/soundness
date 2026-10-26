@@ -35,7 +35,7 @@ package rudiments
 import soundness.*
 import soundness.collationComparable
 import soundness.collations.codepointCollation
-import denominative.dysasymptotics.linearSize
+import denominative.dysasymptotics.{linearAccess, linearSize} // the suite indexes small lists
 import soundness.sortingAlgorithms.timsort
 
 case class Person(name: Text, age: Int)
@@ -375,25 +375,25 @@ object Tests extends Suite("core", m"Rudiments Tests"):
             : proscenium.List[Int])
       . assert(_ == true)
 
-    suite(m"Bounded positional access tests"):
-      // No `linearAccess` acknowledgement in scope: `prim`/`sec`/`ter` walk at most three
-      // cells, so they are not dysasymptotic on `List` and stay ungated.
-      test(m"sec on a list is ungated"):
+    suite(m"Positional access tests"):
+      // Positional access beyond the head opens the `linearAccess` gate (imported for the
+      // suite); `head` alone stays ungated.
+      test(m"at(Sec) reads the second element"):
         val xs: List[Int] = List(10, 20, 30)
         xs.at(Sec)
       . assert(_ == 20)
 
-      test(m"ter on a list is ungated"):
+      test(m"at(Ter) reads the third element"):
         val xs: List[Int] = List(10, 20, 30)
         xs.at(Ter)
       . assert(_ == 30)
 
-      test(m"sec on a single-element list is unset"):
+      test(m"at(Sec) on a single-element list is unset"):
         val xs: List[Int] = List(10)
         xs.at(Sec)
       . assert(_ == Unset)
 
-      test(m"ter on a two-element list is unset"):
+      test(m"at(Ter) on a two-element list is unset"):
         val xs: List[Int] = List(10, 20)
         xs.at(Ter)
       . assert(_ == Unset)
@@ -546,15 +546,12 @@ object Tests extends Suite("core", m"Rudiments Tests"):
       . assert(_ == Unset)
 
       test(m"`tail` drops the first element of a collection"):
-        val list: proscenium.List[Int] =
-          (proscenium.List(1, 2, 3): proscenium.List[Int]).tail
-        list.stdlib
-      . assert(_ == scala.List(2, 3))
+        (proscenium.List(1, 2, 3): proscenium.List[Int]).tail
+      . assert(_ == proscenium.List(2, 3))
 
-      test(m"`tail` of an empty collection is empty"):
-        val list: proscenium.List[Int] = proscenium.List.empty[Int].tail
-        list.stdlib
-      . assert(_ == scala.Nil)
+      test(m"`tail` of an empty collection is absent"):
+        proscenium.List.empty[Int].tail
+      . assert(_ == Unset)
 
       test(m"`tail` drops the first character of a text"):
         text.tail
