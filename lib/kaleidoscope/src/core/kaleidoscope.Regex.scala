@@ -284,9 +284,9 @@ object Regex:
       case head :: tail => captures(tail, last + head.s.length, done :+ last)
 
     val captured: Set[Int] =
-      if parts.size > 1
-      then captures(parts.stdlib.tail.to(List), parts.stdlib.head.s.size, Set())
-      else Set()
+      parts match
+        case head :: tail if !tail.nil => captures(tail, head.s.size, Set())
+        case _                         => Set()
 
     val text: Text = parts.stdlib.mkString.tt
 

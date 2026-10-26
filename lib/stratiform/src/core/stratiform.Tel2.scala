@@ -460,8 +460,7 @@ trait Tel2 extends Tel3:
     // The variant a sum position carries: its first child compound, as a `Tel`. A plain
     // method: read from the inline expansion, the compound array re-freshens (`^{any.rd}`).
     private def firstVariant(telVal: Tel): Optional[Tel] =
-      val compounds = telVal.childCompounds
-      if compounds.nil then Unset else Tel.make(compounds.stdlib.head)
+      telVal.childCompounds.head.let(Tel.make(_))
 
     inline def disjunction[derivation: SumReflection]: (derivation is Tel.Decodable)^ =
       // A sum is a document whose single child compound is the chosen variant, keyed by

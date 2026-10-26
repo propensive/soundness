@@ -707,11 +707,11 @@ trait Json1 extends Json2:
       def aggregate(bytes: Chain[Data]): value in Json =
         // A single in-memory block — the common case — skips the iterator
         // plumbing entirely.
-        // The single-block fast path peeks at the `Chain`'s head and tail, and the general
-        // path hands the parser an `Iterator`; neither has a native counterpart.
-        if !bytes.nil && bytes.stdlib.tail.isEmpty
-        then parseDirect(bytes.stdlib.head, parsable).asInstanceOf[value in Json]
-        else parseDirect(bytes.stdlib.iterator, parsable).asInstanceOf[value in Json]
+        // The single-block fast path is the `#::` pattern, which proves the block exists; the
+        // general path hands the parser an `Iterator`, which has no native counterpart.
+        bytes match
+          case block #:: rest if rest.nil => parseDirect(block, parsable).asInstanceOf[value in Json]
+          case _ => parseDirect(bytes.stdlib.iterator, parsable).asInstanceOf[value in Json]
 
       override def accept(stream: (Stream[Data] over Credit)^): value in Json =
         parseDirect(stream, parsable).asInstanceOf[value in Json]

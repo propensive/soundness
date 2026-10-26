@@ -251,11 +251,12 @@ trait Protobuf1 extends Protobuf2:
       def aggregate(bytes: Chain[Data]): value in Protobuf =
         // A single in-memory block — the common case — is read in place; the general
         // path pulls the chain's cells as the parser needs them.
-        if !bytes.nil && bytes.stdlib.tail.isEmpty
-        then
-          parseDirect(ProtobufParser(bytes.stdlib.head), parsable).asInstanceOf[value in Protobuf]
-        else
-          parseDirect(ProtobufParser(bytes), parsable).asInstanceOf[value in Protobuf]
+        bytes match
+          case block #:: rest if rest.nil =>
+            parseDirect(ProtobufParser(block), parsable).asInstanceOf[value in Protobuf]
+
+          case _ =>
+            parseDirect(ProtobufParser(bytes), parsable).asInstanceOf[value in Protobuf]
 
       // The parameter is not `consume`: `Aggregable.accept`'s signature is pinned
       // non-consuming by overrides in modules outside separation checking, so the stream
