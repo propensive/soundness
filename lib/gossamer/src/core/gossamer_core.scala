@@ -129,11 +129,18 @@ extension (bytes: Data)
     . stdlib.mkString.tt
 
 extension [textual](text: textual)
+  // Cutting yields at least one piece — the text after the last delimiter, or the whole text
+  // when the delimiter never occurs — so the result carries the `Populated` proof and its
+  // `head`/`last` are total. Every `Cuttable` instance keeps that invariant for a positive
+  // limit (trailing empty pieces are kept, as `String.split` does with a positive limit); a
+  // limit of zero or less is read as unlimited rather than as `split`'s zero, which drops
+  // trailing empties and can leave nothing.
   def cut[delimiter](delimiter: delimiter, limit: Int = Int.MaxValue)
     ( using cuttable: textual is Cuttable by delimiter )
-  :   List[textual] =
+  :   List[textual] & Populated =
 
-    cuttable.cut(text, delimiter, limit)
+    cuttable.cut(text, delimiter, if limit <= 0 then Int.MaxValue else limit)
+    . asInstanceOf[List[textual] & Populated]
 
 // One `Traversable`-driven block serves every receiver: the native shapes (`List`, `Chain`,
 // `Sequence`, …) through their own instances, and external `Iterable`s through the blanket

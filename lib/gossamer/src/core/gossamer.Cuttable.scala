@@ -66,11 +66,14 @@ object Cuttable:
       val string = textual.text(text).s
       val matcher = Pattern.compile(regex.pattern.s).nn.matcher(string).nn
 
+      // The pieces *between* matches, with the text after the last match as the final piece
+      // (so there is always at least one, the invariant `cut` relies on). A zero-width match at
+      // the cursor is not a cut, or the scan would never advance.
       @tailrec
       def recur(start: Ordinal, results: List[textual]): List[textual] =
-        if matcher.find(start.n0)
-        then recur(matcher.end.z, text.segment(matcher.start.z thru matcher.end.z) :: results)
-        else results
+        if matcher.find(start.n0) && matcher.end > start.n0
+        then recur(matcher.end.z, text.segment(start till matcher.start.z) :: results)
+        else text.segment(start till text.length.z) :: results
 
       recur(Prim, Nil).reverse
 

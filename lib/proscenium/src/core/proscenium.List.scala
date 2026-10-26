@@ -170,8 +170,13 @@ object List:
     list.updated(index, value)
   def has[element](list: List[element], value: element): Boolean = list.contains(value)
   def drop[element](list: List[element], count: Int): List[element] = list.drop(count)
-  def append[element](list: List[element], value: element): List[element] = list.appended(value)
-  def prepend[element](list: List[element], value: element): List[element] = list.::(value)
+  // Appending or prepending an element makes the list non-empty, so both brand their result:
+  // the construction *is* the proof, as with the literal constructors above.
+  def append[element](list: List[element], value: element): List[element] & Populated =
+    populated(list.appended(value))
+
+  def prepend[element](list: List[element], value: element): List[element] & Populated =
+    populated(list.::(value))
   def concat[element](left: List[element], right: List[element]): List[element] = left ++ right
   def invert[element](list: List[element]): List[element] = list.reverse
 
@@ -200,6 +205,8 @@ val Nil: List[Nothing] = List.of(sci.Nil)
       type Out = sci.List[element]
       def spread(value: list): sci.List[element] = value
 
+// Not branded `& Populated` like `List.prepend`: a right-associative chain `a :: b :: c` types
+// its right operand first, and `element` cannot be inferred from `List[e] & Populated` there.
 given consConstructor: Object with
   extension [element](head: element)
     infix def :: (tail: List[element]): List[element] =

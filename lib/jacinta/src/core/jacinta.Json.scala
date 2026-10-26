@@ -339,7 +339,7 @@ trait Json2 extends Json3:
       Json.Decodable({
         val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
-          . to[List]
+          . pipe { array => array.stdlib.to(List) } // freshens the array
 
         Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })
       }):
@@ -621,7 +621,7 @@ trait Json2 extends Json3:
       Json.Encodable({ () =>
         val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
-          . to[List]
+          . pipe { array => array.stdlib.to(List) } // freshens the array
 
         Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })
       }):

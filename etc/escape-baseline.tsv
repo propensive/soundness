@@ -146,7 +146,6 @@ lib/denominative/src/core/denominative.Countable.scala	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/denominative/src/core/denominative.Definable.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/denominative/src/core/denominative.Terminable.scala	0	0	0	0	0	1	0	0	0	0	0	0	0	0	1	0
 lib/denominative/src/test/denominative_test.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
-lib/digression/src/core/digression.Fqcn.scala	0	0	0	0	0	0	0	0	0	0	1	1	0	0	0	0
 lib/digression/src/core/digression.Smap.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/dissonance/src/core/dissonance.Diff.scala	0	0	0	0	0	0	0	0	0	0	2	0	0	0	0	0
 lib/dissonance/src/core/dissonance.Redraft.scala	0	0	0	0	0	0	0	0	0	0	5	0	0	0	0	0
@@ -199,7 +198,7 @@ lib/espionage/src/test/espionage_test.scala	0	4	0	0	0	0	0	0	2	0	1	0	0	1	1	0
 lib/ethereal/src/core/ethereal.Launcher.scala	0	0	0	0	1	2	0	0	0	0	3	0	0	0	0	0
 lib/ethereal/src/core/ethereal.Session.scala	3	0	6	0	3	3	0	0	0	0	0	0	0	0	1	0
 lib/ethereal/src/core/ethereal_core.scala	3	8	0	0	1	2	0	0	1	0	1	0	0	0	1	0
-lib/ethereal/src/test/ethereal_test.scala	0	0	0	0	1	0	0	0	0	0	10	3	2	0	0	0
+lib/ethereal/src/test/ethereal_test.scala	0	0	0	0	1	0	0	0	0	0	7	0	2	0	0	0
 lib/eucalyptus/src/core/eucalyptus.Logger.scala	2	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/eucalyptus/src/syslog/eucalyptus.Syslog.scala	0	0	0	0	0	0	0	0	2	2	0	0	0	0	0	0
 lib/eucalyptus/src/test/eucalyptus_test.scala	6	0	0	0	0	0	0	0	2	2	0	0	0	0	0	0
@@ -240,7 +239,7 @@ lib/galilei/src/core/galilei.Local.scala	0	0	0	0	0	0	0	2	0	0	0	0	0	0	0	0
 lib/galilei/src/core/galilei.MacOs.scala	0	0	0	0	0	0	0	2	0	0	0	0	0	0	0	0
 lib/galilei/src/core/galilei.Platform.scala	0	0	0	0	1	1	0	0	0	0	0	0	0	0	0	0
 lib/galilei/src/core/galilei.Posix.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0
-lib/galilei/src/core/galilei.Searchpaths.scala	0	0	0	0	0	0	0	1	0	0	1	1	0	0	0	0
+lib/galilei/src/core/galilei.Searchpaths.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0
 lib/galilei/src/core/galilei.Subtree.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0
 lib/galilei/src/core/galilei.Windows.scala	0	0	0	0	0	0	0	2	0	0	0	0	0	0	0	0
 lib/galilei/src/core/galilei_core.scala	0	6	0	0	0	1	0	0	0	0	0	0	0	0	0	0
@@ -345,7 +344,7 @@ lib/iridescence/src/core/iridescence.Spectrum.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	
 lib/iridescence/src/core/iridescence.internal.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0
 lib/jacinta/src/bench/jacinta.Benchmarks.scala	0	0	0	0	9	1	0	0	0	0	0	0	0	0	0	0
 lib/jacinta/src/core/jacinta.Json.Parser.scala	1	0	0	0	0	0	0	0	9	10	0	0	0	0	2	0
-lib/jacinta/src/core/jacinta.Json.scala	25	0	2	0	6	0	0	0	16	30	7	1	0	4	4	0
+lib/jacinta/src/core/jacinta.Json.scala	25	0	2	0	6	0	0	0	16	30	9	1	2	4	4	0
 lib/jacinta/src/core/jacinta.Json4.scala	0	0	0	0	0	0	0	0	0	0	2	0	0	0	0	0
 lib/jacinta/src/core/jacinta.dynamicAccess.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0
 lib/jacinta/src/core/jacinta.inlining.scala	2	0	0	0	0	0	0	0	5	0	0	0	0	0	2	0
@@ -578,7 +577,7 @@ lib/stratiform/src/test/stratiform.SubtypingTests.scala	0	0	0	0	1	0	0	0	0	0	2	2	
 lib/stratiform/src/test/stratiform.TelCheckTree.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
 lib/stratiform/src/test/stratiform.TypedAcceptanceTests.scala	0	0	0	0	0	0	0	0	0	0	6	5	0	0	0	0
 lib/stratiform/src/test/stratiform.VerifyTests.scala	0	0	0	0	0	0	0	0	0	0	7	0	0	0	0	0
-lib/stratiform/src/test/stratiform_test.scala	0	0	2	0	10	1	0	0	0	0	94	30	11	0	1	0
+lib/stratiform/src/test/stratiform_test.scala	0	0	2	0	10	1	0	0	0	0	93	29	11	0	1	0
 lib/superlunary/src/core/superlunary.References.scala	0	0	0	0	0	0	0	0	0	0	1	0	1	0	0	0
 lib/superlunary/src/core/superlunary.Rig.scala	0	0	0	0	0	0	0	0	0	0	4	1	0	0	0	0
 lib/superlunary/src/core/superlunary.Stageable.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
@@ -650,7 +649,7 @@ lib/ultimatum/src/gauges/ultimatum.Gaugeable.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	1	0
 lib/ultimatum/src/gauges/ultimatum.Inlay.scala	0	1	0	0	0	0	0	0	0	0	1	0	0	0	0	0
 lib/ultimatum/src/gauges/ultimatum.Reading.scala	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/ultimatum/src/tables/ultimatum.TableFixture.scala	2	0	3	0	0	0	0	0	0	0	0	0	0	0	0	0
-lib/ultimatum/src/test/ultimatum_test.scala	0	0	13	0	0	0	0	0	0	0	16	7	0	0	0	0
+lib/ultimatum/src/test/ultimatum_test.scala	0	0	13	0	0	0	0	0	0	0	15	6	0	0	0	0
 lib/ulysses/src/core/ulysses.Bibliography.scala	0	0	0	0	0	0	0	0	0	0	3	0	0	1	0	0
 lib/ulysses/src/core/ulysses.BloomFilter.scala	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/ulysses/src/test/ulysses_test.scala	0	0	0	0	0	0	0	0	0	0	1	0	1	0	0	0

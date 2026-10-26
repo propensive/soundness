@@ -52,7 +52,8 @@ object Searchpaths:
   trait Stems extends Planar, Targetable:
     type Plane <: Searchpath
     type Target <: Platform
-    def stems: List[Path on Target]
+    // At least one stem: the head stem is where writes go, so the contract is non-emptiness.
+    def stems: List[Path on Target] & Populated
 
   // Public helpers, not `private`: the transparent-inline operations below would otherwise
   // generate inline-accessor bridges whose fresh capability roots fail capture checking (as
@@ -137,9 +138,7 @@ extension [plane <: Searchpath](path: Path on plane)
     ( using filesystem: stems.Target is Filesystem )
   :   Path on stems.Target =
 
-    // stdlib bridge: the `Stems` contract requires a head stem, but `stems` carries no
-    // `Populated` proof, so the total read is unavailable natively.
-    Searchpaths.resolve[stems.Target](stems.stems.stdlib.head, path)
+    Searchpaths.resolve[stems.Target](stems.stems.head, path)
 
 // A `Relative` or literal path written against `Linux` conventions may be reinterpreted on a
 // searchpath plane; library-qualified and top-level, since neither subject's companion can
@@ -161,8 +160,9 @@ extension (xdg: Xdg.type)
       // `unsafely`: the instantiable's decode tactic. `Xdg`'s own accessors guard each
       // variable with `safely`, falling back to the spec defaults, so a malformed entry
       // cannot actually raise here.
-      val stems: List[Path on Linux] =
-        unsafely(Xdg.dataHome[Path on Linux] :: Xdg.dataDirs[Path on Linux])
+      // `List.prepend` rather than `::`: the companion method carries the `Populated` proof.
+      val stems: List[Path on Linux] & Populated =
+        unsafely(List.prepend(Xdg.dataDirs[Path on Linux], Xdg.dataHome[Path on Linux]))
 
   def configSearch()(using Environment, System)
   :   Searchpaths.Stems { type Plane = Xdg.Config; type Target = Linux } =
@@ -173,5 +173,5 @@ extension (xdg: Xdg.type)
       type Plane = Xdg.Config
       type Target = Linux
 
-      val stems: List[Path on Linux] =
-        unsafely(Xdg.configHome[Path on Linux] :: Xdg.configDirs[Path on Linux])
+      val stems: List[Path on Linux] & Populated =
+        unsafely(List.prepend(Xdg.configDirs[Path on Linux], Xdg.configHome[Path on Linux]))

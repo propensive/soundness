@@ -71,7 +71,8 @@ object Showable:
   given set: [element: Showable] => Set[element] is Showable =
     set => enclose(set.map(_.show), "{", ", ", "}")
 
-  given list: [element: Showable] => List[element] is Showable =
+  // Subtype-parametric so a branded list (`List[e] & Populated`) shows too.
+  given list: [element: Showable, list <: List[element]] => list is Showable =
     list => enclose(list.map(_.show), "[", ", ", "]")
 
   given sequence: [element: Showable] => Sequence[element] is Showable =

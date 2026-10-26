@@ -324,7 +324,6 @@ object Launcher:
 
         def texts(field: Int): List[Text] =
           children.to[List].sweep { case Tel.Element.Value(`field`, _, text) => text }
-          . to(List)
 
         def flag(field: Int): Boolean = children.exists:
           case Tel.Element.Node(`field`, Tels.Flag, _) => true
@@ -349,7 +348,6 @@ object Launcher:
                   field(2).or(abort(Launcher.Mismatch())),
                   field(3) )
 
-          . to(List)
 
         def raws: List[Raw] =
           children.to[List].sweep:
@@ -364,7 +362,6 @@ object Launcher:
                   field(1).let(_.as[Int]),
                   Base256.decodeStrict(field(2).or(abort(Launcher.Mismatch()))) )
 
-          . to(List)
 
         index.or(-1) match
           case Variant.init =>

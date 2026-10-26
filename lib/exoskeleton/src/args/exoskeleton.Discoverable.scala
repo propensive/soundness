@@ -38,6 +38,7 @@ import anticipation.*
 import denominative.*
 import distillate.*
 import prepositional.*
+import rudiments.*
 
 object Discoverable:
   def noSuggestions[operand]: operand is Discoverable = (_, _) => Nil
@@ -46,7 +47,6 @@ object Discoverable:
     value.values.to[List]
     . map: element => value.encode(value.name(element))
     . map(Suggestion(_))
-    . to(List)
 
 trait Discoverable extends Typeclass:
   // Suggestions for a flag's operand at the cursor. `operand` is the partially-typed operand

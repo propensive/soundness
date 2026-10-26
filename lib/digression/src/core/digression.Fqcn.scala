@@ -55,32 +55,29 @@ object Fqcn:
       char == '_' || char == '$'
 
   def apply(name: Text): Fqcn raises Fqcn.Error =
-    val parts = Array.from(name.s.split("\\.").nn.iterator.map(_.nn))
+    val parts = List.from(name.s.split("\\.").nn.iterator.map(_.nn.tt))
 
     parts.each: part =>
-      if part.length == 0 then raise(Fqcn.Error(name, Fqcn.Error.Reason.EmptyName))
+      if part.s.length == 0 then raise(Fqcn.Error(name, Fqcn.Error.Reason.EmptyName))
+      if digression.internal.javaKeywords.has(part.s)
+      then raise(Fqcn.Error(name, Fqcn.Error.Reason.JavaKeyword(part)))
 
-      if digression.internal.javaKeywords.has(part)
-      then raise(Fqcn.Error(name, Fqcn.Error.Reason.JavaKeyword(part.tt)))
-
-      part.foreach: char =>
+      part.s.foreach: char =>
         if !valid(char) then raise(Fqcn.Error(name, Fqcn.Error.Reason.InvalidChar(char)))
 
-      if part.head >= '0' && part.head <= '9'
-      then raise(Fqcn.Error(name, Fqcn.Error.Reason.InvalidStart(part.head)))
+      if part.s.head >= '0' && part.s.head <= '9'
+      then raise(Fqcn.Error(name, Fqcn.Error.Reason.InvalidStart(part.s.head)))
 
-    new Fqcn(parts.remap(_.tt))
+    // `split` yields at least one part, so this only guards the type; the `Populated` proof it
+    // records is what makes `className` and `packageName` total.
+    new Fqcn(parts.occupied.or(abort(Fqcn.Error(name, Fqcn.Error.Reason.EmptyName))))
+
+  private[digression] def join(parts: List[Text]): Text =
+    parts.fold(StringBuilder()): (builder, part) =>
+      (if builder.isEmpty then builder else builder.append('.')).append(part.s)
+    . toString.tt
 
   given encodable: Fqcn is Encodable in Text = _.text
-
-  private[digression] def join(parts: Array[Text]^{}, count: Int): Text =
-    val builder = StringBuilder()
-
-    parts.iterate(parts.extent.capped(count)): index =>
-      if index != Prim then builder.append(".")
-      builder.append(parts.at(index).s)
-
-    builder.toString.tt
 
   // FqcnError → Fqcn.Error
   object Error:
@@ -99,7 +96,11 @@ object Fqcn:
   case class Error(name: Text, reason: Fqcn.Error.Reason)(using Diagnostics)
   extends fulminate.Error(17, reason.number)(m"the class name $name is not valid because $reason")
 
-class Fqcn(val parts: Array[Text]^{}):
-  def text: Text = Fqcn.join(parts, parts.length)
-  def className: Text = parts.stdlib.last
-  def packageName: Text = Fqcn.join(parts, parts.length - 1)
+// A class name has at least one part, and the type says so; the linear-size gate is open
+// because a name's parts are a handful.
+class Fqcn(val parts: List[Text] & Populated):
+  import denominative.dysasymptotics.linearSize
+
+  def text: Text = Fqcn.join(parts)
+  def className: Text = parts.last
+  def packageName: Text = Fqcn.join(parts.lead)

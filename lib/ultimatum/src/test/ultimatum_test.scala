@@ -1216,7 +1216,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
           bars.smoothBar.rows(Fraction(0.05), Tick.zero, 10).stdlib.head
           . render(termcapDefinitions.xtermTrueColorTermcap)
 
-        (rendered.cut(t"48;2;").size - 1, rendered.cut(t"▌").stdlib.head.contains(t"48;2;"))
+        (rendered.cut(t"48;2;").size - 1, rendered.cut(t"▌").head.contains(t"48;2;"))
       . assert(_ == (1, true))
 
       test(m"a full bar leaves no empty cells"):

@@ -1440,7 +1440,7 @@ object Apoplexy:
       case _ =>
         Unset
 
-    def componentName(pointer: JsonPointer): Text = pointer.encode.cut(t"/").last.or(t"")
+    def componentName(pointer: JsonPointer): Text = pointer.encode.cut(t"/").last
 
     def ok(value: TypeRepr, schema: JsonSchema): Boolean = schema match
       case ref: JsonSchema.Ref   => simpleName(value) == componentName(ref.pointer)

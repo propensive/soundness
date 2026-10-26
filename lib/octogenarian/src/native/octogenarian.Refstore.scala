@@ -286,7 +286,7 @@ private[octogenarian] object Refstore:
   :   Unit =
 
     val base = if name.starts(refsPrefix) then commonDir else gitDir
-    val file = descend(base, t"logs" :: name.cut(t"/"))
+    val file = descend(base, List.prepend(name.cut(t"/"), t"logs"))
     val parent: Path on Linux = file.parent.or(base)
     ensureDirectory(parent)
     val signature = Git.Signature(identity, Git.Timestamp.now())
@@ -301,7 +301,7 @@ private[octogenarian] object Refstore:
   :   List[ReflogEntry] =
 
     val base = if name.starts(refsPrefix) then commonDir else gitDir
-    val file = descend(base, t"logs" :: name.cut(t"/"))
+    val file = descend(base, List.prepend(name.cut(t"/"), t"logs"))
     val utc = t"+0000"
 
     if !file.existent() then Nil else

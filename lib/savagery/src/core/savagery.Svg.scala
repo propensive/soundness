@@ -379,8 +379,6 @@ object Svg:
         elem.children.to[List].sweep:
           case e: Xml.Element if e.label == t"stop" => decodeStop(e)
 
-        . to(List)
-
       LinearGradient(id, stops*)
 
 

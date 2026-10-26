@@ -2250,7 +2250,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
 
       test(m"the serializer emits reference, layers and sigil"):
         t"tel 1.0 propensive.dev/build +publishing +maven %\nname Alice\n"
-        . read[Tel].show.cut(t"\n").stdlib.headOption.getOrElse(t"")
+        . read[Tel].show.cut(t"\n").head
       . assert(_ == t"tel 1.0 propensive.dev/build +publishing +maven %")
 
     suite(m"Integration: parse → mutate → print → reparse"):
