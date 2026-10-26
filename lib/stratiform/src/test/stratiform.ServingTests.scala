@@ -92,7 +92,7 @@ object ServingTests extends Suite("tel-serving", m"Stratiform acceptance serving
     case Tel.Element.Node(_, struct: Tels.Struct, children) =>
       val flat = Bintel.flattenKeywords(struct, schema)
 
-      proscenium.List.from(children.stdlib.toList).map:
+      children.to[List].map:
         case Tel.Element.Node(index, _, _)  => flat.stdlib(index.or(0))(0)
         case Tel.Element.Value(index, _, _) => flat.stdlib(index)(0)
 

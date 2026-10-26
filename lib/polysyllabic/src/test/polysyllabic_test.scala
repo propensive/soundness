@@ -43,50 +43,50 @@ object Tests extends Suite("hyphenation", m"Polysyllabic tests"):
     suite(m"Pattern parser"):
       test(m"plain pattern: hy3ph decomposes to (hyph, [0,0,3,0,0])"):
         val (key, scores) = TexPatterns.parsePattern(t"hy3ph")
-        (key, scores.stdlib.to(Seq))
+        (key, scores.to[List])
 
-      . assert(_ == ((t"hyph", Seq[Byte](0, 0, 3, 0, 0))))
+      . assert(_ == ((t"hyph", List[Byte](0, 0, 3, 0, 0))))
 
       test(m"leading boundary pattern: .ach4 decomposes to (.ach, [0,0,0,0,4])"):
         val (key, scores) = TexPatterns.parsePattern(t".ach4")
-        (key, scores.stdlib.to(Seq))
+        (key, scores.to[List])
 
-      . assert(_ == ((t".ach", Seq[Byte](0, 0, 0, 0, 4))))
+      . assert(_ == ((t".ach", List[Byte](0, 0, 0, 0, 4))))
 
       test(m"trailing boundary pattern: ion5. decomposes to (ion., [0,0,0,5,0])"):
         val (key, scores) = TexPatterns.parsePattern(t"ion5.")
-        (key, scores.stdlib.to(Seq))
+        (key, scores.to[List])
 
-      . assert(_ == ((t"ion.", Seq[Byte](0, 0, 0, 5, 0))))
+      . assert(_ == ((t"ion.", List[Byte](0, 0, 0, 5, 0))))
 
       test(m"interleaved digits: a1b2c3 decomposes to (abc, [0,1,2,3])"):
         val (key, scores) = TexPatterns.parsePattern(t"a1b2c3")
-        (key, scores.stdlib.to(Seq))
+        (key, scores.to[List])
 
-      . assert(_ == ((t"abc", Seq[Byte](0, 1, 2, 3))))
+      . assert(_ == ((t"abc", List[Byte](0, 1, 2, 3))))
 
       test(m"pure-letter pattern: abc decomposes to (abc, [0,0,0,0])"):
         val (key, scores) = TexPatterns.parsePattern(t"abc")
-        (key, scores.stdlib.to(Seq))
+        (key, scores.to[List])
 
-      . assert(_ == ((t"abc", Seq[Byte](0, 0, 0, 0))))
+      . assert(_ == ((t"abc", List[Byte](0, 0, 0, 0))))
 
     suite(m"Exception parser"):
       test(m"as-so-ciate decomposes to (associate, [2, 4])"):
         val (word, offsets) = TexPatterns.parseException(t"as-so-ciate")
-        (word, offsets.stdlib.to(Seq))
+        (word, offsets.to[List])
 
       . assert(_ == ((t"associate", Seq(2, 4))))
 
       test(m"single break: ta-ble decomposes to (table, [2])"):
         val (word, offsets) = TexPatterns.parseException(t"ta-ble")
-        (word, offsets.stdlib.to(Seq))
+        (word, offsets.to[List])
 
       . assert(_ == ((t"table", Seq(2))))
 
       test(m"no breaks: present decomposes to (present, [])"):
         val (word, offsets) = TexPatterns.parseException(t"present")
-        (word, offsets.stdlib.to(Seq))
+        (word, offsets.to[List])
 
       . assert(_ == ((t"present", Seq())))
 
@@ -157,9 +157,9 @@ object Tests extends Suite("hyphenation", m"Polysyllabic tests"):
       . assert(_ == t"the al-go-rithm runs")
 
       test(m"syllables breaks letter runs and keeps non-letters as segments"):
-        t"the algorithm".syllables.stdlib.toSeq
+        t"the algorithm".syllables
 
-      . assert(_ == Seq(t"the", t" ", t"al", t"go", t"rithm"))
+      . assert(_ == Sequence(t"the", t" ", t"al", t"go", t"rithm"))
 
     suite(m"Extending an existing Hyphenation"):
       test(m"user-supplied pattern overrides English with higher odd score"):
@@ -193,6 +193,6 @@ object Tests extends Suite("hyphenation", m"Polysyllabic tests"):
         val tiny = Hyphenation(patterns = Seq(t"hy3ph", t"he2n", t"hena4", t"hen5at"))
 
         given Hyphenation = tiny
-        t"hyphenation".breakPoints.stdlib.to(Seq)
+        t"hyphenation".breakPoints.to[List]
 
-      . assert(breaks => breaks.nonEmpty)
+      . assert(breaks => !breaks.nil)

@@ -1556,22 +1556,22 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
       def schemaOf(source: Text): Tels =
         Tels.Validation.validate(source.read[Tel].as[Tels])
 
-      def indices(root: Tel.Element): scala.collection.immutable.List[Int] = root match
+      def indices(root: Tel.Element): List[Int] = root match
         case Tel.Element.Node(_, _, children) =>
-          children.stdlib.toList.map:
+          children.to[List].map:
             case Tel.Element.Node(i, _, _)  => i.or(-1)
             case Tel.Element.Value(i, _, _) => i
-        case _ => scala.collection.immutable.Nil
+        case _ => Nil
 
       test(m"§18.3: children are in member order, not document order"):
         val schema = schemaOf(t"name order\n\ndocument\n  field alpha String\n  field beta String\n")
         indices(Tel.Type.assign(t"beta 1\nalpha 2\n".read[Tel], schema))
-      . assert(_ == scala.collection.immutable.List(0, 1))
+      . assert(_ == List(0, 1))
 
       test(m"§18.3: a default-supplied value takes its member's place"):
         val schema = schemaOf(t"name order\n\ndocument\n  field alpha String required Ann\n  field beta String\n")
         indices(Tel.Type.assign(t"beta 1\n".read[Tel], schema))
-      . assert(_ == scala.collection.immutable.List(0, 1))
+      . assert(_ == List(0, 1))
 
       test(m"§18.3: variant fills of one SelectRef keep their source order"):
         val schema = schemaOf(Text("""|name pets
@@ -1585,7 +1585,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
                                      |  select Pet repeatable
                                      |""".stripMargin))
         indices(Tel.Type.assign(t"owner amy\ncat tom\ndog rex\n".read[Tel], schema))
-      . assert(_ == scala.collection.immutable.List(0, 2, 1))
+      . assert(_ == List(0, 2, 1))
 
       test(m"§20.3: a layer field colliding with a variant keyword is E205"):
         val source = Text("""|name collision
@@ -2524,7 +2524,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
       . assert(_ == true)
 
       test(m"alphabet entries are pairwise distinct"):
-        Base256.alphabet.stdlib.toSet.size
+        Base256.alphabet.to[Set].size
       . assert(_ == 256)
 
       test(m"ASCII digits encode to themselves"):
@@ -2541,8 +2541,8 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
 
       test(m"round-trip all 256 byte values"):
         val data: Data = (0 to 255).map(_.toByte).toArray.asInstanceOf[Array[Byte]]
-        Base256.decode(Base256.encode(data)).stdlib.toSeq
-      . assert(_ == (0 to 255).map(_.toByte))
+        Base256.decode(Base256.encode(data)).to[List]
+      . assert(_ == List.from((0 to 255).map(_.toByte)))
 
       test(m"empty bytes round-trip to empty text"):
         Base256.encode(Array.empty[Byte])
@@ -2563,8 +2563,8 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
 
       test(m"strict decode accepts the alphabet"):
         val data: Data = (0 to 255).map(_.toByte).toArray.asInstanceOf[Array[Byte]]
-        Base256.decodeStrict(Base256.encode(data)).stdlib.toSeq
-      . assert(_ == (0 to 255).map(_.toByte))
+        Base256.decodeStrict(Base256.encode(data)).to[List]
+      . assert(_ == List.from((0 to 255).map(_.toByte)))
 
       test(m"strict decode reports every non-alphabet character by code-point index"):
         val input = Text("A B" + new String(Character.toChars(0x1f600)) + "C")
@@ -2595,8 +2595,8 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         . assert(_ == encoded)
 
         test(m"§11 vector: $encoded decodes strictly"):
-          Base256.decodeStrict(Text(encoded)).stdlib.toList.map(_ & 0xff)
-        . assert(_ == bytes)
+          Base256.decodeStrict(Text(encoded)).to[List].map(_ & 0xff)
+        . assert(_ == List.from(bytes))
 
       test(m"§11 identity vector: encoding 00..FF yields the alphabet"):
         val data: Data = (0 to 255).map(_.toByte).toArray.asInstanceOf[Array[Byte]]
@@ -2836,7 +2836,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val decoded = Bintel.decode(bytes, nameSchema)
         decoded match
           case Tel.Element.Node(_, _, children) =>
-            children.stdlib.toList.collect:
+            children.to[List].sweep:
               case Tel.Element.Value(_, _, t) => t
           case _ => Nil
       . assert(_ == List(t"Alice"))
@@ -2874,7 +2874,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val decoded = Bintel.decode(bytes, nameSchema)
         decoded match
           case Tel.Element.Node(_, _, children) =>
-            children.stdlib.toList.collect:
+            children.to[List].sweep:
               case Tel.Element.Value(_, _, t) => t
           case _ => Nil
       . assert(_ == List(t""))
@@ -2887,7 +2887,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val decoded = Bintel.decode(bytes, nameSchema)
         decoded match
           case Tel.Element.Node(_, _, children) =>
-            children.stdlib.toList.collect:
+            children.to[List].sweep:
               case Tel.Element.Value(_, _, t) => t
           case _ => Nil
       . assert(_ == List(t"café"))
@@ -2940,7 +2940,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val decoded = Bintel.decode(bytes, outerSchema)
         decoded match
           case Tel.Element.Node(_, _, Array(Tel.Element.Node(_, _, inner))) =>
-            inner.stdlib.toList.collect:
+            inner.to[List].sweep:
               case Tel.Element.Value(_, _, t) => t
           case _ => Nil
       . assert(_ == List(t"example.com"))
@@ -3099,14 +3099,14 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val doc = Bintel.decodeDocument(bytes, nameSchema)
         doc.root match
           case Tel.Element.Node(_, _, children) =>
-            children.stdlib.toList.collect:
+            children.to[List].sweep:
               case Tel.Element.Value(_, _, t) => t
           case _ => Nil
       . assert(_ == List(t"Alice"))
 
       def firstName(document: Bintel.Document): Text = document.root match
         case Tel.Element.Node(_, _, children) =>
-          children.stdlib.toList.collect { case Tel.Element.Value(_, _, t) => t }.head
+          children.to[List].sweep { case Tel.Element.Value(_, _, t) => t }.prim.or(t"?")
         case _ => t"?"
 
       test(m"decodeDocument reports the continuation offset"):

@@ -101,7 +101,7 @@ object KeyTests extends Suite("tel-keys", m"Stratiform key field tests"):
     suite(m"TELS axiom ordering"):
       test(m"Field record members put key at index 6, before default"):
         val field = Tels.Axiom.tels.records.stdlib.find(_.name == t"Field").get
-        field.members.stdlib.toList.map:
+        field.members.to[List].map:
           case f: Tels.Field => f.keyword.s
           case _             => "?"
       . assert(_ == List
@@ -113,7 +113,7 @@ object KeyTests extends Suite("tel-keys", m"Stratiform key field tests"):
       // is load-bearing, not decorative.
       test(m"Scalar record members put pattern at index 2, before encoding"):
         val scalar = Tels.Axiom.tels.records.stdlib.find(_.name == t"Scalar").get
-        scalar.members.stdlib.toList.map:
+        scalar.members.to[List].map:
           case f: Tels.Field => f.keyword.s
           case _             => "?"
       . assert(_ == List("name", "validate", "pattern", "encoding", "description"))

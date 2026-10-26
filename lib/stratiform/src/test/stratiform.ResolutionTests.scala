@@ -80,8 +80,8 @@ object ResolutionTests extends Suite("tel-resolution", m"Stratiform schema resol
   // the selected layers' hashes, in declaration order.
   private def signatureFor(selection: List[Text]): Data =
     val (base, layerHashes) = SchemaSignature.componentHashes(layeredDoc, Tels.Axiom.tels)
-    val names = layeredSchema.layers.stdlib.toList.map(_.name)
-    val byName = names.zip(layerHashes.stdlib).toMap
+    val names = layeredSchema.layers.to[List].map(_.name)
+    val byName = names.stdlib.zip(layerHashes.stdlib).toMap
     SchemaSignature.encode((base :: selection.stdlib.map(byName(_))).to(List))
 
   private def pragma

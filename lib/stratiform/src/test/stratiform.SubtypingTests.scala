@@ -130,7 +130,7 @@ object SubtypingTests extends Suite("tel-subtyping", m"Stratiform subtyping test
     case Tel.Element.Node(_, struct: Tels.Struct, children) =>
       val flat = Bintel.flattenKeywords(struct, schema)
 
-      proscenium.List.from(children.stdlib.toList).map:
+      children.to[List].map:
         case Tel.Element.Node(index, _, _)  => flat.stdlib(index.or(0))(0)
         case Tel.Element.Value(index, _, _) => flat.stdlib(index)(0)
 
@@ -234,7 +234,7 @@ object SubtypingTests extends Suite("tel-subtyping", m"Stratiform subtyping test
 
       test(m"projection re-indexes the surviving members"):
         Tels.Projection.project(element, from, to) match
-          case Tel.Element.Node(_, _, children) => proscenium.List.from(children.stdlib.toList).map:
+          case Tel.Element.Node(_, _, children) => children.to[List].map:
             case Tel.Element.Node(index, _, _)  => index.or(-1)
             case Tel.Element.Value(index, _, _) => index
 
@@ -255,7 +255,7 @@ object SubtypingTests extends Suite("tel-subtyping", m"Stratiform subtyping test
 
         projected match
           case Tel.Element.Node(_, _, children) =>
-            proscenium.List.from(children.stdlib.toList).filter:
+            children.to[List].filter:
               case Tel.Element.Node(_, _: Tels.Struct, _) => true
               case _                                      => false
             . map { node => keywords(node, base).size }

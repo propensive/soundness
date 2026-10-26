@@ -97,7 +97,7 @@ object LineageTests extends Suite("tel-lineage", m"Stratiform lineage tests"):
       Tels.Layer(t"", Tels.Struct(Array.empty, Array.empty), Array.empty, Array.empty, Array.empty)
 
   private def keywords(schema: Tels): List[Text] =
-    proscenium.List.from(schema.document.members.stdlib.toList).map:
+    schema.document.members.to[List].map:
       case field: Tels.Field      => field.keyword
       case select: Tels.SelectRef => select.reference
       case _: Tels.Exclude        => t""
