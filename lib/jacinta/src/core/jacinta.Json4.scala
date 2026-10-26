@@ -48,8 +48,6 @@ import turbulence.read
 import spectacular.*
 import vacuous.*
 
-import strategies.throwUnsafely
-
 // Holds `Json.Provider`, the type provider over a JSON Schema document. Its own layer in `Json`'s
 // companion chain so that `Json.scala` need not carry it; it contributes no givens for `Json`
 // itself.
@@ -78,87 +76,92 @@ trait Json4:
   // selected by importing its interface (`emailAddressInterfaces.soundnessEmailAddress`,
   // `urlInterfaces.soundnessUrl`, `uuidInterfaces.soundnessUuid`, …).
   object Provider:
-    given boolean: ("boolean" is Intensional in Json.Provider from Json to Boolean) =
-      Intensional(_.as[Boolean])
+    import Json.Provider.Error.Reason.{JsonType, MissingValue, UnexpectedKind, Unparsable}
 
-    given string: ("string" is Intensional in Json.Provider from Json to Text) =
-      Intensional(_.as[Text])
+    // Every reader which can fail is a `Reader`, raising `Json.Provider.Error` through the
+    // `Tactic` of the code reading the field. A reader's givens are declared at that class type:
+    // see `Intensional.Reading`.
+    type Reader[label <: Label, result] =
+      Intensional.Reading[label, Json.Provider, Json, result, Json.Provider.Error]
 
-    given integer: ("integer" is Intensional in Json.Provider from Json to Int) =
-      Intensional(_.as[Int])
+    given boolean: Reader["boolean", Boolean] =
+      Intensional.Reading((json, _) => decode[Boolean](json))
+
+    given string: Reader["string", Text] = Intensional.Reading((json, _) => decode[Text](json))
+    given integer: Reader["integer", Int] = Intensional.Reading((json, _) => decode[Int](json))
 
     // An `integer` whose `format` is `int64`
-    given long: ("long" is Intensional in Json.Provider from Json to Long) =
-      Intensional(_.as[Long])
-
-    given number: ("number" is Intensional in Json.Provider from Json to Double) =
-      Intensional(_.as[Double])
+    given long: Reader["long", Long] = Intensional.Reading((json, _) => decode[Long](json))
+    given number: Reader["number", Double] = Intensional.Reading((json, _) => decode[Double](json))
 
     // A value the schema does not constrain to one Scala type, read as it is
     given json: ("json" is Intensional in Json.Provider from Json to Json) = Intensional(identity)
 
+    // The formats which name a domain type read the value's text through that type's
+    // `Instantiable`, found where the record is read, so a value it rejects fails through the
+    // `Tactic` its interface was given there
     given dateTime: [instant: Instantiable across Instants from Text]
-    =>  ( "date-time" is Intensional in Json.Provider from Json to instant ) =
-      Intensional(_.as[Text].instantiate)
+    =>  Reader["date-time", instant] =
+      Intensional.Reading((json, _) => decode[Text](json).instantiate)
 
-    given date: [date: Instantiable across Dates from Text]
-    =>  ( "date" is Intensional in Json.Provider from Json to date ) =
-      Intensional(_.as[Text].instantiate)
+    given date: [date: Instantiable across Dates from Text] => Reader["date", date] =
+      Intensional.Reading((json, _) => decode[Text](json).instantiate)
 
-    given time: [time: Instantiable across Times from Text]
-    =>  ( "time" is Intensional in Json.Provider from Json to time ) =
-      Intensional(_.as[Text].instantiate)
+    given time: [time: Instantiable across Times from Text] => Reader["time", time] =
+      Intensional.Reading((json, _) => decode[Text](json).instantiate)
 
     given duration: [duration: Instantiable across Durations from Text]
-    =>  ( "duration" is Intensional in Json.Provider from Json to duration ) =
-      Intensional(_.as[Text].instantiate)
+    =>  Reader["duration", duration] =
+      Intensional.Reading((json, _) => decode[Text](json).instantiate)
 
-    given uriReference: ("uri-reference" is Intensional in Json.Provider from Json to Text) =
-      Intensional(_.as[Text])
+    given uriReference: Reader["uri-reference", Text] =
+      Intensional.Reading((json, _) => decode[Text](json))
 
-    given email: [email: Instantiable across EmailAddresses from Text]
-    =>  ( "email" is Intensional in Json.Provider from Json to email ) =
-      Intensional(_.as[Text].instantiate)
+    given email: [email: Instantiable across EmailAddresses from Text] => Reader["email", email] =
+      Intensional.Reading((json, _) => decode[Text](json).instantiate)
 
     given idnEmail: [email: Instantiable across EmailAddresses from Text]
-    =>  ( "idn-email" is Intensional in Json.Provider from Json to email ) =
-      Intensional(_.as[Text].instantiate)
+    =>  Reader["idn-email", email] =
+      Intensional.Reading((json, _) => decode[Text](json).instantiate)
 
     given hostname: [hostname: Instantiable across Hostnames from Text]
-    =>  ( "hostname" is Intensional in Json.Provider from Json to hostname ) =
-      Intensional(_.as[Text].instantiate)
+    =>  Reader["hostname", hostname] =
+      Intensional.Reading((json, _) => decode[Text](json).instantiate)
 
-    given ipv4: [ipv4: Instantiable across IpAddresses from Text]
-    =>  ( "ipv4" is Intensional in Json.Provider from Json to ipv4 ) =
-      Intensional(_.as[Text].instantiate)
+    given ipv4: [ipv4: Instantiable across IpAddresses from Text] => Reader["ipv4", ipv4] =
+      Intensional.Reading((json, _) => decode[Text](json).instantiate)
 
-    given ipv6: [ipv6: Instantiable across IpAddresses from Text]
-    =>  ( "ipv6" is Intensional in Json.Provider from Json to ipv6 ) =
-      Intensional(_.as[Text].instantiate)
+    given ipv6: [ipv6: Instantiable across IpAddresses from Text] => Reader["ipv6", ipv6] =
+      Intensional.Reading((json, _) => decode[Text](json).instantiate)
 
-    given uri: [url: Instantiable across Urls from Text]
-    =>  ( "uri" is Intensional in Json.Provider from Json to url ) =
-      Intensional(_.as[Text].instantiate)
+    given uri: [url: Instantiable across Urls from Text] => Reader["uri", url] =
+      Intensional.Reading((json, _) => decode[Text](json).instantiate)
 
-    given iri: [url: Instantiable across Urls from Text]
-    =>  ( "iri" is Intensional in Json.Provider from Json to url ) =
-      Intensional(_.as[Text].instantiate)
+    given iri: [url: Instantiable across Urls from Text] => Reader["iri", url] =
+      Intensional.Reading((json, _) => decode[Text](json).instantiate)
 
-    given iriReference: ("iri-reference" is Intensional in Json.Provider from Json to Text) =
-      Intensional(_.as[Text])
+    given iriReference: Reader["iri-reference", Text] =
+      Intensional.Reading((json, _) => decode[Text](json))
 
-    given uuid: [uuid: Instantiable across Uuids from Text]
-    =>  ( "uuid" is Intensional in Json.Provider from Json to uuid ) =
-      Intensional(_.as[Text].instantiate)
+    given uuid: [uuid: Instantiable across Uuids from Text] => Reader["uuid", uuid] =
+      Intensional.Reading((json, _) => decode[Text](json).instantiate)
 
-    given uriTemplate: ("uri-template" is Intensional in Json.Provider from Json to Text) =
-      Intensional(_.as[Text])
+    given uriTemplate: Reader["uri-template", Text] =
+      Intensional.Reading((json, _) => decode[Text](json))
 
-    given jsonPointer: ("json-pointer" is Intensional in Json.Provider from Json to JsonPointer) =
-      Intensional(_.as[Text].as[JsonPointer])
+    given jsonPointer: Reader["json-pointer", JsonPointer] =
+      Intensional.Reading: (json, _) =>
+        val text = decode[Text](json)
 
-    given regex: ("regex" is Intensional in Json.Provider from Json to (Regex in JavaBaseRegex)) =
-      Intensional: json => Regex(json.as[Text])
+        given Tactic[JsonPointer.Error] = unparsable(text, t"json-pointer")
+        text.as[JsonPointer]
+
+    given regex: Reader["regex", Regex in JavaBaseRegex] =
+      Intensional.Reading: (json, _) =>
+        val text = decode[Text](json)
+
+        given Tactic[Regex.Error] = unparsable(text, t"regex")
+        Regex(text)
 
     // The formats above, by name; any other format reads as a plain string
     private val formats: scala.collection.immutable.Set[Text] =
@@ -167,8 +170,35 @@ trait Json4:
           t"hostname", t"ipv4", t"ipv6", t"uri", t"iri", t"iri-reference", t"uuid",
           t"uri-template", t"json-pointer", t"regex" )
 
-    private def fail(reason: Json.Provider.Error.Reason): Nothing =
+    private def fail(reason: Json.Provider.Error.Reason)(using Tactic[Json.Provider.Error])
+    :   Nothing =
+
       abort(Json.Provider.Error(reason))
+
+    // The `Tactic` for a `Json.Error` met while reading a field, raising it through the field's
+    // own `Tactic` as `Json.Provider.Error`, so that every field of a record fails in one way
+    private def decoding(using tactic: Tactic[Json.Provider.Error]): Tactic[Json.Error]^{tactic} =
+      tactic.contramap: error =>
+        val reason = error.reason match
+          case Json.Error.Reason.NotType(found, primitive) => JsonType(primitive, found)
+          case Json.Error.Reason.Absent                    => MissingValue(Unset)
+          case Json.Error.Reason.OutOfRange                => MissingValue(Unset)
+
+        Json.Provider.Error(reason)(using error.diagnostics)
+
+    // A value read as `result`, failing as `decoding` does. Inline, with its decoder summoned
+    // inline, so that the decoder is found at each call's own result type, under `decoding`.
+    private inline def decode[result](json: Json)(using Tactic[Json.Provider.Error]): result =
+      given Tactic[Json.Error] = decoding
+      val decodable = scala.compiletime.summonInline[result is Decodable in Json at Json.Focus]
+      json.as[result](using decodable)
+
+    // The `Tactic` for the error of a format's own parser, raising it as `Unparsable`
+    private def unparsable(text: Text, format: Text)(using tactic: Tactic[Json.Provider.Error])
+    :   Tactic[fulminate.Error]^{tactic} =
+
+      tactic.contramap: error =>
+        Json.Provider.Error(Unparsable(text, format))(using error.diagnostics)
 
     private def bound(param: Text): Optional[Double] = safely(param.as[Double])
 
@@ -187,7 +217,7 @@ trait Json4:
       type Error = Json.Provider.Error
 
       def transform(json: Json, params: List[Text])(using Tactic[Json.Provider.Error]): Int =
-        val int = json.as[Int]
+        val int = decode[Int](json)
 
         params.absolve match
           case min :: max :: xmin :: xmax :: Nil =>
@@ -212,7 +242,7 @@ trait Json4:
       type Error = Json.Provider.Error
 
       def transform(json: Json, params: List[Text])(using Tactic[Json.Provider.Error]): Double =
-        val double = json.as[Double]
+        val double = decode[Double](json)
 
         params.absolve match
           case min :: max :: xmin :: xmax :: Nil =>
@@ -240,7 +270,7 @@ trait Json4:
       type Error = Json.Provider.Error
 
       def transform(json: Json, params: List[Text])(using Tactic[Json.Provider.Error]): Text =
-        val text = json.as[Text]
+        val text = decode[Text](json)
         val length = text.length
 
         params.absolve match
@@ -265,8 +295,8 @@ trait Json4:
       def transform(json: Json, params: List[Text])(using Tactic[Json.Provider.Error]): Text =
         params.absolve match
           case pattern :: Nil =>
-            val regex = Regex(pattern)
-            val text = json.as[Text]
+            val regex = Regex(pattern)(using unparsable(pattern, t"regex"))
+            val text = decode[Text](json)
 
             if regex.matches(text) then text
             else fail(Json.Provider.Error.Reason.PatternMismatch(text, regex))
@@ -283,7 +313,7 @@ trait Json4:
       type Error = Json.Provider.Error
 
       def transform(json: Json, params: List[Text])(using Tactic[Json.Provider.Error]): Text =
-        val text = json.as[Text]
+        val text = decode[Text](json)
 
         if params.has(text) then text
         else fail(Json.Provider.Error.Reason.NotPermitted(text, params))
@@ -295,16 +325,19 @@ trait Json4:
     trait Primitives extends Specification:
       type Origin = Json
       type Form = Json.Provider
+      type Failure = Json.Provider.Error
 
       // `Json.apply` yields an absent JSON value, rather than failing, for a key the object lacks;
       // a `null` value is read as absent too, since the schema's `null` type marks a field
       // optional.
-      def access(name: Text, json: Json): Json = json(name)
+      def access(name: Text, json: Json)(using Tactic[Json.Provider.Error]): Json =
+        given Tactic[Json.Error] = decoding
+        json(name)
       def absent(json: Json): Boolean = json.root.isAbsent || json.root.isNull
 
       // A required field which is absent fails as it is read, whether it is a value or an object
-      override def required(name: Text, json: Json): Json =
-        if absent(json) then abort(Json.Error(Json.Error.Reason.Absent)) else json
+      override def required(name: Text, json: Json)(using Tactic[Json.Provider.Error]): Json =
+        if absent(json) then fail(MissingValue(name)) else json
 
       // The kind of a JSON value, by which a union chooses its alternative
       override def kind(json: Json): Text =
@@ -315,9 +348,10 @@ trait Json4:
         else if json.root.isArray then t"array"
         else t"null"
 
-      override def elements(json: Json): List[Json] = repeated(t"", json)
+      override def elements(json: Json)(using Tactic[Json.Provider.Error]): List[Json] =
+        repeated(t"", json)
 
-      override def pairs(json: Json): List[(Text, Json)] =
+      override def pairs(json: Json)(using Tactic[Json.Provider.Error]): List[(Text, Json)] =
         if !json.root.isObject then List()
         else
           val ast = json.root
@@ -327,11 +361,21 @@ trait Json4:
 
           List.from(entries)
 
-      override def entries(name: Text, json: Json): List[(Text, Json)] = pairs(json(name))
+      override def entries(name: Text, json: Json)(using Tactic[Json.Provider.Error])
+      :   List[(Text, Json)] =
 
-      def repeated(name: Text, json: Json): List[Json] =
+        given Tactic[Json.Error] = decoding
+        pairs(json(name))
+
+      def repeated(name: Text, json: Json)(using Tactic[Json.Provider.Error]): List[Json] =
+        given Tactic[Json.Error] = decoding
         val value = if name.nil then json else json(name)
-        if absent(value) then List() else value.as[List[Json]]
+        if absent(value) then List() else decode[List[Json]](value)
+
+      override def unoffered(kind: Text, offered: List[Text])(using Tactic[Json.Provider.Error])
+      :   Nothing =
+
+        fail(UnexpectedKind(kind, offered))
 
     // The fields of a schema's root object, as the provider's specification. The root must
     // describe an object with properties, possibly through a `$ref` or an `allOf`.
@@ -340,6 +384,7 @@ trait Json4:
     // configuration file which may also be written as a bare string, say — the provider reads
     // that object form.
     def fieldsOf(schema: Json): List[(Text, Member)] =
+      import strategies.throwUnsafely
       val walk = Walk(schema)
 
       walk.rootRecord(schema) match
@@ -358,6 +403,7 @@ trait Json4:
     // OpenAPI document, referring to `#/components/schemas/…` — reads as it would alone. An
     // object reads as a `Member.Record`, an array of objects as one of `Multiplicity.Many`.
     def memberOf(document: Json, node: Json, limit: Int = Int.MaxValue): Member =
+      import strategies.throwUnsafely
       Walk(document, limit).member(node, scala.collection.immutable.Set())
 
     // The walk from a schema node to the `Member` reading a value it describes. `seen` holds
@@ -368,7 +414,11 @@ trait Json4:
     // `Json`: an API's error schema may refer into a graph of thousands of properties, of which
     // a caller wants the first level or two as a record. References already followed are
     // memoised, so a graph is walked once, not once per path into it.
+    // The schema is read as the macro expands, where a schema it cannot read is a compile error
+    // rather than a value to report, so the walk throws.
     private class Walk(root: Json, limit: Int = Int.MaxValue):
+      import strategies.throwUnsafely
+
       private val followed = scala.collection.mutable.HashMap[Text, Member]()
       private type Sl[element] = scala.collection.immutable.List[element]
       private type SSet[element] = scala.collection.immutable.Set[element]
@@ -732,7 +782,14 @@ trait Json4:
       object Reason:
         given Reason is Communicable =
           case JsonType(expected, found) => m"expected JSON type $expected, but found $found"
-          case MissingValue              => m"the value was missing"
+
+          case MissingValue(name) =>
+            name.lay(m"the value was missing")(name => m"the value of $name was missing")
+
+          case UnexpectedKind(found, offered) =>
+            m"the value was a JSON $found, which is not one of ${offered.join(t", ")}"
+
+          case Unparsable(value, format) => m"the value $value is not a valid $format"
 
           case IntOutOfRange(value, minimum, maximum) =>
             if minimum.absent then m"the value was greater than the maximum, ${maximum.or(0)}"
@@ -760,9 +817,11 @@ trait Json4:
 
       enum Reason(val number: Int) extends Clarification:
         case JsonType(expected: Json.Primitive, found: Json.Primitive) extends Reason(1)
-        case MissingValue                                              extends Reason(2)
+        case MissingValue(name: Optional[Text])                        extends Reason(2)
         case PatternMismatch(value: Text, pattern: Regex)              extends Reason(4)
         case NotPermitted(value: Text, permitted: List[Text])          extends Reason(7)
+        case UnexpectedKind(found: Text, offered: List[Text])          extends Reason(8)
+        case Unparsable(value: Text, format: Text)                     extends Reason(9)
 
         case IntOutOfRange(value: Int, minimum: Optional[Int], maximum: Optional[Int])
         extends Reason(3)

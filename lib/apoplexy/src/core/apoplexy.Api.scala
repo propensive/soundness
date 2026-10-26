@@ -81,7 +81,9 @@ object Api:
     def fields: List[(Text, Member)] = Nil
 
     // The records of an array response, one per element
-    def list(json: Json, transform: Text => Json => Any): List[Record] =
+    def list(json: Json, transform: Text => Json => Any)(using Tactic[Json.Provider.Error])
+    :   List[Record] =
+
       repeated(t"", json).map(build(_, transform))
 
   // The presentations of credentials, as an operation's security schemes dictate (the `invoke`

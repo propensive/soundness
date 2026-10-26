@@ -35,13 +35,12 @@ package stratiform
 import anticipation.*
 import contingency.*
 import denominative.*
+import fulminate.*
 import gossamer.*
 import polyvinyl.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
-
-import strategies.throwUnsafely
 
 // Holds `Tel.Provider`, the type provider over a TEL schema. Its own layer in `Tel`'s companion
 // chain so that `Tel.scala` need not carry it, and so that it precedes nothing: it contributes
@@ -79,10 +78,13 @@ trait Tel4:
     given typeName: ("type-name" is Intensional in Tel.Provider from Tel to Text) =
       Intensional(_.primaryAtom)
 
-    given sigil: ("sigil" is Intensional in Tel.Provider from Tel to Char) =
-      Intensional: tel =>
-        val text = tel.primaryAtom.s
-        if text.length == 1 then text.charAt(0) else '#'
+    // A sigil is a single character; any other atom fails through the `Tactic` of the code
+    // reading the field
+    given sigil: Intensional.Reading["sigil", Tel.Provider, Tel, Char, Tel.Provider.Error] =
+      Intensional.Reading: (tel, _) =>
+        val text = tel.primaryAtom
+        if text.length == 1 then text.s.charAt(0)
+        else abort(Tel.Provider.Error(Tel.Provider.Error.Reason.NotSigil(text)))
 
     // A Flag field is satisfied when the schema declares the keyword *and* the parsed document
     // contains a compound with that keyword. Polyvinyl's accessor calls our `access` first,
@@ -92,6 +94,21 @@ trait Tel4:
       Intensional(!absent(_))
 
     given tel: ("tel" is Intensional in Tel.Provider from Tel to Tel) = Intensional(identity)
+
+    object Error:
+      enum Reason(val number: Int) extends Clarification:
+        case Absent(name: Text)    extends Reason(1)
+        case NotSigil(value: Text) extends Reason(2)
+
+      given communicable: Reason is Communicable =
+        case Reason.Absent(name)    => m"the field $name is required"
+        case Reason.NotSigil(value) => m"the value $value is not a single character"
+
+    // A document which does not conform to the schema a `Tel.Provider` reads it by, as one of a
+    // record's fields is read
+    case class Error(reason: Tel.Provider.Error.Reason)(using Diagnostics)
+    extends fulminate.Error(614, reason.number)
+      ( m"the TEL did not conform to its schema because $reason" )
 
     // Walk a Tels.Struct to produce the polyvinyl `Member` map. Each Field at the top level
     // contributes one entry whose `fieldType` names the Intensional instance to look up. A
@@ -181,12 +198,22 @@ trait Tel4:
   abstract class Provider(val tels: Tels) extends Specification:
     type Origin = Tel
     type Form = Tel.Provider
+    type Failure = Tel.Provider.Error
 
     // The schema's base — before any layer — and its full composition. A member the full
     // composition declares and the base does not was introduced by a layer, and reads as
     // optional.
-    private lazy val base: Tels = Tels.Layers.compose(tels, List())
-    private lazy val composed: Tels = Tels.Layers.compose(tels)
+    //
+    // Both are first composed as the macro expands, where a schema which does not compose is a
+    // compile error rather than a value to report, so the composition throws; a schema which
+    // composed then composes again when a record reads it.
+    private lazy val base: Tels =
+      import strategies.throwUnsafely
+      Tels.Layers.compose(tels, List())
+
+    private lazy val composed: Tels =
+      import strategies.throwUnsafely
+      Tels.Layers.compose(tels)
 
     def fields: List[(Text, Member)] =
       Tel.Provider.fieldsOf(composed.document, composed, base, base.document)
@@ -229,7 +256,9 @@ trait Tel4:
         val element = Bintel.decode(framed.body, reading.document, Tel.Codec.Bindings.builtins)
         Bintel.present(element, reading.document)
 
-    def access(name: Text, tel: Tel): Tel = tel.field(name).or(Tel.empty)
+    def access(name: Text, tel: Tel)(using Tactic[Tel.Provider.Error]): Tel =
+      tel.field(name).or(Tel.empty)
+
     def absent(tel: Tel): Boolean = tel.keyword.nil
 
     // Every keyword the composed schema declares as a flag, anywhere: a flag is never absent,
@@ -251,8 +280,10 @@ trait Tel4:
 
     // A required field which is absent fails as it is read, rather than reading as empty text;
     // a flag's absence is its `false`
-    override def required(name: Text, tel: Tel): Tel =
-      if absent(tel) && !flags.contains(name) then abort(Tel.Error(Tel.Error.Reason.Absent))
+    override def required(name: Text, tel: Tel)(using Tactic[Tel.Provider.Error]): Tel =
+      if absent(tel) && !flags.contains(name)
+      then abort(Tel.Provider.Error(Tel.Provider.Error.Reason.Absent(name)))
       else tel
 
-    def repeated(name: Text, tel: Tel): List[Tel] = tel.fields(name).stdlib.to(List)
+    def repeated(name: Text, tel: Tel)(using Tactic[Tel.Provider.Error]): List[Tel] =
+      tel.fields(name).stdlib.to(List)

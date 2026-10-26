@@ -33,9 +33,17 @@
 package polyvinyl
 
 import anticipation.*
+import contingency.*
+import fulminate.*
 import prepositional.*
 
 object Record:
+  // The type of a record's field: its value, read under the `Tactic` of the code reading it. It
+  // is applied wherever the field is selected, as `result raises failure` would be, but is a pure
+  // context function, so that a type mentioning a record — an error carrying one as its payload,
+  // say — captures nothing.
+  type Field[result, failure <: Hazard] = Tactic[failure]^ ?-> result
+
   // Pure functions (`->`): the record retains the accessor, and a capturing one would make the
   // record itself a capability, which its pure self type (rightly) forbids.
   def apply[origin](data0: origin, access0: Text -> origin -> Any): Record from origin =
@@ -57,6 +65,8 @@ trait Record extends Selectable, Original:
   def recordAccess: Text -> Origin -> Any
 
   // The compiler passes a field's name as it is encoded for the JVM — `street$minusaddress` for
-  // `street-address` — so it is decoded before it is looked up.
+  // `street-address` — so it is decoded before it is looked up. The value is the field's reading,
+  // a context function over the specification's `Tactic[Failure]`, which a refined record's field
+  // type applies at the call site; called by name, the caller applies it.
   def selectDynamic(name: String): Any =
     recordAccess(scala.reflect.NameTransformer.decode(name).tt)(recordData)

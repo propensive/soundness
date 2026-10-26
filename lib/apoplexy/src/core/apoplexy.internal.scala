@@ -643,7 +643,8 @@ object Apoplexy:
 
       case Payload.Record(fields, many) =>
         val (refined, _) =
-          Specification.recordExpansion[Json, Json.Provider]('{Api.Records}, fields)
+          Specification.recordExpansion[Json, Json.Provider, Json.Provider.Error]
+            ( '{Api.Records}, fields )
 
         refined.absolve match
           case '[refined] =>
@@ -1311,7 +1312,8 @@ object Apoplexy:
 
       case Payload.Record(fields, many) =>
         val (refined, transform) =
-          Specification.recordExpansion[Json, Json.Provider]('{Api.Records}, fields)
+          Specification.recordExpansion[Json, Json.Provider, Json.Provider.Error]
+            ( '{Api.Records}, fields )
 
         val parse = Expr.summon[Tactic[Parse.Error]].getOrElse:
           val advice = t"a `Tactic[Parse.Error]` is needed"
@@ -1321,7 +1323,9 @@ object Apoplexy:
           case '[type refined <: Record; refined] =>
             val json = '{Api.jsonOf($response)(using $parse)}
 
-            if many then '{Api.Records.list($json, $transform).asInstanceOf[List[refined]]}
+            if many then
+              val tactic = providerTactic(m"reading the ${failure.key} response of $verb $key")
+              '{Api.Records.list($json, $transform)(using $tactic).asInstanceOf[List[refined]]}
             else '{Api.Records.build($json, $transform).asInstanceOf[refined]}
 
     // The raise of one declared failure: the error constructed by class, with its payload and
@@ -1387,11 +1391,14 @@ object Apoplexy:
     val (pointer, source) = jsonResponse(self, t"record()")
     val (fields, many) = responseMember(source, pointer, t"record()")
     val target = '{Api.Records}
-    val (refined, transform) = Specification.recordExpansion[Json, Json.Provider](target, fields)
+    val (refined, transform) =
+      Specification.recordExpansion[Json, Json.Provider, Json.Provider.Error](target, fields)
 
     refined.absolve match
       case '[type refined <: Record; refined] =>
-        if many then '{Api.Records.list($json, $transform).asInstanceOf[List[refined]]}
+        if many then
+          val tactic = providerTactic(m"reading a response with record()")
+          '{Api.Records.list($json, $transform)(using $tactic).asInstanceOf[List[refined]]}
         else '{Api.Records.build($json, $transform).asInstanceOf[refined]}
 
   // `Api.Response.tuple()`: as `record()`, as a named tuple read eagerly
@@ -1401,12 +1408,21 @@ object Apoplexy:
     val (pointer, source) = jsonResponse(self, t"tuple()")
     val (fields, many) = responseMember(source, pointer, t"tuple()")
     val target = '{Api.Records}
-    val (tuple, make) = Specification.tupleExpansion[Json, Json.Provider](target, fields)
+    val (tuple, make) =
+      Specification.tupleExpansion[Json, Json.Provider, Json.Provider.Error](target, fields)
 
     tuple.absolve match
       case '[type tuple <: NamedTuple.AnyNamedTuple; tuple] =>
-        if many then '{Api.Records.repeated(t"", $json).map($make(_)).asInstanceOf[List[tuple]]}
+        if many then
+          val tactic = providerTactic(m"reading a response with tuple()")
+          '{Api.Records.repeated(t"", $json)(using $tactic).map($make(_)).asInstanceOf[List[tuple]]}
         else '{$make($json).asInstanceOf[tuple]}
+
+  // The `Tactic` through which an array response's elements are read, found where the macro is
+  // expanded: an array response which is not an array fails through it
+  private def providerTactic(using Quotes)(reading: Message): Expr[Tactic[Json.Provider.Error]] =
+    Expr.summon[Tactic[Json.Provider.Error]].getOrElse:
+      halt(m"apoplexy: $reading; a `Tactic[Json.Provider.Error]` is needed")
 
   // Compile-time check that `value` structurally matches the response schema.
   private def conformsTo(using quotes: Quotes)(value: quotes.reflect.TypeRepr, schema: JsonSchema)
