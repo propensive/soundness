@@ -37,6 +37,11 @@ import prepositional.*
 object Encodable:
   given bytes: Data is Encodable in Data = identity(_)
 
+  // A `Sized` block encodes as itself. Its own instance, not a `[data <: Data]` widening of
+  // `bytes`: a type variable bounded by a capturing type (`Data` is `Array[Byte]^{}`) is
+  // elaborated as `data^{any.rd}`, which fails evidence declared for the pure `Data`.
+  given sizedBytes: [length <: Int] => (Data & Sized[length]) is Encodable in Data = identity(_)
+
   // A `Long` encodes to its eight bytes in big-endian order.
   given longData: Long is Encodable in Data =
     long => Array((56 to 0 by -8).map(long >> _).map(_.toByte)*)

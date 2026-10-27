@@ -500,7 +500,7 @@ object Tests extends Suite("image", m"Hallucination Tests"):
 
     test(m"the pure JPEG encoder produces a valid JPEG signature"):
       val encoded = JpegEncoder.encode(gradient32, 90)
-      (encoded.stdlib(0) & 0xff, encoded.stdlib(1) & 0xff)
+      (encoded.at(Prim).let(_ & 0xff), encoded.at(Sec).let(_ & 0xff))
     . assert(_ == (0xff, 0xd8))
 
     test(m"the default JPEG quality round-trips through the pure codec"):
@@ -543,8 +543,7 @@ object Tests extends Suite("image", m"Hallucination Tests"):
     . assert(_ == true)
 
     test(m"a corrupted PNG fails its checksum"):
-      val corrupted = Array.tabulate(png.length): index =>
-        if index == 40 then (png.stdlib(index) ^ 1).toByte else png.stdlib(index)
+      val corrupted: Data = png.tabulate(index => if index.n0 == 40 then (png(index) ^ 1).toByte else png(index)).to[Array]
 
       capture[Raster.Error](PngCodec.decode(corrupted)).reason
     . assert(_ == Raster.Error.Reason.BadCrc)

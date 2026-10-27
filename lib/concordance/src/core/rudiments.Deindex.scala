@@ -32,6 +32,7 @@
                                                                                                   */
 package rudiments
 
+import scala.caps
 import scala.compiletime.*
 
 import denominative.*
@@ -144,6 +145,22 @@ extension [self](value: self)(using applicable: Applicable { type Self = self })
 
         optimizable[applicable.Result]: default =>
           if applicable.contains(value, key) then applicable.access(value, key) else default
+
+// The `Sized` producer, the counterpart of `occupied`: one length check, recorded in the type.
+// A plain method, not `inline`: an inline body returning the `Optional` union of a frozen
+// array re-freshens its capture set at each call site (the `Optional[Data]` trap).
+extension [self](value: self)(using countable: Countable { type Self = self })
+  def sized[length <: Int](using length: ValueOf[length]): Optional[self & Sized[length]] =
+    if countable.size(value) == length.value
+    then value.asInstanceOf[self & Sized[length]]
+    else Unset
+
+// A literal ordinal on a `Sized` array is confined at compile time: `sizedMacros.read` checks
+// `i < n` as it expands, so the read is total and an out-of-range literal does not compile;
+// a variable ordinal takes the `at` route and yields `Optional`.
+extension [element, length <: Int](array: Array[element]^{caps.any.rd} & Sized[length])
+  transparent inline def apply(inline ordinal: Ordinal): Any =
+    ${sizedMacros.read[element, length]('array, 'ordinal)}
 
 extension [key, value](map: scala.collection.Map[key, value])
   inline def defines(key: key): Boolean = map.contains(key)

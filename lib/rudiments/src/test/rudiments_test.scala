@@ -216,6 +216,66 @@ object Tests extends Suite("core", m"Rudiments Tests"):
         xs.count(_ == 2)
       . assert(_ == 2)
 
+    suite(m"Sized tests"):
+      test(m"a literal fill carries its length and reads a literal ordinal totally"):
+        val xs = Array.fill(4)(7)
+        xs(Ter)
+      . assert(_ == 7)
+
+      test(m"a literal tabulate carries its length"):
+        Array.tabulate(5)(_*10)(Quin)
+      . assert(_ == 40)
+
+      test(m"a literal cardinal makes a literal-typed ordinal"):
+        Array.fill(512)(0.toByte)(156.z)
+      . assert(_ == 0.toByte)
+
+      test(m"Data.fill brands its length"):
+        Data.fill(8)(_.toByte)(Sept)
+      . assert(_ == 6.toByte)
+
+      test(m"a concatenation's length is the sum"):
+        Array.concat(Array.fill(2)(1), Array.fill(3)(2))(Quin)
+      . assert(_ == 2)
+
+      test(m"sized checks a length once and records it"):
+        Array(1, 2, 3, 4).sized[4].let(_(Quat))
+      . assert(_ == 4)
+
+      test(m"sized is absent for the wrong length"):
+        Array(1, 2, 3).sized[4].absent
+      . assert(_ == true)
+
+      test(m"a literal ordinal beyond the proven length does not compile"):
+        demilitarize:
+          Array.fill(3)(1)(3.z)
+        . map(_.message.toString.contains("beyond the array's proven length"))
+      . assert(_ == List(true))
+
+      test(m"a named ordinal beyond the proven length does not compile"):
+        demilitarize:
+          Array.fill(3)(1)(Quat)
+        . map(_.message.toString.contains("beyond the array's proven length"))
+      . assert(_ == List(true))
+
+      test(m"a literal length is a proof the type records"):
+        val xs = Array.fill(4)(7)
+        summon[xs.type <:< Sized[4]]
+        xs(Quat)
+      . assert(_ == 7)
+
+      test(m"a sized array still converts to a list"):
+        Array.fill(3)(2).to[List]
+      . assert(_ == List(2, 2, 2))
+
+      test(m"a val length is not a proof: the array is unbranded"):
+        demilitarize:
+          val n = 4
+          val xs = Array.fill(n)(7)
+          summon[xs.type <:< Sized[?]]
+        . map(_.message.toString.contains("Cannot prove"))
+      . assert(_ == List(true))
+
     suite(m"last and lead tests"):
       test(m"last of a sequence"):
         val xs: Sequence[Int] = Sequence(1, 2, 3)

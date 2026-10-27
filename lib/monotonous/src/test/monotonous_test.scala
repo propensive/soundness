@@ -205,7 +205,7 @@ object Tests extends Suite("serialization", m"Monotonous tests"):
       import strategies.throwUnsafely
       import alphabets.hexUpperCase, alphabets.base64Standard
 
-      val payload = Data.fill(100)(_.toByte)
+      val payload: Data = Data.fill(100)(_.toByte)
 
       test(m"hex duct serializes a byte stream"):
         Drain.text(payload.stream.via(summon[Alphabet[Hex]]))

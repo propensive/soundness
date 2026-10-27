@@ -391,11 +391,11 @@ object Tests extends Suite("compression", m"Pneumatic tests"):
       . assert(_ == 4100)
 
       test(m"The prefix opens with WBITS 24, ISLAST 0, MNIBBLES 4 and the low bit of MLEN - 1"):
-        prefix.stdlib(0) & 0xff
+        prefix.head.let(_ & 0xff)
       . assert(_ == 0x8f)
 
       test(m"The prefix ends with the empty metadata meta-block"):
-        prefix.stdlib(prefix.length - 1) & 0xff
+        prefix.last.let(_ & 0xff)
       . assert(_ == 0x06)
 
       test(m"An empty base primes to two bytes"):

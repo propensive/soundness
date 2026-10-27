@@ -43,6 +43,35 @@ and cannot be drained are the mutable `scala.Array`, a varargs `Seq`, and an
 and a capability cannot flow into it. A mutable buffer being filled is not an exception to
 find a way around: write it through `Array.scribe`, whose handle brands its own indices.
 
+## Proven lengths
+
+A brand can record a *length* as well as a bound. `Sized[n]` (proscenium, beside `Populated`)
+is a phantom refinement, `Any { type Length = n }`, minted three ways:
+
+- **by construction**: `Array.fill(512)(…)`, `Array.tabulate(8)(…)` and `Data.fill(16)(…)` with
+  a literal length return `… & Sized[n]`, as `List(a, b)` returns `& Populated`; a `val` or
+  an expression length does not brand (only a compile-time constant is a proof the macro can
+  read). The brand is a refinement of the value's type: the collection instances for the
+  frozen array (`Traversable`, `Encodable`, `Streamable`; not yet `Countable`, `Applicable`
+  or `Terminable`) have a `Sized` instance — spelt with the brand in the `Self`, since a type
+  variable bounded by a capturing type acquires `any.rd` — but a *medium* typeclass (`Addressable`, behind `stream`, `Cursor(…)` and
+  `Stream(…)`) names the medium a stream is over, where a brand is meaningless, so a `Data`
+  meant as a medium names its type: `val payload: Data = Data.fill(100)(_.toByte)`;
+- **by declaration**: a producer that fixes a layout — a 512-byte tar header, an 8-byte chunk
+  header — declares `Sized[n]` on its result and discharges it once at the boundary;
+- **by check**: `xs.sized[512]` yields `Optional[xs.type & Sized[512]]`, the counterpart of
+  `occupied`.
+
+On a `Sized[n]` receiver, `xs(156.z)` — or `xs(Quat)`, since the ordinal literals inline to
+their integers — is read by a macro that decides `156 < n` as it expands: the read is total,
+and a literal beyond the length does not compile. The ordinals keep their plain type (a
+refined literal type would infer into every `val` that binds it); a variable ordinal on a
+`Sized` receiver yields `Optional`, as `at` does, and `pick`/`extent` remain the proofs for
+computed indices. Lengths combine at the type level:
+`Array.concat` of two proven arrays is `Sized[n + m]`, reduced when both are literals and
+carried symbolically otherwise. Prefer the brand to a `readUnchecked` with a comment whenever
+the layout is fixed: the byte-probe tests (`header(156.z)`) are exactly this case.
+
 ## When a `while` may stay
 
 A `while` may remain only when no expression in its condition is compared against the size of

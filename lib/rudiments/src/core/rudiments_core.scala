@@ -143,6 +143,8 @@ extension [value](value: value)
 // comparing a `value & Populated` with a plain `value` (no `CanEqual` between them).
 given populatedEquality: [value] => CanEqual[value & Populated, value] = CanEqual.derived
 given populatedEqualityReversed: [value] => CanEqual[value, value & Populated] = CanEqual.derived
+given sizedEquality: [value, length <: Int] => CanEqual[value & Sized[length], value] = CanEqual.derived
+given sizedEqualityReversed: [value, length <: Int] => CanEqual[value, value & Sized[length]] = CanEqual.derived
 
 extension [input, result](inline lambda: (=> input) => result)
   inline def upon(inline value: => input): result = lambda(value)

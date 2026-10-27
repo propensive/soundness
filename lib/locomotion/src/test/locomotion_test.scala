@@ -325,7 +325,7 @@ object Tests extends Suite("protobuf", m"Locomotion Protobuf Tests"):
         capture[Protobuf.Error]:
           // [test-harness] test read inside capture block
           scala.caps.unsafe.unsafeAssumeSeparate:
-            proscenium.Chain(Array.fill(11)(0x80.toByte)).read[Sample in Protobuf]
+            proscenium.Chain[Data](Array.fill(11)(0x80.toByte)).read[Sample in Protobuf]
       . assert(_ == Protobuf.Error(Protobuf.Error.Reason.MalformedVarint(0)))
 
       test(m"a varint whose value overflows 64 bits is rejected"):

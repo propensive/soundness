@@ -84,6 +84,16 @@ object Traversable extends Traversable2:
       scala.collection.immutable.ArraySeq.unsafeWrapArray(array.asInstanceOf[scala.Array[element]])
       . iterator
 
+  // A `Sized` array is its own instance rather than a subtype-parametric widening of the one
+  // above: a type variable bounded by a capturing type is elaborated as `array^{any.rd}`, so
+  // the instance it selects no longer satisfies evidence declared for the pure array
+  // (`Array[Int]^{} is Traversable`). Spelling the brand in the Self keeps the shape exact.
+  given sizedFrozenArray: [element, refs^, length <: Int]
+  =>  (Array[element]^{refs} & Sized[length]) is Traversable by element =
+    array =>
+      scala.collection.immutable.ArraySeq.unsafeWrapArray(array.asInstanceOf[scala.Array[element]])
+      . iterator
+
   // Java collections traverse through `.asScala`, so `javaCollection.to[List]` (and `[Set]`,
   // `[Map]`, …) work with no explicit conversion — the builder is the standard-library converter.
   // `java.lang.Iterable` covers `java.util.List`/`Set`/`Collection`/…; `java.util.Iterator` and
