@@ -37,6 +37,8 @@ import denominative.*
 import escapade.*
 import gossamer.*
 import hieroglyph.*
+import iridescence.*
+import prepositional.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
@@ -238,8 +240,17 @@ enum Bar:
     // this, that uncovered fraction falls through to the terminal's default background and shows
     // as a sliver of the wrong colour along the leading edge. Where the track is drawn as a glyph
     // there is no background to match, and the cell is left alone.
+    //
+    // A tip marks where the fill has got to, so it stands out in the leading edge's colour; a
+    // partial is more of the fill, so it takes the fill's colour — at its position, on a gradient —
+    // lest a smooth bar seem to end in a cell of another colour.
+    val edgeColor: Color in Srgb =
+      if glyphs.tip.present then palette.leadingEdge
+      else if !gradient then palette.fill
+      else palette.lengthwise(if inner <= 1 then 0.0 else whole.toDouble/(inner - 1))
+
     val edge = boundary.lay(e""): glyph =>
-      val tinted = gauging.tint(palette.leadingEdge)(Teletype(glyph))
+      val tinted = gauging.tint(edgeColor)(Teletype(glyph))
       if washedTrack then gauging.wash(palette.track)(tinted) else tinted
 
     val blank = Teletype(glyphs.empty*(inner - used).max(0))

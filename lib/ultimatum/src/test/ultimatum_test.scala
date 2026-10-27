@@ -1219,6 +1219,16 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         (rendered.cut(t"48;2;").size - 1, rendered.cut(t"▌").head.contains(t"48;2;"))
       . assert(_ == (1, true))
 
+      // A partial is more of the fill, not a marker, so it takes the fill's foreground: a bar
+      // whose boundary cell is another colour seems to end in a tip.
+      test(m"the boundary cell shares the fill's foreground"):
+        val rendered =
+          bars.smoothBar.rows(Fraction(0.55), Tick.zero, 10).stdlib.head
+          . render(termcapDefinitions.xtermTrueColorTermcap)
+
+        rendered.cut(t"38;2;").skip(1).map(_.cut(t"m").head).to[Set].size
+      . assert(_ == 1)
+
       test(m"a full bar leaves no empty cells"):
         bar(bars.smoothBar)(Fraction(1.0), 8)
       . assert(_ == t"████████")
