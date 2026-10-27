@@ -715,11 +715,21 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
   // itself is surfaced through `selectDefinitions` for registration, and the
   // definitions of its variants' types through `definitions`. A plain `def`
   // (not the inline body) so the anonymous class is compiled once, not per call site.
+  //
+  // A sum at a member position cannot be a `Reference` to its select, which is E217 (§20.3), and
+  // a field's type can only name a definition (§20.6), so a field of a sum's type names a record
+  // holding one `SelectRef` to the sum's select: a `Figurine` field is `field shape
+  // FigurineValue`, where `record FigurineValue` holds `select Figurine`. It reads as the derived
+  // codecs write it, the field's keyword with one variant beneath. A sum at the root is a
+  // `SelectRef` to its select, with no use for the record, which is dropped, so the schema of a
+  // type whose only sum is its root is as it was (#2323).
   private def selectSchematic
     ( identity: Identity, variants: List[(Text, TelSchematic)], retractions: scala.List[(Text, Text)] )
   :   TelSchematic over Tels.Type =
 
     new TelSchematic:
+      private def wrapperName(naming: Naming): Text = t"${naming(identity)}Value"
+
       private def select(naming: Naming): Tels.SelectDefinition =
         val declared: List[Tels.Variant] = variants.map: variant =>
           Tels.Variant(variant(0), variant(1).fieldType(naming))
@@ -728,6 +738,14 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
 
       def schema(): Tels.Type = schema(Naming.simple)
       override def schema(naming: Naming): Tels.Type = Tels.Reference(naming(identity))
+
+      // Lists, sets and optionals take their member type from here, through `fieldTypeOf`
+      override def fieldType(naming: Naming): Tels.Type = Tels.Reference(wrapperName(naming))
+
+      // The record standing for the sum at a member position
+      private def wrapper(naming: Naming): Tels.RecordDefinition =
+        val member = Tels.SelectRef(Polarity.Implicit, Polarity.Implicit, naming(identity))
+        Tels.RecordDefinition(wrapperName(naming), Array(member), Array.empty)
 
       override def selectDefinitions(naming: Naming): List[Tels.SelectDefinition] =
         List(select(naming))
@@ -752,7 +770,9 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
         if seen.contains(identity) then TelSchematic.Definitions(Nil, Nil)
         else
           val below = variants.map(_(1).definitions(seen + identity, naming))
-          TelSchematic.Definitions(below.bind(_.records), select(naming) :: below.bind(_.selects))
+
+          TelSchematic.Definitions
+            ( wrapper(naming) :: below.bind(_.records), select(naming) :: below.bind(_.selects) )
 
   // A sum derives to a named `SelectDefinition` (its variants) registered in the
   // namespace, with `schema()` returning a `Reference` to it — the indirected form
