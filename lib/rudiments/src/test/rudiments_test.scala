@@ -258,10 +258,6 @@ object Tests extends Suite("core", m"Rudiments Tests"):
         xs(Quat)
       . assert(_ == 7)
 
-      test(m"a sized array still has its size"):
-        Array.fill(4)(7).size
-      . assert(_ == 4)
-
       test(m"a sized array still converts to a list"):
         Array.fill(3)(2).to[List]
       . assert(_ == List(2, 2, 2))

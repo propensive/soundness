@@ -55,8 +55,12 @@ import zephyrine.{stream as _, *}
 // (`Buffering`, `Tactic[Truncation.Error]`), so the typeclass itself remains a
 // single abstract method.
 object Streamable:
-  // Subtype-parametric, so a branded `Data & Sized[n]` streams as itself.
-  given bytes: [data <: Data] => data is Streamable by Data over Credit = Stream(_)
+  given bytes: Data is Streamable by Data over Credit = Stream(_)
+
+  // A `Sized` block streams as itself; its own instance for the reason `Encodable.sizedBytes`
+  // gives (a `[data <: Data]` widening acquires `any.rd`).
+  given sizedBytes: [length <: Int] => (Data & Sized[length]) is Streamable by Data over Credit =
+    Stream(_)
 
   // Bytes tagged with the format they carry, as `foo.in[Data over Protobuf]` writes them, read
   // back as they are. (Text needs no counterpart: `text` below admits any subtype.)

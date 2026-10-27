@@ -49,14 +49,9 @@ object Countable:
   // receivers never had these operations.
 
   // The frozen array, `Array[element]^{}`, likewise: `length` is O(1) and reads are sound
-  // through any reference, so the instance is ungated. Subtype-parametric, so a branded array
-  // (`Array[element]^{} & Sized[n]`) resolves too, and capture-polymorphic like `Traversable`'s,
-  // since inline re-elaboration freshens even a frozen receiver to `any.rd`.
-  // A value of the type parameter does not conform to its own capturing bound (the variable
-  // is elaborated as `array^{any.rd}`), so the length is read through the JVM view, as
-  // `Traversable.frozenArray` traverses; a length read never writes.
-  given frozenArray: [element, refs^, array <: Array[element]^{refs}] => array is Countable =
-    (array: array) => array.asInstanceOf[scala.Array[element]].length
+  // through any reference, so the instance is ungated.
+  given frozenArray: [element] => (Array[element]^{}) is Countable =
+    (array: Array[element]^{}) => array.length
 
   given int: Int is Countable = identity(_)
 

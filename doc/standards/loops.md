@@ -52,8 +52,9 @@ is a phantom refinement, `Any { type Length = n }`, minted three ways:
   a literal length return `… & Sized[n]`, as `List(a, b)` returns `& Populated`; a `val` or
   an expression length does not brand (only a compile-time constant is a proof the macro can
   read). The brand is a refinement of the value's type: the collection instances for the
-  frozen array (`Countable`, `Traversable`, `Encodable`, `Streamable`) are subtype-parametric
-  and accept it, but a *medium* typeclass (`Addressable`, behind `stream`, `Cursor(…)` and
+  frozen array (`Traversable`, `Encodable`, `Streamable`; not yet `Countable`, `Applicable`
+  or `Terminable`) have a `Sized` instance — spelt with the brand in the `Self`, since a type
+  variable bounded by a capturing type acquires `any.rd` — but a *medium* typeclass (`Addressable`, behind `stream`, `Cursor(…)` and
   `Stream(…)`) names the medium a stream is over, where a brand is meaningless, so a `Data`
   meant as a medium names its type: `val payload: Data = Data.fill(100)(_.toByte)`;
 - **by declaration**: a producer that fixes a layout — a 512-byte tar header, an 8-byte chunk

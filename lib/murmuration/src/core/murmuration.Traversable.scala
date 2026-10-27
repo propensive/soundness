@@ -78,10 +78,18 @@ object Traversable extends Traversable2:
   // is sound under separation checking (live writers are excluded wherever readers alias),
   // and inline re-elaboration freshens even statically-frozen references to `any.rd`, so
   // the receiver admits the whole read-only spectrum. Capture-set polymorphism (rather
-  // than a fixed `any.rd` bound) lets boxed capture variables instantiate too. Subtype-
-  // parametric in the array, so a branded one (`Array[element]^{} & Sized[n]`) resolves.
-  given frozenArray: [element, refs^, array <: Array[element]^{refs}]
-  =>  array is Traversable by element =
+  // than a fixed `any.rd` bound) lets boxed capture variables instantiate too.
+  given frozenArray: [element, refs^] => (Array[element]^{refs}) is Traversable by element =
+    array =>
+      scala.collection.immutable.ArraySeq.unsafeWrapArray(array.asInstanceOf[scala.Array[element]])
+      . iterator
+
+  // A `Sized` array is its own instance rather than a subtype-parametric widening of the one
+  // above: a type variable bounded by a capturing type is elaborated as `array^{any.rd}`, so
+  // the instance it selects no longer satisfies evidence declared for the pure array
+  // (`Array[Int]^{} is Traversable`). Spelling the brand in the Self keeps the shape exact.
+  given sizedFrozenArray: [element, refs^, length <: Int]
+  =>  (Array[element]^{refs} & Sized[length]) is Traversable by element =
     array =>
       scala.collection.immutable.ArraySeq.unsafeWrapArray(array.asInstanceOf[scala.Array[element]])
       . iterator
