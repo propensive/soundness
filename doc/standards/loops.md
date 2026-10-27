@@ -52,11 +52,15 @@ is a phantom refinement, `Any { type Length = n }`, minted three ways:
   a literal length return `… & Sized[n]`, as `List(a, b)` returns `& Populated`; a `val` or
   an expression length does not brand (only a compile-time constant is a proof the macro can
   read). The brand is a refinement of the value's type: the collection instances for the
-  frozen array (`Traversable`, `Encodable`, `Streamable`; not yet `Countable`, `Applicable`
-  or `Terminable`) have a `Sized` instance — spelt with the brand in the `Self`, since a type
+  frozen array (`Traversable`, `Encodable`, `Streamable`, `Countable`, `Applicable`,
+  `Terminable`, and downstream `Postable`, `Servable`, `Transmissible`, `Readable`,
+  `Encodable in Protobuf`) have a `Sized` instance — spelt with the brand in the `Self`, since a type
   variable bounded by a capturing type acquires `any.rd` — but a *medium* typeclass (`Addressable`, behind `stream`, `Cursor(…)` and
   `Stream(…)`) names the medium a stream is over, where a brand is meaningless, so a `Data`
-  meant as a medium names its type: `val payload: Data = Data.fill(100)(_.toByte)`;
+  meant as a medium names its type: `val payload: Data = Data.fill(100)(_.toByte)`. The rule
+  for a new `Data is X` given: if `Self` appears only in argument position, add a `sized…` twin
+  (`[length <: Int] => (Data & Sized[length]) is X`) beside it, so a proven block is accepted
+  wherever the plain one is; if `Self` is a result or a stream element (a medium), do not;
 - **by declaration**: a producer that fixes a layout — a 512-byte tar header, an 8-byte chunk
   header — declares `Sized[n]` on its result and discharges it once at the boundary;
 - **by check**: `xs.sized[512]` yields `Optional[xs.type & Sized[512]]`, the counterpart of

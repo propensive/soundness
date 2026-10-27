@@ -36,6 +36,7 @@ import scala.compiletime
 
 export proscenium.Sequence
 export proscenium.Comparison
+export proscenium.Sized
 export Predef.runtimeChecked as absolve
 export scala.reflect.{ClassTag, Typeable}
 export proscenium.Set

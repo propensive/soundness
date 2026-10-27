@@ -253,7 +253,7 @@ bands: the nodes that depend on nothing in the innermost band, each further band
 rank further out, so that a build fills in from the centre outwards. Each node is a sector of its
 band, sweeping an angle proportional to its size within the rank, and a band is as thick as its
 rank's share of the total size. A node's size and its progress, from `0.0` to `1.0`, come from
-two typeclasses on the node type, `Sized` and `Progressive`; the sector fills clockwise as far as
+two typeclasses on the node type, `Weighted` and `Progressive`; the sector fills clockwise as far as
 the node is complete, with the remainder in a subdued tint of the sector's colour, which is the
 palette's first colour shaded by where the sector lies: its hue turning through thirty degrees
 from left to right, and darker below the middle and lighter above it. A doughnut has
@@ -266,7 +266,7 @@ further are replaced:
 
 ```scala
 case class Step(name: Text, size: Double, done: Double)
-given Step is Sized = _.size
+given Step is Weighted = _.size
 given Step is Progressive = _.done
 
 val parse = Step(t"parse", 2.0, 1.0)

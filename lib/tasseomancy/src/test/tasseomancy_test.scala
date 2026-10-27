@@ -526,7 +526,7 @@ object Tests extends Suite("charts", m"Tasseomancy tests"):
 
     suite(m"Doughnuts"):
       case class Step(name: Text, size: Double, done: Double = 0.0)
-      given Step is Sized = _.size
+      given Step is Weighted = _.size
       given Step is Progressive = _.done
       val a = Step(t"a", 1.0)
       val b = Step(t"b", 2.0, 0.5)

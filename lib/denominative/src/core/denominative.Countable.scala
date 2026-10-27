@@ -53,6 +53,14 @@ object Countable:
   given frozenArray: [element] => (Array[element]^{}) is Countable =
     (array: Array[element]^{}) => array.length
 
+  // A `Sized` array is its own instance rather than a subtype-parametric widening of the one
+  // above: a type variable bounded by a capturing type is elaborated as `array^{any.rd}`, so
+  // the instance it selects fails evidence declared for the pure array. Spelling the brand in
+  // the Self keeps the shape exact (as `Traversable.sizedFrozenArray` does).
+  given sizedFrozenArray: [element, length <: Int]
+  =>  (Array[element]^{} & Sized[length]) is Countable =
+    (array: Array[element]^{} & Sized[length]) => array.length
+
   given int: Int is Countable = identity(_)
 
   given arrayBuffer: [element] => ArrayBuffer[element] is Countable:

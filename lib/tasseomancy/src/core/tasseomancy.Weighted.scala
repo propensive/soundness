@@ -35,6 +35,6 @@ package tasseomancy
 import prepositional.*
 
 // The extent of a node of a doughnut: the share of its rank's angle it sweeps and, summed over
-// the rank, the thickness of the rank's band. A negative size counts as zero.
-trait Sized extends Typeclass.Pure:
-  def size(value: Self): Double
+// the rank, the thickness of the rank's band. A negative weight counts as zero.
+trait Weighted extends Typeclass.Pure:
+  def weight(value: Self): Double

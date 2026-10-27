@@ -36,7 +36,7 @@ export
   tasseomancy
   . { Bands, Bars, Boxes, Calibration, Categorical, Category, Chart, ChartPalette,
       Continuous, Doughnut, Estimate, FontMetric, Gradation, Histogram, Lines, Noted, Pie,
-      Plottable, Progressive, Ruler, Samples, Scale, Scatter, Series, Sized, StackedBars, chart }
+      Plottable, Progressive, Ruler, Samples, Scale, Scatter, Series, StackedBars, Weighted, chart }
 
 package calibrations:
   export tasseomancy.calibrations.{adaptiveCalibration, linearCalibration, logarithmicCalibration,

@@ -87,6 +87,11 @@ object Postable:
   given unit: Unit is Postable = Postable(media"text/plain", _ => Iterator.empty[Data].stream)
   given data: Data is Postable = Postable[Data](media"application/octet-stream", _.stream)
 
+  // A `Sized` block posts as the plain one; its own instance, since a brand is a refinement the
+  // exact `Self` above does not match (see `anticipation.Encodable.sizedBytes`).
+  given sizedData: [length <: Int] => (Data & Sized[length]) is Postable =
+    Postable[Data & Sized[length]](media"application/octet-stream", data => (data: Data).stream)
+
   given byteStream: Chain[Data] is Postable =
     Postable(media"application/octet-stream", chain => Stream(chain))
 
