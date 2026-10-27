@@ -79,6 +79,10 @@ object Servable:
   given data: Data is Servable =
     Servable[Data](media"application/octet-stream")(Http.Body.Fixed(_))
 
+  // A `Sized` block is served as the plain one (see `Postable.sizedData`).
+  given sizedData: [length <: Int] => (Data & Sized[length]) is Servable =
+    Servable[Data & Sized[length]](media"application/octet-stream")(Http.Body.Fixed(_))
+
   // `Text` is served as the generic `media` instance below would serve it, but with its
   // constant `content-type` header rendered once, here — outside the given, whose body is
   // evaluated at every summons because of its context parameter. More specific than

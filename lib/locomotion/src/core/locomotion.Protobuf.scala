@@ -680,6 +680,10 @@ object Protobuf extends Protobuf1:
   given textEncodable: Text is Encodable in Protobuf = text => Wire(WireType.Len, utf8(text))
   given dataEncodable: Data is Encodable in Protobuf = bytes => Wire(WireType.Len, bytes)
 
+  // A `Sized` block encodes as the plain one (see `anticipation.Encodable.sizedBytes`).
+  given sizedDataEncodable: [length <: Int] => (Data & Sized[length]) is Encodable in Protobuf =
+    bytes => Wire(WireType.Len, bytes)
+
   given intDecodable: (tactic: Tactic[Protobuf.Error])
   =>  ( (Int is Decodable in Protobuf)^{tactic, caps.any} ) =
     readVarint(_).toInt

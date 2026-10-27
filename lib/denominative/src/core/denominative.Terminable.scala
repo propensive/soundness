@@ -51,6 +51,11 @@ object Terminable:
   given frozenArray: [element] => (Array[element]^{}) is Terminable by element =
     array => array.readUnchecked(array.length - 1)
 
+  // A `Sized` array's own instance, for the reason `Countable.sizedFrozenArray` gives.
+  given sizedFrozenArray: [element, length <: Int]
+  =>  (Array[element]^{} & Sized[length]) is Terminable by element =
+    array => array.readUnchecked(array.length - 1)
+
   given text: Text is Terminable by Char = text => text.s.charAt(text.s.length - 1)
 
   given indexedSeq: [element] => IndexedSeq[element] is Terminable by element = _.last

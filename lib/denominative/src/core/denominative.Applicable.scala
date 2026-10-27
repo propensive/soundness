@@ -52,6 +52,21 @@ object Applicable:
 
     def access(array: Array[element]^{}, index: Ordinal): Result = array.readUnchecked(index.n0)
 
+  // A `Sized` array's own instance, for the reason `Countable.sizedFrozenArray` gives. A
+  // variable ordinal on a proven array is still a bounds-checked `Optional` read; the literal
+  // reads go through the `Sized` macro and never reach this instance.
+  given sizedFrozenArray: [element, length <: Int]
+  =>  (Array[element]^{} & Sized[length]) is Applicable:
+    type Self = Array[element]^{} & Sized[length]
+    type Operand = Ordinal
+    type Result = element
+
+    def contains(array: Array[element]^{} & Sized[length], index: Ordinal): Boolean =
+      index.n0 >= 0 && index.n0 < array.length
+
+    def access(array: Array[element]^{} & Sized[length], index: Ordinal): Result =
+      array.readUnchecked(index.n0)
+
   given indexedSeq: [element] => IndexedSeq[element] is Applicable:
     type Self = IndexedSeq[element]
     type Operand = Ordinal

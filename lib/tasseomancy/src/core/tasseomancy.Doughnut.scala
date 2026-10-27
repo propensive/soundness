@@ -87,7 +87,7 @@ object Doughnut:
     def remainder(ops: List[Stroke], color: Color in Srgb, rank: Int, index: Int): List[Figure] =
       List(Outline(ops, style = filled(color) + evenOdd, id = Svg.Id(t"sector-$index-rest")))
 
-  given dag: [node: {Sized as sized, Progressive as progressive}] => (ranking: Ranking)
+  given dag: [node: {Weighted as weighted, Progressive as progressive}] => (ranking: Ranking)
   =>  Dag[node] is Plottable in Doughnut to Doughnut.Fit[node] by Doughnut.Style =
 
     new Plottable:
@@ -105,7 +105,7 @@ object Doughnut:
         if countOf(nodes) == 0 then Doughnut.Fit(Nil) else
           val layering = data.layered
           val depth = nodes.fold(0): (acc, node) => acc.max(layering.rank(node) + 1)
-          def sizeOf(node: node): Double = sized.size(node).max(0.0)
+          def sizeOf(node: node): Double = weighted.weight(node).max(0.0)
 
           var middles: Map[node, Double] = Map()
           var bands: List[Band[node]] = Nil

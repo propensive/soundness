@@ -43,6 +43,11 @@ object Transmissible:
   // wildcard capture that cannot flow back into `^{}`.
   given bytes: Data is Transmissible = _.stream
 
+  // A `Sized` block transmits as the plain one; its own instance, since a brand is a
+  // refinement the exact `Self` above does not match (see `anticipation.Encodable.sizedBytes`).
+  given sizedBytes: [length <: Int] => (Data & Sized[length]) is Transmissible =
+    data => (data: Data).stream
+
   given stream: [stream <: Chain[Data]] => stream is Transmissible = value => Stream(value)
 
   given text: [text <: Text] => Codepage => text is Transmissible =

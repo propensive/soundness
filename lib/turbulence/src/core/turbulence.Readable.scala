@@ -85,6 +85,15 @@ object Readable extends Readable1:
   given dataText: (decoder: Charset) => ((Data is Readable to Text)) =
     decoder.decoded(_)
 
+  // A `Sized` block reads as the plain one; its own instances, since a brand is a refinement
+  // the exact `Self` above does not match (see `anticipation.Encodable.sizedBytes`).
+  given sizedDataData: [length <: Int] => (Data & Sized[length]) is Readable to Data =
+    identity(_)
+
+  given sizedDataText: [length <: Int] => (decoder: Charset)
+  =>  ((Data & Sized[length]) is Readable to Text) =
+    decoder.decoded(_)
+
   given dataToData: [source, result]
   =>  ( source0: (source is Streamable by Data over Credit)^ )
   =>  ( aggregable: (result is Aggregable by Data)^ )
