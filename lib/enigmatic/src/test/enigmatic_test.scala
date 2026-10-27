@@ -464,7 +464,7 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
 
       test(m"Cose envelope is tagged with CBOR tag 17 (Mac0)"):
         val wire = Cose(payload, key).in[Data]
-        wire.stdlib(0).toInt & 0xFF
+        wire.at(Prim).let(_.toInt & 0xFF)
       . assert(_ == 0xD1)   // major type 6 (tag) | tag value 17 = 0xC0 | 17 = 0xD1
 
       test(m"Verification fails with the wrong key"):

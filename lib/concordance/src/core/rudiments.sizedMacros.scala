@@ -67,16 +67,44 @@ object sizedMacros:
       if symbol.owner.fullName.startsWith("denominative") then ordinalLiterals.at(symbol.name)
       else Unset
 
-    def literal(term: Term): Optional[Int] = term match
-      case Inlined(_, _, inner)        => literal(inner)
-      case Typed(inner, _)             => literal(inner)
-      case Block(Nil, inner)           => literal(inner)
-      case Literal(IntConstant(value)) => value
-      case ident @ Ident(_)            => named(ident.symbol)
-      case select @ Select(_, _)       => named(select.symbol)
-      case _                           => Unset
+    // Inlining binds an inline parameter to a proxy `val` (`Inlined`'s bindings, or a `Block`'s
+    // statements) and refers to it by name, so the walk carries those bindings and follows an
+    // identifier to its right-hand side.
+    def literal(term: Term, bindings: Map[Symbol, Term]): Optional[Int] =
+      def extend(statements: scala.List[Statement]): Map[Symbol, Term] =
+        statements.foldLeft(bindings):
+          case (map, valDef @ ValDef(_, _, Some(rhs))) => Map.define(map, valDef.symbol, rhs)
+          case (map, _)                                => map
 
-    literal(ordinal.asTerm).lay('{ ($array: Array[element]^{caps.any.rd}).at($ordinal) }): index =>
-      if index >= 0 && index < length
-      then '{ ($array: Array[element]^{caps.any.rd}).readUnchecked($ordinal.n0) }
-      else report.errorAndAbort(s"the ordinal $index is beyond the array's proven length of $length")
+      term match
+        case Inlined(_, inner, expansion) => literal(expansion, extend(inner))
+        case Typed(inner, _)              => literal(inner, bindings)
+        case Block(statements, inner)     => literal(inner, extend(statements))
+        case Literal(IntConstant(value))  => value
+
+        // Inside a lambda the argument arrives before its own inline calls are expanded, as
+        // `z(156)` or `Ordinal.zerary(156)`; both pass their integer through unchanged.
+        case Apply(fun, scala.List(argument))
+            if fun.symbol.flags.is(Flags.Inline) && (fun.symbol.name == "z" || fun.symbol.name == "zerary") =>
+          literal(argument, bindings)
+
+        case ident @ Ident(_)             =>
+          bindings.at(ident.symbol).lay(named(ident.symbol))(literal(_, bindings))
+        case select @ Select(_, _)        => named(select.symbol)
+        case _                            => Unset
+
+    // A plain `match`, not `lay`: a quote inside an inline by-name argument crashes the quote
+    // pickler (`Inlines.inlineCallTrace`). The quotes read the JVM array through casts rather
+    // than `readUnchecked`/`n0`/`at`, which are inline and would meet the same assertion.
+    literal(ordinal.asTerm, Map()) match
+      case Unset =>
+        '{
+          val jvm = $array.asInstanceOf[scala.Array[element]]
+          val index = $ordinal.asInstanceOf[Int]
+          if index >= 0 && index < jvm.length then jvm(index) else Unset
+        }
+
+      case index: Int =>
+        if index >= 0 && index < length
+        then '{ $array.asInstanceOf[scala.Array[element]]($ordinal.asInstanceOf[Int]) }
+        else report.errorAndAbort(s"the ordinal $index is beyond the array's proven length of $length")

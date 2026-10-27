@@ -61,7 +61,7 @@ lib/bitumen/src/core/bitumen.Tarfile.scala	1	2	1	0	0	0	0	0	0	0	1	0	0	1	0	0
 lib/bitumen/src/jvm/bitumen.TarBuilder.scala	0	0	1	0	0	1	0	0	0	0	0	0	0	0	1	0
 lib/bitumen/src/jvm/bitumen.TarFilesystem.scala	0	0	0	0	0	1	0	0	0	0	0	0	0	0	1	0
 lib/bitumen/src/jvm/bitumen_jvm.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
-lib/bitumen/src/test/bitumen_test.scala	0	4	0	0	1	0	0	0	0	0	78	22	11	11	0	0
+lib/bitumen/src/test/bitumen_test.scala	0	4	0	0	1	0	0	0	0	0	59	3	11	11	0	0
 lib/breviloquence/src/bench/breviloquence.Benchmarks.scala	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
 lib/breviloquence/src/core/breviloquence.Cbor.scala	0	0	1	0	1	0	0	0	8	15	1	0	0	0	3	0
 lib/breviloquence/src/core/breviloquence.CborParser.scala	2	0	0	0	0	1	0	0	6	4	0	0	0	0	1	0
@@ -178,7 +178,7 @@ lib/enigmatic/src/core/enigmatic.SoundnessBlockCipher.scala	0	0	0	0	0	6	0	0	0	0	
 lib/enigmatic/src/core/enigmatic.SymmetricKey.scala	0	0	0	0	1	0	0	0	0	0	1	0	1	0	0	0
 lib/enigmatic/src/core/enigmatic_uncloak.scala	0	0	0	0	7	1	0	0	0	0	0	0	0	0	0	0
 lib/enigmatic/src/cose/enigmatic.Cose.scala	0	0	0	0	3	0	0	0	0	0	0	0	0	0	0	0
-lib/enigmatic/src/test/enigmatic_test.scala	0	0	0	0	7	7	0	0	0	0	5	2	0	0	0	0
+lib/enigmatic/src/test/enigmatic_test.scala	0	0	0	0	7	7	0	0	0	0	4	1	0	0	0	0
 lib/escapade/src/core/escapade.Ansi.scala	0	0	5	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/escapade/src/core/escapade.Ribbon.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
 lib/escapade/src/core/escapade.Teletype.scala	0	0	1	0	0	1	0	0	0	0	0	0	0	0	1	0
@@ -258,7 +258,6 @@ lib/gastronomy/src/core/gastronomy.PureHashes.scala	0	0	0	0	0	5	0	0	0	0	0	0	0	0	
 lib/gastronomy/src/core/gastronomy_core.scala	0	0	0	11	0	0	0	0	0	1	0	0	0	0	0	0
 lib/gastronomy/src/multihash/gastronomy.Multihash.scala	0	0	0	0	1	0	0	0	0	0	3	0	1	0	0	0
 lib/gastronomy/src/test/gastronomy_test.scala	0	0	0	0	4	1	0	0	0	0	2	0	0	0	0	0
-lib/geodesy/src/test/geodesy_test.scala	0	0	0	0	0	0	0	0	0	0	3	3	0	0	0	0
 lib/gesticulate/src/bench/gesticulate.Benchmarks.scala	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
 lib/gesticulate/src/core/gesticulate.Media.scala	0	0	0	0	0	0	0	0	0	0	2	0	0	0	0	0
 lib/gesticulate/src/core/gesticulate.MediaType.scala	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
@@ -297,7 +296,7 @@ lib/hallucination/src/jpeg/hallucination.JpegHuffmanEncoder.scala	0	0	0	0	0	0	0	
 lib/hallucination/src/jpeg/hallucination.JpegParser.scala	1	0	0	0	4	0	0	0	0	0	0	0	0	0	0	0
 lib/hallucination/src/jpeg/hallucination.JpegUpsampler.scala	0	0	1	0	0	0	0	0	1	6	0	0	0	0	0	0
 lib/hallucination/src/png/hallucination.PngCodec.scala	0	0	0	0	4	4	0	0	0	0	2	1	0	0	1	0
-lib/hallucination/src/test/hallucination_test.scala	0	0	0	0	0	0	0	0	0	0	13	5	1	0	0	0
+lib/hallucination/src/test/hallucination_test.scala	0	0	0	0	0	0	0	0	0	0	9	1	1	0	0	0
 lib/hallucination/src/webp/hallucination.Vp8BoolEncoder.scala	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
 lib/hallucination/src/webp/hallucination.Vp8Decoder.scala	0	0	2	0	3	0	0	0	0	0	0	0	0	0	0	0
 lib/hallucination/src/webp/hallucination.Vp8Encoder.scala	0	0	0	0	1	2	0	0	1	0	0	0	0	0	0	0
@@ -444,7 +443,7 @@ lib/pneumatic/src/flate/pneumatic.Deflation.scala	0	0	0	0	0	0	0	0	0	4	0	0	0	0	0	
 lib/pneumatic/src/lzma/pneumatic.Xz.scala	0	0	0	0	2	2	0	0	0	3	0	0	0	0	1	0
 lib/pneumatic/src/lzma/pneumatic.XzContainer.scala	0	0	0	0	0	1	0	0	0	0	0	0	0	0	1	0
 lib/pneumatic/src/lzw/pneumatic.LzwEngine.scala	0	0	0	0	1	0	0	0	0	3	0	0	0	0	0	0
-lib/pneumatic/src/test/pneumatic_test.scala	0	3	0	0	10	12	0	0	1	0	93	7	5	1	0	0
+lib/pneumatic/src/test/pneumatic_test.scala	0	3	0	0	10	12	0	0	1	0	91	5	5	1	0	0
 lib/polaris/src/core/polaris.Bufferable.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
 lib/polaris/src/core/polaris.Debufferable.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
 lib/polysyllabic/src/core/polysyllabic.Hyphenation.scala	0	0	0	0	0	0	0	0	0	1	2	0	0	0	1	0
@@ -474,7 +473,7 @@ lib/profanity/src/core/profanity.Terminal.scala	1	0	3	0	0	0	0	0	1	0	0	0	0	0	0	0
 lib/profanity/src/core/profanity_core.scala	0	2	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/profanity/src/test/profanity_test.scala	0	0	0	0	4	0	0	0	0	0	3	2	0	0	0	0
 lib/prophesy/src/core/prophesy.Elaboration.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0
-lib/proscenium/src/core/proscenium.Array.scala	3	0	0	0	0	0	0	0	0	1	1	0	0	0	0	0
+lib/proscenium/src/core/proscenium.Array.scala	3	0	0	0	0	0	0	0	0	3	1	0	0	0	0	0
 lib/proscenium/src/core/proscenium.Chain.scala	0	0	0	0	0	0	0	0	0	0	3	0	0	0	1	0
 lib/proscenium/src/core/proscenium.Ledger.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/proscenium/src/core/proscenium.List.scala	0	0	0	0	0	0	0	0	0	0	2	0	0	0	1	0

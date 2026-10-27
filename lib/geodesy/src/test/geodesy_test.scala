@@ -187,7 +187,7 @@ object Tests extends Suite("geo", m"Geodesy tests"):
       . assert(_ == 8)
 
       test(m"index 7 is Northwest"):
-        Compass.points8.stdlib(7)
+        Compass.points8.sized[8].let(_(Sept))
       . assert(_ == Northwest)
 
       test(m"contains no duplicates"):
@@ -204,11 +204,11 @@ object Tests extends Suite("geo", m"Geodesy tests"):
       . assert(_ == 16)
 
       test(m"every fourth point is a cardinal wind"):
-        List(0, 4, 8, 12).map(Compass.points16.stdlib(_))
+        List(0, 4, 8, 12).map(index => Compass.points16.at(index.z))
       . assert(_ == List(North, East, South, West))
 
       test(m"intercardinal winds lie between the cardinal ones"):
-        List(2, 6, 10, 14).map(Compass.points16.stdlib(_))
+        List(2, 6, 10, 14).map(index => Compass.points16.at(index.z))
       . assert(_ == List(Northeast, Southeast, Southwest, Northwest))
 
     suite(m"Compass directions"):

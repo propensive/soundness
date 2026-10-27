@@ -74,7 +74,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == List('0', '0'))
 
       test(m"file type flag at offset 156"):
-        header.stdlib(156).toChar
+        header.sized[512].let(_(156.z).toChar)
       . assert(_ == '0')
 
       test(m"name field starts with hello.txt"):
@@ -109,7 +109,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == 5)
 
       test(m"directory entry has type flag 5"):
-        blocks(2).stdlib(156).toChar
+        blocks(2).sized[512].let(_(156.z).toChar)
       . assert(_ == '5')
 
       test(m"directory entryName ends with /"):
@@ -132,7 +132,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == 5)
 
       test(m"PAX header has type flag 'x' at offset 156"):
-        blocks(0).stdlib(156).toChar
+        blocks(0).sized[512].let(_(156.z).toChar)
       . assert(_ == 'x')
 
       test(m"PAX header name is PaxHeaders/0"):
@@ -144,15 +144,15 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == List('1', '6', '0', ' ', 'p', 'a', 't', 'h', '='))
 
       test(m"PAX record ends with newline at offset 159"):
-        blocks(1).stdlib(159).toChar
+        blocks(1).sized[512].let(_(159.z).toChar)
       . assert(_ == '\n')
 
       test(m"regular header (block 2) has type flag '0' for the file"):
-        blocks(2).stdlib(156).toChar
+        blocks(2).sized[512].let(_(156.z).toChar)
       . assert(_ == '0')
 
       test(m"regular header name bytes 0, 99 both 'a' (truncated to 100)"):
-        (blocks(2).stdlib(0).toChar, blocks(2).stdlib(99).toChar)
+        (blocks(2).sized[512].let(_(0.z).toChar), blocks(2).sized[512].let(_(99.z).toChar))
       . assert(_ == ('a', 'a'))
 
     suite(m"PAX extended headers for long link targets"):
@@ -171,7 +171,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == 5)
 
       test(m"PAX header type flag is 'x'"):
-        blocks(0).stdlib(156).toChar
+        blocks(0).sized[512].let(_(156.z).toChar)
       . assert(_ == 'x')
 
       test(m"PAX record uses the linkpath keyword"):
@@ -179,11 +179,11 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == List('1', '6', '4', ' ', 'l', 'i', 'n', 'k', 'p', 'a', 't', 'h', '='))
 
       test(m"regular header (block 2) has type flag '2' for the symlink"):
-        blocks(2).stdlib(156).toChar
+        blocks(2).sized[512].let(_(156.z).toChar)
       . assert(_ == '2')
 
       test(m"regular header link target bytes 157, 256 both 'b' (trunc 100)"):
-        (blocks(2).stdlib(157).toChar, blocks(2).stdlib(256).toChar)
+        (blocks(2).sized[512].let(_(157.z).toChar), blocks(2).sized[512].let(_(256.z).toChar))
       . assert(_ == ('b', 'b'))
 
     suite(m"Reader: round-trip a single file through a pull endpoint"):
@@ -469,7 +469,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       val blocks = tar.source[Data].chain.to[List].stdlib
 
       test(m"first block has 'L' type flag at offset 156"):
-        blocks(0).stdlib(156).toChar
+        blocks(0).sized[512].let(_(156.z).toChar)
       . assert(_ == 'L')
 
       test(m"first block has name '././@LongLink'"):
@@ -477,11 +477,11 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == "././@LongLink")
 
       test(m"second block holds the long name (first byte 'a')"):
-        blocks(1).stdlib(0).toChar
+        blocks(1).sized[512].let(_(0.z).toChar)
       . assert(_ == 'a')
 
       test(m"third block is the regular file header (typeflag '0')"):
-        blocks(2).stdlib(156).toChar
+        blocks(2).sized[512].let(_(156.z).toChar)
       . assert(_ == '0')
 
       test(m"long path round-trips via reader honouring 'L'"):
@@ -502,7 +502,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       val blocks = tar.source[Data].chain.to[List].stdlib
 
       test(m"first block has 'K' type flag"):
-        blocks(0).stdlib(156).toChar
+        blocks(0).sized[512].let(_(156.z).toChar)
       . assert(_ == 'K')
 
       test(m"long link target round-trips via reader honouring 'K'"):
@@ -954,7 +954,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       val blocks = bytes.to[List].stdlib
 
       test(m"header type flag is 'S'"):
-        blocks.head.stdlib(156).toChar
+        blocks.head.sized[512].let(_(156.z).toChar)
       . assert(_ == 'S')
 
       test(m"realsize is recorded at offset 483-494"):
@@ -977,7 +977,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == (5000L, 200L))
 
       test(m"isExtended byte is 0 (fewer than 4 segments)"):
-        blocks.head.stdlib(482).toInt
+        blocks.head.sized[512].let(_(482.z).toInt)
       . assert(_ == 0)
 
       val entries = Tarfile.read(bytes.stdlib.iterator.stream).toList
@@ -1016,11 +1016,11 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       val blocks = bytes.to[List].stdlib
 
       test(m"header isExtended byte is 1"):
-        blocks.head.stdlib(482).toInt
+        blocks.head.sized[512].let(_(482.z).toInt)
       . assert(_ == 1)
 
       test(m"extension block (block 1) is emitted before data"):
-        blocks(1).stdlib(0).toChar
+        blocks(1).sized[512].let(_(0.z).toChar)
       . assert(_ == '0') // first segment's offset starts with '0' octal
 
       test(m"reader recovers all 10 segments"):

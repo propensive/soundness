@@ -147,9 +147,11 @@ extension [self](value: self)(using applicable: Applicable { type Self = self })
           if applicable.contains(value, key) then applicable.access(value, key) else default
 
 // The `Sized` producer, the counterpart of `occupied`: one length check, recorded in the type.
+// A plain method, not `inline`: an inline body returning the `Optional` union of a frozen
+// array re-freshens its capture set at each call site (the `Optional[Data]` trap).
 extension [self](value: self)(using countable: Countable { type Self = self })
-  inline def sized[length <: Int]: Optional[self & Sized[length]] =
-    if countable.size(value) == constValue[length]
+  def sized[length <: Int](using length: ValueOf[length]): Optional[self & Sized[length]] =
+    if countable.size(value) == length.value
     then value.asInstanceOf[self & Sized[length]]
     else Unset
 

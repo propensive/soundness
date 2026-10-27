@@ -37,6 +37,13 @@ import prepositional.*
 object Data:
   def apply(xs: Byte*): Data = Array(xs*)
 
+  // A literal length brands the result `Sized[n]`, as `fill` does.
+  def build[length <: Int & Singleton](count: length)(lambda: scala.Array[Byte]^ => Unit)
+    ( using DummyImplicit )
+  :   Data & Sized[length] =
+
+    build(count: Int)(lambda).asInstanceOf[Data & Sized[length]]
+
   def build(count: Int)(lambda: scala.Array[Byte]^ => Unit): Data =
     val array: scala.Array[Byte]^ = new scala.Array[Byte](count)
     lambda(array)

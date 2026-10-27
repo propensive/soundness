@@ -52,7 +52,8 @@ export
       typed, typeName, unit, unsafeMatchable, unwind, upsert,
       variance, waive, weave, when, yet, upon, context,
       mean2, unique, seek, reap, where, Scoped, unused,
-      Populated, head, last, lead, reduce, populatedEquality }
+      Populated, head, last, lead, reduce, populatedEquality, sized, sizedEquality,
+      sizedEqualityReversed }
 
 // The two interval `each` overloads are re-declared here, beside the exported collection `each`,
 // rather than exported from denominative: two toplevel definitions of one name in `package
@@ -134,6 +135,14 @@ extension [self](value: self)(using applicable: denominative.Applicable { type S
   :   vacuous.Optional[applicable.Result] =
 
     rudiments.at(value)(ordinal)
+
+// The `Sized` read, re-declared like the group above: `inline` so the literal ordinal reaches
+// the macro behind `rudiments.apply` as a literal tree, which is what it checks.
+extension [element, length <: Int]
+  ( array: proscenium.Array[element]^{scala.caps.any.rd} & proscenium.Sized[length] )
+
+  transparent inline def apply(inline ordinal: denominative.Ordinal): Any =
+    rudiments.apply(array)(ordinal)
 
 // Re-declared for the same reason as the `Deindex` group above: the typeclass evidence is a
 // dependent leading `using` clause, which synthesized export forwarders cannot carry.
