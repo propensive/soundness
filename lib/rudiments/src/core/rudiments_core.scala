@@ -191,9 +191,17 @@ extension [self, value <: Matchable](self: self)(using traversable: self is Trav
   transparent inline def sift[filter <: value: Typeable]: List[filter] =
     List.from(traversable.traverse(self).flatMap(filter.unapply(_)))
 
-  def bi: List[(value, value)] = List.from(traversable.traverse(self).map { v => (v, v) })
-  def tri: List[(value, value, value)] =
-    List.from(traversable.traverse(self).map { v => (v, v, v) })
+  // Shape-preserving: a `Set` of pairs from a `Set`, a `List` from a `List`. Plain `Reshapable`,
+  // not `Stable`: pairing an element with itself cannot collapse a set.
+  def bi[result]
+    ( using reshapable: self is murmuration.Reshapable by (value, value) to result )
+  :   result =
+    reshapable.reshape(traversable.traverse(self).map { v => (v, v) })
+
+  def tri[result]
+    ( using reshapable: self is murmuration.Reshapable by (value, value, value) to result )
+  :   result =
+    reshapable.reshape(traversable.traverse(self).map { v => (v, v, v) })
 
 extension [value <: Matchable](iterable: Iterable[value])
   transparent inline def sift[filter <: value: Typeable]: Iterable[filter] =

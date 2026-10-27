@@ -1176,7 +1176,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
         arArchive(List(nameTable, first, second))
 
       test(m"long names resolve through the name table"):
-        List.from(Arfile.read(gnu.source[Data])).keep(_.role == Ar.Role.Regular).map(_.name)
+        List.from(Arfile.read(gnu.source[Data])).filter(_.role == Ar.Role.Regular).map(_.name)
       . assert(_ == List(t"parserInternals.o", t"xmlschemastypes.o"))
 
       test(m"the name table member is recognised by role"):
