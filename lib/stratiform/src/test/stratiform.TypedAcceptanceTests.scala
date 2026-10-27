@@ -102,6 +102,43 @@ object TypedAcceptanceTests extends Suite("tel-typed-acceptance", m"Stratiform t
   case class PhraseCode(code: Text)
   case class Clash(phrase: Phrase, element: Element, named: PhraseCode)
 
+  // Sums at member positions (#2323): as a field, in a list, a set and an option, and recursively.
+  enum Figurine derives CanEqual:
+    case Circle(radius: Int)
+    case Square(side: Int)
+
+  case class Drawing
+    ( shape:   Figurine,
+      shapes:  List[Figurine],
+      spare:   Optional[Figurine],
+      palette: Set[Figurine] )
+  derives CanEqual
+
+  enum Outline derives CanEqual:
+    case Leaf(size: Int)
+    case Branch(children: List[Outline])
+
+  case class Plan(outline: Outline) derives CanEqual
+
+  // The type of the field `keyword` in a struct
+  private def fieldType(struct: Tels.Struct, keyword: Text): Optional[Tels.Type] =
+    struct.members.to[proscenium.List].bind:
+      case field: Tels.Field if field.keyword == keyword => List(field.fieldType)
+      case _                                             => Nil
+
+    . prim
+
+  // The members of the record `name` in a schema
+  private def recordMembers(schema: Tels, name: Text): Optional[Tels.Struct] =
+    schema.records.seek(_.name == name).let: record =>
+      Tels.Struct(record.members, Array.empty)
+
+  // Whether a struct holds exactly one member, a `SelectRef` to the select `name`
+  private def selectsOnly(name: Text)(struct: Tels.Struct): Boolean =
+    struct.members.to[proscenium.List] match
+      case List(select: Tels.SelectRef) => select.reference == name
+      case _                            => false
+
   private def keywords(struct: Tels.Struct): List[Text] =
     proscenium.List.from(struct.members.stdlib.toList).map:
       case field: Tels.Field      => field.keyword
@@ -180,8 +217,13 @@ object TypedAcceptanceTests extends Suite("tel-typed-acceptance", m"Stratiform t
       lazy val sheet = Tels.tels[Sheet](t"sheet")
 
       test(m"two types sharing a simple name are both kept, qualified by their enclosing types"):
-        sheet.records.stdlib.toList.map(_.name)
-      . assert(_ == scala.List(t"ElementCode", t"Para", t"PhraseCode", t"Plain"))
+        sheet.records.to[proscenium.List].map(_.name).filter(!_.s.endsWith("Value"))
+      . assert(_ == List(t"ElementCode", t"Para", t"PhraseCode", t"Plain"))
+
+      test(m"each sum a field holds has a value record"):
+        val names = sheet.records.to[proscenium.List].map(_.name)
+        (names.has(t"ElementValue"), names.has(t"PhraseValue"), names.count(_.s.endsWith("Value")))
+      . assert(_ == (true, true, 2))
 
       test(m"a variant of a qualified record references it by its qualified name"):
         sheet.selects.stdlib.toList.flatMap(_.variants.stdlib.toList).map(_.variantType)
@@ -202,12 +244,84 @@ object TypedAcceptanceTests extends Suite("tel-typed-acceptance", m"Stratiform t
 
       test(m"a type with no clashes is named as before"):
         val schema = Tels.tels[Envelope](t"envelope")
-        (schema.records.stdlib.toList.map(_.name), schema.selects.stdlib.toList.map(_.name))
-      . assert(_ == (scala.List(t"Ping", t"Data", t"Stop"), scala.List(t"Message")))
+        val records = schema.records.to[proscenium.List].map(_.name)
+        val selects = schema.selects.to[proscenium.List].map(_.name)
+        (records.filter(!_.s.endsWith("Value")), records.filter(_.s.endsWith("Value")), selects)
+      . assert(_ == (List(t"Ping", t"Data", t"Stop"), List(t"MessageValue"), List(t"Message")))
 
       test(m"a clash the qualification cannot resolve is E210"):
         capture[Tel.Error](Tels.tels[Clash](t"clash")).reason
       . assert(_ == Tel.Error.Reason.DuplicateDefinition)
+
+    suite(m"Sums at member positions"):
+      lazy val drawing = Tels.tels[Drawing](t"drawing")
+
+      val value =
+        Drawing
+          ( Figurine.Circle(1),
+            List(Figurine.Square(2), Figurine.Circle(3)),
+            Figurine.Square(4),
+            Set(Figurine.Circle(5)) )
+
+      test(m"a sum-typed field references the sum's value record"):
+        List(t"shape", t"shapes", t"spare", t"palette").map(fieldType(drawing.document, _))
+      . assert(_ == List.fill(4)(Tels.Reference(t"FigurineValue")))
+
+      test(m"a sum's value record holds one SelectRef to its select"):
+        recordMembers(drawing, t"FigurineValue").let(selectsOnly(t"Figurine")).or(false)
+      . assert(identity)
+
+      test(m"a sum's select keeps the sum's name"):
+        variants(drawing, t"Figurine")
+      . assert(_ == List(t"circle", t"square"))
+
+      test(m"a schema with sum-typed fields passes the composed checks"):
+        Tels.Validation.checkComposed(Tels.Layers.compose(drawing)).name
+      . assert(_ == t"drawing")
+
+      test(m"a record with sum-typed fields round-trips through BinTEL"):
+        Bintel.read[Drawing](value.bintel)
+      . assert(_ == value)
+
+      test(m"an absent optional sum round-trips through BinTEL"):
+        val sparse = value.copy(spare = Unset)
+        Bintel.read[Drawing](sparse.bintel)
+      . assert(_ == value.copy(spare = Unset))
+
+      test(m"a recursive sum round-trips through BinTEL"):
+        val plan = Plan(Outline.Branch(List(Outline.Leaf(1), Outline.Branch(List(Outline.Leaf(2))))))
+        Bintel.read[Plan](plan.bintel)
+      . assert(_ == Plan(Outline.Branch(List(Outline.Leaf(1), Outline.Branch(List(Outline.Leaf(2)))))))
+
+      test(m"a recursive sum's own list of itself references the sum's value record"):
+        recordMembers(Tels.tels[Plan](t"plan"), t"Branch").let(fieldType(_, t"children"))
+      . assert(_ == Tels.Reference(t"OutlineValue"))
+
+      test(m"a sum at the root is a SelectRef to its select, with no value record"):
+        val schema = Tels.tels[Figurine](t"figurine")
+        (keywords(schema.document), recordMembers(schema, t"FigurineValue"))
+      . assert(_ == (List(t"Figurine"), Unset))
+
+      test(m"a value of sums whose cases share a name round-trips through BinTEL"):
+        val sheet = Sheet(List(Element.Para(List(Phrase.Code(t"scala", List(t"x")))),
+                               Element.Code(t"scala", List(t"val x = 1"), 3)))
+
+        Bintel.read[Sheet](sheet.bintel)
+      . assert(_ == Sheet(List(Element.Para(List(Phrase.Code(t"scala", List(t"x")))),
+                               Element.Code(t"scala", List(t"val x = 1"), 3))))
+
+      test(m"a hand-written Reference to a select is still E217"):
+        val field = Tels.Field(Tels.Polarity.Implicit, Tels.Polarity.Implicit, t"shape",
+                               Tels.Reference(t"FigurineValue"), Unset)
+
+        val schema =
+          Tels.Layers.compose(drawing).copy(document = Tels.Struct(Array(field), Array.empty))
+
+        val field2 = field.copy(fieldType = Tels.Reference(t"Figurine"))
+        val schema2 = schema.copy(document = Tels.Struct(Array(field2), Array.empty))
+
+        capture[Tel.Error](Tels.Validation.checkComposed(schema2)).reason
+      . assert(_ == Tel.Error.Reason.ReferenceKindMismatch)
 
     suite(m"Layers named by objects"):
       test(m"a layer's name is read from its type"):

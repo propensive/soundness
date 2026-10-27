@@ -586,7 +586,7 @@ lib/stratiform/src/test/stratiform.ServingTests.scala	0	0	0	0	1	1	0	0	0	0	3	2	1	
 lib/stratiform/src/test/stratiform.SubtypingTests.scala	0	0	0	0	1	0	0	0	0	0	5	2	3	0	0	0
 lib/stratiform/src/test/stratiform.TelCheckTree.scala	0	0	0	0	0	0	0	0	0	0	4	0	3	0	0	0
 lib/stratiform/src/test/stratiform.TelpTests.scala	0	0	0	0	0	0	0	0	0	0	1	1	0	0	0	0
-lib/stratiform/src/test/stratiform.TypedAcceptanceTests.scala	0	0	0	0	0	0	0	0	0	0	23	5	17	0	0	0
+lib/stratiform/src/test/stratiform.TypedAcceptanceTests.scala	0	0	0	0	0	0	0	0	0	0	20	5	14	0	0	0
 lib/stratiform/src/test/stratiform.VerifyTests.scala	0	0	0	0	0	0	0	0	0	0	7	0	0	0	0	0
 lib/stratiform/src/test/stratiform_test.scala	0	0	2	0	10	1	0	0	0	0	122	47	22	0	1	0
 lib/superlunary/src/core/superlunary.References.scala	0	0	0	0	0	0	0	0	0	0	1	0	1	0	0	0
