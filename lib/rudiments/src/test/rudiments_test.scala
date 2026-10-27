@@ -190,8 +190,9 @@ object Tests extends Suite("core", m"Rudiments Tests"):
         Chain.iterate(1)(_ + 1).head
       . assert(_ == 1)
 
-      test(m"prim of an empty chain is Unset"):
-        Chain[Int]().head
+      test(m"head of an empty chain is Unset"):
+        val chain: Chain[Int] = Chain()
+        chain.head
       . assert(_ == Unset)
 
     suite(m"Size and count tests"):
