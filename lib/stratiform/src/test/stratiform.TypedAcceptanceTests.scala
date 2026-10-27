@@ -126,7 +126,7 @@ object TypedAcceptanceTests extends Suite("tel-typed-acceptance", m"Stratiform t
       case field: Tels.Field if field.keyword == keyword => List(field.fieldType)
       case _                                             => Nil
 
-    . prim
+    . head
 
   // The members of the record `name` in a schema
   private def recordMembers(schema: Tels, name: Text): Optional[Tels.Struct] =
