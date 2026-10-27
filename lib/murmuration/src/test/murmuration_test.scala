@@ -288,7 +288,7 @@ object Tests extends Suite("collections", m"Murmuration tests"):
       test(m"a set cannot be deduplicated"):
         demilitarize:
           Set(1, 2, 3).deduplicate(_%2)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       // `sort` demands `Reshapable.Stable`, so an unordered shape cannot be sorted: the
       // alternative would be to sort and then silently drop the order again.
@@ -296,12 +296,12 @@ object Tests extends Suite("collections", m"Murmuration tests"):
         demilitarize:
           import sortingAlgorithms.timsort
           Set(3, 1, 2).sort
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"a set cannot be excerpted"):
         demilitarize:
           Set(3, 1, 2).excerpt(0, 1)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       // `sweep` is deliberately not `Stable`: gathering from a set is meaningful.
       test(m"a set can be swept"):
@@ -379,13 +379,13 @@ object Tests extends Suite("collections", m"Murmuration tests"):
       test(m"sorting needs an algorithm to be chosen"):
         demilitarize:
           List(3, 1, 2).sort
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"two algorithms in scope are ambiguous"):
         demilitarize:
           import sortingAlgorithms.{timsort, quicksort}
           List(3, 1, 2).sort
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Timsort orders a list"):
         import sortingAlgorithms.timsort
@@ -679,13 +679,13 @@ object Tests extends Suite("collections", m"Murmuration tests"):
         demilitarize:
           import sortingAlgorithms.timsort
           Array(3, 1, 2).sort()
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"a frozen array does not take the collection sort either"):
         demilitarize:
           import sortingAlgorithms.timsort
           Array(3, 1, 2).sort
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       // `order` is not overloaded, so it still sorts a frozen array into a new one — which is
       // what to reach for when the array must not be written to.
@@ -699,7 +699,7 @@ object Tests extends Suite("collections", m"Murmuration tests"):
         demilitarize:
           val array = Array.allocate[Int](3)
           array.sort()
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
     // Sizing the scratch array from `Countable` is an optimization, and one that must not be
     // able to lose or invent elements when the count is wrong.

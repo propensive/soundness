@@ -379,8 +379,8 @@ object Tests extends Suite("terminal", m"Profanity Tests"):
                 case _            => editor
 
           completingEditor
-           ( Chain(Keypress.CharKey('g'), Keypress.CharKey('e'), Keypress.Tab,
-                    Keypress.Enter).iterator,
+           ( Chain.iterator(Chain(Keypress.CharKey('g'), Keypress.CharKey('e'), Keypress.Tab,
+                    Keypress.Enter)),
              LineEditor() )
            (_(_))
         . assert(_ == t"geography")

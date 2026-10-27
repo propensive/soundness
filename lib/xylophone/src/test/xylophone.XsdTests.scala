@@ -50,11 +50,11 @@ object XsdTests extends Suite("xsd", m"Xylophone XML Schema tests"):
     suite(m"Real-world schemas parse"):
       test(m"The purchase order schema has its global elements and types"):
         val xsd = schema(cp"/xsd/po.xsd")
-        (Map.keys(xsd.elements).stdlib, Map.keys(xsd.complexTypes).stdlib, Map.keys(xsd.simpleTypes).stdlib)
+        (Map.keys(xsd.elements), Map.keys(xsd.complexTypes), Map.keys(xsd.simpleTypes))
       . assert(_ == (Set(t"purchaseOrder", t"comment"), Set(t"PurchaseOrderType", t"USAddress", t"Items"), Set(t"SKU")))
 
       test(m"The shipping order schema resolves its default-namespace type names"):
-        Map.keys(schema(cp"/xsd/shiporder.xsd").complexTypes).stdlib
+        Map.keys(schema(cp"/xsd/shiporder.xsd").complexTypes)
       . assert(_ == Set(t"shiptotype", t"itemtype", t"shipordertype"))
 
       test(m"The purchase order schema has no target namespace"):
@@ -78,11 +78,11 @@ object XsdTests extends Suite("xsd", m"Xylophone XML Schema tests"):
 
       test(m"The xml namespace schema declares global attributes and an attribute group"):
         val xsd = schema(cp"/xsd/xml.xsd")
-        (Map.keys(xsd.attributes).stdlib, Map.keys(xsd.attributeGroups).stdlib)
+        (Map.keys(xsd.attributes), Map.keys(xsd.attributeGroups))
       . assert(_ == (Set(t"lang", t"space", t"base", t"id"), Set(t"specialAttrs")))
 
       test(m"The SOAP envelope schema declares its four elements"):
-        Map.keys(schema(cp"/xsd/soap-envelope.xsd").elements).stdlib
+        Map.keys(schema(cp"/xsd/soap-envelope.xsd").elements)
       . assert(_ == Set(t"Envelope", t"Header", t"Body", t"Fault"))
 
       test(m"The nuspec schema is qualified"):

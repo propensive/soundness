@@ -161,11 +161,11 @@ object Tests extends Suite("websocket", m"Perihelion tests"):
       scala.Array[Byte]((code >> 8).toByte, code.toByte) ++ octets(reason)
 
     def parseFrame(bytes: scala.Array[Byte]): Optional[Websocket.Frame] =
-      Websocket.Frame.parse(Cursor[Data](Chain(Array.unsafeFrozen(bytes)).iterator))
+      Websocket.Frame.parse(Cursor[Data](Chain.iterator(Chain(Array.unsafeFrozen(bytes)))))
 
     def readMessages(frames: scala.Array[Byte]*): List[perihelion.Message] =
       val stream = Chain(frames*).map(Array.unsafeFrozen(_))
-      Reader(() => zephyrine.Stream(stream.iterator), Channel()).messages.to[List]
+      Reader(() => zephyrine.Stream(Chain.iterator(stream)), Channel()).messages.to[List]
 
     def texts(messages: List[perihelion.Message]): List[Text] = messages.map:
       case perihelion.Message.Text(text) => text
@@ -303,7 +303,7 @@ object Tests extends Suite("websocket", m"Perihelion tests"):
         // before `incoming` decodes the JSON payload.
         val frameBytes = outgoing.serialize(Ping(7).over[Json]).memoize
 
-        val payload = Websocket.Frame.parse(Cursor[Data](Chain(frameBytes).iterator))(using Masking.Client()) match
+        val payload = Websocket.Frame.parse(Cursor[Data](Chain.iterator(Chain(frameBytes))))(using Masking.Client()) match
           case Websocket.Frame.Text(_, data) => data
           case _                   => Data()
 
@@ -312,7 +312,7 @@ object Tests extends Suite("websocket", m"Perihelion tests"):
 
     suite(m"Client masking"):
       def parseAs(masking: Masking, bytes: Data): Optional[Websocket.Frame] =
-        Websocket.Frame.parse(Cursor[Data](Chain(bytes).iterator))(using masking)
+        Websocket.Frame.parse(Cursor[Data](Chain.iterator(Chain(bytes))))(using masking)
 
       test(m"A client-masked frame is readable by the server"):
         val masked: Data = Masking.Client().outbound(Websocket.Frame.Text(true, t"hi".in[Data]).encode)

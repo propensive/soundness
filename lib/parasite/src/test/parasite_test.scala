@@ -1541,7 +1541,7 @@ object Tests extends Suite("threads", m"Parasite tests"):
         test(m"A name containing a separator is not a valid Async name"):
           demilitarize:
             val name: Name[Async] = n"bad/name"
-        . assert(_.nonEmpty)
+        . assert(!_.nil)
 
         test(m"Constructing an invalid Async name raises Name.Error"):
           capture[Name.Error](Name[Async](t"bad/name")).message.show
@@ -1673,7 +1673,7 @@ object Tests extends Suite("threads", m"Parasite tests"):
           gate.fulfill(7)
           val results = tasks.tail.map: t =>
             safely(t.await()).or(-1)
-          results.toSet
+          Set.from(results)
         . assert(_ == Set(7))
 
         test(m"Awaiting a promise from many tasks each with timeouts"):

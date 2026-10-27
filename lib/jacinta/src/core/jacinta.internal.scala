@@ -484,7 +484,16 @@ object internal:
           val pos = expr.asTerm.underlyingArgument.pos
           // `tpe` is the spliced value's singleton type (`xs.type`); widen it to
           // the collection type before inspecting the constructor.
-          TypeRepr.of[tpe].widen.dealias match
+          // A brand (`List[t] & Populated`) is an intersection: spread the collection component.
+          def unbrand(repr: TypeRepr): TypeRepr = repr.dealias match
+            case AndType(left, right) =>
+              val l = unbrand(left)
+              l match
+                case AppliedType(constructor, _) if aliasCollectionSyms.has(constructor.typeSymbol) => l
+                case _ => unbrand(right)
+            case other => other
+
+          unbrand(TypeRepr.of[tpe].widen) match
             case AppliedType(constructor, scala.collection.immutable.List(element))
             if aliasCollectionSyms.has(constructor.typeSymbol) =>
               element.asType.absolve match

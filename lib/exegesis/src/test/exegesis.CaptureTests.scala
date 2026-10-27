@@ -53,7 +53,7 @@ object CaptureTests extends Suite("lsp-capture", m"Handle confinement tests"):
             Unset
 
           ()
-    . assert(_.nonEmpty)
+    . assert(!_.nil)
 
     test(m"the client cannot be stashed in an outer variable"):
       demilitarize:
@@ -64,7 +64,7 @@ object CaptureTests extends Suite("lsp-capture", m"Handle confinement tests"):
             stash = () => client.logMessage(t"late")
 
           ()
-    . assert(_.nonEmpty)
+    . assert(!_.nil)
 
     test(m"the workspace handle cannot be stashed in an outer variable"):
       demilitarize:
@@ -75,7 +75,7 @@ object CaptureTests extends Suite("lsp-capture", m"Handle confinement tests"):
             stash = () => workspace.documents
 
           ()
-    . assert(_.nonEmpty)
+    . assert(!_.nil)
 
     test(m"the registry cannot escape the registration block"):
       demilitarize:
@@ -84,7 +84,7 @@ object CaptureTests extends Suite("lsp-capture", m"Handle confinement tests"):
           Lsp.listen(t"escape"):
             stash = summon[Lsp.Registry]
           stash
-    . assert(_.nonEmpty)
+    . assert(!_.nil)
 
     // A pure snapshot taken from a handle may escape by design: only the handle is confined.
     test(m"a pure text snapshot may leave the handler"):
@@ -96,4 +96,4 @@ object CaptureTests extends Suite("lsp-capture", m"Handle confinement tests"):
             stash = document.text
 
           ()
-    . assert(_.isEmpty)
+    . assert(_.nil)

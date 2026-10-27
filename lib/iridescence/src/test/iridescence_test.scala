@@ -349,7 +349,7 @@ object Tests extends Suite("color", m"Iridescence tests"):
           import mixing.multiplyMixing
           1*Cielab(0, 0, 0) + 1*Cielab(40, 20, 10)
         . map(_.message)
-      . assert(!_.isEmpty)
+      . assert(!_.nil)
 
     suite(m"Cielab manipulation"):
       test(m"delta to self is zero"):

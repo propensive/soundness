@@ -552,14 +552,14 @@ object Tests extends Suite("sockets", m"Coaxial tests"):
 
       test(m"a UDP-only option is collected only for UDP connections"):
         import socketOptions.broadcastSocketOption
-        (summon[Every[Socket.Option.Tcp]].values, summon[Every[Socket.Option.Udp]].values)
+        (List.from(summon[Every[Socket.Option.Tcp]].values), List.from(summon[Every[Socket.Option.Udp]].values))
       . assert(_ == (Nil, List(Socket.Option.Broadcast)))
 
       test(m"a shared option is collected for every connection type"):
         import socketOptions.reuseAddressSocketOption
-        ( summon[Every[Socket.Option.Tcp]].values,
-          summon[Every[Socket.Option.Udp]].values,
-          summon[Every[Socket.Option.Domain]].values )
+        ( List.from(summon[Every[Socket.Option.Tcp]].values),
+          List.from(summon[Every[Socket.Option.Udp]].values),
+          List.from(summon[Every[Socket.Option.Domain]].values) )
       . assert(_ == (List(Socket.Option.ReuseAddress),
                      List(Socket.Option.ReuseAddress),
                      List(Socket.Option.ReuseAddress)))

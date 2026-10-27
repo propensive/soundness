@@ -341,7 +341,7 @@ object Tests extends Suite("ordinal", m"Denominative Tests"):
       . assert(_ == 4)
 
       test(m"an indexed sequence's gamut spans all its elements"):
-        val sequence: IndexedSeq[Int] = Sequence(1, 2)
+        val sequence: IndexedSeq[Int] = scala.collection.immutable.IndexedSeq(1, 2)
         sequence.gamut.size
       . assert(_ == 2)
 

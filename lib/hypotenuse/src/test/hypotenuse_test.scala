@@ -759,7 +759,7 @@ object Tests extends Suite("arithmetic", m"Hypotenuse tests"):
             val theirs = plain(reference(a, 0).divide(reference(b, 0), 0, java).nn)
             ours == theirs
 
-      . assert(_.forall(identity))
+      . assert(_.all(identity))
 
       test(m"differential arithmetic against BigDecimal"):
         val random = scala.util.Random(742938473L)
@@ -787,7 +787,7 @@ object Tests extends Suite("arithmetic", m"Hypotenuse tests"):
 
           sums && differences && products && comparisons && quotients
 
-      . assert(_.forall(identity))
+      . assert(_.all(identity))
 
       test(m"differential many-limb arithmetic against BigDecimal"):
         val random = scala.util.Random(93842711L)
@@ -816,7 +816,7 @@ object Tests extends Suite("arithmetic", m"Hypotenuse tests"):
 
           products && quotients && sums
 
-      . assert(_.forall(identity))
+      . assert(_.all(identity))
 
       test(m"parse round-trips its own rendering"):
         val random = scala.util.Random(555000111L)
@@ -825,7 +825,7 @@ object Tests extends Suite("arithmetic", m"Hypotenuse tests"):
           val value = Decimal(random.nextLong(), random.nextInt(30) - 10)
           Decimal.comparison(Decimal.parse(value.text), value) == 0
 
-      . assert(_.forall(identity))
+      . assert(_.all(identity))
 
     suite(m"Q64 tests"):
       import strategies.throwUnsafely
@@ -956,7 +956,7 @@ object Tests extends Suite("arithmetic", m"Hypotenuse tests"):
 
           sums && differences && products && quotients && comparisons
 
-      . assert(_.forall(identity))
+      . assert(_.all(identity))
 
       test(m"an unrepresentable result rounds to a semiconvergent"):
         Q64(2000000011L, 2000000010L)
@@ -1058,7 +1058,7 @@ object Tests extends Suite("arithmetic", m"Hypotenuse tests"):
           val value = Q64(random.nextLong(4097L) - 2048L, random.nextLong(2048L) + 1L)
           Q64.parse(value.text) == value
 
-      . assert(_.forall(identity))
+      . assert(_.all(identity))
 
       test(m"random encodings decode to the reduced fraction"):
         val random = scala.util.Random(1029384756L)
@@ -1070,7 +1070,7 @@ object Tests extends Suite("arithmetic", m"Hypotenuse tests"):
           val value = Q64(a, b)
           value.numerator == a/divisor && value.denominator == b/divisor
 
-      . assert(_.forall(identity))
+      . assert(_.all(identity))
 
     suite(m"Q32 tests"):
 
@@ -1136,7 +1136,7 @@ object Tests extends Suite("arithmetic", m"Hypotenuse tests"):
 
           sums && differences && products && quotients && comparisons
 
-      . assert(_.forall(identity))
+      . assert(_.all(identity))
 
       test(m"square roots of square fractions are exact"):
         Q32(9, 4).sqrt

@@ -74,7 +74,7 @@ object Tests extends Suite("errors", m"Contingency"):
             case VarargsError(arguments) => ()
           . protect(action())
 
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Varargs are handled safely"):
         recover:
@@ -172,7 +172,7 @@ object Tests extends Suite("errors", m"Contingency"):
                 case ErrorA(n) => s"recovered:$n"
               . protect(failA(7))
             inlineRecover
-        . assert(_.isEmpty)
+        . assert(_.nil)
 
       test(m"recover works inside an `inline def` via a non-inline helper"):
         def helperRecover: String =
@@ -401,7 +401,6 @@ object Tests extends Suite("errors", m"Contingency"):
       test(m"survive filters errors from a sequence"):
         List(1, 2, 3, 4).survive[Int]: n =>
           if n % 2 == 0 then n else raise(ErrorA(n)) yet 0
-        . to(List)
       . assert(_ == List(2, 4))
 
     suite(m"Foci / Pointer / track / validate / focus"):

@@ -33,6 +33,7 @@
 package abacist
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suite counts small lists
 
 given decimalizer: Decimalizer = Decimalizer(3)
 
@@ -66,12 +67,12 @@ object Tests extends Suite("count", m"Abacist Tests"):
       test(m"Units of different dimensions cannot be mixed"):
         demilitarize:
           (Quanta(1, 2, 3): Quanta[Inches[1]] in (Seconds[1], Yards[1], Miles[1]))
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"A non-unit base is rejected by the type bound"):
         demilitarize:
           val bad: Quanta[String] = ???
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Convert a length to a Quanta"):
         val length: Quantity[Metres[1]] = (5.9*Foot + 10.0*Inch)
@@ -169,7 +170,7 @@ object Tests extends Suite("count", m"Abacist Tests"):
         demilitarize:
           val weight: Weight = Quanta(2, 3, 4)
           weight.collapse(3)
-      . assert(_.length == 1)
+      . assert(_.size == 1)
 
       suite(m"Shared base-unit supertype"):
         type Hms = Quanta[Seconds[1]] in (Minutes[1], Hours[1])
@@ -178,7 +179,7 @@ object Tests extends Suite("count", m"Abacist Tests"):
         test(m"Differently-divided quanta share a common base-unit supertype"):
           val a: Hms = Quanta(0, 1, 0)
           val b: Ms = Quanta(0, 30)
-          List[Quanta[Seconds[1]]](a, b).length
+          List[Quanta[Seconds[1]]](a, b).size
         . assert(_ == 2)
 
         test(m"Quanta with the same base unit but different divisions are comparable"):

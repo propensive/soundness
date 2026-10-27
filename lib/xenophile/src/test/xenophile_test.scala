@@ -86,23 +86,23 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
       test(m"a class absent from the classpath is rejected"):
         demilitarize:
           Foreign["kotlin.absent.NowhereKt", Kotlin].missing(1)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"an unknown member of a Kotlin type is rejected"):
         demilitarize:
           Foreign["kotlin.internal.ProgressionUtilKt", Kotlin].missing(1)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"a call with the wrong arity is rejected"):
         demilitarize:
           Foreign["kotlin.internal.ProgressionUtilKt", Kotlin].getProgressionLastElement(1)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"a call with a wrongly-typed argument is rejected"):
         demilitarize:
           Foreign["kotlin.internal.ProgressionUtilKt", Kotlin]
           . getProgressionLastElement(t"one", 10, 2)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
     suite(m"Kotlin facades"):
       val pair = make[kotlin.Pair[Text, Text]](t"a", t"b")
@@ -149,12 +149,12 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
       test(m"an unknown property is rejected"):
         demilitarize:
           make[kotlin.Pair[Text, Text]](t"a", t"b").third
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"a wrongly-typed constructor argument is rejected"):
         demilitarize:
           make[kotlin.text.Regex](42)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"a companion object's members are reachable"):
         val escaped: Text = companion[kotlin.text.Regex].escape(t"a.b")
@@ -170,7 +170,7 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
       test(m"a class without a companion object is rejected"):
         demilitarize:
           companion[kotlin.Pair[Text, Text]]
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"a Scala lambda satisfies a Kotlin function-type parameter"):
         val replaced: Text = regex.replace(t"a1b2",
@@ -196,7 +196,7 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
       test(m"assignment to a val property is rejected"):
         demilitarize:
           make[kotlin.Pair[Text, Text]](t"a", t"b").first = t"z"
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"an object singleton's constant properties are reachable"):
         val quote: Char = singleton[kotlin.text.Typography].quote
@@ -206,7 +206,7 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
       test(m"a class is not mistaken for an object singleton"):
         demilitarize:
           singleton[kotlin.Pair[Text, Text]]
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"omitted trailing parameters fall back to Kotlin defaults"):
         regex.find(t"a7b").let(_.value)
@@ -260,7 +260,7 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
       . assert(_.exists(_.contains("input")))
 
       test(m"a Scala List argument satisfies a Java collection parameter"):
-        val wrapped = make[java.util.ArrayList[Text]](List(t"a", t"b"))
+        val wrapped = make[java.util.ArrayList[Text]](List(t"a", t"b").stdlib)
         val size: Int = wrapped.size()
         size
       . assert(_ == 2)
@@ -276,27 +276,27 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
       . assert(_.exists(_.contains("value class")))
 
       test(m"a typed lambda satisfies a Java functional-interface parameter"):
-        val list = make[java.util.ArrayList[Text]](List(t"a", t"bb", t"ccc"))
+        val list = make[java.util.ArrayList[Text]](List(t"a", t"bb", t"ccc").stdlib)
         val _ = list.removeIf((text: Text) => text.length > 1)
         val size: Int = list.size()
         size
       . assert(_ == 1)
 
       test(m"an UNTYPED lambda infers against a functional-interface method"):
-        val list = make[java.util.ArrayList[Text]](List(t"a", t"bb", t"ccc"))
+        val list = make[java.util.ArrayList[Text]](List(t"a", t"bb", t"ccc").stdlib)
         val _ = list.removeIf(text => text.length > 1)   // no ascription on `text`
         val size: Int = list.size()
         size
       . assert(_ == 1)
 
       test(m"an UNTYPED multi-argument lambda infers (an arity-2 interface)"):
-        val list = make[java.util.ArrayList[Text]](List(t"ccc", t"a", t"bb"))
+        val list = make[java.util.ArrayList[Text]](List(t"ccc", t"a", t"bb").stdlib)
         val _ = list.sort((left, right) => left.length - right.length)   // no ascriptions
         list.get(0).k.toString.tt
       . assert(_ == t"a")
 
       test(m"an UNTYPED lambda infers on a facade RETURNED from a method"):
-        val list = make[java.util.ArrayList[Text]](List(t"a", t"bb", t"ccc", t"d"))
+        val list = make[java.util.ArrayList[Text]](List(t"a", t"bb", t"ccc", t"d").stdlib)
         val sub = list.subList(0, 3)             // a facade returned from a call
         val _ = sub.removeIf(text => text.length > 1)    // untyped lambda on the returned facade
         sub.size()
@@ -312,7 +312,7 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
       test(m"an in-scope Conversion fits an argument to a parameter"):
         given Conversion[Int, Text] = _.toString.tt
         // `ArrayList.add(E)` expects a `Text`; pass an `Int`, fitted by the conversion.
-        val list = make[java.util.ArrayList[Text]](List())
+        val list = make[java.util.ArrayList[Text]](List().stdlib)
         val _ = list.add(42)
         list.get(0).k.toString.tt
       . assert(_ == t"42")
@@ -458,15 +458,15 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
 
     suite(m"Compile-time safety"):
       test(m"selecting an undefined member is a compile error"):
-        demilitarize(foo.nonexistent).map(_.message)
+        demilitarize(foo.nonexistent).map(_.message.tt)
       . assert(_ == List(t"xenophile: the foreign type Foo has no member nonexistent"))
 
       test(m"calling a method with the wrong arity is a compile error"):
-        demilitarize(foo.greet(t"a", t"b")).map(_.message)
+        demilitarize(foo.greet(t"a", t"b")).map(_.message.tt)
       . assert(_ == List(t"xenophile: greet expects 1 arguments, not 2"))
 
       test(m"passing an argument of the wrong foreign type is a compile error"):
-        demilitarize(foo.greet(42)).map(_.message)
+        demilitarize(foo.greet(42)).map(_.message.tt)
       . assert(_ == List(t"xenophile: greet expects an argument of foreign type string"))
 
     suite(m"Native (C headers)"):
@@ -526,7 +526,7 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
           case _                                                                      => false
 
       test(m"passing a C argument of the wrong foreign type is a compile error"):
-        demilitarize(library.abs(t"five")).map(_.message)
+        demilitarize(library.abs(t"five")).map(_.message.tt)
       . assert(_ == List(t"xenophile: abs expects an argument of foreign type int"))
 
     suite(m"Wit (WebAssembly Interface Types)"):
@@ -575,7 +575,7 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
           case _                                                                      => false
 
       test(m"passing a WIT argument of the wrong foreign type is a compile error"):
-        demilitarize(api.add(t"two", t"three")).map(_.message)
+        demilitarize(api.add(t"two", t"three")).map(_.message.tt)
       . assert(_ == List(t"xenophile: add expects an argument of foreign type s32"))
 
       test(m"an interface function is qualified with its package's module id"):
@@ -706,7 +706,7 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
           case _                                   => false
 
       test(m"passing a WebIDL argument of the wrong foreign type is a compile error"):
-        demilitarize(shape.scale(t"large")).map(_.message)
+        demilitarize(shape.scale(t"large")).map(_.message.tt)
       . assert(_ == List(t"xenophile: scale expects an argument of foreign type f64"))
 
     suite(m"WebIDL (real DOM from webref)"):
@@ -762,7 +762,7 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
             false
 
       test(m"passing a DOM argument of the wrong foreign type is a compile error"):
-        demilitarize(node.appendChild(Foreign["Event", WebIdlDom])).map(_.message)
+        demilitarize(node.appendChild(Foreign["Event", WebIdlDom])).map(_.message.tt)
       . assert(_ == List(t"xenophile: appendChild expects an argument of foreign type Node"))
 
     // The end-to-end dynamic-completions route: Harlequin's typechecked pipeline finds the

@@ -129,6 +129,18 @@ extension [self](self: self)(using traversable: self is Traversable)
 
       current
 
+// The `Traversable`-receiver twin of `median` below: a native collection is not an `Iterable`,
+// so the traversal is materialised and delegated.
+extension [self, value](self: self)(using traversable: self is Traversable by value)
+  inline def median
+    ( using commensurable: value is Commensurable against value,
+            subtractable:  value is Subtractable by value,
+            divisible:     subtractable.Result is Divisible by Double,
+            addable:       value is Addable by divisible.Result )
+  :   Optional[addable.Result] =
+
+    traversable.traverse(self).to(Iterable).median
+
 extension [value](iterable: Iterable[value])
   inline def minimum(using commensurable: value is Commensurable against value): Optional[value] =
     if iterable.nil then Unset else

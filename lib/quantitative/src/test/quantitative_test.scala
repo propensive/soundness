@@ -67,12 +67,12 @@ object Tests extends Suite("units", m"Quantitative Tests"):
       test(m"Cannot add quantities of different units"):
         demilitarize:
           Metre + 2*Second
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Cannot specify a quantity with a double value"):
         demilitarize:
           val x: Quantity[Metres[1]] = 10.0
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Specify a quantity"):
         case class Speed(value: Quantity[Metres[1] & Hours[-1]])
@@ -90,27 +90,27 @@ object Tests extends Suite("units", m"Quantitative Tests"):
         demilitarize:
           Second*2 + Metre*3.0
         .map(_.message)
-      . assert(_.contains(t"quantitative: the left operand represents time, but the right operand represents distance; these are incompatible physical quantities"))
+      . assert(_.has(t"quantitative: the left operand represents time, but the right operand represents distance; these are incompatible physical quantities"))
 
       test(m"Units cancel out"):
         demilitarize:
           (20*Metre*Second)/(Metre*Second): Double
         .map(_.message)
-      . assert(_.isEmpty)
+      . assert(_.nil)
 
       test(m"Principal units are preferred"):
         demilitarize:
           val x = 2*Metre
           val y = 3*Foot
           val z: Quantity[Metres[2]] = x*y
-      . assert(_.isEmpty)
+      . assert(_.nil)
 
       test(m"Non-principal units are not preferred"):
         demilitarize:
           val x = 2*Metre
           val y = 3*Foot
           val z: Quantity[Feet[2]] = x*y
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Units of different dimension cannot be added"):
         demilitarize:

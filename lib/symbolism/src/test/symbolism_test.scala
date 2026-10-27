@@ -120,7 +120,7 @@ object Tests extends Suite("operators", m"Symbolism Tests"):
       test(m"Adding mismatched types is rejected"):
         demilitarize:
           Vector2(1, 2) + 1
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
     suite(m"Subtractable tests"):
       test(m"Subtract two Ints through the typeclass"):
@@ -219,7 +219,7 @@ object Tests extends Suite("operators", m"Symbolism Tests"):
       test(m"There is no square root for Ints"):
         demilitarize:
           16.sqrt
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
     suite(m"Zeroic and Unital tests"):
       test(m"Zero for Int is 0"):
@@ -253,7 +253,7 @@ object Tests extends Suite("operators", m"Symbolism Tests"):
       test(m"There is no zero for an arbitrary type"):
         demilitarize:
           zero[Vector2 => Vector2]
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
     suite(m"Quotient tests"):
       test(m"Decompose a quotient into its parts"):

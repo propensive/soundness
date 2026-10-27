@@ -46,10 +46,10 @@ object CaptureTests extends Suite("cli-capture", m"Rig confinement tests"):
         def attempt(launcher: Enclave.Launcher): Enclave.Tool =
           launcher.sandbox(summon[Enclave.Tool])
       . map(_.message)
-    . assert(_.nonEmpty)
+    . assert(!_.nil)
 
     test(m"a closure over the Tool cannot escape sandbox"):
       demilitarize:
         def attempt(launcher: Enclave.Launcher): () => Text =
           launcher.sandbox(() => summon[Enclave.Tool].command)
-    . assert(_.nonEmpty)
+    . assert(!_.nil)

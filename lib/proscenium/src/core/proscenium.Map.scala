@@ -39,7 +39,10 @@ import scala.collection.immutable as sci
 // `confine`; `Traversable by (key, value)` the transforming surface), construction and the
 // greppable `stdlib` bridge in the companion, casts at the boundary, and deliberately NO
 // `Conversion` to a stdlib supertype.
-object Map:
+// The companion is `Pure`: the umbrella forwards it as a `val`, and under capture checking a
+// value of a non-pure object type is a tracked capability, so `xs.to(Map)` — which passes the
+// companion as a factory — would otherwise capture the forwarder and freshen its result.
+object Map extends scala.caps.Pure:
   // `of` is a plain method, not `inline`: inline expansion of the cast inside capturing
   // lambdas crashes the capture checker's boxer (boxDeeply assertion).
   private[proscenium] def of[key, value](map: sci.Map[key, value]): Map[key, value] =

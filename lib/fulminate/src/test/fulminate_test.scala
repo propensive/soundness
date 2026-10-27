@@ -189,4 +189,4 @@ object Tests extends Suite("messages", m"Fulminate Tests"):
       test(m"well-formed backticks compile without error"):
         demilitarize:
           m"hello `world`"
-      . assert(_.isEmpty)
+      . assert(_.nil)

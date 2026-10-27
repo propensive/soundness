@@ -50,13 +50,13 @@ object Tests extends Suite("money", m"Plutocrat tests"):
         demilitarize:
           val amount: Money in "EUR" = Gbp(3.01)
 
-      . assert(!_.isEmpty)
+      . assert(!_.nil)
 
       test(m"No type error for unspecified currency"):
         demilitarize:
           val amount: Money = Gbp(3.01)
 
-      . assert(_.isEmpty)
+      . assert(_.nil)
 
       test(m"Currency is recoverable from runtime"):
         val amount: Money = Gbp(3.01)
@@ -135,7 +135,7 @@ object Tests extends Suite("money", m"Plutocrat tests"):
 
       test(m"Prices in different currencies cannot be combined"):
         demilitarize(Eur(1.00).tax(0.175) + Gbp(1.00).tax(0.2))
-      . assert(!_.isEmpty)
+      . assert(!_.nil)
 
 
     suite(m"ISINs"):

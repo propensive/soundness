@@ -71,7 +71,7 @@ object Tests extends Suite("dom", m"Querencia tests"):
       . assert: expr =>
           val root = Foreign.Expression.Reference(t"document")
           val select = Foreign.Expression.Select(root, t"getElementById", t"Document")
-          expr == Foreign.Expression.Apply(select, List(Foreign.Expression.Literal(t"foo")))
+          expr == Foreign.Expression.Apply(select, List(Foreign.Expression.Literal(t"foo")).stdlib)
 
       test(m"indexing yields the element's foreign type"):
         val element: Foreign of "HTMLElement" from Browser = document.querySelectorAll(t".x")(0)

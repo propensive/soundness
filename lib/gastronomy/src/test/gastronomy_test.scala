@@ -428,7 +428,7 @@ object Tests extends Suite("hashing", m"Gastronomy tests"):
           import providers.javaBaseProvider
           t"123456789".digest[Crc32]
         . map(_.message)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"digesting with SHA-2 needs no permit"):
         demilitarize:

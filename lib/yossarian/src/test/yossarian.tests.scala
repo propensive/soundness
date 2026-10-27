@@ -92,7 +92,7 @@ object Tests extends Suite("pty", m"Yossarian Tests"):
         List(t"bash", t"zsh", t"fish", t"pwsh").map: shell =>
           val whole = fixture(t"$shell.transcript")
           val chunks = whole.s.grouped(7).to(List)
-          val pty = chunks.foldLeft(Pty(80, 24))((pty, chunk) => pty.consume(Text(chunk)))
+          val pty = chunks.fold(Pty(80, 24))((pty, chunk) => pty.consume(Text(chunk)))
           captured(pty) == captured(Pty(80, 24).consume(whole))
       . assert(_ == List(true, true, true, true))
 

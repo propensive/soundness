@@ -497,14 +497,14 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
 
       test(m"Cursor[Data] remainder from start equals full stream"):
         val blocks = Chain(Data(1, 2, 3), Data(4, 5), Data(6, 7))
-        val cursor = Cursor[Data](blocks.iterator)
+        val cursor = Cursor[Data](Chain.iterator(blocks))
         cursor.remainder.stdlib.map(_.stdlib).flatten.to(List)
 
       . assert(_.map(_.toInt) == List(1, 2, 3, 4, 5, 6, 7))
 
       test(m"Cursor[Data] remainder mid-block emits cross-block tail"):
         val blocks = Chain(Data(1, 2, 3, 4, 5), Data(6, 7, 8))
-        val cursor = Cursor[Data](blocks.iterator)
+        val cursor = Cursor[Data](Chain.iterator(blocks))
         for i <- 0 until 3 do cursor.next()
         cursor.remainder.stdlib.map(_.stdlib).flatten.to(List)
 
@@ -512,7 +512,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
 
       test(m"Cursor[Data] remainder inside hold still emits unconsumed tail"):
         val blocks = Chain(Data(1, 2, 3, 4, 5), Data(6, 7, 8))
-        val cursor = Cursor[Data](blocks.iterator)
+        val cursor = Cursor[Data](Chain.iterator(blocks))
         for i <- 0 until 3 do cursor.next()
         cursor.hold(cursor.remainder.stdlib.map(_.stdlib).flatten.to(List))
 
@@ -1251,11 +1251,11 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
       . assert(_ == "hi")
 
       test(m"records iterates across chunks in order"):
-        Stream(Iterator(Array(Row(1), Row(2)), Array(Row(3)))).records.to(List)
+        List.from(Stream(Iterator(Array(Row(1), Row(2)), Array(Row(3)))).records)
       . assert(_ == List(Row(1), Row(2), Row(3)))
 
       test(m"records of an empty record stream is empty"):
-        Iterator.empty[Array[Row]^{}].stream.records.to(List)
+        List.from(Iterator.empty[Array[Row]^{}].stream.records)
       . assert(_ == List())
 
       test(m"memoize materializes a record stream into one frozen array"):
@@ -1264,8 +1264,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
       . assert(_ == List(Row(1), Row(2), Row(3)))
 
       test(m"records composes with truncate"):
-        Stream(Iterator(Array(Row(1), Row(2)), Array(Row(3), Row(4)))).truncate(3).records
-        . to(List)
+        List.from(Stream(Iterator(Array(Row(1), Row(2)), Array(Row(3), Row(4)))).truncate(3).records)
       . assert(_ == List(Row(1), Row(2), Row(3)))
 
       test(m"streamOf lends a bounded sub-stream of a cursor"):

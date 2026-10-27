@@ -169,26 +169,26 @@ object VerifyTests extends Suite("json-verify", m"Jacinta verify tests"):
       test(m"An unknown field is rejected"):
         demilitarize:
           t"""{"name": "Alice", "age": 30, "email": "a@b.c"}""".read[Json].verify[Employee].nope
-        . head.message
-      . assert(_.contains("has no field"))
+        . head.let(_.message)
+      . assert(_.lay(false)(_.contains("has no field")))
 
       test(m"Indexing a non-array field is rejected"):
         demilitarize:
           t"""{"name": "Alice", "age": 30, "email": "a@b.c"}""".read[Json].verify[Employee].name(0)
-        . head.message
-      . assert(_.contains("not an indexable array"))
+        . head.let(_.message)
+      . assert(_.lay(false)(_.contains("not an indexable array")))
 
       test(m"Field access on a scalar position is rejected"):
         demilitarize:
           t"""{"name": "Alice", "age": 30, "email": "a@b.c"}""".read[Json].verify[Employee].name.deeper
-        . head.message
-      . assert(_.contains("has no field"))
+        . head.let(_.message)
+      . assert(_.lay(false)(_.contains("has no field")))
 
       test(m"Plain (unverified) field access requires the enabler"):
         demilitarize:
           t"""{"name": "Alice"}""".read[Json].name
-        . head.message
-      . assert(_.contains("dynamicAccess.dynamicJson"))
+        . head.let(_.message)
+      . assert(_.lay(false)(_.contains("dynamicAccess.dynamicJson")))
 
       test(m"Plain field access is permitted in a dynamically[Json] block"):
         dynamically[Json]:
@@ -204,5 +204,5 @@ object VerifyTests extends Suite("json-verify", m"Jacinta verify tests"):
         demilitarize:
           dynamically[Text]:
             t"""{"name": "Alice"}""".read[Json].name
-        . head.message
-      . assert(_.contains("dynamically[Json]"))
+        . head.let(_.message)
+      . assert(_.lay(false)(_.contains("dynamically[Json]")))

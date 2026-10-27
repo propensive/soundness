@@ -233,6 +233,16 @@ extension [element](sequence: Iterable[element])
 
     sequence.map { element => safely(lambda(element)) }.compact
 
+// The `Traversable`-receiver twin: a native collection is not an `Iterable`, so the traversal
+// is materialised and the survivors returned as a native list.
+extension [self, element](self: self)(using traversable: self is murmuration.Traversable by element)
+  transparent inline def survive[result](using erased void: Void)[error <: Hazard]
+    ( lambda
+    : (OptionalTactic[error, result], Diagnostics, CanThrow[Exception]) ?=> element => result )
+  :   proscenium.List[result] =
+
+    proscenium.List.from(traversable.traverse(self).to(Iterable).survive[result](lambda))
+
 
 extension [value](optional: Optional[value])
   def lest[success, error <: Hazard](error: Diagnostics ?=> error)(using Tactic[error]^): value =

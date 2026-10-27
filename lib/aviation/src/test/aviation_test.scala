@@ -168,27 +168,27 @@ object Tests extends Suite("time", m"Aviation Tests"):
 
       test(m"A valid literal date compiles"):
         demilitarize((2012-Mar-8).jdn)
-      . assert(_.isEmpty)
+      . assert(_.nil)
 
       test(m"An impossible day-of-month literal fails to compile"):
         demilitarize((2012-Feb-30).jdn)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"A 31st of a thirty-day-month literal fails to compile"):
         demilitarize((2012-Apr-31).jdn)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"A non-leap-year 29 February literal fails to compile"):
         demilitarize((2011-Feb-29).jdn)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"A leap-year 29 February literal compiles"):
         demilitarize((2012-Feb-29).jdn)
-      . assert(_.isEmpty)
+      . assert(_.nil)
 
       test(m"A zero day-of-month literal fails to compile"):
         demilitarize((2012-Mar-0).jdn)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"A literal date equals its `ts` string counterpart"):
         (2012-Mar-8)
@@ -196,14 +196,14 @@ object Tests extends Suite("time", m"Aviation Tests"):
 
       test(m"1900-Feb-29 fails to compile under the default Gregorian calendar"):
         demilitarize((1900-Feb-29).jdn)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"1900-Feb-29 compiles under a contextual Julian calendar"):
         demilitarize:
           import calendars.julianCalendar
           (1900-Feb-29).jdn
         . filter(_.error)
-      . assert(_.isEmpty)
+      . assert(_.nil)
 
       test(m"A contextual Julian calendar yields the Julian Julian-day for the literal"):
         given julian: RomanCalendar = calendars.julianCalendar
@@ -297,15 +297,15 @@ object Tests extends Suite("time", m"Aviation Tests"):
 
       test(m"Time with too many minutes is invalid"):
         demilitarize(7.88.am)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Time with too few minute digits is invalid"):
         demilitarize(7.8.am)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Time with too many minute digits is invalid"):
         demilitarize(7.585.am)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Specify afternoon time with hour `12`"):
         12.25.pm
@@ -345,7 +345,7 @@ object Tests extends Suite("time", m"Aviation Tests"):
         demilitarize:
           import calendars.papalCutover
           (1582-Oct-10).jdn
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Papal cutover rejects a gap date at runtime"):
         import calendars.papalCutover
@@ -367,7 +367,7 @@ object Tests extends Suite("time", m"Aviation Tests"):
         demilitarize:
           import calendars.britishCutover
           (1752-Sep-5).jdn
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"British cutover accepts the day after its gap"):
         given british: Regime = calendars.britishCutover
@@ -913,11 +913,11 @@ object Tests extends Suite("time", m"Aviation Tests"):
 
       test(m"13.00.am is a compile error"):
         demilitarize(13.00.am)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"hour above 12 is a compile error"):
         demilitarize(15.30.pm)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
     suite(m"Anniversary"):
       import calendars.gregorianCalendar
@@ -1609,7 +1609,7 @@ object Tests extends Suite("time", m"Aviation Tests"):
       test(m"Islamic months cannot be added in a Coptic context"):
         demilitarize:
           unsafely(Date(Year(1716), CopticMonth.Thout, Day(1))) + 1*IslamicMonth
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
     suite(m"Islamic calendar"):
       import calendars.islamicCalendar
@@ -1648,7 +1648,7 @@ object Tests extends Suite("time", m"Aviation Tests"):
       test(m"Coptic months cannot be added in an Islamic context"):
         demilitarize:
           unsafely(Date(Year(1420), IslamicMonth.Muharram, Day(1))) + 1*CopticMonth
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
     suite(m"Ethiopian calendar"):
       import calendars.ethiopianCalendar
@@ -1768,7 +1768,7 @@ object Tests extends Suite("time", m"Aviation Tests"):
 
       test(m"Subtracting instants on different timelines is a compile error"):
         demilitarize(Instant(newYear).over[Tai] - Instant(newYear))
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"untai inverts the discrete step"):
         LeapSeconds.untai(LeapSeconds.tai(newYear)) == newYear
@@ -2068,7 +2068,7 @@ object Tests extends Suite("time", m"Aviation Tests"):
 
       test(m"A rec literal with an invalid date fails to compile"):
         demilitarize(rec"R5/2024-02-30/P1M")
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
     suite(m"Rrule expansion"):
       import calendars.gregorianCalendar
@@ -2319,12 +2319,12 @@ object Tests extends Suite("time", m"Aviation Tests"):
 
       test(m"An English description needs a Locale[en] in scope"):
         demilitarize(Rrule(2024-Jan-1, Frequency.Daily).show)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"With a Locale[en] in scope, the description compiles"):
         given Locale[en] = Locale(en)
         demilitarize(Rrule(2024-Jan-1, Frequency.Daily).show)
-      . assert(_.isEmpty)
+      . assert(_.nil)
 
     suite(m"Moment subtraction"):
       import calendars.gregorianCalendar
@@ -2473,7 +2473,7 @@ object Tests extends Suite("time", m"Aviation Tests"):
 
       test(m"tz\"NotARealZone\" is a compile error"):
         demilitarize(tz"NotARealZone")
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
     suite(m"ts interpolator"):
       import calendars.gregorianCalendar
@@ -2535,44 +2535,44 @@ object Tests extends Suite("time", m"Aviation Tests"):
 
       test(m"A zoneless leap second is a compile error"):
         demilitarize(ts"2016-12-31T23:59:60")
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"A leap second not at :59 is a compile error"):
         demilitarize(ts"2016-12-31T23:30:60Z")
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"A year literal does not typecheck as a Monthstamp"):
         demilitarize:
           val monthstamp: Monthstamp = ts"2024"
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"An unparseable timestamp is a compile error"):
         demilitarize(ts"not-a-timestamp")
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"An empty timestamp is a compile error"):
         demilitarize(ts"")
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"A month above 12 is a compile error"):
         demilitarize(ts"2024-13-15")
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"A nonexistent day is a compile error"):
         demilitarize(ts"2024-06-31")
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"An hour above 23 is a compile error"):
         demilitarize(ts"2024-06-17T25:00:00")
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"An invalid weekday name is a compile error"):
         demilitarize(ts"Xyz, 17 Jun 2024 14:30:45 GMT")
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"A substitution is a compile error"):
         demilitarize(ts"${2024}")
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
     suite(m"Atomic time (TAI) conversion"):
       import calendars.gregorianCalendar
@@ -2682,11 +2682,11 @@ object Tests extends Suite("time", m"Aviation Tests"):
 
       test(m"A malformed dur literal is a compile error"):
         demilitarize(dur"P1X")
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"A dur literal with a substitution is a compile error"):
         demilitarize(dur"${1}")
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
     suite(m"Relative timespan formatting"):
       import timespanFormats.englishRelativeTimespan

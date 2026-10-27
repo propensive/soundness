@@ -34,14 +34,29 @@ package soundness
 
 import scala.compiletime
 
-export proscenium.Sequence
+// The collection companions are forwarded as STABLE paths, not exported: an `export` of an
+// object makes a `def` forwarder, and a companion member selected through that unstable prefix
+// sees the opaque alias's right-hand side — `Sequence.empty[Int].toVector` compiled, exposing
+// the whole stdlib API on every value built through the umbrella's companions. The types are
+// ordinary parameterised aliases: a bare alias of an opaque constructor (`type List =
+// proscenium.List`) is not seen through — `::`, `CanEqual` and the extension methods all
+// treat it as a different `List` — whereas the applied alias dealiases as usual, and
+// `xs.to[List]` still finds the same constructor through it.
+type Sequence[+element] = proscenium.Sequence[element]
+val Sequence: proscenium.Sequence.type = proscenium.Sequence
 export proscenium.Comparison
 export proscenium.Sized
 export Predef.runtimeChecked as absolve
 export scala.reflect.{ClassTag, Typeable}
-export proscenium.Set
-export proscenium.Map
-export proscenium.{List, Nil, `::`, Chain, `#::`}
+type Set[element] = proscenium.Set[element]
+val Set: proscenium.Set.type = proscenium.Set
+type Map[key, +value] = proscenium.Map[key, value]
+val Map: proscenium.Map.type = proscenium.Map
+type List[+element] = proscenium.List[element]
+val List: proscenium.List.type = proscenium.List
+type Chain[+element] = proscenium.Chain[element]
+val Chain: proscenium.Chain.type = proscenium.Chain
+export proscenium.{Nil, `::`, `#::`}
 export scala.collection.immutable.{TreeMap, TreeSet}
 export scala.collection.concurrent.TrieMap
 

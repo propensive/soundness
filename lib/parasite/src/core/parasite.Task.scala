@@ -127,6 +127,12 @@ object Task:
       // [construction-fresh] fresh sequence Task handle sealed for pure fa\u00e7ade
       caps.unsafe.unsafeAssumePure(async(tasks.map(_.join())))
 
+  // The native collections are not `Iterable`: a `Traversable`-receiver twin materialises them.
+  extension [self, result](tasks: self)(using traversable: self is murmuration.Traversable by Task[result])
+    def race()(using monitor: Monitor^, probate: SharedProbate)
+    :   (Tactic[Async.Error]^) ?->{monitor, probate} result =
+      traversable.traverse(tasks).to(Iterable).race()
+
   extension [result](tasks: Iterable[Task[result]])
     def race()(using monitor: Monitor^, probate: SharedProbate)
     :   (Tactic[Async.Error]^) ?->{monitor, probate} result =

@@ -182,7 +182,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
           t"hmtx" -> hmtx, t"loca" -> loca, t"maxp" -> maxp, t"name" -> name, t"OS/2" -> os2,
           t"post" -> post)
 
-      var offset = 12 + tables.length*16
+      var offset = 12 + tables.size*16
       val directory = scala.collection.immutable.List.newBuilder[Data]
       val parts = scala.collection.immutable.List.newBuilder[Data]
 
@@ -1190,8 +1190,8 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
                   data.asInstanceOf[Data].utf8
 
           case _ =>
-            List()
-      . assert(_ == List(t"A", -500.0, t"B"))
+            scala.collection.immutable.List()
+      . assert(_ == scala.collection.immutable.List(t"A", -500.0, t"B"))
 
       test(m"unknown operators survive as Unrecognized"):
         operators(t"BX /x 7 fancyNewOp EX")
@@ -1304,7 +1304,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
 
       test(m"runs carry their positions in points"):
         PdfFile(contentPage(t"BT /F1 12 Tf 72 720 Td (Hello) Tj ET")).open():
-          pdf.page(Prim).runs.stdlib match
+          pdf.page(Prim).runs match
             case List(run) => (run.x, run.y, run.size, run.text)
             case _         => (Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
                                   Quantity[Points[1]](0.0), t"")
@@ -1313,7 +1313,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
 
       test(m"the transformation matrix scales positions"):
         PdfFile(contentPage(t"q 2 0 0 2 0 0 cm BT /F1 12 Tf 50 100 Td (X) Tj ET Q")).open():
-          pdf.page(Prim).runs.stdlib match
+          pdf.page(Prim).runs match
             case List(run) => (run.x, run.size)
             case _         => (Quantity[Points[1]](0.0), Quantity[Points[1]](0.0))
       . assert(_ == (Quantity[Points[1]](100.0), Quantity[Points[1]](24.0)))
@@ -1829,7 +1829,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
             t"<< /Type /Pages /Kids [3 0 R] /Count 1 /MediaBox [0 0 100 100] >>".in[Data],
             t"<< /Type /Page /Parent 2 0 R >>".in[Data] )
 
-        document((standard ++ objects)*)
+        document(List.concat(standard, List.from(objects))*)
 
       test(m"a named destination resolves through the name tree"):
         val doc = navigable

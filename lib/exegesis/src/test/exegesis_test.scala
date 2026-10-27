@@ -315,13 +315,13 @@ object Tests extends Suite("lsp", m"Exegesis Tests"):
 
     suite(m"Content-Length framing"):
       test(m"a framed message is unframed to its body"):
-        Iterator(t"Content-Length: 5\r\n\r\n12345".in[Data]).frames[ContentLength].map(_.utf8).to(List)
+        List.from(Iterator(t"Content-Length: 5\r\n\r\n12345".in[Data]).frames[ContentLength].map(_.utf8))
       . assert(_ == List(t"12345"))
 
       test(m"a multi-byte UTF-8 body is framed by byte length, not character count"):
         val body = t"""{"k":"café"}"""
         val message = t"Content-Length: ${body.in[Data].length}\r\n\r\n"+body
-        Iterator(message.in[Data]).frames[ContentLength].map(_.utf8).to(List)
+        List.from(Iterator(message.in[Data]).frames[ContentLength].map(_.utf8))
       . assert(_ == List(t"""{"k":"café"}"""))
 
     suite(m"Dispatch"):
@@ -541,7 +541,7 @@ object Tests extends Suite("lsp", m"Exegesis Tests"):
           server.initialize()
           server.initialized()
           server.open(t"file:///a.scala", t"scala", t"hello")
-          server.complete(t"file:///a.scala", Position(0, 0)).items.stdlib.map(_.label.s)
+          server.complete(t"file:///a.scala", Position(0, 0)).items.map(_.label.s)
 
       . assert(_ == List("loopback"))
 
@@ -557,7 +557,7 @@ object Tests extends Suite("lsp", m"Exegesis Tests"):
           // read: the server publishes before it answers.
           server.hover(t"file:///a.scala", Position(0, 0))
 
-        record.notes.stdlib.map(_.s)
+        record.notes.map(_.s)
 
       . assert(_ == List("diagnostics:file:///a.scala:opened"))
 
@@ -600,7 +600,7 @@ object Tests extends Suite("lsp", m"Exegesis Tests"):
           // A request establishes that the notification preceding it has been read.
           server.hover(t"file:///a.scala", Position(0, 0))
 
-        record.notes.stdlib.map(_.s)
+        record.notes.map(_.s)
 
       . assert(_ == List("diagnostics:file:///a.scala:proxied"))
 
@@ -625,7 +625,7 @@ object Tests extends Suite("lsp", m"Exegesis Tests"):
           server.initialize()
           server.initialized()
           server.open(t"file:///a.scala", t"scala", t"hello")
-          server.complete(t"file:///a.scala", Position(0, 0)).items.stdlib.map(_.label.s)
+          server.complete(t"file:///a.scala", Position(0, 0)).items.map(_.label.s)
 
       . assert(_ == List("upstream"))
 

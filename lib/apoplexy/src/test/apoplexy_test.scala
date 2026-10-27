@@ -228,8 +228,8 @@ components:
       demilitarize:
         val refs = Api(cp"/openapi/local/refstore.json", base = url"https://ref.example.com")
         refs.items(7).get
-      . length
-    .assert(_ > 0)
+      . nil
+    .assert(_ == false)
 
     test(m"an unsupported OpenAPI version is rejected"):
       capture[OpenApi.Error]:

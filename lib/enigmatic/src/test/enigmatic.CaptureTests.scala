@@ -77,21 +77,21 @@ object CaptureTests extends Suite("crypto-capture", m"Capability confinement tes
       demilitarize:
         val key = PrivateKey.generate[Rsa[1024]]()
         val stolen = key.uncloak(summon[Decryptor[Rsa[1024]]])
-    . assert(_.nonEmpty)
+    . assert(!_.nil)
 
     test(m"a closure encrypting later cannot escape uncloak"):
       demilitarize:
         val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
         val later = key.uncloak:
           () => t"secret".encrypt(InitializationVector.random)
-    . assert(_.nonEmpty)
+    . assert(!_.nil)
 
     test(m"a closure decrypting later cannot escape uncloak"):
       demilitarize:
         val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
         val ciphertext = key.uncloak(t"secret".encrypt(InitializationVector.random))
         val later = key.uncloak(() => ciphertext.decrypt.as[Text])
-    . assert(_.nonEmpty)
+    . assert(!_.nil)
 
     test(m"the capability cannot be stashed in an outer variable"):
       demilitarize:
@@ -129,7 +129,7 @@ object CaptureTests extends Suite("crypto-capture", m"Capability confinement tes
       demilitarize:
         val password = Password(t"hunter2")
         val later = password.uncloak(() => cleartext.chars)
-    . assert(_.nonEmpty)
+    . assert(!_.nil)
 
     test(m"a password never renders its secret"):
       Password(t"hunter2").show
@@ -147,4 +147,4 @@ object CaptureTests extends Suite("crypto-capture", m"Capability confinement tes
         import cloaks.offHeapCloak
         val key: SymmetricKey[Aes[256] over Cbc against Pkcs7] =
           SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
-    . assert(_.nonEmpty)
+    . assert(!_.nil)

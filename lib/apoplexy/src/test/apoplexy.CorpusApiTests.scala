@@ -150,12 +150,12 @@ object CorpusApiTests extends Suite("openapi-corpus-client", m"OpenAPI corpus cl
       . assert(_ == true)
 
       test(m"a query parameter of the wrong type is rejected"):
-        demilitarize(api.pet.findByStatus.get(status = 1)).length
-      . assert(_ > 0)
+        demilitarize(api.pet.findByStatus.get(status = 1)).nil
+      . assert(_ == false)
 
       test(m"omitting the required status is rejected"):
-        demilitarize(api.pet.findByStatus.get).length
-      . assert(_ > 0)
+        demilitarize(api.pet.findByStatus.get).nil
+      . assert(_ == false)
 
     suite(m"Redocly Museum (YAML, OpenAPI 3.1)"):
       val api = Api(cp"/openapi/redocly/museum.yaml")
@@ -220,8 +220,8 @@ object CorpusApiTests extends Suite("openapi-corpus-client", m"OpenAPI corpus cl
       . assert(_ == List(t"limit" -> t"10"))
 
       test(m"an undeclared path is rejected"):
-        demilitarize(api.channels(t"1").unicorns).length
-      . assert(_ > 0)
+        demilitarize(api.channels(t"1").unicorns).nil
+      . assert(_ == false)
 
     suite(m"Stripe"):
       val api = Api(cp"/openapi/stripe/spec3.json")

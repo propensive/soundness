@@ -192,23 +192,23 @@ object VerifyTests extends Suite("tel-verify", m"Stratiform verify tests"):
       test(m"An unknown field is rejected"):
         demilitarize:
           Worker(t"Alice", 30).encode.verify[Worker].nope
-        . head.message
-      . assert(_.contains("has no field"))
+        . head.let(_.message)
+      . assert(_.lay(false)(_.contains("has no field")))
 
       test(m"Indexing a non-collection field is rejected"):
         demilitarize:
           Worker(t"Alice", 30).encode.verify[Worker].name(0)
-        . head.message
-      . assert(_.contains("not an indexable collection"))
+        . head.let(_.message)
+      . assert(_.lay(false)(_.contains("not an indexable collection")))
 
       test(m"Field access on a scalar position is rejected"):
         demilitarize:
           Worker(t"Alice", 30).encode.verify[Worker].name.deeper
-        . head.message
-      . assert(_.contains("has no field"))
+        . head.let(_.message)
+      . assert(_.lay(false)(_.contains("has no field")))
 
       test(m"Plain (unverified) field access requires the enabler"):
         demilitarize:
           Worker(t"Alice", 30).encode.name
-        . head.message
-      . assert(_.contains("dynamicAccess.dynamicTel"))
+        . head.let(_.message)
+      . assert(_.lay(false)(_.contains("dynamicAccess.dynamicTel")))

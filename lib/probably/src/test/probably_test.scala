@@ -57,7 +57,7 @@ def listing(terms: List[Text] = Nil): Runner[Unit] =
 
 // Outside any suite, where no `Testable` is in scope but the one a method is given.
 object Orphans:
-  def refused: scala.List[Boolean] =
+  def refused: proscenium.List[Boolean] =
     demilitarize:
       def orphan()(using Testable): Test.Id = test(m"orphan")
     . map(_.message.tt.contains(t"a test must be declared for a Suite"))
@@ -157,7 +157,7 @@ object Tests extends Suite("testing", m"Probably Tests"):
 
       test(m"a test is refused where no Testable says which suite it is for"):
         Orphans.refused
-      . assert(_ == scala.List(true))
+      . assert(_ == List(true))
 
       test(m"a method declares tests for a named suite, for any suite, or impromptu"):
         demilitarize:

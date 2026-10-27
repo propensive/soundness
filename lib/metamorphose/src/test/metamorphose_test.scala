@@ -151,4 +151,4 @@ object Tests extends Suite("permutations", m"Metamorphose tests"):
       for i <- 0 to 6 do
         test(m"Apply permutation indexwise"):
           permutation(i)
-        . assert(_ == indices(i))
+        . assert(_ == indices.at(i.z))

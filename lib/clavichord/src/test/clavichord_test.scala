@@ -61,7 +61,7 @@ object Tests extends Suite("keyboard", m"Clavichord tests"):
             Keypress.Backspace, Keypress.Escape, Keypress.Left, Keypress.Right, Keypress.Up,
             Keypress.Down)
 
-        keys.map(rendered(_)).to(Set).size
+        keys.map(rendered(_)).to[Set].size
       . assert(_ == 14)
 
     suite(m"Character and function keys"):

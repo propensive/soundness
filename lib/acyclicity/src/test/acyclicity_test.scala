@@ -589,21 +589,21 @@ object Tests extends Suite("dag", m"Acyclicity Tests"):
       test(m"an empty identifier is not a valid DOT id"):
         demilitarize:
           val id: Name[Dot.Id] = n""
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
 
     suite(m"Layering"):
       test(m"a chain has one node per layer"):
         val dag = Dag(t"a" -> Set(), t"b" -> Set(t"a"), t"c" -> Set(t"b"))
-        dag.layered.layers.map(_.map { case Layering.Vertex.Real(n) => n; case other => t"?" })
+        List.from(dag.layered.layers.map { layer => List.from(layer.map { case Layering.Vertex.Real(n) => n; case other => t"?" }) })
       . assert(_ == List(List(t"a"), List(t"b"), List(t"c")))
 
       test(m"the diamond's middle layer holds both siblings"):
-        diamond.layered.layers.map(_.length)
+        List.from(diamond.layered.layers.map(_.length))
       . assert(_ == List(1, 2, 1))
 
       test(m"ranks are the longest path from a source"):
-        diamond.layered.rank
+        Map.from(diamond.layered.rank)
       . assert(_ == Map(t"d" -> 0, t"b" -> 1, t"c" -> 1, t"a" -> 2))
 
       // In first-reach order `c` precedes `d`, which crosses `a → d` over `b → c`; swapping
@@ -621,7 +621,7 @@ object Tests extends Suite("dag", m"Acyclicity Tests"):
 
       test(m"links join every adjacent pair of layers"):
         val dag = Dag(t"a" -> Set(), t"b" -> Set(t"a"), t"c" -> Set(t"a", t"b"))
-        dag.layered.links.map(_.length)
+        List.from(dag.layered.links.map(_.length))
       . assert(_ == List(2, 2))
 
       // `b` feeds only `d`, two layers down: `Balanced` sinks it to the layer above `d`.

@@ -246,7 +246,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
           root.open[Directory](): dir ?=>
             (dir / "nope.txt").overwrite(t"nope")
         . map(_.message)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"A dot-dot path element does not compile"):
         demilitarize:
@@ -254,7 +254,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
           root.open[Directory](): dir ?=>
             dir / ".."
         . map(_.message)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"A path from one directory cannot be written under another"):
         demilitarize:
@@ -263,7 +263,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
             root.open[Directory](Read & Write): second ?=>
               (first / "stolen.txt").overwrite(t"nope")
         . map(_.message)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
     suite(m"Creating entries"):
       import errorDiagnostics.emptyDiagnostics
@@ -461,7 +461,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
           ramFile.open[Ram](): ram ?=>
             ram(0L) = t"no".in[Data]
         . map(_.message)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Growing a mapping extends the file for positional writes past the old end"):
         val growLeaf: Text = Uuid().show
@@ -488,7 +488,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
           ramFile.open[Ram](): ram ?=>
             ram.grow(20L)
         . map(_.message)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
     suite(m"Creating mapped files"):
       import errorDiagnostics.emptyDiagnostics

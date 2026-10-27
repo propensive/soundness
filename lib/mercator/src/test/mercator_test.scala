@@ -82,7 +82,7 @@ object Tests extends Suite("monads", m"Mercator tests"):
     test(m"Functor for List"):
       val functor = summon[Functor[scala.collection.immutable.List]]
       functor.map(scala.collection.immutable.List(1, 2, 3))(_ + 1)
-    . assert(_ == List(2, 3, 4))
+    . assert(_ == scala.collection.immutable.List(2, 3, 4))
 
     test(m"Functor for Set"):
       val functor = summon[Functor[scala.collection.immutable.Set]]
@@ -112,7 +112,7 @@ object Tests extends Suite("monads", m"Mercator tests"):
     test(m"Monad for List"):
       val monad = summon[Monad[scala.collection.immutable.List]]
       monad.bind(scala.collection.immutable.List(1, 2, 3)) { v => if v > 1 then scala.collection.immutable.List(v + 1) else scala.collection.immutable.List.empty }
-    . assert(_ == List(3, 4))
+    . assert(_ == scala.collection.immutable.List(3, 4))
 
     test(m"Monad for Set"):
       val monad = summon[Monad[scala.collection.immutable.Set]]

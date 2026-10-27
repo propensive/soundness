@@ -203,31 +203,31 @@ object Tests extends Suite("ansi", m"Escapade tests"):
       test(m"unclosed paren is a compile error"):
         demilitarize:
           e"$Bold(text"
-        .  nonEmpty
-      . assert(_ == true)
+        . nil
+      . assert(_ == false)
 
       test(m"unclosed square bracket is a compile error"):
         demilitarize:
           e"$Bold[text"
-        .  nonEmpty
-      . assert(_ == true)
+        . nil
+      . assert(_ == false)
 
       test(m"unclosed brace is a compile error"):
         demilitarize:
           e"$Bold{text"
-        .  nonEmpty
-      . assert(_ == true)
+        . nil
+      . assert(_ == false)
 
       test(m"unclosed angle bracket is a compile error"):
         demilitarize:
           e"$Bold<text"
-        .  nonEmpty
-      . assert(_ == true)
+        . nil
+      . assert(_ == false)
 
       test(m"properly closed parens compile cleanly"):
         demilitarize:
           e"$Bold(text)"
-        .  isEmpty
+        . nil
       . assert(_ == true)
 
     // ─── style markers (one per marker) ───────────────────────────────────

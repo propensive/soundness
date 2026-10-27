@@ -118,12 +118,12 @@ object Tests extends Suite("names", m"Nomenclature tests"):
     test(m"An inferred name is rejected where a non-matching plane is required"):
       demilitarize:
         val name: Name[EndsO] = n"world"
-    . assert(_.nonEmpty)
+    . assert(!_.nil)
 
     test(m"An identifier valid in no plane in scope is a compile error"):
       demilitarize:
         val name = n"."
-    . assert(_.nonEmpty)
+    . assert(!_.nil)
 
     test(m"Name is required"):
       capture[Name.Error](Name[Required](t"")).message.show
@@ -243,7 +243,7 @@ object Tests extends Suite("names", m"Nomenclature tests"):
       test(m"a non-conforming literal is a compile error"):
         demilitarize:
           val name: Name[Prefixed] = n"ray"
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
     suite(m"MustContain"):
       inline given containing: Containing is Nominative under MustContain["-"] = !!
@@ -272,7 +272,7 @@ object Tests extends Suite("names", m"Nomenclature tests"):
       test(m"a non-conforming literal is a compile error"):
         demilitarize:
           val name: Name[Containing] = n"mainnav"
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
     suite(m"MustNotEnd"):
       inline given notEndingZ: NotEndingZ is Nominative under MustNotEnd["z"] = !!
@@ -300,7 +300,7 @@ object Tests extends Suite("names", m"Nomenclature tests"):
       test(m"a non-conforming literal is a compile error"):
         demilitarize:
           val name: Name[NotEndingZ] = n"quartz"
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
     suite(m"MustMatch"):
       inline given lowercase: Lowercase is Nominative under MustMatch["[a-z]+"] = !!
@@ -325,7 +325,7 @@ object Tests extends Suite("names", m"Nomenclature tests"):
       test(m"a non-conforming literal is a compile error"):
         demilitarize:
           val name: Name[Lowercase] = n"abc1"
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
     suite(m"MustMatch anchoring"):
       inline given repeated: Repeated is Nominative under MustMatch["a+"] = !!
@@ -367,4 +367,4 @@ object Tests extends Suite("names", m"Nomenclature tests"):
       test(m"a non-conforming literal is a compile error"):
         demilitarize:
           val name: Name[NotDigits] = n"123"
-      . assert(_.nonEmpty)
+      . assert(!_.nil)

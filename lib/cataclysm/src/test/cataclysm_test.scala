@@ -756,11 +756,11 @@ object Tests extends Suite("css", m"Cataclysm Tests"):
       . assert(_ == t"2fr")
 
       test(m"adding two different relative units fails to compile"):
-        demilitarize(2.0*Em + 1.0*Vh).nonEmpty
+        !demilitarize(2.0*Em + 1.0*Vh).nil
       . assert(_ == true)
 
       test(m"adding a relative and an absolute length fails to compile"):
-        demilitarize(2.0*Px + 3.0*Cm).nonEmpty
+        !demilitarize(2.0*Px + 3.0*Cm).nil
       . assert(_ == true)
 
     suite(m"CSS output integrations"):
@@ -856,11 +856,11 @@ object Tests extends Suite("css", m"Cataclysm Tests"):
       . assert(_ == true)
 
       test(m"a non-name substitution in selector position fails to compile"):
-        demilitarize(css"$width { color: red }").nonEmpty
+        !demilitarize(css"$width { color: red }").nil
       . assert(_ == true)
 
       test(m"a substitution mixed with literal text fails to compile"):
-        demilitarize(css"a { margin: $width 0 }").nonEmpty
+        !demilitarize(css"a { margin: $width 0 }").nil
       . assert(_ == true)
 
     suite(m"CSS interpolator result type"):
@@ -879,11 +879,11 @@ object Tests extends Suite("css", m"Cataclysm Tests"):
       . assert(_ == t"a { color: red }".read[Css].rules)
 
       test(m"a bare style set is statically a Css.Style, not a stylesheet"):
-        demilitarize(css"color: red".rules).nonEmpty
+        !demilitarize(css"color: red".rules).nil
       . assert(_ == true)
 
       test(m"a stylesheet is statically a Css, not an inline style set"):
-        demilitarize(css"a { color: red }".text).nonEmpty
+        !demilitarize(css"a { color: red }".text).nil
       . assert(_ == true)
 
     suite(m"Joining CSS with +"):
@@ -908,4 +908,4 @@ object Tests extends Suite("css", m"Cataclysm Tests"):
         demilitarize:
           css"""p { color: red /* unterminated"""
         . map(_.message)
-      . assert(_.headOption.exists(_.contains("a comment was not terminated")))
+      . assert(_.head.lay(false)(_.contains("a comment was not terminated")))

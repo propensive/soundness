@@ -104,4 +104,4 @@ object Tests extends Suite("database", m"Anamnesis tests"):
       demilitarize:
         top.store().assign(red.reference())
 
-    . assert(_.nonEmpty)
+    . assert(!_.nil)

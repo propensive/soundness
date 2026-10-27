@@ -611,7 +611,7 @@ object Tests extends Suite("xml", m"Xylophone tests"):
         demilitarize:
           x"<foo></bar>"
         . map(_.focus)
-      . assert(_.headOption.exists(_.contains("bar")))
+      . assert(_.head.lay(false)(_.contains("bar")))
 
       test(m"focus is identity-mapped through literal \\n (interpolators don't decode it)"):
         // In an interpolator, `\n` is passed through verbatim — both source
@@ -619,14 +619,14 @@ object Tests extends Suite("xml", m"Xylophone tests"):
         demilitarize:
           x"<foo>\n</bar>"
         . map(_.focus)
-      . assert(_.headOption.exists(_.contains("bar")))
+      . assert(_.head.lay(false)(_.contains("bar")))
 
       test(m"focus respects literal é in source (single value char)"):
         // A non-ASCII char in source is one char in value too; identity.
         demilitarize:
           x"<foo>é</bar>"
         . map(_.focus)
-      . assert(_.headOption.exists(_.contains("bar")))
+      . assert(_.head.lay(false)(_.contains("bar")))
 
       test(m"focus respects \\u#### lexer escape"):
         // The fixture has the literal 6 chars \\u00e9 in source. Whether the
@@ -642,7 +642,7 @@ object Tests extends Suite("xml", m"Xylophone tests"):
         demilitarize:
           x"""<foo></bar>"""
         . map(_.focus)
-      . assert(_.headOption.exists(_.contains("bar")))
+      . assert(_.head.lay(false)(_.contains("bar")))
 
       test(m"focus on bad name is exactly the offending span (with escape)"):
         // After `\n` (1 value char, 2 source chars), the `</bar>` close span
@@ -669,7 +669,7 @@ object Tests extends Suite("xml", m"Xylophone tests"):
         demilitarize:
           x"<foo>$greeting</foo></bar>"
         . map(_.focus)
-      . assert(_.headOption.exists(_.contains("bar")))
+      . assert(_.head.lay(false)(_.contains("bar")))
 
 
     suite(m"Extractor tests"):
@@ -797,7 +797,7 @@ object Tests extends Suite("xml", m"Xylophone tests"):
         demilitarize:
           (x"<a/>": Xml).absolve match
             case x"<a><?$pi?></a>" => pi
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
 
     suite(m"Namespaces"):
@@ -964,14 +964,14 @@ object Tests extends Suite("xml", m"Xylophone tests"):
       test(m"emit indents a document and adds the header and trailing newlines"):
         import formatting.indentedXmlFormatting
         val document = Document[Xml](elem(t"a", elem(t"b")), Xml.Header(t"1.0", Unset, Unset))
-        supervise(Xml.emit(document).to(List).mkString.tt)
+        supervise(Xml.emit(document).to(List).join)
       . assert(_ == t"<?xml version=\"1.0\"?>\n<a>\n  <b/>\n</a>\n")
 
     // The fiber form of `emit` is the reference: the push and borrowing forms must write the
     // same document, the byte forms as its UTF-8 encoding.
     suite(m"Streaming serialization"):
       def reference(document: Document[Xml])(using Xml.Formatting): Text =
-        supervise(Xml.emit(document).to(List).mkString.tt)
+        supervise(Xml.emit(document).to(List).join)
 
       def pushed(document: Document[Xml])(using Xml.Formatting): Text =
         val builder = new java.lang.StringBuilder()
@@ -1425,13 +1425,13 @@ object Tests extends Suite("xml", m"Xylophone tests"):
         demilitarize:
           val flag = true
           xp"//div[@id=$flag]"
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"an insertion cannot appear as an axis name"):
         demilitarize:
           val axis = t"child"
           xp"//$axis::div"
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"an unclosed predicate is rejected"):
         demilitarize:
@@ -1547,8 +1547,8 @@ object Tests extends Suite("xml", m"Xylophone tests"):
       test(m"Dynamic access does not compile without the enabler import"):
         demilitarize:
           t"<r><x>1</x></r>".read[Xml].x()
-        . nonEmpty
-      . assert(identity)
+        . nil
+      . assert(_ == false)
 
     suite(m"Reading from a stream as it arrives"):
       // A stream of `size`-byte (or `size`-char) chunks, so the readers' `accept` is the path

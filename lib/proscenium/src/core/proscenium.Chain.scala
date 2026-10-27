@@ -39,7 +39,10 @@ import scala.collection.immutable as sci
 // supertype. The distinguishing constraint is LAZINESS: the `#::` cons keeps its tail operand
 // by-name, and the `#::` extractor is name-based and non-forcing (matching a head forces only the
 // first element, never the tail's contents).
-object Chain:
+// The companion is `Pure`: the umbrella forwards it as a `val`, and under capture checking a
+// value of a non-pure object type is a tracked capability, so `xs.to(Chain)` — which passes the
+// companion as a factory — would otherwise capture the forwarder and freshen its result.
+object Chain extends scala.caps.Pure:
   // `of` is a plain method, not `inline`: inline expansion of the cast inside capturing lambdas
   // crashes the capture checker's boxer (boxDeeply assertion), and streaming code is cc-heavy.
   private[proscenium] def of[element](chain: sci.LazyList[element]): Chain[element] =
@@ -53,6 +56,15 @@ object Chain:
   def apply[element](elements: element*): Chain[element] = of(sci.LazyList(elements*))
 
   def empty[element]: Chain[element] = of(sci.LazyList.empty[element])
+
+  // A branded chain (`& Populated`, as the literal constructors mint) compares with a plain one:
+  // `CanEqual` is sought in the companions of the compared types, and the brand, a refinement of
+  // `Any`, contributes no companion, so the equalities live here rather than at package level.
+  given populatedEquality: [left, right] => CanEqual[Chain[left] & Populated, Chain[right]] =
+    CanEqual.derived
+
+  given populatedEqualityReversed: [left, right] => CanEqual[Chain[left], Chain[right] & Populated] =
+    CanEqual.derived
 
   def from[element](elements: IterableOnce[element]^): Chain[element] =
     of(sci.LazyList.from(elements))

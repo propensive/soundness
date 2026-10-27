@@ -345,5 +345,5 @@ object TelpTests extends Suite("telp", m"Stratiform TELP tests"):
         demilitarize:
           val name = t"email"
           telp"/contact/$name"
-        . length
+        . size
       . assert(_ == 1)

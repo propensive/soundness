@@ -462,7 +462,7 @@ object Tests extends Suite("cbor", m"Breviloquence Tests"):
         val cbor = Renamed(List(1L, 2L), List(3L)).in[Cbor]
         val ast = Cbor.unseal(cbor)
         val keys = (0 until ast.entries).map(ast.key(_).string).toSet
-        keys == Set("data_files", "index_files")
+        Set.from(keys) == Set("data_files", "index_files")
       . assert(identity)
 
       test(m"Decode reads wire keys back into Scala fields"):
@@ -476,7 +476,7 @@ object Tests extends Suite("cbor", m"Breviloquence Tests"):
         val cbor = original.in[Cbor]
         val ast = Cbor.unseal(cbor)
         val keys = (0 until ast.entries).map(ast.key(_).string).toSet
-        keys == Set("values", "label")
+        Set.from(keys) == Set("values", "label")
       . assert(identity)
 
       test(m"@name renames a variant's discriminator"):
@@ -719,7 +719,7 @@ object Tests extends Suite("cbor", m"Breviloquence Tests"):
 
       test(m"trailing bytes are rejected as on the AST path"):
         val bytes = encoded(Point(3, 4))
-        val padded = Array.from(bytes.stdlib.to(List) :+ 0.toByte)
+        val padded = Array.from(bytes.stdlib :+ 0.toByte)
         capture[Cbor.Error](padded.read[Point in Cbor]).reason match
           case Cbor.Error.Reason.Trailing(offset) => offset
           case _                                 => -1L

@@ -175,7 +175,7 @@ object Tests extends Suite("shell", m"Guillotine tests"):
         demilitarize:
           sh"echo 'Hello world"
         . map(_.message)
-      . assert(_.headOption.exists(_.contains("single quote")))
+      . assert(_.head.lay(false)(_.contains("single quote")))
 
       test(m"unterminated single quote focus is the opening quote"):
         demilitarize:
@@ -187,7 +187,7 @@ object Tests extends Suite("shell", m"Guillotine tests"):
         demilitarize:
           sh"""echo "Hello"""
         . map(_.message)
-      . assert(_.headOption.exists(_.contains("double quote")))
+      . assert(_.head.lay(false)(_.contains("double quote")))
 
       test(m"unterminated double quote focus is the opening quote"):
         demilitarize:
@@ -199,7 +199,7 @@ object Tests extends Suite("shell", m"Guillotine tests"):
         demilitarize:
           sh"""echo \"""
         . map(_.message)
-      . assert(_.headOption.exists(_.contains("escape character")))
+      . assert(_.head.lay(false)(_.contains("escape character")))
 
       test(m"trailing escape character focus is the backslash"):
         demilitarize:
@@ -212,7 +212,7 @@ object Tests extends Suite("shell", m"Guillotine tests"):
         demilitarize:
           sh"""ls \$file"""
         . map(_.message)
-      . assert(_.headOption.exists(_.contains("substitution")))
+      . assert(_.head.lay(false)(_.contains("substitution")))
 
       test(m"quote opened after a substitution is positioned correctly"):
         val flags = t"-la"
@@ -532,7 +532,7 @@ object Tests extends Suite("shell", m"Guillotine tests"):
           throw Exception("abandoned")
         catch case _: Exception => ()
 
-        pids.toList.map(ProcessHandle.of(_).nn.isPresent)
+        List.from(pids).map(ProcessHandle.of(_).nn.isPresent)
       . assert(_ == List(false))
 
       test(m"a session ends though a background job holds the terminal"):

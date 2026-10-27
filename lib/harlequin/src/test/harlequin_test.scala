@@ -271,7 +271,7 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
           + t"val chosen = pick[Int](9)(using Ordering.Int)"
 
         elaborationsOf(explicit, t"pick")
-      . assert(_.isEmpty)
+      . assert(_.nil)
 
     // Fragment analysis is pure text+lexer work — no compiler givens — so a completion host
     // can split its input before deciding whether to invoke the typechecker at all.

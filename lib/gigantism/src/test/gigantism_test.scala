@@ -52,12 +52,12 @@ object Tests extends Suite("macros", m"Gigantism Tests"):
   def run(): Unit =
     suite(m"Summoning every instance"):
       test(m"No instances are found when none are in scope"):
-        every[Missing].values
+        List.from(every[Missing].values)
       . assert(_ == Nil)
 
       test(m"A single instance in scope is found"):
         import Shapes.square
-        every[Shape].values
+        List.from(every[Shape].values)
       . assert(_ == List(Shape(t"square")))
 
       test(m"Every mutually-ambiguous instance in scope is found"):
@@ -76,7 +76,7 @@ object Tests extends Suite("macros", m"Gigantism Tests"):
 
       test(m"A locally-defined instance is found"):
         given local: Shape = Shape(t"triangle")
-        every[Shape].values
+        List.from(every[Shape].values)
       . assert(_ == List(Shape(t"triangle")))
 
       test(m"Local and imported instances are both found"):

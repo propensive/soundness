@@ -93,7 +93,7 @@ object Tests extends Suite("types", m"Typonym tests"):
       test(m"The stated result type is checked against the reification"):
         demilitarize:
           reifyAs[TypeSet["a" | "b"], List[Int]]
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       // Aspirational: only the `TypeSet` case reifies at its element type, building `List[set]`.
       // The `TypeList` case reifies each element independently and so produces a `List[Any]`,
@@ -105,7 +105,7 @@ object Tests extends Suite("types", m"Typonym tests"):
           demilitarize:
             reifyAs[TypeList[("a", "b")], List[String]]
           . map(_.message)
-        . assert(_.isEmpty)
+        . assert(_.nil)
 
     suite(m"Reifiable"):
       test(m"A directly-constructed Reifiable returns its value"):
@@ -122,15 +122,15 @@ object Tests extends Suite("types", m"Typonym tests"):
       test(m"A non-literal type cannot be reified"):
         demilitarize:
           reify[Int]
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"A non-literal element of a type list cannot be reified"):
         demilitarize:
           reify[TypeList[(String, "two")]]
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"A non-literal member of a type set cannot be reified"):
         demilitarize:
           reify[TypeSet["one" | Int]]
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 

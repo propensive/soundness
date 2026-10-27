@@ -184,7 +184,7 @@ object Tests extends Suite("fonts", m"Phoenicia Tests"):
         t"hmtx" -> hmtxTable, t"maxp" -> maxpTable, t"post" -> postTable, t"OS/2" -> os2Table,
         t"name" -> nameTable, t"loca" -> locaTable, t"glyf" -> glyfTable)
 
-    sfnt((base ++ extra)*)
+    sfnt(List.concat(base, List.from(extra))*)
 
   def run(): Unit =
     suite(m"Character mapping"):

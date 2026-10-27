@@ -53,7 +53,7 @@ object CaptureTests extends Suite("httpd-capture", m"Connection confinement test
             Http.Response(Http.Ok)(t"")
 
           ()
-    . assert(_.nonEmpty)
+    . assert(!_.nil)
 
     // A streamed response body may retain the connection it answers (`Http.Response^
     // {connection}`) but nothing else scoped: a body reading a *foreign* capability
@@ -67,4 +67,4 @@ object CaptureTests extends Suite("httpd-capture", m"Connection confinement test
             Http.Response(Http.Ok)(Http.Body.Flowing(() => foreign))
 
           ()
-    . assert(_.nonEmpty)
+    . assert(!_.nil)

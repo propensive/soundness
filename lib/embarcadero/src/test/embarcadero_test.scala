@@ -81,7 +81,7 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
       . assert(_ == media"application/vnd.oci.image.layer.v1.tar+gzip")
 
       test(m"the blob is a valid gzipped tar round-tripping to the original entry"):
-        Tarfile.read(layer.blob.stream.decompress[Gzip]).map(_.entryName).to(List)
+        List.from(Tarfile.read(layer.blob.stream.decompress[Gzip]).map(_.entryName))
       . assert(_ == List(t"hello.txt"))
 
     suite(m"Image config"):
@@ -171,7 +171,7 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
 
       // The archive with its entry list transformed: for exercising failure paths.
       def rebuilt(transform: List[Tar.Entry] => List[Tar.Entry]): Data =
-        val entries = Tarfile.read(archiveData.stream).to(List)
+        val entries = List.from(Tarfile.read(archiveData.stream))
         Tarfile(transform(entries)).source[Data].memoize
 
       def failure[result](body: => result): Optional[Oci.Error.Reason] =

@@ -356,7 +356,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
            Keypress.CharKey('y'), Keypress.CharKey('o'),
            Keypress.Escape )
 
-        Form(root, Occupancy.Fullscreen, stack(editor(), editor())).run(events.iterator)
+        Form(root, Occupancy.Fullscreen, stack(editor(), editor())).run(List.iterator(events))
         root.render
       . assert(_ == t"hi        \n          \nyo        \n          ")
 
@@ -366,8 +366,8 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"a growing editor re-tiles and pushes its sibling down"):
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
         val root = FlowExtent(TerminalBoard(10, 4), Rect(0, 0, 10, 4))
-        val events = List.fill(21)(Keypress.CharKey('a')) ++ List(Keypress.Escape)
-        Form(root, Occupancy.Fullscreen, stack(editor(), editor())).run(events.iterator)
+        val events = List.concat(List.fill(21)(Keypress.CharKey('a')), List(Keypress.Escape))
+        Form(root, Occupancy.Fullscreen, stack(editor(), editor())).run(List.iterator(events))
         root.render
       . assert(_ == t"aaaaaaaaaa\naaaaaaaaaa\na         \n          ")
 
@@ -872,7 +872,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
           Keypress.CharKey('x'),
           Keypress.Escape)
 
-        Form(root, Occupancy.Inline, stack(editor()), debounce = 50).run(events.iterator)
+        Form(root, Occupancy.Inline, stack(editor()), debounce = 50).run(List.iterator(events))
         String(bytes.toByteArray.nn, "UTF-8").tt.cut(t"\e[2K").size - 1
       . assert(_ == 1)
 
@@ -1133,7 +1133,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
         val root = FlowExtent(TerminalBoard(12, 3), Rect(0, 0, 12, 3))
         val pane = stack(menu(List(t"alpha", t"beta"), t"alpha"), editor())
-        Form(root, Occupancy.Fullscreen, pane).run(List(Keypress.Tab, Keypress.Escape).iterator)
+        Form(root, Occupancy.Fullscreen, pane).run(List.iterator(List(Keypress.Tab, Keypress.Escape)))
         root.render
       . assert(_ == t" · alpha    \n   beta     \n            ")
 

@@ -276,7 +276,7 @@ object Tests extends Suite("diff", m"Dissonance tests"):
 
       test(m"Serialize round-trips through parse"):
         Redraft.parse(roundtrip).serialize.to[List]
-      . assert(_ == roundtrip.to(List))
+      . assert(_ == roundtrip.to[List])
 
     suite(m"Redraft application tests"):
       test(m"Apply a simple redraft"):
