@@ -45,7 +45,7 @@ import strategies.throwUnsafely
 import probates.panicProbate
 
 object Tests extends Suite("parsing", m"Zephyrine tests"):
-  val bytes = Data.fill(1000)(_.toByte)
+  val bytes: Data = Data.fill(1000)(_.toByte)
   def run(): Unit = stochastic:
 
     suite(m"Producer tests"):
@@ -1204,7 +1204,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
       . assert(_ == List())
 
       test(m"truncate and discard compose to a slice"):
-        Stream(Data.fill(20)(_.toByte)).discard(5).truncate(5).memoize.to[List]
+        Stream(Data.fill(20)(_.toByte): Data).discard(5).truncate(5).memoize.to[List]
       . assert(_.to[List].map(_.toInt) == List(5, 6, 7, 8, 9))
 
       test(m"truncate composes with a duct"):
@@ -1269,13 +1269,13 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
       . assert(_ == List(Row(1), Row(2), Row(3)))
 
       test(m"streamOf lends a bounded sub-stream of a cursor"):
-        val cursor = Cursor(Data.fill(10)(_.toByte))
+        val cursor = Cursor(Data.fill(10)(_.toByte): Data)
         // [pump-overlap] read after a consuming pump, lend or duct
         scala.caps.unsafe.unsafeAssumeSeparate(streamOf(cursor, 4).memoize.to[List])
       . assert(_.to[List].map(_.toInt) == List(0, 1, 2, 3))
 
       test(m"the lent cursor resumes at the boundary"):
-        val cursor = Cursor(Data.fill(10)(_.toByte))
+        val cursor = Cursor(Data.fill(10)(_.toByte): Data)
         // [pump-overlap] read after a consuming pump, lend or duct
         scala.caps.unsafe.unsafeAssumeSeparate(streamOf(cursor, 4).memoize)
         val remainder: List[Data] = cursor.remainder.to[List]
@@ -1283,7 +1283,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
       . assert(_.map(_.toInt) == List(4, 5, 6, 7, 8, 9))
 
       test(m"streamOf without a length lends the whole remainder"):
-        val cursor = Cursor(Data.fill(6)(_.toByte))
+        val cursor = Cursor(Data.fill(6)(_.toByte): Data)
         // [pump-overlap] read after a consuming pump, lend or duct
         scala.caps.unsafe.unsafeAssumeSeparate(streamOf(cursor).memoize.to[List])
       . assert(_.to[List].map(_.toInt) == List(0, 1, 2, 3, 4, 5))

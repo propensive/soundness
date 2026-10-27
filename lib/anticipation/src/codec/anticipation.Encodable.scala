@@ -35,7 +35,8 @@ package anticipation
 import prepositional.*
 
 object Encodable:
-  given bytes: Data is Encodable in Data = identity(_)
+  // Subtype-parametric, so a branded `Data & Sized[n]` encodes as itself.
+  given bytes: [data <: Data] => data is Encodable in Data = identity(_)
 
   // A `Long` encodes to its eight bytes in big-endian order.
   given longData: Long is Encodable in Data =
