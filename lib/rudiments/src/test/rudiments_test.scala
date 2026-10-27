@@ -355,20 +355,16 @@ object Tests extends Suite("core", m"Rudiments Tests"):
         first
       . assert(_ == 5)
 
-      test(m"an empty List literal is not Populated"):
-        demilitarize:
-          val xs = proscenium.List[Int]()
-          xs.head
-        . map(_.message)
-      . assert(_.nonEmpty)
+      test(m"an empty List literal is not Populated, so its head is Optional and absent"):
+        val xs = proscenium.List[Int]()
+        xs.head
+      . assert(_ == Unset)
 
-      test(m"a splatted sequence is not Populated"):
-        demilitarize:
-          val source: proscenium.List[Int] = proscenium.List(1, 2)
-          val xs = proscenium.List(source.stdlib*)
-          xs.head
-        . map(_.message)
-      . assert(_.nonEmpty)
+      test(m"a splatted sequence is not Populated, so its head is Optional"):
+        val source: proscenium.List[Int] = proscenium.List(1, 2)
+        val xs = proscenium.List(source.stdlib*)
+        xs.head
+      . assert(_ == 1)
 
       test(m"a branded literal compares with its unbranded self"):
         proscenium.List(1, 2, 3) == (proscenium.List(1) + proscenium.List(2, 3)
