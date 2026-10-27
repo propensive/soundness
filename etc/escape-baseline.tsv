@@ -360,6 +360,7 @@ lib/kaleidoscope/src/core/kaleidoscope.internal.scala	0	0	0	0	0	1	0	0	0	1	6	2	0	
 lib/larceny/src/plugin/larceny.LarcenyTransformer.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/larceny/src/plugin/larceny.Subcompiler.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/legerdemain/src/core/legerdemain.Elicitable.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
+lib/legerdemain/src/query/legerdemain.Query.scala	0	0	0	0	0	0	0	0	0	0	1	0	1	0	0	0
 lib/legerdemain/src/query/legerdemain.internal.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/legerdemain/src/test/legerdemain_test.scala	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/locomotion/src/core/locomotion.Protobuf.scala	0	0	0	0	3	3	0	0	5	5	2	2	0	0	2	0
@@ -504,7 +505,7 @@ lib/rudiments/src/core/rudiments.atomicMacros.scala	0	0	0	0	0	0	0	0	2	0	0	0	0	0	
 lib/rudiments/src/core/rudiments.sorting.scala	0	0	0	0	0	0	0	0	3	1	0	0	0	0	0	0
 lib/rudiments/src/core/rudiments_core.scala	1	0	0	1	0	1	0	2	0	0	0	0	0	0	3	0
 lib/rudiments/src/core/soundness_rudiments_core.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0
-lib/rudiments/src/test/rudiments_test.scala	0	0	0	0	0	0	0	0	0	0	8	0	0	0	0	0
+lib/rudiments/src/test/rudiments_test.scala	0	0	0	0	0	0	0	0	0	0	6	0	0	0	0	0
 lib/savagery/src/core/savagery.Figure.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0
 lib/savagery/src/core/savagery.Svg.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/savagery/src/test/savagery_test.scala	0	0	0	0	1	0	0	0	0	0	17	17	0	0	0	0
@@ -549,7 +550,7 @@ lib/stratiform/src/core/stratiform.SchemaResolver.scala	0	0	0	0	0	0	0	0	0	0	4	0	
 lib/stratiform/src/core/stratiform.SchemaSignature.scala	0	0	0	0	0	0	0	0	0	0	10	0	1	0	0	0
 lib/stratiform/src/core/stratiform.Stratiform.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/stratiform/src/core/stratiform.Tel.scala	4	0	2	0	3	4	0	0	15	18	17	0	3	0	2	0
-lib/stratiform/src/core/stratiform.Tel2.scala	2	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0
+lib/stratiform/src/core/stratiform.Tel2.scala	2	0	0	0	0	0	0	0	0	0	2	0	2	0	2	0
 lib/stratiform/src/core/stratiform.Tel3.scala	2	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/stratiform/src/core/stratiform.Tel4.scala	0	0	0	0	0	0	0	0	0	0	7	0	7	0	0	0
 lib/stratiform/src/core/stratiform.TelReader.scala	0	0	0	0	0	0	0	0	2	1	0	0	0	0	0	0
@@ -673,7 +674,7 @@ lib/vivisection/src/eval/vivisection.Purview.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	1
 lib/vivisection/src/test/vivisection_test.scala	2	0	0	0	0	1	0	0	0	0	20	1	0	6	0	0
 lib/wisteria/src/core/wisteria.SumDerivation.scala	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
 lib/wisteria/src/core/wisteria.internal.scala	0	0	0	0	0	0	0	0	2	1	6	0	0	0	1	0
-lib/wisteria/src/test/wisteria_test.scala	0	0	0	0	3	0	0	0	0	0	3	0	0	0	0	0
+lib/wisteria/src/test/wisteria_test.scala	0	0	0	0	3	0	0	0	0	0	5	2	0	0	0	0
 lib/xenophile/src/cffi/xenophile.CHeader.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0
 lib/xenophile/src/core/xenophile.internal.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	1	0
 lib/xenophile/src/js/xenophile.JsInvoke.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
@@ -730,7 +731,7 @@ lib/zephyrine/src/core/zephyrine.Slate.scala	0	0	0	0	0	0	0	0	1	2	0	0	0	0	0	0
 lib/zephyrine/src/core/zephyrine.Stream.scala	0	0	2	0	0	0	0	0	5	1	0	0	0	0	0	0
 lib/zephyrine/src/core/zephyrine.internal.scala	0	0	0	0	0	0	0	5	0	0	0	0	0	0	0	0
 lib/zephyrine/src/core/zephyrine_core.scala	0	0	12	0	0	0	0	0	8	3	0	0	0	0	0	0
-lib/zephyrine/src/test/zephyrine_test.scala	0	26	1	0	1	0	0	0	3	2	10	1	0	2	0	0
+lib/zephyrine/src/test/zephyrine_test.scala	0	26	1	0	1	0	0	0	3	2	12	1	2	2	0	0
 lib/zeppelin/src/core/zeppelin.Zip.scala	0	0	0	0	0	0	0	3	0	0	0	0	0	0	0	0
 lib/zeppelin/src/core/zeppelin.Zipfile.scala	0	0	0	0	0	0	0	0	0	0	3	0	0	3	0	0
 lib/zeppelin/src/test/zeppelin_test.scala	0	0	0	0	1	7	0	0	0	0	5	5	0	0	0	0
