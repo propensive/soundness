@@ -252,6 +252,20 @@ object Tests extends Suite("core", m"Rudiments Tests"):
         . map(_.message.toString.contains("beyond the array's proven length"))
       . assert(_ == List(true))
 
+      test(m"a literal length is a proof the type records"):
+        val xs = Array.fill(4)(7)
+        summon[xs.type <:< Sized[4]]
+        xs(Quat)
+      . assert(_ == 7)
+
+      test(m"a val length is not a proof: the array is unbranded"):
+        demilitarize:
+          val n = 4
+          val xs = Array.fill(n)(7)
+          summon[xs.type <:< Sized[?]]
+        . map(_.message.toString.contains("Cannot prove"))
+      . assert(_ == List(true))
+
     suite(m"last and lead tests"):
       test(m"last of a sequence"):
         val xs: Sequence[Int] = Sequence(1, 2, 3)

@@ -69,22 +69,31 @@ object Array:
     // [construction-fresh] the iterator's fresh array is aliased by no writer
     unsafeFrozen(elements.iterator.toArray)
 
-  // A literal length is a proof of length: these overloads brand the result `Sized[n]`, and
-  // overloading resolution prefers them for a literal argument (the singleton-bounded
-  // parameter is more specific than `Int`) and cannot apply them to a variable. The
-  // `DummyImplicit` only keeps their erased signatures distinct from the unproven forms.
-  def fill[element: ClassTag, length <: Int & Singleton](count: length)(element: => element)
+  // A literal length is a proof of length: these overloads brand the result `Sized[n]`.
+  // Overloading resolution prefers them for any *stable* argument (the singleton-bounded
+  // parameter is more specific than `Int`), which includes a `val`, so each is `transparent
+  // inline` and brands only when the length is a compile-time constant; a `val` length yields
+  // the plain array, as the `Int` overload does for an expression. The `DummyImplicit` only
+  // keeps their erased signatures distinct from the unproven forms.
+  transparent inline def fill[element: ClassTag, length <: Int & Singleton](count: length)
+    ( element: => element )
     ( using DummyImplicit )
-  :   Array[element]^{} & Sized[length] =
+  :   Array[element]^{} =
 
-    fill[element](count: Int)(element).asInstanceOf[Array[element]^{} & Sized[length]]
+    inline scala.compiletime.constValueOpt[length] match
+      case Some(_) =>
+        fill[element](count: Int)(element).asInstanceOf[Array[element]^{} & Sized[length]]
+      case None    => fill[element](count: Int)(element)
 
-  def tabulate[element: ClassTag, length <: Int & Singleton](count: length)
+  transparent inline def tabulate[element: ClassTag, length <: Int & Singleton](count: length)
     ( lambda: Int => element )
     ( using DummyImplicit )
-  :   Array[element]^{} & Sized[length] =
+  :   Array[element]^{} =
 
-    tabulate[element](count: Int)(lambda).asInstanceOf[Array[element]^{} & Sized[length]]
+    inline scala.compiletime.constValueOpt[length] match
+      case Some(_) =>
+        tabulate[element](count: Int)(lambda).asInstanceOf[Array[element]^{} & Sized[length]]
+      case None    => tabulate[element](count: Int)(lambda)
 
   // Concatenation; with two proven lengths the result's length is their sum, decided at the
   // type level when both are literals and carried symbolically otherwise.

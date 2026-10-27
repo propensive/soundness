@@ -49,7 +49,12 @@ A brand can record a *length* as well as a bound. `Sized[n]` (proscenium, beside
 is a phantom refinement, `Any { type Length = n }`, minted three ways:
 
 - **by construction**: `Array.fill(512)(…)`, `Array.tabulate(8)(…)` and `Data.fill(16)(…)` with
-  a literal length return `… & Sized[n]`, as `List(a, b)` returns `& Populated`;
+  a literal length return `… & Sized[n]`, as `List(a, b)` returns `& Populated`; a `val` or
+  an expression length does not brand (only a compile-time constant is a proof the macro can
+  read). The brand is a refinement of the value's type, so it does not match a typeclass
+  instance declared for the plain type (`Addressable { type Self = Data }`): where the
+  typeclass operations rather than the proof are wanted, bind with an ascription
+  (`val payload: Data = Data.fill(100)(_.toByte)`);
 - **by declaration**: a producer that fixes a layout — a 512-byte tar header, an 8-byte chunk
   header — declares `Sized[n]` on its result and discharges it once at the boundary;
 - **by check**: `xs.sized[512]` yields `Optional[xs.type & Sized[512]]`, the counterpart of

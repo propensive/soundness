@@ -37,22 +37,31 @@ import prepositional.*
 object Data:
   def apply(xs: Byte*): Data = Array(xs*)
 
-  // A literal length brands the result `Sized[n]`, as `fill` does.
-  def build[length <: Int & Singleton](count: length)(lambda: scala.Array[Byte]^ => Unit)
+  // A literal length brands the result `Sized[n]`; a stable but non-literal one does not (see
+  // `Array.fill`).
+  transparent inline def build[length <: Int & Singleton](count: length)
+    ( lambda: scala.Array[Byte]^ => Unit )
     ( using DummyImplicit )
-  :   Data & Sized[length] =
+  :   Data =
 
-    build(count: Int)(lambda).asInstanceOf[Data & Sized[length]]
+    inline scala.compiletime.constValueOpt[length] match
+      case Some(_) => build(count: Int)(lambda).asInstanceOf[Data & Sized[length]]
+      case None    => build(count: Int)(lambda)
 
   def build(count: Int)(lambda: scala.Array[Byte]^ => Unit): Data =
     val array: scala.Array[Byte]^ = new scala.Array[Byte](count)
     lambda(array)
     array.asInstanceOf[Data]
 
-  // A literal length brands the result `Sized[n]`, as `Array.fill` does.
-  def fill[length <: Int & Singleton](count: length)(lambda: Int => Byte)(using DummyImplicit)
-  :   Data & Sized[length] =
-    fill(count: Int)(lambda).asInstanceOf[Data & Sized[length]]
+  // A literal length brands the result `Sized[n]`; a stable but non-literal one does not (see
+  // `Array.fill`).
+  transparent inline def fill[length <: Int & Singleton](count: length)(lambda: Int => Byte)
+    ( using DummyImplicit )
+  :   Data =
+
+    inline scala.compiletime.constValueOpt[length] match
+      case Some(_) => fill(count: Int)(lambda).asInstanceOf[Data & Sized[length]]
+      case None    => fill(count: Int)(lambda)
 
   def fill(count: Int)(lambda: Int => Byte): Data = build(count): array =>
     var index = 0
