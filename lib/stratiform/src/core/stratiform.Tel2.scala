@@ -398,8 +398,7 @@ trait Tel2 extends Tel3:
           // goes through the stdlib view.
 
             contexts[derivation](): [field] => context => (label, context.shape())
-            . stdlib.toList
-            . to(List)
+            . pipe { array => array.stdlib.to(List) } // freshens the array, as jacinta\'s does
 
         Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })
       }):
@@ -461,8 +460,7 @@ trait Tel2 extends Tel3:
     // The variant a sum position carries: its first child compound, as a `Tel`. A plain
     // method: read from the inline expansion, the compound array re-freshens (`^{any.rd}`).
     private def firstVariant(telVal: Tel): Optional[Tel] =
-      val compounds = telVal.childCompounds
-      if compounds.nil then Unset else Tel.make(compounds.stdlib.head)
+      telVal.childCompounds.head.let(Tel.make(_))
 
     inline def disjunction[derivation: SumReflection]: (derivation is Tel.Decodable)^ =
       // A sum is a document whose single child compound is the chosen variant, keyed by
@@ -526,8 +524,7 @@ trait Tel2 extends Tel3:
             // the array.
 
             contexts[derivation](): [field] => context => (label, context.shape())
-            . stdlib.toList
-            . to(List)
+            . pipe { array => array.stdlib.to(List) } // freshens the array, as jacinta\'s does
 
           Morphology.Obj(fields, fields.sweep { case (label, shape) if !shape.optional => label })
 

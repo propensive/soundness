@@ -239,7 +239,7 @@ object OpensslCrypto extends Crypto:
 
       val context = newContext()
       initialise(context, transformation, key, iv, encrypting)
-      val block = if transformation.cut(t"/").prim == t"AES" then 16 else 8
+      val block = if transformation.cut(t"/").head == t"AES" then 16 else 8
 
       new Cipher.Session:
         def update(chunk: Data): Data = OpensslCrypto.update(context, chunk, block, encrypting)
@@ -257,7 +257,7 @@ object OpensslCrypto extends Crypto:
 
     try
       initialise(context, transformation, key, iv, encrypting)
-      val block = if transformation.cut(t"/").prim == t"AES" then 16 else 8
+      val block = if transformation.cut(t"/").head == t"AES" then 16 else 8
 
       update(context, data, block, encrypting) + finish(context, block, encrypting)
     finally freeContext(context)

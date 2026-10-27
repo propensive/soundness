@@ -201,7 +201,7 @@ private[octogenarian] object Revwalk:
     def touches(hash: Git.Hash): Boolean =
       if paths == Nil then true else
         val current = commit(objects, hash)
-        val parentTree = current.parents.prim.let(commit(objects, _).tree)
+        val parentTree = current.parents.head.let(commit(objects, _).tree)
 
         paths.exists: path =>
           Trees.lookup(objects, current.tree, path) != parentTree
@@ -265,7 +265,7 @@ private[octogenarian] object Revwalk:
 
     def age(hash: Git.Hash): Long = -commit(objects, hash).committer.timestamp.seconds
 
-    found.filter(!dominated(_)).order(age(_)).prim
+    found.filter(!dominated(_)).order(age(_)).head
 
 // Trees: looking up entries by path and writing trees.
 private[octogenarian] object Trees:

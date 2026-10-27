@@ -661,7 +661,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
         test(m"a blob's content is read back"):
           withWorktree: worktree ?=>
             val hash = commitFile(t"a", t"a\n", t"first")
-            val entry = worktree.treeAt(worktree.commitAt(hash).tree).prim.or(abort(Git.Error(Git.Error.Reason.Unexpected)))
+            val entry = worktree.treeAt(worktree.commitAt(hash).tree).head.or(abort(Git.Error(Git.Error.Reason.Unexpected)))
             String(worktree.blobAt(entry.hash).asInstanceOf[scala.Array[Byte]], "UTF-8").nn.tt
         .assert(_ == t"a\n")
 
@@ -1336,7 +1336,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
             commitFile(t"a", t"a\n", t"first")
             write(t"a", t"changed\n")
             worktree.stash()
-            val entry = worktree.stashes().let(_.prim.or(abort(Git.Error(Git.Error.Reason.NoSuchStash))))
+            val entry = worktree.stashes().let(_.head.or(abort(Git.Error(Git.Error.Reason.NoSuchStash))))
             worktree.popStash(entry)
             (worktree.status().value.size, worktree.stashes().value.size)
         .assert(_ == ((1, 0)))
@@ -1346,7 +1346,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
             commitFile(t"a", t"a\n", t"first")
             write(t"a", t"changed\n")
             worktree.stash()
-            val entry = worktree.stashes().let(_.prim.or(abort(Git.Error(Git.Error.Reason.NoSuchStash))))
+            val entry = worktree.stashes().let(_.head.or(abort(Git.Error(Git.Error.Reason.NoSuchStash))))
             worktree.dropStash(entry)
             worktree.stashes().value
         .assert(_.nil)
@@ -1356,7 +1356,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
             commitFile(t"a", t"a\n", t"first")
             write(t"a", t"changed\n")
             worktree.stash()
-            val entry = worktree.stashes().let(_.prim.or(abort(Git.Error(Git.Error.Reason.NoSuchStash))))
+            val entry = worktree.stashes().let(_.head.or(abort(Git.Error(Git.Error.Reason.NoSuchStash))))
             sh"git -C ${worktree.stem} stash drop -q".exec[Exit]()
             capture[Git.Error](worktree.dropStash(entry)).reason
         .assert(_ == Git.Error.Reason.NoSuchStash)

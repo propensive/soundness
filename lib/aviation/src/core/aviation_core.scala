@@ -611,7 +611,7 @@ extension [sequence](sequence: sequence)(using recurrent: sequence is Recurrent)
   def following(after: recurrent.Topic)(using order: recurrent.Topic is Comparable)
   :   Optional[recurrent.Topic] =
 
-    recurrent.occurrences(sequence).skip(order.atMost(_, after)).prim
+    recurrent.occurrences(sequence).skip(order.atMost(_, after)).head
 
 export Weekday.{Mon, Tue, Wed, Thu, Fri, Sat, Sun}
 

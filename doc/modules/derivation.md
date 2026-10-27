@@ -209,7 +209,7 @@ object ParsingSums extends Derivation[Parsing]:
   inline def disjunction[derivation: SumReflection]: Parsing[derivation] =
     text =>
       text.cut(t":") match
-        case List(prefix, rest) =>
+        case List(prefix: Text, rest: Text) =>
           delegate[derivation](prefix):
             [variant <: derivation] => parsing => parsing.parse(rest)
 ```

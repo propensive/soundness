@@ -110,7 +110,7 @@ object SshKeygen:
               payload )
 
         if found != 0 then Git.Verification.Unknown(principals.trim) else
-          val principal = principals.cut(t"\n").prim.or(t"").trim
+          val principal = principals.cut(t"\n").head.trim
 
           val arguments =
             List

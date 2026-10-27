@@ -33,6 +33,7 @@
 package sibylline
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suites read list sizes; the cost is irrelevant here
 
 import dynamicAccess.dynamicJson
 import errorDiagnostics.stackTracesDiagnostics
@@ -65,7 +66,7 @@ object ToolkitTests extends Suite("llm-tools", m"Toolkit and tool-loop tests"):
 
   def run(): Unit =
     test(m"a toolkit's specs carry names, descriptions and schemas"):
-      val spec = kit.specs.prim.option.get
+      val spec = kit.specs.head.option.get
       val properties = spec.parameters.in[Json].properties
 
       (spec.name, spec.description, properties.ticker.`type`.as[Text])
@@ -117,7 +118,7 @@ object ToolkitTests extends Suite("llm-tools", m"Toolkit and tool-loop tests"):
 
       val handle = session(dialect)
       handle.ask(t"Price AAPL?")
-      handle.history.stdlib.size
+      handle.history.size
     . assert(_ == 4)
 
     test(m"malformed arguments become an is_error result the model can see"):
@@ -131,7 +132,7 @@ object ToolkitTests extends Suite("llm-tools", m"Toolkit and tool-loop tests"):
       val handle = session(dialect)
       handle.ask(t"Price AAPL?")
 
-      dialect.calls.last.history.stdlib.last.content.stdlib.head match
+      dialect.calls.last.history.stdlib.last.content.head match
         case Content.ToolResult(id, _, failure) => (id, failure)
         case other                              => (t"?", false)
     . assert(_ == (t"c1", true))

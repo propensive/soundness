@@ -38,7 +38,7 @@ import contingency.*
 import denominative.*
 import fulminate.*
 import gossamer.*
-import rudiments.{at, last, prim, where}
+import rudiments.{at, last, head, where}
 import vacuous.*
 
 // A menu's options are a short, hand-written list, so a linear scan for the current option
@@ -60,7 +60,7 @@ extends Question[item]:
           val index: Int = options.where(_ == current).let(_.n0).or(-1)
           copy(current = options.at((options.size - 1 min index + 1).z).or(current))
 
-        case Home => copy(current = options.prim.or(current))
+        case Home => copy(current = options.head.or(current))
         case End  => copy(current = options.last.or(current))
         case _    => this
 

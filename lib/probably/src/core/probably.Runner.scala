@@ -341,7 +341,7 @@ object Runner:
       reporter.started(report, suite.id, true)
       block(using suite)
 
-      suites = suites.tail
+      suites = suites.tail.or(Nil)
       mutex { active = active.filter(_ != suite.id) }
 
       // With assertions still queued from within the block, the suite ends when the last of

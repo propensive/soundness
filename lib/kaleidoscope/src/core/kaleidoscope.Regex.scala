@@ -168,7 +168,7 @@ object Regex:
                     matched
                   else
                     val body = regex.pattern.s.substring(group.start, group.end).nn.tt
-                    if optional then rescan(body, matched).prim else rescan(body, matched)
+                    if optional then rescan(body, matched).head else rescan(body, matched)
 
                 recur(groups, rest, value :: values)
 
@@ -284,9 +284,9 @@ object Regex:
       case head :: tail => captures(tail, last + head.s.length, done :+ last)
 
     val captured: Set[Int] =
-      if parts.size > 1
-      then captures(parts.stdlib.tail.to(List), parts.stdlib.head.s.size, Set())
-      else Set()
+      parts match
+        case head :: tail if !tail.nil => captures(tail, head.s.size, Set())
+        case _                         => Set()
 
     val text: Text = parts.stdlib.mkString.tt
 

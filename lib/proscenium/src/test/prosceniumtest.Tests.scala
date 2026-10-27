@@ -138,11 +138,10 @@ object Tests extends Suite("prelude-consumer", m"Proscenium consumer-view tests"
         List.empty[Int].occupied
       . assert(_ == Unset)
 
-      test(m"head is unavailable without a proof"):
-        demilitarize:
-          val elements = scala.Seq(1, 2, 3)
-          List(elements*).head
-      . assert(_.nonEmpty)
+      test(m"head without a proof is Optional"):
+        val elements = scala.Seq(1, 2, 3)
+        List(elements*).head
+      . assert(_ == 1)
 
       test(m"head is available once occupied has proven non-emptiness"):
         demilitarize:

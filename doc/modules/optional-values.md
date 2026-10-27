@@ -59,7 +59,7 @@ optionality is flat, `let` serves where both `map` and `flatMap` would be needed
 `Option` — a function that itself returns an `Optional` does not add a layer:
 
 ```scala
-def initial(text: Text): Optional[Char] = text.chars.prim
+def initial(text: Text): Optional[Char] = text.chars.head
 
 name.let(_.upper)                 // Optional[Text], upper-cased when present
 name.let(_.keep(1)).let(initial)  // chains without nesting

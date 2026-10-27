@@ -117,7 +117,7 @@ private[octogenarian] object Operations:
   // The value in force for a single-valued key: git lists scopes from system to local and the
   // last setting wins.
   def setting(config: List[(Git.Config.Key, Text)], key: Git.Config.Key): Optional[Text] =
-    config.sweep { case (`key`, value) => value }.reverse.prim
+    config.sweep { case (`key`, value) => value }.reverse.head
 
   def identity(backend: Git.Backend^, gitDir: Path on Linux)
     ( using Tactic[Git.Error] )
@@ -180,7 +180,7 @@ private[octogenarian] object Operations:
     val tree = backend.writeTree(gitDir, root)
 
     if !allowEmpty then
-      val parentTree = parents.prim.lay(emptyTree): parent =>
+      val parentTree = parents.head.lay(emptyTree): parent =>
         Objects.parseCommit(parent, readObject(backend, gitDir, parent)(1)).tree
 
       if parentTree == tree then abort(Git.Error(Reason.NothingToCommit))
@@ -189,7 +189,7 @@ private[octogenarian] object Operations:
     val payload = Objects.serializeCommit(tree, parents, author.or(committer), committer, message)
     val signed = signer.lay(payload): signer => Objects.signCommit(payload, signer.sign(payload))
     val hash = backend.writeObject(gitDir, Git.Object.Kind.Commit, signed)
-    val subject = message.cut(t"\n").prim.or(t"")
+    val subject = message.cut(t"\n").head
 
     backend.updateRef
       ( gitDir, t"HEAD", hash, Git.Backend.Expectation(head.commit), t"$verb: $subject" )

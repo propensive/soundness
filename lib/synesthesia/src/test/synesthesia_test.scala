@@ -163,7 +163,7 @@ object Tests extends Suite("mcp", m"Synesthesia Tests"):
       . assert(_ == Mcp.CallTool(List(Mcp.TextContent(t"boom")), isError = true))
 
       def mimeType(uri: Text): Optional[Text] =
-        interface.`resources/read`(uri, Unset).contents.prim.let(_.contents).let:
+        interface.`resources/read`(uri, Unset).contents.head.let(_.contents).let:
           case contents: Mcp.TextResourceContents => contents.mimeType
           case contents: Mcp.BlobResourceContents => contents.mimeType
 

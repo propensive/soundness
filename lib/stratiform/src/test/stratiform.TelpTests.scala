@@ -124,7 +124,7 @@ object TelpTests extends Suite("telp", m"Stratiform TELP tests"):
       . assert(_ == (Telp.Root, Telp.Root))
 
       test(m"components may contain spaces"):
-        Telp.parse(t"/cat/felix/toy/ball of string").components.stdlib.last
+        Telp.parse(t"/cat/felix/toy/ball of string").components.last
       . assert(_ == t"ball of string")
 
       test(m"a doubled delimiter is a syntax error"):

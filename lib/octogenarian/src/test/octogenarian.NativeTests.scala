@@ -395,7 +395,7 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
         (dir / "sub").create[Directory]()
         write(dir / "sub", t"b", t"b\n")
         dir.open[Git.Worktree](Read & Write) { worktree ?=> worktree.add(Operations.planePath(worktree, t"sub/b")) }
-        gitOut(dir, t"ls-files", t"--stage").cut(t"\n").map(_.cut(t" ").prim.or(t""))
+        gitOut(dir, t"ls-files", t"--stage").cut(t"\n").map(_.cut(t" ").head)
       .assert(_ == List(t"100644", t"100644"))
 
       test(m"rm removes the file and its index entry"):
@@ -482,8 +482,8 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
         gitCommit(dir, t"a", t"one\ntwo\nthree\nfour\nfive\n", t"first")
         write(dir, t"a", t"one\ntwo\nTHREE\nfour\nfive\n")
         dir.open[Git.Worktree](): worktree ?=>
-          val file = worktree.diff().value.prim.or(abort(Git.Error(Git.Error.Reason.Unexpected)))
-          val hunk = file.hunks.prim.or(abort(Git.Error(Git.Error.Reason.Unexpected)))
+          val file = worktree.diff().value.head.or(abort(Git.Error(Git.Error.Reason.Unexpected)))
+          val hunk = file.hunks.head.or(abort(Git.Error(Git.Error.Reason.Unexpected)))
           val changes = hunk.edits.filter(!_.isInstanceOf[Par[?]]).fold(0) { (n, _) => n + 1 }
           (file.changeKind, hunk.oldStart, hunk.oldLines, hunk.newStart, hunk.newLines, changes)
       .assert(_ == ((ChangeKind.Modified, 1, 5, 1, 5, 2)))
@@ -678,7 +678,7 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
         write(dir, t"a", t"changed\n")
         sh"git -C $dir stash -q".exec[Exit]()
         dir.open[Git.Worktree](Read & Write): worktree ?=>
-          val entry = worktree.stashes().let(_.prim.or(abort(Git.Error(Git.Error.Reason.NoSuchStash))))
+          val entry = worktree.stashes().let(_.head.or(abort(Git.Error(Git.Error.Reason.NoSuchStash))))
           worktree.popStash(entry)
         (gitOut(dir, t"status", t"--porcelain"), gitOut(dir, t"stash", t"list"), read(dir, t"a"))
       .assert(_ == ((t" M a", t"", t"changed\n")))
@@ -692,7 +692,7 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
           !(dir / "d").existent()
         val listed = gitOut(dir, t"stash", t"list")
         dir.open[Git.Worktree](Read & Write): worktree ?=>
-          val entry = worktree.stashes().let(_.prim.or(abort(Git.Error(Git.Error.Reason.NoSuchStash))))
+          val entry = worktree.stashes().let(_.head.or(abort(Git.Error(Git.Error.Reason.NoSuchStash))))
           worktree.popStash(entry)
         (gone, listed.starts(t"stash@{0}: WIP on main"), gitOut(dir, t"status", t"--porcelain"))
       .assert(_ == ((true, true, t"?? d")))
@@ -703,7 +703,7 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
         write(dir, t"a", t"changed\n")
         sh"git -C $dir stash -q".exec[Exit]()
         dir.open[Git.Worktree](Read & Write): worktree ?=>
-          val entry = worktree.stashes().let(_.prim.or(abort(Git.Error(Git.Error.Reason.NoSuchStash))))
+          val entry = worktree.stashes().let(_.head.or(abort(Git.Error(Git.Error.Reason.NoSuchStash))))
           worktree.dropStash(entry)
         (gitOut(dir, t"stash", t"list"), sh"git -C $dir rev-parse -q --verify refs/stash".exec[Exit]() == Exit.Ok)
       .assert(_ == ((t"", false)))
@@ -716,7 +716,7 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
         write(dir, t"a", t"two\n")
         sh"git -C $dir stash -q -m newer".exec[Exit]()
         dir.open[Git.Worktree](Read & Write): worktree ?=>
-          val entry = worktree.stashes().let(_.reverse.prim.or(abort(Git.Error(Git.Error.Reason.NoSuchStash))))
+          val entry = worktree.stashes().let(_.reverse.head.or(abort(Git.Error(Git.Error.Reason.NoSuchStash))))
           worktree.dropStash(entry)
         gitOut(dir, t"stash", t"list")
       .assert(_ == t"stash@{0}: On main: newer")

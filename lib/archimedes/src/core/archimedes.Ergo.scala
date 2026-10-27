@@ -258,11 +258,11 @@ object Ergo:
 
     if rows.size == 1 then
       // The guard makes the row present; the default is unreachable.
-      val row = rows.prim.lay(t"")(_.join)
+      val row = rows.head.lay(t"")(_.join)
       t"$RowVec($row)"
     else if rows.all(_.size == 1) then
       // Likewise, each row is known to hold exactly one cell.
-      val column = rows.map(_.prim.or(t"")).join
+      val column = rows.map(_.head.or(t"")).join
       t"$ColVec($column)"
     else
       val body = rows.map { cells => group(cells.join) }.join

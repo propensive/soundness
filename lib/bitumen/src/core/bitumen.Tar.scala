@@ -655,7 +655,7 @@ object Tar:
     :   Iterator[Tar.Entry]^{tarTactic, streamTactic} =
 
       Tarfile.read:
-        flags.prim match
+        flags.head match
           case Tar.Flag.Gzip    => stream.decompress[Gzip]
           case Tar.Flag.Zlib    => stream.decompress[Zlib]
           case Tar.Flag.Deflate => stream.decompress[Deflate]

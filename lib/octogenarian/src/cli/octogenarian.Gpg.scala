@@ -109,11 +109,11 @@ object Gpg:
           val second = line.s.indexOf(' ', line.s.indexOf(' ') + 1)
           if second < 0 then line else line.skip(second + 1)
 
-        lines.filter(_.starts(t"GOODSIG ")).prim match
+        lines.filter(_.starts(t"GOODSIG ")).head match
           case line: Text => Git.Verification.Good(userId(line))
 
           case _ =>
-            lines.filter(_.starts(t"BADSIG ")).prim match
+            lines.filter(_.starts(t"BADSIG ")).head match
               case line: Text => Git.Verification.Bad(line)
-              case _          => Git.Verification.Unknown(lines.prim.or(output.trim))
+              case _          => Git.Verification.Unknown(lines.head.or(output.trim))
       finally java.nio.file.Files.deleteIfExists(file)

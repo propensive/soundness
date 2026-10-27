@@ -375,7 +375,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
         val corrupted: List[Data] = Array.from(good.stdlib.head.stdlib.updated(0, ('Z'.toByte: Byte))) :: good.stdlib.tail.to(proscenium.List)
         collectTar { Tarfile.read(corrupted.stdlib.iterator.stream).toList; () }.reasons
       . assert: reasons =>
-          reasons.size == 1 && reasons.prim.lay(false)(_.isInstanceOf[Tar.Error.Reason.BadChecksum])
+          reasons.size == 1 && reasons.head.lay(false)(_.isInstanceOf[Tar.Error.Reason.BadChecksum])
 
       test(m"an unknown type flag degrades to a file, never a directory"):
         val good: List[Data] = Tarfile(List(helloFile)).source[Data].chain.to[List].asInstanceOf[List[Data]]
@@ -411,7 +411,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
           ()
 
         ( issues.reasons.size,
-          issues.reasons.prim.let(_.isInstanceOf[Tar.Error.Reason.UnknownTypeFlag]),
+          issues.reasons.head.let(_.isInstanceOf[Tar.Error.Reason.UnknownTypeFlag]),
           entries.headOption.map(_.isInstanceOf[Tar.Entry.File]) )
       . assert(_ == (1, true, Some(true)))
 
@@ -1025,7 +1025,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
       test(m"reader recovers all 10 segments"):
         Tarfile.read(bytes.stdlib.iterator.stream).toList.head match
-          case sp: Tar.Entry.Sparse => sp.segments.stdlib.length
+          case sp: Tar.Entry.Sparse => sp.segments.size
           case _                   => 0
       . assert(_ == 10)
 
@@ -1109,9 +1109,8 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
       test(m"re-serialising a parsed archive reproduces the original bytes"):
         val original = arArchive(List(arEntry(t"a.txt", t"aaa"), arEntry(t"b.txt", t"bb")))
-        Arfile.from(original.source[Data]).source[Data].memoize.stdlib.to(List)
-      . assert(_ == arArchive(List(arEntry(t"a.txt", t"aaa"), arEntry(t"b.txt", t"bb"))).stdlib
-          .to(List))
+        Arfile.from(original.source[Data]).source[Data].memoize.to[List]
+      . assert(_ == arArchive(List(arEntry(t"a.txt", t"aaa"), arEntry(t"b.txt", t"bb"))).to[List])
 
     suite(m"AR: chunk boundaries"):
       // The reader pulls off a shared cursor, so a chunking that splits headers and bodies at

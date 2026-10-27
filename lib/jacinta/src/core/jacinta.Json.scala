@@ -707,11 +707,11 @@ trait Json1 extends Json2:
       def aggregate(bytes: Chain[Data]): value in Json =
         // A single in-memory block — the common case — skips the iterator
         // plumbing entirely.
-        // The single-block fast path peeks at the `Chain`'s head and tail, and the general
-        // path hands the parser an `Iterator`; neither has a native counterpart.
-        if !bytes.nil && bytes.stdlib.tail.isEmpty
-        then parseDirect(bytes.stdlib.head, parsable).asInstanceOf[value in Json]
-        else parseDirect(bytes.stdlib.iterator, parsable).asInstanceOf[value in Json]
+        // The single-block fast path is the `#::` pattern, which proves the block exists; the
+        // general path hands the parser an `Iterator`, which has no native counterpart.
+        bytes match
+          case block #:: rest if rest.nil => parseDirect(block, parsable).asInstanceOf[value in Json]
+          case _ => parseDirect(bytes.stdlib.iterator, parsable).asInstanceOf[value in Json]
 
       override def accept(stream: (Stream[Data] over Credit)^): value in Json =
         parseDirect(stream, parsable).asInstanceOf[value in Json]
@@ -3119,8 +3119,8 @@ object Json extends Json1, Dynamic:
     Json.Encodable(shape): map =>
       val keys: List[key] = map.keys.to[List]
       // `Array.from` takes an `IterableOnce`, so the mappings stay on the stdlib view.
-      val values = Array.from(keys.stdlib.map(map(_).encode.root))
-      val keysArr = Array.from(keys.stdlib.map(_.encode.s))
+      val values = keys.map(map(_).encode.root).to[Array]
+      val keysArr = keys.map(_.encode.s).to[Array]
 
       Json.ast
         ( Json.Ast.obj(keysArr.asInstanceOf[Array[String]^{}], values.asInstanceOf[Array[Any]^{}]) )

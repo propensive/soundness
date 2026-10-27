@@ -44,7 +44,7 @@ import Mutation.Error.Reason
 import denominative.dysasymptotics.linearSize
 import rudiments.`:+`
 import rudiments.each
-import rudiments.{all, prim, sec}
+import rudiments.{all, head, at}
 
 // Primitive presentation-preserving mutations per §22.2. Each op is a
 // local rewrite addressed by a Tel.Pointer; surrounding atoms, comments,
@@ -1071,8 +1071,9 @@ object Mutation:
         // `prim`/`sec` stand in for the two length tests without walking the list:
         // exactly one occurrence is a present `prim` with an absent `sec`, and more
         // than one is a present `sec`.
-        val first: Optional[Text] = occurrences.prim
-        val second: Optional[Text] = occurrences.sec
+        val first: Optional[Text] = occurrences.head
+        import denominative.dysasymptotics.linearAccess // the second element: a two-cell walk
+        val second: Optional[Text] = occurrences.at(Sec)
 
         // Local `def`s, so each scan still happens only on the branch that needs it.
         def soleInlineable = first.let { o => !o.nil && inlineSafe(o, sigil) }.or(false)

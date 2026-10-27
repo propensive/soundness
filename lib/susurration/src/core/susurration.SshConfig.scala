@@ -118,8 +118,8 @@ case class SshConfig(blocks: List[SshConfig.Block]):
 
   def resolve(host: Text): Resolution =
     def expand(value: Text): Text = value.sub(t"%h", host)
-    val hostName = values(host, t"hostname").prim.let(expand).or(host)
-    val user = values(host, t"user").prim
-    val port = values(host, t"port").prim.let { port => safely(port.s.toInt) }.or(22)
+    val hostName = values(host, t"hostname").head.let(expand).or(host)
+    val user = values(host, t"user").head
+    val port = values(host, t"port").head.let { port => safely(port.s.toInt) }.or(22)
 
     Resolution(hostName, user, port, values(host, t"identityfile").map(expand))

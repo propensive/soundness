@@ -33,6 +33,7 @@
 package sibylline
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suites read list sizes; the cost is irrelevant here
 
 import codepages.utf8Codepage
 import dynamicAccess.dynamicJson
@@ -106,13 +107,13 @@ object OpenAITests extends Suite("openai", m"OpenAI dialect tests"):
       val exchange = fake.exchanges.stdlib.reverse.head
 
       ( exchange.path,
-        exchange.headers.filter(_.key == t"authorization").prim.let(_.value) )
+        exchange.headers.filter(_.key == t"authorization").head.let(_.value) )
     . assert(_ == (t"/v1/chat/completions", t"Bearer sk-test"))
 
     test(m"a keyless compatible target sends no authorization header"):
       given fake: FakeModel = FakeModel((_, _, _) => answer(t"yes"))
       OpenAI.compatible(url"http://model.test/v1", t"llama").session(llm.ask(t"Ready?"))
-      fake.exchanges.stdlib.reverse.head.headers.filter(_.key == t"authorization").stdlib.size
+      fake.exchanges.stdlib.reverse.head.headers.filter(_.key == t"authorization").size
     . assert(_ == 0)
 
     test(m"the system prompt becomes a leading system message"):
@@ -280,7 +281,7 @@ object GeminiTests extends Suite("gemini", m"Gemini dialect tests"):
       val exchange = fake.exchanges.stdlib.reverse.head
 
       ( exchange.path,
-        exchange.headers.filter(_.key == t"x-goog-api-key").prim.let(_.value) )
+        exchange.headers.filter(_.key == t"x-goog-api-key").head.let(_.value) )
     . assert(_ == (t"/v1beta/models/gemini-test:generateContent", t"g-key"))
 
     test(m"the streamed endpoint asks for SSE"):

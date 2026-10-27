@@ -35,7 +35,7 @@ package rudiments
 import soundness.*
 import soundness.collationComparable
 import soundness.collations.codepointCollation
-import denominative.dysasymptotics.linearSize
+import denominative.dysasymptotics.{linearAccess, linearSize} // the suite indexes small lists
 import soundness.sortingAlgorithms.timsort
 
 case class Person(name: Text, age: Int)
@@ -187,11 +187,12 @@ object Tests extends Suite("core", m"Rudiments Tests"):
       . assert(_ == 3)
 
       test(m"prim reads the head of an infinite chain"):
-        Chain.iterate(1)(_ + 1).prim
+        Chain.iterate(1)(_ + 1).head
       . assert(_ == 1)
 
-      test(m"prim of an empty chain is Unset"):
-        Chain[Int]().prim
+      test(m"head of an empty chain is Unset"):
+        val chain: Chain[Int] = Chain()
+        chain.head
       . assert(_ == Unset)
 
     suite(m"Size and count tests"):
@@ -355,47 +356,43 @@ object Tests extends Suite("core", m"Rudiments Tests"):
         first
       . assert(_ == 5)
 
-      test(m"an empty List literal is not Populated"):
-        demilitarize:
-          val xs = proscenium.List[Int]()
-          xs.head
-        . map(_.message)
-      . assert(_.nonEmpty)
+      test(m"an empty List literal is not Populated, so its head is Optional and absent"):
+        val xs = proscenium.List[Int]()
+        xs.head
+      . assert(_ == Unset)
 
-      test(m"a splatted sequence is not Populated"):
-        demilitarize:
-          val source: proscenium.List[Int] = proscenium.List(1, 2)
-          val xs = proscenium.List(source.stdlib*)
-          xs.head
-        . map(_.message)
-      . assert(_.nonEmpty)
+      test(m"a splatted sequence is not Populated, so its head is Optional"):
+        val source: proscenium.List[Int] = proscenium.List(1, 2)
+        val xs = proscenium.List(source.stdlib*)
+        xs.head
+      . assert(_ == 1)
 
       test(m"a branded literal compares with its unbranded self"):
         proscenium.List(1, 2, 3) == (proscenium.List(1) + proscenium.List(2, 3)
             : proscenium.List[Int])
       . assert(_ == true)
 
-    suite(m"Bounded positional access tests"):
-      // No `linearAccess` acknowledgement in scope: `prim`/`sec`/`ter` walk at most three
-      // cells, so they are not dysasymptotic on `List` and stay ungated.
-      test(m"sec on a list is ungated"):
+    suite(m"Positional access tests"):
+      // Positional access beyond the head opens the `linearAccess` gate (imported for the
+      // suite); `head` alone stays ungated.
+      test(m"at(Sec) reads the second element"):
         val xs: List[Int] = List(10, 20, 30)
-        xs.sec
+        xs.at(Sec)
       . assert(_ == 20)
 
-      test(m"ter on a list is ungated"):
+      test(m"at(Ter) reads the third element"):
         val xs: List[Int] = List(10, 20, 30)
-        xs.ter
+        xs.at(Ter)
       . assert(_ == 30)
 
-      test(m"sec on a single-element list is unset"):
+      test(m"at(Sec) on a single-element list is unset"):
         val xs: List[Int] = List(10)
-        xs.sec
+        xs.at(Sec)
       . assert(_ == Unset)
 
-      test(m"ter on a two-element list is unset"):
+      test(m"at(Ter) on a two-element list is unset"):
         val xs: List[Int] = List(10, 20)
-        xs.ter
+        xs.at(Ter)
       . assert(_ == Unset)
 
     suite(m"Attested tests"):
@@ -546,15 +543,12 @@ object Tests extends Suite("core", m"Rudiments Tests"):
       . assert(_ == Unset)
 
       test(m"`tail` drops the first element of a collection"):
-        val list: proscenium.List[Int] =
-          (proscenium.List(1, 2, 3): proscenium.List[Int]).tail
-        list.stdlib
-      . assert(_ == scala.List(2, 3))
+        (proscenium.List(1, 2, 3): proscenium.List[Int]).tail
+      . assert(_ == proscenium.List(2, 3))
 
-      test(m"`tail` of an empty collection is empty"):
-        val list: proscenium.List[Int] = proscenium.List.empty[Int].tail
-        list.stdlib
-      . assert(_ == scala.Nil)
+      test(m"`tail` of an empty collection is absent"):
+        proscenium.List.empty[Int].tail
+      . assert(_ == Unset)
 
       test(m"`tail` drops the first character of a text"):
         text.tail
@@ -1018,7 +1012,7 @@ object Tests extends Suite("core", m"Rudiments Tests"):
 
       // test(m"Index unique numbers by their first letter"):
       //   safely:
-      //     numbers.indexBy(_.prim)
+      //     numbers.indexBy(_.head)
       // .assert(_ == Map('o' -> t"one", 't' -> t"two", 'f' -> t"four", 's' -> t"six", 'e' -> t"eight", 'n' -> t"nine"))
 
       //test(m"Index unique numbers by their length"):

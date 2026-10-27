@@ -172,7 +172,7 @@ extends caps.ExclusiveCapability:
 
       val message: Optional[Text] = declaring(cls).lay(Unset):
         fieldId =>
-          connection.fieldValues(exception, List(fieldId)).prim match
+          connection.fieldValues(exception, List(fieldId)).head match
             case Jdwp.Value.Reference(Jdwp.Tag.StringTag, id) if !id.empty =>
               connection.stringValue(Jdwp.Ref(id.long))
 
@@ -193,7 +193,7 @@ extends caps.ExclusiveCapability:
   // The frame where the thread stopped — the innermost, and the default subject of variable
   // recovery and evaluation.
   private[vivisection] def topFrame: Optional[(FrameId, Jdwp.Location)] =
-    connection.frames(thread, 0, 1).prim
+    connection.frames(thread, 0, 1).head
 
   // The logical variables visible at the top frame — where the thread stopped.
   def variables(): List[Variable] =
@@ -308,7 +308,7 @@ extends caps.ExclusiveCapability:
           val elem = connection.fields(cls).seek(_.name == t"elem")
 
           elem.let: field =>
-            connection.fieldValues(id, List(field.field)).prim.let: value0 =>
+            connection.fieldValues(id, List(field.field)).head.let: value0 =>
               (value0, Variable.Provenance.Cell(id, field.field, provenance), true)
 
           . or((value, provenance, false))

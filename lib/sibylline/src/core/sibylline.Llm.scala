@@ -309,7 +309,7 @@ object Llm:
       else response.status.code match
         case 429 | 503 | 529 if remaining > 0 =>
           val delay: Long =
-            safely(response.headers.retryAfter.prim.let(_.as[Long])).or(backoff)
+            safely(response.headers.retryAfter.head.let(_.as[Long])).or(backoff)
 
           // A plain blocking sleep: this module is JVM-only, the whole call is synchronous on
           // the caller's thread, and no `Monitor` is demanded of one-shot callers.
@@ -593,7 +593,7 @@ object Llm:
       reply
 
     private[sibylline] update def arguments(reply: Reply): Json =
-      reply.toolCalls.prim.let(_.arguments).or:
+      reply.toolCalls.head.let(_.arguments).or:
         abort(Error(Error.Reason.Malformed, t"the model did not call the answer tool"))
 
     // Whether this session's dialect constrains replies to a schema natively.

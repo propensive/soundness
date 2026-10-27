@@ -209,7 +209,7 @@ object Tests extends Suite("charts", m"Tasseomancy tests"):
           case a :: b :: tail => (b - a) > gap && widening(b :: tail, b - a)
           case _              => true
 
-        (positions.prim.or(-1.0), positions.reverse.prim.or(-1.0), widening(positions, 0.0))
+        (positions.head.or(-1.0), positions.reverse.head.or(-1.0), widening(positions, 0.0))
       . assert(_ == (0.0, 1.0, true))
 
       test(m"a value is placed exponentially along the axis"):
@@ -302,7 +302,7 @@ object Tests extends Suite("charts", m"Tasseomancy tests"):
           case a :: b :: tail => a < b && rising(b :: tail)
           case _              => true
 
-        (rising(smoothed), smoothed.prim.or(-1.0) >= 0.0, smoothed.reverse.prim.or(99.0) <= 40.0)
+        (rising(smoothed), smoothed.head.or(-1.0) >= 0.0, smoothed.reverse.head.or(99.0) <= 40.0)
       . assert(_ == (true, true, true))
 
       test(m"a smoothed line chart draws its markers at the measured points"):

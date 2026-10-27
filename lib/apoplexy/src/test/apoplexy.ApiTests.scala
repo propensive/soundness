@@ -80,7 +80,7 @@ class Recorder(canned: () => Http.Response) extends Http.Backend:
     lastMethod = method
     lastHeaders = headers
     val data = body().memoize
-    lastBody = if data.stdlib.isEmpty then Unset else data
+    lastBody = if data.nil then Unset else data
     canned()
 
 object ApiTests extends Suite("openapi-client", m"Api client tests"):

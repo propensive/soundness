@@ -33,6 +33,7 @@
 package sibylline
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suites read list sizes; the cost is irrelevant here
 
 import charsets.utf8Charset
 import codepages.utf8Codepage
@@ -144,9 +145,9 @@ class FakeModel(route: (Http.Method, Text, Int) -> Http.Response) extends Http.B
   :   Http.Response =
 
     val data = body().memoize
-    val sent = if data.stdlib.isEmpty then Unset else data.read[Text]
+    val sent = if data.nil then Unset else data.read[Text]
     val path = url.skip(t"http://model.test".length)
-    val attempt = exchanges.stdlib.size
+    val attempt = exchanges.size
     exchanges ::= FakeModel.Exchange(method, path, headers, sent)
 
     route(method, path, attempt)
@@ -163,7 +164,7 @@ object AnthropicTests extends Suite("anthropic", m"Anthropic dialect tests"):
     fake.exchanges.stdlib.reverse.head.body.option.get.read[Json]
 
   def header(fake: FakeModel, name: Text): Optional[Text] =
-    fake.exchanges.stdlib.reverse.head.headers.filter(_.key == name).prim.let(_.value)
+    fake.exchanges.stdlib.reverse.head.headers.filter(_.key == name).head.let(_.value)
 
   def run(): Unit =
     test(m"a one-shot ask decodes the reply"):
@@ -290,7 +291,7 @@ object AnthropicTests extends Suite("anthropic", m"Anthropic dialect tests"):
         else FakeModel.answer(t"eventually")
 
       val reply = target.session(llm.ask(t"Ready?"))
-      (reply.text, fake.exchanges.stdlib.size)
+      (reply.text, fake.exchanges.size)
     . assert(_ == (t"eventually", 2))
 
     test(m"an authentication failure raises Unauthorized with the status"):

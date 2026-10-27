@@ -33,6 +33,7 @@
 package praxinoscope
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suites read list sizes; the cost is irrelevant here
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
@@ -588,7 +589,7 @@ object Tests extends Suite("re2", m"Praxinoscope tests"):
       . assert(_ == false)
 
       test(m"A named group captures positionally"):
-        motif(t"(?<x>a)(b)").groups(t"ab").let(_.stdlib.size)
+        motif(t"(?<x>a)(b)").groups(t"ab").let(_.size)
       . assert(_ == 2)
 
       test(m"A P-style named group captures too")(motif(t"(?P<x>a)b").matches(t"ab"))

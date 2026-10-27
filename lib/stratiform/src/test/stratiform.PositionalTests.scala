@@ -317,7 +317,7 @@ object PositionalTests extends Suite("tel-positional", m"Stratiform positional a
 
       test(m"a nested record's leading scalars go inline"):
         Tel.canonical(PDelivery(PRecipient(t"Acme", t"HQ")))
-          .childCompounds.stdlib.head.atoms.length
+          .childCompounds.head.let(_.atoms.length)
       . assert(_ == 2)
 
       test(m"the canonical form reparses to the value on both paths"):

@@ -285,7 +285,7 @@ object OpenAI:
     given jsonTactic: (Tactic[Json.Error]^) = summon[Tactic[Llm.Error]].contramap: _ =>
       Llm.Error(Llm.Error.Reason.Malformed, t"a stream chunk had an unexpected shape")
 
-    val data: Text = sse.data.prim.or(t"")
+    val data: Text = sse.data.head.or(t"")
 
     if data == t"[DONE]" then List() else
       val json: Json = Llm.parsed(data)
@@ -654,7 +654,7 @@ private[sibylline] object ResponsesDialect:
     given jsonTactic: (Tactic[Json.Error]^) = summon[Tactic[Llm.Error]].contramap: _ =>
       Llm.Error(Llm.Error.Reason.Malformed, t"a stream event had an unexpected shape")
 
-    val json: Json = Llm.parsed(sse.data.prim.or(t"{}"))
+    val json: Json = Llm.parsed(sse.data.head.or(t"{}"))
 
     sse.event match
       case t"response.created" =>

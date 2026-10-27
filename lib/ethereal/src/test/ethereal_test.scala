@@ -38,6 +38,7 @@ import java.nio.file as jnf
 import java.util.concurrent as juc
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suites read list sizes; the cost is irrelevant here
 
 // The suite's own classloader for the `Enclave` rig: under fume the suite lives in an
 // isolating classloader, and the system loader knows only fume.
@@ -111,10 +112,10 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
       // over from an earlier run) never collide on process names, state
       // directories, or `pkill`/`killall` targets — a collision corrupts the
       // daemon handshake and makes these tests flaky under load.
-      val name:        Text = t"e${Uuid().text.cut(t"-").stdlib.head}"
-      val upgradeName: Text = t"u${Uuid().text.cut(t"-").stdlib.head}"
-      val selfuName:   Text = t"s${Uuid().text.cut(t"-").stdlib.head}"
-      val dispName:    Text = t"d${Uuid().text.cut(t"-").stdlib.head}"
+      val name:        Text = t"e${Uuid().text.cut(t"-").head}"
+      val upgradeName: Text = t"u${Uuid().text.cut(t"-").head}"
+      val selfuName:   Text = t"s${Uuid().text.cut(t"-").head}"
+      val dispName:    Text = t"d${Uuid().text.cut(t"-").head}"
 
       safely(sh"pkill $name".exec[Exit]())
       snooze(0.1*Second)
@@ -762,9 +763,9 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
             . check(_ == Exit.Ok)
 
             test(m"reinstallation replaces the target's inode"):
-              val inode1 = sh"ls -i $installDir/$name".exec[Text]().trim.cut(t" ").stdlib.head
+              val inode1 = sh"ls -i $installDir/$name".exec[Text]().trim.cut(t" ").head
               sh"$tool install $installDir".exec[Text]()
-              val inode2 = sh"ls -i $installDir/$name".exec[Text]().trim.cut(t" ").stdlib.head
+              val inode2 = sh"ls -i $installDir/$name".exec[Text]().trim.cut(t" ").head
               inode1 != inode2
 
             . check(_ == true)
@@ -888,7 +889,7 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
                 Pane.enter(t"kittiwake")
                 Pane.enter('\r')
                 val delivered = awaitScreen(_.contains(t"[kittiwake]"))
-                val echoed = Pane.screenshot().screen.filter(_.contains(t"kittiwake")).stdlib.length > 1
+                val echoed = Pane.screenshot().screen.filter(_.contains(t"kittiwake")).size > 1
                 (delivered, echoed)
 
             . check(_ == (true, false))
@@ -929,7 +930,7 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
                 snooze(0.5*Second)
                 Pane.enter(t"harrier")
                 snooze(0.5*Second)
-                Pane.screenshot().screen.filter(_.contains(t"harrier")).stdlib.length > 0
+                Pane.screenshot().screen.filter(_.contains(t"harrier")).size > 0
 
             . check(_ == false)
 
@@ -940,7 +941,7 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
               sh"$tool".exec[Unit]()
               val jvmPid = sh"$tool '{admin}' pid".exec[Text]().trim
               val parent = sh"ps -p $jvmPid -o ppid=".exec[Text]().trim
-              sh"ps -p $parent -o comm=".exec[Text]().trim.cut(t"/").stdlib.last
+              sh"ps -p $parent -o comm=".exec[Text]().trim.cut(t"/").last
 
             . check(_ == name)
 
@@ -1467,7 +1468,7 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
         test(m"a raw record round-trips, bytes and all"):
           val raw = Launcher.Raw(t"argument", 1, bytes(0x61, 0xff, 0x62))
           Launcher.decode(Launcher.encode(init.copy(raws = List(raw)))) match
-            case init2: Launcher.Message.Init => init2.raws.prim match
+            case init2: Launcher.Message.Init => init2.raws.head match
               case raw2: Launcher.Raw => (raw2.kind, raw2.index, raw2.bytes.stdlib.map(_ & 0xff).toList)
               case _                  => (t"", Unset, Nil)
             case _ => (t"", Unset, Nil)

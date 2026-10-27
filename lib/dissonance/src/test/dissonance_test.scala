@@ -66,65 +66,65 @@ object Tests extends Suite("diff", m"Dissonance tests"):
       . assert(_ == Diff(Ins(0, 'a')))
 
       test(m"Deletion to become empty list"):
-        diff(Sequence.from(t"a".chars.stdlib), Sequence.from(t"".chars.stdlib))
+        diff(t"a".chars.to[Sequence], t"".chars.to[Sequence])
       . assert(_ == Diff(Del(0, 'a')))
 
       test(m"Prefix to short list"):
-        diff(Sequence.from(t"BC".chars.stdlib), Sequence.from(t"ABC".chars.stdlib))
+        diff(t"BC".chars.to[Sequence], t"ABC".chars.to[Sequence])
       . assert(_ == Diff(Ins(0, 'A'), Par(0, 1, 'B'), Par(1, 2, 'C')))
 
       test(m"Suffix to short list"):
-        diff(Sequence.from(t"AB".chars.stdlib), Sequence.from(t"ABC".chars.stdlib))
+        diff(t"AB".chars.to[Sequence], t"ABC".chars.to[Sequence])
       . assert(_ == Diff(Par(0, 0, 'A'), Par(1, 1, 'B'), Ins(2, 'C')))
 
       test(m"Insertion in middle of short list"):
-        diff(Sequence.from(t"AC".chars.stdlib), Sequence.from(t"ABC".chars.stdlib))
+        diff(t"AC".chars.to[Sequence], t"ABC".chars.to[Sequence])
       . assert(_ == Diff(Par(0, 0, 'A'), Ins(1, 'B'), Par(1, 2, 'C')))
 
       test(m"Deletion from middle of short list"):
-        diff(Sequence.from(t"ABC".chars.stdlib), Sequence.from(t"AC".chars.stdlib))
+        diff(t"ABC".chars.to[Sequence], t"AC".chars.to[Sequence])
       . assert(_ == Diff(Par(0, 0, 'A'), Del(1, 'B'), Par(2, 1, 'C')))
 
       test(m"Deletion from start of short list"):
-        diff(Sequence.from(t"ABC".chars.stdlib), Sequence.from(t"BC".chars.stdlib)).edits.to(List)
+        diff(t"ABC".chars.to[Sequence], t"BC".chars.to[Sequence]).edits.to(List)
       . assert(_ == List(Del(0, 'A'), Par(1, 0, 'B'), Par(2, 1, 'C')))
 
       test(m"Deletion from end of short list"):
-        diff(Sequence.from(t"ABC".chars.stdlib), Sequence.from(t"AB".chars.stdlib))
+        diff(t"ABC".chars.to[Sequence], t"AB".chars.to[Sequence])
       . assert(_ == Diff(Par(0, 0, 'A'), Par(1, 1, 'B'), Del(2, 'C')))
 
       test(m"Multiple inner keeps"):
-        diff(Sequence.from(t"BCD".chars.stdlib), Sequence.from(t"ABC".chars.stdlib))
+        diff(t"BCD".chars.to[Sequence], t"ABC".chars.to[Sequence])
       . assert(_ == Diff(Ins(0, 'A'), Par(0, 1, 'B'), Par(1, 2, 'C'), Del(2, 'D')))
 
       test(m"Example from blog"):
-        diff(Sequence.from(t"ABCABBA".chars.stdlib), Sequence.from(t"CBABAC".chars.stdlib)).edits.to(List)
+        diff(t"ABCABBA".chars.to[Sequence], t"CBABAC".chars.to[Sequence]).edits.to(List)
       . assert(_ == List(Del(0, 'A'), Del(1, 'B'), Par(2, 0, 'C'), Ins(1, 'B'), Par(3, 2, 'A'),
           Par(4, 3, 'B'), Del(5, 'B'), Par(6, 4, 'A'), Ins(5, 'C')))
 
       test(m"Reversed example from blog"):
-        diff(Sequence.from(t"CBABAC".chars.stdlib), Sequence.from(t"ABCABBA".chars.stdlib)).edits.to(List)
+        diff(t"CBABAC".chars.to[Sequence], t"ABCABBA".chars.to[Sequence]).edits.to(List)
       . assert(_ == List(Del(0, 'C'), Ins(0, 'A'), Par(1, 1, 'B'), Ins(2, 'C'), Par(2, 3, 'A'),
           Par(3, 4, 'B'), Ins(5, 'B'), Par(4, 6, 'A'), Del(5, 'C')))
 
       test(m"Item swap"):
-        diff(Sequence.from(t"AB".chars.stdlib), Sequence.from(t"BA".chars.stdlib))
+        diff(t"AB".chars.to[Sequence], t"BA".chars.to[Sequence])
       . assert(_ == Diff(Del(0, 'A'), Par(1, 0, 'B'), Ins(1, 'A')))
 
       test(m"Item change"):
-        diff(Sequence.from(t"A".chars.stdlib), Sequence.from(t"C".chars.stdlib))
+        diff(t"A".chars.to[Sequence], t"C".chars.to[Sequence])
       . assert(_ == Diff(Del(0, 'A'), Ins(0, 'C')))
 
       test(m"Item change between values"):
-        diff(Sequence.from(t"NAN".chars.stdlib), Sequence.from(t"NCN".chars.stdlib))
+        diff(t"NAN".chars.to[Sequence], t"NCN".chars.to[Sequence])
       . assert(_ == Diff(Par(0, 0, 'N'), Del(1, 'A'), Ins(1, 'C'), Par(2, 2, 'N')))
 
       test(m"Item swap between values"):
-        diff(Sequence.from(t"NABN".chars.stdlib), Sequence.from(t"NBAN".chars.stdlib))
+        diff(t"NABN".chars.to[Sequence], t"NBAN".chars.to[Sequence])
       . assert(_ == Diff(Par(0, 0, 'N'), Del(1, 'A'), Par(2, 1, 'B'), Ins(2, 'A'), Par(3, 3, 'N')))
 
       test(m"Item swap interspersed with values"):
-        diff(Sequence.from(t"AZB".chars.stdlib), Sequence.from(t"BZA".chars.stdlib))
+        diff(t"AZB".chars.to[Sequence], t"BZA".chars.to[Sequence])
       . assert(_ == Diff(Del(0, 'A'), Del(1, 'Z'), Par(2, 0, 'B'), Ins(1, 'Z'), Ins(2, 'A')))
 
       test(m"real-world example 1"):
@@ -280,35 +280,35 @@ object Tests extends Suite("diff", m"Dissonance tests"):
 
     suite(m"Redraft application tests"):
       test(m"Apply a simple redraft"):
-        Redraft.parse(Chain(t"- line2", t"+ new line 2a")).patch(source).pipe(prog => Sequence.from(prog.stdlib))
+        Redraft.parse(Chain(t"- line2", t"+ new line 2a")).patch(source).to[Sequence]
       . assert(_ == Sequence(t"line1", t"new line 2a", t"line3"))
 
       test(m"Omitted unchanged lines are skipped"):
-        Redraft.parse(Chain(t"- line2")).patch(source).pipe(prog => Sequence.from(prog.stdlib))
+        Redraft.parse(Chain(t"- line2")).patch(source).to[Sequence]
       . assert(_ == Sequence(t"line1", t"line3"))
 
       test(m"Insert before the first line"):
-        Redraft.parse(Chain(t"+ line0")).patch(source).pipe(prog => Sequence.from(prog.stdlib))
+        Redraft.parse(Chain(t"+ line0")).patch(source).to[Sequence]
       . assert(_ == Sequence(t"line0", t"line1", t"line2", t"line3"))
 
       test(m"Forced insert with the alternate marker"):
-        Redraft.parse(Chain(t"> line0")).patch(source).pipe(prog => Sequence.from(prog.stdlib))
+        Redraft.parse(Chain(t"> line0")).patch(source).to[Sequence]
       . assert(_ == Sequence(t"line0", t"line1", t"line2", t"line3"))
 
       test(m"Deletion anchored by context"):
-        Redraft.parse(Chain(t"b", t"- a")).patch(dup).pipe(prog => Sequence.from(prog.stdlib))
+        Redraft.parse(Chain(t"b", t"- a")).patch(dup).to[Sequence]
       . assert(_ == Sequence(t"a", t"b"))
 
       test(m"A verbatim marker line is kept as context"):
-        Redraft.parse(Chain(t"- alpha", t"< - beta", t"- gamma")).patch(list).pipe(prog => Sequence.from(prog.stdlib))
+        Redraft.parse(Chain(t"- alpha", t"< - beta", t"- gamma")).patch(list).to[Sequence]
       . assert(_ == Sequence(t"- alpha", t"- gamma"))
 
       test(m"Escaped context matches a literal marker line"):
-        Redraft.parse(Chain(t"\\- alpha")).patch(list).pipe(prog => Sequence.from(prog.stdlib))
+        Redraft.parse(Chain(t"\\- alpha")).patch(list).to[Sequence]
       . assert(_ == Sequence(t"- alpha", t"- beta", t"- gamma"))
 
       test(m"Delete a literal marker line with a doubled marker"):
-        Redraft.parse(Chain(t"- alpha", t"- - beta", t"- gamma")).patch(list).pipe(prog => Sequence.from(prog.stdlib))
+        Redraft.parse(Chain(t"- alpha", t"- - beta", t"- gamma")).patch(list).to[Sequence]
       . assert(_ == Sequence(t"- alpha", t"- gamma"))
 
     suite(m"Redraft ambiguity tests"):
@@ -336,7 +336,7 @@ object Tests extends Suite("diff", m"Dissonance tests"):
       . assert(_ == List(t"b", t"- a"))
 
       test(m"A rendered redraft reproduces the target when applied"):
-        diff(source, target).redraft().patch(source).pipe(prog => Sequence.from(prog.stdlib))
+        diff(source, target).redraft().patch(source).to[Sequence]
       . assert(_ == target)
 
     // suite(m"Casual diff tests"):
@@ -371,10 +371,10 @@ object Tests extends Suite("diff", m"Dissonance tests"):
     //   def allPermutations(n: Int): List[List[Text]] =
     //     if n == 0 then Nil else permutations(n) ++ allPermutations(n - 1)
 
-    //   allPermutations(3).map(_.pipe(prog => Sequence.from(prog.stdlib))).each: perm1 =>
-    //     allPermutations(3).map(_.pipe(prog => Sequence.from(prog.stdlib))).each: perm2 =>
+    //   allPermutations(3).map(_.to[Sequence]).each: perm1 =>
+    //     allPermutations(3).map(_.to[Sequence]).each: perm2 =>
     //       import unsafeExceptions.canThrowAny
     //       val d = diff(perm1, perm2).casual
     //       test(m"Check differences"):
-    //         d.patch(perm1).pipe(prog => Sequence.from(prog.stdlib))
+    //         d.patch(perm1).to[Sequence]
     //       . assert(_ == perm2)

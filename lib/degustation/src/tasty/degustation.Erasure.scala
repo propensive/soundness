@@ -39,7 +39,7 @@ import gossamer.*
 import murmuration.*
 import denominative.dysasymptotics.linearSize
 import denominative.{nil, size}
-import rudiments.{at, prim}
+import rudiments.{at, head}
 import vacuous.*
 
 import Pickled.*
@@ -95,7 +95,7 @@ class Erasure(universe: Universe):
   // non-method, `()`.
   def signature(tree: Tree, scope: Optional[Scope], owner: Optional[ClassInfo]): Text = tree match
     case Tree.DefDef(_, name, clauses, returns, _, _) =>
-      def typeClause(clause: List[Tree]): Boolean = clause.prim match
+      def typeClause(clause: List[Tree]): Boolean = clause.head match
         case Tree.TypeParam(_, _, _, _) => true
         case _                          => false
 
@@ -203,7 +203,7 @@ class Erasure(universe: Universe):
       aliased.or(universe.resolve(tpe, scope) match
         case Resolution.Class(info, arguments, _) => info.fullName.s match
           case "scala.Array" =>
-            arguments.prim.lay(Erased.Ref(Object)): element =>
+            arguments.head.lay(Erased.Ref(Object)): element =>
               if isGenericArrayElement(element, scope) then Erased.Ref(Object)
               else Erased.Array(erase(element, scope, vc = false))
 

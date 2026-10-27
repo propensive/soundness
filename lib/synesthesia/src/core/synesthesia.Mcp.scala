@@ -958,12 +958,12 @@ object Mcp:
             // nothing else would ever evict it: 204 for a session that existed, 404 for one that
             // did not, and 400 for a request that names none.
             case Http.Delete =>
-              request.headers.mcpSessionId.prim.lay(Http.Response(Http.BadRequest)()): id =>
+              request.headers.mcpSessionId.head.lay(Http.Response(Http.BadRequest)()): id =>
                 if terminate(id) then Http.Response(Http.NoContent)()
                 else Http.Response(Http.NotFound)()
 
             case _ =>
-              val sessionId = request.headers.mcpSessionId.prim.or(Uuid().in[Text])
+              val sessionId = request.headers.mcpSessionId.head.or(Uuid().in[Text])
               val interface: Mcp.Interface = Mcp.Interface(sessionId, this)
               Mcp.send(sessionId, this, interface)(JsonRpc.serve(interface))
 

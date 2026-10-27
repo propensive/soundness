@@ -40,7 +40,7 @@ import gossamer.*
 import murmuration.*
 import denominative.dysasymptotics.linearSize
 import denominative.{nil, size}
-import rudiments.{at, prim}
+import rudiments.{at, head}
 import vacuous.*
 
 import Pickled.*
@@ -1034,9 +1034,9 @@ class Universe(source: ClassSource):
     . to(List)
 
     val valueParam: Optional[Type] =
-      val extendsAnyVal = parents.prim.let(Universe.className).lay(false)(_ == t"scala.AnyVal")
+      val extendsAnyVal = parents.head.let(Universe.className).lay(false)(_ == t"scala.AnyVal")
 
-      if extendsAnyVal then template.params.prim.let:
+      if extendsAnyVal then template.params.head.let:
         case Tree.Param(_, _, tpt, _) => Universe.typeOf(tpt)
         case _                        => Unset
 
@@ -1312,7 +1312,7 @@ class Universe(source: ClassSource):
 
         // A type clause and a term clause may spell the same names (`def f[key](key: key)`), so
         // only clauses of the binder's own kind are candidates.
-        def isTypeClause(clause: List[Tree]): Boolean = clause.prim match
+        def isTypeClause(clause: List[Tree]): Boolean = clause.head match
           case Tree.TypeParam(_, _, _, _) => true
           case _                          => false
 
@@ -1504,7 +1504,7 @@ class Universe(source: ClassSource):
   private def termMember(prefix: Type, name: Name, scope: Optional[Scope]): Resolution =
     // The path is pinned to the scope it is spelled in here, once: the search may move into the
     // declaring class's scope, where the path's addresses mean nothing.
-    termMember(prefix, name, scope, Universe.pin(List(prefix), scope).prim.or(prefix))
+    termMember(prefix, name, scope, Universe.pin(List(prefix), scope).head.or(prefix))
 
   // `path` is the stable prefix the member is selected on, kept while `prefix` is widened to the
   // type whose members are searched, for the member's type to be seen from it.

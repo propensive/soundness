@@ -301,7 +301,7 @@ object Markdown:
             (acc, formattable) => acc.or(formattable.format(info, code))
 
           formatted.or:
-            Pre(info.prim.lay(Code(code)) { info => Code(`class` = t"language-$info")(code) })
+            Pre(info.head.lay(Code(code)) { info => Code(`class` = t"language-$info")(code) })
 
       Html.Fragment(markdown.children.map { node => Html.Fragment(layout(node), "\n") }*)
 

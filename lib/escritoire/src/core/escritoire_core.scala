@@ -147,7 +147,7 @@ package columnar:
       ( using Text is Measurable, Hyphenation )
     :   Sequence[text] =
 
-      Sequence.from(lines.stdlib.toVector.map(Flow.shorten(_, width, ellipsis)))
+      lines.to[Sequence].map(Flow.shorten(_, width, ellipsis))
 
   case class Shortened(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
     // Elastic between one cell and its natural width, truncating whatever exceeds the
@@ -163,7 +163,7 @@ package columnar:
       ( using Text is Measurable, Hyphenation )
     :   Sequence[text] =
 
-      Sequence.from(lines.stdlib.toVector.map(Flow.shorten(_, width, ellipsis)))
+      lines.to[Sequence].map(Flow.shorten(_, width, ellipsis))
 
   case class Collapsible(threshold: Double) extends Columnar:
     // Rigid at its natural width, but drops from the table entirely when space runs out;

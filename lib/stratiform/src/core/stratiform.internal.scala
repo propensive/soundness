@@ -407,7 +407,7 @@ object internal:
 
       def emitBlock(b: Tel.Block): Expr[Tel.Block] =
         val comments =
-          '{Array.from(${Expr.ofList(b.comments.stdlib.toList.map(emitComment))})}
+          '{Array.from(${Expr.ofList(b.comments.stdlib.map(emitComment))})}
           . asInstanceOf[Expr[Array[Tel.Comment]^{}]]
 
         val tab: Expr[Optional[Tel.Tabulation]] = b.tabulation match
@@ -415,14 +415,14 @@ object internal:
           case _                 => '{Unset}
 
         val compounds =
-          '{Array.from(${Expr.ofList(b.compounds.stdlib.toList.map(emitCompound))})}
+          '{Array.from(${Expr.ofList(b.compounds.stdlib.map(emitCompound))})}
           . asInstanceOf[Expr[Array[Tel.Compound]^{}]]
 
         val tbl = Expr(b.trailingBlankLines)
         '{Tel.Block($comments, $tab, $compounds, $tbl)}
 
       def emitBlocks(blocks: Array[Tel.Block]^{}): Expr[Array[Tel.Block]^{}] =
-        '{Array.from(${Expr.ofList(blocks.stdlib.toList.map(emitBlock))})}
+        '{Array.from(${Expr.ofList(blocks.stdlib.map(emitBlock))})}
         . asInstanceOf[Expr[Array[Tel.Block]^{}]]
 
       val directiveExpr: Expr[Optional[Text]] = document.interpreterDirective match

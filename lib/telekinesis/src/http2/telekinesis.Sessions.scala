@@ -99,7 +99,7 @@ private[telekinesis] object Sessions:
         header.key.lower == t"transfer-encoding" && header.value.lower.contains(t"chunked")
 
       val length: Optional[Int] =
-        head.headers.filter(_.key.lower == t"content-length").prim.let(_.value)
+        head.headers.filter(_.key.lower == t"content-length").head.let(_.value)
         . lay(Unset: Optional[Int]): text => safely(Integer.parseInt(text.s.trim.nn))
 
       val bodiless: Boolean =

@@ -142,7 +142,7 @@ typecheck
 ##
 interactive: terminal ?=>
   val pages = List(t"Home", t"Settings", t"About")
-  val sidebar = border(BorderStyle.rounded)(menu(pages, pages.prim.or(t""), maxWidth = 20))
+  val sidebar = border(BorderStyle.rounded)(menu(pages, pages.head.or(t""), maxWidth = 20))
   val body = border(BorderStyle.heavy)(editor(LineEditor()))
 
   form(Occupancy.Inline)(strip(sidebar, body))

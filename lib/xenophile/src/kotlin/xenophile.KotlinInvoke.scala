@@ -38,7 +38,8 @@ import scala.quoted.*
 
 import anticipation.*
 import fulminate.*
-import rudiments.{filter, prim, sec}
+import denominative.Sec
+import rudiments.{filter, head, at}
 import vacuous.*
 
 // The terminal materializer for the Kotlin ecosystem: turns a fully-applied `Foreign`
@@ -93,9 +94,10 @@ object KotlinInvoke extends Materializer:
     // `prim`/`sec` replace the `List(one)`/`Nil`/`_` match: the stdlib `List` extractor is the
     // one in scope here (this file works with `quotes.reflect` trees).
     val member =
-      members.prim.lay(halt(m"xenophile: $owner has no $function matching these arguments")):
+      members.head.lay(halt(m"xenophile: $owner has no $function matching these arguments")):
         first =>
-          if members.sec.present
+          import denominative.dysasymptotics.linearAccess // the second element: a two-cell walk
+          if members.at(Sec).present
           then halt(m"xenophile: $owner.$function is overloaded; overloads are not yet supported")
           else first
 

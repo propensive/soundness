@@ -201,7 +201,7 @@ object Bench:
   :   Benchmark =
 
     // The sample size, then `runs` timings, then the bytes allocated.
-    val sample: Long = results0.prim.or(0L)
+    val sample: Long = results0.head.or(0L)
     val results = results0.stdlib.drop(1).take(runs)
     val allocated: Long = results0.last.or(0L)
     val total = results.sum

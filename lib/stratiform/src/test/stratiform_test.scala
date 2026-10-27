@@ -43,6 +43,7 @@ import anticipation.*
 import aperture.*
 import contingency.*
 import denominative.*
+import denominative.dysasymptotics.linearSize // the suite reads list sizes; the cost is irrelevant here
 import fulminate.*
 import larceny.*
 import gastronomy.*
@@ -326,7 +327,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
     suite(m"Streaming parser — negative corpus (E1xx)"):
       CorpusLoader.negative.each: testcase =>
         val codes = CorpusLoader.expectedCodes(testcase)
-        if codes.stdlib.nonEmpty && codes.stdlib.forall(_ < 200) then
+        if !codes.nil && codes.stdlib.forall(_ < 200) then
           test(m"streaming raises an expected E1xx error on ${testcase.stem}"):
             codes.has:
               capture[Tel.Error](Tel.Parser.parse(Cursor[Data](testcase.source)))
@@ -360,7 +361,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
       // is the same whatever the chunk boundaries.
       CorpusLoader.negative.each: testcase =>
         val codes = CorpusLoader.expectedCodes(testcase)
-        if codes.stdlib.nonEmpty && codes.stdlib.forall(_ < 200) then
+        if !codes.nil && codes.stdlib.forall(_ < 200) then
           test(m"all chunk sizes raise the same error on ${testcase.stem}"):
             val baseline =
               capture[Tel.Error](Tel.Parser.parse(Cursor[Data](testcase.source))).reason.number
@@ -391,15 +392,15 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         . assert(_ == CheckFormat.parseStream(testcase.check).map(_.tree))
 
       test(m"two documents yield a list of two"):
-        CorpusLoader.caseByStem(t"stream", t"two-documents").source.read[List[Tel]].stdlib.length
+        CorpusLoader.caseByStem(t"stream", t"two-documents").source.read[List[Tel]].size
       . assert(_ == 2)
 
       test(m"a trailing separator yields no empty trailing document"):
-        CorpusLoader.caseByStem(t"stream", t"trailing-separator").source.read[List[Tel]].stdlib.length
+        CorpusLoader.caseByStem(t"stream", t"trailing-separator").source.read[List[Tel]].size
       . assert(_ == 1)
 
       test(m"two consecutive separators yield an empty document between them"):
-        CorpusLoader.caseByStem(t"stream", t"empty-between").source.read[List[Tel]].stdlib.length
+        CorpusLoader.caseByStem(t"stream", t"empty-between").source.read[List[Tel]].size
       . assert(_ == 3)
 
       test(m"a malformed document in a stream raises (fail-fast)"):
@@ -466,7 +467,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
 
       test(m"a sum encodes its variant as a child keyed by the variant name"):
         val shape: Tests.Shape2 = Tests.Shape2.Circle(7)
-        shape.encode.childCompounds.stdlib.head.keyword
+        shape.encode.childCompounds.head.let(_.keyword)
       . assert(_ == t"circle")
 
       test(m"a single-field sum variant round-trips"):
@@ -771,7 +772,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
     suite(m"tel\"…\" interpolator"):
       test(m"simple literal"):
         val parsed = tel"hello"
-        parsed.childCompounds.stdlib.headOption.map(_.keyword).getOrElse(t"")
+        parsed.childCompounds.head.let(_.keyword).or(t"")
       . assert(_ == t"hello")
 
       test(m"keyword with atom and hole"):
@@ -786,7 +787,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val parsed = tel"""parent
   child
 """
-        parsed.childCompounds.stdlib.headOption.map(_.keyword).getOrElse(t"")
+        parsed.childCompounds.head.let(_.keyword).or(t"")
       . assert(_ == t"parent")
 
     suite(m"tel\"…\" extractor"):
@@ -1556,22 +1557,22 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
       def schemaOf(source: Text): Tels =
         Tels.Validation.validate(source.read[Tel].as[Tels])
 
-      def indices(root: Tel.Element): scala.collection.immutable.List[Int] = root match
+      def indices(root: Tel.Element): List[Int] = root match
         case Tel.Element.Node(_, _, children) =>
-          children.stdlib.toList.map:
+          children.to[List].map:
             case Tel.Element.Node(i, _, _)  => i.or(-1)
             case Tel.Element.Value(i, _, _) => i
-        case _ => scala.collection.immutable.Nil
+        case _ => Nil
 
       test(m"§18.3: children are in member order, not document order"):
         val schema = schemaOf(t"name order\n\ndocument\n  field alpha String\n  field beta String\n")
         indices(Tel.Type.assign(t"beta 1\nalpha 2\n".read[Tel], schema))
-      . assert(_ == scala.collection.immutable.List(0, 1))
+      . assert(_ == List(0, 1))
 
       test(m"§18.3: a default-supplied value takes its member's place"):
         val schema = schemaOf(t"name order\n\ndocument\n  field alpha String required Ann\n  field beta String\n")
         indices(Tel.Type.assign(t"beta 1\n".read[Tel], schema))
-      . assert(_ == scala.collection.immutable.List(0, 1))
+      . assert(_ == List(0, 1))
 
       test(m"§18.3: variant fills of one SelectRef keep their source order"):
         val schema = schemaOf(Text("""|name pets
@@ -1585,7 +1586,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
                                      |  select Pet repeatable
                                      |""".stripMargin))
         indices(Tel.Type.assign(t"owner amy\ncat tom\ndog rex\n".read[Tel], schema))
-      . assert(_ == scala.collection.immutable.List(0, 2, 1))
+      . assert(_ == List(0, 2, 1))
 
       test(m"§20.3: a layer field colliding with a variant keyword is E205"):
         val source = Text("""|name collision
@@ -1870,30 +1871,32 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
 
       test(m"Construct picks inline atoms for simple values"):
         val c = Mutation.construct(t"name", t"Alice")
-        c.atoms.stdlib.head match
+        c.atoms.head match
           case Tel.Atom.Inline(text, _) => text
           case _                        => t""
       . assert(_ == t"Alice")
 
       test(m"Construct picks a source atom for multi-line values"):
         val c = Mutation.construct(t"note", t"first line\nsecond line")
-        c.atoms.stdlib.head match
+        c.atoms.head match
           case _: Tel.Atom.Source  => "source"
           case _: Tel.Atom.Inline  => "inline"
           case _: Tel.Atom.Literal => "literal"
+          case _                   => "absent"
       . assert(_ == "source")
 
       test(m"Construct falls back to literal for blank-line payloads"):
         val c = Mutation.construct(t"note", t"first\n\nsecond\n")
-        c.atoms.stdlib.head match
+        c.atoms.head match
           case _: Tel.Atom.Literal => "literal"
           case _: Tel.Atom.Source  => "source"
           case _: Tel.Atom.Inline  => "inline"
+          case _                   => "absent"
       . assert(_ == "literal")
 
       test(m"Construct's inline atom uses one preceding space"):
         val c = Mutation.construct(t"name", t"Alice")
-        c.atoms.stdlib.head match
+        c.atoms.head match
           case Tel.Atom.Inline(_, sp) => sp
           case _                       => -1
       . assert(_ == 1)
@@ -1902,17 +1905,18 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         // A trailing LF is unrepresentable as a source atom (Convention A,
         // §14), so the value must be carried by a literal atom.
         val c = Mutation.construct(t"note", t"single line\n")
-        c.atoms.stdlib.head match
+        c.atoms.head match
           case _: Tel.Atom.Literal => "literal"
           case _: Tel.Atom.Source  => "source"
           case _: Tel.Atom.Inline  => "inline"
+          case _                   => "absent"
       . assert(_ == "literal")
 
       test(m"Construct's inline atom uses two preceding spaces for a spaced value"):
         // §22.3: a value containing a space is emitted with a hard-space
         // separator so its soft spaces survive as content (§10.3).
         val c = Mutation.construct(t"name", t"Jon Pretty")
-        c.atoms.stdlib.head match
+        c.atoms.head match
           case Tel.Atom.Inline(_, sp) => sp
           case _                       => -1
       . assert(_ == 2)
@@ -1921,15 +1925,16 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         // The remark risk (§11.2) is only a *leading* sigil-then-space; an
         // internal `<space><sigil>` is content in hard-space mode.
         val c = Mutation.construct(t"note", t"see #3")
-        c.atoms.stdlib.head match
+        c.atoms.head match
           case _: Tel.Atom.Inline  => "inline"
           case _: Tel.Atom.Source  => "source"
           case _: Tel.Atom.Literal => "literal"
+          case _                   => "absent"
       . assert(_ == "inline")
 
       test(m"Construct escalates a leading sigil-then-space value off inline (§22.2)"):
         val c = Mutation.construct(t"note", t"# heading")
-        c.atoms.stdlib.head match
+        c.atoms.head match
           case _: Tel.Atom.Inline  => "inline"
           case _                    => "escalated"
       . assert(_ == "escalated")
@@ -1942,20 +1947,22 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val tel    = doc("note text\n")
         val ptr    = Tel.Pointer.of(t"note")
         val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, t"line\n"))
-        result.childCompounds.stdlib.head.atoms.stdlib.head match
+        result.childCompounds.head.let(_.atoms.head) match
           case _: Tel.Atom.Literal => "literal"
           case _: Tel.Atom.Source  => "source"
           case _: Tel.Atom.Inline  => "inline"
+          case _                   => "absent"
       . assert(_ == "literal")
 
       test(m"UpdateAtom escalates an inline atom to a source atom for a multi-line value"):
         val tel    = doc("note text\n")
         val ptr    = Tel.Pointer.of(t"note")
         val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, t"line one\nline two"))
-        result.childCompounds.stdlib.head.atoms.stdlib.head match
+        result.childCompounds.head.let(_.atoms.head) match
           case _: Tel.Atom.Source  => "source"
           case _: Tel.Atom.Inline  => "inline"
           case _: Tel.Atom.Literal => "literal"
+          case _                   => "absent"
       . assert(_ == "source")
 
       test(m"UpdateAtom never downgrades a literal atom to inline (§22.3)"):
@@ -1963,10 +1970,11 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val tel    = doc("note\n      ===\nnow literal\n      ===\n")
         val ptr    = Tel.Pointer.of(t"note")
         val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, t"now simple"))
-        result.childCompounds.stdlib.head.atoms.stdlib.head match
+        result.childCompounds.head.let(_.atoms.head) match
           case _: Tel.Atom.Literal => "literal"
           case _: Tel.Atom.Source  => "source"
           case _: Tel.Atom.Inline  => "inline"
+          case _                   => "absent"
       . assert(_ == "literal")
 
       // A top-level literal atom's delimiter line is six spaces plus the
@@ -1978,7 +1986,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val tel    = doc("note x\n")
         val ptr    = Tel.Pointer.of(t"note")
         val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, crCollision))
-        result.childCompounds.stdlib.head.atoms.stdlib.head match
+        result.childCompounds.head.let(_.atoms.head) match
           case Tel.Atom.Literal(delimiter, _) => delimiter
           case _                              => t""
       . assert(_ == t"----")
@@ -1987,7 +1995,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val tel    = doc("note x\n")
         val ptr    = Tel.Pointer.of(t"note")
         val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, crCollision))
-        result.show.read[Tel].childCompounds.stdlib.head.atoms.stdlib.head match
+        result.show.read[Tel].childCompounds.head.let(_.atoms.head) match
           case Tel.Atom.Literal(_, text) => text
           case _                         => t""
       . assert(_ == crCollision)
@@ -2033,10 +2041,11 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val tel    = doc("note text\n")
         val ptr    = Tel.Pointer.of(t"note")
         val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, t"line1\t\nline2"))
-        result.childCompounds.stdlib.head.atoms.stdlib.head match
+        result.childCompounds.head.let(_.atoms.head) match
           case _: Tel.Atom.Literal => "literal"
           case _: Tel.Atom.Source  => "source"
           case _: Tel.Atom.Inline  => "inline"
+          case _                   => "absent"
       . assert(_ == "literal")
 
       test(m"InsertAfter a tabulated row opens a new block after the table (§22.2)"):
@@ -2153,7 +2162,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
     suite(m".read[Tel] from Text"):
       test(m"reading a Text value gives a Tel"):
         val tel = t"name Alice\n".read[Tel]
-        tel.childCompounds.stdlib.headOption.map(_.keyword).getOrElse(t"")
+        tel.childCompounds.head.let(_.keyword).or(t"")
       . assert(_ == t"name")
 
     suite(m".load[Tel] returns Document[Tel] with metadata"):
@@ -2169,14 +2178,14 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
 
       test(m"Document[Tel].root parses the content"):
         val doc = t"name Alice\n".load[Tel]
-        doc.root.childCompounds.stdlib.headOption.map(_.keyword).getOrElse(t"")
+        doc.root.childCompounds.head.let(_.keyword).or(t"")
       . assert(_ == t"name")
 
       test(m"bytes load as a document, with the pragma"):
         val bytes: Data = Array.unsafeFrozen("tel 1.0\nname Alice\n".getBytes("UTF-8").nn)
         val doc = bytes.load[Tel]
         ( doc.metadata.pragma.let(_.version).or((0, 0)),
-          doc.root.childCompounds.stdlib.headOption.map(_.keyword).getOrElse(t"") )
+          doc.root.childCompounds.head.let(_.keyword).or(t"") )
       . assert(_ == ((1, 0), t"name"))
 
       test(m"a document ending at end of input has no continuation"):
@@ -2250,7 +2259,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
 
       test(m"the serializer emits reference, layers and sigil"):
         t"tel 1.0 propensive.dev/build +publishing +maven %\nname Alice\n"
-        . read[Tel].show.cut(t"\n").stdlib.headOption.getOrElse(t"")
+        . read[Tel].show.cut(t"\n").head
       . assert(_ == t"tel 1.0 propensive.dev/build +publishing +maven %")
 
     suite(m"Integration: parse → mutate → print → reparse"):
@@ -2509,7 +2518,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         // present; the captured error must be one of them, since fixture
         // filenames sometimes describe a scenario while the reference
         // parser surfaces a different code first (e.g. e118 → E117).
-        if codes.stdlib.nonEmpty && codes.stdlib.forall(_ < 200) then
+        if !codes.nil && codes.stdlib.forall(_ < 200) then
           test(m"raises an expected E1xx error on ${testcase.stem}"):
             codes.has(capture[Tel.Error](testcase.source.read[Tel]).reason.number)
           . assert(_ == true)
@@ -2524,7 +2533,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
       . assert(_ == true)
 
       test(m"alphabet entries are pairwise distinct"):
-        Base256.alphabet.stdlib.toSet.size
+        Base256.alphabet.to[Set].size
       . assert(_ == 256)
 
       test(m"ASCII digits encode to themselves"):
@@ -2541,8 +2550,8 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
 
       test(m"round-trip all 256 byte values"):
         val data: Data = (0 to 255).map(_.toByte).toArray.asInstanceOf[Array[Byte]]
-        Base256.decode(Base256.encode(data)).stdlib.toSeq
-      . assert(_ == (0 to 255).map(_.toByte))
+        Base256.decode(Base256.encode(data)).to[List]
+      . assert(_ == List.from((0 to 255).map(_.toByte)))
 
       test(m"empty bytes round-trip to empty text"):
         Base256.encode(Array.empty[Byte])
@@ -2563,8 +2572,8 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
 
       test(m"strict decode accepts the alphabet"):
         val data: Data = (0 to 255).map(_.toByte).toArray.asInstanceOf[Array[Byte]]
-        Base256.decodeStrict(Base256.encode(data)).stdlib.toSeq
-      . assert(_ == (0 to 255).map(_.toByte))
+        Base256.decodeStrict(Base256.encode(data)).to[List]
+      . assert(_ == List.from((0 to 255).map(_.toByte)))
 
       test(m"strict decode reports every non-alphabet character by code-point index"):
         val input = Text("A B" + new String(Character.toChars(0x1f600)) + "C")
@@ -2574,7 +2583,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
       . assert(_ == scala.collection.immutable.List((1, 0x20), (3, 0x1f600)))
 
       test(m"permissive decode counts a supplementary character as one character"):
-        Base256.decode(Text("A" + new String(Character.toChars(0x1f600)))).stdlib.length
+        Base256.decode(Text("A" + new String(Character.toChars(0x1f600)))).size
       . assert(_ == 2)
 
       // §11 normative test vectors.
@@ -2595,8 +2604,8 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         . assert(_ == encoded)
 
         test(m"§11 vector: $encoded decodes strictly"):
-          Base256.decodeStrict(Text(encoded)).stdlib.toList.map(_ & 0xff)
-        . assert(_ == bytes)
+          Base256.decodeStrict(Text(encoded)).to[List].map(_ & 0xff)
+        . assert(_ == List.from(bytes))
 
       test(m"§11 identity vector: encoding 00..FF yields the alphabet"):
         val data: Data = (0 to 255).map(_.toByte).toArray.asInstanceOf[Array[Byte]]
@@ -2836,7 +2845,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val decoded = Bintel.decode(bytes, nameSchema)
         decoded match
           case Tel.Element.Node(_, _, children) =>
-            children.stdlib.toList.collect:
+            children.to[List].sweep:
               case Tel.Element.Value(_, _, t) => t
           case _ => Nil
       . assert(_ == List(t"Alice"))
@@ -2874,7 +2883,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val decoded = Bintel.decode(bytes, nameSchema)
         decoded match
           case Tel.Element.Node(_, _, children) =>
-            children.stdlib.toList.collect:
+            children.to[List].sweep:
               case Tel.Element.Value(_, _, t) => t
           case _ => Nil
       . assert(_ == List(t""))
@@ -2887,7 +2896,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val decoded = Bintel.decode(bytes, nameSchema)
         decoded match
           case Tel.Element.Node(_, _, children) =>
-            children.stdlib.toList.collect:
+            children.to[List].sweep:
               case Tel.Element.Value(_, _, t) => t
           case _ => Nil
       . assert(_ == List(t"café"))
@@ -2940,7 +2949,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val decoded = Bintel.decode(bytes, outerSchema)
         decoded match
           case Tel.Element.Node(_, _, Array(Tel.Element.Node(_, _, inner))) =>
-            inner.stdlib.toList.collect:
+            inner.to[List].sweep:
               case Tel.Element.Value(_, _, t) => t
           case _ => Nil
       . assert(_ == List(t"example.com"))
@@ -3099,14 +3108,14 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val doc = Bintel.decodeDocument(bytes, nameSchema)
         doc.root match
           case Tel.Element.Node(_, _, children) =>
-            children.stdlib.toList.collect:
+            children.to[List].sweep:
               case Tel.Element.Value(_, _, t) => t
           case _ => Nil
       . assert(_ == List(t"Alice"))
 
       def firstName(document: Bintel.Document): Text = document.root match
         case Tel.Element.Node(_, _, children) =>
-          children.stdlib.toList.collect { case Tel.Element.Value(_, _, t) => t }.head
+          children.to[List].sweep { case Tel.Element.Value(_, _, t) => t }.head.or(t"?")
         case _ => t"?"
 
       test(m"decodeDocument reports the continuation offset"):
@@ -3201,7 +3210,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
       val h2 = synthetic(3)
 
       test(m"single-component signature length is 33 (32 + 1 cadence byte)"):
-        SchemaSignature.encode(List(h0)).stdlib.length
+        SchemaSignature.encode(List(h0)).size
       . assert(_ == 33)
 
       test(m"single-component signature begins with the component hash"):
@@ -3209,11 +3218,11 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
       . assert(_ == true)
 
       test(m"two-component signature length is 37 (32 + 4 + 1)"):
-        SchemaSignature.encode(List(h0, h1)).stdlib.length
+        SchemaSignature.encode(List(h0, h1)).size
       . assert(_ == 37)
 
       test(m"three-component signature length is 39 (32 + 4 + 2 + 1)"):
-        SchemaSignature.encode(List(h0, h1, h2)).stdlib.length
+        SchemaSignature.encode(List(h0, h1, h2)).size
       . assert(_ == 39)
 
       test(m"empty hash list raises BadSignatureLength"):
@@ -3427,7 +3436,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
                         selfContained().length + dataDoc.read[Tel].bintelDocument(
                           Tels.Layers.compose(schemaDoc.read[Tel].as[Tels]),
                           SchemaSignature.fromDocument(schemaDoc.read[Tel], Tels.Axiom.tels))
-                          .stdlib.length))
+                          .size))
 
       test(m"decodeWholeDocumentSelfContained rejects a continuation as B08"):
         val self   = selfContained()

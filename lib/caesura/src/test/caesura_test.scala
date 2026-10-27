@@ -148,43 +148,43 @@ object Tests extends Suite("dsv", m"Caesura tests"):
       import dsvFormats.csvFormat
 
       test(m"simple parse"):
-        t"""hello,world""".read[Sheet].rows.stdlib.head
+        t"""hello,world""".read[Sheet].rows.head
       . assert(_ == Dsv(t"hello", t"world"))
 
       test(m"simple parse with quotes"):
-        t""""hello","world"""".read[Sheet].rows.stdlib.head
+        t""""hello","world"""".read[Sheet].rows.head
       . assert(_ == Dsv(t"hello", t"world"))
 
       test(m"empty unquoted field at start"):
-        t",hello,world".read[Sheet].rows.stdlib.head
+        t",hello,world".read[Sheet].rows.head
       . assert(_ == Dsv(t"", t"hello", t"world"))
 
       test(m"empty unquoted field at end"):
-        t"hello,world,".read[Sheet].rows.stdlib.head
+        t"hello,world,".read[Sheet].rows.head
       . assert(_ == Dsv(t"hello", t"world", t""))
 
       test(m"empty unquoted field in middle"):
-        t"hello,,world".read[Sheet].rows.stdlib.head
+        t"hello,,world".read[Sheet].rows.head
       . assert(_ == Dsv(t"hello", t"", t"world"))
 
       test(m"empty quoted field at start"):
-        t""""","hello","world"""".read[Sheet].rows.stdlib.head
+        t""""","hello","world"""".read[Sheet].rows.head
       . assert(_ == Dsv(t"", t"hello", t"world"))
 
       test(m"empty quoted field at end"):
-        t""""hello","world",""""".read[Sheet].rows.stdlib.head
+        t""""hello","world",""""".read[Sheet].rows.head
       . assert(_ == Dsv(t"hello", t"world", t""))
 
       test(m"empty quoted field in middle"):
-        t""""hello","","world"""".read[Sheet].rows.stdlib.head
+        t""""hello","","world"""".read[Sheet].rows.head
       . assert(_ == Dsv(t"hello", t"", t"world"))
 
       test(m"quoted comma"):
-        t""""hello,world"""".read[Sheet].rows.stdlib.head
+        t""""hello,world"""".read[Sheet].rows.head
       . assert(_ == Dsv(t"hello,world"))
 
       test(m"escaped quotes"):
-        t""""hello""world"""".read[Sheet].rows.stdlib.head
+        t""""hello""world"""".read[Sheet].rows.head
       . assert(_ == Dsv(t"""hello"world"""))
 
       test(m"misplaced quote"):
@@ -253,33 +253,33 @@ object Tests extends Suite("dsv", m"Caesura tests"):
         import dsvFormats.tsvWithHeaderFormat
         import dsvRedesignations.unchangedRedesignation
         val dsv = t"greeting\taddressee\nHello\tWorld\n".read[Sheet]
-        dsv.rows.stdlib.head.addressee[Text]
+        dsv.rows.head.let(_.addressee[Text])
       . assert(_ == t"World")
 
       test(m"Access field by mapped name"):
         import dsvFormats.tsvWithHeaderFormat
         import dsvRedesignations.capitalizedWordsRedesignation
         val dsv = t"Personal Greeting\tTarget Person\nHello\tWorld\n".read[Sheet]
-        dsv.rows.stdlib.head.targetPerson[Text]
+        dsv.rows.head.let(_.targetPerson[Text])
       . assert(_ == t"World")
 
       test(m"Access field by name 2"):
         import dsvFormats.tsvWithHeaderFormat
         import dsvRedesignations.unchangedRedesignation
         val dsv = t"greeting\tnumber\nHello\t23\n".read[Sheet]
-        dsv.rows.stdlib.head.number[Int]
+        dsv.rows.head.let(_.number[Int])
       . assert(_ == 23)
 
 
 
     test(m"decode case class"):
       import dsvFormats.csvFormat
-      t"""hello,world""".read[Sheet].rows.stdlib.head.as[Foo]
+      t"""hello,world""".read[Sheet].rows.head.let(_.as[Foo])
     . assert(_ == Foo(t"hello", t"world"))
 
     test(m"decode complex case class"):
       import dsvFormats.csvFormat
-      t"""0.1,two,three,4,five,six""".read[Sheet].rows.stdlib.head.as[Bar]
+      t"""0.1,two,three,4,five,six""".read[Sheet].rows.head.let(_.as[Bar])
     . assert(_ == Bar(0.1, Foo(t"two", t"three"), 4, Foo(t"five", t"six")))
 
     test(m"`read[T in Dsv]` decodes a single record directly"):
@@ -362,12 +362,12 @@ object Tests extends Suite("dsv", m"Caesura tests"):
 
     test(m"decode case class from TSV"):
       import dsvFormats.tsvFormat
-      t"hello\tworld".read[Sheet].rows.stdlib.head.as[Foo]
+      t"hello\tworld".read[Sheet].rows.head.let(_.as[Foo])
     . assert(_ == Foo(t"hello", t"world"))
 
     test(m"decode case class from CSV by headings"):
       import dsvFormats.csvWithHeaderFormat
-      t"greeting,name\nhello,world".read[Sheet].rows.stdlib.head.as[Quux]
+      t"greeting,name\nhello,world".read[Sheet].rows.head.let(_.as[Quux])
     . assert(_ == Quux(t"world", t"hello"))
 
     test(m"convert case class to TSV"):
@@ -406,7 +406,7 @@ object Tests extends Suite("dsv", m"Caesura tests"):
 
       test(m"case class survives encode, render, parse and decode"):
         Bar(0.1, Foo(t"two", t"three"), 4, Foo(t"five", t"six")).dsv.show
-         .read[Sheet].rows.stdlib.head.as[Bar]
+         .read[Sheet].rows.head.let(_.as[Bar])
       . assert(_ == Bar(0.1, Foo(t"two", t"three"), 4, Foo(t"five", t"six")))
 
       test(m"quoted cell survives a parse/render roundtrip"):
@@ -451,7 +451,7 @@ object Tests extends Suite("dsv", m"Caesura tests"):
       test(m"lenient faults read a wrong-typed Optional cell as Unset"):
         import dsvFormats.csvFormat
         import optionalityOptions.lenientDsvFaults
-        t"hello,abc".read[Sheet].rows.stdlib.head.as[Tally]
+        t"hello,abc".read[Sheet].rows.head.let(_.as[Tally])
       . assert(_ == Tally(t"hello", Unset))
 
       test(m"strict absence raises Absent on the direct path"):

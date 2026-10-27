@@ -120,7 +120,7 @@ extends StackTrace.Resolver:
 
         val definition =
           candidates.seek(StackResolver.matches(frame.jvmMethod, hint, _))
-          . or(candidates.prim)
+          . or(candidates.head)
 
         val kind = hint.or(definition.let(_.kind)).or(Kind.Synthetic)
         val code = frame.line.let(sourceLine(path, _))
@@ -180,7 +180,7 @@ extends StackTrace.Resolver:
   private def definitionSource(tasty: Tasty.File, path: Text, line: Int)
   :   Optional[StackTrace.Frame.Source] =
 
-    tasty.covering(line).prim.let: definition =>
+    tasty.covering(line).head.let: definition =>
       val owner = definition.owners.reverse.map(StackResolver.display).join(t".")
       val name = StackResolver.display(definition.name)
 

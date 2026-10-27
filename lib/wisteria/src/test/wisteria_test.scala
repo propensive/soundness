@@ -142,6 +142,8 @@ object Tests extends Suite("derivation", m"Wisteria tests"):
           [in, out] => _.flatMap,
           [monadic] => Some(_),
           [field] => context =>
+            // The confined read cannot narrow inside this inline lambda (its `Applicable`
+            // evidence is left unresolved), so the bounds check stays explicit.
             if index < inputArr.length then context.parse(inputArr.stdlib(index))
             else None
         )

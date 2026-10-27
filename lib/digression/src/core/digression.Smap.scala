@@ -164,7 +164,7 @@ object Smap:
 
             files = files.define(id, File(name, path))
         else if section == 'L' then
-          entry(line.trim.nn, entries.prim.lay(0)(_.fileId)).let: entry =>
+          entry(line.trim.nn, entries.head.lay(0)(_.fileId)).let: entry =>
             entries = entry :: entries
 
         index += 1

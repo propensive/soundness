@@ -74,7 +74,7 @@ extension (endpoint: Endpoint[Udp.Port])
 
     val reply = packet.data.as[Dns.Message]
 
-    if reply.id != message.id || reply.questions.prim != message.questions.prim
+    if reply.id != message.id || reply.questions.head != message.questions.head
     then abort(Dns.Error(Reason.Mismatch(reply.id)))
 
     reply

@@ -203,7 +203,7 @@ object Dsv extends Dsv1:
     ( using format: Dsv.Format, tactic: Tactic[Dsv.Error] )
   :   value =
 
-    dsv.data.prim.lay(raise(Dsv.Error(format, Dsv.Error.Reason.Absent)) yet sentinel): cell =>
+    dsv.data.head.lay(raise(Dsv.Error(format, Dsv.Error.Reason.Absent)) yet sentinel): cell =>
       parse(cell).or:
         raise(Dsv.Error(format, Dsv.Error.Reason.Unparseable(cell, expected))) yet sentinel
 

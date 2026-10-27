@@ -87,7 +87,7 @@ private[octogenarian] object Refstore:
   // A ref file holds `ref: <name>` or a hash; `FETCH_HEAD` and `MERGE_HEAD` hold one hash per
   // line, the first with a tab-separated description after it.
   private def parseTarget(content: Text): Optional[Git.Backend.Target] =
-    val line = content.trim.cut(t"\n").prim.or(t"")
+    val line = content.trim.cut(t"\n").head
 
     if line.starts(symbolicPrefix) then Git.Backend.Target.Symbolic(line.skip(5).trim)
     else if line.length == 40 then Git.Backend.Target.Direct(Git.Hash.unsafe(line))
@@ -286,7 +286,7 @@ private[octogenarian] object Refstore:
   :   Unit =
 
     val base = if name.starts(refsPrefix) then commonDir else gitDir
-    val file = descend(base, t"logs" :: name.cut(t"/"))
+    val file = descend(base, List.prepend(name.cut(t"/"), t"logs"))
     val parent: Path on Linux = file.parent.or(base)
     ensureDirectory(parent)
     val signature = Git.Signature(identity, Git.Timestamp.now())
@@ -301,7 +301,7 @@ private[octogenarian] object Refstore:
   :   List[ReflogEntry] =
 
     val base = if name.starts(refsPrefix) then commonDir else gitDir
-    val file = descend(base, t"logs" :: name.cut(t"/"))
+    val file = descend(base, List.prepend(name.cut(t"/"), t"logs"))
     val utc = t"+0000"
 
     if !file.existent() then Nil else

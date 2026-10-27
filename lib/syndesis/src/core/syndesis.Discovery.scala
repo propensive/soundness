@@ -187,7 +187,7 @@ object Discovery:
     // The value of a key, if present (or `Unset` for a key present without a value, which
     // `has` distinguishes); keys compare without regard to ASCII case (RFC 6763 §6.4).
     def apply(key: Text): Optional[Text] =
-      entries.filter { case (key2, _) => Dns.Name.fold(key2) == Dns.Name.fold(key) }.prim.let(_(1))
+      entries.filter { case (key2, _) => Dns.Name.fold(key2) == Dns.Name.fold(key) }.head.let(_(1))
 
     def has(key: Text): Boolean =
       entries.exists { case (key2, _) => Dns.Name.fold(key2) == Dns.Name.fold(key) }

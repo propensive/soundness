@@ -332,9 +332,9 @@ trait Cbor1 extends Cbor2:
       def aggregate(bytes: Chain[Data]): value in Cbor =
         // A single in-memory block — the common case — is read in place; the general
         // path pulls the chain's cells as the parser needs them.
-        if !bytes.nil && bytes.stdlib.tail.isEmpty
-        then parseDirect(CborParser(bytes.stdlib.head), parsable).asInstanceOf[value in Cbor]
-        else parseDirect(CborParser(bytes), parsable).asInstanceOf[value in Cbor]
+        bytes match
+          case block #:: rest if rest.nil => parseDirect(CborParser(block), parsable).asInstanceOf[value in Cbor]
+          case _                          => parseDirect(CborParser(bytes), parsable).asInstanceOf[value in Cbor]
 
       // The stream crosses as a neutral reference (see `CborParser.aggregable`).
       override def accept(stream: (Stream[Data] over Credit)^): value in Cbor =

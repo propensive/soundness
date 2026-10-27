@@ -279,7 +279,7 @@ object Tests extends Suite("mdns", m"Syndesis tests"):
 
             fury.advertise(description)(using a):
               fury.browse(using b):
-                summon[Discovery.Browser].events.stdlib.head
+                summon[Discovery.Browser].events.head
       . assert(_ == Discovery.Event.Found(gondor))
 
       test(m"A found instance resolves to its port, TXT and addresses"):
@@ -346,7 +346,7 @@ object Tests extends Suite("mdns", m"Syndesis tests"):
       def announced(message: Dns.Message): Optional[Dns.Name] =
         message.answers.filter: record =>
           record.ttl > 0 && record.rdata == Dns.Rdata.Srv(0, 0, 8443, dns"a.local")
-        . prim.let(_.name)
+        . head.let(_.name)
 
       // Reads the rogue's packets until one satisfies `lambda`.
       def awaitPacket[result](rogue: Mdns.Transport & Mdns.Transport.Inlet)(lambda: Dns.Message => Optional[result]): result =
@@ -396,7 +396,7 @@ object Tests extends Suite("mdns", m"Syndesis tests"):
               awaitPacket(rogue) { message => if isProbe(message) then true else Unset }
               rogue.send(rivalClaim.in[Data])
               val reannounced = awaitPacket(rogue)(announced(_))
-              (reannounced.labels.prim, summon[Discovery.Advertisement].instance.label)
+              (reannounced.labels.head, summon[Discovery.Advertisement].instance.label)
       . assert(_ == (t"Gondor (2)", t"Gondor (2)"))
 
       test(m"Advertising reports its activity to the loan's loggable"):

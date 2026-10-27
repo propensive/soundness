@@ -56,7 +56,7 @@ supervise:
         case other                                           => ()
 
     Acp.permission:
-      Acp.options.filter(_.kind == Acp.PermissionOptionKind.AllowOnce).prim
+      Acp.options.filter(_.kind == Acp.PermissionOptionKind.AllowOnce).head
       . lay(Acp.Cancelled): option => Acp.Selected(option.optionId)
 
   . apply:
@@ -100,7 +100,7 @@ with `Acp.Selected`, or answers `Acp.Cancelled`. The option kinds are `AllowOnce
 
 ```scala
 def allowAlways(using Acp.Registry^): Unit = Acp.permission:
-  Acp.options.filter(_.kind == Acp.PermissionOptionKind.AllowAlways).prim
+  Acp.options.filter(_.kind == Acp.PermissionOptionKind.AllowAlways).head
   . lay(Acp.Cancelled): option => Acp.Selected(option.optionId)
 ```
 

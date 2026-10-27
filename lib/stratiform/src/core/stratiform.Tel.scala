@@ -1740,7 +1740,7 @@ object Tel extends Tel2:
           if compound.children.exists(!_.compounds.nil)
           then recoverNode(Reason.NonStructCompound)(())
 
-          val text = compound.atoms.prim.lay(t""):
+          val text = compound.atoms.head.lay(t""):
             case Tel.Atom.Inline(t, _)  => t
             case Tel.Atom.Source(t)     => t
             case Tel.Atom.Literal(_, t) => t
@@ -2066,7 +2066,7 @@ object Tel extends Tel2:
     // (3), every scalar carrying BASE-256 text.
     def apply(element: Tel.Element)(using Tactic[Error]): Acceptance = element match
       case Tel.Element.Node(_, _, children) =>
-        Acceptance(children.stdlib.to(List).map(alternative))
+        Acceptance(children.to[List].map(alternative))
 
       case _ =>
         abort(Error(Error.Reason.Malformed))

@@ -546,7 +546,7 @@ extends Git.Backend:
     ( using Tactic[Git.Error] )
   :   Optional[(Git.Object.Kind, Data)] =
 
-    readObjects(gitDir, List(hash)).prim.let: (_, kind, data) => (kind, data)
+    readObjects(gitDir, List(hash)).head.let: (_, kind, data) => (kind, data)
 
   // `cat-file --batch` answers each hash with `<hash> <type> <size>\n<content>\n`, or
   // `<hash> missing\n`.

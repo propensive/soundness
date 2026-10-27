@@ -106,8 +106,7 @@ object Mdns:
         List.from(interfaces.stdlib.flatMap(_.addresses.stdlib.map(_.address)))
 
       val label: Text =
-        safely(jn.InetAddress.getLocalHost.nn.getHostName.nn.tt).or(t"soundness").cut(t".").prim
-        . or(t"soundness")
+        safely(jn.InetAddress.getLocalHost.nn.getHostName.nn.tt).or(t"soundness").cut(t".").head
 
       val host2: Dns.Name = safely(Dns.Name(label, t"local")).or(dns"soundness.local")
 
@@ -150,7 +149,7 @@ object Mdns:
         private val queue: juc.LinkedBlockingQueue[Packet | Termination.type] =
           juc.LinkedBlockingQueue()
 
-        private def source: Ipv4 | Ipv6 = addresses.prim.or(Ipv4.Localhost)
+        private def source: Ipv4 | Ipv6 = addresses.head.or(Ipv4.Localhost)
 
         def send(data: Data): Unit raises Socket.Error =
           val packet = Packet(data, source, port)
@@ -621,10 +620,10 @@ object Mdns:
       val time = now
       val name = instance.dnsName
 
-      cache.lookup(name, Dns.Type.Srv, time).prim.let: srvRecord =>
+      cache.lookup(name, Dns.Type.Srv, time).head.let: srvRecord =>
         srvRecord.rdata.absolve match
           case Dns.Rdata.Srv(_, _, portNumber, target) =>
-            cache.lookup(name, Dns.Type.Txt, time).prim.let: txtRecord =>
+            cache.lookup(name, Dns.Type.Txt, time).head.let: txtRecord =>
               val txt = txtRecord.rdata.absolve match
                 case txt: Dns.Rdata.Txt => Discovery.Txt.parse(txt.texts)
 
@@ -881,7 +880,7 @@ object Mdns:
           query(List(Dns.Question(name, Dns.Type.Srv), Dns.Question(name, Dns.Type.Txt)))
 
           // The target's addresses may not have come with the SRV record.
-          cache.lookup(name, Dns.Type.Srv, now).prim.let: record =>
+          cache.lookup(name, Dns.Type.Srv, now).head.let: record =>
             record.rdata.absolve match
               case Dns.Rdata.Srv(_, _, _, target) =>
                 query(List(Dns.Question(target, Dns.Type.A), Dns.Question(target, Dns.Type.Aaaa)))

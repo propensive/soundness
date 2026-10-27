@@ -100,27 +100,27 @@ object Tests extends Suite("concat", m"Concordance tests"):
 
     suite(m"prim, sec and ter"):
       test(m"prim reads the first element"):
-        List(t"a", t"b", t"c").prim
+        List(t"a", t"b", t"c").head
       . assert(_ == t"a")
 
       test(m"sec reads the second element"):
-        List(t"a", t"b", t"c").sec
+        List(t"a", t"b", t"c").at(Sec)
       . assert(_ == t"b")
 
       test(m"ter reads the third element"):
-        List(t"a", t"b", t"c").ter
+        List(t"a", t"b", t"c").at(Ter)
       . assert(_ == t"c")
 
       test(m"prim is Unset for an empty list"):
-        List.empty[Text].prim
+        List.empty[Text].head
       . assert(_ == Unset)
 
       test(m"sec is Unset for a one-element list"):
-        List(t"a").sec
+        List(t"a").at(Sec)
       . assert(_ == Unset)
 
       test(m"ter is Unset for a two-element list"):
-        List(t"a", t"b").ter
+        List(t"a", t"b").at(Ter)
       . assert(_ == Unset)
 
     suite(m"Grouping"):

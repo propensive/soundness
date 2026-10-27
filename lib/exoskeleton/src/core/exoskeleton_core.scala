@@ -92,7 +92,7 @@ package executives:
           environments.javaBaseEnvironment,
           workingDirectories.javaBaseWorkingDirectory,
           stdio,
-          arguments.prim.let(_ != t"{admin}").or(true),
+          arguments.head.let(_ != t"{admin}").or(true),
           login )
 
 

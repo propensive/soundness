@@ -304,9 +304,19 @@ extension [self](value: self)(using traversable: self is Traversable)
 // Operations that are partial on possibly-empty collections but *total* on receivers carrying a
 // `Populated` proof (obtained from `occupied`, whose bounds check is thereby discharged exactly
 // once). Stdlib members shadow these for stdlib receivers while the aliases remain transparent.
-extension [self <: Populated](value: self)(using traversable: self is Traversable)
-  def head: traversable.Operand = traversable.traverse(value).next()
+// `head` *adapts* to what the receiver's type proves, like `last` below: on a `Populated`
+// receiver it is total and yields the element; otherwise it yields `Optional[element]`,
+// checking emptiness once.
+extension [self](value: self)(using traversable: self is Traversable)
+  transparent inline def head: Optional[traversable.Operand] =
+    compiletime.summonFrom:
+      case _: (`self` <:< Populated) => traversable.traverse(value).next()
 
+      case _ =>
+        val iterator = traversable.traverse(value)
+        if iterator.hasNext then iterator.next() else Unset
+
+extension [self <: Populated](value: self)(using traversable: self is Traversable)
   def reduce(lambda: (traversable.Operand, traversable.Operand) => traversable.Operand)
   :   traversable.Operand =
 
@@ -331,8 +341,17 @@ extension [self](value: self)
       case _ =>
         if traversable.traverse(value).hasNext then terminable.last(value) else Unset
 
-extension [self <: Populated, result](value: self)(using truncable: self is Truncable to result)
-  def lead: result = truncable.lead(value)
+// `lead` adapts like `head` and `last`: everything before the last element, total on a
+// `Populated` receiver and `Optional` otherwise.
+extension [self, result](value: self)
+  ( using truncable: self is Truncable to result, traversable: self is Traversable )
+
+  transparent inline def lead: Optional[result] =
+    compiletime.summonFrom:
+      case _: (`self` <:< Populated) => truncable.lead(value)
+
+      case _ =>
+        if traversable.traverse(value).hasNext then truncable.lead(value) else Unset
 
 // Conversion to a requested shape, which may be a proper type or an unapplied constructor:
 // `chars.to[List]`, `text.to[Set]`, `pairs.to[Map]`. `transparent inline` so the
@@ -627,10 +646,14 @@ extension [value](value: value)
   def snip(count: Int): (segmentable.Segment, segmentable.Segment) =
     (value.segment(Prim till count.z), value.segment(count.z till value.limit))
 
-  // Everything after the first element; empty stays empty, inheriting `skip`'s totality.
-  // Generalized here from gossamer (which kept only the genuinely textual operations), so the
-  // collections and every textual type answer to the same name.
-  inline def tail: segmentable.Segment = value.skip(1, Bidi.Ltr)
+  // Everything after the first element. Adapts like `head`: total on a `Populated` receiver,
+  // `Optional` otherwise (an empty value has no tail). Generalized here from gossamer (which
+  // kept only the genuinely textual operations), so the collections and every textual type
+  // answer to the same name.
+  transparent inline def tail: Optional[segmentable.Segment] =
+    compiletime.summonFrom:
+      case _: (`value` <:< Populated) => value.skip(1, Bidi.Ltr)
+      case _ => if countable.nil(value) then Unset else value.skip(1, Bidi.Ltr)
 
 // The predicate forms find the boundary of the leading (or trailing) run satisfying the
 // predicate by traversal, then rebuild by segmentation — never element-by-element, so styled

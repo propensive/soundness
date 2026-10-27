@@ -226,7 +226,7 @@ private[octogenarian] object Transfer:
 
     def named(candidate: Text): Boolean = refs.exists(_(0) == candidate)
 
-    candidates.filter(named(_)).prim
+    candidates.filter(named(_)).head
 
   // One ref a fetch refspec selected on the peer: its name there, its hash, where it lands
   // locally (if anywhere), and whether a non-fast-forward is allowed.
@@ -302,7 +302,7 @@ private[octogenarian] object Transfer:
       Peer.Local(location, identity)
     else
       val transport =
-        transports.filter(_.accepts(url)).prim
+        transports.filter(_.accepts(url)).head
         . or(abort(Git.Error(Reason.Unsupported(t"the transport for $url"))))
 
       transport.connect(url)
@@ -550,7 +550,7 @@ private[octogenarian] object Transfer:
       val current: Optional[Git.Hash] = remoteMap.at(intent.remote)
       val forced = intent.force || force == Git.Push.Force.Always
 
-      lease.filter(_(0) == intent.remote).prim match
+      lease.filter(_(0) == intent.remote).head match
         case (_, expected) if expected != current => (intent, Left(t"stale info"))
 
         case _ =>

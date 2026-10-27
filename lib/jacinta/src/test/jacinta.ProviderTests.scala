@@ -33,6 +33,7 @@
 package jacinta
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suites read list sizes; the cost is irrelevant here
 
 import codepages.utf8Codepage
 import emailAddressInterfaces.soundnessEmailAddress
@@ -377,7 +378,7 @@ object ProviderTests extends Suite("json-provider", m"JSON Provider tests"):
       . assert(_ == List((t"Programmer": Optional[Text]), Unset))
 
       test(m"a date matching the pattern is accepted"):
-        ResumeSchema.record(resume).work.prim.let(_.startDate)
+        ResumeSchema.record(resume).work.head.let(_.startDate)
       . assert(_ == (t"1843-01": Optional[Text]))
 
       test(m"a date not matching the pattern is rejected when that record is read"):
@@ -387,7 +388,7 @@ object ProviderTests extends Suite("json-provider", m"JSON Provider tests"):
           case _                                     => false
 
       test(m"a valid record's fields are unaffected by an invalid sibling"):
-        ResumeSchema.record(resume).work.prim.let(_.highlights)
+        ResumeSchema.record(resume).work.head.let(_.highlights)
       . assert(_ == (List(t"Note G"): Optional[List[Text]]))
 
     suite(m"SchemaStore: launchSettings, husky, jsdoc, prettier, mocha"):
@@ -472,7 +473,7 @@ object ProviderTests extends Suite("json-provider", m"JSON Provider tests"):
       val build = json(t"""{"steps": [{"name": "gcr.io/cloud-builders/docker", "args": ["build", "."], "timeout": "120s", "allowExitCodes": [0, 1]}, {"name": "x", "timeout": "2m"}], "tags": ["ci"]}""")
 
       test(m"a duration matching its pattern"):
-        CloudBuildSchema.record(build).steps.prim.let(_.timeout)
+        CloudBuildSchema.record(build).steps.head.let(_.timeout)
       . assert(_ == (t"120s": Optional[Text]))
 
       test(m"a duration in the wrong unit is rejected"):
@@ -482,7 +483,7 @@ object ProviderTests extends Suite("json-provider", m"JSON Provider tests"):
           case _                         => false
 
       test(m"an array of integers reads as a List of Int"):
-        CloudBuildSchema.record(build).steps.prim.let(_.allowExitCodes)
+        CloudBuildSchema.record(build).steps.head.let(_.allowExitCodes)
       . assert(_ == (List(0, 1): Optional[List[Int]]))
 
       val swa = json(t"""{"routes": [{"route": "/api/*", "methods": ["GET", "POST"], "allowedRoles": ["admin"]}], "navigationFallback": {"rewrite": "/index.html"}, "platform": {"apiRuntime": "node:18"}}""")
@@ -492,11 +493,11 @@ object ProviderTests extends Suite("json-provider", m"JSON Provider tests"):
       . assert(_ == List(t"/api/*"))
 
       test(m"an enum array inside an array element"):
-        StaticWebAppSchema.record(swa).routes.prim.let(_.methods)
+        StaticWebAppSchema.record(swa).routes.head.let(_.methods)
       . assert(_ == (List(t"GET", t"POST"): Optional[List[Text]]))
 
       test(m"an unlisted HTTP method is rejected"):
-        capture[Json.Provider.Error](StaticWebAppSchema.record(json(t"""{"routes": [{"route": "/", "methods": ["FETCH"]}]}""")).routes.prim.let(_.methods)).reason
+        capture[Json.Provider.Error](StaticWebAppSchema.record(json(t"""{"routes": [{"route": "/", "methods": ["FETCH"]}]}""")).routes.head.let(_.methods)).reason
       . assert:
           case NotPermitted(t"FETCH", _) => true
           case _                         => false
@@ -541,11 +542,11 @@ object ProviderTests extends Suite("json-provider", m"JSON Provider tests"):
       val tree = json(t"""{"label": "root", "children": [{"label": "branch", "children": [{"label": "leaf"}]}]}""")
 
       test(m"a reference to the root unrolls one level"):
-        RecursiveSchema.record(tree).children.prim.let(_.label)
+        RecursiveSchema.record(tree).children.head.let(_.label)
       . assert(_ == (t"branch": Optional[Text]))
 
       test(m"a recursive reference reads as raw JSON at the recursion"):
-        RecursiveSchema.record(tree).children.prim.let(_.children.prim.let(_(t"label").as[Text]))
+        RecursiveSchema.record(tree).children.head.let(_.children.head.let(_(t"label").as[Text]))
       . assert(_ == (t"leaf": Optional[Text]))
 
       test(m"an allOf merges the referenced base with the node's own properties"):
@@ -644,7 +645,7 @@ object ProviderTests extends Suite("json-provider", m"JSON Provider tests"):
       . assert(_ == List(true, true))
 
       test(m"a tuple-typed array reads as a List of raw JSON"):
-        ContainersSchema.record(containers).pair.stdlib.size
+        ContainersSchema.record(containers).pair.size
       . assert(_ == 2)
 
       test(m"an array of arrays reads as a List of Lists"):

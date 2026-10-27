@@ -171,7 +171,7 @@ trait Tel4:
     :   Member =
 
       def scalar(validators: Array[Text]^{}): Member =
-        Member.Value(validators.prim.or(t"string"), Nil, multiplicity)
+        Member.Value(validators.head.or(t"string"), Nil, multiplicity)
 
       fieldType match
         case s: Tels.Scalar => scalar(s.validators)
@@ -286,4 +286,4 @@ trait Tel4:
       else tel
 
     def repeated(name: Text, tel: Tel)(using Tactic[Tel.Provider.Error]): List[Tel] =
-      tel.fields(name).stdlib.to(List)
+      tel.fields(name).to[List]

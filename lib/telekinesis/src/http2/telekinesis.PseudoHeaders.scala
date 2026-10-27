@@ -114,7 +114,7 @@ object PseudoHeaders:
 
     val host: Host =
       safely(authority.as[Host]).or:
-        safely(authority.cut(t":").prim.or(authority).as[Host]).or:
+        safely(authority.cut(t":").head.as[Host]).or:
           abort(Http2.Error(Reason.Protocol(t"bad :authority")))
 
     val target: Text = pathText.lest(Http2.Error(Reason.Protocol(t"missing :path")))

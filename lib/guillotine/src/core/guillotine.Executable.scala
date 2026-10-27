@@ -229,7 +229,7 @@ object Command:
     if name.contains(t"/") || name.contains(t"\\") then name else
       val extensions: List[Text] =
         if ji.File.separatorChar == '\\'
-        then t"" :: environment.variable(t"PATHEXT").or(t".EXE").cut(t";")
+        then List.prepend(environment.variable(t"PATHEXT").or(t".EXE").cut(t";"), t"")
         else List(t"")
 
       val candidates: List[ji.File] =

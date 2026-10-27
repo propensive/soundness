@@ -117,7 +117,7 @@ object Tests extends Suite("bytecode", m"Mandible tests"):
             3 )
 
       Bytecode(Unset, List(getstatic, invoke), 1, 0).effectivelyStaticCalls
-    . assert(_.stdlib.isEmpty)
+    . assert(_.nil)
 
     test(m"Linearizer inlines a resolvable static-dispatchable call"):
       val moduleFrame = Bytecode.Frame.L(t"Foo$$")

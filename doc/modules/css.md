@@ -76,7 +76,7 @@ import errorDiagnostics.stackTracesDiagnostics
 
 t"a { color: red }".read[Css]
 
-capture[Css.Errors](t"a { colour: red }".read[Css]).errors.prim.let(_.reason)
+capture[Css.Errors](t"a { colour: red }".read[Css]).errors.head.let(_.reason)
 // Css.Error.Reason.UnknownProperty(t"colour")
 ```
 

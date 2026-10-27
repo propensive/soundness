@@ -35,6 +35,7 @@ package xenophile
 import scala.caps
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suites read list sizes; the cost is irrelevant here
 import soundness.collationComparable
 import soundness.collations.codepointCollation
 import soundness.sortingAlgorithms.timsort
@@ -866,7 +867,7 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
 
     test(m"overloads accumulate under one member rather than overwriting"):
       declarations(t"interface A { f(x: number): string; f(x: string): number; }").stdlib
-      . flatMap(_.declaredMembers.stdlib).map(_.signatures.stdlib.length)
+      . flatMap(_.declaredMembers.stdlib).map(_.signatures.size)
     . assert(_ == scala.List(2))
 
     test(m"an inline object type does not terminate the enclosing interface"):

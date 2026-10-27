@@ -324,7 +324,7 @@ package filesystemBackends:
           . call[Unit]()
 
       def hidden(path: Path on Plane)(using Tactic[Io.Error]): Boolean =
-        path.descent.to(List).prim.let(_.starts(t".")).or(false)
+        path.descent.to(List).head.let(_.starts(t".")).or(false)
 
       def volume(path: Path on Plane)(using Tactic[Io.Error]): Volume =
         abort(Io.Error(path, Operation.Metadata, Reason.Unsupported))

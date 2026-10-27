@@ -126,7 +126,7 @@ object TypedAcceptanceTests extends Suite("tel-typed-acceptance", m"Stratiform t
       case field: Tels.Field if field.keyword == keyword => List(field.fieldType)
       case _                                             => Nil
 
-    . prim
+    . head
 
   // The members of the record `name` in a schema
   private def recordMembers(schema: Tels, name: Text): Optional[Tels.Struct] =
@@ -140,20 +140,20 @@ object TypedAcceptanceTests extends Suite("tel-typed-acceptance", m"Stratiform t
       case _                            => false
 
   private def keywords(struct: Tels.Struct): List[Text] =
-    proscenium.List.from(struct.members.stdlib.toList).map:
+    struct.members.to[List].map:
       case field: Tels.Field      => field.keyword
       case select: Tels.SelectRef => select.reference
       case _: Tels.Exclude        => t""
 
   private def retractions(schema: Tels): List[(Text, Text, List[Text])] =
-    proscenium.List.from(schema.layers.stdlib.toList).bind: layer =>
-      proscenium.List.from(layer.selects.stdlib.toList).map: select =>
-        (layer.name, select.name, proscenium.List.from(select.excludes.stdlib.toList))
+    schema.layers.to[List].bind: layer =>
+      layer.selects.to[List].map: select =>
+        (layer.name, select.name, select.excludes.to[List])
 
   private def variants(schema: Tels, name: Text): List[Text] =
-    proscenium.List.from(schema.selects.stdlib.toList).bind: select =>
+    schema.selects.to[List].bind: select =>
       if select.name != name then Nil
-      else proscenium.List.from(select.variants.stdlib.toList).map(_.keyword)
+      else select.variants.to[List].map(_.keyword)
 
   // The names of the lineage's layers whose hashes a served document carries.
   private def servedLayers(lineage: SchemaSignature.Lineage, served: Tel.Acceptance.Served)
@@ -170,23 +170,23 @@ object TypedAcceptanceTests extends Suite("tel-typed-acceptance", m"Stratiform t
       lazy val schema = Tels.tels[ContactV2](t"contact")
 
       test(m"a nested product is a named record referenced by the field"):
-        (schema.records.stdlib.toList.map(_.name), keywords(schema.document))
-      . assert(_ == (scala.List(t"Address"), List(t"name", t"email", t"address")))
+        (schema.records.to[List].map(_.name), keywords(schema.document))
+      . assert(_ == (List(t"Address"), List(t"name", t"email", t"address")))
 
       test(m"a layered field forms a layer of that name, refining the root"):
-        proscenium.List.from(schema.layers.stdlib.toList).map: layer =>
+        schema.layers.to[List].map: layer =>
           (layer.name, keywords(layer.overlay))
       . assert(_ == List((t"with-phone", List(t"phone"))))
 
       test(m"a required field has implicit polarity"):
-        schema.document.members.stdlib.toList.map:
+        schema.document.members.to[List].map:
           case field: Tels.Field => field.required
           case _                 => Tels.Polarity.Tight
-      . assert(_ == scala.List(Tels.Polarity.Implicit, Tels.Polarity.Loose, Tels.Polarity.Loose))
+      . assert(_ == List(Tels.Polarity.Implicit, Tels.Polarity.Loose, Tels.Polarity.Loose))
 
       test(m"a recursive type registers its own record"):
-        Tels.tels[Node](t"node").records.stdlib.toList.map(_.name)
-      . assert(_ == scala.List(t"Node"))
+        Tels.tels[Node](t"node").records.to[List].map(_.name)
+      . assert(_ == List(t"Node"))
 
       test(m"a derived schema renders and hashes as its hand-written equivalent"):
         val source = Text("""|tel 1.0
@@ -217,35 +217,35 @@ object TypedAcceptanceTests extends Suite("tel-typed-acceptance", m"Stratiform t
       lazy val sheet = Tels.tels[Sheet](t"sheet")
 
       test(m"two types sharing a simple name are both kept, qualified by their enclosing types"):
-        sheet.records.to[proscenium.List].map(_.name).filter(!_.s.endsWith("Value"))
+        sheet.records.to[List].map(_.name).filter(!_.s.endsWith("Value"))
       . assert(_ == List(t"ElementCode", t"Para", t"PhraseCode", t"Plain"))
 
       test(m"each sum a field holds has a value record"):
-        val names = sheet.records.to[proscenium.List].map(_.name)
+        val names = sheet.records.to[List].map(_.name)
         (names.has(t"ElementValue"), names.has(t"PhraseValue"), names.count(_.s.endsWith("Value")))
       . assert(_ == (true, true, 2))
 
       test(m"a variant of a qualified record references it by its qualified name"):
-        sheet.selects.stdlib.toList.flatMap(_.variants.stdlib.toList).map(_.variantType)
-      . assert(_ == scala.List(Tels.Reference(t"ElementCode"), Tels.Reference(t"Para"),
+        sheet.selects.to[List].bind(_.variants.to[List]).map(_.variantType)
+      . assert(_ == List(Tels.Reference(t"ElementCode"), Tels.Reference(t"Para"),
                                Tels.Reference(t"PhraseCode"), Tels.Reference(t"Plain")))
 
       test(m"two products sharing a simple name are qualified by their enclosing objects"):
-        Tels.tels[Both](t"both").records.stdlib.toList.map(_.name)
-      . assert(_ == scala.List(t"AlphaItem", t"BetaItem"))
+        Tels.tels[Both](t"both").records.to[List].map(_.name)
+      . assert(_ == List(t"AlphaItem", t"BetaItem"))
 
       test(m"a value of clashing types round-trips through BinTEL"):
         Bintel.read[Both](Both(Alpha.Item(t"one"), Beta.Item(2)).bintel)
       . assert(_ == Both(Alpha.Item(t"one"), Beta.Item(2)))
 
       test(m"a type reached by several paths yields one definition"):
-        Tels.tels[Pair](t"pair").records.stdlib.toList.map(_.name)
-      . assert(_ == scala.List(t"Address"))
+        Tels.tels[Pair](t"pair").records.to[List].map(_.name)
+      . assert(_ == List(t"Address"))
 
       test(m"a type with no clashes is named as before"):
         val schema = Tels.tels[Envelope](t"envelope")
-        val records = schema.records.to[proscenium.List].map(_.name)
-        val selects = schema.selects.to[proscenium.List].map(_.name)
+        val records = schema.records.to[List].map(_.name)
+        val selects = schema.selects.to[List].map(_.name)
         (records.filter(!_.s.endsWith("Value")), records.filter(_.s.endsWith("Value")), selects)
       . assert(_ == (List(t"Ping", t"Data", t"Stop"), List(t"MessageValue"), List(t"Message")))
 

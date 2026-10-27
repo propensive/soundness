@@ -267,12 +267,12 @@ object Tests extends Suite("text", m"Gossamer Tests"):
 
     suite(m"Text methods"):
       test(m"get bytes from text"):
-        t"hello".sysData.stdlib.to(List)
+        t"hello".sysData.to[List].map(_.toInt)
 
       . assert(_ == List(104, 101, 108, 108, 111))
 
       test(m"get bytes from empty Text"):
-        t"".sysData.stdlib.isEmpty
+        t"".sysData.nil
 
       . assert(identity(_))
 
@@ -1198,11 +1198,11 @@ object Tests extends Suite("text", m"Gossamer Tests"):
                         t"bonk", t"bool", t"bowk", t"bosk", t"boom", t"bood", t"bock"))
 
       test(m"There many matches at distance 2 from `book`"):
-        lexicon.search("book", 2).stdlib.size
+        lexicon.search("book", 2).size
       . assert(_ == 112)
 
       test(m"All the matches are found at distance 3"):
-        lexicon.search("book", 3).stdlib.size
+        lexicon.search("book", 3).size
       . assert(_ == words.size)
 
     suite(m"Dictionary tests"):

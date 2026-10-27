@@ -105,7 +105,7 @@ object TypescriptDialect extends Dialect:
         Unset
 
       case Typescript.Member.Kind.Property | Typescript.Member.Kind.Getter =>
-        member.signatures.prim.let: signature =>
+        member.signatures.head.let: signature =>
           val result = signature match
             case Typescript.Type.Function(_, result, _, _) => foreign(result)
             case other                                     => foreign(other)
@@ -115,7 +115,7 @@ object TypescriptDialect extends Dialect:
       case Typescript.Member.Kind.Method | Typescript.Member.Kind.Setter =>
         // The first declared signature wins where a member is overloaded: `Prototype` records one
         // arity, and TypeScript resolves against the signatures in order.
-        member.signatures.prim.let: signature =>
+        member.signatures.head.let: signature =>
           signature match
             case Typescript.Type.Function(parameters, result, _, _) =>
               val arguments = parameters.map: parameter =>

@@ -33,6 +33,7 @@
 package charisma
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suites read list sizes; the cost is irrelevant here
 
 import PeriodicTable.*
 
@@ -77,7 +78,7 @@ object Tests extends Suite("chemistry", m"Charisma Tests"):
       . assert(_ == true)
 
       test(m"Every element has a distinct symbol"):
-        PeriodicTable.symbols.stdlib.size
+        PeriodicTable.symbols.size
       . assert(_ == 118)
 
       test(m"An element is shown as its symbol"):
@@ -199,7 +200,7 @@ object Tests extends Suite("chemistry", m"Charisma Tests"):
       . assert(_ == t"Cl⁻(aq)")
 
       test(m"Physical states are rendered in parentheses"):
-        Array.unsafeFrozen(PhysicalState.values).stdlib.to(List).map(_.show)
+        Array.unsafeFrozen(PhysicalState.values).to[List].map(_.show)
       . assert(_ == List(t"(s)", t"(l)", t"(g)", t"(aq)"))
 
     suite(m"Chemical formula tests"):
@@ -261,7 +262,7 @@ object Tests extends Suite("chemistry", m"Charisma Tests"):
       . assert(_ == t"2H₂ + O₂ → 2H₂O")
 
       test(m"Reactions are rendered with distinct arrows"):
-        Array.unsafeFrozen(Reaction.values).stdlib.to(List).map(_.show)
+        Array.unsafeFrozen(Reaction.values).to[List].map(_.show)
       . assert(_ == List(t"→", t"⇄", t"⇋", t"↔", t"="))
 
       test(m"A resonance equation has a resonance reaction"):

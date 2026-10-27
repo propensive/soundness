@@ -472,7 +472,7 @@ class Websocket[message, state]
   given key0: ("secWebsocketKey" is Directive of Text) = identity(_)
 
   val key: Text =
-    request.headers.secWebsocketKey.prim.or(panic(m"the Sec-WebSocket-Key was missing"))
+    request.headers.secWebsocketKey.head.or(panic(m"the Sec-WebSocket-Key was missing"))
 
   val channel: Channel = Channel()
 

@@ -62,7 +62,7 @@ package environments:
   inline given wasiEnvironment: Environment = new Environment:
     def variable(name: Text): Optional[Text] =
       Foreign["environment", Wit].`get-environment`.call[List[(Text, Text)]]()
-        .filter(_._1 == name).prim.let(_._2)
+        .filter(_._1 == name).head.let(_._2)
 
 package workingDirectories:
   // The component's initial working directory, from `wasi:cli/environment` `initial-cwd`

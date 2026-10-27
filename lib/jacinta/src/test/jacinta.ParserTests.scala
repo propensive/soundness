@@ -244,7 +244,7 @@ object ParserTests extends Suite("json-parser", m"Jacinta JSON parser tests"):
       def shape(node: Any): Any = node.asMatchable match
         case nums: scala.Array[Double] @unchecked =>
           // Number-only array: recover Long for whole values, Double for the rest.
-          Array.unsafeFrozen(nums).stdlib.toList.to(List).map: d =>
+          Array.unsafeFrozen(nums).to[List].map: d =>
             if d.isWhole && d >= Long.MinValue.toDouble && d <= Long.MaxValue.toDouble
             then d.toLong
             else d

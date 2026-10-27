@@ -991,7 +991,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       given Searchpaths.Stems on Xdg.Data onto Linux = new Searchpaths.Stems:
         type Plane = Xdg.Data
         type Target = Linux
-        val stems: List[Path on Linux] = List(stemA, stemB)
+        val stems: List[Path on Linux] & Populated = List(stemA, stemB)
 
       test(m"locate finds the first stem's match"):
         unsafely((% / "icons" / "app.png").on[Xdg.Data].search())

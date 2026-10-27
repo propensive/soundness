@@ -134,7 +134,7 @@ object Tests extends Suite("permutations", m"Metamorphose tests"):
 
       test(m"Check uniqueness of permutations"):
         val list = List("one", "two", "three", "four", "five", "six", "seven")
-        Permutation.bySize(7).map(_(list)).stdlib.toSet.size
+        Permutation.bySize(7).map(_(list)).to[Set].size
       . assert(_ == 5040)
 
       Permutation.bySize(6).each: permutation =>

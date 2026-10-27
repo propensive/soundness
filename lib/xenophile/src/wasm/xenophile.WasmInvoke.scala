@@ -78,7 +78,7 @@ object WasmInvoke extends Materializer:
     // other named types (variants, records), the referencing function's own module — WASI types
     // are used within the interface that declares them.
     def definingModule(name: Text): Optional[Text] =
-      allDefinitions(name).let(_.values.prim.let(_.module).or(Unset)).or(module)
+      allDefinitions(name).let(_.values.head.let(_.module).or(Unset)).or(module)
 
     def facadeOf(name: Text): Symbol =
       facadeClass(definingModule(name).or(halt(m"xenophile: $name has no defining module")), name)
@@ -740,7 +740,7 @@ object WasmInvoke extends Materializer:
     val origin = TypeRepr.of[Wit]
     val definitions = Xenophile.definitions(origin, Xenophile.locusOf(origin))
 
-    val module = definitions(topic).let(_.values.prim.let(_.module).or(Unset)).or:
+    val module = definitions(topic).let(_.values.head.let(_.module).or(Unset)).or:
       halt(m"xenophile: the WIT resource $topic has no known module")
 
     val facade = facadeClass(module, topic)

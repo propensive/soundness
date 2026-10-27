@@ -34,6 +34,7 @@
 package murmuration
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suite reads list sizes; the cost is irrelevant here
 
 import murmuration.subsumes
 
@@ -590,7 +591,7 @@ object Tests extends Suite("collections", m"Murmuration tests"):
     // are frozen unless explicitly allocated, so each test starts from a fresh exclusive copy.
     suite(m"Sorting an array in place"):
       def mutableCopy[element: ClassTag](values: List[element]): Array[element]^ =
-        val array = Array.allocate[element](values.stdlib.length)
+        val array = Array.allocate[element](values.size)
         val iterator = values.stdlib.iterator
         var index = 0
 

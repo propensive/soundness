@@ -47,11 +47,18 @@ extension [countable: Countable](inline value: countable)
 
 // The receiver is not `inline`: an inline parameter is not an immutable path, so it cannot
 // brand `Ordinal in value.type` (the same constraint as `confine` and `within`).
+// `ult` adapts to what the receiver's type proves, like rudiments' `last`: on a `Populated`
+// receiver the element exists, so the ordinal is minted without the check or the `Optional`.
 extension [countable: Countable](value: countable)
-  inline def ult: Optional[Ordinal in value.type] =
-    if countable.size(value) >= 1
-    then (countable.size(value) - 1).z.asInstanceOf[Ordinal in value.type]
-    else Unset
+  transparent inline def ult: Optional[Ordinal in value.type] =
+    scala.compiletime.summonFrom:
+      case _: (`countable` <:< Populated) =>
+        (countable.size(value) - 1).z.asInstanceOf[Ordinal in value.type]
+
+      case _ =>
+        if countable.size(value) >= 1
+        then (countable.size(value) - 1).z.asInstanceOf[Ordinal in value.type]
+        else Unset
 
   inline def pen: Optional[Ordinal in value.type] =
     if countable.size(value) >= 2

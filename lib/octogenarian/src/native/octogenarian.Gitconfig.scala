@@ -178,7 +178,7 @@ private[octogenarian] object Gitconfig:
     val occurrences = lines.filter { case Line.Entry(k, _, _) => k == key; case _ => false }
 
     if occurrences != Nil && !replaceAll then
-      val last = occurrences.reverse.prim
+      val last = occurrences.reverse.head
       lines.map: line => if Optional(line) == last then entry else line
     else if occurrences != Nil then
       lines.filter { case Line.Entry(k, _, _) => k != key; case _ => true }.pipe(add(_, key, value))
@@ -211,7 +211,7 @@ private[octogenarian] object Gitconfig:
   def unset(lines: List[Line], key: Git.Config.Key, all: Boolean): List[Line] =
     if all then lines.filter { case Line.Entry(k, _, _) => k != key; case _ => true }
     else
-      val last = lines.filter { case Line.Entry(k, _, _) => k == key; case _ => false }.reverse.prim
+      val last = lines.filter { case Line.Entry(k, _, _) => k == key; case _ => false }.reverse.head
       lines.filter: line => Optional(line) != last
 
   def render(lines: List[Line]): Text = lines.map(_.raw).join(t"", t"\n", t"\n")

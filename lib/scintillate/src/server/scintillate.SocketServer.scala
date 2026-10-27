@@ -105,7 +105,7 @@ object SocketServer:
       else if key.equalsIgnoreCase("transfer-encoding") then
         if containsIgnoreCase(header.value.s, "chunked") then facts.chunked = true
       else if key.equalsIgnoreCase("content-length") then
-        // The first such header governs, as the former `.prim` selection did.
+        // The first such header governs, as the former `.head` selection did.
         if facts.contentLength.absent
         then facts.contentLength = safely(Integer.parseInt(header.value.s.trim.nn))
 

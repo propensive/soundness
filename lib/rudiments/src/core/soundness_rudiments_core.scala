@@ -144,26 +144,6 @@ extension [self](value: self)(using definable: denominative.Definable { type Sel
 extension [self](value: self)(using omissible: denominative.Omissible { type Self = self })
   def omit(index: omissible.Operand): self = omissible.omit(value, index)
 
-extension [element](sequence: proscenium.List[element])
-  // Mirrors the ungated `List` special cases in `rudiments.Deindex` (same non-`inline`
-  // rationale); duplicated because `rudiments.prim` (etc.) resolves to the `Applicable`-bound
-  // overload when referenced qualified.
-  def prim: vacuous.Optional[element] =
-    if proscenium.List.nil(sequence) then vacuous.Unset else proscenium.List.head(sequence)
-
-  def sec: vacuous.Optional[element] =
-    val rest = proscenium.List.drop(sequence, 1)
-    if proscenium.List.nil(rest) then vacuous.Unset else proscenium.List.head(rest)
-
-  def ter: vacuous.Optional[element] =
-    val rest = proscenium.List.drop(sequence, 2)
-    if proscenium.List.nil(rest) then vacuous.Unset else proscenium.List.head(rest)
-
-extension [element](chain: proscenium.Chain[element])
-  // Mirrors the ungated `Chain` special case in `rudiments.Deindex` (same rationale).
-  def prim: vacuous.Optional[element] =
-    if proscenium.Chain.nil(chain) then vacuous.Unset else proscenium.Chain.head(chain)
-
 // `keep` and `skip` are re-declared rather than exported (unlike their siblings above, in the
 // export clause): `Chain`'s lazy forms live in its companion — implicit scope — and a call on a
 // `Chain` receiver only reaches them when the lexical candidate's failed `Segmentable` summon
@@ -200,11 +180,4 @@ extension [value](value: value)
 
     rudiments.skip(value)(predicate, bidi)
 
-extension [self](inline value: self)
-  ( using applicable: denominative.Applicable
-                        { type Self = self; type Operand = denominative.Ordinal } )
-
-  inline def prim: vacuous.Optional[applicable.Result] = rudiments.prim(value)
-  inline def sec: vacuous.Optional[applicable.Result] = rudiments.sec(value)
-  inline def ter: vacuous.Optional[applicable.Result] = rudiments.ter(value)
 

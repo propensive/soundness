@@ -35,6 +35,7 @@ package gesticulate
 import scala.math
 
 import soundness.*
+import denominative.dysasymptotics.{linearSize, unboundedSize} // the suites measure parsed chains; the cost is irrelevant here
 
 import codepages.utf8Codepage
 import strategies.throwUnsafely
@@ -88,12 +89,12 @@ object Tests extends Suite("mime", m"Gesticulate tests"):
 
       for blockSize <- blockSizes do
         test(m"Single part: count at block size $blockSize"):
-          Multipart.parse(chunks(singlePart, blockSize)).parts.stdlib.length
+          Multipart.parse(chunks(singlePart, blockSize)).parts.size
 
         . assert(_ == 1)
 
         test(m"Single part: name at block size $blockSize"):
-          Multipart.parse(chunks(singlePart, blockSize)).parts.stdlib.head.name.or(t"")
+          Multipart.parse(chunks(singlePart, blockSize)).parts.head.let(_.name.or(t""))
 
         . assert(_ == t"field1")
 
@@ -103,7 +104,7 @@ object Tests extends Suite("mime", m"Gesticulate tests"):
         . assert(_ == t"value1")
 
         test(m"Two parts: count at block size $blockSize"):
-          Multipart.parse(chunks(twoParts, blockSize)).parts.stdlib.length
+          Multipart.parse(chunks(twoParts, blockSize)).parts.size
 
         . assert(_ == 2)
 
@@ -118,17 +119,17 @@ object Tests extends Suite("mime", m"Gesticulate tests"):
         . assert(_ == Chain(t"value1", t"value2"))
 
       test(m"Filename extraction"):
-        Multipart.parse(chunks(partsWithFilename, 4096)).parts.stdlib.head.filename.or(t"")
+        Multipart.parse(chunks(partsWithFilename, 4096)).parts.head.let(_.filename.or(t""))
 
       . assert(_ == t"hello.txt")
 
       test(m"Disposition is FormData"):
-        Multipart.parse(chunks(singlePart, 4096)).parts.stdlib.head.disposition
+        Multipart.parse(chunks(singlePart, 4096)).parts.head.let(_.disposition)
 
       . assert(_ == Multipart.Disposition.FormData)
 
       test(m"Headers map preserved"):
-        Multipart.parse(chunks(partsWithFilename, 4096)).parts.stdlib.head.headers.at(t"Content-Type").or(t"")
+        Multipart.parse(chunks(partsWithFilename, 4096)).parts.head.let(_.headers.at(t"Content-Type").or(t""))
 
       . assert(_ == t"text/plain")
 
@@ -234,7 +235,7 @@ object Tests extends Suite("mime", m"Gesticulate tests"):
 
       test(m"A part's body reads as empty once the next part has been read"):
         val parts = Multipart.parse(chunks(twoParts, 4096)).parts
-        parts.stdlib.length
+        parts.size
         bodyText(parts.stdlib.head)
 
       . assert(_ == t"")
@@ -251,7 +252,7 @@ object Tests extends Suite("mime", m"Gesticulate tests"):
       test(m"A field after a 100 KB binary body is still read"):
         val rest =
           t"--xyz\r\nContent-Disposition: form-data; name=\"after\"\r\n\r\nvalue2\r\n--xyz--\r\n"
-        Multipart.parse(bytesChunks(binaryWire(large, rest), 4096)).parts.map(bodyText).stdlib.last
+        Multipart.parse(bytesChunks(binaryWire(large, rest), 4096)).parts.map(bodyText).last
 
       . assert(_ == t"value2")
 
@@ -299,9 +300,9 @@ object Tests extends Suite("mime", m"Gesticulate tests"):
     // Every suffix must survive being written and read back: the hyphenated ones did not,
     // because the whole suffix was capitalized (`Json-seq`) rather than each word.
     test(m"every suffix round-trips through its rendered form"):
-      Array.unsafeFrozen(Media.Suffix.values).stdlib.toList.map: suffix =>
+      Array.unsafeFrozen(Media.Suffix.values).to[List].map: suffix =>
         t"application/thing+${suffix.name}".as[MediaType].suffixes
-    . assert(_ == Array.unsafeFrozen(Media.Suffix.values).stdlib.toList.map(List(_)))
+    . assert(_ == Array.unsafeFrozen(Media.Suffix.values).to[List].map(List(_)))
 
     test(m"parse a hyphenated suffix"):
       t"application/thing+json-seq".as[MediaType].suffixes

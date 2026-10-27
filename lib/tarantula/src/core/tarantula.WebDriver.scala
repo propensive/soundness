@@ -1032,7 +1032,7 @@ object WebDriver:
       ( using Tenacity, Monitor, Tactic[Tenacity.Error] )
     :   Element =
 
-      awaitElements(value).prim.lest(Error(Error.Reason.NoSuchElement, t"nothing matched", Nil))
+      awaitElements(value).head.lest(Error(Error.Reason.NoSuchElement, t"nothing matched", Nil))
 
     // The general form, for a condition the caller can evaluate without raising — comparing a
     // title, counting elements, reading a cookie.

@@ -446,7 +446,7 @@ trait Sfnt:
         case (1, 0)  => 4
         case _       => 5
 
-      if candidates.stdlib.isEmpty then Unset else candidates.stdlib.minBy(rank).decode
+      candidates.occupied.let(_.stdlib.minBy(rank).decode)
 
   case class CmapTable(offset: Int):
     case class GlyphEncoding(platformId: Int, encodingId: Int, offset: Int):

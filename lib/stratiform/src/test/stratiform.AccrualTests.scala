@@ -519,7 +519,7 @@ object AccrualTests extends Suite("tel-accrual", m"Stratiform multi-error accrua
       CorpusLoader.negative.each: testcase =>
         val expected = CheckFormat.parse(testcase.check).errors.map(_.code)
 
-        if expected.stdlib.nonEmpty && expected.stdlib.forall(_ < 200)
+        if !expected.nil && expected.stdlib.forall(_ < 200)
         && !strictExemptions.stdlib.contains(testcase.stem)
         then
           test(m"accrues exactly the reference diagnostics on ${testcase.stem}"):

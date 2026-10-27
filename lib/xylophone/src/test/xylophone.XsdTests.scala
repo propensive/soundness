@@ -33,6 +33,7 @@
 package xylophone
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suites read list sizes; the cost is irrelevant here
 
 import charsets.utf8Charset
 import classloaders.threadContextClassloader
@@ -65,14 +66,14 @@ object XsdTests extends Suite("xsd", m"Xylophone XML Schema tests"):
       . assert(_ == t"http://maven.apache.org/POM/4.0.0")
 
       test(m"The Maven POM schema has many complex types"):
-        Map.keys(schema(cp"/xsd/maven-4.0.0.xsd").complexTypes).stdlib.size
+        Map.keys(schema(cp"/xsd/maven-4.0.0.xsd").complexTypes).size
       . assert(_ > 30)
 
       test(m"GPX declares a restricted latitude type"):
         schema(cp"/xsd/gpx.xsd").simpleTypes.at(t"latitudeType").let(_.definition)
       . assert:
           case Xsd.SimpleType.Restriction(Xsd.TypeRef.Named(base), facets) =>
-            base == Xml.Name(Xsd.namespace, t"decimal") && facets.stdlib.length == 2
+            base == Xml.Name(Xsd.namespace, t"decimal") && facets.size == 2
           case _ => false
 
       test(m"The xml namespace schema declares global attributes and an attribute group"):

@@ -196,8 +196,9 @@ object Renderer:
         e"${Fg(palette.subdued)}($code)"
 
       val raw = body.cut(t"\n")
-      // Drop a trailing empty line that comes from a final '\n' in `code`.
-      val lines = if raw.last.lay(false)(_.plain.length == 0) then raw.skip(1, Bidi.Rtl) else raw
+      // Drop a trailing empty line that comes from a final '\n' in `code`. A cut is never
+      // empty, so its `last` is total.
+      val lines = if raw.last.plain.length == 0 then raw.skip(1, Bidi.Rtl) else raw
 
       lines.map: line => e"  ${line: Teletype}"
 
@@ -208,7 +209,7 @@ object Renderer:
         case Nil => Nil
 
         case lines @ _ :: _ =>
-          if lines.last.lay(false)(_.plain.length == 0) then lines.skip(1, Bidi.Rtl) else lines
+          if lines.last.plain.length == 0 then lines.skip(1, Bidi.Rtl) else lines
 
   private def bullet(palette: MarkdownPalette): Teletype =
     e"${Fg(palette.subdued)}(•)"

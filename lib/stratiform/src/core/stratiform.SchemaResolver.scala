@@ -35,7 +35,7 @@ package stratiform
 import java.util as ju
 
 import anticipation.*
-import rudiments.{each, exists, map, prim}
+import rudiments.{each, exists, map, head}
 import contingency.*
 import distillate.*
 import gossamer.*
@@ -236,14 +236,14 @@ object SchemaResolver:
           case signature: Data =>
             delegate.bySignature(signature, pragma.reference).let: body =>
               val resolved = accept(body.data.read[Tel], Step.Lira)
-              stores.prim.let(_.cache(resolved.signature, body.data))
+              stores.head.let(_.cache(resolved.signature, body.data))
               result = resolved
 
           case _ => pragma.reference match
             case reference: Tel.Pragma.Reference =>
               delegate.bySelector(reference).let: body =>
                 val resolved = accept(body.data.read[Tel], Step.Lira)
-                stores.prim.let(_.cache(resolved.signature, body.data))
+                stores.head.let(_.cache(resolved.signature, body.data))
                 result = resolved
 
             case _ => ()

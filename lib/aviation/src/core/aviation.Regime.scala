@@ -63,7 +63,7 @@ class Regime(name: Text, segments: List[Regime.Segment]) extends RomanCalendar(n
 
   // The calendar governing a Julian day number: the latest segment to have taken effect by then.
   private def at(date: Date): RomanCalendar =
-    val first = segments.prim.or(panic(m"an empty regime has no calendar"))
+    val first = segments.head.or(panic(m"an empty regime has no calendar"))
     bounded.filter(_(0).from.jdn <= date.jdn).last.lay(first.calendar)(_(0).calendar)
 
   // The regime's Julian day number for a field date, or `Unset` if it falls in a gap between two

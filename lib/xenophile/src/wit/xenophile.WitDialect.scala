@@ -182,7 +182,7 @@ object WitDialect extends Dialect:
 
       // `option<T>` takes exactly one argument; the sole argument is bound to a typed local
       // before it is read (`wildApprox`), and anything else falls through unchanged, as before.
-      val single: Optional[Foreign.Type] = if arguments.size == 1 then arguments.prim else Unset
+      val single: Optional[Foreign.Type] = if arguments.size == 1 then arguments.head else Unset
 
       if applied.constructor == t"option"
       then single.lay(Foreign.Type.Applied(applied.constructor, arguments)): inner =>

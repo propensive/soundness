@@ -98,10 +98,10 @@ private[octogenarian] class Protocol(channel: Channel^) extends Peer:
           val fields = line.text.trim.cut(t" ")
           val hash = Git.Hash.unsafe(Refstore.nth(fields, 0).or(Git.Hash.zero.text))
           val name = Refstore.nth(fields, 1).or(t"")
-          val symref = fields.filter(_.starts(t"symref-target:")).prim.let(_.skip(14))
+          val symref = fields.filter(_.starts(t"symref-target:")).head.let(_.skip(14))
 
           val peeled =
-            fields.filter(_.starts(t"peeled:")).prim.let(_.skip(7)).let(Git.Hash.unsafe(_))
+            fields.filter(_.starts(t"peeled:")).head.let(_.skip(7)).let(Git.Hash.unsafe(_))
 
           (name, hash, symref, peeled)
 
@@ -125,7 +125,7 @@ private[octogenarian] class Protocol(channel: Channel^) extends Peer:
     lsRefs().bind(expand(_))
 
   def symbolicHead()(using Tactic[Git.Error]): Optional[Text] =
-    lsRefs().filter(_(0) == t"HEAD").prim.let(_(2)).or(Unset)
+    lsRefs().filter(_(0) == t"HEAD").head.let(_(2)).or(Unset)
 
   // Reads a sideband-multiplexed packfile section: band 1 is pack data, band 2 progress text,
   // band 3 a fatal error.
@@ -166,7 +166,7 @@ private[octogenarian] class Protocol(channel: Channel^) extends Peer:
 
   // Progress as the server prints it: `Counting objects:  50% (1/2)` and the like.
   private def progress(text: Text, activity: Git.Activity^): Unit =
-    val line = text.cut(t"\r").reverse.prim.or(t"").trim
+    val line = text.cut(t"\r").reverse.head.or(t"").trim
     val open = line.s.indexOf('(')
     val slash = line.s.indexOf('/', open.max(0))
     val close = line.s.indexOf(')', slash.max(0))
@@ -242,10 +242,10 @@ private[octogenarian] class Protocol(channel: Channel^) extends Peer:
       // The first line carries the server's capabilities after a NUL.
       val nul: Text = "\u0000".tt
 
-      def beforeNul(line: Pktline.Packet.Line): Text = line.text.cut(nul).prim.or(t"").trim
+      def beforeNul(line: Pktline.Packet.Line): Text = line.text.cut(nul).head.trim
       def afterNul(line: Pktline.Packet.Line): Text = Refstore.nth(line.text.cut(nul), 1).or(t"")
 
-      val serverCapabilities = advertised.prim.let(afterNul(_)).or(t"").trim.cut(t" ")
+      val serverCapabilities = advertised.head.let(afterNul(_)).or(t"").trim.cut(t" ")
 
       def refEntry(line: Pktline.Packet.Line): List[(Text, Git.Hash)] =
         val fields = beforeNul(line).cut(t" ")
@@ -264,7 +264,7 @@ private[octogenarian] class Protocol(channel: Channel^) extends Peer:
         case Git.Backend.Expectation.Absent        => Git.Hash.zero.text
 
         case Git.Backend.Expectation.Unconditional =>
-          current.filter(_(0) == update.ref).prim.let(_(1).text).or(Git.Hash.zero.text)
+          current.filter(_(0) == update.ref).head.let(_(1).text).or(Git.Hash.zero.text)
 
       val wanted =
         List(t"report-status", t"delete-refs", t"ofs-delta").filter(serverCapabilities.has(_))
@@ -291,13 +291,13 @@ private[octogenarian] class Protocol(channel: Channel^) extends Peer:
 
       // `unpack ok` then `ok <ref>` or `ng <ref> <reason>` per command.
       val report = response.section().map(_.text.trim)
-      val unpack = report.filter(_.starts(t"unpack ")).prim.let(_.skip(7)).or(t"ok")
+      val unpack = report.filter(_.starts(t"unpack ")).head.let(_.skip(7)).or(t"ok")
 
       def reportLine(update: RefUpdate): Optional[Text] =
         val okPrefix = t"ok ${update.ref}"
         val ngPrefix = t"ng ${update.ref}"
         def matches(line: Text): Boolean = line == okPrefix || line.starts(t"$ngPrefix ")
-        report.filter(matches(_)).prim
+        report.filter(matches(_)).head
 
       def result(update: RefUpdate): (Text, Optional[Text]) =
         val rejection: Optional[Text] = reportLine(update) match

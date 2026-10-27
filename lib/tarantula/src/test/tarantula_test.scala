@@ -35,6 +35,7 @@ package tarantula
 import scala.language.experimental.pureFunctions
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suites read list sizes; the cost is irrelevant here
 
 import charsets.utf8Charset
 import codepages.utf8Codepage
@@ -91,9 +92,9 @@ class FakeDriver(route: (Http.Method, Text, Int) -> Http.Response) extends Http.
   :   Http.Response =
 
     val data = body().memoize
-    val sent = if data.stdlib.isEmpty then Unset else data.read[Text]
+    val sent = if data.nil then Unset else data.read[Text]
     val path = url.skip(t"http://localhost:4444".length)
-    val attempt = exchanges.stdlib.size
+    val attempt = exchanges.size
     exchanges ::= FakeDriver.Exchange(method, path, sent)
 
     route(method, path, attempt)
@@ -146,7 +147,7 @@ object Tests extends Suite("webdriver", m"Tarantula tests"):
         WebDriver(url"http://localhost:4444", WebDriver.Chrome.headless.capabilities).session:
           session ?=> ()
 
-        fake.exchanges.reverse.prim.let(_.body.or(t"").read[Json])
+        fake.exchanges.reverse.head.let(_.body.or(t"").read[Json])
         . let(_.capabilities.alwaysMatch.browserName.as[Text])
 
       . assert(_ == t"chrome")
@@ -165,7 +166,7 @@ object Tests extends Suite("webdriver", m"Tarantula tests"):
         WebDriver(url"http://localhost:4444", t"{}".read[Json]).session: session ?=>
           session.title()
 
-        fake.exchanges.prim.let { exchange => (exchange.method, exchange.path) }
+        fake.exchanges.head.let { exchange => (exchange.method, exchange.path) }
 
       . assert(_ == (Http.Delete, t"/session/$sessionId"))
 
@@ -177,7 +178,7 @@ object Tests extends Suite("webdriver", m"Tarantula tests"):
           WebDriver(url"http://localhost:4444", t"{}".read[Json]).session: session ?=>
             abort(WebDriver.Error(WebDriver.Error.Reason.UnknownError, t"deliberate", Nil))
 
-        fake.exchanges.prim.let(_.method)
+        fake.exchanges.head.let(_.method)
 
       . assert(_ == Http.Delete)
 
@@ -309,36 +310,36 @@ object Tests extends Suite("webdriver", m"Tarantula tests"):
         fake.exchanges.reverse.stdlib.filter(_.path != t"/session").to(List)
 
       test(m"navigation posts the target URL"):
-        sent(browser.navigateTo(target)).prim.let(_.body.or(t""))
+        sent(browser.navigateTo(target)).head.let(_.body.or(t""))
       . assert(_ == t"""{"url":"http://example.com/"}""")
 
       test(m"script execution uses the W3C execute/sync path"):
-        sent(browser.execute(t"return 1")).prim.let(_.path)
+        sent(browser.execute(t"return 1")).head.let(_.path)
       . assert(_ == t"/session/$sessionId/execute/sync")
 
       test(m"script execution sends a script and an argument list"):
-        sent(browser.execute(t"return 1")).prim.let(_.body.or(t""))
+        sent(browser.execute(t"return 1")).head.let(_.body.or(t""))
       . assert(_ == t"""{"script":"return 1","args":[]}""")
 
       test(m"the page source is read, not posted"):
-        sent(browser.source().pipe(_ => ())).prim.let { e => (e.method, e.path) }
+        sent(browser.source().pipe(_ => ())).head.let { e => (e.method, e.path) }
       . assert(_ == (Http.Get, t"/session/$sessionId/source"))
 
       test(m"timeouts are sent in the W3C shape, not the JSON Wire pair"):
         sent(browser.timeouts(WebDriver.Session.Timeouts(`implicit` = 5000L)))
-        . prim.let(_.body.or(t""))
+        . head.let(_.body.or(t""))
       . assert(_ == t"""{"implicit":5000}""")
 
       test(m"accepting an alert uses the W3C path"):
-        sent(browser.acceptAlert()).prim.let(_.path)
+        sent(browser.acceptAlert()).head.let(_.path)
       . assert(_ == t"/session/$sessionId/alert/accept")
 
       test(m"switching to the top frame sends a null id"):
-        sent(browser.topFrame()).prim.let(_.body.or(t""))
+        sent(browser.topFrame()).head.let(_.body.or(t""))
       . assert(_ == t"""{"id":null}""")
 
       test(m"deleting all cookies is a DELETE, not a POST"):
-        sent(browser.deleteCookies()).prim.let { e => (e.method, e.path) }
+        sent(browser.deleteCookies()).head.let { e => (e.method, e.path) }
       . assert(_ == (Http.Delete, t"/session/$sessionId/cookie"))
 
     suite(m"Capabilities, errors and printing"):

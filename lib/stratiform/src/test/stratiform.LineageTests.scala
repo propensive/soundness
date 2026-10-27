@@ -97,7 +97,7 @@ object LineageTests extends Suite("tel-lineage", m"Stratiform lineage tests"):
       Tels.Layer(t"", Tels.Struct(Array.empty, Array.empty), Array.empty, Array.empty, Array.empty)
 
   private def keywords(schema: Tels): List[Text] =
-    proscenium.List.from(schema.document.members.stdlib.toList).map:
+    schema.document.members.to[List].map:
       case field: Tels.Field      => field.keyword
       case select: Tels.SelectRef => select.reference
       case _: Tels.Exclude        => t""
@@ -149,7 +149,7 @@ object LineageTests extends Suite("tel-lineage", m"Stratiform lineage tests"):
 
     suite(m"Atoms"):
       test(m"the base group begins with the head atom"):
-        Tels.Atoms.base(contact).atoms.prim match
+        Tels.Atoms.base(contact).atoms.head match
           case Tels.Atoms.Atom.Head(name, sigil) => (name, sigil.absent)
           case _                                 => (t"", false)
       . assert(_ == (t"contact", true))
@@ -201,7 +201,7 @@ object LineageTests extends Suite("tel-lineage", m"Stratiform lineage tests"):
       lazy val lineage: SchemaSignature.Lineage = SchemaSignature.Lineage.of(contactDoc)
       lazy val other: SchemaSignature.Lineage = SchemaSignature.Lineage(layered)
       lazy val request: Tel.Acceptance = resourceText("acceptance-request.tel").as[Tel.Acceptance]
-      lazy val first: Tel.Acceptance.Alternative = request.alternatives.prim.or(panic(m"no alternative"))
+      lazy val first: Tel.Acceptance.Alternative = request.alternatives.head.or(panic(m"no alternative"))
 
       test(m"the lineage names the six layers in declaration order"):
         lineage.layers.map(_.name)
@@ -242,7 +242,7 @@ object LineageTests extends Suite("tel-lineage", m"Stratiform lineage tests"):
       test(m"a library decodes the request's signature to the base and with-address"):
         SchemaSignature.Library(List(other, lineage)).decode(first.schema.data).let: decoded =>
           (decoded.lineage.schema.name, decoded.hashes.map(hex))
-      . assert(_ == (t"contact", List(hex(lineage.base), lineage.layers.map(_.hash).prim.let(hex).or(""))))
+      . assert(_ == (t"contact", List(hex(lineage.base), lineage.layers.map(_.hash).head.let(hex).or(""))))
 
       test(m"a library composes a decoded signature"):
         SchemaSignature.Library(List(lineage)).resolve(first.schema.data).let(keywords(_))

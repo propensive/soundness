@@ -74,6 +74,6 @@ object Resource:
           classloader.inputStream(resource.path.encode)
 
   given nominable: [resource <: Resource] => resource is Nominable =
-    _.path.descent.to(List).prim.or(t"/")
+    _.path.descent.to(List).head.or(t"/")
 
 case class Resource private[hellenism](path: Path on Classpath) extends Locative

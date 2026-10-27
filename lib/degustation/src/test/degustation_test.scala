@@ -37,6 +37,7 @@ import java.nio.file.{Files, Paths}
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suites read list sizes; the cost is irrelevant here
 import galilei.Linux.pathOnLinux
 
 import alphabets.hexLowerCase
@@ -387,7 +388,7 @@ object Tests extends Suite("atoms", m"Degustation Tests"):
       val corpusClasspath = (outputs ++ libraryPaths).to(List)
 
       test(m"a real module's TASTy atomizes without vocabulary gaps"):
-        Inspection.atomize(corpusTasty.to(List), corpusClasspath).stdlib.size
+        Inspection.atomize(corpusTasty.to(List), corpusClasspath).size
       . assert(_ > 0)
 
       test(m"a real module's atomization is deterministic"):

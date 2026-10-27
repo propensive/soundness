@@ -500,7 +500,7 @@ class Transport(duplex: Duplex, hostname: Text, port: Int)
 
     // The client's first supported algorithm the server also supports (RFC 4253 §7.1).
     def choose(kind: Text, ours: List[Text], theirs: List[Text]): Text =
-      ours.filter { ours => theirs.exists(_ == ours) }.prim.or:
+      ours.filter { ours => theirs.exists(_ == ours) }.head.or:
         abort(Ssh.Error(Reason.NoCommonAlgorithm(kind)))
 
     val kex = choose(t"key exchange", algorithms.kex, serverKex)
@@ -512,7 +512,7 @@ class Transport(duplex: Duplex, hostname: Text, port: Int)
     // A wrong guess leaves a KEX packet to be ignored (RFC 4253 §7.1). The server guessed only
     // if its first algorithms are ours.
     val guessedWrong =
-      serverKex.prim != algorithms.kex.prim || serverHostKey.prim != algorithms.hostKey.prim
+      serverKex.head != algorithms.kex.head || serverHostKey.head != algorithms.hostKey.head
 
     if guess && guessedWrong then receive()
 

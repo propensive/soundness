@@ -89,7 +89,7 @@ extends Findable:
   // The group this one is within, if it is not a root. (Held as a list because a constructor
   // parameter typed as a union with `Testable` itself, a class with an abstract type member,
   // sends the compiler into a cycle.)
-  def parent: Optional[Testable] = parents.prim
+  def parent: Optional[Testable] = parents.head
 
   override def equals(that: Any): Boolean = that.unsafeMatchable(using Unsafe) match
     case that: Testable => name == that.name && parent == that.parent

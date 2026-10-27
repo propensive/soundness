@@ -137,7 +137,7 @@ PdfFile(path).open():
   pdf.info.title                            // Optional[Text]
   pdf.destinations.at(t"intro")             // Optional[Destination]
   pdf.bookmarks                             // List[Bookmark]
-  pdf.attachments.prim.let(_.filename)      // the first attachment's name, if any
+  pdf.attachments.head.let(_.filename)      // the first attachment's name, if any
   pdf.page(Prim).annotations                // List[Annotation]
 ```
 

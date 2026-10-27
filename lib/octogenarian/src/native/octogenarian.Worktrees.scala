@@ -82,7 +82,7 @@ private[octogenarian] object Worktrees:
 
     def matches(candidate: Path on Linux): Boolean = workingTree(candidate) == Optional(path)
 
-    entries(commonDir).filter(matches(_)).prim
+    entries(commonDir).filter(matches(_)).head
     . or(abort(Git.Error(Reason.NoSuchWorktree(path.encode))))
 
   // A registry name for a new worktree: its directory's name, suffixed with a number if taken.

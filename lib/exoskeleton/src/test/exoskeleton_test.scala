@@ -33,6 +33,7 @@
 package exoskeleton
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suites read list sizes; the cost is irrelevant here
 import soundness.collationComparable
 import soundness.collations.codepointCollation
 import soundness.sortingAlgorithms.timsort
@@ -552,7 +553,7 @@ object Tests extends Suite("cli", m"Exoskeleton Tests"):
                 Pane.enter(t"cd ${fixture.encode}")
                 Pane.enter('\r')
                 Pane.completions(t"files verify ")
-            .check { out => out.cut(t"one.txt").stdlib.length == 2 && out.cut(t"src/").stdlib.length == 2 }
+            .check { out => out.cut(t"one.txt").size == 2 && out.cut(t"src/").size == 2 }
 
           // yossarian, which renders the panes on a pseudo-terminal the tests above use, checked
           // against tmux, an independent terminal emulator: each scenario is typed into a pane of
@@ -842,7 +843,7 @@ object Tests extends Suite("cli", m"Exoskeleton Tests"):
 
       test(m"Local help for a leaf renders its section with ancestor globals"):
         HelpApp.tree.local(List(t"useradd")).let: local =>
-          summon[Help is Printable].print(local, stdios.muteStdio.termcap).cut(t"\n")
+          summon[Help is Printable].print(local, stdios.muteStdio.termcap).cut(t"\n"): List[Text]
         . or(Nil)
       .assert:
         _ == List
@@ -864,7 +865,7 @@ object Tests extends Suite("cli", m"Exoskeleton Tests"):
 
       test(m"Local help for a non-leaf renders its subcommands"):
         HelpApp.tree.local(List(t"distribution")).let: local =>
-          summon[Help is Printable].print(local, stdios.muteStdio.termcap).cut(t"\n")
+          summon[Help is Printable].print(local, stdios.muteStdio.termcap).cut(t"\n"): List[Text]
         . or(Nil)
       .assert:
         _ == List
@@ -931,7 +932,7 @@ object Tests extends Suite("cli", m"Exoskeleton Tests"):
 
             // The menu still names the flag, rather than showing the bare letter.
             test(m"zsh names the flag in full in the menu"):
-              zsh(t"-ab").prim.let(_.prim).or(t"").starts(t"-c ")
+              zsh(t"-ab").head.let(_.head).or(t"").starts(t"-c ")
             . check(_ == true)
 
             test(m"zsh offers a no-trailing-space variant, so the cluster can grow"):
@@ -944,7 +945,7 @@ object Tests extends Suite("cli", m"Exoskeleton Tests"):
             // which is not an extension of the cluster (#1964).
             test(m"fish offers the extended cluster"):
               sh"$tool '{completions}' fish 1 3 /dev/null -- clstr -ab".exec[Text]()
-              . cut(t"\n").map(_.cut(t"\t").prim.or(t""))
+              . cut(t"\n").map(_.cut(t"\t").head)
             . check(_.has(t"-abc"))
 
             test(m"bash offers the extended cluster"):
@@ -1286,7 +1287,7 @@ object Tests extends Suite("cli", m"Exoskeleton Tests"):
             execute(Exit.Ok)
 
           invoke(app)(t"--count", t"4x")(1).faults.map(_(1))
-        . check(_.prim.let(_.contains(t"not a valid int")).or(false))
+        . check(_.head.let(_.contains(t"not a valid int")).or(false))
 
         test(m"A missing validated flag is accrued as missing, not as a fault"):
           def app(using cli: Cli): Execution =

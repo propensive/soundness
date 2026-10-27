@@ -111,7 +111,7 @@ object Zip:
       import filesystemOptions.dereferenceSymlinks
       import abstractables.epochMillisecondsAbstractable
       import errorDiagnostics.emptyDiagnostics
-      given Zip.Compression = flags.prim.or(compression)
+      given Zip.Compression = flags.head.or(compression)
       given TraversalOrder = TraversalOrder.PreOrder
 
       val prefix: Text = root.encode
