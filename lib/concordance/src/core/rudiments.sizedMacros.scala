@@ -63,8 +63,13 @@ object sizedMacros:
     val ordinalLiterals: Map[String, Int] =
       Map("Prim" -> 0, "Sec" -> 1, "Ter" -> 2, "Quat" -> 3, "Quin" -> 4, "Sen" -> 5, "Sept" -> 6)
 
+    // The literal may be named through the umbrella's export forwarder (`soundness.Quat`) as
+    // well as directly (`denominative.Quat`): a separate compiler run — larceny's, or a
+    // consumer's — sees the forwarder's symbol, whose owner is the umbrella package.
     def named(symbol: Symbol): Optional[Int] =
-      if symbol.owner.fullName.startsWith("denominative") then ordinalLiterals.at(symbol.name)
+      val owner = symbol.owner.fullName
+      if owner.startsWith("denominative") || owner.startsWith("soundness")
+      then ordinalLiterals.at(symbol.name)
       else Unset
 
     // Inlining binds an inline parameter to a proxy `val` (`Inlined`'s bindings, or a `Block`'s

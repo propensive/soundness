@@ -187,7 +187,7 @@ object Tests extends Suite("geo", m"Geodesy tests"):
       . assert(_ == 8)
 
       test(m"index 7 is Northwest"):
-        Compass.points8.sized[8].let(_(Sept))
+        Compass.points8.sized[8].let(_(7.z))
       . assert(_ == Northwest)
 
       test(m"contains no duplicates"):

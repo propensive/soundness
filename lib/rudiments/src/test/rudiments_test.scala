@@ -248,6 +248,12 @@ object Tests extends Suite("core", m"Rudiments Tests"):
 
       test(m"a literal ordinal beyond the proven length does not compile"):
         demilitarize:
+          Array.fill(3)(1)(3.z)
+        . map(_.message.toString.contains("beyond the array's proven length"))
+      . assert(_ == List(true))
+
+      test(m"a named ordinal beyond the proven length does not compile"):
+        demilitarize:
           Array.fill(3)(1)(Quat)
         . map(_.message.toString.contains("beyond the array's proven length"))
       . assert(_ == List(true))
