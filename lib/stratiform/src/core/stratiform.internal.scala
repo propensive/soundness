@@ -406,24 +406,19 @@ object internal:
         '{Tel.Compound(${keywordExpr}.tt, $atomsExpr, $remarkExpr, $childrenExpr)}
 
       def emitBlock(b: Tel.Block): Expr[Tel.Block] =
-        val comments =
-          '{Array.from(${Expr.ofList(b.comments.stdlib.map(emitComment))})}
-          . asInstanceOf[Expr[Array[Tel.Comment]^{}]]
+        val comments = Array.quoted(b.comments.map(emitComment))
 
         val tab: Expr[Optional[Tel.Tabulation]] = b.tabulation match
           case t: Tel.Tabulation => '{${emitTabulation(t)}: Optional[Tel.Tabulation]}
           case _                 => '{Unset}
 
-        val compounds =
-          '{Array.from(${Expr.ofList(b.compounds.stdlib.map(emitCompound))})}
-          . asInstanceOf[Expr[Array[Tel.Compound]^{}]]
+        val compounds = Array.quoted(b.compounds.map(emitCompound))
 
         val tbl = Expr(b.trailingBlankLines)
         '{Tel.Block($comments, $tab, $compounds, $tbl)}
 
       def emitBlocks(blocks: Array[Tel.Block]^{}): Expr[Array[Tel.Block]^{}] =
-        '{Array.from(${Expr.ofList(blocks.stdlib.map(emitBlock))})}
-        . asInstanceOf[Expr[Array[Tel.Block]^{}]]
+        Array.quoted(blocks.map(emitBlock))
 
       val directiveExpr: Expr[Optional[Text]] = document.interpreterDirective match
         case text: Text => '{${Expr(text.s)}.tt: Optional[Text]}

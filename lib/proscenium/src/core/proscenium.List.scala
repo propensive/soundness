@@ -151,6 +151,15 @@ object List extends scala.caps.Pure:
     def apply(list: List[element])(using scala.quoted.Quotes): scala.quoted.Expr[List[element]] =
       '{List.from(${scala.quoted.Expr.ofList(list.map(scala.quoted.Expr(_)))})}
 
+  // The native counterpart of `Expr.ofList`: a native list of already-lifted expressions
+  // becomes one lifted native list. Macro code holding `List[Expr[T]]` calls this rather than
+  // bridging to the stdlib `Seq` that `Expr.ofList` takes; the hop is confined here.
+  def quoted[element: scala.quoted.Type](elements: List[scala.quoted.Expr[element]])
+    ( using scala.quoted.Quotes )
+  :   scala.quoted.Expr[List[element]] =
+
+    '{List.from(${scala.quoted.Expr.ofList(elements.stdlib)})}
+
   given fromExpr: [element: {scala.quoted.Type, scala.quoted.FromExpr}]
   =>  scala.quoted.FromExpr[List[element]]:
     def unapply(expr: scala.quoted.Expr[List[element]])(using scala.quoted.Quotes)

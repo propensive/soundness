@@ -564,9 +564,9 @@ object internal:
               '{Iterable($v)}
 
         ' {
-            // `Expr.ofList` takes a stdlib list.
-            val all = ${Expr.ofList(pieces.stdlib)}
-            . foldLeft(scala.collection.immutable.List.empty[Json.Ast])(_ ++ _)
+            val all = ${List.quoted(pieces)}.fuse(scala.collection.immutable.List.empty[Json.Ast]):
+              state ++ next
+
             Json.Ast.arr(Array.from(all).asInstanceOf[Array[Any]^{}])
           }
 

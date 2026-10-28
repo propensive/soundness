@@ -194,6 +194,39 @@ object Array:
     // [transfer] freeze: consume retires writers, drops write capability
     caps.unsafe.unsafeAssumePure(array)
 
+  // The native counterpart of `Expr.ofList` for a frozen array (see `List.quoted`): a list of
+  // lifted elements becomes one lifted frozen array. The element's `ClassTag` is resolved at
+  // the expansion site, where the element type is concrete.
+  def quoted[element: scala.quoted.Type](elements: List[scala.quoted.Expr[element]])
+    ( using quotes: scala.quoted.Quotes )
+  :   scala.quoted.Expr[Array[element]^{}] =
+
+    quotedElements(elements.stdlib)
+
+  // The same, from a frozen array of lifted elements, which is what a macro walking an array
+  // of children naturally holds.
+  def quoted[element: scala.quoted.Type](elements: Array[scala.quoted.Expr[element]]^{})
+    ( using quotes: scala.quoted.Quotes )
+  :   scala.quoted.Expr[Array[element]^{}] =
+
+    quotedElements(elements.stdlib)
+
+  private def quotedElements[element: scala.quoted.Type]
+    ( elements: scala.collection.immutable.Seq[scala.quoted.Expr[element]] )
+    ( using quotes: scala.quoted.Quotes )
+  :   scala.quoted.Expr[Array[element]^{}] =
+
+    scala.quoted.Expr.summon[ClassTag[element]] match
+      case Some(classTag) =>
+        // Cast-erased: a frozen array's `^{}` is re-freshened to `any.rd` inside a quote, so
+        // the lifted tree's type is restated here, once, for every macro that lifts an array.
+        '{Array.from[element](${scala.quoted.Expr.ofList(elements)})(using $classTag)}
+        . asInstanceOf[scala.quoted.Expr[Array[element]^{}]]
+
+      case None =>
+        quotes.reflect.report.errorAndAbort
+          ("no ClassTag is available for the elements of the array")
+
   // The inverse of `freeze`: an exclusive copy of any readable array, which the caller may
   // write through -- `copy(i) = value` -- and then `freeze` again. This is the shape for an
   // edit of several slots; a one-slot edit is `define`, and a splice is `concat` of segments.
