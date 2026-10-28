@@ -220,9 +220,8 @@ trait Cbor2:
             val key: Text = renames(label).or(label)
 
             def decodeNow(): field =
-              values.stdlib.get(key.s) match
-                case Some(value) => context.decoded(new Cbor(value))
-                case None        => default.or(context.decoded(new Cbor(Ast(Unset))))
+              values.at(key.s).lay(default.or(context.decoded(new Cbor(Ast(Unset))))): value =>
+                context.decoded(new Cbor(value))
 
             if !active then Venture(decodeNow())
             else

@@ -281,11 +281,11 @@ object Tests extends Suite("yaml", m"Ypsiloid Tests"):
       // Decoded via `List` and rebuilt: the `Factory`-based collection decoders do not yet have
       // instances for the opaque `Sequence` (a pending work item across the serialization modules).
       test(m"Parse a flow sequence into a Sequence"):
-        t"[10, 20, 30]".read[Yaml].as[List[Int]].stdlib.pipe(Sequence.from(_))
+        t"[10, 20, 30]".read[Yaml].as[List[Int]].to[Sequence]
       . assert(_ == Sequence(10, 20, 30))
 
       test(m"Parse a flow sequence into a Set"):
-        t"[1, 2, 3]".read[Yaml].as[List[Int]].stdlib.pipe(Set.from(_))
+        t"[1, 2, 3]".read[Yaml].as[List[Int]].to[Set]
       . assert(_ == Set(1, 2, 3))
 
       test(m"Empty flow sequence parses to Yaml.Ast.Sequence with no items"):
@@ -892,18 +892,16 @@ object Tests extends Suite("yaml", m"Ypsiloid Tests"):
         val shape: Shape = Shape.Circle(2.0)
         shape.in[Yaml].root match
           case Yaml.Ast.Mapping(entries) =>
-            entries.stdlib.collectFirst:
-              case (Yaml.Ast.Str(k), Yaml.Ast.Str(v)) if k == t"type" => v.s
-            . getOrElse("none")
+            entries.reap { case (Yaml.Ast.Str(k), Yaml.Ast.Str(v)) if k == t"type" => v.s }
+            . or("none")
           case _ => "none"
       . assert(_ == "Circle")
 
       test(m"@name renames a variant's `type` discriminator"):
         (YStatus.Active(5): YStatus).in[Yaml].root match
           case Yaml.Ast.Mapping(entries) =>
-            entries.stdlib.collectFirst:
-              case (Yaml.Ast.Str(k), Yaml.Ast.Str(v)) if k == t"type" => v.s
-            . getOrElse("none")
+            entries.reap { case (Yaml.Ast.Str(k), Yaml.Ast.Str(v)) if k == t"type" => v.s }
+            . or("none")
           case _ => "none"
       . assert(_ == "ok")
 

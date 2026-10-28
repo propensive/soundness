@@ -92,7 +92,7 @@ object Tests extends Suite("money", m"Plutocrat tests"):
       . assert(_ == Eur(1.00))
 
       test(m"Split an amount"):
-        Eur(3.01).share(3).stdlib.total
+        Eur(3.01).share(3).total
 
       . assert(_ == Eur(3.01))
 

@@ -825,7 +825,7 @@ trait Xml4:
     private def children(parent: Xml.Element, name: Text): List[Xml.Element] =
       // `Option`, since an expected namespace may itself be absent
       val expected: Option[Xml.Name] =
-        layout.elements.stdlib.get((parent.localName, name)).map(Xml.Name(_, name))
+        layout.elements.at((parent.localName, name)).let(Xml.Name(_, name)).option
 
       val buffer = scm.ArrayBuffer[Xml.Element]()
 
@@ -844,9 +844,8 @@ trait Xml4:
       List.from(buffer)
 
     private def attributeOf(parent: Xml.Element, name: Text): Optional[Text] =
-      layout.attributes.stdlib.get((parent.localName, name)) match
-        case Some(namespace) => parent.attribute(Xml.Name(namespace, name))
-        case None            => parent.attributes.fetch(name)
+      layout.attributes.at((parent.localName, name)).lay(parent.attributes.fetch(name)):
+        namespace => parent.attribute(Xml.Name(namespace, name))
 
     private def ownText(element: Xml.Element): Xml =
       val builder = StringBuilder()

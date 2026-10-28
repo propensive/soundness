@@ -61,7 +61,7 @@ lib/bitumen/src/jvm/bitumen.TarFilesystem.scala	0	0	0	0	0	1	0	0	0	0	0	0	0	0	1	0
 lib/bitumen/src/jvm/bitumen_jvm.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/bitumen/src/test/bitumen_test.scala	0	4	0	0	1	0	0	0	0	0	9	0	0	0	0	0
 lib/breviloquence/src/bench/breviloquence.Benchmarks.scala	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
-lib/breviloquence/src/core/breviloquence.Cbor.scala	0	0	1	0	1	0	0	0	8	15	1	0	0	0	3	0
+lib/breviloquence/src/core/breviloquence.Cbor.scala	0	0	1	0	1	0	0	0	8	15	0	0	0	0	3	0
 lib/breviloquence/src/core/breviloquence.CborParser.scala	2	0	0	0	0	1	0	0	6	4	0	0	0	0	1	0
 lib/breviloquence/src/core/breviloquence.dynamicAccess.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0
 lib/breviloquence/src/core/breviloquence.inlining.scala	2	0	0	0	0	0	0	0	5	0	0	0	0	0	3	0
@@ -80,7 +80,6 @@ lib/caesura/src/core/caesura.Sheet.scala	3	0	2	0	0	2	0	0	1	2	1	0	0	1	1	0
 lib/caesura/src/core/caesura.dynamicAccess.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0
 lib/caesura/src/core/caesura_core.scala	0	0	2	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/caesura/src/test/caesura.AccrualTests.scala	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0
-lib/caesura/src/test/caesura_test.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
 lib/camouflage/src/core/camouflage.Cache.scala	0	0	2	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/camouflage/src/core/camouflage.LruCache.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/capricious/src/core/capricious.Random.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
@@ -89,7 +88,6 @@ lib/capricious/src/core/capricious_core.scala	0	0	0	0	0	0	0	0	0	0	1	0	1	0	0	0
 lib/capricious/src/test/capricious_test.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
 lib/cataclysm/src/core/cataclysm.SyntaxMatcher.scala	0	0	0	0	0	0	0	0	0	0	2	0	0	0	1	0
 lib/cataclysm/src/core/cataclysm.internal.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	2	0
-lib/charisma/src/core/charisma.Molecule.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
 lib/charisma/src/core/charisma.PeriodicTable.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
 lib/charisma/src/test/charisma_test.scala	0	0	0	0	2	0	0	0	0	0	0	0	0	0	0	0
 lib/chiaroscuro/src/core/chiaroscuro.Decomposable.scala	3	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
@@ -176,7 +174,7 @@ lib/escapade/src/core/escapade.Ansi.scala	0	0	5	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/escapade/src/core/escapade.Teletype.scala	0	0	1	0	0	1	0	0	0	0	0	0	0	0	1	0
 lib/escapade/src/core/escapade.internal.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0
 lib/escapade/src/io/escapade_io.scala	0	0	0	0	0	0	0	0	2	2	0	0	0	0	0	0
-lib/escapade/src/test/escapade_test.scala	0	0	0	0	0	0	0	0	0	0	2	0	0	0	1	0
+lib/escapade/src/test/escapade_test.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	1	0
 lib/escritoire/src/core/escritoire.Columnation.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/escritoire/src/core/escritoire.Grid.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	2	0
 lib/escritoire/src/core/escritoire.Layout.scala	0	0	0	0	0	0	0	0	0	0	2	2	0	0	1	0
@@ -285,7 +283,7 @@ lib/hallucination/src/jpeg/hallucination.JpegHuffman.scala	0	0	0	0	0	0	0	0	0	7	0
 lib/hallucination/src/jpeg/hallucination.JpegHuffmanEncoder.scala	0	0	0	0	0	0	0	0	0	4	0	0	0	0	0	0
 lib/hallucination/src/jpeg/hallucination.JpegParser.scala	1	0	0	0	4	0	0	0	0	0	0	0	0	0	0	0
 lib/hallucination/src/jpeg/hallucination.JpegUpsampler.scala	0	0	1	0	0	0	0	0	1	6	0	0	0	0	0	0
-lib/hallucination/src/png/hallucination.PngCodec.scala	0	0	0	0	4	4	0	0	0	0	1	1	0	0	1	0
+lib/hallucination/src/png/hallucination.PngCodec.scala	0	0	0	0	4	4	0	0	0	0	0	0	0	0	1	0
 lib/hallucination/src/webp/hallucination.Vp8BoolEncoder.scala	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
 lib/hallucination/src/webp/hallucination.Vp8Decoder.scala	0	0	2	0	3	0	0	0	0	0	0	0	0	0	0	0
 lib/hallucination/src/webp/hallucination.Vp8Encoder.scala	0	0	0	0	1	2	0	0	1	0	0	0	0	0	0	0
@@ -312,7 +310,7 @@ lib/hieroglyph/src/core/hieroglyph.Unicode.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/hieroglyph/src/core/hieroglyph_core.scala	2	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/hieroglyph/src/test/hieroglyph_test.scala	0	0	0	0	4	0	0	0	0	0	6	0	2	0	0	0
 lib/honeycomb/src/core/honeycomb.Dom.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
-lib/honeycomb/src/core/honeycomb.Html.scala	2	0	1	0	3	5	0	0	5	5	2	0	2	0	0	0
+lib/honeycomb/src/core/honeycomb.Html.scala	2	0	1	0	3	5	0	0	5	5	1	0	1	0	0	0
 lib/honeycomb/src/core/honeycomb.internal.scala	2	0	2	0	0	0	0	0	0	1	6	1	0	0	4	0
 lib/hyperbole/src/core/hyperbole.internal.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/hyperbole/src/stacks/hyperbole.StackResolver.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
@@ -342,7 +340,6 @@ lib/kaleidoscope/src/core/kaleidoscope.Regex.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	1
 lib/kaleidoscope/src/core/kaleidoscope.internal.scala	0	0	0	0	0	1	0	0	0	1	6	2	0	0	1	0
 lib/larceny/src/plugin/larceny.LarcenyTransformer.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/larceny/src/plugin/larceny.Subcompiler.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
-lib/legerdemain/src/core/legerdemain.Elicitable.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
 lib/legerdemain/src/query/legerdemain.Query.scala	0	0	0	0	0	0	0	0	0	0	1	0	1	0	0	0
 lib/legerdemain/src/query/legerdemain.internal.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/legerdemain/src/test/legerdemain_test.scala	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0
@@ -409,11 +406,10 @@ lib/parasite/src/test/parasite_test.scala	0	0	0	0	0	0	0	0	1	0	0	0	0	0	1	0
 lib/perihelion/src/core/perihelion.Websocket.scala	0	0	0	0	0	1	0	0	4	5	0	0	0	0	0	0
 lib/perihelion/src/core/perihelion_core.scala	0	0	0	0	0	0	0	0	1	1	0	0	0	0	0	0
 lib/perihelion/src/test/perihelion.Test.scala	0	0	1	0	2	0	0	0	0	0	0	0	0	0	0	0
-lib/phoenicia/src/core/phoenicia.Sfnt.scala	0	0	1	0	0	4	0	0	0	0	1	0	0	0	0	0
+lib/phoenicia/src/core/phoenicia.Sfnt.scala	0	0	1	0	0	4	0	0	0	0	0	0	0	0	0	0
 lib/phoenicia/src/core/phoenicia.internal.scala	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
 lib/phoenicia/src/test/phoenicia_test.scala	0	0	0	0	4	0	0	0	0	0	0	0	0	0	1	0
 lib/plutocrat/src/core/plutocrat.internal.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0
-lib/plutocrat/src/test/plutocrat_test.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
 lib/pneumatic/src/brotli/pneumatic.Brotli.scala	0	0	0	0	2	3	0	0	0	3	0	0	0	0	0	0
 lib/pneumatic/src/brotli/pneumatic.BrotliDictionaryData.scala	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
 lib/pneumatic/src/brotli/pneumatic.BrotliEncoder.scala	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
@@ -458,7 +454,7 @@ lib/proscenium/src/core/proscenium.List.scala	0	0	0	0	0	0	0	0	0	0	3	0	0	0	1	0
 lib/proscenium/src/core/proscenium.Map.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/proscenium/src/core/proscenium.Sequence.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	1	0
 lib/proscenium/src/core/proscenium.Set.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
-lib/proscenium/src/test/prosceniumtest.Tests.scala	0	0	0	0	0	0	0	0	0	0	8	0	0	0	0	0
+lib/proscenium/src/test/prosceniumtest.Tests.scala	0	0	0	0	0	0	0	0	0	0	6	0	0	0	0	0
 lib/punctuation/src/core/punctuation.BlockBuilder.scala	0	0	7	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/punctuation/src/core/punctuation.BlockParser.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/punctuation/src/core/punctuation.EmphasisProcessor.scala	0	0	7	0	0	0	0	0	0	0	0	0	0	0	1	0
@@ -494,7 +490,6 @@ lib/scintillate/src/test/scintillate_test.scala	2	1	0	0	1	1	0	0	0	0	1	0	0	1	0	0
 lib/sedentary/src/core/sedentary.Bench.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
 lib/sedentary/src/core/sedentary.Stress.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
 lib/sedentary/src/core/sedentary.StressSearch.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
-lib/sedentary/src/test/sedentary_test.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
 lib/serpentine/src/core/anticipation_serpentine_core.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0
 lib/serpentine/src/core/serpentine.Path.scala	0	0	0	2	0	0	0	0	0	0	2	0	0	0	0	0
 lib/serpentine/src/core/serpentine.Relative.scala	0	0	0	0	0	0	0	0	0	0	3	0	0	0	0	0
@@ -534,17 +529,16 @@ lib/stratiform/src/core/stratiform.dynamicAccess.scala	0	0	0	0	0	0	0	1	0	0	0	0	0
 lib/stratiform/src/core/stratiform.internal.scala	1	0	0	0	0	0	0	0	0	1	3	0	3	0	2	0
 lib/stratiform/src/core/stratiform_core.scala	0	0	3	0	0	0	0	0	0	0	2	0	0	0	0	0
 lib/stratiform/src/staged/stratiform.stagedInternal.scala	1	0	0	0	0	0	0	0	3	0	0	0	0	0	3	0
-lib/stratiform/src/test/stratiform.AcceptanceTests.scala	0	0	0	0	2	1	0	0	0	0	3	0	0	0	1	0
-lib/stratiform/src/test/stratiform.AccrualTests.scala	0	0	1	0	0	0	0	0	0	0	2	0	0	0	0	0
+lib/stratiform/src/test/stratiform.AcceptanceTests.scala	0	0	0	0	2	1	0	0	0	0	2	0	0	0	1	0
+lib/stratiform/src/test/stratiform.AccrualTests.scala	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/stratiform/src/test/stratiform.CodecTests.scala	0	0	0	0	0	0	0	0	0	0	12	0	1	0	0	0
 lib/stratiform/src/test/stratiform.CorpusLoader.scala	0	0	0	0	2	0	0	0	0	0	2	0	0	0	0	0
-lib/stratiform/src/test/stratiform.LineageTests.scala	0	0	0	0	1	1	0	0	0	0	1	0	0	0	0	0
+lib/stratiform/src/test/stratiform.LineageTests.scala	0	0	0	0	1	1	0	0	0	0	0	0	0	0	0	0
 lib/stratiform/src/test/stratiform.ResolutionTests.scala	0	0	2	0	1	0	0	0	0	0	7	0	0	0	0	0
 lib/stratiform/src/test/stratiform.SchemaCorpusTests.scala	0	0	0	0	0	0	0	0	0	0	1	0	1	0	0	0
 lib/stratiform/src/test/stratiform.ServingTests.scala	0	0	0	0	1	1	0	0	0	0	0	0	0	0	0	0
 lib/stratiform/src/test/stratiform.SubtypingTests.scala	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
-lib/stratiform/src/test/stratiform.TypedAcceptanceTests.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
-lib/stratiform/src/test/stratiform_test.scala	0	0	2	0	10	1	0	0	0	0	32	0	1	0	1	0
+lib/stratiform/src/test/stratiform_test.scala	0	0	2	0	10	1	0	0	0	0	28	0	1	0	1	0
 lib/superlunary/src/core/superlunary.References.scala	0	0	0	0	0	0	0	0	0	0	1	0	1	0	0	0
 lib/superlunary/src/core/superlunary.Rig.scala	0	0	0	0	0	0	0	0	0	0	3	1	0	0	0	0
 lib/superlunary/src/core/superlunary.Stageable.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
@@ -566,7 +560,7 @@ lib/synesthesia/src/core/synesthesia.internal.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	
 lib/tarantula/src/test/tarantula_test.scala	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/tasseomancy/src/test/tasseomancy_test.scala	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
 lib/telekinesis/src/core/telekinesis.Cookie.scala	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-lib/telekinesis/src/core/telekinesis.Http.scala	4	0	1	0	1	0	0	0	7	8	1	0	0	0	0	0
+lib/telekinesis/src/core/telekinesis.Http.scala	4	0	1	0	1	0	0	0	7	8	0	0	0	0	0	0
 lib/telekinesis/src/core/telekinesis.Receivable.scala	0	0	0	0	0	0	0	0	2	2	0	0	0	0	0	0
 lib/telekinesis/src/core/telekinesis.Servable.scala	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
 lib/telekinesis/src/core/telekinesis.internal.scala	3	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0
@@ -652,7 +646,7 @@ lib/xenophile/src/native/xenophile.PanamaInvoke.scala	0	0	0	0	0	0	0	0	1	0	1	0	0	
 lib/xenophile/src/nativeruntime/xenophile.ForeignBuffer.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
 lib/xenophile/src/nativeruntime/xenophile.ForeignLibrary.scala	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/xenophile/src/scalanative/xenophile.NativeInvoke.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	2	0
-lib/xenophile/src/test/xenophile_test.scala	0	1	0	0	0	0	0	0	0	0	22	0	0	0	0	0
+lib/xenophile/src/test/xenophile_test.scala	0	1	0	0	0	0	0	0	0	0	21	0	0	0	0	0
 lib/xenophile/src/typescript/xenophile.Typescript.scala	0	0	0	0	0	0	0	0	0	0	1	0	1	0	0	0
 lib/xenophile/src/wasm/xenophile.WasmInvoke.scala	0	0	0	0	0	0	0	0	0	0	5	1	0	1	2	0
 lib/xenophile/src/webidl/xenophile.WebIdl.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0
@@ -663,7 +657,7 @@ lib/xylophone/src/core/xylophone.XPathEngine.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	1
 lib/xylophone/src/core/xylophone.XPathReader.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/xylophone/src/core/xylophone.Xml.scala	9	1	0	0	4	3	0	0	16	4	0	0	0	0	4	0
 lib/xylophone/src/core/xylophone.Xml3.scala	2	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-lib/xylophone/src/core/xylophone.Xml4.scala	0	0	0	0	0	0	0	0	0	0	2	0	0	0	1	0
+lib/xylophone/src/core/xylophone.Xml4.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/xylophone/src/core/xylophone.XmlSchema.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/xylophone/src/core/xylophone.Xsd.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0
 lib/xylophone/src/core/xylophone.dynamicAccess.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0
@@ -679,7 +673,6 @@ lib/ypsiloid/src/core/ypsiloid.Yaml.scala	0	1	1	0	0	0	0	0	22	32	3	3	0	0	4	0
 lib/ypsiloid/src/core/ypsiloid.dynamicAccess.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0
 lib/ypsiloid/src/core/ypsiloid.internal.scala	0	0	0	0	0	0	0	0	1	3	8	0	0	1	2	0
 lib/ypsiloid/src/test/ypsiloid_conformance.scala	0	0	0	0	0	0	0	0	1	0	2	0	0	0	1	0
-lib/ypsiloid/src/test/ypsiloid_test.scala	0	0	0	0	0	0	0	0	0	0	4	0	0	0	0	0
 lib/zephyrine/src/bench/zephyrine.Benchmarks.scala	0	0	0	0	2	0	0	0	0	0	0	0	0	0	0	0
 lib/zephyrine/src/core-jvm/zephyrine.WordLoad.scala	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
 lib/zephyrine/src/core/zephyrine.Addressable.scala	0	0	0	0	3	3	0	0	1	3	1	0	0	0	2	0

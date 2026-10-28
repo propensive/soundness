@@ -1065,9 +1065,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val root = Tel.Type.assign(doc, personSchema)
         root match
           case Tel.Element.Node(_, _, children) =>
-            List.from:
-              children.stdlib.collect:
-                case Tel.Element.Value(_, _, t) => t
+            children.sweep { case Tel.Element.Value(_, _, t) => t }.to[List]
 
           case _ => Nil
       . assert(_ == List(t"Alice", t"30"))
@@ -1275,10 +1273,10 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         case Tel.Element.Node(_, _, children) if children.length == 1 =>
           children.head match
             case Tel.Element.Node(_, _, inner) =>
-              List.from:
-                inner.stdlib.collect:
-                  case Tel.Element.Value(idx, _, text) => (idx, text)
-                  case Tel.Element.Node(idx, _, _)     => (idx.or(-1), t"")
+              inner.sweep:
+                case Tel.Element.Value(idx, _, text) => (idx, text)
+                case Tel.Element.Node(idx, _, _)     => (idx.or(-1), t"")
+              . to[List]
 
             case _ => Nil
 
@@ -1403,10 +1401,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val doc = t"age 30\n".read[Tel]
         Tel.Type.assign(doc, defaultingSchema) match
           case Tel.Element.Node(_, _, children) =>
-            val values = children.stdlib.collect:
-              case Tel.Element.Value(_, _, t) => t
-
-            Set.from(values)
+            children.sweep { case Tel.Element.Value(_, _, t) => t }.to[Set]
 
           case _ => Set()
       . assert(_ == Set(t"Anonymous", t"30"))
@@ -1415,9 +1410,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val doc = t"name Alice\nage 30\n".read[Tel]
         Tel.Type.assign(doc, defaultingSchema) match
           case Tel.Element.Node(_, _, children) =>
-            List.from:
-              children.stdlib.collect:
-                case Tel.Element.Value(_, _, t) => t
+            children.sweep { case Tel.Element.Value(_, _, t) => t }.to[List]
 
           case _ => Nil
       . assert(_ == List(t"Alice", t"30"))

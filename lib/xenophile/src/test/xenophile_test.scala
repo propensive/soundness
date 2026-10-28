@@ -622,7 +622,7 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
 
       test(m"every world in a source is read"):
         val wit = t"package test:demo@1.0.0; world a { export x:y/z@1.0.0; } world b { import p:q/r@1.0.0; }"
-        List.from(WitDialect.worlds(wit).stdlib.keySet).sort
+        WitDialect.worlds(wit).keys.to[List].sort
       . assert(_ == List(t"a", t"b"))
 
     suite(m"WebIDL (synthetic sample)"):

@@ -272,7 +272,7 @@ object Tests extends Suite("bench", m"Sedentary Tests"):
           else humped(37)(window)
 
         val confirmed = windows.filter(_.extended).map(_.count)
-        val best = confirmed.stdlib.maxBy(count => humped(37)(Window(count, true)).throughput)
+        val best = confirmed.maximize(count => humped(37)(Window(count, true)).throughput).or(-1)
         (winner.let(_.count).or(-1), best)
       . assert(_ == _)
 

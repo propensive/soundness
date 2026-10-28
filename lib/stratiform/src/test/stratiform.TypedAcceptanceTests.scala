@@ -163,7 +163,7 @@ object TypedAcceptanceTests extends Suite("tel-typed-acceptance", m"Stratiform t
     . map(_.layer.name)
 
   private def hex(data: Data): String =
-    data.stdlib.map { byte => f"${byte & 0xff}%02x" }.mkString
+    data.map { byte => f"${byte & 0xff}%02x".tt }.join.s
 
   def run(): Unit =
     suite(m"Derived schema shape"):

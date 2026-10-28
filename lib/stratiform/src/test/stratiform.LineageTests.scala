@@ -55,7 +55,7 @@ object LineageTests extends Suite("tel-lineage", m"Stratiform lineage tests"):
     Text(String(Array.unsafeJvm(resource(name)), "UTF-8").trim.nn)
 
   private def hex(data: Data): String =
-    data.stdlib.map { byte => f"${byte & 0xff}%02x" }.mkString
+    data.map { byte => f"${byte & 0xff}%02x".tt }.join.s
 
   private val axiom: Tels = Tels.Axiom.tels
 
