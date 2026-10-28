@@ -76,11 +76,11 @@ object Tests extends Suite("proxy", m"Vicarious Tests"):
           val bad: Org is Specific over (Codec in Json) =
             specifically:
               case root.cto.invalid() => nameCodec
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"An instance of the wrong type does not compile"):
         demilitarize:
           val bad: Org is Specific over (Codec in Json) =
             specifically:
               case root.cto.name() => ageCodec
-      . assert(_.nonEmpty)
+      . assert(!_.nil)

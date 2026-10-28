@@ -51,7 +51,7 @@ object CaptureTests extends Suite("terminal-capture", m"Terminal confinement tes
         :   Terminal =
           interactive(summon[Terminal])
       . map(_.message)
-    . assert(_.nonEmpty)
+    . assert(!_.nil)
 
     // The closures call a method on the terminal: selecting a PURE field (like `events`)
     // discharges the capability path under capture checking, so only a use that charges the
@@ -61,7 +61,7 @@ object CaptureTests extends Suite("terminal-capture", m"Terminal confinement tes
         def attempt(using Console, Monitor, Probate, Environment, Every[Terminal.Feature])
         :   () => Int =
           interactive(() => summon[Terminal].knownColumns)
-    . assert(_.nonEmpty)
+    . assert(!_.nil)
 
     test(m"the Terminal cannot be stashed in an outer variable"):
       demilitarize:
@@ -69,4 +69,4 @@ object CaptureTests extends Suite("terminal-capture", m"Terminal confinement tes
           var stash: () => Unit = () => ()
           interactive:
             stash = () => { summon[Terminal].knownColumns; () }
-    . assert(_.nonEmpty)
+    . assert(!_.nil)

@@ -33,6 +33,7 @@
 package dendrology
 
 import soundness.*
+import denominative.dysasymptotics.{linearAccess, linearSize} // the suite counts and indexes small rendered lists
 
 import strategies.throwUnsafely
 import textMetrics.uniformMetric
@@ -143,10 +144,10 @@ object Tests extends Suite("tree", m"Dendrology tests"):
           t"D" -> Set(t"B", t"C") )
       val rendered = LaneDagDiagram(dag).render(node => t"").map(_.s)
       val nodeMark = '●'
-      ( rendered.head.indexOf(nodeMark) >= 0,
-        rendered.last.indexOf(nodeMark) >= 0,
-        rendered(1).indexOf(nodeMark) >= 0,
-        rendered(rendered.length - 2).indexOf(nodeMark) >= 0 )
+      ( rendered.head.lay(false)(_.indexOf(nodeMark) >= 0),
+        rendered.last.lay(false)(_.indexOf(nodeMark) >= 0),
+        rendered.at(Sec).lay(false)(_.indexOf(nodeMark) >= 0),
+        rendered.at((rendered.size - 2).z).lay(false)(_.indexOf(nodeMark) >= 0) )
 
     . assert(_ == (true, true, false, false))
 
@@ -212,7 +213,7 @@ object Tests extends Suite("tree", m"Dendrology tests"):
           t"B" -> Set(t"A"),
           t"C" -> Set(),
           t"D" -> Set(t"A", t"C") )
-      LaneDagDiagram(dag).render(node => t"").map(_.s).mkString("\n").linesIterator.toList.size
+      LaneDagDiagram(dag).render(node => t"").join(t"\n").cut(t"\n").size
 
     . assert(_ == 7)
 
@@ -288,7 +289,7 @@ object Tests extends Suite("tree", m"Dendrology tests"):
           t"B" -> Set(),
           t"C" -> Set(t"A"),
           t"D" -> Set(t"B", t"C") )
-      LayeredDagDiagram(dag).rows.collect { case (_, nodesAt) if nodesAt.nonEmpty => nodesAt.size }
+      List.from(LayeredDagDiagram(dag).rows.collect { case (_, nodesAt) if nodesAt.nonEmpty => nodesAt.size })
 
     . assert(_ == List(1, 2, 1))
 

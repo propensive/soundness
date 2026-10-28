@@ -54,12 +54,12 @@ object Tests extends Suite("matrix", m"Mosquito tests"):
     test(m"Type error if size is incorrect"):
       demilitarize:
         val vector: Vector[Int, 2] = Vector(1, 3, 4)
-    . assert(_.nonEmpty)
+    . assert(!_.nil)
 
     test(m"Type error if type is incorrect"):
       demilitarize:
         val vector: Vector[String, 3] = Vector(1, 3, 4)
-    . assert(_.nonEmpty)
+    . assert(!_.nil)
 
     test(m"Calculate integer dot-product"):
       Vector(1, 2, 3).dot(Vector(4, 3, 7))
@@ -310,7 +310,7 @@ object Tests extends Suite("matrix", m"Mosquito tests"):
       test(m"Type error if determinant called on non-square matrix"):
         demilitarize:
           Matrix[2, 3]((1, 2, 3), (4, 5, 6)).determinant
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
     suite(m"Inverse"):
       test(m"Inverse of 2x2 identity is identity"):
@@ -352,7 +352,7 @@ object Tests extends Suite("matrix", m"Mosquito tests"):
       test(m"Type error if inverse called on non-square matrix"):
         demilitarize:
           Matrix[2, 3]((1.0, 2.0, 3.0), (4.0, 5.0, 6.0)).inverse
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
     suite(m"Seven-dimensional cross product"):
       val a7 = Vector(1, 2, 3, 4, 5, 6, 7)
@@ -392,7 +392,7 @@ object Tests extends Suite("matrix", m"Mosquito tests"):
       test(m"Type error if cross called on 4-vector"):
         demilitarize:
           Vector(1, 2, 3, 4).cross(Vector(5, 6, 7, 8))
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
     suite(m"Interesting types"):
       test(m"Dot product of a vector of quantities"):

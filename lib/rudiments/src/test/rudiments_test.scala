@@ -1029,7 +1029,7 @@ object Tests extends Suite("core", m"Rudiments Tests"):
         demilitarize:
           val x: Byte = bin"00011111 11111111"
           x
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Non-binary content"):
         demilitarize:
@@ -1258,7 +1258,7 @@ object Tests extends Suite("core", m"Rudiments Tests"):
     suite(m"Data tests"):
       test(m"Construct a `Data` literal"):
         Data(1, 2, 3)
-      . assert(_.length == 3)
+      . assert(_.size == 3)
 
       // test(m"Construct a `Data` value from a Long"):
       //   Data(Long.MaxValue)
@@ -1266,7 +1266,7 @@ object Tests extends Suite("core", m"Rudiments Tests"):
 
       test(m"Construct an empty `Data`"):
         Data()
-      . assert(_.length == 0)
+      . assert(_.size == 0)
 
     suite(m"Bytes tests"):
       test(m"Construct a simple Bytes"):

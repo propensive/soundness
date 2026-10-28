@@ -225,7 +225,7 @@ object SchemaValidityTests extends Suite("tel-schema-validity", m"Stratiform sch
                                                    |  select Pet
                                                    |    exclude fox
                                                    |""".stripMargin)))
-        composed.selects.stdlib.find(_.name == t"Pet").get.variants.stdlib.map(_.keyword.s).toList
+        composed.selects.seek(_.name == t"Pet").let(_.variants.to[List].map(_.keyword.s)).or(List())
       . assert(_ == List("cat", "dog"))
 
       test(m"a document using an excluded variant fails with E306"):
@@ -255,7 +255,7 @@ object SchemaValidityTests extends Suite("tel-schema-validity", m"Stratiform sch
                                                    |  select Pet
                                                    |    exclude fox
                                                    |""".stripMargin)))
-        composed.selects.stdlib.find(_.name == t"Pet").get.variants.stdlib.map(_.keyword.s).toList
+        composed.selects.seek(_.name == t"Pet").let(_.variants.to[List].map(_.keyword.s)).or(List())
       . assert(_ == List("cat", "dog"))
 
       test(m"E211: exclude in a layer-introduced fresh select"):
@@ -319,7 +319,7 @@ object SchemaValidityTests extends Suite("tel-schema-validity", m"Stratiform sch
         val body = doc.bintel(Tels.Axiom.tels)
         val element = Bintel.decode(body, Tels.Axiom.tels)
         val composed = Tels.Validation.validate(element.as[Tels])
-        composed.selects.stdlib.find(_.name == t"Pet").get.variants.stdlib.map(_.keyword.s).toList
+        composed.selects.seek(_.name == t"Pet").let(_.variants.to[List].map(_.keyword.s)).or(List())
       . assert(_ == List("cat", "dog"))
 
     suite(m"Pattern constraints (§21.8)"):
@@ -374,7 +374,7 @@ object SchemaValidityTests extends Suite("tel-schema-validity", m"Stratiform sch
         val schema = Tels.Validation.validate(schemaOf(coded(pattern(t"[A-Z]{2}-[0-9]{4}"),
             t"layer regional\n  scalar Code\n    encoding hex\n")))
 
-        schema.scalars.stdlib.find(_.name == t"Code").get.patterns.stdlib.map(_.s).toList
+        schema.scalars.seek(_.name == t"Code").let(_.patterns.to[List].map(_.s)).or(List())
       . assert(_ == List("[A-Z]{2}-[0-9]{4}"))
 
       // An inherited empty list denotes Σ*, so a layer's first patterns are
@@ -407,7 +407,7 @@ object SchemaValidityTests extends Suite("tel-schema-validity", m"Stratiform sch
         val doc = coded(pattern(t"[A-Z]{2}-[0-9]{4}"), t"").read[Tel]
         val element = Bintel.decode(doc.bintel(Tels.Axiom.tels), Tels.Axiom.tels)
         val composed = Tels.Validation.validate(element.as[Tels])
-        composed.scalars.stdlib.find(_.name == t"Code").get.patterns.stdlib.map(_.s).toList
+        composed.scalars.seek(_.name == t"Code").let(_.patterns.to[List].map(_.s)).or(List())
       . assert(_ == List("[A-Z]{2}-[0-9]{4}"))
 
     suite(m"Pattern value checks (§21.8)"):

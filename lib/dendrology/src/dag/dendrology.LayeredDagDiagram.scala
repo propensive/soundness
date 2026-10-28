@@ -188,7 +188,7 @@ object LayeredDagDiagram:
 case class LayeredDagDiagram[node](rows: List[(List[DagTile], Map[Int, node])]):
   val size: Int = rows.length
 
-  def render[line](glyph: node => line)(using style: LaneDagStyle[line]): List[line] =
+  def render[line](glyph: node => line)(using style: LaneDagStyle[line]): proscenium.List[line] =
     val maxCol = rows.iterator.map(_(0).length).maxOption.getOrElse(0)
     val widths = scala.Array.fill(maxCol)(2)
 
@@ -199,9 +199,11 @@ case class LayeredDagDiagram[node](rows: List[(List[DagTile], Map[Int, node])]):
 
     val widthsList = widths.iterator.to(List)
 
-    rows.map: (tiles, nodesAt) =>
+    val rendered = rows.map: (tiles, nodesAt) =>
       val glyphs: Map[Int, line] = nodesAt.map: (col, n) => col -> glyph(n)
       style.serialize(tiles.to(proscenium.List), glyphs, widthsList.to(proscenium.List), Unset)
+
+    rendered.to(proscenium.List)
 
   def tiles: List[List[DagTile]] = rows.map(_(0))
   def nodesAt: List[Map[Int, node]] = rows.map(_(1))

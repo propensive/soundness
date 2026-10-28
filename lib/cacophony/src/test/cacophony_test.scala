@@ -140,7 +140,7 @@ object Tests extends Suite("audio", m"Cacophony Tests"):
         outlet.open[Pcm](): out ?=>
           out.play(??? : Audio)
       . map(_.message)
-    . assert(_.nonEmpty)
+    . assert(!_.nil)
 
     test(m"Playing on an outlet with the Write grant compiles"):
       demilitarize:

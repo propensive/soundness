@@ -32,9 +32,12 @@
                                                                                                   */
 package cardinality
 
+import denominative.*
 import fulminate.*
 import larceny.*
 import probably.*
+import rudiments.*
+import vacuous.*
 
 object Tests extends Suite("ranges", m"Cardinality tests"):
   def run(): Unit =
@@ -43,12 +46,12 @@ object Tests extends Suite("ranges", m"Cardinality tests"):
       test(m"Value is less than lower bound"):
         demilitarize:
           val x: -1.0 ~ 1.0 = -1.01
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Value is greater than upper bound"):
         demilitarize:
           val x: -1.0 ~ 1.0 = 1.01
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Doubling a number doubles its range"):
         demilitarize:
@@ -79,7 +82,7 @@ object Tests extends Suite("ranges", m"Cardinality tests"):
           val x: 0.0 ~ 1.0 = 0.5
           val y: 0.0 ~ 2.0 = 1.0
           val z: 0.0 ~ 2.0 = x + y
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Adding a singleton shifts both bounds"):
         demilitarize:
@@ -91,7 +94,7 @@ object Tests extends Suite("ranges", m"Cardinality tests"):
         demilitarize:
           val x: 0.0 ~ 1.0 = 0.5
           val y: 0.0 ~ 1.0 = x + 1.0
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
     suite(m"Subtraction"):
       test(m"Subtracting a range widens downwards"):
@@ -106,7 +109,7 @@ object Tests extends Suite("ranges", m"Cardinality tests"):
           val x: 0.0 ~ 1.0 = 0.5
           val y: 0.0 ~ 2.0 = 1.0
           val z: 0.0 ~ 1.0 = x - y
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Subtracting a singleton shifts both bounds down"):
         demilitarize:
@@ -132,14 +135,14 @@ object Tests extends Suite("ranges", m"Cardinality tests"):
           val x: -2.0 ~ 1.0 = 0.0
           val y: -3.0 ~ 4.0 = 0.0
           val z: -8.0 ~ 4.0 = x*y
-      . assert(_.exists(_.message.toString.contains("(-8.0d : scala.Double) ~ (6.0d : scala.Double)")))
+      . assert(_.seek(_.message.toString.contains("(-8.0d : scala.Double) ~ (6.0d : scala.Double)")).present)
 
       test(m"The product does not fit a range truncated at the naive lower bound"):
         demilitarize:
           val x: -2.0 ~ 1.0 = 0.0
           val y: -3.0 ~ 4.0 = 0.0
           val z: -6.0 ~ 6.0 = x*y
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Multiplying by a negative singleton swaps the bounds"):
         demilitarize:
@@ -170,9 +173,8 @@ object Tests extends Suite("ranges", m"Cardinality tests"):
           val y: -1.0 ~ 1.0 = 0.5
           val z: 0.0 ~ 100.0 = x/y
       . assert:
-          _.exists:
-            _.message.toString.contains
-              ("(-Infinityd : scala.Double) ~ (Infinityd : scala.Double)")
+          _.seek(_.message.toString.contains("(-Infinityd : scala.Double) ~ (Infinityd : scala.Double)"))
+          . present
 
     suite(m"Runtime behaviour"):
       test(m"The underlying value survives the opaque type"):

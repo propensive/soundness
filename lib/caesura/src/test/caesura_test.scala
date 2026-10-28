@@ -46,16 +46,16 @@ object Tests extends Suite("dsv", m"Caesura tests"):
       import dsvFormats.csvFormat
 
       test(m"rows of a stream as an iterator"):
-        t"a,b\nc,d\ne,f".source[Text].rows.to(List)
+        List.from(t"a,b\nc,d\ne,f".source[Text].rows)
       . assert(_ == List(Dsv(t"a", t"b"), Dsv(t"c", t"d"), Dsv(t"e", t"f")))
 
       test(m"quoted newlines survive one-char chunks"):
-        t"\"1\n2\",x\ny,z".s.grouped(1).map(_.tt).stream.rows.to(List)
+        List.from(t"\"1\n2\",x\ny,z".s.grouped(1).map(_.tt).stream.rows)
       . assert(_ == List(Dsv(t"1\n2", t"x"), Dsv(t"y", t"z")))
 
       test(m"header rows carry column names"):
         import dsvFormats.csvWithHeaderFormat
-        t"name,age\nalpha,1\nbeta,2".source[Text].rows.map(_[Text](t"name").or(t"?")).to(List)
+        List.from(t"name,age\nalpha,1\nbeta,2".source[Text].rows.map(_[Text](t"name").or(t"?")))
       . assert(_ == List(t"alpha", t"beta"))
 
     suite(m"Direct parsing"):
@@ -84,7 +84,7 @@ object Tests extends Suite("dsv", m"Caesura tests"):
       . assert(_ == List(DirectFoo(t"a", t"b"), DirectFoo(t"c", t"d"), DirectFoo(t"e", t"f")))
 
       test(m"typed rows stream one value per row"):
-        t"x,1\ny,2".source[Text].rowsOf[DirectStat].map(_.count).to(List)
+        List.from(t"x,1\ny,2".source[Text].rowsOf[DirectStat].map(_.count))
       . assert(_ == List(1, 2))
 
       test(m"direct read locates fields by heading"):

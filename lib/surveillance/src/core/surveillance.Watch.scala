@@ -48,11 +48,15 @@ import vacuous.*
 import zephyrine.*
 
 object Watch:
-  def apply[path: Abstractable across Paths to Text](paths: Iterable[path])(using watcher: Watcher)
+  // Any traversable collection of paths — a native `List(…)` literal or a stdlib `Iterable`.
+  def apply[paths, path](paths: paths)
+    ( using traversable:  paths is murmuration.Traversable by path,
+            abstractable: path is Abstractable across Paths to Text,
+            watcher:      Watcher )
   :   Watch^{watcher} raises Watch.Error =
 
     val pathGroups =
-      paths.map(_.generic.s).map(jnf.Paths.get(_).nn).map: javaPath =>
+      traversable.traverse(paths).to(Iterable).map(_.generic.s).map(jnf.Paths.get(_).nn).map: javaPath =>
         if javaPath.toFile.nn.isDirectory then (javaPath, (_: Text) => true)
         else
           val parent = Optional(javaPath.getParent).or(jnf.Paths.get("").nn)

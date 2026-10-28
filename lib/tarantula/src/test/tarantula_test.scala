@@ -431,7 +431,7 @@ object Tests extends Suite("webdriver", m"Tarantula tests"):
             val onPage: List[WebDriver.Element] = browser \ t"d"
             val speed = 1.0*Metre/Second
         . map(_.message)
-      . assert(_.isEmpty)
+      . assert(_.nil)
 
     suite(m"Input actions"):
       def performed(steps: List[WebDriver.Session.Action]): Text =

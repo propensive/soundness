@@ -35,22 +35,30 @@ package aviation
 import scala.collection.immutable.SortedMap
 import scala.math.Ordering
 
+import prepositional.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
 
 object Holidays:
-  def apply(holidays: Iterable[Holiday]): Holidays = new Holidays:
-    // A `SortedMap` orders its keys with a stdlib `Ordering`, so the `Comparable` for `Date` is
-    // adapted here rather than being one.
-    private given ordering: Ordering[Date] = summon[Date is Comparable].ordering
+  // Any traversable collection of holidays — a native `List(…)` literal or a stdlib `Iterable`.
+  def apply[holidays](holidays: holidays)
+    ( using traversable: holidays is murmuration.Traversable by Holiday )
+  :   Holidays =
 
-    private val store: SortedMap[Date, Holiday] = holidays.bi.map(_.date -> _).to(SortedMap)
+    new Holidays:
+      // A `SortedMap` orders its keys with a stdlib `Ordering`, so the `Comparable` for `Date` is
+      // adapted here rather than being one.
+      private given ordering: Ordering[Date] = summon[Date is Comparable].ordering
 
-    def holiday(date: Date): Optional[Holiday] = if store.defines(date) then store(date) else Unset
+      private val store: SortedMap[Date, Holiday] =
+        traversable.traverse(holidays).map { holiday => holiday.date -> holiday }.to(SortedMap)
 
-    def between(start: Date, end: Date): List[Holiday] =
-      store.iteratorFrom(start).map(_(1)).takeWhile(_.date < end).to(List)
+      def holiday(date: Date): Optional[Holiday] =
+        if store.defines(date) then store(date) else Unset
+
+      def between(start: Date, end: Date): List[Holiday] =
+        store.iteratorFrom(start).map(_(1)).takeWhile(_.date < end).to(List)
 
 trait Holidays:
   def holiday(date: Date): Optional[Holiday]

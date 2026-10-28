@@ -42,7 +42,10 @@ import scala.collection.immutable as sci
 // Pattern support: `case head :: tail =>` matches via the name-based extractor below;
 // `case Nil =>` matches by equality against the `Nil` value (not an extractor object), so
 // existing syntax compiles unchanged; `case List(a, b)` matches via `unapplySeq`.
-object List:
+// The companion is `Pure`: the umbrella forwards it as a `val`, and under capture checking a
+// value of a non-pure object type is a tracked capability, so `xs.to(List)` — which passes the
+// companion as a factory — would otherwise capture the forwarder and freshen its result.
+object List extends scala.caps.Pure:
   // `of` is a plain method, not `inline`: inline expansion of the cast inside capturing
   // lambdas crashes the capture checker's boxer (boxDeeply assertion).
   private[proscenium] def of[element](list: sci.List[element]): List[element] =
@@ -99,6 +102,15 @@ object List:
     list.asInstanceOf[List[element] & Populated]
 
   def empty[element]: List[element] = of(sci.List.empty[element])
+
+  // A branded list (`& Populated`, as the literal constructors mint) compares with a plain one:
+  // `CanEqual` is sought in the companions of the compared types, and the brand, a refinement of
+  // `Any`, contributes no companion, so the equalities live here rather than at package level.
+  given populatedEquality: [left, right] => CanEqual[List[left] & Populated, List[right]] =
+    CanEqual.derived
+
+  given populatedEqualityReversed: [left, right] => CanEqual[List[left], List[right] & Populated] =
+    CanEqual.derived
 
   def from[element](elements: IterableOnce[element]^): List[element] =
     of(sci.List.from(elements))

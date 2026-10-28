@@ -198,14 +198,14 @@ lib/espionage/src/test/espionage_test.scala	0	4	0	0	0	0	0	0	2	0	1	0	0	1	1	0
 lib/ethereal/src/core/ethereal.Launcher.scala	0	0	0	0	1	2	0	0	0	0	3	0	0	0	0	0
 lib/ethereal/src/core/ethereal.Session.scala	3	0	6	0	3	3	0	0	0	0	0	0	0	0	1	0
 lib/ethereal/src/core/ethereal_core.scala	3	8	0	0	1	2	0	0	1	0	1	0	0	0	1	0
-lib/ethereal/src/test/ethereal_test.scala	0	0	0	0	1	0	0	0	0	0	7	0	2	0	0	0
+lib/ethereal/src/test/ethereal_test.scala	0	0	0	0	1	0	0	0	0	0	5	0	2	0	0	0
 lib/eucalyptus/src/core/eucalyptus.Logger.scala	2	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/eucalyptus/src/syslog/eucalyptus.Syslog.scala	0	0	0	0	0	0	0	0	2	2	0	0	0	0	0	0
 lib/eucalyptus/src/test/eucalyptus_test.scala	6	0	0	0	0	0	0	0	2	2	0	0	0	0	0	0
 lib/exegesis/src/core/exegesis.Lsp.scala	15	0	78	0	0	1	0	0	0	0	1	0	0	1	1	0
 lib/exegesis/src/core/exegesis.LspSession.scala	1	0	8	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/exegesis/src/core/exegesis.LspSessional.scala	1	0	0	0	0	0	0	0	0	0	1	0	0	1	0	0
-lib/exegesis/src/test/exegesis_test.scala	0	0	0	0	0	0	0	0	2	0	11	2	0	3	1	0
+lib/exegesis/src/test/exegesis_test.scala	0	0	0	0	0	0	0	0	2	0	7	2	0	3	1	0
 lib/exoskeleton/src/args/exoskeleton.Cli.scala	0	0	2	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/exoskeleton/src/args/exoskeleton.internal.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/exoskeleton/src/args/exoskeleton_args.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0
@@ -226,7 +226,7 @@ lib/facsimile/src/core/facsimile.PdfWriter.scala	0	6	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/facsimile/src/core/facsimile.TextExtractor.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
 lib/facsimile/src/core/facsimile_editing.scala	0	5	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/facsimile/src/file/facsimile.PdfFile.scala	0	2	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-lib/facsimile/src/test/facsimile_test.scala	0	24	0	0	18	17	0	0	0	0	7	2	0	0	1	0
+lib/facsimile/src/test/facsimile_test.scala	0	24	0	0	18	17	0	0	0	0	5	2	0	0	1	0
 lib/frontier/src/core/frontier.internal.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/fulminate/src/core/fulminate.UncheckedError.scala	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/fulminate/src/test/fulminate_test.scala	0	0	0	0	0	0	0	0	0	0	8	8	0	0	0	0
@@ -369,7 +369,7 @@ lib/locomotion/src/core/locomotion.ProtobufReader.scala	0	0	0	0	0	0	0	0	2	2	0	0	
 lib/locomotion/src/core/locomotion.ProtobufSizes.scala	0	0	0	0	0	0	0	0	1	5	0	0	0	0	0	0
 lib/locomotion/src/core/locomotion.inlining.scala	2	0	0	0	0	0	0	0	10	0	0	0	0	0	2	0
 lib/locomotion/src/staged/locomotion.InlinableStager.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
-lib/locomotion/src/test/locomotion_test.scala	0	5	0	0	0	0	0	0	0	0	10	0	0	0	0	0
+lib/locomotion/src/test/locomotion_test.scala	0	5	0	0	0	0	0	0	0	0	7	0	0	0	0	0
 lib/mandible/src/core/mandible.Bytecode.scala	0	1	0	0	0	0	0	0	0	0	1	0	0	0	1	0
 lib/mandible/src/core/mandible.ClasspathIndex.scala	0	0	0	0	1	0	0	0	0	0	1	0	1	0	0	0
 lib/mandible/src/core/mandible_core.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
@@ -493,6 +493,7 @@ lib/quantitative/src/core/quantitative.internal.scala	0	0	0	0	0	0	0	3	0	0	0	0	0	
 lib/quantitative/src/core/quantitative.protointernal.scala	0	0	0	0	0	0	0	0	0	0	1	0	1	0	1	0
 lib/quantitative/src/test/quantitative_test.scala	0	0	0	0	0	0	0	0	0	0	7	0	0	0	0	0
 lib/quantitative/src/units/quantitative.Typometry.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0
+lib/querencia/src/test/querencia_test.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
 lib/revolution/src/core/revolution.Manifest.scala	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
 lib/revolution/src/semver/revolution.Semver.scala	0	0	0	0	0	0	0	0	0	0	3	0	0	0	0	0
 lib/revolution/src/semver/revolution.internal.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
@@ -571,7 +572,6 @@ lib/stratiform/src/test/stratiform.LineageTests.scala	0	0	0	0	1	1	0	0	0	0	1	0	0	
 lib/stratiform/src/test/stratiform.PositionalTests.scala	0	0	0	0	0	0	0	0	0	0	11	11	0	0	0	0
 lib/stratiform/src/test/stratiform.ResolutionTests.scala	0	0	2	0	1	0	0	0	0	0	8	0	3	0	0	0
 lib/stratiform/src/test/stratiform.SchemaCorpusTests.scala	0	0	0	0	0	0	0	0	0	0	4	0	0	0	0	0
-lib/stratiform/src/test/stratiform.SchemaValidityTests.scala	0	0	0	0	0	0	0	0	0	0	10	0	0	0	0	0
 lib/stratiform/src/test/stratiform.ServingTests.scala	0	0	0	0	1	1	0	0	0	0	2	2	0	0	0	0
 lib/stratiform/src/test/stratiform.SubtypingTests.scala	0	0	0	0	1	0	0	0	0	0	2	2	0	0	0	0
 lib/stratiform/src/test/stratiform.TelCheckTree.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
@@ -614,7 +614,7 @@ lib/telekinesis/src/http2/telekinesis.Huffman.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	
 lib/telekinesis/src/http2/telekinesis.PseudoHeaders.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/telekinesis/src/http2/telekinesis.Sessions.scala	1	0	0	0	0	0	0	0	1	2	0	0	0	0	0	0
 lib/telekinesis/src/http2/telekinesis_http2.scala	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-lib/telekinesis/src/test/telekinesis.Http2Tests.scala	0	5	0	0	1	0	0	0	5	0	3	0	0	0	0	0
+lib/telekinesis/src/test/telekinesis.Http2Tests.scala	0	5	0	0	1	0	0	0	5	0	2	0	0	0	0	0
 lib/telekinesis/src/test/telekinesis_test.scala	0	6	1	0	1	1	0	2	0	0	6	0	0	4	0	0
 lib/telekinesis/src/wasi/telekinesis_wasi.scala	0	0	0	0	2	0	0	0	0	0	2	0	0	0	0	0
 lib/tessellate/src/core/tessellate.Alignment.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
@@ -634,7 +634,7 @@ lib/turbulence/src/core/turbulence.Streamable.scala	3	0	0	0	0	0	0	0	5	4	0	0	0	0	
 lib/turbulence/src/core/turbulence.Writable.scala	0	0	0	0	0	0	0	0	6	6	0	0	0	0	0	0
 lib/turbulence/src/core/turbulence_core.scala	0	0	4	0	0	0	0	0	1	3	0	0	0	0	0	0
 lib/turbulence/src/stdio/turbulence.Stdio.scala	0	0	0	0	0	2	0	0	0	0	0	0	0	0	0	0
-lib/turbulence/src/test/turbulence_test.scala	5	7	1	0	2	1	0	0	11	5	9	0	2	0	2	0
+lib/turbulence/src/test/turbulence_test.scala	5	7	1	0	2	1	0	0	11	5	9	0	1	0	2	0
 lib/turbulence/src/wasi/turbulence_wasi.scala	0	0	0	0	2	0	0	0	0	0	0	0	0	0	0	0
 lib/ultimatum/src/core/ultimatum.FlowExtent.scala	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/ultimatum/src/core/ultimatum.Focus.scala	0	0	2	0	0	0	0	0	0	0	0	0	0	0	0	0
@@ -687,7 +687,7 @@ lib/xenophile/src/native/xenophile.PanamaInvoke.scala	0	0	0	0	0	0	0	0	1	0	1	0	0	
 lib/xenophile/src/nativeruntime/xenophile.ForeignBuffer.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
 lib/xenophile/src/nativeruntime/xenophile.ForeignLibrary.scala	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/xenophile/src/scalanative/xenophile.NativeInvoke.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	2	0
-lib/xenophile/src/test/xenophile_test.scala	0	1	0	0	0	0	0	0	0	0	33	8	0	0	0	0
+lib/xenophile/src/test/xenophile_test.scala	0	1	0	0	0	0	0	0	0	0	39	8	0	0	0	0
 lib/xenophile/src/typescript/xenophile.Typescript.scala	0	0	0	0	0	0	0	0	0	0	4	0	1	0	0	0
 lib/xenophile/src/wasm/xenophile.WasmInvoke.scala	0	0	0	0	0	0	0	0	0	0	5	1	0	1	2	0
 lib/xenophile/src/webidl/xenophile.WebIdl.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0
@@ -708,7 +708,7 @@ lib/xylophone/src/core/xylophone_core.scala	0	0	0	0	0	0	0	0	0	0	2	0	0	0	1	0
 lib/xylophone/src/staged/xylophone.InlinableStager.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/xylophone/src/test/xylophone.DirectParsingTests.scala	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
 lib/xylophone/src/test/xylophone.PositionTests.scala	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
-lib/xylophone/src/test/xylophone.XsdTests.scala	0	0	0	0	0	0	0	0	0	0	10	1	0	0	0	0
+lib/xylophone/src/test/xylophone.XsdTests.scala	0	0	0	0	0	0	0	0	0	0	3	1	0	0	0	0
 lib/xylophone/src/test/xylophone_test.scala	0	0	0	0	5	0	0	0	0	0	0	0	0	0	0	0
 lib/yossarian/src/core/yossarian.Pty.scala	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/yossarian/src/core/yossarian.internal.scala	0	0	3	0	1	0	0	0	0	3	0	0	0	0	0	0

@@ -38,6 +38,7 @@ import java.io as ji
 import java.util.concurrent.atomic.AtomicLong
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suite counts small record lists
 
 import codepages.utf8Codepage, charsets.utf8Charset, textSanitizers.strictSanitizer
 import threads.platformThreads
@@ -153,19 +154,19 @@ object Tests extends Suite("streams", m"Turbulence tests"):
 
     object Ref:
       given textSource: Ref is Streamable by Text over Credit =
-        ref => Stream(Chain(t"abc", t"def").iterator)
+        ref => Stream(Chain.iterator(Chain(t"abc", t"def")))
       given dataSource: Ref is Streamable by Data over Credit =
-        ref => Stream(Chain(t"abc".in[Data], t"def".in[Data]).iterator)
+        ref => Stream(Chain.iterator(Chain(t"abc".in[Data], t"def".in[Data])))
 
     case class Ref()
 
     object Ref2:
-      given Ref2 is Streamable by Text over Credit = ref => Stream(Chain(t"abc", t"def").iterator)
+      given Ref2 is Streamable by Text over Credit = ref => Stream(Chain.iterator(Chain(t"abc", t"def")))
 
     case class Ref2()
 
     object Ref3:
-      given Ref3 is Streamable by Data over Credit = ref => Stream(Chain(t"abc".in[Data], t"def".in[Data]).iterator)
+      given Ref3 is Streamable by Data over Credit = ref => Stream(Chain.iterator(Chain(t"abc".in[Data], t"def".in[Data])))
 
     case class Ref3()
 
@@ -463,7 +464,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
         relay.put(t"two")
         relay.put(t"three")
         relay.stop()
-        relay.stream.records.to(List)
+        List.from(relay.stream.records)
       . assert(_ == List(t"one", t"two", t"three"))
 
       test(m"records already queued batch into one window"):
@@ -483,7 +484,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
       test(m"an immediately-stopped relay yields no records"):
         val relay = Relay[Text]()
         relay.stop()
-        relay.stream.records.to(List)
+        List.from(relay.stream.records)
       . assert(_ == List())
 
       test(m"records after stop are not delivered"):
@@ -491,7 +492,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
         relay.put(t"before")
         relay.stop()
         relay.put(t"after")
-        relay.stream.records.to(List)
+        List.from(relay.stream.records)
       . assert(_ == List(t"before"))
 
       test(m"records queued before draining form one batch"):
@@ -544,7 +545,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
               async:
                 for value <- 1 to 25 do relay.put(t"${index*100 + value}")
 
-          val reader = async(relay.stream.records.to(Set))
+          val reader = async(Set.from(relay.stream.records))
           producers.each(_.await())
           relay.stop()
           unsafely(reader.await())
@@ -559,7 +560,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
         val relay = Relay[Text]()
         for _ <- 1 to 100000 do relay.put(t"x")
         relay.stop()
-        relay.stream.records.to(List).length
+        List.from(relay.stream.records).size
       . assert(_ == 100000)
 
       test(m"per-producer order is preserved through the relay"):
@@ -569,7 +570,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
             for value <- 1 to 100 do relay.put(t"$value")
             relay.stop()
 
-          unsafely(async(relay.stream.records.to(List)).await())
+          unsafely(async(List.from(relay.stream.records)).await())
       . assert(_ == (1 to 100).to(List).map { value => t"$value" })
 
     suite(m"Line splitting"):
@@ -586,8 +587,8 @@ object Tests extends Suite("streams", m"Turbulence tests"):
       // every case.
       def splitLines(input: Text, chunk: Int)(using LineSeparation): List[Text] =
         if chunk == -1 then input.delineate.to[List]
-        else if chunk == 0 then input.stream.delineate.records.to(List)
-        else input.s.grouped(chunk).map(_.tt).stream.delineate.records.to(List)
+        else if chunk == 0 then List.from(input.stream.delineate.records)
+        else List.from(input.s.grouped(chunk).map(_.tt).stream.delineate.records)
 
       // The same input through the byte-level duct (`Stream[Data].delineate`
       // under a UTF-8 decoder, which is ASCII-transparent, so the separators are
@@ -609,7 +610,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
             pieces += java.util.Arrays.copyOfRange(bytes, index, index + size).nn.asInstanceOf[Data]
             index += size
 
-        pieces.iterator.stream.delineate.records.to(List)
+        List.from(pieces.iterator.stream.delineate.records)
 
       def check(policy: Text, cases: List[(Text, List[Text])])(using LineSeparation): Unit =
         for fragment <- List(-1, 0, 1, 3) do
@@ -699,13 +700,13 @@ object Tests extends Suite("streams", m"Turbulence tests"):
         import lineSeparation.adaptiveLinefeedLineSeparation
 
         test(m"lines splits a byte stream through the character decoder"):
-          t"first\nsecond\r\nthird".in[Data].stream.delineate.records.to(List)
+          List.from(t"first\nsecond\r\nthird".in[Data].stream.delineate.records)
         . assert(_ == List(t"first", t"second", t"third"))
 
         test(m"a line spanning many windows is reassembled"):
           val long = Text(String(scala.Array.fill(10000)('x')))
           val input = long + t"\ny"
-          input.s.grouped(7).map(_.tt).stream.delineate.records.to(List)
+          List.from(input.s.grouped(7).map(_.tt).stream.delineate.records)
         . assert(_ == List(Text(String(scala.Array.fill(10000)('x'))), t"y"))
 
         // Characters of two, three and four bytes, fragmented at every byte
@@ -731,7 +732,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
           . assert(_ == true)
 
         test(m"lines of an empty byte stream is empty"):
-          Iterator.empty[Data].stream.delineate.records.to(List)
+          List.from(Iterator.empty[Data].stream.delineate.records)
         . assert(_ == List())
 
     suite(m"Source and Sink tests"):
@@ -825,8 +826,8 @@ object Tests extends Suite("streams", m"Turbulence tests"):
 
           val merged = Confluence(endpoints.map(_.asInstanceOf[Stream[Data] over Credit])*)
           val gathered = Gather2().ingest(merged)
-          gathered.data.stdlib.to(List).sorted
-      . assert(_ == (1 to 4).flatMap { index => List.fill(1000)(index.toByte) }.sorted.to(List))
+          gathered.data.stdlib.sorted
+      . assert(_ == (1 to 4).flatMap { index => scala.List.fill(1000)(index.toByte) }.sorted)
 
       test(m"manifold delivers the whole stream to every subscriber"):
         supervise:
@@ -844,7 +845,9 @@ object Tests extends Suite("streams", m"Turbulence tests"):
                 val gathered = gather.ingest(stream())
                 gathered.data.to[List]
 
-          results.map { task => task.await() }.to(List)
+          // Awaited through `sequence`: a per-task `await` inside `map` captures the monitor in
+          // the mapped list, which the assertion outside `supervise` may not see.
+          List.from(results).sequence.await()
       . assert(_ == List.fill(3)(payload.to[List]))
 
       val mixed: Data =
@@ -871,7 +874,8 @@ object Tests extends Suite("streams", m"Turbulence tests"):
                 val gathered = gather.ingest(stream())
                 gathered.data.to[List]
 
-          results.map { task => task.await() }.to(List)
+          // Awaited through `sequence`, as above.
+          List.from(results).sequence.await()
       . assert(_ == List.fill(3)(mixed.to[List]))
 
       test(m"confluence snapshots transient sources into the merge"):

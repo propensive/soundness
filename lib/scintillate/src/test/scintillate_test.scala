@@ -35,6 +35,7 @@ package scintillate
 import scala.caps
 
 import soundness.*
+import soundness.sortingAlgorithms.timsort
 
 import logging.silentLogging
 import strategies.throwUnsafely
@@ -460,7 +461,7 @@ object Tests extends Suite("httpd", m"Scintillate tests"):
                 socket.close()
                 response.cut(t"HTTP/1.1 200 OK").size - 1
 
-          val total = tasks.map(_.await()).foldLeft(0)(_ + _)
+          val total = tasks.map(_.await()).fold(0)(_ + _)
           val millis = (java.lang.System.nanoTime() - start)/1000000.0
           server.cancel()
 
@@ -641,7 +642,7 @@ object Tests extends Suite("httpd", m"Scintillate tests"):
           // counter yields three distinct values.
           val results = List(fetch(), fetch(), fetch())
           server.cancel()
-          results.sorted
+          results.sort
 
       . assert(_ == List(1, 2, 3))
 
@@ -723,7 +724,7 @@ object Tests extends Suite("httpd", m"Scintillate tests"):
       . assert(_.contains(t"431"))
 
       test(m"A streaming response to HTTP/1.0 is close-delimited, not chunked"):
-        val body = Http.Body.Flowing(() => Stream(Chain(t"Hello".in[Data], t"World".in[Data]).iterator))
+        val body = Http.Body.Flowing(() => Stream(Chain.iterator(Chain(t"Hello".in[Data], t"World".in[Data]))))
         inProcess(Http.Response(Http.Ok)(body), t"GET / HTTP/1.0\r\nHost: x\r\n\r\n")
 
       . assert: response =>

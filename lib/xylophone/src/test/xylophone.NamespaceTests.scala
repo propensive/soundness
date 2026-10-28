@@ -185,7 +185,7 @@ object NamespaceTests extends Suite("xml-namespaces", m"Xylophone namespace test
       test(m"An unbound prefix in a literal does not compile"):
         demilitarize:
           x"<zz:a/>"
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Lenient namespacing lets an unbound prefix through"):
         import namespaceOptions.lenientNamespaces

@@ -1018,15 +1018,15 @@ object Tests extends Suite("yaml", m"Ypsiloid Tests"):
         demilitarize:
           dynamically[Json]:
             yaml.name
-        . nonEmpty
-      . assert(identity)
+        . nil
+      . assert(_ == false)
 
       test(m"dynamically[Yaml] does not permit dynamic access to Json"):
         demilitarize:
           dynamically[Yaml]:
             json.name
-        . head.message
-      . assert(_.contains("dynamically[Json]"))
+        . head.let(_.message)
+      . assert(_.lay(false)(_.contains("dynamically[Json]")))
 
     suite(m"Yaml.make construction"):
       test(m"Yaml.make with one field"):

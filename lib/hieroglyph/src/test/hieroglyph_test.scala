@@ -235,7 +235,7 @@ object Tests extends Suite("unicode", m"Hieroglyph tests"):
 
       test(m"Check that a non-encoding encoding has no encoder method"):
         demilitarize(enc"ISO-2022-CN".encoder).map(_.message)
-      . assert(_.length == 1)
+      . assert(_.size == 1)
 
       test(m"Encoding has an encoder method"):
         demilitarize(enc"ISO-8859-1".encoder).map(_.message)
@@ -315,7 +315,7 @@ object Tests extends Suite("unicode", m"Hieroglyph tests"):
 
         var failures: List[(Int, String)] = Nil
 
-        lines.zipWithIndex.each: (rawLine, idx) =>
+        lines.indexed.each: (rawLine, idx) =>
           val withoutComment =
             if rawLine.indexOf('#') >= 0 then rawLine.substring(0, rawLine.indexOf('#')).nn
             else rawLine
@@ -336,7 +336,7 @@ object Tests extends Suite("unicode", m"Hieroglyph tests"):
             val input = sb.toString.nn.tt
             val actual = GraphemeBreak.boundaries(input).to[List]
 
-            if actual != expected.to(List) then failures = (idx + 1, rawLine) :: failures
+            if actual != expected.to(List) then failures = (idx.n0 + 1, rawLine) :: failures
 
         failures.size
 

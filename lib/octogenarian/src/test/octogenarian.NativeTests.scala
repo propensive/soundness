@@ -307,7 +307,7 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
         hashes.each { hash => sh"git -C $dir notes add -m note ${hash.text}".exec[Exit]() }
         dir.open[Git.Repo](): repo ?=>
           val keys = repo.notes().value.keys
-          hashes.forall(keys.has(_))
+          hashes.all(keys.has(_))
       .assert(_ == true)
 
     suite(m"Configuration"):

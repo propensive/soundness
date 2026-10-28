@@ -47,7 +47,7 @@ object CaptureTests extends Suite("llm-capture", m"Confinement tests"):
           var stash: () => Llm.Reply = () => Scripted.reply(t"")
           stash = () => session.ask(t"late")
           ()
-    . assert(_.nonEmpty)
+    . assert(!_.nil)
 
     test(m"a streamed response cannot be stashed in an outer variable"):
       demilitarize:
@@ -56,16 +56,16 @@ object CaptureTests extends Suite("llm-capture", m"Confinement tests"):
           val response = session.stream(t"go")
           stash = () => response.reply().unit
           ()
-    . assert(_.nonEmpty)
+    . assert(!_.nil)
 
     test(m"a pure reply may leave the session block"):
       demilitarize:
         def attempt(using session: Llm.Session^): Llm.Reply =
           session.ask(t"fine")
-    . assert(_.isEmpty)
+    . assert(_.nil)
 
     test(m"the history snapshot may leave the session block"):
       demilitarize:
         def attempt(using session: Llm.Session^): List[Llm.Message] =
           session.history
-    . assert(_.isEmpty)
+    . assert(_.nil)

@@ -42,7 +42,7 @@ import Http2.{Client, Connection, Endpoint, ErrorCode, Flags, Frame, FrameType, 
 object Http2Tests extends Suite("http2", m"Telekinesis HTTP/2 Tests"):
   def run(): Unit =
     def bytes(hex: Text): Data =
-      Array.from(hex.s.grouped(2).map(Integer.parseInt(_, 16).toByte).to(List))
+      Array.from(hex.s.grouped(2).map(Integer.parseInt(_, 16).toByte))
 
     def hex(data: Data): Text =
       data.to[List].map(b => String.format("%02x", java.lang.Integer.valueOf(b & 0xff)).nn).stdlib.mkString.tt
@@ -154,7 +154,7 @@ object Http2Tests extends Suite("http2", m"Telekinesis HTTP/2 Tests"):
 
       test(m"a request's pseudo-headers + headers survive a round-trip"):
         val encoded = Hpack().encode(headers)
-        Hpack().decode(encoded).stdlib.map(e => (e.name, e.value))
+        Hpack().decode(encoded).map(e => (e.name, e.value))
       . assert(_ == headers.map(e => (e.name, e.value)))
 
     suite(m"Frame codec — golden bytes"):

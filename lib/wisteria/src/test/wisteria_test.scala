@@ -499,35 +499,35 @@ object Tests extends Suite("derivation", m"Wisteria tests"):
       test(m"Show fails on a non-choice ADT"):
         demilitarize:
           Show.derived[Adt]
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Producer fails on a non-choice ADT"):
         demilitarize:
           Producer.derived[Adt]
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Producer fails on a regular product"):
         demilitarize:
           Producer.derived[ParserTestCaseClass]
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Derivation fails when no Mirror is available"):
         demilitarize:
           trait NotADataType
           Eq.derived[NotADataType]
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Derivation fails when a field's typeclass is missing"):
         demilitarize:
           case class HasUnknown(unknown: java.io.File)
           Eq.derived[HasUnknown]
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Derivation fails on an unsupported parameter type"):
         demilitarize:
           case class Bag(items: List[java.io.File])
           Readable.derived[Bag]
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
     suite(m"Specific override detection"):
       val nameCodec: Text is Codec in Json = new Codec:

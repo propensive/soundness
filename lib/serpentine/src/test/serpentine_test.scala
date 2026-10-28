@@ -33,6 +33,7 @@
 package serpentine
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suite counts small error lists
 
 object Tests extends Suite("paths", m"internal Benchmarks"):
   def run(): Unit =
@@ -57,7 +58,7 @@ object Tests extends Suite("paths", m"internal Benchmarks"):
           val path: Path of ("bar", "foo") = % / "foo" / "baz"
         .map(_.message)
 
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Specificity of path is not obligatory"):
         val path: Path = % / "foo" / "baz"
@@ -105,7 +106,7 @@ object Tests extends Suite("paths", m"internal Benchmarks"):
 
         . map(_.message)
 
-      . assert(_.length == 1)
+      . assert(_.size == 1)
 
       test(m"Unknown label permitted on Linux with Tactic"):
         val dir: Text = t"dir"
@@ -131,14 +132,14 @@ object Tests extends Suite("paths", m"internal Benchmarks"):
               val path = (% / dir / "baz")
         .map(_.message)
 
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Forbidden characters are forbidden"):
         demilitarize:
           val path: Path on Linux = (% / "fo/o" / "baz").on[Linux]
         . map(_.message)
 
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Autoconvert known `Path` to `Path on Linux`"):
         def receive(path: into[Path on Linux]): Unit = ()
@@ -150,7 +151,7 @@ object Tests extends Suite("paths", m"internal Benchmarks"):
         demilitarize:
           (Drive('D') / "Foo ")
 
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Can construct invalid path on platformless path"):
         val path = % / "./."
@@ -161,25 +162,25 @@ object Tests extends Suite("paths", m"internal Benchmarks"):
         demilitarize:
           val path = % / "foo"
           summon[path.type <:< Path on Linux]
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Platformed path retains platformedness"):
         demilitarize:
           val path = Drive('C') / "foo"
           path: Int
         . map(_.message)
-      . assert(_.head.tt.contains(t"Windows"))
+      . assert(_.head.lay(false)(_.tt.contains(t"Windows")))
 
       test(m"Windows path can't be converted to Linux"):
         demilitarize:
           val path = (Drive('C') / "foo").on[Linux]
         . map(_.message)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Linux path can't be converted to Windows"):
         demilitarize:
           val path = (% / "foo").on[Windows]
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Linux path can be converted to Mac OS"):
         demilitarize:
@@ -324,7 +325,7 @@ object Tests extends Suite("paths", m"internal Benchmarks"):
         demilitarize:
           t"C:\\Windows\\System\\".as[Path]
 
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Decode a simple relative path"):
         t"foo".as[Relative on Linux]
@@ -353,7 +354,7 @@ object Tests extends Suite("paths", m"internal Benchmarks"):
       test(m"Cannot decode a relative path without knowing plane"):
         demilitarize:
           t"..\\..\\foo\\bar".as[Relative]
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
     suite(m"Compiletime tests"):
       test(m"Specific path has known elements"):
@@ -476,7 +477,7 @@ object Tests extends Suite("paths", m"internal Benchmarks"):
           relative: Path on MacOs
         . map(_.message)
 
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
 
       test(m"Calculate simple relative path"):
@@ -643,12 +644,12 @@ object Tests extends Suite("paths", m"internal Benchmarks"):
       test(m"Linux path does not conform to Windows"):
         demilitarize:
           p"/home/user/data.csv": Path on Windows
-      . assert(_.length > 0)
+      . assert(!_.nil)
 
       test(m"Windows path does not conform to Linux"):
         demilitarize:
           p"""D:\Foo\Bar""": Path on Linux
-      . assert(_.length > 0)
+      . assert(!_.nil)
 
       test(m"Invalid path"):
         demilitarize(p"123").map(_.message)

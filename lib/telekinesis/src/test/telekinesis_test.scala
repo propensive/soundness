@@ -248,7 +248,7 @@ object Tests extends Suite("http", m"Telekinesis tests"):
             val fixture = t"HTTP/1.1 200 OK\r\n\r\n$payload"
             bodyText(Http.Response.parse(chunks(fixture, blockSize)))
 
-          . assert(_.length == 1000)
+          . assert(_.size == 1000)
 
       suite(m"Malformed input"):
         test(m"Wrong protocol prefix raises Expectation"):
@@ -503,7 +503,7 @@ object Tests extends Suite("http", m"Telekinesis tests"):
       . assert(_ == true)
 
       test(m"Streaming body is framed with chunked transfer-encoding"):
-        val body = Http.Body.Flowing(() => Stream(Chain(t"Hello".in[Data], t"World".in[Data]).iterator))
+        val body = Http.Body.Flowing(() => Stream(Chain.iterator(Chain(t"Hello".in[Data], t"World".in[Data]))))
         wire(Http.Response(Http.Ok)(body))
 
       . assert: text =>
@@ -513,7 +513,7 @@ object Tests extends Suite("http", m"Telekinesis tests"):
           && text.ends(t"0\r\n\r\n")
 
       test(m"Streaming body skips zero-length blocks"):
-        val body = Http.Body.Flowing(() => Stream(Chain(t"ab".in[Data], t"".in[Data], t"cd".in[Data]).iterator))
+        val body = Http.Body.Flowing(() => Stream(Chain.iterator(Chain(t"ab".in[Data], t"".in[Data], t"cd".in[Data]))))
         wire(Http.Response(Http.Ok)(body))
 
       . assert(_.contains(t"2\r\nab\r\n2\r\ncd\r\n"))
@@ -818,8 +818,10 @@ object Tests extends Suite("http", m"Telekinesis tests"):
           val request = Http.Request(Http.Get, 1.1, t"localhost".as[Host], t"/", Nil,
               () => Http.emptyBody())
 
-          List(session.fetch(request), session.fetch(request)).map: response =>
-            response.body.stream.memoize.utf8
+          // Bound one at a time: a `List(…)` of capturing responses has no `Mappable` instance.
+          val first = session.fetch(request).body.stream.memoize.utf8
+          val second = session.fetch(request).body.stream.memoize.utf8
+          List(first, second)
 
         serverSocket.close()
         texts

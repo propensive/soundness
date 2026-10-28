@@ -33,6 +33,7 @@
 package ulysses
 
 import soundness.*
+import denominative.dysasymptotics.linearSize // the suite keeps prefixes of small key lists
 
 import providers.soundnessProvider
 import Blake3.hash   // a concrete `Hash in Blake3` in scope, so BloomFilter infers BLAKE3
@@ -121,23 +122,23 @@ object Tests extends Suite("bloom", m"Ulysses tests"):
 
     test(m"Adding elements one at a time equals adding them together"):
       val empty = BloomFilter.freeze(BloomFilter[Text](1000, 0.01))
-      keys.take(500).foldLeft(empty)(_ + _) == empty ++ keys.take(500)
+      keys.keep(500).fold(empty)(_ + _) == empty ++ keys.keep(500)
 
     . assert(identity(_))
 
     test(m"Adding in place then freezing equals adding by copying"):
       val filter = BloomFilter[Text](1000, 0.01)
       filter.add(t"one")
-      filter.addAll(keys.take(500))
-      BloomFilter.freeze(filter) == BloomFilter[Text](1000, 0.01) + t"one" ++ keys.take(500)
+      filter.addAll(keys.keep(500))
+      BloomFilter.freeze(filter) == BloomFilter[Text](1000, 0.01) + t"one" ++ keys.keep(500)
 
     . check(identity(_))
 
     test(m"A frozen filter answers for everything added before it was frozen"):
       val filter = BloomFilter[Text](1000, 0.01)
-      filter.addAll(keys.take(500))
+      filter.addAll(keys.keep(500))
       val frozen = BloomFilter.freeze(filter)
-      keys.take(500).all(frozen.hits(_)) && !frozen.hits(t"other-1")
+      keys.keep(500).all(frozen.hits(_)) && !frozen.hits(t"other-1")
 
     . check(identity(_))
 
@@ -161,10 +162,10 @@ object Tests extends Suite("bloom", m"Ulysses tests"):
     val numbers2 = (1 to 20).map(_.toString.tt.digest[Blake3].data)
 
     test(m"Encode a Palimpsest under the default Cadence"):
-      given bibliography: Bibliography = Bibliography(proscenium.List.from(numbers))
-      Palimpsest(Sequence.from((1 to 3).map(numbers(_)))).resolve
+      given bibliography: Bibliography = Bibliography(numbers)
+      Palimpsest(numbers.skip(1).keep(3).to[Sequence]).resolve
 
-    . assert(_ == (1 to 3).map(numbers(_)))
+    . assert(_ == numbers.skip(1).keep(3).to[Sequence])
 
     def bytes(values: Int*): Data = Array.from(values.map(_.toByte))
 
@@ -202,7 +203,7 @@ object Tests extends Suite("bloom", m"Ulysses tests"):
 
     test(m"Round-trip a Palimpsest under an overridden Cadence"):
       given cadence: Cadence = Cadence(initial = 4, regular = 2, hashSize = 32)
-      given bibliography: Bibliography = Bibliography(proscenium.List.from(letters))
-      Palimpsest(Sequence.from(letters.toSeq)).resolve
+      given bibliography: Bibliography = Bibliography(letters)
+      Palimpsest(letters.to[Sequence]).resolve
 
     . assert(_ == letters)

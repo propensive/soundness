@@ -319,7 +319,7 @@ object AnthropicTests extends Suite("anthropic", m"Anthropic dialect tests"):
     test(m"streamed deltas arrive incrementally"):
       given fake: FakeModel = FakeModel((_, _, _) => FakeModel.reply(FakeModel.streamed))
 
-      target.session(llm.stream(t"go").text.to(List))
+      target.session(List.from(llm.stream(t"go").text))
     . assert(_ == List(t"fjord of ", t"Norway"))
 
     test(m"a streamed request asks for a stream"):

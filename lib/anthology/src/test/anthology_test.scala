@@ -332,7 +332,7 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
     test(m"The WASI component edge is not available without toolchain and WIT world"):
       demilitarize:
         sjsEdges.wasi()
-    . assert(_.nonEmpty)
+    . assert(!_.nil)
 
     test(m"A well-formed compiler session block compiles cleanly"):
       demilitarize:
@@ -355,7 +355,7 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
           val classpath: LocalClasspath = ???
           val leaked = Scalac[3.8](Nil).on(classpath).session(compilation)
         . map(_.message)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
     aspirationally:
       test(m"A live compile process cannot span a further compile"):
@@ -366,7 +366,7 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
             val process1 = compilation.compile(Map(t"a.scala" -> t"class A"))
             val process2 = compilation.compile(Map(t"b.scala" -> t"class B"))
             process1.errors
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
     // The OCI edge itself needs only a WIT world (the component is linked by the preceding
     // edge, whose provider probes the WASI toolchain), so its graph shape is checkable without
@@ -392,12 +392,12 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
       demilitarize:
         val compilation: Compilation[Universe.Sjsir] = ???
         val native: Compilation[Universe.Nir] = compilation
-    . assert(_.nonEmpty)
+    . assert(!_.nil)
 
     test(m"Compiling into the nir universe requires plugin evidence"):
       demilitarize:
         summon[Universe.Emission[Universe.Nir]]
-    . assert(_.nonEmpty)
+    . assert(!_.nil)
 
     test(m"Triples render as LLVM target triples"):
       Triple.Arm64MacOs.text
@@ -666,7 +666,7 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
     test(m"A Kotlin 2 option does not apply to a Kotlin 1.9 compiler"):
       demilitarize:
         Kotlinc[1.9](List(kotlincOptions.warnings.extra))
-    . assert(_.nonEmpty)
+    . assert(!_.nil)
 
     // An end-to-end Kotlin compilation, which runs only where the compiler it drives is on the
     // classpath. It is a compile-only dependency of the `kotlin` component — the caller supplies
@@ -795,10 +795,10 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
     proscalaLibrary().let: proscala =>
       caches
       . map(_.resolve("https/repo1.maven.org/maven2/org/scala-native").nn)
-      . find { base => artifacts.stdlib.forall { jar => Files.exists(base.resolve(jar.s)) } }
-      . map: base =>
+      . seek { base => artifacts.stdlib.forall { jar => Files.exists(base.resolve(jar.s)) } }
+      . let: base =>
           val jars = artifacts.stdlib.map { jar => base.resolve(jar.s).nn }
-          val stdlib = List("scala-library.jar", "scala3-library.jar").map(proscala.resolve(_).nn)
+          val stdlib = scala.collection.immutable.List("scala-library.jar", "scala3-library.jar").map(proscala.resolve(_).nn)
           val plugin = unsafely(jars.head.toString.tt.as[soundness.Path on Linux])
 
           val classpath =
@@ -806,5 +806,3 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
               ((jars.tail ++ stdlib).map { jar => Classpath.Entry.Jar(jar.toString.tt) }*)
 
           (NirPlugin(plugin), classpath)
-
-      . getOrElse(Unset)

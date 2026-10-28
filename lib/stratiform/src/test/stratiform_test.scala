@@ -1066,9 +1066,9 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val root = Tel.Type.assign(doc, personSchema)
         root match
           case Tel.Element.Node(_, _, children) =>
-            children.stdlib.collect:
-              case Tel.Element.Value(_, _, t) => t
-            .toList
+            List.from:
+              children.stdlib.collect:
+                case Tel.Element.Value(_, _, t) => t
 
           case _ => Nil
       . assert(_ == List(t"Alice", t"30"))
@@ -1276,10 +1276,10 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         case Tel.Element.Node(_, _, children) if children.length == 1 =>
           children.stdlib(0) match
             case Tel.Element.Node(_, _, inner) =>
-              inner.stdlib.collect:
-                case Tel.Element.Value(idx, _, text) => (idx, text)
-                case Tel.Element.Node(idx, _, _)     => (idx.or(-1), t"")
-              .toList
+              List.from:
+                inner.stdlib.collect:
+                  case Tel.Element.Value(idx, _, text) => (idx, text)
+                  case Tel.Element.Node(idx, _, _)     => (idx.or(-1), t"")
 
             case _ => Nil
 
@@ -1416,9 +1416,9 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val doc = t"name Alice\nage 30\n".read[Tel]
         Tel.Type.assign(doc, defaultingSchema) match
           case Tel.Element.Node(_, _, children) =>
-            children.stdlib.collect:
-              case Tel.Element.Value(_, _, t) => t
-            .toList
+            List.from:
+              children.stdlib.collect:
+                case Tel.Element.Value(_, _, t) => t
 
           case _ => Nil
       . assert(_ == List(t"Alice", t"30"))
@@ -2472,14 +2472,14 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
           val source = new Cell(t"name Alice\n")
           source.open[Tel]() { handle ?=> handle.update(Tel.Pointer.of(t"name"), t"Bob") }
         . map(_.message)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"Reading without the Read grant does not compile"):
         demilitarize:
           val source = new Cell(t"name Alice\n")
           source.open[Tel](Write) { handle ?=> handle.current.show }
         . map(_.message)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
     suite(m"Opening file paths"):
       import galilei.*
@@ -3623,4 +3623,4 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
   child value
    misindented value"""
         . map(_.focus)
-      . assert(_.headOption.exists { focus => focus.length < 8 && focus.forall(_ == ' ') })
+      . assert(_.head.lay(false) { focus => focus.length < 8 && focus.forall(_ == ' ') })

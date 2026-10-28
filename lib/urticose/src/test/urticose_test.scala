@@ -1100,7 +1100,7 @@ object Tests extends Suite("internet", m"Urticose tests"):
       . assert(_ == Dns.Name(t"_fury", t"_tcp", t"local"))
 
       test(m"The dns interpolator rejects an invalid name at compile time"):
-        demilitarize(dns"a..b").map(_.message).nonEmpty
+        !demilitarize(dns"a..b").map(_.message).nil
       . assert(_ == true)
 
       val unicastQuestion = Dns.Question(service, Dns.Type.Ptr, unicast = true)

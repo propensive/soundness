@@ -145,7 +145,7 @@ object Tests extends Suite("stacktrace", m"Digression Tests"):
               "*F", "1 Util",
               "*L", "1#1:121", "1#1:122",
               "*E" )
-          . mkString("\n")
+          . map(_.tt).join(t"\n").s
 
     val nested: Optional[Smap] =
       Smap.parse:
@@ -163,7 +163,7 @@ object Tests extends Suite("stacktrace", m"Digression Tests"):
               "*F", "1 B", "2 A",
               "*L", "1#1:11", "1#2:12",
               "*E" )
-          . mkString("\n")
+          . map(_.tt).join(t"\n").s
 
     suite(m"SMAP parsing and expansion"):
       test(m"Unparsable text is not an SMAP"):
@@ -211,7 +211,7 @@ object Tests extends Suite("stacktrace", m"Digression Tests"):
               "*F", "+ 1 Main.scala", "Main.scala", "+ 2 Util.scala", "Util.scala",
               "*L", "1#1,120:1", "3#2:121",
               "*E" )
-          . mkString("\n")
+          . map(_.tt).join(t"\n").s
 
         Smap.parse(Text(bare)).let(_.expand(121))
 
@@ -228,7 +228,7 @@ object Tests extends Suite("stacktrace", m"Digression Tests"):
                 "*F", "+ 1 Main.scala", "Main.scala", "+ 2 Util.scala", "foo/Util.scala",
                 "*L", "1#1,100:1", "3#2:101", "3#2,2:105,2",
                 "*E" )
-            . mkString("\n")
+            . map(_.tt).join(t"\n").s
 
       test(m"An inlined line answers the generated range standing for it"):
         smap.let(_.sites(t"Util.scala", 3))

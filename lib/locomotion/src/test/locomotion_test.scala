@@ -146,7 +146,7 @@ object Tests extends Suite("protobuf", m"Locomotion Protobuf Tests"):
       . assert(_ == List(0x0a, 0x02, 0x41, 0x42, 0x10, 0x00))
 
       test(m"sparse field numbers produce the right tags"):
-        wire(Sparse(1, t"")).stdlib.take(2)
+        wire(Sparse(1, t"")).keep(2)
       . assert(_ == List(0x18, 0x01))
 
       test(m"a negative int encodes as a ten-byte varint"):
@@ -205,7 +205,7 @@ object Tests extends Suite("protobuf", m"Locomotion Protobuf Tests"):
       . assert(_ == Numbers(List(0, 1, 2)))
 
       test(m"repeated ints are packed into one length-delimited field"):
-        wire(Numbers(List(3, 270, 86942))).stdlib.take(2)
+        wire(Numbers(List(3, 270, 86942))).keep(2)
       . assert(_ == List(0x0a, 0x06))
 
       test(m"a packed field produced elsewhere decodes back to a List"):
@@ -264,7 +264,7 @@ object Tests extends Suite("protobuf", m"Locomotion Protobuf Tests"):
 
     suite(m"Field-number fallback"):
       test(m"unannotated fields use 1-based declaration order"):
-        wire(Unnumbered(150, 0)).stdlib.take(2)
+        wire(Unnumbered(150, 0)).keep(2)
       . assert(_ == List(0x08, 0x96))
 
       test(m"unannotated message round-trips"):
@@ -708,8 +708,8 @@ object Tests extends Suite("protobuf", m"Locomotion Protobuf Tests"):
 
       test(m"varints of every width read directly"):
         given (Longs is Protobuf.Printable) = Inlinable.printable[Longs]
-        Protobuf.Printable.print(Longs(Sequence.from(widths))).read[Longs in Protobuf]
-      . assert(_ == Longs(Sequence.from(widths)))
+        Protobuf.Printable.print(Longs(widths.to[Sequence])).read[Longs in Protobuf]
+      . assert(_ == Longs(widths.to[Sequence]))
 
       test(m"unpacked occurrences gather into a Sequence"):
         Array[Byte](0x08, 0x01, 0x08, 0xac.toByte, 0x02).read[Longs in Protobuf]

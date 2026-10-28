@@ -1469,16 +1469,16 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
           val raw = Launcher.Raw(t"argument", 1, bytes(0x61, 0xff, 0x62))
           Launcher.decode(Launcher.encode(init.copy(raws = List(raw)))) match
             case init2: Launcher.Message.Init => init2.raws.head match
-              case raw2: Launcher.Raw => (raw2.kind, raw2.index, raw2.bytes.stdlib.map(_ & 0xff).toList)
-              case _                  => (t"", Unset, Nil)
-            case _ => (t"", Unset, Nil)
+              case raw2: Launcher.Raw => (raw2.kind, raw2.index, raw2.bytes.to[List].map(_ & 0xff))
+              case _                  => (t"", Unset, List[Int]())
+            case _ => (t"", Unset, List[Int]())
         . check(_ == (t"argument", 1, List(0x61, 0xff, 0x62)))
 
         // A chunk has no structural equality: its bytes are compared.
         test(m"a data document round-trips, bytes and all"):
           Launcher.decode(Launcher.encode(Launcher.Message.Data(t"7", bytes(0, 1, 127, 128, 255)))) match
-            case Launcher.Message.Data(stream, chunk) => (stream, chunk.stdlib.map(_ & 0xff).toList)
-            case other                                => (t"", Nil)
+            case Launcher.Message.Data(stream, chunk) => (stream, chunk.to[List].map(_ & 0xff))
+            case other                                => (t"", List[Int]())
         . check(_ == (t"7", List(0, 1, 127, 128, 255)))
 
         test(m"a document of another schema is rejected"):

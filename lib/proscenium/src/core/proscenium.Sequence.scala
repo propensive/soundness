@@ -41,7 +41,10 @@ import scala.collection.immutable as sci
 // conversion (for vararg splices and stdlib-boundary interop); operations live with their
 // typeclasses. The boundary functions cast (`asInstanceOf`): under capture checking an identity
 // ascription fails box adaptation when the element type captures.
-object Sequence:
+// The companion is `Pure`: the umbrella forwards it as a `val`, and under capture checking a
+// value of a non-pure object type is a tracked capability, so `xs.to(Sequence)` — which passes the
+// companion as a factory — would otherwise capture the forwarder and freshen its result.
+object Sequence extends scala.caps.Pure:
   // `of` is a plain method, not `inline`: inline expansion of the cast inside capturing
   // lambdas crashes the capture checker's boxer (boxDeeply assertion).
   private[proscenium] def of[element](vector: sci.Vector[element]): Sequence[element] =
@@ -94,6 +97,15 @@ object Sequence:
 
   // The parameter is capturing (`^`): iterators produced by the transforming operations capture
   // their lambdas, and a pure parameter type would reject them. It is consumed eagerly here.
+  // A branded sequence (`& Populated`, as the literal constructors mint) compares with a plain one:
+  // `CanEqual` is sought in the companions of the compared types, and the brand, a refinement of
+  // `Any`, contributes no companion, so the equalities live here rather than at package level.
+  given populatedEquality: [left, right] => CanEqual[Sequence[left] & Populated, Sequence[right]] =
+    CanEqual.derived
+
+  given populatedEqualityReversed: [left, right] => CanEqual[Sequence[left], Sequence[right] & Populated] =
+    CanEqual.derived
+
   def from[element](elements: IterableOnce[element]^): Sequence[element] =
     of(sci.Vector.from(elements))
 

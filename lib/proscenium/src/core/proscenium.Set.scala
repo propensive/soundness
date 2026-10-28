@@ -39,7 +39,10 @@ import scala.collection.immutable as sci
 // the greppable `stdlib` bridge in the companion, casts at the boundary (capture checking
 // rejects identity ascriptions for capturing element types), and deliberately NO `Conversion`
 // to any stdlib supertype, which would re-expose the partial surface at member selection.
-object Set:
+// The companion is `Pure`: the umbrella forwards it as a `val`, and under capture checking a
+// value of a non-pure object type is a tracked capability, so `xs.to(Set)` — which passes the
+// companion as a factory — would otherwise capture the forwarder and freshen its result.
+object Set extends scala.caps.Pure:
   // `of` is a plain method, not `inline`: inline expansion of the cast inside capturing
   // lambdas crashes the capture checker's boxer (boxDeeply assertion).
   private[proscenium] def of[element](set: sci.Set[element]): Set[element] =
@@ -47,6 +50,15 @@ object Set:
 
   def apply[element](elements: element*): Set[element] = of(sci.Set(elements*))
   def empty[element]: Set[element] = of(sci.Set.empty[element])
+
+  // A branded set (`& Populated`, as the literal constructors mint) compares with a plain one:
+  // `CanEqual` is sought in the companions of the compared types, and the brand, a refinement of
+  // `Any`, contributes no companion, so the equalities live here rather than at package level.
+  given populatedEquality: [left, right] => CanEqual[Set[left] & Populated, Set[right]] =
+    CanEqual.derived
+
+  given populatedEqualityReversed: [left, right] => CanEqual[Set[left], Set[right] & Populated] =
+    CanEqual.derived
 
   def from[element](elements: IterableOnce[element]^): Set[element] =
     of(sci.Set.from(elements))

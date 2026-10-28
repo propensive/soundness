@@ -62,7 +62,7 @@ object Tests extends Suite("prelude", m"Proscenium Tests"):
     . assert(_ == (42, 0))
 
     test(m"take on an infinite stream does not diverge"):
-      Chain.continually(7).take(3).toList
+      Chain.continually(7).keep(3).to[List]
 
     . assert(_ == List(7, 7, 7))
 
@@ -231,7 +231,7 @@ object Tests extends Suite("prelude", m"Proscenium Tests"):
 
       test(m"a set is built from an iterable"):
         Set.from(scala.List(1, 1, 2))
-      . assert(_ == scala.collection.immutable.Set(1, 2))
+      . assert(_ == Set(1, 2))
 
       test(m"a map looks up by key"):
         Map(t"a" -> 1, t"b" -> 2)(t"a")
@@ -243,7 +243,7 @@ object Tests extends Suite("prelude", m"Proscenium Tests"):
 
       test(m"a sequence keeps its order"):
         Sequence(3, 1, 2)
-      . assert(_ == scala.collection.immutable.Vector(3, 1, 2))
+      . assert(_ == Sequence(3, 1, 2))
 
       test(m"a sequence destructures by pattern"):
         Sequence(1, 2) match

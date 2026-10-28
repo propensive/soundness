@@ -96,7 +96,7 @@ object Tests extends Suite("random", m"Capricious Tests"):
       . assert(_ == true)
 
       test(m"successive draws within one block differ"):
-        stochastic(List.fill(16)(arbitrary[Long]())).distinct.size
+        stochastic(List.fill(16)(arbitrary[Long]())).to[Set].size
       . assert(_ == 16)
 
     suite(m"Seed"):
@@ -120,7 +120,7 @@ object Tests extends Suite("random", m"Capricious Tests"):
 
     suite(m"Primitive instances"):
       test(m"booleans take both values"):
-        stochastic(List.fill(64)(arbitrary[Boolean]())).distinct.size
+        stochastic(List.fill(64)(arbitrary[Boolean]())).to[Set].size
       . assert(_ == 2)
 
       test(m"a byte is drawn from the low bits of a long"):
@@ -147,15 +147,15 @@ object Tests extends Suite("random", m"Capricious Tests"):
 
     suite(m"Random capability"):
       test(m"the unit interval is bounded below"):
-        stochastic(List.fill(256)(summon[Random].unitInterval())).forall(_ >= 0.0)
+        stochastic(List.fill(256)(summon[Random].unitInterval())).all(_ >= 0.0)
       . assert(_ == true)
 
       test(m"the unit interval is bounded above"):
-        stochastic(List.fill(256)(summon[Random].unitInterval())).forall(_ < 1.0)
+        stochastic(List.fill(256)(summon[Random].unitInterval())).all(_ < 1.0)
       . assert(_ == true)
 
       test(m"a toss comes up both ways"):
-        stochastic(List.fill(64)(toss())).distinct.size
+        stochastic(List.fill(64)(toss())).to[Set].size
       . assert(_ == 2)
 
       test(m"the global generator draws without a seed in scope"):
@@ -188,7 +188,7 @@ object Tests extends Suite("random", m"Capricious Tests"):
           given Distribution = UniformDistribution(-1.0, 1.0)
           List.fill(4096)(arbitrary[Double]())
 
-        . forall { value => value >= -1.0 && value <= 1.0 }
+        . all { value => value >= -1.0 && value <= 1.0 }
       . assert(_ == true)
 
       test(m"the mean is the midpoint of the range"):
@@ -213,6 +213,6 @@ object Tests extends Suite("random", m"Capricious Tests"):
       . assert(_ == true)
 
       test(m"a sum type reaches every variant"):
-        stochastic(List.fill(256)(arbitrary[Colour]())).distinct.size
+        stochastic(List.fill(256)(arbitrary[Colour]())).to[Set].size
       . assert(_ == 3)
 

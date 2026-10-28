@@ -175,32 +175,32 @@ object ApiTests extends Suite("openapi-client", m"Api client tests"):
 
     suite(m"compile-time safety"):
       test(m"a nonexistent first segment is rejected"):
-        demilitarize(api.unicorns).length
-      . assert(_ > 0)
+        demilitarize(api.unicorns).nil
+      . assert(_ == false)
 
       test(m"an undeclared path is rejected"):
-        demilitarize(api.pets(42).toys).length
-      . assert(_ > 0)
+        demilitarize(api.pets(42).toys).nil
+      . assert(_ == false)
 
       test(m"a path parameter of the wrong type is rejected"):
-        demilitarize(api.pets(t"notAnInt")).length
-      . assert(_ > 0)
+        demilitarize(api.pets(t"notAnInt")).nil
+      . assert(_ == false)
 
       test(m"the apply shortcut is rejected on a multi-method endpoint"):
-        demilitarize(api.pets(limit = 10)).length
-      . assert(_ > 0)
+        demilitarize(api.pets(limit = 10)).nil
+      . assert(_ == false)
 
       test(m"the apply shortcut cannot invoke a DELETE-only endpoint"):
-        demilitarize(api.logout()).length
-      . assert(_ > 0)
+        demilitarize(api.logout()).nil
+      . assert(_ == false)
 
       test(m"a query parameter of the wrong type is rejected"):
-        demilitarize(api.pets(42).photos(width = t"big")).length
-      . assert(_ > 0)
+        demilitarize(api.pets(42).photos(width = t"big")).nil
+      . assert(_ == false)
 
       test(m"omitting a required query parameter is rejected"):
-        demilitarize(api.pets(42).photos(height = 20)).length
-      . assert(_ > 0)
+        demilitarize(api.pets(42).photos(height = 20)).nil
+      . assert(_ == false)
 
     suite(m"sending and decoding responses"):
       test(m".call[Pet]() decodes a single pet"):
@@ -258,8 +258,8 @@ object ApiTests extends Suite("openapi-client", m"Api client tests"):
         demilitarize:
           given Http.Backend = Recorder(() => ok(petJson))
           api.pets(42).get.call[Photo]()
-        . length
-      . assert(_ > 0)
+        . nil
+      . assert(_ == false)
 
     // The refstore spec requires `queryKey` (an API key in the query) for every operation but
     // `GET /items`, and `cookieKey` for `/items/{itemId}/notes`
@@ -291,8 +291,8 @@ object ApiTests extends Suite("openapi-client", m"Api client tests"):
       . assert(_ == List(Http.Header(t"X-Request-Id", t"r1")))
 
       test(m"omitting a required header parameter is rejected"):
-        demilitarize(refs.items.get(limit = 5)).length
-      . assert(_ > 0)
+        demilitarize(refs.items.get(limit = 5)).nil
+      . assert(_ == false)
 
       test(m"HEAD is a verb"):
         refs.items.head(`X-Request-Id` = t"r1").request.method
@@ -314,8 +314,8 @@ object ApiTests extends Suite("openapi-client", m"Api client tests"):
         demilitarize:
           given Http.Backend = Recorder(() => ok(itemJson))
           refs.items(7).get.call[Note]()
-        . length
-      . assert(_ > 0)
+        . nil
+      . assert(_ == false)
 
     suite(m"media types construe their carriers"):
       val refs = Api(cp"/openapi/local/refstore.json", base = url"https://ref.example.com")
@@ -363,8 +363,8 @@ object ApiTests extends Suite("openapi-client", m"Api client tests"):
           refs.items(7).get.attempt[Item]() match
             case Attempt.Failure(Api.Conflict(problem)) => t"?"
             case _                                      => t"?"
-        . length
-      . assert(_ > 0)
+        . nil
+      . assert(_ == false)
 
       test(m"a path substitution is percent-encoded"):
         val recorder = Recorder(() => Http.Response(Http.Ok, contentType = media"text/plain")(t"x"))
@@ -431,8 +431,8 @@ object ApiTests extends Suite("openapi-client", m"Api client tests"):
         demilitarize:
           given Http.Backend = Recorder(() => Http.Response(Http.Ok)(t"Spoon"))
           refs.items(7).label.get.record()
-        . length
-      . assert(_ > 0)
+        . nil
+      . assert(_ == false)
 
     suite(m"security schemes"):
       val refs = Api(cp"/openapi/local/refstore.json", base = url"https://ref.example.com")
@@ -457,8 +457,8 @@ object ApiTests extends Suite("openapi-client", m"Api client tests"):
         demilitarize:
           given Http.Backend = Recorder(() => ok(itemJson))
           val icon: Raster in Png = refs.items(7).get.call()
-        . length
-      . assert(_ > 0)
+        . nil
+      . assert(_ == false)
 
     suite(m"the spec decides the wire format (Api over Json / over Xml)"):
       val xmlApi = Api(cp"/openapi/local/xmlstore.json")

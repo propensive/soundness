@@ -185,6 +185,24 @@ export rudiments.internal.&
 // [erased-evidence] erased value summoner
 inline def !! [erasure]: erasure = caps.unsafe.unsafeErasedValue
 
+// The `Traversable`-receiver twins of the `Iterable` groups in this file (as `all` has, below):
+// a native collection is not an `Iterable`, so each materialises the traversal and delegates.
+extension [self, value <: Matchable](self: self)(using traversable: self is Traversable by value)
+  transparent inline def sift[filter <: value: Typeable]: List[filter] =
+    List.from(traversable.traverse(self).flatMap(filter.unapply(_)))
+
+  // Shape-preserving: a `Set` of pairs from a `Set`, a `List` from a `List`. Plain `Reshapable`,
+  // not `Stable`: pairing an element with itself cannot collapse a set.
+  def bi[result]
+    ( using reshapable: self is murmuration.Reshapable by (value, value) to result )
+  :   result =
+    reshapable.reshape(traversable.traverse(self).map { v => (v, v) })
+
+  def tri[result]
+    ( using reshapable: self is murmuration.Reshapable by (value, value, value) to result )
+  :   result =
+    reshapable.reshape(traversable.traverse(self).map { v => (v, v, v) })
+
 extension [value <: Matchable](iterable: Iterable[value])
   transparent inline def sift[filter <: value: Typeable]: Iterable[filter] =
     iterable.flatMap(filter.unapply(_))
@@ -527,6 +545,48 @@ extension [value](iterable: Iterable[value])
     Map.from(iterable.map { value => (lambda(value), value) })
 
   def longestTrain(predicate: value => Boolean): (Int, Int) =
+    longestTrainOf(iterable)(predicate)
+
+extension [self, value](self: self)(using traversable: self is Traversable by value)
+  def longestTrain(predicate: value => Boolean): (Int, Int) =
+    longestTrainOf(traversable.traverse(self).to(Iterable))(predicate)
+
+  def mean
+    ( using addable:   value is Addable by value,
+            equality:  addable.Result =:= value,
+            divisible: value is Divisible by Double,
+            eqality2:  divisible.Result =:= value )
+  :   Optional[value] =
+    traversable.traverse(self).to(Iterable).mean
+
+  def variance
+    ( using addable:       value is Addable by value,
+            equality:      addable.Result =:= value,
+            divisible:     value is Divisible by Double,
+            equality2:     divisible.Result =:= value,
+            subtractable:  value is Subtractable by value,
+            multiplicable: subtractable.Result is Multiplicable by subtractable.Result,
+            addable2:      multiplicable.Result is Addable by multiplicable.Result,
+            zeroic2:       multiplicable.Result is Zeroic,
+            equality3:     addable2.Result =:= multiplicable.Result,
+            divisible2:    multiplicable.Result is Divisible by Double )
+  :   Optional[divisible2.Result] =
+    traversable.traverse(self).to(Iterable).variance
+
+  def std
+    ( using addable:       value is Addable by value,
+            equality:      addable.Result =:= value,
+            divisible:     value is Divisible by Double,
+            equality2:     divisible.Result =:= value,
+            divisible2:    value is Divisible by value,
+            equality3:     divisible2.Result =:= Double,
+            multiplicable: value is Multiplicable by Double,
+            equality4:     multiplicable.Result =:= value )
+  :   Optional[value] =
+    traversable.traverse(self).to(Iterable).std
+
+private def longestTrainOf[value](iterable: Iterable[value])(predicate: value => Boolean)
+:   (Int, Int) =
     @tailrec
     def recur(index: Int, iterable: Iterable[value], bestStart: Int, bestLength: Int, length: Int)
     :   (Int, Int) =

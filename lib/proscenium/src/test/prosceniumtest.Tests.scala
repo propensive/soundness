@@ -104,7 +104,7 @@ object Tests extends Suite("prelude-consumer", m"Proscenium consumer-view tests"
           demilitarize:
             val sequence: Sequence[Int] = scala.collection.immutable.List(1, 2).to(Sequence)
           . map(_.message)
-        . assert(_.isEmpty)
+        . assert(_.nil)
 
     suite(m"Non-emptiness proofs"):
       // From outside the package these are the operations that matter: `head` is total only on
@@ -119,7 +119,7 @@ object Tests extends Suite("prelude-consumer", m"Proscenium consumer-view tests"
         demilitarize:
           val elements = scala.Seq(1, 2, 3)
           val list: List[Int] & Populated = List(elements*)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"a literal sequence is branded as populated"):
         demilitarize:
@@ -155,14 +155,14 @@ object Tests extends Suite("prelude-consumer", m"Proscenium consumer-view tests"
       test(m"a list is not a stdlib list"):
         demilitarize:
           val list: scala.collection.immutable.List[Int] = List(1, 2, 3)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"a stdlib list is not a list"):
         demilitarize:
           val list: List[Int] = scala.collection.immutable.List(1, 2, 3)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"a ledger is not a map"):
         demilitarize:
           val map: Map[Int, Int] = Ledger(1 -> 1)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)

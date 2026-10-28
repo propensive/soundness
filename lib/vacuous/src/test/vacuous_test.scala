@@ -78,14 +78,14 @@ object Tests extends Suite("optional", m"Vacuous Tests"):
         val x = compiletime.summonInline[Int is Distinct from (Int | String)]
 
       . map(_.message)
-    . assert(_.nonEmpty)
+    . assert(!_.nil)
 
     test(m"String is not distinct from itself"):
       demilitarize:
         val x = compiletime.summonInline[String is Distinct from String]
 
       . map(_.message)
-    . assert(_.nonEmpty)
+    . assert(!_.nil)
 
     test(m"Abstract type not proven distinct from String"):
       demilitarize:
@@ -93,7 +93,7 @@ object Tests extends Suite("optional", m"Vacuous Tests"):
         foo[String]
 
       . map(_.message)
-    . assert(_.contains(t"[↯SN-991] type T is abstract"))
+    . assert(_.has("[↯SN-991] type T is abstract"))
 
     test(m"Abstract type is not proven distinct from anything, e.g. Int"):
       demilitarize:
@@ -101,7 +101,7 @@ object Tests extends Suite("optional", m"Vacuous Tests"):
         foo[Int]
 
       . map(_.message)
-    . assert(_.contains(t"[↯SN-991] type T is abstract"))
+    . assert(_.has("[↯SN-991] type T is abstract"))
 
     test(m"Inline abstract type not distinct from Int"):
       demilitarize:
@@ -121,7 +121,7 @@ object Tests extends Suite("optional", m"Vacuous Tests"):
         foo[String]
 
       . map(_.message)
-    . assert(_.nonEmpty)
+    . assert(!_.nil)
 
     test(m"String is not distinct from String | Int"):
       demilitarize:
@@ -131,7 +131,7 @@ object Tests extends Suite("optional", m"Vacuous Tests"):
         foo[String]
 
       . map(_.message)
-    . assert(_.nonEmpty)
+    . assert(!_.nil)
 
     test(m"String singleton is not distinct from String"):
       demilitarize:
@@ -141,7 +141,7 @@ object Tests extends Suite("optional", m"Vacuous Tests"):
         foo[""]
 
       . map(_.message)
-    . assert(_.nonEmpty)
+    . assert(!_.nil)
 
 
     test(m"String singleton not distinct from another"):

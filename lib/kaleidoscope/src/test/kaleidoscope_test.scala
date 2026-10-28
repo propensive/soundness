@@ -583,20 +583,18 @@ object Tests extends Suite("regex", m"Kaleidoscope tests"):
           t"" match
             case r"hello(world" =>
 
-        . head
-        . message
+        . head.let(_.message)
 
-      . assert(_.contains("[↯SN-397.1] the regular expression could not be parsed because a capturing group was not closed at 11"))
+      . assert(_.lay(false)(_.contains("[↯SN-397.1] the regular expression could not be parsed because a capturing group was not closed at 11")))
 
       test(m"variable must be bound"):
         demilitarize:
           t"" match
             case r"hello${space}world" =>
 
-        . head
-        . message
+        . head.let(_.message)
 
-      . assert(_.contains("[↯SN-397.2] the regular expression could not be parsed because a capturing group was expected immediately following an extractor at 0"))
+      . assert(_.lay(false)(_.contains("[↯SN-397.2] the regular expression could not be parsed because a capturing group was expected immediately following an extractor at 0")))
 
       test(m"invalid quantifier focus is the offending character"):
         demilitarize:

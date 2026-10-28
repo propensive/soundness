@@ -154,7 +154,7 @@ object InterpreterTests extends Suite("cli-interpreter", m"Commandline interpret
             val name: Optional[Text] = Flag(t"name", aliases = List('n'))()
             Exit.Ok
         . map(_.message)
-      . assert(_.isEmpty)
+      . assert(_.nil)
 
       test(m"a flag read in a completions prelude is not yet its value"):
         demilitarize:
@@ -167,4 +167,4 @@ object InterpreterTests extends Suite("cli-interpreter", m"Commandline interpret
             val name: Optional[Text] = Flag(t"name", aliases = List('n'))()
             execute(Exit.Ok)
         . map(_.message)
-      . assert(_.nonEmpty)
+      . assert(!_.nil)

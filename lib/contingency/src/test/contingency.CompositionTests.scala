@@ -135,7 +135,7 @@ object CompositionTests extends Suite("errors-composition", m"Contingency compos
       test(m"Forcing a Venture without a skip-scope in context does not compile"):
         demilitarize:
           def force(v: Venture[Int]): Int = v()
-      . assert(_.nonEmpty)
+      . assert(!_.nil)
 
       test(m"A nested venture's skip is delimited; later siblings still contribute"):
         collect:

@@ -507,7 +507,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
           val dir = freshRepo()
           dir.open[Git.Worktree]() { worktree ?=> worktree.commit(t"nope", worktree.head()) }
         . map(_.message)
-      .assert(_.nonEmpty)
+      .assert(!_.nil)
 
       test(m"the handle cannot be the block's result"):
         demilitarize:

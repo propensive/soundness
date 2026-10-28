@@ -207,13 +207,13 @@ object Tests extends Suite("open", m"Aperture Tests"):
       demilitarize:
         Ref(t"zeta").open[Doc]() { handle ?=> handle.append(t"nope") }
       . map(_.message)
-    . assert(_.nonEmpty)
+    . assert(!_.nil)
 
     test(m"An ambiguous form does not compile"):
       demilitarize:
         Ref(t"eta").open() { handle ?=> handle.title }
       . map(_.message)
-    . assert(_.nonEmpty)
+    . assert(!_.nil)
 
     test(m"A session-independent value leaves a session"):
       given Tick = Tick()
@@ -304,4 +304,4 @@ object Tests extends Suite("open", m"Aperture Tests"):
       demilitarize:
         Ref(t"theta").open[Doc](Write) { handle ?=> handle.title }
       . map(_.message)
-    . assert(_.nonEmpty)
+    . assert(!_.nil)

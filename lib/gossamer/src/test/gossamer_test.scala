@@ -707,7 +707,7 @@ object Tests extends Suite("text", m"Gossamer Tests"):
           val x: String = Text("text")
         . map(_.message)
 
-      . assert(!_.isEmpty)
+      . assert(!_.nil)
 
     suite(m"Decimalization tests"):
       test(m"Write negative pi"):
@@ -1475,7 +1475,7 @@ object Tests extends Suite("text", m"Gossamer Tests"):
 
         . map(_.message)
 
-      . assert(!_.isEmpty)
+      . assert(!_.nil)
 
       test(m"mid-list wildcard errors"):
         demilitarize:
@@ -1485,7 +1485,7 @@ object Tests extends Suite("text", m"Gossamer Tests"):
 
         . map(_.message)
 
-      . assert(!_.isEmpty)
+      . assert(!_.nil)
 
     suite(m"Ascii compile-time error positioning"):
       test(m"a non-ASCII character's focus is the character itself"):

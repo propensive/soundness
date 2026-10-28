@@ -66,11 +66,11 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       val header = blocks.head
 
       test(m"USTAR magic at offset 257"):
-        header.stdlib.slice(257, 263).toList.map(_.toChar)
+        List.from(header.stdlib.slice(257, 263).toList.map(_.toChar))
       . assert(_ == List('u', 's', 't', 'a', 'r', '\u0000'))
 
       test(m"version 00 at offset 263"):
-        header.stdlib.slice(263, 265).toList.map(_.toChar)
+        List.from(header.stdlib.slice(263, 265).toList.map(_.toChar))
       . assert(_ == List('0', '0'))
 
       test(m"file type flag at offset 156"):
@@ -78,7 +78,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == '0')
 
       test(m"name field starts with hello.txt"):
-        header.stdlib.slice(0, 9).toList.map(_.toChar)
+        List.from(header.stdlib.slice(0, 9).toList.map(_.toChar))
       . assert(_ == List('h', 'e', 'l', 'l', 'o', '.', 't', 'x', 't'))
 
       test(m"single-file archive emits 4 blocks"):
@@ -113,7 +113,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == '5')
 
       test(m"directory entryName ends with /"):
-        blocks(2).stdlib.slice(0, 5).toList.map(_.toChar)
+        List.from(blocks(2).stdlib.slice(0, 5).toList.map(_.toChar))
       . assert(_ == List('d', 'a', 't', 'a', '/'))
 
     suite(m"PAX extended headers for long names"):
@@ -136,11 +136,11 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == 'x')
 
       test(m"PAX header name is PaxHeaders/0"):
-        blocks(0).stdlib.slice(0, 13).toList.map(_.toChar)
+        List.from(blocks(0).stdlib.slice(0, 13).toList.map(_.toChar))
       . assert(_ == List('P', 'a', 'x', 'H', 'e', 'a', 'd', 'e', 'r', 's', '/', '0', '\u0000'))
 
       test(m"PAX record begins with decimal length prefix '160 path='"):
-        blocks(1).stdlib.slice(0, 9).toList.map(_.toChar)
+        List.from(blocks(1).stdlib.slice(0, 9).toList.map(_.toChar))
       . assert(_ == List('1', '6', '0', ' ', 'p', 'a', 't', 'h', '='))
 
       test(m"PAX record ends with newline at offset 159"):
@@ -175,7 +175,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == 'x')
 
       test(m"PAX record uses the linkpath keyword"):
-        blocks(1).stdlib.slice(0, 13).toList.map(_.toChar)
+        List.from(blocks(1).stdlib.slice(0, 13).toList.map(_.toChar))
       . assert(_ == List('1', '6', '4', ' ', 'l', 'i', 'n', 'k', 'p', 'a', 't', 'h', '='))
 
       test(m"regular header (block 2) has type flag '2' for the symlink"):
@@ -196,7 +196,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
       test(m"streamed file data round-trips across odd chunk boundaries"):
         entries.head match
-          case f: Tar.Entry.File => f.data.memoize.stdlib.to(List).map(_.toChar).mkString
+          case f: Tar.Entry.File => f.data.memoize.stdlib.map(_.toChar).mkString
           case _                => ""
       . assert(_ == "hello")
 
@@ -241,7 +241,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
       test(m"file data round-trips"):
         entries.head match
-          case f: Tar.Entry.File => f.data.memoize.stdlib.to(List).map(_.toChar).mkString
+          case f: Tar.Entry.File => f.data.memoize.stdlib.map(_.toChar).mkString
           case _                => ""
       . assert(_ == "hello")
 
@@ -796,15 +796,15 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       val tar = Tarfile(List(helloFile, emptyDir))
 
       test(m"gzip round-trips through Tarfile.fromGzip"):
-        Tarfile.read(tar.gzip.decompress[Gzip]).toList.map(_.entryName)
+        List.from(Tarfile.read(tar.gzip.decompress[Gzip]).map(_.entryName))
       . assert(_ == List(t"hello.txt", t"data/"))
 
       test(m"zlib round-trips through Tarfile.fromZlib"):
-        Tarfile.read(tar.zlib.decompress[Zlib]).toList.map(_.entryName)
+        List.from(Tarfile.read(tar.zlib.decompress[Zlib]).map(_.entryName))
       . assert(_ == List(t"hello.txt", t"data/"))
 
       test(m"deflate round-trips through Tarfile.fromDeflate"):
-        Tarfile.read(tar.deflate.decompress[Deflate]).toList.map(_.entryName)
+        List.from(Tarfile.read(tar.deflate.decompress[Deflate]).map(_.entryName))
       . assert(_ == List(t"hello.txt", t"data/"))
 
       test(m"gzipped stream is shorter than uncompressed (for small archive)"):
@@ -919,7 +919,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
         target.open[Tar](Tar.Flag.Gzip):
           bitumen.tar.entries.to(List).head match
-            case f: Tar.Entry.File => f.data.memoize.stdlib.to(List).map(_.toChar).mkString
+            case f: Tar.Entry.File => f.data.memoize.stdlib.map(_.toChar).mkString
             case _                 => ""
       . assert(_ == "zipped")
 
@@ -1081,12 +1081,12 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == t"!<arch>\n")
 
       test(m"a single member round-trips its name"):
-        Arfile.read(arArchive(List(arEntry(t"hello.txt", t"hello"))).source[Data]).toList
+        List.from(Arfile.read(arArchive(List(arEntry(t"hello.txt", t"hello"))).source[Data]))
         . map(_.name)
       . assert(_ == List(t"hello.txt"))
 
       test(m"a single member round-trips its body"):
-        Arfile.read(arArchive(List(arEntry(t"hello.txt", t"hello"))).source[Data]).toList
+        List.from(Arfile.read(arArchive(List(arEntry(t"hello.txt", t"hello"))).source[Data]))
         . map(_.data.memoize.utf8)
       . assert(_ == List(t"hello"))
 
@@ -1099,7 +1099,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
         val original =
           List(arEntry(t"a.txt", t"aaa"), arEntry(t"b.txt", t"bb"), arEntry(t"c.txt", t"c"))
 
-        Arfile.read(arArchive(original).source[Data]).toList.map(_.name)
+        List.from(Arfile.read(arArchive(original).source[Data])).map(_.name)
       . assert(_ == List(t"a.txt", t"b.txt", t"c.txt"))
 
       test(m"an odd-sized member is padded so the next header is even-aligned"):
@@ -1119,12 +1119,12 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
       for size <- List(1, 3, 7, 64) do
         test(m"members parse when the stream arrives in chunks of $size"):
-          Arfile.read(original.stdlib.grouped(size).map(Array.from(_)).iterator.stream).toList
+          List.from(Arfile.read(original.stdlib.grouped(size).map(Array.from(_)).iterator.stream))
           . map(_.name)
         . assert(_ == List(t"a.txt", t"bee.txt"))
 
         test(m"bodies survive chunking by $size"):
-          Arfile.read(original.stdlib.grouped(size).map(Array.from(_)).iterator.stream).toList
+          List.from(Arfile.read(original.stdlib.grouped(size).map(Array.from(_)).iterator.stream))
           . map(_.data.memoize.utf8)
         . assert(_ == List(t"aaa", t"bbbb"))
 
@@ -1176,11 +1176,11 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
         arArchive(List(nameTable, first, second))
 
       test(m"long names resolve through the name table"):
-        Arfile.read(gnu.source[Data]).toList.filter(_.role == Ar.Role.Regular).map(_.name)
+        List.from(Arfile.read(gnu.source[Data])).filter(_.role == Ar.Role.Regular).map(_.name)
       . assert(_ == List(t"parserInternals.o", t"xmlschemastypes.o"))
 
       test(m"the name table member is recognised by role"):
-        Arfile.read(gnu.source[Data]).toList.map(_.role)
+        List.from(Arfile.read(gnu.source[Data])).map(_.role)
       . assert(_ == List(Ar.Role.NameTable, Ar.Role.Regular, Ar.Role.Regular))
 
       test(m"the 64-bit symbol table is a symbol table, not a long-name reference"):
@@ -1188,7 +1188,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
           Ar.Entry(t"/SYM64/", t"/SYM64/", 0L, UnixUser(0), UnixGroup(0), 0,
             Archive.Body(arBytes(t"xy")))
 
-        Arfile.read(arArchive(List(symbols)).source[Data]).toList.map(_.role)
+        List.from(Arfile.read(arArchive(List(symbols)).source[Data])).map(_.role)
       . assert(_ == List(Ar.Role.SymbolTable))
 
       test(m"an unresolvable long-name reference raises"):

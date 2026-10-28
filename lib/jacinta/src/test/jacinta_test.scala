@@ -1539,7 +1539,7 @@ object DirectTests extends Suite("json-direct", m"Jacinta direct parsing and for
       test(m"emit streams exactly the text show renders"):
         import formatting.indentedJsonFormatting
         val json = Json.make(a = 1.in[Json], b = (List(t"x", t"y"): List[Text]).in[Json], c = t"q\"\n".in[Json])
-        supervise(Json.emit(json).to(List).mkString.tt) == json.show
+        supervise(Json.emit(json).to(List).join) == json.show
       . assert(identity)
 
       test(m"the push form of emit delivers exactly the text show renders"):
@@ -1600,7 +1600,7 @@ object DirectTests extends Suite("json-direct", m"Jacinta direct parsing and for
       test(m"emit of a large document arrives in more than one chunk"):
         import formatting.compactJsonFormatting
         val json = t"[${(0 until 20000).mkString(",")}]".read[Json]
-        supervise(Json.emit(json).to(List).length)
+        supervise(Json.emit(json).to(List).size)
       . assert(_ > 1)
 
     suite(m"Discriminator strategies"):
@@ -1879,7 +1879,7 @@ object DirectTests extends Suite("json-direct", m"Jacinta direct parsing and for
       . assert(_ == List(1, 2, 3))
 
       test(m"NDJSON lines may hold heterogeneous values"):
-        t"\"hi\"\n42\ntrue".source[Text].delineate.records.map(_.read[Json]).to(List).length
+        t"\"hi\"\n42\ntrue".source[Text].delineate.records.map(_.read[Json]).to(List).size
       . assert(_ == 3)
 
     suite(m"j\"\" interpolator"):

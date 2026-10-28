@@ -32,8 +32,10 @@
                                                                                                   */
 package larceny
 
-def demilitarize(code: Matchable): List[CompileError] = code match
-  case xs: List[CompileError] @unchecked => xs
-  case _                                 => Nil
+// The plugin substitutes a `scala.List` of errors for the block; the suites compare the result
+// against a native `List(…)` literal, so it is handed back as the native list.
+def demilitarize(code: Matchable): proscenium.List[CompileError] = code match
+  case xs: List[CompileError] @unchecked => proscenium.List.from(xs)
+  case _                                 => proscenium.List()
 
-def procrastinate(errors: List[CompileError]): List[CompileError] = errors
+def procrastinate(errors: proscenium.List[CompileError]): proscenium.List[CompileError] = errors
