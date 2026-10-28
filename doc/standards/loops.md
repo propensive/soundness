@@ -76,6 +76,17 @@ computed indices. Lengths combine at the type level:
 carried symbolically otherwise. Prefer the brand to a `readUnchecked` with a comment whenever
 the layout is fixed: the byte-probe tests (`header(156.z)`) are exactly this case.
 
+## Editing a frozen array
+
+A frozen array (`Array[e]^{}`) is never written through; an edit is a copy, and the copy's
+shape names the edit. One slot is `xs.define(i, v)`; one slot removed is `xs.omit(i)`; a
+segment replaced is `Array.concat(xs.before(i), replacement, xs.after(i))` (segments are
+`before`/`upto`/`from`/`after` around an ordinal, or `keep`/`skip` by count), which copies the
+three parts once; and several slots at once are `Array.thaw(xs)`, which
+yields an exclusive copy to write through with `copy(i) = v`, frozen again by `Array.freeze`.
+None of these goes through the stdlib view: `xs.stdlib.updated`, `take ++ … ++ drop` and an
+`ArrayBuffer.from(xs.stdlib)` are the shapes they replace.
+
 ## When a `while` may stay
 
 A `while` may remain only when no expression in its condition is compared against the size of

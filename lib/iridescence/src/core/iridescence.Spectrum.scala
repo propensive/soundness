@@ -33,6 +33,8 @@
 package iridescence
 
 import denominative.*
+import vacuous.*
+import fulminate.{m, panic}
 import prepositional.*
 import rudiments.*
 
@@ -45,12 +47,15 @@ object Spectrum:
     def assign(target: Srgb): Color in color =
       if colors.nil then colors = colors0.to[Set]
 
-      val chosen = colors.stdlib.minBy: candidate =>
+      val nearest = colors.minimize: candidate =>
         val srgb = candidate.to[Srgb]
         val dr = srgb.red - target.red
         val dg = srgb.green - target.green
         val db = srgb.blue - target.blue
         dr*dr + dg*dg + db*db
+
+      // The spectrum was refilled above if it had run dry, so it is empty only if the palette is.
+      val chosen = nearest.or(panic(m"the spectrum's palette is empty"))
 
       colors = colors.except(Set(chosen))
       chosen

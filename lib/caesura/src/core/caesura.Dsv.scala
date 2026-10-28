@@ -616,12 +616,14 @@ case class Dsv(data: Array[Text]^{}, columns: Optional[Map[Text, Int]] = Unset) 
     columns.let(_(field)).let { index => data.at(index.z) }.let(value.decoded(_))
 
   override def hashCode: Int =
-    data.stdlib.indices.fuse(0)(state*31 + data.readUnchecked(next).hashCode)
+    var hash = 0
+    data.extent.each: index => hash = hash*31 + data(index).hashCode
+    hash
 
   override def equals(that: Any): Boolean = that.asMatchable match
     case row: Dsv =>
-      data.length == row.data.length && data.stdlib.indices.all: index =>
-        data.readUnchecked(index) == row.data.readUnchecked(index)
+      data.length == row.data.length && data.extent.all: index =>
+        data(index) == row.data.readUnchecked(index.n0)
 
     case _ =>
       false

@@ -3808,28 +3808,19 @@ object Tel extends Tel2:
     ( blocks: Array[Block]^{}, keyword: Text, compound: Compound )
   :   Array[Block]^{} =
 
-    var b = 0
-    var found = false
-    val out = scala.collection.mutable.ArrayBuffer.from(blocks.stdlib)
+    var replaced: Optional[Array[Block]^{}] = Unset
 
-    while b < out.length && !found do
-      val cs = out(b).compounds
+    blocks.extent.each: index =>
+      if replaced.absent then
+        val block = blocks(index)
 
-      cs.where(_.keyword == keyword).let: ordinal =>
-        out(b) =
-          out(b).copy(compounds = Array.from(cs.stdlib.updated(ordinal.n0, compound)))
+        block.compounds.where(_.keyword == keyword).let: ordinal =>
+          val compounds = block.compounds.define(ordinal, compound)
+          replaced = blocks.define(index, block.copy(compounds = compounds))
 
-        found = true
-
-      b += 1
-
-    if !found then
-      if out.isEmpty then out += Block(Array.empty, Unset, Array(compound), 0)
-      else
-        val lastIdx = out.length - 1
-        out(lastIdx) = out(lastIdx).copy(compounds = out(lastIdx).compounds :+ compound)
-
-    Array.from(out)
+    replaced.or:
+      blocks.ult.lay(Array(Block(Array.empty, Unset, Array(compound), 0))): last =>
+        blocks.define(last, blocks(last).copy(compounds = blocks(last).compounds :+ compound))
 
   // Replace the `index`-th child compound (flattened across blocks) by applying
   // `transform`, preserving block structure and surrounding formatting. An
@@ -3851,9 +3842,8 @@ object Tel extends Tel2:
         then
           block.copy
             ( compounds =
-                Array.from
-                  ( compounds.stdlib.updated
-                      ( index - base, transform(compounds.readUnchecked(index - base)) ) ) )
+                compounds.define
+                  ( (index - base).z, transform(compounds.readUnchecked(index - base)) ) )
         else
           block
 

@@ -106,6 +106,24 @@ object Array:
     array.place(right, left.length)
     freeze(array)
 
+  // The three-operand form, for splicing: `Array.concat(xs.before(i), replacement,
+  // xs.after(i))` rebuilds a frozen array with a segment replaced, in one pass. A fixed arity
+  // rather than a repeated parameter: a frozen array as the element of a varargs `Seq` is
+  // re-freshened to `^{any.rd}` by the alias-captures rule, and the segments' element types
+  // then fail to unify under the invariant `Array` -- so until that is lifted, a splice is
+  // exactly three parts, which is what every splice of a fixed layout needs.
+  def concat[element: ClassTag]
+    ( left:   Array[element]^{caps.any.rd},
+      middle: Array[element]^{caps.any.rd},
+      right:  Array[element]^{caps.any.rd} )
+  :   Array[element]^{} =
+
+    val array: Array[element]^ = allocate[element](left.length + middle.length + right.length)
+    array.place(left)
+    array.place(middle, left.length)
+    array.place(right, left.length + middle.length)
+    freeze(array)
+
   def concat[element: ClassTag, left <: Int, right <: Int]
     ( leftArray:  Array[element]^{caps.any.rd} & Sized[left],
       rightArray: Array[element]^{caps.any.rd} & Sized[right] )
@@ -175,6 +193,16 @@ object Array:
   def freeze[element](consume array: Array[element]^): Array[element]^{} =
     // [transfer] freeze: consume retires writers, drops write capability
     caps.unsafe.unsafeAssumePure(array)
+
+  // The inverse of `freeze`: an exclusive copy of any readable array, which the caller may
+  // write through -- `copy(i) = value` -- and then `freeze` again. This is the shape for an
+  // edit of several slots; a one-slot edit is `define`, and a splice is `concat` of segments.
+  // A copy, never the array itself: the source may be frozen or shared, so other readers
+  // must keep seeing it unchanged, and nothing is laundered.
+  def thaw[element: ClassTag](array: Array[element]^{caps.any.rd}): Array[element]^ =
+    val copy: Array[element]^ = allocate[element](array.length)
+    copy.place(array)
+    copy
 
   // The trusted boundary cast: asserts that the caller retains no writer to `array`. For
   // interop edges that cannot thread `consume`. A read-only reference cannot feed

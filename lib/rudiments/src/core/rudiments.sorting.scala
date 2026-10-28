@@ -42,6 +42,7 @@ import denominative.Countable
 import murmuration.{Reshapable, SortAlgorithm, Traversable}
 import prepositional.*
 import symbolism.*
+import vacuous.*
 
 // The sorting operations live here rather than in murmuration, beside the other operations over
 // `Traversable`, because sizing the scratch array needs `Countable`, which is denominative's and
@@ -80,6 +81,20 @@ extension [self, element](self: self)(using traversable: self is Traversable by 
 
     reshapable.reshape
       ( sorting.sorted(algorithm, traversable.traverse(self), comparable, sizeHint) )
+
+  // The element whose key is greatest (`maximize`) or least (`minimize`), or `Unset` on an
+  // empty receiver. Beside `order` because they ask the same question of the same
+  // `Comparable`: `xs.maximize(f)` is the last element of `xs.order(f)`, found in one pass
+  // with no sort. The first of several equal-keyed elements wins, as the stable sort would
+  // place it. Over `Comparable`, not hypotenuse's numeric `Commensurable`, so any ordered key
+  // -- a `Text`, an `Ordinal`, a date -- selects.
+  def maximize[key](lambda: element => key)(using comparable: key is Comparable)
+  :   Optional[element] =
+    sorting.extremum(traversable.traverse(self), lambda, comparable, true)
+
+  def minimize[key](lambda: element => key)(using comparable: key is Comparable)
+  :   Optional[element] =
+    sorting.extremum(traversable.traverse(self), lambda, comparable, false)
 
   // How many elements are coming, when that is known and the caller has accepted the cost of
   // asking. `Countable` is complexity-gated — a `List` answers only where `linearSize` has been
@@ -131,6 +146,30 @@ object sorting:
   // tuple after the cast back from the untyped scratch array. `sort` needs none of this — there,
   // an element is its own key — so only `order` pays for it.
   class Entry(val key: Any, val element: Any)
+
+  // One pass over the elements, keeping the one whose key compares `More` (or `Less`) than
+  // every key seen so far; a tie keeps the earlier element.
+  def extremum[element, key]
+    ( iterator:   Iterator[element]^,
+      lambda:     element => key,
+      comparable: key is Comparable,
+      greatest:   Boolean )
+  :   Optional[element] =
+
+    if !iterator.hasNext then Unset else
+      var current = iterator.next()
+      var best = lambda(current)
+
+      while iterator.hasNext do
+        val element = iterator.next()
+        val next = lambda(element)
+        val comparison = comparable.compare(next, best)
+
+        if (if greatest then comparison.more else comparison.less) then
+          current = element
+          best = next
+
+      current
 
   // The comparator the algorithms take, from a `Comparable` over the elements themselves.
   def comparator[element](comparable: element is Comparable): ju.Comparator[AnyRef] =

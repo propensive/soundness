@@ -35,6 +35,7 @@ package caesura
 import anticipation.*
 import distillate.*
 import prepositional.*
+import rudiments.{fuse, next, state}
 import vacuous.*
 import wisteria.*
 
@@ -43,7 +44,7 @@ object Spannable extends ProductDerivable[Spannable]:
     // Not `total`: the `Iterable` overload narrows to `Int` via `Zeroic` while the
     // `Traversable` one yields `Optional[Int]`, and which is picked here depends on the
     // expected type. The underlying array's `sum` is unambiguous.
-    () => contexts[derivation](): [field] => context => context.spans().stdlib.sum
+    () => contexts[derivation](): [field] => context => context.spans().fuse(0)(state + next)
 
   given decoder: [decodable] => ((decodable is Decodable in Text)^) => decodable is Spannable =
     () => Array(1)
