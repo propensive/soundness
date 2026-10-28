@@ -98,6 +98,15 @@ private def interfacesOf(interfaces: List[NetworkInterface]): List[jn.NetworkInt
         case nic: jn.NetworkInterface => nic :: interfacesOf(tail)
         case _                        => interfacesOf(tail)
 
+// The JDK address from an IP: `getByAddress` copies the bytes it is handed, so one readable
+// view serves every call.
+private def inetAddress(ip: Ipv4 | Ipv6): jn.InetAddress =
+  jn.InetAddress.getByAddress(Array.unsafeJvm(ip.bytes)).nn
+
+// A datagram carrying `data` to `address`: the packet reads the array but never writes it.
+private def datagram(data: Data, address: jn.InetAddress, port: Int): jn.DatagramPacket =
+  jn.DatagramPacket(Array.unsafeJvm(data), data.length, address, port)
+
 // The address of a received datagram's sender; every `InetAddress` is four or sixteen bytes, so
 // one decoder accepts it.
 private def senderOf(address: jn.InetSocketAddress): Ipv4 | Ipv6 =
@@ -251,11 +260,7 @@ package socketBackends:
     def reply(binding: UdpBinding, sender: Ipv4 | Ipv6, port: Udp.Port, data: Data)
     :   Unit raises Socket.Error =
 
-      val ip: jn.InetAddress = jn.InetAddress.getByAddress(Array.unsafeJvm(sender.bytes)).nn
-
-      val packet = jn.DatagramPacket(Array.unsafeJvm(data), data.length, ip, port.number)
-
-      try binding.socket.send(packet)
+      try binding.socket.send(datagram(data, inetAddress(sender), port.number))
       catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Transmit))
 
     def unbind(binding: UdpBinding): Unit = binding.socket.close()
@@ -265,7 +270,7 @@ package socketBackends:
       ( multicast: Multicast, interfaces: List[NetworkInterface], options: List[Socket.Option] )
     :   MulticastBinding =
 
-      val group = jn.InetAddress.getByAddress(Array.unsafeJvm(multicast.group.bytes)).nn
+      val group = inetAddress(multicast.group)
 
       val family =
         if group.isInstanceOf[jn.Inet4Address] then jn.StandardProtocolFamily.INET
@@ -330,8 +335,7 @@ package socketBackends:
     def sendTo(binding: MulticastBinding, destination: Ipv4 | Ipv6, port: Udp.Port, data: Data)
     :   Unit raises Socket.Error =
 
-      val address = jn.InetAddress.getByAddress(Array.unsafeJvm(destination.bytes)).nn
-      val target = jn.InetSocketAddress(address, port.number)
+      val target = jn.InetSocketAddress(inetAddress(destination), port.number)
 
       try binding.synchronized(binding.channel.send(ByteBuffer.wrap(Array.unsafeJvm(data)), target))
       catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Transmit))
@@ -350,10 +354,7 @@ package socketBackends:
       val courier = routeUdp(endpoint, interface, options)
 
       try
-        val packet =
-          jn.DatagramPacket(Array.unsafeJvm(data), data.length, courier.address, courier.port)
-
-        try courier.socket.send(packet)
+        try courier.socket.send(datagram(data, courier.address, courier.port))
         catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Transmit))
 
         receiveFrom(courier.socket, datagramSize(options))
@@ -497,10 +498,7 @@ package socketBackends:
     def dispatch(courier: UdpCourier, consume input: (Stream[Data] over Credit)^): Unit =
       val bytes = input.memoize
 
-      val packet =
-        jn.DatagramPacket(Array.unsafeJvm(bytes), bytes.length, courier.address, courier.port)
-
-      courier.socket.send(packet)
+      courier.socket.send(datagram(bytes, courier.address, courier.port))
 
 // Applies `Socket.Option`s to freshly-constructed sockets and resolves a `MacAddress` to a network
 // interface. The Java socket kinds share no common Scala interface for `setOption`/`setSoTimeout`,
