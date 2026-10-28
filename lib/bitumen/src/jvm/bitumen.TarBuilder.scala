@@ -194,11 +194,11 @@ class TarBuilder private[bitumen]
   ( sink: Optional[ji.RandomAccessFile], format: LongNameFormat )
   ( using Tactic[Tar.Error] )
 extends caps.ExclusiveCapability:
-  // [field-purity] entry stack in non-Stateful exclusive builder
-  @scala.caps.unsafe.untrackedCaptures
-  private var stack: List[Tar.Entry] = Nil
+  // A cell rather than a `var`: a cell is a pure value a non-`Stateful` class may hold.
+  private val stack: Atomic.Ref[List[Tar.Entry]] = Atomic.Ref(Nil)
 
-  def insert(entry: Tar.Entry): Unit = sink.lay(stack ::= entry)(writeEntry(_, entry))
+  def insert(entry: Tar.Entry): Unit =
+    sink.lay(stack() = entry :: stack())(writeEntry(_, entry))
 
   def insert[data: Streamable by Data over Credit as streamable](name: Tar.Ref, data: data)
   :   Unit =
@@ -287,4 +287,4 @@ extends caps.ExclusiveCapability:
     write(out, Tarfile.zeroBlock)
 
   private[bitumen] def tarfile(format: LongNameFormat): Tarfile =
-    Tarfile(stack.reverse, format)
+    Tarfile(stack().reverse, format)

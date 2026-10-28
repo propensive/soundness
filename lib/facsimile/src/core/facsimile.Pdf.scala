@@ -118,7 +118,7 @@ object Pdf:
         case Cos.Sequence(first :: _) => first.chars.or(Array.empty[Byte])
         case _                        => Array.empty[Byte]
 
-      pdf.guard = password.lay(Guard(encrypt, id, scala.Array.empty[Char])(using pdf)): password =>
+      pdf.guard() = password.lay(Guard(encrypt, id, scala.Array.empty[Char])(using pdf)): password =>
         password.uncloak(Guard(encrypt, id, cleartext.chars)(using pdf))
 
   // The header comment is nominally at offset 0, but tolerated anywhere in the first 1KiB,
@@ -968,9 +968,8 @@ extends caps.ExclusiveCapability:
 
   // The security handler, installed by `Pdf.unlock` after the document exists (it must read
   // the unencrypted `/Encrypt` dictionary through this same document first).
-  // [field-purity] security guard var installed after construction
-  @scala.caps.unsafe.untrackedCaptures
-  private[facsimile] var guard: Optional[Guard] = Unset
+  // An atomic cell, not a `var`: a cell is a pure value a non-`Stateful` class may hold.
+  private[facsimile] val guard: Atomic.Ref[Optional[Guard]] = Atomic.Ref(Unset)
 
   // The write overlay: an in-memory incremental update layered over the immutable read model.
   // New and replaced objects live in `overlay`, deleted objects in `freed`; `apply` consults
@@ -984,10 +983,9 @@ extends caps.ExclusiveCapability:
     scala.collection.mutable.HashSet()
 
   // The next free object number, one past the largest the original file used.
-  // [field-purity] nextNumber counter var in Pdf
-  @scala.caps.unsafe.untrackedCaptures
-  private[facsimile] var nextNumber: Int =
-    (xref.entries.keys.maximum.or(0).max(trailer(t"Size").let(_.long).or(0L).toInt - 1)) + 1
+  private[facsimile] val nextNumber: Atomic.Int =
+    Atomic.Int
+      ((xref.entries.keys.maximum.or(0).max(trailer(t"Size").let(_.long).or(0L).toInt - 1)) + 1)
 
   // Payloads for streams created during the write scope. A `Cos.Body` locates its bytes by a
   // file offset; a new stream has none, so it is given a negative sentinel `start` that keys
@@ -995,9 +993,7 @@ extends caps.ExclusiveCapability:
   private[facsimile] val newStreams: scala.collection.mutable.HashMap[Long, Data] =
     scala.collection.mutable.HashMap()
 
-  // [field-purity] nextStreamId counter var in Pdf
-  @scala.caps.unsafe.untrackedCaptures
-  private var nextStreamId: Long = -1L
+  private val nextStreamId: Atomic.Long = Atomic.Long(-1L)
 
   // Trailer entries set or overridden during the write scope — e.g. a newly-created `/Info`
   // reference. Merged over the original trailer's carried-forward entries by the writer.
@@ -1006,8 +1002,8 @@ extends caps.ExclusiveCapability:
 
   // A new stream object carrying inline bytes, for content the write scope produces.
   private[facsimile] def newBody(entries: Map[Text, Cos], data: Data): Cos.Body =
-    val id = nextStreamId
-    nextStreamId -= 1
+    val id = nextStreamId()
+    nextStreamId() = id - 1
     newStreams(id) = data
     Cos.Body(entries.define(t"Length", Cos.Integral(data.length.toLong)), id)
 
@@ -1021,8 +1017,8 @@ extends caps.ExclusiveCapability:
 
   // Allocates a fresh object number for a new value, returning a reference to it.
   private[facsimile] def allocate(value: Cos): Cos.Ref =
-    val number = nextNumber
-    nextNumber += 1
+    val number = nextNumber()
+    nextNumber() = number + 1
     overlay(number) = value
     Cos.Ref(number, 0)
 
@@ -1283,7 +1279,7 @@ extends caps.ExclusiveCapability:
 
             // Strings in a directly-stored object are encrypted individually; those inside
             // an object stream travel in its already-decrypted payload, so are skipped.
-            guard.lay(content)(decryptStrings(content, number, generation, _))
+            guard().lay(content)(decryptStrings(content, number, generation, _))
 
         case Xref.Entry.Compressed(container, index) =>
           if generation != 0 then Cos.Nil else
@@ -1416,7 +1412,7 @@ extends caps.ExclusiveCapability:
       val bytes = source.read(body.start, (payloadEnd(body) - body.start).toInt)
 
       if !encryptedStream(body) then bytes else
-        guard.lay(bytes): guard =>
+        guard().lay(bytes): guard =>
           streamOwners.at(body.start).lay(bytes): (number, generation) =>
             guard.stream(bytes, number, generation, Unset)
 
@@ -1424,7 +1420,7 @@ extends caps.ExclusiveCapability:
   // not exempt — cross-reference streams (never encrypted), metadata under `/EncryptMetadata
   // false`, and streams marked with the `Identity` crypt filter.
   private def encryptedStream(body: Cos.Body)(using Tactic[Pdf.Error]): Boolean =
-    guard.lay(false): guard =>
+    guard().lay(false): guard =>
       val kind = body.entries(t"Type").let(_.name).or(t"")
 
       val exempt =
