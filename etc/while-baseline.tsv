@@ -23,7 +23,7 @@ lib/burdock/src/core/burdock.internal.scala	1	0	0
 lib/cacophony/src/core/cacophony.Audio.scala	2	2	0
 lib/cacophony/src/core/cacophony.Outlet.scala	1	0	0
 lib/cacophony/src/core/cacophony.Pcm.scala	1	0	0
-lib/caesura/src/core/caesura.Dsv.scala	3	7	0
+lib/caesura/src/core/caesura.Dsv.scala	3	5	0
 lib/caesura/src/core/caesura.Sheet.scala	5	0	3
 lib/camouflage/src/core/camouflage.LruCache.scala	1	0	0
 lib/capricious/src/core/capricious_core.scala	0	1	0
@@ -47,7 +47,7 @@ lib/denominative/src/core/denominative.Applicable.scala	0	2	1
 lib/denominative/src/core/denominative.Definable.scala	1	1	0
 lib/denominative/src/core/denominative.Terminable.scala	0	2	1
 lib/denominative/src/core/denominative.internal.scala	2	0	0
-lib/denominative/src/core/denominative_core.scala	10	0	0
+lib/denominative/src/core/denominative_core.scala	12	0	0
 lib/digression/src/core/digression.Smap.scala	1	0	1
 lib/digression/src/core/digression.StackTrace.scala	1	0	6
 lib/dissonance/src/core/dissonance.Redraft.scala	3	5	0
@@ -55,11 +55,10 @@ lib/dissonance/src/core/dissonance_core.scala	0	6	0
 lib/distillate/src/core/distillate.Decodable.scala	0	0	1
 lib/escapade/src/core/escapade.Ansi.scala	2	0	2
 lib/escapade/src/core/escapade.Imprintable.scala	1	2	0
-lib/escapade/src/core/escapade.Ribbon.scala	0	1	0
 lib/escapade/src/core/escapade.Teletype.scala	6	16	1
 lib/escapade/src/core/escapade.internal.scala	1	1	0
 lib/escritoire/src/core/escritoire.Grid.scala	0	2	0
-lib/escritoire/src/core/escritoire.Layout.scala	0	10	0
+lib/escritoire/src/core/escritoire.Layout.scala	0	9	0
 lib/escritoire/src/core/escritoire.TableRow.scala	0	1	0
 lib/espionage/src/core/espionage.Acp.scala	1	0	0
 lib/ethereal/src/core/ethereal.Launcher.scala	4	2	0
@@ -124,7 +123,7 @@ lib/hypotenuse/src/core/hypotenuse.Bcd.scala	7	0	3
 lib/hypotenuse/src/core/hypotenuse.Decimal.scala	35	55	18
 lib/hypotenuse/src/core/hypotenuse.internal.scala	4	14	0
 lib/hypotenuse/src/core/hypotenuse.rationalInternal.scala	33	0	19
-lib/hypotenuse/src/core/hypotenuse_core.scala	4	14	0
+lib/hypotenuse/src/core/hypotenuse_core.scala	2	14	0
 lib/jacinta/src/core/jacinta.Json.Parser.scala	56	12	0
 lib/jacinta/src/core/jacinta.Json.scala	39	49	5
 lib/jacinta/src/core/jacinta.JsonPointer.scala	1	0	4
@@ -188,7 +187,7 @@ lib/punctuation/src/core/punctuation.Serializer.scala	10	0	15
 lib/rudiments/src/core/rudiments.Atomic.scala	1	0	0
 lib/rudiments/src/core/rudiments.Loop.scala	1	0	0
 lib/rudiments/src/core/rudiments.atomicMacros.scala	4	0	0
-lib/rudiments/src/core/rudiments.sorting.scala	3	0	0
+lib/rudiments/src/core/rudiments.sorting.scala	4	0	0
 lib/rudiments/src/core/rudiments_core.scala	6	0	0
 lib/savagery/src/core/savagery.Svg.scala	9	0	15
 lib/sedentary/src/core/sedentary.Bench.scala	10	0	0
@@ -202,7 +201,7 @@ lib/stratiform/src/core/stratiform.Mutation.scala	28	45	15
 lib/stratiform/src/core/stratiform.Positional.scala	3	5	0
 lib/stratiform/src/core/stratiform.SchemaResolver.scala	1	4	0
 lib/stratiform/src/core/stratiform.SchemaSignature.scala	5	5	0
-lib/stratiform/src/core/stratiform.Tel.scala	108	64	17
+lib/stratiform/src/core/stratiform.Tel.scala	107	64	17
 lib/stratiform/src/core/stratiform.Tel2.scala	1	4	0
 lib/stratiform/src/core/stratiform.Tel4.scala	0	0	1
 lib/stratiform/src/core/stratiform.Telp.scala	4	5	2

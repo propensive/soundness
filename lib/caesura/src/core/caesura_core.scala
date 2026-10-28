@@ -128,8 +128,11 @@ package optics:
     . or(t"")
 
   private def withCell(row: Dsv, name: String, value: Text): Dsv =
+    // A row has few cells, so copying them to replace one is cheap.
+    import denominative.dysasymptotics.linearSize
+
     row.columns.let(_(name.tt)).lay(row): index =>
-      row.copy(data = Array.from(row.data.stdlib.updated(index, value)))
+      row.copy(data = row.data.define(index.z, value))
 
   given dsvCellLens: [name <: Label: ValueOf] => (erased dynamical: (? >: Dsv) is Dynamical)
   =>  name is Lens from Dsv onto Text =

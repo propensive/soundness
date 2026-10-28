@@ -36,7 +36,6 @@ import anticipation.*
 import contingency.*
 import corpuscular.*
 import fulminate.*
-import gossamer.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
@@ -95,8 +94,7 @@ object Multihash:
     if length > available then abort(Multihash.Error(Multihash.Reason.Truncated))
     if length < available then abort(Multihash.Error(Multihash.Reason.Trailing))
 
-    Multihash
-      ( code.toInt, Array.from(data.stdlib.slice(afterLength, afterLength + length.toInt)) )
+    Multihash(code.toInt, data.skip(afterLength).keep(length.toInt))
 
   enum Reason:
     case Truncated, Trailing, Oversize

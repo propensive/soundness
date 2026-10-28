@@ -58,8 +58,8 @@ private[hallucination] object PngCodec:
   def decode(data: Data): Raster raises Raster.Error =
     try
       val signed =
-        data.length >= 8 && signature.stdlib.indices.forall: index =>
-          u8(data, index) == signature.readUnchecked(index)
+        data.length >= 8 && signature.extent.all: index =>
+          u8(data, index.n0) == signature(index)
 
       if !signed then abort(Raster.Error(Png(), Reason.BadSignature))
 

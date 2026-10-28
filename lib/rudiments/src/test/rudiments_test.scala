@@ -149,6 +149,16 @@ object Tests extends Suite("core", m"Rudiments Tests"):
         xs.minimize(identity(_))
       . assert(_ == Unset)
 
+      test(m"maximize keeps the first of equal keys"):
+        val xs: List[Text] = List(t"ab", t"cd", t"e")
+        xs.maximize(_.length)
+      . assert(_ == t"ab")
+
+      test(m"minimize orders by any Comparable key"):
+        val xs: List[Person] = List(Person(t"Zed", 40), Person(t"Amy", 30))
+        xs.minimize(_.name.s)
+      . assert(_ == Person(t"Amy", 30))
+
       test(m"last on an occupied chain demands the unbounded acknowledgement"):
         import denominative.dysasymptotics.unboundedSize
         val xs: Chain[Int] = Chain(1, 2, 3)
@@ -548,6 +558,43 @@ object Tests extends Suite("core", m"Rudiments Tests"):
         val xs: Array[Int]^{} = Array.tabulate(3)(_ + 1)
         xs.define(Prim, 10).to[List]
       . assert(_ == List(10, 2, 3))
+
+      test(m"omit removes a frozen array element"):
+        import denominative.dysasymptotics.linearSize
+        val xs: Array[Int]^{} = Array.tabulate(4)(_ + 1)
+        xs.omit(Sec).to[List]
+      . assert(_ == List(1, 3, 4))
+
+      test(m"omit outside a frozen array returns it unchanged"):
+        import denominative.dysasymptotics.linearSize
+        val xs: Array[Int]^{} = Array.tabulate(3)(_ + 1)
+        xs.omit(Quat).to[List]
+      . assert(_ == List(1, 2, 3))
+
+      test(m"thaw yields a writable copy which freezes back"):
+        val xs: Array[Int]^{} = Array.tabulate(3)(_ + 1)
+        val copy = Array.thaw(xs)
+        copy(0) = 10
+        copy(2) = 30
+        Array.freeze(copy).to[List]
+      . assert(_ == List(10, 2, 30))
+
+      test(m"thaw leaves the source untouched"):
+        val xs: Array[Int]^{} = Array.tabulate(3)(_ + 1)
+        val copy = Array.thaw(xs)
+        copy(1) = 20
+        xs.to[List]
+      . assert(_ == List(1, 2, 3))
+
+      test(m"three-operand concat splices segments in order"):
+        val xs: Array[Int]^{} = Array.tabulate(5)(_ + 1)
+        Array.concat(xs.before(Ter), Array(30, 31), xs.after(Ter)).to[List]
+      . assert(_ == List(1, 2, 30, 31, 4, 5))
+
+      test(m"three-operand concat accepts empty segments"):
+        val xs: Array[Text]^{} = Array(t"a", t"b")
+        Array.concat(xs.before(Prim), Array(t"z"), xs.after(Sec)).to[List]
+      . assert(_ == List(t"z"))
 
     suite(m"Ordered reshaping tests"):
       test(m"Map sorts into a Ledger iterating in sorted order"):

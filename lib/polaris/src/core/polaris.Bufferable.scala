@@ -33,6 +33,8 @@
 package polaris
 
 import prepositional.*
+import rudiments.total
+import vacuous.or
 import wisteria.*
 
 object Bufferable extends ProductDerivable[Bufferable]:
@@ -68,7 +70,7 @@ object Bufferable extends ProductDerivable[Bufferable]:
     // an inferred type adopts a memoized root capability from the unit's first expansion,
     // failing any second expansion (upstream #26547).
     Join[derivation]
-      ( contexts[derivation]() { [field] => _.width }.stdlib.sum,
+      ( contexts[derivation]() { [field] => _.width }.total.or(0),
         (sextant: Sextant^, value) =>
           fields(value) { [field] => field => contextual.sextant(sextant, field) } )
 

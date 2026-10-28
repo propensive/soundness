@@ -49,7 +49,7 @@ import gossamer.*
 import hellenism.*
 import inimitable.*
 import prepositional.*
-import rudiments.defines
+import rudiments.{define, defines}
 import serpentine.*
 import spectacular.*
 import pathInterfaces.pathOnLinux
@@ -203,7 +203,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
             }
 
         val target = stage(out)
-        cache = (cache.stdlib.updated(key, (target, function))).to(Map)
+        cache = cache.define(key, (target, function))
 
         (target, function)
 

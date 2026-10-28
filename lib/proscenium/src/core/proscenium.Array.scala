@@ -106,30 +106,22 @@ object Array:
     array.place(right, left.length)
     freeze(array)
 
-  // The variadic form, for splicing: `Array.concat(xs.before(i), replacement, xs.after(i))`
-  // rebuilds a frozen array with a segment replaced, in one pass. Its own name would be a
-  // coercion of the two-operand form, so it is an overload; the empty call is the empty array.
-  // Frozen parts only: a repeated parameter of `^{caps.any.rd}` references leaks its fresh
-  // capability into the method's capture scope, and a capture-set variable in its place makes
-  // the element type uninferrable from several arguments. Segments of a frozen array, and the
-  // literals spliced between them, are already frozen.
-  def concat[element: ClassTag](parts: (Array[element]^{})*): Array[element]^{} =
-    var size = 0
-    var part = 0
+  // The three-operand form, for splicing: `Array.concat(xs.before(i), replacement,
+  // xs.after(i))` rebuilds a frozen array with a segment replaced, in one pass. A fixed arity
+  // rather than a repeated parameter: a frozen array as the element of a varargs `Seq` is
+  // re-freshened to `^{any.rd}` by the alias-captures rule, and the segments' element types
+  // then fail to unify under the invariant `Array` -- so until that is lifted, a splice is
+  // exactly three parts, which is what every splice of a fixed layout needs.
+  def concat[element: ClassTag]
+    ( left:   Array[element]^{caps.any.rd},
+      middle: Array[element]^{caps.any.rd},
+      right:  Array[element]^{caps.any.rd} )
+  :   Array[element]^{} =
 
-    while part < parts.length do
-      size += parts(part).length
-      part += 1
-
-    val array: Array[element]^ = allocate[element](size)
-    var offset = 0
-    part = 0
-
-    while part < parts.length do
-      array.place(parts(part), offset)
-      offset += parts(part).length
-      part += 1
-
+    val array: Array[element]^ = allocate[element](left.length + middle.length + right.length)
+    array.place(left)
+    array.place(middle, left.length)
+    array.place(right, left.length + middle.length)
     freeze(array)
 
   def concat[element: ClassTag, left <: Int, right <: Int]
