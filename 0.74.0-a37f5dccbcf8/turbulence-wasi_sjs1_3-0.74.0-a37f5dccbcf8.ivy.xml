@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ivy-module version="2.0" xmlns:e="http://ant.apache.org/ivy/extra">
+    <info organisation="dev.propensive" module="turbulence-wasi_sjs1_3" revision="0.74.0-a37f5dccbcf8" status="release">
+        <description/>
+    </info>
+    <configurations>
+        <conf name="pom" visibility="public" description=""/>
+        <conf extends="runtime" name="test" visibility="public" description=""/>
+        <conf name="provided" visibility="public" description=""/>
+        <conf name="optional" visibility="public" description=""/>
+        <conf name="compile" visibility="public" description=""/>
+        <conf extends="compile" name="runtime" visibility="public" description=""/>
+    </configurations>
+    <publications>
+        <artifact name="turbulence-wasi_sjs1_3" type="pom" ext="pom" conf="pom"/>
+        <artifact name="turbulence-wasi_sjs1_3" type="jar" ext="jar" conf="compile"/>
+        </publications>
+    <dependencies>
+        <dependency 
+        org="org.scala-lang" name="scala3-library_sjs1_3" rev="3.10.0-pro-1.0.5" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="org.scala-js" name="scalajs-library_2.13" rev="1.22.0-wasm.4" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="beneficence-core_sjs1_3" rev="0.74.0-a37f5dccbcf8" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="proscenium-core_sjs1_3" rev="0.74.0-a37f5dccbcf8" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="turbulence-stdio_sjs1_3" rev="0.74.0-a37f5dccbcf8" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="xenophile-wasm_sjs1_3" rev="0.74.0-a37f5dccbcf8" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="xenophile-wit_sjs1_3" rev="0.74.0-a37f5dccbcf8" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="hellenism-core_sjs1_3" rev="0.74.0-a37f5dccbcf8" conf="compile->compile;runtime->runtime">
+</dependency>
+    </dependencies>
+</ivy-module>

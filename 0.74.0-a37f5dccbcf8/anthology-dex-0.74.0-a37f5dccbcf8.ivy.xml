@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ivy-module version="2.0" xmlns:e="http://ant.apache.org/ivy/extra">
+    <info organisation="dev.propensive" module="anthology-dex" revision="0.74.0-a37f5dccbcf8" status="release">
+        <description/>
+    </info>
+    <configurations>
+        <conf name="pom" visibility="public" description=""/>
+        <conf extends="runtime" name="test" visibility="public" description=""/>
+        <conf name="provided" visibility="public" description=""/>
+        <conf name="optional" visibility="public" description=""/>
+        <conf name="compile" visibility="public" description=""/>
+        <conf extends="compile" name="runtime" visibility="public" description=""/>
+    </configurations>
+    <publications>
+        <artifact name="anthology-dex" type="pom" ext="pom" conf="pom"/>
+        <artifact name="anthology-dex" type="jar" ext="jar" conf="compile"/>
+        </publications>
+    <dependencies>
+        <dependency org="com.android.tools" name="r8" rev="8.13.19" conf="compile->compile;runtime->runtime"/>
+        <dependency 
+        org="org.scala-lang" name="scala-library" rev="3.10.0-pro-1.0.5" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="beneficence-core" rev="0.74.0-a37f5dccbcf8" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="proscenium-core" rev="0.74.0-a37f5dccbcf8" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="anthology-linker" rev="0.74.0-a37f5dccbcf8" conf="compile->compile;runtime->runtime">
+</dependency>
+    </dependencies>
+</ivy-module>
