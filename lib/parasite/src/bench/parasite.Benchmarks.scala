@@ -261,11 +261,13 @@ object Benchmarks extends Suite("threads-bench", m"Effect runtimes: Soundness vs
       sum
 
     // `concurrently` is the rivals' `Workers` construction exactly: a shared index, an indexed
-    // output array, min(size, parallelism) tasks, joined together.
+    // output array, min(size, parallelism) tasks, joined together. The reads below are
+    // `readUnchecked`: every index is one `concurrently` or a counting loop derives from the
+    // array's own length.
     def workers(values: Array[Int], parallelism: Int, rounds: Int)(using Threading)
     :   Array[Int] =
       running:
-        concurrently(values.length, parallelism)(i => work(values(i), rounds))
+        concurrently(values.length, parallelism)(i => work(values.readUnchecked(i), rounds))
 
       // The rivals start one fiber per element; a Soundness task is a thread, so the bounded form
       // is the idiom: eight workers over the elements, each element's failure caught where it
@@ -275,7 +277,7 @@ object Benchmarks extends Suite("threads-bench", m"Effect runtimes: Soundness vs
       running:
         val results: Array[Optional[Int]] =
           concurrently(values.length, parallelism): i =>
-            val value = values(i)
+            val value = values.readUnchecked(i)
             safely(if (value & 1023) == 0 then abort(Expected.Error()) else work(value, rounds))
 
         val output = new scala.Array[Int](values.length)
@@ -283,7 +285,7 @@ object Benchmarks extends Suite("threads-bench", m"Effect runtimes: Soundness vs
         var i = 0
 
         while i < results.length do
-          results(i).let: value =>
+          results.readUnchecked(i).let: value =>
             output(count) = value
             count += 1
           i += 1
@@ -298,7 +300,7 @@ object Benchmarks extends Suite("threads-bench", m"Effect runtimes: Soundness vs
         val transformed = batch.map(work(_, rounds))
         var i = 0
         while i < transformed.length do
-          sum += transformed(i)
+          sum += transformed.readUnchecked(i)
           i += 1
       sum
 
@@ -313,18 +315,18 @@ object Benchmarks extends Suite("threads-bench", m"Effect runtimes: Soundness vs
 
         val sums: Array[Long] =
           concurrently(chunks.length, parallelism): index =>
-            val batch = chunks(index)
+            val batch = chunks.readUnchecked(index)
             var sum = 0L
             var i = 0
             while i < batch.length do
-              sum += work(batch(i), rounds)
+              sum += work(batch.readUnchecked(i), rounds)
               i += 1
             sum
 
         var total = 0L
         var i = 0
         while i < sums.length do
-          total += sums(i)
+          total += sums.readUnchecked(i)
           i += 1
         total
 
@@ -344,7 +346,7 @@ object Benchmarks extends Suite("threads-bench", m"Effect runtimes: Soundness vs
           val batch = queue.take().asInstanceOf[Array[Int]]
           var i = 0
           while i < batch.length do
-            sum += work(batch(i), rounds)
+            sum += work(batch.readUnchecked(i), rounds)
             i += 1
           taken += 1
         producer.await()
@@ -380,12 +382,12 @@ object Benchmarks extends Suite("threads-bench", m"Effect runtimes: Soundness vs
 
     rounds.foreach: work =>
       agree(t"workers $work")
-        ( Direct.workers(valuesArray, parallelism, work).toVector,
+        ( Direct.workers(valuesArray, parallelism, work).to[List].stdlib,
           Rivals.Ce.workers(values, parallelism, work),
           Rivals.Ky.workers(values, parallelism, work) )
 
       agree(t"collect successes $work")
-        ( Direct.collectSuccesses(valuesArray, parallelism, work).toVector,
+        ( Direct.collectSuccesses(valuesArray, parallelism, work).to[List].stdlib,
           Rivals.Ce.collectSuccesses(values, work),
           Rivals.Ky.collectSuccesses(values, work) )
 
