@@ -248,26 +248,26 @@ object Archive:
     ( truncated: (Int, Int) => Nothing )
   :   () ->{cursor, truncated} Optional[Data] =
 
-    // [closure-capture] local counter captured by returned pull closure
-    @caps.unsafe.untrackedCaptures
-    var consumed: Long = 0L
+    // An atomic cell rather than a `var`: the returned closure may only capture `cursor` and
+    // `truncated`, and a cell is pure, where a captured local `var` is a capability.
+    val consumed = Atomic.Long(0L)
 
     val chunkSize: Int = 65536
 
     () =>
-      if consumed >= size then
-        if consumed < padded then
-          val remainder = (padded - consumed).toInt
+      if consumed() >= size then
+        if consumed() < padded then
+          val remainder = (padded - consumed()).toInt
           cursor.take(truncated(remainder, cursor.available))(remainder)
-          consumed = padded
+          consumed() = padded
 
         Unset
       else
-        val count = (size - consumed).min(chunkSize.toLong).toInt
+        val count = (size - consumed()).min(chunkSize.toLong).toInt
 
         // The inline `take` expansion re-infers a fresh `any.rd` on the frozen chunk; the
         // cast reasserts the frozen form, which `take` already guarantees.
         val data = cursor.take(truncated(count, cursor.available))(count).asInstanceOf[Data]
 
-        consumed += count
+        consumed() = consumed() + count
         data

@@ -141,9 +141,10 @@ private[scintillate] object Connections:
             catch case _: ji.IOException => abort(Truncation.Error(count.b))
 
           case Http.Body.Flowing(source) =>
-            val stream = source()
-
-            def recur(): Unit = stream.refill(Credit(Long.MaxValue)) match
+            // The stream is passed explicitly rather than closed over, so the tail re-entry is
+            // a call over a parameter, not a read-back of a captured exclusive.
+            def recur(stream: (Stream[Data] over Credit)^): Unit =
+              stream.refill(Credit(Long.MaxValue)) match
               case size: Int =>
                 try
                   stream.lend: region =>
@@ -158,13 +159,11 @@ private[scintillate] object Connections:
                 catch case _: ji.IOException => abort(Truncation.Error(count.b))
 
                 stream.skip(size)
-                // Tail re-entry over the same single-owner stream.
-                // [closure-capture] local def tail re-entry over single-owner stream
-                scala.caps.unsafe.unsafeAssumeSeparate(recur())
+                recur(stream)
 
               case _ => ()
 
-            recur()
+            recur(source())
 
           case Http.Body.Empty =>
             try responseBody.flush()
