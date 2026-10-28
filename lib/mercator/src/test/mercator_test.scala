@@ -47,7 +47,7 @@ object Tests extends Suite("monads", m"Mercator tests"):
     test(m"Identity for Option"):
       val point = summon[Identity[Option]]
       point.point(1)
-    . assert(_ == 1)
+    . assert(_ == Some(1))
 
     test(m"Identity for List"):
       summon[Identity[scala.collection.immutable.List]].point(1)
@@ -77,7 +77,7 @@ object Tests extends Suite("monads", m"Mercator tests"):
     test(m"Functor for Option"):
       val functor = summon[Functor[Option]]
       functor.map(Some(1))(_ + 1)
-    . assert(_ == 2)
+    . assert(_ == Some(2))
 
     test(m"Functor for List"):
       val functor = summon[Functor[scala.collection.immutable.List]]
@@ -107,7 +107,7 @@ object Tests extends Suite("monads", m"Mercator tests"):
     test(m"Monad for Option"):
       val monad = summon[Monad[Option]]
       monad.bind(Some(1)) { v => Some(v + 1) }
-    . assert(_ == 2)
+    . assert(_ == Some(2))
 
     test(m"Monad for List"):
       val monad = summon[Monad[scala.collection.immutable.List]]
