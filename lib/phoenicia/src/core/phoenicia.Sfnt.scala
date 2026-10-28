@@ -119,6 +119,7 @@ object Sfnt:
 
     // A font has a handful of tables, so counting them is cheap.
     import denominative.dysasymptotics.linearSize
+    import denominative.size
     import rudiments.sortingAlgorithms.timsort
 
     val sorted = tables.order(_(0).s)
@@ -127,7 +128,7 @@ object Sfnt:
     val searchRange = (1 << entrySelector)*16
     val tablesStart = 12 + count*16
 
-    val total = tablesStart + sorted.sumBy: entry => padded(entry(1).length)
+    val total = tablesStart + sorted.fuse(0)(state + padded(next(1).length))
 
     val buffer = Array.allocate[Byte](total)
 

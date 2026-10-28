@@ -318,8 +318,6 @@ object Launcher:
         def optional(field: Int): Optional[Text] = children.reap:
           case Tel.Element.Value(`field`, _, text) => text
 
-        . optional
-
         def text(field: Int): Text = optional(field).or(abort(Launcher.Mismatch()))
 
         def texts(field: Int): List[Text] =
@@ -340,8 +338,6 @@ object Launcher:
               def field(index: Int): Optional[Text] = fields.reap:
                 case Tel.Element.Value(`index`, _, text) => text
 
-              . optional
-
               Descriptor
                 ( field(0).or(abort(Launcher.Mismatch())).as[Int],
                   field(1).or(abort(Launcher.Mismatch())),
@@ -354,8 +350,6 @@ object Launcher:
             case Tel.Element.Node(17, _, fields) =>
               def field(index: Int): Optional[Text] = fields.reap:
                 case Tel.Element.Value(`index`, _, text) => text
-
-              . optional
 
               Raw
                 ( field(0).or(abort(Launcher.Mismatch())),

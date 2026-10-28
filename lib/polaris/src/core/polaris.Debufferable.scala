@@ -36,7 +36,6 @@ import anticipation.*
 import hypotenuse.*
 import prepositional.*
 import rudiments.*
-import vacuous.or
 import wisteria.*
 
 object Debufferable extends ProductDerivable[Debufferable]:
@@ -76,7 +75,7 @@ object Debufferable extends ProductDerivable[Debufferable]:
     // this derivation, and any second expansion in the same unit fails the root-visibility
     // check (upstream #26547, from 2026-07-17 nightlies).
     Join[derivation]
-      ( contexts[derivation]() { [field] => _.width }.total.or(0),
+      ( contexts[derivation]() { [field] => _.width }.fuse(0)(state + next),
         (sextant: Sextant^) => build { [field] => context => context.debuffer(sextant) } )
 
 trait Debufferable extends Typeclass:
