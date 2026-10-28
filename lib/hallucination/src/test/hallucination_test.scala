@@ -599,7 +599,7 @@ object Tests extends Suite("image", m"Hallucination Tests"):
 
     test(m"a four-bit greyscale PNG decodes with scaled samples"):
       val raster = PngCodec.decode(grey4)
-      (0 until 4).map(raster(_, 0).red).to[List]
+      List.from((0 until 4).map(raster(_, 0).red))
     . assert(_ == List(0, 85, 170, 255))
 
     val pal2 = hex"""89504e470d0a1a0a0000000d494844520000000400000002020300000002c695f00000000c504c54

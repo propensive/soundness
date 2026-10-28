@@ -65,7 +65,7 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
 
     def writeZip(name: Text, entries: Zip.Entry*): Path on Linux =
       val path = workDir/name
-      path.write(Zipfile(entries.to[List]))
+      path.write(Zipfile(List.from(entries)))
       path
 
     def bytesOf(path: Path on Linux): Data = path.read[Data]
@@ -97,7 +97,7 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
         val builder = scala.collection.immutable.List.newBuilder[Text]
         val iterator = zip.entries().nn
         while iterator.hasMoreElements do builder += iterator.nextElement().nn.getName.nn.tt
-        builder.result().to[List]
+        List.from(builder.result())
       finally zip.close()
 
     def jdkContent(path: Path on Linux, name: Text): Data =
@@ -427,7 +427,7 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
       lazy val path: Path on Linux =
         val many = (0 until 66000).map { i => entry(t"e$i", t"") }
         val path = workDir/t"zip64.zip"
-        path.write(Zipfile(many.to[List]))
+        path.write(Zipfile(List.from(many)))
         path
 
       test(m"a ZIP64 end-of-central-directory record is emitted"):

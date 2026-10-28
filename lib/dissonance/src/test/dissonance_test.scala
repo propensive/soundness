@@ -86,7 +86,7 @@ object Tests extends Suite("diff", m"Dissonance tests"):
       . assert(_ == Diff(Par(0, 0, 'A'), Del(1, 'B'), Par(2, 1, 'C')))
 
       test(m"Deletion from start of short list"):
-        diff(t"ABC".chars.to[Sequence], t"BC".chars.to[Sequence]).edits.to[List]
+        List.from(diff(t"ABC".chars.to[Sequence], t"BC".chars.to[Sequence]).edits)
       . assert(_ == List(Del(0, 'A'), Par(1, 0, 'B'), Par(2, 1, 'C')))
 
       test(m"Deletion from end of short list"):
@@ -98,12 +98,12 @@ object Tests extends Suite("diff", m"Dissonance tests"):
       . assert(_ == Diff(Ins(0, 'A'), Par(0, 1, 'B'), Par(1, 2, 'C'), Del(2, 'D')))
 
       test(m"Example from blog"):
-        diff(t"ABCABBA".chars.to[Sequence], t"CBABAC".chars.to[Sequence]).edits.to[List]
+        List.from(diff(t"ABCABBA".chars.to[Sequence], t"CBABAC".chars.to[Sequence]).edits)
       . assert(_ == List(Del(0, 'A'), Del(1, 'B'), Par(2, 0, 'C'), Ins(1, 'B'), Par(3, 2, 'A'),
           Par(4, 3, 'B'), Del(5, 'B'), Par(6, 4, 'A'), Ins(5, 'C')))
 
       test(m"Reversed example from blog"):
-        diff(t"CBABAC".chars.to[Sequence], t"ABCABBA".chars.to[Sequence]).edits.to[List]
+        List.from(diff(t"CBABAC".chars.to[Sequence], t"ABCABBA".chars.to[Sequence]).edits)
       . assert(_ == List(Del(0, 'C'), Ins(0, 'A'), Par(1, 1, 'B'), Ins(2, 'C'), Par(2, 3, 'A'),
           Par(3, 4, 'B'), Ins(5, 'B'), Par(4, 6, 'A'), Del(5, 'C')))
 
@@ -128,8 +128,8 @@ object Tests extends Suite("diff", m"Dissonance tests"):
       . assert(_ == Diff(Del(0, 'A'), Del(1, 'Z'), Par(2, 0, 'B'), Ins(1, 'Z'), Ins(2, 'A')))
 
       test(m"real-world example 1"):
-        diff(Sequence('a', 'b', 'c'), Sequence('A', 'b', 'C')).edits.to[List]
-      . assert(_ == Diff(Del(0, 'a'), Ins(0, 'A'), Par(1, 1, 'b'), Del(2, 'c'), Ins(2, 'C')).edits.to[List])
+        List.from(diff(Sequence('a', 'b', 'c'), Sequence('A', 'b', 'C')).edits)
+      . assert(_ == List.from(Diff(Del(0, 'a'), Ins(0, 'A'), Par(1, 1, 'b'), Del(2, 'c'), Ins(2, 'C')).edits))
 
       test(m"real-world example 2"):
         diff(Sequence(t"A", t"B"), Sequence(t"B", t"C", t"D"))
@@ -228,32 +228,32 @@ object Tests extends Suite("diff", m"Dissonance tests"):
     suite(m"Evolution tests"):
       test(m"Sample words"):
         val evolution =
-          evolve((scala.collection.immutable.List(t"slain", t"stain", t"strange", t"star", t"rain", t"train").map { w => w.chars.to[List] }).to[List])
+          evolve(List.from((scala.collection.immutable.List(t"slain", t"stain", t"strange", t"star", t"rain", t"train").map { w => w.chars.to[List] })))
         List(Prim, Sec, Ter, Quat, Quin, Sen).map(evolution(_).stdlib.mkString)
       . assert(_ == List("slain", "stain", "strange", "star", "rain", "train"))
 
       test(m"dog/cat"):
-        val evolution = evolve((scala.collection.immutable.List(t"dog", t"cat", t"dog").map { w => w.chars.to[List] }).to[List])
+        val evolution = evolve(List.from((scala.collection.immutable.List(t"dog", t"cat", t"dog").map { w => w.chars.to[List] })))
         List(Prim, Sec, Ter).map(evolution(_).stdlib.mkString)
       . assert(_ == List("dog", "cat", "dog"))
 
       test(m"dog/cat 2"):
-        val evolution = evolve((scala.collection.immutable.List(t"dog", t"cat", t"dog", t"dog2").map { w => w.chars.to[List] }).to[List])
+        val evolution = evolve(List.from((scala.collection.immutable.List(t"dog", t"cat", t"dog", t"dog2").map { w => w.chars.to[List] })))
         List(Prim, Sec, Ter, Quat).map(evolution(_).stdlib.mkString)
       . assert(_ == List("dog", "cat", "dog", "dog2"))
 
       test(m"dog/cat 3"):
-        val evolution = evolve((scala.collection.immutable.List(t"dog", t"cat", t"dog", t"do").map { w => w.chars.to[List] }).to[List])
+        val evolution = evolve(List.from((scala.collection.immutable.List(t"dog", t"cat", t"dog", t"do").map { w => w.chars.to[List] })))
         List(Prim, Sec, Ter, Quat).map(evolution(_).stdlib.mkString)
       . assert(_ == List("dog", "cat", "dog", "do"))
 
       test(m"Dogs and cats"):
-        val evolution = evolve((scala.collection.immutable.List(t"dog", t"dog and cat", t"cat", t"cat and dog").map { w => w.chars.to[List] }).to[List])
+        val evolution = evolve(List.from((scala.collection.immutable.List(t"dog", t"dog and cat", t"cat", t"cat and dog").map { w => w.chars.to[List] })))
         List(Prim, Sec, Ter, Quat).map(evolution(_).stdlib.mkString)
       . assert(_ == List("dog", "dog and cat", "cat", "cat and dog"))
 
       test(m"Jack and Jill"):
-        val evolution = evolve((scala.collection.immutable.List(t"Jack and Jill", t"Jack with Jill", t"Jack und Jill").map { w => w.chars.to[List] }).to[List])
+        val evolution = evolve(List.from((scala.collection.immutable.List(t"Jack and Jill", t"Jack with Jill", t"Jack und Jill").map { w => w.chars.to[List] })))
         List(Prim, Sec, Ter).map(evolution(_).stdlib.mkString)
       . assert(_ == List("Jack and Jill", "Jack with Jill", "Jack und Jill"))
 

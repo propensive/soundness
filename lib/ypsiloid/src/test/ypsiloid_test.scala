@@ -285,7 +285,7 @@ object Tests extends Suite("yaml", m"Ypsiloid Tests"):
       . assert(_ == Sequence(10, 20, 30))
 
       test(m"Parse a flow sequence into a Set"):
-        t"[1, 2, 3]".read[Yaml].as[List[Int]].stdlib.pipe(_.to[Set])
+        t"[1, 2, 3]".read[Yaml].as[List[Int]].stdlib.pipe(Set.from(_))
       . assert(_ == Set(1, 2, 3))
 
       test(m"Empty flow sequence parses to Yaml.Ast.Sequence with no items"):
@@ -421,7 +421,7 @@ object Tests extends Suite("yaml", m"Ypsiloid Tests"):
 
       test(m"Decode Option[Int] from a top-level integer"):
         t"42".read[Yaml].as[Option[Int]]
-      . assert(_ == 42)
+      . assert(_ == Some(42))
 
       test(m"Decode Option[Int] from null"):
         t"null".read[Yaml].as[Option[Int]]
@@ -824,7 +824,7 @@ object Tests extends Suite("yaml", m"Ypsiloid Tests"):
 
       test(m"Encode Some(value)"):
         (Some(42): Option[Int]).in[Yaml].as[Option[Int]]
-      . assert(_ == 42)
+      . assert(_ == Some(42))
 
       test(m"Encode None to absent and decode back"):
         WithOption(t"x", None).in[Yaml].as[WithOption]
@@ -1370,7 +1370,7 @@ object Tests extends Suite("yaml", m"Ypsiloid Tests"):
         . read[Yaml]
 
       test(m"the pulled blocks are the rendered text"):
-        Yaml.emit(document).to[List].join
+        List.from(Yaml.emit(document)).join
       . assert(_ == document.show)
 
       test(m"a tree is emitted in several blocks"):
@@ -1384,7 +1384,7 @@ object Tests extends Suite("yaml", m"Ypsiloid Tests"):
       . assert(_ == document.show)
 
       test(m"a single scalar is emitted whole"):
-        Yaml.emit(t"just text".read[Yaml]).to[List].join
+        List.from(Yaml.emit(t"just text".read[Yaml])).join
       . assert(_ == t"just text".read[Yaml].show)
 
       test(m"a streamed value reads back"):

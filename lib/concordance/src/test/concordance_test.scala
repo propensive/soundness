@@ -56,7 +56,7 @@ object Tests extends Suite("concat", m"Concordance tests"):
 
       test(m"a bijection looks up by key"):
         bijection.get(1)
-      . assert(_ == t"one")
+      . assert(_ == Some(t"one"))
 
       test(m"a bijection has no value for an absent key"):
         bijection.get(9)
@@ -64,11 +64,11 @@ object Tests extends Suite("concat", m"Concordance tests"):
 
       test(m"flipping exchanges keys and values"):
         bijection.flip.get(t"one")
-      . assert(_ == 1)
+      . assert(_ == Some(1))
 
       test(m"flipping twice restores the original"):
         bijection.flip.flip.get(1)
-      . assert(_ == t"one")
+      . assert(_ == Some(t"one"))
 
       test(m"a flipped bijection returns the same object when flipped back"):
         bijection.flip.flip.map
@@ -80,7 +80,7 @@ object Tests extends Suite("concat", m"Concordance tests"):
 
       test(m"removing a key leaves the others"):
         bijection.-(1).get(2)
-      . assert(_ == t"two")
+      . assert(_ == Some(t"two"))
 
       test(m"a bijection iterates as pairs"):
         bijection.iterator.toSet
@@ -88,7 +88,7 @@ object Tests extends Suite("concat", m"Concordance tests"):
 
       test(m"a stdlib map converts to a bijection"):
         scala.collection.immutable.Map(1 -> t"a").bijection.flip.get(t"a")
-      . assert(_ == 1)
+      . assert(_ == Some(1))
 
       test(m"a bijection is applicable by key"):
         bijection.defines(2)

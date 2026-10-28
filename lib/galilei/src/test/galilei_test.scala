@@ -86,7 +86,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       test(m"A path literal's elements are its type"):
         val path = p"/foo/bar/baz"
         summon[path.Topic =:= ("baz", "bar", "foo")]
-        path.descent.to[List]
+        List.from(path.descent)
       . assert(_ == List(t"baz", t"bar", t"foo"))
 
       // A path is not streamable, so `load` reads it whole as bytes and hands them to the

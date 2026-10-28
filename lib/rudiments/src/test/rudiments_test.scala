@@ -1195,7 +1195,7 @@ object Tests extends Suite("core", m"Rudiments Tests"):
 
       test(m"Convert a set value to an Option"):
         setInt.option
-      . assert(_ == 42)
+      . assert(_ == Some(42))
 
       test(m"Fold over a Optional"):
         absentInt.lay(0)(_ + 1)
