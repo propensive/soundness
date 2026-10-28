@@ -1,7 +1,7 @@
 //| mill-version: 1.1.5
 //| mill-jvm-version: temurin:25
 //| mill-jvm-opts: ["-XX:NonProfiledCodeHeapSize=250m", "-XX:ReservedCodeCacheSize=500m"]
-//| mvnDeps: ["dev.propensive:crux-mill:0.1.1"]
+//| mvnDeps: ["dev.propensive:crux-mill:0.1.2"]
 
                                                                                                   /*
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -393,7 +393,11 @@ trait Fork extends CruxScalaModule:
       if mapped.module.organization.value != "org.scala-js" then mapped
       else if Set("scalajs-library_2.13", "scalajs-scalalib_2.13")(mapped.module.name.value)
       then mapped.withVersionConstraint(fork)
-      else mapped.withModule(mapped.module.withOrganization(coursier.core.Organization("io.github.scala-wasm")))
+      // Only what is at the Scala.js version is the scala-wasm fork's; `scalajs-logging` and the
+      // js-env libraries are stock artifacts at their own versions, on Central as `org.scala-js`.
+      else if mapped.versionConstraint.asString == settings.scalaJsVersion
+      then mapped.withModule(mapped.module.withOrganization(coursier.core.Organization("io.github.scala-wasm")))
+      else mapped
 
 // The beneficence plugin writes `META-INF/givens/<typeclass>` and `META-INF/services/probably.Suite`
 // into every module that contributes an entry to them, so both are per-module *fragments* of a
