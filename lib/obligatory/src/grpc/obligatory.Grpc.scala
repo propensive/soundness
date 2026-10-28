@@ -242,7 +242,7 @@ object Grpc:
       def recur(): Chain[response] =
         if messages.hasNext then
           // Successive pulls from the same single-owner message iterator.
-          // [closure-capture] local recur def pulls same message iterator repeatedly
+          // [by-name-capture] the lazy tail captures the single-owner message iterator
           scala.caps.unsafe.unsafeAssumeSeparate
             ( decodeMessage[response](messages.next()) #:: recur() )
         else

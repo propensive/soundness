@@ -1502,32 +1502,30 @@ case class Bytecode
       val callsite = bc.effectivelyStaticCalls
 
       // The budget counter is this walk's own local; no aliased writer.
-      // [closure-capture] each-lambda writes walk-local budget var
-      scala.caps.unsafe.unsafeAssumeSeparate:
-        bc.instructions.each: instr =>
-          // The body itself spends the budget, so the bound is retested per element rather
-          // than bounding the traversal: `keep` fixes its boundary in a pass that completes
-          // before any of the body — and hence before any spending — has run.
-          if budget > 0 then
-            budget -= 1
+      bc.instructions.each: instr =>
+        // The body itself spends the budget, so the bound is retested per element rather
+        // than bounding the traversal: `keep` fixes its boundary in a pass that completes
+        // before any of the body — and hence before any spending — has run.
+        if budget > 0 then
+          budget -= 1
 
-            val target: Optional[(Text, Text, Text)] = instr.opcode match
-              case Invokestatic(o, n, d)                                     => (o, n, d)
-              case Invokevirtual(o, n, d) if callsite.has(instr.offset)      => (o, n, d)
-              case Invokeinterface(o, n, d, _) if callsite.has(instr.offset) => (o, n, d)
-              case _                                                         => Unset
+          val target: Optional[(Text, Text, Text)] = instr.opcode match
+            case Invokestatic(o, n, d)                                     => (o, n, d)
+            case Invokevirtual(o, n, d) if callsite.has(instr.offset)      => (o, n, d)
+            case Invokeinterface(o, n, d, _) if callsite.has(instr.offset) => (o, n, d)
+            case _                                                         => Unset
 
-            target.let: (owner, name, descriptor) =>
-              if depth >= maxDepth then results += Bytecode.Linearized(depth, source, instr)
-              else resolver(owner, name, descriptor) match
-                case bytecode: Bytecode =>
-                  results += Bytecode.Linearized(depth, source, instr)
-                  expand(bytecode, depth + 1, t"$owner.$name")
+          target.let: (owner, name, descriptor) =>
+            if depth >= maxDepth then results += Bytecode.Linearized(depth, source, instr)
+            else resolver(owner, name, descriptor) match
+              case bytecode: Bytecode =>
+                results += Bytecode.Linearized(depth, source, instr)
+                expand(bytecode, depth + 1, t"$owner.$name")
 
-                case _ =>
-                  results += Bytecode.Linearized(depth, source, instr)
+              case _ =>
+                results += Bytecode.Linearized(depth, source, instr)
 
-            . or(results += Bytecode.Linearized(depth, source, instr))
+          . or(results += Bytecode.Linearized(depth, source, instr))
 
     expand(this, 0, t"")
     results.to(List)

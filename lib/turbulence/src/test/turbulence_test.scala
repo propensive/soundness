@@ -762,17 +762,16 @@ object Tests extends Suite("streams", m"Turbulence tests"):
         val stream = source.stream(reader)
         val builder = StringBuilder()
 
-        def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:  // [closure-capture]
-         stream.refill(Credit(64)) match
+        def recur(stream: (Stream[Text] over Credit)^): Unit = stream.refill(Credit(64)) match
           case count: Int =>
             val window = unsafely(stream.unsafeStorage).asInstanceOf[scala.Array[Char]]
             builder.append(String(window, stream.start, count))
             stream.skip(count)
-            scala.caps.unsafe.unsafeAssumeSeparate(recur())  // [closure-capture]
+            recur(stream)
 
           case _ => ()
 
-        scala.caps.unsafe.unsafeAssumeSeparate(recur())  // [closure-capture]
+        recur(stream)
         builder.toString.tt
       . assert(_ == original)
 

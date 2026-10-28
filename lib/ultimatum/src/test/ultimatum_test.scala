@@ -670,13 +670,11 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"a shrink with an anchor clears from the recovered row and re-docks"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        // [closure-capture] local width var read by root's size closure
-        @scala.caps.unsafe.untrackedCaptures
-        var w = 6
-        val root = new InlineRoot(() => w, () => 4)
+        val w = Atomic.Int(6)
+        val root = new InlineRoot(() => w(), () => 4)
         root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi"); root.flush()
         bytes.reset()
-        w = 4
+        w() = 4
         root.invalidate()
         root.anchor(2, 1)
         root.reframe(4, 2); root.move(Prim, Prim); root.put(t"abcd\nhi"); root.flush()
@@ -689,15 +687,13 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"the anchor column selects the reflow model"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        // [closure-capture] local width var read by root's size closure
-        @scala.caps.unsafe.untrackedCaptures
-        var w = 6
-        val root = new InlineRoot(() => w, () => 4)
+        val w = Atomic.Int(6)
+        val root = new InlineRoot(() => w(), () => 4)
         root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi")
         root.showCaret(5.z, Prim)
         root.flush()
         bytes.reset()
-        w = 4
+        w() = 4
         root.invalidate()
         root.anchor(3, 2)
         root.reframe(4, 2); root.move(Prim, Prim); root.put(t"abcd\nhi"); root.flush()
@@ -709,15 +705,13 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"the anchor column selects the truncate model"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        // [closure-capture] local width var read by root's size closure
-        @scala.caps.unsafe.untrackedCaptures
-        var w = 6
-        val root = new InlineRoot(() => w, () => 4)
+        val w = Atomic.Int(6)
+        val root = new InlineRoot(() => w(), () => 4)
         root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi")
         root.showCaret(5.z, Prim)
         root.flush()
         bytes.reset()
-        w = 4
+        w() = 4
         root.invalidate()
         root.anchor(3, 4)
         root.reframe(4, 2); root.move(Prim, Prim); root.put(t"abcd\nhi"); root.flush()
@@ -729,15 +723,13 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"an unmatchable anchor column falls back to the full clear"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        // [closure-capture] local width var read by root's size closure
-        @scala.caps.unsafe.untrackedCaptures
-        var w = 6
-        val root = new InlineRoot(() => w, () => 4)
+        val w = Atomic.Int(6)
+        val root = new InlineRoot(() => w(), () => 4)
         root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi")
         root.showCaret(5.z, Prim)
         root.flush()
         bytes.reset()
-        w = 4
+        w() = 4
         root.invalidate()
         root.anchor(3, 3)
         root.reframe(4, 2); root.move(Prim, Prim); root.put(t"abcd\nhi"); root.flush()
@@ -747,11 +739,11 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"a width growth recovers with both models in agreement"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        var w = 4
-        val root = new InlineRoot(() => w, () => 4)
+        val w = Atomic.Int(4)
+        val root = new InlineRoot(() => w(), () => 4)
         root.reframe(4, 2); root.move(Prim, Prim); root.put(t"ab\nhi"); root.flush()
         bytes.reset()
-        w = 6
+        w() = 6
         root.invalidate()
         root.anchor(2, 1)
         root.reframe(6, 2); root.move(Prim, Prim); root.put(t"ab\nhi"); root.flush()
@@ -763,17 +755,15 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"a second resize without a fresh anchor falls back"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        // [closure-capture] local width var read by root's size closure
-        @scala.caps.unsafe.untrackedCaptures
-        var w = 6
-        val root = new InlineRoot(() => w, () => 4)
+        val w = Atomic.Int(6)
+        val root = new InlineRoot(() => w(), () => 4)
         root.reframe(6, 2); root.move(Prim, Prim); root.put(t"abcdef\nhi"); root.flush()
-        w = 4
+        w() = 4
         root.invalidate()
         root.anchor(2, 1)
         root.reframe(4, 2); root.move(Prim, Prim); root.put(t"abcd\nhi"); root.flush()
         bytes.reset()
-        w = 3
+        w() = 3
         root.invalidate()
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\nhi"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
@@ -784,13 +774,13 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"a wide glyph is counted whole in the reflow prediction"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        var w = 4
-        val root = new InlineRoot(() => w, () => 4)
+        val w = Atomic.Int(4)
+        val root = new InlineRoot(() => w(), () => 4)
         root.reframe(4, 2); root.move(Prim, Prim); root.put(t"ab中\nhi")
         root.showCaret(Prim, Sec)
         root.flush()
         bytes.reset()
-        w = 3
+        w() = 3
         root.invalidate()
         root.anchor(4, 1)
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\nhi"); root.flush()
@@ -830,10 +820,8 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"a resize with an anchor reply recovers the block position"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        // [closure-capture] local width var read by root's size closure
-        @scala.caps.unsafe.untrackedCaptures
-        var w = 6
-        val root = new InlineRoot(() => w, () => 4)
+        val w = Atomic.Int(6)
+        val root = new InlineRoot(() => w(), () => 4)
 
         val events = new Iterator[Terminal.Event]:
           // [stdlib-iterator] event queue var in anonymous test Iterator
@@ -844,7 +832,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
             scala.collection.immutable.List(
               () => Interrupt.Winch,
               () => Terminal.Info.CursorPosition(2, 1),
-              () => { w = 4; Terminal.Info.WindowSize(4, 4) },
+              () => { w() = 4; Terminal.Info.WindowSize(4, 4) },
               () => Keypress.Escape)
 
           def hasNext = remaining.nonEmpty
@@ -951,10 +939,8 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"a WindowSize event re-tiles and fully redraws"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        // [closure-capture] local rows var read by root's size closure
-        @scala.caps.unsafe.untrackedCaptures
-        var liveRows: Int = 4
-        val root = new ScreenRoot(() => 10, () => liveRows)
+        val liveRows = Atomic.Int(4)
+        val root = new ScreenRoot(() => 10, () => liveRows())
 
         val resize = new Iterator[Terminal.Event]:
           // [stdlib-iterator] pending flag in anonymous test Iterator
@@ -964,7 +950,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
 
           def next() =
             pending = false
-            liveRows = 2
+            liveRows() = 2
             Terminal.Info.WindowSize(2, 10)
 
         Form(root, Occupancy.Fullscreen, stack(panel()(Out.print(t"A")), panel()(Out.print(t"B"))))

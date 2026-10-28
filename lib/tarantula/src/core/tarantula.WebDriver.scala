@@ -740,23 +740,18 @@ object WebDriver:
     private final val Shadow: Text = t"shadow-6066-11e4-a52e-4f735466cecf"
 
     // Set once by `create`, before the handle is lent to a block: neither exists until the driver
-    // has minted them, and there is no session to be a method of until then. Both are pure values,
-    // so the variables track nothing; the annotation says so, rather than making the whole session
-    // `Stateful` for two write-once fields.
-    // [field-purity] write-once session fields, class not Stateful
-    @scala.caps.unsafe.untrackedCaptures
-    private var id: Text = t""
+    // has minted them, and there is no session to be a method of until then. Atomic cells rather
+    // than `var`s: a cell is a pure value, so the session need not be `Stateful` for two
+    // write-once fields.
+    private val id: Atomic.Ref[Text] = Atomic.Ref(t"")
+    private val negotiated: Atomic.Ref[Optional[Json]] = Atomic.Ref(Unset)
 
-    // [field-purity]
-    @scala.caps.unsafe.untrackedCaptures
-    private var negotiated: Optional[Json] = Unset
-
-    def sessionId: Text = id
+    def sessionId: Text = id()
 
     // What the driver actually agreed to, which is not what was asked for: it names the browser
     // and version that answered, and says whether optional behaviour — `setWindowRect`,
     // `acceptInsecureCerts` — is available. Vendor keys (`moz:*`, `goog:*`) are left as `Json`.
-    def capabilities: Json = negotiated.or(Empty().in[Json])
+    def capabilities: Json = negotiated().or(Empty().in[Json])
     def browserName: Optional[Text] = capability(t"browserName")
     def browserVersion: Optional[Text] = capability(t"browserVersion")
     def platformName: Optional[Text] = capability(t"platformName")
@@ -824,14 +819,14 @@ object WebDriver:
     private def post(path: Text, content: Json): Json = outcome(address(path).submit()(content))
     private def delete(path: Text): Json = outcome(address(path).fetch(Http.Delete))
 
-    private def read(path: Text): Json = get(t"session/$id/$path")
+    private def read(path: Text): Json = get(t"session/${id()}/$path")
 
     // The session-scoped `DELETE`s: dropping a cookie, closing a window, releasing held keys.
     private def drop(path: Text): Unit =
-      delete(t"session/$id/$path")
+      delete(t"session/${id()}/$path")
       ()
 
-    private def send(path: Text, content: Json): Json = post(t"session/$id/$path", content)
+    private def send(path: Text, content: Json): Json = post(t"session/${id()}/$path", content)
 
     // A command issued for its effect on the browser: the driver replies `{"value":null}`, and
     // there is nothing to read back.
@@ -844,14 +839,14 @@ object WebDriver:
     // `Error` and not as an exception from a field initializer.
     private[tarantula] def create(capabilities: Json): Unit =
       val value = post(t"session", capabilities).value
-      id = Session.text(value.sessionId)
-      negotiated = safely(value.capabilities)
+      id() = Session.text(value.sessionId)
+      negotiated() = safely(value.capabilities)
 
     // Ends the session, and with it the browser instance. Called from the `finally` of the
     // `Sessional` that opened it; a caller never needs it, and could not use the handle
     // afterwards anyway.
     private[tarantula] def close(): Unit =
-      delete(t"session/$id")
+      delete(t"session/${id()}")
       ()
 
     private def elementPath(element: Element, path: Text): Text =
@@ -894,7 +889,7 @@ object WebDriver:
     def window(): Text = Session.text(read(t"window").value)
 
     def closeWindow(): List[Text] =
-      Session.texts(delete(t"session/$id/window").value)
+      Session.texts(delete(t"session/${id()}/window").value)
 
     def switchTo(window: Text): Unit = command(t"window", Handle(window).in[Json])
     def windowRect(): Session.Rect = Session.rect(read(t"window/rect").value)
