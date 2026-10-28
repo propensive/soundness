@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ivy-module version="2.0" xmlns:e="http://ant.apache.org/ivy/extra">
+    <info organisation="dev.propensive" module="stratiform-core_sjs1_3" revision="0.74.0" status="release">
+        <description/>
+    </info>
+    <configurations>
+        <conf name="pom" visibility="public" description=""/>
+        <conf extends="runtime" name="test" visibility="public" description=""/>
+        <conf name="provided" visibility="public" description=""/>
+        <conf name="optional" visibility="public" description=""/>
+        <conf name="compile" visibility="public" description=""/>
+        <conf extends="compile" name="runtime" visibility="public" description=""/>
+    </configurations>
+    <publications>
+        <artifact name="stratiform-core_sjs1_3" type="pom" ext="pom" conf="pom"/>
+        <artifact name="stratiform-core_sjs1_3" type="jar" ext="jar" conf="compile"/>
+        </publications>
+    <dependencies>
+        <dependency 
+        org="org.scala-lang" name="scala3-library_sjs1_3" rev="3.10.0-pro-1.0.5" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="org.scala-js" name="scalajs-library_2.13" rev="1.22.0-wasm.4" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="beneficence-core_sjs1_3" rev="0.74.0" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="proscenium-core_sjs1_3" rev="0.74.0" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="zephyrine-core_sjs1_3" rev="0.74.0" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="turbulence-core_sjs1_3" rev="0.74.0" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="parasite-core_sjs1_3" rev="0.74.0" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="gossamer-core_sjs1_3" rev="0.74.0" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="contingency-core_sjs1_3" rev="0.74.0" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="anticipation-codec_sjs1_3" rev="0.74.0" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="distillate-core_sjs1_3" rev="0.74.0" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="wisteria-core_sjs1_3" rev="0.74.0" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="prepositional-core_sjs1_3" rev="0.74.0" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="contextual-core_sjs1_3" rev="0.74.0" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="gigantism-core_sjs1_3" rev="0.74.0" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="fulminate-core_sjs1_3" rev="0.74.0" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="adversaria-core_sjs1_3" rev="0.74.0" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="aperture-core_sjs1_3" rev="0.74.0" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="praxinoscope-core_sjs1_3" rev="0.74.0" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="stratiform-base256_sjs1_3" rev="0.74.0" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="gastronomy-core_sjs1_3" rev="0.74.0" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="ulysses-core_sjs1_3" rev="0.74.0" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="polyvinyl-core_sjs1_3" rev="0.74.0" conf="compile->compile;runtime->runtime">
+</dependency>
+    </dependencies>
+</ivy-module>

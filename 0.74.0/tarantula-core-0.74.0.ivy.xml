@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ivy-module version="2.0" xmlns:e="http://ant.apache.org/ivy/extra">
+    <info organisation="dev.propensive" module="tarantula-core" revision="0.74.0" status="release">
+        <description/>
+    </info>
+    <configurations>
+        <conf name="pom" visibility="public" description=""/>
+        <conf extends="runtime" name="test" visibility="public" description=""/>
+        <conf name="provided" visibility="public" description=""/>
+        <conf name="optional" visibility="public" description=""/>
+        <conf name="compile" visibility="public" description=""/>
+        <conf extends="compile" name="runtime" visibility="public" description=""/>
+    </configurations>
+    <publications>
+        <artifact name="tarantula-core" type="pom" ext="pom" conf="pom"/>
+        <artifact name="tarantula-core" type="jar" ext="jar" conf="compile"/>
+        </publications>
+    <dependencies>
+        <dependency 
+        org="org.scala-lang" name="scala-library" rev="3.10.0-pro-1.0.5" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency org="dev.propensive" name="beneficence-core" rev="0.74.0" conf="compile->compile;runtime->runtime"/>
+        <dependency org="dev.propensive" name="proscenium-core" rev="0.74.0" conf="compile->compile;runtime->runtime"/>
+        <dependency org="dev.propensive" name="jacinta-core" rev="0.74.0" conf="compile->compile;runtime->runtime"/>
+        <dependency org="dev.propensive" name="telekinesis-jvm" rev="0.74.0" conf="compile->compile;runtime->runtime"/>
+        <dependency org="dev.propensive" name="guillotine-core" rev="0.74.0" conf="compile->compile;runtime->runtime"/>
+        <dependency org="dev.propensive" name="honeycomb-core" rev="0.74.0" conf="compile->compile;runtime->runtime"/>
+        <dependency org="dev.propensive" name="aperture-core" rev="0.74.0" conf="compile->compile;runtime->runtime"/>
+        <dependency org="dev.propensive" name="anticipation-focus" rev="0.74.0" conf="compile->compile;runtime->runtime">
+        </dependency>
+        <dependency org="dev.propensive" name="clavichord-core" rev="0.74.0" conf="compile->compile;runtime->runtime"/>
+        <dependency org="dev.propensive" name="quantitative-units" rev="0.74.0" conf="compile->compile;runtime->runtime">
+        </dependency>
+    </dependencies>
+</ivy-module>

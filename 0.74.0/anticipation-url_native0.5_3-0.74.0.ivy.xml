@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ivy-module version="2.0" xmlns:e="http://ant.apache.org/ivy/extra">
+    <info organisation="dev.propensive" module="anticipation-url_native0.5_3" revision="0.74.0" status="release">
+        <description/>
+    </info>
+    <configurations>
+        <conf name="pom" visibility="public" description=""/>
+        <conf extends="runtime" name="test" visibility="public" description=""/>
+        <conf name="provided" visibility="public" description=""/>
+        <conf name="optional" visibility="public" description=""/>
+        <conf name="compile" visibility="public" description=""/>
+        <conf extends="compile" name="runtime" visibility="public" description=""/>
+    </configurations>
+    <publications>
+        <artifact name="anticipation-url_native0.5_3" type="pom" ext="pom" conf="pom"/>
+        <artifact name="anticipation-url_native0.5_3" type="jar" ext="jar" conf="compile"/>
+        </publications>
+    <dependencies>
+        <dependency 
+        org="org.scala-lang" name="scala-library" rev="3.10.0-pro-1.0.5" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="org.scala-lang" name="proscala-library_native0.5_3" rev="3.10.0-pro-1.0.5" conf="provided->compile">
+</dependency>
+        <dependency org="org.scala-native" name="scala3lib_native0.5_3" rev="3.10.0+0.5.12" conf="provided->compile"/>
+        <dependency org="org.scala-native" name="javalib_native0.5_3" rev="0.5.12" conf="provided->compile"/>
+        <dependency org="org.scala-native" name="auxlib_native0.5_3" rev="0.5.12" conf="provided->compile"/>
+        <dependency org="org.scala-native" name="clib_native0.5_3" rev="0.5.12" conf="provided->compile"/>
+        <dependency org="org.scala-native" name="posixlib_native0.5_3" rev="0.5.12" conf="provided->compile"/>
+        <dependency org="org.scala-native" name="nativelib_native0.5_3" rev="0.5.12" conf="provided->compile"/>
+        <dependency 
+        org="dev.propensive" name="beneficence-core_native0.5_3" rev="0.74.0" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="proscenium-core_native0.5_3" rev="0.74.0" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="anticipation-text_native0.5_3" rev="0.74.0" conf="compile->compile;runtime->runtime">
+</dependency>
+        <dependency 
+        org="dev.propensive" name="anticipation-generic_native0.5_3" rev="0.74.0" conf="compile->compile;runtime->runtime">
+</dependency>
+    </dependencies>
+</ivy-module>
