@@ -67,7 +67,7 @@ object CodecTests extends Suite("tel-codec", m"Stratiform codec tests"):
       var done = false
 
       while !done && i < bytes.length && shift < 64 do
-        val b = bytes.stdlib(i) & 0xff
+        val b = bytes.readUnchecked(i) & 0xff // i ranges over bytes
         value |= (b & 0x7fL) << shift
         shift += 7
         i += 1
@@ -118,7 +118,7 @@ object CodecTests extends Suite("tel-codec", m"Stratiform codec tests"):
     case node: Tel.Element.Node =>
       var result: Optional[Text] = Unset
 
-      node.children.stdlib.foreach: child =>
+      node.children.each: child =>
         if result.absent then result = firstValue(child)
 
       result
@@ -294,7 +294,7 @@ object CodecTests extends Suite("tel-codec", m"Stratiform codec tests"):
         val body = schemaDoc.bintel(Tels.Axiom.tels)
         val element = Bintel.decode(body, Tels.Axiom.tels)
         val reconstructed = element.as[Tels]
-        reconstructed.scalars.stdlib.find(_.name == t"Amount").map(_.encoding).getOrElse(Unset)
+        reconstructed.scalars.seek(_.name == t"Amount").let(_.encoding)
       . assert(_ == t"decimal-varint")
 
     suite(m"Staged parser (Bintel.Parsable) encoded scalars"):
@@ -306,7 +306,7 @@ object CodecTests extends Suite("tel-codec", m"Stratiform codec tests"):
         Bintel.encode(element, schema, bindings)
 
       test(m"the derived schema carries the declared encoding"):
-        Tels.tels[Payment](t"payment").document.members.stdlib.head.absolve match
+        Tels.tels[Payment](t"payment").document.members.head.absolve match
           case f: Tels.Field => f.fieldType.absolve match
             case s: Tels.Scalar => s.encoding
       . assert(_ == t"decimal-varint")

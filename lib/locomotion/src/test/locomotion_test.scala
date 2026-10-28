@@ -160,9 +160,9 @@ object Tests extends Suite("protobuf", m"Locomotion Protobuf Tests"):
       test(m"a nested payload over 127 bytes takes a two-byte length"):
         // Person: tag, 2-byte length, 200 bytes of name, then age = 1: 205 bytes.
         val bytes = wire(Envelope(Person("x".repeat(200).nn.tt, 1)))
-        (bytes.stdlib.take(3), bytes.size, bytes.stdlib.takeRight(2))
+        (bytes.keep(3), bytes.size, bytes.keep(2, Bidi.Rtl))
       . assert:
-          _ == (scala.List(0x0a, 0xcd, 0x01), 208, scala.List(0x10, 0x01))
+          _ == (List(0x0a, 0xcd, 0x01), 208, List(0x10, 0x01))
 
       test(m"a repeated field inside a nested message is sized whole"):
         wire(TagsEnvelope(Tags(List(t"a", t"b"))))
@@ -994,15 +994,15 @@ object Tests extends Suite("protobuf", m"Locomotion Protobuf Tests"):
       val person = Person("x".repeat(40).nn.tt, 1)
 
       def pushed[value: Protobuf.Printable](value: value)
-      :   (Int, scala.collection.immutable.List[Int]) =
+      :   (Int, List[Int]) =
 
         val blocks = scala.collection.mutable.ListBuffer[Data]()
         Protobuf.Printable.emit(value, blocks += _)
-        (blocks.length, blocks.toList.flatMap(_.to[List].stdlib.map(_ & 0xff)))
+        (blocks.length, List.from(blocks).flatMap(_.to[List].map(_ & 0xff)))
 
       test(m"pushed blocks are the printed bytes"):
         pushed(batch)(1)
-      . assert(_ == Protobuf.Printable.print(batch).to[List].stdlib.map(_ & 0xff))
+      . assert(_ == Protobuf.Printable.print(batch).to[List].map(_ & 0xff))
 
       test(m"a message spans several blocks"):
         pushed(batch)(0)
@@ -1010,8 +1010,8 @@ object Tests extends Suite("protobuf", m"Locomotion Protobuf Tests"):
 
       test(m"a string longer than a block is delivered whole"):
         pushed(person)(1)
-      . assert(_ == Protobuf.Printable.print(person).to[List].stdlib.map(_ & 0xff))
+      . assert(_ == Protobuf.Printable.print(person).to[List].map(_ & 0xff))
 
       test(m"pulled blocks are the printed bytes"):
-        supervise(Protobuf.Printable.emit(batch).toList).flatMap(_.to[List].stdlib.map(_ & 0xff))
-      . assert(_ == Protobuf.Printable.print(batch).to[List].stdlib.map(_ & 0xff))
+        supervise(List.from(Protobuf.Printable.emit(batch))).flatMap(_.to[List].map(_ & 0xff))
+      . assert(_ == Protobuf.Printable.print(batch).to[List].map(_ & 0xff))

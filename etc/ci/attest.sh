@@ -157,11 +157,14 @@ if [[ "${SOUNDNESS_CI_SKIP_BUILD:-0}" != "1" ]]; then
     # suites natively: the only stages that catch a `java.*` API Scala Native lacks, or a
     # platform twin that compiles but misbehaves. `make wasm-e2e` then links the `.wasi`
     # backends into a real Wasm component and runs its scenarios under wasmtime — the only
-    # stage that exercises the WIT ABI at runtime.
+    # stage that exercises the WIT ABI at runtime. `benches.compile` compiles (never runs) every
+    # benchmark module: they are in neither `soundness.all` nor the test aggregate, and six of
+    # them once rotted for weeks behind a collection change nobody compiled them against.
     make xek-fetch \
       && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false soundness.all.compile \
       && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false soundness.js.compile \
       && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false soundness.native.compile \
+      && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false benches.compile \
       && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false nativelink.binary \
       && ./out/nativelink/binary.dest/soundness-native \
       && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false nativelink.testSuites \
@@ -209,6 +212,7 @@ statement = {
             "./mill --no-daemon -j 6 --ticker false soundness.all.compile",
             "./mill --no-daemon -j 6 --ticker false soundness.js.compile",
             "./mill --no-daemon -j 6 --ticker false soundness.native.compile",
+            "./mill --no-daemon -j 6 --ticker false benches.compile",
             "./mill --no-daemon -j 6 --ticker false nativelink.binary && ./out/nativelink/binary.dest/soundness-native",
             "./mill --no-daemon -j 6 --ticker false nativelink.testSuites",
             "./mill --no-daemon -j 6 --ticker false test.assembly",

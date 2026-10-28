@@ -462,7 +462,7 @@ object AccrualTests extends Suite("tel-accrual", m"Stratiform multi-error accrua
       . assert(_ == Set(Tel.Error.Reason.BadPragmaPhrase, Tel.Error.Reason.TrailingSpaces))
 
       test(m"Two odd-indented lines accrue two OddIndentation errors"):
-        validateRead(t"a\n b\n c\n").items.stdlib.map(_(1).reason).to(List)
+        validateRead(t"a\n b\n c\n").items.map(_(1).reason).to[List]
       . assert(_ == List(Tel.Error.Reason.OddIndentation, Tel.Error.Reason.OddIndentation))
 
       test(m"An over-indented line recovers and a later defect still accrues"):
@@ -489,11 +489,11 @@ object AccrualTests extends Suite("tel-accrual", m"Stratiform multi-error accrua
       . assert(_ == 0)
 
       test(m"A defect after a blank-then-deeper line still accrues (#1834)"):
-        validateRead(t"tel 1.0\n\nparent\n\n  child\n   bogus\n").items.stdlib.map(_(1).reason).to(List)
+        validateRead(t"tel 1.0\n\nparent\n\n  child\n   bogus\n").items.map(_(1).reason).to[List]
       . assert(_ == List(Tel.Error.Reason.OddIndentation))
 
       test(m"The post-blank odd-indent defect is located on its own line"):
-        validateRead(t"tel 1.0\n\nparent\n\n  child\n   bogus\n").items.stdlib.map(_(1).span.startLine).to(List)
+        validateRead(t"tel 1.0\n\nparent\n\n  child\n   bogus\n").items.map(_(1).span.startLine).to[List]
       . assert(_ == List(5.z))
 
       test(m"Blank-then-over-indented recovers and later defects accrue"):
@@ -519,11 +519,11 @@ object AccrualTests extends Suite("tel-accrual", m"Stratiform multi-error accrua
       CorpusLoader.negative.each: testcase =>
         val expected = CheckFormat.parse(testcase.check).errors.map(_.code)
 
-        if !expected.nil && expected.stdlib.forall(_ < 200)
-        && !strictExemptions.stdlib.contains(testcase.stem)
+        if !expected.nil && expected.all(_ < 200)
+        && !strictExemptions.has(testcase.stem)
         then
           test(m"accrues exactly the reference diagnostics on ${testcase.stem}"):
-            validateRead(testcase.source.utf8).items.stdlib.map(_(1).reason.number).sorted
+            validateRead(testcase.source.utf8).items.map(_(1).reason.number).stdlib.sorted
           . assert(_ == expected.stdlib.sorted)
 
       CorpusLoader.positive.each: testcase =>

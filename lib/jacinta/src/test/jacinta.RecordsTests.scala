@@ -34,6 +34,7 @@ package jacinta
 
 
 import soundness.*
+import denominative.dysasymptotics.linearAccess // the suite indexes small fixture lists
 
 
 import codepages.utf8Codepage
@@ -123,7 +124,7 @@ object RecordsTests extends Suite("json-records", m"Jacinta records tests"):
                   ( Json.Provider.Error.Reason.PatternMismatch(t"green", r"#[0-9a-f]{6}") ) )
 
     test(m"Get a color"):
-      record.children.stdlib(1).color
+      record.children.at(Sec).let(_.color)
     . assert(_ == t"#ff0000")
 
     test(m"Get a nested item value"):

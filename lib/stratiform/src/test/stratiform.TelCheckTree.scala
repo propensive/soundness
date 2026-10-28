@@ -68,7 +68,7 @@ object TelCheckTree:
         List
          ( t"version"   -> CheckTree.Tuple(List(CheckTree.Num(major), CheckTree.Num(minor))),
            t"reference" -> ofOptional(p.reference)(r => CheckTree.Str(r.text)),
-           t"layers"    -> CheckTree.Sequence((p.layers.stdlib.map(l => CheckTree.Str(l))).to(List)),
+           t"layers"    -> CheckTree.Sequence((p.layers.map(l => CheckTree.Str(l))).to[List]),
            t"signature" -> ofOptional(p.signature)(s => CheckTree.Str(s)),
            t"sigil"     -> ofOptional(p.sigil)(c => CheckTree.Str(Text(c.toString))) ) )
 

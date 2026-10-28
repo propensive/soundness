@@ -130,7 +130,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
       Operations.planePath(worktree, name)
 
     def patchFrom(lines: Text*): List[FileDiff] =
-      Patch.parse(lines.to(List))
+      Patch.parse(List.from(lines))
 
     def messages(using worktree: (Git.Worktree.Handle & Granting[Grant.Read & Grant.Write])^): List[Text] =
       worktree.log().value.map(_.message)
@@ -321,7 +321,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
            t"+++ b/foo.txt",
            t"@@ -1 +1 @@",
            t"-old",
-           t"+new" ).stdlib.head.changeKind
+           t"+new" ).head.let(_.changeKind)
       .assert(_ == ChangeKind.Modified)
 
       test(m"a new file has ChangeKind.Added"):
@@ -332,7 +332,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
            t"--- /dev/null",
            t"+++ b/new.txt",
            t"@@ -0,0 +1 @@",
-           t"+content" ).stdlib.head.changeKind
+           t"+content" ).head.let(_.changeKind)
       .assert(_ == ChangeKind.Added)
 
       test(m"a deleted file has ChangeKind.Deleted"):
@@ -343,7 +343,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
            t"--- a/old.txt",
            t"+++ /dev/null",
            t"@@ -1 +0,0 @@",
-           t"-content" ).stdlib.head.changeKind
+           t"-content" ).head.let(_.changeKind)
       .assert(_ == ChangeKind.Deleted)
 
       test(m"a renamed file has ChangeKind.Renamed"):
@@ -351,16 +351,16 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
          ( t"diff --git a/old.txt b/new.txt",
            t"similarity index 100%",
            t"rename from old.txt",
-           t"rename to new.txt" ).stdlib.head.changeKind
+           t"rename to new.txt" ).head.let(_.changeKind)
       .assert(_ == ChangeKind.Renamed)
 
       test(m"a renamed file records both old and new paths"):
-        val file = patchFrom
+        patchFrom
          ( t"diff --git a/old.txt b/new.txt",
            t"similarity index 100%",
            t"rename from old.txt",
-           t"rename to new.txt" ).stdlib.head
-        (file.oldPath, file.newPath)
+           t"rename to new.txt" ).head.let: file =>
+          (file.oldPath, file.newPath)
       .assert(_ == (t"old.txt", t"new.txt"))
 
       test(m"a copied file has ChangeKind.Copied"):
@@ -368,7 +368,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
          ( t"diff --git a/source b/dest",
            t"similarity index 80%",
            t"copy from source",
-           t"copy to dest" ).stdlib.head.changeKind
+           t"copy to dest" ).head.let(_.changeKind)
       .assert(_ == ChangeKind.Copied)
 
       test(m"multiple files yield multiple FileDiffs"):
@@ -397,7 +397,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
            t"+a1",
            t"@@ -10 +10 @@",
            t"-b",
-           t"+b1" ).stdlib.head.hunks.size
+           t"+b1" ).head.let(_.hunks.size)
       .assert(_ == 2)
 
       test(m"hunk records line range from @@ header"):
@@ -410,8 +410,8 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
            t"-old6",
            t"+new7",
            t"+new8",
-           t" ctx9" ).stdlib.head.hunks.stdlib.head
-        (hunk.oldStart, hunk.oldLines, hunk.newStart, hunk.newLines)
+           t" ctx9" ).head.let(_.hunks.head)
+        hunk.lay((0, 0, 0, 0)) { h => (h.oldStart, h.oldLines, h.newStart, h.newLines) }
       .assert(_ == (5, 3, 7, 4))
 
       test(m"a single-line hunk omits the count field"):
@@ -421,8 +421,8 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
            t"+++ b/foo",
            t"@@ -1 +1 @@",
            t"-x",
-           t"+y" ).stdlib.head.hunks.stdlib.head
-        (hunk.oldStart, hunk.oldLines, hunk.newStart, hunk.newLines)
+           t"+y" ).head.let(_.hunks.head)
+        hunk.lay((0, 0, 0, 0)) { h => (h.oldStart, h.oldLines, h.newStart, h.newLines) }
       .assert(_ == (1, 1, 1, 1))
 
       test(m"hunk edits get accurate left/right line numbers"):
@@ -435,7 +435,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
            t"-old6",
            t"+new7",
            t"+new8",
-           t" ctx9" ).stdlib.head.hunks.stdlib.head.edits
+           t" ctx9" ).head.let(_.hunks.head).let(_.edits).or(Nil)
 
         edits == List
          ( Par(5, 7, t"ctx5"),
@@ -452,7 +452,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
            t"+++ b/foo",
            t"@@ -1 +1 @@ def someFunction()",
            t"-old",
-           t"+new" ).stdlib.head.hunks.stdlib.head.section
+           t"+new" ).head.let(_.hunks.head).let(_.section)
       .assert(_ == t"def someFunction()")
 
       test(m"`\\ No newline at end of file` is ignored"):
@@ -464,19 +464,19 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
            t"-old",
            t"\\ No newline at end of file",
            t"+new",
-           t"\\ No newline at end of file" ).stdlib.head.hunks.stdlib.head.edits.size
+           t"\\ No newline at end of file" ).head.let(_.hunks.head).let(_.edits.size)
       .assert(_ == 2)
 
       test(m"a binary diff yields a FileDiff with no hunks"):
-        val file = patchFrom
+        patchFrom
          ( t"diff --git a/blob b/blob",
            t"index 1234567..89abcde",
-           t"Binary files a/blob and b/blob differ" ).stdlib.head
-        file.hunks
-      .assert(_.nil)
+           t"Binary files a/blob and b/blob differ" ).head.let: file =>
+          file.hunks.nil
+      .assert(_ == true)
 
       test(m"asDiff flattens hunks into a Dissonance Diff"):
-        val file = patchFrom
+        patchFrom
          ( t"diff --git a/foo b/foo",
            t"--- a/foo",
            t"+++ b/foo",
@@ -485,16 +485,16 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
            t"+new",
            t"@@ -10 +10 @@",
            t"-other",
-           t"+also" ).stdlib.head
-        Patch.asDiff(file).edits.length
+           t"+also" ).head.let: file =>
+          Patch.asDiff(file).edits.size
       .assert(_ == 4)
 
       test(m"a header with no --- / +++ block still records paths from `diff --git`"):
-        val file = patchFrom
+        patchFrom
          ( t"diff --git a/foo b/foo",
            t"old mode 100644",
-           t"new mode 100755" ).stdlib.head
-        (file.oldPath, file.newPath)
+           t"new mode 100755" ).head.let: file =>
+          (file.oldPath, file.newPath)
       .assert(_ == (t"foo", t"foo"))
 
     // Compile-time checks on the handle types; the backend is immaterial, so they are not run per
@@ -1099,13 +1099,13 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
             commitFile(t"a", t"a\n", t"first")
             commitFile(t"b", t"b\n", t"second")
             worktree.reset(ResetMode.Soft, Git.Revision.head(1), worktree.head())
-            worktree.reflog().value.stdlib.head.message.starts(t"reset:")
+            worktree.reflog().value.head.lay(false)(_.message.starts(t"reset:"))
         .assert(_ == true)
 
         test(m"reflog entries carry the commit hash"):
           withWorktree: worktree ?=>
             val hash = commitFile(t"a", t"a\n", t"first")
-            worktree.reflog().value.stdlib.head.hash == hash
+            worktree.reflog().value.head.lay(false)(_.hash == hash)
         .assert(_ == true)
 
       // ----- diff (integration) ---------------------------------------------
@@ -1119,10 +1119,11 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
 
             val files = worktree.diff().value
             files.size == 1
-              && files.stdlib.head.changeKind == ChangeKind.Modified
-              && files.stdlib.head.hunks.bind(_.edits).stdlib.exists:
-                  case Ins(_, t"second") => true
-                  case _                 => false
+              && files.head.lay(false)(_.changeKind == ChangeKind.Modified)
+              && files.head.lay(false): file =>
+                  file.hunks.bind(_.edits).exists:
+                    case Ins(_, t"second") => true
+                    case _                 => false
         .assert(_ == true)
 
         test(m"diffStaged reports staged changes"):
@@ -1132,8 +1133,8 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
             worktree.add(planePath(t"b"))
             val staged = worktree.diffStaged().value
             staged.size == 1
-              && staged.stdlib.head.changeKind == ChangeKind.Added
-              && staged.stdlib.head.newPath == t"b"
+              && staged.head.lay(false)(_.changeKind == ChangeKind.Added)
+              && staged.head.lay(false)(_.newPath == t"b")
         .assert(_ == true)
 
         test(m"diff() ignores already-committed changes"):
@@ -1161,10 +1162,10 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
             commitFile(t"a", t"a\n", t"first")
             sh"rm ${worktree.stem}/a".exec[Exit]()
             worktree.add(planePath(t"a"))
-            val file = worktree.diffStaged().value.stdlib.head
-            file.changeKind == ChangeKind.Deleted
-              && file.oldPath == t"a"
-              && file.newPath == Unset
+            worktree.diffStaged().value.head.lay(false): file =>
+              file.changeKind == ChangeKind.Deleted
+                && file.oldPath == t"a"
+                && file.newPath == Unset
         .assert(_ == true)
 
       // ----- merge / cherry-pick / revert / rebase -----------------------------
@@ -1196,7 +1197,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
           withWorktree: worktree ?=>
             diverged()
             val outcome = worktree.merge(Git.Branch(t"feature"), worktree.head(), ff = FastForward.Never, message = t"merge")
-            (worktree.log().value.stdlib.head.parents.size, outcome.isInstanceOf[Git.Merge.Outcome.Merged])
+            (worktree.log().value.head.lay(0)(_.parents.size), outcome.isInstanceOf[Git.Merge.Outcome.Merged])
         .assert(_ == ((2, true)))
 
         test(m"merging an already-merged branch is UpToDate"):
@@ -1248,7 +1249,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
             write(t"a", t"resolved\n")
             worktree.add(planePath(t"a"))
             worktree.continue() match
-              case Git.Sequence.Outcome.Completed(_) => worktree.log().value.stdlib.head.parents.size
+              case Git.Sequence.Outcome.Completed(_) => worktree.log().value.head.lay(0)(_.parents.size)
               case _                                 => 0
         .assert(_ == 2)
 

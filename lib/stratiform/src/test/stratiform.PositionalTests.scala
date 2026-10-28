@@ -189,7 +189,7 @@ object PositionalTests extends Suite("tel-positional", m"Stratiform positional a
       test(m"a multi-line Text encodes as a source atom and reparses"):
         val value = PNote(t"line one\nline two")
         val sourceForm =
-          value.encode.childCompounds.stdlib.head.atoms.stdlib(0).isInstanceOf[Tel.Atom.Source]
+          value.encode.childCompounds.head.let(_.atoms.at(Prim)).lay(false)(_.isInstanceOf[Tel.Atom.Source])
 
         (value.encode.show.s.tt.read[Tel].as[PNote] == value, sourceForm)
       . assert(_ == (true, true))
@@ -197,7 +197,7 @@ object PositionalTests extends Suite("tel-positional", m"Stratiform positional a
       test(m"an unsafe payload escalates to a literal atom and reparses"):
         val value = PNote(t"para one\n\npara two")
         val literalForm =
-          value.encode.childCompounds.stdlib.head.atoms.stdlib(0).isInstanceOf[Tel.Atom.Literal]
+          value.encode.childCompounds.head.let(_.atoms.at(Prim)).lay(false)(_.isInstanceOf[Tel.Atom.Literal])
 
         (value.encode.show.s.tt.read[Tel].as[PNote] == value, literalForm)
       . assert(_ == (true, true))
@@ -207,8 +207,8 @@ object PositionalTests extends Suite("tel-positional", m"Stratiform positional a
       // both expect.
       test(m"a Boolean encodes as an explicit true/false atom"):
         val doc = PFlags(true, Unset).encode
-        (doc.childCompounds.length, doc.childCompounds.stdlib.head.keyword,
-         doc.childCompounds.stdlib.head.atoms.length)
+        (doc.childCompounds.length, doc.childCompounds.head.lay(t"")(_.keyword),
+         doc.childCompounds.head.lay(0)(_.atoms.length))
       . assert(_ == (1, t"active", 1))
 
       test(m"a false Boolean is written, not omitted"):
@@ -326,19 +326,19 @@ object PositionalTests extends Suite("tel-positional", m"Stratiform positional a
 
       test(m"a repeatable's occurrences all go inline and reparse"):
         val doc = Tel.canonical(PLogBook(PLog(t"lbl", List(1, 2, 3))))
-        (doc.childCompounds.stdlib.head.atoms.length,
+        (doc.childCompounds.head.lay(0)(_.atoms.length),
          reparses(PLogBook(PLog(t"lbl", List(1, 2, 3)))))
       . assert(_ == (4, true))
 
       test(m"a single-occurrence repeatable takes the child form"):
         val doc = Tel.canonical(PLogBook(PLog(t"lbl", List(7))))
-        (doc.childCompounds.stdlib.head.atoms.length,
+        (doc.childCompounds.head.lay(0)(_.atoms.length),
          reparses(PLogBook(PLog(t"lbl", List(7)))))
       . assert(_ == (1, true))
 
       test(m"an absent optional scalar terminates the inline run"):
         val doc = Tel.canonical(PPairBox(PPair(Unset, t"x")))
-        (doc.childCompounds.stdlib.head.atoms.length,
+        (doc.childCompounds.head.lay(0)(_.atoms.length),
          reparses(PPairBox(PPair(Unset, t"x"))))
       . assert(_ == (0, true))
 
@@ -346,12 +346,12 @@ object PositionalTests extends Suite("tel-positional", m"Stratiform positional a
       // explicit `true`/`false` atom.
       test(m"a false Boolean joins the inline run as its atom"):
         val doc = Tel.canonical(PGuardBox(PGuard(false, t"hello")))
-        (doc.childCompounds.stdlib.head.atoms.length,
+        (doc.childCompounds.head.lay(0)(_.atoms.length),
          reparses(PGuardBox(PGuard(false, t"hello"))))
       . assert(_ == (2, true))
 
       test(m"a true Boolean joins the inline run as its atom"):
         val doc = Tel.canonical(PGuardBox(PGuard(true, t"hello")))
-        (doc.childCompounds.stdlib.head.atoms.length,
+        (doc.childCompounds.head.lay(0)(_.atoms.length),
          reparses(PGuardBox(PGuard(true, t"hello"))))
       . assert(_ == (2, true))

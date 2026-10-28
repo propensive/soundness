@@ -50,27 +50,27 @@ object Tests extends Suite("rpc", m"Obligatory Tests"):
   def run(): Unit =
     suite(m"Unframing tests"):
       test(m"Unframe by carriage-return lines"):
-        Chain.iterator(Chain(t"one\rtwo\r", t"three")).frames[CarriageReturn].to(List)
+        List.from(Chain.iterator(Chain(t"one\rtwo\r", t"three")).frames[CarriageReturn])
       . assert(_ == List("one", "two", "three"))
 
       test(m"Unframe by carriage-return lines, without terminal line"):
-        Chain.iterator(Chain(t"one\rtwo", t"\rthree\r")).frames[CarriageReturn].to(List)
+        List.from(Chain.iterator(Chain(t"one\rtwo", t"\rthree\r")).frames[CarriageReturn])
       . assert(_ == List("one", "two", "three"))
 
       test(m"Unframe by linefeed lines"):
-        Chain.iterator(Chain(t"one\ntwo\nth", t"ree")).frames[Linefeed].to(List)
+        List.from(Chain.iterator(Chain(t"one\ntwo\nth", t"ree")).frames[Linefeed])
       . assert(_ == List("one", "two", "three"))
 
       test(m"Unframe by linefeed lines, without terminal line"):
-        Chain.iterator(Chain(t"one\ntwo\nthree\n")).frames[Linefeed].to(List)
+        List.from(Chain.iterator(Chain(t"one\ntwo\nthree\n")).frames[Linefeed])
       . assert(_ == List("one", "two", "three"))
 
       test(m"Unframe by cr/lf lines"):
-        Chain.iterator(Chain(t"""one\r\ntwo\r\nthree""")).frames[CrLf].to(List)
+        List.from(Chain.iterator(Chain(t"""one\r\ntwo\r\nthree""")).frames[CrLf])
       . assert(_ == List("one", "two", "three"))
 
       test(m"Unframe by cr/lf lines, without terminal line"):
-        Chain.iterator(Chain(t"""one\r\ntwo\r\nthree\r\n""")).frames[CrLf].to(List)
+        List.from(Chain.iterator(Chain(t"""one\r\ntwo\r\nthree\r\n""")).frames[CrLf])
       . assert(_ == List("one", "two", "three"))
 
       test(m"Unframe bytes by linefeed lines"):
@@ -81,11 +81,11 @@ object Tests extends Suite("rpc", m"Obligatory Tests"):
       . assert(_ == List("one", "two", "three"))
 
       test(m"Unframe bytes by linefeed lines, without terminal fragment"):
-        Chain.iterator(Chain(t"one\ntwo\nthree\n".in[Data])).frames[Linefeed].map(_.utf8).to(List)
+        List.from(Chain.iterator(Chain(t"one\ntwo\nthree\n".in[Data])).frames[Linefeed].map(_.utf8))
       . assert(_ == List("one", "two", "three"))
 
       test(m"Unframe bytes by linefeed lines, retaining empty lines"):
-        Chain.iterator(Chain(t"one\n\ntwo\n".in[Data])).frames[Linefeed].map(_.utf8).to(List)
+        List.from(Chain.iterator(Chain(t"one\n\ntwo\n".in[Data])).frames[Linefeed].map(_.utf8))
       . assert(_ == List("one", "", "two"))
 
       test(m"Unframe bytes by linefeed splits multi-byte UTF-8 content correctly"):
@@ -111,11 +111,11 @@ object Tests extends Suite("rpc", m"Obligatory Tests"):
         List(Data(1, 2, 3), Data(), Data(-1, -2), Array.tabulate[Byte](300)(_.toByte))
 
       test(m"Length-prefixed chunks longer than 127 bytes"):
-        Chain.iterator(Chain(LengthPrefix.encode(longBody))).frames[LengthPrefix].to(List).map(_.to[List])
+        List.from(Chain.iterator(Chain(LengthPrefix.encode(longBody))).frames[LengthPrefix]).map(_.to[List])
       . assert(_ == List(longBody.to[List]))
 
       test(m"Length-prefixed chunks longer than 32767 bytes"):
-        Chain.iterator(Chain(LengthPrefix.encode(hugeBody))).frames[LengthPrefix].to(List).map(_.length)
+        List.from(Chain.iterator(Chain(LengthPrefix.encode(hugeBody))).frames[LengthPrefix]).map(_.length)
       . assert(_ == List(40000))
 
       test(m"Length-prefixed records round-trip through `encode`"):
@@ -129,38 +129,38 @@ object Tests extends Suite("rpc", m"Obligatory Tests"):
         val input =
           t"Content-Type: x\r\nContent-Length: 5\r\n\r\n12345Content-Length: 3\r\n\r\nabc"
 
-        Iterator(input.in[Data]).frames[ContentLength].map(_.utf8).to(List)
+        List.from(Iterator(input.in[Data]).frames[ContentLength].map(_.utf8))
       . assert(_ == List("12345", "abc"))
 
       test(m"Content-Length counts bytes, not characters"):
         val body = t"""{"text":"café"}"""
         val input = t"Content-Length: ${body.in[Data].length}\r\n\r\n"+body
 
-        Iterator(input.in[Data]).frames[ContentLength].map(_.utf8).to(List)
+        List.from(Iterator(input.in[Data]).frames[ContentLength].map(_.utf8))
       . assert(_ == List(t"""{"text":"café"}"""))
 
       test(m"Server-side events"):
         val input = t"data: foobar\ndata: baz\n\ndata: hello world\n\n"
 
-        Iterator(input).frames[Sse].to(List)
+        List.from(Iterator(input).frames[Sse])
       . assert(_ == List("data: foobar\ndata: baz", "data: hello world"))
 
       test(m"Server-side events without terminal newlines"):
         val input = t"data: foobar\ndata: baz\n\ndata: hello world"
 
-        Iterator(input).frames[Sse].to(List)
+        List.from(Iterator(input).frames[Sse])
       . assert(_ == List("data: foobar\ndata: baz", "data: hello world"))
 
       test(m"Typed server-side events"):
         val input = t"event: one\ndata: foobar\ndata: baz\n\ndata: hello world"
 
-        Iterator(input).frames[Sse].map(_.as[Sse]).to(List)
+        List.from(Iterator(input).frames[Sse].map(_.as[Sse]))
       . assert(_ == List(Sse("one", List("foobar", "baz")), Sse("message", List("hello world"))))
 
       test(m"Typed server-side events with more fields"):
         val input = t"event: one\nid: 123\ndata: foobar\ndata: baz\n\ndata: hello world\nretry: 54321"
 
-        Iterator(input).frames[Sse].map(_.as[Sse]).to(List)
+        List.from(Iterator(input).frames[Sse].map(_.as[Sse]))
       . assert(_ == List(Sse("one", List("foobar", "baz"), "123"), Sse("message", List("hello world"), Unset, 54321L)))
 
     suite(m"gRPC message framing"):
@@ -172,17 +172,17 @@ object Tests extends Suite("rpc", m"Obligatory Tests"):
 
       test(m"round-trip a single message"):
         val framed = Grpc.Framing.encode(ascii(t"hello"))
-        Chain.iterator(Chain(framed)).frames[Grpc.Framing].to(List).map(_.to[List])
+        List.from(Chain.iterator(Chain(framed)).frames[Grpc.Framing]).map(_.to[List])
       . assert(_ == List(ascii(t"hello").to[List]))
 
       test(m"split two concatenated messages"):
         val framed = Array.from(Grpc.Framing.encode(ascii(t"one")).stdlib ++ Grpc.Framing.encode(ascii(t"two")).stdlib)
-        Chain.iterator(Chain(framed)).frames[Grpc.Framing].to(List).map(_.to[List])
+        List.from(Chain.iterator(Chain(framed)).frames[Grpc.Framing]).map(_.to[List])
       . assert(_ == List(ascii(t"one").to[List], ascii(t"two").to[List]))
 
       test(m"gzip-compressed message round-trips"):
         val framed = Grpc.Framing.encode(ascii(t"compress me please"), compress = true)
-        Chain.iterator(Chain(framed)).frames[Grpc.Framing].to(List).map(_.to[List])
+        List.from(Chain.iterator(Chain(framed)).frames[Grpc.Framing]).map(_.to[List])
       . assert(_ == List(ascii(t"compress me please").to[List]))
 
       test(m"status code maps to the canonical name"):

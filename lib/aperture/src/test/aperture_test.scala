@@ -53,7 +53,7 @@ class DocHandle(val name: Text, val flags: List[TestFlag]) extends caps.Exclusiv
   @scala.caps.unsafe.untrackedCaptures
   private var appended: List[Text] = Nil
   def titleOf: Text = t"doc:$name"
-  def appendedText: Text = appended.stdlib.reverse.join
+  def appendedText: Text = appended.reverse.join
 
 extension (handle: (DocHandle & Granting[Grant.Read])^)
   def title: Text = handle.titleOf

@@ -530,7 +530,7 @@ object Tests extends Suite("svg", m"Savagery tests"):
 
       test(m"Parse SVG with path and check ops"):
         val svg = t"""<svg width="10" height="10"><path d="M 0 0 L 1 1 Z"/></svg>""".read[Svg]
-        svg.figures.stdlib.head
+        svg.figures.head
       .assert:
           case Outline(ops, Unset, Unset, Nil) =>
             ops.reverse == List(Stroke.MoveTo(Point(0, 0)), Stroke.DrawTo(Point(1, 1)), Stroke.Close)
@@ -538,7 +538,7 @@ object Tests extends Suite("svg", m"Savagery tests"):
 
       test(m"Parse path with relative h and v"):
         val svg = t"""<svg width="10" height="10"><path d="M 0 0 h 2 v -2 Z"/></svg>""".read[Svg]
-        svg.figures.stdlib.head
+        svg.figures.head
       .assert:
           case Outline(ops, _, _, _) =>
             ops.reverse == List
@@ -550,7 +550,7 @@ object Tests extends Suite("svg", m"Savagery tests"):
 
       test(m"Parse path with id"):
         val svg = t"""<svg width="10" height="10"><path id="x" d="M 0 0 Z"/></svg>""".read[Svg]
-        svg.figures.stdlib.head
+        svg.figures.head
       .assert:
           case Outline(_, _, id, _) => id == Svg.Id(t"x")
           case _                    => false
@@ -559,7 +559,7 @@ object Tests extends Suite("svg", m"Savagery tests"):
         val svg = t"""<svg width="10" height="10"><path d="M 0 0 Z" transform="translate(5,10)"/></svg>"""
                 . read[Svg]
 
-        svg.figures.stdlib.head
+        svg.figures.head
       .assert:
           case Outline(_, _, _, transforms) =>
             transforms == List(Transform.Translate(Delta(5, 10)))
@@ -569,7 +569,7 @@ object Tests extends Suite("svg", m"Savagery tests"):
         val svg = t"""<svg width="10" height="10"><path d="M 0 0 Z" transform="translate(1,2) rotate(45)"/></svg>"""
                 . read[Svg]
 
-        svg.figures.stdlib.head
+        svg.figures.head
       .assert:
           case Outline(_, _, _, transforms) =>
             transforms == List(Transform.Translate(Delta(1, 2)), Transform.Rotate(Angle.degrees(45)))
@@ -580,7 +580,7 @@ object Tests extends Suite("svg", m"Savagery tests"):
           t"""<svg width="10" height="10"><defs><linearGradient id="g"><stop offset="0" stop-color="#ff0000"/></linearGradient></defs></svg>"""
         . read[Svg]
 
-        svg.defs.stdlib.head
+        svg.defs.head
       .assert:
           case lg: Svg.LinearGradient[?] =>
             lg.stops.length == 1 && lg.stops.head.color == Srgb(1.0, 0.0, 0.0)
@@ -590,7 +590,7 @@ object Tests extends Suite("svg", m"Savagery tests"):
           t"""<svg width="10" height="10"><defs><linearGradient id="g"><stop offset="0" stop-color="#f00"/></linearGradient></defs></svg>"""
         . read[Svg]
 
-        svg.defs.stdlib.head
+        svg.defs.head
       .assert:
           case lg: Svg.LinearGradient[?] => lg.stops.head.color == Srgb(1.0, 0.0, 0.0)
 
@@ -599,7 +599,7 @@ object Tests extends Suite("svg", m"Savagery tests"):
           t"""<svg width="10" height="10"><defs><linearGradient id="g"><stop offset="0.5" stop-color="rgb(255,0,0)"/></linearGradient></defs></svg>"""
         . read[Svg]
 
-        svg.defs.stdlib.head
+        svg.defs.head
       .assert:
           case lg: Svg.LinearGradient[?] => lg.stops.head.color == Srgb(1.0, 0.0, 0.0)
 
@@ -608,7 +608,7 @@ object Tests extends Suite("svg", m"Savagery tests"):
           t"""<svg width="10" height="10"><defs><linearGradient id="g"><stop offset="0" stop-color="red"/></linearGradient></defs></svg>"""
         . read[Svg]
 
-        svg.defs.stdlib.head
+        svg.defs.head
       .assert:
           case lg: Svg.LinearGradient[?] => lg.stops.head.color == Srgb(1.0, 0.0, 0.0)
 
@@ -618,7 +618,7 @@ object Tests extends Suite("svg", m"Savagery tests"):
 
         . read[Svg]
 
-        svg.defs.stdlib.head
+        svg.defs.head
       .assert:
           case lg: Svg.LinearGradient[?] => lg.id == Svg.Id(t"myGrad")
 
@@ -635,7 +635,7 @@ object Tests extends Suite("svg", m"Savagery tests"):
           t"""<svg width="10" height="10"><g id="pair"><rect x="0" y="0" width="5" height="5"/><circle cx="0" cy="0" r="3"/></g></svg>"""
         . read[Svg]
 
-        svg.figures.stdlib.head
+        svg.figures.head
       .assert:
           case Group(figures, id, _, _) =>
             id == Svg.Id(t"pair") && figures == List(Rectangle((0, 0), 5, 5), Circle((0, 0), 3))
@@ -645,14 +645,14 @@ object Tests extends Suite("svg", m"Savagery tests"):
         val svg =
           t"""<svg width="10" height="10"><polyline points="0,0 10,5 20 0"/></svg>""".read[Svg]
 
-        svg.figures.stdlib.head
+        svg.figures.head
       .assert(_ == Polyline(List(Point(0, 0), Point(10, 5), Point(20, 0))))
 
       test(m"Parse polygon as closed polyline"):
         val svg =
           t"""<svg width="10" height="10"><polygon points="0,0 10,5 20,0"/></svg>""".read[Svg]
 
-        svg.figures.stdlib.head
+        svg.figures.head
       .assert(_ == Polyline(List(Point(0, 0), Point(10, 5), Point(20, 0)), closed = true))
 
       test(m"Parse text with anchor and baseline"):
@@ -660,7 +660,7 @@ object Tests extends Suite("svg", m"Savagery tests"):
           t"""<svg width="10" height="10"><text x="1" y="2" text-anchor="middle" dominant-baseline="hanging">Hi</text></svg>"""
         . read[Svg]
 
-        svg.figures.stdlib.head
+        svg.figures.head
       .assert:
           case Lettering(position, text, anchor, baseline, _, _, _, _) =>
             position == Point(1, 2) && text == t"Hi" && anchor == Lettering.Anchor.Middle
@@ -672,7 +672,7 @@ object Tests extends Suite("svg", m"Savagery tests"):
           t"""<svg width="10" height="10"><rect x="0" y="0" width="5" height="5" id="r" style="fill: red; stroke-width: 2px"/></svg>"""
         . read[Svg]
 
-        svg.figures.stdlib.head
+        svg.figures.head
       .assert:
           case Rectangle(_, _, _, _, style, id) =>
             id == Svg.Id(t"r") && style.let(_.text) == t"fill: red; stroke-width: 2px"
@@ -682,12 +682,12 @@ object Tests extends Suite("svg", m"Savagery tests"):
         val svg = t"""<svg width="10" height="10"><rect x="0" y="0" width="5" height="5" foo="bar"/></svg>"""
                 . read[Svg]
 
-        svg.figures.stdlib.head
+        svg.figures.head
       .assert(_ == Rectangle(Point(0, 0), 5, 5))
 
       test(m"Default missing attributes to zero"):
         val svg = t"""<svg width="10" height="10"><rect width="5" height="5"/></svg>""".read[Svg]
-        svg.figures.stdlib.head
+        svg.figures.head
       .assert(_ == Rectangle(Point(0, 0), 5, 5))
 
       test(m"Round-trip: rectangle"):

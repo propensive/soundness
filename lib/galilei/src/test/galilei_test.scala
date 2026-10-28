@@ -86,7 +86,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       test(m"A path literal's elements are its type"):
         val path = p"/foo/bar/baz"
         summon[path.Topic =:= ("baz", "bar", "foo")]
-        path.descent.to(List)
+        List.from(path.descent)
       . assert(_ == List(t"baz", t"bar", t"foo"))
 
       // A path is not streamable, so `load` reads it whole as bytes and hands them to the
@@ -504,7 +504,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
           target.create[Ram](RamFlag.Size(16L)): ram ?=>
             ram(0L) = t"ABCD".in[Data]
 
-          (target.read[Data].length, Array.from(target.read[Data].stdlib.slice(0, 4)).utf8)
+          (target.read[Data].length, target.read[Data].segment(0.z till 4.z).utf8)
       . assert(_ == (16, t"ABCD"))
 
       test(m"Creating a mapping without Size is refused"):

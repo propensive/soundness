@@ -110,7 +110,7 @@ object Tests extends Suite("atoms", m"Degustation Tests"):
             . filter { path => path.toString.endsWith(".tasty") }
             . map { path => Text(path.toString) }
 
-          use(tastyFiles.to(List), (Text(out.encode.s) :: libs).to(List))
+          use(List.from(tastyFiles), List.from((Text(out.encode.s) :: libs)))
 
     def atomize(source: Text): scala.List[ScalaAtom] =
       compileWith(source, classpath, libraryPaths, false): (tastyFiles, classpath0) =>
@@ -123,15 +123,15 @@ object Tests extends Suite("atoms", m"Degustation Tests"):
 
     // The same source atomized by the compiler-driven oracle (`tasty/1`'s reference
     // implementation), for the differential tests: key, class, encoding and references.
-    def oracleListing(source: Text): scala.List[(Text, Boolean, Text, scala.List[Text])] =
+    def oracleListing(source: Text): scala.List[(Text, Boolean, Text, List[Text])] =
       compileWith(source, classpath, libraryPaths, false): (tastyFiles, classpath0) =>
         degustation.Oracle.atomize(tastyFiles, classpath0).stdlib
-        . map { atom => (atom.key, atom.replaceable, atom.encoding.serialize[Hex], atom.references.stdlib.map(_.toString.tt)) }
+        . map { atom => (atom.key, atom.replaceable, atom.encoding.serialize[Hex], atom.references.map(_.toString.tt)) }
         . sortBy(_(0).s)
 
-    def fullListing(source: Text): scala.List[(Text, Boolean, Text, scala.List[Text])] =
+    def fullListing(source: Text): scala.List[(Text, Boolean, Text, List[Text])] =
       atomize(source)
-      . map { atom => (atom.key, atom.replaceable, atom.encoding.serialize[Hex], atom.references.stdlib.map(_.toString.tt)) }
+      . map { atom => (atom.key, atom.replaceable, atom.encoding.serialize[Hex], atom.references.map(_.toString.tt)) }
       . sortBy(_(0).s)
 
     lazy val baseline = listing(fixture)
@@ -290,12 +290,12 @@ object Tests extends Suite("atoms", m"Degustation Tests"):
         atoms
         . find { atom => atom.key.s.startsWith(prefix) && atom.key.s.endsWith("[inline]") }
         . map:
-            _.references.stdlib.map:
+            _.references.map:
               case ScalaReference.Own(key)     => s"own:$key"
               case ScalaReference.Foreign(key) => s"foreign:$key"
-            . toSet
+            . stdlib.toSet
 
-        . getOrElse(scala.collection.immutable.Set())
+        . getOrElse(scala.collection.immutable.Set[String]())
 
       val outerRefs = refs("refs.outer(")
       val nestedRefs = refs("refs.nested(")
@@ -385,15 +385,15 @@ object Tests extends Suite("atoms", m"Degustation Tests"):
         . filter { path => !path.toString.contains("/test/") }
         . map { path => Text(path.toString) }
 
-      val corpusClasspath = (outputs ++ libraryPaths).to(List)
+      val corpusClasspath = List.from((outputs ++ libraryPaths))
 
       test(m"a real module's TASTy atomizes without vocabulary gaps"):
-        Inspection.atomize(corpusTasty.to(List), corpusClasspath).size
+        Inspection.atomize(List.from(corpusTasty), corpusClasspath).size
       . assert(_ > 0)
 
       test(m"a real module's atomization is deterministic"):
         def once(): scala.List[(Text, Text)] =
-          Inspection.atomize(corpusTasty.to(List), corpusClasspath).stdlib
+          Inspection.atomize(List.from(corpusTasty), corpusClasspath).stdlib
           . map { atom => (atom.key, atom.encoding.serialize[Hex]) }
           . sortBy(_(0).s)
 

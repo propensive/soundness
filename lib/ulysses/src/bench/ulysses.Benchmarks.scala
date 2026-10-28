@@ -94,7 +94,9 @@ object Benchmarks extends Suite("bloom-bench", m"Ulysses Bloom filter benchmarks
   val absentBytes: Array[scala.Array[Byte]] =
     absentStrings.map(_.getBytes(StandardCharsets.UTF_8).nn)
 
-  def keys(size: Int): List[Text] = List.tabulate(size)(present(_))
+  // `readUnchecked` throughout: every index is a loop counter or ring cursor bounded by the
+  // array it reads.
+  def keys(size: Int): List[Text] = List.tabulate(size)(present.readUnchecked(_))
 
   // Ulysses, filled in place and frozen, under the default (BLAKE3) and a 32-bit checksum hash.
   def buildUlyssesBlake3(size: Int): BloomFilter[Text, Blake3] =
@@ -119,7 +121,7 @@ object Benchmarks extends Suite("bloom-bench", m"Ulysses Bloom filter benchmarks
     var index = 0
 
     while index < size do
-      filter.put(presentStrings(index))
+      filter.put(presentStrings.readUnchecked(index))
       index += 1
 
     filter
@@ -129,7 +131,7 @@ object Benchmarks extends Suite("bloom-bench", m"Ulysses Bloom filter benchmarks
     var index = 0
 
     while index < size do
-      filter.add(presentStrings(index))
+      filter.add(presentStrings.readUnchecked(index))
       index += 1
 
     filter
@@ -140,7 +142,7 @@ object Benchmarks extends Suite("bloom-bench", m"Ulysses Bloom filter benchmarks
     var index = 0
 
     while index < size do
-      filter.merge(EnhancedDoubleHasher(presentBytes(index)))
+      filter.merge(EnhancedDoubleHasher(presentBytes.readUnchecked(index)))
       index += 1
 
     filter
@@ -154,22 +156,22 @@ object Benchmarks extends Suite("bloom-bench", m"Ulysses Bloom filter benchmarks
   lazy val commons: org.apache.commons.collections4.bloomfilter.SimpleBloomFilter =
     buildCommons(filled)
 
-  def ulyssesBlake3Present(): Boolean = ulyssesBlake3.hits(present(advance()))
-  def ulyssesBlake3Absent(): Boolean = ulyssesBlake3.hits(absent(advance()))
-  def ulyssesMurmur3Present(): Boolean = ulyssesMurmur3.hits(present(advance()))
-  def ulyssesMurmur3Absent(): Boolean = ulyssesMurmur3.hits(absent(advance()))
-  def ulyssesCrc32Present(): Boolean = ulyssesCrc32.hits(present(advance()))
-  def ulyssesCrc32Absent(): Boolean = ulyssesCrc32.hits(absent(advance()))
-  def guavaPresent(): Boolean = guava.mightContain(presentStrings(advance()))
-  def guavaAbsent(): Boolean = guava.mightContain(absentStrings(advance()))
-  def alexandrnikitinPresent(): Boolean = alexandrnikitin.mightContain(presentStrings(advance()))
-  def alexandrnikitinAbsent(): Boolean = alexandrnikitin.mightContain(absentStrings(advance()))
+  def ulyssesBlake3Present(): Boolean = ulyssesBlake3.hits(present.readUnchecked(advance()))
+  def ulyssesBlake3Absent(): Boolean = ulyssesBlake3.hits(absent.readUnchecked(advance()))
+  def ulyssesMurmur3Present(): Boolean = ulyssesMurmur3.hits(present.readUnchecked(advance()))
+  def ulyssesMurmur3Absent(): Boolean = ulyssesMurmur3.hits(absent.readUnchecked(advance()))
+  def ulyssesCrc32Present(): Boolean = ulyssesCrc32.hits(present.readUnchecked(advance()))
+  def ulyssesCrc32Absent(): Boolean = ulyssesCrc32.hits(absent.readUnchecked(advance()))
+  def guavaPresent(): Boolean = guava.mightContain(presentStrings.readUnchecked(advance()))
+  def guavaAbsent(): Boolean = guava.mightContain(absentStrings.readUnchecked(advance()))
+  def alexandrnikitinPresent(): Boolean = alexandrnikitin.mightContain(presentStrings.readUnchecked(advance()))
+  def alexandrnikitinAbsent(): Boolean = alexandrnikitin.mightContain(absentStrings.readUnchecked(advance()))
 
   def commonsPresent(): Boolean =
-    commons.contains(org.apache.commons.collections4.bloomfilter.EnhancedDoubleHasher(presentBytes(advance())))
+    commons.contains(org.apache.commons.collections4.bloomfilter.EnhancedDoubleHasher(presentBytes.readUnchecked(advance())))
 
   def commonsAbsent(): Boolean =
-    commons.contains(org.apache.commons.collections4.bloomfilter.EnhancedDoubleHasher(absentBytes(advance())))
+    commons.contains(org.apache.commons.collections4.bloomfilter.EnhancedDoubleHasher(absentBytes.readUnchecked(advance())))
 
   // The false-positive rate each engine actually achieves over the absent ring, as a check that
   // the engines are being compared at the error rate they were all asked for.

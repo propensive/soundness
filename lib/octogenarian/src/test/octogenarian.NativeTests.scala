@@ -93,7 +93,7 @@ object NativeTests extends Suite("git-native", m"Octogenarian native backend"):
 
     // git's output without its trailing newline; leading spaces (as in porcelain status) are kept.
     def gitOut(dir: Path on Linux, arguments: Text*): Text =
-      val output = Command((t"git" :: t"-C" :: dir.encode :: arguments.to(List))*).exec[Text]()
+      val output = Command((t"git" :: t"-C" :: dir.encode :: List.from(arguments))*).exec[Text]()
       if output.ends(t"\n") then output.skip(1, Rtl) else output
 
     suite(m"Opening"):

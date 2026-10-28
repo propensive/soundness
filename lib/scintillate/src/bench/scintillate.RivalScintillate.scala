@@ -61,7 +61,7 @@ object RivalScintillate:
       case t"/echo"  => Http.Response(Http.Ok)(request.body().memoize)
 
       case location if location.starts(t"/user/") =>
-        val value = request.textHeaders.filter(_.key.lower == requestId).prim.lay(t"")(_.value)
+        val value = request.textHeaders.filter(_.key.lower == requestId).head.lay(t"")(_.value)
         Http.Response(Http.Ok)(t"${location.skip(6)}:$value")
 
       case _ =>

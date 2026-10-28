@@ -101,7 +101,7 @@ object ToolkitTests extends Suite("llm-tools", m"Toolkit and tool-loop tests"):
 
       val handle = session(dialect)
       val reply = handle.ask(t"Price AAPL?")
-      val followup = dialect.calls.last.history.stdlib.last.content
+      val followup = dialect.calls.last.history.last.let(_.content).or(List())
 
       (reply.text, dialect.calls.size, followup)
     . assert:
@@ -132,7 +132,7 @@ object ToolkitTests extends Suite("llm-tools", m"Toolkit and tool-loop tests"):
       val handle = session(dialect)
       handle.ask(t"Price AAPL?")
 
-      dialect.calls.last.history.stdlib.last.content.head match
+      dialect.calls.last.history.last.let(_.content.head) match
         case Content.ToolResult(id, _, failure) => (id, failure)
         case other                              => (t"?", false)
     . assert(_ == (t"c1", true))

@@ -40,6 +40,13 @@ rule exceptional
   uses throw
   uses catch-all
 
+# The `.stdlib` bridge out of the native collections, which etc/check-escape-count.py ratchets
+# per file (with its gate-bypass, round-trip and iterator shapes); counted here so the trend
+# lands in the git notes commit by commit and a new bridge is flagged where it is written.
+rule stdlib
+  invokes stdlib
+  message  The `.stdlib` bridge leaves the native collections; prefer the native name, or open the dysasymptotic gate when the cost is the point
+
 # Partial accessors that fail at runtime rather than in the type.
 rule partial
   invokes get

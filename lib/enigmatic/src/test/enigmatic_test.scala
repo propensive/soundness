@@ -256,7 +256,7 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
       val key = SymmetricKey.generate[Aes[256]]()
       key.uncloak:
         val plain = t"Hello world".in[Data]
-        val chunks = plain.stdlib.grouped(1).map { chunk => Array.from(chunk) }.to(Chain)
+        val chunks = Chain.from(plain.stdlib.grouped(1).map { chunk => Array.from(chunk) })
         chunks.encrypt(InitializationVector.random).fold(Array.empty[Byte])(_ + _).decrypt.as[Text]
     . assert(_ == t"Hello world")
 
@@ -480,7 +480,7 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
         tampered.place(wire)
         // Flip a bit in the MAC tag near the end of the envelope.
         val index = wire.length - 5
-        tampered(index) = (tampered.stdlib(index) ^ 0xFF.toByte).toByte
+        tampered(index) = (tampered.readUnchecked(index) ^ 0xFF.toByte).toByte // index is wire.length - 5
         Array.freeze(tampered).authenticate[Cose](key)
       . assert(!_)
 

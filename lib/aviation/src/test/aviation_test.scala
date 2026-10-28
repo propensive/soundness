@@ -1918,7 +1918,7 @@ object Tests extends Suite("time", m"Aviation Tests"):
       test(m"Period.union of overlapping periods is one period"):
         val a = Instant(0L) ~ Instant(2000L)
         val b = Instant(1000L) ~ Instant(3000L)
-        (a.union(b).stdlib.map { p => (p.start.long, p.finish.long) }).to(Set)
+        Set.from((a.union(b).stdlib.map { p => (p.start.long, p.finish.long) }))
       . assert(_ == Set((0L, 3000L)))
 
       test(m"Period.union of disjoint periods is two periods"):
@@ -1963,7 +1963,7 @@ object Tests extends Suite("time", m"Aviation Tests"):
       . assert(_ == 2)
 
       test(m"The final partial segment ends at the period's finish"):
-        (Instant(0L) ~ Instant(3_600_000L)).segments(25*Minute).stdlib.last.finish.long
+        (Instant(0L) ~ Instant(3_600_000L)).segments(25*Minute).last.let(_.finish.long)
       . assert(_ == 3_600_000L)
 
       test(m"A period can be split by a Duration"):
@@ -1992,7 +1992,7 @@ object Tests extends Suite("time", m"Aviation Tests"):
       . assert(_ == List(2024-Jan-1, 2024-Jan-2, 2024-Jan-3, 2024-Jan-4))
 
       test(m"by is lazy, so a vast range can be sampled cheaply"):
-        Period(2024-Jan-1, 2030-Jan-1).by(1*Day).stdlib.take(3).to(List)
+        Period(2024-Jan-1, 2030-Jan-1).by(1*Day).keep(3).to[List]
       . assert(_ == List(2024-Jan-1, 2024-Jan-2, 2024-Jan-3))
 
     suite(m"Monotonic clock"):
@@ -2138,7 +2138,7 @@ object Tests extends Suite("time", m"Aviation Tests"):
       . assert(_ == true)
 
       test(m"A parsed rrule generates the right occurrences"):
-        Rrule.parse(t"FREQ=MONTHLY;BYDAY=-1FR", 2024-Jan-1).occurrences.stdlib.take(2).to(List)
+        Rrule.parse(t"FREQ=MONTHLY;BYDAY=-1FR", 2024-Jan-1).occurrences.keep(2).to[List]
       . assert(_ == List(2024-Jan-26, 2024-Feb-23))
 
       test(m"An invalid rrule string raises Rrule.Error"):

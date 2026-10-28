@@ -93,8 +93,8 @@ object ServingTests extends Suite("tel-serving", m"Stratiform acceptance serving
       val flat = Bintel.flattenKeywords(struct, schema)
 
       children.to[List].map:
-        case Tel.Element.Node(index, _, _)  => flat.stdlib(index.or(0))(0)
-        case Tel.Element.Value(index, _, _) => flat.stdlib(index)(0)
+        case Tel.Element.Node(index, _, _)  => flat.at(index.or(0).z).lay(t"")(_(0))
+        case Tel.Element.Value(index, _, _) => flat.at(index.z).lay(t"")(_(0))
 
     case _ => List()
 

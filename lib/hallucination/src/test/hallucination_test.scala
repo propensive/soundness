@@ -372,7 +372,7 @@ object Tests extends Suite("image", m"Hallucination Tests"):
 
     test(m"a decoded PNG has an eight-bit RGB or RGBA layout"):
       png.read[Raster in Png].descriptor.entries.map(_.depth)
-    . assert(_.stdlib.forall(_ == 8))
+    . assert(_.all(_ == 8))
 
     test(m"repacking to the same layout returns the same raster"):
       val raster = stripes
@@ -480,7 +480,7 @@ object Tests extends Suite("image", m"Hallucination Tests"):
       val raster = JpegCodec.decode(jpgGray)
       var sum = 0L
       for index <- 0 until 23*17 do
-        sum += math.abs(raster(index%23, index/23).red - (grayRef.stdlib(index) & 0xff))
+        sum += math.abs(raster(index%23, index/23).red - (grayRef.readUnchecked(index) & 0xff)) // bounded by the loop
 
       sum.toDouble/(23*17)
     . assert(_ < 2.0)
@@ -491,7 +491,7 @@ object Tests extends Suite("image", m"Hallucination Tests"):
     . assert(_ == true)
 
     test(m"a truncated JPEG fails cleanly"):
-      capture[Raster.Error](JpegCodec.decode(Array.from(jpg420.stdlib.slice(0, 200)))).reason
+      capture[Raster.Error](JpegCodec.decode(jpg420.segment(0.z till 200.z))).reason
     . assert(_ == Raster.Error.Reason.Truncated)
 
     // A smooth gradient whose channels stay within 0..255 (no wrap-around discontinuity that
@@ -599,7 +599,7 @@ object Tests extends Suite("image", m"Hallucination Tests"):
 
     test(m"a four-bit greyscale PNG decodes with scaled samples"):
       val raster = PngCodec.decode(grey4)
-      (0 until 4).map(raster(_, 0).red).to(List)
+      List.from((0 until 4).map(raster(_, 0).red))
     . assert(_ == List(0, 85, 170, 255))
 
     val pal2 = hex"""89504e470d0a1a0a0000000d494844520000000400000002020300000002c695f00000000c504c54
@@ -900,9 +900,9 @@ object Tests extends Suite("image", m"Hallucination Tests"):
     test(m"lossy encoding produces a valid RIFF/WEBP/VP8 container"):
       val encoded = WebpCodec.encodeLossy(lossySource, 80)
 
-      ( String(encoded.stdlib.slice(0, 4).toArray, "UTF-8").tt,
-        String(encoded.stdlib.slice(8, 12).toArray, "UTF-8").tt,
-        String(encoded.stdlib.slice(12, 16).toArray, "UTF-8").tt )
+      ( encoded.segment(0.z till 4.z).utf8,
+        encoded.segment(8.z till 12.z).utf8,
+        encoded.segment(12.z till 16.z).utf8 )
     . assert(_ == (t"RIFF", t"WEBP", t"VP8 "))
 
     test(m"a smaller image also lossy-encodes and round-trips"):
@@ -939,7 +939,7 @@ object Tests extends Suite("image", m"Hallucination Tests"):
     test(m"encoded WebP is a valid RIFF/WEBP/VP8L container"):
       val encoded = WebpCodec.encode(gradient)
 
-      ( String(encoded.stdlib.slice(0, 4).toArray, "UTF-8").tt,
-        String(encoded.stdlib.slice(8, 12).toArray, "UTF-8").tt,
-        String(encoded.stdlib.slice(12, 16).toArray, "UTF-8").tt )
+      ( encoded.segment(0.z till 4.z).utf8,
+        encoded.segment(8.z till 12.z).utf8,
+        encoded.segment(12.z till 16.z).utf8 )
     . assert(_ == (t"RIFF", t"WEBP", t"VP8L"))

@@ -70,7 +70,7 @@ object Readers:
   // carried them exactly; compiled here for the same reason.
   def rawArgument(index: Int)(using resident: Resident): Text =
     resident.rawArgument(index) match
-      case bytes: Data => Text(bytes.stdlib.map(b => f"${b & 0xff}%02x").mkString)
+      case bytes: Data => bytes.to[List].map(b => f"${b & 0xff}%02x".tt).join
       case _           => t"(text)"
 
   // A resident whose clients exchange `Text` messages: `over` fixes the type `broadcast` takes and
@@ -694,7 +694,7 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
             test(m"rapid sequential invocations succeed"):
               val results = (1 to 5).map: i =>
                 sh"$tool echo $i".exec[Text]()
-              results.to(List).map(_.trim)
+              List.from(results).map(_.trim)
 
             . check(_ == List(t"1", t"2", t"3", t"4", t"5"))
 
@@ -1335,7 +1335,7 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
         val signatureHex =
           t"55d18c247b88db8fc6af7a197c56ee2b680084d1800afe8947a2f613c70492e563"
 
-        def hex(data: Data): Text = Text(data.stdlib.map(b => f"${b & 0xff}%02x").mkString)
+        def hex(data: Data): Text = data.to[List].map(b => f"${b & 0xff}%02x".tt).join
         def bytes(values: Int*): Data = Array.unsafeFrozen(values.map(_.toByte).toArray)
 
         test(m"the schema signature is pinned"):
@@ -1482,15 +1482,15 @@ object Tests extends Suite("daemon", m"Ethereal Tests"):
         . check(_ == (t"7", List(0, 1, 127, 128, 255)))
 
         test(m"a document of another schema is rejected"):
-          val bytes = Launcher.encode(Launcher.Message.ExitStatus(7)).stdlib.toList.toArray
+          val bytes = Launcher.encode(Launcher.Message.ExitStatus(7)).to[List].stdlib.toArray
           bytes(6) = (bytes(6) ^ 0x01).toByte
           Launcher.decode(bytes.asInstanceOf[Array[Byte]]).absent
         . check(_ == true)
 
         test(m"readDocument takes exactly one document from a stream"):
           val document = Launcher.encode(Launcher.Message.ExitStatus(7))
-          val stream = document.stdlib.toList ++ scala.List[Byte](1, 2, 3)
-          val in = ji.ByteArrayInputStream(stream.toArray)
+          val stream = List.concat(document.to[List], List[Byte](1.toByte, 2.toByte, 3.toByte))
+          val in = ji.ByteArrayInputStream(stream.stdlib.toArray)
           val read = Launcher.readDocument(in)
           (read.let(hex(_)), in.available())
         . check(_ == (hex(Launcher.encode(Launcher.Message.ExitStatus(7))), 3))

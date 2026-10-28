@@ -37,6 +37,7 @@ import scala.tasty.inspector as sti
 
 import anticipation.*
 import gossamer.*
+import murmuration.*
 import vacuous.*
 
 
@@ -61,7 +62,7 @@ object Oracle:
     val ok =
       try
         sti.TastyInspector.inspectAllTastyFiles
-          (tastyFiles.stdlib.map(_.s), scala.Nil, classpath.stdlib.map(_.s))(inspector)
+          (tastyFiles.map(_.s).stdlib, scala.Nil, classpath.map(_.s).stdlib)(inspector)
 
       catch case error: Exception =>
         throw Oracle.Error(error.getMessage.nn.tt)
@@ -69,6 +70,6 @@ object Oracle:
     failure.let: detail => throw Oracle.Error(detail)
     if !ok then throw Oracle.Error(t"the compiler reported errors")
 
-    result.to(List)
+    List.from(result)
 
   class Error(val detail: Text) extends RuntimeException(detail.s)

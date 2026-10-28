@@ -381,24 +381,24 @@ object Tests extends Suite("dsv", m"Caesura tests"):
       def sheet: Sheet = t"name,age\nAlice,30\nBob,25".read[Sheet]
 
       test(m"cell lens reads a cell by column name"):
-        summon["name" is Lens from Dsv onto Text](sheet.rows.stdlib.head)
+        sheet.rows.head.let(summon["name" is Lens from Dsv onto Text](_))
       . assert(_ == t"Alice")
 
       test(m"cell lens replaces a cell by column name"):
-        sheet.rows.stdlib.head.lens(_.name = t"Carol").data.stdlib.head
+        sheet.rows.head.let(_.lens(_.name = t"Carol").data.head)
       . assert(_ == t"Carol")
 
       test(m"row optic updates a cell in the n-th row"):
-        sheet.lens(_(Sec).name = t"Carol").rows.to[List].map(_.data.stdlib.head)
+        sheet.lens(_(Sec).name = t"Carol").rows.to[List].map(_.data.head.or(t"?"))
       . assert(_ == List(t"Alice", t"Carol"))
 
       test(m"each-row optic updates every row"):
-        sheet.lens(_(Each).name = t"X").rows.to[List].map(_.data.stdlib.head)
+        sheet.lens(_(Each).name = t"X").rows.to[List].map(_.data.head.or(t"?"))
       . assert(_ == List(t"X", t"X"))
 
       test(m"filter-row optic updates only matching rows"):
-        sheet.lens(_(Filter[Dsv](_.data.stdlib.head == t"Bob")).name = t"X")
-         .rows.to[List].map(_.data.stdlib.head)
+        sheet.lens(_(Filter[Dsv](_.data.head == t"Bob")).name = t"X")
+         .rows.to[List].map(_.data.head.or(t"?"))
       . assert(_ == List(t"Alice", t"X"))
 
     suite(m"Roundtrip"):
@@ -437,14 +437,14 @@ object Tests extends Suite("dsv", m"Caesura tests"):
       // close over `capture`'s tracked block parameter.
       test(m"a wrong-typed Optional cell raises Unparseable by default"):
         import dsvFormats.csvFormat
-        try t"hello,abc".read[Sheet].rows.stdlib.head.as[Tally].count
+        try t"hello,abc".read[Sheet].rows.head.let(_.as[Tally].count)
         catch case error: Dsv.Error => error.reason
       . assert(_ == Dsv.Error.Reason.Unparseable(t"abc", t"Int"))
 
       test(m"strict absence raises Absent for a short row's trailing Optional"):
         import dsvFormats.csvFormat
         import optionalityOptions.strictDsvAbsence
-        try t"hello".read[Sheet].rows.stdlib.head.as[Tally].count
+        try t"hello".read[Sheet].rows.head.let(_.as[Tally].count)
         catch case error: Dsv.Error => error.reason
       . assert(_ == Dsv.Error.Reason.Absent)
 

@@ -37,12 +37,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Each library's benchmarks live in `lib/<name>/src/bench` and are declared as `object bench
   extends Benchmarks(…)` in `build.mill`; the cross-format corpus is the top-level `bench` module
   over `src/bench`, run with `make bench`.
-- **Benchmarks must keep compiling.** They are *not* in `soundness.all`, the `test` aggregate, or
-  `make attest`, so a library change that breaks one is otherwise invisible — that is exactly how
-  all 11 of them came to rot behind the opaque-collections migration. The `benches` aggregate
-  module exists to make them visible: `make build` runs `mill benches.compile`, so run `make
-  build` (not just `mill soundness.all`) after any change to a collection API, a core type's
-  surface, or a `Benchmarks(…)` module's dependencies.
+- **Benchmarks must keep compiling.** They are *not* in `soundness.all` or the `test` aggregate,
+  so a library change that breaks one is otherwise invisible — that is exactly how all 11 of them
+  came to rot behind the opaque-collections migration, and six again behind the array changes.
+  The `benches` aggregate module exists to make them visible: `make build` runs `mill
+  benches.compile`, and so does `make attest` (compile only; benchmarks are never run there), so
+  run `make build` (not just `mill soundness.all`) after any change to a collection API, a core
+  type's surface, or a `Benchmarks(…)` module's dependencies.
 - A new benchmark module needs no registration: `benches` collects every `Benchmarks` child of
   every library automatically. A `bench` object with no `src/bench` directory compiles vacuously
   and proves nothing — `zeppelin.bench` is currently in that state.

@@ -109,7 +109,7 @@ private def hexOf(bytes: Data): String =
   val sb = new StringBuilder
   var index = 0
   while index < bytes.length do
-    sb.append(f"${bytes.stdlib(index) & 0xFF}%02x")
+    sb.append(f"${bytes.readUnchecked(index) & 0xFF}%02x") // index ranges over bytes
     index += 1
   sb.toString
 
@@ -802,10 +802,10 @@ object Tests extends Suite("cbor", m"Breviloquence Tests"):
       . assert(_ == 1)
 
     suite(m"Codec modes"):
-      def bytes(data: Data): scala.collection.immutable.List[Int] =
-        data.to[List].stdlib.map(_ & 0xff)
+      def bytes(data: Data): List[Int] =
+        data.to[List].map(_ & 0xff)
 
-      def derivedBytes[value: Encodable in Cbor](value: value): scala.collection.immutable.List[Int] =
+      def derivedBytes[value: Encodable in Cbor](value: value): List[Int] =
         bytes(Cbor.Ast.encodable.encoded(Cbor.unseal(value.in[Cbor])))
 
       val team = Team(Person(t"Ada", 36), 3)
@@ -899,6 +899,6 @@ object Tests extends Suite("cbor", m"Breviloquence Tests"):
         given (Tree is Cbor.Printable) = Inlinable.printable[Tree]
         val blocks = scala.collection.mutable.ListBuffer[Data]()
         Cbor.Printable.emit(tree, blocks += _)
-        (blocks.length > 1, blocks.toList.flatMap(bytes))
+        (blocks.length > 1, List.from(blocks).flatMap(bytes))
       . assert(_ == (true, derivedBytes(tree)))
 

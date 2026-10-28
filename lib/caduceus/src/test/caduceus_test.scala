@@ -210,16 +210,14 @@ object Tests extends Suite("email", m"Caduceus tests"):
         given courier: TestCourier = TestCourier()
         given sender: Sender = Sender(jack)
         t"hello".send(subject = t"Greetings", to = jill, cc = jane, bcc = jack)
-        val envelope = courier.envelopes.stdlib.head
-        (envelope.cc, envelope.bcc)
+        courier.envelopes.head.lay((List[EmailAddress](), List[EmailAddress]())) { envelope => (envelope.cc, envelope.bcc) }
       . assert(_ == (List(jane), List(jack)))
 
       test(m"Recipients default to empty lists"):
         given courier: TestCourier = TestCourier()
         given sender: Sender = Sender(jack)
         t"hello".send(subject = t"Greetings", to = jill)
-        val envelope = courier.envelopes.stdlib.head
-        (envelope.cc, envelope.bcc, envelope.replyTo)
+        courier.envelopes.head.lay((List[EmailAddress](), List[EmailAddress](), List[EmailAddress]())) { envelope => (envelope.cc, envelope.bcc, envelope.replyTo) }
       . assert(_ == (Nil, Nil, Nil))
 
       test(m"The sent email carries the body"):

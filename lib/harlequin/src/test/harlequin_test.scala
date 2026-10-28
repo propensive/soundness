@@ -83,16 +83,16 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
       . assert(_ == Text("Token(text:t\"val\" ╱ accent:Keyword ╱ meta:○ ╱ span:⟪∅⟫ ╱ role:○)"))
 
     test(m"tokenized highlighting attaches no type metadata"):
-      Scala.highlight(snippet).lines.to[List].stdlib.flatMap(_.stdlib).flatMap(_.meta.option)
+      Scala.highlight(snippet).lines.to[List].flatMap(_.stdlib).map(_.meta).sift[Token.Meta]
     .assert(_ == Nil)
 
     test(m"tokenized highlighting survives expressions nested deeper than ten"):
       Scala.highlight(t"val sum: Int = 1 + 2 + 3 + 4 + 5 + 6 + 7 + 8 + 9 + 10 + 11 + 12")
-      . lines.to[List].stdlib.flatMap(_.stdlib).count(_.text == t"+")
+      . lines.to[List].flatMap(_.stdlib).count(_.text == t"+")
     .assert(_ == 11)
 
     test(m"each token carries its line and column position"):
-      val tokens = Scala.highlight(t"val n =\n  List").lines.to[List].stdlib.flatMap(_.stdlib)
+      val tokens = Scala.highlight(t"val n =\n  List").lines.to[List].flatMap(_.stdlib)
 
       tokens.map: token =>
         (token.text, token.span.startLine.lay(-1)(_.n0), token.span.startColumn.lay(-1)(_.n0))
@@ -102,9 +102,8 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
     // exercised by the tokenized (no-typer) path. `tagOf` reads the accent and role (as
     // their rendered names) of the first token whose text matches.
     def tagOf(source: Text, word: Text): (Text, Text) =
-      Scala.highlight(source).lines.to[List].stdlib.flatMap(_.stdlib).find(_.text == word) match
-        case Some(token) => (token.accent.show, token.role.lay(t"")(_.show))
-        case None        => (t"", t"")
+      Scala.highlight(source).lines.to[List].flatMap(_.stdlib).seek(_.text == word).lay((t"", t"")): token =>
+        (token.accent.show, token.role.lay(t"")(_.show))
 
     test(m"a val name is a term binding"):
       tagOf(t"val alpha = 1", t"alpha")
@@ -145,7 +144,7 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
       given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
       import highlighting.typecheckedScala
 
-      typeOf(Scala.highlight(snippet).lines.to[List].stdlib.flatMap(_.stdlib).to(List), t"xs").or(t"")
+      typeOf(Scala.highlight(snippet).lines.to[List].flatMap(_.stdlib).to[List], t"xs").or(t"")
     .assert { rendered => rendered.subsumes(t"List") && rendered.subsumes(t"Int") }
 
     // Within a warm compiler session, a snippet is typed against what the session has compiled:
@@ -163,8 +162,8 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
         val second = Scala.highlight(t"val again = List(Earlier.number)")
 
         ( first.diagnostics.size,
-          typeOf(first.lines.to[List].stdlib.flatMap(_.stdlib).to(List), t"later").or(t""),
-          typeOf(second.lines.to[List].stdlib.flatMap(_.stdlib).to(List), t"again").or(t"") )
+          typeOf(first.lines.to[List].flatMap(_.stdlib).to[List], t"later").or(t""),
+          typeOf(second.lines.to[List].flatMap(_.stdlib).to[List], t"again").or(t"") )
     .assert: (errors, later, again) =>
       errors == 0 && later.subsumes(t"Int") && again.subsumes(t"List") && again.subsumes(t"Int")
 
@@ -245,14 +244,14 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
     // Elaborations record what the typer added at a call site — inferred type arguments and
     // synthesized `using` arguments — on the callee's token, and never anything written.
     suite(m"Elaborations"):
-      def elaborationsOf(source: Text, word: Text): scala.List[prophesy.Elaboration] =
+      def elaborationsOf(source: Text, word: Text): List[prophesy.Elaboration] =
         given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
         given LocalClasspath = LocalClasspath.of(Classloader[Tests.type])
         import highlighting.typecheckedScala
 
-        Scala.highlight(source).lines.to[List].stdlib.flatMap(_.stdlib)
+        Scala.highlight(source).lines.to[List].flatMap(_.stdlib)
         . filter(_.text == word)
-        . flatMap(_.meta.let(_.elaboration).option)
+        . map(_.meta.let(_.elaboration)).sift[prophesy.Elaboration]
 
       val snippet =
         t"def pick[element](x: element)(using Ordering[element]): element = x\nval chosen = pick(9)"
@@ -271,7 +270,7 @@ object Tests extends Suite("highlighting", m"Harlequin Tests"):
           + t"val chosen = pick[Int](9)(using Ordering.Int)"
 
         elaborationsOf(explicit, t"pick")
-      . assert(_.isEmpty)
+      . assert(_.nil)
 
     // Fragment analysis is pure text+lexer work — no compiler givens — so a completion host
     // can split its input before deciding whether to invoke the typechecker at all.

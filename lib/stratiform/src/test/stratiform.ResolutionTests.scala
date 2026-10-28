@@ -73,7 +73,7 @@ object ResolutionTests extends Suite("tel-resolution", m"Stratiform schema resol
 
   // The composed document's field keywords, sorted, as one Text.
   private def memberKeywords(schema: Tels): Text =
-    Text(schema.document.members.stdlib.toList
+    Text(schema.document.members.to[List].stdlib
     . collect { case f: Tels.Field => f.keyword.s }.sorted.mkString(","))
 
   // The composed signature for a selection: the base hash followed by
@@ -82,7 +82,7 @@ object ResolutionTests extends Suite("tel-resolution", m"Stratiform schema resol
     val (base, layerHashes) = SchemaSignature.componentHashes(layeredDoc, Tels.Axiom.tels)
     val names = layeredSchema.layers.to[List].map(_.name)
     val byName = names.stdlib.zip(layerHashes.stdlib).toMap
-    SchemaSignature.encode((base :: selection.stdlib.map(byName(_))).to(List))
+    SchemaSignature.encode((base :: selection.map(byName(_))).to[List])
 
   private def pragma
     ( reference: Optional[Tel.Pragma.Reference] = Unset,
@@ -171,9 +171,9 @@ object ResolutionTests extends Suite("tel-resolution", m"Stratiform schema resol
 
       test(m"swapped layer components name the first diverging layer"):
         val (base, layerHashes) = SchemaSignature.componentHashes(layeredDoc, Tels.Axiom.tels)
-        val hashes = layeredSchema.layers.stdlib.toList.map(_.name).zip(layerHashes.stdlib).toMap
+        val hashes = layeredSchema.layers.to[List].map(_.name).stdlib.zip(layerHashes.stdlib).toMap
         val swapped =
-          SchemaSignature.encode((base :: scala.List(hashes(t"gamma"), hashes(t"alpha"))).to(List))
+          SchemaSignature.encode(List.from(base :: scala.List(hashes(t"gamma"), hashes(t"alpha"))))
 
         capture[Tels.Resolution.Error]:
           SchemaSignature.verifySelection
@@ -183,9 +183,9 @@ object ResolutionTests extends Suite("tel-resolution", m"Stratiform schema resol
 
       test(m"a layer hash in base position is a base mismatch"):
         val (base, layerHashes) = SchemaSignature.componentHashes(layeredDoc, Tels.Axiom.tels)
-        val hashes = layeredSchema.layers.stdlib.toList.map(_.name).zip(layerHashes.stdlib).toMap
+        val hashes = layeredSchema.layers.to[List].map(_.name).stdlib.zip(layerHashes.stdlib).toMap
         val wrongBase =
-          SchemaSignature.encode((hashes(t"gamma") :: scala.List(hashes(t"alpha"))).to(List))
+          SchemaSignature.encode(List.from(hashes(t"gamma") :: scala.List(hashes(t"alpha"))))
 
         capture[Tels.Resolution.Error]:
           SchemaSignature.verifySelection

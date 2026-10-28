@@ -118,13 +118,13 @@ object Tests extends Suite("streams", m"Turbulence tests"):
         bs     <- 1 to 8
       do
         test(m"length tests"):
-          val stream = string.in[Data].stdlib.grouped(bs).map(Array.from(_)).to(proscenium.Chain)
+          val stream = Chain.from(string.in[Data].stdlib.grouped(bs).map(Array.from(_)))
           val result = stream.read[Text]
           result.in[Data].length
         . assert(_ == string.in[Data].length)
 
         test(m"roundtrip tests"):
-          val stream = string.in[Data].stdlib.grouped(bs).map(Array.from(_)).to(proscenium.Chain)
+          val stream = Chain.from(string.in[Data].stdlib.grouped(bs).map(Array.from(_)))
           val result = stream.read[Text]
 
           result.s
@@ -143,7 +143,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
         val string = "aë€𐍈z"
 
         val chunks =
-          (0 until string.length).map { index => string.charAt(index).toString.tt }.to(Chain)
+          Chain.from((0 until string.length).map { index => string.charAt(index).toString.tt })
 
         summon[Charset].decoded(summon[Codepage].encoded(chunks))
         . to[List].join.s
@@ -549,7 +549,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
           producers.each(_.await())
           relay.stop()
           unsafely(reader.await())
-      . assert(_ == (for index <- 1 to 4; value <- 1 to 25 yield t"${index*100 + value}").to(Set))
+      . assert(_ == Set.from((for index <- 1 to 4; value <- 1 to 25 yield t"${index*100 + value}")))
 
       // The relay's contract is that producers never block: it is the many-producer
       // record bus (HTTP/2's outbound frame mux relies on this to avoid distributed
@@ -571,7 +571,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
             relay.stop()
 
           unsafely(async(List.from(relay.stream.records)).await())
-      . assert(_ == (1 to 100).to(List).map { value => t"$value" })
+      . assert(_ == List.from((1 to 100)).map { value => t"$value" })
 
     suite(m"Line splitting"):
       test(m"whole-value Data delineate agrees with the stream form"):

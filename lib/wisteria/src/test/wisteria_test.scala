@@ -548,7 +548,7 @@ object Tests extends Suite("derivation", m"Wisteria tests"):
             case root.cto.name() => nameCodec
             case root.ceo.age()  => ageCodec
 
-        wisteria.internal.overridePaths[CodecJson, Company].stdlib.pipe(_.to(Set))
+        wisteria.internal.overridePaths[CodecJson, Company].stdlib.pipe(Set.from(_))
       . assert(_ == Set(t"cto.name", t"ceo.age"))
 
       test(m"A Specific for a different typeclass is ignored"):

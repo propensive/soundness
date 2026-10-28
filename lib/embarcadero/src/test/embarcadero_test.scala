@@ -138,7 +138,7 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
       . assert(_ == image.manifest)
 
     suite(m"OCI archive"):
-      val entries    = Tarfile.read(image.archive.source[Data]).to(List).asInstanceOf[List[bitumen.Tar.Entry]]
+      val entries    = List.from(Tarfile.read(image.archive.source[Data])).asInstanceOf[List[bitumen.Tar.Entry]]
       val names      = entries.map(_.entryName)
       // Explicit result type and reasserting cast: the collect lambda re-freshens the
       // frozen chunk to an `any.rd` that leaks out of the partial function.
@@ -151,12 +151,12 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
       . assert(_ == (true, true))
 
       test(m"archive contains one blob per config, layer and manifest"):
-        names.stdlib.count(_.s.startsWith("blobs/sha256/"))
+        names.count(_.s.startsWith("blobs/sha256/"))
       . assert(_ == 3)
 
       test(m"the layer blob is stored under its digest path"):
         val hex = layer.digest.s.stripPrefix("sha256:")
-        names.stdlib.map(_.s).contains("blobs/sha256/"+hex)
+        names.map(_.s).has("blobs/sha256/"+hex)
       . assert(_ == true)
 
       test(m"oci-layout declares image layout version 1.0.0"):
@@ -193,15 +193,15 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
       . assert(_ == image.imageConfig)
 
       test(m"a layer's stored blob streams verbatim"):
-        archiveData.open[Image]() { handle ?=> handle.compressed(image.manifest.layers.stdlib.head).memoize.to[List] }
+        archiveData.open[Image]() { handle ?=> image.manifest.layers.head.lay(Nil)(handle.compressed(_).memoize.to[List]) }
       . assert(_ == layer.blob.to[List])
 
       test(m"a layer decompresses to the original tar bytes"):
-        archiveData.open[Image]() { handle ?=> handle.layer(image.manifest.layers.stdlib.head).memoize.to[List] }
+        archiveData.open[Image]() { handle ?=> image.manifest.layers.head.lay(Nil)(handle.layer(_).memoize.to[List]) }
       . assert(_ == layer.raw.to[List])
 
       test(m"verified gathers a blob and confirms its digest and size"):
-        archiveData.open[Image]() { handle ?=> handle.verified(image.manifest.layers.stdlib.head).to[List] }
+        archiveData.open[Image]() { handle ?=> image.manifest.layers.head.lay(Nil)(handle.verified(_).to[List]) }
       . assert(_ == layer.blob.to[List])
 
       test(m"index JSON round-trips through jacinta"):
@@ -221,7 +221,7 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
 
       test(m"a missing blob is reported by its digest"):
         val data = rebuilt(_.filter(_.entryName != layerBlobPath))
-        failure(data.open[Image]() { handle ?=> handle.verified(image.manifest.layers.stdlib.head) })
+        failure(data.open[Image]() { handle ?=> image.manifest.layers.head.let(handle.verified(_)) })
       . assert(_ == Oci.Error.Reason.MissingBlob(layer.digest))
 
       test(m"a corrupted blob fails its digest check"):
@@ -254,6 +254,8 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
             target  = t"wasi:http/proxy@0.2.0" )
 
       val wasmConfig = artifact.wasmConfig.or(panic(m"the fixture artifact always has a wasm config"))
+      // Through the stdlib view: a `Layer` carries capturing fields, which the generic `head`
+      // instance cannot take (the capability-element gap the #2235 plan records).
       val wasmLayer  = artifact.layers.stdlib.head
 
       test(m"the artifact carries a wasm config, not an image config"):
@@ -307,15 +309,15 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
 
       test(m"the artifact archives as an ordinary oci-layout with three blobs"):
         val entries =
-          Tarfile.read(artifact.archive.source[Data]).to(List).asInstanceOf[List[bitumen.Tar.Entry]]
+          List.from(Tarfile.read(artifact.archive.source[Data])).asInstanceOf[List[bitumen.Tar.Entry]]
 
         val names = entries.map(_.entryName)
-        (names.has(t"oci-layout"), names.stdlib.count(_.s.startsWith("blobs/sha256/")))
+        (names.has(t"oci-layout"), names.count(_.s.startsWith("blobs/sha256/")))
       . assert(_ == (true, 3))
 
       test(m"the component round-trips out of the archive unchanged"):
         val archived = artifact.archive.source[Data].memoize
-        archived.open[Image]() { handle ?=> handle.layer(artifact.manifest.layers.stdlib.head).memoize.to[List] }
+        archived.open[Image]() { handle ?=> artifact.manifest.layers.head.lay(Nil)(handle.layer(_).memoize.to[List]) }
       . assert(_ == component.to[List])
 
       test(m"the wasm config round-trips, digest-verified"):
@@ -376,7 +378,7 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
 
                 case Frame.Headers(id, block, _, _) =>
                   val fields = hpack.decode(block)
-                  fields.stdlib.find(_.name == t"containerd-namespace").foreach: entry =>
+                  fields.seek(_.name == t"containerd-namespace").let: entry =>
                     namespace.offer(entry.value)
 
                   val status = hpack.encode(List(Hpack.Entry(t":status", t"200"),
@@ -661,7 +663,7 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
             given containerd: (Containerd^) = Containerd(endpoint, t"example")
             val spec = Container(t"web", image = t"img:1")
             val pid = spec.open[Workload]() { workload ?=> workload.pid }
-            (pid, calls.synchronized(calls.to(List)))
+            (pid, calls.synchronized(List.from(calls)))
       . assert(_ == (4321, List(t"$containersService/Create", t"$tasksService/Create",
           t"$tasksService/Delete", t"$containersService/Delete")))
 
@@ -684,7 +686,7 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
             val (pid, exit) = spec.open[Workload](Read & embarcadero.Launch & Signalling): workload ?=>
               (workload.pid, workload.await().exitStatus)
 
-            (pid, exit, calls.synchronized(calls.to(List)))
+            (pid, exit, calls.synchronized(List.from(calls)))
       . assert(_ == (5678, 7, List(t"$containersService/Create", t"$tasksService/Create",
           t"$tasksService/Start", t"$tasksService/Wait", t"$tasksService/Kill",
           t"$tasksService/Wait", t"$tasksService/Delete", t"$containersService/Delete")))
@@ -711,7 +713,7 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
                 t"returned"
               catch case _: java.lang.IllegalStateException => t"escaped"
 
-            (outcome, calls.synchronized(calls.to(List)))
+            (outcome, calls.synchronized(List.from(calls)))
       . assert(_ == (t"escaped", List(t"$containersService/Create", t"$tasksService/Create",
           t"$tasksService/Start", t"$tasksService/Kill", t"$tasksService/Wait",
           t"$tasksService/Delete", t"$containersService/Delete")))
@@ -732,7 +734,7 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
             given containerd: (Containerd^) = Containerd(endpoint, t"example")
             val spec = Container(t"web", image = t"img:1")
             val result = safely(spec.open[Workload]() { workload ?=> () })
-            (result.absent, calls.synchronized(calls.to(List)))
+            (result.absent, calls.synchronized(List.from(calls)))
       . assert(_ == (true, List(t"$containersService/Create")))
 
     suite(m"containerd timestamps via the generic time abstraction"):

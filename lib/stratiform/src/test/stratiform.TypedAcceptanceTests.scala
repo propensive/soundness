@@ -512,35 +512,35 @@ object TypedAcceptanceTests extends Suite("tel-typed-acceptance", m"Stratiform t
         val shapes = Tel.Acceptance[Tuple1[Shape]]()
         val circle: Shape = Circle(3)
         circle.fulfil(shapes.acceptance).let: served =>
-          (servedLayers(shapes.lineages.stdlib.head, served), shapes.read(served.document) == circle)
+          (shapes.lineages.head.lay(Nil)(servedLayers(_, served)), shapes.read(served.document) == circle)
       . assert(_ == (List(t"lean"), true))
 
       test(m"a retracted case is served without the layer retracting it"):
         val shapes = Tel.Acceptance[Tuple1[Shape]]()
         val square: Shape = Square(4)
         square.fulfil(shapes.acceptance).let: served =>
-          (servedLayers(shapes.lineages.stdlib.head, served), shapes.read(served.document) == square)
+          (shapes.lineages.head.lay(Nil)(servedLayers(_, served)), shapes.read(served.document) == square)
       . assert(_ == (Nil, true))
 
       test(m"a case retracted from one of two layers is served under the other"):
         val messages = Tel.Acceptance[Tuple1[Message]]()
         val ping: Message = Message.Ping
         ping.fulfil(messages.acceptance).let: served =>
-          (servedLayers(messages.lineages.stdlib.head, served), messages.read(served.document) == ping)
+          (messages.lineages.head.lay(Nil)(servedLayers(_, served)), messages.read(served.document) == ping)
       . assert(_ == (List(t"quiet"), true))
 
       test(m"two layers retracting the same case are served together"):
         val messages = Tel.Acceptance[Tuple1[Message]]()
         val stop: Message = Message.Stop
         stop.fulfil(messages.acceptance).let: served =>
-          (servedLayers(messages.lineages.stdlib.head, served), messages.read(served.document) == stop)
+          (messages.lineages.head.lay(Nil)(servedLayers(_, served)), messages.read(served.document) == stop)
       . assert(_ == (List(t"lean", t"quiet"), true))
 
       test(m"a case retracted from both layers is served under neither"):
         val messages = Tel.Acceptance[Tuple1[Message]]()
         val data: Message = Message.Data(t"payload")
         data.fulfil(messages.acceptance).let: served =>
-          (servedLayers(messages.lineages.stdlib.head, served), messages.read(served.document) == data)
+          (messages.lineages.head.lay(Nil)(servedLayers(_, served)), messages.read(served.document) == data)
       . assert(_ == (Nil, true))
 
       test(m"a document of no accepted format is unread"):

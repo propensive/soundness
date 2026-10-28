@@ -121,6 +121,6 @@ object Tests extends Suite("completions", m"Prophesy tests"):
 
       test(m"lookup consumes no more context than the tree's depth"):
         val deep: proscenium.List[Lexeme] =
-          (scala.collection.immutable.List.fill(10)(Lexeme.Term) :+ Lexeme.Break).to(proscenium.List)
+          List.from((scala.collection.immutable.List.fill(10)(Lexeme.Term) :+ Lexeme.Break))
         tree(Lexeme.Symbol(t".") :: deep)
       . assert(_ == Keywords(Set(), Expectation.Nothing))

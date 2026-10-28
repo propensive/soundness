@@ -73,11 +73,7 @@ object EquivalenceTests extends Suite("tel-equivalence", m"Stratiform schema/cod
 
       case Tel.Element.Node(idx, _, children) =>
         val next = idx.lay(prefix)(prefix + "/" + _)
-        var i = 0
-
-        while i < children.length do
-          recur(children.stdlib(i), next)
-          i += 1
+        children.each { child => recur(child, next) }
 
     recur(element, "#")
     buffer.toList

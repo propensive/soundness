@@ -86,7 +86,9 @@ object Benchmarks extends Suite("dag-bench", m"Acyclicity benchmarks"):
 
   // `from` depends on `to`, pairwise. Built once per (shape, size) and cached; the lookup is
   // inside the timed region, identical for every engine.
-  case class Edges(count: Int, from: Array[Int], to: Array[Int])
+  // Frozen Soundness arrays, not JVM ones: a case class holding mutable arrays acquires a
+  // capturing refinement under capture checking, which the dataset cache could not store.
+  case class Edges(count: Int, from: proscenium.Array[Int]^{}, to: proscenium.Array[Int]^{})
 
   private val datasets: scm.HashMap[(Int, Int), Edges] = scm.HashMap()
 
@@ -146,7 +148,9 @@ object Benchmarks extends Suite("dag-bench", m"Acyclicity benchmarks"):
 
       node += 1
 
-    Edges(size, Array.from(from), Array.from(to))
+    val fromArray: proscenium.Array[Int]^{} = proscenium.Array.from(from)
+    val toArray: proscenium.Array[Int]^{} = proscenium.Array.from(to)
+    Edges(size, fromArray, toArray)
 
   // The built graph of each engine, per (shape, size), so the query cells time the query. The
   // topology is exclusive and cannot be held here; its cells build inside the timed body, with
@@ -166,14 +170,14 @@ object Benchmarks extends Suite("dag-bench", m"Acyclicity benchmarks"):
     var index = 0
 
     while index < data.from.length do
-      dag = dag.add(data.from(index), data.to(index))
+      dag = dag.add(data.from.readUnchecked(index), data.to.readUnchecked(index))
       index += 1
 
     dag
 
-  def buildMirrored(data: Edges): MirroredDag[Int] = MirroredDag(data.count, data.from, data.to)
+  def buildMirrored(data: Edges): MirroredDag[Int] = MirroredDag(data.count, data.from.stdlib.toArray, data.to.stdlib.toArray)
   def buildFrozen(data: Edges): Topology[Int]^{} = buildDag(data).freeze
-  def buildStdlib(data: Edges): StdlibDag = StdlibDag(data.count, data.from, data.to)
+  def buildStdlib(data: Edges): StdlibDag = StdlibDag(data.count, data.from.stdlib.toArray, data.to.stdlib.toArray)
 
   def buildTopology(data: Edges): Topology[Int]^ =
     val topology: Topology[Int]^ = Topology()
@@ -186,7 +190,7 @@ object Benchmarks extends Suite("dag-bench", m"Acyclicity benchmarks"):
     index = 0
 
     while index < data.from.length do
-      topology.add(data.from(index), data.to(index))
+      topology.add(data.from.readUnchecked(index), data.to.readUnchecked(index))
       index += 1
 
     topology
@@ -204,7 +208,7 @@ object Benchmarks extends Suite("dag-bench", m"Acyclicity benchmarks"):
     index = data.from.length - 1
 
     while index >= 0 do
-      topology.add(data.from(index), data.to(index))
+      topology.add(data.from.readUnchecked(index), data.to.readUnchecked(index))
       index -= 1
 
     topology
@@ -227,7 +231,7 @@ object Benchmarks extends Suite("dag-bench", m"Acyclicity benchmarks"):
     index = data.from.length - 1
 
     while index >= 0 do
-      graph.addEdge(box(data.from(index)), box(data.to(index)))
+      graph.addEdge(box(data.from.readUnchecked(index)), box(data.to.readUnchecked(index)))
       index -= 1
 
     graph
@@ -243,7 +247,7 @@ object Benchmarks extends Suite("dag-bench", m"Acyclicity benchmarks"):
     index = 0
 
     while index < data.from.length do
-      graph.addEdge(box(data.from(index)), box(data.to(index)))
+      graph.addEdge(box(data.from.readUnchecked(index)), box(data.to.readUnchecked(index)))
       index += 1
 
     graph
@@ -265,7 +269,7 @@ object Benchmarks extends Suite("dag-bench", m"Acyclicity benchmarks"):
     index = 0
 
     while index < data.from.length do
-      graph.putEdge(box(data.from(index)), box(data.to(index)))
+      graph.putEdge(box(data.from.readUnchecked(index)), box(data.to.readUnchecked(index)))
       index += 1
 
     graph
@@ -615,7 +619,7 @@ object Benchmarks extends Suite("dag-bench", m"Acyclicity benchmarks"):
     var valid = order.length == expected
 
     while valid && index < data.from.length do
-      (position.get(data.from(index)), position.get(data.to(index))) match
+      (position.get(data.from.readUnchecked(index)), position.get(data.to.readUnchecked(index))) match
         case (Some(from), Some(to)) => valid = to < from
         case _                      => ()
 

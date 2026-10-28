@@ -129,9 +129,9 @@ object Tests extends Suite("audio", m"Cacophony Tests"):
       if feed.supports[Monaural](8000.0*Hertz, 16) then
         test(m"Recording from a feed produces audio chunks"):
           val recording = feed.record[Monaural](8000.0*Hertz, 16, chunkBytes = 1024)
-          val chunk: Audio across Monaural = recording.stream.stdlib.head
+          val chunk = recording.stream.head
           recording.stop()
-          chunk.channels
+          chunk.let(_.channels)
         . assert(_ == 1)
 
     test(m"Playing on an outlet without the Write grant does not compile"):
@@ -154,7 +154,7 @@ object Tests extends Suite("audio", m"Cacophony Tests"):
       demilitarize:
         val feed: Feed = ???
         feed.open[Pcm across Monaural](Read, PcmFlag.Rate(8000)): input ?=>
-          input.stream.stdlib.head
+          input.stream.head
       . map(_.message)
     . assert(_ == Nil)
 

@@ -812,27 +812,27 @@ object Tests extends Suite("internet", m"Urticose tests"):
       . assert(_ == true)
 
       test(m"An interface can be looked up by its name"):
-        val interface = NetworkInterface.all().stdlib.head
-        NetworkInterface.byName(interface.name).let(_.name)
-      . assert(_ == NetworkInterface.all().stdlib.head.name)
+        NetworkInterface.all().head.let: interface =>
+          NetworkInterface.byName(interface.name).let(_.name)
+      . assert(_ == NetworkInterface.all().head.let(_.name))
 
       test(m"An interface can be looked up by its index"):
-        val interface = NetworkInterface.all().stdlib.head
-        NetworkInterface.byIndex(interface.index).let(_.index)
-      . assert(_ == NetworkInterface.all().stdlib.head.index)
+        NetworkInterface.all().head.let: interface =>
+          NetworkInterface.byIndex(interface.index).let(_.index)
+      . assert(_ == NetworkInterface.all().head.let(_.index))
 
       test(m"Looking up a nonexistent interface name yields Unset"):
         NetworkInterface.byName(t"definitely-not-an-interface")
       . assert(_ == Unset)
 
       test(m"An interface's addresses partition into IPv4 and IPv6"):
-        val interface = NetworkInterface.all().stdlib.head
-        interface.ipv4.size + interface.ipv6.size
-      . assert(_ == NetworkInterface.all().stdlib.head.addresses.size)
+        NetworkInterface.all().head.let: interface =>
+          interface.ipv4.size + interface.ipv6.size
+      . assert(_ == NetworkInterface.all().head.let(_.addresses.size))
 
       test(m"The loopback interface can be found by its address"):
-        val loopback = NetworkInterface.all().filter(_.loopback).stdlib.head
-        NetworkInterface.byAddress(loopback.addresses.stdlib.head.address).let(_.loopback)
+        NetworkInterface.all().filter(_.loopback).head.let: loopback =>
+          loopback.addresses.head.let { address => NetworkInterface.byAddress(address.address).let(_.loopback) }
       . assert(_ == true)
 
     suite(m"DNS name tests"):
@@ -989,10 +989,11 @@ object Tests extends Suite("internet", m"Urticose tests"):
               c028 0010 8001 00001194 000b 09 747874766572733d31 00
               c043 0001 8001 00000078 0004 c0a80102"""
 
-      def roundtrip(rdata: Dns.Rdata): Dns.Rdata =
+      // The decoded message's answers are an unproven list, so the round trip is an `Optional`.
+      def roundtrip(rdata: Dns.Rdata): Optional[Dns.Rdata] =
         val record = Dns.Record(Dns.Name(t"example", t"com"), 60, rdata)
         val message = Dns.Message(1, Dns.Flags(), Nil, List(record))
-        message.in[Data].as[Dns.Message].answers.stdlib.head.rdata
+        message.in[Data].as[Dns.Message].answers.head.let(_.rdata)
 
       test(m"A query encodes to its wire form"):
         query.in[Data].serialize[Hex]
