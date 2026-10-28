@@ -37,10 +37,10 @@ import scala.math
 import prepositional.*
 
 object Rootable:
-  def apply[root <: Int & Singleton, operand, result](lambda: operand -> result)
-  :   operand is Rootable[root] to result =
+  def apply[degree <: Int & Singleton, operand, result](lambda: operand -> result)
+  :   operand is Rootable[degree] to result =
 
-    new Rootable[root]:
+    new Rootable[degree]:
       type Self = operand
       type Result = result
 
@@ -52,5 +52,5 @@ object Rootable:
   given sqrtFloat: Float is Rootable[2] to Float = math.sqrt(_).toFloat
   given cbrtFloat: Float is Rootable[3] to Float = math.cbrt(_).toFloat
 
-trait Rootable[root <: Int & Singleton] extends Typeclass, Resultant:
+trait Rootable[degree <: Int & Singleton] extends Typeclass, Resultant:
   def root(value: Self): Result

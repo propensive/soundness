@@ -167,7 +167,7 @@ case class Layout[row, text: ClassTag]
   // Whether two layouts show the same columns at the same widths.
   def stable(that: Layout[row, text]): Boolean = survivors == that.survivors
 
-  def row(cells: Cells[text], decorations: List[Optional[text -> text]])
+  def tableRow(cells: Cells[text], decorations: List[Optional[text -> text]])
     ( using metrics:     Text is Measurable,
             textual:     text is Textual { type Result = Char },
             hyphenation: Hyphenation )
@@ -199,7 +199,7 @@ case class Layout[row, text: ClassTag]
             hyphenation: Hyphenation )
   :   List[text] =
 
-    List.from(Grid.rowLines(style, widths, row(cells, decorations)))
+    List.from(Grid.rowLines(style, widths, tableRow(cells, decorations)))
 
   // A row's height in lines, without rendering it where that is possible: a cell whose natural
   // width fits its column is not wrapped, so it stands as many lines as it has; only a cell

@@ -36,8 +36,8 @@ import scala.language.experimental.pureFunctions
 
 import fulminate.Hazard
 
-enum Attempt[+success, +error <: Hazard]:
-  case Success(value: success)
+enum Attempt[+result, +error <: Hazard]:
+  case Success(value: result)
   case Failure(value: error)
 
   def failure: Boolean = this match
@@ -46,28 +46,28 @@ enum Attempt[+success, +error <: Hazard]:
 
   def success: Boolean = !failure
 
-  def map[success2](lambda: success => success2): Attempt[success2, error] =
+  def map[result2](lambda: result => result2): Attempt[result2, error] =
     this match
       case Success(success) => Success(lambda(success))
       case Failure(failure) => Failure(failure)
 
-  def handle(block: error ~> Hazard): Attempt[success, Hazard] =
+  def handle(block: error ~> Hazard): Attempt[result, Hazard] =
     this match
       case Success(value) => Success(value)
       case Failure(value) => Failure(if block.isDefinedAt(value) then block(value) else value)
 
-  def acknowledge(block: error ~> Unit): Attempt[success, error] =
+  def acknowledge(block: error ~> Unit): Attempt[result, error] =
     this match
       case Failure(value) => if block.isDefinedAt(value) then block(value)
       case _              => ()
 
     this
 
-  transparent inline def apply(): success raises error = this match
+  transparent inline def apply(): result raises error = this match
     case Success(value) => value
     case Failure(error) => abort(error)
 
-  def recover[success2 >: success](block: error ~> success2): success2 =
+  def recover[result2 >: result](block: error ~> result2): result2 =
 
     this match
       case Success(value) => value

@@ -174,8 +174,8 @@ object Url:
     case Textual(value: Text)
     case RawTextual(value: Text)
 
-class Url[+scheme <: Label]
-  ( val origin:   Origin[scheme],
+class Url[+protocol <: Label]
+  ( val origin:   Origin[protocol],
     val location: Text,
     val query:    Optional[Text] = Unset,
     val fragment: Optional[Text] = Unset )
@@ -184,7 +184,7 @@ extends Root(t"${origin.scheme}:${origin.authority.lay(t"")(t"//"+_.show)}$locat
   type Plane = Www
   type Topic = Zero
 
-  def scheme: Scheme[scheme] = origin.scheme
+  def scheme: Scheme[protocol] = origin.scheme
   def authority: Optional[Authority] = origin.authority
   def requestTarget: Text = location+query.lay(t"")(t"?"+_)
   def host: Optional[Host] = authority.let(_.host)
