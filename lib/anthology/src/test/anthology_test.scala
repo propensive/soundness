@@ -308,12 +308,14 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
 
     test(m"The AXML encoder emits the binary-XML chunk header"):
       val axml = Axml.encode(Axml.Element(t"manifest", Nil, Nil))
-      List(axml.stdlib(0), axml.stdlib(1), axml.stdlib(2), axml.stdlib(3)).map(_.toInt & 0xff)
+      // The first four bytes are the chunk header the fixture is known to carry.
+      List(0, 1, 2, 3).map(axml.readUnchecked(_).toInt & 0xff)
     . assert(_ == List(0x03, 0x00, 0x08, 0x00))
 
     test(m"The AXML total-size field equals the encoded length"):
       val axml = Axml.encode(Axml.Element(t"manifest", Nil, Nil))
-      def u8(index: Int): Int = axml.stdlib(index).toInt & 0xff
+      // The offsets probed are those of the AXML header, which the fixture is known to carry.
+      def u8(index: Int): Int = axml.readUnchecked(index).toInt & 0xff
       val declared = u8(4) | (u8(5) << 8) | (u8(6) << 16) | (u8(7) << 24)
       declared == axml.length
     . assert(_ == true)

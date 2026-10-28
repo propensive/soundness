@@ -120,8 +120,8 @@ object Tests extends Suite("markdown", m"Punctuation tests"):
 
       test(m"fenced code block preserves content"):
         val src = t"```scala\nval x = 1\n```\n"
-        val first = Parser.parse(src).children.stdlib.head
-        val again = Parser.parse(Parser.parse(src).show).children.stdlib.head
+        val first = Parser.parse(src).children.head
+        val again = Parser.parse(Parser.parse(src).show).children.head
 
         (first, again).match
           case (Layout.CodeBlock(_, a, b), Layout.CodeBlock(_, c, d)) => (a, b) == (c, d)

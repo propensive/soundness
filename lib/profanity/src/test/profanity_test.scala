@@ -435,7 +435,7 @@ object Tests extends Suite("terminal", m"Profanity Tests"):
         supervise:
           Keyboard.Standard()
           . process(Chain('\u001B', '[', '?', '1', '2', ';', '3', '4', 'R'))
-          . stdlib.head
+          . head
       . assert:
           case Terminal.Info.CursorPosition(12, 34) => true
           case _                                   => false
@@ -445,7 +445,7 @@ object Tests extends Suite("terminal", m"Profanity Tests"):
         supervise:
           Keyboard.Standard()
           . process(Chain('\u001B', '[', '?', '1', '2', ';', '3', '4', ';', '1', 'R'))
-          . stdlib.head
+          . head
       . assert:
           case Terminal.Info.CursorPosition(12, 34) => true
           case _                                   => false

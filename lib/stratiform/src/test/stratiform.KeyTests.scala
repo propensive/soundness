@@ -127,7 +127,7 @@ object KeyTests extends Suite("tel-keys", m"Stratiform key field tests"):
                                   |document
                                   |  field user User
                                   |""".stripMargin))
-        val field = schema.records.stdlib.find(_.name == t"User").get.members.stdlib.head
+        val field = schema.records.seek(_.name == t"User").let(_.members.head).or(panic(m"the schema defines User with a member"))
         field.absolve match
           case f: Tels.Field => (f.key, f.default.absent)
       . assert(_ == (true, true))
@@ -138,7 +138,7 @@ object KeyTests extends Suite("tel-keys", m"Stratiform key field tests"):
                                   |document
                                   |  field country String England
                                   |""".stripMargin))
-        schema.document.members.stdlib.head.absolve match
+        schema.document.members.head.absolve match
           case f: Tels.Field => (f.key, f.default)
       . assert(_ == (false, t"England"))
 
@@ -148,7 +148,7 @@ object KeyTests extends Suite("tel-keys", m"Stratiform key field tests"):
                                   |document
                                   |  field id Identifier key fallback
                                   |""".stripMargin))
-        schema.document.members.stdlib.head.absolve match
+        schema.document.members.head.absolve match
           case f: Tels.Field => (f.key, f.default)
       . assert(_ == (true, t"fallback"))
 
@@ -159,7 +159,7 @@ object KeyTests extends Suite("tel-keys", m"Stratiform key field tests"):
                                   |  field username Identifier
                                   |    key
                                   |""".stripMargin))
-        schema.document.members.stdlib.head.absolve match
+        schema.document.members.head.absolve match
           case f: Tels.Field => f.key
       . assert(_ == true)
 
@@ -176,7 +176,7 @@ object KeyTests extends Suite("tel-keys", m"Stratiform key field tests"):
                        |  record User
                        |    field username Identifier key
                        |""".stripMargin))
-        composed.records.stdlib.find(_.name == t"User").get.members.stdlib.head.absolve match
+        composed.records.stdlib.find(_.name == t"User").get.members.head.absolve match
           case f: Tels.Field => f.key
       . assert(_ == true)
 

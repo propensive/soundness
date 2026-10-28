@@ -33,6 +33,7 @@
 package zeppelin
 
 import soundness.*
+import denominative.dysasymptotics.linearAccess // the suite indexes small fixture lists
 
 import charsets.utf8Charset
 import codepages.utf8Codepage
@@ -127,7 +128,7 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
     def contains(data: Data, signature: List[Int]): Boolean =
       val window = signature.size
       (0 to data.length - window).exists: i =>
-        (0 until window).forall(j => (data.readUnchecked(i + j) & 0xff) == signature.stdlib(j))
+        (0 until window).forall(j => signature.at(j.z).lay(false)(_ == (data.readUnchecked(i + j) & 0xff)))
 
     suite(m"The umbrella's zip"):
       test(m"the collection zip pairs elements beside the zipfile accessor"):
@@ -409,7 +410,7 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
 
     suite(m"Entry reuse between archives"):
       val source = writeZip(t"src.zip", entry(t"x.txt", (t"reuse me "*32)))
-      val reused: Zip.Entry = Zipfile.read(source).entries.stdlib.head
+      val reused: Zip.Entry = Zipfile.read(source).entries.head.or(panic(m"the source archive has an entry"))
       val target = workDir/t"dst.zip"
       target.write(Zipfile(List(reused)))
 
@@ -558,8 +559,8 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
       . assert(_ == false)
 
       test(m"a parsed entry exposes both version fields"):
-        val entry = readEntries(foreign).stdlib.head
-        (entry.versionMadeBy, entry.localVersion, entry.centralVersion)
+        readEntries(foreign).head.lay((0, 0, 0)): entry =>
+          (entry.versionMadeBy, entry.localVersion, entry.centralVersion)
       . assert(_ == (20, 20, 20))
 
       test(m"zeppelin's own archive rebuilds byte-identically"):
@@ -599,8 +600,8 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
 
       test(m"Unix attributes and the version made by round-trip"):
         val unix = entry(t"u.txt", t"unix").withHeaders(versionMadeBy = 0x314, externalAttributes = 0x81a40000L)
-        val read = readEntries(writeZip(t"unix.zip", unix)).stdlib.head
-        (read.versionMadeBy, read.externalAttributes, read.internalAttributes)
+        readEntries(writeZip(t"unix.zip", unix)).head.lay((0, 0L, 0)): read =>
+          (read.versionMadeBy, read.externalAttributes, read.internalAttributes)
       . assert(_ == (0x314, 0x81a40000L, 0))
 
       test(m"the JDK reader lists an entry with Unix attributes"):
@@ -621,8 +622,8 @@ object Tests extends Suite("zip", m"Zeppelin tests"):
         path
 
       test(m"an extra field is read from both headers"):
-        val read = readEntries(marked).stdlib.head
-        (read.localExtra.lay(Nil)(_.to[List]), read.centralExtra.lay(Nil)(_.to[List]))
+        readEntries(marked).head.lay((List[Byte](), List[Byte]())): read =>
+          (read.localExtra.lay(Nil)(_.to[List]), read.centralExtra.lay(Nil)(_.to[List]))
       . assert(_ == (List(0xfe.toByte, 0xca.toByte, 0.toByte, 0.toByte), List(0xfe.toByte, 0xca.toByte, 0.toByte, 0.toByte)))
 
       test(m"an archive with an extra field rebuilds byte-identically"):

@@ -580,7 +580,7 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
 
       test(m"an interface function is qualified with its package's module id"):
         val wit = t"package wasi:random@0.2.0; interface random { get-random-u64: func() -> u64; }"
-        WitDialect.parse(wit).stdlib(t"random").stdlib(t"get-random-u64").module.or(t"")
+        WitDialect.parse(wit).at(t"random").let(_.at(t"get-random-u64")).let(_.module).or(t"")
       . assert(_ == t"wasi:random/random@0.2.0")
 
     suite(m"Wit worlds"):
@@ -593,31 +593,31 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
             }"""
 
       test(m"a world's imports are read in order, as Component Model ids"):
-        WitDialect.worlds(source).stdlib(t"service").imports
+        WitDialect.worlds(source).at(t"service").lay(Nil)(_.imports)
       . assert(_ == List(t"wasi:io/streams@0.2.0", t"wasi:clocks/monotonic-clock@0.2.0"))
 
       test(m"a world's exports are read separately from its imports"):
-        WitDialect.worlds(source).stdlib(t"service").exports
+        WitDialect.worlds(source).at(t"service").lay(Nil)(_.exports)
       . assert(_ == List(t"wasi:http/incoming-handler@0.2.0"))
 
       test(m"a bare interface name is qualified with the package id"):
         val wit = t"package test:demo@1.0.0; world w { import helper; }"
-        WitDialect.worlds(wit).stdlib(t"w").imports
+        WitDialect.worlds(wit).at(t"w").lay(Nil)(_.imports)
       . assert(_ == List(t"test:demo/helper@1.0.0"))
 
       test(m"an inline function import references no interface"):
         val wit = t"package test:demo@1.0.0; world w { import log: func(message: string); }"
-        WitDialect.worlds(wit).stdlib(t"w").imports
+        WitDialect.worlds(wit).at(t"w").lay(Nil)(_.imports)
       . assert(_ == List())
 
       test(m"an inline interface export references no interface"):
         val wit = t"package test:demo@1.0.0; world w { export handler: interface { go: func(); } }"
-        WitDialect.worlds(wit).stdlib(t"w").exports
+        WitDialect.worlds(wit).at(t"w").lay(Nil)(_.exports)
       . assert(_ == List())
 
       test(m"a world does not capture items from an interface beside it"):
         val wit = t"package test:demo@1.0.0; interface i { go: func(); } world w { import wasi:io/streams@0.2.0; }"
-        WitDialect.worlds(wit).stdlib(t"w").imports
+        WitDialect.worlds(wit).at(t"w").lay(Nil)(_.imports)
       . assert(_ == List(t"wasi:io/streams@0.2.0"))
 
       test(m"every world in a source is read"):

@@ -36,6 +36,7 @@ import scala.annotation.targetName
 import scala.collection.immutable.Seq
 
 import soundness.*
+import denominative.dysasymptotics.linearAccess // the suite indexes small fixture lists
 
 // Adversaria's accessors are panopticon lenses (#490), which puts `panopticon.Filter` on this
 // classpath. This suite is `package facsimile`, but a package member declared in another file
@@ -868,7 +869,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
           val dict = doc.resolved(font).dictionary.or(noParms)
 
           dict(t"Widths") match
-            case Cos.Sequence(widths) => (widths.stdlib('A' - 32), widths.stdlib('z' - 32))
+            case Cos.Sequence(widths) => widths.at(('A' - 32).z).let { a => widths.at(('z' - 32).z).let { z => (a, z) } }
             case _                    => Unset
       . assert(_ == (Cos.Integral(500), Cos.Integral(0)))
 

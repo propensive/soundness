@@ -67,7 +67,7 @@ object CodecTests extends Suite("tel-codec", m"Stratiform codec tests"):
       var done = false
 
       while !done && i < bytes.length && shift < 64 do
-        val b = bytes.stdlib(i) & 0xff
+        val b = bytes.readUnchecked(i) & 0xff // i ranges over bytes
         value |= (b & 0x7fL) << shift
         shift += 7
         i += 1
@@ -306,7 +306,7 @@ object CodecTests extends Suite("tel-codec", m"Stratiform codec tests"):
         Bintel.encode(element, schema, bindings)
 
       test(m"the derived schema carries the declared encoding"):
-        Tels.tels[Payment](t"payment").document.members.stdlib.head.absolve match
+        Tels.tels[Payment](t"payment").document.members.head.absolve match
           case f: Tels.Field => f.fieldType.absolve match
             case s: Tels.Scalar => s.encoding
       . assert(_ == t"decimal-varint")

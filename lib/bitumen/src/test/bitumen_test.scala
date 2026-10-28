@@ -34,6 +34,7 @@ package bitumen
 
 
 import soundness.*
+import rudiments.occupied // the suite proves its fixture lists non-empty once
 import filesystemBackends.javaBaseFilesystem
 
 import java.nio.file as jnf
@@ -66,11 +67,11 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       val header = blocks.head
 
       test(m"USTAR magic at offset 257"):
-        List.from(header.stdlib.slice(257, 263).toList.map(_.toChar))
+        header.segment(257.z till 263.z).to[List].map(_.toChar)
       . assert(_ == List('u', 's', 't', 'a', 'r', '\u0000'))
 
       test(m"version 00 at offset 263"):
-        List.from(header.stdlib.slice(263, 265).toList.map(_.toChar))
+        header.segment(263.z till 265.z).to[List].map(_.toChar)
       . assert(_ == List('0', '0'))
 
       test(m"file type flag at offset 156"):
@@ -78,7 +79,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == '0')
 
       test(m"name field starts with hello.txt"):
-        List.from(header.stdlib.slice(0, 9).toList.map(_.toChar))
+        header.segment(0.z till 9.z).to[List].map(_.toChar)
       . assert(_ == List('h', 'e', 'l', 'l', 'o', '.', 't', 'x', 't'))
 
       test(m"single-file archive emits 4 blocks"):
@@ -113,7 +114,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == '5')
 
       test(m"directory entryName ends with /"):
-        List.from(blocks(2).stdlib.slice(0, 5).toList.map(_.toChar))
+        blocks(2).segment(0.z till 5.z).to[List].map(_.toChar)
       . assert(_ == List('d', 'a', 't', 'a', '/'))
 
     suite(m"PAX extended headers for long names"):
@@ -136,11 +137,11 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == 'x')
 
       test(m"PAX header name is PaxHeaders/0"):
-        List.from(blocks(0).stdlib.slice(0, 13).toList.map(_.toChar))
+        blocks(0).segment(0.z till 13.z).to[List].map(_.toChar)
       . assert(_ == List('P', 'a', 'x', 'H', 'e', 'a', 'd', 'e', 'r', 's', '/', '0', '\u0000'))
 
       test(m"PAX record begins with decimal length prefix '160 path='"):
-        List.from(blocks(1).stdlib.slice(0, 9).toList.map(_.toChar))
+        blocks(1).segment(0.z till 9.z).to[List].map(_.toChar)
       . assert(_ == List('1', '6', '0', ' ', 'p', 'a', 't', 'h', '='))
 
       test(m"PAX record ends with newline at offset 159"):
@@ -175,7 +176,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == 'x')
 
       test(m"PAX record uses the linkpath keyword"):
-        List.from(blocks(1).stdlib.slice(0, 13).toList.map(_.toChar))
+        blocks(1).segment(0.z till 13.z).to[List].map(_.toChar)
       . assert(_ == List('1', '6', '4', ' ', 'l', 'i', 'n', 'k', 'p', 'a', 't', 'h', '='))
 
       test(m"regular header (block 2) has type flag '2' for the symlink"):
@@ -351,8 +352,8 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       import errorDiagnostics.emptyDiagnostics
 
       test(m"bad checksum is detected"):
-        val good: List[Data] = Tarfile(List(helloFile)).source[Data].chain.to[List].asInstanceOf[List[Data]]
-        val corrupted: List[Data] = Array.from(good.stdlib.head.stdlib.updated(0, ('Z'.toByte: Byte))) :: good.stdlib.tail.to(proscenium.List)
+        val good = Tarfile(List(helloFile)).source[Data].chain.to[List].asInstanceOf[List[Data]].occupied.or(panic(m"a tar has blocks"))
+        val corrupted: List[Data] = List.prepend(good.tail, Array.from(good.head.stdlib.updated(0, ('Z'.toByte: Byte))))
         capture[Tar.Error](Tarfile.read(corrupted.stdlib.iterator.stream).toList).reason
       . assert: r =>
           r.isInstanceOf[Tar.Error.Reason.BadChecksum]
@@ -371,17 +372,17 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       test(m"a bad checksum accrues exactly one error, with no parse cascade"):
         // A corrupt block cannot be trusted for anything, so nothing in it is parsed: no
         // BadName/BadOctal cascade follows the checksum failure.
-        val good: List[Data] = Tarfile(List(helloFile)).source[Data].chain.to[List].asInstanceOf[List[Data]]
-        val corrupted: List[Data] = Array.from(good.stdlib.head.stdlib.updated(0, ('Z'.toByte: Byte))) :: good.stdlib.tail.to(proscenium.List)
+        val good = Tarfile(List(helloFile)).source[Data].chain.to[List].asInstanceOf[List[Data]].occupied.or(panic(m"a tar has blocks"))
+        val corrupted: List[Data] = List.prepend(good.tail, Array.from(good.head.stdlib.updated(0, ('Z'.toByte: Byte))))
         collectTar { Tarfile.read(corrupted.stdlib.iterator.stream).toList; () }.reasons
       . assert: reasons =>
           reasons.size == 1 && reasons.head.lay(false)(_.isInstanceOf[Tar.Error.Reason.BadChecksum])
 
       test(m"an unknown type flag degrades to a file, never a directory"):
-        val good: List[Data] = Tarfile(List(helloFile)).source[Data].chain.to[List].asInstanceOf[List[Data]]
+        val good = Tarfile(List(helloFile)).source[Data].chain.to[List].asInstanceOf[List[Data]].occupied.or(panic(m"a tar has blocks"))
         // Patch the type flag to an unrecognised value and restamp the checksum
         // (bytes 148-156 count as spaces; "%06o\0 " format).
-        val flagged = good.stdlib.head.stdlib.updated(156, 'q'.toByte)
+        val flagged = good.head.stdlib.updated(156, 'q'.toByte)
 
         var sum = 0L
         var i = 0
@@ -403,7 +404,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
         patchedBlock = patchedBlock.updated(154, 0.toByte).updated(155, ' '.toByte)
 
         val patched: List[Data] =
-          Array.from(patchedBlock) :: good.stdlib.tail.to(proscenium.List)
+          List.prepend(good.tail, Array.from(patchedBlock))
 
         var entries: scala.collection.immutable.List[bitumen.Tar.Entry] = scala.Nil
         val issues = collectTar:
@@ -434,11 +435,11 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == 5)
 
       test(m"PAX record contains uname keyword"):
-        Array.from(blocks(1).stdlib.slice(0, 80)).utf8.s.contains("uname=")
+        blocks(1).segment(0.z till 80.z).utf8.s.contains("uname=")
       . assert(_ == true)
 
       test(m"PAX record contains gname keyword"):
-        Array.from(blocks(1).stdlib.slice(0, 256)).utf8.s.contains("gname=")
+        blocks(1).segment(0.z till 256.z).utf8.s.contains("gname=")
       . assert(_ == true)
 
       test(m"long uname round-trips via reader"):
@@ -473,7 +474,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == 'L')
 
       test(m"first block has name '././@LongLink'"):
-        blocks(0).stdlib.slice(0, 13).toList.map(_.toChar).mkString
+        blocks(0).segment(0.z till 13.z).ascii.s
       . assert(_ == "././@LongLink")
 
       test(m"second block holds the long name (first byte 'a')"):
@@ -958,20 +959,20 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == 'S')
 
       test(m"realsize is recorded at offset 483-494"):
-        val realSize = Array.from(blocks.head.stdlib.slice(483, 494)).ascii.s
+        val realSize = blocks.head.segment(483.z till 494.z).ascii.s
         java.lang.Long.parseLong(realSize.trim.nn, 8)
       . assert(_ == 10000L)
 
       test(m"first sparse segment offset+length recorded at 386-409"):
-        val ofs = Array.from(blocks.head.stdlib.slice(386, 397)).ascii.s
-        val len = Array.from(blocks.head.stdlib.slice(398, 409)).ascii.s
+        val ofs = blocks.head.segment(386.z till 397.z).ascii.s
+        val len = blocks.head.segment(398.z till 409.z).ascii.s
         ( java.lang.Long.parseLong(ofs.trim.nn, 8),
           java.lang.Long.parseLong(len.trim.nn, 8) )
       . assert(_ == (0L, 100L))
 
       test(m"second sparse segment offset+length recorded at 410-433"):
-        val ofs = Array.from(blocks.head.stdlib.slice(410, 421)).ascii.s
-        val len = Array.from(blocks.head.stdlib.slice(422, 433)).ascii.s
+        val ofs = blocks.head.segment(410.z till 421.z).ascii.s
+        val len = blocks.head.segment(422.z till 433.z).ascii.s
         ( java.lang.Long.parseLong(ofs.trim.nn, 8),
           java.lang.Long.parseLong(len.trim.nn, 8) )
       . assert(_ == (5000L, 200L))

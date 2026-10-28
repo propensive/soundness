@@ -209,11 +209,11 @@ object Tests extends Suite("prelude", m"Proscenium Tests"):
       . assert(_ == 0)
 
       test(m"a ledger looks up by key"):
-        Ledger(t"a" -> 1, t"b" -> 2).stdlib(t"b")
+        Ledger(t"a" -> 1, t"b" -> 2).at(t"b")
       . assert(_ == 2)
 
       test(m"a later pair for the same key wins"):
-        Ledger(t"a" -> 1, t"a" -> 2).stdlib(t"a")
+        Ledger(t"a" -> 1, t"a" -> 2).at(t"a")
       . assert(_ == 2)
 
       test(m"a collection converts to a ledger"):

@@ -122,7 +122,7 @@ object Tests extends Suite("messages", m"Fulminate Tests"):
     suite(m"Backtick-delimited nesting"):
       test(m"single backtick pair produces an embedded message"):
         val msg = m"hello `world` today"
-        (msg.texts, msg.messages.size, msg.messages.stdlib.head.texts)
+        (msg.texts, msg.messages.size, msg.messages.head.let(_.texts))
       . assert(_ == ((List(t"hello ", t" today"), 1, List(t"world"))))
 
       test(m"backticks render as nested italics in colorText"):
@@ -140,13 +140,13 @@ object Tests extends Suite("messages", m"Fulminate Tests"):
       test(m"substitution inside backtick region attaches to inner message"):
         val name = t"y"
         val msg = m"`x $name`"
-        (msg.texts, msg.messages.size, msg.messages.stdlib.head.texts, msg.messages.stdlib.head.messages.size)
+        (msg.texts, msg.messages.size, msg.messages.head.let(_.texts), msg.messages.head.let(_.messages.size))
       . assert(_ == ((List(t"", t""), 1, List(t"x ", t""), 1)))
 
       test(m"backticks across part boundaries"):
         val n = 1
         val msg = m"a `b $n c` d"
-        (msg.texts, msg.messages.stdlib.head.texts, msg.messages.stdlib.head.messages.size)
+        (msg.texts, msg.messages.head.let(_.texts), msg.messages.head.let(_.messages.size))
       . assert(_ == ((List(t"a ", t" d"), List(t"b ", t" c"), 1)))
 
       test(m"two adjacent backtick pairs produce two inner messages"):
@@ -154,13 +154,13 @@ object Tests extends Suite("messages", m"Fulminate Tests"):
       . assert(_ == 2)
 
       test(m"two adjacent backtick pairs preserve content"):
-        m"`a` `b`".messages.map(_.texts.stdlib.head)
+        m"`a` `b`".messages.map(_.texts.head)
       . assert(_ == List(t"a", t"b"))
 
       test(m"depth 2 via substitution into a backtick region"):
         val inner = m"b"
         val msg = m"`a $inner c`"
-        msg.messages.stdlib.head.messages.stdlib.head.texts
+        msg.messages.head.let(_.messages.head).let(_.texts)
       . assert(_ == List(t"b"))
 
       test(m"depth 2 renders with bold-italic ANSI in colorText"):

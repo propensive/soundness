@@ -179,9 +179,9 @@ object PositionTests extends Suite("json-positions", m"Jacinta position-index te
         val json = t"""{"a":{"b":42}}""".read[Json]
         json.positionIndex.let: index =>
           val data = index.ints
-          val firstEntryOff = data.stdlib(5)
+          val firstEntryOff = data.readUnchecked(5) // the header offsets the fixture is known to carry
           val valueDescOff = firstEntryOff + 3
-          val valueSize = data.stdlib(valueDescOff)
+          val valueSize = data.readUnchecked(valueDescOff)
           val slice = data.segment((valueDescOff).z till (valueDescOff + valueSize).z)
           slice.length == valueSize
       . assert(_ == true)

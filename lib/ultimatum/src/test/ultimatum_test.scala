@@ -1212,11 +1212,9 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       // background is therefore set for the whole run — before the boundary glyph — and never
       // changed again; anything else shows as a sliver of the wrong colour at the leading edge.
       test(m"the boundary cell shares the track's background"):
-        val rendered =
-          bars.smoothBar.rows(Fraction(0.05), Tick.zero, 10).stdlib.head
-          . render(termcapDefinitions.xtermTrueColorTermcap)
-
-        (rendered.cut(t"48;2;").size - 1, rendered.cut(t"▌").head.contains(t"48;2;"))
+        bars.smoothBar.rows(Fraction(0.05), Tick.zero, 10).head.lay((0, false)): row =>
+          val rendered = row.render(termcapDefinitions.xtermTrueColorTermcap)
+          (rendered.cut(t"48;2;").size - 1, rendered.cut(t"▌").head.contains(t"48;2;"))
       . assert(_ == (1, true))
 
       // A partial is more of the fill, not a marker, so it takes the fill's foreground: a bar
@@ -1377,7 +1375,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
            (t"markerBar", width => bars.markerBar.rows(Fraction(0.37), Tick.zero, width)),
            (t"percentageBar", width => bars.percentageBar.rows(Fraction(0.37), Tick.zero, width)) )
         . map: (name, render) =>
-            (name, (width: Int) => render(width).stdlib.head.plain)
+            (name, (width: Int) => render(width).head.lay(t"")(_.plain))
 
       test(m"every bar renders exactly the width it is given, from 1 to 120 cells"):
         designs.flatMap: (name, render) =>
@@ -1394,8 +1392,8 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       . assert(_ == scala.List(1, 1, 1))
 
       test(m"a bar's output is stable for a fixed tick"):
-        val once = bars.smoothBar.rows(Fraction(0.37), Tick.zero, 30).stdlib.head.plain
-        val twice = bars.smoothBar.rows(Fraction(0.37), Tick.zero, 30).stdlib.head.plain
+        val once = bars.smoothBar.rows(Fraction(0.37), Tick.zero, 30).head.lay(t"")(_.plain)
+        val twice = bars.smoothBar.rows(Fraction(0.37), Tick.zero, 30).head.lay(t"")(_.plain)
         (once, twice)
       . assert((a, b) => a == b)
 

@@ -375,12 +375,13 @@ object Tests extends Suite("compression", m"Pneumatic tests"):
       // A successor differing from its predecessor by two edits and an insertion.
       val base = pattern(4096, 7)
       val edited = Data.fill(base.length): i =>
-        if i == 100 then 42.toByte else if i == 2000 then 43.toByte else base.stdlib(i)
+        if i == 100 then 42.toByte else if i == 2000 then 43.toByte else base.readUnchecked(i) // i ranges over base
       val inserted = pattern(64, 99)
       val next = Data.fill(edited.length + inserted.length): i =>
-        if i < 1500 then edited.stdlib(i)
-        else if i < 1500 + inserted.length then inserted.stdlib(i - 1500)
-        else edited.stdlib(i - inserted.length)
+        // Each branch's index is within the array it reads, by the comparison guarding it.
+        if i < 1500 then edited.readUnchecked(i)
+        else if i < 1500 + inserted.length then inserted.readUnchecked(i - 1500)
+        else edited.readUnchecked(i - inserted.length)
 
       val prefix = Brotli.prefix(base)
       val continuation = Brotli.continuation(base, next)
@@ -498,7 +499,7 @@ object Tests extends Suite("compression", m"Pneumatic tests"):
         // byte asserts nothing.
         val buffer = Array.allocate[Byte](source.length)
         buffer.place(source)
-        buffer(36) = (source.stdlib(36) ^ 0x55).toByte
+        buffer(36) = (source.readUnchecked(36) ^ 0x55).toByte // offset 36 of a header the fixture carries
         val corrupted: Data = Array.freeze(buffer)
         try corrupted.decompress[Xz].to[List] != original.to[List]
         catch case _: Exception => true

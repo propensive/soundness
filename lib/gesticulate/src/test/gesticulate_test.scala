@@ -99,7 +99,7 @@ object Tests extends Suite("mime", m"Gesticulate tests"):
         . assert(_ == t"field1")
 
         test(m"Single part: body at block size $blockSize"):
-          bodyText(Multipart.parse(chunks(singlePart, blockSize)).parts.stdlib.head)
+          Multipart.parse(chunks(singlePart, blockSize)).parts.head.let(bodyText(_))
 
         . assert(_ == t"value1")
 
@@ -140,7 +140,7 @@ object Tests extends Suite("mime", m"Gesticulate tests"):
           t"\r\n" +
           t"line1\rline2\r\n" +
           t"--xyz--\r\n"
-        bodyText(Multipart.parse(chunks(body, 4096)).parts.stdlib.head)
+        Multipart.parse(chunks(body, 4096)).parts.head.let(bodyText(_))
 
       . assert(_ == t"line1\rline2")
 
@@ -151,7 +151,7 @@ object Tests extends Suite("mime", m"Gesticulate tests"):
           t"\r\n" +
           t"line1\r\nstill body\r\n" +
           t"--xyz--\r\n"
-        bodyText(Multipart.parse(chunks(body, 4096)).parts.stdlib.head)
+        Multipart.parse(chunks(body, 4096)).parts.head.let(bodyText(_))
 
       . assert(_ == t"line1\r\nstill body")
 
@@ -162,7 +162,7 @@ object Tests extends Suite("mime", m"Gesticulate tests"):
           t"\r\n" +
           t"--xy not the boundary\r\n" +
           t"--xyz--\r\n"
-        bodyText(Multipart.parse(chunks(body, 4096)).parts.stdlib.head)
+        Multipart.parse(chunks(body, 4096)).parts.head.let(bodyText(_))
 
       . assert(_ == t"--xy not the boundary")
 
@@ -228,7 +228,7 @@ object Tests extends Suite("mime", m"Gesticulate tests"):
       test(m"A body larger than the cursor's window is lent as several regions"):
         var regions = 0
         val upload = Multipart.parse(bytesChunks(binaryWire(large), 4096))
-        upload.parts.stdlib.head.body().drain { region => range => regions += 1 }
+        upload.parts.head.let(_.body().drain { region => range => regions += 1 })
         regions
 
       . assert(_ > 1)
@@ -236,7 +236,7 @@ object Tests extends Suite("mime", m"Gesticulate tests"):
       test(m"A part's body reads as empty once the next part has been read"):
         val parts = Multipart.parse(chunks(twoParts, 4096)).parts
         parts.size
-        bodyText(parts.stdlib.head)
+        parts.head.let(bodyText(_))
 
       . assert(_ == t"")
 

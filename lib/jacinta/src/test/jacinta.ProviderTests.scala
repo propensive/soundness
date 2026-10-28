@@ -33,6 +33,7 @@
 package jacinta
 
 import soundness.*
+import denominative.dysasymptotics.linearAccess // the suite indexes small fixture lists
 import denominative.dysasymptotics.linearSize // the suites read list sizes; the cost is irrelevant here
 
 import codepages.utf8Codepage
@@ -382,7 +383,7 @@ object ProviderTests extends Suite("json-provider", m"JSON Provider tests"):
       . assert(_ == (t"1843-01": Optional[Text]))
 
       test(m"a date not matching the pattern is rejected when that record is read"):
-        capture[Json.Provider.Error](ResumeSchema.record(resume).work.stdlib(1).startDate).reason
+        capture[Json.Provider.Error](ResumeSchema.record(resume).work.at(Sec).let(_.startDate)).reason
       . assert:
           case PatternMismatch(t"eighteen-fifty", _) => true
           case _                                     => false
@@ -477,7 +478,7 @@ object ProviderTests extends Suite("json-provider", m"JSON Provider tests"):
       . assert(_ == (t"120s": Optional[Text]))
 
       test(m"a duration in the wrong unit is rejected"):
-        capture[Json.Provider.Error](CloudBuildSchema.record(build).steps.stdlib(1).timeout).reason
+        capture[Json.Provider.Error](CloudBuildSchema.record(build).steps.at(Sec).let(_.timeout)).reason
       . assert:
           case PatternMismatch(t"2m", _) => true
           case _                         => false

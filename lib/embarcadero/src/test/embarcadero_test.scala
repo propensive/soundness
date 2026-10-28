@@ -193,15 +193,15 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
       . assert(_ == image.imageConfig)
 
       test(m"a layer's stored blob streams verbatim"):
-        archiveData.open[Image]() { handle ?=> handle.compressed(image.manifest.layers.stdlib.head).memoize.to[List] }
+        archiveData.open[Image]() { handle ?=> image.manifest.layers.head.lay(Nil)(handle.compressed(_).memoize.to[List]) }
       . assert(_ == layer.blob.to[List])
 
       test(m"a layer decompresses to the original tar bytes"):
-        archiveData.open[Image]() { handle ?=> handle.layer(image.manifest.layers.stdlib.head).memoize.to[List] }
+        archiveData.open[Image]() { handle ?=> image.manifest.layers.head.lay(Nil)(handle.layer(_).memoize.to[List]) }
       . assert(_ == layer.raw.to[List])
 
       test(m"verified gathers a blob and confirms its digest and size"):
-        archiveData.open[Image]() { handle ?=> handle.verified(image.manifest.layers.stdlib.head).to[List] }
+        archiveData.open[Image]() { handle ?=> image.manifest.layers.head.lay(Nil)(handle.verified(_).to[List]) }
       . assert(_ == layer.blob.to[List])
 
       test(m"index JSON round-trips through jacinta"):
@@ -221,7 +221,7 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
 
       test(m"a missing blob is reported by its digest"):
         val data = rebuilt(_.filter(_.entryName != layerBlobPath))
-        failure(data.open[Image]() { handle ?=> handle.verified(image.manifest.layers.stdlib.head) })
+        failure(data.open[Image]() { handle ?=> image.manifest.layers.head.let(handle.verified(_)) })
       . assert(_ == Oci.Error.Reason.MissingBlob(layer.digest))
 
       test(m"a corrupted blob fails its digest check"):
@@ -254,6 +254,8 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
             target  = t"wasi:http/proxy@0.2.0" )
 
       val wasmConfig = artifact.wasmConfig.or(panic(m"the fixture artifact always has a wasm config"))
+      // Through the stdlib view: a `Layer` carries capturing fields, which the generic `head`
+      // instance cannot take (the capability-element gap the #2235 plan records).
       val wasmLayer  = artifact.layers.stdlib.head
 
       test(m"the artifact carries a wasm config, not an image config"):
@@ -315,7 +317,7 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
 
       test(m"the component round-trips out of the archive unchanged"):
         val archived = artifact.archive.source[Data].memoize
-        archived.open[Image]() { handle ?=> handle.layer(artifact.manifest.layers.stdlib.head).memoize.to[List] }
+        archived.open[Image]() { handle ?=> artifact.manifest.layers.head.lay(Nil)(handle.layer(_).memoize.to[List]) }
       . assert(_ == component.to[List])
 
       test(m"the wasm config round-trips, digest-verified"):

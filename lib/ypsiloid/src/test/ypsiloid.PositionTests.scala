@@ -170,9 +170,9 @@ object PositionTests extends Suite("yaml-positions", m"Ypsiloid position-index t
           // The single entry's offset is at data(5), entry = [keyLine,
           // keyColumn, keyLength, <valueDescriptor>]. The value descriptor
           // starts at offset(0) + 3 from the root descriptor.
-          val firstEntryOff = data.stdlib(5)
+          val firstEntryOff = data.readUnchecked(5) // the header offsets the fixture is known to carry
           val valueDescOff = firstEntryOff + 3
-          val valueSize = data.stdlib(valueDescOff)
+          val valueSize = data.readUnchecked(valueDescOff)
           val slice = data.segment((valueDescOff).z till (valueDescOff + valueSize).z)
           slice.length == valueSize
       . assert(_ == true)

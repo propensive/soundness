@@ -341,7 +341,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
           def hasNext: Boolean = p < data.length
           def next(): Data =
             val end = (p + n).min(data.length)
-            val out: Data = Array.from(data.stdlib.slice(p, end))
+            val out: Data = data.segment(p.z till end.z)
             p = end
             out
         Cursor[Data](it)
@@ -411,7 +411,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
 
       test(m"read[Chain[Tel]] is lazy past a malformed later document"):
         val source = t"first ok\n##\nparent\n   bad"
-        TelCheckTree.of(source.read[Chain[Tel]].stdlib.head)
+        source.read[Chain[Tel]].head.let(TelCheckTree.of(_))
       . assert(_ == TelCheckTree.of(t"first ok".read[Tel]))
 
     suite(m"Encode/decode primitives"):
@@ -527,11 +527,10 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
 
       test(m"each product variant references its registered record"):
         val schema = Tels.tels[Tests.Shape2](t"shape")
-        val select = schema.selects.stdlib.head
-        select.variants.stdlib.find(_.keyword == t"rectangle").get.variantType match
-          case Tels.Reference(name) =>
-            schema.records.stdlib.find(_.name == name).map(_.members.length).getOrElse(-1)
-          case _ => -1
+        schema.selects.head.lay(-1): select =>
+          select.variants.seek(_.keyword == t"rectangle").let(_.variantType) match
+            case Tels.Reference(name) => schema.records.seek(_.name == name).lay(-1)(_.members.size)
+            case _                    => -1
       . assert(_ == 2)
 
       test(m"the document root references the select"):
@@ -1274,7 +1273,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
       // with flags carrying empty text.
       def project(root: Tel.Element) = root match
         case Tel.Element.Node(_, _, children) if children.length == 1 =>
-          children.stdlib(0) match
+          children.head match
             case Tel.Element.Node(_, _, inner) =>
               List.from:
                 inner.stdlib.collect:
@@ -1673,7 +1672,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
 
       test(m"§15: the closing delimiter is the opening line without trailing spaces"):
         val source = t"code\n      EOF  \nline one\n      EOF\nnext 1\n"
-        source.read[Tel].document.let(_.children.stdlib.head.compounds.length)
+        source.read[Tel].document.let(_.children.head).let(_.compounds.size)
       . assert(_ == 2)
 
     suite(m"Dynamic access"):
@@ -2529,7 +2528,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
       . assert(_ == 256)
 
       test(m"alphabet satisfies codepoint ≡ index (mod 256)"):
-        (0 until 256).forall(i => Base256.alphabet.stdlib(i).toInt % 256 == i)
+        (0 until 256).forall(i => Base256.alphabet.at(i.z).lay(false)(_.toInt % 256 == i))
       . assert(_ == true)
 
       test(m"alphabet entries are pairwise distinct"):
@@ -2537,15 +2536,15 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
       . assert(_ == 256)
 
       test(m"ASCII digits encode to themselves"):
-        (0x30 to 0x39).forall(b => Base256.alphabet.stdlib(b) == b.toChar)
+        (0x30 to 0x39).forall(b => Base256.alphabet.at(b.z) == b.toChar)
       . assert(_ == true)
 
       test(m"ASCII uppercase letters encode to themselves"):
-        (0x41 to 0x5A).forall(b => Base256.alphabet.stdlib(b) == b.toChar)
+        (0x41 to 0x5A).forall(b => Base256.alphabet.at(b.z) == b.toChar)
       . assert(_ == true)
 
       test(m"ASCII lowercase letters encode to themselves"):
-        (0x61 to 0x7A).forall(b => Base256.alphabet.stdlib(b) == b.toChar)
+        (0x61 to 0x7A).forall(b => Base256.alphabet.at(b.z) == b.toChar)
       . assert(_ == true)
 
       test(m"round-trip all 256 byte values"):
@@ -2623,7 +2622,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val sb = new java.lang.StringBuilder
         var i = 0
         while i < data.length do
-          sb.append(f"${data.stdlib(i) & 0xff}%02X")
+          sb.append(f"${data.readUnchecked(i) & 0xff}%02X") // bounded by the loop
           if i + 1 < data.length then sb.append(' ')
           i += 1
         sb.toString
@@ -2709,7 +2708,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
       val sb = new java.lang.StringBuilder
       var i = 0
       while i < data.length do
-        sb.append(f"${data.stdlib(i) & 0xff}%02X")
+        sb.append(f"${data.readUnchecked(i) & 0xff}%02X") // bounded by the loop
         if i + 1 < data.length then sb.append(' ')
         i += 1
       sb.toString
@@ -2964,7 +2963,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
       test(m"truncated input raises Bintel.Error"):
         val original = t"name Alice\n".read[Tel]
         val bytes = original.bintel(nameSchema)
-        val truncated = Array.from(bytes.stdlib.slice(0, bytes.length - 1))
+        val truncated = bytes.segment(0.z till (bytes.length - 1).z)
         // B02 (inside a varint), B06 (inside a value) or B09 (otherwise),
         // depending on where the truncation lands (§10 precedence).
         val reason = capture[Bintel.Error](Bintel.decode(truncated, nameSchema)).reason
@@ -3025,8 +3024,8 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val body: Data = scala.Array[Byte](0x01).asInstanceOf[Array[Byte]]
         val framed = Bintel.frame(body, sig32)
         // The document length counts every byte after itself: 1 + 32 + 1 = 34.
-        framed.stdlib.slice(0, 6).toSeq
-      . assert(_ == Seq(0xB2.toByte, 0xC4.toByte, 0xB5.toByte, 0xBB.toByte, 0x22.toByte, 0x20.toByte))
+        framed.segment(0.z till 6.z).to[List]
+      . assert(_ == List(0xB2.toByte, 0xC4.toByte, 0xB5.toByte, 0xBB.toByte, 0x22.toByte, 0x20.toByte))
 
       test(m"frame rejects too-short signature"):
         val tooShort: Data = scala.Array.fill[Byte](1)(0).asInstanceOf[Array[Byte]]
@@ -3100,8 +3099,8 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
 
       test(m"tel.bintelDocument produces a file beginning with magic"):
         val bytes = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
-        bytes.stdlib.slice(0, 4).toSeq
-      . assert(_ == Seq(0xB2.toByte, 0xC4.toByte, 0xB5.toByte, 0xBB.toByte))
+        bytes.segment(0.z till 4.z).to[List]
+      . assert(_ == List(0xB2.toByte, 0xC4.toByte, 0xB5.toByte, 0xBB.toByte))
 
       test(m"decodeDocument round-trips through frame + decode"):
         val bytes = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
@@ -3214,7 +3213,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
       . assert(_ == 33)
 
       test(m"single-component signature begins with the component hash"):
-        SchemaSignature.encode(List(h0)).stdlib.slice(0, 32).toSeq == h0.stdlib
+        SchemaSignature.encode(List(h0)).segment(0.z till 32.z).to[List] == h0.to[List]
       . assert(_ == true)
 
       test(m"two-component signature length is 37 (32 + 4 + 1)"):
@@ -3285,7 +3284,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val sig = SchemaSignature.fromDocument(source.read[Tel], Tels.Axiom.tels)
         val bintel = Tel.Type.assign(source.read[Tel], Tels.Axiom.tels).bintel(Tels.Axiom.tels)
         val hash = Blake3.hashOf(bintel, 32)
-        sig.stdlib.slice(0, 32).toSeq == hash.stdlib
+        sig.segment(0.z till 32.z).to[List] == hash.to[List]
       . assert(_ == true)
 
       test(m"schema with a single layer produces a 37-byte signature"):
@@ -3400,8 +3399,8 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         Bintel.selfContained(dataDoc.read[Tel], schemaDoc.read[Tel])
 
       test(m"self-contained document begins with the B2 C4 B5 BC magic"):
-        selfContained().stdlib.slice(0, 4).toSeq
-      . assert(_ == Seq[Byte](0xb2.toByte, 0xc4.toByte, 0xb5.toByte, 0xbc.toByte))
+        selfContained().segment(0.z till 4.z).to[List]
+      . assert(_ == List[Byte](0xb2.toByte, 0xc4.toByte, 0xb5.toByte, 0xbc.toByte))
 
       test(m"self-contained text form begins with βτεμ"):
         Bintel.text(selfContained()).s.substring(0, 4)
