@@ -119,10 +119,31 @@ trait Definable extends Typeclass.Pure, Operable, Resultant:
   def define(value: Self, index: Operand, result: Result): Self
 
 // The inverse of `define`, and a separate typeclass rather than a method on `Definable`
-// because only key-addressed containers can implement it: deleting at an `Ordinal` would shift
-// every later index, so the positional containers have no instance at all, and `omit` is simply
-// unavailable on them.
+// because the linked and sequential containers cannot implement it honestly: deleting at an
+// `Ordinal` shifts every later index, so `List` and `Sequence` have no instance at all, and
+// `omit` is simply unavailable on them. The frozen array is the exception: it is copied whole
+// by every edit anyway, so omitting one slot is the same linear copy as `define`, and the
+// shift is exactly what a copy-on-write edit of a fixed layout wants.
 object Omissible:
+  // Dysasymptotic, as `Definable.frozenArray` is, and gated on the same acknowledgement; the
+  // rebuilt array is fresh, so freezing it is discharged by construction. An out-of-range
+  // ordinal returns the array unchanged.
+  given frozenArray: [element: scala.reflect.ClassTag]
+  =>  ( complexity: Dysasymptotic.LinearSize )
+  =>  ((Array[element]^{}) is Omissible { type Operand = Ordinal }) =
+    new Omissible:
+      type Self = Array[element]^{}
+      type Operand = Ordinal
+
+      def omit(array: Self, index: Ordinal): Self =
+        if index.n0 >= 0 && index.n0 < array.length then
+          val copy = Array.allocate[element](array.length - 1)
+          copy.place(array, 0, 0, index.n0)
+          copy.place(array, index.n0 + 1, index.n0, array.length - index.n0 - 1)
+          Array.freeze(copy)
+        else
+          array
+
   given map: [key, value] => (Map[key, value] is Omissible { type Operand = key }) =
     new Omissible:
       type Self = Map[key, value]

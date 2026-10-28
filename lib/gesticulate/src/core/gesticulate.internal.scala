@@ -42,7 +42,6 @@ import denominative.dysasymptotics.linearSize
 import fulminate.*
 import gigantism.*
 import gossamer.*
-import hypotenuse.minimize
 import rudiments.*
 import vacuous.*
 

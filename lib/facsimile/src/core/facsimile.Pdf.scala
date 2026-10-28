@@ -45,7 +45,7 @@ import denominative.*
 import enigmatic.*
 import fulminate.*
 import gossamer.*
-import hypotenuse.{maximize, maximum}
+import hypotenuse.maximum
 import hieroglyph.*
 import iridescence.*
 import mosquito.*

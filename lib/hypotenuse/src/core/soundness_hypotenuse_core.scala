@@ -39,8 +39,8 @@ export
       Arithmetic, erf, euler, exp, expm1, exponent, F32, F64, finite, floor, gcd, goldenRatio,
       hex, hyp, increment, infinite, int, lcm, ln, log10, log1p, long, mantissa, nan, octal,
       Orderable, pi, predecessor, rawBits, round, S16, S32, S64, S8, scalb, short,
-      signum, sin, sinh, successor, tan, U16, U32, U64, U8, ulp, π, φ, min, minimize, minimum,
-      max, maximize, maximum, median, Decimal, Q32, Q64, Rational }
+      signum, sin, sinh, successor, tan, U16, U32, U64, U8, ulp, π, φ, min, minimum,
+      max, maximum, median, Decimal, Q32, Q64, Rational }
 
 package arithmeticOptions:
   export

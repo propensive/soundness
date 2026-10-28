@@ -89,46 +89,6 @@ extension [self](self: self)(using traversable: self is Traversable)
 
       current
 
-  inline def minimize[key](lambda: traversable.Operand => key)
-    ( using commensurable: key is Commensurable against key )
-  :   Optional[traversable.Operand] =
-
-    val iterator = traversable.traverse(self)
-
-    if !iterator.hasNext then Unset else
-      var current = iterator.next()
-      var best = lambda(current)
-
-      while iterator.hasNext do
-        val element = iterator.next()
-        val next = lambda(element)
-
-        if next < best then
-          current = element
-          best = next
-
-      current
-
-  inline def maximize[key](lambda: traversable.Operand => key)
-    ( using commensurable: key is Commensurable against key )
-  :   Optional[traversable.Operand] =
-
-    val iterator = traversable.traverse(self)
-
-    if !iterator.hasNext then Unset else
-      var current = iterator.next()
-      var best = lambda(current)
-
-      while iterator.hasNext do
-        val element = iterator.next()
-        val next = lambda(element)
-
-        if next > best then
-          current = element
-          best = next
-
-      current
-
 // The `Traversable`-receiver twin of `median` below: a native collection is not an `Iterable`,
 // so the traversal is materialised and delegated.
 extension [self, value](self: self)(using traversable: self is Traversable by value)
@@ -150,45 +110,11 @@ extension [value](iterable: Iterable[value])
 
       current
 
-  inline def minimize[value2](lambda: value => value2)
-    ( using commensurable: value2 is Commensurable against value2 )
-  :   Optional[value] =
-
-    if iterable.nil then Unset else
-      var current = iterable.head
-      var best = lambda(current)
-
-      iterable.tail.each: element =>
-        val next = lambda(element)
-
-        if next < best then
-          current = element
-          best = next
-
-      current
-
   inline def maximum(using commensurable: value is Commensurable against value): Optional[value] =
     if iterable.nil then Unset else
       var current = iterable.head
 
       iterable.tail.each: element => if element > current then current = element
-
-      current
-
-  inline def maximize[value2](lambda: value => value2)
-    ( using commensurable: value2 is Commensurable against value2 )
-  :   Optional[value] =
-
-    if iterable.nil then Unset else
-      var current = iterable.head
-      var best = lambda(current)
-
-      iterable.tail.each: element =>
-        val next = lambda(element)
-
-        if next > best then
-          current = element
-          best = next
 
       current
 
