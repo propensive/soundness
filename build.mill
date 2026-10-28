@@ -4132,18 +4132,32 @@ object release extends Module:
   // Builds every released jar and copies it into one directory under its release asset name,
   // with its POM and ivy.xml embedded. The version is `publishVersion`, which the release script
   // pins with `SOUNDNESS_RELEASE_VERSION` so every asset carries exactly the tagged version.
+  // The ivy.xml published beside each jar as `<artifactId>-<version>.ivy.xml`: the metadata
+  // Coursier reads when crux (propensive/crux) uses the release as an Ivy-pattern repository,
+  // without the sources and javadoc publications. Mill declares those in the `compile`
+  // configuration too, and the crux artifact pattern names the main jar for any publication
+  // without a classifier, so left in place they would resolve to the jar itself.
+  private def stripDescriptor(ivy: String): String =
+    val artifact = """<artifact\b[^>]*?(?:/>|>\s*</artifact>)""".r
+    val filtered = artifact.replaceAllIn(ivy, found =>
+      if found.matched.contains("classifier=") || found.matched.matches("""(?s).*\btype="(src|doc)".*""")
+      then "" else java.util.regex.Matcher.quoteReplacement(found.matched))
+    filtered.linesIterator.filter(_.trim.nonEmpty).mkString("", "\n", "\n")
+
   def stage: T[Seq[PathRef]] = Task:
     val jars: Seq[(PathRef, String, String, String, PathRef, PathRef)] =
       Task.traverse(releasableModules)(module =>
         Task.Anon((module.jar(), module.pomSettings().organization, module.artifactId(),
                    module.publishVersion(), module.pom(), module.ivy())))()
 
-    jars.map: (jar, group, artifactId, version, pom, ivy) =>
+    jars.flatMap: (jar, group, artifactId, version, pom, ivy) =>
       val target = Task.dest / s"$artifactId-$version.jar"
       val prefix = s"META-INF/maven/$group/$artifactId"
       val descriptors = Seq(s"$prefix/pom.xml" -> pom.path, s"$prefix/ivy.xml" -> ivy.path)
       withDescriptors(jar.path, target, descriptors)
-      PathRef(target)
+      val metadata = Task.dest / s"$artifactId-$version.ivy.xml"
+      os.write.over(metadata, stripDescriptor(os.read(ivy.path)))
+      Seq(PathRef(target), PathRef(metadata))
 
 // A tiny Scala.js app whose `fastLinkJS` actually LINKS a representative slice of
 // the JS-capable modules, so the linker reports any reachable reference to a
