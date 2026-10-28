@@ -57,7 +57,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - Every ` ```scala ` fence in `doc/modules/*.md` is checked by `make doccheck` (or `make doccheck
   DOC=<tutorial>`), which evaluates the fences in order through the flame REPL's JSON API
-  (`etc/doccheck.py`; needs the `flame` binary and the release installed into `~/.ivy2/local`, which pinning it in a consumer's `etc/refs` and running `make sync-deps` there does) and
+  (`etc/doccheck.py`; needs the `flame` binary and the release's jars resolvable, which pinning it in a consumer's `etc/refs` does, through crux) and
   checks the names they use against the source (`etc/doccheck-names.py`). Run it after changing a
   tutorial or an API a tutorial documents. flame is built against the latest *release*, so a
   failure that names something renamed since (listed in the unreleased `doc/migration/<version>.md`) is reported
