@@ -161,10 +161,10 @@ object AnthropicTests extends Suite("anthropic", m"Anthropic dialect tests"):
   val target: Anthropic = Anthropic(t"claude-sonnet-4-5", t"sk-test").on(url"http://model.test")
 
   def sent(fake: FakeModel): Json =
-    fake.exchanges.stdlib.reverse.head.body.option.get.read[Json]
+    fake.exchanges.reverse.head.let(_.body).or(panic(m"the fake recorded a body")).read[Json]
 
   def header(fake: FakeModel, name: Text): Optional[Text] =
-    fake.exchanges.stdlib.reverse.head.headers.filter(_.key == name).head.let(_.value)
+    fake.exchanges.reverse.head.let(_.headers.filter(_.key == name).head).let(_.value)
 
   def run(): Unit =
     test(m"a one-shot ask decodes the reply"):
@@ -185,7 +185,7 @@ object AnthropicTests extends Suite("anthropic", m"Anthropic dialect tests"):
     test(m"unset knobs are omitted from the request"):
       given fake: FakeModel = FakeModel((_, _, _) => FakeModel.answer(t"yes"))
       target.session(llm.ask(t"Ready?"))
-      val body = fake.exchanges.stdlib.reverse.head.body.option.get
+      val body = fake.exchanges.reverse.head.let(_.body).or(panic(m"the fake recorded a body"))
 
       ( body.contains(t"temperature"), body.contains(t"stop_sequences"),
         body.contains(t"tools") )
@@ -200,7 +200,7 @@ object AnthropicTests extends Suite("anthropic", m"Anthropic dialect tests"):
     test(m"the endpoint is the Messages API"):
       given fake: FakeModel = FakeModel((_, _, _) => FakeModel.answer(t"yes"))
       target.session(llm.ask(t"Ready?"))
-      val exchange = fake.exchanges.stdlib.reverse.head
+      val exchange = fake.exchanges.reverse.head.or(panic(m"the fake recorded an exchange"))
       (exchange.method, exchange.path)
     . assert(_ == (Http.Post, t"/v1/messages"))
 
@@ -210,7 +210,7 @@ object AnthropicTests extends Suite("anthropic", m"Anthropic dialect tests"):
 
       val verdict = target.session(llm.solicit[Appraisal](t"Summarise."))
       val json = sent(fake)
-      val body = fake.exchanges.stdlib.reverse.head.body.option.get
+      val body = fake.exchanges.reverse.head.let(_.body).or(panic(m"the fake recorded a body"))
 
       ( verdict,
         json.output_config.format.`type`.as[Text],
@@ -253,7 +253,7 @@ object AnthropicTests extends Suite("anthropic", m"Anthropic dialect tests"):
             Llm.Request(Llm.Id.request(t"second"), t"Summarise MSFT.") )
 
       val submitted = target.prompted(t"Be terse.").elicitAll[Appraisal](requests)
-      val json = fake.exchanges.stdlib.reverse.head.body.option.get.read[Json]
+      val json = fake.exchanges.reverse.head.let(_.body).or(panic(m"the fake recorded a body")).read[Json]
       val ended = submitted.await(0)
 
       val outcomes = ended.outcomes().map: outcome =>

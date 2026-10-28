@@ -412,7 +412,7 @@ object Tests extends Suite("acp", m"Espionage Tests"):
               "update":{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"hi"}}}}"""
 
         TestClient.roundtrip(message.as[Json])
-        TestClient.updates.synchronized(TestClient.updates.to(List))
+        TestClient.updates.synchronized(TestClient.updates.to[List])
       . assert(_ == List(t"s1:hi"))
 
       test(m"session/request_permission answers the handler's selection"):
@@ -502,7 +502,7 @@ object Tests extends Suite("acp", m"Espionage Tests"):
               val stop = connection.prompt(session.sessionId, t"hello agent")
               log.synchronized(log.append(t"stop:$stop"))
 
-        log.synchronized(log.to(List))
+        log.synchronized(log.to[List])
       . assert:
           _ == List
                 ( t"session:sess1",
@@ -512,7 +512,7 @@ object Tests extends Suite("acp", m"Espionage Tests"):
                   t"stop:EndTurn" )
 
       test(m"the agent saw the turn as scripted"):
-        AgentFixture.received.synchronized(AgentFixture.received.to(List))
+        AgentFixture.received.synchronized(AgentFixture.received.to[List])
       . assert:
           _ == List
                 ( t"initialize",
@@ -556,5 +556,5 @@ object Tests extends Suite("acp", m"Espionage Tests"):
       . assert(_ == StopReason.Cancelled)
 
       test(m"the cancelled turn's permission request was answered cancelled"):
-        AgentFixture.received.synchronized(AgentFixture.received.to(List))
+        AgentFixture.received.synchronized(AgentFixture.received.to[List])
       . assert(_.has(t"answer:perm2:cancelled"))

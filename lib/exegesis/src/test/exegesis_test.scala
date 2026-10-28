@@ -148,7 +148,7 @@ object TrafficFixture:
       Lsp.listen(t"Test", t"1.0", observer):
         hover(Hover(MarkupContent(value = document.text)))
 
-    log.synchronized(log.toList).to(List)
+    List.from(log.synchronized(log.toList))
 
 // Runs a real `Lsp.listen` server on its own task, joined to a client by a pair of pipes: an
 // exchange that crosses the framing and the codecs in both directions, exactly as it would between
@@ -160,10 +160,10 @@ object LoopbackFixture:
   // A listener that records what the server said unbidden.
   class Record() extends Lsp.Listener:
     private val log: scm.ArrayBuffer[Text] = scm.ArrayBuffer()
-    def notes: List[Text] = log.synchronized(log.toList.to(List))
+    def notes: List[Text] = log.synchronized(List.from(log.toList))
 
     override def diagnostics(uri: Text, version: Optional[Int], reports: List[Diagnostic]): Unit =
-      val messages = reports.stdlib.map(_.message.s).mkString(",")
+      val messages = reports.map(_.message).join(t",")
       log.synchronized(log.append(t"diagnostics:$uri:$messages"))
 
     override def message(kind: MessageType, text: Text): Unit =
@@ -498,7 +498,7 @@ object Tests extends Suite("lsp", m"Exegesis Tests"):
       val traffic: List[(Text, Text)] = TrafficFixture.observed
 
       test(m"the observer sees one message in each direction"):
-        traffic.stdlib.map(_._1).mkString(",")
+        traffic.map(_(0)).join(t",")
       . assert(_ == "recv,send")
 
       test(m"an inbound message is observed as its body, without the framing"):
@@ -506,7 +506,7 @@ object Tests extends Suite("lsp", m"Exegesis Tests"):
       . assert(_ == TrafficFixture.request)
 
       test(m"an outbound message is observed as the response to the request"):
-        traffic.stdlib.last._2.as[Json].as[JsonRpc.Response].id.let(_.as[Int])
+        traffic.last.let(_(1).as[Json].as[JsonRpc.Response].id.let(_.as[Int]))
       . assert(_ == 0)
 
     suite(m"Client sessions"):

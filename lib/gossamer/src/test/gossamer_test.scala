@@ -408,7 +408,7 @@ object Tests extends Suite("text", m"Gossamer Tests"):
 
       test(m"before slices an IndexedSeq by ordinal"):
         val sequence: IndexedSeq[Int] = Vector(0, 1, 2, 3, 4)
-        sequence.before(Ter).to(List)
+        sequence.before(Ter).to[List]
       . assert(_ == List(0, 1))
 
       test(m"snip a Text in two"):

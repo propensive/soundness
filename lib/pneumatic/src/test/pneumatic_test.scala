@@ -50,7 +50,7 @@ object Tests extends Suite("compression", m"Pneumatic tests"):
   def run(): Unit =
     suite(m"Compression tests"):
       test(m"Compress a single block with GZip"):
-        proscenium.Chain(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Gzip].stdlib.map(_.stdlib).flatten.to(proscenium.List)
+        List.from(proscenium.Chain(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Gzip].stdlib.map(_.stdlib).flatten)
       . assert(_ == Data(1, 1, 2, 3, 5, 8, 13, 21, 34).compress[Gzip].to[List])
 
       test(m"Roundtrip compress/decompress a single block with GZip"):
@@ -58,7 +58,7 @@ object Tests extends Suite("compression", m"Pneumatic tests"):
       . assert: stream => stream === proscenium.Chain(Data(1, 1, 2, 3, 5, 8, 13, 21, 34))
 
       val longData: Chain[Data] =
-        (proscenium.Chain.continually(Array.from((0 to 255).map(_.toByte))).stdlib.take(1000)).to(proscenium.Chain)
+        (proscenium.Chain.continually(Array.from((0 to 255).map(_.toByte))).keep(1000)).to[Chain]
 
       test(m"Roundtrip compress/decompress a long repetitive stream with Gzip"):
         longData.compress[Gzip].decompress[Gzip]
@@ -117,7 +117,7 @@ object Tests extends Suite("compression", m"Pneumatic tests"):
         Lzw.decompress(Lzw.compress(variedData, earlyChange = false), earlyChange = false)
       . assert(_.stdlib.map(_.stdlib).flatten == variedData.stdlib.map(_.stdlib).flatten)
       test(m"Compress a single block with Zlib"):
-        proscenium.Chain(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Zlib].stdlib.map(_.stdlib).flatten.to(proscenium.List)
+        List.from(proscenium.Chain(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Zlib].stdlib.map(_.stdlib).flatten)
       . assert(_ == Data(1, 1, 2, 3, 5, 8, 13, 21, 34).compress[Zlib].to[List])
 
       test(m"Roundtrip compress/decompress a single block with Zlib"):
@@ -129,7 +129,7 @@ object Tests extends Suite("compression", m"Pneumatic tests"):
       . assert(_.stdlib.map(_.stdlib).flatten == longData.stdlib.map(_.stdlib).flatten)
 
       test(m"Compress a single block with Deflate"):
-        proscenium.Chain(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Deflate].stdlib.map(_.stdlib).flatten.to(proscenium.List)
+        List.from(proscenium.Chain(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Deflate].stdlib.map(_.stdlib).flatten)
       . assert(_ == Data(1, 1, 2, 3, 5, 8, 13, 21, 34).compress[Deflate].to[List])
 
       test(m"Roundtrip compress/decompress a single block with Deflate"):
@@ -308,7 +308,7 @@ object Tests extends Suite("compression", m"Pneumatic tests"):
       . assert(_ == foxPlain.in[Data].to[List])
 
       val brotliLong: Chain[Data] =
-        (proscenium.Chain.continually(Array.from((0 to 255).map(_.toByte))).stdlib.take(1000)).to(proscenium.Chain)
+        (proscenium.Chain.continually(Array.from((0 to 255).map(_.toByte))).keep(1000)).to[Chain]
       val brotliWhole: Data = Array.from(Array.from((0 to 255).map(_.toByte)).stdlib ++ Data(1, 1, 2, 3, 5, 8, 13).stdlib)
       val brotliVaried: Data =
         Array.from((0 until 40000).map { index => ((index*index + index/3)%251).toByte })
@@ -523,7 +523,7 @@ object Tests extends Suite("compression", m"Pneumatic tests"):
 
       val xzWhole: Data = Array.from(Array.from((0 to 255).map(_.toByte)).stdlib ++ Data(1, 1, 2, 3, 5, 8, 13).stdlib)
       val xzLong: Chain[Data] =
-        (proscenium.Chain.continually(Array.from((0 to 255).map(_.toByte))).stdlib.take(1000)).to(proscenium.Chain)
+        (proscenium.Chain.continually(Array.from((0 to 255).map(_.toByte))).keep(1000)).to[Chain]
       val xzVaried: Data =
         Array.from((0 until 40000).map { index => ((index*index + index/3)%251).toByte })
 
@@ -557,8 +557,8 @@ object Tests extends Suite("compression", m"Pneumatic tests"):
       . assert(_ == true)
 
       test(m"Compress with an explicit fast preset and roundtrip (Xz)"):
-        Xz.compress(proscenium.Chain(xzVaried), 1).decompress[Xz].stdlib.map(_.stdlib).flatten.to(proscenium.List)
-      . assert(_ == xzVaried.to[List])
+        Xz.compress(proscenium.Chain(xzVaried), 1).decompress[Xz].stdlib.map(_.stdlib).flatten
+      . assert(_ == xzVaried.stdlib.toList)
 
       test(m"Empty input roundtrips (Xz)"):
         Data().compress[Xz].decompress[Xz].to[List]
@@ -580,8 +580,8 @@ object Tests extends Suite("compression", m"Pneumatic tests"):
         val payload: Data =
           Array.from((0 until 700000).map { i => ((i*31 + (i >> 6)) & 0xff).toByte })
         val encodedChunks = Xz.compress(Chain(payload), 0)
-        val roundtrips = encodedChunks.decompress[Xz].stdlib.map(_.stdlib).flatten.to(proscenium.List) == payload.stdlib.to(proscenium.List)
-        val encodedBytes: Data = Array.from(encodedChunks.stdlib.map(_.stdlib).flatten)
+        val roundtrips = encodedChunks.decompress[Xz].stdlib.map(_.stdlib).flatten == payload.stdlib.toList
+        val encodedBytes: Data = Array.from(encodedChunks.stdlib.flatMap(_.stdlib))
         val byXz =
           try
             val process = ProcessBuilder("xz", "-d", "-c").start().nn
@@ -589,7 +589,7 @@ object Tests extends Suite("compression", m"Pneumatic tests"):
             process.getOutputStream.nn.close()
             val decoded = process.getInputStream.nn.readAllBytes().nn
             process.waitFor()
-            Array.unsafeFrozen(decoded).to[List] == payload.stdlib.to(proscenium.List)
+            Array.unsafeFrozen(decoded).to[List] == List.from(payload.stdlib)
           catch case _: ji.IOException => true
         roundtrips && byXz
       . assert(_ == true)
@@ -604,7 +604,7 @@ object Tests extends Suite("compression", m"Pneumatic tests"):
           stdin.close()
           val decoded = process.getInputStream.nn.readAllBytes().nn
           process.waitFor()
-          process.exitValue() == 0 && Array.unsafeFrozen(decoded).to[List] == data.stdlib.to(proscenium.List)
+          process.exitValue() == 0 && Array.unsafeFrozen(decoded).to[List] == List.from(data.stdlib)
         catch case _: ji.IOException => true // xz binary unavailable; skip
 
       test(m"The xz binary decodes our output (repetitive)"):
@@ -628,7 +628,7 @@ object Tests extends Suite("compression", m"Pneumatic tests"):
     suite(m"LZMA2 tests"):
       val lzma2Whole: Data = Array.from(Array.from((0 to 255).map(_.toByte)).stdlib ++ Data(1, 1, 2, 3, 5, 8, 13).stdlib)
       val lzma2Long: Chain[Data] =
-        (proscenium.Chain.continually(Array.from((0 to 255).map(_.toByte))).stdlib.take(1000)).to(proscenium.Chain)
+        (proscenium.Chain.continually(Array.from((0 to 255).map(_.toByte))).keep(1000)).to[Chain]
       val lzma2Varied: Data =
         Array.from((0 until 40000).map { index => ((index*index + index/3)%251).toByte })
 
@@ -666,8 +666,8 @@ object Tests extends Suite("compression", m"Pneumatic tests"):
 
       test(m"Explicit preset and dictionary size roundtrip (LZMA2)"):
         Lzma2.decompress(Lzma2.compress(Chain(lzma2Varied), 1),
-            Lzma2Options.preset(1).dictSize).stdlib.map(_.stdlib).flatten.to(proscenium.List)
-      . assert(_ == lzma2Varied.to[List])
+            Lzma2Options.preset(1).dictSize).stdlib.map(_.stdlib).flatten
+      . assert(_ == lzma2Varied.stdlib.toList)
 
     suite(m"Compression duct tests"):
       val mixed: Data =
@@ -755,8 +755,8 @@ object Tests extends Suite("compression", m"Pneumatic tests"):
 
             case _ => draining = false
 
-        builder.result().to(proscenium.List)
-      . assert(_ == mixed.stdlib.to(proscenium.List))
+        List.from(builder.result())
+      . assert(_ == List.from(mixed.stdlib))
 
       test(m"gzip duct decompresses JDK-produced gzip"):
         val out = ji.ByteArrayOutputStream()
@@ -765,7 +765,7 @@ object Tests extends Suite("compression", m"Pneumatic tests"):
         zipped.close()
         val gathered = Gather2().ingest:
           summon[Chain[Data] is Streamable by Data over Credit]
-          . stream(Array.unsafeFrozen(out.toByteArray.nn).stdlib.grouped(7).map(Array.from(_)).to(Chain))
+          . stream(Chain.from(Array.unsafeFrozen(out.toByteArray.nn).stdlib.grouped(7).map(Array.from(_))))
           . decompress[Gzip]
 
         gathered.data.to[List]

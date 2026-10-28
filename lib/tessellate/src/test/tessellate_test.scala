@@ -174,7 +174,7 @@ object Tests extends Suite("layout", m"Tessellate tests"):
       // Unbreakable spans (#1992): a verbatim run amid prose wraps as one word. The spans are
       // char offsets into the plain content, as `Flow` positions always are.
       def protecting(content: Text, width: Int, spans: Interval*): List[Text] =
-        Flow.wrap(content, width, unbreakable = spans.to(List)).to[List]
+        Flow.wrap(content, width, unbreakable = spans.to[List]).to[List]
 
       test(m"an unbreakable span moves whole to the next line rather than breaking inside"):
         protecting(t"see foo bar baz here", 12, 4.z thru 14.u)

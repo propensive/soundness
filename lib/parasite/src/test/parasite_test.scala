@@ -810,8 +810,8 @@ object Tests extends Suite("threads", m"Parasite tests"):
 
       suite(m"Bounded concurrency"):
         test(m"Results come back in job order"):
-          concurrently(100, 4)(i => i*i).stdlib.toList
-        . assert(_ == scala.List.tabulate(100)(i => i*i))
+          concurrently(100, 4)(i => i*i).to[List]
+        . assert(_ == List.tabulate(100)(i => i*i))
 
         test(m"No more than `parallelism` jobs run at once"):
           val running = juca.AtomicInteger(0)
@@ -838,8 +838,8 @@ object Tests extends Suite("threads", m"Parasite tests"):
         . assert(_ == 0)
 
         test(m"Fewer jobs than workers starts only as many tasks as jobs"):
-          concurrently(2, 8)(i => i + 1).stdlib.toList
-        . assert(_ == scala.List(1, 2))
+          concurrently(2, 8)(i => i + 1).to[List]
+        . assert(_ == List(1, 2))
 
         test(m"A failing job surfaces its exception at the join"):
           try

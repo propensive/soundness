@@ -436,13 +436,13 @@ object Tests extends Suite("cli", m"Exoskeleton Tests"):
             // appear exactly once...
             test(m"fish slash-terminated incomplete suggestion is not duplicated"):
               sh"$tool '{completions}' fish 3 0 /dev/null -- abcd tree --at ".exec[Text]()
-            . check(_.cut(t"\n").stdlib.count(_.starts(t"src/")) == 1)
+            . check(_.cut(t"\n").count(_.starts(t"src/")) == 1)
 
             // ...and the twin survives only where fish needs it: a sole incomplete
             // candidate with no slash of its own.
             test(m"fish sole non-slash incomplete suggestion keeps its LCP twin"):
               sh"$tool '{completions}' fish 3 0 /dev/null -- abcd tree --node ".exec[Text]()
-            .check(_.cut(t"\n").stdlib.count(_.starts(t"key.")) == 2)
+            .check(_.cut(t"\n").count(_.starts(t"key.")) == 2)
 
             // Regression check for #1109: with focus0 = 0 and position0 = 0 the
             // completions executive previously hit a `.get` on an empty Option in
@@ -478,27 +478,27 @@ object Tests extends Suite("cli", m"Exoskeleton Tests"):
             // in the menu, and selecting the twin inserts a stray trailing space.
             test(m"fish lists a file candidate exactly once"):
               sh"$tool '{completions}' fish 3 0 /dev/null -- abcd files verify ''".exec[Text]()
-            . check(_.cut(t"\n").stdlib.count(_.starts(t"one.txt")) == 1)
+            . check(_.cut(t"\n").count(_.starts(t"one.txt")) == 1)
 
             test(m"fish lists a directory candidate exactly once"):
               sh"$tool '{completions}' fish 3 0 /dev/null -- abcd files verify ''".exec[Text]()
-            . check(_.cut(t"\n").stdlib.count(_.starts(t"src/")) == 1)
+            . check(_.cut(t"\n").count(_.starts(t"src/")) == 1)
 
             test(m"powershell lists a file candidate exactly once"):
               val line = t"abcd files verify "
               sh"$tool '{completions}' powershell ${line.length} 0 '' -- $line".exec[Text]()
-            . check(_.cut(t"\n").stdlib.count(_.starts(t"one.txt")) == 1)
+            . check(_.cut(t"\n").count(_.starts(t"one.txt")) == 1)
 
             // Issue #1783, `incomplete` too broad: `Pathname` marks every candidate that
             // differs from the argument as incomplete, so even plain files get zsh's
             // suffix-suppressing `compadd` twin; only directories should.
             test(m"zsh emits no suffix-suppressing twin for a plain file"):
               sh"$tool '{completions}' zsh 4 0 /dev/null -- abcd files verify ''".exec[Text]()
-            . check(_.cut(t"\n").stdlib.count(_.contains(t"one.txt")) == 1)
+            . check(_.cut(t"\n").count(_.contains(t"one.txt")) == 1)
 
             test(m"zsh still emits the suffix-suppressing twin for a directory"):
               sh"$tool '{completions}' zsh 4 0 /dev/null -- abcd files verify ''".exec[Text]()
-            . check(_.cut(t"\n").stdlib.count(_.contains(t"src/")) == 2)
+            . check(_.cut(t"\n").count(_.contains(t"src/")) == 2)
 
             // Issue #1782: `Pathname` discards the `prior` suggestions, so a subcommand and
             // a path matched against the same argument should offer the union, but the
@@ -525,8 +525,8 @@ object Tests extends Suite("cli", m"Exoskeleton Tests"):
             test(m"tilde completions list the home directory and keep the tilde"):
               sh"$tool '{completions}' fish 3 0 /dev/null -- abcd files verify '~/'".exec[Text]()
             .assert: output =>
-                val lines = output.cut(t"\n").stdlib.filter(!_.nil)
-                lines.nonEmpty && lines.forall(_.starts(t"~/"))
+                val lines = output.cut(t"\n").filter(!_.nil)
+                !lines.nil && lines.all(_.starts(t"~/"))
 
             test(m"subcommands and paths at one position combine on zsh"):
               sh"$tool '{completions}' zsh 3 0 /dev/null -- abcd files ''".exec[Text]()
@@ -913,8 +913,8 @@ object Tests extends Suite("cli", m"Exoskeleton Tests"):
             // Each `compadd` invocation is one line of NUL-separated arguments.
             def zsh(text: Text): List[List[Text]] =
               sh"$tool '{completions}' zsh 2 3 /dev/null -- clstr $text".exec[Text]()
-              . cut(t"\n").stdlib.filter(_.length > 0)
-              . map(_.cut(t"\u0000")).to(List)
+              . cut(t"\n").filter(_.length > 0)
+              . map(_.cut(t"\u0000")).to[List]
 
             def adjacent(line: List[Text], first: Text, second: Text): Boolean =
               line.stdlib.sliding(2).exists: pair =>
@@ -923,11 +923,11 @@ object Tests extends Suite("cli", m"Exoskeleton Tests"):
             // `compadd -p <prefix>` is zsh's *hidden* prefix: inserted, but neither displayed
             // nor matched against, so the word grows by the single new character.
             test(m"zsh takes the typed cluster as a hidden prefix"):
-              zsh(t"-ab").stdlib.exists(adjacent(_, t"-p", t"-ab"))
+              zsh(t"-ab").exists(adjacent(_, t"-p", t"-ab"))
             . check(_ == true)
 
             test(m"zsh inserts only the character being added"):
-              zsh(t"-ab").stdlib.exists(adjacent(_, t"--", t"c"))
+              zsh(t"-ab").exists(adjacent(_, t"--", t"c"))
             . check(_ == true)
 
             // The menu still names the flag, rather than showing the bare letter.
@@ -936,7 +936,7 @@ object Tests extends Suite("cli", m"Exoskeleton Tests"):
             . check(_ == true)
 
             test(m"zsh offers a no-trailing-space variant, so the cluster can grow"):
-              zsh(t"-ab").stdlib.exists(adjacent(_, t"-S", t""))
+              zsh(t"-ab").exists(adjacent(_, t"-S", t""))
             . check(_ == true)
 
             // Fish and bash insert whole words, so the candidate is the extended cluster. Both
@@ -956,7 +956,7 @@ object Tests extends Suite("cli", m"Exoskeleton Tests"):
             // A two-character argument is not a cluster: the interpreter only expands beyond
             // two characters, so `-a` still completes as an ordinary short flag.
             test(m"a two-character flag is completed without a prefix"):
-              zsh(t"-a").stdlib.exists(adjacent(_, t"-p", t"-a"))
+              zsh(t"-a").exists(adjacent(_, t"-p", t"-a"))
             . check(_ == false)
 
       suite(m"Manpage tests"):

@@ -650,8 +650,8 @@ object ProviderTests extends Suite("json-provider", m"JSON Provider tests"):
       . assert(_ == 2)
 
       test(m"an array of arrays reads as a List of Lists"):
-        ContainersSchema.record(containers).matrix.stdlib.map(_.stdlib.sum)
-      . assert(_ == scala.collection.immutable.List(3.0, 3.0))
+        ContainersSchema.record(containers).matrix.map(_.stdlib.sum)
+      . assert(_ == List(3.0, 3.0))
 
       test(m"an array of referenced records"):
         ContainersSchema.record(containers).people.map(_.name)

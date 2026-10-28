@@ -244,10 +244,10 @@ object Tests extends Suite("bootstrap", m"Burdock Tests"):
 
       Repackager.repackage(inputJar, outputJar, resolve, cached, t"bootstrap-bytes".in[Data])
 
-      val names: List[Text] = Zipfile.read(outputJar).entries.stdlib.map(_.ref.show).to(List)
+      val names: List[Text] = Zipfile.read(outputJar).entries.map(_.ref.show).to[List]
 
       val manifest: Text =
-        Zipfile.read(outputJar).entries.stdlib.find(_.ref.show == t"META-INF/MANIFEST.MF").get.read[Data].utf8
+        Zipfile.read(outputJar).entries.seek(_.ref.show == t"META-INF/MANIFEST.MF").or(panic(m"the suite expects a match")).read[Data].utf8
 
       test(m"keeps the application's own class"):
         names.has(t"com/example/Main.class")
@@ -348,19 +348,19 @@ object Tests extends Suite("bootstrap", m"Burdock Tests"):
 
       Repackager.repackage(inputJar, outputJar, resolve, cached, t"real-bootstrap".in[Data])
 
-      val names: List[Text] = Zipfile.read(outputJar).entries.stdlib.map(_.ref.show).to(List)
+      val names: List[Text] = Zipfile.read(outputJar).entries.map(_.ref.show).to[List]
 
       test(m"a bundled bootstrap class is not duplicated"):
-        names.stdlib.count(_ == t"burdock/Bootstrap.class")
+        names.count(_ == t"burdock/Bootstrap.class")
       .assert(_ == 1)
 
       test(m"the force-included bootstrap bytes win over the bundled copy"):
-        Zipfile.read(outputJar).entries.stdlib.find(_.ref.show == t"burdock/Bootstrap.class").get
+        Zipfile.read(outputJar).entries.seek(_.ref.show == t"burdock/Bootstrap.class").or(panic(m"the suite expects a match"))
         . read[Data].utf8
       .assert(_ == t"real-bootstrap")
 
       test(m"a cached class already bundled is not duplicated"):
-        names.stdlib.count(_ == t"dep/Lib.class")
+        names.count(_ == t"dep/Lib.class")
       .assert(_ == 1)
 
     suite(m"Repackager (slimming)"):
@@ -397,10 +397,10 @@ object Tests extends Suite("bootstrap", m"Burdock Tests"):
 
       Repackager.repackage(inputJar, outputJar, resolve, cached, t"bootstrap".in[Data])
 
-      val names: List[Text] = Zipfile.read(outputJar).entries.stdlib.map(_.ref.show).to(List)
+      val names: List[Text] = Zipfile.read(outputJar).entries.map(_.ref.show).to[List]
 
       val manifest: Text =
-        Zipfile.read(outputJar).entries.stdlib.find(_.ref.show == t"META-INF/MANIFEST.MF").get
+        Zipfile.read(outputJar).entries.seek(_.ref.show == t"META-INF/MANIFEST.MF").or(panic(m"the suite expects a match"))
         . read[Data].utf8
 
       test(m"strips a published dependency's bundled class"):
@@ -450,7 +450,7 @@ object Tests extends Suite("bootstrap", m"Burdock Tests"):
       Repackager.repackage(inputJar, outputJar, _ => Unset, _ => Unset, t"bootstrap".in[Data])
 
       def entry(jar: Path on Linux, name: Text): Zip.Entry =
-        Zipfile.read(jar).entries.stdlib.find(_.ref.show == name).get
+        Zipfile.read(jar).entries.seek(_.ref.show == name).or(panic(m"the suite expects a match"))
 
       test(m"a Stored input entry stays Stored (no re-deflate)"):
         entry(outputJar, t"pkg/Stored.class").method

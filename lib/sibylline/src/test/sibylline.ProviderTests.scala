@@ -48,7 +48,7 @@ object OpenAITests extends Suite("openai", m"OpenAI dialect tests"):
   val target: OpenAI = OpenAI.compatible(url"http://model.test/v1", t"gpt-test", t"sk-test")
 
   def sent(fake: FakeModel): Json =
-    fake.exchanges.stdlib.reverse.head.body.option.get.read[Json]
+    fake.exchanges.reverse.head.let(_.body).or(panic(m"the fake recorded a body")).read[Json]
 
   def answer(text: Text): Http.Response = FakeModel.reply:
     t"""{"id": "cmpl_1", "model": "gpt-test", "choices":
@@ -104,7 +104,7 @@ object OpenAITests extends Suite("openai", m"OpenAI dialect tests"):
     test(m"the request goes to the configured base with Bearer auth"):
       given fake: FakeModel = FakeModel((_, _, _) => answer(t"yes"))
       target.session(llm.ask(t"Ready?"))
-      val exchange = fake.exchanges.stdlib.reverse.head
+      val exchange = fake.exchanges.reverse.head.or(panic(m"the fake recorded an exchange"))
 
       ( exchange.path,
         exchange.headers.filter(_.key == t"authorization").head.let(_.value) )
@@ -113,7 +113,7 @@ object OpenAITests extends Suite("openai", m"OpenAI dialect tests"):
     test(m"a keyless compatible target sends no authorization header"):
       given fake: FakeModel = FakeModel((_, _, _) => answer(t"yes"))
       OpenAI.compatible(url"http://model.test/v1", t"llama").session(llm.ask(t"Ready?"))
-      fake.exchanges.stdlib.reverse.head.headers.filter(_.key == t"authorization").size
+      fake.exchanges.reverse.head.let(_.headers.filter(_.key == t"authorization").size)
     . assert(_ == 0)
 
     test(m"the system prompt becomes a leading system message"):
@@ -182,7 +182,7 @@ object ResponsesTests extends Suite("openai-responses", m"OpenAI Responses diale
     OpenAI.compatible(url"http://model.test/v1", t"gpt-test", t"sk-test").responses
 
   def sent(fake: FakeModel): Json =
-    fake.exchanges.stdlib.reverse.head.body.option.get.read[Json]
+    fake.exchanges.reverse.head.let(_.body).or(panic(m"the fake recorded a body")).read[Json]
 
   def answer(text: Text): Http.Response = FakeModel.reply:
     t"""{"id": "resp_1", "model": "gpt-test", "status": "completed", "output":
@@ -222,7 +222,7 @@ object ResponsesTests extends Suite("openai-responses", m"OpenAI Responses diale
       given fake: FakeModel = FakeModel((_, _, _) => answer(t"yes"))
       target.chat.prompted(t"Be terse.").responses.session(llm.ask(t"Ready?"))
       val json = sent(fake)
-      val exchange = fake.exchanges.stdlib.reverse.head
+      val exchange = fake.exchanges.reverse.head.or(panic(m"the fake recorded an exchange"))
 
       ( exchange.path, json.instructions.as[Text], json.input(0).`type`.as[Text],
         json.input(0).content(0).`type`.as[Text] )
@@ -253,7 +253,7 @@ object GeminiTests extends Suite("gemini", m"Gemini dialect tests"):
   val target: Gemini = Gemini(t"gemini-test", t"g-key").on(url"http://model.test")
 
   def sent(fake: FakeModel): Json =
-    fake.exchanges.stdlib.reverse.head.body.option.get.read[Json]
+    fake.exchanges.reverse.head.let(_.body).or(panic(m"the fake recorded a body")).read[Json]
 
   def answer(text: Text): Http.Response = FakeModel.reply:
     t"""{"responseId": "gen_1", "modelVersion": "gemini-test", "candidates":
@@ -278,7 +278,7 @@ object GeminiTests extends Suite("gemini", m"Gemini dialect tests"):
     test(m"the endpoint addresses the model and the key travels as a header"):
       given fake: FakeModel = FakeModel((_, _, _) => answer(t"yes"))
       target.session(llm.ask(t"Ready?"))
-      val exchange = fake.exchanges.stdlib.reverse.head
+      val exchange = fake.exchanges.reverse.head.or(panic(m"the fake recorded an exchange"))
 
       ( exchange.path,
         exchange.headers.filter(_.key == t"x-goog-api-key").head.let(_.value) )
@@ -287,7 +287,7 @@ object GeminiTests extends Suite("gemini", m"Gemini dialect tests"):
     test(m"the streamed endpoint asks for SSE"):
       given fake: FakeModel = FakeModel((_, _, _) => FakeModel.reply(streamed))
       target.session(llm.stream(t"go").reply())
-      fake.exchanges.stdlib.reverse.head.path
+      fake.exchanges.reverse.head.let(_.path)
     . assert(_ == t"/v1beta/models/gemini-test:streamGenerateContent?alt=sse")
 
     test(m"the request carries contents, system instruction and config"):

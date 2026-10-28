@@ -382,8 +382,8 @@ object Tests extends Suite("dag", m"Acyclicity Tests"):
       . assert(_ == diamond.edges)
 
       test(m"a frozen graph inverts in place, reversing its order"):
-        frozen.invert.linearized.stdlib
-      . assert(_ == diamond.linearized.stdlib.reverse)
+        frozen.invert.linearized
+      . assert(_ == diamond.linearized.reverse)
 
       test(m"a frozen inversion snapshots to the inverted Dag"):
         frozen.invert.snapshot

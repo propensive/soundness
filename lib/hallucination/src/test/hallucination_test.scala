@@ -372,7 +372,7 @@ object Tests extends Suite("image", m"Hallucination Tests"):
 
     test(m"a decoded PNG has an eight-bit RGB or RGBA layout"):
       png.read[Raster in Png].descriptor.entries.map(_.depth)
-    . assert(_.stdlib.forall(_ == 8))
+    . assert(_.all(_ == 8))
 
     test(m"repacking to the same layout returns the same raster"):
       val raster = stripes
@@ -599,7 +599,7 @@ object Tests extends Suite("image", m"Hallucination Tests"):
 
     test(m"a four-bit greyscale PNG decodes with scaled samples"):
       val raster = PngCodec.decode(grey4)
-      (0 until 4).map(raster(_, 0).red).to(List)
+      (0 until 4).map(raster(_, 0).red).to[List]
     . assert(_ == List(0, 85, 170, 255))
 
     val pal2 = hex"""89504e470d0a1a0a0000000d494844520000000400000002020300000002c695f00000000c504c54

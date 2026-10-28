@@ -90,16 +90,16 @@ object XsdTests extends Suite("xsd", m"Xylophone XML Schema tests"):
       . assert(_ == Xsd.Form.Qualified)
 
       test(m"The Spring beans schema declares groups"):
-        Map.keys(schema(cp"/xsd/spring-beans.xsd").groups).stdlib.contains(t"beanElements")
+        Map.keys(schema(cp"/xsd/spring-beans.xsd").groups).has(t"beanElements")
       . assert(_ == true)
 
       test(m"The XLIFF schema records its imports"):
-        schema(cp"/xsd/xliff-core-2.0.xsd").imports.stdlib.map(_.namespace)
-      . assert(_.contains(Optional(t"http://www.w3.org/XML/1998/namespace")))
+        schema(cp"/xsd/xliff-core-2.0.xsd").imports.map(_.namespace)
+      . assert(_.has(Optional(t"http://www.w3.org/XML/1998/namespace")))
 
       test(m"Documentation is kept"):
-        schema(cp"/xsd/po.xsd").documentation.stdlib.headOption.map(_.trim.s.take(21))
-      . assert(_ == Some("Purchase order schema"))
+        schema(cp"/xsd/po.xsd").documentation.head.let(_.trim.s.take(21))
+      . assert(_ == "Purchase order schema")
 
     suite(m"Errors"):
       test(m"A document that is not a schema is rejected"):

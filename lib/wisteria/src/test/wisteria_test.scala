@@ -294,7 +294,7 @@ object Tests extends Suite("derivation", m"Wisteria tests"):
     suite(m"Product derivation"):
       test(m"Parse a product via construct"):
         Parser.derived[ParserTestCaseClass].parse("42,true")
-      . assert(_ == Some(ParserTestCaseClass(42, true)))
+      . assert(_ == ParserTestCaseClass(42, true))
 
       test(m"Failed parse returns None via construct"):
         Parser.derived[ParserTestCaseClass].parse("notanint,true")
@@ -548,7 +548,7 @@ object Tests extends Suite("derivation", m"Wisteria tests"):
             case root.cto.name() => nameCodec
             case root.ceo.age()  => ageCodec
 
-        wisteria.internal.overridePaths[CodecJson, Company].stdlib.pipe(_.to(Set))
+        wisteria.internal.overridePaths[CodecJson, Company].stdlib.pipe(_.to[Set])
       . assert(_ == Set(t"cto.name", t"ceo.age"))
 
       test(m"A Specific for a different typeclass is ignored"):

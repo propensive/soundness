@@ -91,7 +91,7 @@ object Tests extends Suite("pty", m"Yossarian Tests"):
       test(m"the transcripts render alike however they are divided"):
         List(t"bash", t"zsh", t"fish", t"pwsh").map: shell =>
           val whole = fixture(t"$shell.transcript")
-          val chunks = whole.s.grouped(7).to(List)
+          val chunks = whole.s.grouped(7).to[List]
           val pty = chunks.fold(Pty(80, 24))((pty, chunk) => pty.consume(Text(chunk)))
           captured(pty) == captured(Pty(80, 24).consume(whole))
       . assert(_ == List(true, true, true, true))
@@ -377,7 +377,7 @@ object Tests extends Suite("pty", m"Yossarian Tests"):
     val Pty24x80: () -> Pty = () => Pty(80, 24)
 
     def screen(pty: Pty): List[Text] =
-      ((0 until pty.buffer.height).toList.map(y => row(pty, y.z))).to(List)
+      ((0 until pty.buffer.height).toList.map(y => row(pty, y.z))).to[List]
 
     // Local Text helpers so we don't depend on extension-method imports that
     // collide with Chain[Data] versions.

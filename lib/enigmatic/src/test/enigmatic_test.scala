@@ -256,7 +256,7 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
       val key = SymmetricKey.generate[Aes[256]]()
       key.uncloak:
         val plain = t"Hello world".in[Data]
-        val chunks = plain.stdlib.grouped(1).map { chunk => Array.from(chunk) }.to(Chain)
+        val chunks = Chain.from(plain.stdlib.grouped(1).map { chunk => Array.from(chunk) })
         chunks.encrypt(InitializationVector.random).fold(Array.empty[Byte])(_ + _).decrypt.as[Text]
     . assert(_ == t"Hello world")
 

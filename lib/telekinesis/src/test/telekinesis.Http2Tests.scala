@@ -285,9 +285,9 @@ object Http2Tests extends Suite("http2", m"Telekinesis HTTP/2 Tests"):
           val (stream, response) = connection.fetch(request, t"http", t"unix")
           val bodyText = ascii(t"pong").to[List] == response.body.stream.memoize.to[List]
           val statusCode = response.status.code
-          val grpcStatus = stream.trailers.await().stdlib.find(_.name == t"grpc-status").map(_.value)
+          val grpcStatus = stream.trailers.await().seek(_.name == t"grpc-status").let(_.value)
           server.cancel()
-          (statusCode, bodyText, grpcStatus.getOrElse(t"?"))
+          (statusCode, bodyText, grpcStatus.or(t"?"))
       . assert(_ == (200, true, t"0"))
 
       test(m"the Http.Client given resolves and drives a request over h2c"):

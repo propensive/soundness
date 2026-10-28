@@ -137,12 +137,12 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
       test(m"emit streams exactly the text show renders"):
         val source = t"tel 1.0\n\n# people\nperson Jane  # lead\n  age 21\n\nperson Bob\n"
         val parsed = source.read[Tel]
-        supervise(Tel.emit(parsed).to(List).join) == parsed.show
+        supervise(List.from(Tel.emit(parsed)).join) == parsed.show
       . assert(identity)
 
       test(m"emit of an encoded value wraps it in a document, as show does"):
         val parsed = t"name Jane\n".read[Tel]
-        supervise(Tel.emit(parsed).to(List).join) == parsed.show
+        supervise(List.from(Tel.emit(parsed)).join) == parsed.show
       . assert(identity)
 
       test(m"the push form of emit delivers exactly the text show renders"):
@@ -283,7 +283,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
 
       CorpusLoader.streaming.filter(!_.check.s.contains("errors:")).each: testcase =>
         test(m"${testcase.stem} yields its documents one at a time from one-byte chunks"):
-          dribble(testcase.source, 1).documents.map(TelCheckTree.of).to(List)
+          List.from(dribble(testcase.source, 1).documents.map(TelCheckTree.of))
         . assert(_ == CheckFormat.parseStream(testcase.check).map(_.tree))
 
       CorpusLoader.streaming.filter(!_.check.s.contains("errors:")).each: testcase =>
@@ -327,7 +327,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
     suite(m"Streaming parser — negative corpus (E1xx)"):
       CorpusLoader.negative.each: testcase =>
         val codes = CorpusLoader.expectedCodes(testcase)
-        if !codes.nil && codes.stdlib.forall(_ < 200) then
+        if !codes.nil && codes.all(_ < 200) then
           test(m"streaming raises an expected E1xx error on ${testcase.stem}"):
             codes.has:
               capture[Tel.Error](Tel.Parser.parse(Cursor[Data](testcase.source)))
@@ -361,7 +361,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
       // is the same whatever the chunk boundaries.
       CorpusLoader.negative.each: testcase =>
         val codes = CorpusLoader.expectedCodes(testcase)
-        if !codes.nil && codes.stdlib.forall(_ < 200) then
+        if !codes.nil && codes.all(_ < 200) then
           test(m"all chunk sizes raise the same error on ${testcase.stem}"):
             val baseline =
               capture[Tel.Error](Tel.Parser.parse(Cursor[Data](testcase.source))).reason.number
@@ -522,7 +522,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
 
     suite(m"sum-type schema derivation"):
       test(m"a sum derives a select with one variant per case"):
-        Tels.tels[Tests.Shape2](t"shape").selects.bind(_.variants).stdlib.map(_.keyword).to(List)
+        Tels.tels[Tests.Shape2](t"shape").selects.bind(_.variants).map(_.keyword).to[List]
       . assert(_ == List(t"circle", t"rectangle", t"dot"))
 
       test(m"each product variant references its registered record"):
@@ -534,10 +534,10 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
       . assert(_ == 2)
 
       test(m"the document root references the select"):
-        Tels.tels[Tests.Shape2](t"shape").document.members.stdlib.map:
+        Tels.tels[Tests.Shape2](t"shape").document.members.map:
           case ref: Tels.SelectRef => ref.reference
           case _                   => t""
-        . to(List)
+        . to[List]
       . assert(_ == List(t"Shape2"))
 
     suite(m"`in Tel` decoder shorthand"):
@@ -777,9 +777,9 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
       test(m"keyword with atom and hole"):
         val alice = t"Alice"
         val parsed = tel"name $alice"
-        parsed.childCompounds.stdlib.headOption.map(c =>
+        parsed.childCompounds.head.let(c =>
           (c.keyword, c.atoms.stdlib.collect { case Tel.Atom.Inline(t, _) => t }.headOption.getOrElse(t"")))
-          .getOrElse((t"", t""))
+          .or((t"", t""))
       . assert(_ == (t"name", t"Alice"))
 
       test(m"multi-line tel literal parses"):
@@ -900,9 +900,9 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
       . assert(identity)
 
       test(m"axiom declares the four built-in scalars"):
-        Tels.Axiom.tels.scalars.stdlib.map(_.name).toSet
+        Tels.Axiom.tels.scalars.map(_.name).to[Set]
       . assert: scalars =>
-          scalars == Set(t"Identifier", t"TypeName", t"Sigil", t"String").stdlib
+          scalars == Set(t"Identifier", t"TypeName", t"Sigil", t"String")
 
     suite(m"E107 schema-aware recovery (§19.5)"):
       // A schema where a root-level `parent` field references a
@@ -1406,7 +1406,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
             val values = children.stdlib.collect:
               case Tel.Element.Value(_, _, t) => t
 
-            values.toSeq.to(Set)
+            Set.from(values)
 
           case _ => Set()
       . assert(_ == Set(t"Anonymous", t"30"))
@@ -2150,7 +2150,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
     suite(m"Tel.fields repeated-keyword accessor"):
       test(m"fields returns all matching children in order"):
         val tel = t"item 1\nitem 2\nitem 3\n".read[Tel]
-        tel.fields(t"item").stdlib.map(_.primaryAtom).toList.to(List)
+        tel.fields(t"item").map(_.primaryAtom).to[List]
       . assert(_ == List(t"1", t"2", t"3"))
 
       test(m"fields returns empty array when none match"):
@@ -2517,7 +2517,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         // present; the captured error must be one of them, since fixture
         // filenames sometimes describe a scenario while the reference
         // parser surfaces a different code first (e.g. e118 → E117).
-        if !codes.nil && codes.stdlib.forall(_ < 200) then
+        if !codes.nil && codes.all(_ < 200) then
           test(m"raises an expected E1xx error on ${testcase.stem}"):
             codes.has(capture[Tel.Error](testcase.source.read[Tel]).reason.number)
           . assert(_ == true)
@@ -3010,7 +3010,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
       . assert(_ == "B2 C4 B5 BB")
 
       def concat(a: Data, b: Data): Data =
-        (a.stdlib.toList ++ b.stdlib.toList).toArray.asInstanceOf[Array[Byte]]
+        Array.concat(a, b)
 
       test(m"frame prepends magic, document length, signature-length varint, signature"):
         val body: Data = scala.Array[Byte](0x01, 0x02).asInstanceOf[Array[Byte]]
@@ -3140,7 +3140,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
 
       test(m"a declared length shorter than the structure fails inside the body"):
         val bytes = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
-        val forged = bytes.stdlib.toList.toArray
+        val forged = bytes.stdlib.toArray
         forged(4) = (forged(4) - 1).toByte
         capture[Bintel.Error](Bintel.decodeDocument(forged.asInstanceOf[Array[Byte]], nameSchema))
         . reason
@@ -3429,7 +3429,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val signature = SchemaSignature.fromDocument(sd, axiom)
         val external  = dataDoc.read[Tel].bintelDocument(schema, signature)
         val self      = selfContained()
-        val stream    = (self.stdlib.toList ++ external.stdlib.toList).toArray
+        val stream    = Array.concat(self, external)
         Bintel.decodeStream(stream.asInstanceOf[Array[Byte]], schema).map(_.continuation)
       . assert(_ == List(selfContained().length,
                         selfContained().length + dataDoc.read[Tel].bintelDocument(
@@ -3439,7 +3439,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
 
       test(m"decodeWholeDocumentSelfContained rejects a continuation as B08"):
         val self   = selfContained()
-        val stream = (self.stdlib.toList ++ self.stdlib.toList).toArray
+        val stream = Array.concat(self, self)
         capture[Bintel.Error](Bintel.decodeWholeDocumentSelfContained(stream.asInstanceOf[Array[Byte]]))
         . reason
       . assert(_ == Bintel.Error.Reason.TrailingBytes)

@@ -67,7 +67,7 @@ object FramedTests extends Suite("tel-framed", m"Stratiform framed duplex tests"
       client.send(Request(3, t"three"))
       client.close()
 
-      server.messages.to(List)
+      List.from(server.messages)
     . assert(_ == List(Request(1, t"one"), Request(2, t"two"), Request(3, t"three")))
 
     test(m"a symmetric protocol frames the same type both ways"):

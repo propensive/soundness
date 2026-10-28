@@ -622,7 +622,7 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
 
       test(m"every world in a source is read"):
         val wit = t"package test:demo@1.0.0; world a { export x:y/z@1.0.0; } world b { import p:q/r@1.0.0; }"
-        WitDialect.worlds(wit).stdlib.keySet.to(proscenium.List).sort
+        List.from(WitDialect.worlds(wit).stdlib.keySet).sort
       . assert(_ == List(t"a", t"b"))
 
     suite(m"WebIDL (synthetic sample)"):
@@ -802,27 +802,27 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
 
     def declarations(source: Text): List[Typescript.Declaration] = Typescript.Parser.parse(source)
 
-    def names(source: Text): scala.List[Text] = declarations(source).stdlib.map(_.key)
+    def names(source: Text): List[Text] = declarations(source).map(_.key)
 
-    def members(source: Text): scala.List[Text] =
-      declarations(source).stdlib.flatMap(_.declaredMembers.stdlib).map(_.selector)
+    def members(source: Text): List[Text] =
+      declarations(source).bind(_.declaredMembers.to[List]).map(_.selector)
 
     // Every construct below was dropped whole, or silently misread, by the grammar this
     // replaced; each test names the shape rather than the mechanism.
 
     test(m"a generic interface is read, not dropped"):
       names(t"interface Box<T> { value: T; }")
-    . assert(_ == scala.List(t"Box"))
+    . assert(_ == List(t"Box"))
 
     test(m"an interface's extends clause is recorded"):
-      declarations(t"interface A { x: number; }\ninterface B extends A { y: number; }").stdlib
-      . collect { case interface: Typescript.Declaration.Interface => interface }
-      . flatMap(_.extending.stdlib.map(_.text))
-    . assert(_ == scala.List(t"A"))
+      declarations(t"interface A { x: number; }\ninterface B extends A { y: number; }")
+      . sift[Typescript.Declaration.Interface]
+      . bind(_.extending.map(_.text))
+    . assert(_ == List(t"A"))
 
     test(m"a type alias is a declaration"):
       names(t"type Id = string | number;")
-    . assert(_ == scala.List(t"Id"))
+    . assert(_ == List(t"Id"))
 
     test(m"a class, an enum, a function and a const are declarations"):
       names(t"""|declare class C { m(): void; }
@@ -830,11 +830,11 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
                 |declare function f(x: number): string;
                 |declare const k: number;
                 |""".s.stripMargin.tt)
-    . assert(_ == scala.List(t"C", t"E", t"f", t"k"))
+    . assert(_ == List(t"C", t"E", t"f", t"k"))
 
     test(m"a namespace qualifies the declarations it encloses"):
       names(t"declare namespace a { namespace b { interface X { y: number; } } }")
-    . assert(_ == scala.List(t"a.b.X"))
+    . assert(_ == List(t"a.b.X"))
 
     test(m"only exported declarations are exported in a module"):
       declarations(t"export interface A { x: number; }\ninterface B { y: number; }").stdlib
@@ -842,42 +842,40 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
     . assert(_ == scala.List((t"A", true), (t"B", false)))
 
     test(m"every top-level declaration is exported in a global script"):
-      declarations(t"interface A { x: number; }").stdlib.map(_.exported)
-    . assert(_ == scala.List(true))
+      declarations(t"interface A { x: number; }").map(_.exported)
+    . assert(_ == List(true))
 
     test(m"a comment does not start a declaration"):
       names(t"// interface Ghost { x: number; }\ninterface Real { x: number; }")
-    . assert(_ == scala.List(t"Real"))
+    . assert(_ == List(t"Real"))
 
     test(m"a block comment is skipped entirely"):
       names(t"/* interface Ghost {\n x: number; } */\ninterface Real { x: number; }")
-    . assert(_ == scala.List(t"Real"))
+    . assert(_ == List(t"Real"))
 
     test(m"an index signature is a member of its own kind"):
       members(t"interface A { [key: string]: number; }")
-    . assert(_ == scala.List(t"[]"))
+    . assert(_ == List(t"[]"))
 
     test(m"a call signature and a construct signature are distinct members"):
       members(t"interface A { (x: number): string; new (y: string): A; }")
-    . assert(_ == scala.List(t"()", t"new()"))
+    . assert(_ == List(t"()", t"new()"))
 
     test(m"a getter and a setter do not collide with a property"):
       members(t"interface A { get x(): number; set x(value: number); }")
-    . assert(_ == scala.List(t"get x", t"set x"))
+    . assert(_ == List(t"get x", t"set x"))
 
     test(m"overloads accumulate under one member rather than overwriting"):
-      declarations(t"interface A { f(x: number): string; f(x: string): number; }").stdlib
-      . flatMap(_.declaredMembers.stdlib).map(_.signatures.size)
-    . assert(_ == scala.List(2))
+      declarations(t"interface A { f(x: number): string; f(x: string): number; }").flatMap(_.declaredMembers.stdlib).map(_.signatures.size)
+    . assert(_ == List(2))
 
     test(m"an inline object type does not terminate the enclosing interface"):
       members(t"interface A { config: { host: string; port: number }; after: number; }")
-    . assert(_ == scala.List(t"config", t"after"))
+    . assert(_ == List(t"config", t"after"))
 
     test(m"a function type is read as a function, not as a stray parenthesis"):
-      declarations(t"interface A { handler: (event: string) => void; }").stdlib
-      . flatMap(_.declaredMembers.stdlib).flatMap(_.signatures.stdlib).map(_.text)
-    . assert(_ == scala.List(t"(event: string) => void"))
+      declarations(t"interface A { handler: (event: string) => void; }").flatMap(_.declaredMembers.stdlib).flatMap(_.signatures.stdlib).map(_.text)
+    . assert(_ == List(t"(event: string) => void"))
 
     test(m"an intersection is not truncated to its first member"):
       declarations(t"type T = A & B;").stdlib
@@ -914,8 +912,8 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
       declarations(t"declare function f(...args: string[]): void;").stdlib
       . collect { case function: Typescript.Declaration.Function => function }
       . flatMap(_.signatures.stdlib)
-      . collect { case Typescript.Type.Function(parameters, _, _, _) => parameters.stdlib.map(_.rest) }
-    . assert(_ == scala.List(scala.List(true)))
+      . collect { case Typescript.Type.Function(parameters, _, _, _) => parameters.map(_.rest) }
+    . assert(_ == scala.List(List(true)))
 
     // Constructs outside the grammar are refused, never approximated. This is the property the
     // discipline depends on: a declaration file read as a smaller contract than it declares
@@ -953,7 +951,7 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
 
     test(m"interfaces merge, so a repeated interface name is accepted"):
       names(t"interface A { x: number; }\ninterface A { y: number; }")
-    . assert(_ == scala.List(t"A", t"A"))
+    . assert(_ == List(t"A", t"A"))
 
     // The dialect projection, which the foreign-function macro reads.
 

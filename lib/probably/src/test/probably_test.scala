@@ -97,7 +97,7 @@ object Tests extends Suite("testing", m"Probably Tests"):
 
     if location.isDirectory then
       val files: List[java.io.File] =
-        java.io.File(location, directory).listFiles.nn.iterator.map(_.nn).to(List)
+        java.io.File(location, directory).listFiles.nn.iterator.map(_.nn).to[List]
 
       files.filter(_.getName.nn.startsWith(source.s + "-")).flatMap: file =>
         lines(java.nio.file.Files.readAllBytes(file.toPath).nn)
@@ -106,7 +106,7 @@ object Tests extends Suite("testing", m"Probably Tests"):
 
       try
         val entries: List[java.util.zip.ZipEntry] =
-          ju.Collections.list(zip.entries()).nn.asScala.iterator.map(_.nn).to(List)
+          ju.Collections.list(zip.entries()).nn.asScala.iterator.map(_.nn).to[List]
 
         entries.filter(_.getName.nn.startsWith(directory + source.s + "-")).flatMap: entry =>
           lines(zip.getInputStream(entry).nn.readAllBytes().nn)
@@ -144,7 +144,7 @@ object Tests extends Suite("testing", m"Probably Tests"):
             case _ =>
               ()
 
-        (index.size, listed.iterator.to(List) == index)
+        (index.size, listed.iterator.to[List] == index)
       . assert(_ == (6, true))
 
       test(m"the index names a suite object, and leaves out what an impromptu block declares"):

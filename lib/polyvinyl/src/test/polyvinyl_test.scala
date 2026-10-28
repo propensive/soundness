@@ -235,8 +235,8 @@ object Tests extends Suite("records", m"Polyvinyl tests"):
       . assert(_ == Map())
 
       test(m"a single-alternative union nests a multiplicity"):
-        ShapeRecords.record(shapes).rows.stdlib.map(_.stdlib)
-      . assert(_ == scala.collection.immutable.List(scala.collection.immutable.List(t"r1"), Nil))
+        ShapeRecords.record(shapes).rows.map(_.stdlib)
+      . assert(_ == List(List(t"r1"), Nil))
 
       test(m"a tuple reads unions and maps too"):
         val tuple = ShapeRecords.tuple(shapes)

@@ -188,7 +188,7 @@ object Tests extends Suite("webdriver", m"Tarantula tests"):
         given Http.Backend = fake
         WebDriver(url"http://localhost:4444", t"{}".read[Json]).session(lambda)
 
-        fake.exchanges.reverse.stdlib.filter(_.path.ends(t"/element")).head.body.or(t"")
+        fake.exchanges.reverse.filter(_.path.ends(t"/element")).head.let(_.body).or(t"")
         . read[Json]
 
       test(m"a tag is located by tag name"):
@@ -253,9 +253,9 @@ object Tests extends Suite("webdriver", m"Tarantula tests"):
         WebDriver(url"http://localhost:4444", t"{}".read[Json]).session: session ?=>
           browser.element(H1).click()
 
-        fake.exchanges.stdlib.filter(_.path.ends(t"/click")).headOption.map(_.path)
+        fake.exchanges.filter(_.path.ends(t"/click")).head.let(_.path)
 
-      . assert(_ == Some(t"/session/$sessionId/element/E9/click"))
+      . assert(_ == t"/session/$sessionId/element/E9/click")
 
     suite(m"Error decoding"):
       def raised(status: Http.Status, code: Text, message: Text, trace: Text = t"")
@@ -307,7 +307,7 @@ object Tests extends Suite("webdriver", m"Tarantula tests"):
         val fake = driver((_, _) => string(t"Example"))
         given Http.Backend = fake
         WebDriver(url"http://localhost:4444", t"{}".read[Json]).session(lambda)
-        fake.exchanges.reverse.stdlib.filter(_.path != t"/session").to(List)
+        fake.exchanges.reverse.filter(_.path != t"/session").to[List]
 
       test(m"navigation posts the target URL"):
         sent(browser.navigateTo(target)).head.let(_.body.or(t""))
@@ -380,7 +380,7 @@ object Tests extends Suite("webdriver", m"Tarantula tests"):
         WebDriver(url"http://localhost:4444", t"{}".read[Json]).session: session ?=>
           browser.printPage(WebDriver.Session.Print(scale = 0.5))
 
-        fake.exchanges.stdlib.filter(_.path.ends(t"/print")).head.body.or(t"").read[Json]
+        fake.exchanges.filter(_.path.ends(t"/print")).head.let(_.body).or(t"").read[Json]
         . pipe { json => (json.page.width.as[Double], json.margin.top.as[Double]) }
 
       . assert(_ == (21.59, 1.0))
@@ -415,7 +415,7 @@ object Tests extends Suite("webdriver", m"Tarantula tests"):
               WebDriver(url"http://localhost:4444", t"{}".read[Json]).session: session ?=>
                 browser.awaitElement(H1)
 
-            . pipe(_ => fake.exchanges.stdlib.count(_.path.ends(t"/elements")))
+            . pipe(_ => fake.exchanges.count(_.path.ends(t"/elements")))
 
         . assert(_ == 5)
 
@@ -440,7 +440,7 @@ object Tests extends Suite("webdriver", m"Tarantula tests"):
         WebDriver(url"http://localhost:4444", t"{}".read[Json]).session: session ?=>
           browser.perform(WebDriver.Session.Action.Source.Key, steps)
 
-        fake.exchanges.stdlib.filter(_.path.ends(t"/actions")).head.body.or(t"")
+        fake.exchanges.filter(_.path.ends(t"/actions")).head.let(_.body).or(t"")
 
       def performed2(keypresses: Keypress*): Text =
         val fake = driver((_, _) => none)
@@ -448,7 +448,7 @@ object Tests extends Suite("webdriver", m"Tarantula tests"):
         WebDriver(url"http://localhost:4444", t"{}".read[Json]).session: session ?=>
           browser.press(keypresses*)
 
-        fake.exchanges.stdlib.filter(_.path.ends(t"/actions")).head.body.or(t"")
+        fake.exchanges.filter(_.path.ends(t"/actions")).head.let(_.body).or(t"")
 
       test(m"a keypress is one keyboard source with two steps"):
         performed(List(WebDriver.Session.Action.KeyDown(t"a"), WebDriver.Session.Action.KeyUp(t"a")))
@@ -485,7 +485,7 @@ object Tests extends Suite("webdriver", m"Tarantula tests"):
         WebDriver(url"http://localhost:4444", t"{}".read[Json]).session: session ?=>
           browser.releaseActions()
 
-        fake.exchanges.stdlib.filter(_.path.ends(t"/actions")).head.method
+        fake.exchanges.filter(_.path.ends(t"/actions")).head.let(_.method)
 
       . assert(_ == Http.Delete)
 

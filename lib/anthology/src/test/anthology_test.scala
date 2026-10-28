@@ -83,7 +83,7 @@ def passTool(label: Text): Tool = new Tool:
 // The default settings of the tool on the edge producing `target`, for assertions on the
 // defaults each edge provider declares.
 def initialOf(edges: List[Edge], target: Artifact): Any =
-  edges.stdlib.find(_.target == target).get.tool.initial
+  edges.seek(_.target == target).or(panic(m"the suite expects a match")).tool.initial
 
 object Tests extends Suite("compiler", m"Anthology Tests"):
   def run(): Unit =
@@ -589,7 +589,7 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
               Scalac[3.8](Nil).on(classpath).session:
                 val process = alpha.compile()
                 process.complete()
-                process.classfiles.stdlib.contains(t"/Alpha.class".as[Path on Classpath])
+                process.classfiles.defines(t"/Alpha.class".as[Path on Classpath])
             . check(_ == true)
 
             test(m"A session compile's updates report progress and completion"):

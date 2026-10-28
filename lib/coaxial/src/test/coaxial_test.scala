@@ -62,7 +62,7 @@ object Tests extends Suite("sockets", m"Coaxial tests"):
     def ascii(text: Text): Data = Array.unsafeFrozen(text.s.getBytes("US-ASCII").nn)
     def bytes(data: Data): List[Byte] = data.to[List]
     def joined(stream: Chain[Data]): List[Byte] =
-      (stream.stdlib.flatMap { d => d.stdlib }.toList).to(List)
+      (stream.stdlib.flatMap { d => d.stdlib }.toList).to[List]
     def drained(stream: zephyrine.Stream[Data] over Credit): List[Byte] = stream.memoize.to[List]
 
     suite(m"Duplex streaming endpoints"):
@@ -406,7 +406,7 @@ object Tests extends Suite("sockets", m"Coaxial tests"):
         test(m"Reuse options let two UDP sockets share a port"):
           import socketOptions.reuseAddressSocketOption, socketOptions.reusePortSocketOption
           val port = Port[Udp]()
-          val options = summon[Every[Socket.Option.Udp]].values.to(List)
+          val options = summon[Every[Socket.Option.Udp]].values.to[List]
           val first = backend.listenUdp(port, Unset, options)
           val second = try backend.listenUdp(port, Unset, options) finally backend.unbind(first)
           backend.unbind(second)
@@ -537,7 +537,7 @@ object Tests extends Suite("sockets", m"Coaxial tests"):
       test(m"reuseAddress sets SO_REUSEADDR on a configured TCP server socket"):
         import socketOptions.reuseAddressSocketOption
         val server = jn.ServerSocket()
-        configure(server, (summon[Every[Socket.Option.Tcp]].values).to(List))
+        configure(server, (summon[Every[Socket.Option.Tcp]].values).to[List])
         server.getOption(java.net.StandardSocketOptions.SO_REUSEADDR).nn.booleanValue
           .also(server.close())
       . assert(_ == true)
@@ -545,7 +545,7 @@ object Tests extends Suite("sockets", m"Coaxial tests"):
       test(m"broadcast sets SO_BROADCAST on a configured UDP socket"):
         import socketOptions.broadcastSocketOption
         val socket = jn.DatagramSocket()
-        configure(socket, (summon[Every[Socket.Option.Udp]].values).to(List))
+        configure(socket, (summon[Every[Socket.Option.Udp]].values).to[List])
         socket.getOption(java.net.StandardSocketOptions.SO_BROADCAST).nn.booleanValue
           .also(socket.close())
       . assert(_ == true)

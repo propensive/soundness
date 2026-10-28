@@ -140,9 +140,9 @@ object VerifyTests extends Suite("tel-verify", m"Stratiform verify tests"):
               field.repeatable -> field.fieldType
           . collect:
               case (repeatable, Tels.Reference(name)) =>
-                repeatable -> schema.records.stdlib.find(_.name == name).map: record =>
+                repeatable -> schema.records.seek(_.name == name).let: record =>
                   keywords(Tels.Struct(record.members, record.validators))
-                . getOrElse(List())
+                . or(List())
           . to(List)
       . assert(_ == List(Tels.Polarity.Loose -> List(t"name", t"age")))
 

@@ -964,14 +964,14 @@ object Tests extends Suite("xml", m"Xylophone tests"):
       test(m"emit indents a document and adds the header and trailing newlines"):
         import formatting.indentedXmlFormatting
         val document = Document[Xml](elem(t"a", elem(t"b")), Xml.Header(t"1.0", Unset, Unset))
-        supervise(Xml.emit(document).to(List).join)
+        supervise(List.from(Xml.emit(document)).join)
       . assert(_ == t"<?xml version=\"1.0\"?>\n<a>\n  <b/>\n</a>\n")
 
     // The fiber form of `emit` is the reference: the push and borrowing forms must write the
     // same document, the byte forms as its UTF-8 encoding.
     suite(m"Streaming serialization"):
       def reference(document: Document[Xml])(using Xml.Formatting): Text =
-        supervise(Xml.emit(document).to(List).join)
+        supervise(List.from(Xml.emit(document)).join)
 
       def pushed(document: Document[Xml])(using Xml.Formatting): Text =
         val builder = new java.lang.StringBuilder()

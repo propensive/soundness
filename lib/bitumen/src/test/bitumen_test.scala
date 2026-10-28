@@ -197,7 +197,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
       test(m"streamed file data round-trips across odd chunk boundaries"):
         entries.head match
-          case f: Tar.Entry.File => f.data.memoize.stdlib.map(_.toChar).mkString
+          case f: Tar.Entry.File => f.data.memoize.ascii.s
           case _                => ""
       . assert(_ == "hello")
 
@@ -242,7 +242,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
       test(m"file data round-trips"):
         entries.head match
-          case f: Tar.Entry.File => f.data.memoize.stdlib.map(_.toChar).mkString
+          case f: Tar.Entry.File => f.data.memoize.ascii.s
           case _                => ""
       . assert(_ == "hello")
 
@@ -531,25 +531,25 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
       test(m"atime round-trips"):
         entries.head match
-          case f: Tar.Entry.File => f.pax.stdlib.get(t"atime").getOrElse(t"")
+          case f: Tar.Entry.File => f.pax.at(t"atime").or(t"")
           case _                => t""
       . assert(_ == t"1700000000.500000000")
 
       test(m"ctime round-trips"):
         entries.head match
-          case f: Tar.Entry.File => f.pax.stdlib.get(t"ctime").getOrElse(t"")
+          case f: Tar.Entry.File => f.pax.at(t"ctime").or(t"")
           case _                => t""
       . assert(_ == t"1700000001.250000000")
 
       test(m"mtime sub-second portion round-trips"):
         entries.head match
-          case f: Tar.Entry.File => f.pax.stdlib.get(t"mtime").getOrElse(t"")
+          case f: Tar.Entry.File => f.pax.at(t"mtime").or(t"")
           case _                => t""
       . assert(_ == t"1234567890.987654321")
 
       test(m"comment round-trips"):
         entries.head match
-          case f: Tar.Entry.File => f.pax.stdlib.get(t"comment").getOrElse(t"")
+          case f: Tar.Entry.File => f.pax.at(t"comment").or(t"")
           case _                => t""
       . assert(_ == t"a test file")
 
@@ -809,8 +809,8 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == List(t"hello.txt", t"data/"))
 
       test(m"gzipped stream is shorter than uncompressed (for small archive)"):
-        val raw = tar.source[Data].chain.stdlib.map(_.length).sum
-        val compressed = tar.gzip.chain.stdlib.map(_.length).sum
+        val raw = tar.source[Data].chain.map(_.length).fold(0)(_ + _)
+        val compressed = tar.gzip.chain.map(_.length).fold(0)(_ + _)
         compressed < raw
       . assert(_ == true)
 
@@ -825,12 +825,12 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
       test(m"in-memory data opens as Tar"):
         tar.source[Data].memoize.open[Tar]():
-          bitumen.tar.entries.to(List).map(_.entryName)
+          List.from(bitumen.tar.entries).map(_.entryName)
       . assert(_ == List(t"hello.txt", t"data/"))
 
       test(m"gzipped data opens as Tar with the Gzip flag"):
         tar.gzip.memoize.open[Tar](Tar.Flag.Gzip):
-          bitumen.tar.entries.to(List).map(_.entryName)
+          List.from(bitumen.tar.entries).map(_.entryName)
       . assert(_ == List(t"hello.txt", t"data/"))
 
       test(m"an archive file opens as Tar"):
@@ -840,7 +840,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
         path.open[File](Write, OpenFlag.Create) { handle ?=> handle.write(tar) }
 
         path.open[Tar]():
-          bitumen.tar.entries.to(List).map(_.entryName)
+          List.from(bitumen.tar.entries).map(_.entryName)
       . assert(_ == List(t"hello.txt", t"data/"))
 
       test(m"opening for writing is refused"):
@@ -868,7 +868,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
           builder.insert(t"hello.txt".as[Relative on Tar], t"hello".in[Data])
 
         target.open[Tar]():
-          bitumen.tar.entries.to(List).map(_.entryName)
+          List.from(bitumen.tar.entries).map(_.entryName)
       . assert(_ == List(t"hello.txt"))
 
       test(m"A gzip-compressed creation round-trips with the Gzip flag"):
@@ -878,7 +878,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
           builder.insert(t"data.txt".as[Relative on Tar], t"payload".in[Data])
 
         target.open[Tar](Tar.Flag.Gzip):
-          bitumen.tar.entries.to(List).map(_.entryName)
+          List.from(bitumen.tar.entries).map(_.entryName)
       . assert(_ == List(t"data.txt"))
 
       test(m"A scoped entry writer streams an unknown-length body"):
@@ -891,7 +891,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
             for i <- 1 to 5 do entry.put(Array.fill[Byte](1000)(i.toByte))
 
         target.open[Tar]():
-          bitumen.tar.entries.to(List).head match
+          List.from(bitumen.tar.entries).head match
             case f: Tar.Entry.File => f.data.size
             case _                 => 0
       . assert(_ == 5000)
@@ -908,7 +908,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
           builder.insert(t"third.txt".as[Relative on Tar], t"three".in[Data])
 
         target.open[Tar]():
-          bitumen.tar.entries.to(List).map(_.entryName)
+          List.from(bitumen.tar.entries).map(_.entryName)
       . assert(_ == List(t"first.txt", t"second.bin", t"third.txt"))
 
       test(m"a scoped entry writer buffers under compression"):
@@ -919,8 +919,8 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
             entry.put(t"zipped".in[Data])
 
         target.open[Tar](Tar.Flag.Gzip):
-          bitumen.tar.entries.to(List).head match
-            case f: Tar.Entry.File => f.data.memoize.stdlib.map(_.toChar).mkString
+          List.from(bitumen.tar.entries).head match
+            case f: Tar.Entry.File => f.data.memoize.ascii.s
             case _                 => ""
       . assert(_ == "zipped")
 
@@ -1010,7 +1010,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
                            group    = UnixGroup(0),
                            mtime    = 0.bits.u32,
                            realSize = 10000L,
-                           segments = manySegments.to(proscenium.List),
+                           segments = List.from(manySegments),
                            data     = Archive.Body(Array.fill[Byte](500)('X'.toByte)) )
 
       val bytes = Tarfile(List(sparseEntry)).source[Data].chain
@@ -1219,7 +1219,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
       test(m"in-memory data opens as Ar"):
         deb.source[Data].memoize.open[Ar]():
-          bitumen.ar.entries.to(List).map(_.name)
+          List.from(bitumen.ar.entries).map(_.name)
       . assert(_ == List(t"debian-binary", t"control.tar"))
 
       test(m"an archive file opens as Ar"):
@@ -1229,7 +1229,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
         path.open[File](Write, OpenFlag.Create) { handle ?=> handle.write(deb) }
 
         path.open[Ar]():
-          bitumen.ar.entries.to(List).map(_.name)
+          List.from(bitumen.ar.entries).map(_.name)
       . assert(_ == List(t"debian-binary", t"control.tar"))
 
       test(m"opening for writing is refused"):

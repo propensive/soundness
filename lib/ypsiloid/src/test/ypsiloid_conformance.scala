@@ -144,7 +144,7 @@ object Conformance:
             else None
 
           Some(TestCase(id, description, yamlText, isError, expectedJson,
-                        tagsByTest.getOrElse(id, Set.empty)))
+                        tagsByTest.or(id, Set.empty)))
 
   private def loadTagsByTest(tagsDir: Path): Map[String, Set[String]] =
     if !Files.isDirectory(tagsDir) then Map.empty
@@ -155,7 +155,7 @@ object Conformance:
           val tagName = tagDir.getFileName.nn.toString
           Files.list(tagDir).nn.iterator.nn.each: testLink =>
             val testId = testLink.getFileName.nn.toString
-            accumulator.update(testId, accumulator.getOrElse(testId, Set.empty) + tagName)
+            accumulator.update(testId, accumulator.or(testId, Set.empty) + tagName)
       accumulator.toMap
 
   def runTestCase(testCase: TestCase): Result =
@@ -241,7 +241,7 @@ object Conformance:
     c == ' ' || c == '\n' || c == '\t' || c == '\r'
 
   def main(args: scala.Array[String]): Unit =
-    val suiteRoot = args.headOption.filterNot(_.startsWith("--")).getOrElse(suitePath)
+    val suiteRoot = args.headOption.filterNot(_.startsWith("--")).or(suitePath)
     val verbose = args.contains("--verbose")
     val maxFailuresShown = if verbose then Int.MaxValue else 30
 

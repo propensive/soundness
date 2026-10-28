@@ -100,7 +100,7 @@ object KeyTests extends Suite("tel-keys", m"Stratiform key field tests"):
   def run(): Unit =
     suite(m"TELS axiom ordering"):
       test(m"Field record members put key at index 6, before default"):
-        val field = Tels.Axiom.tels.records.stdlib.find(_.name == t"Field").get
+        val field = Tels.Axiom.tels.records.seek(_.name == t"Field").or(panic(m"the suite expects a match"))
         field.members.to[List].map:
           case f: Tels.Field => f.keyword.s
           case _             => "?"
@@ -112,7 +112,7 @@ object KeyTests extends Suite("tel-keys", m"Stratiform key field tests"):
       // `SemanticReconstructor` reads these positions by index, so this order
       // is load-bearing, not decorative.
       test(m"Scalar record members put pattern at index 2, before encoding"):
-        val scalar = Tels.Axiom.tels.records.stdlib.find(_.name == t"Scalar").get
+        val scalar = Tels.Axiom.tels.records.seek(_.name == t"Scalar").or(panic(m"the suite expects a match"))
         scalar.members.to[List].map:
           case f: Tels.Field => f.keyword.s
           case _             => "?"
@@ -176,7 +176,7 @@ object KeyTests extends Suite("tel-keys", m"Stratiform key field tests"):
                        |  record User
                        |    field username Identifier key
                        |""".stripMargin))
-        composed.records.stdlib.find(_.name == t"User").get.members.head.absolve match
+        composed.records.seek(_.name == t"User").or(panic(m"the suite expects a match")).members.head.absolve match
           case f: Tels.Field => f.key
       . assert(_ == true)
 

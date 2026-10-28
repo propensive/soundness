@@ -1184,7 +1184,7 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
           case List(_, Pdf.Operator.ShowTexts(elements), _) =>
             // Via the stdlib list and a `Double`-first match: the frozen-array union member
             // takes a reach capture under pattern binding that `Mappable` rejects.
-            elements.stdlib.map: element =>
+            elements.map: element =>
               (element.asInstanceOf[Matchable]: @unchecked) match
                 case value: Double => value
                 case data          =>

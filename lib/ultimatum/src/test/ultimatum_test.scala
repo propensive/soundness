@@ -129,8 +129,8 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
 
     suite(m"Layout solver"):
       def cell(sizing: Sizing): Frame = Frame.Cell(sizing)
-      def strip(children: Frame*): Frame = Frame.Split(Sizing(), ultimatum.Arrangement.Strip, children.to(List))
-      def stack(children: Frame*): Frame = Frame.Split(Sizing(), ultimatum.Arrangement.Stack, children.to(List))
+      def strip(children: Frame*): Frame = Frame.Split(Sizing(), ultimatum.Arrangement.Strip, List.from(children))
+      def stack(children: Frame*): Frame = Frame.Split(Sizing(), ultimatum.Arrangement.Stack, List.from(children))
 
       test(m"fractions divide the arrangement proportionally"):
         val frame = strip(cell(Sizing(2.0)), cell(Sizing(3.0)), cell(Sizing(4.0)))
@@ -181,7 +181,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       def cell(sizing: Sizing): Frame = Frame.Cell(sizing)
 
       def grid(columns: Int, gap: Int = 0)(children: Frame*): Frame =
-        Frame.Split(Sizing(), ultimatum.Arrangement.Grid(columns, gap), children.to(List))
+        Frame.Split(Sizing(), ultimatum.Arrangement.Grid(columns, gap), List.from(children))
 
       test(m"cells flow row-major into columns with content-sized rows"):
         val frame = grid(2)
@@ -1180,7 +1180,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       // where the opaque status types are transparent, so a generic helper would infer the
       // underlying `Double` from a literal and then fail to match the design.
       def bar(design: Fraction is Gaugeable)(value: Fraction, width: Int): Text =
-        design.rows(value, Tick.zero, width).stdlib.map(_.plain).mkString("\n").tt
+        design.rows(value, Tick.zero, width).map(_.plain).join(t"\n")
 
       // Any design lifts to the same status made optional, via `Gaugeable.optional`; putting the
       // definite design in scope is what lets the lift derive the optional one.
@@ -1190,14 +1190,14 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
 
         given definite: (Fraction is Gaugeable) = design
 
-        summon[Optional[Fraction] is Gaugeable].rows(value, tick, width).stdlib.map(_.plain)
-        . mkString("\n").tt
+        summon[Optional[Fraction] is Gaugeable].rows(value, tick, width).map(_.plain)
+        . join(t"\n")
 
       def spin(design: Fraction is Gaugeable)
          (value: Fraction, width: Int, tick: Tick = Tick.zero)
       :   Text =
 
-        design.rows(value, tick, width).stdlib.map(_.plain).mkString("\n").tt
+        design.rows(value, tick, width).map(_.plain).join(t"\n")
 
       test(m"a half-full smooth bar fills exactly half its cells"):
         bar(bars.smoothBar)(Fraction(0.5), 10)
@@ -1321,10 +1321,10 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       import textMetrics.uniformMetric
 
       def bar(design: Fraction is Gaugeable)(value: Fraction, width: Int): Text =
-        design.rows(value, Tick.zero, width).stdlib.map(_.plain).mkString("\n").tt
+        design.rows(value, Tick.zero, width).map(_.plain).join(t"\n")
 
       def spin(design: Fraction is Gaugeable)(value: Fraction, width: Int): Text =
-        design.rows(value, Tick.zero, width).stdlib.map(_.plain).mkString("\n").tt
+        design.rows(value, Tick.zero, width).map(_.plain).join(t"\n")
 
       test(m"an emoji spinner renders as emoji when they are permitted"):
         import gaugeGlyphs.emojiGlyphs
@@ -1493,7 +1493,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       import textMetrics.uniformMetric
 
       def plain[status](design: status is Gaugeable)(value: status, width: Int): Text =
-        design.rows(value, Tick.zero, width).stdlib.map(_.plain).mkString("\n").tt
+        design.rows(value, Tick.zero, width).map(_.plain).join(t"\n")
 
       test(m"a column meter shows a bounded reading as one cell"):
         plain(meters.columnMeter)(Meter(0.5), 1)
@@ -1598,10 +1598,10 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       // Monomorphic, as elsewhere in these suites: a generic helper infers the underlying
       // `Duration` from a literal, because the opaque types are transparent in this package.
       def spent(design: Duration is Gaugeable)(value: Duration, width: Int): Text =
-        design.rows(value, Tick.zero, width).stdlib.map(_.plain).mkString("\n").tt
+        design.rows(value, Tick.zero, width).map(_.plain).join(t"\n")
 
       def left(design: Countdown is Gaugeable)(value: Countdown, width: Int): Text =
-        design.rows(value, Tick.zero, width).stdlib.map(_.plain).mkString("\n").tt
+        design.rows(value, Tick.zero, width).map(_.plain).join(t"\n")
 
       test(m"a compact elapsed time gives the two largest useful units"):
         spent(timers.compactElapsed)(161.0*Second, 5)
@@ -1643,7 +1643,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       import textMetrics.uniformMetric
 
       def plain[status](design: status is Gaugeable)(value: status, width: Int): Text =
-        design.rows(value, Tick.zero, width).stdlib.map(_.plain).mkString("\n").tt
+        design.rows(value, Tick.zero, width).map(_.plain).join(t"\n")
 
       test(m"a caption follows the gauge it labels"):
         import bars.blockBar
@@ -1682,12 +1682,12 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         Form(root, Occupancy.Fullscreen, pane, () => (), 0, 0, delay => { recorded += delay; () })
         . run(scala.Iterator(Keypress.Escape))
 
-        recorded.toList.to(List)
+        List.from(recorded.toList)
 
       test(m"a layout containing a spinner arms a wake at the design's period"):
         given definite: (Fraction is Gaugeable) = spinners.brailleDotsSpinner
-        wakes(gauge(Reading(Fraction.indeterminate))).stdlib.headOption
-      . assert(_ == Some(80L))
+        wakes(gauge(Reading(Fraction.indeterminate))).head
+      . assert(_ == 80L)
 
       test(m"a layout of static panels arms no wake at all"):
         wakes(panel()(Out.print(t"still"))).size
@@ -1700,8 +1700,8 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
       test(m"the shortest period wins when several gauges animate"):
         val fast = gauge(Reading(Fraction(0.0)))(using spinners.starSpinner)
         val slow = gauge(Reading(Fraction(0.0)))(using spinners.toggleSpinner)
-        wakes(stack(fast, slow)).stdlib.headOption
-      . assert(_ == Some(70L))
+        wakes(stack(fast, slow)).head
+      . assert(_ == 70L)
 
 // A test-only root `Board` that paints into a fixed in-memory grid but reports a
 // settable size, so a layout can be re-tiled to a smaller `width`/`height` and

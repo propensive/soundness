@@ -118,7 +118,7 @@ object CodecTests extends Suite("tel-codec", m"Stratiform codec tests"):
     case node: Tel.Element.Node =>
       var result: Optional[Text] = Unset
 
-      node.children.stdlib.foreach: child =>
+      node.children.each: child =>
         if result.absent then result = firstValue(child)
 
       result
@@ -294,7 +294,7 @@ object CodecTests extends Suite("tel-codec", m"Stratiform codec tests"):
         val body = schemaDoc.bintel(Tels.Axiom.tels)
         val element = Bintel.decode(body, Tels.Axiom.tels)
         val reconstructed = element.as[Tels]
-        reconstructed.scalars.stdlib.find(_.name == t"Amount").map(_.encoding).getOrElse(Unset)
+        reconstructed.scalars.seek(_.name == t"Amount").let(_.encoding)
       . assert(_ == t"decimal-varint")
 
     suite(m"Staged parser (Bintel.Parsable) encoded scalars"):

@@ -125,7 +125,7 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
       depth:        Jdwp.StepDepth,
       count:        Int = 1 )
     ( using Monitor )
-  :   (Text, scala.List[(Optional[Text], Int, Boolean)]) =
+  :   (Text, List[(Text, Int, Boolean)]) =
 
     val classpathText = fixtureClasspath()
     val command: Command = sh"java -classpath $classpathText $fixtureClass"
@@ -141,12 +141,12 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
       debug.resume()
       val thread = stopped.await()
 
-      def recur(remaining: Int): (Text, scala.List[(Optional[Text], Int, Boolean)]) =
-        val landing = Promise[(Text, scala.List[(Optional[Text], Int, Boolean)])]()
+      def recur(remaining: Int): (Text, List[(Text, Int, Boolean)]) =
+        val landing = Promise[(Text, List[(Text, Int, Boolean)])]()
 
         debug.step(thread, depth): step ?=>
-          val positions = step.positions(step.location).stdlib.map: position =>
-            (position.source, position.line, position.inlined)
+          val positions = step.positions(step.location).map: position =>
+            (position.source.or(t""), position.line, position.inlined)
 
           landing.offer((step.describe(step.location)(0), positions))
           step.remain()
@@ -789,8 +789,8 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
         debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(67)):
           stop ?=>
             stop.evaluator(classpath): eval ?=>
-              val port = eval.variables().stdlib.find(_.name == t"port")
-              port.flatMap(_.static.option).getOrElse(t"«none»")
+              val port = eval.variables().seek(_.name == t"port")
+              port.let(_.static).or(t"«none»")
 
     . assert(_ == t"vivisection.Fixture.Port")
 
@@ -804,8 +804,8 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
         debugFixture(t"vivisection.Fixture", t"vivisection.Fixture.scala", Ordinal.uniary(67)):
           stop ?=>
             stop.evaluator(classpath): eval ?=>
-              val gateway = eval.variables().stdlib.find(_.name == t"gateway")
-              val static = gateway.flatMap(_.static.option).getOrElse(t"«none»")
+              val gateway = eval.variables().seek(_.name == t"gateway")
+              val static = gateway.let(_.static).or(t"«none»")
               (static, eval.inspect(t"gateway"))
 
     . assert(_ == (t"vivisection.Fixture.Port", t"⟨port 443⟩"))
@@ -1062,7 +1062,7 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
           client.awaitResponse(t"disconnect")
 
           (initialized.body.supportsConfigurationDoneRequest.as[Boolean],
-           names.stdlib.contains(t"int"))
+           names.has(t"int"))
 
     . assert(_ == (true, true))
 
@@ -1107,7 +1107,7 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
           client.request(t"disconnect")
           client.awaitResponse(t"disconnect")
 
-          (stopped.body.reason.as[Text], stepped.body.reason.as[Text], lines.stdlib.contains(41))
+          (stopped.body.reason.as[Text], stepped.body.reason.as[Text], lines.has(41))
 
     . assert(_ == (t"breakpoint", t"step", true))
 
@@ -1189,14 +1189,14 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
           val trace = client.awaitResponse(t"stackTrace")
           val frame = trace.body.stackFrames(0).id.as[Int]
 
-          def labels(text: Text, column: Int): scala.List[Text] =
+          def labels(text: Text, column: Int): List[Text] =
             val arguments =
               Json.make
                 ( text = text.in[Json], column = column.in[Json], frameId = frame.in[Json] )
 
             client.request(t"completions", arguments)
             val completed = client.awaitResponse(t"completions")
-            completed.body.targets.as[List[Json]].stdlib.map(_.label.as[Text])
+            completed.body.targets.as[List[Json]].map(_.label.as[Text])
 
           val prefixed = labels(t"in", 3)
           val members = labels(t"text.le", 8)
@@ -1205,9 +1205,9 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
           client.request(t"disconnect")
           client.awaitResponse(t"disconnect")
 
-          ( prefixed.contains(t"int") && prefixed.contains(t"ints"),
-            members.contains(t"length"),
-            bindings.isEmpty )
+          ( prefixed.has(t"int") && prefixed.has(t"ints"),
+            members.has(t"length"),
+            bindings.nil )
 
     . assert(_ == (true, true, true))
 
@@ -1327,7 +1327,7 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
 
           client.request(t"disconnect")
           client.awaitResponse(t"disconnect")
-          names.stdlib.contains(t"int")
+          names.has(t"int")
 
     . assert(_ == true)
 
@@ -1343,8 +1343,8 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
 
         debuggee.session:
           val stopped = Promise[ThreadId]()
-          val first = Promise[scala.List[(Optional[Text], Int, Boolean)]]()
-          val second = Promise[scala.List[(Optional[Text], Int, Boolean)]]()
+          val first = Promise[List[(Text, Int, Boolean)]]()
+          val second = Promise[List[(Text, Int, Boolean)]]()
 
           debug.breakpoint(t"vivisection.Paced.scala", Ordinal.uniary(40)): stop ?=>
             stopped.offer(stop.thread)
@@ -1355,7 +1355,7 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
 
           debug.step(thread, Jdwp.StepDepth.Over): step ?=>
             first.offer:
-              step.positions(step.location).stdlib.map: p => (p.source, p.line, p.inlined)
+              step.positions(step.location).map: p => (p.source.or(t""), p.line, p.inlined)
             step.remain()
 
           debug.resume()
@@ -1363,19 +1363,19 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
 
           debug.step(thread, Jdwp.StepDepth.Over): step ?=>
             second.offer:
-              step.positions(step.location).stdlib.map: p => (p.source, p.line, p.inlined)
+              step.positions(step.location).map: p => (p.source.or(t""), p.line, p.inlined)
             step.remain()
 
           debug.resume()
 
           // Line 42's own first code is inlined too (`.nn` from proscenium), so the second
           // landing is asserted by its real frame: the step passed over the whole of line 41.
-          (landing1, second.await().lastOption)
+          (landing1, second.await().last.or((t"", 0, false)))
 
     . assert(_ ==
-        ( scala.List((t"vivisection.Doubling.scala", 40, true),
+        ( List((t"vivisection.Doubling.scala", 40, true),
               (t"vivisection.Paced.scala", 41, false)),
-          scala.Some((t"vivisection.Paced.scala", 42, false)) ))
+          (t"vivisection.Paced.scala", 42, false) ))
 
     // Stepping *into* advances the logical (innermost) line: having arrived at the inline
     // call's first body line, a step in moves to the body's next line — line by line within
@@ -1389,7 +1389,7 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
         debuggee.session:
           val stopped = Promise[ThreadId]()
           val arrival = Promise[Unit]()
-          val landing = Promise[scala.List[(Optional[Text], Int, Boolean)]]()
+          val landing = Promise[List[(Text, Int, Boolean)]]()
 
           debug.breakpoint(t"vivisection.Paced.scala", Ordinal.uniary(40)): stop ?=>
             stopped.offer(stop.thread)
@@ -1408,13 +1408,13 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
 
           debug.step(thread, Jdwp.StepDepth.Into): step ?=>
             landing.offer:
-              step.positions(step.location).stdlib.map: p => (p.source, p.line, p.inlined)
+              step.positions(step.location).map: p => (p.source.or(t""), p.line, p.inlined)
             step.remain()
 
           debug.resume()
           landing.await()
 
-    . assert(_ == scala.List(
+    . assert(_ == List(
           (t"vivisection.Doubling.scala", 41, true),
           (t"vivisection.Paced.scala", 41, false)))
 
@@ -1425,7 +1425,7 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
         stepFixture(t"vivisection.Forwarded", t"vivisection.Forwarded.scala", Ordinal.uniary(65),
             Jdwp.StepDepth.Into)
 
-    . assert(_(1) == scala.List((t"vivisection.Forwarded.scala", 47, false)))
+    . assert(_(1) == List((t"vivisection.Forwarded.scala", 47, false)))
 
     // A field accessor is plumbing with nothing beneath it: a step into `robot.serial` passes
     // through the getter, back to the unchanged line, and on to the next.
@@ -1434,7 +1434,7 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
         stepFixture(t"vivisection.Forwarded", t"vivisection.Forwarded.scala", Ordinal.uniary(66),
             Jdwp.StepDepth.Into)
 
-    . assert(_(1) == scala.List((t"vivisection.Forwarded.scala", 67, false)))
+    . assert(_(1) == List((t"vivisection.Forwarded.scala", 67, false)))
 
     // A bridge (`combine(Object, Object)`, generated for the `Combiner[Int]` view) is plumbing:
     // a step into the call passes through it and its unboxing to the typed implementation.
@@ -1443,7 +1443,7 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
         stepFixture(t"vivisection.Forwarded", t"vivisection.Forwarded.scala", Ordinal.uniary(68),
             Jdwp.StepDepth.Into)
 
-    . assert(_(1) == scala.List((t"vivisection.Forwarded.scala", 58, false)))
+    . assert(_(1) == List((t"vivisection.Forwarded.scala", 58, false)))
 
     // A lazy val's accessor is plumbing, but its initializer is the programmer's own code: a
     // step into a first access arrives at the initializer's line.
@@ -1452,7 +1452,7 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
         stepFixture(t"vivisection.Forwarded", t"vivisection.Forwarded.scala", Ordinal.uniary(69),
             Jdwp.StepDepth.Into)
 
-    . assert(_(1) == scala.List((t"vivisection.Forwarded.scala", 55, false)))
+    . assert(_(1) == List((t"vivisection.Forwarded.scala", 55, false)))
 
     // A lambda's body is user code, lifted into a synthetic method and reached through the
     // JDK's lambda machinery: from `twice`'s body, a step into `f(x)` passes through all of it
@@ -1464,7 +1464,7 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
 
     . assert: (name, positions) =>
         name.contains(t"anonfun")
-        && positions == scala.List((t"vivisection.Forwarded.scala", 70, false))
+        && positions == List((t"vivisection.Forwarded.scala", 70, false))
 
     // The SMAP path end to end: a breakpoint on the body of an inline method — in a file whose
     // class never loads at runtime — binds at the inlined copy inside the caller's class, and
@@ -1474,10 +1474,10 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
       supervise:
         debugFixture(t"vivisection.Inlined", t"vivisection.Doubling.scala", Ordinal.uniary(40)):
           stop ?=>
-            stop.positions(stop.location).stdlib.map: position =>
-              (position.source, position.line, position.inlined)
+            stop.positions(stop.location).map: position =>
+              (position.source.or(t""), position.line, position.inlined)
 
-    . assert(_ == scala.List(
+    . assert(_ == List(
           (t"vivisection.Doubling.scala", 40, true),
           (t"vivisection.Inlined.scala", 40, false)))
 
@@ -1575,8 +1575,8 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
       val received = scala.collection.mutable.ArrayBuffer[Text]()
       val data = DapTransport.frame(t"""{"seq":1}""")
       DapTransport.pump(Stream(data), _ => ())(received.append(_))
-      received.toList
-    . assert(_ == scala.List(t"""{"seq":1}"""))
+      List.from(received)
+    . assert(_ == List(t"""{"seq":1}"""))
 
     // A launch session drains the debuggee's console from the moment of the fork: its output is
     // readable as a stream, and its exit status resolves when it terminates — so a debuggee
@@ -1715,7 +1715,7 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
         debuggee.session:
           debug.breakpoint(t"vivisection.Recount.scala", Ordinal.uniary(43)): stop ?=>
             if hits.incrementAndGet() == 1
-            then stop.frames().stdlib.headOption.foreach { (frame, _) => stop.pop(frame) }
+            then stop.frames().head.let { (frame, _) => stop.pop(frame) }
             else
               outcome.offer(hits.get)
               stop.remain()

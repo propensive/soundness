@@ -80,7 +80,7 @@ object CheckFormat:
       if line.startsWith("=== document ") then sections += new StringBuilder()
       else if sections.nonEmpty then sections.last.append(line).append('\n')
 
-    (sections.toList.map(section => parse(Text(section.toString)))).to(List)
+    List.from((sections.toList.map(section => parse(Text(section.toString)))))
 
   private def parseValue(cursor: Cursor): CheckTree =
     cursor.skipWhitespace()
@@ -121,7 +121,7 @@ object CheckFormat:
 
     cursor.advance(1) // consume '}'
 
-    builder.toList.to(List)
+    List.from(builder.toList)
 
   private def parseSomePayload(cursor: Cursor): CheckTree =
     cursor.advance(1) // consume '('
@@ -149,7 +149,7 @@ object CheckFormat:
 
     cursor.advance(1)
 
-    CheckTree.Sequence(builder.toList.to(List))
+    CheckTree.Sequence(List.from(builder.toList))
 
   private def parseTuple(cursor: Cursor): CheckTree =
     cursor.advance(1) // consume '('
@@ -165,7 +165,7 @@ object CheckFormat:
 
     cursor.advance(1)
 
-    CheckTree.Tuple(builder.toList.to(List))
+    CheckTree.Tuple(List.from(builder.toList))
 
   private def parseString(cursor: Cursor): Text =
     cursor.advance(1) // opening "
@@ -266,7 +266,7 @@ object CheckFormat:
 
       cursor.skipLineWhitespace()
 
-    builder.toList.to(List)
+    List.from(builder.toList)
 
   private def isDigit(c: Char): Boolean = c >= '0' && c <= '9'
   private def isHexDigit(c: Char): Boolean = isDigit(c) || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')

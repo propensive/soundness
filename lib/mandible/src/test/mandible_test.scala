@@ -53,19 +53,19 @@ object Tests extends Suite("bytecode", m"Mandible tests"):
 
   def run(): Unit =
     test(m"Locate a known method on a classfile"):
-      Classfile[StackTrace].let(_.methods.stdlib.find(_.name == t"rewrite").getOrElse(Unset))
+      Classfile[StackTrace].let(_.methods.seek(_.name == t"rewrite"))
     . assert(_ != Unset)
 
     test(m"Disassemble a known method's bytecode"):
       Classfile[StackTrace]
-      . let(_.methods.stdlib.find(_.name == t"rewrite").getOrElse(Unset))
+      . let(_.methods.seek(_.name == t"rewrite"))
       . let(_.bytecode)
       . lay(0)(_.instructions.size)
     . assert(_ > 0)
 
     test(m"Bytecode carries declared maxStack and maxLocals"):
       Classfile[StackTrace]
-      . let(_.methods.stdlib.find(_.name == t"rewrite").getOrElse(Unset))
+      . let(_.methods.seek(_.name == t"rewrite"))
       . let(_.bytecode)
       . lay((-1, -1))(bytecode => (bytecode.maxStack, bytecode.maxLocals))
     . assert((s, l) => s >= 0 && l >= 0)

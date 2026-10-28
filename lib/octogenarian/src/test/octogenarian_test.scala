@@ -130,7 +130,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
       Operations.planePath(worktree, name)
 
     def patchFrom(lines: Text*): List[FileDiff] =
-      Patch.parse(lines.to(List))
+      Patch.parse(lines.to[List])
 
     def messages(using worktree: (Git.Worktree.Handle & Granting[Grant.Read & Grant.Write])^): List[Text] =
       worktree.log().value.map(_.message)

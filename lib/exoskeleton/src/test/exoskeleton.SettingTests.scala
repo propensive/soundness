@@ -152,7 +152,7 @@ object SettingTests extends Suite("cli-settings", m"Setting tests"):
 
       given system: System = fixedSystem()
       Port()(using completion)
-      completion.flags.keySet.to(List).map(_.name)
+      List.from(completion.flags.keySet).map(_.name)
     . assert(_ == List(t"port"))
 
     test(m"Reading a setting records its environment variable for help"):

@@ -77,45 +77,45 @@ object Tests extends Suite("prelude", m"Proscenium Tests"):
     suite(m"Array construction"):
       // Frozen arrays compare through `readable`: `==` on an array is reference identity.
       test(m"a literal array holds its elements"):
-        Array(1, 2, 3).stdlib.toList
-      . assert(_ == scala.List(1, 2, 3))
+        Array(1, 2, 3).to[List]
+      . assert(_ == List(1, 2, 3))
 
       test(m"an empty array has no elements"):
         Array.empty[Int].length
       . assert(_ == 0)
 
       test(m"an allocated array is zero-filled"):
-        Array.allocate[Int](3).stdlib.toList
-      . assert(_ == scala.List(0, 0, 0))
+        Array.freeze(Array.allocate[Int](3)).to[List]
+      . assert(_ == List(0, 0, 0))
 
       test(m"an allocated array has the requested length"):
         Array.allocate[Int](5).length
       . assert(_ == 5)
 
       test(m"fill repeats its element"):
-        Array.fill(4)(7).stdlib.toList
-      . assert(_ == scala.List(7, 7, 7, 7))
+        Array.fill(4)(7).to[List]
+      . assert(_ == List(7, 7, 7, 7))
 
       test(m"fill evaluates its element for each position"):
         var count = 0
-        Array.fill(4)({ count += 1; count }).stdlib.toList
-      . assert(_ == scala.List(1, 2, 3, 4))
+        Array.fill(4)({ count += 1; count }).to[List]
+      . assert(_ == List(1, 2, 3, 4))
 
       test(m"tabulate applies its lambda to each index"):
-        Array.tabulate(4)(_*10).stdlib.toList
-      . assert(_ == scala.List(0, 10, 20, 30))
+        Array.tabulate(4)(_*10).to[List]
+      . assert(_ == List(0, 10, 20, 30))
 
       test(m"range is end-exclusive"):
-        Array.range(2, 6).stdlib.toList
-      . assert(_ == scala.List(2, 3, 4, 5))
+        Array.range(2, 6).to[List]
+      . assert(_ == List(2, 3, 4, 5))
 
       test(m"an empty range gives an empty array"):
         Array.range(3, 3).length
       . assert(_ == 0)
 
       test(m"from copies an iterable"):
-        Array.from(scala.List(9, 8, 7)).stdlib.toList
-      . assert(_ == scala.List(9, 8, 7))
+        Array.from(scala.List(9, 8, 7)).to[List]
+      . assert(_ == List(9, 8, 7))
 
     suite(m"Array access"):
       test(m"a frozen array reads through readUnchecked"):
@@ -159,12 +159,12 @@ object Tests extends Suite("prelude", m"Proscenium Tests"):
 
     suite(m"Array transformation"):
       test(m"mapping a frozen array gives a frozen array"):
-        Array(1, 2, 3).map(_*2).stdlib.toList
-      . assert(_ == scala.List(2, 4, 6))
+        Array(1, 2, 3).map(_*2).to[List]
+      . assert(_ == List(2, 4, 6))
 
       test(m"mapping may change the element type"):
-        Array(1, 2, 3).map(_.toString).stdlib.toList
-      . assert(_ == scala.List("1", "2", "3"))
+        Array(1, 2, 3).map(_.toString).to[List]
+      . assert(_ == List("1", "2", "3"))
 
       test(m"place transfers a window"):
         val buffer = Array.allocate[Int](4)
@@ -189,8 +189,8 @@ object Tests extends Suite("prelude", m"Proscenium Tests"):
         val buffer = Array.allocate[Int](2)
         buffer(0) = 1
         buffer(1) = 2
-        Array.freeze(buffer).stdlib.toList
-      . assert(_ == scala.List(1, 2))
+        Array.freeze(buffer).to[List]
+      . assert(_ == List(1, 2))
 
     suite(m"Ledger"):
       // A `Ledger` is exactly a `Map` that promises insertion order; that promise is the

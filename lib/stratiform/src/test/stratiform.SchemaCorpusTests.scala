@@ -94,7 +94,7 @@ object SchemaCorpusTests extends Suite("tel-schema-corpus", m"Stratiform schema 
             scala.Nil
           catch case error: Tel.Error => scala.List(error.reason.number)
 
-        (assigned.stdlib ::: constructed).to(proscenium.List)
+        List.from(assigned.stdlib ::: constructed)
       else
         CorpusLoader.auxiliarySchema(category, tail).let: aux =>
           try assignCodes(tel, Tels.Validation.validate(aux.read[Tel].as[Tels]))
@@ -106,11 +106,11 @@ object SchemaCorpusTests extends Suite("tel-schema-corpus", m"Stratiform schema 
     suite(m"Negative corpus (E2xx schema validity, E3xx validation)"):
       CorpusLoader.negative.each: testcase =>
         val codes = CorpusLoader.expectedCodes(testcase)
-        if !codes.nil && codes.stdlib.forall(_ >= 200)
-            && codes.stdlib.exists(implemented.contains)
+        if !codes.nil && codes.all(_ >= 200)
+            && codes.exists(implemented.contains)
         then
           test(m"raises an expected error on ${testcase.stem}"):
-            collectCodes(testcase, t"neg").stdlib.exists(codes.has(_))
+            collectCodes(testcase, t"neg").exists(codes.has(_))
           . assert(_ == true)
 
     suite(m"Positive corpus (schema-bearing cases stay clean)"):

@@ -523,7 +523,7 @@ object Tests extends Suite("http", m"Telekinesis tests"):
       // `Set-Cookie` may, and must therefore survive the same merge.
       test(m"A singleton header named at the call site overrides the Servable's"):
         val response = Http.Response(Http.Ok, contentType = media"text/plain")(t"hello")
-        response.textHeaders.stdlib.count(_.key.lower == t"content-type")
+        response.textHeaders.count(_.key.lower == t"content-type")
 
       . assert(_ == 1)
 
@@ -540,7 +540,7 @@ object Tests extends Suite("http", m"Telekinesis tests"):
 
       test(m"Set-Cookie is repeatable, so both values are kept"):
         val served = Http.Response(Http.Ok, setCookie = t"a=1")(t"hello") + Cookie.Value(t"b", t"2")
-        served.textHeaders.stdlib.count(_.key.lower == t"set-cookie")
+        served.textHeaders.count(_.key.lower == t"set-cookie")
 
       . assert(_ == 2)
 

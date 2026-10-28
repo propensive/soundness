@@ -99,7 +99,7 @@ object Tests extends Suite("unicode", m"Hieroglyph tests"):
       for chunk <- 1 to 25 do
         test(m"Decode Japanese text in chunks of size $chunk"):
           import textSanitizers.skipSanitizer
-          charsets.utf8Charset.decoded(japaneseData.stdlib.grouped(chunk).map(Array.from(_)).to(Chain)).join
+          charsets.utf8Charset.decoded(Chain.from(japaneseData.stdlib.grouped(chunk).map(Array.from(_)))).join
         . assert(_ == japanese)
 
       val badUtf8 = Data(45, -62, 49, 48)
@@ -205,13 +205,13 @@ object Tests extends Suite("unicode", m"Hieroglyph tests"):
 
       for chunk <- 1 to 12 do
         test(m"encode astral text in chunks of size $chunk"):
-          val chunks = astral.s.grouped(chunk).map(_.tt).to(Chain)
+          val chunks = Chain.from(astral.s.grouped(chunk).map(_.tt))
           joined(codepages.utf8Codepage.encoded(chunks)).to[List]
         . assert(_ == codepages.utf8Codepage.encoded(astral).to[List])
 
       test(m"a chunked encoding round-trips through the decoder"):
         import textSanitizers.skipSanitizer
-        val chunks = astral.s.grouped(3).map(_.tt).to(Chain)
+        val chunks = Chain.from(astral.s.grouped(3).map(_.tt))
         charsets.utf8Charset.decoded(joined(codepages.utf8Codepage.encoded(chunks)))
       . assert(_ == astral)
 
@@ -311,7 +311,7 @@ object Tests extends Suite("unicode", m"Hieroglyph tests"):
       test(m"UAX #29 conformance"):
         val resourcePath = "/hieroglyph/GraphemeBreakTest.txt"
         val stream = getClass.getResourceAsStream(resourcePath).nn
-        val lines = scala.io.Source.fromInputStream(stream).getLines().to(List)
+        val lines = List.from(scala.io.Source.fromInputStream(stream).getLines())
 
         var failures: List[(Int, String)] = Nil
 
@@ -336,7 +336,7 @@ object Tests extends Suite("unicode", m"Hieroglyph tests"):
             val input = sb.toString.nn.tt
             val actual = GraphemeBreak.boundaries(input).to[List]
 
-            if actual != expected.to(List) then failures = (idx.n0 + 1, rawLine) :: failures
+            if actual != List.from(expected) then failures = (idx.n0 + 1, rawLine) :: failures
 
         failures.size
 
@@ -387,7 +387,7 @@ object Tests extends Suite("unicode", m"Hieroglyph tests"):
       test(m"UTS #10 conformance (non-ignorable)"):
         val resourcePath = "/hieroglyph/CollationTest_NON_IGNORABLE_SHORT.txt"
         val stream = getClass.getResourceAsStream(resourcePath).nn
-        val lines = scala.io.Source.fromInputStream(stream).getLines().to(List)
+        val lines = List.from(scala.io.Source.fromInputStream(stream).getLines())
 
         def compareCps(left: Array[Int], right: Array[Int]): Int =
           val leftView = left.stdlib

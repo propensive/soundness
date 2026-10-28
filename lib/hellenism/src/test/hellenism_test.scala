@@ -89,7 +89,7 @@ object Tests extends Suite("classpath", m"Hellenism Tests"):
     test(m"load services from META-INF/services"):
       import systems.javaBaseSystem
       val classpath = LocalClasspath.of(Classloader[Tests.type])
-      classpath.services[TestService].stdlib.map(_.name).to(Set)
+      classpath.services[TestService].map(_.name).to[Set]
     . assert(_ == Set(t"A", t"B"))
 
     suite(m"Resource reads"):

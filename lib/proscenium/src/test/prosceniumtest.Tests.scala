@@ -73,17 +73,17 @@ object Tests extends Suite("prelude-consumer", m"Proscenium consumer-view tests"
       . assert(_ == scala.collection.immutable.List(t"b", t"a"))
 
       test(m"a frozen array crosses to the stdlib as an ArraySeq"):
-        Array(1, 2, 3).stdlib.toList
-      . assert(_ == scala.collection.immutable.List(1, 2, 3))
+        Array(1, 2, 3).to[List]
+      . assert(_ == List(1, 2, 3))
 
     suite(m"Building the opaque types from stdlib collections"):
       test(m"a stdlib collection builds a list"):
-        val list: List[Int] = scala.collection.immutable.List(1, 2).to(List)
+        val list: List[Int] = List.from(scala.collection.immutable.List(1, 2))
         list.stdlib
       . assert(_ == scala.collection.immutable.List(1, 2))
 
       test(m"a stdlib collection builds a set"):
-        val set: Set[Int] = scala.collection.immutable.List(1, 1, 2).to(Set)
+        val set: Set[Int] = Set.from(scala.collection.immutable.List(1, 1, 2))
         set.stdlib
       . assert(_ == scala.collection.immutable.Set(1, 2))
 
@@ -102,7 +102,7 @@ object Tests extends Suite("prelude-consumer", m"Proscenium consumer-view tests"
       aspirationally:
         test(m"a stdlib collection builds a sequence"):
           demilitarize:
-            val sequence: Sequence[Int] = scala.collection.immutable.List(1, 2).to(Sequence)
+            val sequence: Sequence[Int] = scala.collection.immutable.List(1, 2).to[Sequence]
           . map(_.message)
         . assert(_.nil)
 

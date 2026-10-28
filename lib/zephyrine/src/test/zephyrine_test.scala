@@ -56,7 +56,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
           producer.put("two")
           producer.finish()
           val output = producer.iterator
-          val it = async(output.to(List))
+          val it = async(List.from(output))
 
           unsafely(it.await())
       . assert(_ == List("onet", "wo"))
@@ -108,7 +108,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
         supervise:
           val producer = Producer[Text](4, 2)
           val output = producer.iterator
-          val out = async(output.to(List))
+          val out = async(List.from(output))
           producer.put("12345678901234567890")
           producer.finish()
           unsafely(out.await())
@@ -118,7 +118,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
         supervise:
           val producer = Producer[Text](4, 2)
           val output = producer.iterator
-          val out = async(output.to(List))
+          val out = async(List.from(output))
           producer.put("123456789012345678")
           producer.finish()
           unsafely(out.await())
@@ -178,11 +178,11 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
           // `arraycopy` length (a regression here over-reads the source).
           val producer = Producer[Data](8)
           val reader = producer.iterator
-          val output = async(reader.to(List))
+          val output = async(List.from(reader))
           producer.put(Data.fill(3)(_.toByte))
           producer.put(Data.fill(5)(i => (i + 10).toByte))
           producer.finish()
-          unsafely(output.await()).flatMap(_.stdlib.to(List))
+          unsafely(output.await()).flatMap(_.to[List])
       . assert(_.map(_.toInt) == List(0, 1, 2, 10, 11, 12, 13, 14))
 
       test(m"Synchronous text collection joins puts"):
@@ -214,7 +214,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
         supervise:
           val producer = Producer[Data](4)
           val reader = producer.iterator
-          val output = async(reader.to(List))
+          val output = async(List.from(reader))
           var i = 0
 
           while i < 10 do
@@ -222,8 +222,8 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
             i += 1
 
           producer.finish()
-          unsafely(output.await()).flatMap(_.stdlib.to(List))
-      . assert(_ == (0 until 10).map(_.toByte).to(List))
+          unsafely(output.await()).flatMap(_.to[List])
+      . assert(_ == List.from((0 until 10).map(_.toByte)))
 
       test(m"Push chars (synchronous text)"):
         Producer.collect[Text](): producer =>
@@ -498,7 +498,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
       test(m"Cursor[Data] remainder from start equals full stream"):
         val blocks = Chain(Data(1, 2, 3), Data(4, 5), Data(6, 7))
         val cursor = Cursor[Data](Chain.iterator(blocks))
-        cursor.remainder.stdlib.map(_.stdlib).flatten.to(List)
+        List.from(cursor.remainder.stdlib.map(_.stdlib).flatten)
 
       . assert(_.map(_.toInt) == List(1, 2, 3, 4, 5, 6, 7))
 
@@ -506,7 +506,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
         val blocks = Chain(Data(1, 2, 3, 4, 5), Data(6, 7, 8))
         val cursor = Cursor[Data](Chain.iterator(blocks))
         for i <- 0 until 3 do cursor.next()
-        cursor.remainder.stdlib.map(_.stdlib).flatten.to(List)
+        List.from(cursor.remainder.stdlib.map(_.stdlib).flatten)
 
       . assert(_.map(_.toInt) == List(4, 5, 6, 7, 8))
 
@@ -514,7 +514,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
         val blocks = Chain(Data(1, 2, 3, 4, 5), Data(6, 7, 8))
         val cursor = Cursor[Data](Chain.iterator(blocks))
         for i <- 0 until 3 do cursor.next()
-        cursor.hold(cursor.remainder.stdlib.map(_.stdlib).flatten.to(List))
+        cursor.hold(List.from(cursor.remainder.stdlib.map(_.stdlib).flatten))
 
       . assert(_.map(_.toInt) == List(4, 5, 6, 7, 8))
 
@@ -1123,7 +1123,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
 
         scala.caps.unsafe.unsafeAssumeSeparate(recur())  // [closure-capture]
         collected.reverse
-      . assert(_ == (1 to 100).map { index => s"record-$index" }.to(List))
+      . assert(_ == List.from((1 to 100).map { index => s"record-$index" }))
 
       test(m"flow grants nothing when halted"):
         val regulation = summon[Pace is Regulation]

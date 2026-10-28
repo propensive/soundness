@@ -1539,7 +1539,7 @@ object DirectTests extends Suite("json-direct", m"Jacinta direct parsing and for
       test(m"emit streams exactly the text show renders"):
         import formatting.indentedJsonFormatting
         val json = Json.make(a = 1.in[Json], b = (List(t"x", t"y"): List[Text]).in[Json], c = t"q\"\n".in[Json])
-        supervise(Json.emit(json).to(List).join) == json.show
+        supervise(List.from(Json.emit(json)).join) == json.show
       . assert(identity)
 
       test(m"the push form of emit delivers exactly the text show renders"):
@@ -1600,7 +1600,7 @@ object DirectTests extends Suite("json-direct", m"Jacinta direct parsing and for
       test(m"emit of a large document arrives in more than one chunk"):
         import formatting.compactJsonFormatting
         val json = t"[${(0 until 20000).mkString(",")}]".read[Json]
-        supervise(Json.emit(json).to(List).size)
+        supervise(List.from(Json.emit(json)).size)
       . assert(_ > 1)
 
     suite(m"Discriminator strategies"):
@@ -1875,11 +1875,11 @@ object DirectTests extends Suite("json-direct", m"Jacinta direct parsing and for
       // NDJSON needs no bespoke type: split the source into lines and read each
       // as `Json`.
       test(m"decode NDJSON text to a List of values"):
-        t"1\n2\n3".source[Text].delineate.records.map(_.read[Json].as[Int]).to(List)
+        List.from(t"1\n2\n3".source[Text].delineate.records.map(_.read[Json].as[Int]))
       . assert(_ == List(1, 2, 3))
 
       test(m"NDJSON lines may hold heterogeneous values"):
-        t"\"hi\"\n42\ntrue".source[Text].delineate.records.map(_.read[Json]).to(List).size
+        List.from(t"\"hi\"\n42\ntrue".source[Text].delineate.records.map(_.read[Json])).size
       . assert(_ == 3)
 
     suite(m"j\"\" interpolator"):

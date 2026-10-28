@@ -229,14 +229,14 @@ object Tests extends Suite("regex", m"Kaleidoscope tests"):
           . map { (g: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
               g.to[List] } // explicit: inference boxes the element captures
 
-        . assert(_ == Some(List(t"bar")))
+        . assert(_ == List(t"bar"))
 
         test(m"Two captures"):
           JavaBaseRegex.engine.matchGroups(Regex.parse(List(t"foo", t"(bar)", t"(baz)")), t"foobarbaz")
           . map { (g: Array[List[Text | Char] | Optional[Text | Char]]^{}) =>
               g.to[List] } // explicit: inference boxes the element captures
 
-        . assert(_ == Some(List(t"bar", t"baz")))
+        . assert(_ == List(t"bar", t"baz"))
 
         test(m"Two captures, one repeating"):
           JavaBaseRegex.engine.matchGroups(Regex.parse(List(t"foo", t"(bar)", t"(baz)*")), t"foobarbazbaz")

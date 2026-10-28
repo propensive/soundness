@@ -58,14 +58,14 @@ object Slug:
                             (inline insertions: Any*)
     :   Slug =
 
-      Slug(assemble(compiletime.constValueTuple[parts].toList.reverse.to(List),
-                    insertions.to(List)))
+      Slug(assemble(compiletime.constValueTuple[parts].toList.reverse.to[List],
+                    insertions.to[List]))
 
   given extrapolable: Slug is Extrapolable:
     transparent inline def extrapolate[parts <: Tuple, origins <: Tuple](scrutinee: Slug)
     :   Extrapolation[Slug] =
 
-      scrutinee.text == assemble(compiletime.constValueTuple[parts].toList.reverse.to(List), Nil)
+      scrutinee.text == assemble(compiletime.constValueTuple[parts].toList.reverse.to[List], Nil)
 
 case class Parts(values: List[Text])
 
@@ -75,7 +75,7 @@ object Parts:
                             (inline insertions: Any*)
     :   Parts =
 
-      Parts(Parts.texts(compiletime.constValueTuple[parts].toList.to(List)))
+      Parts(Parts.texts(compiletime.constValueTuple[parts].toList.to[List]))
 
   def texts(values: List[Any]): List[Text] = values.map(_.toString.tt)
 
