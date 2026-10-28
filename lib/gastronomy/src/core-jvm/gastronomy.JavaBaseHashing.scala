@@ -53,8 +53,8 @@ object JavaBaseHashing extends Hashing:
   // The JDK has `java.util.zip` CRC-32 and Adler-32 (both intrinsified) but no CRC-64, so this
   // provider simply does not offer `crc64`; the structural refinement means a CRC-64 digest
   // resolves only under the Soundness provider, exactly as BLAKE3 does.
-  def adler32: Hashing.Function = checksum { () => juz.Adler32() }
-  def crc32: Hashing.Function = checksum { () => juz.CRC32() }
+  def adler32: Hashing.Function = checksum: () => juz.Adler32()
+  def crc32: Hashing.Function = checksum: () => juz.CRC32()
 
   // `Adler32` and `CRC32` share `java.util.zip.Checksum` and both yield a 32-bit value, written
   // big-endian; one digester serves both, so the JDK crossing is made in one place.
