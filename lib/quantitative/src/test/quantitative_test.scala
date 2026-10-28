@@ -495,14 +495,14 @@ object Tests extends Suite("units", m"Quantitative Tests"):
       // the typeclass operation is inlined and don't count.
       def callsTypeclassOp(bytecode: Bytecode): Boolean =
         val ops = Set(t"negate", t"add", t"subtract", t"multiply", t"divide", t"root", t"op")
-        bytecode.instructions.stdlib.exists: instruction =>
+        bytecode.instructions.exists: instruction =>
           instruction.opcode match
             case Bytecode.Opcode.Invokevirtual(_, name, _)      => ops.has(name)
             case Bytecode.Opcode.Invokeinterface(_, name, _, _) => ops.has(name)
             case _                                              => false
 
       def hasBoxing(bytecode: Bytecode): Boolean =
-        bytecode.instructions.stdlib.exists: instruction =>
+        bytecode.instructions.exists: instruction =>
           instruction.opcode match
             case Bytecode.Opcode.Invokestatic(owner, method, _) =>
               (owner.s.contains("Double") || owner.s.contains("BoxesRunTime"))
@@ -511,31 +511,31 @@ object Tests extends Suite("units", m"Quantitative Tests"):
               false
 
       def containsDneg(bytecode: Bytecode): Boolean =
-        bytecode.instructions.stdlib.exists: instruction =>
+        bytecode.instructions.exists: instruction =>
           instruction.opcode match
             case Bytecode.Opcode.Dneg => true
             case _                    => false
 
       def containsDmul(bytecode: Bytecode): Boolean =
-        bytecode.instructions.stdlib.exists: instruction =>
+        bytecode.instructions.exists: instruction =>
           instruction.opcode match
             case Bytecode.Opcode.Dmul => true
             case _                    => false
 
       def containsDdiv(bytecode: Bytecode): Boolean =
-        bytecode.instructions.stdlib.exists: instruction =>
+        bytecode.instructions.exists: instruction =>
           instruction.opcode match
             case Bytecode.Opcode.Ddiv => true
             case _                    => false
 
       def containsDadd(bytecode: Bytecode): Boolean =
-        bytecode.instructions.stdlib.exists: instruction =>
+        bytecode.instructions.exists: instruction =>
           instruction.opcode match
             case Bytecode.Opcode.Dadd => true
             case _                    => false
 
       def containsDsub(bytecode: Bytecode): Boolean =
-        bytecode.instructions.stdlib.exists: instruction =>
+        bytecode.instructions.exists: instruction =>
           instruction.opcode match
             case Bytecode.Opcode.Dsub => true
             case _                    => false

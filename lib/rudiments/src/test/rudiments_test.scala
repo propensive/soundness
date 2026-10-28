@@ -1972,13 +1972,11 @@ object Tests extends Suite("core", m"Rudiments Tests"):
 
       // The JDK atomic method a probe compiled down to, if it reached exactly one.
       def atomicCalls(bytecode: Bytecode): Set[Text] =
-        bytecode.instructions.stdlib.collect:
-          case instruction => instruction.opcode
-        . collect:
-            case Bytecode.Opcode.Invokevirtual(owner, name, _)
-            if owner.s.startsWith("java.util.concurrent.atomic") =>
-              name
-        . to(Set)
+        bytecode.instructions.map(_.opcode).sweep:
+          case Bytecode.Opcode.Invokevirtual(owner, name, _)
+          if owner.s.startsWith("java.util.concurrent.atomic") =>
+            name
+        . to[Set]
 
       def calls(method: Text, expected: Text)(using Classloader): Boolean =
         methodBytecode(method).lay(false)(atomicCalls(_).has(expected))
@@ -1988,14 +1986,14 @@ object Tests extends Suite("core", m"Rudiments Tests"):
       def callsWrapper(bytecode: Bytecode): Boolean =
         val names = Set(t"ere", t"since", t"revise", t"publish", t"swap", t"replace", t"update")
 
-        bytecode.instructions.stdlib.exists: instruction =>
+        bytecode.instructions.exists: instruction =>
           instruction.opcode match
             case Bytecode.Opcode.Invokevirtual(_, name, _)      => names.has(name)
             case Bytecode.Opcode.Invokeinterface(_, name, _, _) => names.has(name)
             case _                                              => false
 
       def hasBoxing(bytecode: Bytecode): Boolean =
-        bytecode.instructions.stdlib.exists: instruction =>
+        bytecode.instructions.exists: instruction =>
           instruction.opcode match
             case Bytecode.Opcode.Invokestatic(owner, method, _) =>
               owner.s.contains("BoxesRunTime") && method.s.contains("box")
@@ -2006,7 +2004,7 @@ object Tests extends Suite("core", m"Rudiments Tests"):
       // A closure allocated per retry is exactly what the four hand-hoisted `UnaryOperator`
       // values in `parasite.Promise` existed to avoid; the transition must beta-reduce instead.
       def allocatesClosure(bytecode: Bytecode): Boolean =
-        bytecode.instructions.stdlib.exists: instruction =>
+        bytecode.instructions.exists: instruction =>
           instruction.opcode match
             case Bytecode.Opcode.Invokeinterface(owner, t"apply", _, _) =>
               owner.s.startsWith("scala.Function")
@@ -2086,7 +2084,7 @@ object Tests extends Suite("core", m"Rudiments Tests"):
 
       test(m"a reference read does not call nnFail"):
         methodBytecode(t"refRead").lay(true): bytecode =>
-          bytecode.instructions.stdlib.exists: instruction =>
+          bytecode.instructions.exists: instruction =>
             instruction.opcode match
               case Bytecode.Opcode.Invokestatic(_, t"nnFail", _) => true
               case _                                             => false

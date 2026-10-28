@@ -189,7 +189,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
     suite(m"Reader: round-trip a single file through a pull endpoint"):
       val bytes: Data = Tarfile(List(helloFile)).source[Data].memoize
-      val entries = Tarfile.read(bytes.stdlib.grouped(7).map(Array.from(_)).iterator.stream).toList
+      val entries = Tarfile.read(Stream(bytes.batched(7).to[Chain])).toList
 
       test(m"streamed reader produces one entry"):
         entries.length
@@ -213,20 +213,20 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       val bytes: Data = Tarfile(List(bigFile)).source[Data].memoize
 
       test(m"a 200kB body arrives as multiple chunks"):
-        Tarfile.read(bytes.stdlib.grouped(8192).map(Array.from(_)).iterator.stream).toList.head match
+        Tarfile.read(Stream(bytes.batched(8192).to[Chain])).toList.head match
           case f: Tar.Entry.File => f.data.chunks.length
           case _                 => 0
       . assert(_ > 1)
 
       test(m"the chunks reassemble the payload exactly"):
-        Tarfile.read(bytes.stdlib.grouped(8192).map(Array.from(_)).iterator.stream).toList.head match
+        Tarfile.read(Stream(bytes.batched(8192).to[Chain])).toList.head match
           case f: Tar.Entry.File => f.data.size
           case _                 => 0
       . assert(_ == 200000)
 
     suite(m"Reader: round-trip a single file"):
       val bytes = Tarfile(List(helloFile)).source[Data].chain
-      val entries = Tarfile.read(bytes.stdlib.iterator.stream).toList
+      val entries = Tarfile.read(Stream(bytes)).toList
 
       test(m"reader produces one entry"):
         entries.length
@@ -248,7 +248,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
     suite(m"Reader: round-trip multiple entries"):
       val bytes = Tarfile(List(helloFile, emptyDir)).source[Data].chain
-      val entries = Tarfile.read(bytes.stdlib.iterator.stream).toList
+      val entries = Tarfile.read(Stream(bytes)).toList
 
       test(m"two entries"):
         entries.length
@@ -279,7 +279,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
                         data  = Archive.Body() )
 
       val bytes = Tarfile(List(longFile)).source[Data].chain
-      val entries = Tarfile.read(bytes.stdlib.iterator.stream).toList
+      val entries = Tarfile.read(Stream(bytes)).toList
 
       test(m"reader produces one entry (PAX consumed silently)"):
         entries.length
@@ -300,7 +300,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
                            target = longTarget )
 
       val bytes = Tarfile(List(longSymlink)).source[Data].chain
-      val entries = Tarfile.read(bytes.stdlib.iterator.stream).toList
+      val entries = Tarfile.read(Stream(bytes)).toList
 
       test(m"single Symlink entry emitted"):
         entries.head.isInstanceOf[Tar.Entry.Symlink]
@@ -322,7 +322,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
                           data  = Archive.Body(t"#!/bin/sh\n".in[Data]) )
 
       val bytes = Tarfile(List(executable)).source[Data].chain
-      val entries = Tarfile.read(bytes.stdlib.iterator.stream).toList
+      val entries = Tarfile.read(Stream(bytes)).toList
 
       test(m"mode bits round-trip"):
         entries.head match
@@ -353,8 +353,8 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
       test(m"bad checksum is detected"):
         val good = Tarfile(List(helloFile)).source[Data].chain.to[List].asInstanceOf[List[Data]].occupied.or(panic(m"a tar has blocks"))
-        val corrupted: List[Data] = List.prepend(good.tail, Array.from(good.head.stdlib.updated(0, ('Z'.toByte: Byte))))
-        capture[Tar.Error](Tarfile.read(corrupted.stdlib.iterator.stream).toList).reason
+        val corrupted: List[Data] = List.prepend(good.tail, good.head.define(Prim, 'Z'.toByte))
+        capture[Tar.Error](Tarfile.read(Stream(corrupted.to[Chain])).toList).reason
       . assert: r =>
           r.isInstanceOf[Tar.Error.Reason.BadChecksum]
             || r.isInstanceOf[Tar.Error.Reason.BadName]
@@ -373,8 +373,8 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
         // A corrupt block cannot be trusted for anything, so nothing in it is parsed: no
         // BadName/BadOctal cascade follows the checksum failure.
         val good = Tarfile(List(helloFile)).source[Data].chain.to[List].asInstanceOf[List[Data]].occupied.or(panic(m"a tar has blocks"))
-        val corrupted: List[Data] = List.prepend(good.tail, Array.from(good.head.stdlib.updated(0, ('Z'.toByte: Byte))))
-        collectTar { Tarfile.read(corrupted.stdlib.iterator.stream).toList; () }.reasons
+        val corrupted: List[Data] = List.prepend(good.tail, good.head.define(Prim, 'Z'.toByte))
+        collectTar { Tarfile.read(Stream(corrupted.to[Chain])).toList; () }.reasons
       . assert: reasons =>
           reasons.size == 1 && reasons.head.lay(false)(_.isInstanceOf[Tar.Error.Reason.BadChecksum])
 
@@ -382,33 +382,27 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
         val good = Tarfile(List(helloFile)).source[Data].chain.to[List].asInstanceOf[List[Data]].occupied.or(panic(m"a tar has blocks"))
         // Patch the type flag to an unrecognised value and restamp the checksum
         // (bytes 148-156 count as spaces; "%06o\0 " format).
-        val flagged = good.head.stdlib.updated(156, 'q'.toByte)
-
+        val block = good.head
         var sum = 0L
-        var i = 0
 
-        while i < 512 do
-          sum += (if i >= 148 && i < 156 then 0x20 else flagged(i) & 0xff)
-          i += 1
+        block.extent.each: i =>
+          sum +=
+            ( if i.n0 >= 148 && i.n0 < 156 then 0x20
+              else if i.n0 == 156 then 'q'.toByte & 0xff
+              else block(i) & 0xff )
 
         val octal: String = java.lang.Long.toOctalString(sum).nn
         val padded: String = "000000".substring(octal.length).nn + octal
-
-        var patchedBlock = flagged
-        i = 0
-
-        while i < 6 do
-          patchedBlock = patchedBlock.updated(148 + i, padded.charAt(i).toByte)
-          i += 1
-
-        patchedBlock = patchedBlock.updated(154, 0.toByte).updated(155, ' '.toByte)
-
-        val patched: List[Data] =
-          List.prepend(good.tail, Array.from(patchedBlock))
+        val patchedBlock = Array.thaw(block)
+        patchedBlock(156) = 'q'.toByte
+        (0 until 6).each { i => patchedBlock(148 + i) = padded.charAt(i).toByte }
+        patchedBlock(154) = 0.toByte
+        patchedBlock(155) = ' '.toByte
+        val patched: List[Data] = List.prepend(good.tail, Array.freeze(patchedBlock))
 
         var entries: scala.collection.immutable.List[bitumen.Tar.Entry] = scala.Nil
         val issues = collectTar:
-          entries = Tarfile.read(patched.stdlib.iterator.stream).toList
+          entries = Tarfile.read(Stream(patched.to[Chain])).toList
           ()
 
         ( issues.reasons.size,
@@ -527,7 +521,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
                                t"comment" -> t"a test file" ) )
 
       val bytes = Tarfile(List(file)).source[Data].chain
-      val entries = Tarfile.read(bytes.stdlib.iterator.stream).toList
+      val entries = Tarfile.read(Stream(bytes)).toList
 
       test(m"atime round-trips"):
         entries.head match
@@ -981,7 +975,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
         blocks.head.sized[512].let(_(482.z).toInt)
       . assert(_ == 0)
 
-      val entries = Tarfile.read(bytes.stdlib.iterator.stream).toList
+      val entries = Tarfile.read(Stream(bytes)).toList
 
       test(m"reader recovers a Sparse entry"):
         entries.head.isInstanceOf[Tar.Entry.Sparse]
@@ -1025,7 +1019,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
       . assert(_ == '0') // first segment's offset starts with '0' octal
 
       test(m"reader recovers all 10 segments"):
-        Tarfile.read(bytes.stdlib.iterator.stream).toList.head match
+        Tarfile.read(Stream(bytes)).toList.head match
           case sp: Tar.Entry.Sparse => sp.segments.size
           case _                   => 0
       . assert(_ == 10)
@@ -1120,12 +1114,12 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
       for size <- List(1, 3, 7, 64) do
         test(m"members parse when the stream arrives in chunks of $size"):
-          List.from(Arfile.read(original.stdlib.grouped(size).map(Array.from(_)).iterator.stream))
+          List.from(Arfile.read(Stream(original.batched(size).to[Chain])))
           . map(_.name)
         . assert(_ == List(t"a.txt", t"bee.txt"))
 
         test(m"bodies survive chunking by $size"):
-          List.from(Arfile.read(original.stdlib.grouped(size).map(Array.from(_)).iterator.stream))
+          List.from(Arfile.read(Stream(original.batched(size).to[Chain])))
           . map(_.data.memoize.utf8)
         . assert(_ == List(t"aaa", t"bbbb"))
 
@@ -1150,7 +1144,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
       test(m"a corrupt header terminator raises BadTerminator"):
         val original = arArchive(List(arEntry(t"a.txt", t"aaa")))
-        val corrupt = Array.from(original.stdlib.updated(8 + 58, ('X'.toByte: Byte)))
+        val corrupt = original.define((8 + 58).z, 'X'.toByte)
         capture[Ar.Error](Arfile.read(corrupt.source[Data]).toList).reason
       . assert(_.isInstanceOf[Ar.Error.Reason.BadTerminator])
 

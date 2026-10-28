@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 import soundness.*
 import denominative.dysasymptotics.linearSize // the suite counts small record lists
+import soundness.sortingAlgorithms.timsort
 
 import codepages.utf8Codepage, charsets.utf8Charset, textSanitizers.strictSanitizer
 import threads.platformThreads
@@ -93,7 +94,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
 
       shredded.each: stream =>
         test(m"correct length after shredding"):
-          stream.map(_.length).stdlib.total
+          stream.map(_.length).total
         . assert(_ == 1000)
 
         test(m"correct content after shredding"):
@@ -118,13 +119,13 @@ object Tests extends Suite("streams", m"Turbulence tests"):
         bs     <- 1 to 8
       do
         test(m"length tests"):
-          val stream = Chain.from(string.in[Data].stdlib.grouped(bs).map(Array.from(_)))
+          val stream = string.in[Data].batched(bs).to[Chain]
           val result = stream.read[Text]
           result.in[Data].length
         . assert(_ == string.in[Data].length)
 
         test(m"roundtrip tests"):
-          val stream = Chain.from(string.in[Data].stdlib.grouped(bs).map(Array.from(_)))
+          val stream = string.in[Data].batched(bs).to[Chain]
           val result = stream.read[Text]
 
           result.s
@@ -614,8 +615,8 @@ object Tests extends Suite("streams", m"Turbulence tests"):
 
       def check(policy: Text, cases: List[(Text, List[Text])])(using LineSeparation): Unit =
         for fragment <- List(-1, 0, 1, 3) do
-          cases.stdlib.zipWithIndex.each: (row, index) =>
-            test(m"$policy, case $index, chunk size $fragment"):
+          cases.indexed.each: (row, ordinal) =>
+            test(m"$policy, case ${ordinal.n0}, chunk size $fragment"):
               splitLines(row(0), fragment)
             . assert(_ == row(1))
 
@@ -623,8 +624,8 @@ object Tests extends Suite("streams", m"Turbulence tests"):
         // the byte duct must agree with it on every policy, every case and every
         // fragmentation.
         for fragment <- List(0, 1, 3) do
-          cases.stdlib.zipWithIndex.each: (row, index) =>
-            test(m"$policy, case $index, byte chunk size $fragment"):
+          cases.indexed.each: (row, ordinal) =>
+            test(m"$policy, case ${ordinal.n0}, byte chunk size $fragment"):
               splitBytes(row(0), fragment)
             . assert(_ == row(1))
 
@@ -825,8 +826,8 @@ object Tests extends Suite("streams", m"Turbulence tests"):
 
           val merged = Confluence(endpoints.map(_.asInstanceOf[Stream[Data] over Credit])*)
           val gathered = Gather2().ingest(merged)
-          gathered.data.stdlib.sorted
-      . assert(_ == (1 to 4).flatMap { index => scala.List.fill(1000)(index.toByte) }.sorted)
+          gathered.data.to[List].sort
+      . assert(_ == List.from((1 to 4).flatMap { index => scala.List.fill(1000)(index.toByte) }))
 
       test(m"manifold delivers the whole stream to every subscriber"):
         supervise:
@@ -1006,15 +1007,15 @@ object Tests extends Suite("streams", m"Turbulence tests"):
 
       test(m"sink.buffered stages by the buffering block size"):
         given Buffering = probeBuffering(7, 2)
-        var sizes: sci.List[Int] = sci.Nil
+        var sizes: List[Int] = Nil
 
         val intake = Sink.buffered[Unit, Data]
-          ((), (_, chunks) => sizes = chunks.stdlib.to(sci.List).map(_.length))
+          ((), (_, chunks) => sizes = chunks.map(_.length).to[List])
 
         intake.put(Data.fill(8)(_.toByte))
         intake.finish()
         sizes
-      . assert(_ == sci.List(7, 1))
+      . assert(_ == List(7, 1))
 
       // `OutputStream.write` permits the caller to reuse its array afterwards, and the chunk
       // is read only when the stream is consumed, so aliasing the caller's array would let a

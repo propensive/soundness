@@ -1744,10 +1744,10 @@ object Tels extends Tels2:
 
       case Scalar(validators, encoding, patterns) =>
         if encoding.present || !patterns.nil then abort(Error(Error.Reason.InlineScalar(keyword)))
-        else validators.stdlib.toList match
-          case scala.Nil => t"String"
+        else validators.to[List] match
+          case Nil => t"String"
 
-          case scala.List(single) => single.s match
+          case single :: Nil => single.s match
             case "identifier" => t"Identifier"
             case "type-name"  => t"TypeName"
             case "sigil"      => t"Sigil"
