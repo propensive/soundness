@@ -253,15 +253,15 @@ object Scalac:
         ( using Scalac.Session
                   ( target.classpath(), emission.flags + target.scalac.commandLineArguments ) )
 
-case class Scalac[version <: Scalac.Versions, universe <: Universe] private
-  ( options: List[Scalac.Option[version]] ):
+case class Scalac[release <: Scalac.Versions, universe <: Universe] private
+  ( options: List[Scalac.Option[release]] ):
 
   def commandLineArguments: List[Text] = options.bind(_.flags)
   def version: Text = Scalac.version
 
-  def targeting[universe2 <: Universe]: Scalac[version, universe2] = new Scalac(options)
+  def targeting[universe2 <: Universe]: Scalac[release, universe2] = new Scalac(options)
 
-  def on(classpath: LocalClasspath): Scalac.Setup[version, universe] =
+  def on(classpath: LocalClasspath): Scalac.Setup[release, universe] =
     Scalac.Setup(this, classpath)
 
 

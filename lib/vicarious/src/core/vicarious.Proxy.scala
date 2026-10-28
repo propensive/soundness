@@ -40,12 +40,13 @@ object Proxy:
   transparent inline given derived: [key, value] => Proxy[key, value, 0] =
     ${internal.proxy[key, value]}
 
-// `index` is the runtime witness of the type-level `id` (the flattened path index), so navigation
-// and pattern-matching work for a proxy whose `id` is statically abstract (`Nat`) — e.g. the
-// scrutinee of a `case root.cto.joined() => …` pattern, whose `id` cannot be read via `ValueOf`.
-class Proxy[key, value, +id <: Nat](index: Int) extends Selectable, Dynamic, Findable:
+// `index` is the runtime witness of the type-level `ordinal` (the flattened path index), so
+// navigation and pattern-matching work for a proxy whose `ordinal` is statically abstract (`Nat`)
+// — e.g. the scrutinee of a `case root.cto.joined() => …` pattern, whose `ordinal` cannot be
+// read via `ValueOf`.
+class Proxy[key, value, +ordinal <: Nat](index: Int) extends Selectable, Dynamic, Findable:
   transparent inline def selectDynamic(key: String): value | Proxy[key, value, Nat] =
-    ${internal.dereference[key, value, id]('key)}
+    ${internal.dereference[key, value, ordinal]('key)}
 
   def id: Int = index
   inline def apply()(using catalog: Catalog[key, value]): value = catalog.values(index)

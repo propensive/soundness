@@ -72,7 +72,7 @@ object Job:
 // a single owner.
 //
 // A pipeline has a process at each end, and they are not the same one: its output comes from the
-// last process, and its input goes to the first. `process` is therefore the tail — whose output,
+// last process, and its input goes to the first. `tail` is therefore that last one — whose output,
 // exit status and pid speak for the pipeline — and `head` is where input is written, which for a
 // single command is the same process. The distinction is not cosmetic: `startPipeline` replaces
 // every process's standard input but the first's with a null stream that throws on any write.
@@ -80,26 +80,26 @@ object Job:
 // while another awaits its exit and the caller may abort it, and `java.lang.Process` is
 // thread-safe.
 class Job[+exec <: Label, result] private[guillotine]
-  ( process: java.lang.Process, head: java.lang.Process )
+  ( tail: java.lang.Process, head: java.lang.Process )
 extends Subprocess, Process.Ref, anticipation.Durable:
 
-  private[guillotine] def this(process: java.lang.Process) = this(process, process)
+  private[guillotine] def this(tail: java.lang.Process) = this(tail, tail)
 
-  def pid: Pid = Pid(process.pid)
-  def alive: Boolean = process.isAlive
-  def attend(): Unit = process.waitFor()
+  def pid: Pid = Pid(tail.pid)
+  def alive: Boolean = tail.isAlive
+  def attend(): Unit = tail.waitFor()
 
   // The process's standard output (or error) as a single-owner pull endpoint:
   // each call reads on from the live pipe, and explicit `memoize` replaces any
   // implicit caching.
   def stdout()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
-    summon[(ji.InputStream is Streamable by Data over Credit)^].stream(process.getInputStream.nn)
+    summon[(ji.InputStream is Streamable by Data over Credit)^].stream(tail.getInputStream.nn)
 
   def stderr()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
-    summon[(ji.InputStream is Streamable by Data over Credit)^].stream(process.getErrorStream.nn)
+    summon[(ji.InputStream is Streamable by Data over Credit)^].stream(tail.getErrorStream.nn)
 
-  def text(): Text = String(process.getInputStream.nn.readAllBytes().nn, "UTF-8").nn.tt
-  def errorText(): Text = String(process.getErrorStream.nn.readAllBytes().nn, "UTF-8").nn.tt
+  def text(): Text = String(tail.getInputStream.nn.readAllBytes().nn, "UTF-8").nn.tt
+  def errorText(): Text = String(tail.getErrorStream.nn.readAllBytes().nn, "UTF-8").nn.tt
 
   // Standard output as a record stream of its lines: UTF-8 through the duct
   // kernel, with adaptive line separation — matching the treatment of `\n`,
@@ -109,7 +109,7 @@ extends Subprocess, Process.Ref, anticipation.Durable:
     import turbulence.lineSeparation.adaptiveLinefeedLineSeparation
     stdout().delineate
 
-  def status(): Int = process.waitFor()
+  def status(): Int = tail.waitFor()
 
 
   def stdin[chunk](stream: (Stream[chunk] over Credit)^)
@@ -135,22 +135,22 @@ extends Subprocess, Process.Ref, anticipation.Durable:
     ( using computable: (result is Computable)^ )
   :   (Tactic[Async.Error]^) ?->{this, computable} result =
 
-    if process.waitFor(duration.generic/1_000_000L, juc.TimeUnit.MILLISECONDS)
+    if tail.waitFor(duration.generic/1_000_000L, juc.TimeUnit.MILLISECONDS)
     then computable.compute(this)
     else contingency.abort(Async.Error(Async.Error.Reason.Timeout))
 
   // Real `using` clauses rather than the `logs` sugar, as for `Executable.exec`.
-  def exitStatus()(using (Exec.Event is Loggable)^): Exit = process.waitFor() match
+  def exitStatus()(using (Exec.Event is Loggable)^): Exit = tail.waitFor() match
     case 0     => Log.fine(Exec.Event.ProcessExit(pid, 0)); Exit.Ok
     case other => Log.warn(Exec.Event.ProcessExit(pid, other)); Exit.Fail(other)
 
   def abort()(using (Exec.Event is Loggable)^): Unit =
     Log.info(Exec.Event.AbortProcess(pid))
-    process.destroy()
+    tail.destroy()
 
   def kill()(using (Exec.Event is Loggable)^): Unit =
     Log.warn(Exec.Event.KillProcess(pid))
-    process.destroyForcibly()
+    tail.destroyForcibly()
 
   def process(using Tactic[Pid.Error]^): Process^ = Process(pid)
 

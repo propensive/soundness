@@ -304,17 +304,17 @@ object Dictionary:
           Array.freeze(failArr), Array.freeze(dictLinkArr), alphabet, summon )
 
 // The arrays are frozen: built once, then never written, so a dictionary may be shared freely.
-final class Dictionary[+value]
+final class Dictionary[+meaning]
   ( val children: Array[Int]^{},
     val values:   Array[AnyRef | Null]^{},
     val depth:    Array[Int]^{},
     val fail:     Array[Int]^{},
     val dictLink: Array[Int]^{},
     val alphabet: Dictionary.Alphabet,
-    classTag:     ClassTag[value @uncheckedVariance] ):
+    classTag:     ClassTag[meaning @uncheckedVariance] ):
 
   // The exposed `values` array is `Array[AnyRef | Null]` rather than
-  // `Array[value | Null]` because Array is invariant and the JVM checks
+  // `Array[meaning | Null]` because Array is invariant and the JVM checks
   // the runtime array type on every field access — exposing a typed view
   // would cost a `ClassCastException` on the first reference. Callers
   // who want the typed view use `value(node)`, which casts at the access
@@ -322,7 +322,7 @@ final class Dictionary[+value]
 
   // Re-expose the `ClassTag` to the rebuild path so `+`/`++` can allocate
   // their fresh values array without the caller having to summon one.
-  private[gossamer] given valueTag: ClassTag[value @uncheckedVariance] = classTag
+  private[gossamer] given valueTag: ClassTag[meaning @uncheckedVariance] = classTag
 
   inline def root: Int = 0
 
@@ -334,10 +334,11 @@ final class Dictionary[+value]
     if sl < 0 then -1 else children.readUnchecked(node*alphabet.size + sl)
 
   // Value at `node`, or `null` if no key terminates here.
-  inline def value(node: Int): value | Null = values.readUnchecked(node).asInstanceOf[value | Null]
+  inline def value(node: Int): meaning | Null =
+    values.readUnchecked(node).asInstanceOf[meaning | Null]
 
   // Exact lookup of a full key. `Unset` if the key is not in the trie.
-  def apply(key: Text): Optional[value] =
+  def apply(key: Text): Optional[meaning] =
     val s = key.s
     val n = s.length
     var node = 0
@@ -349,12 +350,12 @@ final class Dictionary[+value]
 
     if node < 0 then Unset else
       val v = values.readUnchecked(node)
-      if v == null then Unset else v.asInstanceOf[value]
+      if v == null then Unset else v.asInstanceOf[meaning]
 
   // Slice variant: lookup against `buffer[offset, offset + length)`
   // without allocating a `Text`. Useful in hot loops that already hold a
   // char buffer (e.g. parser word boundaries).
-  def apply(buffer: scala.Array[Char], offset: Int, length: Int): Optional[value] =
+  def apply(buffer: scala.Array[Char], offset: Int, length: Int): Optional[meaning] =
     var node = 0
     var i = 0
 
@@ -364,7 +365,7 @@ final class Dictionary[+value]
 
     if node < 0 then Unset else
       val v = values.readUnchecked(node)
-      if v == null then Unset else v.asInstanceOf[value]
+      if v == null then Unset else v.asInstanceOf[meaning]
 
   // Number of stored entries (nodes whose value is non-null).
   def size: Int =
@@ -378,13 +379,13 @@ final class Dictionary[+value]
     count
 
   // Iterate over stored values.
-  def iterator: Iterable[value] =
-    val buffer = ArrayBuffer[value]()
+  def iterator: Iterable[meaning] =
+    val buffer = ArrayBuffer[meaning]()
     var i = 0
 
     while i < values.length do
       val v = values.readUnchecked(i)
-      if v != null then buffer += v.asInstanceOf[value]
+      if v != null then buffer += v.asInstanceOf[meaning]
       i += 1
 
     buffer
@@ -392,14 +393,14 @@ final class Dictionary[+value]
   // Iterate over `(key, value)` pairs by walking the trie in alphabet
   // order. Allocates an `ArrayBuffer` and a `StringBuilder` shared
   // across recursive descents.
-  def entries: Iterable[(Text, value)] =
-    val buffer = ArrayBuffer[(Text, value)]()
+  def entries: Iterable[(Text, meaning)] =
+    val buffer = ArrayBuffer[(Text, meaning)]()
     val key = new java.lang.StringBuilder
     val alpha = alphabet.size
 
     def walk(node: Int): Unit =
       val v = values.readUnchecked(node)
-      if v != null then buffer += ((key.toString.nn.tt, v.asInstanceOf[value]))
+      if v != null then buffer += ((key.toString.nn.tt, v.asInstanceOf[meaning]))
       var sl = 0
 
       while sl < alpha do
@@ -416,14 +417,14 @@ final class Dictionary[+value]
     buffer
 
   // Add an entry, returning a new Dictionary. Widens the value type to
-  // include the new entry's value type via the standard `[v2 >: value]`
+  // include the new entry's value type via the standard `[meaning2 >: meaning]`
   // bound (`+`/`++` follow the same pattern).
-  def add[value2 >: value: ClassTag](key: Text, value: value2): Dictionary[value2] =
+  def add[meaning2 >: meaning: ClassTag](key: Text, value: meaning2): Dictionary[meaning2] =
     this + (key -> value)
 
-  def + [value2 >: value: ClassTag](entry: (Text, value2)): Dictionary[value2] =
+  def + [meaning2 >: meaning: ClassTag](entry: (Text, meaning2)): Dictionary[meaning2] =
     this ++ Iterable(entry)
 
-  def ++ [value2 >: value: ClassTag](extras: Iterable[(Text, value2)]): Dictionary[value2] =
-    val combined = entries.asInstanceOf[Iterable[(Text, value2)]] ++ extras
-    Dictionary[value2](combined.toSeq*)
+  def ++ [meaning2 >: meaning: ClassTag](extras: Iterable[(Text, meaning2)]): Dictionary[meaning2] =
+    val combined = entries.asInstanceOf[Iterable[(Text, meaning2)]] ++ extras
+    Dictionary[meaning2](combined.toSeq*)

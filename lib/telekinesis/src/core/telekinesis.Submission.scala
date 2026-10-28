@@ -40,12 +40,12 @@ import legerdemain.*
 import prepositional.*
 import vacuous.*
 
-case class Submission[value](query: Optional[Query]):
+case class Submission[content](query: Optional[Query]):
   def fresh: Boolean = query.absent
 
-  def optional(using Tactic[Hazard] ?=> value is Decodable in Query): Optional[value] =
-    safely(query.let(_.as[value]))
+  def optional(using Tactic[Hazard] ?=> content is Decodable in Query): Optional[content] =
+    safely(query.let(_.as[content]))
 
   def submitted: Boolean = query.present
-  def valid(using Tactic[Hazard] ?=> value is Decodable in Query): Boolean = optional.present
-  def value(using value is Decodable in Query): Optional[value] = query.let(_.as[value])
+  def valid(using Tactic[Hazard] ?=> content is Decodable in Query): Boolean = optional.present
+  def value(using content is Decodable in Query): Optional[content] = query.let(_.as[content])

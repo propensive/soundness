@@ -103,7 +103,7 @@ abstract class Tabulation[text: ClassTag]():
         val rowDecorations: List[Optional[text -> text]] =
           if decorationIterator.hasNext then decorationIterator.next() else Nil
 
-        layout.row(cells, rowDecorations)
+        layout.tableRow(cells, rowDecorations)
 
     Grid
       ( List

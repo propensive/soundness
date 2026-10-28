@@ -108,11 +108,11 @@ object Interaction:
 
     def result(editor: LineEditor): Text = editor.value
 
-trait Interaction[result, question]:
+trait Interaction[answer, question]:
   def before(): Unit = ()
   def render(state: Optional[question], menu: question): Unit
   def after(): Unit = ()
-  def result(state: question): result
+  def result(state: question): answer
 
   // Which event submits the answer, given the current state (default: Enter). A
   // multi-line editor overrides this to consult the editor's mode — e.g. submitting
@@ -132,7 +132,7 @@ trait Interaction[result, question]:
   final def recur
     ( events: Iterator[Terminal.Event], state: question, oldState: Optional[question] )
     ( key: (question, Terminal.Event) => question )
-  :   Optional[result] =
+  :   Optional[answer] =
 
     render(oldState, state)
 
@@ -152,7 +152,7 @@ trait Interaction[result, question]:
 
   def apply(events: Iterator[Terminal.Event], state: question)
     ( key: (question, Terminal.Event) => question )
-  :   Optional[result] =
+  :   Optional[answer] =
 
     before()
     recur(events, state, Unset)(key).also(after())
