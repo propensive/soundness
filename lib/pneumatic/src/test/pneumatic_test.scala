@@ -740,20 +740,18 @@ object Tests extends Suite("compression", m"Pneumatic tests"):
         // A loop, not a recursion: `unsafeAssumeSeparate` takes its body as a lambda, so a
         // recursive call inside it is not in tail position, and at three bytes per refill this
         // runs for enough steps to overflow the stack.
-        // [closure-capture] a local def or closure over a fresh stream reads it back read-only
-        scala.caps.unsafe.unsafeAssumeSeparate:
-          var draining = true
+        var draining = true
 
-          while draining do stream.refill(Credit(3)) match
-            case count: Int =>
-              val window = unsafely(stream.unsafeStorage).asInstanceOf[scala.Array[Byte]]
-              var index = 0
-              while index < count do
-                builder += window(stream.start + index)
-                index += 1
-              stream.skip(count)
+        while draining do stream.refill(Credit(3)) match
+          case count: Int =>
+            val window = unsafely(stream.unsafeStorage).asInstanceOf[scala.Array[Byte]]
+            var index = 0
+            while index < count do
+              builder += window(stream.start + index)
+              index += 1
+            stream.skip(count)
 
-            case _ => draining = false
+          case _ => draining = false
 
         List.from(builder.result())
       . assert(_ == List.from(mixed.stdlib))

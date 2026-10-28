@@ -1353,17 +1353,13 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
         PdfFile(document(catalog, body)).open():
           pdf(2, 0) match
             case body: Cos.Body =>
-              // [closure-capture] local drain def over spring's stream from document
-              scala.caps.unsafe.unsafeAssumeSeparate:
-                drain(pdf.spring(body)()).utf8
+              drain(pdf.spring(body)()).utf8
 
             case _ =>
               t""
 
       test(m"a raw payload streams in chunks"):
-        // [closure-capture] calls local streamed def over fresh document
-        scala.caps.unsafe.unsafeAssumeSeparate:
-          streamed(t"<< /Length 11 >>\nstream\nHello world\nendstream".in[Data])
+        streamed(t"<< /Length 11 >>\nstream\nHello world\nendstream".in[Data])
       . assert(_ == t"Hello world")
 
       test(m"a Flate payload streams through the zlib duct"):
@@ -1372,15 +1368,12 @@ object Tests extends Suite("pdf", m"Facsimile tests"):
         val body = t"<< /Length ${payload.length} /Filter /FlateDecode >>\nstream\n".in[Data]
           ++ payload ++ t"\nendstream".in[Data]
 
-        // [closure-capture] calls local streamed def over fresh document
-        scala.caps.unsafe.unsafeAssumeSeparate(streamed(body))
+        streamed(body)
       . assert(_ == t"streamed and inflated")
 
       test(m"a gathered filter delivers through flush"):
-        // [closure-capture]
-        scala.caps.unsafe.unsafeAssumeSeparate:
-          streamed(t"<< /Length 11 /Filter /ASCIIHexDecode >>\nstream\n48656C6C6F>\nendstream"
-            . in[Data])
+        streamed(t"<< /Length 11 /Filter /ASCIIHexDecode >>\nstream\n48656C6C6F>\nendstream"
+          . in[Data])
       . assert(_ == t"Hello")
 
       test(m"a spring re-materializes the same content"):

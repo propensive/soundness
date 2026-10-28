@@ -1038,17 +1038,16 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
         val stream = chunks.iterator.stream.via(summon[Charset])
         val builder = StringBuilder()
 
-        def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:  // [closure-capture]
-         stream.refill(Credit(8)) match
+        def recur(stream: (Stream[Text] over Credit)^): Unit = stream.refill(Credit(8)) match
           case count: Int =>
             val window = unsafely(stream.unsafeStorage).asInstanceOf[scala.Array[Char]]
             builder.append(String(window, stream.start, count))
             stream.skip(count)
-            scala.caps.unsafe.unsafeAssumeSeparate(recur())  // [closure-capture]
+            recur(stream)
 
           case _ => ()
 
-        scala.caps.unsafe.unsafeAssumeSeparate(recur())  // [closure-capture]
+        recur(stream)
         builder.toString.tt
       . assert(_ == exotic)
 
@@ -1071,17 +1070,16 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
         val stream = malformed.stream.via(summon[Charset])
         val builder = StringBuilder()
 
-        def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:  // [closure-capture]
-         stream.refill(Credit(8)) match
+        def recur(stream: (Stream[Text] over Credit)^): Unit = stream.refill(Credit(8)) match
           case count: Int =>
             val window = unsafely(stream.unsafeStorage).asInstanceOf[scala.Array[Char]]
             builder.append(String(window, stream.start, count))
             stream.skip(count)
-            scala.caps.unsafe.unsafeAssumeSeparate(recur())  // [closure-capture]
+            recur(stream)
 
           case _ => ()
 
-        scala.caps.unsafe.unsafeAssumeSeparate(recur())  // [closure-capture]
+        recur(stream)
         builder.toString.tt
       . assert(_ == summon[Charset].decoded(malformed))
 
@@ -1090,16 +1088,16 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
         val decoded = gathered.data.stream.via(summon[Charset])
         val builder = StringBuilder()
 
-        def recur(): Unit = decoded.refill(Credit(4)) match
+        def recur(decoded: (Stream[Text] over Credit)^): Unit = decoded.refill(Credit(4)) match
           case count: Int =>
             val window = unsafely(decoded.unsafeStorage).asInstanceOf[scala.Array[Char]]
             builder.append(String(window, decoded.start, count))
             decoded.skip(count)
-            scala.caps.unsafe.unsafeAssumeSeparate(recur())  // [closure-capture]
+            recur(decoded)
 
           case _ => ()
 
-        scala.caps.unsafe.unsafeAssumeSeparate(recur())  // [closure-capture]
+        recur(decoded)
         builder.toString.tt
       . assert(_ == exotic)
 
@@ -1108,8 +1106,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
         val stream = Stream[Array[String]^{}](records)
         var collected: List[String] = Nil
 
-        def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:  // [closure-capture]
-         stream.refill(Credit(7)) match
+        def recur(stream: (Stream[Array[String]^{}] over Credit)^): Unit = stream.refill(Credit(7)) match
           case count: Int =>
             val window = unsafely(stream.unsafeStorage).asInstanceOf[scala.Array[AnyRef]]
 
@@ -1117,11 +1114,11 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
             do collected = window(stream.start + index).asInstanceOf[String] :: collected
 
             stream.skip(count)
-            scala.caps.unsafe.unsafeAssumeSeparate(recur())  // [closure-capture]
+            recur(stream)
 
           case _ => ()
 
-        scala.caps.unsafe.unsafeAssumeSeparate(recur())  // [closure-capture]
+        recur(stream)
         collected.reverse
       . assert(_ == List.from((1 to 100).map { index => s"record-$index" }))
 
@@ -1229,20 +1226,26 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
       . assert(_ == List())
 
       test(m"chain construction pulls nothing"):
-        var pulled: Int = 0
-        val chunks = Iterator(Array[Byte](1.toByte), Array[Byte](2.toByte)).map { chunk => pulled += 1; chunk }
+        val pulled = Atomic.Int(0)
+
+        val chunks = Iterator(Array[Byte](1.toByte), Array[Byte](2.toByte)).map: chunk =>
+          pulled() = pulled() + 1
+          chunk
+
         val list = chunks.stream.chain
-        // [closure-capture] a local def or closure over a fresh stream reads it back read-only
-        scala.caps.unsafe.unsafeAssumeSeparate(pulled)
+        pulled()
       . assert(_ == 0)
 
       test(m"chain pulls chunks only as cells are forced"):
-        var pulled: Int = 0
-        val chunks = Iterator(Array[Byte](1.toByte), Array[Byte](2.toByte)).map { chunk => pulled += 1; chunk }
+        val pulled = Atomic.Int(0)
+
+        val chunks = Iterator(Array[Byte](1.toByte), Array[Byte](2.toByte)).map: chunk =>
+          pulled() = pulled() + 1
+          chunk
+
         val list = chunks.stream.chain
         list.head
-        // [closure-capture] a local def or closure over a fresh stream reads it back read-only
-        scala.caps.unsafe.unsafeAssumeSeparate(pulled)
+        pulled()
       . assert(_ == 1)
 
       test(m"chain reassembles a transformed pipeline"):
