@@ -54,7 +54,7 @@ object Tests extends Suite("mime", m"Gesticulate tests"):
         def go(offset: Int): Chain[Data] =
           if offset >= data.length then Chain() else
             val end = math.min(offset + size, data.length)
-            Array.from(data.stdlib.slice(offset, end)) #:: go(end)
+            data.segment(offset.z till end.z) #:: go(end)
         go(0)
 
       def bodyText(part: Part): Text = part.read[Data].utf8
@@ -198,7 +198,7 @@ object Tests extends Suite("mime", m"Gesticulate tests"):
         def go(offset: Int): Chain[Data] =
           if offset >= data.length then Chain() else
             val end = math.min(offset + size, data.length)
-            Array.from(data.stdlib.slice(offset, end)) #:: go(end)
+            data.segment(offset.z till end.z) #:: go(end)
         go(0)
 
       def binaryWire(body: Data, rest: Text = t"--xyz--\r\n"): Data =
@@ -220,8 +220,8 @@ object Tests extends Suite("mime", m"Gesticulate tests"):
 
       for blockSize <- List(1, 7, 50, 4095, 4096, 65536) do
         test(m"100 KB binary body round-trips at block size $blockSize"):
-          val part = Multipart.parse(bytesChunks(binaryWire(large), blockSize)).parts.stdlib.head
-          same(part.read[Data], large)
+          Multipart.parse(bytesChunks(binaryWire(large), blockSize)).parts.head.lay(false): part =>
+            same(part.read[Data], large)
 
         . assert(_ == true)
 
@@ -241,11 +241,11 @@ object Tests extends Suite("mime", m"Gesticulate tests"):
       . assert(_ == t"")
 
       test(m"A body may be read in two pieces"):
-        val part = Multipart.parse(bytesChunks(binaryWire(large), 4096)).parts.stdlib.head
-        val first = part.body()
-        val piece = first.refill(Credit(1000)).or(0)
-        first.skip(piece)
-        piece + part.read[Data].length
+        Multipart.parse(bytesChunks(binaryWire(large), 4096)).parts.head.lay(0): part =>
+          val first = part.body()
+          val piece = first.refill(Credit(1000)).or(0)
+          first.skip(piece)
+          piece + part.read[Data].length
 
       . assert(_ == 100000)
 
@@ -263,8 +263,8 @@ object Tests extends Suite("mime", m"Gesticulate tests"):
 
         test(m"Body of $size bytes, delimiter at a window edge, round-trips"):
           val body = binary(size, size)
-          val part = Multipart.parse(bytesChunks(binaryWire(body), 4096)).parts.stdlib.head
-          same(part.read[Data], body)
+          Multipart.parse(bytesChunks(binaryWire(body), 4096)).parts.head.lay(false): part =>
+            same(part.read[Data], body)
 
         . assert(_ == true)
 

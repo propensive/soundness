@@ -33,6 +33,7 @@
 package panopticon
 
 import soundness.*
+import denominative.dysasymptotics.linearAccess // the suite indexes small fixture lists
 
 case class Organization(name: String, leader: Person)
 case class Person(name: String, age: Int, role: Role)
@@ -143,7 +144,7 @@ object Tests extends Suite("optics", m"Panopticon tests"):
          _.depts(Prim).lead.role.name = "Y",
          _.name                       = "Z",
          _.hq.city                    = "W" )
-      ( r.depts.stdlib.head.lead.addr.city, r.depts.stdlib.head.lead.role.name, r.name, r.hq.city )
+      r.depts.head.lay((t"", t"", t"", t"")) { d => (d.lead.addr.city, d.lead.role.name, r.name, r.hq.city) }
     . assert(_ == ("X", "Y", "Z", "W"))
 
     test(m"leaf collision: later write wins"):
@@ -169,7 +170,7 @@ object Tests extends Suite("optics", m"Panopticon tests"):
       val r = org.lens
        ( _.depts(Prim).name      = "Renamed",
          _.depts(Prim).lead.name = "NewLead" )
-      ( r.depts.stdlib.head.name, r.depts.stdlib.head.lead.name )
+      r.depts.head.lay((t"", t"")) { d => (d.name, d.lead.name) }
     . assert(_ == ("Renamed", "NewLead"))
 
     test(m"prior used inside multi-update"):
@@ -198,7 +199,7 @@ object Tests extends Suite("optics", m"Panopticon tests"):
       val r = org.lens
        ( _.depts(Each).lead.role.name  = "Boss",
          _.depts(Prim).lead.role.count = 0 )
-      ( r.depts.stdlib(0).lead.role, r.depts.stdlib(1).lead.role )
+      r.depts.at(Prim).let { a => r.depts.at(Sec).let { b => (a.lead.role, b.lead.role) } }
     . assert(_ == (Role("Boss", 0), Role("Boss", 300)))
 
     test(m"Filter[T] traversal forces fallback"):
@@ -216,7 +217,7 @@ object Tests extends Suite("optics", m"Panopticon tests"):
        ( _.depts(Prim).members(Filter[Employee](_.age > 35)).age = 99,
          _.depts(Each).lead.role.name  = "Boss",
          _.depts(Each).lead.role.count = 0 )
-      ( r.depts.stdlib(0).lead.role, r.depts.stdlib(0).members.map(_.age) )
+      r.depts.at(Prim).let { d => (d.lead.role, d.members.map(_.age)) }
     . assert(_ == (Role("Boss", 0), List(30, 99)))
 
     test(m"three updates sharing a Prim traversal"):
@@ -225,7 +226,7 @@ object Tests extends Suite("optics", m"Panopticon tests"):
        ( _.depts(Prim).lead.name     = "Renamed",
          _.depts(Prim).lead.age      = 99,
          _.depts(Prim).lead.role.name = "Boss" )
-      ( r.depts.stdlib.head.lead.name, r.depts.stdlib.head.lead.age, r.depts.stdlib.head.lead.role.name )
+      r.depts.head.lay((t"", 0, t"")) { d => (d.lead.name, d.lead.age, d.lead.role.name) }
     . assert(_ == ("Renamed", 99, "Boss"))
 
     case class Bag(items: Sequence[Int])

@@ -421,7 +421,7 @@ object Tests extends Suite("lsp", m"Exegesis Tests"):
           t"""{"jsonrpc":"2.0","id":8,"method":"textDocument/inlayHint","params":{"textDocument":{"uri":"file:///x"},"range":{"start":{"line":0,"character":0},"end":{"line":0,"character":1}}}}"""
           . as[Json]
 
-        TestServer.dispatch(request).let(_.as[JsonRpc.Response].result.as[List[InlayHint]].stdlib.head.kind)
+        TestServer.dispatch(request).let(_.as[JsonRpc.Response].result.as[List[InlayHint]].head.let(_.kind))
       . assert(_ == InlayHintKind.Type)
 
       test(m"a registered command is dispatched by name"):

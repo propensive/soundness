@@ -11,7 +11,7 @@ lib/acyclicity/src/core/acyclicity.Poset.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/acyclicity/src/core/acyclicity.Search.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0
 lib/acyclicity/src/core/acyclicity.Topology.scala	1	0	0	0	2	0	0	0	2	0	0	0	0	0	1	0
 lib/acyclicity/src/core/acyclicity_core.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0
-lib/acyclicity/src/test/acyclicity_test.scala	0	0	0	0	0	0	0	0	0	0	15	2	0	0	0	0
+lib/acyclicity/src/test/acyclicity_test.scala	0	0	0	0	0	0	0	0	0	0	13	0	0	0	0	0
 lib/adversaria/src/core/adversaria.internal.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/ambience/src/core/ambience.Searchpath.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0
 lib/ambience/src/core/ambience.Variable.scala	2	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
@@ -76,15 +76,14 @@ lib/cacophony/src/core/cacophony.Audio.scala	0	0	0	0	1	2	0	0	0	0	0	0	0	0	0	0
 lib/cacophony/src/core/cacophony.Feed.scala	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/cacophony/src/core/cacophony.Outlet.scala	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0
 lib/cacophony/src/core/cacophony.Pcm.scala	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0
-lib/cacophony/src/test/cacophony_test.scala	0	0	0	0	0	0	0	0	0	0	2	2	0	0	0	0
 lib/caduceus/src/resend/caduceus_core.scala	1	1	0	0	0	0	0	0	0	0	1	1	0	0	0	0
-lib/caduceus/src/test/caduceus_test.scala	0	0	2	0	0	0	0	0	0	0	2	2	0	0	0	0
+lib/caduceus/src/test/caduceus_test.scala	0	0	2	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/caesura/src/core/caesura.Dsv.scala	1	0	0	0	0	0	0	0	2	2	7	3	0	0	0	0
 lib/caesura/src/core/caesura.Sheet.scala	3	0	2	0	0	2	0	0	1	2	1	0	0	1	1	0
 lib/caesura/src/core/caesura.Spannable.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
 lib/caesura/src/core/caesura.dynamicAccess.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0
 lib/caesura/src/core/caesura_core.scala	0	0	2	0	0	0	0	0	0	0	1	0	1	0	0	0
-lib/caesura/src/test/caesura.AccrualTests.scala	0	0	1	0	0	0	0	0	0	0	1	1	0	0	0	0
+lib/caesura/src/test/caesura.AccrualTests.scala	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/caesura/src/test/caesura_test.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
 lib/camouflage/src/core/camouflage.Cache.scala	0	0	2	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/camouflage/src/core/camouflage.LruCache.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
@@ -119,7 +118,7 @@ lib/contingency/src/core/contingency.Recovery.scala	0	0	0	0	0	0	0	0	1	0	0	0	0	0	
 lib/contingency/src/core/contingency.Venture.scala	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0
 lib/contingency/src/core/contingency.internal.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0
 lib/corpuscular/src/core/corpuscular_core.scala	0	0	0	0	0	6	0	0	0	0	0	0	0	0	0	0
-lib/corpuscular/src/test/corpuscular_test.scala	0	0	0	0	0	13	0	0	0	0	2	2	0	0	0	0
+lib/corpuscular/src/test/corpuscular_test.scala	0	0	0	0	0	13	0	0	0	0	0	0	0	0	0	0
 lib/cosmopolite/src/core/cosmopolite.Polyglot.scala	0	0	0	0	0	0	0	0	0	0	5	1	0	0	0	0
 lib/degustation/src/core/degustation.Inspection.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
 lib/degustation/src/tasty/degustation.Classfile.scala	0	0	0	0	0	1	0	0	0	0	0	0	0	0	1	0
@@ -178,7 +177,7 @@ lib/enigmatic/src/core/enigmatic.SoundnessBlockCipher.scala	0	0	0	0	0	6	0	0	0	0	
 lib/enigmatic/src/core/enigmatic.SymmetricKey.scala	0	0	0	0	1	0	0	0	0	0	1	0	1	0	0	0
 lib/enigmatic/src/core/enigmatic_uncloak.scala	0	0	0	0	7	1	0	0	0	0	0	0	0	0	0	0
 lib/enigmatic/src/cose/enigmatic.Cose.scala	0	0	0	0	3	0	0	0	0	0	0	0	0	0	0	0
-lib/enigmatic/src/test/enigmatic_test.scala	0	0	0	0	7	7	0	0	0	0	4	1	0	0	0	0
+lib/enigmatic/src/test/enigmatic_test.scala	0	0	0	0	7	7	0	0	0	0	3	0	0	0	0	0
 lib/escapade/src/core/escapade.Ansi.scala	0	0	5	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/escapade/src/core/escapade.Ribbon.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
 lib/escapade/src/core/escapade.Teletype.scala	0	0	1	0	0	1	0	0	0	0	0	0	0	0	1	0
@@ -192,7 +191,6 @@ lib/escritoire/src/core/escritoire.TableCell.scala	0	0	0	0	0	0	0	0	0	0	1	1	0	0	0
 lib/escritoire/src/core/escritoire.Tabulable.scala	0	0	0	0	0	0	0	0	0	0	2	0	1	0	0	0
 lib/escritoire/src/core/escritoire.Tabulation.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	1	2	0
 lib/escritoire/src/core/escritoire_core.scala	0	0	0	0	0	0	0	0	0	0	2	0	2	0	1	0
-lib/escritoire/src/test/escritoire_test.scala	0	0	0	0	0	0	0	0	0	0	1	1	0	0	0	0
 lib/espionage/src/core/espionage.Acp.scala	6	0	7	0	0	0	0	0	0	0	1	0	0	1	0	0
 lib/espionage/src/test/espionage_test.scala	0	4	0	0	0	0	0	0	2	0	1	0	0	1	1	0
 lib/ethereal/src/core/ethereal.Launcher.scala	0	0	0	0	1	2	0	0	0	0	3	0	0	0	0	0
@@ -205,7 +203,7 @@ lib/eucalyptus/src/test/eucalyptus_test.scala	6	0	0	0	0	0	0	0	2	2	0	0	0	0	0	0
 lib/exegesis/src/core/exegesis.Lsp.scala	15	0	78	0	0	1	0	0	0	0	1	0	0	1	1	0
 lib/exegesis/src/core/exegesis.LspSession.scala	1	0	8	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/exegesis/src/core/exegesis.LspSessional.scala	1	0	0	0	0	0	0	0	0	0	1	0	0	1	0	0
-lib/exegesis/src/test/exegesis_test.scala	0	0	0	0	0	0	0	0	2	0	7	2	0	3	1	0
+lib/exegesis/src/test/exegesis_test.scala	0	0	0	0	0	0	0	0	2	0	6	1	0	3	1	0
 lib/exoskeleton/src/args/exoskeleton.Cli.scala	0	0	2	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/exoskeleton/src/args/exoskeleton.internal.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/exoskeleton/src/args/exoskeleton_args.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0
@@ -245,7 +243,7 @@ lib/galilei/src/core/galilei_core.scala	0	6	0	0	0	1	0	0	0	0	0	0	0	0	0	0
 lib/galilei/src/jvm/galilei.Ram.scala	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0
 lib/galilei/src/jvm/galilei_jvm.scala	0	0	0	0	0	2	0	0	0	0	0	0	0	0	0	0
 lib/galilei/src/native/galilei_native.scala	2	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0
-lib/galilei/src/test/galilei_test.scala	0	22	0	0	1	2	0	0	1	1	1	0	1	0	0	0
+lib/galilei/src/test/galilei_test.scala	0	22	0	0	1	2	0	0	1	1	0	0	0	0	0	0
 lib/galilei/src/wasi/galilei_wasi.scala	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0
 lib/gastronomy/src/core-jvm/gastronomy.JavaBaseHashing.scala	0	0	0	0	1	6	0	0	0	0	0	0	0	0	0	0
 lib/gastronomy/src/core/gastronomy.Blake3.scala	0	0	0	0	1	7	0	0	0	2	0	0	0	0	0	0
@@ -262,7 +260,7 @@ lib/gesticulate/src/core/gesticulate.Media.scala	0	0	0	0	0	0	0	0	0	0	2	0	0	0	0	0
 lib/gesticulate/src/core/gesticulate.MediaType.scala	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
 lib/gesticulate/src/core/gesticulate.Multipart.scala	1	3	1	0	0	1	0	0	2	2	0	0	0	0	0	0
 lib/gesticulate/src/core/gesticulate.internal.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	1	1	0
-lib/gesticulate/src/test/gesticulate_test.scala	0	0	0	0	4	5	0	0	0	0	5	3	2	0	0	0
+lib/gesticulate/src/test/gesticulate_test.scala	0	0	0	0	4	5	0	0	0	0	0	0	0	0	0	0
 lib/gigantism/src/core/gigantism.Every.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/gigantism/src/core/gigantism_core.scala	0	0	0	0	0	0	0	0	0	0	2	0	0	0	0	0
 lib/gossamer/src/core/gossamer.AsciiBuilder.scala	0	0	0	0	1	0	0	0	0	0	0	0	0	0	1	0
@@ -351,7 +349,6 @@ lib/jacinta/src/schema/jacinta.JsonSchema.scala	8	0	0	0	0	0	0	0	0	0	2	0	1	0	0	0
 lib/jacinta/src/staged/jacinta.InlinableStager.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/jacinta/src/test/jacinta.ParserTests.scala	0	0	0	0	6	0	0	0	1	0	1	0	1	0	0	0
 lib/jacinta/src/test/jacinta.ProviderTests.scala	0	0	0	0	0	0	0	0	0	0	3	0	0	0	0	0
-lib/jacinta/src/test/jacinta.RecordsTests.scala	0	0	0	0	0	0	0	0	0	0	1	1	0	0	0	0
 lib/kaleidoscope/src/core/kaleidoscope.Regex.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	1	0
 lib/kaleidoscope/src/core/kaleidoscope.internal.scala	0	0	0	0	0	1	0	0	0	1	6	2	0	0	1	0
 lib/larceny/src/plugin/larceny.LarcenyTransformer.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
@@ -406,12 +403,11 @@ lib/obligatory/src/test/obligatory_test.scala	0	0	0	0	1	0	0	0	0	0	5	0	0	0	0	0
 lib/octogenarian/src/core/octogenarian.Patch.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
 lib/octogenarian/src/native/octogenarian.Pktline.scala	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/octogenarian/src/sshNative/octogenarian.SshNative.scala	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0
-lib/octogenarian/src/test/octogenarian_test.scala	0	0	0	0	0	0	0	0	0	0	16	4	0	0	0	0
+lib/octogenarian/src/test/octogenarian_test.scala	0	0	0	0	0	0	0	0	0	0	12	0	0	0	0	0
 lib/orthodoxy/src/test/orthodoxy_test.scala	0	0	2	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/panopticon/src/core/panopticon.Composable.scala	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/panopticon/src/core/panopticon.Optical.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0
 lib/panopticon/src/core/panopticon.internal.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0
-lib/panopticon/src/test/panopticon_test.scala	0	0	0	0	0	0	0	0	0	0	11	11	0	0	0	0
 lib/parasite/src/bench/parasite.Benchmarks.scala	0	0	0	0	1	0	0	0	1	0	0	0	0	0	0	0
 lib/parasite/src/core/parasite.Async.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0
 lib/parasite/src/core/parasite.Daemon.scala	2	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
@@ -422,7 +418,7 @@ lib/parasite/src/core/parasite.Task.scala	8	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
 lib/parasite/src/core/parasite.Timeout.scala	2	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/parasite/src/core/parasite_core.scala	7	0	0	0	0	0	0	0	2	0	1	0	0	0	0	0
 lib/parasite/src/jvm/parasite.GarbageCollection.scala	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-lib/parasite/src/test/parasite_test.scala	0	0	0	0	0	0	0	0	1	0	3	1	2	0	1	0
+lib/parasite/src/test/parasite_test.scala	0	0	0	0	0	0	0	0	1	0	2	0	2	0	1	0
 lib/perihelion/src/core/perihelion.Websocket.scala	0	0	0	0	0	1	0	0	4	5	0	0	0	0	0	0
 lib/perihelion/src/core/perihelion_core.scala	0	0	0	0	0	0	0	0	1	1	0	0	0	0	0	0
 lib/perihelion/src/test/perihelion.Test.scala	0	0	1	0	2	0	0	0	0	0	0	0	0	0	0	0
@@ -563,7 +559,6 @@ lib/stratiform/src/test/stratiform.AcceptanceTests.scala	0	0	0	0	2	1	0	0	0	0	3	0
 lib/stratiform/src/test/stratiform.AccrualTests.scala	0	0	1	0	0	0	0	0	0	0	7	0	0	0	0	0
 lib/stratiform/src/test/stratiform.CodecTests.scala	0	0	0	0	0	0	0	0	0	0	14	0	1	0	0	0
 lib/stratiform/src/test/stratiform.CorpusLoader.scala	0	0	0	0	2	0	0	0	0	0	2	0	0	0	0	0
-lib/stratiform/src/test/stratiform.EquivalenceTests.scala	0	0	0	0	0	0	0	0	0	0	1	1	0	0	0	0
 lib/stratiform/src/test/stratiform.KeyTests.scala	0	0	0	0	0	0	0	0	0	0	3	0	0	0	0	0
 lib/stratiform/src/test/stratiform.LineageTests.scala	0	0	0	0	1	1	0	0	0	0	1	0	0	0	0	0
 lib/stratiform/src/test/stratiform.ResolutionTests.scala	0	0	2	0	1	0	0	0	0	0	8	0	3	0	0	0
@@ -647,7 +642,6 @@ lib/ultimatum/src/tables/ultimatum.TableFixture.scala	2	0	3	0	0	0	0	0	0	0	0	0	0	
 lib/ultimatum/src/test/ultimatum_test.scala	0	0	13	0	0	0	0	0	0	0	11	2	0	0	0	0
 lib/ulysses/src/core/ulysses.Bibliography.scala	0	0	0	0	0	0	0	0	0	0	3	0	0	1	0	0
 lib/ulysses/src/core/ulysses.BloomFilter.scala	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-lib/ulysses/src/test/ulysses_test.scala	0	0	0	0	0	0	0	0	0	0	1	0	1	0	0	0
 lib/urticose/src/core/urticose.NetworkInterface.scala	0	0	0	0	1	1	0	0	0	0	0	0	0	0	0	0
 lib/urticose/src/core/urticose.internal.scala	0	0	0	0	0	0	0	3	0	0	2	0	0	0	0	0
 lib/urticose/src/dns/urticose.Dns.scala	0	0	0	0	1	2	0	0	0	0	0	0	0	0	2	0
@@ -725,7 +719,7 @@ lib/zephyrine/src/core/zephyrine.Slate.scala	0	0	0	0	0	0	0	0	1	2	0	0	0	0	0	0
 lib/zephyrine/src/core/zephyrine.Stream.scala	0	0	2	0	0	0	0	0	5	1	0	0	0	0	0	0
 lib/zephyrine/src/core/zephyrine.internal.scala	0	0	0	0	0	0	0	5	0	0	0	0	0	0	0	0
 lib/zephyrine/src/core/zephyrine_core.scala	0	0	12	0	0	0	0	0	8	3	0	0	0	0	0	0
-lib/zephyrine/src/test/zephyrine_test.scala	0	26	1	0	1	0	0	0	3	2	12	1	2	2	0	0
+lib/zephyrine/src/test/zephyrine_test.scala	0	26	1	0	1	0	0	0	3	2	11	0	2	2	0	0
 lib/zeppelin/src/core/zeppelin.Zip.scala	0	0	0	0	0	0	0	3	0	0	0	0	0	0	0	0
 lib/zeppelin/src/core/zeppelin.Zipfile.scala	0	0	0	0	0	0	0	0	0	0	3	0	0	3	0	0
 lib/zeppelin/src/test/zeppelin_test.scala	0	0	0	0	1	7	0	0	0	0	0	0	0	0	0	0

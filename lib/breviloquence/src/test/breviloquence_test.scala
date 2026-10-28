@@ -109,7 +109,7 @@ private def hexOf(bytes: Data): String =
   val sb = new StringBuilder
   var index = 0
   while index < bytes.length do
-    sb.append(f"${bytes.stdlib(index) & 0xFF}%02x")
+    sb.append(f"${bytes.readUnchecked(index) & 0xFF}%02x") // index ranges over bytes
     index += 1
   sb.toString
 

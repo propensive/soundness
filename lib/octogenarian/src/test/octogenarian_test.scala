@@ -355,12 +355,12 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
       .assert(_ == ChangeKind.Renamed)
 
       test(m"a renamed file records both old and new paths"):
-        val file = patchFrom
+        patchFrom
          ( t"diff --git a/old.txt b/new.txt",
            t"similarity index 100%",
            t"rename from old.txt",
-           t"rename to new.txt" ).stdlib.head
-        (file.oldPath, file.newPath)
+           t"rename to new.txt" ).head.let: file =>
+          (file.oldPath, file.newPath)
       .assert(_ == (t"old.txt", t"new.txt"))
 
       test(m"a copied file has ChangeKind.Copied"):
@@ -468,15 +468,15 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
       .assert(_ == 2)
 
       test(m"a binary diff yields a FileDiff with no hunks"):
-        val file = patchFrom
+        patchFrom
          ( t"diff --git a/blob b/blob",
            t"index 1234567..89abcde",
-           t"Binary files a/blob and b/blob differ" ).stdlib.head
-        file.hunks
-      .assert(_.nil)
+           t"Binary files a/blob and b/blob differ" ).head.let: file =>
+          file.hunks.nil
+      .assert(_ == true)
 
       test(m"asDiff flattens hunks into a Dissonance Diff"):
-        val file = patchFrom
+        patchFrom
          ( t"diff --git a/foo b/foo",
            t"--- a/foo",
            t"+++ b/foo",
@@ -485,16 +485,16 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
            t"+new",
            t"@@ -10 +10 @@",
            t"-other",
-           t"+also" ).stdlib.head
-        Patch.asDiff(file).edits.length
+           t"+also" ).head.let: file =>
+          Patch.asDiff(file).edits.size
       .assert(_ == 4)
 
       test(m"a header with no --- / +++ block still records paths from `diff --git`"):
-        val file = patchFrom
+        patchFrom
          ( t"diff --git a/foo b/foo",
            t"old mode 100644",
-           t"new mode 100755" ).stdlib.head
-        (file.oldPath, file.newPath)
+           t"new mode 100755" ).head.let: file =>
+          (file.oldPath, file.newPath)
       .assert(_ == (t"foo", t"foo"))
 
     // Compile-time checks on the handle types; the backend is immaterial, so they are not run per

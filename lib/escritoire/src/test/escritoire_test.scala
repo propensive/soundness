@@ -379,7 +379,7 @@ object Tests extends Suite("table", m"Escritoire tests"):
       val layout = scaffold.layout(40).extend(scaffold.cells(Person(t"Bob", 5)))
       val alice = scaffold.cells(Person(t"Alexandra", 30))
       val extended = layout.extend(alice)
-      (layout.accommodates(alice), extended eq layout, extended.aggregates.stdlib(0).natural)
+      (layout.accommodates(alice), extended eq layout, extended.aggregates.at(Prim).lay(0)(_.natural))
     . assert(_ == (false, false, 9))
 
     test(m"a Fixed column accommodates any content"):

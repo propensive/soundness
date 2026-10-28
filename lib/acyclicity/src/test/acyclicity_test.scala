@@ -81,7 +81,7 @@ object Tests extends Suite("dag", m"Acyclicity Tests"):
       . assert(_ == Set(12))
 
       test(m"a Hasse diagram linearizes from its bottom to its top"):
-        (hasse.linearized.stdlib.head, hasse.linearized.stdlib.last)
+        (hasse.linearized.head.or(0), hasse.linearized.last.or(0))
       . assert(_ == (1, 12))
 
       test(m"inverting a Hasse diagram swaps covering and covered"):

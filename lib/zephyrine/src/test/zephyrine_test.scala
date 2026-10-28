@@ -1240,7 +1240,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
         var pulled: Int = 0
         val chunks = Iterator(Array[Byte](1.toByte), Array[Byte](2.toByte)).map { chunk => pulled += 1; chunk }
         val list = chunks.stream.chain
-        list.stdlib.head
+        list.head
         // [closure-capture] a local def or closure over a fresh stream reads it back read-only
         scala.caps.unsafe.unsafeAssumeSeparate(pulled)
       . assert(_ == 1)

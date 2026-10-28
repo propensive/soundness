@@ -1551,7 +1551,7 @@ object Tests extends Suite("threads", m"Parasite tests"):
         test(m"Concurrent stream preserves head element with delays"):
           val gate = Promise[Unit]()
           val stream: Chain[Int] = 1 #:: { gate.await(); 2 } #:: { 3 } #:: Chain.empty
-          val task = async(stream.concurrent.stdlib.head)
+          val task = async(stream.concurrent.head)
           gate.fulfill(())
           task.await()
         . assert(_ == 1)

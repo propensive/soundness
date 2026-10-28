@@ -480,7 +480,7 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
         tampered.place(wire)
         // Flip a bit in the MAC tag near the end of the envelope.
         val index = wire.length - 5
-        tampered(index) = (tampered.stdlib(index) ^ 0xFF.toByte).toByte
+        tampered(index) = (tampered.readUnchecked(index) ^ 0xFF.toByte).toByte // index is wire.length - 5
         Array.freeze(tampered).authenticate[Cose](key)
       . assert(!_)
 
