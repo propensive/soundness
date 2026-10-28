@@ -539,8 +539,7 @@ lib/stratiform/src/core/stratiform.Tel2.scala	2	0	0	0	0	0	0	0	0	0	2	0	2	0	2	0
 lib/stratiform/src/core/stratiform.Tel3.scala	2	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/stratiform/src/core/stratiform.Tel4.scala	0	0	0	0	0	0	0	0	0	0	7	0	7	0	0	0
 lib/stratiform/src/core/stratiform.TelReader.scala	0	0	0	0	0	0	0	0	2	1	0	0	0	0	0	0
-lib/stratiform/src/core/stratiform.Telp.scala	0	0	0	0	0	0	0	0	0	0	5	0	0	0	0	0
-lib/stratiform/src/core/stratiform.Tels.scala	0	0	0	0	0	0	0	0	0	0	22	0	10	0	1	0
+lib/stratiform/src/core/stratiform.Tels.scala	0	0	0	0	0	0	0	0	0	0	20	0	10	0	1	0
 lib/stratiform/src/core/stratiform.Tels2.scala	0	0	0	0	0	0	0	0	0	0	5	0	5	0	0	0
 lib/stratiform/src/core/stratiform.Varint.scala	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
 lib/stratiform/src/core/stratiform.dynamicAccess.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0
@@ -573,7 +572,7 @@ lib/susurration/src/core/susurration.Session.scala	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0
 lib/susurration/src/core/susurration.Transport.scala	1	0	8	0	2	3	0	0	0	0	0	0	0	0	0	0
 lib/susurration/src/core/susurration.Wire.scala	0	0	0	0	3	5	0	0	0	0	0	0	0	0	0	0
 lib/susurration/src/test/susurration_test.scala	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
-lib/syndesis/src/core/syndesis.Mdns.scala	0	2	12	0	0	0	0	0	6	0	4	0	1	0	1	0
+lib/syndesis/src/core/syndesis.Mdns.scala	0	2	12	0	0	0	0	0	6	0	0	0	0	0	1	0
 lib/syndesis/src/test/syndesis_test.scala	0	0	0	0	0	0	0	0	0	0	2	0	0	0	0	0
 lib/synesthesia/src/core/synesthesia.Mcp.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
 lib/synesthesia/src/core/synesthesia.internal.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0
@@ -668,7 +667,7 @@ lib/xenophile/src/nativeruntime/xenophile.ForeignBuffer.scala	0	0	0	0	0	0	0	0	0	
 lib/xenophile/src/nativeruntime/xenophile.ForeignLibrary.scala	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/xenophile/src/scalanative/xenophile.NativeInvoke.scala	0	0	0	0	0	0	0	0	0	0	1	0	0	0	2	0
 lib/xenophile/src/test/xenophile_test.scala	0	1	0	0	0	0	0	0	0	0	22	0	0	0	0	0
-lib/xenophile/src/typescript/xenophile.Typescript.scala	0	0	0	0	0	0	0	0	0	0	4	0	1	0	0	0
+lib/xenophile/src/typescript/xenophile.Typescript.scala	0	0	0	0	0	0	0	0	0	0	1	0	1	0	0	0
 lib/xenophile/src/wasm/xenophile.WasmInvoke.scala	0	0	0	0	0	0	0	0	0	0	5	1	0	1	2	0
 lib/xenophile/src/webidl/xenophile.WebIdl.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0
 lib/xenophile/src/wit/xenophile.Wit.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0

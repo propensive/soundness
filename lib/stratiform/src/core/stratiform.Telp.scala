@@ -39,10 +39,10 @@ import denominative.{size, z}
 import distillate.*
 import fulminate.*
 import gossamer.*
-import murmuration.exists
+import murmuration.{exists, filter}
 import prepositional.*
 import rudiments.each
-import rudiments.{`:+`, at, head, seek}
+import rudiments.{`:+`, at, head, seek, to}
 import vacuous.*
 
 // TELP, the TEL Path companion specification: a schema-aware textual path
@@ -160,25 +160,20 @@ object Telp:
   private case class Slot(flatIndex: Int, repeatable: Boolean, slotType: Tels.Type)
 
   private def definitionOf(reference: Text, schema: Tels): Optional[Tels.SelectDefinition] =
-    schema.selects.stdlib.find(_.name == reference) match
-      case scala.Some(definition) => definition
-      case scala.None             => Unset
+    schema.selects.seek(_.name == reference)
 
   private def resolved(t: Tels.Type, schema: Tels): Optional[Tels.Type] = t match
     case Tels.Reference(name) =>
-      schema.records.stdlib.find(_.name == name) match
-        case scala.Some(record) => Tels.Struct(record.members, record.validators)
-
-        case scala.None => schema.scalars.stdlib.find(_.name == name) match
-          case scala.Some(scalar) =>
-            Tels.Scalar(scalar.validators, scalar.encoding, scalar.patterns)
-
-          case scala.None =>
-            if name == Tels.Builtin.Flag then Tels.Flag
-            else if name == Tels.Builtin.String || name == Tels.Builtin.Identifier ||
-              name == Tels.Builtin.TypeName || name == Tels.Builtin.Sigil
-            then Tels.Scalar(Array.empty)
-            else Unset
+      schema.records.seek(_.name == name).let { record => Tels.Struct(record.members, record.validators) }
+      . or:
+          schema.scalars.seek(_.name == name)
+          . let { scalar => Tels.Scalar(scalar.validators, scalar.encoding, scalar.patterns) }
+          . or:
+              if name == Tels.Builtin.Flag then Tels.Flag
+              else if name == Tels.Builtin.String || name == Tels.Builtin.Identifier ||
+                name == Tels.Builtin.TypeName || name == Tels.Builtin.Sigil
+              then Tels.Scalar(Array.empty)
+              else Unset
 
     case other => other
 
@@ -245,7 +240,7 @@ object Telp:
           keyFlat.let: keyIndex =>
             var value: Optional[Text] = Unset
 
-            node.children.stdlib.foreach:
+            node.children.each:
               case Tel.Element.Value(idx, _, text) =>
                 if idx == keyIndex && value.absent then value = text
 
@@ -276,12 +271,12 @@ object Telp:
 
   private def childrenAt(node: Tel.Element.Node, flatIndex: Int): List[Tel.Element] =
 
-    node.children.stdlib.filter: element =>
+    node.children.filter: element =>
       element match
         case Tel.Element.Node(idx, _, _)  => idx.or(-1) == flatIndex
         case Tel.Element.Value(idx, _, _) => idx == flatIndex
 
-    . to(List)
+    . to[List]
 
 case class Telp(components: List[Text]) derives CanEqual:
   // Push a component onto the root (front) of the path. The product

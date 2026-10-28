@@ -897,8 +897,8 @@ object Tels extends Tels2:
         val existing = out.indexWhere(_.name == newDef.name)
 
         if existing >= 0 then
-          val original = origin.stdlib.find(_.name == newDef.name)
-          out(existing) = mergeSelect(out(existing), newDef, original.getOrElse(out(existing)))
+          val original = origin.seek(_.name == newDef.name)
+          out(existing) = mergeSelect(out(existing), newDef, original.or(out(existing)))
         else
           if records.exists(_.name == newDef.name) || scalars.exists(_.name == newDef.name)
           then abort(Tel.Error(Reason.DuplicateDefinition))
@@ -2199,7 +2199,7 @@ object Tels extends Tels2:
     // parsed document but by no derived one, so it is disregarded when validator sets are
     // compared.
     private def constraining(validators: Array[Text]^{}): sci.Set[Text] =
-      validators.stdlib.toList.filter(_ != t"string").to(sci.Set)
+      validators.filter(_ != t"string").stdlib.to(sci.Set)
 
     private def required(polarity: Polarity): Boolean = polarity != Polarity.Loose
     private def repeatable(polarity: Polarity): Boolean = polarity == Polarity.Loose
@@ -2211,7 +2211,7 @@ object Tels extends Tels2:
 
         case select: SelectRef =>
           schema.selects.seek(_.name == select.reference).lay(sci.Set()): definition =>
-            definition.variants.stdlib.toList.map(_.keyword).to(sci.Set)
+            definition.variants.map(_.keyword).stdlib.to(sci.Set)
 
         case _: Exclude => sci.Set()
 
@@ -2400,7 +2400,7 @@ object Tels extends Tels2:
 
         if index >= 0 && index < sourceKeywords.length then
           val keyword = sourceKeywords.readUnchecked(index)(0)
-          val position = targetKeywords.stdlib.indexWhere(_(0) == keyword)
+          val position = targetKeywords.where(_(0) == keyword).lay(-1)(_.n0)
 
           if position >= 0 then
             (child, resolve(targetKeywords.readUnchecked(position)(1), to)) match

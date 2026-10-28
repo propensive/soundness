@@ -103,7 +103,7 @@ object Mdns:
       if bindings == Nil then abort(Mdns.Error(Join(group4.show)))
 
       val addresses2: List[Ipv4 | Ipv6] =
-        List.from(interfaces.stdlib.flatMap(_.addresses.stdlib.map(_.address)))
+        interfaces.flatMap(_.addresses.map(_.address))
 
       val label: Text =
         safely(jn.InetAddress.getLocalHost.nn.getHostName.nn.tt).or(t"soundness").cut(t".").head
@@ -822,13 +822,11 @@ object Mdns:
       val name = service.dnsName
 
       def instances(): Set[Discovery.Instance] =
-        Set.from:
-          cache.lookup(name, Dns.Type.Ptr, now).stdlib.flatMap: record =>
-            record.rdata.absolve match
-              case Dns.Rdata.Ptr(target) =>
-                Discovery.Instance.parse(target).let(List(_)).or(Nil).stdlib
-
-              case _ => scala.collection.immutable.Nil
+        cache.lookup(name, Dns.Type.Ptr, now).flatMap: record =>
+          record.rdata.absolve match
+            case Dns.Rdata.Ptr(target) => Discovery.Instance.parse(target).let(List(_)).or(Nil)
+            case _                     => Nil
+        . to[Set]
 
       val browsing = Discovery.Browsing(relay, () => instances())
 

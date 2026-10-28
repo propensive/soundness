@@ -286,7 +286,7 @@ object Typescript:
     // generic collection reaches it reliably.
     def text: Text =
       def render(types: List[Typescript.Type], separator: String): String =
-        types.stdlib.map { typed => typed.text.s }.mkString(separator)
+        types.map(_.text).join(separator.tt).s
 
       val rendered: String = this match
         case Named(name, Nil)        => name.s
@@ -302,13 +302,13 @@ object Typescript:
         case Predicate(name, target) => name.s+" is "+target.text.s
 
         case Object(members) =>
-          "{ "+members.stdlib.map { member => member.name.s }.mkString("; ")+" }"
+          "{ "+members.map(_.name).join(t"; ").s+" }"
 
         case Function(parameters, result, _, construct) =>
-          val arguments = parameters.stdlib.map: parameter =>
-            parameter.name.s+": "+parameter.typed.lay("any"): value => value.text.s
+          val arguments = parameters.map: parameter =>
+            (parameter.name.s+": "+parameter.typed.lay("any") { value => value.text.s }).tt
 
-          (if construct then "new " else "")+"("+arguments.mkString(", ")+") => "+result.text.s
+          (if construct then "new " else "")+"("+arguments.join(t", ").s+") => "+result.text.s
 
       rendered.tt
 
