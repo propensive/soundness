@@ -234,8 +234,8 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
 
 
     suite(m"Cursor tests"):
-      def hello = Cursor(t"Hello world!".chars.to[List].map(_.show).stdlib.iterator)
-      def numbers = Cursor(t"0123456789abc".chars.to[List].map(_.show).stdlib.iterator)
+      def hello = Cursor(t"Hello world!".chars.to[List].map(_.show).to[Chain])
+      def numbers = Cursor(t"0123456789abc".chars.to[List].map(_.show).to[Chain])
 
       test(m"Iterate over elements"):
         val cursor = hello
@@ -498,7 +498,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
       test(m"Cursor[Data] remainder from start equals full stream"):
         val blocks = Chain(Data(1, 2, 3), Data(4, 5), Data(6, 7))
         val cursor = Cursor[Data](Chain.iterator(blocks))
-        List.from(cursor.remainder.stdlib.map(_.stdlib).flatten)
+        cursor.remainder.flat.to[List]
 
       . assert(_.map(_.toInt) == List(1, 2, 3, 4, 5, 6, 7))
 
@@ -506,7 +506,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
         val blocks = Chain(Data(1, 2, 3, 4, 5), Data(6, 7, 8))
         val cursor = Cursor[Data](Chain.iterator(blocks))
         for i <- 0 until 3 do cursor.next()
-        List.from(cursor.remainder.stdlib.map(_.stdlib).flatten)
+        cursor.remainder.flat.to[List]
 
       . assert(_.map(_.toInt) == List(4, 5, 6, 7, 8))
 
@@ -514,7 +514,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
         val blocks = Chain(Data(1, 2, 3, 4, 5), Data(6, 7, 8))
         val cursor = Cursor[Data](Chain.iterator(blocks))
         for i <- 0 until 3 do cursor.next()
-        cursor.hold(List.from(cursor.remainder.stdlib.map(_.stdlib).flatten))
+        cursor.hold(cursor.remainder.flat.to[List])
 
       . assert(_.map(_.toInt) == List(4, 5, 6, 7, 8))
 

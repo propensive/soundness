@@ -289,7 +289,7 @@ trait Json2 extends Json3:
 
         def aggregate(bytes: Chain[Data]): value in Json =
           // The parser consumes an `Iterator`, which only the stdlib view of a `Chain` offers.
-          Json.readJson(bytes.stdlib.iterator).as[value].asInstanceOf[value in Json]
+          Json.readJson(Chain.iterator(bytes)).as[value].asInstanceOf[value in Json]
 
         override def accept(stream: (Stream[Data] over Credit)^): value in Json =
           Json.readJson(stream).as[value].asInstanceOf[value in Json]
@@ -711,7 +711,7 @@ trait Json1 extends Json2:
         // general path hands the parser an `Iterator`, which has no native counterpart.
         bytes match
           case block #:: rest if rest.nil => parseDirect(block, parsable).asInstanceOf[value in Json]
-          case _ => parseDirect(bytes.stdlib.iterator, parsable).asInstanceOf[value in Json]
+          case _ => parseDirect(Chain.iterator(bytes), parsable).asInstanceOf[value in Json]
 
       override def accept(stream: (Stream[Data] over Credit)^): value in Json =
         parseDirect(stream, parsable).asInstanceOf[value in Json]
@@ -1319,7 +1319,7 @@ object Json extends Json1, Dynamic:
 
         def shape(): Morphology =
           val entries: List[(Text, Morphology)] =
-            (fields.stdlib.map { (key, parser, _) => (key.tt, parser.shape()) }.toList).to(List)
+            fields.map { (key, parser, _) => (key.tt, parser.shape()) }.to[List]
 
           Morphology.Obj
             ( entries, entries.sweep { case (key, shape) if !shape.optional => key } )
@@ -1633,7 +1633,7 @@ object Json extends Json1, Dynamic:
         type Operand = Data
 
         // The parser consumes an `Iterator`, which only the stdlib view of a `Chain` offers.
-        def aggregate(source: Chain[Data]): Json.Ast = Json.Ast.parse(source.stdlib.iterator)
+        def aggregate(source: Chain[Data]): Json.Ast = Json.Ast.parse(Chain.iterator(source))
         override def accept(stream: (Stream[Data] over Credit)^): Json.Ast =
           // See `readJson`: the non-consume `accept` signature crosses to the
           // consuming parser as a neutral reference.
@@ -3138,7 +3138,7 @@ object Json extends Json1, Dynamic:
       type Operand = Data
 
       // The parser consumes an `Iterator`, which only the stdlib view of a `Chain` offers.
-      def aggregate(bytes: Chain[Data]): Json = readJson(bytes.stdlib.iterator)
+      def aggregate(bytes: Chain[Data]): Json = readJson(Chain.iterator(bytes))
       override def accept(stream: (Stream[Data] over Credit)^): Json = readJson(stream)
 
   given showable: Formatting => Json is Showable = _.root.show

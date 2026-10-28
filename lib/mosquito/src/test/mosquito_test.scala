@@ -330,9 +330,9 @@ object Tests extends Suite("matrix", m"Mosquito tests"):
         m.inverse.lay(Double.MaxValue): inverse =>
           val product = m*inverse
           val target = Matrix[2, 2]((1.0, 0.0), (0.0, 1.0))
-          product.elements.stdlib.indices
-          . map(i => math.abs(product.elements.readUnchecked(i) - target.elements.readUnchecked(i)))
-          . max
+          product.elements.extent
+          . tabulate(i => math.abs(product.elements(i) - target.elements.readUnchecked(i.n0)))
+          . maximize(identity(_)).or(0.0)
       . assert(_ < 0.000001)
 
       test(m"M times M-inverse is identity (3x3)"):
@@ -340,9 +340,9 @@ object Tests extends Suite("matrix", m"Mosquito tests"):
         m.inverse.lay(Double.MaxValue): inverse =>
           val product = m*inverse
           val target = Matrix[3, 3]((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0))
-          product.elements.stdlib.indices
-          . map(i => math.abs(product.elements.readUnchecked(i) - target.elements.readUnchecked(i)))
-          . max
+          product.elements.extent
+          . tabulate(i => math.abs(product.elements(i) - target.elements.readUnchecked(i.n0)))
+          . maximize(identity(_)).or(0.0)
       . assert(_ < 0.000001)
 
       test(m"Inverse of singular 3x3 matrix is Unset"):

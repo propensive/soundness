@@ -755,7 +755,7 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
       def contents = Files.list(lib).nn.iterator.nn.asScala
 
       val complete =
-        fixed.stdlib.forall { name => Files.exists(lib.resolve(name.s)) }
+        fixed.all { name => Files.exists(lib.resolve(name.s)) }
         && contents.exists(_.getFileName.nn.toString.startsWith("scalajs-javalib"))
         && contents.exists(_.getFileName.nn.toString.startsWith("scalajs-library_2.13"))
 
@@ -797,7 +797,7 @@ object Tests extends Suite("compiler", m"Anthology Tests"):
     proscalaLibrary().let: proscala =>
       caches
       . map(_.resolve("https/repo1.maven.org/maven2/org/scala-native").nn)
-      . seek { base => artifacts.stdlib.forall { jar => Files.exists(base.resolve(jar.s)) } }
+      . seek { base => artifacts.all { jar => Files.exists(base.resolve(jar.s)) } }
       . let: base =>
           val jars = artifacts.stdlib.map { jar => base.resolve(jar.s).nn }
           val stdlib = scala.collection.immutable.List("scala-library.jar", "scala3-library.jar").map(proscala.resolve(_).nn)

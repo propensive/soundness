@@ -358,7 +358,7 @@ object internal:
 
     val (parts2, spreads) = preprocess(parts)
     // The parts are `String`s, so `join` (which is `Text`-only) does not apply.
-    val source: String = parts2.stdlib.mkString(MarkerString)
+    val source: String = parts2.map(_.tt).join(MarkerString.tt).s
     import hieroglyph.codepages.utf8Codepage
     val data: Array[Byte]^{} = source.tt.in[Data]
 
@@ -686,7 +686,7 @@ object internal:
     abortive:
       val (parts2, spreads) = preprocess(parts)
       // The parts are `String`s, so `join` (which is `Text`-only) does not apply.
-      val source: String = parts2.stdlib.mkString(MarkerString)
+      val source: String = parts2.map(_.tt).join(MarkerString.tt).s
       import hieroglyph.codepages.utf8Codepage
       val data: Array[Byte]^{} = source.tt.in[Data]
       val ast: Json.Ast = Json.Ast.parse(data, true)
