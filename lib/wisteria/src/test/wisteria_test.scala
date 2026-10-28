@@ -294,7 +294,7 @@ object Tests extends Suite("derivation", m"Wisteria tests"):
     suite(m"Product derivation"):
       test(m"Parse a product via construct"):
         Parser.derived[ParserTestCaseClass].parse("42,true")
-      . assert(_ == ParserTestCaseClass(42, true))
+      . assert(_ == Some(ParserTestCaseClass(42, true)))
 
       test(m"Failed parse returns None via construct"):
         Parser.derived[ParserTestCaseClass].parse("notanint,true")
