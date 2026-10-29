@@ -527,7 +527,7 @@ object Tests extends Suite("collections", m"Murmuration tests"):
     // some equal pair in the other order and the two results would differ.
     suite(m"Powersort merging"):
       def agreesWithTimsort(data: List[Int]): Boolean =
-        val tagged: List[(Int, Int)] = List.from(data.stdlib.zipWithIndex)
+        val tagged: List[(Int, Int)] = data.indexed.map { (element, ordinal) => (element, ordinal.n0) }
 
         val byPowersort =
           import sortingAlgorithms.powersort
@@ -747,7 +747,7 @@ object Tests extends Suite("collections", m"Murmuration tests"):
     // outside oracle here: it is stable, and it is nobody's code but the standard library's.
     suite(m"Ordering by an interleaved key"):
       def keyed(count: Int, modulus: Int): List[(Int, Int)] =
-        List.from(pseudorandom(count, modulus).stdlib.zipWithIndex)
+        pseudorandom(count, modulus).indexed.map { (element, ordinal) => (element, ordinal.n0) }
 
       // Sorting pairs by their first component, with `zipWithIndex` making every element
       // distinct: a stable sort must leave equal keys in their original order.

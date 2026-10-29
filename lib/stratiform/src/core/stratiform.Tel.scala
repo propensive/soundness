@@ -1432,15 +1432,15 @@ object Tel extends Tel2:
               case s: Tels.SelectRef =>
                 val selectDef = selectDefinitionOf(s, schema)
 
-                selectDef.variants.stdlib.zipWithIndex.find(_._1.keyword == atomText) match
-                  case Some((_, variantOffset)) =>
-                    results += Tel.Element.Node(flatPos + variantOffset, Tels.Flag, Array.empty)
+                selectDef.variants.indexed.seek(_(0).keyword == atomText) match
+                  case (_, variantOffset: Ordinal) =>
+                    results += Tel.Element.Node(flatPos + variantOffset.n0, Tels.Flag, Array.empty)
 
                     if s.repeatable != Tels.Polarity.Loose then
                       flatPos += selectDef.variants.length
                       pos += 1
 
-                  case None =>
+                  case Unset =>
                     // §20.2 step 3d: no variant keyword matches the atom at a
                     // required all-Flag SelectRef. Recovery drops the atom.
                     recoverNode(Reason.AtomVariantUnmatched)(())
@@ -1623,7 +1623,7 @@ object Tel extends Tel2:
             keyFlat.let: keyIdx =>
               var value: Optional[Text] = Unset
 
-              node.children.stdlib.foreach:
+              node.children.each:
                 case Tel.Element.Value(idx, _, text) =>
                   if idx == keyIdx && value.absent then value = text
 
@@ -1969,7 +1969,7 @@ object Tel extends Tel2:
         else Unset
 
       count.let: n =>
-        val xor = data.stdlib.foldLeft(0): (acc, byte) => acc ^ (byte & 0xff)
+        val xor = data.fuse(0)(state ^ (next & 0xff))
         if xor == 0x79 then n else Unset
 
   trait Codec:
@@ -3832,20 +3832,19 @@ object Tel extends Tel2:
 
     var offset = 0
 
-    Array.from:
-      blocks.stdlib.map: block =>
-        val compounds = block.compounds
-        val base = offset
-        offset += compounds.length
+    blocks.map: block =>
+      val compounds = block.compounds
+      val base = offset
+      offset += compounds.length
 
-        if index >= base && index < base + compounds.length
-        then
-          block.copy
-            ( compounds =
-                compounds.define
-                  ( (index - base).z, transform(compounds.readUnchecked(index - base)) ) )
-        else
-          block
+      if index >= base && index < base + compounds.length
+      then
+        block.copy
+          ( compounds =
+              compounds.define
+                ( (index - base).z, transform(compounds.readUnchecked(index - base)) ) )
+      else
+        block
 
   // Apply `transform` to every child compound (flattened across blocks),
   // preserving block structure. Used by the panopticon `Each` optic.
@@ -8148,11 +8147,10 @@ extends scala.Dynamic, Documentary, Topical, Original:
   // this is always empty since the root has no atoms.
   def atomTexts: Array[Text]^{} = subtree match
     case c: Tel.Compound =>
-      Array.from:
-        c.atoms.stdlib.map:
-          case Tel.Atom.Inline(text, _)  => text
-          case Tel.Atom.Source(text)     => text
-          case Tel.Atom.Literal(_, text) => text
+      c.atoms.map:
+        case Tel.Atom.Inline(text, _)  => text
+        case Tel.Atom.Source(text)     => text
+        case Tel.Atom.Literal(_, text) => text
 
     case _: Tel.Document => Array.empty
 

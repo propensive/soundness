@@ -56,7 +56,7 @@ object TextPage:
     extension (value: TextPage) def mediaType: MediaType = media"text/plain"(charset = "UTF-8")
 
   given streamable: (TextPage is Streamable by Text over Credit) =
-    value => Stream(value.lines.stdlib.iterator)
+    value => Stream(value.lines.to[Chain])
 
 object Tests extends Suite("httpd", m"Scintillate tests"):
   def run(): Unit =
@@ -724,7 +724,7 @@ object Tests extends Suite("httpd", m"Scintillate tests"):
       . assert(_.contains(t"431"))
 
       test(m"A streaming response to HTTP/1.0 is close-delimited, not chunked"):
-        val body = Http.Body.Flowing(() => Stream(Chain.iterator(Chain(t"Hello".in[Data], t"World".in[Data]))))
+        val body = Http.Body.Flowing(() => Stream(Chain(t"Hello".in[Data], t"World".in[Data])))
         inProcess(Http.Response(Http.Ok)(body), t"GET / HTTP/1.0\r\nHost: x\r\n\r\n")
 
       . assert: response =>

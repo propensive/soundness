@@ -262,26 +262,27 @@ object Redraft:
   :   List[Directive] =
 
     // The greedy minimization walks the directives by position, repeatedly, so they are
-    // materialized once into an indexable array; every index below comes from `array.stdlib.indices`.
+    // materialized once into an indexable array; every index below comes from `indices`.
     val array = directives.to[Array]
+    val indices: List[Int] = array.extent.tabulate(_.n0).to[List]
     val dropped = scala.collection.mutable.Set[Int]()
 
     def remaining: List[Directive] =
-      array.stdlib.indices.to(List).filter(!dropped.has(_)).map(array.readUnchecked(_))
+      indices.filter(!dropped.has(_)).map(array.readUnchecked(_))
 
     def valid(candidate: List[Directive]): Boolean =
       val (edits, anomalies) = analyze(candidate, original, _ == _)
       anomalies.nil && Diff(edits*).patch(original.to[List]).to[List] == target
 
-    val changes = array.stdlib.indices.filter(!array.readUnchecked(_).isInstanceOf[Directive.Keep])
+    val changes = indices.filter(!array.readUnchecked(_).isInstanceOf[Directive.Keep])
 
     def distance(index: Int): Int =
-      if changes.nil then 0 else changes.map { c => (c - index).abs }.min
+      if changes.nil then 0 else changes.fuse(Int.MaxValue)(state.min((next - index).abs))
 
     val order =
-      array.stdlib.indices
+      indices
       . filter(array.readUnchecked(_).isInstanceOf[Directive.Keep])
-      . sortBy: index => -distance(index)
+      . order: index => -distance(index)
 
     order.each: index =>
       dropped += index

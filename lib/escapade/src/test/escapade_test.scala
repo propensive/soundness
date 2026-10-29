@@ -466,7 +466,7 @@ object Tests extends Suite("ansi", m"Escapade tests"):
         List.tabulate(3000): index =>
           if index%3 == 0 then e"$Bold(b$index)" else if index%3 == 1 then e"" else e"p$index"
 
-      val folded = parts.stdlib.foldLeft(Teletype.empty)(_.append(_))
+      val folded = parts.fuse(Teletype.empty)(state.append(next))
 
       test(m"joining many parts gives the left fold's plain text"):
         parts.join.plain

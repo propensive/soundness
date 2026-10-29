@@ -37,6 +37,7 @@ import escapade.*
 import gossamer.*
 import prepositional.*
 import profanity.*
+import rudiments.{each, indexed, keep}
 import symbolism.*
 import vacuous.*
 
@@ -112,14 +113,12 @@ object Gaugeable:
       val width = canvas.width
 
       if width >= design.minWidth(status) then
-        var row = 0
-        // The stdlib view lets the paint loop pull rows one at a time from a stdlib `Iterator`.
-        val lines = design.rows(status, tick, width).stdlib.iterator
+        // A gauge has a handful of rows, so counting them to clip at the canvas is cheap.
+        import denominative.dysasymptotics.linearSize
 
-        while lines.hasNext && row < canvas.height do
-          canvas.move(Prim, row.z)
-          canvas.put(lines.next())
-          row += 1
+        design.rows(status, tick, width).keep(canvas.height).indexed.each: (line, row) =>
+          canvas.move(Prim, row)
+          canvas.put(line)
 
       canvas.flush()
 

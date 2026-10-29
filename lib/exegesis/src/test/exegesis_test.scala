@@ -344,7 +344,7 @@ object Tests extends Suite("lsp", m"Exegesis Tests"):
           . as[Json]
 
         TestServer.dispatch(request)
-        TestServer.session.outgoing.stdlib.iterator.next().as[JsonRpc.Request].method
+        TestServer.session.outgoing.head.let(_.as[JsonRpc.Request].method)
       . assert(_ == t"textDocument/publishDiagnostics")
 
       test(m"a hover request is answered from the ambient document"):
@@ -446,7 +446,7 @@ object Tests extends Suite("lsp", m"Exegesis Tests"):
           . as[Json]
 
         TestServer.dispatch(request)
-        TestServer.session.outgoing.stdlib.iterator.next().as[JsonRpc.Request].method
+        TestServer.session.outgoing.head.let(_.as[JsonRpc.Request].method)
       . assert(_ == t"$$/progress")
 
       test(m"a completionItem/resolve request decodes a bare item and resolves it"):
@@ -491,7 +491,7 @@ object Tests extends Suite("lsp", m"Exegesis Tests"):
           . as[Json]
 
         TestServer.roundtrip(request)
-        TestServer.session.outgoing.stdlib.iterator.next().as[JsonRpc.Request].method
+        TestServer.session.outgoing.head.let(_.as[JsonRpc.Request].method)
       . assert(_ == t"window/logMessage")
 
     suite(m"Traffic observation"):

@@ -93,17 +93,15 @@ object internal:
     // is itself a separator, not a body character.
     val segments: List[Text] = subtype.cut(t"+")
 
-    // The stdlib view gives a lazy scan that stops at the first offending character.
-    val badChar: Option[Char] = segments.stdlib.iterator.flatMap: seg =>
-      seg.chars.seek { c => c.isWhitespace || c.isControl || specials.has(c) }.option
-
-    . nextOption()
+    // `or` is by-name, so the scan stops at the first segment with an offending character.
+    val badChar: Optional[Char] = segments.fuse(Unset: Optional[Char]):
+      state.or(next.chars.seek { c => c.isWhitespace || c.isControl || specials.has(c) })
 
     badChar match
-      case Some(char) =>
+      case char: Char =>
         m"$char is not a valid character in a media-type subtype"
 
-      case None =>
+      case Unset =>
         val main: Text = segments.absolve match
           case segment :: _ => segment
         val isStandard =

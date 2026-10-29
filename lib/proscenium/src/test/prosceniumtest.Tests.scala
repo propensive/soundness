@@ -69,8 +69,8 @@ object Tests extends Suite("prelude-consumer", m"Proscenium consumer-view tests"
       . assert(_ == scala.collection.immutable.Vector(1, 2, 3))
 
       test(m"a ledger crosses to the stdlib keeping its order"):
-        Ledger(t"b" -> 2, t"a" -> 1).stdlib.keys.toList
-      . assert(_ == scala.collection.immutable.List(t"b", t"a"))
+        Ledger(t"b" -> 2, t"a" -> 1).keys.to[List]
+      . assert(_ == List(t"b", t"a"))
 
       test(m"a frozen array crosses to the stdlib as an ArraySeq"):
         Array(1, 2, 3).to[List]
@@ -91,8 +91,8 @@ object Tests extends Suite("prelude-consumer", m"Proscenium consumer-view tests"
         val ledger: Ledger[Int, Text] =
           scala.collection.immutable.List((2, t"b"), (1, t"a")).to(Ledger)
 
-        ledger.stdlib.keys.toList
-      . assert(_ == scala.collection.immutable.List(2, 1))
+        ledger.keys.to[List]
+      . assert(_ == List(2, 1))
 
       // Aspirational: `List`, `Set`, `Map` and `Ledger` each provide a `factory` conversion so
       // that `.to(…)` builds them, but `Sequence` does not, so it is the one opaque collection

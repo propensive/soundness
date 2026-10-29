@@ -668,13 +668,10 @@ object Xml extends Tag.Container
         type Form = Xml
 
         private def childOf(entry: Element, label: BaseText): Xml =
-          val found = entry.children.stdlib.find:
+          entry.children.seek:
             case element: Element => element.label == label
             case _                => false
-
-          found match
-            case Some(node) => node
-            case None       => Absent
+          . or(Absent)
 
         def decoded(xml: Xml): Map[key, value] =
           var accumulator = Map.empty[key, value]
@@ -2077,9 +2074,7 @@ object Xml extends Tag.Container
     case _ =>
       summonInline[derivation is Annotated by xmlns] match
         case fields: Annotated.AnnotatedFields[Xml.xmlns, ?, ?, ?] @unchecked =>
-          fields.annotations.stdlib.headOption
-          . map { annotation => (annotation.uri, annotation.qualified) }
-          . optional
+          fields.annotations.head.let { annotation => (annotation.uri, annotation.qualified) }
 
         case _ =>
           Unset
@@ -5396,7 +5391,7 @@ object Xml extends Tag.Container
       val scope:      Scope = xylophone.internal.Scope.empty )
   extends Node, Topical, Transportive:
     override def toString(): String =
-      s"<$label>${children.stdlib.mkString}</$label>"
+      s"<$label>${children.map(_.toString.tt).join}</$label>"
 
     // The bindings in force at this element: its scope, extended by any declarations among its
     // own attributes — which are all a hand-built element has

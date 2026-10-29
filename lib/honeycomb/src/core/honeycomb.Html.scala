@@ -2265,7 +2265,7 @@ object Html extends Tag.Container
               foreign )
 
         case node: Node =>
-          Element(label, attributes, Array.from(children.stdlib.prepended(node)), foreign)
+          Element(label, attributes, Array.concat(Array(node), children), foreign)
 
       . of[this.Topic]
       . over[this.Transport]

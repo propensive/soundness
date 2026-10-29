@@ -277,7 +277,7 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
 
       val reader = async:
         import strategies.throwUnsafely
-        safely(clientIn.source[Data].chain.stdlib.iterator.frames[ContentLength].each:
+        safely(clientIn.source[Data].chain.frames[ContentLength].each:
           frame => client.enqueue(frame.read[Json]))
         ()
 

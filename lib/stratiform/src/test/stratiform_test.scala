@@ -351,7 +351,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
           val baseline = TelCheckTree.of(Tel.make(
             Tel.Parser.parse(Cursor[Data](testcase.source))))
           val sizes = List(1, 7, 64, 1024, testcase.source.length.max(1))
-          sizes.stdlib.forall: n =>
+          sizes.all: n =>
             val tree = TelCheckTree.of(Tel.make(
               Tel.Parser.parse(chunkedCursor(testcase.source, n))))
             tree == baseline
@@ -366,7 +366,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
             val baseline =
               capture[Tel.Error](Tel.Parser.parse(Cursor[Data](testcase.source))).reason.number
             val sizes = List(1, 7, 64, 1024, testcase.source.length.max(1))
-            sizes.stdlib.forall: n =>
+            sizes.all: n =>
               capture[Tel.Error](Tel.Parser.parse(chunkedCursor(testcase.source, n)))
               . reason.number == baseline
           . assert(identity)
@@ -778,7 +778,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val alice = t"Alice"
         val parsed = tel"name $alice"
         parsed.childCompounds.head.let(c =>
-          (c.keyword, c.atoms.stdlib.collect { case Tel.Atom.Inline(t, _) => t }.headOption.getOrElse(t"")))
+          (c.keyword, c.atoms.reap { case Tel.Atom.Inline(t, _) => t }.or(t"")))
           .or((t"", t""))
       . assert(_ == (t"name", t"Alice"))
 
@@ -1065,9 +1065,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val root = Tel.Type.assign(doc, personSchema)
         root match
           case Tel.Element.Node(_, _, children) =>
-            List.from:
-              children.stdlib.collect:
-                case Tel.Element.Value(_, _, t) => t
+            children.sweep { case Tel.Element.Value(_, _, t) => t }.to[List]
 
           case _ => Nil
       . assert(_ == List(t"Alice", t"30"))
@@ -1275,10 +1273,10 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         case Tel.Element.Node(_, _, children) if children.length == 1 =>
           children.head match
             case Tel.Element.Node(_, _, inner) =>
-              List.from:
-                inner.stdlib.collect:
-                  case Tel.Element.Value(idx, _, text) => (idx, text)
-                  case Tel.Element.Node(idx, _, _)     => (idx.or(-1), t"")
+              inner.sweep:
+                case Tel.Element.Value(idx, _, text) => (idx, text)
+                case Tel.Element.Node(idx, _, _)     => (idx.or(-1), t"")
+              . to[List]
 
             case _ => Nil
 
@@ -1403,10 +1401,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val doc = t"age 30\n".read[Tel]
         Tel.Type.assign(doc, defaultingSchema) match
           case Tel.Element.Node(_, _, children) =>
-            val values = children.stdlib.collect:
-              case Tel.Element.Value(_, _, t) => t
-
-            Set.from(values)
+            children.sweep { case Tel.Element.Value(_, _, t) => t }.to[Set]
 
           case _ => Set()
       . assert(_ == Set(t"Anonymous", t"30"))
@@ -1415,9 +1410,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
         val doc = t"name Alice\nage 30\n".read[Tel]
         Tel.Type.assign(doc, defaultingSchema) match
           case Tel.Element.Node(_, _, children) =>
-            List.from:
-              children.stdlib.collect:
-                case Tel.Element.Value(_, _, t) => t
+            children.sweep { case Tel.Element.Value(_, _, t) => t }.to[List]
 
           case _ => Nil
       . assert(_ == List(t"Alice", t"30"))
@@ -2956,7 +2949,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
       test(m"trailing bytes after document root raise Bintel.Error"):
         val original = t"name Alice\n".read[Tel]
         val bytes = original.bintel(nameSchema)
-        val padded = (bytes.stdlib.toList :+ 0xff.toByte).toArray.asInstanceOf[Array[Byte]]
+        val padded = bytes :+ 0xff.toByte
         capture[Bintel.Error](Bintel.decode(padded, nameSchema)).reason
       . assert(_ == Bintel.Error.Reason.TrailingBytes)
 
@@ -3131,18 +3124,18 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
 
       test(m"a declared length longer than the structure is B16"):
         val bytes = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
-        val forged = new scala.Array[Byte](bytes.length + 1)
-        bytes.stdlib.copyToArray(forged)
-        forged(4) = (forged(4) + 1).toByte
-        capture[Bintel.Error](Bintel.decodeDocument(forged.asInstanceOf[Array[Byte]], nameSchema))
+        val forged = Array.allocate[Byte](bytes.length + 1)
+        forged.place(bytes)
+        forged(4) = (bytes.at(4.z).or(0.toByte) + 1).toByte
+        capture[Bintel.Error](Bintel.decodeDocument(Array.freeze(forged), nameSchema))
         . reason
       . assert(_ == Bintel.Error.Reason.DeclaredLengthMismatch)
 
       test(m"a declared length shorter than the structure fails inside the body"):
         val bytes = t"name Alice\n".read[Tel].bintelDocument(nameSchema, sig32)
-        val forged = bytes.stdlib.toArray
-        forged(4) = (forged(4) - 1).toByte
-        capture[Bintel.Error](Bintel.decodeDocument(forged.asInstanceOf[Array[Byte]], nameSchema))
+        val forged = Array.thaw(bytes)
+        forged(4) = (bytes.at(4.z).or(0.toByte) - 1).toByte
+        capture[Bintel.Error](Bintel.decodeDocument(Array.freeze(forged), nameSchema))
         . reason
       . assert(_ == Bintel.Error.Reason.ValueTruncated)
 
@@ -3384,7 +3377,7 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
           Array.unsafeFrozen(arr)
 
         val digest = Tel.Type.assign(telBytes.read[Tel], Tels.Axiom.tels).valueHash(Tels.Axiom.tels)
-        digest.data.stdlib.map(b => f"${b & 0xff}%02x").mkString
+        digest.data.map(b => f"${b & 0xff}%02x".tt).join
       . assert(_ == "d440b01e327c62c41ac641047f2c4d8df3cbe94abb24db33f189226b7b8b7ad3")
 
     suite(m"BinTEL §6.2 self-contained mode"):

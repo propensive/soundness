@@ -105,8 +105,8 @@ object Cell:
     case Nil => empty
 
     case _ =>
-      val ascent = cells.stdlib.map(_.baseline).reduceLeft(max)
-      val descent = cells.stdlib.map { cell => cell.height - 1 - cell.baseline }.reduceLeft(max)
+      val ascent = cells.map(_.baseline).maximize(identity(_)).or(0)
+      val descent = cells.map { cell => cell.height - 1 - cell.baseline }.maximize(identity(_)).or(0)
       val framed = cells.stdlib.map(_.framed(ascent, descent))
 
       // Every framed cell has exactly `ascent + descent + 1` lines, so joining row-wise is an
@@ -427,12 +427,9 @@ object Cell:
   // Lay out a sequence of nodes as a row, stretching any bracket or integral
   // operators to the height of the surrounding (non-stretchy) content.
   def row(nodes: List[Mathml]): Cell =
-    val content = nodes.stdlib.filter { node => stretchyChar(node).absent }.map(of)
-    val ascent = if content.isEmpty then 0 else content.map(_.baseline).reduceLeft(max)
-
-    val descent =
-      if content.isEmpty then 0
-      else content.map { cell => cell.height - 1 - cell.baseline }.reduceLeft(max)
+    val content = nodes.filter { node => stretchyChar(node).absent }.map(of)
+    val ascent = content.map(_.baseline).maximize(identity(_)).or(0)
+    val descent = content.map { cell => cell.height - 1 - cell.baseline }.maximize(identity(_)).or(0)
 
     val height = ascent + descent + 1
 

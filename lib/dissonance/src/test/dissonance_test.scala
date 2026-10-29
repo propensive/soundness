@@ -229,32 +229,32 @@ object Tests extends Suite("diff", m"Dissonance tests"):
       test(m"Sample words"):
         val evolution =
           evolve(List.from((scala.collection.immutable.List(t"slain", t"stain", t"strange", t"star", t"rain", t"train").map { w => w.chars.to[List] })))
-        List(Prim, Sec, Ter, Quat, Quin, Sen).map(evolution(_).stdlib.mkString)
+        List(Prim, Sec, Ter, Quat, Quin, Sen).map(evolution(_).map(_.toString.tt).join.s)
       . assert(_ == List("slain", "stain", "strange", "star", "rain", "train"))
 
       test(m"dog/cat"):
         val evolution = evolve(List.from((scala.collection.immutable.List(t"dog", t"cat", t"dog").map { w => w.chars.to[List] })))
-        List(Prim, Sec, Ter).map(evolution(_).stdlib.mkString)
+        List(Prim, Sec, Ter).map(evolution(_).map(_.toString.tt).join.s)
       . assert(_ == List("dog", "cat", "dog"))
 
       test(m"dog/cat 2"):
         val evolution = evolve(List.from((scala.collection.immutable.List(t"dog", t"cat", t"dog", t"dog2").map { w => w.chars.to[List] })))
-        List(Prim, Sec, Ter, Quat).map(evolution(_).stdlib.mkString)
+        List(Prim, Sec, Ter, Quat).map(evolution(_).map(_.toString.tt).join.s)
       . assert(_ == List("dog", "cat", "dog", "dog2"))
 
       test(m"dog/cat 3"):
         val evolution = evolve(List.from((scala.collection.immutable.List(t"dog", t"cat", t"dog", t"do").map { w => w.chars.to[List] })))
-        List(Prim, Sec, Ter, Quat).map(evolution(_).stdlib.mkString)
+        List(Prim, Sec, Ter, Quat).map(evolution(_).map(_.toString.tt).join.s)
       . assert(_ == List("dog", "cat", "dog", "do"))
 
       test(m"Dogs and cats"):
         val evolution = evolve(List.from((scala.collection.immutable.List(t"dog", t"dog and cat", t"cat", t"cat and dog").map { w => w.chars.to[List] })))
-        List(Prim, Sec, Ter, Quat).map(evolution(_).stdlib.mkString)
+        List(Prim, Sec, Ter, Quat).map(evolution(_).map(_.toString.tt).join.s)
       . assert(_ == List("dog", "dog and cat", "cat", "cat and dog"))
 
       test(m"Jack and Jill"):
         val evolution = evolve(List.from((scala.collection.immutable.List(t"Jack and Jill", t"Jack with Jill", t"Jack und Jill").map { w => w.chars.to[List] })))
-        List(Prim, Sec, Ter).map(evolution(_).stdlib.mkString)
+        List(Prim, Sec, Ter).map(evolution(_).map(_.toString.tt).join.s)
       . assert(_ == List("Jack and Jill", "Jack with Jill", "Jack und Jill"))
 
     val source = Sequence(t"line1", t"line2", t"line3")

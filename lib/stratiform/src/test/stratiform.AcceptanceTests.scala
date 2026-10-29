@@ -62,7 +62,7 @@ object AcceptanceTests extends Suite("tel-acceptance", m"Stratiform acceptance t
     array.toSeq
 
   private def hex(data: Data): String =
-    data.stdlib.map { byte => f"${byte & 0xff}%02x" }.mkString
+    data.map { byte => f"${byte & 0xff}%02x".tt }.join.s
 
   private def bytes(values: Int*): Data =
     Array.unsafeFrozen(values.map(_.toByte).toArray)

@@ -213,7 +213,7 @@ trait Sfnt:
   def advanceWidth(char: Char): Int raises Font.Error = hmtx.advanceWidth(glyph(char).id)
 
   def width(text: Text): Quantity[Ems[1]] raises Font.Error =
-    text.chars.stdlib.sumBy(advanceWidth).toDouble*Em/head.unitsPerEm.int.toDouble
+    text.chars.fuse(0)(state + advanceWidth(next)).toDouble*Em/head.unitsPerEm.int.toDouble
 
   def leftSideBearing(char: Char): Int raises Font.Error =
     hmtx.leftSideBearing(glyph(char).id)

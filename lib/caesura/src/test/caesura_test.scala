@@ -487,7 +487,7 @@ object Tests extends Suite("dsv", m"Caesura tests"):
       . assert(_ == List(1, 2, 1, 2))
 
       test(m"the total column count is the sum of all spans"):
-        Spannable.derived[Bar].spans().stdlib.sum
+        Spannable.derived[Bar].spans().total
       . assert(_ == 6)
 
     suite(m"Field renaming"):

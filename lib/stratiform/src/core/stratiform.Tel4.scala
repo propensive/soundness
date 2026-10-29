@@ -120,14 +120,13 @@ trait Tel4:
         baseStruct: Optional[Tels.Struct] = Unset )
     :   List[(Text, Member)] =
 
-      val declared: scala.collection.immutable.Set[Text] =
-        baseStruct.lay(scala.collection.immutable.Set()): struct =>
-          struct.members.stdlib.toList.collect { case field: Tels.Field => field.keyword }
-          . to(scala.collection.immutable.Set)
+      val declared: Set[Text] =
+        baseStruct.lay(Set()): struct =>
+          struct.members.sweep { case field: Tels.Field => field.keyword }.to[Set]
 
       struct.members.stdlib.toList.flatMap:
         case field: Tels.Field =>
-          val layered = base.present && !declared.contains(field.keyword)
+          val layered = base.present && !declared.has(field.keyword)
           scala.List(field.keyword -> memberOf(field, schema, base, layered))
 
         // A select member is one of its definition's variants, each a field of its own

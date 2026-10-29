@@ -147,7 +147,7 @@ private[hallucination] object PngCodec:
         case 4 => 2
         case _ => 4
 
-      val alpha = colorType == 4 || colorType == 6 || !transparency.stdlib.isEmpty
+      val alpha = colorType == 4 || colorType == 6 || transparency.length > 0
       val maximum = (1 << depth) - 1
 
       // The `tRNS` samples for greyscale and truecolour are full-depth values.

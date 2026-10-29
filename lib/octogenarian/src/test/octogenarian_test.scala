@@ -762,7 +762,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
           withWorktree: worktree ?=>
             commitFile(t"a", t"a\n", t"first")
             write(t"new.txt", t"new\n")
-            worktree.status().value.stdlib.exists: e =>
+            worktree.status().value.exists: e =>
               e.path == planePath(t"new.txt") && e.index == Git.Status.Untracked
         .assert(_ == true)
 
@@ -771,7 +771,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
             commitFile(t"a", t"a\n", t"first")
             write(t"new.txt", t"new\n")
             worktree.add(planePath(t"new.txt"))
-            worktree.status().value.stdlib.exists: e =>
+            worktree.status().value.exists: e =>
               e.path == planePath(t"new.txt") && e.index == Git.Status.Added
         .assert(_ == true)
 
@@ -779,7 +779,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
           withWorktree: worktree ?=>
             commitFile(t"a", t"a\n", t"first")
             write(t"a", t"a-changed\n")
-            worktree.status().value.stdlib.exists: e =>
+            worktree.status().value.exists: e =>
               e.path == planePath(t"a") && e.worktree == Git.Status.Updated
         .assert(_ == true)
 
@@ -787,7 +787,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
           withWorktree: worktree ?=>
             commitFile(t"a", t"a\n", t"first")
             sh"rm ${worktree.stem}/a".exec[Exit]()
-            worktree.status().value.stdlib.exists: e =>
+            worktree.status().value.exists: e =>
               e.path == planePath(t"a") && e.worktree == Git.Status.Deleted
         .assert(_ == true)
 
@@ -797,7 +797,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
             commitFile(t".gitignore", t"ignored.txt\n", t"add gitignore")
             write(t"ignored.txt", t"x\n")
 
-            worktree.status(ignored = true).value.stdlib.exists: e =>
+            worktree.status(ignored = true).value.exists: e =>
               e.path == planePath(t"ignored.txt") && e.index == Git.Status.Ignored
         .assert(_ == true)
 
@@ -838,7 +838,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
             write(t"new.txt", t"new\n")
             worktree.add(planePath(t"new.txt"))
             worktree.unstage(planePath(t"new.txt"))
-            worktree.status().value.stdlib.exists: e =>
+            worktree.status().value.exists: e =>
               e.path == planePath(t"new.txt") && e.index == Git.Status.Untracked
         .assert(_ == true)
 
@@ -861,7 +861,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
           withWorktree: worktree ?=>
             commitFile(t"a", t"a\n", t"first")
             worktree.rm(planePath(t"a"))()
-            !(worktree.stem / "a").existent() && worktree.status().value.stdlib.exists: e =>
+            !(worktree.stem / "a").existent() && worktree.status().value.exists: e =>
               e.path == planePath(t"a") && e.index == Git.Status.Deleted
         .assert(_ == true)
 
@@ -869,7 +869,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
           withWorktree: worktree ?=>
             commitFile(t"a", t"a\n", t"first")
             worktree.rm(planePath(t"a"))(cached = true)
-            (worktree.stem / "a").existent() && worktree.status().value.stdlib.exists: e =>
+            (worktree.stem / "a").existent() && worktree.status().value.exists: e =>
               e.path == planePath(t"a") && e.index == Git.Status.Deleted
         .assert(_ == true)
 
@@ -894,7 +894,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
             write(t"a", t"changed\n")
             worktree.add(planePath(t"a"))
             worktree.restore(planePath(t"a"))(staged = true)
-            worktree.status().value.stdlib.exists: e =>
+            worktree.status().value.exists: e =>
               e.path == planePath(t"a") && e.index == Unset && e.worktree == Git.Status.Updated
         .assert(_ == true)
 
@@ -930,7 +930,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
             commitFile(t"a", t"a\n", t"first")
             commitFile(t"b", t"b\n", t"second")
             worktree.reset(ResetMode.Soft, Git.Revision.head(1), worktree.head())
-            worktree.status().value.stdlib.exists: e =>
+            worktree.status().value.exists: e =>
               e.path == planePath(t"b") && e.index == Git.Status.Added
         .assert(_ == true)
 
@@ -939,7 +939,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
             commitFile(t"a", t"a\n", t"first")
             commitFile(t"b", t"b\n", t"second")
             worktree.reset(ResetMode.Mixed, Git.Revision.head(1), worktree.head())
-            worktree.status().value.stdlib.exists: e =>
+            worktree.status().value.exists: e =>
               e.path == planePath(t"b") && e.index == Git.Status.Untracked
         .assert(_ == true)
 
@@ -1282,7 +1282,7 @@ object Tests extends Suite("git", m"Octogenarian Tests"):
             val toRevert = commitFile(t"b", t"b\n", t"add b")
             worktree.revert(List(toRevert), worktree.head(), noCommit = true)
             messages.size == 2
-              && worktree.status().value.stdlib.exists: e =>
+              && worktree.status().value.exists: e =>
                   e.path == planePath(t"b") && e.index == Git.Status.Deleted
         .assert(_ == true)
 
