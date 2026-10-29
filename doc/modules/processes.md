@@ -58,7 +58,7 @@ The type does more than name a conversion; it decides how the result is *interpr
 disagree about which stream carries the important output and about what a nonzero status means —
 for some it is a failure, for others one of several ordinary answers — and the choice of type
 settles both. It also decides *when* the call returns: `Text` waits for the process to finish and
-gives its whole output, while an `Iterator[Text]` yields lines as they arrive. `Stderr` reads the
+gives its whole output, while a `Chain[Text]` yields lines lazily, as they arrive. `Stderr` reads the
 other stream, `Data` the raw bytes, and `Unit` discards the output while still waiting.
 
 A `Computable` instance defines each of these, so a type not covered gains one by saying how to

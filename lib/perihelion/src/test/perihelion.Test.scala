@@ -245,7 +245,7 @@ object Tests extends Suite("websocket", m"Perihelion tests"):
       test(m"An empty control frame parses without reading past its end"):
         class Live() extends Iterator[Data]:
           var pulls: Int = 0
-          update def advance(): Boolean = { pulls += 1; true }
+          def advance(): Boolean = { pulls += 1; true }
           def current: Data =
             if pulls == 1 then Data(0x8a.toByte, 0x00.toByte) else Data(0x8a.toByte)
 

@@ -46,7 +46,7 @@ object FramedTests extends Suite("tel-framed", m"Stratiform framed duplex tests"
   case class Reply(id: Int, length: Int) derives CanEqual
 
   // The next message, or a failure: a test that reads expects one to be there.
-  def receive[message](messages: Iterator[message]^): message =
+  def receive[message](messages: Iterator[message]): message =
     messages.seek(_ => true)(throw new NoSuchElementException())(identity(_))
 
   def run(): Unit =

@@ -834,9 +834,9 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
 
           private var head: Terminal.Event = Keypress.Escape
 
-          update def advance(): Boolean = remaining match
-            case next :: tail => remaining = tail; head = next(); true
-            case _            => false
+          update def advance(): Boolean = remaining.headOption match
+            case Some(next) => remaining = remaining.tail; head = next(); true
+            case None       => false
 
           def current: Terminal.Event = head
 

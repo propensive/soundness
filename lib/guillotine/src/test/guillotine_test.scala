@@ -338,7 +338,7 @@ object Tests extends Suite("shell", m"Guillotine tests"):
       . assert(_ == t"3")
 
       test(m"read stream of strings"):
-        sh"echo 'Hello world'".exec[Iterator[Text]]().to[List]
+        sh"echo 'Hello world'".exec[Chain[Text]]().to[List]
       . assert(_ == List(t"Hello world"))
 
       test(m"read list of strings"):

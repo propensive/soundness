@@ -48,14 +48,15 @@ object Stderr:
 case class Stderr(text: Text)
 
 object Computable:
-  given lineStream: Buffering => (Iterator[Text] is Computable) =
-    // Line-oriented output as a single-consumer line iterator (the K-B
-    // adapter), replacing the memoizing `Chain` bridge. `lines()` needs a
-    // `Tactic[Truncation.Error]` and `.records` a `Buffering`; the endpoint the
-    // iterator pulls from is laundered to fit the pure `Self` slot, so the
-    // caller must drain it once. A read failure throws, as the `BufferedReader`
-    // this replaced did.
-    job => unsafely(job.lines().records.asInstanceOf[Iterator[Text]])
+  given lineStream: Buffering => (Chain[Text] is Computable) =
+    // Line-oriented output as a lazy chain of lines, pulled from the process as the chain is
+    // forced and memoized thereafter. An exclusive iterator cannot be the `Self` of an erased
+    // given (a trait holding it would have to be a `Capability`), so the chain -- pure, lazy --
+    // is the honest line-at-a-time type here. `lines()` needs a `Tactic[Truncation.Error]` and
+    // `.records` a `Buffering`. A read failure throws, as the `BufferedReader` this replaced did.
+    job => unsafely:
+      val records: Iterator[Text]^ = job.lines().records
+      records.chain
 
   given list: List[Text] is Computable = job => unsafely(job.lines().records.to[List])
 

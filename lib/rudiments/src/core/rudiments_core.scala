@@ -230,7 +230,7 @@ extension [value <: Matchable](iterable: Iterable[value])
 // idiom for locating a specific element.)
 extension [self](self: self)(using traversable: self is Traversable)
   def seek(predicate: traversable.Operand => Boolean): Optional[traversable.Operand] =
-    traversable.traverse(self).seek(predicate)(Unset)(identity(_))
+    traversable.traverse(self).seek[Optional[traversable.Operand]](predicate)(Unset)(identity(_))
 
   // The first element the partial function is defined at, transformed by it: the total
   // counterpart of `collectFirst`, and the single-result sibling of `sweep`. A distinct name
@@ -275,7 +275,7 @@ extension [self](self: self)(using traversable: self is Traversable)
   // The first element satisfying the predicate, or `Unset`: the `Traversable` sibling of the
   // stdlib's `find`, whose `Option` result the collections do not use.
   inline def find(predicate: traversable.Operand => Boolean): Optional[traversable.Operand] =
-    traversable.traverse(self).seek(predicate)(Unset)(identity(_))
+    traversable.traverse(self).seek[Optional[traversable.Operand]](predicate)(Unset)(identity(_))
 
   // The `Traversable` sibling of the `Iterable` `fuse` below, so the opaque collections fold
   // through the same name.
@@ -339,11 +339,12 @@ extension [self](value: self)(using traversable: self is Traversable)
   transparent inline def head: Optional[traversable.Operand] =
     compiletime.summonFrom:
       case _: (`self` <:< Populated) =>
-        traversable.traverse(value).seek(_ => true)(throw java.util.NoSuchElementException()):
-          identity(_)
+        traversable.traverse(value).next() match
+          case Iterator.Exhausted                         => throw java.util.NoSuchElementException()
+          case element: `traversable`.Operand @unchecked  => element
 
       case _ =>
-        traversable.traverse(value).seek(_ => true)(Unset)(identity(_))
+        traversable.traverse(value).seek[Optional[traversable.Operand]](_ => true)(Unset)(identity(_))
 
 extension [self <: Populated](value: self)(using traversable: self is Traversable)
   def reduce(lambda: (traversable.Operand, traversable.Operand) => traversable.Operand)

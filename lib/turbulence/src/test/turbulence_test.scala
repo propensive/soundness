@@ -733,7 +733,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
           . assert(_ == true)
 
         test(m"lines of an empty byte stream is empty"):
-          List.from(Iterator.empty[Data].stream.delineate.records)
+          Iterator.empty[Data].stream.delineate.records.to[List]
         . assert(_ == List())
 
     suite(m"Source and Sink tests"):
