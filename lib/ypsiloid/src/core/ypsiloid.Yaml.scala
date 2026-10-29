@@ -2691,9 +2691,9 @@ object Yaml extends Yaml1, Dynamic:
         val mk = cursor.mark
 
         val isBom =
-          cursor.more && cursor.unsafeDatum(using Unsafe) == -17.toByte &&
-            { cursor.next(); cursor.more && cursor.unsafeDatum(using Unsafe) == -69.toByte } &&
-            { cursor.next(); cursor.more && cursor.unsafeDatum(using Unsafe) == -65.toByte }
+          cursor.more && cursor.unsafeDatum(using Unsafe) == (-17).toByte &&
+            { cursor.next(); cursor.more && cursor.unsafeDatum(using Unsafe) == (-69).toByte } &&
+            { cursor.next(); cursor.more && cursor.unsafeDatum(using Unsafe) == (-65).toByte }
 
         if isBom then cursor.next() else cursor.cue(mk)
 

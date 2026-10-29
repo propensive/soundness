@@ -435,7 +435,7 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
   // `syncTo`/`syncFrom` round-trip. The slow path retains full BOM
   // semantics (including rolling back if only the first byte matches).
   protected update def bom(): Unit =
-    if !more || peek != -17.toByte then return
+    if !more || peek != (-17).toByte then return
 
     // Block-scoped like `reconcileLineation`, with parser state read before the cursor
     // binding and one binding used throughout (each cursor access through `this` would
@@ -450,9 +450,9 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
         val mk = current.mark
 
         val bom =
-          current.more && current.unsafeDatum(using Unsafe) == -17.toByte &&
-            { current.next(); current.more && current.unsafeDatum(using Unsafe) == -69.toByte } &&
-            { current.next(); current.more && current.unsafeDatum(using Unsafe) == -65.toByte }
+          current.more && current.unsafeDatum(using Unsafe) == (-17).toByte &&
+            { current.next(); current.more && current.unsafeDatum(using Unsafe) == (-69).toByte } &&
+            { current.next(); current.more && current.unsafeDatum(using Unsafe) == (-65).toByte }
 
         if bom then current.next() else current.cue(mk)
 
