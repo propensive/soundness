@@ -411,7 +411,9 @@ object JavaBaseCrypto extends Crypto:
   private def embedTopLevel(privateKey: Data, publicKey: Data): Data =
     val bits = decode(publicKey) match
       case Asn1.Sequence(List(_, bits: Asn1.BitString)) => bits
-      case _ => panic(m"the public key was not a SubjectPublicKeyInfo")
+
+      case _ =>
+        panic(m"the public key was not a SubjectPublicKeyInfo")
 
     decode(privateKey) match
       case Asn1.Sequence(List(version, algorithm, octets: Asn1.OctetString)) =>
@@ -434,7 +436,7 @@ object JavaBaseCrypto extends Crypto:
     decode(privateKey) match
       case Asn1.Sequence(_ :: algorithm :: _ :: rest) =>
         val bits = rest.reap:
-          case Asn1.Tagged(1, _, bits: Asn1.BitString)   => bits
+          case Asn1.Tagged(1, _, bits: Asn1.BitString)      => bits
           // A public key is whole octets, so the BIT STRING's leading unused-bits count is zero.
           case Asn1.Unknown(Asn1.Context, 1, false, octets) => Asn1.BitString(octets.skip(1), 0)
 

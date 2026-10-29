@@ -37,7 +37,6 @@ import contingency.*
 import denominative.*
 import gossamer.*
 import rudiments.*
-import vacuous.*
 
 // ASCII85Decode (ISO 32000-2 §7.4.3): groups of five characters from `!`–`u` encode four
 // bytes base-85; `z` abbreviates four zero bytes; a partial final group of n characters

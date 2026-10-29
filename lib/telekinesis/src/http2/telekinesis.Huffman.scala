@@ -32,12 +32,8 @@
                                                                                                   */
 package telekinesis
 
-import scala.collection.mutable as scm
-
 import anticipation.*
 import contingency.*
-import rudiments.*
-import vacuous.*
 
 import Http2.Error.Reason
 

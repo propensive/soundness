@@ -35,15 +35,8 @@ package xenophile
 import java.lang.invoke as jli
 import java.util.concurrent as juc
 
-import scala.collection.immutable.Seq
-import scala.collection.immutable.{List, Nil, ::}
-import scala.quoted.*
-
 import anticipation.*
-import fulminate.*
-import gossamer.*
 import prepositional.*
-import rudiments.*
 import vacuous.*
 
 // The Kotlin/JVM ecosystem: `Interoperable` markers associating Scala types with the Kotlin

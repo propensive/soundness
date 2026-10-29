@@ -33,10 +33,9 @@
 package telekinesis
 
 import scala.caps
+import scala.collection.concurrent as scc
 
-import scala.collection.mutable as scm
-
-import anticipation.{Data as Bytes, *}
+import anticipation.{Data as Bytes}
 import coaxial.*
 import contingency.*
 import fulminate.*
@@ -51,7 +50,6 @@ import vacuous.*
 import Http2.Error.Reason
 import anticipation.*
 import denominative.*
-import scala.collection.concurrent as scc
 import hieroglyph.*, codepages.asciiCodepage
 import proscenium.*
 import turbulence.*
@@ -844,7 +842,7 @@ object Http2:
     // batched replenishment.
     private[telekinesis] val unreplenished: Atomic[Int] = Atomic(0)
 
-    val body: Stream.Body = Stream.Body{ count => onConsume(this, count) }
+    val body: Stream.Body = Stream.Body: count => onConsume(this, count)
 
     // Untracked: written only by the connection's single reader daemon.
     // [synchronized] plain var written by single reader daemon

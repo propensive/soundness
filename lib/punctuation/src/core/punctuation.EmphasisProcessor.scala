@@ -126,7 +126,8 @@ final class InlineList:
     private var node0: InlineNode = null.asInstanceOf[InlineNode]
 
     update def advance(): Boolean = cur match
-      case null          => false
+      case null => false
+
       case n: InlineNode =>
         node0 = n
         cur = n.next

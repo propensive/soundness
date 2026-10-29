@@ -42,7 +42,6 @@ import distillate.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
-import rudiments.*
 import vacuous.*
 
 package systems:

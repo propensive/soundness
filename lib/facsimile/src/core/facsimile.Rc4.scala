@@ -33,8 +33,6 @@
 package facsimile
 
 import anticipation.*
-import rudiments.*
-import vacuous.*
 
 // RC4, the stream cipher of the PDF standard security handler at revisions 2–4 (ISO
 // 32000-2 §7.6.3). Symmetric, so the same operation encrypts and decrypts. Implemented here

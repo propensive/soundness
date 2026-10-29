@@ -40,7 +40,6 @@ import contextual.*
 import contingency.*
 import gossamer.*
 import hieroglyph.*
-import honeycomb.Html
 import honeycomb.Renderable
 import hypotenuse.*
 import mosquito.*

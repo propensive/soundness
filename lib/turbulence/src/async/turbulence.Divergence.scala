@@ -32,8 +32,6 @@
                                                                                                   */
 package turbulence
 
-import java.util.concurrent as juc
-
 import scala.caps
 import scala.collection.immutable.IndexedSeq
 

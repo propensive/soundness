@@ -32,8 +32,6 @@
                                                                                                   */
 package aviation
 
-import contingency.*
-
 // The shared structure of the "wandering"/Alexandrian calendars — Coptic, Ethiopian and the French
 // Republican calendar: twelve months of 30 days followed by a short thirteenth month of 5 days (6
 // in a leap year), with a leap year every fourth year (those with `year % 4 == 3`). Subclasses

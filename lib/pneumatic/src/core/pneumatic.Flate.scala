@@ -34,8 +34,6 @@ package pneumatic
 
 import scala.caps
 
-import vacuous.*
-
 // Shared definitions for the pure-Scala DEFLATE implementation, ported faithfully from JZlib
 // (com.jcraft.jzlib, BSD 3-clause, Copyright (c) 2000-2011 ymnk, JCraft, Inc.), itself a port of
 // zlib by Jean-loup Gailly and Mark Adler. Because this port is pure Scala, the `Deflate`, `Gzip`

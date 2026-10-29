@@ -763,7 +763,7 @@ object Http:
 
     lazy val textCookies: Map[Text, Text] =
       headers.cookie.bind: (cookie: List[Cookie.Value]) =>
-        cookie.map { value => value.name -> value.value }
+        cookie.map: value => value.name -> value.value
 
       . to[Map]
 

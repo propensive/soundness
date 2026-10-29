@@ -406,8 +406,6 @@ object atomicMacros:
       prior:      Boolean )
   :   Macro[value] =
 
-    import quotes.reflect.*
-
     analyse(transition, numeric = false) match
       case (Shape.Identity, _) =>
         '{$atomic.get().asInstanceOf[value]}

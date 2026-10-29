@@ -32,9 +32,9 @@
                                                                                                   */
 package obligatory
 
-import murmuration.Iterator
 import scala.caps
 
+import murmuration.Iterator
 import prepositional.*
 
 extension [element](stream: Iterator[element]^)

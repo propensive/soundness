@@ -41,7 +41,6 @@ import contingency.*
 import denominative.*
 import prepositional.*
 import rudiments.*
-import turbulence.*
 import vacuous.*
 import zephyrine.*
 import Protobuf.Error.Reason
@@ -91,7 +90,8 @@ object ProtobufParser:
     val limit = data.length
 
     // A one-byte varint (a bool, a small count or enum) is the common case, read in place.
-    if limit > 0 && view.readUnchecked(0) >= 0 then view.readUnchecked(0).toLong else varintOfSlow(view, limit)
+    if limit > 0 && view.readUnchecked(0) >= 0 then view.readUnchecked(0).toLong
+    else varintOfSlow(view, limit)
 
   private def varintOfSlow(view: Data, limit: Int)(using Tactic[Protobuf.Error])
   :   Long =
@@ -193,7 +193,12 @@ object ProtobufParser:
     @scala.annotation.tailrec
     private def gather(number: Int, end: Int, acc: List[Protobuf]): List[Protobuf] =
       if end <= 0 then acc
-      else gather(number, end - 1, if numbers.readUnchecked(end - 1) == number then wires.readUnchecked(end - 1) :: acc else acc)
+      else
+        gather
+          ( number,
+            end - 1,
+            if numbers.readUnchecked(end - 1) == number then wires.readUnchecked(end - 1) :: acc
+            else acc )
 
     def defines(number: Int): Boolean = seek(number, count) >= 0
 
@@ -201,6 +206,7 @@ object ProtobufParser:
     // value itself if it occurs once, and `Repeated` of every occurrence otherwise.
     def apply(number: Int): Protobuf =
       val last = seek(number, count)
+
       if last < 0 then Protobuf.Absent
       else if seek(number, last) < 0 then wires.readUnchecked(last)
       else Protobuf.Repeated(gather(number, last + 1, Nil))
@@ -234,7 +240,8 @@ object ProtobufParser:
         val value = view.readUnchecked(pos).toLong
         pos += 1
         value
-      else varintSlow()
+      else
+        varintSlow()
 
     private update def varintSlow()(using Tactic[Protobuf.Error]): Long =
       val start = pos
@@ -288,7 +295,8 @@ object ProtobufParser:
       val tagStart = pos
       val tag = varint().toInt
       val code = tag & 0x7
-      (tag >>> 3, WireType.fromId(code).lest(Protobuf.Error(Reason.UnexpectedWireType(code, tagStart))))
+      ( tag >>> 3,
+        WireType.fromId(code).lest(Protobuf.Error(Reason.UnexpectedWireType(code, tagStart))) )
 
     // The number of fields in the payload, validating every tag and extent as `next` will;
     // the walk then rewinds to the start.
@@ -558,8 +566,10 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
       val value = cells(pos).toLong
       pos += 1
       value
-    else if limit - pos >= 10 && bufEnd - pos >= 10 then varintShort(offset)
-    else directVarintSlow()
+    else if limit - pos >= 10 && bufEnd - pos >= 10 then
+      varintShort(offset)
+    else
+      directVarintSlow()
 
   // The two-, three- and four-byte varints — lengths, counts, timestamps, most packed
   // values — read straight through, with no per-byte state; longer ones continue in
@@ -757,7 +767,10 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
   // read whole, with the same checks at the same offsets.
   private update def lengthDelimited()(using Tactic[Protobuf.Error]): Int =
     val length = directVarint().toInt
-    if length < 0 || position + length > boundary then abort(Protobuf.Error(Reason.Truncated(offset)))
+
+    if length < 0 || position + length > boundary
+    then abort(Protobuf.Error(Reason.Truncated(offset)))
+
     expect(length)
     length
 

@@ -39,7 +39,6 @@ import anticipation.*
 import contingency.*
 import gigantism.*
 import gossamer.*
-import prepositional.*
 import spectacular.*
 import urticose.*
 import vacuous.*

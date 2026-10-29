@@ -35,7 +35,6 @@ package exoskeleton
 import anticipation.*
 import denominative.*
 import denominative.dysasymptotics.linearSize
-import fulminate.*
 import gossamer.*
 import rudiments.*
 import symbolism.*

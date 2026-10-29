@@ -38,8 +38,6 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import prepositional.*
-import rudiments.*
-import vacuous.*
 import zephyrine.*
 
 // Brotli (RFC 7932), implemented natively in pure Scala: the decoder is a faithful port of Google's

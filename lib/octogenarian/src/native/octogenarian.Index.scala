@@ -37,7 +37,6 @@ import java.nio.ByteBuffer
 import anticipation.*
 import aperture.*
 import contingency.*
-import distillate.*
 import galilei.*
 import gastronomy.*
 import gossamer.*

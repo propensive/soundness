@@ -33,7 +33,6 @@
 package quantitative
 
 import anticipation.*
-import rudiments.*
 
 object Stones:
   given designation: Designation[Stones[1]] = () => "st".tt

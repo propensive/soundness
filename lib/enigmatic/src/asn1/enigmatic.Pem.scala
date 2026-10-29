@@ -34,8 +34,6 @@ package enigmatic
 
 import java.lang as jl
 
-import scala.caps
-
 import anticipation.*
 import contingency.*
 import denominative.*

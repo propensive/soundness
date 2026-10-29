@@ -38,8 +38,6 @@ import gossamer.*
 import hieroglyph.*
 import obligatory.*
 import prepositional.*
-import rudiments.*
-import turbulence.*
 import zephyrine.*
 
 // The framing shared by both roles. A Language Server exchange is `Content-Length`-framed JSON-RPC

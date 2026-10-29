@@ -124,7 +124,6 @@ object JsonRpc:
   // Awaits a request's response, raising the peer's fault as a `JsonRpc.Error` rather than
   // blocking forever on a promise an error response could never fulfil.
   def outcome(pending: Pending)(using Monitor, Tactic[JsonRpc.Error]): Json =
-    import fulminate.errorDiagnostics.stackTracesDiagnostics
 
     try unsafely(pending.promise.await())
     catch case async: Async.Error => faults.remove(pending.id) match

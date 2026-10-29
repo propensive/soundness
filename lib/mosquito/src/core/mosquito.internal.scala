@@ -293,7 +293,6 @@ object internal:
     def iarray: Array[left]^{} = left.data
     def size(using ValueOf[size]): Int = valueOf[size]
 
-
     // Inline, with the element arithmetic resolved at the call site (`plus` and `times`), as
     // the arithmetic instances are: a `Vector[Double, n]` sums its squares without boxing.
     inline def norm
@@ -311,9 +310,11 @@ object internal:
 
       while i < left.data.length do
         val x = left.data.readUnchecked(i)
+
         sum =
           plus[multiplicable.Result, multiplicable.Result, multiplicable.Result]
             ( sum, times[left, left, multiplicable.Result](x, x) )
+
         i += 1
 
       sum.sqrt

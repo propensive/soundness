@@ -35,8 +35,6 @@ package pneumatic
 import scala.caps
 
 import anticipation.*
-import rudiments.*
-import vacuous.*
 import zephyrine.*
 
 // LZMA2 wraps the raw LZMA symbol stream in self-describing chunks: each carries its uncompressed

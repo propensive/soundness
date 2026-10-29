@@ -50,7 +50,7 @@ object Bibliography:
 
     (0 until shared).find{ index => left.readUnchecked(index) != right.readUnchecked(index) }.fold
       (left.length - right.length)
-      (index => (left.readUnchecked(index) & 0xff) - (right.readUnchecked(index) & 0xff))
+      { index => (left.readUnchecked(index) & 0xff) - (right.readUnchecked(index) & 0xff) }
 
   // The order of `hash` relative to every string beginning with `prefix`: zero when `hash` begins
   // with it, so that the hashes it matches form one run in the sorted index.
@@ -59,7 +59,7 @@ object Bibliography:
 
     (0 until shared).find{ index => hash.readUnchecked(index) != prefix.readUnchecked(index) }.fold
       (if hash.length < prefix.length then -1 else 0)
-      (index => (hash.readUnchecked(index) & 0xff) - (prefix.readUnchecked(index) & 0xff))
+      { index => (hash.readUnchecked(index) & 0xff) - (prefix.readUnchecked(index) & 0xff) }
 
   // The first index in `[low, high)` whose hash does not precede `prefix`.
   @tailrec
@@ -67,7 +67,8 @@ object Bibliography:
     if low >= high then low else
       val middle = (low + high) >>> 1
 
-      if prefixOrder(sorted.readUnchecked(middle), prefix) < 0 then lowerBound(sorted, prefix, middle + 1, high)
+      if prefixOrder(sorted.readUnchecked(middle), prefix) < 0
+      then lowerBound(sorted, prefix, middle + 1, high)
       else lowerBound(sorted, prefix, low, middle)
 
 case class Bibliography(hashes: Array[Data]^{}) extends Findable:

@@ -251,7 +251,8 @@ object Redraft:
 
     def near(index: Int): Boolean =
       (1 to k).exists: d =>
-        (index - d >= 0 && keep.readUnchecked(index - d)) || (index + d < n && keep.readUnchecked(index + d))
+        (index - d >= 0 && keep.readUnchecked(index - d)) ||
+          (index + d < n && keep.readUnchecked(index + d))
 
     directives.indexed
     . filter: (directive, ordinal) => !directive.isInstanceOf[Directive.Keep] || near(ordinal.n0)

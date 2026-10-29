@@ -40,7 +40,6 @@ import profanity.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
-import denominative.dysasymptotics.linearSize
 
 object Form:
   // Minted fresh: the constructor proxy's result would be read-only, and `run` is an update.
@@ -180,8 +179,7 @@ extends scala.caps.ExclusiveCapability, scala.caps.Stateful:
     def nextWidth(): Int =
       val index = consumed
       consumed += 1
-      if stale then root.width
-      else previous.entries.at(index.z).lay(root.width)(_.rect.width)
+      if stale then root.width else previous.entries.at(index.z).lay(root.width)(_.rect.width)
 
     def project(node: Pane): Frame = node match
       case Pane.Branch(sizing, arrangement, panes) =>

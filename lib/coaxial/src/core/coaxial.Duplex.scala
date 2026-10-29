@@ -34,7 +34,6 @@ package coaxial
 
 import anticipation.*
 import prepositional.*
-import rudiments.*
 import turbulence.Relay
 import vacuous.*
 import zephyrine.*

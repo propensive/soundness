@@ -32,18 +32,16 @@
                                                                                                   */
 package frontier
 
-import scala.collection.immutable.{List, Nil, ::}
+import scala.collection.immutable.{List, Nil}
 import scala.quoted.*
 
 import dotty.tools.dotc.*
 
 import anticipation.*
-import denominative.*
 import gigantism.*
 import gossamer.*
 import proscenium.*
 import spectacular.*
-import symbolism.*
 import vacuous.*
 
 object internal:

@@ -33,7 +33,6 @@
 package dendrology
 
 // Deliberate stdlib opt-out, as in the diagram implementations.
-import scala.collection.immutable.{Map, Set}
 
 import anticipation.*
 import gossamer.*

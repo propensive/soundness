@@ -32,13 +32,11 @@
                                                                                                   */
 package stratiform
 
-import anticipation.*
 import contingency.*
 import denominative.*
 import panopticon.*
 import prepositional.*
 import rudiments.*
-import vacuous.*
 
 // The panopticon lens and optic instances for `Tel`. These were members of `trait Tel2`, and so
 // inherited into `Tel`'s implicit scope; they are the only reason `stratiform.core` needed

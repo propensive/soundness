@@ -59,6 +59,7 @@ object Fqcn:
 
     parts.each: part =>
       if part.s.length == 0 then raise(Fqcn.Error(name, Fqcn.Error.Reason.EmptyName))
+
       if digression.internal.javaKeywords.has(part.s)
       then raise(Fqcn.Error(name, Fqcn.Error.Reason.JavaKeyword(part)))
 
@@ -75,6 +76,7 @@ object Fqcn:
   private[digression] def join(parts: List[Text]): Text =
     parts.fold(StringBuilder()): (builder, part) =>
       (if builder.isEmpty then builder else builder.append('.')).append(part.s)
+
     . toString.tt
 
   given encodable: Fqcn is Encodable in Text = _.text

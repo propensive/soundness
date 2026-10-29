@@ -37,7 +37,6 @@ import scala.collection.immutable as sci
 import scala.collection.immutable.Seq
 
 import denominative.*
-import prepositional.*
 
 object Bijection:
   def apply[key, value](map: sci.Map[key, value]): Bijection[key, value] =

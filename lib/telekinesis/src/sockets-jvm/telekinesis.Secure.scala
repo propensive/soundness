@@ -32,21 +32,16 @@
                                                                                                   */
 package telekinesis
 
-import java.io as ji
-
 import anticipation.*
 import coaxial.*
 import contingency.*
-import distillate.*
 import gigantism.*
 import gossamer.*
 import parasite.*
-import prepositional.*
 import rudiments.*
 import spectacular.*
 import turbulence.*
 import urticose.*
-import vacuous.*
 import zephyrine.*
 
 // The JVM's `https` exchange for `httpBackends.soundnessHttp`: ALPN offers `h2` then `http/1.1`
@@ -79,7 +74,8 @@ private[telekinesis] object Secure:
         val authority: Text = if port == 443 then host.show else t"${host.show}:$port"
 
         // RFC 7540 §8.1.2.2: connection-specific headers must not appear in h2.
-        val headers2: List[Http.Header] = headers.filter: header => header.key.lower != t"connection"
+        val headers2: List[Http.Header] =
+          headers.filter: header => header.key.lower != t"connection"
 
         val httpRequest = Http.Request(method, 1.1, host, target, headers2, body)
 

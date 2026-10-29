@@ -34,8 +34,6 @@ package pneumatic
 
 import scala.caps
 
-import vacuous.*
-
 // The integrity checks an XZ stream may carry over each block's uncompressed data. The stream flags
 // name one type for the whole stream: 0x00 none, 0x01 CRC-32, 0x04 CRC-64, 0x0A SHA-256. We compute
 // and verify none/CRC-32/CRC-64; SHA-256-checked streams still decode, but the check is skipped

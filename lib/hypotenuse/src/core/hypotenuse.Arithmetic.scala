@@ -34,7 +34,6 @@ package hypotenuse
 
 import anticipation.*
 import fulminate.*
-import prepositional.*
 import symbolism.*
 
 // The failure of an arithmetic *operation*, as distinct from a value that cannot be

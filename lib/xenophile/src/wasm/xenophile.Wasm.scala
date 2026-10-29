@@ -39,7 +39,6 @@ import gossamer.*
 import hypotenuse.*
 import prepositional.*
 import rudiments.*
-import vacuous.*
 
 // The uniform form of a value marshalled across a WIT function boundary (see the `Wasm` class). A
 // single form lets a codec be summoned for any Scala type without knowing its carrier in advance;

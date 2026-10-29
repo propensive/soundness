@@ -38,7 +38,6 @@ import scala.collection.immutable.TreeMap
 import scala.math.Ordering
 
 import anticipation.*
-import contingency.*
 import denominative.*
 import fulminate.*
 import kaleidoscope.*

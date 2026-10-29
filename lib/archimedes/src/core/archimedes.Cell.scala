@@ -46,7 +46,6 @@ import symbolism.*
 import vacuous.*
 
 import Mathml.*
-import denominative.dysasymptotics.linearSize
 
 // A `Cell` is a rectangular block of monospaced character cells with a `baseline`
 // — the row index (from the top) of the mathematical axis that composition aligns
@@ -106,14 +105,17 @@ object Cell:
 
     case _ =>
       val ascent = cells.map(_.baseline).maximize(identity(_)).or(0)
-      val descent = cells.map { cell => cell.height - 1 - cell.baseline }.maximize(identity(_)).or(0)
+
+      val descent =
+        cells.map { cell => cell.height - 1 - cell.baseline }.maximize(identity(_)).or(0)
+
       val framed = cells.stdlib.map(_.framed(ascent, descent))
 
       // Every framed cell has exactly `ascent + descent + 1` lines, so joining row-wise is an
       // n-ary zip of the line sequences — no indexing, hence no bounds obligation to discharge.
       val rows =
         framed
-        . map { cell => cell.lines.stdlib.map(_.text) }
+        . map: cell => cell.lines.stdlib.map(_.text)
         . reduceLeft: (left, right) => left.zip(right).map { (l, r) => t"$l$r" }
 
       Cell(Sequence.from(rows.map(Writing(_))), cells.map(_.width).total, ascent)
@@ -429,7 +431,9 @@ object Cell:
   def row(nodes: List[Mathml]): Cell =
     val content = nodes.filter { node => stretchyChar(node).absent }.map(of)
     val ascent = content.map(_.baseline).maximize(identity(_)).or(0)
-    val descent = content.map { cell => cell.height - 1 - cell.baseline }.maximize(identity(_)).or(0)
+
+    val descent =
+      content.map { cell => cell.height - 1 - cell.baseline }.maximize(identity(_)).or(0)
 
     val height = ascent + descent + 1
 
@@ -495,7 +499,6 @@ case class Cell(lines: Sequence[Writing], width: Int, baseline: Int):
     val blank = Cell.spaces(width)
 
     Cell
-      ( Iterator.fill(above)(blank).to[Sequence] + lines +
-        Iterator.fill(below)(blank).to[Sequence],
+      ( Iterator.fill(above)(blank).to[Sequence] + lines + Iterator.fill(below)(blank).to[Sequence],
         width,
         ascent )

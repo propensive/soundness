@@ -34,7 +34,6 @@ package chiaroscuro
 
 import scala.caps
 import scala.compiletime.*
-import scala.reflect.*
 
 import anticipation.*
 import gossamer.*

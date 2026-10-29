@@ -216,6 +216,7 @@ object Flow:
         if candidate > 0 && breakable(candidate) then
           val breakWidth =
             widths.readUnchecked(candidate) - widths.readUnchecked(lineStart) + hyphenWidth
+
           if breakWidth <= width && candidate > best then best = candidate
 
         index += 1
@@ -303,7 +304,7 @@ object Flow:
 
     def segment(fromCluster: Int, toCluster: Int): textual =
       content.segment
-        (boundaries.readUnchecked(fromCluster).z thru boundaries.readUnchecked(toCluster).u)
+        ( boundaries.readUnchecked(fromCluster).z thru boundaries.readUnchecked(toCluster).u )
 
     def recur(cluster: Int, lineStart: Int, acc: List[textual]): List[textual] =
       if cluster >= clusters then

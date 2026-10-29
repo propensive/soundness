@@ -44,7 +44,6 @@ import fulminate.*
 import galilei.*
 import gossamer.*
 import hieroglyph.*, codepages.asciiCodepage, textMetrics.uniformMetric
-import hypotenuse.*
 import hypotenuse.*, arithmeticOptions.uncheckedOverflow
 import nomenclature.*
 import pneumatic.*

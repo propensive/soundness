@@ -32,10 +32,8 @@
                                                                                                   */
 package facsimile
 
-import ambience.*
 import anticipation.*
 import contingency.*
-import galilei.*
 import prepositional.*
 
 // These were anchored in `Pdf`'s companion so that `path.open[Pdf]()` and `data.open[Pdf]()`

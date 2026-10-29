@@ -32,8 +32,6 @@
                                                                                                   */
 package stenography
 
-import java.nio.charset as jnc
-
 import anticipation.*
 import denominative.*
 import rudiments.*
@@ -83,17 +81,17 @@ enum Designator:
   // structure, which is exact for a designator made with the case constructors rather than
   // interned, and fast for one which was.
   override lazy val hashCode: Int = this match
-    case Top(name)          => name.hashCode
-    case Term(parent, name) => (parent.hashCode*31 + name.hashCode)*31 + 1
-    case Type(parent, name) => (parent.hashCode*31 + name.hashCode)*31 + 2
+    case Top(name)          => name.##
+    case Term(parent, name) => (parent.hashCode*31 + name.##)*31 + 1
+    case Type(parent, name) => (parent.hashCode*31 + name.##)*31 + 2
 
   override def equals(that: Any): Boolean = that match
     case that: Designator =>
       (this eq that) || hashCode == that.hashCode && ((this, that) match
-        case (Top(name), Top(name2))                   => name == name2
+        case (Top(name), Top(name2))                    => name == name2
         case (Term(parent, name), Term(parent2, name2)) => name == name2 && parent == parent2
         case (Type(parent, name), Type(parent2, name2)) => name == name2 && parent == parent2
-        case _                                         => false)
+        case _                                          => false)
 
     case _ =>
       false

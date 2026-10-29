@@ -40,9 +40,7 @@ import anticipation.*
 import aperture.*
 import contingency.*
 import prepositional.*
-import quantitative.*
 import rudiments.reap
-import turbulence.*
 import vacuous.or
 
 object Pcm:

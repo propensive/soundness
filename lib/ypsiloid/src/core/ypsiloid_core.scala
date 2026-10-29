@@ -40,10 +40,9 @@ import denominative.*
 import gossamer.*
 import hypotenuse.Bcd
 import prepositional.*
-import spectacular.{Showable, show}
+import spectacular.Showable
 import symbolism.*
 import wisteria.*
-import zephyrine.*
 
 // Renders a `Yaml.Ast` back to YAML text in conservative block style. The whole emission lives in
 // this instance so `.show` is the single route to YAML text. The output is deliberately

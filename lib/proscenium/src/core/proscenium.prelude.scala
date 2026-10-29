@@ -27,6 +27,7 @@
 ┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
 ┃    either express or implied. See the License for the specific language governing permissions    ┃
 ┃    and limitations under the License.                                                            ┃
+┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package proscenium
@@ -101,4 +102,3 @@ export scala.Iterable
 // `proscenium.Chain.scala`, so it is NOT re-exported from `scala` here.
 // TEMPORARY: `StringBuilder` is the mutable text-accumulation currency, pending its own review.
 export scala.StringBuilder
-

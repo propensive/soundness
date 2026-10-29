@@ -44,11 +44,9 @@ import beneficence.*
 import contingency.*
 import denominative.*
 import distillate.*
-import eucalyptus.*
 import fulminate.*
 import gossamer.*
 import guillotine.*
-import hieroglyph.*
 import jacinta.*
 import obligatory.*
 import parasite.*
@@ -1638,7 +1636,6 @@ object Lsp:
     ( using Stdio, Monitor, Probate )
   :   Unit =
 
-    import codepages.utf8Codepage
     import strategies.throwUnsafely
     import Json.jsonEncodableInText
 
@@ -1698,7 +1695,6 @@ object Lsp:
   // spawned in a handler is legitimate), but scoping still confines it to the serving scope that
   // minted it — a client handle cannot be stashed for use after the session ends.
   trait Client extends Findable, anticipation.Durable:
-    import Lsp.*
 
     @rpc
     def `textDocument/publishDiagnostics`

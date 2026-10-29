@@ -38,9 +38,8 @@ import scala.compiletime.*
 
 import anticipation.*
 import fulminate.*
-import murmuration.Iterator
-
 import errorDiagnostics.stackTracesDiagnostics
+import murmuration.Iterator
 
 inline def default[value](using default: Default[value]): value = default()
 

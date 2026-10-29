@@ -403,7 +403,7 @@ private[hallucination] object WebpLossless:
 
             val dist =
               planeCodeToDistance
-                (width, copyDistance(group.trees.readUnchecked(4).readSymbol(reader)))
+                ( width, copyDistance(group.trees.readUnchecked(4).readSymbol(reader)) )
 
             if index < dist || numValues - index < length then
               abort(Raster.Error(Webp(), Reason.Bitstream))

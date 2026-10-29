@@ -33,7 +33,6 @@
 package profanity
 
 import anticipation.*
-import beneficence.*
 import quantitative.*
 import spectacular.*
 import vacuous.*
@@ -54,4 +53,6 @@ case class Signal
     rows:      Optional[Int]                 = Unset,
     deadline:  Optional[Quantity[Seconds[1]]] = Unset ):
 
-  def size: Optional[(Int, Int)] = columns.let: c => rows.let { r => (c, r) }
+  def size: Optional[(Int, Int)] =
+    columns.let: c =>
+      rows.let: r => (c, r)

@@ -409,6 +409,7 @@ private[guillotine] object PtyProcess:
   // on a fresh pseudo-terminal of the given size and, if one is given, line discipline.
   def apply(builder: ProcessBuilder, width: Int, height: Int, termios: Optional[Termios])
   :   PtyProcess =
+
     import scala.unsafeExceptions.canThrowAny
     val arena = jlf.Arena.ofConfined().nn
 

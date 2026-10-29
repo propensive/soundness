@@ -38,9 +38,7 @@ import scala.reflect
 import anticipation.*
 import denominative.*
 import fulminate.*
-import prepositional.*
 import rudiments.*
-import vacuous.*
 
 object Showable:
   // The delimited rendering of any `Traversable`'s elements. `join` lives in `gossamer`,

@@ -35,7 +35,6 @@ package graffiti
 import anticipation.*
 import honeycomb.*
 import prepositional.*
-import spectacular.*
 
 // `href` is typed `of Url`; honeycomb accepts an `HttpUrl` or abstractable URL, but page metadata
 // (a favicon, a canonical link) is naturally an arbitrary path string, so accept `Text` directly.

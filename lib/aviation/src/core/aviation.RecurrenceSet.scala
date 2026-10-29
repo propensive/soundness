@@ -32,7 +32,6 @@
                                                                                                   */
 package aviation
 
-import denominative.*
 import rudiments.*
 import rudiments.sortingAlgorithms.timsort
 import symbolism.*

@@ -36,7 +36,6 @@ import scala.caps
 import scala.collection.Factory
 import scala.collection.immutable.IndexedSeq
 import scala.collection.immutable.Vector
-import scala.collection.mutable as scm
 import scala.compiletime.*
 import scala.language.dynamics
 import scala.language.experimental.pureFunctions
@@ -132,7 +131,7 @@ trait Json2 extends Json3:
     // depends on deferral), and its thunk may not capture the evidence.
     val shape: () -> Morphology =
       // [by-name-capture] deferred shape thunk may not capture evidence
-      caps.unsafe.unsafeAssumePure(() => Morphology.Opt(encodable.shape()))
+      caps.unsafe.unsafeAssumePure { () => Morphology.Opt(encodable.shape()) }
 
     Json.Encodable(shape): value =>
       value.let(_.asInstanceOf[inner]).let(encodable.encode(_)).or(Json.ast(Json.Ast(Unset)))
@@ -160,7 +159,7 @@ trait Json2 extends Json3:
     caps.unsafe.unsafeAssumePure:
       val shape: () -> Morphology =
         // [by-name-capture] shape thunk over by-name decodable
-        caps.unsafe.unsafeAssumePure(() => Morphology.Opt(decodable.shape()))
+        caps.unsafe.unsafeAssumePure { () => Morphology.Opt(decodable.shape()) }
 
       Json.Decodable(shape()): json =>
         // Missing keys arrive here as `Unset`; a present `null` arrives as the `JsonNull`
@@ -266,7 +265,8 @@ trait Json2 extends Json3:
 
   // `foo.in[Data over Json]`: the same text, encoded in the `Codepage` in scope.
   given encodableOverData: [value]
-  =>  ( text: (value is anticipation.Encodable in (Text over Json))^, codepage: hieroglyph.Codepage )
+  =>  ( text:     (value is anticipation.Encodable in (Text over Json))^,
+        codepage: hieroglyph.Codepage )
   =>  ( (value is anticipation.Encodable in (Data over Json))^{text} ) =
 
     value => codepage.encoded(text.encode(value)).asInstanceOf[Data over Json]
@@ -710,7 +710,9 @@ trait Json1 extends Json2:
         // The single-block fast path is the `#::` pattern, which proves the block exists; the
         // general path hands the parser an `Iterator`, which has no native counterpart.
         bytes match
-          case block #:: rest if rest.nil => parseDirect(block, parsable).asInstanceOf[value in Json]
+          case block #:: rest if rest.nil =>
+            parseDirect(block, parsable).asInstanceOf[value in Json]
+
           case _ => parseDirect(bytes.iterator, parsable).asInstanceOf[value in Json]
 
       override def accept(stream: (Stream[Data] over Credit)^): value in Json =
@@ -2930,7 +2932,7 @@ object Json extends Json1, Dynamic:
     caps.unsafe.unsafeAssumePure:
       val shape: () -> Morphology =
         // [by-name-capture] shape thunk over by-name decodable
-        caps.unsafe.unsafeAssumePure(() => Morphology.Opt(decodable.shape()))
+        caps.unsafe.unsafeAssumePure { () => Morphology.Opt(decodable.shape()) }
 
       // The same three policies as `optional`, yielding `None`: an absent key or a wire `null`
       // is `None` unless strict; a rejected value is `None` only under lenient faults.
@@ -2951,7 +2953,7 @@ object Json extends Json1, Dynamic:
     // depends on deferral), and its thunk may not capture the evidence.
     val shape: () -> Morphology =
       // [by-name-capture] deferred shape thunk may not capture evidence
-      caps.unsafe.unsafeAssumePure(() => Morphology.Opt(encodable.shape()))
+      caps.unsafe.unsafeAssumePure { () => Morphology.Opt(encodable.shape()) }
 
     Json.Encodable(shape):
       case None        => Json.ast(Json.Ast(Unset))
@@ -3012,7 +3014,7 @@ object Json extends Json1, Dynamic:
       // depends on deferral), and its thunk may not capture the evidence.
       val shape: () -> Morphology =
         // [by-name-capture] shape thunk over by-name encodable
-        caps.unsafe.unsafeAssumePure(() => Morphology.Arr(encodable.shape()))
+        caps.unsafe.unsafeAssumePure { () => Morphology.Arr(encodable.shape()) }
 
       Json.Encodable(shape): values =>
         val builder = scala.collection.immutable.List.newBuilder[Json.Ast]
@@ -3037,7 +3039,7 @@ object Json extends Json1, Dynamic:
     caps.unsafe.unsafeAssumePure:
       val shape: () -> Morphology =
         // [by-name-capture] shape thunk over by-name decodable
-        caps.unsafe.unsafeAssumePure(() => Morphology.Arr(decodable.shape()))
+        caps.unsafe.unsafeAssumePure { () => Morphology.Arr(decodable.shape()) }
 
       Json.Decodable(shape()): value =>
         val builder = factory.newBuilder
@@ -3097,7 +3099,7 @@ object Json extends Json1, Dynamic:
     caps.unsafe.unsafeAssumePure:
       val shape: () -> Morphology =
         // [by-name-capture] shape thunk over by-name decodable
-        caps.unsafe.unsafeAssumePure(() => Morphology.Dict(Morphology.Str, decodable.shape()))
+        caps.unsafe.unsafeAssumePure { () => Morphology.Dict(Morphology.Str, decodable.shape()) }
 
       Json.Decodable(shape()): value =>
         val root = value.root
@@ -3123,7 +3125,7 @@ object Json extends Json1, Dynamic:
     // depends on deferral), and its thunk may not capture the evidence.
     val shape: () -> Morphology =
       // [by-name-capture] deferred shape thunk may not capture evidence
-      caps.unsafe.unsafeAssumePure(() => Morphology.Dict(Morphology.Str, encodable.shape()))
+      caps.unsafe.unsafeAssumePure { () => Morphology.Dict(Morphology.Str, encodable.shape()) }
 
     Json.Encodable(shape): map =>
       val keys: List[key] = map.keys.to[List]
@@ -3593,10 +3595,10 @@ extends Dynamic, Topical, Original derives CanEqual:
 
   override def hashCode: Int =
     def recur(value: Json.Ast): Int = value.asMatchable match
-      case value: Long       => value.hashCode
-      case value: Double     => value.hashCode
+      case value: Long       => value.##
+      case value: Double     => value.##
       case value: String     => value.hashCode
-      case value: Boolean    => value.hashCode
+      case value: Boolean    => value.##
 
       case value: Int =>
         // Small-BCD number — hash through the BigDecimal projection so
@@ -3609,7 +3611,7 @@ extends Dynamic, Topical, Original derives CanEqual:
         // backing representation the parser picked.
         val ast = value.asInstanceOf[Json.Ast]
         val n = value.length
-        var acc = n.hashCode
+        var acc = n.##
         var i = 0
 
         while i < n do
@@ -3629,7 +3631,7 @@ extends Dynamic, Topical, Original derives CanEqual:
         // for cross-form equality with the boxed/Double/Long array shapes.
         val ast = value.asInstanceOf[Json.Ast]
         val n = value.length
-        var acc = n.hashCode
+        var acc = n.##
         var i = 0
 
         while i < n do
@@ -3651,10 +3653,10 @@ extends Dynamic, Topical, Original derives CanEqual:
             acc = acc.define(ast.objectKey(i), recur(ast.objectValue(i)))
             i += 1
 
-          acc.hashCode
+          acc.##
         else
           val n = ast.arrayLength
-          var acc = n.hashCode
+          var acc = n.##
           var i = 0
 
           while i < n do

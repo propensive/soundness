@@ -34,10 +34,7 @@ package murmuration
 
 import java.util as ju
 
-import scala.collection.immutable as sci
 import scala.util.boundary
-
-import prepositional.*
 
 object SortAlgorithm:
   // The JDK's own sort for objects, which is Timsort: adaptive, stable, and the algorithm

@@ -78,8 +78,7 @@ object Molecule:
 
     orderedElements.map: (element, count) =>
       val number =
-        if count == 1 then t""
-        else count.show.chars.map(_.subscript).sift[Char].map(_.show).join
+        if count == 1 then t"" else count.show.chars.map(_.subscript).sift[Char].map(_.show).join
 
       t"${element.symbol}$number"
 

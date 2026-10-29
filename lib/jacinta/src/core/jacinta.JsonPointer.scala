@@ -46,7 +46,6 @@ import rudiments.*
 import serpentine.*
 import spectacular.*
 import symbolism.*
-import vacuous.*
 
 object JsonPointer extends Root(""):
   type Plane = JsonPointer

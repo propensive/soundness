@@ -36,7 +36,6 @@ import java.io as ji
 
 import anticipation.*
 import beneficence.*
-import rudiments.*
 import vacuous.*
 
 object Stdio:

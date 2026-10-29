@@ -31,6 +31,7 @@
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package turbulence
+
 import java.io as ji
 import java.lang as jl
 import java.nio.charset as jnc
@@ -41,7 +42,6 @@ import contingency.*
 import denominative.*
 import prepositional.*
 import rudiments.reverse
-import vacuous.*
 import zephyrine.*
 
 object LineSeparation:

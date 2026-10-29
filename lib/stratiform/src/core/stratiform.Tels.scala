@@ -289,7 +289,7 @@ object Tels extends Tels2:
 
         record("Scalar",
           "A scalar declaration: a named scalar definition constrained by validators and/or RE2 patterns, with an optional encoding.",
-          field("name",        typeNameRef),
+          field("name", typeNameRef),
           // §21.8 made `validate` optional and added `pattern`; both members are
           // optional, and a scalar may declare neither (E224 is withdrawn).
           field("validate",    identifierRef, required = Loose, repeatable = Loose),
@@ -356,7 +356,7 @@ object Tels extends Tels2:
       records  = Array(
         record("Alternative",
           "One composition the reader accepts, with the further components it can resolve.",
-          field("schema",         Reference(t"Signature")),
+          field("schema", Reference(t"Signature")),
           field("self-contained", Flag, required = Loose),
           field("any-published",  Flag, required = Loose),
           field("component",      Reference(t"Component"), required = Loose,

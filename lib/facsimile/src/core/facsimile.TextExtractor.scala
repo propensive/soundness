@@ -34,7 +34,6 @@ package facsimile
 
 import anticipation.*
 import denominative.*
-import gossamer.*
 import mosquito.*
 import quantitative.*
 import rudiments.*

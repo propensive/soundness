@@ -39,7 +39,7 @@ import prepositional.*
 import telekinesis.*
 import turbulence.*
 
-import zephyrine.{Parse, memoize}
+import zephyrine.memoize
 
 // Interprets an `Http.Response` as a value of `Self`, reading the body as the carrier type
 // `Transport` the spec's media type construes (see `gesticulate.Construable`). It reads only:

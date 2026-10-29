@@ -37,9 +37,7 @@ import scala.language.experimental.pureFunctions
 import guillotine.*
 import parasite.*
 import prepositional.*
-import rudiments.*
 import turbulence.*
-import vacuous.*
 
 object Client:
   @targetName("make")

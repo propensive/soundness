@@ -968,11 +968,12 @@ object Tel extends Tel2:
                       then raise(Tel.Error(Tel.Error.Reason.NonRepeatableTooMany))(using tactic)
 
                       reader.skipEntry(indent)
-                    else values(found) =
-                      if focused
-                      then focusing(foci, reader, keys.readUnchecked(found).tt):
-                        entries.readUnchecked(found)(1).parse(reader, indent)
-                      else entries.readUnchecked(found)(1).parse(reader, indent)
+                    else
+                      values(found) =
+                        if focused
+                        then focusing(foci, reader, keys.readUnchecked(found).tt):
+                          entries.readUnchecked(found)(1).parse(reader, indent)
+                        else entries.readUnchecked(found)(1).parse(reader, indent)
 
           index = 0
           var failedSlots = false
@@ -2639,16 +2640,17 @@ object Tel extends Tel2:
 
         def domainValid(domain: String): Boolean =
           def label(l: String): Boolean =
-            l.nonEmpty && l.forall { ch => ch.isLetterOrDigit && ch <= 'z' || ch == '-' }
-              && !l.startsWith("-") && !l.endsWith("-")
+            l.nonEmpty &&
+              l.forall { ch => ch.isLetterOrDigit && ch <= 'z' || ch == '-' } &&
+              !l.startsWith("-") && !l.endsWith("-")
 
           domain.nonEmpty && domain.split("\\.", -1).nn.forall: l => label(l.nn)
 
         def nameValid(name: String): Boolean =
           def kebab(segment: String): Boolean =
             segment.nonEmpty && segment.charAt(0).isLower &&
-              segment.forall { ch => ch.isLower || ch.isDigit || ch == '-' }
-              && !segment.endsWith("-") && !segment.contains("--")
+              segment.forall { ch => ch.isLower || ch.isDigit || ch == '-' } &&
+              !segment.endsWith("-") && !segment.contains("--")
 
           name.nonEmpty && name.split("[/.]", -1).nn.forall: segment => kebab(segment.nn)
 
@@ -2667,7 +2669,8 @@ object Tel extends Tel2:
                 Unset
           else if selector.charAt(0).isLetter &&
             selector.forall { ch => ch.isLetterOrDigit || ch == '-' || ch == '.' }
-          then Selector.Tag(selector.tt)
+          then
+            Selector.Tag(selector.tt)
           else
             Unset
 
@@ -2690,7 +2693,7 @@ object Tel extends Tel2:
     // selector names a published release by version or tag and a bare
     // reference is a local-only development handle.
     case class Reference(domain: Text, name: Text, selector: Optional[Reference.Selector]):
-      def text: Text = t"$domain/$name${selector.lay(t"")(s => t":${s.text}")}"
+      def text: Text = t"$domain/$name${selector.lay(t"") { s => t":${s.text}" }}"
 
       // Whether this is the built-in `tels` meta-schema's coordinate,
       // with or without its version pin.
@@ -2840,7 +2843,7 @@ object Tel extends Tel2:
         case o: Inline => text == o.text && precedingSpaces == o.precedingSpaces
         case _         => false
 
-      override def hashCode: Int = text.hashCode * 31 + precedingSpaces
+      override def hashCode: Int = text.## * 31 + precedingSpaces
 
       override def toString: String = s"Inline($text,$precedingSpaces)"
 
@@ -3224,6 +3227,7 @@ object Tel extends Tel2:
       type Operand = Data
 
       def aggregate(source: Chain[Data]): Tel = parseTracking(concatenate(source))
+
       override def accept(stream: (Stream[Data] over Credit)^): Tel =
         parseTracking(streamed(stream))
 
@@ -3472,8 +3476,7 @@ object Tel extends Tel2:
 
   // The byte form, the parser's own input: parsed as it arrives, with no transcoding.
   given loadableData: (tactic: Tactic[Tel.Error], buffering: Buffering, tracking: PositionTracking)
-  =>  ( (Tel is Loadable by Data)^{tactic} ) = stream =>
-    loaded(parseTracking(streamed(stream)))
+  =>  ( (Tel is Loadable by Data)^{tactic} ) = stream => loaded(parseTracking(streamed(stream)))
 
   // The metadata comes off the parsed `Tel`'s own subtree rather than from a second, untracked
   // `Tel.Parser.parse`, so that under `parsing.trackPositions` the loaded document keeps its
@@ -4058,7 +4061,6 @@ object Tel extends Tel2:
     import java.nio.charset.StandardCharsets
     import scala.language.unsafeNulls
     import denominative.*
-    import fulminate.*
     import Tel.Error.Reason
 
     import Parser.*
@@ -4877,8 +4879,10 @@ object Tel extends Tel2:
       if head.separator then
         consumeSeparatorLine()
         (doc, true)
-      else if documentIsEmpty(doc) then (Unset, false)
-      else (doc, false)
+      else if documentIsEmpty(doc) then
+        (Unset, false)
+      else
+        (doc, false)
 
     // A document with no prologue and no children: the empty document yielded
     // between two separators, or the absence of any document at the end of a
@@ -5032,7 +5036,8 @@ object Tel extends Tel2:
           pos += run
           count += run
           false
-      } do ()
+      }
+      do ()
 
       while more && peek == SP do
         advance()
@@ -5129,8 +5134,8 @@ object Tel extends Tel2:
 
       def kebab(t: String): Boolean =
         t.nonEmpty && t.charAt(0).isLower &&
-          t.forall { ch => ch.isLower || ch.isDigit || ch == '-' }
-          && !t.endsWith("-") && !t.contains("--")
+          t.forall { ch => ch.isLower || ch.isDigit || ch == '-' } &&
+          !t.endsWith("-") && !t.contains("--")
 
       var index = 2
 
@@ -5534,7 +5539,8 @@ object Tel extends Tel2:
             while lastIx >= start && {
               val last = scratchBlocks(lastIx)
               last.comments.nil && last.tabulation.absent && last.compounds.nil
-            } do lastIx -= 1
+            }
+            do lastIx -= 1
 
             val reason =
               if lastIx < start then Reason.OverIndentation
@@ -8089,7 +8095,9 @@ extends scala.Dynamic, Documentary, Topical, Original:
   // needs a `Locus`-fixing mixin and a lowest-priority adapter given; here the
   // focus type is already fixed by the `tracks Tel.Focus` clause, so the
   // enrichment is called directly.)
-  inline def as[value](using value: (value is Decodable in Tel)^): value raises Tel.Error tracks Tel.Focus =
+  inline def as[value](using value: (value is Decodable in Tel)^)
+  :   value raises Tel.Error tracks Tel.Focus =
+
     val result = value.decoded(this)
     Tel.supplementPositions(this)
     result

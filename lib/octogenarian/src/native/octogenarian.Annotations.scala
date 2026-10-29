@@ -34,7 +34,6 @@ package octogenarian
 
 import anticipation.*
 import contingency.*
-import distillate.*
 import galilei.*
 import gossamer.*
 import prepositional.*

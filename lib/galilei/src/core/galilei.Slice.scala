@@ -41,7 +41,6 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import symbolism.*
-import vacuous.*
 import Io.Error.{Operation, Reason}
 
 object Slice:

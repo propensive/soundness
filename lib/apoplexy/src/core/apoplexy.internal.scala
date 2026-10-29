@@ -45,7 +45,6 @@ import gesticulate.*
 import gigantism.*
 import gossamer.*
 import hellenism.*
-import hieroglyph.*
 import jacinta.*
 import legerdemain.*
 import orthodoxy.*
@@ -57,9 +56,7 @@ import telekinesis.*
 import turbulence.*
 import urticose.*
 import vacuous.*
-import xylophone.*
 
-import codepages.utf8Codepage
 import rudiments.sortingAlgorithms.timsort
 import strategies.throwUnsafely
 import zephyrine.Parse
@@ -78,7 +75,7 @@ object Apoplexy:
 
   // The caches are keyed by the resource's content as well as its name, so that a spec edited
   // between two compilations in the same compiler process is read afresh.
-  private def key(source: Text, content: Text): Text = t"$source#${content.hashCode}"
+  private def key(source: Text, content: Text): Text = t"$source#${content.##}"
 
   private def spec(using Quotes)(source: Text): OpenApi =
     val content = resource(source)
@@ -534,7 +531,7 @@ object Apoplexy:
       // Already parsed above, so the generated parse cannot fail: it throws unsafely rather
       // than going through an `unsafely` block, whose context function a spliced closure
       // cannot match under Scala 3.10's capture checking.
-      Optional('{ { import contingency.strategies.throwUnsafely; Media.parse(${Expr(media.s)}.tt) } })
+      Optional('{{ import contingency.strategies.throwUnsafely; Media.parse(${Expr(media.s)}.tt) }})
     catch case error: MediaType.Error => Unset
 
   // How a declared error response is raised: by the class of its status, a range class for
@@ -999,7 +996,7 @@ object Apoplexy:
         catch case error: Url.Error => halt(m"apoplexy: the spec's server URL $server is not valid")
 
         // Validated above, so the generated decoding cannot fail (see `mediaTypeExpr`).
-        '{ { import contingency.strategies.throwUnsafely; $serverExpr.tt.as[HttpUrl] } }
+        '{{ import contingency.strategies.throwUnsafely; $serverExpr.tt.as[HttpUrl] }}
 
       case supplied: Expr[HttpUrl] @unchecked =>
         if server.starts(t"/") then '{Api.extend($supplied, $serverExpr.tt)} else supplied
@@ -1326,7 +1323,8 @@ object Apoplexy:
             if many then
               val tactic = providerTactic(m"reading the ${failure.key} response of $verb $key")
               '{Api.Records.list($json, $transform)(using $tactic).asInstanceOf[List[refined]]}
-            else '{Api.Records.build($json, $transform).asInstanceOf[refined]}
+            else
+              '{Api.Records.build($json, $transform).asInstanceOf[refined]}
 
     // The raise of one declared failure: the error constructed by class, with its payload and
     // (for a range or `default` class) the status, through its own tactic
@@ -1386,11 +1384,11 @@ object Apoplexy:
   // with the schema's properties, built over `Api.Records` with the expansion polyvinyl makes
   // of the schema's fields
   def recordMacro(self: Expr[Api.Response], json: Expr[Json]): Macro[Any] =
-    import quotes.reflect.*
 
     val (pointer, source) = jsonResponse(self, t"record()")
     val (fields, many) = responseMember(source, pointer, t"record()")
     val target = '{Api.Records}
+
     val (refined, transform) =
       Specification.recordExpansion[Json, Json.Provider, Json.Provider.Error](target, fields)
 
@@ -1399,15 +1397,16 @@ object Apoplexy:
         if many then
           val tactic = providerTactic(m"reading a response with record()")
           '{Api.Records.list($json, $transform)(using $tactic).asInstanceOf[List[refined]]}
-        else '{Api.Records.build($json, $transform).asInstanceOf[refined]}
+        else
+          '{Api.Records.build($json, $transform).asInstanceOf[refined]}
 
   // `Api.Response.tuple()`: as `record()`, as a named tuple read eagerly
   def tupleMacro(self: Expr[Api.Response], json: Expr[Json]): Macro[Any] =
-    import quotes.reflect.*
 
     val (pointer, source) = jsonResponse(self, t"tuple()")
     val (fields, many) = responseMember(source, pointer, t"tuple()")
     val target = '{Api.Records}
+
     val (tuple, make) =
       Specification.tupleExpansion[Json, Json.Provider, Json.Provider.Error](target, fields)
 
@@ -1416,7 +1415,8 @@ object Apoplexy:
         if many then
           val tactic = providerTactic(m"reading a response with tuple()")
           '{Api.Records.repeated(t"", $json)(using $tactic).map($make(_)).asInstanceOf[List[tuple]]}
-        else '{$make($json).asInstanceOf[tuple]}
+        else
+          '{$make($json).asInstanceOf[tuple]}
 
   // The `Tactic` through which an array response's elements are read, found where the macro is
   // expanded: an array response which is not an array fails through it

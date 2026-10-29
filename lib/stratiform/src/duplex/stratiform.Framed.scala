@@ -32,9 +32,9 @@
                                                                                                   */
 package stratiform
 
-import anticipation.*
 import scala.caps
 
+import anticipation.*
 import coaxial.*
 import contingency.*
 import obligatory.*
@@ -80,8 +80,9 @@ object Framed:
       update def advance(): Boolean =
         if opened == null then
           opened =
-            duplex.source.chunks.frames[LengthPrefix].map { frame =>
-              Bintel.present(Bintel.decode(frame, inboundSchema), inboundSchema).as[inbound] }
+            duplex.source.chunks.frames[LengthPrefix].map: frame =>
+              Bintel.present(Bintel.decode(frame, inboundSchema), inboundSchema).as[inbound]
+
             . asInstanceOf[AnyRef]
 
         // [iterator-inner] the untyped field read back as the exclusive iterator it holds

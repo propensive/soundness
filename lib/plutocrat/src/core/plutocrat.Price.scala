@@ -80,7 +80,7 @@ trait Price:
   def effectiveTaxRate: Double = tax/principal
 
   def inclusive: Money in Form = principal + tax
-  override def hashCode(): Int = (principal.asInstanceOf[Long] ^ tax.asInstanceOf[Long]*31).hashCode
+  override def hashCode(): Int = (principal.asInstanceOf[Long] ^ tax.asInstanceOf[Long]*31).##
 
   override def toString(): String =
     s"Price(${principal.value} ${principal.currency}, ${tax.value} ${tax.currency})"

@@ -31,6 +31,7 @@
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package obligatory
+
 import fulminate.*
 
 // The act of delimiting messages in a byte stream, which `CrLf`, `ContentLength` and

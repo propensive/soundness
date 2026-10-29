@@ -45,20 +45,15 @@ import fulminate.*
 import galilei.*
 import gossamer.*
 import hellenism.*
-import inimitable.*
 import jacinta.*
-import parasite.*
 import parasite.*
 import prepositional.*
 import probably.*
-import rudiments.*
 import serpentine.*
 import superlunary.*
 import vacuous.*
 
 import systems.javaBaseSystem
-import threads.platformThreads
-import workingDirectories.javaBaseWorkingDirectory
 
 // A stress test: the memory/scaling counterpart of `Bench`. Where `Bench` times one operation
 // repeated serially on the calling thread, `Stress` runs the body concurrently on `concurrency`

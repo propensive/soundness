@@ -33,7 +33,6 @@
 package quantitative
 
 import anticipation.*
-import rudiments.*
 
 object Quarters:
   given designation: Designation[Quarters[1]] = () => "qr".tt

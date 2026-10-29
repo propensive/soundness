@@ -31,15 +31,13 @@
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package escapade
+
 import anticipation.*
 import fulminate.*
 import gossamer.*
-import hieroglyph.*
-import iridescence.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
-import vacuous.*
 
 // The low-priority home of the plain `Showable` rendering: in the companion it competed,
 // ambiguously, with `colorable` — both subjects are bare type parameters, and a type with

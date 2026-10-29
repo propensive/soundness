@@ -56,7 +56,8 @@ object sizedMacros:
 
     val length: Int = TypeRepr.of[length].dealias match
       case ConstantType(IntConstant(length)) => length
-      case other => report.errorAndAbort(s"the array's proven length ${other.show} is not a literal")
+      case other =>
+        report.errorAndAbort(s"the array's proven length ${other.show} is not a literal")
 
     // The seven ordinal literals are `final val`s (patterns need a stable identifier), so they
     // are known here by symbol rather than by value.
@@ -68,6 +69,7 @@ object sizedMacros:
     // consumer's — sees the forwarder's symbol, whose owner is the umbrella package.
     def named(symbol: Symbol): Optional[Int] =
       val owner = symbol.owner.fullName
+
       if owner.startsWith("denominative") || owner.startsWith("soundness")
       then ordinalLiterals.at(symbol.name)
       else Unset
@@ -90,11 +92,13 @@ object sizedMacros:
         // Inside a lambda the argument arrives before its own inline calls are expanded, as
         // `z(156)` or `Ordinal.zerary(156)`; both pass their integer through unchanged.
         case Apply(fun, scala.List(argument))
-            if fun.symbol.flags.is(Flags.Inline) && (fun.symbol.name == "z" || fun.symbol.name == "zerary") =>
+          if fun.symbol.flags.is(Flags.Inline) &&
+            (fun.symbol.name == "z" || fun.symbol.name == "zerary") =>
           literal(argument, bindings)
 
-        case ident @ Ident(_)             =>
+        case ident @ Ident(_) =>
           bindings.at(ident.symbol).lay(named(ident.symbol))(literal(_, bindings))
+
         case select @ Select(_, _)        => named(select.symbol)
         case _                            => Unset
 
@@ -103,13 +107,14 @@ object sizedMacros:
     // than `readUnchecked`/`n0`/`at`, which are inline and would meet the same assertion.
     literal(ordinal.asTerm, Map()) match
       case Unset =>
-        '{
-          val jvm = $array.asInstanceOf[scala.Array[element]]
-          val index = $ordinal.asInstanceOf[Int]
-          if index >= 0 && index < jvm.length then jvm(index) else Unset
-        }
+        ' {
+            val jvm = $array.asInstanceOf[scala.Array[element]]
+            val index = $ordinal.asInstanceOf[Int]
+            if index >= 0 && index < jvm.length then jvm(index) else Unset
+          }
 
       case index: Int =>
         if index >= 0 && index < length
-        then '{ $array.asInstanceOf[scala.Array[element]]($ordinal.asInstanceOf[Int]) }
-        else report.errorAndAbort(s"the ordinal $index is beyond the array's proven length of $length")
+        then '{$array.asInstanceOf[scala.Array[element]]($ordinal.asInstanceOf[Int])}
+        else
+          report.errorAndAbort(s"the ordinal $index is beyond the array's proven length of $length")

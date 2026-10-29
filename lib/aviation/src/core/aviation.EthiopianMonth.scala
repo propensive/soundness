@@ -32,9 +32,7 @@
                                                                                                   */
 package aviation
 
-import anticipation.*
 import prepositional.*
-import spectacular.*
 import symbolism.*
 
 // The thirteen months of the Ethiopian calendar: twelve of 30 days plus the short epagomenal month

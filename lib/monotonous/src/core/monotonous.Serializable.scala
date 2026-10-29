@@ -42,7 +42,6 @@ import denominative.*
 import hypotenuse.*
 import prepositional.*
 import rudiments.*
-import vacuous.*
 
 object Serializable:
   def base[base <: Serialization](bits: Int)(using alphabet: Alphabet[base]): Serializable in base =

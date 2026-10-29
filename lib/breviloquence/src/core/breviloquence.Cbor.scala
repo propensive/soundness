@@ -332,8 +332,11 @@ trait Cbor1 extends Cbor2:
         // A single in-memory block — the common case — is read in place; the general
         // path pulls the chain's cells as the parser needs them.
         bytes match
-          case block #:: rest if rest.nil => parseDirect(CborParser(block), parsable).asInstanceOf[value in Cbor]
-          case _                          => parseDirect(CborParser(bytes), parsable).asInstanceOf[value in Cbor]
+          case block #:: rest if rest.nil =>
+            parseDirect(CborParser(block), parsable).asInstanceOf[value in Cbor]
+
+          case _ =>
+            parseDirect(CborParser(bytes), parsable).asInstanceOf[value in Cbor]
 
       // The stream crosses as a neutral reference (see `CborParser.aggregable`).
       override def accept(stream: (Stream[Data] over Credit)^): value in Cbor =
@@ -772,7 +775,7 @@ object Cbor extends Cbor1, Dynamic:
           Array.empty[Cbor.Ast]
 
   final class Tag(val tag: Long, val value: Any):
-    override def hashCode: Int = (tag.hashCode*31)^value.hashCode
+    override def hashCode: Int = (tag.## * 31)^value.##
 
     override def equals(that: Any): Boolean = that match
       case that: Tag => tag == that.tag && value == that.value
@@ -1537,7 +1540,7 @@ class Cbor(private[breviloquence] val root: Cbor.Ast) extends Dynamic derives Ca
       case -1    => Cbor.ast(Cbor.Ast(Unset))
       case index => Cbor(root.value(index))
 
-  override def hashCode: Int = root.hashCode
+  override def hashCode: Int = root.##
 
   override def equals(right: Any): Boolean = right match
     case right: Cbor => recur(root, right.root)

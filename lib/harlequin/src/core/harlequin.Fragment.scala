@@ -33,8 +33,8 @@
 package harlequin
 
 import anticipation.*
+import denominative.Ordinal
 import denominative.dysasymptotics.linearSize
-import denominative.{Ordinal, nil}
 import gossamer.*
 import prophesy.ScalaKeywords
 import proscenium.*

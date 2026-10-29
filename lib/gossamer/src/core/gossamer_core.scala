@@ -39,14 +39,12 @@ import java.util.regex as jur
 
 import scala.collection.mutable as scm
 import scala.compiletime
-import scala.language.experimental.into
 import scala.language.experimental.pureFunctions
 import scala.reflect
 import scala.reflect.*
 
 import anticipation.*
 import denominative.*
-import fulminate.*
 import hieroglyph.*
 import hypotenuse.*
 import kaleidoscope.*
@@ -597,13 +595,13 @@ extension [self, element, result](values: self)
   :   result =
 
     assembly.assemble
-      (Iterator(left).concat(penultimately(separator, penultimate)).concat(Iterator(right)))
+      ( Iterator(left).concat(penultimately(separator, penultimate)).concat(Iterator(right)) )
 
   // The elements with `separator` between each adjacent pair.
   private def separated(consume elements: Iterator[assembly.Part]^, separator: assembly.Part)
   :   Iterator[assembly.Part]^ =
 
-    elements.flatMap(element => List(separator, element)).skip(1)
+    elements.flatMap { element => List(separator, element) }.skip(1)
 
   // The parts of the receiver with `separator` between each pair of elements except the
   // last, which `penultimate` precedes: `one, two and three`.
@@ -620,8 +618,10 @@ extension [self, element, result](values: self)
         val leading: Iterator[assembly.Part]^ = separated(elements.iterator.keep(n - 1), separator)
         val trailing: Iterator[assembly.Part]^ = elements.iterator.skip(n - 1)
         val middle: Iterator[assembly.Part]^ = Iterator[assembly.Part](penultimate)
+
         val result: Iterator[assembly.Part]^ =
           leading.concat[assembly.Part](middle).concat[assembly.Part](trailing)
+
         result
 
 extension (builder: StringBuilder)

@@ -32,8 +32,6 @@
                                                                                                   */
 package aperture
 
-import scala.caps
-
 import prepositional.*
 
 // Refines a type's `Grants` member; `Mode granting Grant.Read` reads naturally.

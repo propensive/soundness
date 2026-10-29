@@ -32,17 +32,14 @@
                                                                                                   */
 package locomotion
 
-import scala.collection.immutable.Vector
-
-import scala.caps
-
-import scala.language.experimental.pureFunctions
-
 import java.lang as jl
 import java.nio.charset.StandardCharsets.UTF_8
 
+import scala.caps
 import scala.collection.Factory
+import scala.collection.immutable.Vector
 import scala.compiletime.*
+import scala.language.experimental.pureFunctions
 import scala.reflect.ClassTag
 
 import adversaria.*
@@ -623,7 +620,9 @@ object Protobuf extends Protobuf1:
     var index = 0
 
     repeat(numberView.length):
-      size += ProtobufPrinter.fieldSize(numberView.readUnchecked(index), wireView.readUnchecked(index))
+      size +=
+        ProtobufPrinter.fieldSize(numberView.readUnchecked(index), wireView.readUnchecked(index))
+
       index += 1
 
     sized(size): printer =>
@@ -1009,6 +1008,7 @@ object Protobuf extends Protobuf1:
           build[derivation]:
             [field0] => context =>
               val wire = table(annotated(label).let(_.stdlib.head.number).or(index + 1))
+
               if wire.isAbsent then default.or(context.decoded(Protobuf.Absent))
               else context.decoded(wire) }
 
@@ -1027,6 +1027,7 @@ object Protobuf extends Protobuf1:
             delegate(label):
               [variant <: derivation] => context =>
                 val wire = table(index.n1)
+
                 if wire.isAbsent then abort(Protobuf.Error(Reason.MissingField(index.n1)))
                 else context.decoded(wire) }
 

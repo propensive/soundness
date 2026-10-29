@@ -34,7 +34,6 @@ package xenophile
 
 import anticipation.*
 import fulminate.*
-import gossamer.*
 
 // The C header front end: the declaration model a header parses to, the `Dialect` that
 // projects it for the FFI backends, the parser itself, and the error it raises. `Dialect`
@@ -104,7 +103,6 @@ object CHeader:
     import contingency.*
     import gossamer.*
     import rudiments.*
-    import symbolism.*
     import vacuous.*
 
     import denominative.nil
@@ -241,11 +239,7 @@ object CHeader:
 
     import anticipation.*
     import contingency.*
-    // `Error as _`: an inner wildcard import of `fulminate` would make the bare `Error` ambiguous
-    // with this object's sibling `CHeader.Error`.
-    import fulminate.{Error as _, *}
     import gossamer.*
-    import rudiments.*
     import vacuous.*
 
     import Error.Reason

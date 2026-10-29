@@ -35,8 +35,6 @@ package xenophile
 import java.lang.foreign.*
 
 import anticipation.*
-import rudiments.*
-import vacuous.*
 
 // A manually-managed block of foreign memory: the portable scratch space for pointer-typed C
 // parameters — an input buffer copied in from `Data`, an output buffer read back with `data`, or

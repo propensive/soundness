@@ -37,7 +37,6 @@ import java.lang.{Integer as JInt, Long as JLong, Short as JShort, Byte as JByte
 
 import scala.annotation.*
 import scala.language.experimental.genericNumberLiterals
-import scala.language.experimental.into
 import scala.util.FromDigits
 import scala.{caps, math}
 
@@ -45,7 +44,6 @@ import anticipation.*
 import denominative.*
 import prepositional.*
 import symbolism.*
-import vacuous.*
 
 object internal:
   type Bits[bits <: 8 | 16 | 32 | 64] <: B8 | B16 | B32 | B64 = bits match
@@ -141,19 +139,19 @@ object internal:
     // for the `Widening`, which a dependent type would not let it do, and transparency still
     // gives the summoned instance its singleton type, through which `add` inlines.
     transparent inline given addableWidening: [right] => (widening: Widening[right])
-          =>  F64 is Addable by right to F64 =
+    =>  F64 is Addable by right to F64 =
       widening.Addition
 
     transparent inline given subtractableWidening: [right] => (widening: Widening[right])
-          =>  F64 is Subtractable by right to F64 =
+    =>  F64 is Subtractable by right to F64 =
       widening.Subtraction
 
     transparent inline given multiplicableWidening: [right] => (widening: Widening[right])
-          =>  F64 is Multiplicable by right to F64 =
+    =>  F64 is Multiplicable by right to F64 =
       widening.Multiplication
 
     transparent inline given divisibleWidening: [right] => (widening: Widening[right])
-          =>  F64 is Divisible by right to F64 =
+    =>  F64 is Divisible by right to F64 =
       widening.Division
 
     inline given canEqual: CanEqual
@@ -343,19 +341,19 @@ object internal:
     // for the `Widening`, which a dependent type would not let it do, and transparency still
     // gives the summoned instance its singleton type, through which `add` inlines.
     transparent inline given addableWidening: [right] => (widening: Widening[right])
-          =>  F32 is Addable by right to F32 =
+    =>  F32 is Addable by right to F32 =
       widening.Addition
 
     transparent inline given subtractableWidening: [right] => (widening: Widening[right])
-          =>  F32 is Subtractable by right to F32 =
+    =>  F32 is Subtractable by right to F32 =
       widening.Subtraction
 
     transparent inline given multiplicableWidening: [right] => (widening: Widening[right])
-          =>  F32 is Multiplicable by right to F32 =
+    =>  F32 is Multiplicable by right to F32 =
       widening.Multiplication
 
     transparent inline given divisibleWidening: [right] => (widening: Widening[right])
-          =>  F32 is Divisible by right to F32 =
+    =>  F32 is Divisible by right to F32 =
       widening.Division
 
     inline given canEqual: CanEqual
@@ -439,6 +437,7 @@ object internal:
 
     inline given divisible: (division: DivisionByZero) => division.divideU64.type =
       division.divideU64
+
     inline given canEqual: CanEqual[U64, U64] = CanEqual.derived
 
     given fromDigits: FromDigits[U64]:
@@ -526,6 +525,7 @@ object internal:
 
     inline given divisible: (division: DivisionByZero) => division.divideU32.type =
       division.divideU32
+
     inline given canEqual: CanEqual[U32, U32] = CanEqual.derived
 
     given fromDigits: FromDigits[U32]:
@@ -613,6 +613,7 @@ object internal:
 
     inline given divisible: (division: DivisionByZero) => division.divideU16.type =
       division.divideU16
+
     inline given canEqual: CanEqual[U16, U16] = CanEqual.derived
 
     given fromDigits: FromDigits[U16]:
@@ -704,6 +705,7 @@ object internal:
 
     inline given divisible: (division: DivisionByZero) => division.divideU8.type =
       division.divideU8
+
     inline given canEqual: CanEqual[U8, U8] = CanEqual.derived
 
     given fromDigits: FromDigits[U8]:

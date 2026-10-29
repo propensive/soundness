@@ -45,7 +45,6 @@ import gossamer.*
 import parasite.*
 import prepositional.*
 import quantitative.*
-import rudiments.all
 import rudiments.each
 import rudiments.map
 import spectacular.*

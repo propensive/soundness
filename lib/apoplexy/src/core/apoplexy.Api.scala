@@ -38,12 +38,10 @@ import scala.language.dynamics
 import anticipation.*
 import contingency.*
 import denominative.*
-import distillate.*
 import fulminate.*
 import gesticulate.*
 import gossamer.*
 import hellenism.*
-import hieroglyph.*
 import jacinta.*
 import legerdemain.*
 import orthodoxy.*
@@ -55,7 +53,6 @@ import telekinesis.*
 import turbulence.*
 import urticose.*
 import vacuous.*
-import xylophone.*
 import zephyrine.*
 
 object Api:

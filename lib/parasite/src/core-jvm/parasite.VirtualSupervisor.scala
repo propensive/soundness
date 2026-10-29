@@ -57,7 +57,7 @@ object AdaptiveSupervisor extends ThreadSupervisor uses VirtualSupervisor, Platf
   // propagates and the probe is retried on the next fork.
   private lazy val virtual: Boolean =
     try
-      Thread.ofVirtual().nn.start{ () => () }
+      Thread.ofVirtual().nn.start: () => ()
       true
     catch case error: UnsupportedOperationException => false
 

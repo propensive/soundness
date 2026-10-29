@@ -39,8 +39,6 @@ import denominative.*
 import distillate.*
 import gossamer.*
 import hypotenuse.*
-import parasite.*
-import quantitative.*
 import rudiments.*
 import spectacular.*
 import symbolism.*

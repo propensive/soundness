@@ -34,7 +34,6 @@ package coaxial
 
 import scala.caps
 
-import anticipation.*
 import gigantism.*
 import prepositional.*
 import urticose.*

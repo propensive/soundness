@@ -33,8 +33,6 @@
 package tasseomancy
 
 import murmuration.fold
-import prepositional.*
-import vacuous.*
 
 // A Kalman smoother for a run of measurements in order. The model is a constant velocity:
 // each value is the last plus its rate of change, both perturbed by process noise of unit

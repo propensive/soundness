@@ -44,7 +44,6 @@ import rudiments.*
 import serpentine.*
 import spectacular.*
 import symbolism.*
-import vacuous.*
 
 // A YAML Path identifies a node within a YAML document. Modelled on
 // `jacinta.JsonPointer` and using the same RFC 6901 escaping (`~0`

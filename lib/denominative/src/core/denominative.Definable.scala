@@ -35,7 +35,6 @@ package denominative
 import scala.collection.immutable.IndexedSeq
 import scala.language.experimental.pureFunctions
 
-import anticipation.*
 import prepositional.*
 
 // The write-twin of `Applicable`: `define(index, value)` produces a copy of the container in
@@ -130,7 +129,7 @@ object Omissible:
   // ordinal returns the array unchanged.
   given frozenArray: [element: scala.reflect.ClassTag]
   =>  ( complexity: Dysasymptotic.LinearSize )
-  =>  ((Array[element]^{}) is Omissible { type Operand = Ordinal }) =
+  =>  ( (Array[element]^{}) is Omissible { type Operand = Ordinal } ) =
     new Omissible:
       type Self = Array[element]^{}
       type Operand = Ordinal

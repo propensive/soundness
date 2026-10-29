@@ -38,7 +38,6 @@ import gossamer.*
 import hieroglyph.*
 import denominative.{nil, size, Ordinal}
 import rudiments.{indexed, map, occupied, reduce, seek, count, to}
-import symbolism.*
 import tessellate.*
 import vacuous.*
 

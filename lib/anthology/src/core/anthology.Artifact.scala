@@ -105,6 +105,6 @@ trait Artifact:
 
   final override def equals(that: Any): Boolean = that.asMatchable match
     case that: Artifact => (this eq that) || kind == that.kind && id == that.id
-    case _            => false
+    case _              => false
 
-  final override def hashCode: Int = kind.ordinal*31 + id.hashCode
+  final override def hashCode: Int = kind.ordinal*31 + id.##

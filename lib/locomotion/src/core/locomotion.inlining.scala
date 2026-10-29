@@ -41,7 +41,6 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import prepositional.*
-import rudiments.*
 import vacuous.*
 
 // The machinery behind `Inlinable`: expansion-time instance resolution, the
@@ -569,8 +568,8 @@ object inlining:
     tpe.classSymbol.exists: classSymbol =>
       classSymbol.flags.is(Flags.Case) &&
         !classSymbol.owner.isTerm &&
-        (tpe match { case AppliedType(_, _) => false case _ => true })
-        && classSymbol.primaryConstructor.paramSymss
+        (tpe match { case AppliedType(_, _) => false case _ => true }) &&
+        classSymbol.primaryConstructor.paramSymss
           . filterNot(_.exists(_.isTypeParam)).length == 1
 
   // ── The product generator ──────────────────────────────────────────────
@@ -700,7 +699,7 @@ object inlining:
 
         case Plan.MapGather(_, keyType0, _, valueType0) =>
           Some(TypeRepr.of[Tuple2].appliedTo
-            (List(keyType0.asInstanceOf[TypeRepr], valueType0.asInstanceOf[TypeRepr])))
+            ( List(keyType0.asInstanceOf[TypeRepr], valueType0.asInstanceOf[TypeRepr]) ))
 
         case _ =>
           None
@@ -842,12 +841,16 @@ object inlining:
                           if isArrayType(fieldTypes(index)) then kind match
                             case KInt =>
                               '{$builder.asInstanceOf[scm.ArrayBuilder.ofInt].addOne(${item.asExprOf[Int]})}
+
                             case KLong =>
                               '{$builder.asInstanceOf[scm.ArrayBuilder.ofLong].addOne(${item.asExprOf[Long]})}
+
                             case KBoolean =>
                               '{$builder.asInstanceOf[scm.ArrayBuilder.ofBoolean].addOne(${item.asExprOf[Boolean]})}
+
                             case KDouble =>
                               '{$builder.asInstanceOf[scm.ArrayBuilder.ofDouble].addOne(${item.asExprOf[Double]})}
+
                             case _ =>
                               '{$builder.asInstanceOf[scm.ArrayBuilder.ofFloat].addOne(${item.asExprOf[Float]})}
                           else '{$builder += $item}
@@ -974,10 +977,10 @@ object inlining:
           case Plan.Leaf(_) | Plan.Nested(_) | Plan.NestedRuntime(_) | Plan.OptionalLeaf(_)
             | Plan.OptionalNested(_, _) =>
             Block
-              ( Assign(Ref(slots(index)), Apply(Ref(readDefs(index)), List(code.asTerm)))
-                  :: (if needsSeen(index)
-                      then List(Assign(Ref(seens(index)), Literal(BooleanConstant(true))))
-                      else Nil),
+              ( Assign(Ref(slots(index)), Apply(Ref(readDefs(index)), List(code.asTerm))) ::
+                  (if needsSeen(index)
+                   then List(Assign(Ref(seens(index)), Literal(BooleanConstant(true))))
+                   else Nil),
                 unit )
 
           case Plan.Gather(_, _) | Plan.MapGather(_, _, _, _) =>
@@ -1033,6 +1036,7 @@ object inlining:
         val expected: List[CaseDef] = List.range(0, arity).flatMap: index =>
           naturalCodes(index).map: wireCode =>
             val literal = Expr(wireCode)
+
             val body: Term = plans(index) match
               case Plan.Leaf(_) | Plan.Nested(_) | Plan.NestedRuntime(_) | Plan.OptionalLeaf(_)
                 | Plan.OptionalNested(_, _) =>
@@ -1241,7 +1245,8 @@ object inlining:
                 case '[element] => '{${newBuilder[element, fieldType]}.result()}
 
             case Plan.MapGather(_, keyType0, _, valueType0) =>
-              (keyType0.asInstanceOf[TypeRepr].asType, valueType0.asInstanceOf[TypeRepr].asType) match
+              ( keyType0.asInstanceOf[TypeRepr].asType,
+                valueType0.asInstanceOf[TypeRepr].asType ) match
                 case ('[keyT], '[valueT]) => '{${newBuilder[(keyT, valueT), fieldType]}.result()}
 
             case Plan.Seam =>
@@ -1293,21 +1298,22 @@ object inlining:
 
       if index == arity then
         '{abort(Protobuf.Error(Protobuf.Error.Reason.MissingField(0)))(using $tactic)}
-      else variants(index)(1).asType match
-        case '[type variantType <: sum; variantType] =>
-          val instance = resolve[variantType](cache).getOrElse:
-            report.errorAndAbort
-              ( s"locomotion: no Inlinable for variant ${variants(index)(0)}" )
+      else
+        variants(index)(1).asType match
+          case '[type variantType <: sum; variantType] =>
+            val instance = resolve[variantType](cache).getOrElse:
+              report.errorAndAbort
+                ( s"locomotion: no Inlinable for variant ${variants(index)(0)}" )
 
-          . asInstanceOf[Inlinable { type Self = variantType }]
+            . asInstanceOf[Inlinable { type Self = variantType }]
 
-          ' {
-              if $chosen == ${Expr(index + 1)} then
-                val parsed: variantType = ${instance.parse(reader)}
-                parsed
-              else
-                ${dispatch(index + 1, chosen, tactic)}
-            }
+            ' {
+                if $chosen == ${Expr(index + 1)} then
+                  val parsed: variantType = ${instance.parse(reader)}
+                  parsed
+                else
+                  ${dispatch(index + 1, chosen, tactic)}
+              }
 
     ' {
         val tactic = infer[Tactic[Protobuf.Error]]
@@ -1390,6 +1396,7 @@ object inlining:
   :   Expr[Unit] =
 
     val tag = (number << 3) | code
+
     if tag < 0x80 then '{ProtobufPrinter.of($printer).byte(${Expr(tag)})}
     else '{ProtobufPrinter.of($printer).varint(${Expr(tag.toLong)})}
 
@@ -1438,13 +1445,13 @@ object inlining:
       case KDouble =>
         ' {
             ProtobufPrinter.of($printer).fixed64
-              (java.lang.Double.doubleToLongBits(${value.asExprOf[Double]}))
+              ( java.lang.Double.doubleToLongBits(${value.asExprOf[Double]}) )
           }
 
       case KFloat =>
         ' {
             ProtobufPrinter.of($printer).fixed32
-              (java.lang.Float.floatToIntBits(${value.asExprOf[Float]}))
+              ( java.lang.Float.floatToIntBits(${value.asExprOf[Float]}) )
           }
 
       case KText =>
@@ -1467,7 +1474,8 @@ object inlining:
           if iterator.hasNext then
             val item = iterator.next()
             recur(total + ${size('item)})
-          else total
+          else
+            total
 
         recur(0)
       }
@@ -1522,10 +1530,10 @@ object inlining:
   // Whether a map entry's side has a generated printer: a scalar always, a message when its
   // instance prints.
   private def entryPrints(elem: Elem): Boolean = elem match
-    case Elem.Scalar(_)         => true
-    case Elem.Chunk(_)          => true
+    case Elem.Scalar(_)           => true
+    case Elem.Chunk(_)            => true
     case Elem.Nested(instance, _) => instance.prints
-    case _                      => false
+    case _                        => false
 
   // A message in a field position: its size goes into a slot reserved before its children
   // are measured, and the field is its tag, the length prefix and the body.
@@ -1553,7 +1561,7 @@ object inlining:
   // The product's reflected shape, shared by both passes: its fields, their types and
   // numbers, and their plans.
   private def productShape[product: Type](cache: Cache)(using Quotes)
-  :   ( List[quotes.reflect.Symbol], List[quotes.reflect.TypeRepr], List[Int], List[Plan] ) =
+  :   (List[quotes.reflect.Symbol], List[quotes.reflect.TypeRepr], List[Int], List[Plan]) =
 
     import quotes.reflect.*
 
@@ -1567,7 +1575,7 @@ object inlining:
 
     val classSymbol = tpe.classSymbol.get
     val fields = classSymbol.caseFields
-    val fieldTypes = fields.map { field => tpe.memberType(field).dealias }
+    val fieldTypes = fields.map: field => tpe.memberType(field).dealias
 
     (fields, fieldTypes, fieldNumbersOf(classSymbol).get, fieldTypes.map(planFor(_, cache)))
 
@@ -1617,7 +1625,7 @@ object inlining:
                   ( number,
                     ' {
                         Protobuf.Printable.measureField[fieldType]
-                          ($printable.asInstanceOf[AnyRef], $typed, $sizes)
+                          ( $printable.asInstanceOf[AnyRef], $typed, $sizes )
                       },
                     sizes )
 
@@ -1634,8 +1642,7 @@ object inlining:
                     ' {
                         if ${typed.asExprOf[Optional[inner]]}.absent then 0
                         else
-                          ${Expr(tag)} +
-                            ${scalarSize(kind, '{$typed.asInstanceOf[inner]}, sizes)}
+                          ${Expr(tag)} + ${scalarSize(kind, '{$typed.asInstanceOf[inner]}, sizes)}
                       }
 
               case Plan.Nested(instance) if instance.prints =>
@@ -1653,11 +1660,12 @@ object inlining:
                   case '[inner] =>
                     val present: Expr[inner] = '{$typed.asInstanceOf[inner]}
 
-                    val framed = framedSize
-                      ( number,
-                        instance.asInstanceOf[Inlinable { type Self = inner }]
-                        . measure(present, sizes),
-                        sizes )
+                    val framed =
+                      framedSize
+                        ( number,
+                          instance.asInstanceOf[Inlinable { type Self = inner }]
+                          . measure(present, sizes),
+                          sizes )
 
                     '{if ${typed.asExprOf[Optional[inner]]}.absent then 0 else $framed}
 
@@ -1708,7 +1716,7 @@ object inlining:
                                 ( number,
                                   ' {
                                       Protobuf.Printable.measureField[element]
-                                        ($printable.asInstanceOf[AnyRef], $item, $sizes)
+                                        ( $printable.asInstanceOf[AnyRef], $item, $sizes )
                                     },
                                   sizes )
 
@@ -1747,13 +1755,13 @@ object inlining:
 
                     def entry(item: Expr[(keyT, valueT)]): Option[Expr[Int]] =
                       for
-                        keySize <- entrySize(key, keyType, 1, '{$item._1})
+                        keySize   <- entrySize(key, keyType, 1, '{$item._1})
                         valueSize <- entrySize(value, valueType, 2, '{$item._2})
                       yield framedSize(number, '{$keySize + $valueSize}, sizes)
 
                     // Both sides print, or the whole map takes the seam.
                     if entryPrints(key) && entryPrints(value)
-                    then summed(entries) { item => entry(item).get }
+                    then summed(entries): item => entry(item).get
                     else seam
 
               // A recursive message field (`Plan.Seam` here, its parser being on the
@@ -1763,7 +1771,7 @@ object inlining:
               case _ =>
                 nominal
 
-      sizesOf.foldLeft[Expr[Int]](Expr(0)) { (total, size) => '{$total + $size} }
+      sizesOf.foldLeft[Expr[Int]](Expr(0)): (total, size) => '{$total + $size}
 
   private[locomotion] def productWrite[product: Type]
     ( value: Expr[product], printer: Expr[AnyRef], sizes: Expr[AnyRef] )
@@ -1793,7 +1801,7 @@ object inlining:
             def seam: Expr[Unit] =
               ' {
                   ProtobufPrinter.of($printer).field
-                    (${Expr(number)}, ProtobufSizes.of($sizes).unstash().asInstanceOf[Protobuf])
+                    ( ${Expr(number)}, ProtobufSizes.of($sizes).unstash().asInstanceOf[Protobuf] )
                 }
 
             def tagged(kind: Int, item: Expr[Any]): Expr[Unit] =
@@ -1808,7 +1816,7 @@ object inlining:
                   ( number,
                     ' {
                         Protobuf.Printable.writeField[fieldType]
-                          ($printable.asInstanceOf[AnyRef], $typed, $printer, $sizes)
+                          ( $printable.asInstanceOf[AnyRef], $typed, $printer, $sizes )
                       },
                     printer, sizes )
 
@@ -1842,11 +1850,12 @@ object inlining:
                   case '[inner] =>
                     val present: Expr[inner] = '{$typed.asInstanceOf[inner]}
 
-                    val framed = framedWrite
-                      ( number,
-                        instance.asInstanceOf[Inlinable { type Self = inner }]
-                        . write(present, printer, sizes),
-                        printer, sizes )
+                    val framed =
+                      framedWrite
+                        ( number,
+                          instance.asInstanceOf[Inlinable { type Self = inner }]
+                          . write(present, printer, sizes),
+                          printer, sizes )
 
                     '{if !${typed.asExprOf[Optional[inner]]}.absent then $framed}
 
@@ -1877,7 +1886,7 @@ object inlining:
                           }
 
                       case Elem.Chunk(kind) =>
-                        eachOver { item => tagged(kind, item) }
+                        eachOver: item => tagged(kind, item)
 
                       case Elem.Nested(instance0, _) if instance0.prints =>
                         val instance = instance0.asInstanceOf[Inlinable { type Self = element }]
@@ -1945,12 +1954,12 @@ object inlining:
 
                     def entry(item: Expr[(keyT, valueT)]): Option[Expr[Unit]] =
                       for
-                        keyWrite <- entryWrite(key, keyType, 1, '{$item._1})
+                        keyWrite   <- entryWrite(key, keyType, 1, '{$item._1})
                         valueWrite <- entryWrite(value, valueType, 2, '{$item._2})
-                      yield framedWrite(number, '{ $keyWrite; $valueWrite }, printer, sizes)
+                      yield framedWrite(number, '{$keyWrite; $valueWrite}, printer, sizes)
 
                     if entryPrints(key) && entryPrints(value)
-                    then visited(entries) { item => entry(item).get }
+                    then visited(entries): item => entry(item).get
                     else seam
 
               // A recursive message field (`Plan.Seam` here, its parser being on the
@@ -2021,7 +2030,8 @@ object inlining:
                   if $value.isInstanceOf[variantType] then
                     val variant = $value.asInstanceOf[variantType]
                     ${body[variantType](index, typed, 'variant)}
-                  else ${dispatch(index + 1)}
+                  else
+                    ${dispatch(index + 1)}
                 }
 
       dispatch(0)

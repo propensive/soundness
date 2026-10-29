@@ -40,7 +40,6 @@ import corpuscular.*
 import denominative.*
 import prepositional.*
 import turbulence.*
-import vacuous.*
 import zephyrine.*
 
 // Capability providers. Pick one (or more) with an explicit import, e.g.

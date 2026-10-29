@@ -43,7 +43,6 @@ import anticipation.*
 import denominative.nil
 import murmuration.{exists, fold, map}
 import rudiments.each
-import rudiments.reverse
 import contingency.*
 import digression.*
 import fulminate.*

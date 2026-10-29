@@ -34,7 +34,6 @@ package honeycomb
 
 import java.lang as jl
 
-import scala.caps
 import scala.collection.immutable.IndexedSeq
 import scala.collection.immutable.Seq
 import scala.collection.immutable.VectorMap
@@ -973,7 +972,7 @@ object internal:
           val k = a(i)
           val v = a(i + 1)
           val kh = if k == null then 0 else k.hashCode
-          val vh = if v == null then Unset.hashCode else v.hashCode
+          val vh = if v == null then Unset.## else v.hashCode
           h = h ^ (kh*31 ^ vh)
           i += 2
 

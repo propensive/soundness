@@ -260,6 +260,7 @@ def paint(root: Board^, pane: Pane): Unit =
 
   while running do cells.next() match
     case Iterator.Exhausted => running = false
+
     case (leaf: Pane, rect: Rect) =>
       val extent = FlowExtent(root, rect)
 

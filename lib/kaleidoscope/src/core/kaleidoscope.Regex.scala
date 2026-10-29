@@ -47,7 +47,6 @@ import rudiments.*
 import vacuous.*
 
 import Regex.Error.Reason.*
-import denominative.dysasymptotics.linearSize
 
 object Regex:
   private[kaleidoscope] val cache: TrieMap[String, jur.Pattern] = TrieMap()

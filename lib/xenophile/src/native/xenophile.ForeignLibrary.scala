@@ -148,7 +148,6 @@ object ForeignLibrary:
         panic(m"no such foreign symbol: $symbol (is its library `ForeignLibrary.register`ed?)")
 
     val lookups: List[SymbolLookup] =
-      import scala.jdk.CollectionConverters.ListHasAsScala
       linker.defaultLookup.nn :: registered.to[List]
 
     linker.downcallHandle(search(lookups), descriptor).nn

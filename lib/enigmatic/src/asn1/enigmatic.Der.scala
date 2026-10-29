@@ -34,17 +34,14 @@ package enigmatic
 
 import java.util as ju
 
-import scala.caps
 import scala.compiletime.*
 
 import anticipation.*
 import gossamer.*
 import monotonous.*
 import prepositional.*
-import rudiments.*
 import spectacular.*
 import turbulence.*
-import vacuous.*
 import zephyrine.*
 
 // A DER document: the canonical Distinguished Encoding Rules serialization of a single ASN.1

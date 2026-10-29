@@ -354,7 +354,8 @@ object Typescript:
       def word(start: Int): Int =
         var end = start
         while end < text.length && (text.charAt(end).isLetterOrDigit || text.charAt(end) == '_' ||
-          text.charAt(end) == '$') do end += 1
+          text.charAt(end) == '$')
+        do end += 1
 
         tokens += Token.Word(text.substring(start, end).nn.tt)
         end
@@ -364,7 +365,8 @@ object Typescript:
         while end < text.length && (text.charAt(end).isDigit || text.charAt(end) == '.' ||
           text.charAt(end) == 'x' || text.charAt(end) == 'e' ||
           (text.charAt(end) >= 'a' && text.charAt(end) <= 'f') ||
-          (text.charAt(end) >= 'A' && text.charAt(end) <= 'F')) do end += 1
+          (text.charAt(end) >= 'A' && text.charAt(end) <= 'F'))
+        do end += 1
 
         tokens += Token.Num(text.substring(start, end).nn.tt)
         end
@@ -589,8 +591,8 @@ object Typescript:
           into += classDeclaration(scope, visible)
         else if at(t"type") then
           into += aliasDeclaration(scope, visible)
-        else if at(t"enum") || at(t"const") && ahead(1, t"enum")
-        then into += enumDeclaration(scope, visible)
+        else if at(t"enum") || at(t"const") && ahead(1, t"enum") then
+          into += enumDeclaration(scope, visible)
         else if at(t"function") then
           into += functionDeclaration(scope, visible)
         else if at(t"const") || at(t"let") || at(t"var") then
@@ -747,17 +749,28 @@ object Typescript:
         var scanning = true
 
         while scanning do
-          if at(t"public") then { next(); visibility = Typescript.Member.Visibility.Public }
-          else if at(t"protected") then { next(); visibility = Typescript.Member.Visibility.Protected }
-          else if at(t"private") then { next(); visibility = Typescript.Member.Visibility.Private }
-          else if at(t"static") then { next(); static = true }
-          else if at(t"abstract") then { next(); isAbstract = true }
+          if at(t"public") then
+            next()
+            visibility = Typescript.Member.Visibility.Public
+          else if at(t"protected") then
+            next()
+            visibility = Typescript.Member.Visibility.Protected
+          else if at(t"private") then
+            next()
+            visibility = Typescript.Member.Visibility.Private
+          else if at(t"static") then
+            next()
+            static = true
+          else if at(t"abstract") then
+            next()
+            isAbstract = true
           // `readonly` is only a modifier when something follows it that can be named; `readonly`
           // as a member name is legal TypeScript.
-          else if at(t"readonly") && !(ahead(1, t":") ||
-            ahead(1, t"?") ||
-            ahead(1, t"(")) then { next(); readonly = true }
-          else scanning = false
+          else if at(t"readonly") && !(ahead(1, t":") || ahead(1, t"?") || ahead(1, t"(")) then
+            next()
+            readonly = true
+          else
+            scanning = false
 
         // A call signature `(…): T`, or a generic one `<T>(…): U`.
         if at(t"(") || at(t"<") then
@@ -771,8 +784,7 @@ object Typescript:
               visibility, static, readonly )
 
         // A construct signature `new (…): T`.
-        else if at(t"new") && (ahead(1, t"(") || peek(1) ==
-          Optional(Token.Punct(t"<"))) then
+        else if at(t"new") && (ahead(1, t"(") || peek(1) == Optional(Token.Punct(t"<"))) then
           next()
           val typed = typeParameters()
           val parameters = parameterList()
@@ -802,8 +814,8 @@ object Typescript:
         // A mapped type (`[K in T]: U`) is refused under its own name: it fails the index-signature
         // test above because `in` follows the binder where `:` would, but calling it a computed
         // property name would misdirect whoever reads the diagnostic.
-        else if at(t"[") && ahead(2, t"in")
-        then abort(Typescript.Error(Reason.Unsupported(t"a mapped type")))
+        else if at(t"[") && ahead(2, t"in") then
+          abort(Typescript.Error(Reason.Unsupported(t"a mapped type")))
         else if at(t"[") then
           abort(Typescript.Error(Reason.Unsupported(t"a computed property name")))
         else
@@ -1048,39 +1060,40 @@ object Typescript:
           abort(Typescript.Error(Reason.Unsupported(t"an assertion signature")))
         else if at(t"unique") then
           abort(Typescript.Error(Reason.Unsupported(t"a `unique symbol`")))
-        else peek() match
-          case Token.Str(value) => { next(); Typescript.Type.Literal(value,
-              Typescript.Type.LiteralKind.String) }
+        else
+          peek() match
+            case Token.Str(value) => { next(); Typescript.Type.Literal(value,
+                Typescript.Type.LiteralKind.String) }
 
-          case Token.Num(value) => { next(); Typescript.Type.Literal(value,
-              Typescript.Type.LiteralKind.Number) }
+            case Token.Num(value) => { next(); Typescript.Type.Literal(value,
+                Typescript.Type.LiteralKind.Number) }
 
-          case Token.Punct(t"-") =>
-            next()
+            case Token.Punct(t"-") =>
+              next()
 
-            peek() match
-              case Token.Num(value) =>
-                next()
-                Typescript.Type.Literal(t"-$value", Typescript.Type.LiteralKind.Number)
+              peek() match
+                case Token.Num(value) =>
+                  next()
+                  Typescript.Type.Literal(t"-$value", Typescript.Type.LiteralKind.Number)
 
-              case _ => abort(Typescript.Error(Reason.Syntax(t"expected a number", here)))
+                case _ => abort(Typescript.Error(Reason.Syntax(t"expected a number", here)))
 
-          case Token.Word(word) if word == t"true" || word == t"false" =>
-            next()
-            Typescript.Type.Literal(word, Typescript.Type.LiteralKind.Boolean)
+            case Token.Word(word) if word == t"true" || word == t"false" =>
+              next()
+              Typescript.Type.Literal(word, Typescript.Type.LiteralKind.Boolean)
 
-          case Token.Word(_) =>
-            val name = qualifiedName()
-            val arguments = typeArguments()
-            val named = Typescript.Type.Named(name, arguments)
+            case Token.Word(_) =>
+              val name = qualifiedName()
+              val arguments = typeArguments()
+              val named = Typescript.Type.Named(name, arguments)
 
-            // A conditional type is recognised here, where its `extends` follows a type rather
-            // than a declaration name, and rejected rather than approximated.
-            if at(t"extends")
-            then abort(Typescript.Error(Reason.Unsupported(t"a conditional type")))
-            else named
+              // A conditional type is recognised here, where its `extends` follows a type rather
+              // than a declaration name, and rejected rather than approximated.
+              if at(t"extends")
+              then abort(Typescript.Error(Reason.Unsupported(t"a conditional type")))
+              else named
 
-          case _ => abort(Typescript.Error(Reason.Syntax(t"expected a type", here)))
+            case _ => abort(Typescript.Error(Reason.Syntax(t"expected a type", here)))
 
       private update def qualifiedName()(using Tactic[Typescript.Error]): Text =
         val parts = scala.collection.mutable.ListBuffer[Text]()

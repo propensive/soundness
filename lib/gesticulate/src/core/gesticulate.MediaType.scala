@@ -32,7 +32,6 @@
                                                                                                   */
 package gesticulate
 
-import scala.caps
 import scala.language.dynamics
 
 import anticipation.*

@@ -41,7 +41,6 @@ import contingency.*
 import denominative.*
 import hieroglyph.*
 import prepositional.*
-import rudiments.*
 import vacuous.*
 
 // Makes a stage-descriptor value — a character decoder, a compression

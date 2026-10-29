@@ -45,7 +45,6 @@ import contingency.*
 import fulminate.*
 import gossamer.*
 import kaleidoscope.*
-import prepositional.*
 import rudiments.*
 import spectacular.*
 import vacuous.*

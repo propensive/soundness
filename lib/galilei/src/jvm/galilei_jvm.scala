@@ -226,7 +226,11 @@ package filesystemBackends:
         protect(path, Operation.Create):
           val command = java.util.ArrayList[String]()
           command.add("mkfifo")
-          mode.let { mode => command.add("-m"); command.add(Integer.toOctalString(mode).nn) }
+
+          mode.let: mode =>
+            command.add("-m")
+            command.add(Integer.toOctalString(mode).nn)
+
           command.add(Path.encodable.encode(path).s)
           val process = new ProcessBuilder(command).start().nn
 
@@ -501,7 +505,10 @@ package filesystemBackends:
         val channel =
           protect(path, Operation.Open):
             val optionSet = java.util.HashSet[jnf.OpenOption]()
-            options2.foreach { option => optionSet.add(option); () }
+
+            options2.foreach: option =>
+              optionSet.add(option)
+              ()
 
             val channel =
               jnc.FileChannel

@@ -35,7 +35,6 @@ package geodesy
 import scala.math
 
 import gossamer.*
-import hypotenuse.*
 import spectacular.*
 import symbolism.*
 

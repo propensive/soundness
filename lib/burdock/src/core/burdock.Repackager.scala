@@ -39,8 +39,8 @@ import distillate.*
 import fulminate.*
 import galilei.*
 import gossamer.*
-import parasite.{async, supervise}
 import parasite.Async
+import parasite.{async, supervise}
 import prepositional.*
 import revolution.*
 import rudiments.*
@@ -57,7 +57,6 @@ import parasite.probates.cancelProbate
 import parasite.threads.virtualThreads
 import denominative.*
 import denominative.dysasymptotics.linearSize
-
 import filesystemBackends.javaBaseFilesystem
 
 // The repackager. Reads the dependency hashes embedded by the compile-time macro
@@ -179,12 +178,23 @@ object Repackager:
   :   Summary raises RepackageError =
 
     mitigate:
-      case Io.Error(_, _, _, _)      => RepackageError(m"a filesystem error occurred while repackaging")
-      case Truncation.Error(_)       => RepackageError(m"a stream error occurred while repackaging")
-      case Zip.Error(reason)         => RepackageError(m"the JAR could not be read or written ($reason)")
-      case Path.Error(_, _)          => RepackageError(m"a path could not be resolved while repackaging")
-      case Number.Error(_, _, _)     => RepackageError(m"the manifest contained malformed data")
-      case Fqcn.Error(_, _)          => RepackageError(m"the Main-Class is not a valid class name")
+      case Io.Error(_, _, _, _) =>
+        RepackageError(m"a filesystem error occurred while repackaging")
+
+      case Truncation.Error(_) =>
+        RepackageError(m"a stream error occurred while repackaging")
+
+      case Zip.Error(reason) =>
+        RepackageError(m"the JAR could not be read or written ($reason)")
+
+      case Path.Error(_, _) =>
+        RepackageError(m"a path could not be resolved while repackaging")
+
+      case Number.Error(_, _, _) =>
+        RepackageError(m"the manifest contained malformed data")
+
+      case Fqcn.Error(_, _) =>
+        RepackageError(m"the Main-Class is not a valid class name")
 
     . protect:
         val resource: Text = burdock.internal.ResourcePath.tt

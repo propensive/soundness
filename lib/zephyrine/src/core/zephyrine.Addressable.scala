@@ -262,7 +262,6 @@ object Addressable:
       System.arraycopy(storage, off, array.raw, 0, len)
       Array.freeze(array)
 
-
   inline given text: Text is Addressable:
     type Operand = Char
     type Target = jl.StringBuilder

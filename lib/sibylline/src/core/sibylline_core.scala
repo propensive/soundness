@@ -32,8 +32,6 @@
                                                                                                   */
 package sibylline
 
-import scala.caps
-
 import anticipation.*
 import contingency.*
 import gossamer.*

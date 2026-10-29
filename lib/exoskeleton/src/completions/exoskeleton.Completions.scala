@@ -57,8 +57,8 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 import charsets.utf8Charset
-import textSanitizers.skipSanitizer
 import filesystemBackends.javaBaseFilesystem
+import textSanitizers.skipSanitizer
 
 object Completions:
   case class Tab(arguments: List[Text], focus: Int, cursor: Int, count: Int = 0):
@@ -294,8 +294,6 @@ object Completions:
   (using (CliEvent is Loggable)^)
   (using Tactic[Install.Error])
   :   Installation.InstallResult =
-
-    import filesystemOptions.createNonexistentParents
 
     mitigate:
       case Io.Error(_, _, _, _) => Install.Error(Install.Error.Reason.Io)

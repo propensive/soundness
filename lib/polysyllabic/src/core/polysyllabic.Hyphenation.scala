@@ -32,8 +32,6 @@
                                                                                                   */
 package polysyllabic
 
-import scala.collection.mutable.ArrayBuilder
-
 import anticipation.*
 import denominative.*
 import fulminate.*
@@ -200,7 +198,9 @@ object Hyphenation:
 
       if sl < 0 then node = 0 else
         // Follow failure links until we find a node whose child slot is set.
-        while node != 0 && children.readUnchecked(node*alpha + sl) < 0 do node = fail.readUnchecked(node)
+        while node != 0 && children.readUnchecked(node*alpha + sl) < 0
+        do node = fail.readUnchecked(node)
+
         val next = children.readUnchecked(node*alpha + sl)
         if next >= 0 then node = next
 

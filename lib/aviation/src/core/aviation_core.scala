@@ -37,7 +37,6 @@ import contextual.*
 import contingency.*
 import cosmopolite.{Locale, en, fr, de, es}
 import distillate.*
-import fulminate.*
 import gossamer.*
 import hieroglyph.*
 import prepositional.*

@@ -37,11 +37,9 @@ import scala.collection.immutable.IndexedSeq
 import scala.language.experimental.pureFunctions
 
 import anticipation.*
-import fulminate.*
 import gossamer.*
 import hieroglyph.*
 import rudiments.*
-import spectacular.*
 import symbolism.*
 import tessellate.*
 import vacuous.*

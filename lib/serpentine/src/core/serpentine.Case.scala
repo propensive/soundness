@@ -58,4 +58,4 @@ enum Case:
 
   def hash(descent: List[Text]): Int = descent match
     case Nil          => 1
-    case head :: tail => hash(tail)*31 + apply(head).hashCode
+    case head :: tail => hash(tail)*31 + apply(head).##
