@@ -618,7 +618,7 @@ object Benchmarks extends Suite("collections-bench", m"Murmuration benchmarks"):
       bench(m"pull loop over a List")(target = 250*Milli(Second))
       . over(Axis(t"size")(sizes*)): size =>
           '{
-              def recur(consume pull: Iterator.Pull[Int], total: Int): Int = pull match
+              def recur(pull: Iterator.Pull[Int], total: Int): Int = pull match
                 case Iterator.Exhausted             => total
                 case cursor: Iterator.Cursor[Int] =>
                   val value = cursor.value
@@ -630,7 +630,7 @@ object Benchmarks extends Suite("collections-bench", m"Murmuration benchmarks"):
       bench(m"Iterator.each over a frozen array")(target = 250*Milli(Second))
       . over(Axis(t"size")(sizes*)): size =>
           '{
-              val array: Array[Int]^{} = murmuration.Benchmarks.data(0, $size).to[Array]
+              val array: Array[Int] = murmuration.Benchmarks.data(0, $size).to[Array]
               var total = 0
               array.iterator.each(total += _)
               total
@@ -639,7 +639,7 @@ object Benchmarks extends Suite("collections-bench", m"Murmuration benchmarks"):
       bench(m"stdlib while over a frozen array's elements")(target = 250*Milli(Second))
       . over(Axis(t"size")(sizes*)): size =>
           '{
-              val array: Array[Int]^{} = murmuration.Benchmarks.data(0, $size).to[Array]
+              val array: Array[Int] = murmuration.Benchmarks.data(0, $size).to[Array]
               val iterator = array.stdlib.iterator
               var total = 0
               while iterator.hasNext do total += iterator.next()
