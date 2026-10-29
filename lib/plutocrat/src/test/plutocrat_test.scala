@@ -96,6 +96,11 @@ object Tests extends Suite("money", m"Plutocrat tests"):
 
       . assert(_ == Eur(3.01))
 
+      test(m"Each share of a split is an amount of the same currency"):
+        Eur(3.01).share(3)
+
+      . assert(_ == List(Eur(1.01), Eur(1.00), Eur(1.00)))
+
       test(m"Different currencies cannot be combined"):
         demilitarize:
           Eur(1.00) + Gbp(1.00)
