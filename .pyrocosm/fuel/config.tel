@@ -50,3 +50,11 @@ scalac-option -Yimports:java.lang,proscenium,soundness
 # as one session, with the document's fixture from doc/fixtures compiled first.
 session
 fixtures doc/fixtures
+
+# The API documentation: one overlay per package beneath doc/api, merged onto the model fuel
+# reads from the classpath above (every library is in the test assembly), and the package a
+# document's or an overlay's references resolve through. No `source` directories: Soundness's
+# own sources need the fork compiler's syntax, which fuel's session cannot compile, so a
+# library's members come from its jar and an overlay is checked against those.
+overlay doc/api
+imports soundness
