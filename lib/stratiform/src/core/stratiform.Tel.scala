@@ -2840,7 +2840,7 @@ object Tel extends Tel2:
         case o: Inline => text == o.text && precedingSpaces == o.precedingSpaces
         case _         => false
 
-      override def hashCode: Int = text.hashCode * 31 + precedingSpaces
+      override def hashCode: Int = text.## * 31 + precedingSpaces
 
       override def toString: String = s"Inline($text,$precedingSpaces)"
 

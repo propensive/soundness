@@ -5322,7 +5322,7 @@ object Xml extends Tag.Container
   sealed trait Node extends Xml, caps.Pure
 
   case class Comment(text: BaseText) extends Node:
-    override def hashCode: Int = text.hashCode*31 + 0x436F6D6D
+    override def hashCode: Int = text.##*31 + 0x436F6D6D
 
     override def equals(that: Any): Boolean = that match
       case Comment(text0)           => text0 == text
@@ -5330,7 +5330,7 @@ object Xml extends Tag.Container
       case _                        => false
 
   case class Doctype(text: BaseText) extends Node:
-    override def hashCode: Int = text.hashCode*31 + 0x44637470
+    override def hashCode: Int = text.##*31 + 0x44637470
 
     override def equals(that: Any): Boolean = that match
       case Doctype(text0)           => text0 == text
@@ -5338,7 +5338,7 @@ object Xml extends Tag.Container
       case _                        => false
 
   case class Cdata(text: BaseText) extends Node:
-    override def hashCode: Int = text.hashCode*31 + 0x43646174
+    override def hashCode: Int = text.##*31 + 0x43646174
 
     override def equals(that: Any): Boolean = that match
       case Cdata(text0)           => text0 == text
@@ -5346,7 +5346,7 @@ object Xml extends Tag.Container
       case _                      => false
 
   case class ProcessingInstruction(target: BaseText, data: BaseText) extends Node:
-    override def hashCode: Int = (target.hashCode*31 + data.hashCode)*31 + 0x50494E73
+    override def hashCode: Int = (target.##*31 + data.##)*31 + 0x50494E73
 
     override def equals(that: Any): Boolean = that match
       case ProcessingInstruction(target0, data0)           => target0 == target && data0 == data
@@ -5356,7 +5356,7 @@ object Xml extends Tag.Container
   case class Text(text: BaseText) extends Node:
     type Topic = "#text"
 
-    override def hashCode: Int = text.hashCode*31 + 0x54657874
+    override def hashCode: Int = text.##*31 + 0x54657874
 
     override def equals(that: Any): Boolean = that match
       case Fragment(textual: Text) => this == textual
@@ -5453,7 +5453,7 @@ object Xml extends Tag.Container
     override def hashCode: Int =
       ju.Arrays.hashCode(Array.unsafeJvm(children).asInstanceOf[scala.Array[Object | Null]]) ^
         attributes.hashAttributes ^
-        label.hashCode
+        label.##
 
 
     def selectDynamic(name: Label)
@@ -5498,7 +5498,7 @@ object Xml extends Tag.Container
       positionIndex: Optional[Xml.PositionIndex] = Unset )
   extends Node:
     override def hashCode: Int =
-      ((version.hashCode*31 + encoding.hashCode)*31 + standalone.hashCode)*31 + 0x48646572
+      ((version.##*31 + encoding.##)*31 + standalone.##)*31 + 0x48646572
 
     override def equals(that: Any): Boolean = that match
       case Fragment(header: Header) => equals(header)

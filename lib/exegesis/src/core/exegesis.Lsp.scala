@@ -47,7 +47,6 @@ import distillate.*
 import fulminate.*
 import gossamer.*
 import guillotine.*
-import hieroglyph.*
 import jacinta.*
 import obligatory.*
 import parasite.*

@@ -81,9 +81,9 @@ enum Designator:
   // structure, which is exact for a designator made with the case constructors rather than
   // interned, and fast for one which was.
   override lazy val hashCode: Int = this match
-    case Top(name)          => name.hashCode
-    case Term(parent, name) => (parent.hashCode*31 + name.hashCode)*31 + 1
-    case Type(parent, name) => (parent.hashCode*31 + name.hashCode)*31 + 2
+    case Top(name)          => name.##
+    case Term(parent, name) => (parent.hashCode*31 + name.##)*31 + 1
+    case Type(parent, name) => (parent.hashCode*31 + name.##)*31 + 2
 
   override def equals(that: Any): Boolean = that match
     case that: Designator =>

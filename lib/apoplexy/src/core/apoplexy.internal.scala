@@ -45,7 +45,6 @@ import gesticulate.*
 import gigantism.*
 import gossamer.*
 import hellenism.*
-import hieroglyph.*
 import jacinta.*
 import legerdemain.*
 import orthodoxy.*
@@ -76,7 +75,7 @@ object Apoplexy:
 
   // The caches are keyed by the resource's content as well as its name, so that a spec edited
   // between two compilations in the same compiler process is read afresh.
-  private def key(source: Text, content: Text): Text = t"$source#${content.hashCode}"
+  private def key(source: Text, content: Text): Text = t"$source#${content.##}"
 
   private def spec(using Quotes)(source: Text): OpenApi =
     val content = resource(source)

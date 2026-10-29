@@ -618,7 +618,7 @@ case class Dsv(data: Array[Text]^{}, columns: Optional[Map[Text, Int]] = Unset) 
 
   override def hashCode: Int =
     var hash = 0
-    data.extent.each: index => hash = hash*31 + data(index).hashCode
+    data.extent.each: index => hash = hash*31 + data(index).##
     hash
 
   override def equals(that: Any): Boolean = that.asMatchable match

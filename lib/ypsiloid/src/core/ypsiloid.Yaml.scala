@@ -1108,9 +1108,9 @@ object Yaml extends Yaml1, Dynamic:
 
     def deepHash(ast: Yaml.Ast): Int = (ast: @unchecked) match
       case Yaml.YamlNull => 0
-      case b: Boolean    => b.hashCode
-      case n: Long       => n.hashCode
-      case d: Double     => d.hashCode
+      case b: Boolean    => b.##
+      case n: Long       => n.##
+      case d: Double     => d.##
       case s: String     => s.hashCode
 
       case b: scala.Array[Double] @unchecked =>

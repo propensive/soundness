@@ -47,7 +47,6 @@ import galilei.*
 import gossamer.*
 import hellenism.*
 import jacinta.*
-import parasite.*
 import prepositional.*
 import rudiments.*
 import denominative.dysasymptotics.linearSize

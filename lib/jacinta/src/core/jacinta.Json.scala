@@ -3592,10 +3592,10 @@ extends Dynamic, Topical, Original derives CanEqual:
 
   override def hashCode: Int =
     def recur(value: Json.Ast): Int = value.asMatchable match
-      case value: Long       => value.hashCode
-      case value: Double     => value.hashCode
+      case value: Long       => value.##
+      case value: Double     => value.##
       case value: String     => value.hashCode
-      case value: Boolean    => value.hashCode
+      case value: Boolean    => value.##
 
       case value: Int =>
         // Small-BCD number — hash through the BigDecimal projection so
@@ -3608,7 +3608,7 @@ extends Dynamic, Topical, Original derives CanEqual:
         // backing representation the parser picked.
         val ast = value.asInstanceOf[Json.Ast]
         val n = value.length
-        var acc = n.hashCode
+        var acc = n.##
         var i = 0
 
         while i < n do
@@ -3628,7 +3628,7 @@ extends Dynamic, Topical, Original derives CanEqual:
         // for cross-form equality with the boxed/Double/Long array shapes.
         val ast = value.asInstanceOf[Json.Ast]
         val n = value.length
-        var acc = n.hashCode
+        var acc = n.##
         var i = 0
 
         while i < n do
@@ -3650,10 +3650,10 @@ extends Dynamic, Topical, Original derives CanEqual:
             acc = acc.define(ast.objectKey(i), recur(ast.objectValue(i)))
             i += 1
 
-          acc.hashCode
+          acc.##
         else
           val n = ast.arrayLength
-          var acc = n.hashCode
+          var acc = n.##
           var i = 0
 
           while i < n do

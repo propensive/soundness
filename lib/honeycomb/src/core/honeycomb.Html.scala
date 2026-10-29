@@ -2298,7 +2298,7 @@ object Html extends Tag.Container
 
     override def hashCode: Int =
       ju.Arrays.hashCode(Array.unsafeJvm(children).asInstanceOf[scala.Array[Object | Null]]) ^
-        attributes.hashAttributes ^ label.hashCode
+        attributes.hashAttributes ^ label.##
 
     transparent inline def selectDynamic(name: Label): Any =
 

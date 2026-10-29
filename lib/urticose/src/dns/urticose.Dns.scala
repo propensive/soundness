@@ -211,7 +211,7 @@ object Dns:
       case that: Name => folded == that.folded
       case _          => false
 
-    override def hashCode: Int = folded.hashCode
+    override def hashCode: Int = folded.##
 
   // ── The numbers ─────────────────────────────────────────────────────────────────────────────
   object Type:
@@ -345,7 +345,7 @@ object Dns:
         case that: Txt => strings.map(octets) == that.strings.map(octets)
         case _         => false
 
-      override def hashCode: Int = strings.map(octets).hashCode
+      override def hashCode: Int = strings.map(octets).##
       override def toString: String = s"Txt(${strings.map(_.utf8).join(t", ")})"
 
     // The EDNS(0) options of RFC 6891 §6.1.2, as `(code, data)` pairs; the record's other
@@ -355,7 +355,7 @@ object Dns:
         case that: Opt => comparable == that.comparable
         case _         => false
 
-      override def hashCode: Int = comparable.hashCode
+      override def hashCode: Int = comparable.##
       private def comparable = options.map { case (code, data) => (code, octets(data)) }
 
     // A type this vocabulary does not interpret, carried as its wire octets (RFC 3597) so that

@@ -772,7 +772,7 @@ object Cbor extends Cbor1, Dynamic:
           Array.empty[Cbor.Ast]
 
   final class Tag(val tag: Long, val value: Any):
-    override def hashCode: Int = (tag.hashCode*31)^value.hashCode
+    override def hashCode: Int = (tag.##*31)^value.##
 
     override def equals(that: Any): Boolean = that match
       case that: Tag => tag == that.tag && value == that.value
@@ -1537,7 +1537,7 @@ class Cbor(private[breviloquence] val root: Cbor.Ast) extends Dynamic derives Ca
       case -1    => Cbor.ast(Cbor.Ast(Unset))
       case index => Cbor(root.value(index))
 
-  override def hashCode: Int = root.hashCode
+  override def hashCode: Int = root.##
 
   override def equals(right: Any): Boolean = right match
     case right: Cbor => recur(root, right.root)

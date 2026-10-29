@@ -399,7 +399,7 @@ case class Sheet
 
   override def hashCode: Int =
     (ju.Arrays.hashCode(Array.unsafeJvm(rows).asInstanceOf[scala.Array[Object | Null]])*31 +
-      format.hashCode)*31 +
+      format.##)*31 +
       columns.lay(-1): array =>
         ju.Arrays.hashCode(Array.unsafeJvm(array).asInstanceOf[scala.Array[Object | Null]])
 

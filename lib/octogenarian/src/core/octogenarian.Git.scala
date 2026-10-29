@@ -386,7 +386,7 @@ object Git:
     type Plane = Notes
     type Limit = Git.Hash
 
-    override def hashCode: Int = text.hashCode
+    override def hashCode: Int = text.##
 
     override def equals(any: Any): Boolean = any match
       case other: Git.Hash => text == other.text

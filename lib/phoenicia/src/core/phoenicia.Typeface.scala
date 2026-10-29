@@ -88,5 +88,5 @@ class Typeface(val name: Text) extends Topical:
     case other: Typeface => other.name == name
     case _               => false
 
-  override def hashCode: Int = name.hashCode
+  override def hashCode: Int = name.##
   override def toString: String = name.s

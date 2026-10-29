@@ -38,7 +38,6 @@ import anticipation.*
 import contingency.*
 import murmuration.{exists, foreach}
 import prepositional.*
-import telekinesis.*
 import vacuous.*
 import Json.Error.Reason
 

@@ -348,4 +348,4 @@ trait Markdown:
     case that: Markdown => that.children == children
     case _              => false
 
-  override def hashCode: Int = children.hashCode
+  override def hashCode: Int = children.##
