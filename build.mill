@@ -1,6 +1,7 @@
 //| mill-version: 1.1.5
 //| mill-jvm-version: temurin:25
 //| mill-jvm-opts: ["-XX:NonProfiledCodeHeapSize=250m", "-XX:ReservedCodeCacheSize=500m"]
+//| mvnDeps: ["dev.propensive:crux-mill:0.1.4"]
 
                                                                                                   /*
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
@@ -42,38 +43,18 @@ import scalalib.*
 import mill.scalajslib.*
 import mill.scalajslib.api.*
 import publish.*
+// crux (propensive/crux): the pinned releases on GitHub, read directly as Coursier repositories.
+import crux.*
 import os.Path
 
 object settings:
   // The Scala compiler is Proscala (https://github.com/propensive/proscala), the Propensive fork
   // of Scala 3: upstream Scala plus a set of patches, most of them capture-checking repairs
-  // (see rep/DECISIONS.md). It is consumed in one of two modes:
-  //
-  //   1. Released (the default). Each Proscala release (`SOUNDNESS_SCALA_RELEASE`, default
-  //      `1.0.5`) is built for several upstream Scala versions, and ships each build as a
-  //      `proscala-<scala version>.tar.gz` asset whose contents are a `lib` directory of jars.
-  //      The build's Scala version is `<upstream>-pro-<release>`: the default is Scala 3.10.0
-  //      (`SOUNDNESS_SCALA_BASE`), so `3.10.0-pro-1.0.5`; `SOUNDNESS_SCALA_BASE=3.9.0` selects
-  //      the 3.9 build. The `toolchain` module below downloads that asset and extracts it into a
-  //      shared cache, exposing its jars to every coursier resolution — no local compiler build
-  //      and no publishing step needed. A release from before 1.0.0 (such as `3.9.1-dev-p20`)
-  //      is a single build, versioned as its tag, and is still accepted.
-  //
-  //   2. Local (fork developers). Point `SOUNDNESS_SCALA_HOME` at a `make`-built `release`
-  //      directory to use its `lib` jars directly instead of downloading, and
-  //      `SOUNDNESS_SCALA_VERSION` at the version they were built as. After rebuilding the
-  //      compiler, run `./mill clean`: the compiler and sbt-bridge paths are content-hashed, but
-  //      coursier may serve other repo artifacts from its cache under an unchanging version
-  //      string.
-  //
-  // `scalaVersion` is the *coordinate* version the toolchain force-versions every artifact to; it
-  // must match the version string the jars were built with (`compiler.properties`), or
-  // coursier/zinc caches poison each other across compilers.
-  val scalaRelease = sys.env.getOrElse("SOUNDNESS_SCALA_RELEASE", "1.0.5")
-  val scalaBase = sys.env.getOrElse("SOUNDNESS_SCALA_BASE", "3.10.0")
-  val scalaVersion = sys.env.getOrElse("SOUNDNESS_SCALA_VERSION",
-    if scalaRelease.matches("[0-9]+\\.[0-9]+\\.[0-9]+") then s"$scalaBase-pro-$scalaRelease"
-    else scalaRelease)
+  // (see rep/DECISIONS.md), at this version — `<upstream>-pro-<release>`. It is pinned in `deps`
+  // below like the tools, and resolved from its GitHub release by crux, which also forces every
+  // `org.scala-lang` artifact to it: the flare plugin names the release it was built with, and
+  // the fork stays TASTy-compatible across its patch releases.
+  val scalaVersion = "3.10.0-pro-1.0.5"
 
   // The compiler *stream* — the major Scala version, without the patch level — which is what
   // decides the shape of the compiler-internal APIs a handful of modules wrap. Everything else
@@ -82,7 +63,6 @@ object settings:
   val scalaStream = if scalaVersion.startsWith("3.10") then "3.10" else "3.9"
   // Empty by default → download `scalaVersion` from `scalaRelease`. Set to a local `release`
   // directory to use its `lib` jars directly (fork-developer mode).
-  val scalaHome = sys.env.getOrElse("SOUNDNESS_SCALA_HOME", "")
   val scalaJsVersion = "1.22.0-wasm.4"
   // Scala Native cross-compilation. The stock published `nscplugin`/`scala3lib_native` for the
   // upstream base version work unchanged with the fork compiler (the plugin is keyed to the base
@@ -212,160 +192,6 @@ object settings:
 
     strip(options.to(List)) ++ Seq("-Xmax-inlines", limit)
 
-// Exposes the fork compiler's `release/lib` jars (from a local build via `settings.scalaHome`, or
-// downloaded from the `settings.scalaRelease` GitHub release) as a Maven-layout repository,
-// generated on demand into the task's own dest: the unversioned jars are copied to versioned
-// coordinates with minimal POMs. Everything coursier resolves for `settings.scalaVersion` — the
-// unified `scala-library` (force-versioned into every module's resolution), `scala3-compiler_3`
-// (including the modules that depend on the compiler API), `scala3-staging_3`, the sbt bridge, and
-// the Scala.js stdlib — is served from here.
-object toolchain extends Module:
-  // Downloads and extracts the `settings.scalaVersion` build of the `settings.scalaRelease`
-  // release of propensive/proscala into a *shared* cache dir outside the Mill `out/` tree, so the
-  // throwaway-worktree `make attest` build (clean `out/` every time) reuses it and stays offline
-  // after the first fetch. Each build is a `proscala-<version>.tar.gz` asset carrying a `lib/`
-  // directory of jars, extracted here into `<version>/lib`; a release from before 1.0.0 has just
-  // the one tarball. A `.complete` sentinel makes a fully-populated cache a no-op — no network,
-  // no GitHub API call. Returns the `lib` dir.
-  def downloadRelease(tag: String, version: String): os.Path =
-    val root = os.home / ".cache" / "soundness" / "proscala" / version
-    val lib = root / "lib"
-    val sentinel = lib / ".complete"
-    if os.exists(sentinel) then lib else
-      os.makeDir.all(root)
-      val api = s"https://api.github.com/repos/propensive/proscala/releases/tags/$tag"
-      val json = ujson.read(os.proc("curl", "-fsSL", api).call().out.text())
-      val tarballs = json("assets").arr.filter(_("name").str.endsWith(".tar.gz"))
-      val asset = tarballs.find(_("name").str == s"proscala-$version.tar.gz")
-        .orElse(if tarballs.length == 1 then tarballs.headOption else None)
-        .getOrElse:
-          throw new Exception(s"no build of Scala $version on proscala release $tag")
-      val name = asset("name").str
-      val url = asset("browser_download_url").str
-      val tarball = root / name
-      if !os.exists(tarball) then
-        os.proc("curl", "-fsSL", "-o", tarball.toString, url).call()
-      // Verify against the published digest when the API supplies one ("sha256:<hex>").
-      asset.obj.get("digest").flatMap(_.strOpt).foreach: digest =>
-        if digest.startsWith("sha256:") then
-          val md = java.security.MessageDigest.getInstance("SHA-256")
-          val hex = md.digest(os.read.bytes(tarball)).map("%02x".format(_)).mkString
-          if hex != digest.stripPrefix("sha256:") then
-            os.remove(tarball)
-            throw new Exception(s"checksum mismatch for $name (expected $digest, got sha256:$hex)")
-      // The tarball carries a `lib/` prefix, so extracting into `<version>` lands the jars at
-      // `<version>/lib/*.jar`. Clear any partial extract first (we only get here without the sentinel).
-      os.remove.all(lib)
-      os.proc("tar", "-xzf", tarball.toString, "-C", root.toString).call()
-      os.remove(tarball) // reclaim ~43 MB; the sentinel guards against re-fetching
-      os.write(sentinel, "")
-      lib
-
-  // Content-fingerprints the fork's jars so a rebuilt or re-released compiler regenerates the
-  // repository. `SOUNDNESS_SCALA_HOME` (if set) points at a local `release`; otherwise the
-  // `settings.scalaVersion` build of `settings.scalaRelease` is downloaded and cached.
-  def distribution: T[PathRef] = Task.Input:
-    if settings.scalaHome.nonEmpty then PathRef(os.Path(settings.scalaHome) / "lib")
-    else PathRef(downloadRelease(settings.scalaRelease, settings.scalaVersion))
-
-  def repo: T[PathRef] = Task:
-    val lib = distribution().path
-    val v = settings.scalaVersion
-    val js = settings.scalaJsVersion
-    val sl = "org.scala-lang"
-    val sjs = "org.scala-js"
-
-    // (group, artifactId, jar filename in release/lib, coordinate version, dependencies as
-    // (group, id, version)). The fork's own jars are versioned to the Scala coordinate `v`; the
-    // Scala.js runtime jars — which the fork builds against a custom (non-Central) Scala.js and
-    // ships under their own `-<jsVersion>` filenames — keep the Scala.js coordinate `js`.
-    val artifacts = Seq(
-      // The fork's standard-library additions (`scala.Literate`, `scala.Spreadable`),
-      // shipped as a supplementary jar so `scala-library` stays byte-identical to
-      // upstream's build. Declared as a dependency of the unified `scala-library` —
-      // the artifact every module actually resolves — so the whole build carries it
-      // without per-module wiring; its own deps stay empty to avoid a cycle.
-      (sl, "proscala-library_3", "proscala-library.jar", v, Seq()),
-      (sl, "scala-library", "scala-library.jar", v, Seq(
-        (sl, "proscala-library_3", v))),
-      (sl, "scala3-library_3", "scala3-library.jar", v, Seq(
-        (sl, "scala-library", v))),
-      (sl, "scala3-interfaces", "scala3-interfaces.jar", v, Seq()),
-      (sl, "tasty-core_3", "tasty-core.jar", v, Seq((sl, "scala-library", v))),
-      // The compiler-free TASTy reader for the other two platforms (`hyperbole.tasty` reads
-      // through it), and the fork's additions as NIR (`scala.caps.SharedUnscoped`, which every
-      // Native link reaches through `contingency.ThrowTactic`; see `nativeToolchain.runtimeDeps`).
-      // Their stdlib dependencies are resolved by `.js`/`.native` modules through their own deps,
-      // so, like `proscala-library_sjs1_3`, they declare none here.
-      (sl, "tasty-core_sjs1_3", "tasty-core_sjs1.jar", v, Seq((sl, "scala-library", v))),
-      (sl, "tasty-core_native0.5_3", "tasty-core_native0.5.jar", v, Seq((sl, "scala-library", v))),
-      (sl, "proscala-library_native0.5_3", "proscala-library_native0.5.jar", v, Seq()),
-      (sl, "scala3-compiler_3", "scala3-compiler.jar", v, Seq(
-        (sl, "scala3-interfaces", v),
-        (sl, "tasty-core_3", v),
-        (sl, "scala3-library_3", v))
-        // The compiler's ASM flavour is per-stream, matching the fork's published POMs:
-        // up to 3.9 the backend uses the shaded scala-asm; from 3.10 upstream imports
-        // org.objectweb.asm directly, so the coordinate depends on the org.ow2.asm jars
-        // (asm-util and asm-commons pull in asm, asm-tree and asm-analysis). Without the
-        // right flavour the compiler itself fails at runtime, e.g. with
-        // `ClassNotFoundException: org.objectweb.asm.tree.ClassNode`.
-        ++ (if v.startsWith("3.10") then Seq(
-              ("org.ow2.asm", "asm-util", "9.10.1"),
-              ("org.ow2.asm", "asm-commons", "9.10.1"))
-            else Seq(("org.scala-lang.modules", "scala-asm", "9.9.0-scala-1")))
-        ++ Seq(
-        ("org.scala-sbt", "compiler-interface", "1.12.0"),
-        ("org.scala-sbt", "util-interface", "1.11.5"))),
-      (sl, "scala3-repl_3", "scala3-repl.jar", v, Seq(
-        (sl, "scala3-compiler_3", v),
-        ("org.jline", "jline-reader", "4.0.14"),
-        ("org.jline", "jline-terminal", "4.0.14"),
-        ("org.jline", "jline-terminal-jni", "4.0.14"),
-        ("io.get-coursier", "interface", "1.0.29-M4"),
-        ("org.virtuslab", "using_directives", "1.1.4"),
-        ("com.lihaoyi", "pprint_3", "0.9.3"))),
-      (sl, "scala3-sbt-bridge", "scala3-sbt-bridge.jar", v, Seq(
-        (sl, "scala3-compiler_3", v),
-        (sl, "scala3-repl_3", v))),
-      (sl, "scala3-staging_3", "scala3-staging.jar", v, Seq((sl, "scala3-compiler_3", v))),
-      (sl, "scala3-tasty-inspector_3", "scala3-tasty-inspector.jar", v, Seq(
-        (sl, "scala3-compiler_3", v))),
-      (sjs, "scalajs-javalib", s"scalajs-javalib-$js.jar", js, Seq()),
-      (sjs, "scalajs-library_2.13", s"scalajs-library_2.13-$js.jar", js, Seq(
-        (sjs, "scalajs-javalib", js))),
-      (sjs, "scalajs-scalalib_2.13", "scalajs-scalalib_2.13.jar", v, Seq(
-        (sjs, "scalajs-javalib", js))),
-      (sl, "proscala-library_sjs1_3", "proscala-library_sjs1.jar", v, Seq()),
-      (sl, "scala3-library_sjs1_3", "scala3-library_sjs1.jar", v, Seq(
-        (sl, "scala-library", v),
-        (sl, "proscala-library_sjs1_3", v),
-        (sjs, "scalajs-library_2.13", js),
-        (sjs, "scalajs-scalalib_2.13", v))))
-
-    artifacts.map: (group, id, jar, version, dependencies) =>
-      val dir = Task.dest / os.SubPath(group.replace('.', '/')) / id / version
-      os.makeDir.all(dir)
-      os.copy(lib / jar, dir / s"$id-$version.jar", replaceExisting = true)
-
-      val deps = dependencies.map: (dGroup, dId, dVersion) =>
-        s"<dependency><groupId>$dGroup</groupId><artifactId>$dId</artifactId>" +
-          s"<version>$dVersion</version></dependency>"
-      . mkString
-
-      os.write.over(dir / s"$id-$version.pom",
-        s"""<?xml version="1.0" encoding="UTF-8"?>
-           |<project xmlns="http://maven.apache.org/POM/4.0.0">
-           |  <modelVersion>4.0.0</modelVersion>
-           |  <groupId>$group</groupId>
-           |  <artifactId>$id</artifactId>
-           |  <version>$version</version>
-           |  <dependencies>$deps</dependencies>
-           |</project>
-           |""".stripMargin)
-
-    PathRef(Task.dest)
-
 // The Consequent Style checker, which supersedes the in-repo `decorum` plugin. It links against
 // compiler internals, so it is published per *exact* compiler version (the `CrossVersion.full`
 // convention); no artifact exists for the fork, so the coordinate is pinned to the stock
@@ -450,45 +276,35 @@ def workspaceSource(dest: os.Path, packageName: String, xek: Boolean): PathRef =
     createFolders = true)
   PathRef(dest)
 
-// The propensive libraries this build depends on, pinned in etc/refs, and the propensive tools
-// it runs, pinned in etc/tools (both documented in propensive/.github). Soundness sits at the
-// bottom of the stack: it depends on nothing propensive, so etc/refs is empty; the one tool is
-// the flare compiler plugin, which every library compiles with. A tool is always a release —
-// the plugin never appears in a Soundness POM, and pinning a flare snapshot would make a cycle
-// of the release graph (flare depends on Pyrocosm, which depends on Soundness). Read through
-// `Task.Source`s, not `val`s: the Mill daemon evaluates the build script once and keeps the
-// module tree until build.mill itself changes, so a value read at evaluation time would not see
-// the file edited.
-object deps extends Module:
-  def refsFile = Task.Source(mill.api.BuildCtx.workspaceRoot / "etc" / "refs")
-  def toolsFile = Task.Source(mill.api.BuildCtx.workspaceRoot / "etc" / "tools")
+// What this build depends on from outside itself, pinned in two files (both documented in
+// propensive/.github): the propensive libraries in etc/refs — none, since Soundness sits at the
+// bottom of the stack — and the propensive tools it runs in etc/tools, of which the flare compiler
+// plugin is resolved by the build. Plus the Proscala release, declared here rather than in
+// etc/refs, which deps.py also reads and which does not yet know the form of a Proscala version.
+// crux resolves each pin from its GitHub release; nothing is installed locally. The files are
+// read as sources, so editing one invalidates every resolution.
+object deps extends CruxModule:
+  def refsFiles = Task.Sources(
+    mill.api.BuildCtx.workspaceRoot / "etc" / "refs",
+    mill.api.BuildCtx.workspaceRoot / "etc" / "tools")
 
-  private def parse(path: os.Path): Map[String, String] =
-    os.read.lines(path).map(_.trim).filter(line => line.nonEmpty && !line.startsWith("#"))
-      .map(_.split("\t").map(_.trim).filter(_.nonEmpty))
-      .map(columns => columns(0).stripPrefix("propensive/") -> columns(1)).toMap
+  def declared = Seq(Pin("propensive/proscala", settings.scalaVersion))
 
-  def pins: T[Map[String, String]] = Task(parse(refsFile().path))
-  def tools: T[Map[String, String]] = Task(parse(toolsFile().path))
-
-  def version(name: String): Task[String] = Task.Anon:
-    pins().getOrElse(name, sys.error(s"etc/refs has no pin for $name"))
-
-  def tool(name: String): Task[String] = Task.Anon:
-    val version = tools().getOrElse(name, sys.error(s"etc/tools has no pin for $name"))
-    if !version.matches("\\d+\\.\\d+\\.\\d+") then sys.error(s"tool $name must be a release, not $version")
-    version
-
-  def flare: T[String] = Task(tool("flare")())
+  // A tool is always a release — the plugin never appears in a Soundness POM, and pinning a flare
+  // snapshot would make a cycle of the release graph (flare depends on Pyrocosm, which depends on
+  // Soundness).
+  def flare: T[String] = Task:
+    val v = version("flare")()
+    if !v.matches("\\d+\\.\\d+\\.\\d+") then sys.error(s"tool flare must be a release, not $v")
+    v
 
 // The flare compiler plugin (https://github.com/propensive/flare), which checks every library
 // against Consequent Style as it compiles: `dev.propensive:flare-plugin` at the release pinned in
 // etc/tools, from `~/.ivy2/local` (`make sync-deps`). The plugin is built with the fork, so its POM names the fork's standard library,
 // which only the `toolchain` repository view serves. Only the first jar is taken, as for
 // `nscplugin` below: `-Xplugin:` rejects a non-plugin jar, so exactly one must be passed.
-object flareToolchain extends mill.javalib.CoursierModule:
-  override def repositories: T[Seq[String]] = Task:
-    super.repositories() :+ s"file://${toolchain.repo().path}"
+object flareToolchain extends CruxDeps:
+  def crux = deps
 
   // The plugin's descriptor names the fork's standard library at the version it was built with
   // (a release of the 3.9 stream). The toolchain repository serves the fork's artifacts only at
@@ -527,7 +343,8 @@ object flareToolchain extends mill.javalib.CoursierModule:
 // as a single `-Xplugin:` (resolved intransitively so no non-plugin jar is passed to `-Xplugin`,
 // which the compiler rejects); `runtime` is the Native stdlib/`javalib` that `.native` sources
 // compile against; `tools` is the linker library the `nativelink` driver runs in its own JVM.
-object nativeToolchain extends mill.javalib.CoursierModule:
+object nativeToolchain extends CruxDeps:
+  def crux = deps
   import settings.scalaNativeVersion as snv
   import settings.scalaNativeScalaVersion as snsv
 
@@ -553,40 +370,34 @@ object nativeToolchain extends mill.javalib.CoursierModule:
   def tools: T[Seq[PathRef]] = Task:
     defaultResolver().classpath(Seq(mvn"org.scala-native:tools_3:$snv"))
 
-// Routes a Scala module through the fork toolchain: the repository view above for all coursier
-// resolutions, plus direct (content-hashed) paths for the two hot artifacts — the compiler
-// classpath and the compiled sbt bridge — so a rebuilt compiler is picked up without any
-// version-string ceremony.
-trait Toolchain extends ScalaModule:
+// A module compiled with the pinned fork: crux resolves the compiler, the library and the compiler
+// bridge from the Proscala release and forces every `org.scala-lang` artifact to its version. The
+// Scala.js side is served in two places: Mill asks for `org.scala-js` artifacts at the Scala.js
+// version, of which the fork publishes `scalajs-library_2.13` (and `scalajs-scalalib_2.13`) under
+// its own version, while the rest — javalib, linker, test adapter — are the scala-wasm fork's, on
+// Maven Central as `io.github.scala-wasm` (as `jslink` resolves the linker).
+trait Fork extends CruxScalaModule:
+  def crux = deps
+
   override def repositories: T[Seq[String]] = Task:
     // Google's repository serves the artifacts absent from Maven Central (R8, for dexing), and
     // is listed last so it is only consulted for them.
-    super.repositories() :+ s"file://${toolchain.repo().path}" :+ "https://maven.google.com"
+    super.repositories() :+ "https://maven.google.com"
 
-  override def scalaCompilerClasspath: T[Seq[PathRef]] = Task:
-    // The fork-built jars come from the repository view because Zinc locates the standard
-    // library within this classpath BY FILENAME (`scala-library-<version>*.jar`), and the
-    // distribution's own filenames are unversioned. The compiler's own third-party runtime
-    // dependencies (ASM for bytecode, the sbt compiler/util interfaces for the bridge) are
-    // not shipped in the release, so they are resolved from the ordinary repositories. The
-    // ASM flavour is per-stream: up to 3.9 the backend uses the shaded scala-asm; from 3.10
-    // upstream imports org.objectweb.asm directly (asm-util and asm-commons pull in asm,
-    // asm-tree and asm-analysis), and without it the compiler dies in GenBCode with
-    // `NoClassDefFoundError: org/objectweb/asm/tree/ClassNode`.
-    val versioned = os.walk(toolchain.repo().path).filter(_.ext == "jar").map(PathRef(_))
-    val asm =
-      if settings.scalaVersion.startsWith("3.10") then Seq(
-        mvn"org.ow2.asm:asm-util:9.10.1",
-        mvn"org.ow2.asm:asm-commons:9.10.1")
-      else Seq(mvn"org.scala-lang.modules:scala-asm:9.9.0-scala-1")
-    val thirdParty = defaultResolver().classpath(asm ++ Seq(
-      mvn"org.scala-sbt:compiler-interface:1.12.0",
-      mvn"org.scala-sbt:util-interface:1.11.5"))
+  override def mapDependencies: Task[coursier.Dependency => coursier.Dependency] = Task.Anon:
+    val previous = super.mapDependencies()
+    val fork = coursier.version.VersionConstraint(settings.scalaVersion)
 
-    versioned ++ thirdParty
-
-  override def scalaCompilerBridge: T[Option[PathRef]] = Task:
-    Some(PathRef(toolchain.distribution().path / "scala3-sbt-bridge.jar"))
+    (dependency: coursier.Dependency) =>
+      val mapped = previous(dependency)
+      if mapped.module.organization.value != "org.scala-js" then mapped
+      else if Set("scalajs-library_2.13", "scalajs-scalalib_2.13")(mapped.module.name.value)
+      then mapped.withVersionConstraint(fork)
+      // Only what is at the Scala.js version is the scala-wasm fork's; `scalajs-logging` and the
+      // js-env libraries are stock artifacts at their own versions, on Central as `org.scala-js`.
+      else if mapped.versionConstraint.asString == settings.scalaJsVersion
+      then mapped.withModule(mapped.module.withOrganization(coursier.core.Organization("io.github.scala-wasm")))
+      else mapped
 
 // The beneficence plugin writes `META-INF/givens/<typeclass>` and `META-INF/services/probably.Suite`
 // into every module that contributes an entry to them, so both are per-module *fragments* of a
@@ -597,7 +408,7 @@ val mergeRules: Seq[mill.javalib.Assembly.Rule] =
   Seq(mill.javalib.Assembly.Rule.AppendPattern("META-INF/givens/.*"),
       mill.javalib.Assembly.Rule.AppendPattern("META-INF/services/.*"))
 
-trait BaseScalaModule extends Toolchain:
+trait BaseScalaModule extends Fork:
   override def scalaVersion = settings.scalaVersion
   override def scalacOptions = settings.scalaOptions
   def consoleScalacOptions = scalacOptions()
@@ -680,7 +491,7 @@ trait PlatformCross extends BaseScalaModule:
   def jsSources: T[Seq[PathRef]] = sources
   def nativeSources: T[Seq[PathRef]] = sources
 
-  object js extends ScalaJSModule, Toolchain, SonatypeCentralPublishModule:
+  object js extends ScalaJSModule, Fork, SonatypeCentralPublishModule:
     def scalaVersion = settings.scalaVersion
     def scalaJSVersion = settings.scalaJsVersion
     def scalacOptions = jvm.scalacOptions
@@ -699,7 +510,7 @@ trait PlatformCross extends BaseScalaModule:
     def pomSettings = Task(jvm.pomSettings())
     override def docJar = Task(jvm.docJar())
 
-  object native extends ScalaModule, Toolchain, SonatypeCentralPublishModule:
+  object native extends ScalaModule, Fork, SonatypeCentralPublishModule:
     def scalaVersion = settings.scalaVersion
     def scalacOptions = Task:
       jvm.scalacOptions() :+ s"-Xplugin:${nativeToolchain.nscplugin().path}"
@@ -709,7 +520,7 @@ trait PlatformCross extends BaseScalaModule:
     def compileResources = jvm.compileResources
     def mvnDeps = jvm.mvnDeps
     // The Native stdlib/`javalib` are compiled against directly (they carry the `.nir` the linker
-    // consumes); the fork's JVM stdlib remains present for the compiler itself via `Toolchain`.
+    // consumes); the fork's JVM stdlib remains present for the compiler itself via `Fork`.
     def compileMvnDeps = Task { jvm.compileMvnDeps() ++ nativeToolchain.runtimeDeps }
     override def moduleDeps = jvm.nativeModuleDeps
     // Published as `<jvm-artifact>_native0.5_3`. It is a plain `ScalaModule` (the NIR comes from the
@@ -943,7 +754,7 @@ trait Bundle(components: Bundled*) extends BaseScalaModule, SonatypeCentralPubli
   def jsContents: Seq[ScalaJSModule & PublishModule] = jsDeps(components)
   def nativeContents: Seq[ScalaModule & PublishModule] = nativeDeps(components)
 
-  object js extends ScalaJSModule, Toolchain, SonatypeCentralPublishModule, BundleArtifact:
+  object js extends ScalaJSModule, Fork, SonatypeCentralPublishModule, BundleArtifact:
     def scalaVersion = settings.scalaVersion
     def scalaJSVersion = settings.scalaJsVersion
     def scalacOptions = settings.scalaOptions
@@ -964,7 +775,7 @@ trait Bundle(components: Bundled*) extends BaseScalaModule, SonatypeCentralPubli
     def pomSettings = Task(bundle.pomSettings())
     override def docJar = Task(bundle.docJar())
 
-  object native extends ScalaModule, Toolchain, SonatypeCentralPublishModule, BundleArtifact:
+  object native extends ScalaModule, Fork, SonatypeCentralPublishModule, BundleArtifact:
     def scalaVersion = settings.scalaVersion
     def scalacOptions = Task:
       settings.scalaOptions :+ s"-Xplugin:${nativeToolchain.nscplugin().path}"
@@ -994,7 +805,7 @@ trait Aggregate(dependencies: JavaModule*) extends BaseScalaModule:
   def moduleDeps = dependencies
 
 // ------------------------ GROUPS ------------------------
-object soundness extends Toolchain:
+object soundness extends Fork:
   def scalaVersion = settings.scalaVersion
   def moduleDeps = Seq()
 
@@ -1120,7 +931,7 @@ object soundness extends Toolchain:
   // three).
   object jvm extends Aggregate(base, cli, data, sci, test, tool, web, staged, android)
 
-  object js extends ScalaJSModule, Toolchain:
+  object js extends ScalaJSModule, Fork:
     def scalaVersion = settings.scalaVersion
     def scalaJSVersion = settings.scalaJsVersion
     override def moduleDeps = jsComponents
@@ -1128,7 +939,7 @@ object soundness extends Toolchain:
   // The Scala Native cross-build of every Native-capable component (a sibling platform to `js`,
   // built alongside it, not part of `all`). Compiling it emits `.nir` across the whole surface;
   // `soundness.nativelink` then links a representative slice to a real binary.
-  object native extends ScalaModule, Toolchain:
+  object native extends ScalaModule, Fork:
     def scalaVersion = settings.scalaVersion
     override def moduleDeps = nativeComponents
 
@@ -1172,7 +983,7 @@ object soundness extends Toolchain:
 // `.pyrocosm/fume/config.tel` names. It has no sources and no main class of its own: fume discovers the
 // suites from the jar's `META-INF/services/probably.Suite` index, so `BaseScalaModule` (for its
 // `mergeRules`, which concatenate the per-module index fragments) is essential — as a plain
-// `Toolchain` module the assembly kept only the first module's fragment.
+// `Fork` module the assembly kept only the first module's fragment.
 object test extends BaseScalaModule:
   def moduleDeps: Seq[JavaModule] =
     allLibraries.flatMap(_.moduleDirectChildren).collect { case t: Tests if t.enabled => t }
@@ -1213,7 +1024,7 @@ object bench extends BaseScalaModule:
 // compiling — which is how they came to rot behind the opaque-collections migration. `make
 // build` compiles this so that cannot happen silently again. It has no sources of its own;
 // depending on the modules is what compiles them.
-object benches extends Toolchain:
+object benches extends Fork:
   def scalaVersion = settings.scalaVersion
   def scalacOptions = settings.scalaOptions
   def sources = Task.Sources()
@@ -4163,7 +3974,7 @@ object release extends Module:
 // the JS-capable modules, so the linker reports any reachable reference to a
 // `java.*` class Scala.js does not implement (the runtime counterpart to the
 // static reference audit; `jsAll` only compiles).
-object jslink extends ScalaJSModule, Toolchain:
+object jslink extends ScalaJSModule, Fork:
   def scalaVersion = settings.scalaVersion
   def scalaJSVersion = settings.scalaJsVersion
   def scalacOptions =
@@ -4172,7 +3983,7 @@ object jslink extends ScalaJSModule, Toolchain:
   override def mainClass = Some("jslink.Main")
 
   // Mill resolves the linker under the hardcoded `org.scala-js` group, and through the *global*
-  // `jvmWorker()` resolver, so neither the `Toolchain` file repository nor a `repositories`
+  // `jvmWorker()` resolver, so neither the `Fork` file repository nor a `repositories`
   // override can satisfy the fork version. The scala-wasm fork publishes the same artifacts on
   // Maven Central under `io.github.scala-wasm`, so remap the group and keep everything else
   // (the js-env dependencies are stock artifacts at their own versions).
@@ -4189,7 +4000,7 @@ object jslink extends ScalaJSModule, Toolchain:
 // an `app` cross-module compiled to NIR plus a `linker` driver (`nativelink/linker`) run in its own
 // JVM. Requires `clang` on the PATH.
 object nativelink extends Module:
-  object app extends ScalaModule, Toolchain:
+  object app extends ScalaModule, Fork:
     def scalaVersion = settings.scalaVersion
     def scalacOptions = Task:
       (settings.scalaOptions ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -4210,7 +4021,7 @@ object nativelink extends Module:
   // so nothing statically links libcrypto. It links only because xenophile loads libcrypto by path
   // at run time (`ForeignLibrary.register` → `dlopen`) and resolves symbols from that handle; a
   // regression to `dlopen(null)`-only lookup would link but crash at run time (see the source).
-  object cryptoApp extends ScalaModule, Toolchain:
+  object cryptoApp extends ScalaModule, Fork:
     def scalaVersion = settings.scalaVersion
     def scalacOptions = Task:
       (settings.scalaOptions ++ Seq("-Yno-predef", "-Yimports:java.lang,proscenium"))
@@ -4248,7 +4059,7 @@ object nativelink extends Module:
   // beneficence plugins, `settings.sep`) plus `nscplugin` for NIR, against the `.native` variants
   // of its dependency graph (`nativeDeps` maps them; JVM-only components like `larceny.plugin`
   // drop out).
-  trait NativeSuite extends ScalaModule, Toolchain, Cross.Module[String]:
+  trait NativeSuite extends ScalaModule, Fork, Cross.Module[String]:
     def testModule: Tests = crossValue match
       case "hypotenuse"   => hypotenuse.test
       case "denominative" => denominative.test
@@ -4322,10 +4133,10 @@ object nativelink extends Module:
     binaries.foreach: binary =>
       os.proc(binary.path.toString).call(stdout = os.Inherit, stderr = os.Inherit)
 
-  object linker extends ScalaModule, Toolchain:
+  object linker extends ScalaModule, Fork:
     def scalaVersion = settings.scalaVersion
     def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "nativelink" / "linker")
-    // The linker's own scala3-library comes from the fork (via `Toolchain`); exclude the stock
+    // The linker's own scala3-library comes from the fork (via `Fork`); exclude the stock
     // 3.1.x that `tools` declares so the driver runs against a single, fork-consistent stdlib.
     def mvnDeps = Seq(mvn"org.scala-native:tools_3:${settings.scalaNativeVersion}"
       .exclude("org.scala-lang" -> "scala3-library_3", "org.scala-lang" -> "scala-library"))
@@ -4353,7 +4164,7 @@ object wasm extends Module:
   // `wasi:http/incoming-handler` and exercises the server half of telekinesis' WASI HTTP backend.
   // They are separate modules because a component's exports must match its world exactly, so the
   // two `@WitImplementation` objects cannot share a source set.
-  trait Guest extends ScalaJSModule, Toolchain:
+  trait Guest extends ScalaJSModule, Fork:
     def sourceDir: String
     def scalaVersion = settings.scalaVersion
     def scalaJSVersion = settings.scalaJsVersion
@@ -4380,14 +4191,14 @@ object wasm extends Module:
   object httpApp extends Guest:
     def sourceDir = "http"
 
-  object linker extends ScalaModule, Toolchain:
+  object linker extends ScalaModule, Fork:
     def scalaVersion = settings.scalaVersion
     def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "tests" / "wasm" / "linker")
     def mvnDeps = Seq(mvn"io.github.scala-wasm:scalajs-linker_2.13:${settings.scalaJsVersion}")
 
   // Wraps a linked component in a Wasm OCI Artifact. A JVM driver, like `linker`: it needs
   // embarcadero and xenophile on its classpath, which the build itself does not have.
-  object packager extends ScalaModule, Toolchain:
+  object packager extends ScalaModule, Fork:
     def scalaVersion = settings.scalaVersion
     def scalacOptions = settings.scalaOptions
     def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "tests" / "wasm" / "packager")
@@ -4477,12 +4288,12 @@ object wasm extends Module:
 object android extends Module:
   // The runtime the app compiles against and dexes with (besides the platform stubs): the
   // Kotlin facade machinery and its transitive closure, including kotlin-stdlib.
-  object runtime extends ScalaModule, Toolchain:
+  object runtime extends ScalaModule, Fork:
     def scalaVersion = settings.scalaVersion
     override def moduleDeps = Seq(xenophile.kotlin, iridescence.core)
 
   // The build driver, which runs anthology: see tests/android/builder/build.scala.
-  object builder extends ScalaModule, Toolchain:
+  object builder extends ScalaModule, Fork:
     def scalaVersion = settings.scalaVersion
     def scalacOptions = settings.sep(settings.scalaOptions)
     def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "tests" / "android" / "builder")
