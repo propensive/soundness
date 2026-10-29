@@ -36,7 +36,12 @@ import murmuration.Iterator
 import beneficence.*
 
 object Interactivity:
-  def apply[event](iterator: Iterator[event]^): Interactivity[event]^{iterator} = () => iterator
+  // Hands on an iterator that is already being read, so a continuation resumes where its caller
+  // stopped: the events are the same on every call, captured by the `Interactivity`, not fresh.
+  // Written as a class rather than a lambda, which `-scalajs` expands before capture checking.
+  def apply[event](iterator: Iterator[event]^): Interactivity[event]^{iterator} =
+    new Interactivity[event]:
+      def eventIterator(): Iterator[event]^{this} = iterator
 
 trait Interactivity[event] extends Findable:
-  def eventIterator(): Iterator[event]^
+  def eventIterator(): Iterator[event]^{this}
