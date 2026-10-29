@@ -48,6 +48,7 @@ import symbolism.*
 // capabilities to name.
 trait Sensor extends caps.ExclusiveCapability
 trait Reader extends caps.SharedCapability, caps.Classifier
+trait Store extends caps.Mutable
 
 // A dependent method applied to an argument which is not a stable path has its result selected
 // from a skolem: `?1.Alias`, in the compiler's notation, where `?1` stands for the argument. The
@@ -494,11 +495,11 @@ object Tests extends Suite("typenames", m"Stenography Tests"):
       Syntax.name[(Addable { type Q = Int })#Result]
     . assert(_ == t"(Addable { type Q = Int })#Result")
 
-    captures(new Sensor {}, new Sensor {}, Nil)
+    captures(new Sensor {}, new Sensor {}, Nil, new Store {})
 
   // The capabilities a capture set names have to be tracked references, so the tests which
   // render capture sets take them as parameters rather than referring to globals.
-  def captures(alpha: Sensor, beta: Sensor, sensors: List[Sensor]): Unit =
+  def captures(alpha: Sensor, beta: Sensor, sensors: List[Sensor], store: Store): Unit =
     test(m"Capture set with one capability"):
       Syntax.name[Text^{alpha}]
     . assert(_ == t"Text^{alpha}")
@@ -542,6 +543,14 @@ object Tests extends Suite("typenames", m"Stenography Tests"):
     test(m"Restricted capability in a capture set"):
       Syntax.name[Text^{alpha.only[Reader]}]
     . assert(_ == t"Text^{alpha.only[Reader]}")
+
+    test(m"Capability excluding a classifier in a capture set"):
+      Syntax.name[Text^{alpha.except[Reader]}]
+    . assert(_ == t"Text^{alpha.except[Reader]}")
+
+    test(m"Read-only capability in a capture set"):
+      Syntax.name[Text^{store.rd}]
+    . assert(_ == t"Text^{store.rd}")
 
     test(m"Universal capability in a capture set"):
       Syntax.name[Text^{caps.any}]
