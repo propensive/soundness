@@ -2518,3 +2518,12 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
           test(m"raises an expected E1xx error on ${testcase.stem}"):
             codes.has(capture[Tel.Error](testcase.source.read[Tel]).reason.number)
           . assert(_ == true)
+
+    suite(m"Compile-time error positioning"):
+      test(m"an odd-indentation error's focus lands inside the literal"):
+        demilitarize:
+          tel"""parent
+  child value
+   misindented value"""
+        . map(_.focus)
+      . assert(_.head.lay(false) { focus => focus.length < 8 && focus.forall(_ == ' ') })

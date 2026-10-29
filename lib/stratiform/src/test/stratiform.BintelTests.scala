@@ -1169,12 +1169,3 @@ object BintelTests extends Suite("bintel", m"Stratiform BinTEL tests"):
         import codepages.utf8Codepage
         Tests.Person(t"Zoë", 30).in[Data over Tel].read[Tests.Person in Tel]
       . assert(_ == Tests.Person(t"Zoë", 30))
-
-    suite(m"Compile-time error positioning"):
-      test(m"an odd-indentation error's focus lands inside the literal"):
-        demilitarize:
-          tel"""parent
-  child value
-   misindented value"""
-        . map(_.focus)
-      . assert(_.head.lay(false) { focus => focus.length < 8 && focus.forall(_ == ' ') })

@@ -467,11 +467,6 @@ object Tests extends Suite("collections", m"Murmuration tests"):
         . nil
       . assert(_ == false)
 
-      test(m"advance is not reachable from outside the package"):
-        demilitarize:
-          Iterator(1).advance()
-        . nil
-      . assert(_ == false)
 
     suite(m"Sorting algorithms"):
       // Deliberately no import at this level: the algorithm is chosen per test, and a

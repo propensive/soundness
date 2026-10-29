@@ -353,7 +353,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
       test(m"bad checksum is detected"):
         val good = Tarfile(List(helloFile)).source[Data].chain.to[List].asInstanceOf[List[Data]].occupied.or(panic(m"a tar has blocks"))
-        val corrupted: List[Data] = List.prepend(good.tail, good.head.define(Prim, 'Z'.toByte))
+        val corrupted: List[Data] = List.prepend(good.tail, good.stdlib.head.define(Prim, 'Z'.toByte))
         capture[Tar.Error](Tarfile.read(Stream(corrupted.to[Chain])).to[List].stdlib).reason
       . assert: r =>
           r.isInstanceOf[Tar.Error.Reason.BadChecksum]
@@ -373,7 +373,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
         // A corrupt block cannot be trusted for anything, so nothing in it is parsed: no
         // BadName/BadOctal cascade follows the checksum failure.
         val good = Tarfile(List(helloFile)).source[Data].chain.to[List].asInstanceOf[List[Data]].occupied.or(panic(m"a tar has blocks"))
-        val corrupted: List[Data] = List.prepend(good.tail, good.head.define(Prim, 'Z'.toByte))
+        val corrupted: List[Data] = List.prepend(good.tail, good.stdlib.head.define(Prim, 'Z'.toByte))
         collectTar { Tarfile.read(Stream(corrupted.to[Chain])).to[List].stdlib; () }.reasons
       . assert: reasons =>
           reasons.size == 1 && reasons.head.lay(false)(_.isInstanceOf[Tar.Error.Reason.BadChecksum])
@@ -382,7 +382,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
         val good = Tarfile(List(helloFile)).source[Data].chain.to[List].asInstanceOf[List[Data]].occupied.or(panic(m"a tar has blocks"))
         // Patch the type flag to an unrecognised value and restamp the checksum
         // (bytes 148-156 count as spaces; "%06o\0 " format).
-        val block = good.head
+        val block = good.stdlib.head
         var sum = 0L
 
         block.extent.each: i =>

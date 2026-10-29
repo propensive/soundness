@@ -339,9 +339,9 @@ extension [self](value: self)(using traversable: self is Traversable)
   transparent inline def head: Optional[traversable.Operand] =
     compiletime.summonFrom:
       case _: (`self` <:< Populated) =>
-        traversable.traverse(value).next() match
-          case Iterator.Exhausted                         => throw java.util.NoSuchElementException()
-          case element: `traversable`.Operand @unchecked  => element
+        val next = traversable.traverse(value).next()
+        if next == Iterator.Exhausted then throw java.util.NoSuchElementException()
+        else next.asInstanceOf[traversable.Operand]
 
       case _ =>
         traversable.traverse(value).seek[Optional[traversable.Operand]](_ => true)(Unset)(identity(_))
