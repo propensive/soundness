@@ -32,6 +32,8 @@
                                                                                                   */
 package ulysses
 
+import murmuration.Iterator
+import rudiments.iterator
 import anticipation.*
 import beneficence.*
 
@@ -77,7 +79,7 @@ case class Bibliography(hashes: Array[Data]^{}) extends Findable:
     Array.from[Data](hashes.stdlib.sortWith(Bibliography.ordered(_, _) < 0))
 
   // Return every library hash whose leading bytes equal `prefix`, in the index's byte order.
-  def lookup(prefix: Data): Iterator[Data] =
+  def lookup(prefix: Data): Iterator[Data]^ =
     val first = Bibliography.lowerBound(sorted, prefix, 0, sorted.length)
 
-    sorted.stdlib.iterator.drop(first).takeWhile(Bibliography.prefixOrder(_, prefix) == 0)
+    sorted.iterator.skip(first).keep(Bibliography.prefixOrder(_, prefix) == 0)

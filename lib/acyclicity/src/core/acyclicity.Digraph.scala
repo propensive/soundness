@@ -96,22 +96,25 @@ object Digraph:
   given nodal: [node] => (Digraph[node] is Nodal by node) = new Nodal:
     type Self = Digraph[node]
     type Operand = node
-    def nodes(self: Digraph[node]): Iterator[node] = self.adjacency.keysIterator
+    def nodes(self: Digraph[node]): Iterator[node]^ = Iterator.from(self.adjacency.keysIterator)
     def has(self: Digraph[node], node: node): Boolean = self.adjacency.contains(node)
 
-    def successors(self: Digraph[node], node: node): Iterator[node] =
-      self.adjacency.get(node).fold(Iterator.empty)(_.iterator)
+    def successors(self: Digraph[node], node: node): Iterator[node]^ =
+      self.adjacency.get(node) match
+        case Some(targets) => Iterator.from(targets.iterator)
+        case None          => Iterator.empty
 
   given bidirectional: [node] => (complexity: Dysasymptotic.LinearScan)
   =>  ( Digraph[node] is Bidirectional by node ) = new Bidirectional:
     type Self = Digraph[node]
     type Operand = node
 
-    def predecessors(self: Digraph[node], node: node): Iterator[node] =
-      self.transpose.getOrElse(node, sci.Set()).iterator
+    def predecessors(self: Digraph[node], node: node): Iterator[node]^ =
+      Iterator.from(self.transpose.getOrElse(node, sci.Set()).iterator)
 
   // As a collection, a `Digraph` is its nodes, in the order they were given.
-  given traversable: [node] => Digraph[node] is Traversable by node = _.adjacency.keysIterator
+  given traversable: [node] => Digraph[node] is Traversable by node =
+    digraph => Iterator.from(digraph.adjacency.keysIterator)
   given inclusive: [node] => Digraph[node] is Inclusive by node = _.adjacency.contains(_)
 
   given countable: [node] => Digraph[node] is Countable:

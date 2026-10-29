@@ -96,7 +96,8 @@ trait Dsv2:
       // Only the first record is read from a stream, and only as far as it extends.
       override def accept(stream: (Stream[Text] over Credit)^): value in Dsv =
         Sheet.parseRows(Dsv.adopted(stream))
-        . next().as[value].asInstanceOf[value in Dsv]
+        . seek(_ => true)(throw java.util.NoSuchElementException())(_.as[value])
+        . asInstanceOf[value in Dsv]
 
 trait Dsv1 extends Dsv2:
   this: Dsv.type =>

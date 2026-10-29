@@ -264,7 +264,7 @@ object LaneDagDiagram:
       val verticalCount = tiles.count(_ == Vertical)
       !(onlyPassThrough && verticalCount != 1)
 
-  private def defaultWidths(rows: Iterator[List[DagTile]]): List[Int] =
+  private def defaultWidths(rows: scala.collection.Iterator[List[DagTile]]): List[Int] =
     val maxCol = rows.map(_.length).maxOption.getOrElse(0)
     List.fill(maxCol)(2)
 

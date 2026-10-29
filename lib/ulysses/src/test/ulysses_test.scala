@@ -172,7 +172,7 @@ object Tests extends Suite("bloom", m"Ulysses tests"):
     val shelf = Bibliography:
       proscenium.List(bytes(0x80, 1), bytes(0x10, 2), bytes(0x80, 0), bytes(0x7f, 9), bytes(0x81))
 
-    def found(prefix: Data): List[Text] = List.from(shelf.lookup(prefix).map(_.serialize[Hex]))
+    def found(prefix: Data): List[Text] = shelf.lookup(prefix).map(_.serialize[Hex]).to[List]
 
     test(m"A prefix lookup finds every hash sharing the prefix"):
       found(bytes(0x80))

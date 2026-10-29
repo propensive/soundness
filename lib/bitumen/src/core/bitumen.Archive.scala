@@ -157,17 +157,16 @@ object Archive:
 
     // The body's chunks, replayed from the start; unread chunks pull from the
     // producer as the iterator advances.
-    def chunks: Iterator[Data] = new Iterator[Data]:
-      // [stdlib-iterator] index state in anonymous Iterator
-      @scala.caps.unsafe.untrackedCaptures
+    def chunks: Iterator[Data]^{this, caps.any} = new Iterator[Data]:
       private var index: Int = 0
+      private var chunk: Data = Array.empty[Byte]
 
-      def hasNext: Boolean = index < memo.length || fetch()
-
-      def next(): Data =
-        val chunk = memo(index)
+      update def advance(): Boolean = (index < memo.length || fetch()) && {
+        chunk = memo(index)
         index += 1
-        chunk
+        true }
+
+      def current: Data = chunk
 
     // A fresh stream over the body's chunks, replayed from the start.
     def stream: (Stream[Data] over Credit)^ = Stream(chunks)
@@ -189,48 +188,40 @@ object Archive:
   // A lookahead iterator over a sequential archive. The subclass's `parse()` either `emit`s
   // the next entry — with its lazily-pulled body, if the entry lends one — or `finish`es;
   // before each parse, whatever of the previous entry's body was not yet read is drained, so
-  // the cursor stands at the next header. A stdlib class cannot extend `Stateful`, so its
-  // state is untracked (the record-iterator precedent).
+  // the cursor stands at the next header.
   private[bitumen] abstract class Lookahead[entry] extends Iterator[entry]:
-    // [stdlib-iterator] lookahead extends Iterator, cannot be Stateful
-    @caps.unsafe.untrackedCaptures
     private var lookahead: Optional[entry] = Unset
-
-    // [stdlib-iterator]
-    @caps.unsafe.untrackedCaptures
     private var unread: Optional[Archive.Body] = Unset
-
-    // [stdlib-iterator]
-    @caps.unsafe.untrackedCaptures
     private var finished: Boolean = false
+    private var head: entry = null.asInstanceOf[entry]
 
     // Parse forward from the cursor to the next entry, or to the end of the archive.
-    protected def parse(): Unit
+    protected update def parse(): Unit
 
-    protected def emit(entry: entry, body: Optional[Archive.Body] = Unset): Unit =
+    protected update def emit(entry: entry, body: Optional[Archive.Body] = Unset): Unit =
       lookahead = entry
       unread = body
 
-    protected def finish(): Unit = finished = true
+    protected update def finish(): Unit = finished = true
     protected def pending: Boolean = lookahead.present
     protected def done: Boolean = finished
 
-    private def advance(): Boolean =
+    private update def refresh(): Unit =
       unread.let(_.drain())
       unread = Unset
       parse()
-      lookahead.present
 
-    def hasNext: Boolean = lookahead.present || (!finished && advance())
+    // A parse may emit nothing without finishing (a skipped record), so it is retried until an
+    // entry is at hand or the archive has ended.
+    update def advance(): Boolean =
+      while lookahead.absent && !finished do refresh()
 
-    // `lay` rather than a type test: the entry type is erased.
-    def next(): entry =
-      def exhausted: entry =
-        if !finished && advance() then next() else panic(m"the archive has no more entries")
-
-      lookahead.lay(exhausted): entry =>
+      lookahead.lay(false): entry =>
+        head = entry
         lookahead = Unset
-        entry
+        true
+
+    def current: entry = head
 
   // Exactly `count` bytes off the cursor, or the caller's abort.
   private[bitumen] def takeExactly(cursor: Cursor[Data, {}]^, count: Int)

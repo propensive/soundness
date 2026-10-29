@@ -55,36 +55,30 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
           producer.put("one")
           producer.put("two")
           producer.finish()
-          val output = producer.iterator
-          val it = async(List.from(output))
-
-          unsafely(it.await())
+          producer.iterator.to[List]
       . assert(_ == List("onet", "wo"))
 
       test(m"One block, exact size, ready immediately"):
         val producer = Producer[Text](4, 3)
         producer.put("zero")
-        producer.iterator
-        if producer.iterator.hasNext then producer.iterator.next() else ""
+        producer.iterator.option.getOrElse("")
       . assert(_ == "zero")
 
       test(m"Two blocks, exact size, ready immediately"):
         val producer = Producer[Text](4, 2)
         producer.put("zerofour")
-        producer.iterator
         var out = ""
-        if producer.iterator.hasNext then out += producer.iterator.next()
-        if producer.iterator.hasNext then out += producer.iterator.next()
+        producer.iterator.option.foreach(out += _)
+        producer.iterator.option.foreach(out += _)
         out
       . assert(_ == "zerofour")
 
       test(m"More than two blocks, ready immediately"):
         val producer = Producer[Text](4, 2)
         producer.put("zerofoursix")
-        producer.iterator
         var out = ""
-        if producer.iterator.hasNext then out += producer.iterator.next()
-        if producer.iterator.hasNext then out += producer.iterator.next()
+        producer.iterator.option.foreach(out += _)
+        producer.iterator.option.foreach(out += _)
         out
       . assert(_ == "zerofour")
 
@@ -97,31 +91,34 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
         producer.put("6")
         producer.put("7")
         producer.put("8")
-        producer.iterator
         var out = ""
-        if producer.iterator.hasNext then out += producer.iterator.next()
-        if producer.iterator.hasNext then out += producer.iterator.next()
+        producer.iterator.option.foreach(out += _)
+        producer.iterator.option.foreach(out += _)
         out
       . assert(_ == "12345678")
 
       test(m"Single long message, with blocking"):
         supervise:
           val producer = Producer[Text](4, 2)
-          val output = producer.iterator
-          val out = async(List.from(output))
-          producer.put("12345678901234567890")
-          producer.finish()
-          unsafely(out.await())
+          val reader = producer.iterator
+
+          val fiber = producer.transfer: (producer, _, _) ?=>
+            producer().put("12345678901234567890")
+            producer().finish()
+
+          reader.to[List]
       . assert(_ == List("1234", "5678", "9012", "3456", "7890"))
 
       test(m"Single long message, with blocking; incomplete final block"):
         supervise:
           val producer = Producer[Text](4, 2)
-          val output = producer.iterator
-          val out = async(List.from(output))
-          producer.put("123456789012345678")
-          producer.finish()
-          unsafely(out.await())
+          val reader = producer.iterator
+
+          val fiber = producer.transfer: (producer, _, _) ?=>
+            producer().put("123456789012345678")
+            producer().finish()
+
+          reader.to[List]
       . assert(_ == List("1234", "5678", "9012", "3456", "78"))
 
       for i <- 0 to 30 do
@@ -135,7 +132,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
               producer().put(string)
               producer().finish()
 
-            reader.foldLeft("")(_ + _)
+            reader.fold("")(_ + _)
         . assert(_ == string)
 
         test(m"String length $i, sent unitarily, async puts"):
@@ -148,28 +145,32 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
                 producer().put(char.toString)
               producer().finish()
 
-            reader.foldLeft("")(_ + _)
+            reader.fold("")(_ + _)
         . assert(_ == string)
 
-        test(m"String length $i, sent whole, async reads"):
+        test(m"String length $i, sent whole, put from a task"):
           supervise:
             val producer = Producer[Text](5, 2)
             val reader = producer.iterator
-            val output = async(reader.foldLeft("")(_ + _))
-            producer.put(string)
-            producer.finish()
-            unsafely(output.await())
+
+            val fiber = producer.transfer: (producer, _, _) ?=>
+              producer().put(string)
+              producer().finish()
+
+            reader.fold("")(_ + _)
         . assert(_ == string)
 
-        test(m"String length $i, sent unitarily, async reads"):
+        test(m"String length $i, sent unitarily, put from a task"):
           supervise:
             val producer = Producer[Text](5, 2)
             val reader = producer.iterator
-            val output = async(reader.foldLeft("")(_ + _))
-            string.tt.chars.each: char =>
-              producer.put(char.toString)
-            producer.finish()
-            unsafely(output.await())
+
+            val fiber = producer.transfer: (producer, _, _) ?=>
+              string.tt.chars.each: char =>
+                producer().put(char.toString)
+              producer().finish()
+
+            reader.fold("")(_ + _)
         . assert(_ == string)
 
       test(m"Bytes producer copies a non-zero-offset put correctly"):
@@ -178,11 +179,13 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
           // `arraycopy` length (a regression here over-reads the source).
           val producer = Producer[Data](8)
           val reader = producer.iterator
-          val output = async(List.from(reader))
-          producer.put(Data.fill(3)(_.toByte))
-          producer.put(Data.fill(5)(i => (i + 10).toByte))
-          producer.finish()
-          unsafely(output.await()).flatMap(_.to[List])
+
+          val fiber = producer.transfer: (producer, _, _) ?=>
+            producer().put(Data.fill(3)(_.toByte))
+            producer().put(Data.fill(5)(i => (i + 10).toByte))
+            producer().finish()
+
+          reader.to[List].flatMap(_.to[List])
       . assert(_.map(_.toInt) == List(0, 1, 2, 10, 11, 12, 13, 14))
 
       test(m"Synchronous text collection joins puts"):
@@ -214,15 +217,17 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
         supervise:
           val producer = Producer[Data](4)
           val reader = producer.iterator
-          val output = async(List.from(reader))
-          var i = 0
 
-          while i < 10 do
-            producer.push(i.toByte)
-            i += 1
+          val fiber = producer.transfer: (producer, _, _) ?=>
+            var i = 0
 
-          producer.finish()
-          unsafely(output.await()).flatMap(_.to[List])
+            while i < 10 do
+              producer().push(i.toByte)
+              i += 1
+
+            producer().finish()
+
+          reader.to[List].flatMap(_.to[List])
       . assert(_ == List.from((0 until 10).map(_.toByte)))
 
       test(m"Push chars (synchronous text)"):
@@ -450,7 +455,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
       given Distribution = Gamma.approximate(10.0, 10.0)
       val blocks: scala.List[Data] =
         Chain(bytes).shred(arbitrary[Double]().toInt).filter(!_.nil).to[List].stdlib
-      def byteCursor = Cursor[Data](blocks.iterator)
+      def byteCursor = Cursor[Data](Iterator.from(blocks.iterator))
 
       test(m"Cursor[Data] starts at first byte"):
         val cursor = byteCursor
@@ -497,14 +502,14 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
 
       test(m"Cursor[Data] remainder from start equals full stream"):
         val blocks = Chain(Data(1, 2, 3), Data(4, 5), Data(6, 7))
-        val cursor = Cursor[Data](Chain.iterator(blocks))
+        val cursor = Cursor[Data](blocks)
         cursor.remainder.flat.to[List]
 
       . assert(_.map(_.toInt) == List(1, 2, 3, 4, 5, 6, 7))
 
       test(m"Cursor[Data] remainder mid-block emits cross-block tail"):
         val blocks = Chain(Data(1, 2, 3, 4, 5), Data(6, 7, 8))
-        val cursor = Cursor[Data](Chain.iterator(blocks))
+        val cursor = Cursor[Data](blocks)
         for i <- 0 until 3 do cursor.next()
         cursor.remainder.flat.to[List]
 
@@ -512,7 +517,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
 
       test(m"Cursor[Data] remainder inside hold still emits unconsumed tail"):
         val blocks = Chain(Data(1, 2, 3, 4, 5), Data(6, 7, 8))
-        val cursor = Cursor[Data](Chain.iterator(blocks))
+        val cursor = Cursor[Data](blocks)
         for i <- 0 until 3 do cursor.next()
         cursor.hold(cursor.remainder.flat.to[List])
 
@@ -600,14 +605,9 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
       // (issue #1301) — on a real socket the pull would deadlock.
       test(m"Cursor[Data].expect on a message's final byte does not refill"):
         class Live() extends Iterator[Data]:
-          // [stdlib-iterator] counter var in test Iterator subclass
-          @scala.caps.unsafe.untrackedCaptures
           var pulls: Int = 0
-          def hasNext: Boolean = true
-
-          def next(): Data =
-            pulls += 1
-            if pulls == 1 then Data('a'.toByte, 'b'.toByte) else Data('X'.toByte)
+          update def advance(): Boolean = { pulls += 1; true }
+          def current: Data = if pulls == 1 then Data('a'.toByte, 'b'.toByte) else Data('X'.toByte)
 
         val live = Live()
         val cursor = Cursor(live)
@@ -1035,7 +1035,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
 
       test(m"char decoder duct reassembles multi-byte characters split across refills"):
         val chunks = exotic.s.getBytes("UTF-8").nn.toSeq.map { byte => Array[Byte](byte) }
-        val stream = chunks.iterator.stream.via(summon[Charset])
+        val stream = Iterator.from(chunks.iterator).stream.via(summon[Charset])
         val builder = StringBuilder()
 
         def recur(stream: (Stream[Text] over Credit)^): Unit = stream.refill(Credit(8)) match
@@ -1157,8 +1157,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
       . assert(_ == List(7.toByte, 8.toByte, 9.toByte))
 
       test(m"memoize assembles many regions in order at their total length"):
-        val pieces = Iterator.tabulate(50) { i => Array.fill[Byte](1000 + i)(i.toByte) }
-        val value = Stream(pieces).memoize
+        val value = Stream(Iterator.tabulate(50) { i => Array.fill[Byte](1000 + i)(i.toByte) }).memoize
         (value.length, value.readUnchecked(0), value.readUnchecked(value.length - 1))
       . assert(_ == (50*1000 + 49*50/2, 0.toByte, 49.toByte))
 
@@ -1228,22 +1227,18 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
       test(m"chain construction pulls nothing"):
         val pulled = Atomic.Int(0)
 
-        val chunks = Iterator(Array[Byte](1.toByte), Array[Byte](2.toByte)).map: chunk =>
+        val list = Iterator(Array[Byte](1.toByte), Array[Byte](2.toByte)).map { chunk =>
           pulled() = pulled() + 1
-          chunk
-
-        val list = chunks.stream.chain
+          chunk }.stream.chain
         pulled()
       . assert(_ == 0)
 
       test(m"chain pulls chunks only as cells are forced"):
         val pulled = Atomic.Int(0)
 
-        val chunks = Iterator(Array[Byte](1.toByte), Array[Byte](2.toByte)).map: chunk =>
+        val list = Iterator(Array[Byte](1.toByte), Array[Byte](2.toByte)).map { chunk =>
           pulled() = pulled() + 1
-          chunk
-
-        val list = chunks.stream.chain
+          chunk }.stream.chain
         list.head
         pulled()
       . assert(_ == 1)
@@ -1254,11 +1249,11 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
       . assert(_ == "hi")
 
       test(m"records iterates across chunks in order"):
-        List.from(Stream(Iterator(Array(Row(1), Row(2)), Array(Row(3)))).records)
+        Stream(Iterator(Array(Row(1), Row(2)), Array(Row(3)))).records.to[List]
       . assert(_ == List(Row(1), Row(2), Row(3)))
 
       test(m"records of an empty record stream is empty"):
-        List.from(Iterator.empty[Array[Row]^{}].stream.records)
+        Iterator.empty[Array[Row]^{}].stream.records.to[List]
       . assert(_ == List())
 
       test(m"memoize materializes a record stream into one frozen array"):
@@ -1267,7 +1262,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
       . assert(_ == List(Row(1), Row(2), Row(3)))
 
       test(m"records composes with truncate"):
-        List.from(Stream(Iterator(Array(Row(1), Row(2)), Array(Row(3), Row(4)))).truncate(3).records)
+        Stream(Iterator(Array(Row(1), Row(2)), Array(Row(3), Row(4)))).truncate(3).records.to[List]
       . assert(_ == List(Row(1), Row(2), Row(3)))
 
       test(m"streamOf lends a bounded sub-stream of a cursor"):

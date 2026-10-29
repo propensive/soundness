@@ -199,12 +199,12 @@ object ParserTests extends Suite("json-parser", m"Jacinta JSON parser tests"):
         val bytes = text.s.getBytes("UTF-8").nn
         var offset = 0
 
-        sizes.iterator.flatMap: size =>
-          if offset >= bytes.length then None else
+        Iterator.from(sizes.iterator).flatMap: size =>
+          if offset >= bytes.length then List() else
             val end = math.min(offset + size, bytes.length)
             val slice: Data = Array.unsafeFrozen(bytes.slice(offset, end))
             offset = end
-            Some(slice)
+            List(slice)
 
       test(m"Number split across two blocks"):
         Json.Ast.parse(chunks(t"123456", 3, 3))

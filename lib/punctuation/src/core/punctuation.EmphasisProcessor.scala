@@ -32,6 +32,7 @@
                                                                                                   */
 package punctuation
 
+import scala.caps
 import scala.collection.mutable
 
 import anticipation.*
@@ -120,17 +121,18 @@ final class InlineList:
     node.prev = null
     node.next = null
 
-  def iterator: Iterator[InlineNode] = new Iterator[InlineNode]:
-    // [stdlib-iterator] cursor in anonymous Iterator
-    @scala.caps.unsafe.untrackedCaptures
-    var cur: InlineNode | Null = first
+  def iterator: Iterator[InlineNode]^{this, caps.any} = new Iterator[InlineNode]:
+    private var cur: InlineNode | Null = first
+    private var node0: InlineNode = null.asInstanceOf[InlineNode]
 
-    def hasNext: Boolean = cur != null
+    update def advance(): Boolean = cur match
+      case null          => false
+      case n: InlineNode =>
+        node0 = n
+        cur = n.next
+        true
 
-    def next(): InlineNode =
-      val n = cur.nn
-      cur = n.next
-      n
+    def current: InlineNode = node0
 
 private[punctuation] object EmphasisProcessor:
 

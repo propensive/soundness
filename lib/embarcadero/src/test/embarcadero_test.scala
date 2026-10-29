@@ -81,7 +81,7 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
       . assert(_ == media"application/vnd.oci.image.layer.v1.tar+gzip")
 
       test(m"the blob is a valid gzipped tar round-tripping to the original entry"):
-        List.from(Tarfile.read(layer.blob.stream.decompress[Gzip]).map(_.entryName))
+        Tarfile.read(layer.blob.stream.decompress[Gzip]).map(_.entryName).to[List]
       . assert(_ == List(t"hello.txt"))
 
     suite(m"Image config"):
@@ -138,7 +138,7 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
       . assert(_ == image.manifest)
 
     suite(m"OCI archive"):
-      val entries    = List.from(Tarfile.read(image.archive.source[Data])).asInstanceOf[List[bitumen.Tar.Entry]]
+      val entries    = Tarfile.read(image.archive.source[Data]).to[List]
       val names      = entries.map(_.entryName)
       // Explicit result type and reasserting cast: the collect lambda re-freshens the
       // frozen chunk to an `any.rd` that leaks out of the partial function.
@@ -171,7 +171,7 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
 
       // The archive with its entry list transformed: for exercising failure paths.
       def rebuilt(transform: List[Tar.Entry] => List[Tar.Entry]): Data =
-        val entries = List.from(Tarfile.read(archiveData.stream))
+        val entries = Tarfile.read(archiveData.stream).to[List]
         Tarfile(transform(entries)).source[Data].memoize
 
       def failure[result](body: => result): Optional[Oci.Error.Reason] =
@@ -309,7 +309,7 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
 
       test(m"the artifact archives as an ordinary oci-layout with three blobs"):
         val entries =
-          List.from(Tarfile.read(artifact.archive.source[Data])).asInstanceOf[List[bitumen.Tar.Entry]]
+          Tarfile.read(artifact.archive.source[Data]).to[List]
 
         val names = entries.map(_.entryName)
         (names.has(t"oci-layout"), names.count(_.s.startsWith("blobs/sha256/")))

@@ -155,7 +155,7 @@ private[jacinta] object Parser:
     parser.numberMode = mode
     parser.parse()
 
-  def parse(input: Iterator[Data], mode: NumberMode): Raw raises Parse.Error =
+  def parse(consume input: Iterator[Data]^, mode: NumberMode)(using Tactic[Parse.Error]): Raw =
     val parser = borrow()
     parser.tracking = false
     parser.resetIterator(input)
@@ -163,7 +163,9 @@ private[jacinta] object Parser:
     parser.numberMode = mode
     parser.parse()
 
-  def parse(input: Iterator[Data], holes: Boolean, mode: NumberMode): Raw raises Parse.Error =
+  def parse(consume input: Iterator[Data]^, holes: Boolean, mode: NumberMode)
+    ( using Tactic[Parse.Error] )
+  :   Raw =
     val parser = borrow()
     parser.tracking = false
     parser.resetIterator(input)
@@ -182,8 +184,9 @@ private[jacinta] object Parser:
     val raw = parser.parse()
     (raw.asInstanceOf[Json.Ast], Json.PositionIndex(parser.rootIndex.nn))
 
-  def parseTracked(input: Iterator[Data], mode: NumberMode)
-  :   (Json.Ast, Json.PositionIndex) raises Parse.Error =
+  def parseTracked(consume input: Iterator[Data]^, mode: NumberMode)
+  ( using Tactic[Parse.Error] )
+  :   (Json.Ast, Json.PositionIndex) =
 
     val parser = borrow()
     parser.tracking = true
@@ -193,7 +196,9 @@ private[jacinta] object Parser:
     val raw = parser.parse()
     (raw.asInstanceOf[Json.Ast], Json.PositionIndex(parser.rootIndex.nn))
 
-  def parse(consume input: (Stream[Data] over Credit)^, mode: NumberMode): Raw raises Parse.Error =
+  def parse(consume input: (Stream[Data] over Credit)^, mode: NumberMode)
+    ( using Tactic[Parse.Error] )
+  :   Raw =
     val parser = borrow()
     parser.tracking = false
     // consume-to-consume forwarding is not admitted; the hop re-asserts the transfer
@@ -204,7 +209,8 @@ private[jacinta] object Parser:
     parser.parse()
 
   def parseTracked(consume input: (Stream[Data] over Credit)^, mode: NumberMode)
-  :   (Json.Ast, Json.PositionIndex) raises Parse.Error =
+  ( using Tactic[Parse.Error] )
+  :   (Json.Ast, Json.PositionIndex) =
 
     val parser = borrow()
     parser.tracking = true
@@ -302,7 +308,7 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
     indexBufferId = -1
     rootIndex = null
 
-  update def resetIterator(input: Iterator[Data]): Unit =
+  update def resetIterator(consume input: Iterator[Data]^): Unit =
     if tracking then
       import zephyrine.lineation.linefeedByte
       val fresh = Cursor[Data](input)

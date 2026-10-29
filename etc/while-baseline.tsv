@@ -12,7 +12,7 @@ lib/aviation/src/core/aviation.HebrewCalendar.scala	5	0	0
 lib/aviation/src/core/aviation.LeapSeconds.scala	3	0	0
 lib/aviation/src/core/aviation.Timespan.scala	2	0	0
 lib/aviation/src/core/aviation.internal.scala	0	0	1
-lib/bitumen/src/core/bitumen.Archive.scala	1	0	0
+lib/bitumen/src/core/bitumen.Archive.scala	2	0	0
 lib/bitumen/src/core/bitumen.Pax.scala	3	4	0
 lib/bitumen/src/core/bitumen.Tar.scala	2	0	0
 lib/bitumen/src/core/bitumen.Tarfile.scala	4	3	0
@@ -123,7 +123,7 @@ lib/hypotenuse/src/core/hypotenuse.Bcd.scala	7	0	3
 lib/hypotenuse/src/core/hypotenuse.Decimal.scala	35	55	18
 lib/hypotenuse/src/core/hypotenuse.internal.scala	4	14	0
 lib/hypotenuse/src/core/hypotenuse.rationalInternal.scala	33	0	19
-lib/hypotenuse/src/core/hypotenuse_core.scala	2	14	0
+lib/hypotenuse/src/core/hypotenuse_core.scala	0	14	0
 lib/jacinta/src/core/jacinta.Json.Parser.scala	56	12	0
 lib/jacinta/src/core/jacinta.Json.scala	39	49	5
 lib/jacinta/src/core/jacinta.JsonPointer.scala	1	0	4
@@ -143,6 +143,7 @@ lib/monotonous/src/core/monotonous.Serializable.scala	6	2	0
 lib/mosquito/src/core/mosquito.Matrix.scala	51	38	0
 lib/mosquito/src/core/mosquito.internal.scala	10	17	0
 lib/murmuration/src/core/murmuration.Inclusive.scala	1	1	0
+lib/murmuration/src/core/murmuration.Iterator.scala	13	0	0
 lib/murmuration/src/core/murmuration.SortAlgorithm.scala	29	0	0
 lib/nomenclature/src/core/nomenclature.internal.scala	1	0	1
 lib/nomenclature/src/core/nomenclature_core.scala	3	0	8
@@ -187,13 +188,13 @@ lib/punctuation/src/core/punctuation.Serializer.scala	10	0	15
 lib/rudiments/src/core/rudiments.Atomic.scala	1	0	0
 lib/rudiments/src/core/rudiments.Loop.scala	1	0	0
 lib/rudiments/src/core/rudiments.atomicMacros.scala	4	0	0
-lib/rudiments/src/core/rudiments.sorting.scala	4	0	0
-lib/rudiments/src/core/rudiments_core.scala	6	0	0
+lib/rudiments/src/core/rudiments.sorting.scala	3	0	0
+lib/rudiments/src/core/rudiments_core.scala	3	0	0
 lib/savagery/src/core/savagery.Svg.scala	9	0	15
 lib/sedentary/src/core/sedentary.Bench.scala	10	0	0
 lib/sedentary/src/core/sedentary.Profile.scala	3	0	0
 lib/sedentary/src/core/sedentary.Stress.scala	15	0	0
-lib/sibylline/src/core/sibylline.Llm.scala	2	0	0
+lib/sibylline/src/core/sibylline.Llm.scala	1	0	0
 lib/spectacular/src/core/spectacular.Inspectable.scala	2	1	2
 lib/stratiform/src/core/stratiform.Bintel.scala	15	18	0
 lib/stratiform/src/core/stratiform.BintelParser.scala	1	0	0
@@ -217,7 +218,7 @@ lib/tasseomancy/src/core/tasseomancy.Framing.scala	1	0	0
 lib/tasseomancy/src/core/tasseomancy.Histogram.scala	2	0	0
 lib/tasseomancy/src/core/tasseomancy.Scale.scala	4	0	0
 lib/telekinesis/src/core/telekinesis.Http.scala	10	0	0
-lib/tessellate/src/core/tessellate.Flex.scala	11	0	0
+lib/tessellate/src/core/tessellate.Flex.scala	10	0	0
 lib/tessellate/src/core/tessellate.Flow.scala	10	27	9
 lib/tessellate/src/core/tessellate.LineCharset.scala	0	1	0
 lib/turbulence/src/core/turbulence.Aggregable.scala	2	0	0

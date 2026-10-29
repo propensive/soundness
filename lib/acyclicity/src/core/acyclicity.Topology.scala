@@ -33,6 +33,7 @@
 package acyclicity
 
 import scala.caps
+import scala.collection as sc
 import scala.collection.immutable as sci
 
 import contingency.*
@@ -75,7 +76,7 @@ object Topology:
 
   // A frozen topology from an order (dependencies first) and the successor relation: nodes
   // arrive already ordered, so no edge needs reordering.
-  private[acyclicity] def of[node](order: List[node], successors: node => Iterator[node])
+  private[acyclicity] def of[node](order: List[node], successors: node => sc.Iterator[node])
   :   Topology[node]^{} =
 
     val topology: Topology[node]^ = new Topology()
@@ -107,26 +108,27 @@ object Topology:
   given nodal: [node] => ((Topology[node]^{}) is Nodal by node) = new Nodal:
     type Self = Topology[node]^{}
     type Operand = node
-    def nodes(self: Topology[node]^{}): Iterator[node] = List.iterator(self.linearized)
+    def nodes(self: Topology[node]^{}): Iterator[node]^ =
+      Iterator.from(List.iterator(self.linearized))
     def has(self: Topology[node]^{}, node: node): Boolean = self.has(node)
 
-    def successors(self: Topology[node]^{}, node: node): Iterator[node] =
-      Set.iterator(self.successors(node))
+    def successors(self: Topology[node]^{}, node: node): Iterator[node]^ =
+      Iterator.from(Set.iterator(self.successors(node)))
 
   given bidirectional: [node] => ((Topology[node]^{}) is Bidirectional by node) =
     new Bidirectional:
       type Self = Topology[node]^{}
       type Operand = node
 
-      def predecessors(self: Topology[node]^{}, node: node): Iterator[node] =
-        Set.iterator(self.predecessors(node))
+      def predecessors(self: Topology[node]^{}, node: node): Iterator[node]^ =
+        Iterator.from(Set.iterator(self.predecessors(node)))
 
   given topological: [node] => (Topology[node]^{}) is Topological =
     new Topological { type Self = Topology[node]^{} }
 
   // As a collection, a frozen topology is its nodes, in topological order.
   given traversable: [node] => ((Topology[node]^{}) is Traversable by node) =
-    topology => List.iterator(topology.linearized)
+    topology => Iterator.from(List.iterator(topology.linearized))
 
   given inclusive: [node] => ((Topology[node]^{}) is Inclusive by node) = _.has(_)
 

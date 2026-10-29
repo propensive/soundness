@@ -526,7 +526,7 @@ extension [plane: Filesystem, transport <: Attributed](path: Path on plane over 
       case Unset => Unset
 
       case data: Data =>
-        summon[content is Aggregable by Data].accept(zephyrine.Stream(scala.Iterator(data)))
+        summon[content is Aggregable by Data].accept(zephyrine.Stream(Iterator(data)))
 
   def attribute(name: Text, value: Data)(using backend: FilesystemBackend on plane)
   :   Unit raises Io.Error =

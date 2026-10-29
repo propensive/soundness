@@ -511,7 +511,7 @@ object Mathml:
 
     private def toXmlElement(element: honeycomb.Html.Element): Xml.Element =
       val pairs: List[(Text, Text)] =
-        element.attributes.keys.map { key => (key, element.attributes(key).or(t"")) }.to(List)
+        element.attributes.keys.map { key => (key, element.attributes(key).or(t"")) }.to[List]
 
       val nodes: Array[Xml.Node]^{} = element.children.remap(toXmlNode)
       Xml.Element(element.label, Attributes(pairs*), nodes)

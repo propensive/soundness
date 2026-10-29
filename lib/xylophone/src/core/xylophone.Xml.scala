@@ -2303,7 +2303,7 @@ object Xml extends Tag.Container
 
   // The legacy interoperation shape: a stdlib `Iterator` of chunks.
   private[xylophone] def parseDirect[value]
-    ( input: Iterator[BaseText], parsable: (value is Xml.Parsable)^ )
+    ( input: Iterator[BaseText]^, parsable: (value is Xml.Parsable)^ )
     ( using schema:      XmlSchema,
             scope:       Scope,
             namespacing: Namespacing,
@@ -2432,10 +2432,10 @@ object Xml extends Tag.Container
   // written to a socket or file before it is fully rendered.
   def emit(document: Document[Xml])
     ( using formatting: Formatting, monitor: Monitor, probate: Probate )
-  :   Iterator[BaseText] =
+  :   Iterator[BaseText]^ =
 
     val producer = Producer[BaseText]()
-    val output = producer.iterator
+    val output: Iterator[BaseText]^ = producer.iterator
 
     producer.transfer: (producer, _, _) ?=>
       writeDocument(new Textual(producer()), formatting, document)
@@ -2915,7 +2915,7 @@ object Xml extends Tag.Container
         attrName: BaseText )
     :   Optional[Position] =
 
-      val i = element.attributes.keys.indexOf(attrName)
+      val i = element.attributes.keys.indexed.seek(_(0) == attrName)(-1)(_(1))
 
       if i < 0 then Unset
       else
@@ -3143,8 +3143,8 @@ object Xml extends Tag.Container
       new XmlParser(Cursor[Data](utf8(input)), tracking = false, charOffsets = true)
 
     // The legacy interoperation shape: a stdlib `Iterator` of chunks.
-    def fromIterator(input: Iterator[BaseText])(using XmlSchema, Scope, Namespacing): XmlParser^ =
-      fromChain(Chain.from(input))
+    def fromIterator(input: Iterator[BaseText]^)(using XmlSchema, Scope, Namespacing): XmlParser^ =
+      fromChain(input.chain)
 
     // Tracking-mode constructors build the cursor with a `\n`-aware
     // `Lineation` so `cursor.line` / `cursor.column` reflect real source
@@ -3176,10 +3176,10 @@ object Xml extends Tag.Container
       new XmlParser(Cursor[Data](utf8(input)), tracking = true, charOffsets = true)
 
     // The legacy interoperation shape: a stdlib `Iterator` of chunks.
-    def fromIteratorTracked(input: Iterator[BaseText])(using XmlSchema, Scope, Namespacing)
+    def fromIteratorTracked(input: Iterator[BaseText]^)(using XmlSchema, Scope, Namespacing)
     :   XmlParser^ =
 
-      fromChainTracked(Chain.from(input))
+      fromChainTracked(input.chain)
 
   private[xylophone] final class XmlParser
     ( cursor1:                           Cursor[Data, ?]^,
@@ -5079,17 +5079,17 @@ object Xml extends Tag.Container
   // Back-compat for macro interpolators: matches the previous cursor-based
   // signature (Iterator[Text] + callback).
   private[xylophone] def parse[schema <: XmlSchema]
-    ( input:      Iterator[BaseText],
+    ( input:      Iterator[BaseText]^,
       root:       Tag,
       callback:   (Ordinal, Hole) => Unit              = (_, _) => (),
       keepHeader: Boolean                             = false )
     ( using schema: XmlSchema )
-  :   (Tactic[Parse.Error]^) ?->{callback} Xml =
+  :   (Tactic[Parse.Error]^) ?->{callback, input} Xml =
 
     // Lenient: a literal may use a prefix bound only by a `Namespace` given at its call site,
     // which the interpolator checks after parsing
     new XmlParser
-      ( Cursor[Data](XmlParser.utf8(Chain.from(input))), tracking = false, callback,
+      ( Cursor[Data](XmlParser.utf8(input.chain)), tracking = false, callback,
         charOffsets = true )
       ( using schema, Scope.xml, Namespacing.Lenient )
 

@@ -107,7 +107,7 @@ object Stream:
   def apply[medium](chain: Chain[medium])(using addressable0: medium is Addressable)
   :   (Stream[medium] over Credit)^{caps.any} =
 
-    apply(Chain.iterator(chain))
+    apply(Iterator.from(Chain.iterator(chain)))
 
   // Adapts a chunk iterator (the legacy interoperation shape) into a stream.
   // Demand bounds only how much of each chunk is exposed per refill, not the
@@ -150,30 +150,28 @@ object Stream:
             limit0 += (size - limit0).min(granted)
             limit0 - start0
           else
-            def advance(): Optional[Int] =
-              if !iterator.hasNext then Unset else
-                val chunk = iterator.next()
-                size = addressable0.length(chunk)
+            // The next non-empty chunk, or `Unset` when the iterator is exhausted. Found first
+            // and used after: a continuation writing this stream's fields would overlap the
+            // iterator it captures.
+            iterator.seek(addressable0.length(_) > 0)(Unset)(identity(_)).let: chunk =>
+              size = addressable0.length(chunk)
 
-                if size == 0 then advance() else
-                  // A chunk exposing an immutable backing (`Data`) is lent by reference, as
-                  // the single-chunk factory lends its value; any other is copied into
-                  // owned scratch storage. A borrowed backing is never reused as scratch.
-                  val backing: Optional[AnyRef] =
-                    addressable0.backing(chunk).asInstanceOf[Optional[AnyRef]]
+              // A chunk exposing an immutable backing (`Data`) is lent by reference, as
+              // the single-chunk factory lends its value; any other is copied into
+              // owned scratch storage. A borrowed backing is never reused as scratch.
+              val backing: Optional[AnyRef] =
+                addressable0.backing(chunk).asInstanceOf[Optional[AnyRef]]
 
-                  storage = backing.or(scratch(size)).asInstanceOf[addressable0.Storage]
-                  owned = backing.absent
+              storage = backing.or(scratch(size)).asInstanceOf[addressable0.Storage]
+              owned = backing.absent
 
-                  if owned then
-                    addressable0.copyChunk
-                      ( chunk, 0, storage.asInstanceOf[addressable0.Storage^], 0, size )
+              if owned then
+                addressable0.copyChunk
+                  ( chunk, 0, storage.asInstanceOf[addressable0.Storage^], 0, size )
 
-                  start0 = 0
-                  limit0 = size.min(granted)
-                  limit0
-
-            advance()
+              start0 = 0
+              limit0 = size.min(granted)
+              limit0
 
 // A stream is a stateful capability: a bare `Stream` reference is read-only, and the
 // exclusive `Stream[...]^` that factories return is required to refill, skip or close.

@@ -471,7 +471,7 @@ object Llm:
   // commits the turn; an abandoned or failed stream commits nothing, so a retry re-asks from
   // the previous turn boundary.
   class Response private[sibylline]
-    ( session: Session^, message: Message, source: Iterator[Event]^ )
+    ( session: Session^, message: Message, source: scala.collection.Iterator[Event] )
     ( using tactic: Tactic[Error], diagnostics: Diagnostics )
   extends caps.ExclusiveCapability:
 
@@ -483,24 +483,32 @@ object Llm:
     @scala.caps.unsafe.untrackedCaptures
     private var reply0: Optional[Reply] = Unset
 
-    private val tracked: Iterator[Event]^{source, accumulator} =
-      source.map: event =>
-        accumulator.absorb(event)
-        event
+    // One view of the events, shared by `events`, `text` and `reply`, each of which feeds the
+    // accumulator with every event it pulls. A stdlib view, made at the construction site: this
+    // class is not `Stateful` (see above), so it cannot hold the native iterator in a field and
+    // advance it.
+    private val tracked: scala.collection.Iterator[Event] = source
+
+    private def absorbed(event: Event): Event =
+      accumulator.absorb(event)
+      event
 
     // The full event stream, once: every event pulled here also feeds the accumulator.
-    def events: Iterator[Event]^{this} = tracked
+    def events: Iterator[Event]^{this, caps.any} = Iterator.from(tracked).map(absorbed)
 
-    // Just the text deltas, for `response.text.each(Out.print(_))`.
-    def text: Iterator[Text]^{this} = tracked.collect:
-      case Event.Delta(_, Event.Increment.Textual(text)) => text
+    // Just the text deltas, for `response.text.each(Out.print(_))`: one stage over the shared
+    // view, absorbing every event it passes over.
+    def text: Iterator[Text]^{this, caps.any} = Iterator.from(tracked).flatMap: event =>
+      absorbed(event) match
+        case Event.Delta(_, Event.Increment.Textual(text)) => List(text)
+        case _                                             => List()
 
     // Drains whatever remains, folds the accumulator into the assistant message, commits the
     // user and assistant turns to the session's history atomically, and returns pure data.
     // Idempotent: a second call returns the same `Reply` without touching the stream.
     def reply(): Reply =
       reply0.or:
-        while tracked.hasNext do tracked.next()
+        events.each { _ => () }
         val result = accumulator.reply()
         session.commit(message, result)
         reply0 = result
@@ -624,7 +632,7 @@ object Llm:
     update def stream(message: Message): Response^{this, caps.any} =
       // [borrowing-stateful] response borrows session and reads its dialect stream
       caps.unsafe.unsafeAssumeSeparate:
-        Response(this, message, dialect.stream(exchange(message)))
+        Response(this, message, dialect.stream(exchange(message)).stdlib)
 
     private[sibylline] update def commit(message: Message, reply: Reply): Unit =
       history0 = history0 + List(message, reply.message)

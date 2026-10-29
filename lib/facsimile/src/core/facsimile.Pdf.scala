@@ -1392,18 +1392,17 @@ extends caps.ExclusiveCapability:
         stream
 
   // Chunked positional reads over a raw range: the pull side of `spring`.
-  private def ranges(start: Long, end: Long): Iterator[Data]^{this} = new Iterator[Data]:
-    // [stdlib-iterator] position var in anonymous Iterator
-    @scala.caps.unsafe.untrackedCaptures
+  private def ranges(start: Long, end: Long): Iterator[Data]^{this, caps.any} = new Iterator[Data]:
     private var position: Long = start
+    private var chunk: Data = Array.empty[Byte]
 
-    def hasNext: Boolean = position < end
-
-    def next(): Data =
+    update def advance(): Boolean = position < end && {
       val length = (end - position).min(65536L).toInt
-      val chunk = source.read(position, length)
+      chunk = source.read(position, length)
       position = if chunk.length == 0 then end else position + chunk.length
-      chunk
+      true }
+
+    def current: Data = chunk
 
   // The raw payload, decrypted if the document is encrypted and this stream is not exempt. A
   // stream created in this scope (negative sentinel start) yields its inline bytes directly.

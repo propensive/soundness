@@ -33,6 +33,8 @@
 package stratiform
 
 import anticipation.*
+import scala.caps
+
 import coaxial.*
 import contingency.*
 import obligatory.*
@@ -60,14 +62,41 @@ object Framed:
             framing:   Tactic[Framing.Error],
             bintel:    Tactic[Bintel.Error],
             tel:       Tactic[Tel.Error] )
-  :   (Framed from inbound to outbound)^{framing, bintel, tel} =
+  :   (Framed from inbound to outbound)^{framing, bintel, tel, caps.any} =
+
+    val inboundSchema: Tels = Tels.tels[inbound](Text("root"))
+    val outboundSchema: Tels = Tels.tels[outbound](Text("root"))
+
+    // Opened once, here, so that the connection holds the one iterator rather than minting one
+    // per access (an iterator is a fresh capability, which no field may hold), but lazily: the
+    // framer's cursor pulls its first chunk when it is built, which must not happen before the
+    // peer has sent anything. The opened iterator is held untyped, as `Iterator.flatMap` holds
+    // its inner iterator, because no field may hold a fresh capability and no function type
+    // may return one.
+    val decoded: Iterator[inbound]^ = new Iterator[inbound]:
+      private var opened: AnyRef | Null = null
+      private var head: inbound = null.asInstanceOf[inbound]
+
+      update def advance(): Boolean =
+        if opened == null then
+          opened =
+            duplex.source.chunks.frames[LengthPrefix].map { frame =>
+              Bintel.present(Bintel.decode(frame, inboundSchema), inboundSchema).as[inbound] }
+            . asInstanceOf[AnyRef]
+
+        // [iterator-inner] the untyped field read back as the exclusive iterator it holds
+        val next = opened.asInstanceOf[Iterator[inbound]^].next()
+
+        if next == Iterator.Exhausted then false else
+          // [iterator-inner] the element, separated from the sentinel the union carries
+          head = next.asInstanceOf[inbound]
+          true
+
+      def current: inbound = head
 
     new Framed:
       type Origin = inbound
       type Result = outbound
-
-      private val inboundSchema: Tels = Tels.tels[inbound](Text("root"))
-      private val outboundSchema: Tels = Tels.tels[outbound](Text("root"))
 
       // The one writer: `Duplex.send` leaves serialization to its caller, and two messages'
       // frames interleaved on the wire would be unreadable.
@@ -77,9 +106,7 @@ object Framed:
         val body: Data = message.encode.bintel(outboundSchema)
         writes(duplex.send(Stream(LengthPrefix.encode(body))))
 
-      lazy val messages: Iterator[inbound]^{this} =
-        duplex.source.chunks.frames[LengthPrefix].map: frame =>
-          Bintel.present(Bintel.decode(frame, inboundSchema), inboundSchema).as[inbound]
+      def messages: Iterator[inbound]^{this} = decoded
 
       def close(): Unit = duplex.close()
 

@@ -155,7 +155,7 @@ extension [textual](text: textual)
 extension [self, textual](words: self)
   ( using traversable: self is Traversable by textual )
   ( using instance: textual is Textual { type Result = Char } )
-  def pascal: textual = traversable.traverse(words).map(_.lower.capitalize).to(Iterable).join
+  def pascal: textual = traversable.traverse(words).map(_.lower.capitalize).to[List].join
   def camel: textual = words.pascal.uncapitalize
   def snake: textual = words.join(instance.apply("_".tt))
   def kebab: textual = words.join(instance.apply("-".tt))
@@ -200,8 +200,8 @@ def traversableTextual[textual](using textual0: textual is Textual)
     type Self = textual
     type Operand = textual0.Result
 
-    def traverse(text: textual): Iterator[Operand] =
-      scala.Iterator.range(0, textual0.length(text)).map: index => textual0.access(text, index.z)
+    def traverse(text: textual): Iterator[Operand]^ =
+      Iterator.range(0, textual0.length(text)).map: index => textual0.access(text, index.z)
 
 extension [textual: Textual as instance](text: textual)
   inline def length: Int = textual.length(text)
@@ -580,13 +580,11 @@ extension [self, element, result](values: self)
   def join: result = assembly.assemble(source.traverse(values))
 
   def join(separator: assembly.Part): result =
-    assembly.assemble(source.traverse(values).flatMap(Iterator(separator, _)).drop(1))
+    assembly.assemble(separated(source.traverse(values), separator))
 
   def join(left: assembly.Part, separator: assembly.Part, right: assembly.Part): result =
-    val parts: Iterator[assembly.Part] =
-      source.traverse(values).flatMap(Iterator(separator, _)).drop(1)
-
-    assembly.assemble(Iterator(left) ++ parts ++ Iterator(right))
+    val parts = separated(source.traverse(values), separator)
+    assembly.assemble(Iterator(left).concat(parts).concat(Iterator(right)))
 
   def join(separator: assembly.Part, penultimate: assembly.Part): result =
     assembly.assemble(penultimately(separator, penultimate))
@@ -598,22 +596,33 @@ extension [self, element, result](values: self)
       right:       assembly.Part )
   :   result =
 
-    assembly.assemble(Iterator(left) ++ penultimately(separator, penultimate) ++ Iterator(right))
+    assembly.assemble
+      (Iterator(left).concat(penultimately(separator, penultimate)).concat(Iterator(right)))
+
+  // The elements with `separator` between each adjacent pair.
+  private def separated(consume elements: Iterator[assembly.Part]^, separator: assembly.Part)
+  :   Iterator[assembly.Part]^ =
+
+    elements.flatMap(element => List(separator, element)).skip(1)
 
   // The parts of the receiver with `separator` between each pair of elements except the
   // last, which `penultimate` precedes: `one, two and three`.
   private def penultimately(separator: assembly.Part, penultimate: assembly.Part)
-  :   Iterator[assembly.Part] =
+  :   Iterator[assembly.Part]^ =
 
-    val elements = source.traverse(values).to(scala.collection.immutable.Vector)
+    val elements: Sequence[assembly.Part] = source.traverse(values).to[Sequence]
 
     elements.size match
       case 0 => Iterator.empty
-      case 1 => elements.iterator
+      case 1 => elements.iterator.keep(1)
 
       case n =>
-        val initial = elements.iterator.take(n - 1).flatMap(Iterator(separator, _)).drop(1)
-        initial ++ Iterator(penultimate, elements.last)
+        val leading: Iterator[assembly.Part]^ = separated(elements.iterator.keep(n - 1), separator)
+        val trailing: Iterator[assembly.Part]^ = elements.iterator.skip(n - 1)
+        val middle: Iterator[assembly.Part]^ = Iterator[assembly.Part](penultimate)
+        val result: Iterator[assembly.Part]^ =
+          leading.concat[assembly.Part](middle).concat[assembly.Part](trailing)
+        result
 
 extension (builder: StringBuilder)
   def add(text: Text): Unit = builder.append(text.s)

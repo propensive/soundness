@@ -144,19 +144,19 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
 
     test(m"PEM parses from a stream through accept"):
       import alphabets.base64Standard
-      val stream = request.s.grouped(7).map(_.tt).stream
+      val stream = Iterator.from(request.s.grouped(7).map(_.tt)).stream
       summon[Pem is Aggregable by Text].accept(stream).data.digest[Md5].serialize[Base64]
     . assert(_ == t"iMwRdyDFStqq08vqjPbzYw==")
 
     test(m"PEM parses from a single-char-chunk stream"):
-      val stream = request.s.grouped(1).map(_.tt).stream
+      val stream = Iterator.from(request.s.grouped(1).map(_.tt)).stream
       summon[Pem is Aggregable by Text].accept(stream).label
     . assert(_ == Pem.Label.CertificateRequest)
 
     test(m"PEM certificate chain parses lazily from a stream"):
       val example = t"-----BEGIN EXAMPLE-----\nAAAA\n-----END EXAMPLE-----\n"
       val chain = t"subject=/CN=example\n$example\nissuer comment\n$example$example"
-      val stream = chain.s.grouped(11).map(_.tt).stream
+      val stream = Iterator.from(chain.s.grouped(11).map(_.tt)).stream
       summon[Chain[Pem] is Aggregable by Text].accept(stream).map(_.label).to[List]
     . assert(_ == List.fill(3)(Pem.Label.Proprietary(t"EXAMPLE")))
 

@@ -52,7 +52,8 @@ object Holidays:
       private given ordering: Ordering[Date] = summon[Date is Comparable].ordering
 
       private val store: SortedMap[Date, Holiday] =
-        traversable.traverse(holidays).map { holiday => holiday.date -> holiday }.to(SortedMap)
+        traversable.traverse(holidays).map { holiday => holiday.date -> holiday }.to[List].stdlib
+        . to(SortedMap)
 
       def holiday(date: Date): Optional[Holiday] =
         if store.defines(date) then store(date) else Unset

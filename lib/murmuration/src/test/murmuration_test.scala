@@ -52,10 +52,12 @@ case class Suit(rank: Int)
 case class Miscounted(elements: List[Int], claim: Int)
 
 object Miscounted:
-  given traversable: Miscounted is Traversable by Int = _.elements.stdlib.iterator
+  given traversable: Miscounted is Traversable by Int =
+    elements => Iterator.from(List.iterator(elements.elements))
 
   given reshapable: Miscounted is Reshapable.Stable by Int to List[Int] =
-    elements => List.from(elements)
+    elements =>
+      List.from(Reshapable.build(elements, scala.collection.immutable.List.newBuilder[Int]))
 
   given countable: Miscounted is Countable:
     def size(self: Miscounted): Int = self.claim
@@ -369,6 +371,102 @@ object Tests extends Suite("collections", m"Murmuration tests"):
       test(m"text traverses as characters"):
         t"abc".fold(0)((total, _) => total + 1)
       . assert(_ == 3)
+
+    suite(m"Iterator"):
+      test(m"each visits every element in order"):
+        val seen = scala.collection.mutable.ListBuffer[Int]()
+        Iterator(1, 2, 3).each(seen += _)
+        seen.toList
+      . assert(_ == scala.List(1, 2, 3))
+
+      test(m"fold, exists, all, count and size drain the iterator"):
+        ( Iterator(1, 2, 3, 4).fold(0)(_ + _),
+          Iterator(1, 2, 3, 4).exists(_ == 3),
+          Iterator(1, 2, 3, 4).all(_ < 5),
+          Iterator(1, 2, 3, 4).count(_%2 == 0),
+          Iterator(1, 2, 3, 4).size )
+      . assert(_ == (10, true, true, 2, 4))
+
+      test(m"map, filter and sweep are lazy and compose"):
+        Iterator(1, 2, 3, 4, 5).map(_*10).filter(_ > 10).sweep { case n if n != 40 => n/10 }.to[List]
+      . assert(_ == List(2, 3, 5))
+
+      test(m"keep and skip by count and by predicate"):
+        val counted = Iterator.range(0, 10).skip(2).keep(5).to[List]
+        val tested = Iterator.range(0, 10).skip(_ < 2).keep(_ < 7).to[List]
+        (counted, tested)
+      . assert(_ == (List(2, 3, 4, 5, 6), List(2, 3, 4, 5, 6)))
+
+      test(m"zip, indexed, trace, excerpt, batched and distinct"):
+        ( Iterator(1, 2, 3).zip(Iterator(4, 5)).to[List],
+          Iterator(7, 8).indexed.to[List],
+          Iterator(1, 2, 3).trace(0)(_ + _).to[List],
+          Iterator.range(0, 10).excerpt(3, 6).to[List],
+          Iterator.range(0, 5).batched(2).to[List],
+          Iterator(1, 1, 2, 3, 2).distinct.to[List] )
+      . assert(_ == (List((1, 4), (2, 5)), List((7, 0), (8, 1)), List(0, 1, 3, 6), List(3, 4, 5),
+          List(List(0, 1), List(2, 3), List(4)), List(1, 2, 3)))
+
+      test(m"concat and flatMap over collections"):
+        ( Iterator(1, 2).concat(Iterator(3)).to[List],
+          Iterator(1, 2, 3).flatMap(n => List.fill(n)(n)).to[List] )
+      . assert(_ == (List(1, 2, 3), List(1, 2, 2, 3, 3, 3)))
+
+      test(m"a stepped range counts down"):
+        Iterator.range(10, 0, -3).to[List]
+      . assert(_ == List(10, 7, 4, 1))
+
+      test(m"a pull loop reads every element exactly once"):
+        def recur(consume pull: Iterator.Pull[Int], total: Int): Int = pull match
+          case Iterator.Exhausted             => total
+          case cursor: Iterator.Cursor[Int] =>
+            val value = cursor.value
+            recur(cursor.pull, total + value)
+
+        recur(Iterator(1, 2, 3, 4).pull, 0)
+      . assert(_ == 10)
+
+      test(m"next yields the sentinel once exhausted, and keeps yielding it"):
+        val iterator = Iterator(1)
+        (iterator.next(), iterator.next(), iterator.next())
+      . assert(_ == (1, Iterator.Exhausted, Iterator.Exhausted))
+
+      test(m"seek stops at the first match and leaves the rest"):
+        val iterator = Iterator(1, 2, 3, 4)
+        val found = iterator.seek(_ > 1)(-1)(identity(_))
+        (found, iterator.to[List])
+      . assert(_ == (2, List(3, 4)))
+
+      test(m"chain is lazy and memoizes"):
+        var pulled = 0
+        val chain = Iterator.range(0, 100).map { n => pulled += 1; n }.chain
+        val first = chain.head
+        (first, pulled <= 1)
+      . assert(_ == (0, true))
+
+      test(m"to reshapes into a Set"):
+        Iterator(3, 1, 3, 2).to[Set]
+      . assert(_ == Set(1, 2, 3))
+
+      test(m"a cursor cannot be pulled twice"):
+        demilitarize:
+          Iterator(1, 2).pull match
+            case Iterator.Exhausted           => 0
+            case cursor: Iterator.Cursor[Int] =>
+              cursor.pull
+              cursor.pull
+              1
+        . nil
+      . assert(_ == false)
+
+      test(m"an iterator cannot be used after a combinator consumed it"):
+        demilitarize:
+          val iterator = Iterator(1, 2)
+          val mapped = iterator.map(_ + 1)
+          iterator.size + mapped.size
+        . nil
+      . assert(_ == false)
+
 
     suite(m"Sorting algorithms"):
       // Deliberately no import at this level: the algorithm is chosen per test, and a

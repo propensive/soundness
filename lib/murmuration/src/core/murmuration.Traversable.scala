@@ -45,7 +45,7 @@ import prepositional.*
 transparent trait Traversable2:
   given iterable: [element, collection <: Iterable[element]]
   =>  collection is Traversable by element =
-    _.iterator
+    collection => Iterator.from(collection.iterator)
 
 object Traversable extends Traversable2:
 
@@ -53,26 +53,26 @@ object Traversable extends Traversable2:
   // placing it here (the typeclass companion) keeps it in implicit scope for
   // Opaque `List` likewise; subtype-parametric for `List[e] & Populated` receivers.
   given list: [element, list <: List[element]] => list is Traversable by element =
-    List.iterator(_)
+    list => Iterator.from(List.iterator(list))
 
   // Opaque `Chain` likewise; its `iterator` is lazy (pulls elements on demand).
   given chain: [element, chain <: Chain[element]] => chain is Traversable by element =
-    Chain.iterator(_)
+    chain => Iterator.from(Chain.iterator(chain))
 
   // Opaque `Sequence` likewise; subtype-parametric for `Sequence[e] & Populated` receivers.
   given sequence: [element, sequence <: Sequence[element]] => sequence is Traversable by element =
-    Sequence.iterator(_)
+    sequence => Iterator.from(Sequence.iterator(sequence))
 
   // Opaque `Set` likewise.
   given set: [element, set <: Set[element]] => set is Traversable by element =
-    Set.iterator(_)
+    set => Iterator.from(Set.iterator(set))
 
   // Opaque `Map` traverses as its pairs.
   given map: [key, value] => Map[key, value] is Traversable by (key, value) =
-    Map.iterator(_)
+    map => Iterator.from(Map.iterator(map))
 
   given ledger: [key, value] => Ledger[key, value] is Traversable by (key, value) =
-    Ledger.iterator(_)
+    ledger => Iterator.from(Ledger.iterator(ledger))
 
   // The frozen array, and any other readable reference: reading through a shared reference
   // is sound under separation checking (live writers are excluded wherever readers alias),
@@ -80,9 +80,7 @@ object Traversable extends Traversable2:
   // the receiver admits the whole read-only spectrum. Capture-set polymorphism (rather
   // than a fixed `any.rd` bound) lets boxed capture variables instantiate too.
   given frozenArray: [element, refs^] => (Array[element]^{refs}) is Traversable by element =
-    array =>
-      scala.collection.immutable.ArraySeq.unsafeWrapArray(array.asInstanceOf[scala.Array[element]])
-      . iterator
+    array => Iterator.array(array.asInstanceOf[scala.Array[element]])
 
   // A `Sized` array is its own instance rather than a subtype-parametric widening of the one
   // above: a type variable bounded by a capturing type is elaborated as `array^{any.rd}`, so
@@ -90,9 +88,7 @@ object Traversable extends Traversable2:
   // (`Array[Int]^{} is Traversable`). Spelling the brand in the Self keeps the shape exact.
   given sizedFrozenArray: [element, refs^, length <: Int]
   =>  (Array[element]^{refs} & Sized[length]) is Traversable by element =
-    array =>
-      scala.collection.immutable.ArraySeq.unsafeWrapArray(array.asInstanceOf[scala.Array[element]])
-      . iterator
+    array => Iterator.array(array.asInstanceOf[scala.Array[element]])
 
   // Java collections traverse through `.asScala`, so `javaCollection.to[List]` (and `[Set]`,
   // `[Map]`, …) work with no explicit conversion — the builder is the standard-library converter.
@@ -100,16 +96,16 @@ object Traversable extends Traversable2:
   // `java.util.Map` (traversed as its pairs) are neither, so they get their own instances.
   given javaIterable: [element, collection <: java.lang.Iterable[element]]
   =>  collection is Traversable by element =
-    collection => scala.jdk.CollectionConverters.IterableHasAsScala(collection).asScala.iterator
+    collection => Iterator.from(collection.iterator().nn)
 
   given javaIterator: [element] => java.util.Iterator[element] is Traversable by element =
-    iterator => scala.jdk.CollectionConverters.IteratorHasAsScala(iterator).asScala
+    iterator => Iterator.from(iterator)
 
   given javaMap: [key, value] => java.util.Map[key, value] is Traversable by (key, value) =
-    map => scala.jdk.CollectionConverters.MapHasAsScala(map).asScala.iterator
+    map => Iterator.from(scala.jdk.CollectionConverters.MapHasAsScala(map).asScala.iterator)
 
   given javaEnumeration: [element] => java.util.Enumeration[element] is Traversable by element =
-    enumeration => scala.jdk.CollectionConverters.EnumerationHasAsScala(enumeration).asScala
+    enumeration => Iterator.from(enumeration)
 
 trait Traversable extends Typeclass.Pure, Operable:
-  def traverse(self: Self): Iterator[Operand]
+  def traverse(self: Self): Iterator[Operand]^

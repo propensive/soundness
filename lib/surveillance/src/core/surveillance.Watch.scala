@@ -56,7 +56,8 @@ object Watch:
   :   Watch^{watcher} raises Watch.Error =
 
     val pathGroups =
-      traversable.traverse(paths).to(Iterable).map(_.generic.s).map(jnf.Paths.get(_).nn).map: javaPath =>
+      traversable.traverse(paths).map(_.generic.s).map(jnf.Paths.get(_).nn).to[List].stdlib
+      . map: javaPath =>
         if javaPath.toFile.nn.isDirectory then (javaPath, (_: Text) => true)
         else
           val parent = Optional(javaPath.getParent).or(jnf.Paths.get("").nn)
@@ -193,7 +194,7 @@ object Watch:
 class Watch(spool: Relay[Watch.Event], registration: Watcher.Registration^):
   // The legacy view of the event relay (the audited bridge): one lazy,
   // single-owner drain of the shared queue, as before.
-  def stream: Chain[Watch.Event] = Chain.from(spool.stream.records)
+  def stream: Chain[Watch.Event] = spool.stream.records.chain
 
   // The debounced view: events coalesced into a `Batch` whenever no event has arrived for
   // `quiet`, so a burst of editor saves is reported once, after it has settled.

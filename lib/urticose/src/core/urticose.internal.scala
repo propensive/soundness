@@ -75,8 +75,8 @@ object internal:
       . or:
           panic(m"could not read /urticose/service-names-port-numbers.csv from classpath")
 
-    val lines: Iterator[List[Text]] =
-      scala.io.Source.fromInputStream(stream).getLines().map(_.tt).map(_.cut(t","))
+    val lines: Iterator[List[Text]]^ =
+      Iterator.from(scala.io.Source.fromInputStream(stream).getLines()).map(_.tt).map(_.cut(t","))
 
     // Each CSV row is `name,port,protocol,…`; rows which are too short, name a transport other
     // than TCP or UDP, or carry an unparseable port number, contribute nothing.
@@ -92,8 +92,7 @@ object internal:
       case _ =>
         Nil
 
-    // `Iterator#flatMap` demands an `IterableOnce`, which the opaque `List` is not.
-    Map.from(lines.flatMap(entries(_).stdlib))
+    lines.flatMap(entries(_)).to[List].to[Map]
 
   object Opaques:
     opaque type Ipv4 <: Matchable = Int

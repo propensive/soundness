@@ -103,13 +103,42 @@ a collection that the body indexes. Three shapes qualify.
 
 ## When an `Iterator` is the honest type
 
-A `scala.Iterator` is a one-shot, stateful pull, and that is exactly what it should denote:
-a source read from the outside world once (a socket's frames, an HTTP event stream, a
-terminal's keypresses, an archive serialized chunk by chunk as each entry's payload opens),
-or a cursor a backtracking search resumes from (ulysses's candidate walk). Those stay
-iterators, as does `Traversable.traverse`'s internal currency, until `vacuous.Iterator`
-lands. Everything else that reached for `.stdlib.iterator` had a native form: a stream or
-cursor over a `Chain` is `Stream(chain)`/`Cursor(chain)`; a framer over a `Chain` is
+`murmuration.Iterator[element]` (exported by rudiments and the umbrella) is a one-shot,
+stateful pull, and that is exactly what it should denote: a source read from the outside world
+once (a socket's frames, an HTTP event stream, a terminal's keypresses, an archive serialized
+chunk by chunk as each entry's payload opens), or a cursor a backtracking search resumes from.
+It is a `caps.Stateful` capability, so a method that advances it is an `update def`, a
+combinator that takes it over is a `consume def`, and the compiler refuses a second use of an
+iterator that has been consumed. There is no `hasNext`/`next()` pair: the three honest ways to
+read one are
+
+1. **A terminal operation** — `each`, `fold`, `exists`, `all`, `count`, `size`, `seek`,
+   `chain`, `to[result]` — which drains the iterator in place. `each` is the loop.
+2. **`next()`**, for a stateful consumer that holds the iterator in a field (a `Stream`
+   source, a terminal's event pump): one call advances and yields `element |
+   Iterator.Exhausted`, so the caller must match on `Iterator.Exhausted` before it has an
+   element.
+3. **The moving style**, `pull`, for a hand-written loop that needs the element and the
+   right to stop between elements: `iterator.pull` consumes the iterator and yields
+   `Iterator.Exhausted` or a `Cursor[element]^` that owns it; `cursor.value` reads the
+   element and `cursor.pull` consumes the cursor to advance. Branch with a typed pattern
+   (`case cursor: Iterator.Cursor[Int]`), rebind the handle each step, and read
+   `cursor.value` before `cursor.pull` in the same expression. Reusing a consumed cursor,
+   or reading a value with no cursor, does not compile.
+
+Implementations provide the fast core — `update def advance(): Boolean`, which moves and
+materialises the element into a `var`, and `def current: element`, a plain read — and
+inherit everything else. Lazy combinators (`map`, `filter`, `sweep`, `keep`, `skip`,
+`zip`, `indexed`, `trace`, `excerpt`, `batched`, `distinct`, `concat`, `flatMap`) consume
+their receiver and return a fresh iterator whose capture set names the lambda, so a lambda
+that captures an exclusive value makes the result exclusive too; `flatMap` takes a lambda
+returning a *collection* (`Traversable`), never an iterator.
+
+A `scala.collection.Iterator` is reached only at a boundary: `Iterator.from(javaIterator)`
+and `Iterator.from(stdlibIterator)` wrap one on the way in, and `iterator.stdlib` hands one
+out to a stdlib or JDK API that insists on it, tagged `[stdlib-boundary]` as every bridge is.
+Everything that reached for `.stdlib.iterator` before had a native form: a stream or cursor
+over a `Chain` is `Stream(chain)`/`Cursor(chain)`; a framer over a `Chain` is
 `chain.frames[F]`; a live chain is drained with `each`; a lockstep walk is `zip(…).each` or
 `indexed.each`; a lazy first-match scan is `fuse` with a by-name `or`.
 

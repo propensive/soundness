@@ -146,18 +146,18 @@ case class Palimpsest(data: Data, length: Int):
                 val prefix    = Array.allocate[Byte](prefixLen)
                 System.arraycopy(body, o, prefix.raw, 0, prefixLen)
 
-                val candidates =
-                  bibliography.lookup(Array.freeze(prefix)).iterator
-
+                val candidates = bibliography.lookup(Array.freeze(prefix))
                 var found: Optional[List[Data]] = Unset
+                var searching = true
 
-                while found.absent && remaining > 0 && candidates.hasNext do
-                  remaining -= 1
-                  val hash = candidates.next()
-                  xor_(body, hash, o)
-                  val sub = recur(body, item + 1, hash :: matched)
+                while found.absent && remaining > 0 && searching do candidates.next() match
+                  case Iterator.Exhausted => searching = false
 
-                  if sub.absent then xor_(body, hash, o) else found = sub
+                  case hash: Data =>
+                    remaining -= 1
+                    xor_(body, hash, o)
+                    val sub = recur(body, item + 1, hash :: matched)
+                    if sub.absent then xor_(body, hash, o) else found = sub
 
                 found
 

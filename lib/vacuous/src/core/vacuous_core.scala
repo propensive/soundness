@@ -38,6 +38,7 @@ import scala.compiletime.*
 
 import anticipation.*
 import fulminate.*
+import murmuration.Iterator
 
 import errorDiagnostics.stackTracesDiagnostics
 
@@ -72,8 +73,8 @@ extension [value](iterable: Iterable[Optional[value]])
     else (iterable.map(_.or(panic(m"absence was excluded by the sweep above")))).to(List)
 
 // As `compact` for a streaming source: absent elements are dropped as the iterator advances.
-extension [value](iterator: Iterator[Optional[value]])
-  transparent inline def compact: Iterator[value] =
+extension [value](consume iterator: Iterator[Optional[value]]^)
+  transparent inline def compact: Iterator[value]^ =
     iterator.filter(!_.absent).map(_.or(panic(m"the absent elements were filtered out")))
 
 extension [value](option: Option[value])

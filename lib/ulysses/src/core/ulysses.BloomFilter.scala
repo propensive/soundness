@@ -149,14 +149,7 @@ extends caps.Mutable:
     positions(value)(BloomFilter.setting(words, bitSize, hashCount, _, _))
 
   update def addAll[collection: Traversable by element](elements: collection): Unit =
-    val iterator = summon[collection is Traversable by element].traverse(elements)
-
-    @tailrec
-    def recur(): Unit = if iterator.hasNext then
-      add(iterator.next())
-      recur()
-
-    recur()
+    summon[collection is Traversable by element].traverse(elements).each(add(_))
 
   // Growing by copying, for a frozen filter: a fresh filter with the bits and the new elements,
   // at one copy of the bits. The copy is made here rather than by a method, so that the fresh
@@ -173,21 +166,23 @@ extends caps.Mutable:
   infix def ++ [collection: Traversable by element](elements: collection)
   :   BloomFilter[element, algorithm]^{} =
 
-    val iterator = summon[collection is Traversable by element].traverse(elements)
-
-    // The fresh filter is threaded through `consume`, as a `var` cannot hold an exclusive value.
+    // The fresh filter and the cursor are both threaded through `consume`: a `var` cannot hold
+    // an exclusive value, and a cursor is linear.
     @tailrec
-    def recur(consume next: BloomFilter[element, algorithm]^): BloomFilter[element, algorithm]^{} =
-      if iterator.hasNext then
-        next.add(iterator.next())
-        recur(next)
-      else
-        BloomFilter.freeze(next)
+    def recur(consume pull: Iterator.Pull[element], consume next: BloomFilter[element, algorithm]^)
+    :   BloomFilter[element, algorithm]^{} =
+
+      pull match
+        case Iterator.Exhausted => BloomFilter.freeze(next)
+
+        case cursor: Iterator.Cursor[`element`] =>
+          next.add(cursor.value)
+          recur(cursor.pull, next)
 
     val copy: scala.Array[Long]^ = new scala.Array[Long](words.length)
     java.lang.System.arraycopy(words, 0, copy, 0, words.length)
     val filter = new BloomFilter(bitSize, hashCount, copy)
-    recur(filter)
+    recur(summon[collection is Traversable by element].traverse(elements).pull, filter)
 
   // Allocates nothing beyond the digest, and answers `false` at the first clear position.
   def hits(value: element): Boolean = positions(value): (h1, h2) =>

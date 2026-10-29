@@ -765,7 +765,7 @@ object Http2:
       val stream = this.request(headerBlock, payload)
       val responseHeaders = stream.headers.await()
 
-      (stream, PseudoHeaders.response(responseHeaders, Chain.from(stream.body.stream.records)))
+      (stream, PseudoHeaders.response(responseHeaders, stream.body.stream.records.chain))
 
     def close(): Unit =
       send(Frame.GoAway(0, ErrorCode.NoError.code, Array.empty[Byte]))

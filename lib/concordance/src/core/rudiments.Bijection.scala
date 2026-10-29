@@ -57,7 +57,7 @@ object Bijection:
 case class Bijection[key, value](map: sci.Map[key, value], transposition: sci.Map[value, key])
 extends Iterable[(key, value)], sc.Map[key, value]:
   private inline def bijection: this.type = this
-  def iterator: Iterator[(key, value)] = map.iterator
+  def iterator: sc.Iterator[(key, value)] = map.iterator
 
   infix def - (key: key): Bijection[key, value] =
     Bijection(map - key, transposition - map(key))

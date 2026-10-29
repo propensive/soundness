@@ -43,7 +43,7 @@ export
       establish, Exit,
       Termination, fixpoint, fuse, gib,
       give, indexBy, intercalate, javaInputStream, kib,
-      longestTrain,
+      iterator, longestTrain,
       Loop, loop, mean, mib, Mutex, next, ordinal, pipe, place, plus,
       prior, probe, product, Fixpoint, reflectClass, repeat, runs, runsBy, segment, Segmentable,
       before, upto, from, after, snip, tail, Appendable, Prependable, `:+`, `+:`,

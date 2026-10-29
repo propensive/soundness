@@ -97,7 +97,7 @@ object Cell:
     Cell(Sequence(writing), summon[Writing is Measurable].width(writing), 0)
 
   def blank(width: Int, height: Int, baseline: Int): Cell =
-    Cell(Sequence.from(Iterator.fill(max(height, 1))(spaces(width))), max(width, 0), baseline)
+    Cell(Iterator.fill(max(height, 1))(spaces(width)).to[Sequence], max(width, 0), baseline)
 
   // Horizontal, baseline-aligned concatenation — the workhorse for `<mrow>`. Each
   // cell is framed with blank rows so every baseline lines up, then rows are joined.
@@ -495,7 +495,7 @@ case class Cell(lines: Sequence[Writing], width: Int, baseline: Int):
     val blank = Cell.spaces(width)
 
     Cell
-      ( Sequence.from(Iterator.fill(above)(blank)) + lines +
-        Sequence.from(Iterator.fill(below)(blank)),
+      ( Iterator.fill(above)(blank).to[Sequence] + lines +
+        Iterator.fill(below)(blank).to[Sequence],
         width,
         ascent )

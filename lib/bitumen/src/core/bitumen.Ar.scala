@@ -204,11 +204,11 @@ object Ar:
     def header: Data =
       origin.or(Ar.Header.format(rawName, mtime, user.value, group.value, mode, size))
 
-    def serialize: Iterator[Data] =
+    def serialize: Iterator[Data]^ =
       val body = data.chunks
 
-      if size%2 == 0 then Iterator(header) ++ body
-      else Iterator(header) ++ body ++ Iterator(Ar.Header.padByte)
+      if size%2 == 0 then Iterator(header).concat(body)
+      else Iterator(header).concat(body).concat(Iterator(Ar.Header.padByte))
 
   object Header:
     val headerSize: Int = 60
@@ -328,12 +328,9 @@ object Ar:
   class Handle private[bitumen] (entries0: Iterator[Ar.Entry]^)
   extends caps.ExclusiveCapability:
 
-    // Reached only through this exclusive handle, which scopes it; its capture of the
-    // underlying source is erased here, as `Tar.Handle` erases its own.
-    // [field-fresh-param] handle field erases fresh iterator parameter's capture
-    @caps.unsafe.untrackedCaptures
-    // [field-fresh-param]
-    val entries: Iterator[Ar.Entry] = caps.unsafe.unsafeAssumePure(entries0)
+    // Reached only through this exclusive handle, which scopes it: the iterator is the one the
+    // handle was opened with, and advancing it is a use of the handle.
+    def entries: Iterator[Ar.Entry]^{this} = entries0
 
 // An uninhabited marker naming the format, in the manner of `Tar`.
 sealed trait Ar

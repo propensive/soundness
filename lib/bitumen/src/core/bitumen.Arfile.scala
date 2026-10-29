@@ -39,6 +39,7 @@ import contingency.*
 import denominative.*
 import gossamer.*
 import hieroglyph.*, codepages.asciiCodepage
+import murmuration.Traversable
 import prepositional.*
 import rudiments.*
 import turbulence.*
@@ -46,6 +47,13 @@ import vacuous.*
 import zephyrine.*
 
 object Arfile:
+  // A member's place in the archive, as the blocks it serializes to: the description `flatMap`
+  // opens one at a time, so each member's payload stream is opened only when it is reached.
+  private[bitumen] class Member(val entry: Ar.Entry)
+
+  private[bitumen] object Member:
+    given traversable: Member is Traversable by Data = member => member.entry.serialize
+
   given streamable: Arfile is Streamable by Data over Credit = arfile => Stream(arfile.blocks)
 
   // The endpoint form, as `Tarfile.read`: entries parse lazily straight off a pull endpoint,
@@ -67,10 +75,10 @@ object Arfile:
     // consumed parameter's re-use in the nested call.
     // [pump-overlap] consumed stream reused through nested read call
     scala.caps.unsafe.unsafeAssumeSeparate:
-      Arfile(read(stream).to(List).asInstanceOf[List[Ar.Entry]])
+      Arfile(read(stream).to[List])
 
   private def entryIterator(cursor: Cursor[Data, {}]^)(using tactic: Tactic[Ar.Error])
-  :   Iterator[Ar.Entry]^{cursor, tactic} =
+  :   Iterator[Ar.Entry]^{cursor, tactic, caps.any} =
 
     def truncated(needed: Int, got: Int): Nothing =
       abort(Ar.Error(Ar.Error.Reason.TruncatedStream(needed, got)))
@@ -82,15 +90,10 @@ object Arfile:
       data.segment((0).z till (size.toInt).z)
 
     new Archive.Lookahead[Ar.Entry]:
-      // [stdlib-iterator] state in anonymous Lookahead iterator
-      @caps.unsafe.untrackedCaptures
       private var nameTable: Optional[Data] = Unset
-
-      // [stdlib-iterator]
-      @caps.unsafe.untrackedCaptures
       private var started: Boolean = false
 
-      protected def parse(): Unit =
+      protected update def parse(): Unit =
         if !started then
           started = true
           val head = Archive.takeExactly(cursor, Ar.magicSize)(truncated)
@@ -167,6 +170,5 @@ case class Arfile(entries: List[Ar.Entry]):
   // The raw bytes of the archive: the magic, then each member's header and padded payload. There
   // is no trailing marker to emit — `ar` archives simply end. Reach this externally through the
   // `Streamable` given, i.e. `arfile.source[Data]`.
-  private[bitumen] def blocks: Iterator[Data] =
-    // The blocks are emitted through a stdlib `Iterator`, which the opaque `List` cannot yield.
-    Iterator(Ar.magic.in[Data]) ++ entries.stdlib.iterator.flatMap(_.serialize)
+  private[bitumen] def blocks: Iterator[Data]^ =
+    Iterator(Ar.magic.in[Data]).concat(entries.iterator.flatMap(Arfile.Member(_)))

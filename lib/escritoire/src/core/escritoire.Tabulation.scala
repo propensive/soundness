@@ -95,15 +95,15 @@ abstract class Tabulation[text: ClassTag]():
     def lines(data: List[Cells[text]], decorations2: List[List[Optional[text -> text]]])
     :   Chain[TableRow[text]] =
 
-      // No native iterator: the decorations are consumed one row at a time alongside `data`,
-      // which is shorter or longer at will, so this is a `zipAll`, not a `zip`.
-      val decorationIterator = decorations2.stdlib.iterator
+      // The decorations are consumed one row at a time alongside `data`, which is shorter or
+      // longer at will, so this is a `zipAll`, not a `zip`; strict, because the iterator is
+      // exclusive and cannot be captured by a lazy chain.
+      val decorationIterator = Iterator.from(List.iterator(decorations2))
 
-      data.to[Chain].map: cells =>
-        val rowDecorations: List[Optional[text -> text]] =
-          if decorationIterator.hasNext then decorationIterator.next() else Nil
+      val rows: List[TableRow[text]] = data.map: cells =>
+        layout.tableRow(cells, decorationIterator.seek(_ => true)(Nil)(identity(_)))
 
-        layout.tableRow(cells, rowDecorations)
+      rows.to[Chain]
 
     Grid
       ( List

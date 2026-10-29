@@ -43,6 +43,7 @@ import gossamer.*
 import hieroglyph.*, codepages.asciiCodepage
 import hypotenuse.*
 import pneumatic.*
+import murmuration.Traversable
 import prepositional.*
 import rudiments.*
 import serpentine.*
@@ -56,6 +57,15 @@ enum LongNameFormat:
   case Gnu
 
 object Tarfile:
+  // A member's place in the archive, as the blocks it serializes to under a long-name format:
+  // the description `flatMap` opens one at a time, so each member's payload stream is opened
+  // only when it is reached.
+  private[bitumen] class Member(val entry: Tar.Entry, val longNameFormat: LongNameFormat)
+
+  private[bitumen] object Member:
+    given traversable: Member is Traversable by Data =
+      member => Tarfile.preamble(member.entry, member.longNameFormat).concat(member.entry.serialize)
+
   val zeroBlock: Data = Array.fill[Byte](512)(0)
 
   given streamable: Tarfile is Streamable by Data over Credit = tarfile => Stream(tarfile.blocks)
@@ -86,22 +96,20 @@ object Tarfile:
     // the consumed parameter's re-use in the nested call.
     // [pump-overlap] consumed stream reused through nested read call
     scala.caps.unsafe.unsafeAssumeSeparate:
-      Tarfile(read(stream).to(List).asInstanceOf[List[Tar.Entry]])
+      Tarfile(read(stream).to[List])
 
   private def entryIterator(cursor: Cursor[Data, {}]^)(using tactic: Tactic[Tar.Error])
-  :   Iterator[Tar.Entry]^{cursor, tactic} =
+  :   Iterator[Tar.Entry]^{cursor, tactic, caps.any} =
 
     def truncated(needed: Int, got: Int): Nothing =
       abort(Tar.Error(Tar.Error.Reason.TruncatedStream(needed, got)))
 
     new Archive.Lookahead[Tar.Entry]:
-      // [stdlib-iterator] overlay state in anonymous Lookahead iterator
-      @caps.unsafe.untrackedCaptures
       private var globalOverlay: Map[Text, Text] = Map.empty
 
       // Parse forward to the next real entry. Metadata pseudo-entries (PAX and GNU long-name
       // blocks) accumulate into the overlays consumed by the entry they precede.
-      protected def parse(): Unit =
+      protected update def parse(): Unit =
         var paxOverlay: Map[Text, Text] = Map.empty
         var longName: Optional[Text] = Unset
         var longLink: Optional[Text] = Unset
@@ -373,34 +381,35 @@ object Tarfile:
   // depend only on names and attributes — never on the payload size — so the
   // streaming writer can emit them before an unknown-length body.
   private[bitumen] def preamble(entry: Tar.Entry, longNameFormat: LongNameFormat)
-  :   Iterator[Data] =
+  :   Iterator[Data]^ =
 
-    val longNamePart: Iterator[Data] = longNameFormat match
+    val longNamePart: Iterator[Data]^ = longNameFormat match
       case LongNameFormat.Pax => Iterator.empty
 
       case LongNameFormat.Gnu =>
-        val nameBlocks =
+        val nameBlocks: Iterator[Data]^ =
           if entry.entryName.in[Data].length > 100
           then Tar.Entry.GnuLong(TypeFlag.LongName, entry.entryName).serialize
           else Iterator.empty
 
-        val linkBlocks = entry.link.let: l =>
-          if l.in[Data].length > 100 then Tar.Entry.GnuLong(TypeFlag.LongLink, l).serialize
-          else Iterator.empty
+        val linkBlocks: Iterator[Data]^ = entry.link match
+          case link: Text if link.in[Data].length > 100 =>
+            Tar.Entry.GnuLong(TypeFlag.LongLink, link).serialize
 
-        . or(Iterator.empty)
+          case _ =>
+            Iterator.empty
 
-        nameBlocks ++ linkBlocks
+        nameBlocks.concat(linkBlocks)
 
     val records = paxRecordsFor(entry).filter: (key, _) =>
       longNameFormat match
         case LongNameFormat.Pax => true
         case LongNameFormat.Gnu => key != t"path" && key != t"linkpath"
 
-    val paxPart: Iterator[Data] =
+    val paxPart: Iterator[Data]^ =
       if records.nil then Iterator.empty else Tar.Entry.Pax(Pax.records(records)).serialize
 
-    longNamePart ++ paxPart
+    longNamePart.concat(paxPart)
 
   private def paxRecordsFor(entry: Tar.Entry): List[(Text, Text)] =
     val builder = scala.collection.immutable.List.newBuilder[(Text, Text)]
@@ -446,14 +455,15 @@ case class Tarfile
   ( entries: List[Tar.Entry], longNameFormat: LongNameFormat = LongNameFormat.Pax ):
   // The raw 512-byte blocks of the archive, including the two trailing zero blocks.
   // Reach this externally through the `Streamable` given, i.e. `tarfile.source[Data]`.
-  private[bitumen] def blocks: Iterator[Data] =
-    // The blocks are emitted through a stdlib `Iterator`, which the opaque `List` cannot yield.
-    entries.stdlib.iterator.flatMap(emitEntry) ++ Iterator(Tarfile.zeroBlock, Tarfile.zeroBlock)
+  private[bitumen] def blocks: Iterator[Data]^ =
+    Iterator.from(List.iterator(entries))
+    . flatMap(Tarfile.Member(_, longNameFormat))
+    . concat(Iterator(Tarfile.zeroBlock, Tarfile.zeroBlock))
 
   // Compressed views of the archive's TAR stream.
   def gzip: (Stream[Data] over Credit)^ = Stream(blocks).compress[Gzip]
   def zlib: (Stream[Data] over Credit)^ = Stream(blocks).compress[Zlib]
   def deflate: (Stream[Data] over Credit)^ = Stream(blocks).compress[Deflate]
 
-  private def emitEntry(entry: Tar.Entry): Iterator[Data] =
-    Tarfile.preamble(entry, longNameFormat) ++ entry.serialize
+  private def emitEntry(entry: Tar.Entry): Iterator[Data]^ =
+    Tarfile.preamble(entry, longNameFormat).concat(entry.serialize)

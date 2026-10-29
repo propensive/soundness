@@ -93,7 +93,10 @@ object internal:
       val xml: Xml = Xml.parse(Iterator(parts.mkString("\u0000").tt), generic, capture(_, _))
 
       val holes2 = holes.to(List).sortBy(_(0).n0).map(_(1))
-      val iterator = holes2.to(Iterator)
+      // The holes are walked through the stdlib's iterator: this is the quotes API's own list, and
+      // the walk is shared by the local defs below (a reflect boundary).
+      val iterator = holes2.iterator
+      def nextHole() = if iterator.hasNext then iterator.next() else halt(m"too few holes")
       var index: Int = -1
 
       var types: List[TypeRepr] = Nil
@@ -164,8 +167,8 @@ object internal:
           case "\u0000" :: tail =>
             index += 1
             types ::= TypeRepr.of[Map[Text, Text]]
-            iterator.next()
-            val others = Expr.ofList(pattern.attributes.keys.to(List).map(Expr(_)))
+            nextHole()
+            val others = Expr.ofList(pattern.attributes.keys.stdlib.toList.map(Expr(_)))
 
             ' {
                 $expr &&
@@ -178,7 +181,7 @@ object internal:
                 case "\u0000" =>
                   index += 1
                   types ::= TypeRepr.of[Text]
-                  iterator.next()
+                  nextHole()
 
                   ' {
                       $array(${Expr(index)}) =
@@ -198,7 +201,8 @@ object internal:
 
               '{$expr && $boolean}
 
-        val attributesChecked = attributes(Attributes.keys(pattern.attributes).toList)('{true})
+        val attributesChecked =
+          attributes(Attributes.keys(pattern.attributes).stdlib.toList)('{true})
 
         // The children access is quoted in one piece: splicing a `val children` Expr gives
         // the frozen array a reach capture (`children*.rd`) that cannot subsume into the
@@ -263,7 +267,7 @@ object internal:
           case Xml.Text("\u0000") =>
             index += 1
 
-            iterator.next() match
+            nextHole() match
               case Xml.Hole.Node(label) =>
                 types ::= TypeRepr.of[Xml.Node]
 
@@ -308,7 +312,7 @@ object internal:
           case Xml.Element("\u0000", _, _) =>
             index += 1
 
-            iterator.next() match
+            nextHole() match
               case Xml.Hole.Element(label) =>
                 types ::= TypeRepr.of[Xml.Element]
 
@@ -787,7 +791,8 @@ object internal:
 
     abortive:
 
-      val iterator: Iterator[Expr[Any]] =
+      // The quotes API's own lists are walked through the stdlib's iterator (a reflect boundary).
+      val iterator: scala.collection.Iterator[Expr[Any]] =
         holes.to(List).sortBy(_(0).n0).map(_(1)).zip(insertions).map: (hole, expr) =>
           expr.absolve match
             case '{$expr: value} => hole match
@@ -901,7 +906,7 @@ object internal:
           val (prefix, _) = Xml.Name.split(element.label)
           val used: SSet[Text] = prefix.let(SSet(_)).or(SSet())
 
-          val attributePrefixes = Attributes.keys(element.attributes).toList.flatMap: key =>
+          val attributePrefixes = Attributes.keys(element.attributes).stdlib.toList.flatMap: key =>
             val (prefix, _) = Xml.Name.split(key)
             prefix.let(scala.collection.immutable.List(_)).or(scala.collection.immutable.Nil)
 
@@ -938,7 +943,7 @@ object internal:
           List('{Xml.Header(${Expr(version)}, $encoding2, $standalone2)})
 
         case Xml.Element(label, attributes, children) =>
-          val exprs = Attributes.iterator(attributes).toList.map: (key, value) =>
+          val exprs = Attributes.iterator(attributes).stdlib.toList.map: (key, value) =>
             ' {
                 ( ${Expr(key)},
                   $ {
@@ -1273,52 +1278,33 @@ object internal:
 
         false
 
-      def keys: Iterator[Text] =
-        // The immutable view keeps the iterator pure (the raw array read is read-only).
+      // The keys at the even slots, the values at the odd ones, read in place through the
+      // immutable view of the storage.
+      def keys: Iterator[Text]^ =
         val a = storage(attrs).asInstanceOf[Array[AnyRef | Null]^{}]
 
         new Iterator[Text]:
-          // [stdlib-iterator] index var in anonymous Iterator
-          @scala.caps.unsafe.untrackedCaptures
-          private var i: Int = 0
+          private var i: Int = -2
+          update def advance(): Boolean = { i += 2; i < a.length }
+          def current: Text = a.readUnchecked(i).asInstanceOf[Text]
 
-          def hasNext: Boolean = i < a.length
-
-          def next(): Text =
-            val k = a.readUnchecked(i).asInstanceOf[Text]
-            i += 2
-            k
-
-      def values: Iterator[Text] =
+      def values: Iterator[Text]^ =
         val a = storage(attrs).asInstanceOf[Array[AnyRef | Null]^{}]
 
         new Iterator[Text]:
-          // [stdlib-iterator] index var in anonymous Iterator
-          @scala.caps.unsafe.untrackedCaptures
-          private var i: Int = 1
+          private var i: Int = -1
+          update def advance(): Boolean = { i += 2; i < a.length }
+          def current: Text = a.readUnchecked(i).asInstanceOf[Text]
 
-          def hasNext: Boolean = i < a.length
-
-          def next(): Text =
-            val v = a.readUnchecked(i).asInstanceOf[Text]
-            i += 2
-            v
-
-      def iterator: Iterator[(Text, Text)] =
+      def iterator: Iterator[(Text, Text)]^ =
         val a = storage(attrs).asInstanceOf[Array[AnyRef | Null]^{}]
 
         new Iterator[(Text, Text)]:
-          // [stdlib-iterator] index var in anonymous Iterator
-          @scala.caps.unsafe.untrackedCaptures
-          private var i: Int = 0
+          private var i: Int = -2
+          update def advance(): Boolean = { i += 2; i < a.length }
 
-          def hasNext: Boolean = i < a.length
-
-          def next(): (Text, Text) =
-            val pair =
-              (a.readUnchecked(i).asInstanceOf[Text], a.readUnchecked(i + 1).asInstanceOf[Text])
-            i += 2
-            pair
+          def current: (Text, Text) =
+            (a.readUnchecked(i).asInstanceOf[Text], a.readUnchecked(i + 1).asInstanceOf[Text])
 
       def toMap: Map[Text, Text] =
         val a = storage(attrs)
@@ -1583,7 +1569,7 @@ object internal:
     // Bindings from attribute pairs keyed by prefix, the empty prefix for the default namespace
     private[xylophone] def fromAttributes(attributes: Attributes): Scope =
       import Attributes.iterator
-      Scope(attributes.iterator.toSeq*)
+      Scope(attributes.iterator.stdlib.toSeq*)
 
     // The parent scope extended by the `xmlns` and `xmlns:prefix` declarations among the
     // attributes, in their order

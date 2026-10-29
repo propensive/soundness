@@ -32,6 +32,9 @@
                                                                                                   */
 package obligatory
 
+import murmuration.Iterator
+import scala.caps
+
 import prepositional.*
 
 extension [element](stream: Iterator[element]^)
@@ -46,9 +49,9 @@ extension [element](stream: Iterator[element]^)
 // the chain's cells one at a time, so the result is still the one-shot iterator a framer is.
 extension [element](chain: Chain[element])
   def frames[frame](using framable: (element is Framable by frame)^)
-  :   Iterator[element]^{framable} =
+  :   Iterator[element]^{framable, caps.any} =
 
-    framable.frames(Chain.iterator(chain))
+    framable.frames(Iterator.from(Chain.iterator(chain)))
 
 // These are declared inside `annotations` and exported, rather than at the top level, so that
 // `rpc` does not share a classfile name with `Rpc` on a case-insensitive filesystem.
