@@ -345,7 +345,9 @@ private[facsimile] object Xref:
 
         val widths: List[Int] = dictionary(t"W").let(_.elements)
           . or(abort(Pdf.Error(Pdf.Error.Reason.MissingEntry(t"W"))))
-          . map(_.long.or(abort(Pdf.Error(Pdf.Error.Reason.TypeMismatch(t"W", t"an integer")))).toInt)
+          . map: width =>
+              width.long.or(abort(Pdf.Error(Pdf.Error.Reason.TypeMismatch(t"W", t"an integer"))))
+              . toInt
 
         // Destructured once, rather than indexed three times per row: `/W` is defined to hold
         // exactly three widths, so the pattern is both the arity check and the accessor.

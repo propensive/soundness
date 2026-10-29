@@ -49,10 +49,11 @@ object ProtobufSizes:
   // `acquire`, the one point a table is reached from, and only by the `print` that holds it
   // until `release`.
   private val local: ThreadLocal[AnyRef] =
-    ThreadLocal.withInitial(() => ProtobufSizes().asInstanceOf[AnyRef]).nn
+    ThreadLocal.withInitial { () => ProtobufSizes().asInstanceOf[AnyRef] }.nn
 
   private[locomotion] def acquire(): ProtobufSizes^ =
     val table = local.get.nn.asInstanceOf[ProtobufSizes^]
+
     if table.busy then ProtobufSizes() else
       table.busy = true
       table

@@ -68,7 +68,7 @@ object OpenSsh:
     import PrivateKey.Error.Reason
 
     def malformed(detail: Text): Nothing = abort(PrivateKey.Error(Reason.Malformed(detail)))
-    val reader = Reader(container)(detail => PrivateKey.Error(Reason.Malformed(detail)))
+    val reader = Reader(container): detail => PrivateKey.Error(Reason.Malformed(detail))
 
     if reader.remaining < Magic.length || reader.text(Magic.length) != Magic
     then malformed(t"the document is not an openssh-key-v1 container")
@@ -82,7 +82,7 @@ object OpenSsh:
     if count != 1 then abort(PrivateKey.Error(Reason.Unsupported(t"container holding $count keys")))
 
     reader.string() // the public key, repeated in the private section
-    val section = Reader(reader.string())(detail => PrivateKey.Error(Reason.Malformed(detail)))
+    val section = Reader(reader.string()): detail => PrivateKey.Error(Reason.Malformed(detail))
     val check = section.uint32()
     if section.uint32() != check then malformed(t"the check integers differ")
 
@@ -137,7 +137,8 @@ object OpenSsh:
 
       Pkcs8.wrap(rsaIdentifier, pkcs1.in[Der].data)
 
-    else abort(PrivateKey.Error(Reason.Unsupported(t"key type $keyType")))
+    else
+      abort(PrivateKey.Error(Reason.Unsupported(t"key type $keyType")))
 
   // A public key from its single-line form, `<type> <base64> [comment]`, checked against the
   // cipher the caller named.
@@ -165,7 +166,7 @@ object OpenSsh:
   def spki(blob: Data)(using Tactic[PublicKey.Error], Diagnostics): Data =
     import PublicKey.Error.Reason
 
-    val reader = Reader(blob)(detail => PublicKey.Error(Reason.Malformed(detail)))
+    val reader = Reader(blob): detail => PublicKey.Error(Reason.Malformed(detail))
     val keyType = reader.text()
 
     if keyType == Ed25519Name then
@@ -184,7 +185,8 @@ object OpenSsh:
       val pkcs1: Asn1 = Asn1.Sequence(List(Asn1.Integer(n), Asn1.Integer(e)))
       Spki.wrap(rsaIdentifier, pkcs1.in[Der].data)
 
-    else abort(PublicKey.Error(Reason.Unsupported(t"key type $keyType")))
+    else
+      abort(PublicKey.Error(Reason.Unsupported(t"key type $keyType")))
 
   // A public key in its single-line form, with the comment if one is given. The key's algorithm
   // must be one OpenSSH names; the result is `Unset` otherwise.
@@ -195,7 +197,7 @@ object OpenSsh:
     algorithm.sshName.let: keyType =>
       blob(key).let: blob =>
         val encoded = blob.serialize[Base64]
-        comment.lay(t"$keyType $encoded")(comment => t"$keyType $encoded $comment")
+        comment.lay(t"$keyType $encoded"): comment => t"$keyType $encoded $comment"
 
   // A public key in its wire form (RFC 4253 §6.6): the blob a line's base64 holds, which the
   // protocol sends as the key in authentication and key exchange.
@@ -231,7 +233,8 @@ object OpenSsh:
                     true
 
                   case _ => false
-              else false
+              else
+                false
 
             if encoded then writer.data else Unset
 

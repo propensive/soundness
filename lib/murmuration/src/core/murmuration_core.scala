@@ -160,9 +160,7 @@ extension [self](self: self)(using traversable: self is Traversable)
   :   Map[key, result] =
 
     Reshapable.build(traversable.traverse(self), sci.List.newBuilder).groupBy(lambda)
-    . map: (key, elements) =>
-      (key, reshapable.reshape(Iterator.from(elements.iterator)))
-
+    . map: (key, elements) => (key, reshapable.reshape(Iterator.from(elements.iterator)))
     . to(Map)
 
   def distinct[result]

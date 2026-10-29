@@ -115,6 +115,7 @@ object Digraph:
   // As a collection, a `Digraph` is its nodes, in the order they were given.
   given traversable: [node] => Digraph[node] is Traversable by node =
     digraph => Iterator.from(digraph.adjacency.keysIterator)
+
   given inclusive: [node] => Digraph[node] is Inclusive by node = _.adjacency.contains(_)
 
   given countable: [node] => Digraph[node] is Countable:

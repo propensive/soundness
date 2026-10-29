@@ -32,14 +32,14 @@
                                                                                                   */
 package anticipation
 
-import scala.caps
+import java.nio.charset.StandardCharsets
 
+import scala.caps
 import scala.compiletime.*
 import scala.quoted.*
 import scala.reflect.*
 import scala.util.*
 
-import java.nio.charset.StandardCharsets
 import prepositional.*
 import symbolism.*
 
@@ -53,6 +53,7 @@ object internal:
 
     def apply(string: String): Text = make(string)
     def apply(chars: Array[Char]^{}): Text = make(String(chars.asInstanceOf[scala.Array[Char]]))
+
     def apply(bytes: Array[Byte]^{}): Text =
       make(String(bytes.asInstanceOf[scala.Array[Byte]], StandardCharsets.US_ASCII))
 

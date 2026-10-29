@@ -141,8 +141,12 @@ extension [value](value: value)
 // comparing a `value & Populated` with a plain `value` (no `CanEqual` between them).
 given populatedEquality: [value] => CanEqual[value & Populated, value] = CanEqual.derived
 given populatedEqualityReversed: [value] => CanEqual[value, value & Populated] = CanEqual.derived
-given sizedEquality: [value, length <: Int] => CanEqual[value & Sized[length], value] = CanEqual.derived
-given sizedEqualityReversed: [value, length <: Int] => CanEqual[value, value & Sized[length]] = CanEqual.derived
+
+given sizedEquality: [value, length <: Int] => CanEqual[value & Sized[length], value] =
+  CanEqual.derived
+
+given sizedEqualityReversed: [value, length <: Int] => CanEqual[value, value & Sized[length]] =
+  CanEqual.derived
 
 extension [input, result](inline lambda: (=> input) => result)
   inline def upon(inline value: => input): result = lambda(value)
@@ -195,11 +199,13 @@ extension [self, value <: Matchable](self: self)(using traversable: self is Trav
   def bi[result]
     ( using reshapable: self is murmuration.Reshapable by (value, value) to result )
   :   result =
+
     reshapable.reshape(traversable.traverse(self).map { v => (v, v) })
 
   def tri[result]
     ( using reshapable: self is murmuration.Reshapable by (value, value, value) to result )
   :   result =
+
     reshapable.reshape(traversable.traverse(self).map { v => (v, v, v) })
 
 extension [value <: Matchable](iterable: Iterable[value])
@@ -338,11 +344,13 @@ extension [self](value: self)(using traversable: self is Traversable)
     compiletime.summonFrom:
       case _: (`self` <:< Populated) =>
         val next = traversable.traverse(value).next()
+
         if next == Iterator.Exhausted then throw java.util.NoSuchElementException()
         else next.asInstanceOf[traversable.Operand]
 
       case _ =>
-        traversable.traverse(value).seek[Optional[traversable.Operand]](_ => true)(Unset)(identity(_))
+        traversable.traverse(value)
+        . seek[Optional[traversable.Operand]](_ => true)(Unset)(identity(_))
 
 extension [self <: Populated](value: self)(using traversable: self is Traversable)
   def reduce(lambda: (traversable.Operand, traversable.Operand) => traversable.Operand)
@@ -567,6 +575,7 @@ extension [self, value](self: self)(using traversable: self is Traversable by va
             divisible: value is Divisible by Double,
             eqality2:  divisible.Result =:= value )
   :   Optional[value] =
+
     traversable.traverse(self).to[List].stdlib.mean
 
   def variance
@@ -581,6 +590,7 @@ extension [self, value](self: self)(using traversable: self is Traversable by va
             equality3:     addable2.Result =:= multiplicable.Result,
             divisible2:    multiplicable.Result is Divisible by Double )
   :   Optional[divisible2.Result] =
+
     traversable.traverse(self).to[List].stdlib.variance
 
   def std
@@ -593,23 +603,25 @@ extension [self, value](self: self)(using traversable: self is Traversable by va
             multiplicable: value is Multiplicable by Double,
             equality4:     multiplicable.Result =:= value )
   :   Optional[value] =
+
     traversable.traverse(self).to[List].stdlib.std
 
 private def longestTrainOf[value](iterable: Iterable[value])(predicate: value => Boolean)
 :   (Int, Int) =
-    @tailrec
-    def recur(index: Int, iterable: Iterable[value], bestStart: Int, bestLength: Int, length: Int)
-    :   (Int, Int) =
 
-      if iterable.nil then (bestStart, bestLength) else
-        if predicate(iterable.head) then
-          if length >= bestLength
-          then recur(index + 1, iterable.tail, index - length, length + 1, length + 1)
-          else recur(index + 1, iterable.tail, bestStart, bestLength, length + 1)
-        else
-          recur(index + 1, iterable.tail, bestStart, bestLength, 0)
+  @tailrec
+  def recur(index: Int, iterable: Iterable[value], bestStart: Int, bestLength: Int, length: Int)
+  :   (Int, Int) =
 
-    recur(0, iterable, 0, 0, 0)
+    if iterable.nil then (bestStart, bestLength) else
+      if predicate(iterable.head) then
+        if length >= bestLength
+        then recur(index + 1, iterable.tail, index - length, length + 1, length + 1)
+        else recur(index + 1, iterable.tail, bestStart, bestLength, length + 1)
+      else
+        recur(index + 1, iterable.tail, bestStart, bestLength, 0)
+
+  recur(0, iterable, 0, 0, 0)
 
 extension [element](array: scala.Array[element])
   def snapshot(using ClassTag[element]): Array[element]^{} =
@@ -725,7 +737,9 @@ extension [value](value: value)
   transparent inline def tail: Optional[segmentable.Segment] =
     compiletime.summonFrom:
       case _: (`value` <:< Populated) => value.skip(1, Bidi.Ltr)
-      case _ => if countable.nil(value) then Unset else value.skip(1, Bidi.Ltr)
+
+      case _ =>
+        if countable.nil(value) then Unset else value.skip(1, Bidi.Ltr)
 
 // The predicate forms find the boundary of the leading (or trailing) run satisfying the
 // predicate by traversal, then rebuild by segmentation — never element-by-element, so styled

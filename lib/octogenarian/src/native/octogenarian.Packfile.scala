@@ -44,7 +44,6 @@ import serpentine.*
 import vacuous.*
 import zephyrine.*
 
-
 // A packfile and its index, read positionally: the index is loaded once into arrays, and each
 // object is inflated from its own slice of the pack, whose end is the next entry's offset, so no
 // stream position has to be tracked across entries.

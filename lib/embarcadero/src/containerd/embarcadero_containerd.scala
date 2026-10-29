@@ -39,4 +39,6 @@ import aperture.*
 // container and its task but does not start it — an inspection scope. `Signalling`, not
 // `Signal`, which profanity's interrupt holds in `soundness`.
 val Launch: Mode granting Workload.Grant.Launch = new Mode { type Grants = Workload.Grant.Launch }
-val Signalling: Mode granting Workload.Grant.Signal = new Mode { type Grants = Workload.Grant.Signal }
+
+val Signalling: Mode granting Workload.Grant.Signal =
+  new Mode { type Grants = Workload.Grant.Signal }

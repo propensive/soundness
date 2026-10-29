@@ -487,9 +487,15 @@ object internal:
           def unbrand(repr: TypeRepr): TypeRepr = repr.dealias match
             case AndType(left, right) =>
               val l = unbrand(left)
+
               l match
-                case AppliedType(constructor, _) if aliasCollectionSyms.has(constructor.typeSymbol) => l
-                case _ => unbrand(right)
+                case AppliedType(constructor, _)
+                  if aliasCollectionSyms.has(constructor.typeSymbol) =>
+                  l
+
+                case _ =>
+                  unbrand(right)
+
             case other => other
 
           unbrand(TypeRepr.of[tpe].widen) match

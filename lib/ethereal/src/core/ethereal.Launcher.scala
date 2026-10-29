@@ -4,27 +4,24 @@
 ┃                                                   ╭───╮                                          ┃
 ┃                                                   │   │                                          ┃
 ┃                                                   │   │                                          ┃
-┃   ╭───────╮╭─────────╮╭───╮ ╭───╮╭───╮╭─────────╮│   │╭───╮╭─────────╮╭─────────╮╭─────────╮   ┃
-┃   │   ╭───╯│   ╭─╮   ││   │ │   ││   ││   ╭─╮   ││   ││   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮   │   ┃
-┃   │   ╰───╮│   │ │   ││   │ │   ││   ││   │ │   ││   ││   ││   ╰─╯   ││   ╰─╯   ││   ╰─╯   │   ┃
-┃   ╰───╮   ││   │ │   ││   │ │   ││   ││   │ │   ││   ││   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮   │   ┃
-┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   ││   ╰─╯   ││   ││   ││   │ │   ││   │ │   ││   │ │   │   ┃
-┃   ╰───────╯╰─────────╯╰────╮   ╭╯╰───╯╰─────────╯╰───╯╰───╯╰───╯ ╰───╯╰───╯ ╰───╯╰───╯ ╰───╯   ┃
-┃                       ╭─╮  │   │                                                                 ┃
-┃                       │ ╰──╯   │                                                                 ┃
-┃                       ╰────────╯                                                                 ┃
+┃   ╭───────╮╭─────────╮╭───╮ ╭───╮╭───╮╌────╮╭────╌┤   │╭───╮╌────╮╭────────╮╭───────╮╭───────╮   ┃
+┃   │   ╭───╯│   ╭─╮   ││   │ │   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮  ││   ╭───╯│   ╭───╯   ┃
+┃   │   ╰───╮│   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╰─╯  ││   ╰───╮│   ╰───╮   ┃
+┃   ╰───╮   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╭────╯╰───╮   │╰───╮   │   ┃
+┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
+┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
 ┃    Soundness, version 0.64.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
 ┃                                                                                                  ┃
-┃      https://soundness.dev/                                                                      ┃
+┃        https://soundness.dev/                                                                    ┃
 ┃                                                                                                  ┃
 ┃    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file     ┃
 ┃    except in compliance with the License. You may obtain a copy of the License at                ┃
 ┃                                                                                                  ┃
-┃      http://www.apache.org/licenses/LICENSE-2.0                                                  ┃
+┃        https://www.apache.org/licenses/LICENSE-2.0                                               ┃
 ┃                                                                                                  ┃
 ┃    Unless required by applicable law or agreed to in writing,  software distributed under the    ┃
 ┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
@@ -344,7 +341,6 @@ object Launcher:
                   field(2).or(abort(Launcher.Mismatch())),
                   field(3) )
 
-
         def raws: List[Raw] =
           children.to[List].sweep:
             case Tel.Element.Node(17, _, fields) =>
@@ -355,7 +351,6 @@ object Launcher:
                 ( field(0).or(abort(Launcher.Mismatch())),
                   field(1).let(_.as[Int]),
                   Base256.decodeStrict(field(2).or(abort(Launcher.Mismatch()))) )
-
 
         index.or(-1) match
           case Variant.init =>

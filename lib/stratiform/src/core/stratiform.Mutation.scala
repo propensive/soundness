@@ -235,6 +235,7 @@ object Mutation:
       if isTargetOp && idx == steps.length - 1 then
         val replacement =
           applyToTarget(subtree.children.readUnchecked(blockIdx), localIdx, op, sigil)
+
         val children = subtree.children
 
         val spliced =

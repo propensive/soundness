@@ -32,8 +32,8 @@
                                                                                                   */
 package archimedes
 
-import scala.collection.immutable.Seq
 // Deliberate stdlib opt-out, as in `Cell`.
+import scala.collection.immutable.Seq
 import scala.collection.immutable.{Map, Set}
 import scala.collection.mutable.ListBuffer
 
@@ -462,11 +462,17 @@ object Ergo:
       if c == Hole then
         advance()
         holes.seek(_ => true)(throw java.util.NoSuchElementException())(identity(_))
-      else if c == open then rooted(parseGroup())
-      else if c == Radical then { advance(); Msqrt(parsePrimary()) }
-      else if c == Matrix then parseMatrix()
-      else if c == RowVec then parseVector(row = true)
-      else if c == ColVec then parseVector(row = false)
+      else if c == open then
+        rooted(parseGroup())
+      else if c == Radical then
+        advance()
+        Msqrt(parsePrimary())
+      else if c == Matrix then
+        parseMatrix()
+      else if c == RowVec then
+        parseVector(row = true)
+      else if c == ColVec then
+        parseVector(row = false)
       else if Character.isLetter(c) then
         val start = pos
         while pos < s.length && Character.isLetter(s.charAt(pos)) do pos += 1

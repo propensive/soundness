@@ -45,5 +45,6 @@ object HarlequinBase:
     // frozen array is never written through the JVM view; the cast forgets its read
     // capability, which the field, not being capture-checked, cannot carry.
     val operations = Array.fill(context.settings.XmaxFuel.value)(RecursiveOperation.blank())
+
     context.base.recursiveOperations =
       Array.unsafeJvm(operations).asInstanceOf[scala.Array[RecursiveOperation]]

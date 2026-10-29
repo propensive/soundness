@@ -102,7 +102,7 @@ object Joinable:
 
         def assemble(parts: Iterator[textual]^): textual =
           joinable.join
-            (Reshapable.build(parts, scala.collection.immutable.List.newBuilder[textual]))
+            ( Reshapable.build(parts, scala.collection.immutable.List.newBuilder[textual]) )
 
     trait Fallback:
       given interleaving: [self, element, result]

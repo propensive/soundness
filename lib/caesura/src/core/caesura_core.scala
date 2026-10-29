@@ -117,8 +117,7 @@ package optics:
     // A row has few cells, so copying them to replace one is cheap.
     import denominative.dysasymptotics.linearSize
 
-    row.columns.let(_(name.tt)).lay(row): index =>
-      row.copy(data = row.data.define(index.z, value))
+    row.columns.let(_(name.tt)).lay(row): index => row.copy(data = row.data.define(index.z, value))
 
   given dsvCellLens: [name <: Label: ValueOf] => (erased dynamical: (? >: Dsv) is Dynamical)
   =>  name is Lens from Dsv onto Text =

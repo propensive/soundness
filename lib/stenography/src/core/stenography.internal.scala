@@ -33,8 +33,8 @@
 package stenography
 
 import scala.collection.immutable as sci
-import scala.collection.mutable as scm
 import scala.collection.immutable.{List, Nil}
+import scala.collection.mutable as scm
 import scala.quoted.*
 
 import anticipation.*
@@ -144,8 +144,7 @@ object internal:
         val scopes = (imported ++ own).filter(_.exists)
 
         val (direct, aliases) = cache.summaries.establish(scopes):
-          val harvested = scopes.map: scope =>
-            cache.scopes.establish(scope)(scopeInfo(scope))
+          val harvested = scopes.map: scope => cache.scopes.establish(scope)(scopeInfo(scope))
 
           // Where two aliases claim the same member, choose by name, so that the rendering
           // does not depend on the order the scopes happened to be walked in.

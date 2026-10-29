@@ -193,4 +193,4 @@ extension [cipher <: Cipher](key: SymmetricKey[cipher]^)
 // key.
 extension [cipher <: Cipher](key: SymmetricKey[cipher]^)
   def xor(nonce: Data, counter: Int, data: Data)(using algorithm: cipher & Keystream): Data =
-    key.secret.uncloak(bytes => algorithm.xor(Array.unsafeFrozen(bytes), nonce, counter, data))
+    key.secret.uncloak: bytes => algorithm.xor(Array.unsafeFrozen(bytes), nonce, counter, data)

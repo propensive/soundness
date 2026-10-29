@@ -162,6 +162,7 @@ private[jacinta] object Parser:
   def parse(consume input: Iterator[Data]^, holes: Boolean, mode: NumberMode)
     ( using Tactic[Parse.Error] )
   :   Raw =
+
     val parser = borrow()
     parser.tracking = false
     parser.resetIterator(input)
@@ -195,6 +196,7 @@ private[jacinta] object Parser:
   def parse(consume input: (Stream[Data] over Credit)^, mode: NumberMode)
     ( using Tactic[Parse.Error] )
   :   Raw =
+
     val parser = borrow()
     parser.tracking = false
     // consume-to-consume forwarding is not admitted; the hop re-asserts the transfer
@@ -887,7 +889,7 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
     // byte-by-byte `expect` chain only at a buffer boundary.
     if pos + 5 <= bufEnd then
       val word: Long =
-        (cells(pos)     & 0xFFL)         |
+        (cells(pos)     & 0xFFL) |
           ((cells(pos + 1) & 0xFFL) <<  8) |
           ((cells(pos + 2) & 0xFFL) << 16) |
           ((cells(pos + 3) & 0xFFL) << 24) |
@@ -907,7 +909,7 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
   private update def parseTrue()(using Tactic[Parse.Error]): true =
     if pos + 4 <= bufEnd then
       val word: Int =
-        (cells(pos)     & 0xFF)         |
+        (cells(pos)     & 0xFF) |
           ((cells(pos + 1) & 0xFF) <<  8) |
           ((cells(pos + 2) & 0xFF) << 16) |
           ((cells(pos + 3) & 0xFF) << 24)
@@ -925,7 +927,7 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
   private update def parseNull()(using Tactic[Parse.Error]): Json.JsonNull.type =
     if pos + 4 <= bufEnd then
       val word: Int =
-        (cells(pos)     & 0xFF)         |
+        (cells(pos)     & 0xFF) |
           ((cells(pos + 1) & 0xFF) <<  8) |
           ((cells(pos + 2) & 0xFF) << 16) |
           ((cells(pos + 3) & 0xFF) << 24)

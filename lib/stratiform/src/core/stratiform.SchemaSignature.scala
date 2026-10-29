@@ -243,8 +243,7 @@ object SchemaSignature:
 
     val base = hash(Tels.Renderer.element(schema.copy(layers = Array.empty), axiom), axiom)
 
-    val layers = schema.layers.to[List].map: layer =>
-      hash(Tels.Renderer.layer(layer, axiom), axiom)
+    val layers = schema.layers.to[List].map: layer => hash(Tels.Renderer.layer(layer, axiom), axiom)
 
     (base, layers)
 

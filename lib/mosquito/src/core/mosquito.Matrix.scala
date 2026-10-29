@@ -183,6 +183,7 @@ object Matrix:
           array(index) =
             mosquito.internal.times[element, scalar, result]
               ( left.elements.readUnchecked(index), right )
+
           index += 1
 
       new Matrix(left.rows, left.columns, elements2)
@@ -206,6 +207,7 @@ object Matrix:
           array(index) =
             mosquito.internal.over[element, scalar, result]
               ( left.elements.readUnchecked(index), right )
+
           index += 1
 
       new Matrix(left.rows, left.columns, elements2)

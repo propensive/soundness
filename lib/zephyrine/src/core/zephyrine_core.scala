@@ -672,7 +672,8 @@ private def recordIterator[record]
         head = storage.asInstanceOf[scala.Array[AnyRef]](index).asInstanceOf[record]
         index += 1
         true
-      else false
+      else
+        false
 
     def current: record = head
 

@@ -32,9 +32,9 @@
                                                                                                   */
 package guillotine
 
+import scala.collection.`:+`
 import scala.collection.immutable as sci
 import scala.collection.immutable.::
-import scala.collection.`:+`
 import scala.language.experimental.pureFunctions
 
 import anticipation.*

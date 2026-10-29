@@ -49,7 +49,7 @@ import Raster.Error.Reason
 private[hallucination] object JpegCodec:
   def isJpeg(data: Data): Boolean =
     data.length >= 3 && (data.readUnchecked(0) & 0xff) == 0xff &&
-        (data.readUnchecked(1) & 0xff) == 0xd8 &&
+      (data.readUnchecked(1) & 0xff) == 0xd8 &&
       (data.readUnchecked(2) & 0xff) == 0xff
 
   def decode(data: Data): Raster raises Raster.Error =
@@ -407,6 +407,7 @@ private[hallucination] final class JpegDecoder(bytes: scala.Array[Byte]) extends
           if index >= spectralEnd then continue = false else
             writable(coeff)(base + Unzigzag.readUnchecked(index)) =
               huffman.fastAcValue << successiveLow
+
             index += 1
         else
           val byte = huffman.decode(reader, acTable)

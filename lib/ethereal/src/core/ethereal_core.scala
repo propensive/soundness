@@ -32,15 +32,14 @@
                                                                                                   */
 package ethereal
 
-import scala.language.experimental.pureFunctions
-
-import scala.caps
-
 import java.io as ji
 import java.lang as jl
 import java.nio.charset as jnc
 import java.nio.file as jnf
+
+import scala.caps
 import scala.collection.concurrent as scc
+import scala.language.experimental.pureFunctions
 
 import ambience.*, systems.javaBaseSystem
 import anticipation.*
@@ -72,9 +71,8 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 
-import filesystemOptions.deleteRecursively
-
 import filesystemBackends.javaBaseFilesystem
+import filesystemOptions.deleteRecursively
 
 // The `build_id` of the executable's record, which the launcher passes as `build.id`: a 64-bit
 // value, which releases derive from their version. A `build.id` resource stands in for it when
@@ -312,10 +310,10 @@ def cli[bus <: Matchable](using executive: Executive)
         finally
           if !fresh then drain()
 
-      case _: (Launcher.Message.SignalAck | Launcher.Message.Verdict | Launcher.Message.Mode
-               | Launcher.Message.ExitStatus | Launcher.Message.Open | Launcher.Message.Data
-               | Launcher.Message.End | Launcher.Message.Credit | Launcher.Message.Closed
-               | Launcher.Message.Signal) =>
+      case _: (Launcher.Message.SignalAck | Launcher.Message.Verdict | Launcher.Message.Mode |
+               Launcher.Message.ExitStatus | Launcher.Message.Open | Launcher.Message.Data |
+               Launcher.Message.End | Launcher.Message.Credit | Launcher.Message.Closed |
+               Launcher.Message.Signal) =>
         // Replies travel from the daemon to the launcher, never the other way, and the rest
         // belong inside a session, after `init`.
         Log.warn(DaemonLogEvent.UnrecognizedMessage)

@@ -324,7 +324,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
         if descent.isEmpty then Unset else Path[Plane, Limit, Tuple](root, descent.tail.to(List))
 
   def ancestors: List[Path on Plane under Limit] =
-    safely(parent).let { parent => (parent :: parent.ancestors): List[Path on Plane under Limit] }
+    safely(parent).let: parent => (parent :: parent.ancestors): List[Path on Plane under Limit]
     . or(Nil)
 
   def unsafeChild(value: Text)(using erased unsafe: Unsafe): Path on Plane under Limit =

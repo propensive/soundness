@@ -743,7 +743,7 @@ object Bintel:
     element match
       case Tel.Element.Value(kidx, _, text) =>
         Tel.Compound
-          (flat.readUnchecked(kidx)._1, Array(Tel.Atom.Inline(text, 1)), Unset, Array.empty)
+          ( flat.readUnchecked(kidx)._1, Array(Tel.Atom.Inline(text, 1)), Unset, Array.empty )
 
       case Tel.Element.Node(kidx, struct: Tels.Struct, children) =>
         val keyword   = kidx.let(flat.readUnchecked(_)._1).or(t"")

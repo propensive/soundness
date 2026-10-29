@@ -32,8 +32,8 @@
                                                                                                   */
 package dendrology
 
-import scala.collection.immutable.Vector
 import scala.collection.immutable.List
+import scala.collection.immutable.Vector
 
 import acyclicity.*
 import anticipation.*

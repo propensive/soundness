@@ -27,7 +27,8 @@
 ┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
 ┃    either express or implied. See the License for the specific language governing permissions    ┃
 ┃    and limitations under the License.                                                            ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+┃                                                                                                  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package hieroglyph
 
@@ -82,7 +83,7 @@ object Normalization:
 
         if !mapping.isEmpty && !mapping.startsWith("<") then
           val decomposition =
-            mapping.split(" ").nn.iterator.map { part => Integer.parseInt(part.nn, 16) }
+            mapping.split(" ").nn.iterator.map: part => Integer.parseInt(part.nn, 16)
             . to(sci.Vector)
 
           rawDecompositions(codepoint) = decomposition

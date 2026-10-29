@@ -77,7 +77,7 @@ extension [self, node](graph: self)(using nodal: self is Nodal by node)
   def successors(node: node): Set[node] = nodal.successors(graph, node).to[Set]
 
   def edges: Set[(node, node)] =
-    nodal.nodes(graph).flatMap { from => nodal.successors(graph, from).map(from -> _).to[List] }
+    nodal.nodes(graph).flatMap: from => nodal.successors(graph, from).map(from -> _).to[List]
     . to[Set]
 
   // The nodes with no successors — those depending on nothing. Whole-graph in scope.
@@ -108,7 +108,7 @@ extension [self, node](graph: self)(using nodal: self is Nodal by node)
 
       case Right(_) =>
         Dag.unchecked
-          (Search.adjacency(nodal.nodes(graph).stdlib, nodal.successors(graph, _).stdlib))
+          ( Search.adjacency(nodal.nodes(graph).stdlib, nodal.successors(graph, _).stdlib) )
 
   def digraph: Digraph[node] =
     Digraph.of(Search.adjacency(nodal.nodes(graph).stdlib, nodal.successors(graph, _).stdlib))
@@ -129,6 +129,7 @@ extension [self, node](graph: self)(using nodal: self is Nodal by node)
       sci.VectorMap.from:
         nodal.nodes(graph).map: node =>
           (node, sci.Set.from(Set.iterator(reach.reachable(graph, node))) - node)
+
         . stdlib
 
   def invert[result]

@@ -108,8 +108,10 @@ object Topology:
   given nodal: [node] => ((Topology[node]^{}) is Nodal by node) = new Nodal:
     type Self = Topology[node]^{}
     type Operand = node
+
     def nodes(self: Topology[node]^{}): Iterator[node]^ =
       Iterator.from(List.iterator(self.linearized))
+
     def has(self: Topology[node]^{}, node: node): Boolean = self.has(node)
 
     def successors(self: Topology[node]^{}, node: node): Iterator[node]^ =

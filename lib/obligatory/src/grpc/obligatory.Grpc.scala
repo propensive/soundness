@@ -214,6 +214,7 @@ object Grpc:
 
       expectOk(response)
       val messages = stream.body.stream.records.frames[Framing]
+
       val first: Optional[Data] = messages.next() match
         case Iterator.Exhausted => Unset
         case message: Data      => message

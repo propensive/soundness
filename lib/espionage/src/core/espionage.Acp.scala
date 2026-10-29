@@ -477,11 +477,12 @@ object Acp:
   // Permissions
 
   object PermissionOptionKind:
-    given encodable: PermissionOptionKind is Json.Encodable = Json.Encodable(() => Morphology.Str):
-      case PermissionOptionKind.AllowOnce    => t"allow_once".in[Json]
-      case PermissionOptionKind.AllowAlways  => t"allow_always".in[Json]
-      case PermissionOptionKind.RejectOnce   => t"reject_once".in[Json]
-      case PermissionOptionKind.RejectAlways => t"reject_always".in[Json]
+    given encodable: PermissionOptionKind is Json.Encodable =
+      Json.Encodable(() => Morphology.Str):
+        case PermissionOptionKind.AllowOnce    => t"allow_once".in[Json]
+        case PermissionOptionKind.AllowAlways  => t"allow_always".in[Json]
+        case PermissionOptionKind.RejectOnce   => t"reject_once".in[Json]
+        case PermissionOptionKind.RejectAlways => t"reject_always".in[Json]
 
     // Captures the caller's tactic, which malformed input raises through.
     given decodable: (tactic: Tactic[Json.Error])

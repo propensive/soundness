@@ -284,7 +284,7 @@ object Rrule:
     val weekdays = if !rule.byDay.nil then rule.byDay.map(_.weekday) else List(start.weekday)
 
     val weeks =
-      rule.byWeekNo.map{ week => if week > 0 then week else count + week + 1 }
+      rule.byWeekNo.map: week => if week > 0 then week else count + week + 1
         .filter: week => week >= 1 && week <= count
 
     val dates =

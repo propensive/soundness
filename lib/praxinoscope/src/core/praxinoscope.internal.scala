@@ -336,6 +336,7 @@ object internal:
 
                       while lower < upper do
                         val middle = (lower + upper + 1) >> 1
+
                         if cuts.readUnchecked(middle) <= symbol then lower = middle
                         else upper = middle - 1
 

@@ -59,7 +59,9 @@ object internal:
   // The registered media types, from the string table compiled from the IANA registry at build
   // time (`MediaTypeData`).
   private lazy val systemMediaTypes: Set[Text] =
-    scala.Range(0, MediaTypeData.registered.length).map(MediaTypeData.registered.readUnchecked(_).tt).to(Set)
+    scala.Range(0, MediaTypeData.registered.length)
+    . map(MediaTypeData.registered.readUnchecked(_).tt)
+    . to(Set)
 
   private val validGroups: Set[Text] =
     Set

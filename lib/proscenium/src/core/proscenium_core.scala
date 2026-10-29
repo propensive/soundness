@@ -101,7 +101,7 @@ transparent inline def infer[context]: context = compiletime.summonInline[contex
 
 // Upstream #24728 made `->` an inline method in `scala.Predef`, ending its availability via
 // implicit search under `-Yno-predef`; provide it in the house prelude instead.
-extension [left](left: left) inline infix def ->[right](right: right): (left, right) =
+extension [left](left: left) inline infix def -> [right](right: right): (left, right) =
   (left, right)
 
 transparent inline def provide[context](using erased void: Void)[result]

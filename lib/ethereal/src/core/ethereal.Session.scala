@@ -32,20 +32,19 @@
                                                                                                   */
 package ethereal
 
-import scala.caps
-import scala.unsafeExceptions.canThrowAny
-
 import java.io as ji
 import java.lang as jl
 import java.nio.file as jnf
 import java.util as ju
+
+import scala.caps
 import scala.collection.concurrent as scc
+import scala.unsafeExceptions.canThrowAny
 
 import anticipation.*
 import coaxial.*
 import contingency.*
 import distillate.*
-import zephyrine.*
 import fulminate.*
 import galilei.*
 import gossamer.*
@@ -56,6 +55,7 @@ import rudiments.*
 import spectacular.*
 import symbolism.*
 import vacuous.*
+import zephyrine.*
 
 import errorDiagnostics.emptyDiagnostics
 import galilei.Io.Error.Reason

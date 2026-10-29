@@ -121,8 +121,8 @@ object internal:
       if resolved.termSymbol.isNoSymbol then resolved.typeSymbol else resolved.termSymbol
 
     def root(symbol: Symbol): Boolean =
-      symbol.isNoSymbol || symbol == defn.RootClass || symbol == defn.RootPackage
-      || symbol == defn.EmptyPackageClass
+      symbol.isNoSymbol || symbol == defn.RootClass || symbol == defn.RootPackage ||
+        symbol == defn.EmptyPackageClass
 
     // An object's class is named with a trailing `$`, which is not part of the name a user wrote.
     def enclosing(symbol: Symbol): scala.List[String] =

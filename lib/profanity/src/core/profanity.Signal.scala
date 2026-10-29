@@ -53,4 +53,6 @@ case class Signal
     rows:      Optional[Int]                 = Unset,
     deadline:  Optional[Quantity[Seconds[1]]] = Unset ):
 
-  def size: Optional[(Int, Int)] = columns.let: c => rows.let { r => (c, r) }
+  def size: Optional[(Int, Int)] =
+    columns.let: c =>
+      rows.let: r => (c, r)

@@ -171,7 +171,6 @@ object Producer:
     ( using medium is Addressable { type Operand = operand } )
   extends Staged[medium, operand](block):
 
-
     private val queue: juc.ArrayBlockingQueue[medium | Done.type] =
       juc.ArrayBlockingQueue(depth)
 

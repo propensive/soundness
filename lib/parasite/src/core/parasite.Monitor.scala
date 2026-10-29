@@ -32,15 +32,13 @@
                                                                                                   */
 package parasite
 
-import scala.caps
-
-import scala.language.experimental.pureFunctions
-
 import java.lang as jl
 import java.util.concurrent.atomic as juca
 import java.util.concurrent.locks as jucl
 
 import scala.annotation.*
+import scala.caps
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import contingency.*
@@ -51,8 +49,8 @@ import prepositional.*
 import rudiments.*
 import vacuous.*
 
-import Async.nominative
 import Async.Error.Reason
+import Async.nominative
 import Fulfillment.*
 import beneficence.*
 import unsafeExceptions.canThrowAny

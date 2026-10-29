@@ -193,7 +193,7 @@ object internal:
         symbol.fieldMembers
         . filter(_.info <:< TypeRepr.of[value])
         . filter(TypeRepr.of[value] <:< _.info)
-        . filter { field => names.contains(field.name) }
+        . filter: field => names.contains(field.name)
         . map: field =>
             val name = '{${Literal(StringConstant(field.name)).asExprOf[String]}.tt}
 

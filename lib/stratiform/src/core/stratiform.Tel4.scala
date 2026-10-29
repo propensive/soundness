@@ -83,6 +83,7 @@ trait Tel4:
     given sigil: Intensional.Reading["sigil", Tel.Provider, Tel, Char, Tel.Provider.Error] =
       Intensional.Reading: (tel, _) =>
         val text = tel.primaryAtom
+
         if text.length == 1 then text.s.charAt(0)
         else abort(Tel.Provider.Error(Tel.Provider.Error.Reason.NotSigil(text)))
 

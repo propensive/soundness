@@ -682,6 +682,7 @@ object Html extends Tag.Container
       if index < 0 || index >= data.readUnchecked(offset + 4) then Unset
       else
         val base = offset + data.readUnchecked(offset + 6 + index)
+
         Position
           ( data.readUnchecked(base + 1).z,
             data.readUnchecked(base + 2).z,
@@ -2259,8 +2260,7 @@ object Html extends Tag.Container
         case fragment: Fragment =>
           Element
             ( label, attributes,
-              ( Array.from(fragment.nodes).asInstanceOf[Array[Node]^{}] + children )
-
+              (Array.from(fragment.nodes).asInstanceOf[Array[Node]^{}] + children)
               . asInstanceOf[Array[Node]^{}],
               foreign )
 

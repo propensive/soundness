@@ -32,7 +32,6 @@
                                                                                                   */
 package cataclysm
 
-import murmuration.Iterator
 import scala.collection.`+:`
 import scala.collection.immutable.Seq
 import scala.quoted.*
@@ -44,6 +43,7 @@ import denominative.*
 import fulminate.*
 import gigantism.Lifts
 import gossamer.*
+import murmuration.Iterator
 import murmuration.map
 import nomenclature.*
 import rudiments.all

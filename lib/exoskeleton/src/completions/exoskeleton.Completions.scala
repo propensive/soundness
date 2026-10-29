@@ -57,8 +57,8 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 import charsets.utf8Charset
-import textSanitizers.skipSanitizer
 import filesystemBackends.javaBaseFilesystem
+import textSanitizers.skipSanitizer
 
 object Completions:
   case class Tab(arguments: List[Text], focus: Int, cursor: Int, count: Int = 0):

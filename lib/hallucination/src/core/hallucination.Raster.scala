@@ -63,7 +63,7 @@ object Raster:
     // Routed through `build` (which selects the storage primitive from the descriptor at
     // runtime) rather than closure writes into a per-storage array: an expanded closure
     // write is rejected by the separation checker at each inline site.
-    build(width, height, descriptor) { index => Pixel.value(pixel(index%width, index/width)) }
+    build(width, height, descriptor): index => Pixel.value(pixel(index%width, index/width))
     . asInstanceOf[Raster by layout]
 
   // Recognises the format from its opening magic bytes, among the formats the caller has named.

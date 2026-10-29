@@ -136,6 +136,7 @@ object Teletype:
         recur(from, middle).append(recur(middle, until))
 
     if indexed.isEmpty then empty else empty.append(recur(0, indexed.length))
+
   given printable: Teletype is Printable = _.render(_)
 
   given cuttable: Teletype is Cuttable by Text = (text, delimiter, limit) =>

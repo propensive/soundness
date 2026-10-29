@@ -88,10 +88,10 @@ enum Designator:
   override def equals(that: Any): Boolean = that match
     case that: Designator =>
       (this eq that) || hashCode == that.hashCode && ((this, that) match
-        case (Top(name), Top(name2))                   => name == name2
+        case (Top(name), Top(name2))                    => name == name2
         case (Term(parent, name), Term(parent2, name2)) => name == name2 && parent == parent2
         case (Type(parent, name), Type(parent2, name2)) => name == name2 && parent == parent2
-        case _                                         => false)
+        case _                                          => false)
 
     case _ =>
       false

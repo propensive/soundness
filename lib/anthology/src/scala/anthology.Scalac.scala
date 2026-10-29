@@ -212,7 +212,7 @@ object Scalac:
 
       // stdlib bridge: `run.compileSources` takes a stdlib `List`.
       val sourceFiles: scala.collection.immutable.List[dtdu.SourceFile] =
-        sources.to[List].map { (name, content) => dtdu.SourceFile.virtual(name.s, content.s) }
+        sources.to[List].map: (name, content) => dtdu.SourceFile.virtual(name.s, content.s)
         . stdlib
 
       try
@@ -293,7 +293,7 @@ case class Scalac[release <: Scalac.Versions, universe <: Universe] private
 
     // stdlib bridge: `run.compileSources` takes a stdlib `List`.
     val sourceFiles: scala.collection.immutable.List[dtdu.SourceFile] =
-      sources.to[List].map { (name, content) => dtdu.SourceFile.virtual(name.s, content.s) }
+      sources.to[List].map: (name, content) => dtdu.SourceFile.virtual(name.s, content.s)
       . stdlib
 
     scalacProcess.put:

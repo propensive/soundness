@@ -32,15 +32,12 @@
                                                                                                   */
 package ypsiloid
 
-import scala.collection.immutable.Vector
-
 import scala.caps
-
-import scala.language.dynamics
-
 import scala.collection.Factory
+import scala.collection.immutable.Vector
 import scala.collection.mutable as scm
 import scala.compiletime.*
+import scala.language.dynamics
 
 import adversaria.*
 import anticipation.*
@@ -6172,9 +6169,12 @@ object Yaml extends Yaml1, Dynamic:
         def parse(reader: Yaml.Reader^, node: Yaml.Ast): value =
           if node.isAbsent then
             if absence.strict then reader.tactic.abort(Yaml.Error(Reason.Absent)) else Unset
-          else if node.isNull && !nullity.strict then Unset
-          else if fault.strict then field.parse(reader, node)
-          else reader.tactic.tolerate(field.parse(reader, node)).or(Unset)
+          else if node.isNull && !nullity.strict then
+            Unset
+          else if fault.strict then
+            field.parse(reader, node)
+          else
+            reader.tactic.tolerate(field.parse(reader, node)).or(Unset)
 
     // The same three policies, yielding `None`.
     given option: [value]
@@ -6190,9 +6190,12 @@ object Yaml extends Yaml1, Dynamic:
         def parse(reader: Yaml.Reader^, node: Yaml.Ast): Option[value] =
           if node.isAbsent then
             if absence.strict then reader.tactic.abort(Yaml.Error(Reason.Absent)) else None
-          else if node.isNull && !nullity.strict then None
-          else if fault.strict then Some(field.parse(reader, node))
-          else reader.tactic.tolerate(field.parse(reader, node)).let(Some(_)).or(None)
+          else if node.isNull && !nullity.strict then
+            None
+          else if fault.strict then
+            Some(field.parse(reader, node))
+          else
+            reader.tactic.tolerate(field.parse(reader, node)).let(Some(_)).or(None)
 
     // A sequence, each element focused by its ordinal, as the tree decoder's `iterable`.
     given iterable: [collection <: Iterable, element]
@@ -6313,6 +6316,7 @@ object Yaml extends Yaml1, Dynamic:
       // taken from the exclusive reader would be captured by every closure below it.
       FieldProductParser[derivation]: (carrier, node) =>
         val reader = Yaml.Field.readerOf(carrier)
+
         parseMapping[derivation](renames, carrier, node)
           ( using summon[ProductReflection[derivation]], reader.foci, reader.tactic )
 

@@ -107,7 +107,8 @@ object Cursor:
       var index = 0
 
       while index < length - 1 do
-        table(bytes.readUnchecked(index) & 0xff) = (length - 1 - index).min(Char.MaxValue.toInt).toChar
+        table(bytes.readUnchecked(index) & 0xff) =
+          (length - 1 - index).min(Char.MaxValue.toInt).toChar
         index += 1
 
       Array.freeze(table)
@@ -126,7 +127,10 @@ object Cursor:
 
           if probe == bytes.readUnchecked(last) then
             var offset = 0
-            while offset < last && buffer(index + offset) == bytes.readUnchecked(offset) do offset += 1
+
+            while offset < last && buffer(index + offset) == bytes.readUnchecked(offset)
+            do offset += 1
+
             if offset == last then found = index
 
           if found < 0 then index += shifts.readUnchecked(probe & 0xff)
@@ -271,7 +275,8 @@ object Cursor:
             newlines += 1
             lastNewlineAt = index.n0
             skipped = 0
-          else if utf8 && Utf8.continuation(byte) then skipped += 1
+          else if utf8 && Utf8.continuation(byte) then
+            skipped += 1
 
         bumpLineation(end, newlines, lastNewlineAt, skipped)
 
@@ -291,7 +296,8 @@ object Cursor:
             newlines += 1
             lastNewlineAt = index.n0
             skipped = 0
-          else if utf16 && Character.isLowSurrogate(char) then skipped += 1
+          else if utf16 && Character.isLowSurrogate(char) then
+            skipped += 1
 
         bumpLineation(end, newlines, lastNewlineAt, skipped)
 
@@ -303,7 +309,8 @@ object Cursor:
       if newlines > 0 then
         cursor.unsafeBumpLine(newlines)(using Unsafe)
         cursor.unsafeSetColumn(end - lastNewlineAt - 1 - skipped)(using Unsafe)
-      else cursor.unsafeBumpColumn(end - lineationPos - skipped)(using Unsafe)
+      else
+        cursor.unsafeBumpColumn(end - lineationPos - skipped)(using Unsafe)
 
       lineationPos = end
 
@@ -417,67 +424,69 @@ object Cursor:
   :   Cursor[data, {}]^ =
 
     // The ascribed binding is load-bearing — see the iterator factory below.
-    val cursor: Cursor[data, {}]^ = new Cursor[data, {}]
-      ( () => Unset,
-        Unset,
-        DefaultCapacity,
-        addressable0,
-        lineation0,
-        // Sealed like the loader: the filler captures the adopted stream (consumed by
-        // this factory — sole ownership), and Cursor's Unscoped classification cannot
-        // hold a non-Unscoped capture.
-        locally:
-          val filler = new Lender[addressable0.Storage]:
-            val block: Int = buffering.capacity(addressable0.substrate)
-            private val window: Int = buffering.window(addressable0.substrate)
-
-            // The region last lent, released at the next borrow or fill. Untracked: a filler
-            // is reached only through its cursor, which alone calls it, from `refill`.
-            // [abstract-storage] abstract Storage var in anonymous Lender
-            @caps.unsafe.untrackedCaptures
-            private var lentStorage0: addressable0.Storage =
-              addressable0.allocate(0).asInstanceOf[addressable0.Storage]
-
-            // [field-purity] plain Int var in anonymous Lender
-            @caps.unsafe.untrackedCaptures
-            private var lentStart0: Int = 0
-
-            // [field-purity]
-            @caps.unsafe.untrackedCaptures
-            private var lent: Int = 0
-
-            def lentStorage: addressable0.Storage = lentStorage0
-            def lentStart: Int = lentStart0
-
-            private def release(): Unit =
-              if lent > 0 then
-                stream.skip(lent)
-                lent = 0
-
-            def borrow(): Int =
-              release()
-
-              stream.refill(Credit(window)).lay(-1): count =>
-                lentStorage0 = stream.unsafeStorage(using Unsafe).asInstanceOf[addressable0.Storage]
-                lentStart0 = stream.start
-                lent = count
-                count
-
-            def fill(storage: addressable0.Storage, offset: Int, space: Int): Int =
-              release()
-
-              stream.refill(Credit(space.min(block))).lay(-1): count =>
-                val copied = count.min(space)
-                val source = stream.unsafeStorage(using Unsafe).asInstanceOf[addressable0.Storage]
-                addressable0.transfer(source, stream.start, storage, offset, copied)
-                stream.skip(copied)
-                copied
-
+    val cursor: Cursor[data, {}]^ =
+      new Cursor[data, {}]
+        ( () => Unset,
+          Unset,
+          DefaultCapacity,
+          addressable0,
+          lineation0,
           // Sealed like the loader: the filler captures the adopted stream (consumed by
           // this factory — sole ownership), and Cursor's Unscoped classification cannot
           // hold a non-Unscoped capture.
-          // [construction-fresh] fresh filler over consumed stream laundered at factory
-          caps.unsafe.unsafeAssumePure(filler) )
+          locally:
+            val filler = new Lender[addressable0.Storage]:
+              val block: Int = buffering.capacity(addressable0.substrate)
+              private val window: Int = buffering.window(addressable0.substrate)
+
+              // The region last lent, released at the next borrow or fill. Untracked: a filler
+              // is reached only through its cursor, which alone calls it, from `refill`.
+              // [abstract-storage] abstract Storage var in anonymous Lender
+              @caps.unsafe.untrackedCaptures
+              private var lentStorage0: addressable0.Storage =
+                addressable0.allocate(0).asInstanceOf[addressable0.Storage]
+
+              // [field-purity] plain Int var in anonymous Lender
+              @caps.unsafe.untrackedCaptures
+              private var lentStart0: Int = 0
+
+              // [field-purity]
+              @caps.unsafe.untrackedCaptures
+              private var lent: Int = 0
+
+              def lentStorage: addressable0.Storage = lentStorage0
+              def lentStart: Int = lentStart0
+
+              private def release(): Unit =
+                if lent > 0 then
+                  stream.skip(lent)
+                  lent = 0
+
+              def borrow(): Int =
+                release()
+
+                stream.refill(Credit(window)).lay(-1): count =>
+                  lentStorage0 =
+                    stream.unsafeStorage(using Unsafe).asInstanceOf[addressable0.Storage]
+                  lentStart0 = stream.start
+                  lent = count
+                  count
+
+              def fill(storage: addressable0.Storage, offset: Int, space: Int): Int =
+                release()
+
+                stream.refill(Credit(space.min(block))).lay(-1): count =>
+                  val copied = count.min(space)
+                  val source = stream.unsafeStorage(using Unsafe).asInstanceOf[addressable0.Storage]
+                  addressable0.transfer(source, stream.start, storage, offset, copied)
+                  stream.skip(copied)
+                  copied
+
+            // Sealed like the loader: the filler captures the adopted stream (consumed by
+            // this factory — sole ownership), and Cursor's Unscoped classification cannot
+            // hold a non-Unscoped capture.
+            // [construction-fresh] fresh filler over consumed stream laundered at factory
+            caps.unsafe.unsafeAssumePure(filler) )
 
     cursor
 
@@ -535,8 +544,7 @@ object Cursor:
     val cursor: Cursor[data, {}]^ =
       new Cursor[data, {}]
         // [closure-capture] iterator-capturing loader collapses cursor to read-only
-        ( caps.unsafe.unsafeAssumePure
-            ( () => iterator.seek(_ => true)(Unset)(identity(_)) ),
+        ( caps.unsafe.unsafeAssumePure { () => iterator.seek(_ => true)(Unset)(identity(_)) },
           Unset,
           DefaultCapacity,
           addressable0,

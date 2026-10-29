@@ -155,25 +155,25 @@ trait Xml4:
     type Reader[label <: Label, result] =
       Intensional.Reading[label, Xml.Provider, Xml, result, Xml.Provider.Error]
 
-    given dateTimeText: Reader["dateTime", Text] = Intensional.Reading((xml, _) => Xml4.text(xml))
-    given dateText: Reader["date", Text] = Intensional.Reading((xml, _) => Xml4.text(xml))
-    given timeText: Reader["time", Text] = Intensional.Reading((xml, _) => Xml4.text(xml))
-    given durationText: Reader["duration", Text] = Intensional.Reading((xml, _) => Xml4.text(xml))
-    given anyUriText: Reader["anyURI", Text] = Intensional.Reading((xml, _) => Xml4.text(xml))
+    given dateTimeText: Reader["dateTime", Text] = Intensional.Reading: (xml, _) => Xml4.text(xml)
+    given dateText: Reader["date", Text] = Intensional.Reading: (xml, _) => Xml4.text(xml)
+    given timeText: Reader["time", Text] = Intensional.Reading: (xml, _) => Xml4.text(xml)
+    given durationText: Reader["duration", Text] = Intensional.Reading: (xml, _) => Xml4.text(xml)
+    given anyUriText: Reader["anyURI", Text] = Intensional.Reading: (xml, _) => Xml4.text(xml)
 
   object Provider extends Provider2:
 
-    given string: Reader["string", Text] = Intensional.Reading((xml, _) => Xml4.text(xml))
-    given boolean: Reader["boolean", Boolean] = Intensional.Reading((xml, _) => Xml4.boolean(xml))
-    given int: Reader["int", Int] = Intensional.Reading((xml, _) => Xml4.int(xml))
-    given long: Reader["long", Long] = Intensional.Reading((xml, _) => Xml4.long(xml))
-    given short: Reader["short", Short] = Intensional.Reading((xml, _) => Xml4.short(xml))
-    given byte: Reader["byte", Byte] = Intensional.Reading((xml, _) => Xml4.byte(xml))
-    given double: Reader["double", Double] = Intensional.Reading((xml, _) => Xml4.double(xml))
-    given float: Reader["float", Float] = Intensional.Reading((xml, _) => Xml4.float(xml))
+    given string: Reader["string", Text] = Intensional.Reading: (xml, _) => Xml4.text(xml)
+    given boolean: Reader["boolean", Boolean] = Intensional.Reading: (xml, _) => Xml4.boolean(xml)
+    given int: Reader["int", Int] = Intensional.Reading: (xml, _) => Xml4.int(xml)
+    given long: Reader["long", Long] = Intensional.Reading: (xml, _) => Xml4.long(xml)
+    given short: Reader["short", Short] = Intensional.Reading: (xml, _) => Xml4.short(xml)
+    given byte: Reader["byte", Byte] = Intensional.Reading: (xml, _) => Xml4.byte(xml)
+    given double: Reader["double", Double] = Intensional.Reading: (xml, _) => Xml4.double(xml)
+    given float: Reader["float", Float] = Intensional.Reading: (xml, _) => Xml4.float(xml)
 
     // `xs:decimal` reads as a `Double` for now
-    given decimal: Reader["decimal", Double] = Intensional.Reading((xml, _) => Xml4.double(xml))
+    given decimal: Reader["decimal", Double] = Intensional.Reading: (xml, _) => Xml4.double(xml)
 
     given xml: ("xml" is Intensional in Xml.Provider from Xml to Xml) = Intensional(identity(_))
 
@@ -191,20 +191,20 @@ trait Xml4:
     // interface was given there
     given dateTime: [instant: Instantiable across Instants from Text]
     =>  Reader["dateTime", instant] =
-      Intensional.Reading((xml, _) => Xml4.text(xml).instantiate)
+      Intensional.Reading: (xml, _) => Xml4.text(xml).instantiate
 
     given date: [date: Instantiable across Dates from Text] => Reader["date", date] =
-      Intensional.Reading((xml, _) => Xml4.text(xml).instantiate)
+      Intensional.Reading: (xml, _) => Xml4.text(xml).instantiate
 
     given time: [time: Instantiable across Times from Text] => Reader["time", time] =
-      Intensional.Reading((xml, _) => Xml4.text(xml).instantiate)
+      Intensional.Reading: (xml, _) => Xml4.text(xml).instantiate
 
     given duration: [duration: Instantiable across Durations from Text]
     =>  Reader["duration", duration] =
-      Intensional.Reading((xml, _) => Xml4.text(xml).instantiate)
+      Intensional.Reading: (xml, _) => Xml4.text(xml).instantiate
 
     given anyUri: [url: Instantiable across Urls from Text] => Reader["anyURI", url] =
-      Intensional.Reading((xml, _) => Xml4.text(xml).instantiate)
+      Intensional.Reading: (xml, _) => Xml4.text(xml).instantiate
 
     private def fail(reason: Xml.Provider.Error.Reason)(using Tactic[Xml.Provider.Error]): Nothing =
       abort(Xml.Provider.Error(reason))

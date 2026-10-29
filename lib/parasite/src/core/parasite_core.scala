@@ -253,8 +253,7 @@ extension [result](stream: Chain[result])
   :   (Tactic[Async.Error]^) ?->{monitor, probate} Chain[result] =
 
     // The task is created and awaited under the same monitor; there is no aliased writer.
-    if async(stream.nil).await()
-    then Chain() else stream match
+    if async(stream.nil).await() then Chain() else stream match
       // The `nil` check above already forced the first cell (inside a task, since forcing may
       // block on a live source), so this match forces nothing further.
       case head #:: tail => head #:: tail.concurrent

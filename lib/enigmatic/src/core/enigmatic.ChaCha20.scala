@@ -54,6 +54,7 @@ class ChaCha20(cipher: Crypto.StreamCipher) extends Cipher, Symmetric, Keystream
   def genKey(): Data = cipher.generateKey(keySize)
   def privateToPublic(key: Data): Data = key
   def nonceSize: Int = 12
+
   def xor(key: Data, nonce: Data, counter: Int, data: Data): Data =
     cipher.xor(key, nonce, counter, data)
 

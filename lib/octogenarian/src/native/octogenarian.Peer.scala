@@ -42,7 +42,6 @@ import serpentine.*
 import symbolism.*
 import vacuous.*
 
-
 // A ref to change on a peer: what it is expected to hold now, and what it should hold.
 case class RefUpdate(ref: Text, expected: Git.Backend.Expectation, to: Optional[Git.Hash])
 

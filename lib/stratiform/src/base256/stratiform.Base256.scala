@@ -156,8 +156,10 @@ object Base256:
 
     while i < s.length do
       val c = s.codePointAt(i)
+
       if c > 0xffff || !membership.readUnchecked(c)
       then offenders = Base256.Offender(n, c) :: offenders
+
       out(n) = (c % 256).toByte
       n += 1
       i += Character.charCount(c)

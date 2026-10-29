@@ -143,6 +143,7 @@ object Task:
   extension [result](tasks: Iterable[Task[result]])
     def race()(using monitor: Monitor^, probate: SharedProbate)
     :   (Tactic[Async.Error]^) ?->{monitor, probate} result =
+
       List.from(tasks).race()
 
 // A task carries the error type its body may raise as the `Error` member, refined by the `emits`

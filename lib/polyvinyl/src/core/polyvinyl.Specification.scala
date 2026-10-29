@@ -236,8 +236,7 @@ object Specification:
 
       def elements(data: Expr[origin], tactic: Expr[Tactic[failure]]): Expr[scala.Seq[Object]] =
         Varargs:
-          members.map: field =>
-            '{${read(field.reading, data, tactic)}.asInstanceOf[Object]}
+          members.map: field => '{${read(field.reading, data, tactic)}.asInstanceOf[Object]}
 
       val reading: Reading =
         ' {
