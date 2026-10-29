@@ -1660,8 +1660,7 @@ object Lsp:
     val outgoing = session.outgoing
 
     val writer: Task[Unit] = async:
-      // The stdlib view is drained element by element, without memoizing the live chain.
-      outgoing.stdlib.iterator.each: json =>
+      outgoing.each: json =>
         val body: Text = json.encode
         observer.sent(body)
         summon[Stdio].write(LspTransport.frame(body))

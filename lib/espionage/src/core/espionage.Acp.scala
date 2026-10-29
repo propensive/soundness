@@ -1294,7 +1294,7 @@ object Acp:
         // The stdlib view is drained element by element, without memoizing the live chain; the
         // sink is finished when the drain ends, or when the task is cancelled.
         try
-          connection.outgoing.stdlib.iterator.each: json =>
+          connection.outgoing.each: json =>
             val body: Text = json.encode
             observer.sent(body)
             sink().put(Transport.frame(body))

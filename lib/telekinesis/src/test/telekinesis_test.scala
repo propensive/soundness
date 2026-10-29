@@ -424,7 +424,7 @@ object Tests extends Suite("http", m"Telekinesis tests"):
 
       for blockSize <- blockSizes do
         test(m"fixedBody reads exactly N bytes at block size $blockSize"):
-          val cursor = Cursor[Data](chunks(t"hello world", blockSize).stdlib.iterator)
+          val cursor = Cursor[Data](chunks(t"hello world", blockSize).to[Chain])
           // [pump-overlap] body stream consumes cursor in test
           scala.caps.unsafe.unsafeAssumeSeparate:
             Http.Request.fixedBody(cursor, 5).memoize.utf8
@@ -432,7 +432,7 @@ object Tests extends Suite("http", m"Telekinesis tests"):
         . assert(_ == t"hello")
 
         test(m"fixedBody leaves the cursor after the body at block size $blockSize"):
-          val cursor = Cursor[Data](chunks(t"hello world", blockSize).stdlib.iterator)
+          val cursor = Cursor[Data](chunks(t"hello world", blockSize).to[Chain])
           // [pump-overlap] body stream consumes cursor, cursor read after
           scala.caps.unsafe.unsafeAssumeSeparate:
             Http.Request.fixedBody(cursor, 5).memoize
@@ -444,7 +444,7 @@ object Tests extends Suite("http", m"Telekinesis tests"):
 
         test(m"chunkedBody decodes chunks at block size $blockSize"):
           val fixture = t"5\r\nhello\r\n6\r\n world\r\n0\r\n\r\n"
-          val cursor = Cursor[Data](chunks(fixture, blockSize).stdlib.iterator)
+          val cursor = Cursor[Data](chunks(fixture, blockSize).to[Chain])
           // [pump-overlap] chunked body consumes cursor in test
           scala.caps.unsafe.unsafeAssumeSeparate:
             Http.Request.chunkedBody(cursor).memoize.utf8
@@ -453,7 +453,7 @@ object Tests extends Suite("http", m"Telekinesis tests"):
 
         test(m"chunkedBody leaves the cursor after the body at block size $blockSize"):
           val fixture = t"3\r\nabc\r\n0\r\n\r\nNEXT"
-          val cursor = Cursor[Data](chunks(fixture, blockSize).stdlib.iterator)
+          val cursor = Cursor[Data](chunks(fixture, blockSize).to[Chain])
           // [pump-overlap] chunked body consumes cursor, cursor read after
           scala.caps.unsafe.unsafeAssumeSeparate:
             Http.Request.chunkedBody(cursor).memoize
@@ -503,7 +503,7 @@ object Tests extends Suite("http", m"Telekinesis tests"):
       . assert(_ == true)
 
       test(m"Streaming body is framed with chunked transfer-encoding"):
-        val body = Http.Body.Flowing(() => Stream(Chain.iterator(Chain(t"Hello".in[Data], t"World".in[Data]))))
+        val body = Http.Body.Flowing(() => Stream(Chain(t"Hello".in[Data], t"World".in[Data])))
         wire(Http.Response(Http.Ok)(body))
 
       . assert: text =>
@@ -513,7 +513,7 @@ object Tests extends Suite("http", m"Telekinesis tests"):
           && text.ends(t"0\r\n\r\n")
 
       test(m"Streaming body skips zero-length blocks"):
-        val body = Http.Body.Flowing(() => Stream(Chain.iterator(Chain(t"ab".in[Data], t"".in[Data], t"cd".in[Data]))))
+        val body = Http.Body.Flowing(() => Stream(Chain(t"ab".in[Data], t"".in[Data], t"cd".in[Data])))
         wire(Http.Response(Http.Ok)(body))
 
       . assert(_.contains(t"2\r\nab\r\n2\r\ncd\r\n"))

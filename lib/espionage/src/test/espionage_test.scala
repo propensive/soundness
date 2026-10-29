@@ -181,7 +181,7 @@ object AgentFixture:
 
     val streamable = summon[(ji.InputStream is Streamable by Data over Credit)^]
 
-    streamable.stream(input).chain.stdlib.iterator.frames[Linefeed].each: frame =>
+    streamable.stream(input).chain.frames[Linefeed].each: frame =>
       val message: Text = frame.utf8
 
       if message.length > 0 then

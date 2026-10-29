@@ -101,6 +101,18 @@ a collection that the body indexes. Three shapes qualify.
 3. **The vocabulary's own internals**, in denominative, concordance, zephyrine and proscenium,
    which implement the combinators the rest of the library uses.
 
+## When an `Iterator` is the honest type
+
+A `scala.Iterator` is a one-shot, stateful pull, and that is exactly what it should denote:
+a source read from the outside world once (a socket's frames, an HTTP event stream, a
+terminal's keypresses, an archive serialized chunk by chunk as each entry's payload opens),
+or a cursor a backtracking search resumes from (ulysses's candidate walk). Those stay
+iterators, as does `Traversable.traverse`'s internal currency, until `vacuous.Iterator`
+lands. Everything else that reached for `.stdlib.iterator` had a native form: a stream or
+cursor over a `Chain` is `Stream(chain)`/`Cursor(chain)`; a framer over a `Chain` is
+`chain.frames[F]`; a live chain is drained with `each`; a lockstep walk is `zip(…).each` or
+`indexed.each`; a lazy first-match scan is `fuse` with a by-name `or`.
+
 ## Proof comments
 
 `attested` and `readUnchecked` are the two places a bound cannot follow the program. Each call

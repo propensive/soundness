@@ -155,19 +155,19 @@ object Tests extends Suite("streams", m"Turbulence tests"):
 
     object Ref:
       given textSource: Ref is Streamable by Text over Credit =
-        ref => Stream(Chain.iterator(Chain(t"abc", t"def")))
+        ref => Stream(Chain(t"abc", t"def"))
       given dataSource: Ref is Streamable by Data over Credit =
-        ref => Stream(Chain.iterator(Chain(t"abc".in[Data], t"def".in[Data])))
+        ref => Stream(Chain(t"abc".in[Data], t"def".in[Data]))
 
     case class Ref()
 
     object Ref2:
-      given Ref2 is Streamable by Text over Credit = ref => Stream(Chain.iterator(Chain(t"abc", t"def")))
+      given Ref2 is Streamable by Text over Credit = ref => Stream(Chain(t"abc", t"def"))
 
     case class Ref2()
 
     object Ref3:
-      given Ref3 is Streamable by Data over Credit = ref => Stream(Chain.iterator(Chain(t"abc".in[Data], t"def".in[Data])))
+      given Ref3 is Streamable by Data over Credit = ref => Stream(Chain(t"abc".in[Data], t"def".in[Data]))
 
     case class Ref3()
 
