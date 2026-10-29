@@ -286,13 +286,10 @@ object Tests extends Suite("http", m"Telekinesis tests"):
         // chunk here stands in for a later response that must stay unread.
         test(m"Bodiless response head does not read past the final CRLF"):
           class Live() extends Iterator[Data]:
-            // [stdlib-iterator] counter var in test Iterator subclass
-            @scala.caps.unsafe.untrackedCaptures
             var pulls: Int = 0
-            def hasNext: Boolean = true
+            update def advance(): Boolean = { pulls += 1; true }
 
-            def next(): Data =
-              pulls += 1
+            def current: Data =
               if pulls == 1 then t"HTTP/1.1 204 No Content\r\nServer: test\r\n\r\n".in[Data]
               else t"HTTP/1.1 200 OK\r\n\r\n".in[Data]
 

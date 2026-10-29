@@ -465,7 +465,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
         relay.put(t"two")
         relay.put(t"three")
         relay.stop()
-        List.from(relay.stream.records)
+        relay.stream.records.to[List]
       . assert(_ == List(t"one", t"two", t"three"))
 
       test(m"records already queued batch into one window"):
@@ -485,7 +485,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
       test(m"an immediately-stopped relay yields no records"):
         val relay = Relay[Text]()
         relay.stop()
-        List.from(relay.stream.records)
+        relay.stream.records.to[List]
       . assert(_ == List())
 
       test(m"records after stop are not delivered"):
@@ -493,7 +493,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
         relay.put(t"before")
         relay.stop()
         relay.put(t"after")
-        List.from(relay.stream.records)
+        relay.stream.records.to[List]
       . assert(_ == List(t"before"))
 
       test(m"records queued before draining form one batch"):
@@ -546,7 +546,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
               async:
                 for value <- 1 to 25 do relay.put(t"${index*100 + value}")
 
-          val reader = async(Set.from(relay.stream.records))
+          val reader = async(relay.stream.records.to[Set])
           producers.each(_.await())
           relay.stop()
           unsafely(reader.await())
@@ -561,7 +561,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
         val relay = Relay[Text]()
         for _ <- 1 to 100000 do relay.put(t"x")
         relay.stop()
-        List.from(relay.stream.records).size
+        relay.stream.records.to[List].size
       . assert(_ == 100000)
 
       test(m"per-producer order is preserved through the relay"):
@@ -571,7 +571,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
             for value <- 1 to 100 do relay.put(t"$value")
             relay.stop()
 
-          unsafely(async(List.from(relay.stream.records)).await())
+          unsafely(async(relay.stream.records.to[List]).await())
       . assert(_ == List.from((1 to 100)).map { value => t"$value" })
 
     suite(m"Line splitting"):
@@ -588,8 +588,8 @@ object Tests extends Suite("streams", m"Turbulence tests"):
       // every case.
       def splitLines(input: Text, chunk: Int)(using LineSeparation): List[Text] =
         if chunk == -1 then input.delineate.to[List]
-        else if chunk == 0 then List.from(input.stream.delineate.records)
-        else List.from(input.s.grouped(chunk).map(_.tt).stream.delineate.records)
+        else if chunk == 0 then input.stream.delineate.records.to[List]
+        else Iterator.from(input.s.grouped(chunk).map(_.tt)).stream.delineate.records.to[List]
 
       // The same input through the byte-level duct (`Stream[Data].delineate`
       // under a UTF-8 decoder, which is ASCII-transparent, so the separators are
@@ -611,7 +611,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
             pieces += java.util.Arrays.copyOfRange(bytes, index, index + size).nn.asInstanceOf[Data]
             index += size
 
-        List.from(pieces.iterator.stream.delineate.records)
+        Iterator.from(pieces.iterator).stream.delineate.records.to[List]
 
       def check(policy: Text, cases: List[(Text, List[Text])])(using LineSeparation): Unit =
         for fragment <- List(-1, 0, 1, 3) do
@@ -701,13 +701,13 @@ object Tests extends Suite("streams", m"Turbulence tests"):
         import lineSeparation.adaptiveLinefeedLineSeparation
 
         test(m"lines splits a byte stream through the character decoder"):
-          List.from(t"first\nsecond\r\nthird".in[Data].stream.delineate.records)
+          t"first\nsecond\r\nthird".in[Data].stream.delineate.records.to[List]
         . assert(_ == List(t"first", t"second", t"third"))
 
         test(m"a line spanning many windows is reassembled"):
           val long = Text(String(scala.Array.fill(10000)('x')))
           val input = long + t"\ny"
-          List.from(input.s.grouped(7).map(_.tt).stream.delineate.records)
+          Iterator.from(input.s.grouped(7).map(_.tt)).stream.delineate.records.to[List]
         . assert(_ == List(Text(String(scala.Array.fill(10000)('x'))), t"y"))
 
         // Characters of two, three and four bytes, fragmented at every byte

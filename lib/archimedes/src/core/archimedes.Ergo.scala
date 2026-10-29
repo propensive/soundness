@@ -142,7 +142,7 @@ object Ergo:
   // sentinel, and each hole yields the corresponding already-encoded `atoms` node
   // as a single atom, in left-to-right order.
   def interpolate(parts: Seq[Text], atoms: Seq[Mathml])(using Tactic[Ergo.Error]): Math =
-    Parser(parts.map(_.s).mkString(Hole.toString), atoms.iterator).parseTop()
+    Parser(parts.map(_.s).mkString(Hole.toString), Iterator.from(atoms.iterator)).parseTop()
 
   // Parse-or-throw, for callers (in particular the `ergo""` interpolator's
   // generated code) that have already established the literal is well-formed.
@@ -283,7 +283,7 @@ object Ergo:
       case (glyph, Directive.Fixed(n, v)) if n == name && v == value => glyph.show
       case (glyph, Directive.Param(n)) if n == name                  => t"$glyph($value)"
 
-  private class Parser(s: String, holes: Iterator[Mathml])(using Tactic[Ergo.Error])
+  private class Parser(s: String, holes: Iterator[Mathml]^)(using Tactic[Ergo.Error])
   extends scala.caps.Stateful:
     private var pos = 0
     private var open = '('
@@ -461,7 +461,9 @@ object Ergo:
       skipSpaces()
       val c = peek
 
-      if c == Hole then { advance(); holes.next() }
+      if c == Hole then
+        advance()
+        holes.seek(_ => true)(throw java.util.NoSuchElementException())(identity(_))
       else if c == open then rooted(parseGroup())
       else if c == Radical then { advance(); Msqrt(parsePrimary()) }
       else if c == Matrix then parseMatrix()

@@ -73,42 +73,45 @@ extension [node](start: node)
 // read their own representation directly. Result types are plain type parameters, never
 // path-dependent members, so the export forwarders keep them (#1411).
 extension [self, node](graph: self)(using nodal: self is Nodal by node)
-  def nodes: Set[node] = Set.from(nodal.nodes(graph))
-  def successors(node: node): Set[node] = Set.from(nodal.successors(graph, node))
+  def nodes: Set[node] = nodal.nodes(graph).to[Set]
+  def successors(node: node): Set[node] = nodal.successors(graph, node).to[Set]
 
   def edges: Set[(node, node)] =
-    Set.from(nodal.nodes(graph).flatMap { from => nodal.successors(graph, from).map(from -> _) })
+    nodal.nodes(graph).flatMap { from => nodal.successors(graph, from).map(from -> _).to[List] }
+    . to[Set]
 
   // The nodes with no successors — those depending on nothing. Whole-graph in scope.
-  def sources: Set[node] = Set.from(nodal.nodes(graph).filter(!nodal.successors(graph, _).hasNext))
+  def sources: Set[node] =
+    nodal.nodes(graph).filter(!nodal.successors(graph, _).exists(_ => true)).to[Set]
 
   // The nodes with no predecessors — those nothing depends on. Whole-graph in scope, so no
   // `Bidirectional` is needed: one pass over the edges.
   def sinks: Set[node] =
     val targets = scm.HashSet[node]()
-    nodal.nodes(graph).foreach: from => nodal.successors(graph, from).foreach(targets += _)
-    Set.from(nodal.nodes(graph).filterNot(targets.contains))
+    nodal.nodes(graph).each: from => nodal.successors(graph, from).each(targets += _)
+    nodal.nodes(graph).filter(!targets.contains(_)).to[Set]
 
   def predecessors(node: node)(using bidirectional: self is Bidirectional by node): Set[node] =
-    Set.from(bidirectional.predecessors(graph, node))
+    bidirectional.predecessors(graph, node).to[Set]
 
   // A cycle, if the graph has one: a list of nodes each pointing at the next, ending where it
   // began. Total on any graph.
   def cycle: Optional[List[node]] =
-    Search.topological(nodal.nodes(graph), nodal.successors(graph, _)) match
+    Search.topological(nodal.nodes(graph).stdlib, nodal.successors(graph, _).stdlib) match
       case Left(witness) => List.from(witness)
       case Right(_)      => Unset
 
   // The one checked conversion to a `Dag`: O(n + e), once.
   def acyclic: Dag[node] raises Dag.Error =
-    Search.topological(nodal.nodes(graph), nodal.successors(graph, _)) match
+    Search.topological(nodal.nodes(graph).stdlib, nodal.successors(graph, _).stdlib) match
       case Left(_)  => abort(Dag.Error(Dag.Error.Reason.Cyclic))
 
       case Right(_) =>
-        Dag.unchecked(Search.adjacency(nodal.nodes(graph), nodal.successors(graph, _)))
+        Dag.unchecked
+          (Search.adjacency(nodal.nodes(graph).stdlib, nodal.successors(graph, _).stdlib))
 
   def digraph: Digraph[node] =
-    Digraph.of(Search.adjacency(nodal.nodes(graph), nodal.successors(graph, _)))
+    Digraph.of(Search.adjacency(nodal.nodes(graph).stdlib, nodal.successors(graph, _).stdlib))
 
   // Everything a node reaches, itself included; total on cyclic input, raising only for a node
   // the graph does not have.
@@ -126,6 +129,7 @@ extension [self, node](graph: self)(using nodal: self is Nodal by node)
       sci.VectorMap.from:
         nodal.nodes(graph).map: node =>
           (node, sci.Set.from(Set.iterator(reach.reachable(graph, node))) - node)
+        . stdlib
 
   def invert[result]
     ( using invertible: (self is Invertible by node to result) = Invertible.generic(nodal) )
@@ -138,26 +142,27 @@ extension [self, node](graph: self)(using nodal: self is Nodal by node)
 extension [self, node](graph: self)(using nodal: self is Nodal by node, dag: self is Topological)
   // Every node after everything it points at.
   def linearized: List[node] =
-    Search.topological(nodal.nodes(graph), nodal.successors(graph, _)) match
+    Search.topological(nodal.nodes(graph).stdlib, nodal.successors(graph, _).stdlib) match
       case Right(order) => List.from(order)
       case Left(_)      => List()   // unreachable: the instance certifies there is no cycle
 
   // The minimal graph with the same reachability, through the frozen form's bit matrix.
-  def reduction: Dag[node] = Topology.of(graph.linearized, nodal.successors(graph, _)).reduction
+  def reduction: Dag[node] =
+    Topology.of(graph.linearized, nodal.successors(graph, _).stdlib).reduction
 
   // A value for every node from the values of its successors, which are computed first.
   def traversal[result](lambda: (Set[result], node) => result): Map[node, result] =
     val values = scm.HashMap[node, result]()
 
     List.iterator(graph.linearized).foreach: node =>
-      values(node) = lambda(Set.from(nodal.successors(graph, node).map(values)), node)
+      values(node) = lambda(nodal.successors(graph, node).map(values).to[Set], node)
 
     Map.from(values)
 
   // Arranged for drawing, as `Dag#layered`: the layering is computed on a `Dag`, so any other
   // acyclic graph is converted once, unchecked, since `Topological` certifies it.
   def layered(using ranking: Ranking): Layering[node] =
-    val adjacency = Search.adjacency(nodal.nodes(graph), nodal.successors(graph, _))
+    val adjacency = Search.adjacency(nodal.nodes(graph).stdlib, nodal.successors(graph, _).stdlib)
     Layering(Dag.unchecked(adjacency), ranking)
 
 // The choice package: `import rankings.balancedRanking` pulls nodes down toward their dependents.

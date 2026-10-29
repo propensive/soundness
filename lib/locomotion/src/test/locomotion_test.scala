@@ -1013,5 +1013,5 @@ object Tests extends Suite("protobuf", m"Locomotion Protobuf Tests"):
       . assert(_ == Protobuf.Printable.print(person).to[List].map(_ & 0xff))
 
       test(m"pulled blocks are the printed bytes"):
-        supervise(List.from(Protobuf.Printable.emit(batch))).flatMap(_.to[List].map(_ & 0xff))
+        supervise(Protobuf.Printable.emit(batch).to[List]).flatMap(_.to[List].map(_ & 0xff))
       . assert(_ == Protobuf.Printable.print(batch).to[List].map(_ & 0xff))

@@ -43,7 +43,7 @@ import fulminate.Hazard
 import mercator.*
 import nomenclature.*
 import prepositional.*
-import rudiments.map
+import rudiments.{each, map}
 import vacuous.*
 
 object Task:
@@ -131,19 +131,20 @@ object Task:
   extension [self, result](tasks: self)(using traversable: self is murmuration.Traversable by Task[result])
     def race()(using monitor: Monitor^, probate: SharedProbate)
     :   (Tactic[Async.Error]^) ?->{monitor, probate} result =
-      traversable.traverse(tasks).to(Iterable).race()
+
+      val list: List[Task[result]] = traversable.traverse(tasks).to[List]
+      val promise: Promise[result] = Promise()
+
+      list.each: task =>
+        task.map(promise.offer(_))
+        ()
+
+      try promise.await() finally list.each(_.cancel())
 
   extension [result](tasks: Iterable[Task[result]])
     def race()(using monitor: Monitor^, probate: SharedProbate)
     :   (Tactic[Async.Error]^) ?->{monitor, probate} result =
-
-      val promise: Promise[result] = Promise()
-
-      tasks.foreach: task =>
-        task.map(promise.offer(_))
-        ()
-
-      try promise.await() finally tasks.foreach(_.cancel())
+      List.from(tasks).race()
 
 // A task carries the error type its body may raise as the `Error` member, refined by the `emits`
 // alias (`Task[result] emits error` = `Task[result] { type Error <: error }`). It is preserved to

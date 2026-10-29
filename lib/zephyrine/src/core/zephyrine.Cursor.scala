@@ -536,7 +536,7 @@ object Cursor:
       new Cursor[data, {}]
         // [closure-capture] iterator-capturing loader collapses cursor to read-only
         ( caps.unsafe.unsafeAssumePure
-            ( () => if iterator.hasNext then iterator.next() else Unset ),
+            ( () => iterator.seek(_ => true)(Unset)(identity(_)) ),
           Unset,
           DefaultCapacity,
           addressable0,

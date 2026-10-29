@@ -310,7 +310,7 @@ object Html extends Tag.Container
     val block = formatting.indented
 
     // The reader side is taken first; the producer itself is then owned by the writing task.
-    val output = producer.iterator
+    val output: Iterator[BaseText]^ = producer.iterator
 
     producer.transfer: (producer, _, _) ?=>
       writeHtml(producer(), dom, dom.doctype, 0, block, Mode.Whitespace)
@@ -677,7 +677,7 @@ object Html extends Tag.Container
     private def attribute(element: Element, data: Array[Int]^{}, offset: Int, name: BaseText)
     :   Optional[Position] =
 
-      val index = element.attributes.keys.indexOf(name)
+      val index = element.attributes.keys.indexed.seek(_(0) == name)(-1)(_(1))
 
       if index < 0 || index >= data.readUnchecked(offset + 4) then Unset
       else
@@ -1073,7 +1073,7 @@ object Html extends Tag.Container
       new HtmlParser(Cursor[BaseText](input), permissive)
 
     // The legacy interoperation shape: a stdlib `Iterator` of chunks.
-    def fromIterator(input: Iterator[BaseText], permissive: Boolean = false)(using Dom)
+    def fromIterator(input: Iterator[BaseText]^, permissive: Boolean = false)(using Dom)
     :   HtmlParser^ =
 
       new HtmlParser(Cursor[BaseText](input), permissive)
@@ -2166,7 +2166,7 @@ object Html extends Tag.Container
   // Public entry points.
 
   private[honeycomb] def parse[dom <: Dom]
-    ( input:       Iterator[BaseText],
+    ( input:       Iterator[BaseText]^,
       root:        Tag,
       callback:    Optional[(Ordinal, Hole) => Unit] = Unset,
       fastforward: Int                               = 0,

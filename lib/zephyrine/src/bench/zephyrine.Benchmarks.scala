@@ -142,7 +142,7 @@ object Benchmarks extends Suite("parsing-bench", m"Zephyrine benchmarks"):
       bench(m"Cursor.next, 100 × 100-char fragmented blocks")
         ( target = 1*Second, operationSize = text10kSize ):
         '{
-            val c = Cursor(zephyrine.Benchmarks.text10kFragments.stdlib.iterator)
+            val c = Cursor(zephyrine.Benchmarks.text10kFragments.chain)
             var n = 0
             while c.next() do n += 1
             n
@@ -162,7 +162,7 @@ object Benchmarks extends Suite("parsing-bench", m"Zephyrine benchmarks"):
       bench(m"Cursor[Data].next over Stream, 100 × 100-byte blocks")
         ( target = 1*Second, operationSize = text10kSize ):
         '{
-            val c = Cursor[Data](zephyrine.Benchmarks.data10kFragments.stdlib.iterator.stream)
+            val c = Cursor[Data](Stream(zephyrine.Benchmarks.data10kFragments.chain))
             var n = 0
             while c.next() do n += 1
             n
@@ -200,7 +200,7 @@ object Benchmarks extends Suite("parsing-bench", m"Zephyrine benchmarks"):
       bench(m"hold + mark + grab cross-block (350 chars across 4 blocks)")
         (target = 1*Second):
         '{
-            val c = Cursor(zephyrine.Benchmarks.text10kFragments.stdlib.iterator)
+            val c = Cursor(zephyrine.Benchmarks.text10kFragments.chain)
 
             c.hold:
               val mk = c.mark

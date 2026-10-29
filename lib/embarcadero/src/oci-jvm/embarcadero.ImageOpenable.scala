@@ -61,7 +61,7 @@ extends Openable:
     if mode.atoms.has(Write) then abort(Oci.Error(Oci.Error.Reason.WriteUnsupported))
 
     TarOpenable[path]().open(value, mode, Nil): tar ?=>
-      block(using new Image.Handle(tar.entries.to(List)) with Granting[grants] {})
+      block(using new Image.Handle(tar.entries.to[List]) with Granting[grants] {})
 
 // Re-exported through `soundness.*`, so `path.open[Image]` resolves on the JVM as before.
 given imagePathOpenable: [path: Abstractable across Paths to Text]

@@ -32,7 +32,9 @@
                                                                                                   */
 package murmuration
 
+import scala.collection.immutable as sci
 import scala.collection.immutable.IndexedSeq
+import scala.collection.mutable as scm
 import scala.reflect.ClassTag
 
 import prepositional.*
@@ -58,44 +60,46 @@ object Reshapable extends Reshapable.Fallback:
   // `List[T] & Populated` — from `occupied` or a branded literal — also match.
   given list: [element, element2, list <: List[element]]
   =>  list is Reshapable.Stable by element2 to List[element2] =
-    List.from(_)
+    elements => List.from(build(elements, sci.List.newBuilder[element2]))
 
   given set: [element, element2, set <: Set[element]]
   =>  set is Reshapable by element2 to Set[element2] =
-    Set.from(_)
+    elements => Set.from(build(elements, sci.Set.newBuilder[element2]))
 
   // `Text` rebuilds from its own characters, so the generic operations (`keep`, `skip`, `filter`,
   // …) serve text as well as collections, with no competing text-only extension at the umbrella.
   // Rebuilding from anything else is deliberately absent: it would have no natural result shape.
   given sequence: [element, element2, sequence <: Sequence[element]]
   =>  sequence is Reshapable.Stable by element2 to Sequence[element2] =
-    Sequence.from(_)
+    elements => Sequence.from(build(elements, sci.Vector.newBuilder[element2]))
 
   given indexedSeq: [element, element2]
   =>  IndexedSeq[element] is Reshapable.Stable by element2 to IndexedSeq[element2] =
-    IndexedSeq.from(_)
+    elements => build(elements, IndexedSeq.newBuilder[element2])
 
+  // The lazy exception: the chain pulls from the iterator as it is forced, so the iterator
+  // escapes into it — which `Chain.from`'s pure result does not record, as it never did.
   given chain: [element, element2]
   =>  Chain[element] is Reshapable.Stable by element2 to Chain[element2] =
-    Chain.from(_)
+    elements => elements.chain
 
   // The frozen array reshapes to a frozen array: the rebuilt array is fresh, so freezing
   // it is discharged by construction.
   given frozenArray: [element, element2: ClassTag]
   =>  (Array[element]^{}) is Reshapable.Stable by element2 to (Array[element2]^{}) =
-    elements => Array.unsafeFrozen(elements.toArray)
+    elements => Array.unsafeFrozen(build(elements, sci.List.newBuilder[element2]).toArray)
 
   // A `Map` rebuilt from pairs remains a `Map`…
   given map: [key, value, key2, value2]
   =>  Map[key, value] is Reshapable by (key2, value2) to Map[key2, value2] =
-    Map.from(_)
+    elements => Map.from(build(elements, sci.Map.newBuilder[key2, value2]))
 
   // A `Ledger` rebuilt from pairs remains a `Ledger`, and legitimately `Stable`: insertion
   // order is its identity, so it carries the whole order-sensitive surface (`sort`, `distinct`,
   // `trace`, `zip`).
   given ledger: [key, value, key2, value2]
   =>  Ledger[key, value] is Reshapable.Stable by (key2, value2) to Ledger[key2, value2] =
-    Ledger.from(_)
+    elements => Ledger.from(build(elements, sci.VectorMap.newBuilder[key2, value2]))
 
   trait Fallback extends Fallback2:
     // A `Stable` pair-rebuild of a `Map` yields a `Ledger`: the unordered `Map` shape cannot
@@ -104,12 +108,12 @@ object Reshapable extends Reshapable.Fallback:
     // above, so plain reshapes (`filter`, pairwise `bind`) still rebuild the cheaper `Map`.
     given mapToLedger: [key, value, key2, value2]
     =>  Map[key, value] is Reshapable.Stable by (key2, value2) to Ledger[key2, value2] =
-      Ledger.from(_)
+      elements => Ledger.from(build(elements, sci.VectorMap.newBuilder[key2, value2]))
 
     // A `Ledger` rebuilt from non-pair elements naturally yields a `List`, order preserved.
     given ledgerToList: [key, value, element2]
     =>  Ledger[key, value] is Reshapable.Stable by element2 to List[element2] =
-      List.from(_)
+      elements => List.from(build(elements, sci.List.newBuilder[element2]))
 
   trait Fallback2:
     // …and a `Map` rebuilt from non-pair elements likewise yields a `List` — a more precise
@@ -117,7 +121,15 @@ object Reshapable extends Reshapable.Fallback:
     // (plain) or `Ledger` (`Stable`) shapes above.
     given mapToList: [key, value, element2]
     =>  Map[key, value] is Reshapable.Stable by element2 to List[element2] =
-      List.from(_)
+      elements => List.from(build(elements, sci.List.newBuilder[element2]))
+
+  // The strict rebuild: drain a borrowed iterator into a stdlib builder. Public only because the
+  // instances above are lambdas in a companion; it is the one place the layer meets a builder.
+  def build[element, result](elements: Iterator[element]^, builder: scm.Builder[element, result])
+  :   result =
+
+    elements.each(builder += _)
+    builder.result()
 
 trait Reshapable extends Typeclass.Pure, Operable, Resultant:
   def reshape(elements: Iterator[Operand]^): Result

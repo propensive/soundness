@@ -62,7 +62,7 @@ extends Llm.Dialect:
 
   def stream(turn: Llm.Exchange): Iterator[Llm.Event]^{this, scala.caps.any} =
     calls.append(turn)
-    streams.dequeue().stdlib.iterator
+    Iterator.from(List.iterator(streams.dequeue()))
 
 object Tests extends Suite("llm", m"Sibylline tests"):
   import Llm.{Content, Event, Message, Role, Settings, Stop, Usage}
@@ -157,7 +157,7 @@ object Tests extends Suite("llm", m"Sibylline tests"):
         val dialect = Scripted(scripts = List(script(t"fjord", t" of ", t"Norway")))
         val handle = session(dialect)
         val response = handle.stream(t"go")
-        List.from(response.text)
+        response.text.to[List]
       . assert(_ == List(t"fjord", t" of ", t"Norway"))
 
       test(m"draining a response assembles the full reply"):

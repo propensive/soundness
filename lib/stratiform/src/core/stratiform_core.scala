@@ -272,28 +272,17 @@ private def documentIterator(consume parser: Tel.Parser^)(using tactic: Tactic[T
 :   Iterator[Tel]^ =
 
   new Iterator[Tel]:
-    // [stdlib-iterator] state in anonymous Iterator
-    @scala.caps.unsafe.untrackedCaptures
-    private var pending: Optional[Tel] = Unset
-    // [stdlib-iterator]
-    @scala.caps.unsafe.untrackedCaptures
+    private var document0: Tel = null.asInstanceOf[Tel]
     private var first: Boolean = true
-    // [stdlib-iterator]
-    @scala.caps.unsafe.untrackedCaptures
     private var more: Boolean = true
 
-    def hasNext: Boolean =
-      if pending.present then true
-      else if !more then false
-      else
-        val (document, another) = parser.stepDocument(first)
-        first = false
-        more = another
-        pending = document.let(Tel(_))
-        pending.present
+    update def advance(): Boolean = more && {
+      val (document, another) = parser.stepDocument(first)
+      first = false
+      more = another
 
-    def next(): Tel =
-      if !hasNext then Iterator.empty.next()
-      val document = pending.or(Iterator.empty.next())
-      pending = Unset
-      document
+      document.lay(false): document =>
+        document0 = Tel(document)
+        true }
+
+    def current: Tel = document0

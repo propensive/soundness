@@ -326,26 +326,25 @@ object Tar:
 
     // Re-blocks arbitrary chunks as 512-byte archive blocks, the final block
     // zero-padded, without regard to the incoming chunk boundaries.
-    private[bitumen] def blocks512(chunks: Iterator[Data]): Iterator[Data] =
+    private[bitumen] def blocks512(consume chunks: Iterator[Data]^): Iterator[Data]^ =
       new Iterator[Data]:
-        // [stdlib-iterator] re-blocking state in anonymous Iterator
-        @scala.caps.unsafe.untrackedCaptures
         private var chunk: Data = Array.empty[Byte]
-        // [stdlib-iterator]
-        @scala.caps.unsafe.untrackedCaptures
         private var offset: Int = 0
+        private var block0: Data = Array.empty[Byte]
+        private var exhausted: Boolean = false
 
         // Establish a nonempty current chunk, or report exhaustion.
-        private def replenish(): Boolean =
-          while offset >= chunk.length && chunks.hasNext do
-            chunk = chunks.next()
-            offset = 0
+        private update def replenish(): Boolean =
+          while offset >= chunk.length && !exhausted do chunks.next() match
+            case Iterator.Exhausted => exhausted = true
+
+            case next: Data =>
+              chunk = next
+              offset = 0
 
           offset < chunk.length
 
-        def hasNext: Boolean = replenish()
-
-        def next(): Data =
+        update def advance(): Boolean = replenish() && {
           val block = Array.allocate[Byte](512)
           var position = 0
 
@@ -355,7 +354,10 @@ object Tar:
             offset += count
             position += count
 
-          Array.freeze(block)
+          block0 = Array.freeze(block)
+          true }
+
+        def current: Data = block0
 
   enum Entry(path: Tar.Ref, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32):
     case File
@@ -451,7 +453,7 @@ object Tar:
       case sparse: Sparse  => sparse.segments.map(_.length).total.toInt.bits.u32
       case _               => 0
 
-    def dataBlocks: Iterator[Data] = this match
+    def dataBlocks: Iterator[Data]^ = this match
       case file: File      => Entry.blocks512(file.data.chunks)
       case pax: Pax        => Entry.blocks512(Iterator(pax.records))
 
@@ -562,15 +564,14 @@ object Tar:
       val total = array.iterator.map(_.bits.u8.u32).reduce(_ + _)
       array.place(format(total, 8), 148.z)
 
-    def serialize: Iterator[Data] = this match
+    def serialize: Iterator[Data]^ = this match
       case sparse: Sparse if sparse.segments.size > 4 =>
-        // `Iterator#++` demands an `IterableOnce`, which the opaque `List` is not.
-        Iterator(header) ++
-          Entry.sparseExtensionBlocks(sparse.segments.skip(4)).stdlib ++
-          dataBlocks
+        Iterator(header)
+        . concat(Iterator.from(List.iterator(Entry.sparseExtensionBlocks(sparse.segments.skip(4)))))
+        . concat(dataBlocks)
 
       case _ =>
-        Iterator(header) ++ dataBlocks
+        Iterator(header).concat(dataBlocks)
 
   // TarError → Tar.Error
   object Error:
@@ -670,13 +671,9 @@ object Tar:
   class Handle private[bitumen] (entries0: Iterator[Tar.Entry]^)
   extends caps.ExclusiveCapability:
 
-    // Reached only through this exclusive handle, which scopes it; its capture
-    // of the underlying source is erased here, as the memoizing `LazyList` it
-    // replaces erased it implicitly through its pure cells.
-    // [field-fresh-param] handle field erases fresh iterator parameter's capture
-    @caps.unsafe.untrackedCaptures
-    // [field-fresh-param]
-    val entries: Iterator[Tar.Entry] = caps.unsafe.unsafeAssumePure(entries0)
+    // Reached only through this exclusive handle, which scopes it: the iterator is the one the
+    // handle was opened with, and advancing it is a use of the handle.
+    def entries: Iterator[Tar.Entry]^{this} = entries0
 
 case class SparseSegment(offset: Long, length: Long)
 

@@ -39,6 +39,7 @@ import scala.caps
 import anticipation.*
 import anticipation.Data
 import denominative.*
+import murmuration.Iterator
 import prepositional.*
 import vacuous.*
 
@@ -163,11 +164,13 @@ object Producer:
 
   // Streaming to a queue: full blocks wait (with backpressure) for the consuming thread to drain
   // them through `iterator`, so the producing code must run on its own fiber.
+  // The queue's end marker, outside the channel so its reader iterator captures nothing of it.
+  private object Done
+
   final class Channel[medium, operand](block: Int, depth: Int)
     ( using medium is Addressable { type Operand = operand } )
   extends Staged[medium, operand](block):
 
-    private object Done
 
     private val queue: juc.ArrayBlockingQueue[medium | Done.type] =
       juc.ArrayBlockingQueue(depth)
@@ -179,20 +182,19 @@ object Producer:
       queue.put(Done)
 
     // The reader-side view: like a conduit's stream endpoint, it is owned by the
-    // consuming thread and mediated by the queue's happens-before; the seal is that rim.
-    // [stdlib-iterator] reader-side anonymous Iterator sealed pure
-    lazy val iterator: Iterator[medium] = caps.unsafe.unsafeAssumePure(new Iterator[medium]:
-      // The iterator is the reader-side view of the channel (non-Stateful by design:
-      // scala.Iterator's methods cannot be update methods); its staging slot is untracked.
-      // [stdlib-iterator] staging slot var in anonymous Iterator
-      @caps.unsafe.untrackedCaptures
-      private var ready: medium | Done.type = Done
+    // consuming thread and mediated by the queue's happens-before. A fresh view per call, over
+    // the queue alone, so it outlives the producer's transfer to its fiber.
+    def iterator: Iterator[medium]^ =
+      val source = queue
 
-      def hasNext: Boolean =
-        ready = queue.take().nn
-        ready != Done
+      new Iterator[medium]:
+        private var ready: medium | Done.type = Done
 
-      def next(): medium = ready.asInstanceOf[medium])
+        update def advance(): Boolean =
+          ready = source.take().nn
+          ready != Done
+
+        def current: medium = ready.asInstanceOf[medium]
 
   // Streaming to a consumer: each full block is handed to `consume` inline, on the producing
   // thread, so no fiber or queue is involved; see `Producer.sink`.

@@ -32,6 +32,7 @@
                                                                                                   */
 package cataclysm
 
+import murmuration.Iterator
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -55,7 +56,7 @@ private[cataclysm] object CssParser:
 
     Parser(Cursor[Text](input), validating).document()
 
-  // The legacy interoperation shape: a stdlib `Iterator` of chunks.
+  // The interoperation shape: an `Iterator` of chunks.
   def parse(input: Iterator[Text], validating: Boolean = true)(using Tactic[Css.Error]): Css =
     import zephyrine.lineation.linefeedChar
 

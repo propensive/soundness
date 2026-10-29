@@ -52,10 +52,12 @@ case class Suit(rank: Int)
 case class Miscounted(elements: List[Int], claim: Int)
 
 object Miscounted:
-  given traversable: Miscounted is Traversable by Int = _.elements.stdlib.iterator
+  given traversable: Miscounted is Traversable by Int =
+    elements => Iterator.from(List.iterator(elements.elements))
 
   given reshapable: Miscounted is Reshapable.Stable by Int to List[Int] =
-    elements => List.from(elements)
+    elements =>
+      List.from(Reshapable.build(elements, scala.collection.immutable.List.newBuilder[Int]))
 
   given countable: Miscounted is Countable:
     def size(self: Miscounted): Int = self.claim

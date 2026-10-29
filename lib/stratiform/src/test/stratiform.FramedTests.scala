@@ -45,6 +45,10 @@ object FramedTests extends Suite("tel-framed", m"Stratiform framed duplex tests"
   case class Request(id: Int, text: Text) derives CanEqual
   case class Reply(id: Int, length: Int) derives CanEqual
 
+  // The next message, or a failure: a test that reads expects one to be there.
+  def receive[message](messages: Iterator[message]^): message =
+    messages.seek(_ => true)(throw new NoSuchElementException())(identity(_))
+
   def run(): Unit =
     test(m"a request and its reply cross a framed duplex"):
       val (near, far) = Duplex.pair()
@@ -52,9 +56,9 @@ object FramedTests extends Suite("tel-framed", m"Stratiform framed duplex tests"
       val server = far.framed[Request, Reply]
 
       client.send(Request(1, t"hello"))
-      val request = server.messages.next()
+      val request = receive(server.messages)
       server.send(Reply(request.id, request.text.length))
-      (request, client.messages.next())
+      (request, receive(client.messages))
     . assert(_ == (Request(1, t"hello"), Reply(1, 5)))
 
     test(m"messages sent before any is read arrive in order"):
@@ -67,7 +71,7 @@ object FramedTests extends Suite("tel-framed", m"Stratiform framed duplex tests"
       client.send(Request(3, t"three"))
       client.close()
 
-      List.from(server.messages)
+      server.messages.to[List]
     . assert(_ == List(Request(1, t"one"), Request(2, t"two"), Request(3, t"three")))
 
     test(m"a symmetric protocol frames the same type both ways"):
@@ -76,8 +80,8 @@ object FramedTests extends Suite("tel-framed", m"Stratiform framed duplex tests"
       val right = far.framed[Request, Request]
 
       left.send(Request(1, t"ping"))
-      right.send(right.messages.next().copy(text = t"pong"))
-      left.messages.next()
+      right.send(receive(right.messages).copy(text = t"pong"))
+      receive(left.messages)
     . assert(_ == Request(1, t"pong"))
 
     test(m"a truncated record raises a framing error"):
@@ -88,7 +92,7 @@ object FramedTests extends Suite("tel-framed", m"Stratiform framed duplex tests"
       near.send(zephyrine.Stream(Data(0, 0, 0, 9, 1, 2)))
       near.close()
 
-      capture[Framing.Error](server.messages.next()).reason
+      capture[Framing.Error](receive(server.messages)).reason
     . assert(_ == Framing.Error.Reason.ShortRead)
 
     test(m"a record that is not the expected message raises a decoding error"):
@@ -100,7 +104,7 @@ object FramedTests extends Suite("tel-framed", m"Stratiform framed duplex tests"
       near.close()
 
       try
-        server.messages.next()
+        receive(server.messages)
         t"decoded"
       catch
         case error: Bintel.Error => t"bintel"

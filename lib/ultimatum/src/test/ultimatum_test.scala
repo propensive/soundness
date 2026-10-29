@@ -356,7 +356,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
            Keypress.CharKey('y'), Keypress.CharKey('o'),
            Keypress.Escape )
 
-        Form(root, Occupancy.Fullscreen, stack(editor(), editor())).run(List.iterator(events))
+        Form(root, Occupancy.Fullscreen, stack(editor(), editor())).run(events.iterator)
         root.render
       . assert(_ == t"hi        \n          \nyo        \n          ")
 
@@ -367,7 +367,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
         val root = FlowExtent(TerminalBoard(10, 4), Rect(0, 0, 10, 4))
         val events = List.concat(List.fill(21)(Keypress.CharKey('a')), List(Keypress.Escape))
-        Form(root, Occupancy.Fullscreen, stack(editor(), editor())).run(List.iterator(events))
+        Form(root, Occupancy.Fullscreen, stack(editor(), editor())).run(events.iterator)
         root.render
       . assert(_ == t"aaaaaaaaaa\naaaaaaaaaa\na         \n          ")
 
@@ -383,16 +383,15 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         // The iterator shrinks the root through its size cell, not the root itself, which
         // `Form` holds exclusively while it runs.
         val resize = new Iterator[Terminal.Event]:
-          // [stdlib-iterator] pending flag in anonymous test Iterator
-          @scala.caps.unsafe.untrackedCaptures
           private var pending = true
-          def hasNext = pending
 
-          def next() =
+          update def advance(): Boolean = pending && {
             pending = false
             rootSize.width = 10
             rootSize.height = 2
-            Terminal.Info.WindowSize(2, 10)
+            true }
+
+          def current: Terminal.Event = Terminal.Info.WindowSize(2, 10)
 
         Form(root, Occupancy.Fullscreen, stack(panel()(Out.print(t"A")), panel()(Out.print(t"B")))).run(resize)
         root.render
@@ -824,8 +823,6 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         val root = new InlineRoot(() => w(), () => 4)
 
         val events = new Iterator[Terminal.Event]:
-          // [stdlib-iterator] event queue var in anonymous test Iterator
-          @scala.caps.unsafe.untrackedCaptures
           // Capture-carrying elements do not flow through the opaque List (boxing), so
           // this event queue deliberately stays a stdlib list.
           private var remaining: scala.collection.immutable.List[() => Terminal.Event] =
@@ -835,12 +832,13 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
               () => { w() = 4; Terminal.Info.WindowSize(4, 4) },
               () => Keypress.Escape)
 
-          def hasNext = remaining.nonEmpty
+          private var head: Terminal.Event = Keypress.Escape
 
-          def next() =
-            val head = remaining.head
-            remaining = remaining.tail
-            head()
+          update def advance(): Boolean = remaining match
+            case next :: tail => remaining = tail; head = next(); true
+            case _            => false
+
+          def current: Terminal.Event = head
 
         Form(root, Occupancy.Inline, stack(panel()(Out.print(t"abcdef")))).run(events)
         String(bytes.toByteArray.nn, "UTF-8").tt
@@ -860,7 +858,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
           Keypress.CharKey('x'),
           Keypress.Escape)
 
-        Form(root, Occupancy.Inline, stack(editor()), debounce = 50).run(List.iterator(events))
+        Form(root, Occupancy.Inline, stack(editor()), debounce = 50).run(events.iterator)
         String(bytes.toByteArray.nn, "UTF-8").tt.cut(t"\e[2K").size - 1
       . assert(_ == 1)
 
@@ -943,15 +941,14 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         val root = new ScreenRoot(() => 10, () => liveRows())
 
         val resize = new Iterator[Terminal.Event]:
-          // [stdlib-iterator] pending flag in anonymous test Iterator
-          @scala.caps.unsafe.untrackedCaptures
           private var pending = true
-          def hasNext = pending
 
-          def next() =
+          update def advance(): Boolean = pending && {
             pending = false
             liveRows() = 2
-            Terminal.Info.WindowSize(2, 10)
+            true }
+
+          def current: Terminal.Event = Terminal.Info.WindowSize(2, 10)
 
         Form(root, Occupancy.Fullscreen, stack(panel()(Out.print(t"A")), panel()(Out.print(t"B"))))
         . run(resize)
@@ -1012,15 +1009,14 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         val panes = Panes(panel()(Out.print(t"A")))
 
         val events = new Iterator[Terminal.Event]:
-          // [stdlib-iterator] pending flag in anonymous test Iterator
-          @scala.caps.unsafe.untrackedCaptures
           private var pending = true
-          def hasNext = pending
 
-          def next() =
+          update def advance(): Boolean = pending && {
             pending = false
             panes.append(panel()(Out.print(t"B")))
-            Terminal.Info.Redraw
+            true }
+
+          def current: Terminal.Event = Terminal.Info.Redraw
 
         Form(root, Occupancy.Fullscreen, stack(panes)).run(events)
         root.render
@@ -1119,7 +1115,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
         val root = FlowExtent(TerminalBoard(12, 3), Rect(0, 0, 12, 3))
         val pane = stack(menu(List(t"alpha", t"beta"), t"alpha"), editor())
-        Form(root, Occupancy.Fullscreen, pane).run(List.iterator(List(Keypress.Tab, Keypress.Escape)))
+        Form(root, Occupancy.Fullscreen, pane).run(Iterator(Keypress.Tab, Keypress.Escape))
         root.render
       . assert(_ == t" · alpha    \n   beta     \n            ")
 
@@ -1666,7 +1662,7 @@ object Tests extends Suite("tui", m"Ultimatum Tests"):
         val recorded = scala.collection.mutable.ListBuffer[Long]()
         val root = ScreenRoot(20, 3)
         Form(root, Occupancy.Fullscreen, pane, () => (), 0, 0, delay => { recorded += delay; () })
-        . run(scala.Iterator(Keypress.Escape))
+        . run(Iterator(Keypress.Escape))
 
         List.from(recorded.toList)
 

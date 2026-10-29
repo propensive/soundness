@@ -113,10 +113,8 @@ object Pty:
       pending:            Text    = t"" )
 
 case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
-  // The legacy view of the reply relay (the audited bridge).
-  // `Chain.from`, not `.to[Chain]`: the conversion route lets the live iterator's fresh
-  // capture contaminate the result, where `from`'s signature is pure.
-  def stream: Chain[Text] = Chain.from(output.stream.records)
+  // The lazy view of the reply relay: the chain pulls records as it is forced.
+  def stream: Chain[Text] = output.stream.records.chain
 
   def title: Text = state.title
   def cursor: Ordinal = state.cursor

@@ -241,7 +241,8 @@ extension [self, element](self: self)(using traversable: self is murmuration.Tra
     : (OptionalTactic[error, result], Diagnostics, CanThrow[Exception]) ?=> element => result )
   :   proscenium.List[result] =
 
-    proscenium.List.from(traversable.traverse(self).to(Iterable).survive[result](lambda))
+    traversable.traverse(self).map { element => safely(lambda(element)) }.compact
+    . to[proscenium.List]
 
 
 extension [value](optional: Optional[value])

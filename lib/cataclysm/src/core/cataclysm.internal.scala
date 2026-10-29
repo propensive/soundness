@@ -32,6 +32,7 @@
                                                                                                   */
 package cataclysm
 
+import murmuration.Iterator
 import scala.collection.`+:`
 import scala.collection.immutable.{Seq, ::}
 import scala.quoted.*

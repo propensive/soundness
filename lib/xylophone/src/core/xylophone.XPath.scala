@@ -264,8 +264,7 @@ object XPath extends Format:
     private[xylophone] def attributeName: Optional[Text] = attributeIndex match
       case index: Int => subject match
         case element: Xml.Element =>
-          val keys = element.attributes.keys.drop(index)
-          if keys.hasNext then keys.next() else Unset
+          element.attributes.keys.skip(index).seek(_ => true)(Unset)(identity(_))
 
         case _ =>
           Unset
@@ -276,8 +275,7 @@ object XPath extends Format:
     def stringValue: Text = attributeIndex match
       case index: Int => subject match
         case element: Xml.Element =>
-          val values = element.attributes.values.drop(index)
-          if values.hasNext then values.next() else t""
+          element.attributes.values.skip(index).seek(_ => true)(t"")(identity(_))
 
         case _ =>
           t""

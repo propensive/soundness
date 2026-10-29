@@ -57,7 +57,7 @@ object Computable:
     // this replaced did.
     job => unsafely(job.lines().records.asInstanceOf[Iterator[Text]])
 
-  given list: List[Text] is Computable = job => unsafely(job.lines().records.toList.to(List))
+  given list: List[Text] is Computable = job => unsafely(job.lines().records.to[List])
 
   given text: Text is Computable = _.text()
 

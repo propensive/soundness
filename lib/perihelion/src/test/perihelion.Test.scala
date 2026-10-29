@@ -244,13 +244,9 @@ object Tests extends Suite("websocket", m"Perihelion tests"):
       // frame behind the peer's next transmission (issue #1301).
       test(m"An empty control frame parses without reading past its end"):
         class Live() extends Iterator[Data]:
-          // [stdlib-iterator] counter in test Iterator subclass
-          @scala.caps.unsafe.untrackedCaptures
           var pulls: Int = 0
-          def hasNext: Boolean = true
-
-          def next(): Data =
-            pulls += 1
+          update def advance(): Boolean = { pulls += 1; true }
+          def current: Data =
             if pulls == 1 then Data(0x8a.toByte, 0x00.toByte) else Data(0x8a.toByte)
 
         val live = Live()

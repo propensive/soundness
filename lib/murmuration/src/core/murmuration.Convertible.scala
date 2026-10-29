@@ -32,6 +32,7 @@
                                                                                                   */
 package murmuration
 
+import scala.collection.immutable as sci
 import scala.collection.immutable.IndexedSeq
 import scala.reflect.ClassTag
 
@@ -45,31 +46,31 @@ import prepositional.*
 object Convertible:
   given list: [self] => (traversable: self is Traversable)
   =>  self is Convertible in List to List[traversable.Operand] =
-    self => traversable.traverse(self).to(List)
+    self => List.from(Reshapable.build(traversable.traverse(self), sci.List.newBuilder))
 
   given set: [self] => (traversable: self is Traversable)
   =>  self is Convertible in Set to Set[traversable.Operand] =
-    self => traversable.traverse(self).to(Set)
+    self => Set.from(Reshapable.build(traversable.traverse(self), sci.Set.newBuilder))
 
   given sequence: [self] => (traversable: self is Traversable)
   =>  self is Convertible in Sequence to Sequence[traversable.Operand] =
-    self => Sequence.from(traversable.traverse(self))
+    self => Sequence.from(Reshapable.build(traversable.traverse(self), sci.Vector.newBuilder))
 
   given indexedSeq: [self] => (traversable: self is Traversable)
   =>  self is Convertible in IndexedSeq to IndexedSeq[traversable.Operand] =
-    self => IndexedSeq.from(traversable.traverse(self))
+    self => Reshapable.build(traversable.traverse(self), IndexedSeq.newBuilder)
 
   given chain: [self] => (traversable: self is Traversable)
   =>  self is Convertible in Chain to Chain[traversable.Operand] =
-    self => traversable.traverse(self).to(Chain)
+    self => traversable.traverse(self).chain
 
   given map: [self, key, value] => (traversable: self is Traversable by (key, value))
   =>  self is Convertible in Map to Map[key, value] =
-    self => traversable.traverse(self).to(Map)
+    self => Map.from(Reshapable.build(traversable.traverse(self), sci.Map.newBuilder))
 
   given ledger: [self, key, value] => (traversable: self is Traversable by (key, value))
   =>  self is Convertible in Ledger to Ledger[key, value] =
-    self => Ledger.from(traversable.traverse(self))
+    self => Ledger.from(Reshapable.build(traversable.traverse(self), sci.VectorMap.newBuilder))
 
   // The Java boundary: `xs.to[java.util.List]` builds the platform collection directly from
   // the traversal, so native collections cross into Java APIs with no stdlib bridge at the
@@ -79,7 +80,7 @@ object Convertible:
   =>  self is Convertible in java.util.List to java.util.List[traversable.Operand] =
     self =>
       val list = java.util.ArrayList[traversable.Operand]()
-      traversable.traverse(self).foreach(list.add(_))
+      traversable.traverse(self).each(list.add(_))
       list
 
   // `xs.to[Array]` yields the frozen form, `Array[element]^{}`: the built array is fresh,
@@ -88,7 +89,9 @@ object Convertible:
   =>  ( traversable: self is Traversable )
   =>  ( tag: ClassTag[traversable.Operand] )
   =>  self is Convertible in Array to (Array[traversable.Operand]^{}) =
-    self => Array.unsafeFrozen(traversable.traverse(self).toArray(using tag))
+    self =>
+      val list = Reshapable.build(traversable.traverse(self), sci.List.newBuilder)
+      Array.unsafeFrozen(list.toArray(using tag))
 
 trait Convertible extends Typeclass.Pure, Resultant:
   type Form <: AnyKind

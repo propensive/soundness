@@ -486,26 +486,24 @@ object Yaml extends Yaml1, Dynamic:
   // A value's text a block at a time, as each is pulled: the emitter stops between entries once
   // a block holds the `Buffering` capacity, so serialization pauses without a fiber. One long
   // scalar may overrun a block. The text is that `show` renders.
-  def emit(yaml: Yaml)(using formatting: Formatting, buffering: Buffering): Iterator[Text] =
+  def emit(yaml: Yaml)(using formatting: Formatting, buffering: Buffering): Iterator[Text]^ =
     val block = buffering.capacity(Substrate.Chars)
     val builder = java.lang.StringBuilder()
     val first = YamlEmitter.start(builder, unseal(yaml))
 
     new Iterator[Text]:
-      // [stdlib-iterator] the walk's stack in an anonymous Iterator
-      @caps.unsafe.untrackedCaptures
       private var pending: List[YamlEmitter.Frame] = first
+      private var block0: Text = "".tt
 
       // The builder holds whatever has been written and not yet handed out: at first, a value
       // that fits on one line.
-      def hasNext: Boolean = builder.length > 0 || !pending.nil
-
-      def next(): Text =
-        if !hasNext then Iterator.empty.next()
+      update def advance(): Boolean = (builder.length > 0 || !pending.nil) && {
         pending = YamlEmitter.fill(builder, pending, block)
-        val text = builder.toString.tt
+        block0 = builder.toString.tt
         builder.setLength(0)
-        text
+        true }
+
+      def current: Text = block0
 
   // The push form: serializes on the caller's thread, handing each block to `deliver` as it
   // fills — the shape for writing to a file, a socket or an `OutputStream`.

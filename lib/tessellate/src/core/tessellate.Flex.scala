@@ -33,6 +33,7 @@
 package tessellate
 
 import denominative.size
+import rudiments.iterator
 import vacuous.*
 
 object Flex:
@@ -65,18 +66,12 @@ object Flex:
     val active = scala.Array.fill(n)(true)
     val pinned = scala.Array.fill[Optional[Int]](n)(Unset)
 
-    var index = 0
-    // The stdlib view provides a stepwise cursor for the imperative loop below.
-    val trackCells = tracks.stdlib.iterator
-
-    while index < n && trackCells.hasNext do
-      val track = trackCells.next()
+    tracks.iterator.keep(n).indexed.each: (track, index) =>
       minimum(index) = track.metrics.min
       cap(index) = track.max
       weight(index) = track.weight
       rank(index) = track.rank
       collapsible(index) = track.collapsible
-      index += 1
 
     def activeCount: Int =
       var count = 0

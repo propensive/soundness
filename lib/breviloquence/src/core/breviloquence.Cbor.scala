@@ -782,19 +782,17 @@ object Cbor extends Cbor1, Dynamic:
   // stack of the nodes still to write, so serialization pauses between blocks without a fiber.
   // A block ends at the first node boundary past the `Buffering` capacity, so one long string
   // may overrun it. The bytes are those `.encode` writes.
-  def emit(cbor: Cbor)(using buffering: Buffering): Iterator[Data] =
+  def emit(cbor: Cbor)(using buffering: Buffering): Iterator[Data]^ =
     val block = buffering.capacity(summon[Data is Addressable].substrate)
 
     new Iterator[Data]:
-      // [stdlib-iterator] the walk's stack in an anonymous Iterator
-      @caps.unsafe.untrackedCaptures
       private var pending: List[Ast] = List(cbor.root)
+      private var block0: Data = Array.empty[Byte]
 
-      def hasNext: Boolean = !pending.nil
+      update def advance(): Boolean = !pending.nil && { block0 = emitBlock(); true }
+      def current: Data = block0
 
-      def next(): Data =
-        if pending.nil then Iterator.empty.next()
-
+      private update def emitBlock(): Data =
         Producer.collect[Data](block): out =>
           var size = 0
 
@@ -1216,7 +1214,7 @@ object Cbor extends Cbor1, Dynamic:
     values =>
       val roots = traversable.traverse(values).map: value => encodable.encoded(value).root: Any
 
-      ast(Ast.array(Array.from(roots).asInstanceOf[Array[Any]^{}]))
+      ast(Ast.array(roots.to[List].to[Array]))
 
   given collectionDecodable: [collection <: Iterable, element]
   =>  ( factory: sc.Factory[element, collection[element]], tactic:  Tactic[Cbor.Error] )

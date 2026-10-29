@@ -511,10 +511,10 @@ object Protobuf extends Protobuf1:
     def emit[value](value: value)
       ( using printable: value is Protobuf.Printable )
       ( using Monitor, Probate, Buffering )
-    :   Iterator[Data] =
+    :   Iterator[Data]^ =
 
       val producer = Producer[Data]()
-      val output = producer.iterator
+      val output: Iterator[Data]^ = producer.iterator
 
       producer.transfer: (producer, _, _) ?=>
         emit(value, producer().put(_))
@@ -636,9 +636,9 @@ object Protobuf extends Protobuf1:
   // Chain a message's wire bytes incrementally (chunked); the producing code runs on a separate
   // fiber. The bytes themselves are already assembled (Protobuf length-prefixes nested messages, so
   // their lengths must be known up front); this hands them out in bounded chunks.
-  def emit(value: Protobuf)(using Monitor, Probate): Iterator[Data] =
+  def emit(value: Protobuf)(using Monitor, Probate): Iterator[Data]^ =
     val producer = Producer[Data]()
-    val output = producer.iterator
+    val output: Iterator[Data]^ = producer.iterator
 
     producer.transfer: (producer, _, _) ?=>
       producer().put(value.payload)

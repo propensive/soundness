@@ -33,6 +33,8 @@
 package stratiform
 
 import anticipation.*
+import scala.caps
+
 import coaxial.*
 import contingency.*
 import obligatory.*
@@ -60,14 +62,20 @@ object Framed:
             framing:   Tactic[Framing.Error],
             bintel:    Tactic[Bintel.Error],
             tel:       Tactic[Tel.Error] )
-  :   (Framed from inbound to outbound)^{framing, bintel, tel} =
+  :   (Framed from inbound to outbound)^{framing, bintel, tel, caps.any} =
+
+    val inboundSchema: Tels = Tels.tels[inbound](Text("root"))
+    val outboundSchema: Tels = Tels.tels[outbound](Text("root"))
+
+    // Opened once, here, so that the connection holds the one iterator rather than minting one
+    // per access: an iterator is a fresh capability, which no field may hold.
+    val decoded: Iterator[inbound]^ =
+      duplex.source.chunks.frames[LengthPrefix].map: frame =>
+        Bintel.present(Bintel.decode(frame, inboundSchema), inboundSchema).as[inbound]
 
     new Framed:
       type Origin = inbound
       type Result = outbound
-
-      private val inboundSchema: Tels = Tels.tels[inbound](Text("root"))
-      private val outboundSchema: Tels = Tels.tels[outbound](Text("root"))
 
       // The one writer: `Duplex.send` leaves serialization to its caller, and two messages'
       // frames interleaved on the wire would be unreadable.
@@ -77,9 +85,7 @@ object Framed:
         val body: Data = message.encode.bintel(outboundSchema)
         writes(duplex.send(Stream(LengthPrefix.encode(body))))
 
-      lazy val messages: Iterator[inbound]^{this} =
-        duplex.source.chunks.frames[LengthPrefix].map: frame =>
-          Bintel.present(Bintel.decode(frame, inboundSchema), inboundSchema).as[inbound]
+      def messages: Iterator[inbound]^{this} = decoded
 
       def close(): Unit = duplex.close()
 

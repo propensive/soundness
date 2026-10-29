@@ -338,7 +338,7 @@ object Tests extends Suite("shell", m"Guillotine tests"):
       . assert(_ == t"3")
 
       test(m"read stream of strings"):
-        List.from(sh"echo 'Hello world'".exec[Iterator[Text]]())
+        sh"echo 'Hello world'".exec[Iterator[Text]]().to[List]
       . assert(_ == List(t"Hello world"))
 
       test(m"read list of strings"):
@@ -654,7 +654,7 @@ object Tests extends Suite("shell", m"Guillotine tests"):
       . assert(_ == t"hi")
 
       test(m"head() returns Chain[Text]"):
-        List.from(sh"head -n 1 /dev/null"())
+        sh"head -n 1 /dev/null"().to[List]
       . assert(_ == Nil)
 
       test(m"sleep() returns Exit"):

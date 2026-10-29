@@ -34,6 +34,7 @@ package obligatory
 
 import anticipation.*
 import contingency.*
+import murmuration.Iterator
 import prepositional.*
 import symbolism.*
 import vacuous.*

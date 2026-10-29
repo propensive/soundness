@@ -668,12 +668,12 @@ object Tests extends Suite("yaml", m"Ypsiloid Tests"):
 
         test(m"a document parses from a fragmented text stream"):
           summon[Yaml is Aggregable by Text]
-          . accept(personDoc.s.grouped(3).map(_.tt).stream).as[Person]
+          . accept(Iterator.from(personDoc.s.grouped(3).map(_.tt)).stream).as[Person]
         . assert(_ == Person(t"Alice", 42))
 
         test(m"a document parses from a single-char-chunk stream"):
           summon[Yaml is Aggregable by Text]
-          . accept(personDoc.s.grouped(1).map(_.tt).stream).as[Person]
+          . accept(Iterator.from(personDoc.s.grouped(1).map(_.tt)).stream).as[Person]
         . assert(_ == Person(t"Alice", 42))
 
         test(m"a document parses from a byte stream without transcoding"):
@@ -683,7 +683,7 @@ object Tests extends Suite("yaml", m"Ypsiloid Tests"):
 
         test(m"multi-document YAML parses from a stream"):
           summon[List[Yaml] is Aggregable by Text]
-          . accept(t"---\n1\n---\n2\n---\n3".s.grouped(2).map(_.tt).stream)
+          . accept(Iterator.from(t"---\n1\n---\n2\n---\n3".s.grouped(2).map(_.tt)).stream)
           . map(_.as[Int])
         . assert(_ == List(1, 2, 3))
 
@@ -691,13 +691,14 @@ object Tests extends Suite("yaml", m"Ypsiloid Tests"):
           // Single-char chunks split the astral character's surrogate pair
           // across encoder windows; the duct must carry it.
           summon[Yaml is Aggregable by Text]
-          . accept(t"name: Zoë £€𐍈\nage: 1".s.grouped(1).map(_.tt).stream).as[Person]
+          . accept(Iterator.from(t"name: Zoë £€𐍈\nage: 1".s.grouped(1).map(_.tt)).stream)
+          . as[Person]
         . assert(_ == Person(t"Zoë £€𐍈", 1))
 
         test(m"a tracked parse works over a stream"):
           import parsing.trackPositions
           summon[Yaml is Aggregable by Text]
-          . accept(personDoc.s.grouped(3).map(_.tt).stream).as[Person]
+          . accept(Iterator.from(personDoc.s.grouped(3).map(_.tt)).stream).as[Person]
         . assert(_ == Person(t"Alice", 42))
 
       test(m"Empty stream yields no documents"):
@@ -1368,11 +1369,11 @@ object Tests extends Suite("yaml", m"Ypsiloid Tests"):
         . read[Yaml]
 
       test(m"the pulled blocks are the rendered text"):
-        List.from(Yaml.emit(document)).join
+        Yaml.emit(document).to[List].join
       . assert(_ == document.show)
 
       test(m"a tree is emitted in several blocks"):
-        Yaml.emit(document).length
+        Yaml.emit(document).size
       . assert(_ > 1)
 
       test(m"the pushed blocks are the rendered text"):
@@ -1382,7 +1383,7 @@ object Tests extends Suite("yaml", m"Ypsiloid Tests"):
       . assert(_ == document.show)
 
       test(m"a single scalar is emitted whole"):
-        List.from(Yaml.emit(t"just text".read[Yaml])).join
+        Yaml.emit(t"just text".read[Yaml]).to[List].join
       . assert(_ == t"just text".read[Yaml].show)
 
       test(m"a streamed value reads back"):

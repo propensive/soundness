@@ -66,7 +66,7 @@ object Bars:
   =>  ( categorical: x is Categorical, continuous: y is Continuous, calibration: y is Calibration )
   =>  collection is Plottable in Bars to Bars.Fit by Bars.Style =
     plottable[collection, y]: collection =>
-      List.from(traversable.traverse(collection).map(columnOf(_)))
+      traversable.traverse(collection).map(columnOf(_)).to[List]
 
   private def plottable[data, y: {Continuous as continuous, Calibration as calibration}]
     ( columns: data -> List[Column] )

@@ -69,8 +69,8 @@ extension [self](self: self)(using traversable: self is Traversable)
   // `subsumes` tests whether `subsequence` occurs as a contiguous run of elements within `self` — a
   // substring, for `Text`. The empty subsequence is always present.
   def subsumes(subsequence: self): Boolean =
-    val whole = sci.Vector.from(traversable.traverse(self))
-    val part  = sci.Vector.from(traversable.traverse(subsequence))
+    val whole = Reshapable.build(traversable.traverse(self), sci.Vector.newBuilder)
+    val part  = Reshapable.build(traversable.traverse(subsequence), sci.Vector.newBuilder)
     val last  = whole.length - part.length
 
     part.isEmpty || whole.indices.exists: start =>
@@ -83,16 +83,14 @@ extension [self](self: self)(using traversable: self is Traversable)
             reshapable:       self is Reshapable by element2 to result )
   :   result =
 
-    reshapable.reshape:
-      traversable.traverse(self).flatMap: element => innerTraversable.traverse(lambda(element))
+    reshapable.reshape(traversable.traverse(self).flatMap(lambda))
 
   def flatMap[inner, element2, result](lambda: traversable.Operand => inner)
     ( using innerTraversable: inner is Traversable by element2,
             reshapable:       self is Reshapable by element2 to result )
   :   result =
 
-    reshapable.reshape:
-      traversable.traverse(self).flatMap: element => innerTraversable.traverse(lambda(element))
+    reshapable.reshape(traversable.traverse(self).flatMap(lambda))
 
   def filter[result](predicate: traversable.Operand => Boolean)
     ( using reshapable: self is Reshapable by traversable.Operand to result )
@@ -110,13 +108,13 @@ extension [self](self: self)(using traversable: self is Traversable)
     reshapable.reshape(traversable.traverse(self).filter(predicate))
 
   def foreach(lambda: traversable.Operand => Unit): Unit =
-    traversable.traverse(self).foreach(lambda)
+    traversable.traverse(self).each(lambda)
 
   inline def exists(predicate: traversable.Operand => Boolean): Boolean =
     traversable.traverse(self).exists(predicate)
 
   def fold[state](initial: state)(lambda: (state, traversable.Operand) => state): state =
-    traversable.traverse(self).foldLeft(initial)(lambda)
+    traversable.traverse(self).fold(initial)(lambda)
 
   // A value-taking overload is deliberately omitted, like `where`'s: a path-dependent
   // `traversable.Operand` makes it ambiguous with the predicate form for any lambda argument,
@@ -131,8 +129,7 @@ extension [self](self: self)(using traversable: self is Traversable)
             reshapable:       self is Reshapable by element2 to result )
   :   result =
 
-    reshapable.reshape:
-      traversable.traverse(self).flatMap: element => innerTraversable.traverse(element)
+    reshapable.reshape(traversable.traverse(self).flatMap(identity(_)))
 
   // The running accumulation (the stdlib's `scanLeft`): every intermediate state, initial
   // state first, in the source's own (stable) shape.
@@ -140,7 +137,7 @@ extension [self](self: self)(using traversable: self is Traversable)
     ( using reshapable: self is Reshapable.Stable by state to result )
   :   result =
 
-    reshapable.reshape(traversable.traverse(self).scanLeft(initial)(lambda))
+    reshapable.reshape(traversable.traverse(self).trace(initial)(lambda))
 
   // The contiguous run from `from` (inclusive) to `until` (exclusive), by position: the
   // total counterpart of `slice`, empty when the bounds fall outside the source.
@@ -148,7 +145,7 @@ extension [self](self: self)(using traversable: self is Traversable)
     ( using reshapable: self is Reshapable.Stable by traversable.Operand to result )
   :   result =
 
-    reshapable.reshape(traversable.traverse(self).slice(from, until))
+    reshapable.reshape(traversable.traverse(self).excerpt(from, until))
 
   def zip[that, result](that: that)
     ( using thatTraversable: that is Traversable,
@@ -163,8 +160,9 @@ extension [self](self: self)(using traversable: self is Traversable)
     ( using reshapable: self is Reshapable by traversable.Operand to result )
   :   Map[key, result] =
 
-    traversable.traverse(self).toList.groupBy(lambda).map: (key, elements) =>
-      (key, reshapable.reshape(elements.iterator))
+    Reshapable.build(traversable.traverse(self), sci.List.newBuilder).groupBy(lambda)
+    . map: (key, elements) =>
+      (key, reshapable.reshape(Iterator.from(elements.iterator)))
 
     . to(Map)
 
@@ -176,14 +174,12 @@ extension [self](self: self)(using traversable: self is Traversable)
 
   // The first element for each value of `lambda`, in first-occurrence order (the stdlib's
   // `distinctBy`). Which occurrence survives is positional, so — like `distinct` — this is
-  // honestly unavailable on unordered shapes. Not `Iterator#distinctBy`, whose parameter
-  // capture checking requires to be pure; a seen-set filter accepts any lambda `filter` would.
+  // honestly unavailable on unordered shapes.
   def deduplicate[key, result](lambda: traversable.Operand => key)
     ( using reshapable: self is Reshapable.Stable by traversable.Operand to result )
   :   result =
 
-    val seen = scm.HashSet[key]()
-    reshapable.reshape(traversable.traverse(self).filter { element => seen.add(lambda(element)) })
+    reshapable.reshape(traversable.traverse(self).deduplicate(lambda))
 
   // The longest leading run satisfying `predicate`, and the remainder; each side is traversed
   // independently, since a single `Iterator` cannot be consumed twice.
@@ -191,8 +187,8 @@ extension [self](self: self)(using traversable: self is Traversable)
     ( using reshapable: self is Reshapable.Stable by traversable.Operand to result )
   :   (result, result) =
 
-    ( reshapable.reshape(traversable.traverse(self).takeWhile(predicate)),
-      reshapable.reshape(traversable.traverse(self).dropWhile(predicate)) )
+    ( reshapable.reshape(traversable.traverse(self).keep(predicate)),
+      reshapable.reshape(traversable.traverse(self).skip(predicate)) )
 
   // Every element satisfying `predicate`, and every element that does not; each side is rebuilt
   // in the source's own shape. Unlike `span`, membership ignores position, so unordered shapes
@@ -202,7 +198,7 @@ extension [self](self: self)(using traversable: self is Traversable)
   :   (result, result) =
 
     ( reshapable.reshape(traversable.traverse(self).filter(predicate)),
-      reshapable.reshape(traversable.traverse(self).filterNot(predicate)) )
+      reshapable.reshape(traversable.traverse(self).filter(!predicate(_))) )
 
   // Filter and map in one pass, keeping only the elements the partial function is defined at
   // (the stdlib's `collect`). Not `Stable`: gathering from a `Set` or `Map` is meaningful. The
@@ -212,7 +208,7 @@ extension [self](self: self)(using traversable: self is Traversable)
     ( using reshapable: self is Reshapable by element2 to result )
   :   result =
 
-    reshapable.reshape(traversable.traverse(self).collect(lambda))
+    reshapable.reshape(traversable.traverse(self).sweep(lambda))
 
   // Split into consecutive batches of at most `size` elements, each rebuilt in the source's own
   // shape; `Stable` because the batch boundaries depend on order. The final batch may be shorter.
@@ -220,9 +216,12 @@ extension [self](self: self)(using traversable: self is Traversable)
     ( using reshapable: self is Reshapable.Stable by traversable.Operand to result )
   :   List[result] =
 
-    traversable.traverse(self).grouped(size).map { chunk => reshapable.reshape(chunk.iterator) }
-    . toList
-    . to(List)
+    val builder = sci.List.newBuilder[result]
+
+    traversable.traverse(self).batched(size).each: chunk =>
+      builder += reshapable.reshape(Iterator.from(List.iterator(chunk)))
+
+    List.from(builder.result())
 
 // The choice of sorting algorithm, imported by name to make it. Only one may be in scope: two
 // would make every `sorted` and `order` ambiguous, which is the intended way of saying that a

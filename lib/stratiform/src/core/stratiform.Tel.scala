@@ -3725,9 +3725,9 @@ object Tel extends Tel2:
 
   // Serializes on a fiber, handing out text as it is produced, so a large document can be
   // written to a socket or file before it is fully rendered — the model of `Xml.emit`.
-  def emit(tel: Tel)(using monitor: Monitor, probate: Probate): Iterator[Text] =
+  def emit(tel: Tel)(using monitor: Monitor, probate: Probate): Iterator[Text]^ =
     val producer = Producer[Text]()
-    val output = producer.iterator
+    val output: Iterator[Text]^ = producer.iterator
 
     producer.transfer: (producer, _, _) ?=>
       Serializer(new Textual(producer()), document(tel)).write()

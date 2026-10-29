@@ -168,16 +168,20 @@ extends scala.caps.ExclusiveCapability, scala.caps.Stateful:
 
   // Project the panes to a frame, overriding each widget's minimum with the live
   // size its content needs at the width it last occupied (the root width on the
-  // first solve, or when the previous geometry is stale). The widths are threaded
-  // as an iterator aligned with the leaf walk, so no leaf count has to agree with
+  // first solve, or when the previous geometry is stale). The widths are read by
+  // position aligned with the leaf walk, so no leaf count has to agree with
   // any sequence: a source that runs dry (the live tree grew mid-frame) degrades
   // to the root width.
   private def liveFrame(previous: Form.Layout, stale: Boolean): Frame =
-    val widths: Iterator[Int] =
-      // The stdlib view threads the widths as a stdlib `Iterator`, as described above.
-      if stale then Iterator.empty else previous.entries.stdlib.iterator.map(_.rect.width)
+    // An exclusive iterator cannot be shared between `project` and the lambdas it
+    // passes itself to, so the alignment is a counter over the previous entries.
+    var consumed: Int = 0
 
-    def nextWidth(): Int = if widths.hasNext then widths.next() else root.width
+    def nextWidth(): Int =
+      val index = consumed
+      consumed += 1
+      if stale then root.width
+      else previous.entries.at(index.z).lay(root.width)(_.rect.width)
 
     def project(node: Pane): Frame = node match
       case Pane.Branch(sizing, arrangement, panes) =>
@@ -380,11 +384,13 @@ extends scala.caps.ExclusiveCapability, scala.caps.Stateful:
 
       refresh(changed)
 
-  update def run(events: Iterator[Terminal.Event]): Unit =
+  update def run(events: Iterator[Terminal.Event]^): Unit =
     requestRefresh(Set())
     var running = true
 
-    while running && events.hasNext do events.next() match
+    while running do events.next() match
+      case Iterator.Exhausted => running = false
+
       case Keypress.Tab =>
         val current = layout
 
@@ -449,7 +455,7 @@ extends scala.caps.ExclusiveCapability, scala.caps.Stateful:
       case _: Interrupt =>
         ()
 
-      case event =>
+      case event: Terminal.Event =>
         val current = layout
 
         if !current.focusables.nil then

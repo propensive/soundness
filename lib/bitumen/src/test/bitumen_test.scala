@@ -819,12 +819,12 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
       test(m"in-memory data opens as Tar"):
         tar.source[Data].memoize.open[Tar]():
-          List.from(bitumen.tar.entries).map(_.entryName)
+          bitumen.tar.entries.to[List].map(_.entryName)
       . assert(_ == List(t"hello.txt", t"data/"))
 
       test(m"gzipped data opens as Tar with the Gzip flag"):
         tar.gzip.memoize.open[Tar](Tar.Flag.Gzip):
-          List.from(bitumen.tar.entries).map(_.entryName)
+          bitumen.tar.entries.to[List].map(_.entryName)
       . assert(_ == List(t"hello.txt", t"data/"))
 
       test(m"an archive file opens as Tar"):
@@ -834,7 +834,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
         path.open[File](Write, OpenFlag.Create) { handle ?=> handle.write(tar) }
 
         path.open[Tar]():
-          List.from(bitumen.tar.entries).map(_.entryName)
+          bitumen.tar.entries.to[List].map(_.entryName)
       . assert(_ == List(t"hello.txt", t"data/"))
 
       test(m"opening for writing is refused"):
@@ -862,7 +862,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
           builder.insert(t"hello.txt".as[Relative on Tar], t"hello".in[Data])
 
         target.open[Tar]():
-          List.from(bitumen.tar.entries).map(_.entryName)
+          bitumen.tar.entries.to[List].map(_.entryName)
       . assert(_ == List(t"hello.txt"))
 
       test(m"A gzip-compressed creation round-trips with the Gzip flag"):
@@ -872,7 +872,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
           builder.insert(t"data.txt".as[Relative on Tar], t"payload".in[Data])
 
         target.open[Tar](Tar.Flag.Gzip):
-          List.from(bitumen.tar.entries).map(_.entryName)
+          bitumen.tar.entries.to[List].map(_.entryName)
       . assert(_ == List(t"data.txt"))
 
       test(m"A scoped entry writer streams an unknown-length body"):
@@ -885,7 +885,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
             for i <- 1 to 5 do entry.put(Array.fill[Byte](1000)(i.toByte))
 
         target.open[Tar]():
-          List.from(bitumen.tar.entries).head match
+          bitumen.tar.entries.to[List].head match
             case f: Tar.Entry.File => f.data.size
             case _                 => 0
       . assert(_ == 5000)
@@ -902,7 +902,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
           builder.insert(t"third.txt".as[Relative on Tar], t"three".in[Data])
 
         target.open[Tar]():
-          List.from(bitumen.tar.entries).map(_.entryName)
+          bitumen.tar.entries.to[List].map(_.entryName)
       . assert(_ == List(t"first.txt", t"second.bin", t"third.txt"))
 
       test(m"a scoped entry writer buffers under compression"):
@@ -913,7 +913,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
             entry.put(t"zipped".in[Data])
 
         target.open[Tar](Tar.Flag.Gzip):
-          List.from(bitumen.tar.entries).head match
+          bitumen.tar.entries.to[List].head match
             case f: Tar.Entry.File => f.data.memoize.ascii.s
             case _                 => ""
       . assert(_ == "zipped")
@@ -1213,7 +1213,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
 
       test(m"in-memory data opens as Ar"):
         deb.source[Data].memoize.open[Ar]():
-          List.from(bitumen.ar.entries).map(_.name)
+          bitumen.ar.entries.to[List].map(_.name)
       . assert(_ == List(t"debian-binary", t"control.tar"))
 
       test(m"an archive file opens as Ar"):
@@ -1223,7 +1223,7 @@ object Tests extends Suite("tar", m"Bitumen Tests"):
         path.open[File](Write, OpenFlag.Create) { handle ?=> handle.write(deb) }
 
         path.open[Ar]():
-          List.from(bitumen.ar.entries).map(_.name)
+          bitumen.ar.entries.to[List].map(_.name)
       . assert(_ == List(t"debian-binary", t"control.tar"))
 
       test(m"opening for writing is refused"):

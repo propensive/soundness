@@ -255,18 +255,20 @@ def paint(root: Board^, pane: Pane): Unit =
   // An explicit iterator loop rather than `.each`: the per-cell closure constructs a `FlowExtent`
   // over the `root` canvas (a capability), and capture checking rejects that fresh capability
   // leaking out through the `.each` lambda's inferred parameter type.
-  val cells = pane.leaves.zip(placement.cells).stdlib.iterator
+  val cells = pane.leaves.zip(placement.cells).iterator
+  var running = true
 
-  while cells.hasNext do
-    val (leaf, rect) = cells.next()
-    val extent = FlowExtent(root, rect)
+  while running do cells.next() match
+    case Iterator.Exhausted => running = false
+    case (leaf: Pane, rect: Rect) =>
+      val extent = FlowExtent(root, rect)
 
-    leaf match
-      case Pane.Leaf(_, content)   => content(extent)
-      case Pane.Widget(_, widget)  => widget.render(extent, false)
-      case _                       => ()
+      leaf match
+        case Pane.Leaf(_, content)   => content(extent)
+        case Pane.Widget(_, widget)  => widget.render(extent, false)
+        case _                       => ()
 
-    extent.flush()
+      extent.flush()
 
   root.flush()
 

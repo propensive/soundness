@@ -32,6 +32,7 @@
                                                                                                   */
 package acyclicity
 
+import scala.collection as sc
 import scala.collection.immutable as sci
 import scala.collection.mutable as scm
 import scala.util.boundary, boundary.break
@@ -40,19 +41,21 @@ import scala.util.boundary, boundary.break
 // successor relation alone — so the persistent and the frozen forms differ in what they store,
 // never in how they search. Successors are dependencies throughout: a topological order lists a
 // node after its successors.
+// The searches walk the stdlib adjacency maps the graphs keep, through the stdlib's iterators:
+// an internal boundary, private to the package.
 private[acyclicity] object Search:
   // Iterative depth-first search with three colours, O(n + e). `Right` is the postorder, a
   // topological order with every node after its successors; `Left` is a cycle witness — the grey
   // chain from the revisited node to the top of the stack, closed by that node again. The
   // iteration order of `nodes` decides between equally valid orders, so an insertion-ordered
   // representation gives a stable one.
-  def topological[node](nodes: Iterator[node], successors: node => Iterator[node])
+  def topological[node](nodes: sc.Iterator[node], successors: node => sc.Iterator[node])
   :   Either[sci.List[node], sci.List[node]] =
 
     val colour = scm.HashMap[node, Int]()            // absent white, 1 grey, 2 black
     val order = scm.ListBuffer[node]()
     val path = scm.ArrayBuffer[node]()               // the grey chain
-    val pending = scm.ArrayBuffer[Iterator[node]]()  // each grey node's unvisited successors
+    val pending = scm.ArrayBuffer[sc.Iterator[node]]()  // each grey node's unvisited successors
 
     boundary:
       nodes.foreach: start =>
@@ -90,7 +93,7 @@ private[acyclicity] object Search:
 
   // Everything reachable from `start`, inclusive, by an iterative search with a visited set:
   // total on cyclic input, and O(reach) in both time and stack.
-  def reachable[node](start: node, successors: node => Iterator[node]): Set[node] =
+  def reachable[node](start: node, successors: node => sc.Iterator[node]): Set[node] =
     val seen = scm.HashSet[node](start)
     val stack = scm.ArrayBuffer[node](start)
 
@@ -102,7 +105,7 @@ private[acyclicity] object Search:
     Set.from(seen)
 
   // Every edge reversed, every node kept, in the nodes' own order.
-  def transpose[node](nodes: Iterator[node], successors: node => Iterator[node])
+  def transpose[node](nodes: sc.Iterator[node], successors: node => sc.Iterator[node])
   :   sci.VectorMap[node, sci.Set[node]] =
 
     val builder = scm.LinkedHashMap[node, scm.HashSet[node]]()
@@ -114,7 +117,7 @@ private[acyclicity] object Search:
     sci.VectorMap.from(builder.iterator.map { (node, origins) => (node, sci.Set.from(origins)) })
 
   // The adjacency of every node, closed over edge targets, in the nodes' own order.
-  def adjacency[node](nodes: Iterator[node], successors: node => Iterator[node])
+  def adjacency[node](nodes: sc.Iterator[node], successors: node => sc.Iterator[node])
   :   sci.VectorMap[node, sci.Set[node]] =
 
     val builder = scm.LinkedHashMap[node, sci.Set[node]]()

@@ -412,7 +412,7 @@ object Benchmarks extends Suite("xml-bench", m"Xylophone benchmarks"):
             val utf8 = java.nio.charset.StandardCharsets.UTF_8.nn
 
             supervise:
-              Xml.emit(xylophone.Benchmarks.document3).foreach: chunk =>
+              Xml.emit(xylophone.Benchmarks.document3).each: chunk =>
                 out.write(chunk.s.getBytes(utf8).nn)
         }
 
@@ -506,7 +506,7 @@ object Benchmarks extends Suite("xml-bench", m"Xylophone benchmarks"):
             val utf8 = java.nio.charset.StandardCharsets.UTF_8.nn
 
             supervise:
-              Xml.emit(xylophone.Benchmarks.document4).foreach: chunk =>
+              Xml.emit(xylophone.Benchmarks.document4).each: chunk =>
                 out.write(chunk.s.getBytes(utf8).nn)
         }
 
@@ -600,7 +600,7 @@ object Benchmarks extends Suite("xml-bench", m"Xylophone benchmarks"):
             val utf8 = java.nio.charset.StandardCharsets.UTF_8.nn
 
             supervise:
-              Xml.emit(xylophone.Benchmarks.document5).foreach: chunk =>
+              Xml.emit(xylophone.Benchmarks.document5).each: chunk =>
                 out.write(chunk.s.getBytes(utf8).nn)
         }
 

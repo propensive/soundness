@@ -44,6 +44,7 @@ import galilei.*
 import gossamer.*
 import hieroglyph.*, codepages.utf8Codepage
 import nomenclature.*
+import murmuration.Traversable
 import prepositional.*
 import rudiments.*
 import serpentine.*
@@ -53,6 +54,16 @@ import vacuous.*
 import zephyrine.*
 
 object Zipfile:
+  // A local entry's place in the archive, as the chunks it serializes to: the header, the stored
+  // payload (opened only when `flatMap` reaches it) and the data descriptor, if any.
+  private[zeppelin] class Local(val entry: Zip.Entry, val header: Data, val descriptor: Optional[Data])
+
+  private[zeppelin] object Local:
+    given traversable: Local is Traversable by Data = local =>
+      Iterator(local.header)
+      . concat(local.entry.storedBytes().chunks)
+      . concat(local.descriptor.lay(Iterator.empty)(Iterator(_)))
+
   private val u32Max: Long = 0xffffffffL
   private val u16Max: Int  = 0xffff
 
@@ -555,16 +566,17 @@ case class Zipfile
     val cdSize = central.fold(0L)(_ + _.length)
     val tail = Zipfile.endRecords(records.size.toLong, cdStart, cdSize, comment)
 
-    val prefixIterator: Iterator[Data] =
+    val prefixIterator =
       if prefixBytes.length == 0 then Iterator.empty else Iterator(prefixBytes)
 
-    // Each entry's payload stream is opened only when the serialization reaches
-    // it, and drained in bounded chunks.
-    // The archive is serialized through stdlib `Iterator`s, which the opaque `List` cannot
-    // yield; each of the four `stdlib` bridges below is that crossing.
-    val local: Iterator[Data] =
-      records.stdlib.iterator.flatMap: (entry, _, header, descriptor, _) =>
-        Iterator(header) ++ entry.storedBytes().chunks ++
-          descriptor.lay(Iterator.empty)(Iterator(_))
+    // Each entry's payload stream is opened only when the serialization reaches it, and
+    // drained in bounded chunks: the records are described, and `flatMap` opens one at a time.
+    val local =
+      Iterator.from(List.iterator(records)).flatMap: (entry, _, header, descriptor, _) =>
+        Zipfile.Local(entry, header, descriptor)
 
-    (prefixIterator ++ local ++ central.stdlib.iterator ++ tail.stdlib.iterator).stream
+    prefixIterator
+    . concat(local)
+    . concat(Iterator.from(List.iterator(central)))
+    . concat(Iterator.from(List.iterator(tail)))
+    . stream

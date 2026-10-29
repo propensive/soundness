@@ -95,7 +95,7 @@ export scala.NoSuchElementException
 
 // The two blessed stdlib collection *interfaces*: abstract, and the internal currency of the
 // `Traversable`/`Reshapable` machinery. Concrete stdlib collections are not re-exported.
-export scala.{Iterable, Iterator}
+export scala.Iterable
 
 // `Chain` (and its lazy cons `#::`) is now the opaque alias defined in
 // `proscenium.Chain.scala`, so it is NOT re-exported from `scala` here.

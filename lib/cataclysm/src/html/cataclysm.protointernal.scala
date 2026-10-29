@@ -92,7 +92,7 @@ private[cataclysm] object protointernal:
 
     val content = scala.io.Source.fromInputStream(stream).mkString.tt
 
-    val css = safely(CssParser.parse(Iterator(content))).or:
+    val css = safely(CssParser.parse(Chain(content), true)).or:
       halt(m"cataclysm: could not parse the stylesheet at $path")
 
     // Upcast the typed names to `Text` for comparison against the requested name.

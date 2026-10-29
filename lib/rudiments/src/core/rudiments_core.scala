@@ -180,6 +180,7 @@ def loop(block: ->{scala.caps.any.only[anticipation.Durable]} Unit): Loop^{block
   scala.caps.unsafe.unsafeAssumePure(Loop(lambda))
 
 export rudiments.internal.&
+export murmuration.Iterator
 
 @targetName("erasedValue")
 // [erased-evidence] erased value summoner
@@ -189,7 +190,7 @@ inline def !! [erasure]: erasure = caps.unsafe.unsafeErasedValue
 // a native collection is not an `Iterable`, so each materialises the traversal and delegates.
 extension [self, value <: Matchable](self: self)(using traversable: self is Traversable by value)
   transparent inline def sift[filter <: value: Typeable]: List[filter] =
-    List.from(traversable.traverse(self).flatMap(filter.unapply(_)))
+    (traversable.traverse(self): Iterator[value]^).sweep { case value: filter => value }.to[List]
 
   // Shape-preserving: a `Set` of pairs from a `Set`, a `List` from a `List`. Plain `Reshapable`,
   // not `Stable`: pairing an element with itself cannot collapse a set.
@@ -229,19 +230,18 @@ extension [value <: Matchable](iterable: Iterable[value])
 // idiom for locating a specific element.)
 extension [self](self: self)(using traversable: self is Traversable)
   def seek(predicate: traversable.Operand => Boolean): Optional[traversable.Operand] =
-    traversable.traverse(self).find(predicate).optional
+    traversable.traverse(self).seek(predicate)(Unset)(identity(_))
 
   // The first element the partial function is defined at, transformed by it: the total
   // counterpart of `collectFirst`, and the single-result sibling of `sweep`. A distinct name
   // rather than a `seek` overload, because a case-literal closure matches both the predicate
   // and the partial-function shapes, making every call site ambiguous.
   def reap[element2](lambda: PartialFunction[traversable.Operand, element2]): Optional[element2] =
-    traversable.traverse(self).collectFirst(lambda).optional
+    traversable.traverse(self).sweep(lambda).seek(_ => true)(Unset)(identity(_))
 
   def where(predicate: traversable.Operand => Boolean): Optional[Ordinal] =
-    traversable.traverse(self).zipWithIndex.find { (element, _) => predicate(element) }
-    . map(_(1).z)
-    . optional
+    traversable.traverse(self).indexed.seek { (element, _) => predicate(element) }(Unset):
+      (_, index) => index.z
 
   // Each element paired with its `Ordinal` position, in the source's own (stable) shape:
   // the total counterpart of `zipWithIndex`.
@@ -251,7 +251,7 @@ extension [self](self: self)(using traversable: self is Traversable)
   :   result =
 
     reshapable.reshape:
-      traversable.traverse(self).zipWithIndex.map: (element, index) => (element, index.z)
+      traversable.traverse(self).indexed.map: (element, index) => (element, index.z)
 
   // The extremum operations (`minimum`/`maximum`, the total counterparts of `min`/`max`) live
   // in hypotenuse, driven by `Commensurable` rather than `Comparable` — `Commensurable.orderable`
@@ -263,19 +263,19 @@ extension [self](self: self)(using traversable: self is Traversable)
 
     var ordinal: Ordinal = Prim
 
-    traversable.traverse(self).foreach: operand =>
+    traversable.traverse(self).each: operand =>
       lambda(using ordinal.aka["ordinal"])(operand)
       ordinal = ordinal + 1
 
   // Kept here (not moved to `murmuration`) so it stays overloaded with the `Iterable`/`Iterator`
   // `all` below, avoiding a split-name clash across two modules at the `soundness` umbrella.
   inline def all(predicate: traversable.Operand => Boolean): Boolean =
-    traversable.traverse(self).forall(predicate)
+    traversable.traverse(self).all(predicate)
 
   // The first element satisfying the predicate, or `Unset`: the `Traversable` sibling of the
   // stdlib's `find`, whose `Option` result the collections do not use.
   inline def find(predicate: traversable.Operand => Boolean): Optional[traversable.Operand] =
-    traversable.traverse(self).find(predicate).optional
+    traversable.traverse(self).seek(predicate)(Unset)(identity(_))
 
   // The `Traversable` sibling of the `Iterable` `fuse` below, so the opaque collections fold
   // through the same name.
@@ -283,10 +283,10 @@ extension [self](self: self)(using traversable: self is Traversable)
     ( lambda: (state aka "state", traversable.Operand aka "next") ?=> state )
   :   state =
 
-    val iterator: Iterator[traversable.Operand] = traversable.traverse(self)
     var state: state = base
 
-    while iterator.hasNext do state = lambda(using state.aka["state"], iterator.next().aka["next"])
+    traversable.traverse(self).each: next =>
+      state = lambda(using state.aka["state"], next.aka["next"])
 
     state
 
@@ -299,12 +299,19 @@ extension [self](self: self)(using traversable: self is Traversable)
 
     compiletime.summonFrom:
       case zeroic: ((? <: traversable.Operand) is Zeroic) =>
-        traversable.traverse(self).foldLeft(zeroic.zero)(addable.add)
+        traversable.traverse(self).fold(zeroic.zero)(addable.add)
 
       case _ =>
-        val iterator = traversable.traverse(self)
+        var started = false
+        var state: traversable.Operand = null.asInstanceOf[traversable.Operand]
 
-        if !iterator.hasNext then Unset else iterator.foldLeft(iterator.next())(addable.add)
+        traversable.traverse(self).each: element =>
+          if started then state = addable.add(state, element)
+          else
+            state = element
+            started = true
+
+        if started then state else Unset
 
   def product
     ( using unital:        traversable.Operand is Unital,
@@ -312,14 +319,15 @@ extension [self](self: self)(using traversable: self is Traversable)
             equality:      multiplicable.Result =:= traversable.Operand )
   :   traversable.Operand =
 
-    traversable.traverse(self).foldLeft(unital.one)(multiplicable.multiply)
+    traversable.traverse(self).fold(unital.one)(multiplicable.multiply)
 
 // The `Populated` producer: one non-emptiness check, recorded in the type, so the operations
 // below are total on the result. The presence check *is* the proof, in the same way a confined
 // ordinal's range check is (`Ordinal in value.type`).
 extension [self](value: self)(using traversable: self is Traversable)
   def occupied: Optional[self & Populated] =
-    if traversable.traverse(value).hasNext then value.asInstanceOf[self & Populated] else Unset
+    if traversable.traverse(value).exists(_ => true) then value.asInstanceOf[self & Populated]
+    else Unset
 
 // Operations that are partial on possibly-empty collections but *total* on receivers carrying a
 // `Populated` proof (obtained from `occupied`, whose bounds check is thereby discharged exactly
@@ -330,17 +338,27 @@ extension [self](value: self)(using traversable: self is Traversable)
 extension [self](value: self)(using traversable: self is Traversable)
   transparent inline def head: Optional[traversable.Operand] =
     compiletime.summonFrom:
-      case _: (`self` <:< Populated) => traversable.traverse(value).next()
+      case _: (`self` <:< Populated) =>
+        traversable.traverse(value).seek(_ => true)(throw java.util.NoSuchElementException()):
+          identity(_)
 
       case _ =>
-        val iterator = traversable.traverse(value)
-        if iterator.hasNext then iterator.next() else Unset
+        traversable.traverse(value).seek(_ => true)(Unset)(identity(_))
 
 extension [self <: Populated](value: self)(using traversable: self is Traversable)
   def reduce(lambda: (traversable.Operand, traversable.Operand) => traversable.Operand)
   :   traversable.Operand =
 
-    traversable.traverse(value).reduce(lambda)
+    var started = false
+    var state: traversable.Operand = null.asInstanceOf[traversable.Operand]
+
+    traversable.traverse(value).each: element =>
+      if started then state = lambda(state, element)
+      else
+        state = element
+        started = true
+
+    if started then state else throw java.util.NoSuchElementException()
 
 // The back end of a container: `last` is its final element and `lead` everything before it,
 // mirroring `head` and `tail`. Separate typeclasses from `Traversable` so each container
@@ -359,7 +377,7 @@ extension [self](value: self)
       case _: (`self` <:< Populated) => terminable.last(value)
 
       case _ =>
-        if traversable.traverse(value).hasNext then terminable.last(value) else Unset
+        if traversable.traverse(value).exists(_ => true) then terminable.last(value) else Unset
 
 // `lead` adapts like `head` and `last`: everything before the last element, total on a
 // `Populated` receiver and `Optional` otherwise.
@@ -371,7 +389,7 @@ extension [self, result](value: self)
       case _: (`self` <:< Populated) => truncable.lead(value)
 
       case _ =>
-        if traversable.traverse(value).hasNext then truncable.lead(value) else Unset
+        if traversable.traverse(value).exists(_ => true) then truncable.lead(value) else Unset
 
 // Conversion to a requested shape, which may be a proper type or an unapplied constructor:
 // `chars.to[List]`, `text.to[Set]`, `pairs.to[Map]`. `transparent inline` so the
@@ -395,16 +413,6 @@ extension [self](self: self)
 
 extension [tuple <: Tuple](tuple: tuple)
   def to[product: Mirror.ProductOf]: product = product.fromProduct(tuple)
-
-extension [value](iterator: Iterator[value]^)
-  transparent inline def each(predicate: Ordinal aka "ordinal" ?=> value => Unit): Unit =
-    var ordinal: Ordinal = Prim
-
-    iterator.foreach: value =>
-      predicate(using ordinal.aka["ordinal"])(value)
-      ordinal += 1
-
-  inline def all(predicate: value => Boolean): Boolean = iterator.forall(predicate)
 
 extension [value](iterables: Iterable[Iterable[value]])
   def intercalate(between: Iterable[value] = Iterable()): Iterable[value] =
@@ -518,7 +526,7 @@ extension [value](iterable: Iterable[value])
   inline def fuse[state](base: state)(lambda: (state aka "state", value aka "next") ?=> state)
   :   state =
 
-    val iterator: Iterator[value] = iterable.iterator
+    val iterator: scala.collection.Iterator[value] = iterable.iterator
     var state: state = base
 
     while iterator.hasNext do state = lambda(using state.aka["state"], iterator.next().aka["next"])
@@ -548,8 +556,11 @@ extension [value](iterable: Iterable[value])
     longestTrainOf(iterable)(predicate)
 
 extension [self, value](self: self)(using traversable: self is Traversable by value)
+  // The one-shot traversal itself, for a consumer that pulls: `list.iterator.next()`.
+  def iterator: Iterator[value]^ = traversable.traverse(self)
+
   def longestTrain(predicate: value => Boolean): (Int, Int) =
-    longestTrainOf(traversable.traverse(self).to(Iterable))(predicate)
+    longestTrainOf(traversable.traverse(self).to[List].stdlib)(predicate)
 
   def mean
     ( using addable:   value is Addable by value,
@@ -557,7 +568,7 @@ extension [self, value](self: self)(using traversable: self is Traversable by va
             divisible: value is Divisible by Double,
             eqality2:  divisible.Result =:= value )
   :   Optional[value] =
-    traversable.traverse(self).to(Iterable).mean
+    traversable.traverse(self).to[List].stdlib.mean
 
   def variance
     ( using addable:       value is Addable by value,
@@ -571,7 +582,7 @@ extension [self, value](self: self)(using traversable: self is Traversable by va
             equality3:     addable2.Result =:= multiplicable.Result,
             divisible2:    multiplicable.Result is Divisible by Double )
   :   Optional[divisible2.Result] =
-    traversable.traverse(self).to(Iterable).variance
+    traversable.traverse(self).to[List].stdlib.variance
 
   def std
     ( using addable:       value is Addable by value,
@@ -583,7 +594,7 @@ extension [self, value](self: self)(using traversable: self is Traversable by va
             multiplicable: value is Multiplicable by Double,
             equality4:     multiplicable.Result =:= value )
   :   Optional[value] =
-    traversable.traverse(self).to(Iterable).std
+    traversable.traverse(self).to[List].stdlib.std
 
 private def longestTrainOf[value](iterable: Iterable[value])(predicate: value => Boolean)
 :   (Int, Int) =
@@ -759,32 +770,18 @@ extension [value](value: value)
 
   // The length of the longest leading run satisfying `predicate`.
   private def leading(predicate: traversable.Operand => Boolean): Int =
-    val iterator = traversable.traverse(value)
-    var count = 0
-
-    while iterator.hasNext && predicate(iterator.next()) do count += 1
-
-    count
+    traversable.traverse(value).keep(predicate).size
 
   // The length of the longest trailing run satisfying `predicate`.
   private def trailing(predicate: traversable.Operand => Boolean): Int =
-    var count = 0
-
-    traversable.traverse(value).foreach: element =>
-      count = if predicate(element) then count + 1 else 0
-
-    count
+    traversable.traverse(value).fold(0): (count, element) =>
+      if predicate(element) then count + 1 else 0
 
   // The position of the first element at or after `start` satisfying `predicate`.
   private def locate(predicate: traversable.Operand => Boolean, start: Int): Optional[Int] =
-    val iterator = traversable.traverse(value).drop(start)
-    var index = start
-    var result: Optional[Int] = Unset
-
-    while result.absent && iterator.hasNext do
-      if predicate(iterator.next()) then result = index else index += 1
-
-    result
+    traversable.traverse(value).skip(start).indexed
+    . seek { (element, _) => predicate(element) }(Unset):
+      (_, index) => start + index
 
 // The lazy shape's `keep` and `skip`: `Chain` deliberately has NO `Segmentable` instance —
 // segmentation counts and rebuilds, which would force an unbounded chain — so it cannot use the

@@ -338,12 +338,16 @@ object Tests extends Suite("tel", m"Stratiform Tests"):
       def chunkedCursor(data: Data, n: Int): Cursor[Data, ?] =
         val it = new Iterator[Data]:
           var p: Int = 0
-          def hasNext: Boolean = p < data.length
-          def next(): Data =
+          var head: Data = Data()
+
+          update def advance(): Boolean = p < data.length && {
             val end = (p + n).min(data.length)
-            val out: Data = data.segment(p.z till end.z)
+            head = data.segment(p.z till end.z)
             p = end
-            out
+            true }
+
+          def current: Data = head
+
         Cursor[Data](it)
 
       CorpusLoader.positive.each: testcase =>

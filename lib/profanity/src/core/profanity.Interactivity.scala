@@ -32,10 +32,11 @@
                                                                                                   */
 package profanity
 
+import murmuration.Iterator
 import beneficence.*
 
 object Interactivity:
-  def apply[event](iterator: Iterator[event]): Interactivity[event] = () => iterator
+  def apply[event](iterator: Iterator[event]^): Interactivity[event]^{iterator} = () => iterator
 
 trait Interactivity[event] extends Findable:
-  def eventIterator(): Iterator[event]
+  def eventIterator(): Iterator[event]^

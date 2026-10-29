@@ -55,7 +55,7 @@ object StackedBars:
   =>  ( categorical: x is Categorical, continuous: y is Continuous, calibration: y is Calibration )
   =>  collection is Plottable in StackedBars to StackedBars.Fit by StackedBars.Style =
     plottable[collection, y]: collection =>
-      List.from(traversable.traverse(collection).map(columnOf(_)))
+      traversable.traverse(collection).map(columnOf(_)).to[List]
 
   private def empty(count: Int): Sequence[Stack] =
     var stacks: Sequence[Stack] = Sequence.empty

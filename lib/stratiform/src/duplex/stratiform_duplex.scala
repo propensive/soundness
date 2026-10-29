@@ -32,6 +32,8 @@
                                                                                                   */
 package stratiform
 
+import scala.caps
+
 import coaxial.*
 import contingency.*
 import obligatory.*
@@ -47,6 +49,6 @@ extension (duplex: Duplex)
             framing:   Tactic[Framing.Error],
             bintel:    Tactic[Bintel.Error],
             tel:       Tactic[Tel.Error] )
-  :   (Framed from inbound to outbound)^{framing, bintel, tel} =
+  :   (Framed from inbound to outbound)^{framing, bintel, tel, caps.any} =
 
     Framed[inbound, outbound](duplex)

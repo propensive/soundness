@@ -214,7 +214,9 @@ object Grpc:
 
       expectOk(response)
       val messages = stream.body.stream.records.frames[Framing]
-      val first: Optional[Data] = if messages.hasNext then messages.next() else Unset
+      val first: Optional[Data] = messages.next() match
+        case Iterator.Exhausted => Unset
+        case message: Data      => message
 
       // Verify the trailing status before demanding a body, so a Trailers-Only error
       // response surfaces its real status rather than "no message".
@@ -239,15 +241,16 @@ object Grpc:
       expectOk(response)
       val messages = stream.body.stream.records.frames[Framing]
 
-      def recur(): Chain[response] =
-        if messages.hasNext then
+      def recur(): Chain[response] = messages.next() match
+        case Iterator.Exhausted =>
+          expectStatus(stream)
+          Chain()
+
+        case message: Data =>
           // Successive pulls from the same single-owner message iterator.
           // [by-name-capture] the lazy tail captures the single-owner message iterator
           scala.caps.unsafe.unsafeAssumeSeparate
-            ( decodeMessage[response](messages.next()) #:: recur() )
-        else
-          expectStatus(stream)
-          Chain()
+            ( decodeMessage[response](message) #:: recur() )
 
       recur()
 

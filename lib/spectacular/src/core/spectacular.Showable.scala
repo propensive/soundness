@@ -51,7 +51,14 @@ object Showable:
     ( using traversable: values is Traversable )
   :   Text =
 
-    traversable.traverse(values).mkString(left, separator, right).tt
+    val builder = java.lang.StringBuilder(left)
+    var first = true
+
+    traversable.traverse(values).each: value =>
+      if first then first = false else builder.append(separator)
+      builder.append(value)
+
+    builder.append(right).toString.tt
 
   given showable: [value: Textualizable] => value is Showable = value.textual(_)
   given text: [text <: Text] => text is Showable = identity(_)

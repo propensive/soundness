@@ -207,7 +207,10 @@ extends caps.ExclusiveCapability:
 
     insert(Tar.Entry.File
       ( name, UnixMode(), UnixUser(0), UnixGroup(0), 0.bits.u32,
-        Archive.Body.deferred{ () => if iterator.hasNext then iterator.next() else Unset } ))
+        Archive.Body.deferred { () =>
+          iterator.next() match
+            case Iterator.Exhausted => Unset
+            case chunk: Data        => chunk } ))
 
   // Author one entry with a streamed, unknown-length body: the block writes
   // chunks through the lent `TarEntryWriter`. On an uncompressed target the
@@ -258,7 +261,7 @@ extends caps.ExclusiveCapability:
 
         var count: Long = 0
 
-        file.data.chunks.foreach: chunk =>
+        file.data.chunks.each: chunk =>
           write(out, chunk)
           count += chunk.length
 

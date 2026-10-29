@@ -129,38 +129,38 @@ object Tests extends Suite("rpc", m"Obligatory Tests"):
         val input =
           t"Content-Type: x\r\nContent-Length: 5\r\n\r\n12345Content-Length: 3\r\n\r\nabc"
 
-        List.from(Iterator(input.in[Data]).frames[ContentLength].map(_.utf8))
+        Iterator(input.in[Data]).frames[ContentLength].map(_.utf8).to[List]
       . assert(_ == List("12345", "abc"))
 
       test(m"Content-Length counts bytes, not characters"):
         val body = t"""{"text":"café"}"""
         val input = t"Content-Length: ${body.in[Data].length}\r\n\r\n"+body
 
-        List.from(Iterator(input.in[Data]).frames[ContentLength].map(_.utf8))
+        Iterator(input.in[Data]).frames[ContentLength].map(_.utf8).to[List]
       . assert(_ == List(t"""{"text":"café"}"""))
 
       test(m"Server-side events"):
         val input = t"data: foobar\ndata: baz\n\ndata: hello world\n\n"
 
-        List.from(Iterator(input).frames[Sse])
+        Iterator(input).frames[Sse].to[List]
       . assert(_ == List("data: foobar\ndata: baz", "data: hello world"))
 
       test(m"Server-side events without terminal newlines"):
         val input = t"data: foobar\ndata: baz\n\ndata: hello world"
 
-        List.from(Iterator(input).frames[Sse])
+        Iterator(input).frames[Sse].to[List]
       . assert(_ == List("data: foobar\ndata: baz", "data: hello world"))
 
       test(m"Typed server-side events"):
         val input = t"event: one\ndata: foobar\ndata: baz\n\ndata: hello world"
 
-        List.from(Iterator(input).frames[Sse].map(_.as[Sse]))
+        Iterator(input).frames[Sse].map(_.as[Sse]).to[List]
       . assert(_ == List(Sse("one", List("foobar", "baz")), Sse("message", List("hello world"))))
 
       test(m"Typed server-side events with more fields"):
         val input = t"event: one\nid: 123\ndata: foobar\ndata: baz\n\ndata: hello world\nretry: 54321"
 
-        List.from(Iterator(input).frames[Sse].map(_.as[Sse]))
+        Iterator(input).frames[Sse].map(_.as[Sse]).to[List]
       . assert(_ == List(Sse("one", List("foobar", "baz"), "123"), Sse("message", List("hello world"), Unset, 54321L)))
 
     suite(m"gRPC message framing"):

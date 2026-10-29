@@ -631,19 +631,10 @@ private def chunkIterator[medium](consume stream: (Stream[medium] over Credit)^)
 
   new Iterator[medium]:
     private val block: Int = buffering.transfer(stream.addressable.substrate)
-
-    // A stdlib class cannot extend `Stateful`, so its state is untracked
-    // (the record-iterator precedent below).
-    // [stdlib-iterator] state var in anonymous Iterator
-    @caps.unsafe.untrackedCaptures
-    private var chunk: Optional[medium] = Unset
-    // [stdlib-iterator]
-    @caps.unsafe.untrackedCaptures
+    private var chunk: medium = null.asInstanceOf[medium]
     private var done: Boolean = false
 
-    def hasNext: Boolean = !chunk.absent || (!done && advance())
-
-    private def advance(): Boolean = stream.refill(Credit(block)) match
+    update def advance(): Boolean = !done && (stream.refill(Credit(block)) match
       case count: Int =>
         given stream.addressable.type = stream.addressable
         chunk = stream.lend: region => range => region.materialize(range)
@@ -653,13 +644,9 @@ private def chunkIterator[medium](consume stream: (Stream[medium] over Credit)^)
       case _ =>
         done = true
         stream.close()
-        false
+        false)
 
-    def next(): medium =
-      chunk
-      . lay(if !done && advance() then next() else panic(m"the stream is exhausted")): result =>
-          chunk = Unset
-          result
+    def current: medium = chunk
 
 private def recordIterator[record]
   ( consume stream: (Stream[Array[record]^{}] over Credit)^ )
@@ -672,34 +659,32 @@ private def recordIterator[record]
     // The current region: records `index until limit` of `storage` are
     // unread; `consumed` is skipped lazily, just before the next refill, per
     // the refill contract (an unskipped region is reported, not extended).
-    // A stdlib class cannot extend `Stateful`, so its state is untracked
-    // (the `inputStream` adapter's precedent).
-    // [stdlib-iterator] storage var in anonymous record Iterator
-    @caps.unsafe.untrackedCaptures
-    private var storage: scala.Array[AnyRef] = new scala.Array[AnyRef](0)
-    // [stdlib-iterator] state var in anonymous record Iterator
-    @caps.unsafe.untrackedCaptures
+    // Held as `AnyRef`: a mutable-array field would make the instance Unscoped, which could
+    // not capture the stream (the `Stream` adapters' `[abstract-storage]` precedent).
+    private var storage: AnyRef = new scala.Array[AnyRef](0).asInstanceOf[AnyRef]
     private var index: Int = 0
-    // [stdlib-iterator]
-    @caps.unsafe.untrackedCaptures
     private var limit: Int = 0
-    // [stdlib-iterator]
-    @caps.unsafe.untrackedCaptures
     private var consumed: Int = 0
-    // [stdlib-iterator]
-    @caps.unsafe.untrackedCaptures
     private var done: Boolean = false
+    private var head: record = null.asInstanceOf[record]
 
-    def hasNext: Boolean = index < limit || (!done && replenish())
+    update def advance(): Boolean =
+      if index < limit || (!done && replenish()) then
+        head = storage.asInstanceOf[scala.Array[AnyRef]](index).asInstanceOf[record]
+        index += 1
+        true
+      else false
 
-    private def replenish(): Boolean =
+    def current: record = head
+
+    private update def replenish(): Boolean =
       if consumed > 0 then
         stream.skip(consumed)
         consumed = 0
 
       stream.refill(Credit(block)) match
         case count: Int =>
-          storage = stream.unsafeStorage(using Unsafe).asInstanceOf[scala.Array[AnyRef]]
+          storage = stream.unsafeStorage(using Unsafe).asInstanceOf[AnyRef]
           index = stream.start
           limit = stream.start + count
           consumed = count
@@ -709,12 +694,6 @@ private def recordIterator[record]
           done = true
           stream.close()
           false
-
-    def next(): record =
-      if !hasNext then panic(m"the record stream is exhausted")
-      val result = storage(index).asInstanceOf[record]
-      index += 1
-      result
 
 private def throughDuct[in, out, upTransport, downTransport]
   ( consume duct:

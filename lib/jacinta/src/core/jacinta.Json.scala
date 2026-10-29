@@ -289,7 +289,7 @@ trait Json2 extends Json3:
 
         def aggregate(bytes: Chain[Data]): value in Json =
           // The parser consumes an `Iterator`, which only the stdlib view of a `Chain` offers.
-          Json.readJson(Chain.iterator(bytes)).as[value].asInstanceOf[value in Json]
+          Json.readJson(Iterator.from(Chain.iterator(bytes))).as[value].asInstanceOf[value in Json]
 
         override def accept(stream: (Stream[Data] over Credit)^): value in Json =
           Json.readJson(stream).as[value].asInstanceOf[value in Json]
@@ -711,7 +711,7 @@ trait Json1 extends Json2:
         // general path hands the parser an `Iterator`, which has no native counterpart.
         bytes match
           case block #:: rest if rest.nil => parseDirect(block, parsable).asInstanceOf[value in Json]
-          case _ => parseDirect(Chain.iterator(bytes), parsable).asInstanceOf[value in Json]
+          case _ => parseDirect(bytes.iterator, parsable).asInstanceOf[value in Json]
 
       override def accept(stream: (Stream[Data] over Credit)^): value in Json =
         parseDirect(stream, parsable).asInstanceOf[value in Json]
@@ -1633,7 +1633,7 @@ object Json extends Json1, Dynamic:
         type Operand = Data
 
         // The parser consumes an `Iterator`, which only the stdlib view of a `Chain` offers.
-        def aggregate(source: Chain[Data]): Json.Ast = Json.Ast.parse(Chain.iterator(source))
+        def aggregate(source: Chain[Data]): Json.Ast = Json.Ast.parse(source.iterator)
         override def accept(stream: (Stream[Data] over Credit)^): Json.Ast =
           // See `readJson`: the non-consume `accept` signature crosses to the
           // consuming parser as a neutral reference.
@@ -2543,11 +2543,16 @@ object Json extends Json1, Dynamic:
     def parse(source: Data, holes: Boolean)(using mode: NumberMode): Json.Ast raises Parse.Error =
       Parser.parse(source, holes, mode).asInstanceOf[Json.Ast]
 
-    def parse(input: Iterator[Data])(using mode: NumberMode): Json.Ast raises Parse.Error =
+    // The consumed input is handed on inside the method body itself, not a `raises` lambda,
+    // which could not consume a parameter of the enclosing method.
+    def parse(consume input: Iterator[Data]^)(using mode: NumberMode, tactic: Tactic[Parse.Error])
+    :   Json.Ast =
+
       Parser.parse(input, mode).asInstanceOf[Json.Ast]
 
-    def parse(input: Iterator[Data], holes: Boolean)(using mode: NumberMode)
-    :   Json.Ast raises Parse.Error =
+    def parse(consume input: Iterator[Data]^, holes: Boolean)
+      ( using mode: NumberMode, tactic: Tactic[Parse.Error] )
+    :   Json.Ast =
 
       Parser.parse(input, holes, mode).asInstanceOf[Json.Ast]
 
@@ -2556,8 +2561,9 @@ object Json extends Json1, Dynamic:
 
       Parser.parseTracked(source, mode)
 
-    private[jacinta] def parseTracked(input: Iterator[Data])(using mode: NumberMode)
-    :   (Json.Ast, Json.PositionIndex) raises Parse.Error =
+    private[jacinta] def parseTracked(consume input: Iterator[Data]^)
+      ( using mode: NumberMode, tactic: Tactic[Parse.Error] )
+    :   (Json.Ast, Json.PositionIndex) =
 
       Parser.parseTracked(input, mode)
 
@@ -2596,7 +2602,8 @@ object Json extends Json1, Dynamic:
   // positions are recorded and retained on the `Json` (locatable via
   // `Positionable`); when off, the throughput path is unchanged. This is the
   // single place the `read`/`load` givens branch on tracking.
-  private[jacinta] def readJson(input: Iterator[Data])(using Tactic[Parse.Error], PositionTracking)
+  private[jacinta] def readJson(consume input: Iterator[Data]^)
+    ( using Tactic[Parse.Error], PositionTracking )
   :   Json =
 
     summon[PositionTracking] match
@@ -2636,7 +2643,7 @@ object Json extends Json1, Dynamic:
   // coordinates; there is no `PositionIndex` (nothing to index — the result
   // is the caller's value, not a `Json`).
   private[jacinta] def parseDirect[value]
-    ( input: Iterator[Data], parsable: (value is Json.Parsable)^ )
+    ( consume input: Iterator[Data]^, parsable: (value is Json.Parsable)^ )
     ( using tactic: Tactic[Parse.Error], tracking: PositionTracking, mode: NumberMode )
   :   value =
 
@@ -3008,7 +3015,9 @@ object Json extends Json1, Dynamic:
         caps.unsafe.unsafeAssumePure(() => Morphology.Arr(encodable.shape()))
 
       Json.Encodable(shape): values =>
-        val roots = Array.from(traversable.traverse(values).map(encodable.encoded(_).root))
+        val builder = scala.collection.immutable.List.newBuilder[Json.Ast]
+        traversable.traverse(values).map(encodable.encoded(_).root).each(builder += _)
+        val roots = Array.from(builder.result())
         Json.ast(Json.Ast.arr(roots.asInstanceOf[Array[Any]^{}]))
 
   given array: [collection <: Iterable, element]
@@ -3138,7 +3147,7 @@ object Json extends Json1, Dynamic:
       type Operand = Data
 
       // The parser consumes an `Iterator`, which only the stdlib view of a `Chain` offers.
-      def aggregate(bytes: Chain[Data]): Json = readJson(Chain.iterator(bytes))
+      def aggregate(bytes: Chain[Data]): Json = readJson(Iterator.from(Chain.iterator(bytes)))
       override def accept(stream: (Stream[Data] over Credit)^): Json = readJson(stream)
 
   given showable: Formatting => Json is Showable = _.root.show
@@ -3151,10 +3160,10 @@ object Json extends Json1, Dynamic:
   // Serializes on a fiber, handing out text as it is produced, so a large document can be
   // written to a socket or file before it is fully rendered — the model of `Xml.emit`.
   def emit(json: Json)(using formatting: Formatting, monitor: Monitor, probate: Probate)
-  :   Iterator[Text] =
+  :   Iterator[Text]^ =
 
     val producer = Producer[Text]()
-    val output = producer.iterator
+    val output: Iterator[Text]^ = producer.iterator
 
     producer.transfer: (producer, _, _) ?=>
       Json.Ast.write(new Json.Ast.Textual(producer()), formatting, json.root)

@@ -714,7 +714,7 @@ object Tests extends Suite("compression", m"Pneumatic tests"):
         zipped.write(Array.unsafeJvm(mixed))
         zipped.close()
         val chunks = buffer.toByteArray.nn.iterator.map { byte => Data(byte) }
-        val gathered = Gather2().ingest(Stream(chunks).decompress[Gzip])
+        val gathered = Gather2().ingest(Stream(Iterator.from(chunks)).decompress[Gzip])
         gathered.data.to[List]
       . assert(_ == mixed.to[List])
 

@@ -33,6 +33,7 @@
 package obligatory
 
 import scala.annotation.*
+import scala.caps
 
 import prepositional.*
 import rudiments.*
@@ -41,27 +42,17 @@ import vacuous.*
 object Framable:
   // Wraps a `frame` thunk — which reads one frame and returns `Unset` when
   // the stream is exhausted — into an `Iterator[data]`. Hides the lazy
-  // `ready` cache and the `hasNext`/`next()` plumbing that every framer
-  // would otherwise duplicate. The thunk is by-name and typically closes
-  // over the caller's `Cursor`, so the iterator honestly captures `frame`.
-  def frames[data](frame: => Optional[data]): Iterator[data]^{frame} =
+  // plumbing that every framer would otherwise duplicate. The thunk is by-name and typically
+  // closes over the caller's `Cursor`, so the iterator honestly captures `frame`.
+  def frames[data](frame: => Optional[data]): Iterator[data]^{frame, caps.any} =
     new Iterator[data]:
-      // [stdlib-iterator] ready cache var in anonymous Iterator
-      @scala.caps.unsafe.untrackedCaptures
-      private var ready: Optional[data] = Unset
+      private var ready: data = null.asInstanceOf[data]
 
-      def hasNext: Boolean =
-        if ready.absent then ready = frame
-        ready.present
+      update def advance(): Boolean = frame.lay(false): next =>
+        ready = next
+        true
 
-      // `hasNext` is what pulls a frame, so it is called here too: `next()` alone would otherwise
-      // hand back the unset cache — a null — rather than the next frame, and a caller following
-      // the `Iterator` contract loosely would get a silent null instead of an error.
-      def next(): data =
-        if !hasNext then throw new NoSuchElementException("the framed stream is exhausted")
-
-        ready.asInstanceOf[data].also:
-          ready = Unset
+      def current: data = ready
 
 trait Framable extends Typeclass, Operable:
   // The framed iterator lazily pulls from `input`, so it honestly captures it (and `input` is

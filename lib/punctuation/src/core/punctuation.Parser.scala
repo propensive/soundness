@@ -32,6 +32,7 @@
                                                                                                   */
 package punctuation
 
+import murmuration.Iterator
 import anticipation.*
 import prepositional.*
 import zephyrine.*

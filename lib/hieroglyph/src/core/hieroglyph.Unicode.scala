@@ -108,17 +108,19 @@ object Unicode:
       . or(remoteUnicodeData("UnicodeData.txt".tt))
       . or(panic(m"could not find hieroglyph/UnicodeData.txt on the classpath"))
 
-    scala.io.Source.fromInputStream(in).getLines().map(_.split(";").nn.iterator.to(List)).flatMap:
-      case hex :: name :: _ if !name.nn.startsWith("<") =>
-        val hexInt = Integer.parseInt(hex, 16)
+    val entries =
+      Iterator.from(scala.io.Source.fromInputStream(in).getLines())
+      . map(_.split(";").nn.iterator.to(List))
+      . sweep:
+          case hex :: name :: _ if !name.nn.startsWith("<") =>
+            val hexInt = Integer.parseInt(hex, 16)
 
-        if hexInt < 65536 then Iterator((name.nn.tt, hexInt.toChar))
-        else Iterator((name.nn.tt, new String(Character.toChars(hexInt)).tt))
+            val value: Char | Text =
+              if hexInt < 65536 then hexInt.toChar else new String(Character.toChars(hexInt)).tt
 
-      case _ =>
-        Iterator.empty
+            (name.nn.tt, value)
 
-    . to(Map)
+    Map.from(murmuration.Reshapable.build(entries, scala.collection.immutable.Map.newBuilder))
 
   lazy val unicodeNames: Map[Char | Text, Text] =
     unicodeData.remap: (key, value) =>

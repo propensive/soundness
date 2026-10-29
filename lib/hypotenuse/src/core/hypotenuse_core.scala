@@ -63,31 +63,27 @@ extension [self](self: self)(using traversable: self is Traversable)
     ( using commensurable: traversable.Operand is Commensurable against traversable.Operand )
   :   Optional[traversable.Operand] =
 
-    val iterator = traversable.traverse(self)
+    var started = false
+    var current: traversable.Operand = null.asInstanceOf[traversable.Operand]
 
-    if !iterator.hasNext then Unset else
-      var current = iterator.next()
+    traversable.traverse(self).each: element =>
+      if !started || element < current then current = element
+      started = true
 
-      while iterator.hasNext do
-        val element = iterator.next()
-        if element < current then current = element
-
-      current
+    if started then current else Unset
 
   inline def maximum
     ( using commensurable: traversable.Operand is Commensurable against traversable.Operand )
   :   Optional[traversable.Operand] =
 
-    val iterator = traversable.traverse(self)
+    var started = false
+    var current: traversable.Operand = null.asInstanceOf[traversable.Operand]
 
-    if !iterator.hasNext then Unset else
-      var current = iterator.next()
+    traversable.traverse(self).each: element =>
+      if !started || element > current then current = element
+      started = true
 
-      while iterator.hasNext do
-        val element = iterator.next()
-        if element > current then current = element
-
-      current
+    if started then current else Unset
 
 // The `Traversable`-receiver twin of `median` below: a native collection is not an `Iterable`,
 // so the traversal is materialised and delegated.
@@ -99,7 +95,7 @@ extension [self, value](self: self)(using traversable: self is Traversable by va
             addable:       value is Addable by divisible.Result )
   :   Optional[addable.Result] =
 
-    traversable.traverse(self).to(Iterable).median
+    medianOf(traversable.traverse(self).to[List])
 
 extension [value](iterable: Iterable[value])
   inline def minimum(using commensurable: value is Commensurable against value): Optional[value] =
@@ -125,32 +121,43 @@ extension [value](iterable: Iterable[value])
             addable:       value is Addable by divisible.Result )
   :   Optional[addable.Result] =
 
-    def recur(n: Int, items: List[value]): value = items match
-      case pivot :: rest =>
-        var left: List[value] = Nil
-        var right: List[value] = Nil
+    medianOf(iterable.to(List))
 
-        rest.each: item => if item < pivot then left ::= item else right ::= item
 
-        if left.size == n then pivot
-        else if left.size < n then recur(n - left.size - 1, right)
-        else recur(n, left)
+// The median by quickselect over a native list, shared by the `Iterable` and `Traversable`
+// receivers of `median`.
+private inline def medianOf[value](list: List[value])
+  ( using commensurable: value is Commensurable against value,
+          subtractable:  value is Subtractable by value,
+          divisible:     subtractable.Result is Divisible by Double,
+          addable:       value is Addable by divisible.Result )
+:   Optional[addable.Result] =
 
-      case _ =>
-        // Unreachable: `recur` is only ever applied to a list longer than `n >= 0`.
-        panic(m"median of an empty list")
+  def recur(n: Int, items: List[value]): value = items match
+    case pivot :: rest =>
+      var left: List[value] = Nil
+      var right: List[value] = Nil
 
-    val size = iterable.size
+      rest.each: item => if item < pivot then left ::= item else right ::= item
 
-    if size == 0 then Unset
-    else if size%2 == 0 then
-      val first = recur((size - 1)/2, iterable.to(List))
-      val second = recur((size + 1)/2, iterable.to(List))
-      first + (second - first)/2.0
-    else
-      val result: value = recur((size - 1)/2, iterable.to(List))
-      result + (result - result)/1.0
+      if left.size == n then pivot
+      else if left.size < n then recur(n - left.size - 1, right)
+      else recur(n, left)
 
+    case _ =>
+      // Unreachable: `recur` is only ever applied to a list longer than `n >= 0`.
+      panic(m"median of an empty list")
+
+  val size = list.size
+
+  if size == 0 then Unset
+  else if size%2 == 0 then
+    val first = recur((size - 1)/2, list)
+    val second = recur((size + 1)/2, list)
+    first + (second - first)/2.0
+  else
+    val result: value = recur((size - 1)/2, list)
+    result + (result - result)/1.0
 
 extension (float: Float)
   @targetName("absFloat")

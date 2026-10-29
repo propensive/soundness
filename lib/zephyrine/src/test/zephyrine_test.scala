@@ -56,7 +56,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
           producer.put("two")
           producer.finish()
           val output = producer.iterator
-          val it = async(List.from(output))
+          val it = async(output.to[List])
 
           unsafely(it.await())
       . assert(_ == List("onet", "wo"))
@@ -64,27 +64,24 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
       test(m"One block, exact size, ready immediately"):
         val producer = Producer[Text](4, 3)
         producer.put("zero")
-        producer.iterator
-        if producer.iterator.hasNext then producer.iterator.next() else ""
+        producer.iterator.option.getOrElse("")
       . assert(_ == "zero")
 
       test(m"Two blocks, exact size, ready immediately"):
         val producer = Producer[Text](4, 2)
         producer.put("zerofour")
-        producer.iterator
         var out = ""
-        if producer.iterator.hasNext then out += producer.iterator.next()
-        if producer.iterator.hasNext then out += producer.iterator.next()
+        producer.iterator.option.foreach(out += _)
+        producer.iterator.option.foreach(out += _)
         out
       . assert(_ == "zerofour")
 
       test(m"More than two blocks, ready immediately"):
         val producer = Producer[Text](4, 2)
         producer.put("zerofoursix")
-        producer.iterator
         var out = ""
-        if producer.iterator.hasNext then out += producer.iterator.next()
-        if producer.iterator.hasNext then out += producer.iterator.next()
+        producer.iterator.option.foreach(out += _)
+        producer.iterator.option.foreach(out += _)
         out
       . assert(_ == "zerofour")
 
@@ -97,10 +94,9 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
         producer.put("6")
         producer.put("7")
         producer.put("8")
-        producer.iterator
         var out = ""
-        if producer.iterator.hasNext then out += producer.iterator.next()
-        if producer.iterator.hasNext then out += producer.iterator.next()
+        producer.iterator.option.foreach(out += _)
+        producer.iterator.option.foreach(out += _)
         out
       . assert(_ == "12345678")
 
@@ -108,7 +104,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
         supervise:
           val producer = Producer[Text](4, 2)
           val output = producer.iterator
-          val out = async(List.from(output))
+          val out = async(output.to[List])
           producer.put("12345678901234567890")
           producer.finish()
           unsafely(out.await())
@@ -118,7 +114,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
         supervise:
           val producer = Producer[Text](4, 2)
           val output = producer.iterator
-          val out = async(List.from(output))
+          val out = async(output.to[List])
           producer.put("123456789012345678")
           producer.finish()
           unsafely(out.await())
@@ -135,7 +131,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
               producer().put(string)
               producer().finish()
 
-            reader.foldLeft("")(_ + _)
+            reader.fold("")(_ + _)
         . assert(_ == string)
 
         test(m"String length $i, sent unitarily, async puts"):
@@ -148,14 +144,14 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
                 producer().put(char.toString)
               producer().finish()
 
-            reader.foldLeft("")(_ + _)
+            reader.fold("")(_ + _)
         . assert(_ == string)
 
         test(m"String length $i, sent whole, async reads"):
           supervise:
             val producer = Producer[Text](5, 2)
             val reader = producer.iterator
-            val output = async(reader.foldLeft("")(_ + _))
+            val output = async(reader.fold("")(_ + _))
             producer.put(string)
             producer.finish()
             unsafely(output.await())
@@ -165,7 +161,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
           supervise:
             val producer = Producer[Text](5, 2)
             val reader = producer.iterator
-            val output = async(reader.foldLeft("")(_ + _))
+            val output = async(reader.fold("")(_ + _))
             string.tt.chars.each: char =>
               producer.put(char.toString)
             producer.finish()
@@ -178,7 +174,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
           // `arraycopy` length (a regression here over-reads the source).
           val producer = Producer[Data](8)
           val reader = producer.iterator
-          val output = async(List.from(reader))
+          val output = async(reader.to[List])
           producer.put(Data.fill(3)(_.toByte))
           producer.put(Data.fill(5)(i => (i + 10).toByte))
           producer.finish()
@@ -214,7 +210,7 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
         supervise:
           val producer = Producer[Data](4)
           val reader = producer.iterator
-          val output = async(List.from(reader))
+          val output = async(reader.to[List])
           var i = 0
 
           while i < 10 do
@@ -600,14 +596,9 @@ object Tests extends Suite("parsing", m"Zephyrine tests"):
       // (issue #1301) — on a real socket the pull would deadlock.
       test(m"Cursor[Data].expect on a message's final byte does not refill"):
         class Live() extends Iterator[Data]:
-          // [stdlib-iterator] counter var in test Iterator subclass
-          @scala.caps.unsafe.untrackedCaptures
           var pulls: Int = 0
-          def hasNext: Boolean = true
-
-          def next(): Data =
-            pulls += 1
-            if pulls == 1 then Data('a'.toByte, 'b'.toByte) else Data('X'.toByte)
+          update def advance(): Boolean = { pulls += 1; true }
+          def current: Data = if pulls == 1 then Data('a'.toByte, 'b'.toByte) else Data('X'.toByte)
 
         val live = Live()
         val cursor = Cursor(live)

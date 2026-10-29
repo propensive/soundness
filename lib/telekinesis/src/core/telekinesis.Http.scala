@@ -261,9 +261,9 @@ object Http:
   export Status.*
 
   // One chunk of a chunked body (RFC 9112 §7.1): its size in hex, the data, and a line end.
-  private def frame(data: Data): Iterator[Data] =
+  private def frame(data: Data): List[Data] =
     import codepages.asciiCodepage
-    Iterator(t"${Integer.toHexString(data.length).nn.tt}\r\n".in[Data], data, t"\r\n".in[Data])
+    List(t"${Integer.toHexString(data.length).nn.tt}\r\n".in[Data], data, t"\r\n".in[Data])
 
   object Request:
     given showable: Request is Showable = request =>
@@ -361,11 +361,11 @@ object Http:
           val text = head(t"Transfer-Encoding: chunked")
 
           Stream
-            ( Iterator(text.in[Data]) ++
-              frame(first) ++
-              frame(second) ++
-              Iterator.continually(pull()).takeWhile(_.present).flatMap(_.lay(Iterator())(frame)) ++
-              Iterator(t"0\r\n\r\n".in[Data]) )
+            ( Iterator(text.in[Data])
+              . concat(Iterator.from(List.iterator(frame(first))))
+              . concat(Iterator.from(List.iterator(frame(second))))
+              . concat(Iterator.continually(pull()).keep(_.present).flatMap(_.lay(Nil)(frame)))
+              . concat(Iterator(t"0\r\n\r\n".in[Data])) )
 
         case _ =>
           val data = first.or(Array.empty[Byte])
@@ -852,7 +852,7 @@ object Http:
       val (head, chunked) = framing(response, version)
 
       // Materialize successive blocks off a pull endpoint as a chunk iterator.
-      def pulls(endpoint: (Stream[Data] over Credit)^): Iterator[Data]^{endpoint} =
+      def pulls(consume endpoint: (Stream[Data] over Credit)^): Iterator[Data]^ =
         val block = buffering.capacity(Substrate.Bytes)
 
         Iterator.continually:
@@ -878,7 +878,7 @@ object Http:
 
           result
 
-        . takeWhile(_.present).flatMap(_.lay(Iterator())(Iterator(_)))
+        . keep(_.present).flatMap(_.lay(Nil)(List(_)))
 
       def bodyBytes: Iterator[Data]^ =
         if !includeBody then Iterator.empty
@@ -888,7 +888,7 @@ object Http:
           case Body.Fixed(data) => Iterator(data)
 
           case Body.Flowing(source) =>
-            if chunked then pulls(source()).flatMap(frame) ++ Iterator(t"0\r\n\r\n".in[Data])
+            if chunked then pulls(source()).flatMap(frame).concat(Iterator(t"0\r\n\r\n".in[Data]))
             else pulls(source())
 
       if !includeBody then Stream(head) else response.body match
@@ -898,7 +898,7 @@ object Http:
         case _ =>
           // Hoisted: a by-name `++` operand may not mint a fresh capability.
           val chunks = bodyBytes
-          Stream(Iterator(head) ++ chunks)
+          Stream(Iterator(head).concat(chunks))
 
     // The serialized head alone — the framing headers exactly as `serialize` writes them —
     // for a server that delivers a fixed body straight from the handler's own frozen

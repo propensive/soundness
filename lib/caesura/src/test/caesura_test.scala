@@ -46,16 +46,16 @@ object Tests extends Suite("dsv", m"Caesura tests"):
       import dsvFormats.csvFormat
 
       test(m"rows of a stream as an iterator"):
-        List.from(t"a,b\nc,d\ne,f".source[Text].rows)
+        t"a,b\nc,d\ne,f".source[Text].rows.to[List]
       . assert(_ == List(Dsv(t"a", t"b"), Dsv(t"c", t"d"), Dsv(t"e", t"f")))
 
       test(m"quoted newlines survive one-char chunks"):
-        List.from(t"\"1\n2\",x\ny,z".s.grouped(1).map(_.tt).stream.rows)
+        Iterator.from(t"\"1\n2\",x\ny,z".s.grouped(1).map(_.tt)).stream.rows.to[List]
       . assert(_ == List(Dsv(t"1\n2", t"x"), Dsv(t"y", t"z")))
 
       test(m"header rows carry column names"):
         import dsvFormats.csvWithHeaderFormat
-        List.from(t"name,age\nalpha,1\nbeta,2".source[Text].rows.map(_[Text](t"name").or(t"?")))
+        t"name,age\nalpha,1\nbeta,2".source[Text].rows.map(_[Text](t"name").or(t"?")).to[List]
       . assert(_ == List(t"alpha", t"beta"))
 
     suite(m"Direct parsing"):
@@ -84,7 +84,7 @@ object Tests extends Suite("dsv", m"Caesura tests"):
       . assert(_ == List(DirectFoo(t"a", t"b"), DirectFoo(t"c", t"d"), DirectFoo(t"e", t"f")))
 
       test(m"typed rows stream one value per row"):
-        List.from(t"x,1\ny,2".source[Text].rowsOf[DirectStat].map(_.count))
+        t"x,1\ny,2".source[Text].rowsOf[DirectStat].map(_.count).to[List]
       . assert(_ == List(1, 2))
 
       test(m"direct read locates fields by heading"):
@@ -294,13 +294,13 @@ object Tests extends Suite("dsv", m"Caesura tests"):
 
     test(m"`read[T in Dsv]` decodes the first record of a one-char-chunk stream"):
       import dsvFormats.csvFormat
-      val stream = "hello,world\nnext,row\n".grouped(1).nn.map(_.tt).stream
+      val stream = Iterator.from("hello,world\nnext,row\n".grouped(1).nn.map(_.tt)).stream
       Dsv.aggregableIn[Foo].accept(stream)
     . assert(_ == Foo(t"hello", t"world"))
 
     test(m"`read[T in Dsv]` decodes by headings from a one-char-chunk stream"):
       import dsvFormats.csvWithHeaderFormat
-      val stream = "greeting,name\nhello,world\n".grouped(1).nn.map(_.tt).stream
+      val stream = Iterator.from("greeting,name\nhello,world\n".grouped(1).nn.map(_.tt)).stream
       Dsv.aggregableIn[Quux].accept(stream)
     . assert(_ == Quux(t"world", t"hello"))
 
