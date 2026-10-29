@@ -34,7 +34,6 @@ package locomotion
 
 import scala.caps
 
-import anticipation.*
 import rudiments.*
 
 @unexported

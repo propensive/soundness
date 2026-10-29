@@ -35,7 +35,6 @@ package quantitative
 import soundness.*
 
 import scala.language.strictEquality
-import scala.language.experimental.into
 
 given decimalizer: Decimalizer = Decimalizer(3)
 

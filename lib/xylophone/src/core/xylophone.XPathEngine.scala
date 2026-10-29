@@ -34,7 +34,6 @@ package xylophone
 
 import scala.annotation.tailrec
 import scala.collection.mutable as scm
-import scala.math.Ordering
 
 import anticipation.*
 import contingency.*

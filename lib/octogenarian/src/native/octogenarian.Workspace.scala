@@ -33,10 +33,8 @@
 package octogenarian
 
 import anticipation.*
-import aperture.*
 import contingency.*
 import dissonance.*
-import distillate.*
 import galilei.*
 import gossamer.*
 import prepositional.*

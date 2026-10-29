@@ -32,16 +32,12 @@
                                                                                                   */
 package cataclysm
 
-import anticipation.*
 import contextual.*
-import contingency.*
-import fulminate.*
 import gesticulate.*
 import nomenclature.*
 import prepositional.*
 import rudiments.*
 import symbolism.*
-import turbulence.*
 import vacuous.*
 
 // The `css"…"` typed CSS interpolator, wired through `contextual` like xylophone's

@@ -46,7 +46,6 @@ import symbolism.*
 import vacuous.*
 
 import Mathml.*
-import denominative.dysasymptotics.linearSize
 
 // A `Cell` is a rectangular block of monospaced character cells with a `baseline`
 // — the row index (from the top) of the mathematical axis that composition aligns

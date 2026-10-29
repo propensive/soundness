@@ -35,8 +35,6 @@ package urticose
 import java.net as jn
 import java.util as ju
 
-import scala.jdk.CollectionConverters.*
-
 import anticipation.*
 import contingency.*
 import distillate.*

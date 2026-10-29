@@ -33,7 +33,6 @@
 package quantitative
 
 import anticipation.*
-import rudiments.*
 
 object Miles:
   given designation: Designation[Miles[1]] = () => "mi".tt

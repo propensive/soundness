@@ -41,8 +41,6 @@ import denominative.*
 import hieroglyph.*
 import prepositional.*
 import rudiments.*
-import symbolism.*
-import vacuous.*
 import zephyrine.{stream as _, *}
 
 object Writable:

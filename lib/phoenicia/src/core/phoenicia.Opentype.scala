@@ -33,16 +33,8 @@
 package phoenicia
 
 import anticipation.*
-import contingency.*
-import gossamer.*
-import hypotenuse.*
-import polaris.*
 import prepositional.*
-import quantitative.*
-import rudiments.*
-import symbolism.*
 import turbulence.*
-import vacuous.*
 import zephyrine.*
 
 object Opentype:

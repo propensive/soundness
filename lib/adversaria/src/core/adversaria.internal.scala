@@ -34,11 +34,10 @@ package adversaria
 
 import java.lang as jl
 
-import scala.collection.immutable.{List, Nil, ::}
+import scala.collection.immutable.{List, Nil}
 import scala.quoted.*
 
 import anticipation.*
-import denominative.*
 import fulminate.*
 import gigantism.*
 import panopticon.*

@@ -37,7 +37,6 @@ import scala.language.dynamics
 import adversaria.*
 import anticipation.*
 import gossamer.*
-import hieroglyph.*
 import prepositional.*
 import rudiments.*
 import typonym.*

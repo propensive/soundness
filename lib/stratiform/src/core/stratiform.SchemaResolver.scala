@@ -60,7 +60,7 @@ import vacuous.*
 // Bare references (no selector, no signature) resolve only against a
 // store's local reference entries, by design.
 object SchemaResolver:
-  import Tels.Resolution.{Error as ResolutionError, Step, Store, Delegate}
+  import Tels.Resolution.{Error as ResolutionError, Step, Delegate}
   import ResolutionError.Reason
 
   // The built-in `tels` meta-schema's composed signature: the BASE-256

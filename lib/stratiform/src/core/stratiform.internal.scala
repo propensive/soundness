@@ -45,7 +45,6 @@ import gigantism.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
-import symbolism.*
 import vacuous.*
 
 // Compile-time machinery for the `tel"…"` interpolator and extractor.

@@ -37,16 +37,13 @@ import scala.caps
 import anticipation.*
 import coaxial.*
 import contingency.*
-import enigmatic.*
 import fulminate.*
 import gastronomy.*
 import gigantism.*
 import gossamer.*
 import prepositional.*
 import proscenium.*
-import rudiments.*
 import susurration.*
-import turbulence.*
 import urticose.*
 import vacuous.*
 import zephyrine.*

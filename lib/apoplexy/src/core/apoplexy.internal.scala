@@ -57,9 +57,7 @@ import telekinesis.*
 import turbulence.*
 import urticose.*
 import vacuous.*
-import xylophone.*
 
-import codepages.utf8Codepage
 import rudiments.sortingAlgorithms.timsort
 import strategies.throwUnsafely
 import zephyrine.Parse
@@ -1386,7 +1384,6 @@ object Apoplexy:
   // with the schema's properties, built over `Api.Records` with the expansion polyvinyl makes
   // of the schema's fields
   def recordMacro(self: Expr[Api.Response], json: Expr[Json]): Macro[Any] =
-    import quotes.reflect.*
 
     val (pointer, source) = jsonResponse(self, t"record()")
     val (fields, many) = responseMember(source, pointer, t"record()")
@@ -1403,7 +1400,6 @@ object Apoplexy:
 
   // `Api.Response.tuple()`: as `record()`, as a named tuple read eagerly
   def tupleMacro(self: Expr[Api.Response], json: Expr[Json]): Macro[Any] =
-    import quotes.reflect.*
 
     val (pointer, source) = jsonResponse(self, t"tuple()")
     val (fields, many) = responseMember(source, pointer, t"tuple()")

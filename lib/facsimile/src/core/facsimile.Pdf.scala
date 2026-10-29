@@ -50,7 +50,6 @@ import hieroglyph.*
 import iridescence.*
 import mosquito.*
 import phoenicia.*
-import pneumatic.*
 import prepositional.*
 import quantitative.*
 import rudiments.*
@@ -906,7 +905,6 @@ object Pdf:
 
   // PdfRect → Pdf.Rect
   object Rect:
-    import symbolism.*
 
     // A `/Rect`-shaped array: four numbers whose corners may be given in any order, normalized
     // here to lower-left and upper-right (ISO 32000-2 §7.9.5). `scale` carries `/UserUnit`,

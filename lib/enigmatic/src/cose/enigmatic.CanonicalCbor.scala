@@ -36,7 +36,6 @@ import scala.math
 
 import anticipation.*
 import breviloquence.*
-import vacuous.*
 
 // Deterministic CBOR encoding per RFC 8949 §4.2.1, as required by RFC 9052 §9.
 // The `Cbor.Ast` encoder already emits shortest-form integers and definite-length

@@ -50,7 +50,6 @@ import gossamer.*
 import hypotenuse.Bcd
 import prepositional.*
 import rudiments.*
-import symbolism.*
 import vacuous.*
 import wisteria.{Discriminable, Variant}
 import zephyrine.*

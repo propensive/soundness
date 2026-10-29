@@ -50,7 +50,6 @@ import filesystemOptions.deleteRecursively
 import filesystemOptions.dereferenceSymlinks
 import filesystemOptions.moveAtomically
 import filesystemOptions.overwritePreexisting
-import sortingAlgorithms.timsort
 
 // Git's configuration dialect: `[section]` and `[section "subsection"]` headers, `key = value`
 // entries (a bare key meaning `true`), `#` and `;` comments, double-quoted values with escapes, and

@@ -41,7 +41,6 @@ import anticipation.*
 import contingency.*
 import prepositional.*
 import rudiments.*
-import vacuous.*
 import zephyrine.*
 
 // A target which can be opened as a push endpoint: the successor to

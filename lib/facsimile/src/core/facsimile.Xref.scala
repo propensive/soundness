@@ -35,7 +35,6 @@ package facsimile
 import anticipation.*
 import contingency.*
 import denominative.*
-import denominative.dysasymptotics.linearSize
 import gossamer.*
 import rudiments.*
 import symbolism.*

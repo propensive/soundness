@@ -33,7 +33,6 @@
 package octogenarian
 
 import anticipation.*
-import aperture.*
 import contingency.*
 import distillate.*
 import galilei.*

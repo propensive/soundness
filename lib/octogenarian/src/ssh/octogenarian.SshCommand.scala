@@ -32,8 +32,6 @@
                                                                                                   */
 package octogenarian
 
-import scala.caps
-
 import ambience.*
 import anticipation.*
 import contingency.*

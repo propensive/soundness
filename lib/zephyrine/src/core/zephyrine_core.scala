@@ -37,7 +37,6 @@ import scala.caps
 import anticipation.*
 import denominative.*
 import fulminate.*
-import hieroglyph.*
 import prepositional.*
 import rudiments.*
 import vacuous.*

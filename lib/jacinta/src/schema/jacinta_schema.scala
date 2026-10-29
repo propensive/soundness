@@ -39,12 +39,8 @@ import contingency.*
 import murmuration.{exists, foreach}
 import prepositional.*
 import telekinesis.*
-import urticose.*
 import vacuous.*
-import wisteria.*
-import zephyrine.*
 import Json.Error.Reason
-import httpBackends.javaNetHttp
 
 extension (json: Json)
   // Runtime-checks `json` against the schema for `topic`, then re-types it as a

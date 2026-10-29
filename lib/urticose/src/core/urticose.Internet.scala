@@ -32,8 +32,6 @@
                                                                                                   */
 package urticose
 
-import scala.caps
-
 import beneficence.*
 import contingency.*
 import fulminate.*

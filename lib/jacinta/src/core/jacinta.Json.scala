@@ -36,7 +36,6 @@ import scala.caps
 import scala.collection.Factory
 import scala.collection.immutable.IndexedSeq
 import scala.collection.immutable.Vector
-import scala.collection.mutable as scm
 import scala.compiletime.*
 import scala.language.dynamics
 import scala.language.experimental.pureFunctions

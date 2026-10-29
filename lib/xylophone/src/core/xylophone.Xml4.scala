@@ -33,12 +33,10 @@
 package xylophone
 
 import scala.collection.mutable as scm
-import scala.language.experimental.into
 
 import anticipation.*
 import contingency.*
 import denominative.*
-import distillate.*
 import fulminate.*
 import gossamer.*
 import polyvinyl.*

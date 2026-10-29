@@ -39,7 +39,6 @@ import scala.caps
 import com.sun.net.httpserver as csnh
 
 import anticipation.*
-import beneficence.*
 import contingency.*
 import denominative.*
 import distillate.*

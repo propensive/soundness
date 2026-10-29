@@ -33,7 +33,6 @@
 package octogenarian
 
 import anticipation.*
-import aperture.*
 import contingency.*
 import galilei.*
 import gossamer.*
@@ -41,7 +40,6 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import symbolism.*
-import turbulence.*
 import vacuous.*
 
 

@@ -32,7 +32,6 @@
                                                                                                   */
 package jacinta
 
-import scala.collection.mutable as scm
 import scala.compiletime.*
 import scala.language.dynamics
 import scala.language.experimental.pureFunctions
@@ -42,9 +41,6 @@ import scala.{caps, math}
 import anticipation.*
 import contingency.*
 import denominative.*
-import fulminate.*
-import gossamer.*
-import hieroglyph.*
 import hypotenuse.Bcd
 import prepositional.*
 import proscenium.*

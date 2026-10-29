@@ -32,8 +32,6 @@
                                                                                                   */
 package jacinta
 
-import scala.language.experimental.into
-
 import anticipation.*
 import contingency.*
 import denominative.*

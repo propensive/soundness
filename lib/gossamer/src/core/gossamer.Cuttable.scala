@@ -35,7 +35,6 @@ package gossamer
 import java.util.regex.*
 
 import scala.collection.immutable as sci
-import scala.language.experimental.into
 import scala.language.experimental.pureFunctions
 
 import anticipation.*

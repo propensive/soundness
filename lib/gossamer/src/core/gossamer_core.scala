@@ -39,14 +39,12 @@ import java.util.regex as jur
 
 import scala.collection.mutable as scm
 import scala.compiletime
-import scala.language.experimental.into
 import scala.language.experimental.pureFunctions
 import scala.reflect
 import scala.reflect.*
 
 import anticipation.*
 import denominative.*
-import fulminate.*
 import hieroglyph.*
 import hypotenuse.*
 import kaleidoscope.*

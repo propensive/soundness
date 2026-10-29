@@ -39,7 +39,6 @@ import gossamer.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
-import vacuous.*
 
 trait Elicitable2:
   given decodable: [value: Encodable in Text] => value is Elicitable:

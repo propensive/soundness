@@ -34,9 +34,6 @@ package hieroglyph
 
 import java.io as ji
 
-import scala.caps
-import scala.collection.mutable.ArrayBuilder
-
 import anticipation.*
 import contingency.*
 import denominative.*

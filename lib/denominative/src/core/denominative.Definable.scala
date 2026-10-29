@@ -35,7 +35,6 @@ package denominative
 import scala.collection.immutable.IndexedSeq
 import scala.language.experimental.pureFunctions
 
-import anticipation.*
 import prepositional.*
 
 // The write-twin of `Applicable`: `define(index, value)` produces a copy of the container in

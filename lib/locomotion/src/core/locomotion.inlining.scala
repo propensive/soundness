@@ -41,7 +41,6 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import prepositional.*
-import rudiments.*
 import vacuous.*
 
 // The machinery behind `Inlinable`: expansion-time instance resolution, the

@@ -33,7 +33,6 @@
 package fulminate
 
 import scala.annotation.*
-import scala.language.experimental.into
 
 import anticipation.*
 

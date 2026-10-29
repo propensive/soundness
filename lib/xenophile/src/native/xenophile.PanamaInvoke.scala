@@ -34,7 +34,7 @@ package xenophile
 
 import java.lang.foreign.*
 
-import scala.collection.immutable.{List, Nil, ::}
+import scala.collection.immutable.List
 import scala.quoted.*
 
 import anticipation.*
@@ -63,7 +63,6 @@ import denominative.size
 // A `string` result is read back out of native memory; a pointer result becomes an `Address`.
 object PanamaInvoke extends Materializer:
   def materialize[result: Type](self: Expr[Foreign])(using quotes: Quotes): Expr[result] =
-    import quotes.reflect.*
 
     // The receiver carries the source language (`Origin`) in its refined type; the C function it
     // was reached through is peeled out of the navigation tree by the shared recovery in `core`.

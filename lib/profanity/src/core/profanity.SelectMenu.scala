@@ -32,11 +32,9 @@
                                                                                                   */
 package profanity
 
-import anticipation.*
 import clavichord.Keypress
 import contingency.*
 import denominative.*
-import fulminate.*
 import gossamer.*
 import rudiments.{at, last, head, where}
 import vacuous.*

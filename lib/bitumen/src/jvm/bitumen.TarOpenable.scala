@@ -37,7 +37,6 @@ import java.io as ji
 import anticipation.*
 import aperture.*
 import contingency.*
-import pneumatic.*
 import prepositional.*
 import rudiments.*
 import turbulence.*

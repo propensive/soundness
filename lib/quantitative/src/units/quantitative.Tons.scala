@@ -32,8 +32,6 @@
                                                                                                   */
 package quantitative
 
-import rudiments.*
-
 object Tons:
   erased given ratio: Ratio[Kilograms[1] & Tons[-1], 1016.0469088] =
     Ratio.Evidence[Kilograms[1] & Tons[-1], 1016.0469088]()

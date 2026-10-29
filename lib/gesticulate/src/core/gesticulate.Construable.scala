@@ -32,7 +32,6 @@
                                                                                                   */
 package gesticulate
 
-import anticipation.*
 import prepositional.*
 
 // The Soundness type which carries a media type: `("image/png" is Construable to (Raster in

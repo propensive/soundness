@@ -38,7 +38,6 @@ import distillate.*
 import fulminate.*
 import gastronomy.{Permit, ProcessingPermit}
 import prepositional.*
-import rudiments.*
 import vacuous.*
 
 // Encryption is total: a valid transformation is guaranteed by the static types

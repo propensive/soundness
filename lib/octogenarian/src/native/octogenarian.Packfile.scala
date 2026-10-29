@@ -40,7 +40,6 @@ import galilei.*
 import gossamer.*
 import pneumatic.*
 import prepositional.*
-import rudiments.*
 import serpentine.*
 import vacuous.*
 import zephyrine.*

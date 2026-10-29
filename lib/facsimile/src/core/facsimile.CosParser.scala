@@ -35,7 +35,6 @@ package facsimile
 import anticipation.*
 import contingency.*
 import gossamer.*
-import rudiments.*
 import vacuous.*
 
 // A recursive-descent parser over `CosToken`s. It never resolves indirect references — that

@@ -37,7 +37,6 @@ import scala.collection.immutable as sci
 import scala.collection.mutable as scm
 
 import anticipation.*
-import contingency.*
 import denominative.*
 import fulminate.*
 import rudiments.*

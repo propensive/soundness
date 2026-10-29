@@ -32,22 +32,16 @@
                                                                                                   */
 package escritoire
 
-import scala.collection.immutable as sci
-import scala.collection.immutable.IndexedSeq
 import scala.language.experimental.pureFunctions
 
 import anticipation.*
-import denominative.*
-import fulminate.*
 import gossamer.*
 import hieroglyph.*
 import rudiments.*
 import symbolism.*
-import tessellate.*
 import vacuous.*
 
 // Per-row decorations are a short `List` read by column position.
-import denominative.dysasymptotics.linearAccess
 
 object Tabulation:
   given printable: [text]

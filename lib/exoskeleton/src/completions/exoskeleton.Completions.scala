@@ -295,8 +295,6 @@ object Completions:
   (using Tactic[Install.Error])
   :   Installation.InstallResult =
 
-    import filesystemOptions.createNonexistentParents
-
     mitigate:
       case Io.Error(_, _, _, _) => Install.Error(Install.Error.Reason.Io)
       case Name.Error(_, _, _)  => Install.Error(Install.Error.Reason.Io)

@@ -33,7 +33,6 @@
 package ypsiloid
 
 import scala.collection.immutable.Vector
-import java.nio.charset.StandardCharsets
 
 import scala.caps
 
@@ -64,8 +63,6 @@ import zephyrine.*
 
 import Yaml.Error.Reason
 import spectacular.*
-import serpentine.*
-import symbolism.*
 import denominative.dysasymptotics.linearSize
 
 // `Yaml2` is only ever mixed into the `Yaml` object; pinning its self type to `Yaml.type` makes

@@ -32,8 +32,6 @@
                                                                                                   */
 package polysyllabic
 
-import scala.collection.mutable.ArrayBuilder
-
 import anticipation.*
 import denominative.*
 import fulminate.*

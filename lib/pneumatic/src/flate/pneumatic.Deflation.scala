@@ -36,7 +36,6 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import prepositional.*
-import vacuous.*
 import zephyrine.*
 
 // Streaming compression as a pipeline stage, over the pure-Scala `Deflater`. The three

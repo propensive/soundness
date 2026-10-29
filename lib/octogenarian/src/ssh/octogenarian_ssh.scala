@@ -37,7 +37,6 @@ import scala.caps
 import ambience.*
 import anticipation.*
 import guillotine.*
-import prepositional.*
 
 package gitTransports:
   // Remote repositories over a spawned `ssh`. The capture set is spelled out, as the `cli`

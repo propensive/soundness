@@ -36,7 +36,6 @@ import scala.caps
 
 import anticipation.*
 import contingency.*
-import fulminate.*
 import galilei.*
 import gossamer.*
 import gossamer.collationComparable, gossamer.collations.codepointCollation

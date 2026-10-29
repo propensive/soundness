@@ -34,8 +34,6 @@ package rudiments
 
 import java.io as ji
 
-import scala.collection as sc
-import scala.collection.immutable as sci
 import scala.collection.mutable as scm
 import scala.compiletime.*
 import scala.deriving.*

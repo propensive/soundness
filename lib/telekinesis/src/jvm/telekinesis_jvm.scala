@@ -42,17 +42,12 @@ import anticipation.*
 import coaxial.*
 import coaxial.socketBackends.javaBaseSockets
 import contingency.*
-import distillate.*
 import gigantism.*
-import gossamer.*
-import parasite.*
 import prepositional.*
 import rudiments.*
-import spectacular.*
 import telekinesis.*
 import turbulence.*
 import urticose.*
-import vacuous.*
 import zephyrine.*
 
 // Build the underlying Java client with redirect-following disabled — the

@@ -37,7 +37,6 @@ import contingency.*
 import gossamer.*
 import prepositional.*
 import turbulence.*
-import vacuous.*
 import zephyrine.*
 
 trait Receivable2:

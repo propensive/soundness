@@ -34,12 +34,8 @@ package turbulence
 
 import java.io as ji
 
-import scala.collection.mutable as scm
-
 import anticipation.*
-import denominative.*
 import rudiments.*
-import vacuous.*
 
 class StreamOutputStream() extends ji.OutputStream:
   private val buffer: Scroll[Byte] = Scroll[Byte]()

@@ -34,9 +34,7 @@ package telekinesis
 
 import scala.caps
 
-import scala.collection.mutable as scm
-
-import anticipation.{Data as Bytes, *}
+import anticipation.{Data as Bytes}
 import coaxial.*
 import contingency.*
 import fulminate.*

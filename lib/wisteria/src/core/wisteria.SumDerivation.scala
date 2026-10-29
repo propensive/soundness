@@ -40,7 +40,6 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import fulminate.*
-import rudiments.*
 import vacuous.*
 
 object SumDerivation:

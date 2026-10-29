@@ -37,7 +37,6 @@ import java.lang.{Integer as JInt, Long as JLong, Short as JShort, Byte as JByte
 
 import scala.annotation.*
 import scala.language.experimental.genericNumberLiterals
-import scala.language.experimental.into
 import scala.util.FromDigits
 import scala.{caps, math}
 
@@ -45,7 +44,6 @@ import anticipation.*
 import denominative.*
 import prepositional.*
 import symbolism.*
-import vacuous.*
 
 object internal:
   type Bits[bits <: 8 | 16 | 32 | 64] <: B8 | B16 | B32 | B64 = bits match

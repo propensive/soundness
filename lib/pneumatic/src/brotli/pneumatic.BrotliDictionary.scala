@@ -32,8 +32,6 @@
                                                                                                   */
 package pneumatic
 
-import rudiments.*
-
 // Word transforms and static-dictionary geometry for Brotli, ported faithfully from Google's
 // reference decoder (org.brotli.dec, MIT-licensed, Copyright 2015 Google Inc.).
 // `transformDictionaryWord` writes a transformed dictionary word into `dst` and returns its length.

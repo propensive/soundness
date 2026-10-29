@@ -32,9 +32,6 @@
                                                                                                   */
 package bitumen
 
-import prepositional.*
-import serpentine.*
-
 // The contextual archive handle within an `open[Tar]` block, in the manner of galilei's `file`.
 // Transparent inline so the handle's precise (grant-refined, capturing) type is preserved.
 transparent inline def tar(using handle: Tar.Handle^): handle.type = handle

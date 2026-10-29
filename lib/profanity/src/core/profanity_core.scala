@@ -34,7 +34,6 @@ package profanity
 
 import ambience.*
 import anticipation.*
-import clavichord.Keypress
 import contingency.*
 import gigantism.*
 import gossamer.*

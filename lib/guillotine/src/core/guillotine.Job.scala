@@ -36,12 +36,10 @@ import java.io as ji
 import java.util.concurrent as juc
 
 import scala.caps
-import scala.jdk.StreamConverters.StreamHasToScala
 import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import contingency.*
-import gossamer.*
 import parasite.*
 import prepositional.*
 import rudiments.*

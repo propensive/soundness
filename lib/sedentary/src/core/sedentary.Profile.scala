@@ -46,7 +46,6 @@ import fulminate.*
 import galilei.*
 import gossamer.*
 import hellenism.*
-import inimitable.*
 import jacinta.*
 import parasite.*
 import prepositional.*
@@ -58,8 +57,6 @@ import superlunary.*
 import vacuous.*
 
 import systems.javaBaseSystem
-import threads.platformThreads
-import workingDirectories.javaBaseWorkingDirectory
 
 // A profile test: where `Bench` measures how fast a fragment runs and `Stress` how it
 // scales, `Profile` measures where its time goes. The body is run repeatedly on a single

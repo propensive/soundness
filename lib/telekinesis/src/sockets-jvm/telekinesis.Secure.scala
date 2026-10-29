@@ -32,21 +32,16 @@
                                                                                                   */
 package telekinesis
 
-import java.io as ji
-
 import anticipation.*
 import coaxial.*
 import contingency.*
-import distillate.*
 import gigantism.*
 import gossamer.*
 import parasite.*
-import prepositional.*
 import rudiments.*
 import spectacular.*
 import turbulence.*
 import urticose.*
-import vacuous.*
 import zephyrine.*
 
 // The JVM's `https` exchange for `httpBackends.soundnessHttp`: ALPN offers `h2` then `http/1.1`

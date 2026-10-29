@@ -37,7 +37,6 @@ import denominative.*
 import fulminate.*
 import rudiments.*
 import vacuous.*
-import denominative.dysasymptotics.linearSize
 
 object Palimpsest:
   // §10: a decoder accepting palimpsests from an untrusted source MUST

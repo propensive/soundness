@@ -44,10 +44,7 @@ import contingency.*
 import gigantism.*
 import gossamer.*
 import parasite.*
-import prepositional.*
-import rudiments.*
 import spectacular.*
-import turbulence.*
 import urticose.*
 import vacuous.*
 import zephyrine.*

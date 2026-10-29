@@ -36,7 +36,6 @@ import java.net as jn
 import java.util as ju
 import javax.tools as jt
 
-import scala.jdk.CollectionConverters.*
 import scala.util.control as suc
 
 import ambience.*

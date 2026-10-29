@@ -38,7 +38,6 @@ import anticipation.*
 import clavichord.*
 import denominative.*
 import escapade.*
-import gossamer.*
 import profanity.*
 import rudiments.*
 import vacuous.*

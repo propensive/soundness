@@ -36,13 +36,10 @@ import scala.collection.immutable.IndexedSeq
 
 import anticipation.*
 import contingency.*
-import denominative.*
 import gossamer.*
-import gossamer.Textual.concatenable
 import hieroglyph.*
 import polysyllabic.*
 import rudiments.*
-import symbolism.*
 import tessellate.*
 import vacuous.*
 

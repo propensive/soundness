@@ -34,13 +34,10 @@ package galilei
 
 import scala.language.experimental.pureFunctions
 
-import ambience.*
 import anticipation.*
 import contingency.*
-import fulminate.*
 import gossamer.*
 import prepositional.*
-import rudiments.*
 import serpentine.*
 
 object Device:

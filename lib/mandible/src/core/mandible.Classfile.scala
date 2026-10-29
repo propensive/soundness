@@ -38,7 +38,6 @@ import java.lang.classfile.instruction as jlci
 import java.nio.charset.StandardCharsets
 
 import anticipation.*
-import contingency.*
 import fulminate.*
 import gossamer.*
 import hellenism.*

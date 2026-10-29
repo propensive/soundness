@@ -44,10 +44,7 @@ import scala.collection.concurrent as scc
 import anticipation.*
 import coaxial.*
 import contingency.*
-import digression.*
 import distillate.*
-import eucalyptus.*
-import turbulence.*
 import zephyrine.*
 import fulminate.*
 import galilei.*

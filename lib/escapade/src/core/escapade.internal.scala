@@ -33,7 +33,7 @@
 package escapade
 
 import scala.collection.immutable.Seq
-import scala.collection.immutable.{List, Nil, ::}
+import scala.collection.immutable.List
 import scala.language.experimental.pureFunctions
 import scala.quoted.*
 import scala.reflect.*

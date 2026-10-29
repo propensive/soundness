@@ -34,7 +34,6 @@ package honeycomb
 
 import java.lang as jl
 
-import scala.caps
 import scala.collection.immutable.IndexedSeq
 import scala.collection.immutable.Seq
 import scala.collection.immutable.VectorMap

@@ -33,9 +33,7 @@
 package surveillance
 
 import anticipation.*
-import contingency.*
 import prepositional.*
-import rudiments.*
 
 // The contextual watch handle within an `open[Watch]` block, in the manner of galilei's
 // `file`. Transparent inline so the handle's precise (capturing) type is preserved.

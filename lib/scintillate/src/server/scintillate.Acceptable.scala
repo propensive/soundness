@@ -44,7 +44,6 @@ import rudiments.*
 import telekinesis.*
 import turbulence.*
 import vacuous.*
-import zephyrine.*
 import errorDiagnostics.stackTracesDiagnostics
 
 object Acceptable:

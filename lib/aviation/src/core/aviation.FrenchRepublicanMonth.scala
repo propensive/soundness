@@ -32,9 +32,7 @@
                                                                                                   */
 package aviation
 
-import anticipation.*
 import prepositional.*
-import spectacular.*
 import symbolism.*
 
 // The twelve thirty-day months of the French Republican calendar, followed by the five or six

@@ -32,8 +32,6 @@
                                                                                                   */
 package stenography
 
-import java.nio.charset as jnc
-
 import anticipation.*
 import denominative.*
 import rudiments.*

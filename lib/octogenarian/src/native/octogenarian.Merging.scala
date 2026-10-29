@@ -33,7 +33,6 @@
 package octogenarian
 
 import anticipation.*
-import aperture.*
 import contingency.*
 import dissonance.*
 import galilei.*
@@ -45,10 +44,8 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 
-import filesystemOptions.createNonexistentParents
 import filesystemOptions.deleteRecursively
 import filesystemOptions.overwritePreexisting
-import filesystemOptions.preserveSymlinks
 import sortingAlgorithms.timsort
 
 // Three-way merging: of trees, path by path, and of text, line by line (diff3). A merge either

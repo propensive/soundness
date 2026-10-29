@@ -865,7 +865,6 @@ object Mcp:
 
   // McpClient → Mcp.Client
   trait Client extends Findable:
-    import Mcp.*
 
     @rpc
     protected def ping(): Unit

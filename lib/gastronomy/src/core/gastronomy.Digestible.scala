@@ -38,7 +38,6 @@ import scala.{caps, util}
 
 import anticipation.*
 import corpuscular.*
-import gossamer.*
 import hieroglyph.*
 import prepositional.*
 import rudiments.*

@@ -40,7 +40,6 @@ import anticipation.*
 import denominative.*
 import gossamer.*
 import gossamer.collationComparable
-import gossamer.collations.codepointCollation
 import hieroglyph.*
 import prepositional.*
 import rudiments.*

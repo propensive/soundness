@@ -49,7 +49,6 @@ import fulminate.*
 import nomenclature.*
 import prepositional.*
 import rudiments.*
-import symbolism.*
 import vacuous.*
 
 import Async.nominative

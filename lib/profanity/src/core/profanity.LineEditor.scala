@@ -36,7 +36,6 @@ import anticipation.*
 import clavichord.Keypress
 import contingency.*
 import denominative.*
-import fulminate.*
 import gossamer.*
 import hieroglyph.*, textMetrics.wideCharacterWidthMetric
 import rudiments.*

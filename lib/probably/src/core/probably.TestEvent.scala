@@ -36,7 +36,6 @@ import anticipation.*
 import chiaroscuro.*
 import denominative.dysasymptotics.linearSize
 import digression.*
-import fulminate.*
 import gossamer.*
 import prepositional.*
 import rudiments.*

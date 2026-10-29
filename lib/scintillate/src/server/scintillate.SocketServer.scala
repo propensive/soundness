@@ -141,7 +141,7 @@ case class SocketServer
   ( port: Int, local: Boolean = true, ssl: Optional[jns.SSLContext] = Unset )
   ( using errorPage: WebserverErrorPage )
 extends RequestServable:
-  import SocketServer.{containsIgnoreCase, HeadFacts, factsOf, keepAlive, isUpgrade,
+  import SocketServer.{HeadFacts, factsOf, keepAlive, isUpgrade,
       expectsContinue, errorStatus}
 
   // Cap on the bytes an unconsumed request body will be drained before the

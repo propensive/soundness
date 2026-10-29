@@ -36,11 +36,9 @@ import java.lang.{Integer as JInt, Long as JLong, Double as JDouble, Float as JF
 
 import scala.annotation.*
 import scala.language.experimental.genericNumberLiterals
-import scala.language.experimental.into
 import scala.math
 
 import anticipation.*
-import contingency.*
 import denominative.*
 import denominative.dysasymptotics.linearSize
 import fulminate.{m, panic}

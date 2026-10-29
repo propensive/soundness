@@ -39,8 +39,6 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import prepositional.*
-import rudiments.*
-import vacuous.*
 import zephyrine.*
 
 // XZ (LZMA2 inside the `.xz` container), the high-ratio codec, as a pure-Scala port of the

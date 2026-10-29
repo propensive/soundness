@@ -34,7 +34,7 @@ package cataclysm
 
 import murmuration.Iterator
 import scala.collection.`+:`
-import scala.collection.immutable.{Seq, ::}
+import scala.collection.immutable.Seq
 import scala.quoted.*
 
 import anticipation.*
@@ -47,7 +47,6 @@ import gossamer.*
 import murmuration.map
 import nomenclature.*
 import rudiments.all
-import rudiments.each
 import spectacular.*
 import vacuous.*
 

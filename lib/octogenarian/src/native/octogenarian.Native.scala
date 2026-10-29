@@ -33,7 +33,6 @@
 package octogenarian
 
 import anticipation.*
-import aperture.*
 import contingency.*
 import distillate.*
 import galilei.*
@@ -46,8 +45,6 @@ import turbulence.*
 import urticose.*
 import vacuous.*
 
-import filesystemOptions.createNonexistentParents
-import filesystemOptions.deleteRecursively
 import filesystemOptions.dereferenceSymlinks
 import filesystemOptions.overwritePreexisting
 

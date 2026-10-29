@@ -33,7 +33,6 @@
 package exegesis
 
 import fulminate.*
-import rudiments.*
 import vacuous.*
 
 // The session a proxy holds with the server upstream: what a proxy uses to ask the server

@@ -37,7 +37,6 @@ import java.security.SecureRandom
 import anticipation.*
 import rudiments.*
 import symbolism.*
-import vacuous.*
 
 // Which side of a WebSocket connection this endpoint is, and hence how frames are
 // masked. RFC 6455 §5.3: a client MUST mask every frame it sends with a fresh 32-bit

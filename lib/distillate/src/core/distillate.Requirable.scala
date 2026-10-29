@@ -32,8 +32,6 @@
                                                                                                   */
 package distillate
 
-import scala.caps
-
 import anticipation.*
 import contingency.*
 import fulminate.Hazard

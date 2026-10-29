@@ -34,8 +34,6 @@ package breviloquence
 
 import anticipation.*
 import contingency.*
-import prepositional.*
-import turbulence.*
 
 // Parses one data item, rejecting trailing bytes: from an array, read in
 // place; from a chain of chunks, read as the chunks are pulled. (A stream is

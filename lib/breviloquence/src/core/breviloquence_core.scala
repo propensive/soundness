@@ -32,11 +32,8 @@
                                                                                                   */
 package breviloquence
 
-import anticipation.*
-import contingency.*
 import distillate.Decodable.{Absence, Fault, Nullity}
 import prepositional.*
-import rudiments.*
 
 // How an `Optional` or `Option` field reads an absent key, a CBOR `null`, or a value its inner
 // decoder rejects: lenient yields `Unset`/`None`, strict raises `Cbor.Error`. Absent keys and

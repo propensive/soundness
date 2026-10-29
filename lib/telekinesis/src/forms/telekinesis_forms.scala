@@ -39,7 +39,6 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import fulminate.Hazard
-import gossamer.*
 import honeycomb.*
 import legerdemain.*
 import prepositional.*

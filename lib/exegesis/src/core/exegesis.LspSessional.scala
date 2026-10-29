@@ -43,8 +43,6 @@ import contingency.*
 import distillate.*
 import eucalyptus.*
 import fulminate.*
-import gossamer.*
-import guillotine.*
 import jacinta.*
 import obligatory.*
 import parasite.*

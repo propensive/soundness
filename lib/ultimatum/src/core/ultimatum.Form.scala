@@ -40,7 +40,6 @@ import profanity.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
-import denominative.dysasymptotics.linearSize
 
 object Form:
   // Minted fresh: the constructor proxy's result would be read-only, and `run` is an update.

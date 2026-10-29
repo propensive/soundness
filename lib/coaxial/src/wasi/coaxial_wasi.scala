@@ -37,16 +37,12 @@ import scala.caps
 
 import anticipation.*
 import contingency.*
-import denominative.*
 import distillate.*
-import gigantism.*
 import gossamer.*
 import hellenism.*
 import hypotenuse.*
 import prepositional.*
-import rudiments.*
 import soundness.{call, dispose}
-import spectacular.*
 import turbulence.*
 import urticose.*
 import vacuous.*

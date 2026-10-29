@@ -44,12 +44,8 @@ import galilei.*
 import hieroglyph.*, codepages.asciiCodepage
 import hypotenuse.*, arithmeticOptions.uncheckedOverflow
 import prepositional.*
-import rudiments.*
 import serpentine.*
 import spectacular.*
-import vacuous.*
-
-import filesystemBackends.javaBaseFilesystem
 
 // Writes a `Tarfile` out to a directory tree: the inverse of `directory.archive[Tar]()`, still
 // through `java.nio`, since setting a mode has no backend primitive yet.

@@ -4058,7 +4058,6 @@ object Tel extends Tel2:
     import java.nio.charset.StandardCharsets
     import scala.language.unsafeNulls
     import denominative.*
-    import fulminate.*
     import Tel.Error.Reason
 
     import Parser.*

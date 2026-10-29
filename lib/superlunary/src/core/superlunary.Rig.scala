@@ -42,7 +42,6 @@ import anthology.*
 import anticipation.*
 import contingency.*
 import digression.*
-import distillate.*
 import fulminate.*
 import galilei.*
 import gossamer.*

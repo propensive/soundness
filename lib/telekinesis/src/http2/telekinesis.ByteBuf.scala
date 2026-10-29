@@ -35,9 +35,6 @@ package telekinesis
 import scala.caps
 
 import anticipation.{Data as Bytes, *}
-import prepositional.*
-import rudiments.*
-import vacuous.*
 
 // A minimal growable byte buffer, classified as an exclusive, stateful capability:
 // the separation checker rejects `scala.collection.mutable.ArrayBuilder` mutation

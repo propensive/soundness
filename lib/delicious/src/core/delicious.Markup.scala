@@ -35,7 +35,6 @@ package delicious
 import scala.collection.mutable
 
 import anticipation.*
-import denominative.*
 import gossamer.*
 import rudiments.*
 import vacuous.*

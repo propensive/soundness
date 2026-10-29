@@ -33,7 +33,6 @@
 package quantitative
 
 import anticipation.*
-import rudiments.*
 
 object Days:
   given designation: Designation[Hours[1]] = () => "d".tt

@@ -40,7 +40,6 @@ import gossamer.*
 import hypotenuse.*
 import nomenclature.*
 import prepositional.*
-import symbolism.*
 import vacuous.*
 
 // The default four-decimal-place rendering for numeric comparisons, imported

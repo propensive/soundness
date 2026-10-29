@@ -39,7 +39,6 @@ import contingency.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
-import turbulence.*
 import zephyrine.*
 
 object Stderr:

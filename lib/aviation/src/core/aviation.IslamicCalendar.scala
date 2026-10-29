@@ -33,7 +33,6 @@
 package aviation
 
 import anticipation.*
-import contingency.*
 import gossamer.*
 import spectacular.*
 

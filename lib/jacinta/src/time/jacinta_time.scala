@@ -32,8 +32,6 @@
                                                                                                   */
 package jacinta
 
-import scala.caps
-
 import anticipation.*
 import aviation.*
 import contingency.*

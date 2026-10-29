@@ -44,7 +44,6 @@ import distillate.*
 import fulminate.*
 import gossamer.*
 import monotonous.*, alphabets.base64Standard
-import prepositional.*
 import rudiments.*
 import vacuous.*
 

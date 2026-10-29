@@ -39,7 +39,6 @@ import javax.imageio as ji
 import anticipation.*
 import contingency.*
 import rudiments.*
-import vacuous.*
 
 // The JVM backend: decoding and encoding through `javax.imageio`, whose native codecs outperform
 // any pure implementation. The pure-Scala codecs in `core` remain compiled (and tested) on the

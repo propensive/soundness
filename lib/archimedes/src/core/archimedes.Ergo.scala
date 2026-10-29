@@ -36,9 +36,7 @@ import scala.collection.immutable.Seq
 // Deliberate stdlib opt-out, as in `Cell`.
 import scala.collection.immutable.{Map, Set}
 import scala.collection.mutable.ListBuffer
-import scala.math
 
-import anticipation.*
 import anticipation.*
 import contingency.*
 import fulminate.*

@@ -45,7 +45,6 @@ import denominative.*
 import galilei.CreateFlag
 import gossamer.*
 import hypotenuse.*
-import pneumatic.*
 import prepositional.*
 import rudiments.*
 import turbulence.*

@@ -41,7 +41,6 @@ import contingency.*
 import denominative.*
 import prepositional.*
 import rudiments.reverse
-import vacuous.*
 import zephyrine.*
 
 object LineSeparation:
