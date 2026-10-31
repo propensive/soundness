@@ -68,7 +68,7 @@ object Regex:
     private[kaleidoscope] def compile(pattern: Text): Motif =
       motifs.getOrElseUpdate
         ( pattern.s,
-          { given tactic: (ThrowTactic[Hazard, Any]^) = strategies.throwUnsafely
+          { given tactic: (ThrowTactic[Hazard]^{ThrowTactic.ambient}) = strategies.throwUnsafely
             Motif.parse(pattern) } )
 
     // `Re2`'s companion sits below this library, so per issue #1632 the instance lives in the
@@ -263,7 +263,7 @@ object Regex:
   // the parse cannot fail -- an assertion the signature makes rather than the type system. An
   // `apply` cannot carry the `unsafe` prefix its gate requires, so it is named instead.
   def unsafeFrom(parts: List[String])(using erased unsafe: Unsafe): Regex =
-    given tactic: (ThrowTactic[Hazard, Any]^) = strategies.throwUnsafely
+    given tactic: (ThrowTactic[Hazard]^{ThrowTactic.ambient}) = strategies.throwUnsafely
     parse(parts.map(_.tt))
 
   def apply(text: Text): Regex in JavaBaseRegex raises Regex.Error = parse(List(text))

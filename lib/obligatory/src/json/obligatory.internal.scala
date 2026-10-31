@@ -396,7 +396,7 @@ object internal:
                   // #26547). A `ThrowTactic` throws in place — exactly `unsafely`'s behaviour for
                   // a throwing tactic — so the semantics are unchanged.
                   ' {
-                      val tactic: ThrowTactic[JsonRpc.Error, result]^ = ThrowTactic()
+                      val tactic: ThrowTactic[JsonRpc.Error]^ = ThrowTactic()
 
                       val response =
                         JsonRpc.outcome(JsonRpc.call($rpc, $methodName, $payload))

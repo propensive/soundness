@@ -77,6 +77,7 @@ COLUMNS = [name for name, _ in HATCHES+WRAPPERS]+CASTS+STDLIB+['untagged']
 # The closed vocabulary. Each tag names a blocker; `rep/DECISIONS.md` has the case behind it.
 TAGS = {
   'abstract-storage':   'an abstract `Storage` type cannot carry `^` (probe P5)',
+  'ambient-strategy':   'an ambient error strategy, pure by design as upstream\'s `canThrowAny` is',
   'aliased-read':       'an array read while another exclusive receiver holds its owner',
   'aliased-graph':      'mutable nodes reachable from several references (a linked or shared graph)',
   'anon-fresh-field':   'a fresh-typed field in an anonymous template hides its capability',
