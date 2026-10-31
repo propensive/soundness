@@ -316,7 +316,7 @@ object Ar:
   object Handle:
     private[bitumen] def entries(consume stream: (Stream[Data] over Credit)^)
       ( using tactic: Tactic[Ar.Error] )
-    :   Iterator[Ar.Entry]^{tactic} =
+    :   Iterator[Ar.Entry]^ =
 
       Arfile.read(stream)
 

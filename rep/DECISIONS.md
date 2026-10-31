@@ -3276,3 +3276,47 @@ The rationals' arithmetic instances are inline (as symbolism's primitives, #2282
   bounds are as they were. Lesson: a generic erased cast is a latent `Nothing` whenever the
   type argument is left to inference under a type-parameter expected type — making it inline
   is how you find out.
+
+## Tactics are `caps.Control`; the ambient strategies are pure; `DurableUnscoped` is gone (2026-10-31, #2328)
+
+The exploration asked whether classifier exclusion (`->{any.except[Control]}`, Scala 3.10) could
+replace the `Durable` allow-list and, with it, Proscala's `sharedunscoped` and `classifiermeet`.
+The scratch results (`rep/sepcheck-probes/p17`, `p21`, `p22`):
+
+- **Exclusion is strict, not fail-open.** `except[Control]` admits only what is *known* unrelated
+  to `Control`: a sibling classifier, an exclusive capability, or a lambda capturing those. A bare
+  `SharedCapability` (Control's ancestor), an unclassified function and an outer `CanThrow` are
+  rejected. So a sibling classifier for the shared, thread-crossing capabilities is unavoidable:
+  `Durable` stays.
+- **Exclusion is not a classification.** A body a `Durable` worker, loop or timeout *retains*
+  is a field of a classified class, and "field classifiers have to conform to the classifier of
+  the containing class" — an `except`-typed field is "unclassified" and rejected, and an
+  `except`-typed probate cannot flow into the `only[Durable]` one the worker holds (the
+  `Containment` chain failed first). Every one of the 29 `only[Durable]` sites retains its body,
+  so **`only[Durable]` on retained bodies is upstream's own rule, not an allow-list**; the
+  exclusion form is right only for a body that is merely run on another thread, which Soundness
+  does not have. The sites are unchanged.
+- **Why the ambient tactics needed `SharedUnscoped`, precisely:** the strategy givens were
+  polymorphic *methods* minting a fresh tactic per summon, and a fresh capability minted inside a
+  derivation's synthesised by-name thunk cannot flow out (p17). A given that is a *value* is a
+  static capability, visible from every level — which is why every other `DurableUnscoped`
+  (sinks, supervisors, watchers, `Internet`) is plain `Durable` now with nothing else changed. A
+  static *tracked* tactic object was tried and rejected again (the roadmap records the earlier
+  attempt): a top-level field of capability type forces `object strategies … uses …`, and every
+  lambda raising through the tactic then captures `strategies` — distillate's
+  `safely(decodable(using strategies.throwUnsafely)…)` lambdas were the first to fail. The
+  resolution is upstream's own for the same problem: `unsafeExceptions.canThrowAny` is an
+  `inline given … = caps.unsafe.unsafeErasedValue`, a deliberately untracked ambient throw
+  permission, while a `try`'s `CanThrow` is tracked `Control`. So `ThrowTactic.ambient`,
+  `UncheckedTactic.ambient` and `fatalErrors` are sealed pure (tag `ambient-strategy`; an
+  unscoped throw or a process exit retains no return point), and `throwSafely` carries
+  `^{canThrow}`, the scoped evidence it throws under.
+- **`Emit` is `caps.Control`.** The correct label: a tactic captures a return point on the stack
+  that installed it. Consequence: a `Control` capability may retain only `Control` capabilities,
+  so `Emit.apply`'s handler bound is `only[caps.Control]` (a `handle` case body may raise into an
+  outer emitter but not log through a `Durable` logger — log outside the handler).
+- `ThrowTactic[-error]` lost its phantom `success` parameter and is contravariant, so the one
+  ambient `ThrowTactic[Hazard]` satisfies every `Tactic[error]`.
+
+Mainline residue: none of `SharedUnscoped`, `classifiermeet` or part 3 of classifier exclusion
+(scala/scala3#26409) is used; Scala 3.9 no longer compiles the capture-checked modules.

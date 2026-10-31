@@ -41,10 +41,11 @@ import fulminate.*
 object Emit:
   // Builds an `Emit` whose `record` simply runs `handler` as a side-effect at the emit point — the
   // basis of `handle`, where each covered error type gets an `Emit` backed by its case body.
-  // `handler` may capture shared capabilities — an outer emitter the case body raises into — but
-  // nothing exclusive, since the emitter it becomes is itself a shared capability.
+  // `handler` may capture control capabilities — an outer emitter the case body raises into — but
+  // nothing else, since the emitter it becomes is itself a `caps.Control` capability, and a
+  // classified capability may retain only capabilities of its own classifier.
   def apply[error <: Hazard]
-    ( consume handler: error ->{caps.any.only[caps.SharedCapability]} Unit )
+    ( consume handler: error ->{caps.any.only[caps.Control]} Unit )
     ( using diagnostics0: Diagnostics )
   :   Emit[error]^ =
 
@@ -57,8 +58,13 @@ object Emit:
 // choice). `Tactic` adds the value-replacing `abort`. `raise` needs only an `Emit`; `abort` needs a
 // full `Tactic`. So `emits error` (`Emit[error] ?=>`) is the weaker obligation than `raises error`
 // (`Tactic[error] ?=>`), and a `Tactic` in scope discharges either.
-// An `Emit` is a *capability* (`caps.SharedCapability`): raising an error is an effect, so an
-// emitter must be capture-tracked wherever it is retained. Shared, not Exclusive: one emitter is
+// An `Emit` is a *capability*: raising an error is an effect, so an emitter must be
+// capture-tracked wherever it is retained. A `caps.Control` capability, like a `boundary.Label` or
+// a `CanThrow`: it captures a return point on the stack of the code that installed it, so a body
+// that runs on another thread (`->{caps.any.only[anticipation.Durable]}`, as a task's does) cannot
+// retain one — a boundary tactic broken from the wrong thread would unwind a stack that is not
+// its own, and any tactic used after its scope closed would report into a handler that is gone.
+// `Control` is shared, not Exclusive, which is also what an emitter needs: one emitter is
 // legitimately aliased by everything that reports into its scope — a codec summoned for `as`
 // captures the same tactic that `as` takes as evidence — and raising is not a consuming use, so
 // aliases of one emitter must not read as a separation overlap (rep/sepcheck-probes/p15; the
@@ -68,7 +74,7 @@ object Emit:
 // additionally close over a stack `boundary.Label` (`Emit[error]^{label}`). Combinators that
 // retain the receiver and a user lambda — `contramap`, `Emit.apply` — annotate their result with
 // that capture set, exactly as `LzyList.map` returns `^{xs, f}`.
-trait Emit[-error <: Hazard] extends Findable, caps.SharedCapability:
+trait Emit[-error <: Hazard] extends Findable, caps.Control:
   private inline def emitter: this.type = this
   def diagnostics: Diagnostics
   def record(error: Diagnostics ?=> error): Unit

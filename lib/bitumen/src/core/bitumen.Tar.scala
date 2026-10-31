@@ -652,7 +652,7 @@ object Tar:
       ( using tarTactic:    Tactic[Tar.Error],
               streamTactic: Tactic[Truncation.Error],
               buffering:    Buffering )
-    :   Iterator[Tar.Entry]^{tarTactic, streamTactic} =
+    :   Iterator[Tar.Entry]^ =
 
       Tarfile.read:
         flags.head match

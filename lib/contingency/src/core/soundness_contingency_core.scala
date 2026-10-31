@@ -36,13 +36,17 @@ export
   contingency
   . { abort, abortive, accrual, Accrual, accrue, amalgamate, AmalgamateTactic, Attempt, attempt,
       AttemptTactic, capture, certify, dare, EitherTactic, Emit, Errors, Expectation, Fatal,
-      Foci, focus, guard, Guard, HaltTactic, handle, Handler, lest, Mitigable, mitigate,
-      Mitigation, mitigates, OptionalTactic, Pointer, raise, raises, recover, Recovery, safely,
-      survive, Tactic, throwErrors, ThrowTactic, track, TrackFoci, Tracking, tracks, TrackTactic,
-      Unchecked, unsafely, Validate, validate, Validation, venture, Venture, Venturer,
-      VentureTactic }
+      Foci, focus, guard, Guard, HaltTactic, handle, Handler, lest, Mitigable,
+      mitigate, Mitigation, mitigates, OptionalTactic, Pointer, raise, raises, recover, Recovery,
+      safely, survive, Tactic, throwErrors, ThrowTactic, track, TrackFoci, Tracking, tracks,
+      TrackTactic, Unchecked, UncheckedTactic, unsafely, Validate, validate, Validation, venture,
+      Venture, Venturer, VentureTactic }
 
 package strategies:
-  export
-    contingency.strategies
-    . { fatalErrors, mitigation, throwSafely, throwUnsafely, uncheckedErrors }
+  // A delegating given rather than an export forwarder: a forwarder is a method, and the
+  // umbrella name of a value given lands in the capture set of every `^{tactic}` instance
+  // summoned through it, where a method is not a legal capture reference. The method-form
+  // givens are applied, never referenced, so they forward.
+  given throwUnsafely: (ThrowTactic[Hazard]^{}) = contingency.strategies.throwUnsafely
+
+  export contingency.strategies.{fatalErrors, mitigation, throwSafely, uncheckedErrors}

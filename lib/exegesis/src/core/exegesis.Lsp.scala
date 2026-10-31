@@ -1505,7 +1505,7 @@ object Lsp:
 
   // A shared capability: the writer task reports what it sends and the reader task what it
   // receives, so an observer is called from two tasks at once and must be safe to.
-  trait Observer extends anticipation.DurableUnscoped:
+  trait Observer extends anticipation.Durable:
     def received(message: Text): Unit
     def sent(message: Text): Unit
 
@@ -1614,12 +1614,12 @@ object Lsp:
   // monitor, which a hook needs to await an answer of its own; see `Lsp.Proxy`.
   // The registration block runs once, synchronously, and may capture the monitor freely: a
   // monitor is a durable capability.
-  def proxy(upstream: Server, observer: Observer = Observer.Silent)
+  def proxy(upstream: Server, observer: Optional[Observer^] = Unset)
     ( register: (proxy: Lsp.Proxy^) ?=> Unit )
     ( using Stdio^, Monitor^, Probate, WorkingDirectory, Environment, Diagnostics )
   :   Unit =
 
-    Lsp.Proxy.run(upstream, observer)(register)
+    Lsp.Proxy.run(upstream, observer.or(Observer.Silent))(register)
 
   // Establishes a Language Server over the stdio transport. The block registers the server's
   // feature handlers on the lent registry; once it returns, the registry is consumed and frozen,
@@ -1631,7 +1631,7 @@ object Lsp:
   // nothing capability-carrying is ever stored in an application-lifetime object. `observer`, if
   // given, sees every message in both directions as it crosses the transport.
   // The standard streams are the process's own (pure): the writer task writes to them.
-  def listen(name: Text, version: Optional[Text] = Unset, observer: Observer^ = Observer.Silent)
+  def listen(name: Text, version: Optional[Text] = Unset, observer: Optional[Observer^] = Unset)
     ( register: (registry: Lsp.Registry^) ?=> Unit )
     ( using Stdio, Monitor, Probate )
   :   Unit =
@@ -1659,11 +1659,11 @@ object Lsp:
     val writer: Task[Unit] = async:
       outgoing.each: json =>
         val body: Text = json.encode
-        observer.sent(body)
+        observer.or(Observer.Silent).sent(body)
         summon[Stdio].write(LspTransport.frame(body))
         summon[Stdio].out.flush()
 
-    LspTransport.pump(summon[Stdio].in.source[Data], observer): message =>
+    LspTransport.pump(summon[Stdio].in.source[Data], observer.or(Observer.Silent)): message =>
       safely(message.as[Json]).lay(session.put(JsonRpc.failure(-32700, t"Parse error"))):
         json =>
           val response: Optional[Json] =
@@ -2478,7 +2478,7 @@ object Lsp:
     // it captures: a hook that asks the server something of its own needs the monitor to await the
     // answer, and separation checking would otherwise see the block and this method aliasing it.
     def run
-      ( upstream: Lsp.Server, observer: Lsp.Observer = Lsp.Observer.Silent )
+      ( upstream: Lsp.Server, observer: Optional[Lsp.Observer^] = Unset )
       ( register: (proxy: Lsp.Proxy^) ?=> Unit )
       ( using stdio: Stdio^, monitor: Monitor^, probate: Probate, working: WorkingDirectory,
               environment: Environment, diagnostics: Diagnostics )
@@ -2512,7 +2512,7 @@ object Lsp:
 
       def downstream(json: Json): Unit =
         val body: Text = json.encode
-        observer.sent(body)
+        observer.or(Lsp.Observer.Silent).sent(body)
         stdio.write(LspTransport.frame(body))
         stdio.out.flush()
 
@@ -2562,7 +2562,7 @@ object Lsp:
         // it: an editor's first request arrives before a server has finished starting up.
         val startup = if connected0 == null then null else async(connected0.nn())
 
-        try LspTransport.pump(stdio.in.source[Data], observer): message =>
+        try LspTransport.pump(stdio.in.source[Data], observer.or(Lsp.Observer.Silent)): message =>
           safely(message.as[Json]).let: json =>
             Lsp.method(json).let: method =>
               val id: Optional[Json] = Lsp.identifier(json)

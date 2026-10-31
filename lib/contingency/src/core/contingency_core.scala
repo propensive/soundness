@@ -32,6 +32,7 @@
                                                                                                   */
 package contingency
 
+import scala.caps
 import scala.language.experimental.pureFunctions
 import scala.language.unsafeNulls
 import scala.quoted.*
@@ -43,11 +44,17 @@ import prepositional.*
 import vacuous.*
 
 package strategies:
-  given throwUnsafely: [success] => (ThrowTactic[Hazard, success]^) =
-    ThrowTactic()
+  // The ambient strategies are pure values (see `ThrowTactic.ambient`): no scoped return point
+  // is retained by throwing unchecked or terminating in place, and a tracked ambient tactic
+  // would either fail the level check inside a derivation's synthesised by-name thunk (if fresh)
+  // or be captured by every lambda raising through it (if static). `throwSafely` is the scoped
+  // one: it retains the `CanThrow` evidence it throws under, a `caps.Control` capability.
+  given throwUnsafely: (ThrowTactic[Hazard]^{}) = ThrowTactic.ambient
 
-  given throwSafely: [error <: Hazard: CanThrow, success] => (ThrowTactic[error, success]^) =
-    ThrowTactic()
+  given throwSafely: [error <: Hazard] => (erased canThrow: CanThrow[error])
+  =>  ( ThrowTactic[error]^{canThrow} ) =
+
+    ThrowTactic.ambient
 
   given mitigation: [error <: Hazard, error2 <: Hazard: Mitigable to error]
   =>  ( tactic: Tactic[error]^ )
@@ -55,15 +62,14 @@ package strategies:
 
     tactic.contramap(error2.mitigate(_))
 
-  // Like `ThrowTactic`, these ambient strategies are `caps.SharedUnscoped`: they capture no
-  // scoped capability (they throw or terminate in place), so a use-site instantiation may flow
-  // into the `raises` existential of a non-inline method result.
-  given fatalErrors: [exception <: Hazard: Fatal] => (FatalTactic[exception]^) = FatalTactic()
+  // [ambient-strategy] a fatal tactic terminates in place; pure like `ThrowTactic.ambient`
+  given fatalErrors: [exception <: Hazard: Fatal] => (FatalTactic[exception]^{}) =
+    caps.unsafe.unsafeAssumePure(FatalTactic())
 
   given uncheckedErrors: [error <: Hazard] => (erased unchecked: error is Unchecked)
-  =>  ( UncheckedTactic[error]^ ) =
+  =>  ( UncheckedTactic[error]^{} ) =
 
-    UncheckedTactic()
+    UncheckedTactic.ambient
 
 def certify[error <: Hazard](using tactic: Tactic[error]^)(): Unit = tactic.certify()
 
@@ -99,7 +105,7 @@ def safely[error <: Hazard](using erased void: Void)[success]
 
 
 def unsafely[error <: Hazard](using erased void: Void)[success]
-  ( block: (Unsafe, ThrowTactic[error, success]^, CanThrow[Exception]) ?=> success )
+  ( block: (Unsafe, ThrowTactic[error]^, CanThrow[Exception]) ?=> success )
 :   success =
 
   // `Unsafe`, the injected `ThrowTactic` and the block's `CanThrow` are provided in a SINGLE
@@ -118,7 +124,7 @@ def unsafely[error <: Hazard](using erased void: Void)[success]
 
 
 def throwErrors[error <: Hazard](using CanThrow[error])[success]
-  ( block: ThrowTactic[error, success]^ ?=> success )
+  ( block: ThrowTactic[error]^ ?=> success )
 :   success =
 
   block(using ThrowTactic())

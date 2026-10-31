@@ -63,7 +63,7 @@ object Loggable:
   =>  ( (event is Loggable)^{cap, caps.any} ) =
 
     // The derived logger is a shared capability, so what it retains must be shared: every sink
-    // is (`SharedUnscoped`, ambient and storable statically), but the collection that carries
+    // is (`Durable`, ambient and storable statically), but the collection that carries
     // them is typed by whatever `cap` the summon inferred — an unclassified fresh root when no
     // sink is in scope at all — so the sinks are held through a pure-asserted view, once, here
     // (a cast: the element type's capture set is a type argument, out of `unsafeAssumePure`'s
@@ -91,7 +91,7 @@ object Loggable:
               then sink.submit(level, timestamp, message)
 
 // A shared capability: a logger is written to from every task and daemon at once, and the
-// sinks it fans out to are shared (`SharedUnscoped`) and synchronised. An instance captures
+// sinks it fans out to are shared (`Durable`) and synchronised. An instance captures
 // those sinks, and the self type says so.
 trait Loggable extends Typeclass, Durable:
   loggable: Loggable^ =>
