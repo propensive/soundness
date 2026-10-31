@@ -747,7 +747,7 @@ object Acp:
 
   // A shared capability: the writer task reports what it sends and the reader task what it
   // receives, so an observer is called from two tasks at once and must be safe to.
-  trait Observer extends anticipation.DurableUnscoped:
+  trait Observer extends anticipation.Durable:
     def received(message: Text): Unit
     def sent(message: Text): Unit
 

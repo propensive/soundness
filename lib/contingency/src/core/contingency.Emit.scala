@@ -61,7 +61,7 @@ object Emit:
 // An `Emit` is a *capability*: raising an error is an effect, so an emitter must be
 // capture-tracked wherever it is retained. A `caps.Control` capability, like a `boundary.Label` or
 // a `CanThrow`: it captures a return point on the stack of the code that installed it, so a body
-// that runs on another thread (`->{caps.any.except[caps.Control]}`, as a task's does) cannot
+// that runs on another thread (`->{caps.any.only[anticipation.Durable]}`, as a task's does) cannot
 // retain one — a boundary tactic broken from the wrong thread would unwind a stack that is not
 // its own, and any tactic used after its scope closed would report into a handler that is gone.
 // `Control` is shared, not Exclusive, which is also what an emitter needs: one emitter is

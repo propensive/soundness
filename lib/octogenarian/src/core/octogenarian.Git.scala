@@ -576,7 +576,7 @@ object Git:
   // object is processed. A user interface polls `report()` at its own cadence, or, for a
   // reactive one, drains `updates`, which exists only once asked for, so a poll-only caller
   // pays nothing for it.
-  class Activity() extends DurableUnscoped:
+  class Activity() extends Durable:
     private val phase: Atomic.Ref[Activity.Phase] = Atomic(Activity.Phase.Idle)
     private val remote: Atomic.Bool = Atomic(false)
     private val done: Atomic.Long = Atomic(0L)
