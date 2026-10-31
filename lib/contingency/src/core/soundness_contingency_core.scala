@@ -43,6 +43,10 @@ export
       Venture, Venturer, VentureTactic }
 
 package strategies:
-  export
-    contingency.strategies
-    . { fatalErrors, mitigation, throwSafely, throwUnsafely, uncheckedErrors }
+  // A delegating given rather than an export forwarder: a forwarder is a method, and the
+  // umbrella name of a value given lands in the capture set of every `^{tactic}` instance
+  // summoned through it, where a method is not a legal capture reference. The method-form
+  // givens are applied, never referenced, so they forward.
+  given throwUnsafely: (ThrowTactic[Hazard]^{}) = contingency.strategies.throwUnsafely
+
+  export contingency.strategies.{fatalErrors, mitigation, throwSafely, uncheckedErrors}
