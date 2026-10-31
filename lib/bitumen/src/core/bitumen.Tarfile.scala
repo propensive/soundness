@@ -82,7 +82,7 @@ object Tarfile:
   // An explicit `Tactic` rather than `raises` sugar: a fresh capability in a
   // context-function result cannot flow to a forwarding caller.
   def read(consume stream: (Stream[Data] over Credit)^)(using tactic: Tactic[Tar.Error])
-  :   Iterator[Tar.Entry]^{tactic} =
+  :   Iterator[Tar.Entry]^ =
 
     // The stream's single ownership passes to the cursor inside the iterator, whose fresh
     // capability is laundered (nothing else can reach it).

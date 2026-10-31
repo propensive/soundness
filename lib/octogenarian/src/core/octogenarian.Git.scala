@@ -1582,12 +1582,13 @@ object Git:
             depth:    Optional[Int]     = Unset,
             prune:    Boolean           = false,
             tags:     Boolean           = false,
-            activity: Activity^ = Activity() )
+            activity: Optional[Activity^] = Unset )
           ( using Internet, Tactic[Git.Error] )
         :   Stale[Map[Git.Ref, Git.Hash]] =
 
           val updated =
-            repo.backend.fetch(repo.gitDir, remote, refspecs, depth, prune, tags, activity)
+            val activity0: Activity^ = activity.or(Activity())
+            repo.backend.fetch(repo.gitDir, remote, refspecs, depth, prune, tags, activity0)
 
           Stale(Operations.refMap(updated))
 
@@ -1597,12 +1598,13 @@ object Git:
             force:       Git.Push.Force    = Git.Push.Force.Never,
             tags:        Boolean           = false,
             setUpstream: Boolean           = false,
-            activity:    Activity^ = Activity() )
+            activity:    Optional[Activity^] = Unset )
           ( using Internet, Tactic[Git.Error] )
         :   Stale[Map[Git.Ref, Git.Push.Outcome]] =
 
           val outcomes =
-            repo.backend.push(repo.gitDir, remote, refspecs, force, tags, setUpstream, activity)
+            val activity0: Activity^ = activity.or(Activity())
+            repo.backend.push(repo.gitDir, remote, refspecs, force, tags, setUpstream, activity0)
 
           Stale(Operations.refMap(outcomes))
 
@@ -1941,7 +1943,7 @@ object Git:
             head:     Stale[Git.Head],
             branch:   Optional[Git.Branch] = Unset,
             mode:     Git.Pull.Mode        = Git.Pull.Mode.Merge,
-            activity: Activity^   = Activity() )
+            activity: Optional[Activity^] = Unset )
           ( using Internet, Tactic[Git.Error] )
         :   Git.Merge.Outcome =
 
@@ -1951,7 +1953,7 @@ object Git:
           val refspec = Git.Refspec(t"refs/heads/${target.text}", Unset, false)
 
           worktree.backend.fetch
-            ( worktree.gitDir, remote, List(refspec), Unset, false, false, activity )
+            ( worktree.gitDir, remote, List(refspec), Unset, false, false, activity.or(Activity()) )
 
           mode match
 
@@ -2079,7 +2081,7 @@ object Git:
       depth:     Optional[Int]        = Unset,
       bare:      Boolean              = false,
       recursive: Boolean              = false,
-      activity:  Activity^            = Activity() )
+      activity:  Optional[Activity^] = Unset )
     ( using Internet, Git.Backend^, Tactic[Git.Error] )
   :   Unit =
 
@@ -2092,11 +2094,12 @@ object Git:
           case given (`source` is Abstractable across Paths to Text) => source.generic
 
     Operations.clone
-      ( sourceText, Operations.path(target.generic), branch, depth, bare, recursive, activity )
+      ( sourceText, Operations.path(target.generic), branch, depth, bare, recursive,
+        activity.or(Activity()) )
 
   // Clones exactly one commit: a shallow fetch of it into a fresh repository, checked out.
   inline def cloneCommit[source <: Matchable, path: Abstractable across Paths to Text]
-    ( source: source, target: path, commit: Git.Hash, activity: Activity^ = Activity() )
+    ( source: source, target: path, commit: Git.Hash, activity: Optional[Activity^] = Unset )
     ( using Internet, Git.Backend^, Tactic[Git.Error] )
   :   Unit =
 
@@ -2108,4 +2111,4 @@ object Git:
           case given (`source` is Abstractable across Urls to Text)  => source.generic
           case given (`source` is Abstractable across Paths to Text) => source.generic
 
-    Operations.cloneCommit(sourceText, Operations.path(target.generic), commit, activity)
+    Operations.cloneCommit(sourceText, Operations.path(target.generic), commit, activity.or(Activity()))
