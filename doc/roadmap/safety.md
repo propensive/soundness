@@ -118,9 +118,10 @@ readability — every published artifact remains consumable from a project built
 mainline Scala compiler — and a rebase onto each upstream release whose cost is known rather
 than feared.
 
-Soundness's published artifacts reference two fork-only library symbols — `scala.Spreadable`
-(proscenium's `multiSpreads` givens) and, since `safety-8`, `scala.caps.SharedUnscoped` on the
-ambient tactics — both shipped in the fork's supplementary `proscala-library` jar. A mainline
+Soundness's published artifacts reference one fork-only library symbol — `scala.Spreadable`
+(proscenium's `multiSpreads` givens); `scala.caps.SharedUnscoped`, which the ambient tactics
+carried from `safety-8` until #2328 made them pure, is no longer referenced — shipped in the
+fork's supplementary `proscala-library` jar. A mainline
 consumer therefore needs that jar on its classpath; the readability test below must say so or
 make it unnecessary.
 
@@ -222,7 +223,9 @@ modules are gone (`unsafeAssumeSeparate` 419 → 350). The level wall survived i
 `strategies.throwUnsafely` summoned inside a derivation's field thunk (`rep/sepcheck-probes/p17`,
 the same on 3.10) — user-facing, so the fork grew `caps.SharedUnscoped` (proscala
 `sharedunscoped`) for the ambient strategies, and `rootclassify` for the `normalizeLocalCaps`
-crash the shared tactics exposed in every `Sessional` loan; both shipped in 3.9.1-dev-p18. A
+crash the shared tactics exposed in every `Sessional` loan; both shipped in 3.9.1-dev-p18.
+(#2328 later retired `SharedUnscoped` from Soundness: the ambient strategies are *pure* values,
+as upstream's `canThrowAny` is, and `Emit` is `caps.Control`; see `rep/DECISIONS.md`.) A
 shared *global* strategy value was tried instead and rejected: a package may not export a
 capability, an `object strategies` forces `uses soundness.strategies` onto every user object,
 and a capability-class instance cannot be typed pure (`rep/DECISIONS.md`). The derivation

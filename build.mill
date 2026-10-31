@@ -355,7 +355,7 @@ object nativeToolchain extends CruxDeps:
   // across the module graph and the C linker then rejects the duplicate symbols.
   val runtimeDeps: Seq[mill.javalib.Dep] = Seq(
     // The fork's standard-library additions as NIR, from the Proscala release (`toolchain.repo`):
-    // `contingency.ThrowTactic` extends `scala.caps.SharedUnscoped`, so every Native link needs it.
+    // `scala.Spreadable` (proscenium's `multiSpreads` givens), which every Native link reaches.
     mvn"org.scala-lang:proscala-library_native0.5_3:${settings.scalaVersion}",
     mvn"org.scala-native:scala3lib_native0.5_3:$snsv+$snv",
     mvn"org.scala-native:javalib_native0.5_3:$snv",

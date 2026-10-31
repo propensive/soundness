@@ -71,8 +71,9 @@ backend first (plat-6); with that, Web Crypto slots in as an alternative provide
 primitives it has, without an API change.
 
 The link check links again (2026-10-22): Proscala 1.0.4 publishes its supplementary library as
-`proscala-library_native0.5_3`, so `scala.caps.SharedUnscoped` (which every Native link reaches
-through `contingency.ThrowTactic`) has NIR from the toolchain itself, through
+`proscala-library_native0.5_3`, so `scala.caps.SharedUnscoped` (which every Native link then
+reached through `contingency.ThrowTactic`; since #2328 only `scala.Spreadable` is reached) has
+NIR from the toolchain itself, through
 `nativeToolchain.runtimeDeps`; the one-trait `nativelink.shim` that bridged the gap is gone. The
 same release carries `tasty-core` for Scala.js and Scala Native, which is what lets
 `hyperbole.tasty` read TASTy on both without the compiler. `nativelink.binary` runs on every
