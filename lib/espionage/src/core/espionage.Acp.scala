@@ -671,7 +671,7 @@ object Acp:
   //
   // The connection block may capture the monitor — which a block that spawns a task, to prompt
   // and cancel concurrently, say, needs — freely: a monitor is a shared capability.
-  def connect[result](agent: Agent, observer: Observer = Observer.Silent)
+  def connect[result](agent: Agent, observer: Optional[Observer^] = Unset)
     ( register: (registry: Acp.Registry^) ?=> Unit )
     ( lambda: (connection: Acp.Connection) ?=> result )
     ( using Monitor^, Probate, Diagnostics, WorkingDirectory, Environment, Tactic[Acp.Error] )
@@ -688,7 +688,7 @@ object Acp:
     def open(consume sink: (Intake[Data] over Credit)^, consume read: (Text => Unit) => Unit)
     :   result =
 
-      Exchange.exchange(service, state, observer, sink, read): connection =>
+      Exchange.exchange(service, state, observer.or(Observer.Silent), sink, read): connection =>
         connection.initialize(service.capabilities)
         lambda(using connection)
 
@@ -698,7 +698,7 @@ object Acp:
         val sink = summon[(ji.OutputStream is Sink by Data over Credit)^].intake(output)
 
         // The sink is owned, and finished, by the exchange's writer task.
-        open(sink, Transport.pump(streamable.stream(input), observer)(_))
+        open(sink, Transport.pump(streamable.stream(input), observer.or(Observer.Silent))(_))
 
       case Agent.Process(command) =>
         // Launched with a silent logger and a throwing tactic: a failure to launch has no
@@ -711,7 +711,8 @@ object Acp:
         // The child is killed rather than waited for: an agent that never notices its input
         // closing — or that outlives an exchange that ended early — would otherwise outlive the
         // session it was lent to.
-        try open(job.intake, Transport.pump(job.stdout(), observer)(_)) finally job.abort()
+        val observer0: Observer^ = observer.or(Observer.Silent)
+        try open(job.intake, Transport.pump(job.stdout(), observer0)(_)) finally job.abort()
 
   // The method a message names, or `Unset` if it names none — which marks it a response.
   private[espionage] def method(json: Json): Optional[Text] = envelope(json).method
