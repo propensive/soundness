@@ -461,13 +461,12 @@ package calendars:
         Regime.Segment(Date.julianDay(2361222), gregorianCalendar) )
 
 package nonexistentLeapDays:
+  // 1 March and 28 February exist in every Gregorian year, so each is built totally.
   given roundUpLeapDay: Anniversary.NonexistentLeapDay = year =>
-    import calendars.gregorianCalendar
-    unsafely(Date(year, Mar, Day(1)))
+    calendars.gregorianCalendar.computeJdn(year, Mar, Day(1))
 
   given roundDownLeapDay: Anniversary.NonexistentLeapDay = year =>
-    import calendars.gregorianCalendar
-    unsafely(Date(year, Feb, Day(28)))
+    calendars.gregorianCalendar.computeJdn(year, Feb, Day(28))
 
   // Raised through the tactic the given captures, not thrown: the `unsafely` that stood here
   // shadowed it, so a missing 29 February escaped the caller as an exception.
@@ -508,12 +507,13 @@ package leapModes:
 package monthEnds:
   given clampMonthEnd: Disambiguation = new Disambiguation:
     def resolve(using calendar: Calendar)(year: Year, month: calendar.Mensual, day: Int): Date =
-      unsafely(Date(year, month, Day(day.min(calendar.daysInMonth(month, year)))))
+      // Clamped to the month's end, so the day is real.
+      calendar.computeJdn(year, month, Day(day.min(calendar.daysInMonth(month, year))))
 
   given overflowMonthEnd: Disambiguation = new Disambiguation:
     def resolve(using calendar: Calendar)(year: Year, month: calendar.Mensual, day: Int): Date =
       val max = calendar.daysInMonth(month, year)
-      unsafely(Date(year, month, Day(max))).addDays(day - max)
+      calendar.computeJdn(year, month, Day(max)).addDays(day - max)
 
   given raiseMonthEnd: Tactic[Moment.Error] => Disambiguation = new Disambiguation:
     def resolve(using calendar: Calendar)(year: Year, month: calendar.Mensual, day: Int): Date =

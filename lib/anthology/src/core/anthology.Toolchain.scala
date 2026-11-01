@@ -47,6 +47,7 @@ import contingency.*
 import digression.*
 import fulminate.*
 import galilei.*
+import nomenclature.*
 import parasite.*
 import prepositional.*
 import serpentine.*
@@ -199,7 +200,16 @@ case class Toolchain private (edges: List[Edge]):
     def walk(remaining: List[Edge], current: Deliverable): Deliverable = remaining match
       case edge :: rest =>
         if rest.nil then step(edge, current, out)
-        else walk(rest, step(edge, current, unsafely(out / edge.target.id)))
+        else
+          // A declared artifact's id is the user's; one that is not a file name is reported.
+          val directory =
+            mitigate:
+              case error: Name.Error =>
+                Link.Error(Link.Error.Reason.Packaging(error.message.text))(using error.diagnostics)
+
+            . protect(out / edge.target.id)
+
+          walk(rest, step(edge, current, directory))
 
       case _ =>
         current

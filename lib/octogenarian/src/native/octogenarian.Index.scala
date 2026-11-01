@@ -282,7 +282,7 @@ private[octogenarian] object Index:
 
   // An entry describing a working file as it is now.
   def entryFor(worktree: Path on Linux, path: Text, hash: Git.Hash, mode: Int)
-    ( using Tactic[Io.Error] )
+    ( using Tactic[Io.Error], Tactic[Git.Error] )
   :   Entry =
 
     val file = Refstore.descend(worktree, path.cut(t"/"))
@@ -301,7 +301,7 @@ private[octogenarian] object Index:
   // must be hashed to know whether it changed. The racy-git rule treats an entry written in the
   // same second as the index as unverified.
   def fresh(entry: Entry, worktree: Path on Linux, indexModified: Long)
-    ( using Tactic[Io.Error] )
+    ( using Tactic[Io.Error], Tactic[Git.Error] )
   :   Boolean =
 
     val file = Refstore.descend(worktree, entry.path.cut(t"/"))

@@ -43,10 +43,13 @@ import digression.*
 import galilei.*
 import gossamer.*
 import hellenism.*
+import nomenclature.*
 import parasite.*
 import prepositional.*
 import serpentine.*
+import turbulence.*
 import vacuous.*
+import zeppelin.*
 
 import Artifact.Jar
 
@@ -91,7 +94,26 @@ object jarEdges:
       try
         jnf.Files.createDirectories(jnf.Paths.get(out.encode.s))
         val entries = Classpath.Directory(directory) :: classpath.entries
-        val jarfile = unsafely(Bundler.assemble(LocalClasspath(entries*), out / settings, main))
+        // A fault assembling the bundle is a packaging fault, reported as such.
+        val jarfile =
+          mitigate:
+            case error: Zip.Error =>
+              Link.Error(Link.Error.Reason.Packaging(error.message.text))(using error.diagnostics)
+
+            case error: Path.Error =>
+              Link.Error(Link.Error.Reason.Packaging(error.message.text))(using error.diagnostics)
+
+            case error: Io.Error =>
+              Link.Error(Link.Error.Reason.Packaging(error.message.text))(using error.diagnostics)
+
+            case error: Truncation.Error =>
+              Link.Error(Link.Error.Reason.Packaging(error.message.text))(using error.diagnostics)
+
+            case error: Name.Error =>
+              Link.Error(Link.Error.Reason.Packaging(error.message.text))(using error.diagnostics)
+
+          . protect(Bundler.assemble(LocalClasspath(entries*), out / settings, main))
+
         Deliverable.Product(jarfile)
 
       catch case suc.NonFatal(error) =>
@@ -118,7 +140,25 @@ object jarEdges:
       try
         jnf.Files.createDirectories(jnf.Paths.get(out.encode.s))
         val entries = List(Classpath.Directory(directory))
-        val jarfile = unsafely(Bundler.assemble(LocalClasspath(entries*), out / settings, Unset))
+        val jarfile =
+          mitigate:
+            case error: Zip.Error =>
+              Link.Error(Link.Error.Reason.Packaging(error.message.text))(using error.diagnostics)
+
+            case error: Path.Error =>
+              Link.Error(Link.Error.Reason.Packaging(error.message.text))(using error.diagnostics)
+
+            case error: Io.Error =>
+              Link.Error(Link.Error.Reason.Packaging(error.message.text))(using error.diagnostics)
+
+            case error: Truncation.Error =>
+              Link.Error(Link.Error.Reason.Packaging(error.message.text))(using error.diagnostics)
+
+            case error: Name.Error =>
+              Link.Error(Link.Error.Reason.Packaging(error.message.text))(using error.diagnostics)
+
+          . protect(Bundler.assemble(LocalClasspath(entries*), out / settings, Unset))
+
         Deliverable.Product(jarfile)
 
       catch case suc.NonFatal(error) =>

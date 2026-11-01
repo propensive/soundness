@@ -38,6 +38,7 @@ import contingency.*
 import distillate.*
 import galilei.*
 import gossamer.*
+import nomenclature.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
@@ -76,11 +77,19 @@ private[octogenarian] object Refstore:
       directory.parent.let(ensureDirectory(_))
       directory.create[Directory]()
 
-  def descend(base: Path on Linux, segments: List[Text]): Path on Linux =
+  // The segments come from a ref name, an index path or a worktree name — external text — so
+  // one that does not make a path is the repository's fault, reported as such.
+  def descend(base: Path on Linux, segments: List[Text])(using Tactic[Git.Error]): Path on Linux =
     if segments == Nil then base
-    else unsafely(t"${base.encode}/${segments.join(t"/")}".as[Path on Linux])
+    else
+      mitigate:
+        case error: Path.Error => Git.Error(Git.Error.Reason.Unexpected)(using error.diagnostics)
 
-  def location(gitDir: Path on Linux, commonDir: Path on Linux, name: Text): Path on Linux =
+      . protect(t"${base.encode}/${segments.join(t"/")}".as[Path on Linux])
+
+  def location(gitDir: Path on Linux, commonDir: Path on Linux, name: Text)(using Tactic[Git.Error])
+  :   Path on Linux =
+
     val base = if name.starts(refsPrefix) then commonDir else gitDir
     descend(base, name.cut(t"/"))
 
@@ -105,7 +114,8 @@ private[octogenarian] object Refstore:
         case line if line.length > 41 && line.s.charAt(40) == ' ' && line.s.charAt(0) != '#' =>
           (line.skip(41), Git.Hash.unsafe(line.keep(40)))
 
-  def read(gitDir: Path on Linux, commonDir: Path on Linux, name: Text)(using Tactic[Io.Error])
+  def read(gitDir: Path on Linux, commonDir: Path on Linux, name: Text)
+    ( using Tactic[Io.Error], Tactic[Git.Error] )
   :   Optional[Git.Backend.Target] =
 
     val file = location(gitDir, commonDir, name)
@@ -114,7 +124,8 @@ private[octogenarian] object Refstore:
     else packed(commonDir).reap { case (`name`, hash) => Git.Backend.Target.Direct(hash) }
 
   // Follows symbolic refs to the object they ultimately name.
-  def resolve(gitDir: Path on Linux, commonDir: Path on Linux, name: Text)(using Tactic[Io.Error])
+  def resolve(gitDir: Path on Linux, commonDir: Path on Linux, name: Text)
+    ( using Tactic[Io.Error], Tactic[Git.Error] )
   :   Optional[Git.Hash] =
 
     def recur(name: Text, depth: Int): Optional[Git.Hash] =
@@ -127,7 +138,7 @@ private[octogenarian] object Refstore:
 
   // The name a symbolic ref chain ends at: the ref an update to `name` really writes.
   def dereference(gitDir: Path on Linux, commonDir: Path on Linux, name: Text)
-    ( using Tactic[Io.Error] )
+    ( using Tactic[Io.Error], Tactic[Git.Error] )
   :   Text =
 
     def recur(name: Text, depth: Int): Text =
@@ -179,7 +190,12 @@ private[octogenarian] object Refstore:
 
     val parent: Path on Linux = file.parent.or(abort(Git.Error(Reason.Unexpected)))
     ensureDirectory(parent)
-    val lockFile: Path on Linux = unsafely(t"${file.encode}.lock".as[Path on Linux])
+    // The lock is the file's sibling; a name too long once suffixed is reported, not thrown.
+    val lockFile: Path on Linux =
+      mitigate:
+        case error: Name.Error => Git.Error(Reason.Unexpected)(using error.diagnostics)
+
+      . protect(parent / Name[Linux](t"${file.name}.lock"))
 
     try lockFile.open[File](Write, OpenFlag.Create, OpenFlag.Exclusive): handle ?=> ()
     catch case error: Io.Error => abort(Git.Error(Reason.Locked(file.encode)))
@@ -282,7 +298,7 @@ private[octogenarian] object Refstore:
       to:       Optional[Git.Hash],
       identity: Git.Identity,
       message:  Optional[Text] )
-    ( using Tactic[Io.Error] )
+    ( using Tactic[Io.Error], Tactic[Git.Error] )
   :   Unit =
 
     val base = if name.starts(refsPrefix) then commonDir else gitDir
@@ -297,7 +313,8 @@ private[octogenarian] object Refstore:
     file.write(Store.concatenate(existing, line))
 
   // The reflog of `name`, newest first.
-  def reflog(gitDir: Path on Linux, commonDir: Path on Linux, name: Text)(using Tactic[Io.Error])
+  def reflog(gitDir: Path on Linux, commonDir: Path on Linux, name: Text)
+    ( using Tactic[Io.Error], Tactic[Git.Error] )
   :   List[ReflogEntry] =
 
     val base = if name.starts(refsPrefix) then commonDir else gitDir

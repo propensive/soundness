@@ -122,45 +122,58 @@ object apkEdges:
     try
       jnf.Files.createDirectories(jnf.Paths.get(out.encode.s))
 
-      val dexEntries = unsafely(Zipfile.read(dexArchive).entries).filter: entry =>
-        entry.ref.encode.ends(t".dex")
+      // A dex archive that does not read, or an APK that does not write, is a packaging fault.
+      mitigate:
+        case error: Zip.Error =>
+          Link.Error(Link.Error.Reason.Packaging(error.message.text))(using error.diagnostics)
 
-      // The binary manifest, built from the configuration and the launcher activity.
-      val manifest =
-        Axml.encode:
-          Apk.Manifest
-            ( packageName = form.packageName,
-              versionCode = form.versionCode,
-              versionName = form.versionName,
-              minSdk      = form.minApi,
-              targetSdk   = form.targetApi,
-              label       = form.label,
-              activity    = activity.text,
-              permissions = form.permissions )
+        case error: Io.Error =>
+          Link.Error(Link.Error.Reason.Packaging(error.message.text))(using error.diagnostics)
 
-      // The package: the manifest first, then each dex stored uncompressed and 4-byte aligned
-      // so the runtime can memory-map it. `Zip.Compression.Stored` keeps every entry
-      // uncompressed, and `.aligned(4)` requests the boundary.
-      given Zip.Compression = Zip.Compression.Stored
+        case error: Truncation.Error =>
+          Link.Error(Link.Error.Reason.Packaging(error.message.text))(using error.diagnostics)
 
-      val manifestEntry = Zip.Entry(%.on[Zip] / "AndroidManifest.xml", manifest)
+      . protect:
 
-      // Reuse each dex entry's own path (`classes.dex`, `classes2.dex`, …), re-storing its
-      // decompressed bytes uncompressed and aligned.
-      val dexZipEntries = dexEntries.map: entry =>
-        Zip.Entry(entry.ref, unsafely(entry.read[Data])).aligned(4)
+          val dexEntries = Zipfile.read(dexArchive).entries.filter: entry =>
+            entry.ref.encode.ends(t".dex")
 
-      val unsignedPath = out / "unsigned.apk"
-      unsafely(unsignedPath.write(Zipfile(manifestEntry :: dexZipEntries)))
-      val unsigned = jnf.Files.readAllBytes(jnf.Paths.get(unsignedPath.encode.s)).nn
+          // The binary manifest, built from the configuration and the launcher activity.
+          val manifest =
+            Axml.encode:
+              Apk.Manifest
+                ( packageName = form.packageName,
+                  versionCode = form.versionCode,
+                  versionName = form.versionName,
+                  minSdk      = form.minApi,
+                  targetSdk   = form.targetApi,
+                  label       = form.label,
+                  activity    = activity.text,
+                  permissions = form.permissions )
 
-      val signed =
-        Apk.Signer.sign(Array.unsafeFrozen(unsigned), form.keystore, form.storePass,
-            form.alias, form.keyPass)
+          // The package: the manifest first, then each dex stored uncompressed and 4-byte aligned
+          // so the runtime can memory-map it. `Zip.Compression.Stored` keeps every entry
+          // uncompressed, and `.aligned(4)` requests the boundary.
+          given Zip.Compression = Zip.Compression.Stored
 
-      val apkPath = out / "app.apk"
-      jnf.Files.write(jnf.Paths.get(apkPath.encode.s), Array.unsafeJvm(signed))
-      apkPath
+          val manifestEntry = Zip.Entry(%.on[Zip] / "AndroidManifest.xml", manifest)
+
+          // Reuse each dex entry's own path (`classes.dex`, `classes2.dex`, …), re-storing its
+          // decompressed bytes uncompressed and aligned.
+          val dexZipEntries = dexEntries.map: entry =>
+            Zip.Entry(entry.ref, entry.read[Data]).aligned(4)
+
+          val unsignedPath = out / "unsigned.apk"
+          unsignedPath.write(Zipfile(manifestEntry :: dexZipEntries))
+          val unsigned = jnf.Files.readAllBytes(jnf.Paths.get(unsignedPath.encode.s)).nn
+
+          val signed =
+            Apk.Signer.sign(Array.unsafeFrozen(unsigned), form.keystore, form.storePass,
+                form.alias, form.keyPass)
+
+          val apkPath = out / "app.apk"
+          jnf.Files.write(jnf.Paths.get(apkPath.encode.s), Array.unsafeJvm(signed))
+          apkPath
 
     catch case suc.NonFatal(error) =>
       abort(Link.Error(Link.Error.Reason.Failed(error.stackTrace)))

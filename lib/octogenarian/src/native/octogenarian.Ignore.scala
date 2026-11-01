@@ -152,11 +152,14 @@ private[octogenarian] object Ignore:
 
   // Every rule in force for a worktree: `info/exclude`, then each `.gitignore` found, deeper
   // files later so that they take precedence.
-  def load(gitDir: Path on Linux, worktree: Path on Linux)(using Tactic[Io.Error]): Rules =
+  def load(gitDir: Path on Linux, worktree: Path on Linux)
+    ( using Tactic[Io.Error], Tactic[Git.Error] )
+  :   Rules =
+
     val exclude = gitDir / "info" / "exclude"
     val global = if exclude.existent() then parse(Objects.text(exclude.read[Data]), t"") else Nil
 
-    def recur(directory: Path on Linux, base: Text): List[Rule] =
+    def recur(directory: Path on Linux, base: Text)(using Tactic[Git.Error]): List[Rule] =
       val file: Path on Linux = Refstore.descend(directory, List(t".gitignore"))
       val own = if file.existent() then parse(Objects.text(file.read[Data]), base) else Nil
 

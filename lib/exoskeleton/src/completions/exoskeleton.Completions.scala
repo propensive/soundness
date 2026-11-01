@@ -286,8 +286,10 @@ object Completions:
 
   // Writes `command`'s script for `shell` into `directory`, creating it if necessary, and reports
   // it as `Unconfirmed` unless the shell is known to read it from there.
+  // The script's name is validated inside the mitigation below, so a command whose name is not
+  // a valid file name reports as an installation failure.
   private def place
-    ( shell: Shell, command: Text, scriptName: Name[Linux], directory: Path on Linux,
+    ( shell: Shell, command: Text, scriptName0: Text, directory: Path on Linux,
       loaded: Boolean )
     ( using erased effectful: Effectful )
     ( using Diagnostics )
@@ -302,6 +304,7 @@ object Completions:
       case Truncation.Error(_)  => Install.Error(Install.Error.Reason.Io)
 
     . protect:
+        val scriptName = Name[Linux](scriptName0)
         if !directory.existent() then directory.create[Directory]()
         val target = directory/scriptName
         val existed = target.existent()
@@ -325,7 +328,7 @@ object Completions:
     val fpath = answer.let(_.head).or(Nil).bind(path(_).lay(Nil)(List(_)))
     val writable = fpath.filter: dir => dir.existent() && dir.writable()
     val own = writable.filter(_.encode.starts(t"$home/"))
-    val scriptName = unsafely(Name[Linux](t"_$command"))
+    val scriptName = t"_$command"
     val zshFallback: Path on Linux = Xdg.dataHome[Path on Linux]/"zsh"/"site-functions"
 
     (own + writable).head.lay(place(Shell.Zsh, command, scriptName, zshFallback, false)): dir =>
@@ -345,7 +348,7 @@ object Completions:
       . or(Xdg.dataHome[Path on Linux]/"bash-completion")
 
     val loaded = answer.let(_.head).lay(false)(_.exists(_ != t""))
-    place(Shell.Bash, command, unsafely(Name[Linux](command)), base/"completions", loaded)
+    place(Shell.Bash, command, command, base/"completions", loaded)
 
   // Into the `completions` directory of fish's configuration directory, which fish always
   // searches; the vendor directories are for packagers.
@@ -361,7 +364,7 @@ object Completions:
 
     val directory = configuration/"completions"
     val searched = answer.lay(Nil)(List.drop(_, 1)).head.or(Nil)
-    val scriptName = unsafely(Name[Linux](t"$command.fish"))
+    val scriptName = t"$command.fish"
     place(Shell.Fish, command, scriptName, directory, searched.has(directory.encode))
 
   // Appended to the profile PowerShell names, unless the script is already there.

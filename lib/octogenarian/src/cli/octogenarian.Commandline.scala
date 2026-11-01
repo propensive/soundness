@@ -280,7 +280,13 @@ extends Git.Backend:
     try throwErrors[Exec.Error]:
       val job = executable.fork[Exit]()
       input.lay(()): data => safely(job.stdin[Data](Stream(Chain(data))))
-      val stdout: Data = unsafely(job.stdout().memoize)
+      val stdout: Data =
+        mitigate:
+          case error: Truncation.Error =>
+            Git.Error(Reason.CannotExecuteGit, t"git's output was truncated")
+              ( using error.diagnostics )
+
+        . protect(job.stdout().memoize)
       val stderr = job.errorText()
       (job.exitStatus(), stdout, stderr)
 

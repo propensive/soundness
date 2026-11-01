@@ -43,7 +43,7 @@ import symbolism.*
 // factory and the compile-time `-` operator.
 object Monthstamp:
   def apply(year: Year, month: Month): Monthstamp =
-    unsafely(calendars.gregorianCalendar.jdn(year, month, Day(1))).asInstanceOf[Monthstamp]
+    calendars.gregorianCalendar.computeJdn(year, month, Day(1)).asInstanceOf[Monthstamp]
 
   // The inline path the `-` operator prefers: when the year, month and day are all literals it
   // validates the date at compile time against the contextually-resolved calendar (raising a

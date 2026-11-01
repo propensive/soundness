@@ -38,6 +38,7 @@ import contingency.*
 import distillate.*
 import galilei.*
 import gossamer.*
+import nomenclature.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
@@ -225,7 +226,12 @@ private[octogenarian] object Gitconfig:
 
     val parent: Path on Linux = file.parent.or(abort(Git.Error(Git.Error.Reason.Unexpected)))
     Refstore.ensureDirectory(parent)
-    val lockFile: Path on Linux = unsafely(t"${file.encode}.lock".as[Path on Linux])
+    // The lock is the file's sibling; a name too long once suffixed is reported, not thrown.
+    val lockFile: Path on Linux =
+      mitigate:
+        case error: Name.Error => Git.Error(Git.Error.Reason.Unexpected)(using error.diagnostics)
+
+      . protect(parent / Name[Linux](t"${file.name}.lock"))
 
     try lockFile.open[File](Write, OpenFlag.Create, OpenFlag.Exclusive): handle ?=> ()
     catch case error: Io.Error => abort(Git.Error(Git.Error.Reason.Locked(file.encode)))
@@ -262,10 +268,14 @@ private[octogenarian] object Gitconfig:
     val worktreeEnabled =
       entries(readFile(local)).exists: (key, value) => key == worktreeKey && value.lower == enabled
 
-    List(path(t"/etc/gitconfig")) + xdgFile.let(List(_)).or(Nil) + globalFile.let(List(_)).or(Nil) +
+    val system: List[Path on Linux] = List(% / "etc" / "gitconfig")
+
+    system + xdgFile.let(List(_)).or(Nil) + globalFile.let(List(_)).or(Nil) +
       List(local) + (if worktreeEnabled then List(worktree) else Nil)
 
-  private def path(text: Text): Path on Linux = unsafely(text.as[Path on Linux])
+  // A configuration directory from the environment may be relative, which the XDG specification
+  // says to ignore: such a file is simply absent.
+  private def path(text: Text): Optional[Path on Linux] = safely(text.as[Path on Linux])
 
   // Every entry in force, in the order git lists them, with `include.path` files spliced in.
   def effective(gitDir: Path on Linux, commonDir: Path on Linux)
@@ -292,7 +302,7 @@ private[octogenarian] object Gitconfig:
               then t"${System.getProperty("user.home").nn}${included.skip(1)}"
               else t"${file.parent.lay(t"")(_.encode)}/$included"
 
-            recur(rest, acc + withIncludes(path(target), depth + 1))
+            recur(rest, acc + path(target).lay(Nil)(withIncludes(_, depth + 1)))
 
           case entry :: rest => recur(rest, acc + List(entry))
           case _             => acc

@@ -68,23 +68,32 @@ private[octogenarian] object Sequencer:
 
   // ─────────────────────────────────────────── State files ────────────────────────────────────
 
-  private def stateFile(context: Context, name: Text): Path on Linux =
+  private def stateFile(context: Context, name: Text)(using Tactic[Git.Error]): Path on Linux =
     Refstore.descend(context.gitDir, name.cut(t"/"))
 
-  private def readState(context: Context, name: Text)(using Tactic[Io.Error]): Optional[Text] =
+  private def readState(context: Context, name: Text)
+    ( using Tactic[Io.Error], Tactic[Git.Error] )
+  :   Optional[Text] =
+
     val file = stateFile(context, name)
     if file.existent() then Objects.text(file.read[Data]) else Unset
 
-  private def readHash(context: Context, name: Text)(using Tactic[Io.Error]): Optional[Git.Hash] =
+  private def readHash(context: Context, name: Text)
+    ( using Tactic[Io.Error], Tactic[Git.Error] )
+  :   Optional[Git.Hash] =
+
     readState(context, name).let(_.trim).let(Git.Hash.unsafe(_))
 
-  private def readNumber(context: Context, name: Text)(using Tactic[Io.Error]): Int =
+  private def readNumber(context: Context, name: Text)
+    ( using Tactic[Io.Error], Tactic[Git.Error] )
+  :   Int =
+
     readState(context, name).let(_.trim).let(parseInt(_)).or(0)
 
   private def parseInt(text: Text): Optional[Int] = safely(text.as[Int])
 
   private def writeState(context: Context, name: Text, content: Text)
-    ( using Tactic[Io.Error] )
+    ( using Tactic[Io.Error], Tactic[Git.Error] )
   :   Unit =
 
     val file = stateFile(context, name)
@@ -92,17 +101,21 @@ private[octogenarian] object Sequencer:
     if file.existent() then file.delete()
     file.write(Objects.bytes(content))
 
-  private def deleteState(context: Context, name: Text)(using Tactic[Io.Error]): Unit =
+  private def deleteState(context: Context, name: Text)
+    ( using Tactic[Io.Error], Tactic[Git.Error] )
+  :   Unit =
+
     val file = stateFile(context, name)
     if file.existent() then file.delete()
 
-  private def present(context: Context, name: Text): Boolean = stateFile(context, name).existent()
+  private def present(context: Context, name: Text)(using Tactic[Git.Error]): Boolean =
+    stateFile(context, name).existent()
 
   private def count[element](list: List[element]): Int = list.fold(0): (n, _) => n + 1
 
   // What `.git` records about an operation that has stopped part-way, if any.
   def operation(gitDir: Path on Linux, conflicting: List[Text])
-    ( using Tactic[Io.Error] )
+    ( using Tactic[Io.Error], Tactic[Git.Error] )
   :   Optional[Git.Operation] =
 
     val context = Context(gitDir, gitDir, gitDir, gitDir, Git.Identity(t"", t""), false)
@@ -191,7 +204,7 @@ private[octogenarian] object Sequencer:
         context.logging )
 
   // The name of the branch HEAD is on, as git prints it, or `detached HEAD`.
-  private def headName(context: Context)(using Tactic[Io.Error]): Text =
+  private def headName(context: Context)(using Tactic[Io.Error], Tactic[Git.Error]): Text =
     Refstore.read(context.gitDir, context.commonDir, t"HEAD") match
       case Git.Backend.Target.Symbolic(ref) => ref
       case _                                => t"detached HEAD"
@@ -324,7 +337,7 @@ private[octogenarian] object Sequencer:
   private def conflictLine(path: Text): Text = t"#\t$path\n"
 
   // The message in `MERGE_MSG`, without the commented lines git adds.
-  private def mergeMessage(context: Context)(using Tactic[Io.Error]): Text =
+  private def mergeMessage(context: Context)(using Tactic[Io.Error], Tactic[Git.Error]): Text =
     readState(context, t"MERGE_MSG").or(t"").cut(t"\n").filter(!_.starts(t"#")).join(t"\n").trim
 
   private def mergeVerb
@@ -487,7 +500,7 @@ private[octogenarian] object Sequencer:
         clearSequencer(context)
         Git.Sequence.Outcome.Completed(headCommit(context))
 
-  private def clearSequencer(context: Context)(using Tactic[Io.Error]): Unit =
+  private def clearSequencer(context: Context)(using Tactic[Io.Error], Tactic[Git.Error]): Unit =
     deleteState(context, t"CHERRY_PICK_HEAD")
     deleteState(context, t"REVERT_HEAD")
     deleteState(context, t"MERGE_MSG")
@@ -633,7 +646,7 @@ private[octogenarian] object Sequencer:
       case _ => outcome
 
   private def rebaseOptionSet
-    ( context: Context, name: Text )
+    ( context: Context, name: Text )(using Tactic[Git.Error])
   :   Boolean =
 
     present(context, t"$rebaseDir/$name")

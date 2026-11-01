@@ -171,19 +171,22 @@ object Tzdb:
 
     def parseRule(lineNo: Int, arguments: List[Text]): Tzdb.Entry.Rule = arguments match
       case name :: from :: to :: _ :: month :: day :: time :: save :: letters :: _ =>
-        try unsafely:
-          val end = to match
-            case t"max"  => Int.MaxValue
-            case t"only" => from.as[Int]
-            case other   => to.as[Int]
+        // A field that is not a number is a malformed rule; the other fields' own `Tzdb.Error`s
+        // report through the enclosing tactic.
+        mitigate:
+          case error: Number.Error =>
+            Tzdb.Error(Tzdb.Error.Reason.UnexpectedRule, lineNo)(using error.diagnostics)
 
-          val d = parseDay(lineNo, parseMonth(month), day)
-          val t = parseTime(lineNo, time)
-          val s = parseDuration(lineNo, save)
-          Tzdb.Entry.Rule(name, from.as[Int], end, d, t, s, parseLetters(letters))
+        . protect:
+            val end = to match
+              case t"max"  => Int.MaxValue
+              case t"only" => from.as[Int]
+              case other   => to.as[Int]
 
-        catch case error: Number.Error =>
-          abort(Tzdb.Error(Tzdb.Error.Reason.UnexpectedRule, lineNo))
+            val d = parseDay(lineNo, parseMonth(month), day)
+            val t = parseTime(lineNo, time)
+            val s = parseDuration(lineNo, save)
+            Tzdb.Entry.Rule(name, from.as[Int], end, d, t, s, parseLetters(letters))
 
       case _ =>
         abort(Tzdb.Error(Tzdb.Error.Reason.UnexpectedRule, lineNo))

@@ -65,7 +65,9 @@ private[octogenarian] object Revwalk:
       case _ => abort(Git.Error(Reason.NoSuchObject(hash.text)))
 
   // The commits listed in the repository's `shallow` file, whose parents are absent by design.
-  private def shallow(objects: Path on Linux)(using Tactic[Io.Error]): java.util.HashSet[Git.Hash] =
+  private def shallow(objects: Path on Linux)(using Tactic[Io.Error], Tactic[Git.Error])
+  :   java.util.HashSet[Git.Hash] =
+
     val set = java.util.HashSet[Git.Hash]()
     val file: Optional[Path on Linux] = objects.parent.let(Refstore.descend(_, List(t"shallow")))
 
