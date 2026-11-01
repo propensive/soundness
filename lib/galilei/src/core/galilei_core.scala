@@ -74,7 +74,9 @@ package filesystemTraversal:
 
 extension [plane: Filesystem](path: Path on plane)
 
-  inline def children(using explorable: plane is Explorable): Chain[Path on plane] =
+  inline def children(using explorable: plane is Explorable, tactic: Tactic[Io.Error])
+  :   Chain[Path on plane] =
+
     explorable.children(path)
 
   // Write `content` to the file in its entirety as a single, direct operation: the whole file is

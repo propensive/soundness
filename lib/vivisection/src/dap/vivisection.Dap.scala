@@ -46,6 +46,7 @@ import gossamer.*
 import guillotine.*
 import hieroglyph.*
 import jacinta.*
+import obligatory.*
 import parasite.*
 import proscenium.*
 import turbulence.*
@@ -74,6 +75,8 @@ object Dap:
             options:      Every[Socket.Option.Tcp],
             system:       System,
             asyncError:   Tactic[Async.Error],
+            framing:      Tactic[Framing.Error],
+            truncation:   Tactic[Truncation.Error],
             working:      WorkingDirectory,
             environment:  Environment,
             consume stdio: Stdio^,
@@ -83,9 +86,6 @@ object Dap:
             note:         Diagnostics )
   :   Unit =
 
-    // Ambient: discharges the stream's truncation tactic and the pump's framing one, which the
-    // loop retains; the pumps' `raises Framing.Error` is the follow-up (see `rep/DECISIONS.md`).
-    import strategies.throwUnsafely
     import codepages.utf8Codepage
 
     val outgoing: Relay[Json] = Relay()

@@ -77,8 +77,8 @@ STDLIB = ['stdlib', 'stdlibGate', 'stdlibRound', 'stdlibIterator', 'collectionIm
 # what library code should never need (a scoped `unsafely`, `safely`, `mitigate` or a `raises`
 # is the honest form). Counted in core sources only; the rows left in the baseline are the
 # sanctioned entry points and demos (`ethereal.cli`, `embarcadero/docker.scala`, `src/demo`,
-# `tarantula_image.scala`, `stratiform.CheckedTests.scala`) and the one structural residue in
-# `scintillate.Http2Serve` (issue: a `StreamDuplex` retains its truncation tactic).
+# `src/example`, `tarantula_image.scala`, `stratiform.CheckedTests.scala`) and the umbrella's
+# delegating given.
 AMBIENT = re.compile(r'\bstrategies\s*\.\s*(?:throwUnsafely|throwSafely|uncheckedErrors|fatalErrors)\b')
 
 COLUMNS = [name for name, _ in HATCHES+WRAPPERS]+CASTS+STDLIB+['untagged', 'ambientStrategy']

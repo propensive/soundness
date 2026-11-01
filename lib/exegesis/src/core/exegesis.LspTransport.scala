@@ -57,13 +57,11 @@ private[exegesis] object LspTransport:
   // Reads framed messages from a channel until it is exhausted, handing each to `receive`. The
   // observer sees the message as it arrived — before parsing, so a malformed message is observed
   // too, and without the framing, so both directions read alike in a log.
+  // A malformed frame is reported through the tactic the reader task supplies.
   def pump(consume source: (Stream[Data] over Credit)^, observer: Lsp.Observer^)
     ( receive: Text => Unit )
+    ( using Tactic[Framing.Error] )
   :   Unit =
-
-    // Ambient: the pump is run under a reader task, which may retain no tracked tactic; it
-    // should declare `raises Framing.Error` and run under that task's own tactic (follow-up).
-    import strategies.throwUnsafely
 
     source.chunks.frames[ContentLength].each: frame =>
       val message: Text = frame.utf8
