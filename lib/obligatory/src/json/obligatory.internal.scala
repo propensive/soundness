@@ -105,21 +105,19 @@ object internal:
                         // plain `Decodable in Json`: for a `Json`-typed parameter the
                         // latter is ambiguous between jacinta's carrier and
                         // distillate's universal `generic` identity decoder.
-                        case '[param] => Expr.summon[param is Json.Decodable] match
-                          case Some(decoder) =>
-                            val source =
-                              if bare then '{request.params}
-                              else '{request.params(${Expr(param.name)})}
+                        // The decoder is summoned inside the dispatcher, under its per-call
+                        // tactic: one derived at expansion would retain whatever tactic the
+                        // expansion site had, and the dispatcher may retain none.
+                        case '[param] =>
+                          val source =
+                            if bare then '{request.params}
+                            else '{request.params(${Expr(param.name)})}
 
-                            '{$decoder.decoded($source)}.asTerm
-
-                          case None =>
-                            halt:
-                              m"""
-                                could not find a contextual
-                                ${TypeRepr.of[param is Decodable in Json].show} instance for the
-                                parameter ${param.name} of ${method.name}
-                              """
+                          ' {
+                              scala.compiletime.summonInline[param is Json.Decodable]
+                              . decoded($source)
+                            }
+                          . asTerm
 
                     val application = Apply(Select(target.asTerm, method), params)
 
@@ -390,36 +388,32 @@ object internal:
           if notification then Some:
             '{JsonRpc.notification($rpc, $methodName, $payload)}.asTerm
           else result.asType.absolve match
-            case '[result] => (Expr.summon[result is Json.Decodable], Expr.summon[Monitor]) match
-              case (Some(decoder), Some(monitor)) =>
+            case '[result] => Expr.summon[Monitor] match
+              case Some(monitor) =>
                 Some:
-                  // The tactic is constructed and passed explicitly rather than through
+                  // The tactics are constructed and passed explicitly rather than through
                   // `unsafely: …`, whose block is a context function; each generated method would
                   // re-elaborate that context-function type, and the fresh root capabilities minted
                   // for its `ThrowTactic^`/`CanThrow` parameters are memoized from the first
                   // method's expansion, so a later method's block fails to conform (upstream
                   // #26547). A `ThrowTactic` throws in place — exactly `unsafely`'s behaviour for
-                  // a throwing tactic — so the semantics are unchanged.
+                  // a throwing tactic — so the semantics are unchanged. The result's decoder is
+                  // summoned here, under the call's own tactic: one derived at expansion would
+                  // retain the expansion site's, which a shared connection may not hold.
                   ' {
                       val tactic: ThrowTactic[JsonRpc.Error]^ = ThrowTactic()
+                      given decoding: (Tactic[Json.Error]^) = ThrowTactic()
 
                       val response =
                         JsonRpc.outcome(JsonRpc.call($rpc, $methodName, $payload))
                           ( using $monitor, tactic )
 
-                      $decoder.decoded(response)
+                      scala.compiletime.summonInline[result is Json.Decodable].decoded(response)
                     }
 
                   . asTerm
 
-              case (None, _) =>
-                halt:
-                  m"""
-                    could not find a contextual ${TypeRepr.of[result is Decodable in Json].show}
-                    instance for the return type of ${method.name}
-                  """
-
-              case _ =>
+              case None =>
                 halt(m"a contextual `Monitor` instance is required")
 
         case _ =>

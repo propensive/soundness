@@ -77,28 +77,21 @@ object Classpath extends Root(t""):
     val self: Text = "."
     val parent: Text = ".."
 
-  given streamable: [path <: Path on Classpath] => Tactic[Classpath.Error]
-  =>  ( classloader: Classloader )
-  =>  path is Streamable by Data =
+  // An instance retains the tactics it reads under — a missing resource, a truncated read — and
+  // the pure classloader, and says so.
+  given streamable: [path <: Path on Classpath]
+  =>  ( classpath: Tactic[Classpath.Error], truncation: Tactic[Truncation.Error],
+        classloader: Classloader )
+  =>  ( (path is Streamable by Data)^{classpath, truncation} ) =
 
-    // Built over a throwing tactic (which merely throws) and the pure classloader, so the
-    // instance retains nothing scoped in effect; laundered pure (the codec-thunk seal pattern).
-    // [field-purity] given streamable codec, codec-thunk seal
-    caps.unsafe.unsafeAssumePure:
-      given (Tactic[Truncation.Error]^) = ThrowTactic()
+    Streamable.inputStream.contramap: path => classloader.inputStream(path.encode)
 
-      Streamable.inputStream.contramap: path => classloader.inputStream(path.encode)
+  given source: [path <: Path on Classpath]
+  =>  ( classpath: Tactic[Classpath.Error], truncation: Tactic[Truncation.Error],
+        classloader: Classloader, buffering: Buffering )
+  =>  ( (path is Streamable by Data over Credit)^{classpath, truncation} ) =
 
-  given source: [path <: Path on Classpath] => Tactic[Classpath.Error]
-  =>  ( classloader: Classloader, buffering: Buffering )
-  =>  path is Streamable by Data over Credit =
-
-    // See `streamable` above; laundered pure for the same reason.
-    // [field-purity] given streamable codec, codec-thunk seal
-    caps.unsafe.unsafeAssumePure:
-      given (Tactic[Truncation.Error]^) = ThrowTactic()
-
-      Streamable.inputStream.contramap: path => classloader.inputStream(path.encode)
+    Streamable.inputStream.contramap: path => classloader.inputStream(path.encode)
 
   // ClasspathEntry → Classpath.Entry
   object Entry:

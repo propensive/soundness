@@ -49,8 +49,9 @@ import Lsp.*
 // function, and re-encodes; a method with no rewriter registered is forwarded untouched.
 object rewrite:
   // Each rewriter is retained by the proxy's registry and runs on the listener's thread, so it
-  // may hold no tactic of its own; it decodes under a scoped `unsafely`, minted per call, and
-  // `rewriteResult`/`rewriteParams` pass the message through unchanged when it throws.
+  // may hold no tactic of its own: it takes one at each call, from `rewriteResult`/`rewriteParams`,
+  // which pass the message through unchanged when the rewriter raises — a result that does not
+  // decode as a hover is the `null` a server sends when it has none.
   // The upstream server's advertised capabilities, amended before the editor sees them: a proxy
   // that adds a feature must say so, and one that removes a feature must stop claiming it.
   transparent inline def capabilities
@@ -58,8 +59,8 @@ object rewrite:
     ( using proxy: Lsp.Proxy^ )
   :   Unit =
 
-    proxy.results(t"initialize") = Lsp.Registry.Slot[Json => Json]: json =>
-      unsafely:
+    proxy.results(t"initialize") = new Lsp.Proxy.Rewriter:
+      def rewrite(json: Json)(using Tactic[Json.Error]): Json =
         val result = json.as[InitializeResult]
         result.copy(capabilities = adjust(result.capabilities)).in[Json]
 
@@ -67,57 +68,65 @@ object rewrite:
   // is the `null` a server sends when it has none, and is passed on as it stands, so a rewriter
   // never has to spell out the empty case.
   transparent inline def hover(inline lambda: Hover => Hover)(using proxy: Lsp.Proxy^): Unit =
-    proxy.results(t"textDocument/hover") = Lsp.Registry.Slot[Json => Json]: json =>
-      safely(lambda(json.as[Hover]).in[Json]).or(json)
+    proxy.results(t"textDocument/hover") = new Lsp.Proxy.Rewriter:
+      def rewrite(json: Json)(using Tactic[Json.Error]): Json =
+        lambda(json.as[Hover]).in[Json]
 
   transparent inline def completions(inline lambda: CompletionList => CompletionList)
     ( using proxy: Lsp.Proxy^ )
   :   Unit =
 
-    proxy.results(t"textDocument/completion") = Lsp.Registry.Slot[Json => Json]: json =>
-      unsafely(lambda(json.as[CompletionList]).in[Json])
+    proxy.results(t"textDocument/completion") = new Lsp.Proxy.Rewriter:
+      def rewrite(json: Json)(using Tactic[Json.Error]): Json =
+        lambda(json.as[CompletionList]).in[Json]
 
   transparent inline def definitions(inline lambda: List[Location] => List[Location])
     ( using proxy: Lsp.Proxy^ )
   :   Unit =
 
-    proxy.results(t"textDocument/definition") = Lsp.Registry.Slot[Json => Json]: json =>
-      unsafely(lambda(json.as[List[Location]]).in[Json])
+    proxy.results(t"textDocument/definition") = new Lsp.Proxy.Rewriter:
+      def rewrite(json: Json)(using Tactic[Json.Error]): Json =
+        lambda(json.as[List[Location]]).in[Json]
 
   transparent inline def symbols(inline lambda: List[DocumentSymbol] => List[DocumentSymbol])
     ( using proxy: Lsp.Proxy^ )
   :   Unit =
 
-    proxy.results(t"textDocument/documentSymbol") = Lsp.Registry.Slot[Json => Json]: json =>
-      unsafely(lambda(json.as[List[DocumentSymbol]]).in[Json])
+    proxy.results(t"textDocument/documentSymbol") = new Lsp.Proxy.Rewriter:
+      def rewrite(json: Json)(using Tactic[Json.Error]): Json =
+        lambda(json.as[List[DocumentSymbol]]).in[Json]
 
   transparent inline def codeActions(inline lambda: List[CodeAction] => List[CodeAction])
     ( using proxy: Lsp.Proxy^ )
   :   Unit =
 
-    proxy.results(t"textDocument/codeAction") = Lsp.Registry.Slot[Json => Json]: json =>
-      unsafely(lambda(json.as[List[CodeAction]]).in[Json])
+    proxy.results(t"textDocument/codeAction") = new Lsp.Proxy.Rewriter:
+      def rewrite(json: Json)(using Tactic[Json.Error]): Json =
+        lambda(json.as[List[CodeAction]]).in[Json]
 
   transparent inline def codeLenses(inline lambda: List[CodeLens] => List[CodeLens])
     ( using proxy: Lsp.Proxy^ )
   :   Unit =
 
-    proxy.results(t"textDocument/codeLens") = Lsp.Registry.Slot[Json => Json]: json =>
-      unsafely(lambda(json.as[List[CodeLens]]).in[Json])
+    proxy.results(t"textDocument/codeLens") = new Lsp.Proxy.Rewriter:
+      def rewrite(json: Json)(using Tactic[Json.Error]): Json =
+        lambda(json.as[List[CodeLens]]).in[Json]
 
   transparent inline def inlayHints(inline lambda: List[InlayHint] => List[InlayHint])
     ( using proxy: Lsp.Proxy^ )
   :   Unit =
 
-    proxy.results(t"textDocument/inlayHint") = Lsp.Registry.Slot[Json => Json]: json =>
-      unsafely(lambda(json.as[List[InlayHint]]).in[Json])
+    proxy.results(t"textDocument/inlayHint") = new Lsp.Proxy.Rewriter:
+      def rewrite(json: Json)(using Tactic[Json.Error]): Json =
+        lambda(json.as[List[InlayHint]]).in[Json]
 
   transparent inline def signatureHelp(inline lambda: SignatureHelp => SignatureHelp)
     ( using proxy: Lsp.Proxy^ )
   :   Unit =
 
-    proxy.results(t"textDocument/signatureHelp") = Lsp.Registry.Slot[Json => Json]: json =>
-      safely(lambda(json.as[SignatureHelp]).in[Json]).or(json)
+    proxy.results(t"textDocument/signatureHelp") = new Lsp.Proxy.Rewriter:
+      def rewrite(json: Json)(using Tactic[Json.Error]): Json =
+        lambda(json.as[SignatureHelp]).in[Json]
 
   // The diagnostics a server publishes unbidden. Unlike the rest, this is a notification, so the
   // `params` are rewritten rather than a result: the `uri` and `version` the server reported are
@@ -126,31 +135,34 @@ object rewrite:
     ( using proxy: Lsp.Proxy^ )
   :   Unit =
 
-    proxy.notices(t"textDocument/publishDiagnostics") = Lsp.Registry.Slot[Json => Json]: params =>
-      import dynamicAccess.dynamicJson
+    proxy.notices(t"textDocument/publishDiagnostics") = new Lsp.Proxy.Rewriter:
+      def rewrite(params: Json)(using Tactic[Json.Error]): Json =
+        import dynamicAccess.dynamicJson
 
-      unsafely:
         Map
           ( t"uri"         -> params.uri,
             t"version"     -> params.version,
             t"diagnostics" -> lambda(params.diagnostics.as[List[Diagnostic]]).in[Json] )
 
-      . in[Json]
+        . in[Json]
 
   // The escape hatches, for methods this library does not model, or for a payload a proxy would
   // rather treat as JSON: `result` amends the answer to a request, `notification` the parameters
   // of a message the server sends unbidden.
-  transparent inline def result(method: Text)(inline lambda: Json => Json)
+  transparent inline def result(method: Text)(inline lambda: Tactic[Json.Error] ?=> Json => Json)
     ( using proxy: Lsp.Proxy^ )
   :   Unit =
 
-    proxy.results(method) = Lsp.Registry.Slot[Json => Json](lambda)
+    proxy.results(method) = new Lsp.Proxy.Rewriter:
+      def rewrite(json: Json)(using Tactic[Json.Error]): Json = lambda(json)
 
-  transparent inline def notification(method: Text)(inline lambda: Json => Json)
+  transparent inline def notification(method: Text)
+    ( inline lambda: Tactic[Json.Error] ?=> Json => Json )
     ( using proxy: Lsp.Proxy^ )
   :   Unit =
 
-    proxy.notices(method) = Lsp.Registry.Slot[Json => Json](lambda)
+    proxy.notices(method) = new Lsp.Proxy.Rewriter:
+      def rewrite(json: Json)(using Tactic[Json.Error]): Json = lambda(json)
 
   // The whole-message hooks: every message the editor sends, and every message the server sends
   // back, with the chance to forward it, amend it, drop it, or answer it here. Each may also ask

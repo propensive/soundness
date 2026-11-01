@@ -3361,3 +3361,34 @@ points are what the ambient tactic is for. Rulings and findings:
   per call in the `serve`/`proxy` macros (`summonInline`; upstream #26547) and a slot type of
   `Json -> (Tactic[…]) ?=> Json`; (4) `StreamDuplex` taking its truncation tactic at read time.
 
+### The four follow-ups, done (2026-11-01)
+
+All four landed in the next PR, and the ratchet's `ambientStrategy` column is at the eleven
+entry points. What each took, and the traps:
+
+- **Pumps and exchanges.** `LspTransport.pump`/`DapTransport.pump` take `using
+  Tactic[Framing.Error]`; the exchanges take a `Writing`/`Reading` pair — *traits with a
+  `using`-tactic method*, whose anonymous instances capture only the observer and a stream or
+  job (all `Durable`) — and mint the sink and channel inside the writer and reader tasks under
+  each task's own tactic. The function-typed forms were tried first and are not available: a
+  `(receive: Text => Unit) ->{…} (Tactic[…] ?->{receive} Unit)` is a *curried dependent context
+  function type* ("not yet supported"), and a context function in any container (an
+  `Optional`, a `Slot`) freshens its capture set at each adaptation, so the task's tactic
+  "cannot flow into {any}". A trait method has neither problem.
+- **Rewriters** are `Lsp.Proxy.Rewriter` instances for the same reason; `rewrite.result`/
+  `notification` take `inline lambda: Tactic[Json.Error] ?=> Json => Json`, which is inlined
+  into the instance's method, never stored as a value.
+- **Macros.** `summonFrom` is an inline-only intrinsic and cannot appear in a quote spliced by
+  a non-inline macro; `summonInline` can. Both `serve` and `proxy` now summon decoders inside
+  the generated code, so the expansion site needs no tactic and `Lsp.Connection` holds none.
+- **`DapSession`.** Every decode is in `dispatch`, which takes `using Tactic[Hazard]`: one
+  tactic per request, minted in `handle` ("every error a request raises fails that request"),
+  thrown into the existing catch. `parseValue`'s `try … catch … => Unset` is `safely`.
+- **`StreamDuplex`** was a copy of coaxial's `streamsDuplex` (now public), whose read side ends
+  at EOF and retains no tactic; `Http2Serve.open` builds the connection over it, `start()`'s
+  `Tactic[Async.Error]` is threaded from the accept daemon (`daemon[Async.Error]`), and each
+  stream's daemon is `daemon[Http2.Error | Truncation.Error | Async.Error]`.
+- **`Explorable.children(path)(using Tactic[Io.Error])`**: every caller already had one.
+- **hellenism** `Streamable` givens declare `^{classpath, truncation}` and lose both seals; the
+  bundled-resource readers (`scintillate` error pages, ethereal's schema) use `unsafely`.
+

@@ -106,9 +106,6 @@ private[vivisection] class DapSession(emit: Json => Unit)
           compile:     (CompileEvent is Loggable)^,
           note:        Diagnostics ):
 
-  // Ambient: the adapter's decodes run in callbacks and tasks held in registry slots, which may
-  // retain no tracked tactic; decoders summoned per call are the follow-up (`rep/DECISIONS.md`).
-  import strategies.throwUnsafely
   import dynamicAccess.dynamicJson
 
   // This adapter juggles capabilities whose lifetimes its own state machine encloses. Its
@@ -268,10 +265,15 @@ private[vivisection] class DapSession(emit: Json => Unit)
     val request = Dap.envelope(json)
 
     if request.`type` == t"request" then
+      // Every error a request raises — a malformed argument, an unreachable endpoint, a
+      // debugger fault — fails that request: the tactic minted here, per request, throws it,
+      // and the catch below reports it.
+      given (Tactic[Hazard]^) = ThrowTactic()
+
       try dispatch(request, json)
       catch case error: Exception => fail(request, error.toString.tt)
 
-  private def dispatch(request: Dap.Envelope, json: Json): Unit =
+  private def dispatch(request: Dap.Envelope, json: Json)(using Tactic[Hazard]): Unit =
     request.command.or(t"") match
       case t"initialize" =>
         respond(request, Dap.Capabilities().in[Json])
@@ -707,7 +709,10 @@ private[vivisection] class DapSession(emit: Json => Unit)
       case _ =>
         fail(request, t"unrecognized command")
 
-  private def stepWith(request: Dap.Envelope, json: Json, depth: Jdwp.StepDepth): Unit =
+  private def stepWith(request: Dap.Envelope, json: Json, depth: Jdwp.StepDepth)
+    ( using Tactic[Hazard] )
+  :   Unit =
+
     val arguments = json.arguments.as[Dap.ThreadArguments]
 
     withDebug(request): debug =>
@@ -817,20 +822,20 @@ private[vivisection] class DapSession(emit: Json => Unit)
   // Parses a plain DAP `setVariable` value at the variable's erased type: the primitives, plus
   // a fresh remote string. Anything richer belongs to `setExpression`.
   private def parseValue(halt: Halt, erased: Text, value: Text): Optional[Jdwp.Value] =
-    try erased.s match
-      case "Int"              => Jdwp.Value.OfInt(jl.Integer.parseInt(value.s))
-      case "Long"             => Jdwp.Value.OfLong(jl.Long.parseLong(value.s))
-      case "Boolean"          => Jdwp.Value.OfBoolean(jl.Boolean.parseBoolean(value.s))
-      case "Double"           => Jdwp.Value.OfDouble(jl.Double.parseDouble(value.s))
-      case "Float"            => Jdwp.Value.OfFloat(jl.Float.parseFloat(value.s))
-      case "Short"            => Jdwp.Value.OfShort(jl.Short.parseShort(value.s))
-      case "Byte"             => Jdwp.Value.OfByte(jl.Byte.parseByte(value.s))
+    safely:
+      erased.s match
+        case "Int"              => Jdwp.Value.OfInt(jl.Integer.parseInt(value.s))
+        case "Long"             => Jdwp.Value.OfLong(jl.Long.parseLong(value.s))
+        case "Boolean"          => Jdwp.Value.OfBoolean(jl.Boolean.parseBoolean(value.s))
+        case "Double"           => Jdwp.Value.OfDouble(jl.Double.parseDouble(value.s))
+        case "Float"            => Jdwp.Value.OfFloat(jl.Float.parseFloat(value.s))
+        case "Short"            => Jdwp.Value.OfShort(jl.Short.parseShort(value.s))
+        case "Byte"             => Jdwp.Value.OfByte(jl.Byte.parseByte(value.s))
 
-      case "java.lang.String" =>
-        val string = halt.connection.createString(value)
-        Jdwp.Value.Reference(Jdwp.Tag.StringTag, Jdwp.Ref(string.long))
+        case "java.lang.String" =>
+          val string = halt.connection.createString(value)
+          Jdwp.Value.Reference(Jdwp.Tag.StringTag, Jdwp.Ref(string.long))
 
-      case _ =>
-        Unset
+        case _ =>
+          Unset
 
-    catch case _: Exception => Unset
