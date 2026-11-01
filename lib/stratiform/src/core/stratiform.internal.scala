@@ -271,7 +271,7 @@ object internal:
 
     given Diagnostics = Diagnostics.omit
 
-    try unsafely(Telp.parse(raw.tt)) catch
+    recover:
       case error: Telp.Error =>
         val position =
           contextual.Interpolation.sourcePosition
@@ -280,7 +280,9 @@ object internal:
 
         halt(error.message, position)
 
-    '{unsafely(Telp.parse(${Expr(raw)}.tt))}
+    . protect(Telp.parse(raw.tt))
+
+    '{Telp.unsafeParse(${Expr(raw)}.tt)(using Unsafe)}
 
   def interpolator[parts <: Tuple: Type, origins <: Tuple: Type]
     ( insertions0: Expr[Seq[Any]] )

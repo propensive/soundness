@@ -36,11 +36,13 @@ import scala.compiletime
 
 import anticipation.*
 import contingency.*
+import fulminate.*
 import gesticulate.*
 import gossamer.*
 import prepositional.*
 import spectacular.*
 import turbulence.*
+import vacuous.*
 import zephyrine.*
 
 object Servable:
@@ -70,7 +72,11 @@ object Servable:
   given bytes: [response: Abstractable across HttpStreams to HttpStreams.Content]
   =>  response is Servable =
 
-    def mediaType(value: response): MediaType = unsafely(Media.parse(response.generic(value)(0)))
+    // The content's media type is the `Abstractable` instance's to state; one that is not a
+    // media type is that instance's defect.
+    def mediaType(value: response): MediaType =
+      safely(Media.parse(response.generic(value)(0)))
+      . or(panic(m"the content's media type ${response.generic(value)(0)} is malformed"))
 
     Servable[response](mediaType): value =>
       Http.Body.Flowing: () =>

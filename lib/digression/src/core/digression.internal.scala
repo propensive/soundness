@@ -38,6 +38,7 @@ import scala.quoted.*
 import anticipation.*
 import contingency.*
 import gigantism.*
+import vacuous.*
 
 object internal:
   def location: Macro[Codepoint] =
@@ -58,7 +59,8 @@ object internal:
 
   def fqcn(context: Expr[StringContext]): Macro[Fqcn] =
     // The name is validated at expansion time; the runtime re-parse of the checked, canonical
-    // form cannot fail. (Splicing the parts as an array trips capture-checked `ToExpr` synthesis.)
+    // form is gated by `Unsafe`. (Splicing the parts as an array trips capture-checked `ToExpr`
+    // synthesis.)
     abortive:
       val checked = Fqcn(context.valueOrAbort.parts.head.tt)
-      '{unsafely(Fqcn(${Expr(checked.text.s)}.tt))}
+      '{Fqcn.unsafeFrom(${Expr(checked.text.s)}.tt)(using Unsafe)}

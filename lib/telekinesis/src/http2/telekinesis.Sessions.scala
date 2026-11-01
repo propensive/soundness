@@ -81,9 +81,12 @@ private[telekinesis] object Sessions:
       val cursor = Cursor[Data](duplex.source)
 
       val head: Http.Response.Head =
-        try unsafely(Http.Response.parseHead(cursor)) catch
-          case error: Http.Response.Error => abort(Connect.Error(Unknown))
-          case error: ji.IOException      => abort(Connect.Error(Unknown))
+        try
+          mitigate:
+            case error: Http.Response.Error => Connect.Error(Unknown)(using error.diagnostics)
+
+          . protect(Http.Response.parseHead(cursor))
+        catch case error: ji.IOException => abort(Connect.Error(Unknown))
 
       // A `101` body is the upgraded protocol's unending stream; refuse it.
       if head.status == Http.SwitchingProtocols then abort(Connect.Error(Unknown))

@@ -84,7 +84,9 @@ object Dag:
     new Dag(adjacency)
 
   extension (dag: Dag[Text])
-    def dot: Dot = unsafely:
+    // A node's text names its DOT node, so a text which is not a DOT identifier (empty, or
+    // containing a double-quote or a newline) cannot be rendered.
+    def dot: Dot raises Name.Error =
       val edges = Set.iterator(dag.edges).map: (a, b) => Name[Dot.Id](a) --> Name[Dot.Id](b)
       Dot.Digraph(None, false, edges.toSeq*)
 

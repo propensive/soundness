@@ -47,6 +47,8 @@ object Combobox:
   given renderable: Combobox is Renderable in Phrasing = combobox =>
     val items = combobox.options.map: option => whatwg.Option(value = option)
 
+    // The name is a form pointer, field names joined with `.`, which is a DOM id unless a field
+    // is backticked with whitespace in it, or the pointer is `Self` (an empty name).
     val id = unsafely(Name[DomId](combobox.name))
 
     Html.Fragment

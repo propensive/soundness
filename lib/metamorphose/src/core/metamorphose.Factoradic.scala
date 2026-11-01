@@ -41,20 +41,28 @@ import denominative.dysasymptotics.linearSize
 
 object Factoradic:
   def apply(sequence: List[Int]): Factoradic raises Permutation.Error =
-    def recur(sequence: List[Int], bases: List[BigInt], result: BigInt, base: Int): BigInt =
+    var base = sequence.size
+
+    sequence.each: digit =>
+      if digit >= base
+      then raise(Permutation.Error(Permutation.Error.Reason.BaseRange(digit, base)))
+
+      base -= 1
+
+    unchecked(sequence)
+
+  // The number of a sequence of digits each already known to be below its base: what `apply`
+  // checks, and what a Lehmer code is by construction.
+  private[metamorphose] def unchecked(sequence: List[Int]): Factoradic =
+    def recur(sequence: List[Int], bases: List[BigInt], result: BigInt): BigInt =
       sequence match
         case Nil => result
 
-        case head :: tail =>
-          if head >= base
-          then raise(Permutation.Error(Permutation.Error.Reason.BaseRange(head, base)))
+        case head :: tail => bases match
+          case factor :: factors => recur(tail, factors, result + factor*head)
+          case Nil               => result
 
-          bases match
-            case factor :: factors => recur(tail, factors, result + factor*head, base - 1)
-            case Nil               => result
-
-    val length = sequence.size
-    Factoradic(recur(sequence, Factorial.sequence(length), 0, length))
+    Factoradic(recur(sequence, Factorial.sequence(sequence.size), 0))
 
 case class Factoradic(number: BigInt):
   def expand: List[Int] =

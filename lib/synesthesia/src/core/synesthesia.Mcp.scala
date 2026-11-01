@@ -757,6 +757,9 @@ object Mcp:
     :   GetPrompt =
 
       // The RPC proxy's awaits are scoped to this call, so it runs under its own supervision.
+      // [dispatcher] The service's methods carry no tactic (the JSON-RPC dispatcher's
+      // call-time tactics are a follow-up), so a supervision failure escapes as the
+      // dispatcher's internal error.
       import threads.platformThreads
 
       val messages = unsafely(supervise:
@@ -792,6 +795,8 @@ object Mcp:
 
       // A tool's own failure is a result the model can read (`isError`), distinct from a
       // protocol failure: an unknown tool or a missing parameter is still a JSON-RPC error.
+      // [dispatcher] As in `prompts/get`: the method carries no tactic, so the supervision
+      // failure escapes, and a protocol failure is rethrown for the dispatcher to report.
       try
         val result = unsafely(supervise(spec.invokeTool(server, client, name, arguments)))
         CallTool(content = List(TextContent(result.show)), structuredContent = result)

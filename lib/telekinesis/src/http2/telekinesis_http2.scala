@@ -97,24 +97,23 @@ extends Sessional uses parasite.threads:
 
             // The connection's reader/writer daemons live under a session-scoped
             // supervisor: nothing outlives the lambda.
-            try
+            mitigate:
+              case error: Http2.Error => Connect.Error(Unknown)(using error.diagnostics)
+              case error: Async.Error => Connect.Error(Unknown)(using error.diagnostics)
+
+            . protect:
               // The session's tactic and the lambda share only the session-scoped
               // connection; no aliased writer.
               // [by-name-receiver] session tactic and lambda share the connection
               scala.caps.unsafe.unsafeAssumeSeparate:
-                unsafely:
-                  supervise:
-                    val connection = Http2.Connection(duplex)
+                supervise:
+                  val connection = Http2.Connection(duplex)
 
-                    try
-                      connection.start()
-                      lambda(using Sessions.Multiplexed(connection, authority))
+                  try
+                    connection.start()
+                    lambda(using Sessions.Multiplexed(connection, authority))
 
-                    finally connection.close()
-
-            catch
-              case error: Http2.Error => abort(Connect.Error(Unknown))
-              case error: Async.Error => abort(Connect.Error(Unknown))
+                  finally connection.close()
 
           case _ =>
             lambda(using Sessions.Sequential(duplex))

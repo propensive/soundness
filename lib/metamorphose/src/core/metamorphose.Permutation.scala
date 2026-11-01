@@ -56,13 +56,10 @@ object Permutation:
 
   def apply(sequence: Sequence[Int]): Permutation raises Permutation.Error =
     val length = sequence.size
-    val array: scala.Array[Int]^ = new scala.Array(length)
     val seen: BitSet = BitSet()
     var index = 0
 
     sequence.each: element =>
-      array(index) = element - seen.count(_ < element)
-
       if element >= length || element < 0
       then raise(Permutation.Error(Permutation.Error.Reason.InvalidIndex(element, length - 1)))
 
@@ -72,7 +69,21 @@ object Permutation:
       seen(element) = true
       index += 1
 
-    Permutation(Factoradic(array.iterator.to(List)))
+    unchecked(sequence)
+
+  // The Lehmer code of a sequence already known to be a permutation of its own indices: what
+  // `apply` checks, and what `inverse` constructs.
+  private def unchecked(sequence: Sequence[Int]): Permutation =
+    val array: scala.Array[Int]^ = new scala.Array(sequence.size)
+    val seen: BitSet = BitSet()
+    var index = 0
+
+    sequence.each: element =>
+      array(index) = element - seen.count(_ < element)
+      seen(element) = true
+      index += 1
+
+    Permutation(Factoradic.unchecked(array.iterator.to(List)))
 
   // PermutationError → Permutation.Error
   object Error:
@@ -102,7 +113,7 @@ object Permutation:
 
 case class Permutation(factoradic: Factoradic):
   lazy val lehmer: List[Int] = factoradic.expand
-  lazy val expansion: List[Int] = unsafely(apply[Int](List.range(0, lehmer.size)))
+  lazy val expansion: List[Int] = permute(List.range(0, lehmer.size))
 
   def apply(n: Int): Int =
     // A permutation fixes every point outside its domain; `List` positional access is
@@ -114,7 +125,11 @@ case class Permutation(factoradic: Factoradic):
     if sequence.size < lehmer.size then
       raise(Permutation.Error(Permutation.Error.Reason.TooShort(sequence.size, lehmer.size)))
 
+    permute(sequence)
 
+  // Applies the permutation to a sequence of at least `lehmer.size` elements: what `apply`
+  // checks, and what `List.range(0, lehmer.size)` is by construction.
+  private def permute[element](sequence: List[element]): List[element] =
     def recur
       ( lehmer:  List[Int],
         prefix:  List[element],
@@ -157,4 +172,4 @@ case class Permutation(factoradic: Factoradic):
       case Nil          => false
     do ()
 
-    unsafely(Permutation(Sequence.from(array.iterator)))
+    Permutation.unchecked(Sequence.from(array.iterator))

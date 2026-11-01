@@ -54,6 +54,8 @@ trait CommonFormattable extends Formattable:
   // second class, so a stylesheet — the styling policy for this front-end — can e.g.
   // italicise `.binding` on top of the accent's colour.
   def classes(accent: Accent, role: Optional[Role]): ClassList =
+    // The name is an `Accent` or `Role` case name in lower case: letters only, which is a valid
+    // CSS identifier.
     def cssClass(name: Text): Name[CssClass] = unsafely(Name[CssClass](name))
 
     val roleClass: Optional[Name[CssClass]] = role.let: role => cssClass(role.show.lower)

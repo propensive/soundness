@@ -153,16 +153,16 @@ private def plaintextExchange
 
     if queue.size < maxIdlePerOrigin then queue.add(duplex) else duplex.close()
 
-  // One request/response exchange over `duplex`. Failures are thrown (the
-  // caller translates them, retrying once if the connection came from the
+  // One request/response exchange over `duplex`. A malformed response is raised, and a failed
+  // read thrown (the caller translates both, retrying once if the connection came from the
   // pool); on success, the connection is surrendered for reuse or closed.
-  def attempt(duplex: Duplex): Http.Response =
+  def attempt(duplex: Duplex)(using Tactic[Http.Response.Error]): Http.Response =
     duplex.send(Http.Request.serialize(httpRequest))
 
     // Typed binding: `parse` is overloaded (lazy-list and endpoint forms),
     // so the expected type picks the endpoint pair.
     val input: zephyrine.Stream[Data] over zephyrine.Credit = duplex.source
-    val response: Http.Response = unsafely(Http.Response.parse(input, method == Http.Head))
+    val response: Http.Response = Http.Response.parse(input, method == Http.Head)
 
     // A `101` body is the upgraded protocol's unending stream: draining it
     // would block forever, so refuse it here (aborting rather than throwing,
@@ -198,19 +198,31 @@ private def plaintextExchange
   def fresh(): Http.Response =
     val duplex = connect()
 
-    try attempt(duplex) catch
-      case error: Http.Response.Error    => duplex.close(); abort(Connect.Error(Unknown))
-      case error: Truncation.Error       => duplex.close(); abort(Connect.Error(Unknown))
-      case error: ji.IOException         => duplex.close(); abort(Connect.Error(Unknown))
+    try
+      mitigate:
+        case error: Http.Response.Error =>
+          duplex.close()
+          Connect.Error(Unknown)(using error.diagnostics)
+
+      . protect(attempt(duplex))
+    catch
+      case error: Truncation.Error => duplex.close(); abort(Connect.Error(Unknown))
+      case error: ji.IOException   => duplex.close(); abort(Connect.Error(Unknown))
 
   borrow() match
     case null => fresh()
 
     case duplex: Duplex =>
-      try attempt(duplex) catch
-        case error: Http.Response.Error    => duplex.close(); fresh()
-        case error: Truncation.Error       => duplex.close(); fresh()
-        case error: ji.IOException         => duplex.close(); fresh()
+      try
+        recover:
+          case error: Http.Response.Error =>
+            duplex.close()
+            fresh()
+
+        . protect(attempt(duplex))
+      catch
+        case error: Truncation.Error => duplex.close(); fresh()
+        case error: ji.IOException   => duplex.close(); fresh()
 
 
 // One sequential HTTP/1.1 exchange over an open connection: send the request,
@@ -232,14 +244,16 @@ private[telekinesis] def sequentialFetch(duplex: Duplex, request: Http.Request)
     val input: zephyrine.Stream[Data] over zephyrine.Credit = duplex.source
 
     val response: Http.Response =
-      unsafely(Http.Response.parse(input, request.method == Http.Head))
+      mitigate:
+        case error: Http.Response.Error => Connect.Error(Unknown)(using error.diagnostics)
+
+      . protect(Http.Response.parse(input, request.method == Http.Head))
 
     if response.status == Http.SwitchingProtocols then abort(Connect.Error(Unknown))
 
     repackage(response, response.body.stream.memoize)
 
   catch
-    case error: Http.Response.Error    => abort(Connect.Error(Unknown))
-    case error: Truncation.Error       => abort(Connect.Error(Unknown))
-    case error: ji.IOException         => abort(Connect.Error(Unknown))
+    case error: Truncation.Error => abort(Connect.Error(Unknown))
+    case error: ji.IOException   => abort(Connect.Error(Unknown))
 

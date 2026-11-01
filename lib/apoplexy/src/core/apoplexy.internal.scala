@@ -532,7 +532,7 @@ object Apoplexy:
     // Parsed here first, so the generated parse cannot fail; a gated helper rather than a
     // spliced `unsafely`, whose context function a quote cannot match under capture checking.
     safely(Media.parse(media)).let: _ =>
-      '{unsafeMediaType(${Expr(media.s)}.tt)(using Unsafe)}
+      '{Media.unsafeParse(${Expr(media.s)}.tt)(using Unsafe)}
 
   // How a declared error response is raised: by the class of its status, a range class for
   // `4XX`-style keys (and for a numbered status telekinesis does not name), or `OtherError` for
@@ -1501,10 +1501,7 @@ object Apoplexy:
 
     '{()}
 
-// The decodings the generated code performs on values the macro has already validated at
+// The URL decoding the generated code performs on a value the macro has already validated at
 // expansion: gated by `Unsafe` (which the macro supplies) rather than discharged by a spliced
 // `unsafely`, whose context function a quote cannot match under capture checking.
-def unsafeMediaType(text: Text)(using erased unsafe: Unsafe): MediaType =
-  unsafely(Media.parse(text))
-
 def unsafeHttpUrl(text: Text)(using erased unsafe: Unsafe): HttpUrl = unsafely(text.as[HttpUrl])

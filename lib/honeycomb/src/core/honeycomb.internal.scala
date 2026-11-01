@@ -48,6 +48,7 @@ import denominative.*
 import fulminate.*
 import gigantism.*
 import gossamer.*
+import nomenclature.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
@@ -57,6 +58,32 @@ import vacuous.*
 import zephyrine.*
 
 object internal:
+  // The names of a `ClassList[name]()`: each label of the type is checked against `CssClass`'s
+  // rules here, so an invalid class name halts the expansion, and the names the expansion
+  // yields need no check when the list is made.
+  def classList[name <: Label: Type]: Macro[ClassList of name] =
+    import quotes.reflect.*
+
+    def labels(repr: TypeRepr): List[String] = repr.dealias match
+      case OrType(left, right)                => labels(left) ++ labels(right)
+      case ConstantType(StringConstant(text)) => List(text)
+      case other => halt(m"the class names should be string literals, not ${other.show}")
+
+    val limit: TypeRepr = Expr.summon[CssClass is Nominative].absolve match
+      case Some('{type limit; $nominative: (Nominative { type Limit = limit })}) =>
+        TypeRepr.of[limit]
+
+      case None =>
+        halt(m"the rules for a CSS class name were not found")
+
+    val names: List[Expr[Name[CssClass]]] = labels(TypeRepr.of[name]).map: label =>
+      if !nomenclature.protointernal.planeAccepts(label.tt, limit)
+      then halt(m"${label.tt} is not a valid CSS class name")
+
+      '{${Expr(label)}.tt.asInstanceOf[Name[CssClass]]}
+
+    '{new ClassList(Set(${Varargs(names)}*)) { type Topic = name }}
+
   def extractor[parts <: Tuple: Type, origins <: Tuple: Type]
     ( scrutinee: Expr[Html] )
   :   Macro[Extrapolation[Html]] =

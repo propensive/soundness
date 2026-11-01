@@ -138,13 +138,16 @@ object JsonRpc:
   // blocking forever on a promise an error response could never fulfil.
   def outcome(pending: Pending)(using Monitor, Tactic[JsonRpc.Error]): Json =
 
-    try unsafely(pending.promise.await())
-    catch case async: Async.Error => faults.remove(pending.id) match
-      case null =>
-        abort(JsonRpc.Error(JsonRpc.Error.Reason.Abandoned))
+    mitigate:
+      case async: Async.Error =>
+        given Diagnostics = async.diagnostics
 
-      case failure: Failure =>
-        abort(JsonRpc.Error(JsonRpc.Error.Reason.Failed, failure.code, failure.message))
+        faults.remove(pending.id) match
+          case null             => JsonRpc.Error(JsonRpc.Error.Reason.Abandoned)
+          case failure: Failure =>
+            JsonRpc.Error(JsonRpc.Error.Reason.Failed, failure.code, failure.message)
+
+    . protect(pending.promise.await())
 
   def receive(id: Text, result: Json): Unit = claim(id).let(_.offer(result))
 

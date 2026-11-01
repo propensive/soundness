@@ -175,7 +175,7 @@ object internal:
 
       for segment <- segments.tail do acc = '{$acc + ${selectorFragment()}.s + ${Expr(segment.s)}}
 
-      '{SelectorList.read($acc.tt)}
+      '{SelectorList.unsafeRead($acc.tt)(using Unsafe)}
 
     // The (type-checked) value of a declaration: a lone sentinel becomes the typed
     // substitution; a substitution mixed with literal text, or in the property name,
@@ -197,7 +197,7 @@ object internal:
       case Css.Node.Rule(selector, body) =>
         val selectorExpr =
           if has(selector.show) then assembleSelector(selector.show)
-          else '{SelectorList.read(${lift(selector.show)})}
+          else '{SelectorList.unsafeRead(${lift(selector.show)})(using Unsafe)}
 
         '{Css.Node.Rule($selectorExpr, ${listExpr(body)})}
 

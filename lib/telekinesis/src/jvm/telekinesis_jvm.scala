@@ -135,6 +135,8 @@ private def buildResponse(response: jnh.HttpResponse[ji.InputStream])(using Tact
   val headers: List[Http.Header] = response.headers.nn.map().nn.to[List].bind:
     (key, values) => values.to[List].map: value => Http.Header(key.tt, value.tt)
 
+  // [spring] The body is pulled after `request` has returned, outside the scope of any tactic;
+  // a read the JDK cuts short throws from the pull.
   val body = Http.Body.Flowing: () =>
     unsafely:
       summon[ji.InputStream is Streamable by Data over Credit].stream(response.body().nn)
@@ -170,15 +172,20 @@ given domainSocketFetchable: DomainSocket.Endpoint is Fetchable onto DomainSocke
     def text(endpoint: DomainSocket.Endpoint): Text = endpoint.path
     def hostname(endpoint: DomainSocket.Endpoint): Host = Localhost
 
-given domainSocketHttpClient: Tactic[Truncation.Error] => Http.Client onto DomainSocket =
+given domainSocketHttpClient: (Tactic[Truncation.Error], Tactic[Connect.Error])
+=>  Http.Client onto DomainSocket =
   new Http.Client:
     type Target = DomainSocket
 
     def request(request: Http.Request, socket: DomainSocket)(using Http.Event is Loggable)
     :   Http.Response =
 
-      unsafely:
-        // Typed binding: `transmit` and `parse` are both overloaded (lazy-list and
-        // endpoint forms), so the expected type picks the endpoint pair.
-        val input: zephyrine.Stream[Data] over zephyrine.Credit = socket.transmit(request)
-        Http.Response.parse(input)
+      // Typed binding: `transmit` and `parse` are both overloaded (lazy-list and
+      // endpoint forms), so the expected type picks the endpoint pair.
+      val input: zephyrine.Stream[Data] over zephyrine.Credit = socket.transmit(request)
+
+      mitigate:
+        case error: Http.Response.Error =>
+          Connect.Error(Connect.Error.Reason.Unknown)(using error.diagnostics)
+
+      . protect(Http.Response.parse(input))
