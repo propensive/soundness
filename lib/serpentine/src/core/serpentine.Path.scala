@@ -264,10 +264,10 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
         case limit: (Limit is Submissible on `filesystem`)                 => limit.check(root)
 
         // `root` already belongs to a valid `Path`, so re-validating it cannot fail in
-        // practice; decode it totally (a genuine mismatch throws) so `on` stays total
-        // and usable from `Conversion`.
+        // practice; the check is scoped `unsafely` (a genuine mismatch throws) so `on` stays
+        // total and usable from `Conversion`.
         case radical: (Limit is Radical on `filesystem`) =>
-          radical.decode(root)(using strategies.throwUnsafely)
+          unsafely(radical.decode(root))
 
         case filesystem: (`filesystem` is (Filesystem { type UniqueRoot = true })) =>
           infer[Plane is (Filesystem { type UniqueRoot = true })]

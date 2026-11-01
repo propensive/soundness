@@ -528,10 +528,9 @@ object Apoplexy:
   private def mediaTypeExpr(using Quotes)(media: Text): Optional[Expr[MediaType]] =
     try
       Media.parse(media)
-      // Already parsed above, so the generated parse cannot fail: it throws unsafely rather
-      // than going through an `unsafely` block, whose context function a spliced closure
-      // cannot match under Scala 3.10's capture checking.
-      Optional('{{ import contingency.strategies.throwUnsafely; Media.parse(${Expr(media.s)}.tt) }})
+      // Already parsed above, so the generated parse cannot fail; a gated helper rather than a
+      // spliced `unsafely`, whose context function a quote cannot match under capture checking.
+      Optional('{unsafeMediaType(${Expr(media.s)}.tt)(using Unsafe)})
     catch case error: MediaType.Error => Unset
 
   // How a declared error response is raised: by the class of its status, a range class for
@@ -996,7 +995,7 @@ object Apoplexy:
         catch case error: Url.Error => halt(m"apoplexy: the spec's server URL $server is not valid")
 
         // Validated above, so the generated decoding cannot fail (see `mediaTypeExpr`).
-        '{{ import contingency.strategies.throwUnsafely; $serverExpr.tt.as[HttpUrl] }}
+        '{unsafeHttpUrl($serverExpr.tt)(using Unsafe)}
 
       case supplied: Expr[HttpUrl] @unchecked =>
         if server.starts(t"/") then '{Api.extend($supplied, $serverExpr.tt)} else supplied
@@ -1492,3 +1491,11 @@ object Apoplexy:
       conformsTo(valueRepr, resolveSchema(source, pointer))
 
     '{()}
+
+// The decodings the generated code performs on values the macro has already validated at
+// expansion: gated by `Unsafe` (which the macro supplies) rather than discharged by a spliced
+// `unsafely`, whose context function a quote cannot match under capture checking.
+def unsafeMediaType(text: Text)(using erased unsafe: Unsafe): MediaType =
+  unsafely(Media.parse(text))
+
+def unsafeHttpUrl(text: Text)(using erased unsafe: Unsafe): HttpUrl = unsafely(text.as[HttpUrl])

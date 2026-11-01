@@ -207,13 +207,8 @@ trait Tel4:
     // Both are first composed as the macro expands, where a schema which does not compose is a
     // compile error rather than a value to report, so the composition throws; a schema which
     // composed then composes again when a record reads it.
-    private lazy val base: Tels =
-      import strategies.throwUnsafely
-      Tels.Layers.compose(tels, List())
-
-    private lazy val composed: Tels =
-      import strategies.throwUnsafely
-      Tels.Layers.compose(tels)
+    private lazy val base: Tels = unsafely(Tels.Layers.compose(tels, List()))
+    private lazy val composed: Tels = unsafely(Tels.Layers.compose(tels))
 
     def fields: List[(Text, Member)] =
       Tel.Provider.fieldsOf(composed.document, composed, base, base.document)

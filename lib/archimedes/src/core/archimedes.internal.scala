@@ -106,4 +106,4 @@ object internal:
 
     val partExprs: Expr[Seq[Text]] = Lifts.varargs(parts.map(liftText))
 
-    '{Ergo.unsafeInterpolate($partExprs, ${Lifts.varargs(atoms)})}
+    '{Ergo.unsafeInterpolate($partExprs, ${Lifts.varargs(atoms)})(using Unsafe)}

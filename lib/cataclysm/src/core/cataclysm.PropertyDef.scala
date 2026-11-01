@@ -62,6 +62,5 @@ object PropertyDef:
 // dataset (`css/properties.json`, CC0). `syntax` is the raw value grammar (CSS
 // Value Definition Css.Syntax); `grammar` is its parsed form, computed on demand.
 case class PropertyDef(name: Text, syntax: Text) derives CanEqual:
-  lazy val grammar: Css.Syntax =
-    import contingency.strategies.throwUnsafely
-    SyntaxParser.parse(syntax)
+  // The bundled dataset's grammars all parse (the test suite checks every entry).
+  lazy val grammar: Css.Syntax = unsafely(SyntaxParser.parse(syntax))

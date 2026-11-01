@@ -109,8 +109,7 @@ object Streamer:
   // machinery), so it lives in this non-sep module, expanded exactly once. Decode failures
   // throw; a host wraps calls in `safely`.
   def read(data: Data): TestEvent =
-    import strategies.throwUnsafely
-    unsafely(Bintel.read[TestEvent](data))
+    unsafely[Bintel.Error | Tel.Error | wisteria.Variant.Error](Bintel.read[TestEvent](data))
 
   // One frame: a 4-byte big-endian length prefix, then the payload, flushed so the host's
   // chunk stream sees it promptly.

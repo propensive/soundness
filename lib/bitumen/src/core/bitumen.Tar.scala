@@ -296,9 +296,8 @@ object Tar:
       val mtime: U32 = (millis/1000).toInt.bits.u32
       Entry.File(name, mode, user, group, mtime, Archive.Body(data.source[Data].memoize))
 
-    private[bitumen] val paxRef: Tar.Ref =
-      import strategies.throwUnsafely
-      t"PaxHeaders/0".as[Relative on Tar]
+    // Built structurally (descent is stored leaf-first), so the literal is never parsed.
+    private[bitumen] val paxRef: Tar.Ref = Relative(0, t"0", t"PaxHeaders")
 
     private[bitumen] def sparseExtensionBlocks(segments: List[SparseSegment]): List[Data] =
       if segments.nil then Nil

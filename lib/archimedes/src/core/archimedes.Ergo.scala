@@ -142,15 +142,10 @@ object Ergo:
   def interpolate(parts: Seq[Text], atoms: Seq[Mathml])(using Tactic[Ergo.Error]): Math =
     Parser(parts.map(_.s).mkString(Hole.toString), Iterator.from(atoms.iterator)).parseTop()
 
-  // Parse-or-throw, for callers (in particular the `ergo""` interpolator's
-  // generated code) that have already established the literal is well-formed.
-  def unsafe(input: Text): Math =
-    import strategies.throwUnsafely
-    parse(input)
-
-  def unsafeInterpolate(parts: Seq[Text], atoms: Seq[Mathml]): Math =
-    import strategies.throwUnsafely
-    interpolate(parts, atoms)
+  // Parse-or-throw, gated by `Unsafe`, for the `ergo""` interpolator's generated code, which
+  // has already established at expansion that the literal is well-formed.
+  def unsafeInterpolate(parts: Seq[Text], atoms: Seq[Mathml])(using erased unsafe: Unsafe): Math =
+    unsafely(interpolate(parts, atoms))
 
   // ── Serialisation: an archimedes `Math` tree → ergo shorthand text ──────────
   //

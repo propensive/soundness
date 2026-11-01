@@ -160,9 +160,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
       else
         val uuid = Uuid()
 
-        val out =
-          import strategies.throwUnsafely
-          (temporaryDirectory / uuid).on[Linux]
+        val out = (temporaryDirectory / uuid).on[Linux]
 
         deleteOnShutdown(jnf.Paths.get(out.encode.s).nn)
 
@@ -179,9 +177,8 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
                 // Bound once: splices read transported values from this array, so it must
                 // not be re-deserialized per evaluation — a spliced value inside a hot loop
                 // would otherwise decode the whole transport on every iteration.
-                val incoming: scala.Array[Object] =
-                  import strategies.throwUnsafely
-                  stageable.deserialize(form)
+                // The form was serialised by this same `Stageable`, so it deserialises.
+                val incoming: scala.Array[Object] = unsafely(stageable.deserialize(form))
 
                 stageable.serialize:
 
