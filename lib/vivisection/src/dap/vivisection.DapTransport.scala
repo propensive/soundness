@@ -54,13 +54,11 @@ private[vivisection] object DapTransport:
     t"Content-Length: ${payload.length}\r\n\r\n$body".in[Data]
 
   // Reads framed messages from a channel until it is exhausted, handing each to `receive`.
+  // A malformed frame is reported through the tactic the reader supplies.
   def pump(consume source: (Stream[Data] over Credit)^, observer: Text => Unit)
     ( receive: Text => Unit )
+    ( using Tactic[Framing.Error] )
   :   Unit =
-
-    // Ambient: the pump is run under a reader task, which may retain no tracked tactic; it
-    // should declare `raises Framing.Error` and run under that task's own tactic (follow-up).
-    import strategies.throwUnsafely
 
     // `chunks` is the kernel's chunk-at-a-time terminal, and already the `Iterator` `frames`
     // deframes over — the traversal the memoizing `Chain` bridge gave, retaining nothing.

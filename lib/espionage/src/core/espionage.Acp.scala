@@ -683,33 +683,38 @@ object Acp:
     val state: State = State()
     val service: Service^ = Service(registry, state)
 
-    def open(consume sink: (Intake[Data] over Credit)^, consume read: (Text => Unit) => Unit)
+    def open
+      ( writing: Exchange.Writing^{caps.any.only[anticipation.Durable]},
+        reading: Exchange.Reading^{caps.any.only[anticipation.Durable]} )
     :   result =
 
-      Exchange.exchange(service, state, observer.or(Observer.Silent), sink, read): connection =>
+      Exchange.exchange(service, state, observer.or(Observer.Silent), writing, reading):
+        connection =>
         connection.initialize(service.capabilities)
         lambda(using connection)
 
     agent match
       case Agent.Streams(input, output) =>
-        // The stream and sink retain their truncation tactic, and are read and written on the
-        // exchange's tasks: only the ambient one may be retained there (see the issue on
-        // `StreamDuplex`). Scoped to this branch, so `open`'s `initialize` reports through the
-        // caller's `Tactic[Acp.Error]`.
-        import strategies.throwUnsafely
-        val streamable = summon[(ji.InputStream is Streamable by Data over Credit)^]
-        val sink = summon[(ji.OutputStream is Sink by Data over Credit)^].intake(output)
+        // The sink and the channel are minted by the exchange's writer and reader tasks, each
+        // under its own tactic (see `Exchange.exchange`).
+        val observer0: Observer^ = observer.or(Observer.Silent)
 
-        // The sink is owned, and finished, by the exchange's writer task.
-        open(sink, Transport.pump(streamable.stream(input), observer.or(Observer.Silent))(_))
+        val writing = new Exchange.Writing:
+          def sink(using Tactic[Truncation.Error]): (Intake[Data] over Credit)^ =
+            summon[(ji.OutputStream is Sink by Data over Credit)^].intake(output)
+
+        val reading = new Exchange.Reading:
+          def read(receive: Text => Unit)(using Tactic[Truncation.Error]): Unit =
+            val streamable = summon[(ji.InputStream is Streamable by Data over Credit)^]
+            Transport.pump(streamable.stream(input), observer0)(receive)
+
+        open(writing, reading)
 
       case Agent.Process(command) =>
         // Launched with a silent logger — an exec log has no channel to reach, since an ACP
         // agent owns standard output — and a failure to launch reported as an `Internal` error
-        // through the caller's tactic. The child's streams retain the ambient truncation
-        // tactic, as above.
+        // through the caller's tactic.
         import logging.silentLogging
-        import strategies.throwUnsafely
 
         val job =
           mitigate:
@@ -721,7 +726,15 @@ object Acp:
         // closing — or that outlives an exchange that ended early — would otherwise outlive the
         // session it was lent to.
         val observer0: Observer^ = observer.or(Observer.Silent)
-        try open(job.intake, Transport.pump(job.stdout(), observer0)(_)) finally job.abort()
+
+        val writing = new Exchange.Writing:
+          def sink(using Tactic[Truncation.Error]): (Intake[Data] over Credit)^ = job.intake
+
+        val reading = new Exchange.Reading:
+          def read(receive: Text => Unit)(using Tactic[Truncation.Error]): Unit =
+            Transport.pump(job.stdout(), observer0)(receive)
+
+        try open(writing, reading) finally job.abort()
 
   // The method a message names, or `Unset` if it names none — which marks it a response.
   private[espionage] def method(json: Json): Optional[Text] = envelope(json).method
@@ -1250,12 +1263,23 @@ object Acp:
     // `capture` flows through from `Acp.connect`: the lent block may capture the monitor (to
     // spawn tasks of its own), so the lambda — and the monitor it overlaps with — must both be
     // typed to admit it.
+    // The two sides of a transport, as the exchange's tasks run them: the sink and the channel
+    // are minted *inside* the writer and reader tasks, each under its task's own tactic, so a
+    // truncated write or read is that task's fault, reported to the probate, and neither task
+    // retains a tactic from outside. An instance captures only what a task may retain: the
+    // observer, a stream or a job.
+    private[espionage] trait Writing:
+      def sink(using Tactic[Truncation.Error]): (Intake[Data] over Credit)^
+
+    private[espionage] trait Reading:
+      def read(receive: Text => Unit)(using Tactic[Truncation.Error]): Unit
+
     private[espionage] def exchange[result]
       ( service:  Service^,
         state:    State,
         observer: Acp.Observer,
-        consume sink: (Intake[Data] over Credit)^,
-        consume read: (Text => Unit) => Unit )
+        writing:  Writing^{caps.any.only[anticipation.Durable]},
+        reading:  Reading^{caps.any.only[anticipation.Durable]} )
       ( lambda: Acp.Connection => result )
       ( using Monitor^, Probate, Diagnostics )
     :   result =
@@ -1292,16 +1316,18 @@ object Acp:
       // forbids embedded newlines. The observer sees the encoded body, not the terminator.
       // The writer task owns the sink it frames messages onto, and the reader task the read
       // loop; the dispatchers are pure, closing only over the (pure-typed) serving client.
-      val writer: Task[Unit] = sink.transfer: (sink, _, _) ?=>
+      val writer: Task[Unit] = async[Unit, Truncation.Error]: (_, tactic) ?=>
+        val sink0 = writing.sink(using tactic)
+
         // The stdlib view is drained element by element, without memoizing the live chain; the
         // sink is finished when the drain ends, or when the task is cancelled.
         try
           connection.outgoing.each: json =>
             val body: Text = json.encode
             observer.sent(body)
-            sink().put(Transport.frame(body))
-            sink().flush()
-        finally sink().finish()
+            sink0.put(Transport.frame(body))
+            sink0.flush()
+        finally sink0.finish()
 
       // Runs one dispatch and sends its conclusion. Faults become error responses; a message the
       // dispatcher cannot decode is answered rather than dropped, so the agent never hangs
@@ -1330,8 +1356,10 @@ object Acp:
       // decision for minutes, and running it here would stall both update streaming and response
       // correlation. (This is the deliberate divergence from LSP's single-loop server, whose
       // reverse direction is notifications-only for exactly that reason.)
-      val reader: Task[Unit] = read.transfer: (read, _, _) ?=>
-        read(): message =>
+      val reader: Task[Unit] = async[Unit, Truncation.Error]: (_, tactic) ?=>
+        given Tactic[Truncation.Error] = tactic
+
+        reading.read: message =>
           safely(message.as[Json]).let: json =>
             Acp.method(json).lay(sessionDispatch(json) yet ()): method =>
               if sessionMethods.has(method) then
