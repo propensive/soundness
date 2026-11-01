@@ -38,6 +38,7 @@ import java.net as jn
 import anticipation.*
 import coaxial.*
 import contingency.*
+import fulminate.*
 import gigantism.*
 import gossamer.*
 import rudiments.*
@@ -65,19 +66,12 @@ private[telekinesis] object Secure:
     import Connect.Error.Reason.*
 
     val duplex: Duplex =
-      try
+      mitigate:
+        case error: Socket.Error => socketConnectError(error)
+
+      . protect:
         SecureEndpoint.connectable(using online)(using options, tls)
         . connect(SecureEndpoint(host.show, port), Unset)
-      catch
-        case error: jn.UnknownHostException => abort(Connect.Error(Dns))
-
-        case error: jn.ConnectException =>
-          error.getMessage() match
-            case "Connection refused"   => abort(Connect.Error(Refused))
-            case "Connection timed out" => abort(Connect.Error(Timeout))
-            case _                      => abort(Connect.Error(Unknown))
-
-        case error: ji.IOException => abort(Connect.Error(Unknown))
 
     val headers2: List[Http.Header] =
       if headers.exists(_.key.lower == t"connection") then headers
@@ -86,3 +80,17 @@ private[telekinesis] object Secure:
     val httpRequest = Http.Request(method, 1.1, host, target, headers2, body)
 
     try sequentialFetch(duplex, httpRequest) finally duplex.close()
+
+// The `Connect.Error` for a connection the socket backend could not make, by its reason. The
+// JVM build takes this from the `http2` module, which has no native build; this is its twin
+// for the native sources, which the shared `telekinesis_sockets.scala` resolves to here.
+private[telekinesis] def socketConnectError(error: Socket.Error): Connect.Error =
+  import Connect.Error.Reason.*
+  given Diagnostics = error.diagnostics
+
+  error.reason match
+    case Socket.Error.Reason.Dns       => Connect.Error(Dns)
+    case Socket.Error.Reason.Refused   => Connect.Error(Refused)
+    case Socket.Error.Reason.Timeout   => Connect.Error(Timeout)
+    case Socket.Error.Reason.Handshake => Connect.Error(Ssl(Ssl.Reason.Handshake))
+    case _                             => Connect.Error(Unknown)
