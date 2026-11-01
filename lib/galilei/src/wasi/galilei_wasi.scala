@@ -191,11 +191,7 @@ package filesystemBackends:
           try directory.`readlink-at`(relative).call[Text]() finally descriptor.dispose()
 
       def exists(path: Path on Plane, dereference: Boolean): Boolean =
-        import strategies.throwUnsafely
-
-        try
-          stat(path, dereference) yet true
-        catch case error: Exception => false
+        safely(stat(path, dereference) yet true).or(false)
 
       def children(path: Path on Plane)(using Tactic[Io.Error]): Chain[Text] =
         protect(path, Operation.Read):

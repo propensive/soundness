@@ -98,7 +98,6 @@ object LspSessional:
     ( using Monitor, Probate, Diagnostics )
   :   result =
 
-    import strategies.throwUnsafely
     import Json.jsonEncodableInText
 
     // Sealed: the connection captures this session's monitor and diagnostics, and an honest
@@ -160,6 +159,9 @@ extends Sessional:
   type Result = Lsp.Connection^
 
   def session[result](target: Lsp.Server)(lambda: (session: Result) ?=> result): result =
+    // Ambient: `Sessional#session` fixes the signature, so a failure to launch cannot be raised
+    // through a caller's tactic, and the child's streams retain their truncation tactic on the
+    // exchange's tasks; both are the follow-up in `rep/DECISIONS.md`.
     import strategies.throwUnsafely
 
     target match

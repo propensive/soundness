@@ -239,8 +239,11 @@ object Pane:
       partial() = Array.from(bytes.stdlib.drop(complete))
       val text = Text(String(Array.unsafeJvm(bytes), 0, complete, "UTF-8"))
 
-      try terminal() = terminal().consume(text)(using strategies.throwUnsafely)
-      catch case error: yossarian.Pty.Error => problem() = error.message.text
+      recover:
+        case error: yossarian.Pty.Error => problem() = error.message.text
+
+      . protect:
+          terminal() = terminal().consume(text)
 
     // Writes yossarian's answers to the shell's queries back to the shell, until `finish`.
     def answer(job: Command.OnTerminal.Job[Label])(using Tactic[Pane.Error]): Unit =

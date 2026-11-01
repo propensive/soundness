@@ -65,11 +65,9 @@ object Regex:
     private[kaleidoscope] def install(motif: Motif): Unit =
       if !motifs.contains(motif.pattern.s) then motifs(motif.pattern.s) = motif
 
+    // Throws by contract (see `motif`): a cache has no caller tactic to raise through.
     private[kaleidoscope] def compile(pattern: Text): Motif =
-      motifs.getOrElseUpdate
-        ( pattern.s,
-          { given tactic: (ThrowTactic[Hazard]^{ThrowTactic.ambient}) = strategies.throwUnsafely
-            Motif.parse(pattern) } )
+      motifs.getOrElseUpdate(pattern.s, unsafely(Motif.parse(pattern)))
 
     // `Re2`'s companion sits below this library, so per issue #1632 the instance lives in the
     // typeclass companion. It bridges to praxinoscope: the pattern is re-rendered with a plain
@@ -263,8 +261,7 @@ object Regex:
   // the parse cannot fail -- an assertion the signature makes rather than the type system. An
   // `apply` cannot carry the `unsafe` prefix its gate requires, so it is named instead.
   def unsafeFrom(parts: List[String])(using erased unsafe: Unsafe): Regex =
-    given tactic: (ThrowTactic[Hazard]^{ThrowTactic.ambient}) = strategies.throwUnsafely
-    parse(parts.map(_.tt))
+    unsafely(parse(parts.map(_.tt)))
 
   def apply(text: Text): Regex in JavaBaseRegex raises Regex.Error = parse(List(text))
 

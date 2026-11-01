@@ -731,12 +731,10 @@ trait Xml4:
     // A schema is read as the provider object is made, where a schema it cannot read is a
     // compile error rather than a value to report, so its parsing throws.
     object Schema extends Schema2:
-      import strategies.throwUnsafely
-
-      private[Provider] def parse(text: Text): Schema = Schema(Xsd.parse(text))
+      private[Provider] def parse(text: Text): Schema = unsafely(Schema(Xsd.parse(text)))
 
       given xsd: Conversion[Xsd, Schema] = Schema(_)
-      given xml: Conversion[Xml, Schema] = xml => Schema(Xsd.parse(xml))
+      given xml: Conversion[Xml, Schema] = xml => unsafely(Schema(Xsd.parse(xml)))
       given text: Conversion[Text, Schema] = parse(_)
 
     class Schema(val xsd: Xsd)

@@ -67,11 +67,11 @@ object Launcher:
   // Read through ethereal's own classloader, since the resource is in its jar and the first
   // thread to need the schema may carry any context classloader.
   lazy val schemaText: Text =
-    import strategies.throwUnsafely
     import charsets.utf8Charset
     import textSanitizers.strictSanitizer
     given classloader: Classloader = Classloader[Launcher.type]
-    cp"/ethereal/ethereal-launcher.tel".read[Text]
+    // The resource is in ethereal's own jar; its absence is a packaging error.
+    unsafely(cp"/ethereal/ethereal-launcher.tel".read[Text])
 
   // A file descriptor the client holds, as `init` advertises it: its number, `r`/`w`/`rw`,
   // its kind (`file`, `pipe`, `tty`, `socket`, `other`) and, for a regular file, its real path.
@@ -125,15 +125,12 @@ object Launcher:
     case Exited(code: Int)
 
   // Parsed once; a malformed schema text is a programming error, not a runtime condition.
-  lazy val schema: Tels =
-    import strategies.throwUnsafely
-    Tels.Validation.validate(schemaText.read[Tel].as[Tels])
+  lazy val schema: Tels = unsafely(Tels.Validation.validate(schemaText.read[Tel].as[Tels]))
 
   // The §8 palimpsest signature of the schema, carried by every document on the wire and
   // compared byte-for-byte on receipt.
   lazy val signature: Data =
-    import strategies.throwUnsafely
-    SchemaSignature.fromDocument(schemaText.read[Tel], Tels.Axiom.tels)
+    unsafely(SchemaSignature.fromDocument(schemaText.read[Tel], Tels.Axiom.tels))
 
   // The variant indices of `Message` in the document root's keyword order — a single
   // `SelectRef`, so its variants occupy indices 0 to 14 in declaration order.
@@ -262,9 +259,8 @@ object Launcher:
   // A message as one framed BinTEL document (§6.1): magic, length, signature, body. A `data`
   // document is framed by hand: its bytes go straight into the frame, with no BASE-256 text
   // in between, since every chunk of every stream passes this way.
-  def encode(message: Message): Data =
-    import strategies.throwUnsafely
-
+  // Library-built elements against the library's own schema: a frame cannot fail to encode.
+  def encode(message: Message): Data = unsafely:
     message match
       case Message.Data(stream, chunk) => Bintel.frame(dataBody(stream, chunk), signature)
 

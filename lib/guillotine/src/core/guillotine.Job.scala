@@ -153,13 +153,7 @@ extends Subprocess, Process.Ref, anticipation.Durable:
   def process(using Tactic[Pid.Error]^): Process^ = Process(pid)
 
   def startTime[instant: Instantiable across Instants from Long]: Optional[instant] =
-    try
-      import strategies.throwUnsafely
-      process.startTime[instant]
-    catch case _: Pid.Error => Unset
+    safely(process.startTime[instant])
 
   def cpuUsage[instant: Instantiable across Durations from Long]: Optional[instant] =
-    try
-      import strategies.throwUnsafely
-      process.cpuUsage[instant]
-    catch case _: Pid.Error => Unset
+    safely(process.cpuUsage[instant])

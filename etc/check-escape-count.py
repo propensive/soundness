@@ -72,7 +72,16 @@ IMPORT = re.compile(r'^\s*import\s+scala\.collection\b')
 
 STDLIB = ['stdlib', 'stdlibGate', 'stdlibRound', 'stdlibIterator', 'collectionImport']
 
-COLUMNS = [name for name, _ in HATCHES+WRAPPERS]+CASTS+STDLIB+['untagged']
+# The ambient error strategies — `strategies.throwUnsafely` and its siblings — are the single
+# import that switches exception checking off: what prototyping, a `@main` and a demo want, and
+# what library code should never need (a scoped `unsafely`, `safely`, `mitigate` or a `raises`
+# is the honest form). Counted in core sources only; the rows left in the baseline are the
+# sanctioned entry points and demos (`ethereal.cli`, `embarcadero/docker.scala`, `src/demo`,
+# `tarantula_image.scala`, `stratiform.CheckedTests.scala`) and the one structural residue in
+# `scintillate.Http2Serve` (issue: a `StreamDuplex` retains its truncation tactic).
+AMBIENT = re.compile(r'\bstrategies\s*\.\s*(?:throwUnsafely|throwSafely|uncheckedErrors|fatalErrors)\b')
+
+COLUMNS = [name for name, _ in HATCHES+WRAPPERS]+CASTS+STDLIB+['untagged', 'ambientStrategy']
 
 # The closed vocabulary. Each tag names a blocker; `rep/DECISIONS.md` has the case behind it.
 TAGS = {
@@ -164,6 +173,7 @@ def census(path):
       row['stdlibRound'] += len(ROUND.findall(line))
       row['stdlibIterator'] += len(ITERATOR.findall(line))
       row['collectionImport'] += 1 if IMPORT.match(line) else 0
+      if '/src/test/' not in path: row['ambientStrategy'] += len(AMBIENT.findall(line))
 
       for match in SHAPE.finditer(line):
         shape = '.stdlib'+re.sub(r'\s+', '', match.group(1) or '')

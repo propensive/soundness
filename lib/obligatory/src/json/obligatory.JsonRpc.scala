@@ -85,8 +85,21 @@ object JsonRpc:
   // checking, the opaque `Text` in an invariant position freshens against the expansion site.
   inline def methods[interface]: List[Text] = ${obligatory.internal.methodNames[interface]}
 
+  object Request:
+    // A pure, throwing derivation anchor (as `Lsp.Envelope`'s): a decodable derived at a summon
+    // site inside `safely` would capture its scoped tactic, which the summon cannot absorb.
+    given decodable: Request is Json.Decodable =
+      given tactic: Tactic[Json.Error] = ThrowTactic()
+      Json.DecodableDerivation.derived
+
   case class Request(jsonrpc: Text, method: Text, params: Json, id: Optional[Json])
   case class Response(jsonrpc: Text, result: Json, id: Optional[Json])
+
+  object Failure:
+    given decodable: Failure is Json.Decodable =
+      given tactic: Tactic[Json.Error] = ThrowTactic()
+      Json.DecodableDerivation.derived
+
   case class Failure(code: Int, message: Text, data: Optional[Json] = Unset)
 
   // A specification-correct error response: the fault is carried in the `error` member (not
@@ -143,13 +156,11 @@ object JsonRpc:
   // of `result` and `error`, and the distinction matters: the second is a fault, not a value.
   def answer(json: Json): Unit =
     import dynamicAccess.dynamicJson
-    import strategies.throwUnsafely
 
-    // `try`/`catch` rather than `safely`: a decodable cannot thread the boundary tactic under
-    // separation checking, and an unreadable member is simply absent.
-    val id: Optional[Text] = try json.id.as[Text] catch case _: Exception => Unset
-    val failure: Optional[Failure] = try json.error.as[Failure] catch case _: Exception => Unset
-    val result: Optional[Json] = try json.result catch case _: Exception => Unset
+    // An unreadable member is simply absent.
+    val id: Optional[Text] = safely(json.id.as[Text])
+    val failure: Optional[Failure] = safely(json.error.as[Failure])
+    val result: Optional[Json] = safely(json.result)
 
     id.let: id => failure.lay(result.let(receive(id, _)))(receiveFailure(id, _))
 

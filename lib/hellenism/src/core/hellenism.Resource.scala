@@ -48,12 +48,12 @@ object Resource:
   given streamable: [resource <: Resource]
   =>  ( classloader: Classloader )
   =>  resource is Streamable by Data =
-    // See `Classpath.streamable`: unscoped throwing tactic + pure classloader; laundered pure.
+    // See `Classpath.streamable`: a throwing tactic + pure classloader; laundered pure.
     // [field-purity] given streamable codec, codec-thunk seal
     caps.unsafe.unsafeAssumePure:
-      given Tactic[Truncation.Error | Classpath.Error] = strategies.throwUnsafely
+      given (Tactic[Truncation.Error | Classpath.Error]^) = ThrowTactic()
 
-      // The lambda and the codec share only the unscoped throwing tactic; no aliased writer.
+      // The lambda and the codec share only the throwing tactic; no aliased writer.
       // [by-name-receiver] contramap lambda and codec share throwing tactic
       scala.caps.unsafe.unsafeAssumeSeparate:
         Streamable.inputStream.contramap: (resource: resource) =>
@@ -62,10 +62,10 @@ object Resource:
   given source: [resource <: Resource]
   =>  ( classloader: Classloader, buffering: Buffering )
   =>  resource is Streamable by Data over Credit =
-    // See `streamable` above: unscoped throwing tactic + pure classloader; laundered pure.
+    // See `streamable` above: a throwing tactic + pure classloader; laundered pure.
     // [field-purity] given streamable codec, codec-thunk seal
     caps.unsafe.unsafeAssumePure:
-      given Tactic[Truncation.Error | Classpath.Error] = strategies.throwUnsafely
+      given (Tactic[Truncation.Error | Classpath.Error]^) = ThrowTactic()
 
       // As `streamable` above.
       // [by-name-receiver] contramap lambda and codec share throwing tactic

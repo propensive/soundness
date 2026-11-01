@@ -47,7 +47,8 @@ object Explorable:
     // `children` cannot raise through its lazy result, so backend failures propagate as
     // thrown `Io.Error`s (the pre-backend per-platform instances did the same).
     path =>
-      import strategies.throwUnsafely
+      // Ambient until `children` takes a `Tactic[Io.Error]` (follow-up in `rep/DECISIONS.md`).
+    import strategies.throwUnsafely
       backend.children(path).map: name => unsafely(path.unsafeChild(name))
 
 trait Explorable extends Typeclass:

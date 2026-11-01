@@ -145,23 +145,21 @@ private[telekinesis] object Sessions:
             // [field-fresh-param] body field's capture-polymorphic declared type
             caps.unsafe.unsafeAssumePure(request.body) )
 
-      // Distinct throwing tactics per error type (a single shared tactic would
-      // alias across `fetch`'s two using-parameters, tripping separation).
-      import strategies.throwUnsafely
+      // One tactic per error type (a single shared tactic would alias across `fetch`'s two
+      // using-parameters, tripping separation), each reporting as a connection failure.
+      mitigate:
+        case error: Http2.Error      => Connect.Error(Unknown)(using error.diagnostics)
+        case error: Async.Error      => Connect.Error(Unknown)(using error.diagnostics)
+        case error: Truncation.Error => Connect.Error(Unknown)(using error.diagnostics)
 
-      try
-        val (_, response) = connection.fetch(request2, t"https", authority)
-        val data: Data = response.body.stream.memoize
+      . protect:
+          val (_, response) = connection.fetch(request2, t"https", authority)
+          val data: Data = response.body.stream.memoize
 
-        val body: Http.Body = response.body match
-          case Http.Body.Empty => Http.Body.Empty
+          val body: Http.Body = response.body match
+            case Http.Body.Empty => Http.Body.Empty
 
-          case _ =>
-            if data.length == 0 then Http.Body.Empty else Http.Body.Fixed(data)
+            case _ =>
+              if data.length == 0 then Http.Body.Empty else Http.Body.Fixed(data)
 
-        response.status(response.textHeaders, body)
-
-      catch
-        case error: Http2.Error      => abort(Connect.Error(Unknown))
-        case error: Async.Error      => abort(Connect.Error(Unknown))
-        case error: Truncation.Error => abort(Connect.Error(Unknown))
+          response.status(response.textHeaders, body)

@@ -181,9 +181,8 @@ extends ji.OutputStream:
         val allowed = allowance(bytes.length - position)
 
         if allowed == 0 then
-          import strategies.throwUnsafely
           severed() = true
-          abort(Egress.Error(stream))
+          unsafely[Egress.Error](abort(Egress.Error(stream)))
 
         emit(Array.unsafeFrozen(ju.Arrays.copyOfRange(bytes, position, position + allowed).nn))
         position += allowed

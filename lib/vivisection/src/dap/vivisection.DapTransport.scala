@@ -58,6 +58,8 @@ private[vivisection] object DapTransport:
     ( receive: Text => Unit )
   :   Unit =
 
+    // Ambient: the pump is run under a reader task, which may retain no tracked tactic; it
+    // should declare `raises Framing.Error` and run under that task's own tactic (follow-up).
     import strategies.throwUnsafely
 
     // `chunks` is the kernel's chunk-at-a-time terminal, and already the `Iterator` `frames`

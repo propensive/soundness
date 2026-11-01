@@ -35,7 +35,7 @@ package soundness
 export
   distillate
   . { As, as, Codecs, Decodable, Decodable2, Enumerable, Extractable, Identifiable,
-      Irrefutable, Number, Parsable, Requirable }
+      Irrefutable, Number, Parsable }
 
 package codecs:
   export

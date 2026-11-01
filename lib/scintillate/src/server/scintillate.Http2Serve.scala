@@ -65,6 +65,8 @@ object Http2Serve:
     ( using Monitor, Probate, (Httpd.Event is Loggable)^ )
   :   Unit =
 
+    // Ambient: each stream's daemon body may retain no tracked tactic; the daemon's own tactic
+    // is the follow-up (`rep/DECISIONS.md`).
     given http2Tactic: Tactic[Http2.Error] = strategies.throwUnsafely
     given truncationTactic: Tactic[Truncation.Error] = strategies.throwUnsafely
 
@@ -155,6 +157,8 @@ object Http2Serve:
       // capturing the caller's `Probate` capability would make this call — and so
       // the accept-daemon body — impure.
       import probates.cancelProbate
+      // Ambient: the duplex retains its truncation tactic and is read on the connection's
+      // reader daemon, so only an untracked tactic can be retained there (`rep/DECISIONS.md`).
       given asyncTactic: Tactic[Async.Error] = strategies.throwUnsafely
       given truncationTactic: Tactic[Truncation.Error] = strategies.throwUnsafely
       val connection = Http2.ServerConnection(StreamDuplex(in, out))
