@@ -677,8 +677,6 @@ object Acp:
     ( using Monitor^, Probate, Diagnostics, WorkingDirectory, Environment, Tactic[Acp.Error] )
   :   result =
 
-    import strategies.throwUnsafely
-
     val registry: Acp.Registry^ = Acp.Registry()
     register(using registry)
 
@@ -694,6 +692,11 @@ object Acp:
 
     agent match
       case Agent.Streams(input, output) =>
+        // The stream and sink retain their truncation tactic, and are read and written on the
+        // exchange's tasks: only the ambient one may be retained there (see the issue on
+        // `StreamDuplex`). Scoped to this branch, so `open`'s `initialize` reports through the
+        // caller's `Tactic[Acp.Error]`.
+        import strategies.throwUnsafely
         val streamable = summon[(ji.InputStream is Streamable by Data over Credit)^]
         val sink = summon[(ji.OutputStream is Sink by Data over Credit)^].intake(output)
 
@@ -701,12 +704,18 @@ object Acp:
         open(sink, Transport.pump(streamable.stream(input), observer.or(Observer.Silent))(_))
 
       case Agent.Process(command) =>
-        // Launched with a silent logger and a throwing tactic: a failure to launch has no
-        // caller's `Tactic` to be raised through here, and an exec log has no channel to reach —
-        // an ACP agent owns standard output.
+        // Launched with a silent logger — an exec log has no channel to reach, since an ACP
+        // agent owns standard output — and a failure to launch reported as an `Internal` error
+        // through the caller's tactic. The child's streams retain the ambient truncation
+        // tactic, as above.
         import logging.silentLogging
+        import strategies.throwUnsafely
 
-        val job = command.fork[Exit]()
+        val job =
+          mitigate:
+            case error: Exec.Error => Acp.Error(Acp.Error.Reason.Internal, error.message.text)
+
+          . protect(command.fork[Exit]())
 
         // The child is killed rather than waited for: an agent that never notices its input
         // closing — or that outlives an exchange that ended early — would otherwise outlive the
@@ -720,15 +729,11 @@ object Acp:
   // The id a message correlates on, for a message of any kind.
   private[espionage] def identifier(json: Json): Optional[Json] = envelope(json).id
 
-  private[espionage] def envelope(json: Json): Envelope =
-    import strategies.throwUnsafely
-    try json.as[Envelope] catch case _: Exception => Envelope()
+  private[espionage] def envelope(json: Json): Envelope = safely(json.as[Envelope]).or(Envelope())
 
+  // An unreadable id is simply absent.
   private[espionage] def requestId(json: Json): Optional[Json] =
-    // Throwing rather than `safely`: the request decodable cannot thread the boundary tactic
-    // under separation checking, and an unreadable id is simply absent.
-    import strategies.throwUnsafely
-    try json.as[JsonRpc.Request].id catch case _: Exception => Unset
+    safely(json.as[JsonRpc.Request]).let(_.id)
 
   // An observer of the raw traffic crossing the transport, for a client that exposes a log of
   // the messages it exchanges. Each message is reported as the text that was read from — or
@@ -1224,8 +1229,6 @@ object Acp:
     def pump(consume source: (Stream[Data] over Credit)^, observer: Acp.Observer^)
       ( receive: Text => Unit )
     :   Unit =
-
-      import strategies.throwUnsafely
 
       source.chunks.frames[Linefeed].each: frame =>
         val message: Text = frame.utf8

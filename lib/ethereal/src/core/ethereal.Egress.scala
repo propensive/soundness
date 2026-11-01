@@ -55,9 +55,9 @@ object Egress:
 // program which writes until it cannot ends, as it would were it writing a pipe.
 class Egress(stream: Text, underlying: ji.OutputStream, severed: Atomic.Bool)
 extends ji.OutputStream:
+  // A Java override: the error is thrown through a scoped tactic, and caught by the daemon.
   private def check(): Unit =
-    import strategies.throwUnsafely
-    if severed() then abort(Egress.Error(stream))
+    if severed() then unsafely[Egress.Error](abort(Egress.Error(stream)))
 
   def write(byte: Int): Unit =
     check()

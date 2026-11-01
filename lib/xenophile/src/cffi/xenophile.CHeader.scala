@@ -109,10 +109,11 @@ object CHeader:
 
     val library: Text = t"library"
 
-    def parse(source: Text): Map[Text, Map[Text, Prototype]] = parse0(source)
+    // `Dialect.parse` is total: a header that does not parse defines nothing, and the macro
+    // reports "the foreign type is not defined" from the empty result.
+    def parse(source: Text): Map[Text, Map[Text, Prototype]] = safely(parse0(source)).or(Map())
 
-    private def parse0(source: Text): Map[Text, Map[Text, Prototype]] =
-      import strategies.throwUnsafely
+    private def parse0(source: Text)(using Tactic[CHeader.Error]): Map[Text, Map[Text, Prototype]] =
       val declarations: List[Declaration] = Parser.parse(source)
 
       val typedefs: Map[Text, Foreign.Type] =

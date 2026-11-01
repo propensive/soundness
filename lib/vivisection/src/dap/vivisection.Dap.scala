@@ -124,9 +124,7 @@ object Dap:
       command: Optional[Text] = Unset,
       event:   Optional[Text] = Unset )
 
-  def envelope(json: Json): Envelope =
-    import strategies.throwUnsafely
-    try json.as[Envelope] catch case _: Exception => Envelope()
+  def envelope(json: Json): Envelope = safely(json.as[Envelope]).or(Envelope())
 
   // Message constructors. The `seq` is supplied by the session, which owns the outgoing
   // counter. Each object is built in one total step from its field list (`type` is a keyword,

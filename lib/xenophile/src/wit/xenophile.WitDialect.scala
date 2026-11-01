@@ -65,19 +65,18 @@ object WitDialect extends Dialect:
   // from the world it was linked against without disassembling the component itself.
   case class World(name: Text, imports: List[Text], exports: List[Text])
 
-  def parse(source: Text): Map[Text, Map[Text, Prototype]] = parse0(source)
+  // Total, as `CHeader.Dialect.parse` is.
+  def parse(source: Text): Map[Text, Map[Text, Prototype]] = safely(parse0(source)).or(Map())
 
   // Every `world` declared in a source, by name. A bare interface name (`import
   // monotonic-clock;`, naming an interface in the same package) is qualified with the package
   // id, so every id in the result is a full Component Model id.
-  def worlds(source: Text): Map[Text, World] = worlds0(source)
+  def worlds(source: Text): Map[Text, World] raises Wit.Error = worlds0(source)
 
   private def packageOf(document: Wit.Document): Optional[Text] =
     document.packageName.let: name => document.version.let { version => t"$name@$version" }.or(name)
 
-  private def worlds0(source: Text): Map[Text, World] =
-    import strategies.throwUnsafely
-
+  private def worlds0(source: Text)(using Tactic[Wit.Error]): Map[Text, World] =
     Wit.Parser.parse(source).bind: document =>
       val pkg = packageOf(document)
 
@@ -90,8 +89,7 @@ object WitDialect extends Dialect:
 
     . to[Map]
 
-  private def parse0(source: Text): Map[Text, Map[Text, Prototype]] =
-    import strategies.throwUnsafely
+  private def parse0(source: Text)(using Tactic[Wit.Error]): Map[Text, Map[Text, Prototype]] =
     val documents: List[Wit.Document] = Wit.Parser.parse(source)
 
     var types = Map[Text, Map[Text, Prototype]]()

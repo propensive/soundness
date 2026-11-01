@@ -1469,20 +1469,16 @@ object Lsp:
   // an error response has neither, so neither can read the id of an arbitrary message.
   private[exegesis] def identifier(json: Json): Optional[Json] = envelope(json).id
 
-  private[exegesis] def envelope(json: Json): Envelope =
-    import strategies.throwUnsafely
-    try json.as[Envelope] catch case _: Exception => Envelope()
+  private[exegesis] def envelope(json: Json): Envelope = safely(json.as[Envelope]).or(Envelope())
 
   // The `params` of a message, or the whole message if it has none.
   private[exegesis] def params(json: Json): Json =
     import dynamicAccess.dynamicJson
     try json.params catch case _: Exception => json
 
+  // An unreadable id is simply absent.
   private[exegesis] def requestId(json: Json): Optional[Json] =
-    // Throwing rather than `safely`: the request decodable cannot thread the boundary tactic
-    // under separation checking, and an unreadable id is simply absent.
-    import strategies.throwUnsafely
-    try json.as[JsonRpc.Request].id catch case _: Exception => Unset
+    safely(json.as[JsonRpc.Request]).let(_.id)
 
   // An observer of the raw traffic crossing the transport, for a server that exposes a log of the
   // messages it exchanges. Each message is reported as the text that was read from — or framed
@@ -2649,9 +2645,7 @@ object Lsp:
 
     // The id of a message, if the peer chose a string for it: the form `JsonRpc.call` mints, and so
     // the form a response to a request the proxy made itself comes back under.
-    private def token(id: Json): Optional[Text] =
-      import strategies.throwUnsafely
-      try id.as[Text] catch case _: Exception => Unset
+    private def token(id: Json): Optional[Text] = safely(id.as[Text])
 
   // The target of the proxy's registration combinators, lent to the block given to `Lsp.proxy` for
   // its duration. An exclusive capability, so it cannot escape the block; its slots are public and

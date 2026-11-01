@@ -695,12 +695,9 @@ object WebDriver:
     // connection is the expected outcome, not something to report. The `ready` flag in the reply
     // is deliberately *not* consulted — a driver that already holds a session reports `ready:
     // false`, and it is the port being bound, not the driver being idle, that is being waited for.
-    // A local throwing strategy, so that `safely` sees the failure rather than the caller's tactic.
     private[tarantula] def listening(base: HttpUrl)
       ( using Online, Http.Backend, (Http.Event is Loggable)^ )
     :   Boolean =
-
-      import strategies.throwUnsafely
 
       safely:
         Url(base.origin, t"${base.location}/status")
