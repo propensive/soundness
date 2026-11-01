@@ -602,7 +602,7 @@ private[coaxial] def bindAddress(nic: jn.NetworkInterface): Optional[jn.InetAddr
 // stream. The stream/write shape mirrors `channelDuplex` and `Serviceable`'s socket path.
 // `shutdown` is a pure function: its closures hold only untracked OS resources (like
 // `channelDuplex`'s socket), so the `Duplex` remains capture-free under capture checking.
-private[coaxial] def streamsDuplex
+def streamsDuplex
   ( in: ji.InputStream, out: ji.OutputStream, negotiated: Optional[Text] = Unset )
   ( shutdown: () -> Unit )
 :   Duplex =

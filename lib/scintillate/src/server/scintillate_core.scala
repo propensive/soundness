@@ -137,8 +137,10 @@ package webserverErrorPages:
     import hieroglyph.codepages.utf8Codepage
     Http.Response(Unfulfilled(t"An error occurred which prevented the request from completing."))
 
-  private def prefix(using Classloader): Data = cp"/scintillate/error.pre.html".read[Data]
-  private def postfix(using Classloader): Data = cp"/scintillate/error.post.html".read[Data]
+  // Bundled in scintillate's own jar; their absence is a packaging error.
+  private def prefix(using Classloader): Data = unsafely(cp"/scintillate/error.pre.html".read[Data])
+  private def postfix(using Classloader): Data =
+    unsafely(cp"/scintillate/error.post.html".read[Data])
 
   given styledErrorPage: Classloader => WebserverErrorPage = (throwable, request) =>
     // Direct `Content`, not `.ascribe`: the inline re-elaboration freshens the chunk type.

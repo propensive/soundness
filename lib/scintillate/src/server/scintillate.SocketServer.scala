@@ -464,7 +464,7 @@ extends RequestServable:
           safely(serverSocket.accept().nn).let: socket =>
             val socket0: AnyRef = socket
 
-            daemon:
+            daemon[Async.Error]:
               val socket1 = socket0.asInstanceOf[jn.Socket]
 
               try

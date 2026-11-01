@@ -65,17 +65,14 @@ object Http2Serve:
     ( using Monitor, Probate, (Httpd.Event is Loggable)^ )
   :   Unit =
 
-    // Ambient: each stream's daemon body may retain no tracked tactic; the daemon's own tactic
-    // is the follow-up (`rep/DECISIONS.md`).
-    given http2Tactic: Tactic[Http2.Error] = strategies.throwUnsafely
-    given truncationTactic: Tactic[Truncation.Error] = strategies.throwUnsafely
-
     val connectionRef: AnyRef = connection.asInstanceOf[AnyRef]
 
     connection.eachStream: stream =>
       val streamRef: AnyRef = stream.asInstanceOf[AnyRef]
 
-      daemon:
+      // A stream's faults — a malformed request, a truncated write, an await on a cancelled
+      // stream — are the daemon's own: the daemon's tactic throws them, ending that stream.
+      daemon[Http2.Error | Truncation.Error | Async.Error]:
         val stream0 = streamRef.asInstanceOf[Http2.Stream]
         val connection0 = connectionRef.asInstanceOf[Http2.ServerConnection]
         val handler1 = handler0.asInstanceOf[AnyRef => AnyRef]
@@ -145,7 +142,8 @@ object Http2Serve:
   // scope. `serve` (per-request) is the degenerate session that immediately
   // handles with no per-connection setup; `serveSession` lends the caller an
   // `Http2Session` so it can set up per-connection state first.
-  private def open(in: ji.InputStream, out: ji.OutputStream)(using monitor: Monitor)
+  private def open(in: ji.InputStream, out: ji.OutputStream)
+    ( using monitor: Monitor, async: Tactic[Async.Error] )
   :   Http2.ServerConnection^{monitor} =
 
     // The connection is created and used under the same monitor; its fresh capability is
@@ -157,17 +155,16 @@ object Http2Serve:
       // capturing the caller's `Probate` capability would make this call — and so
       // the accept-daemon body — impure.
       import probates.cancelProbate
-      // Ambient: the duplex retains its truncation tactic and is read on the connection's
-      // reader daemon, so only an untracked tactic can be retained there (`rep/DECISIONS.md`).
-      given asyncTactic: Tactic[Async.Error] = strategies.throwUnsafely
-      given truncationTactic: Tactic[Truncation.Error] = strategies.throwUnsafely
-      val connection = Http2.ServerConnection(StreamDuplex(in, out))
+      // The socket's streams as a duplex, read on the connection's own reader daemon; EOF ends
+      // the read side, so no truncation tactic is retained. The socket is closed by the accept
+      // daemon, not the duplex.
+      val connection = Http2.ServerConnection(streamsDuplex(in, out)(() => ()))
       connection.start()
       connection
 
   def serve
     ( handler: AnyRef => AnyRef, in: ji.InputStream, out: ji.OutputStream, port: Int )
-    ( using Monitor, (Httpd.Event is Loggable)^ )
+    ( using Monitor, Tactic[Async.Error], (Httpd.Event is Loggable)^ )
   :   Unit =
 
     val connection = open(in, out)
@@ -185,7 +182,7 @@ object Http2Serve:
   // `AnyRef => Unit` rim (a session-scope function value re-hides otherwise).
   def serveSession
     ( scope0: AnyRef, in: ji.InputStream, out: ji.OutputStream, port: Int )
-    ( using Monitor, (Httpd.Event is Loggable)^ )
+    ( using Monitor, Tactic[Async.Error], (Httpd.Event is Loggable)^ )
   :   Unit =
 
     val connection = open(in, out)
@@ -214,22 +211,3 @@ object Http2Serve:
 // connection, so it cannot leak to another client's connection.
 trait Http2Session:
   def handle(handler: (connection: Http.Connection) ?=> Http.Response^{connection}): Unit
-
-// A `Duplex` over a socket's raw byte streams: reads frame the inbound endpoint,
-// each `send` writes the whole chunk and flushes (the writer serialises one frame
-// per send). Used to drive `Http2.ServerConnection` over a scintillate socket.
-class StreamDuplex(in: ji.InputStream, out: ji.OutputStream)(using Tactic[Truncation.Error])
-extends Duplex:
-  def source(using Buffering): (Stream[Data] over Credit)^ = Streamable.inputStream.stream(in)
-
-  def send(consume data: (Stream[Data] over Credit)^): Unit =
-    data.drain: region =>
-      range =>
-        val interval: Interval = range
-
-        out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
-            interval.size)
-
-    out.flush()
-
-  def close(): Unit = safely(out.close())
