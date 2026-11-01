@@ -44,12 +44,12 @@ object Explorable:
   =>  ( backend: FilesystemBackend on plane )
   =>  plane is Explorable =
 
-    // `children` cannot raise through its lazy result, so backend failures propagate as
-    // thrown `Io.Error`s (the pre-backend per-platform instances did the same).
-    path =>
-      // Ambient until `children` takes a `Tactic[Io.Error]` (follow-up in `rep/DECISIONS.md`).
-    import strategies.throwUnsafely
-      backend.children(path).map: name => unsafely(path.unsafeChild(name))
+    new Explorable:
+      type Self = plane
+
+      def children(path: Path on plane)(using Tactic[Io.Error]): Chain[Path on plane] =
+        backend.children(path).map: name => unsafely(path.unsafeChild(name))
 
 trait Explorable extends Typeclass:
-  def children(path: Path on Self): Chain[Path on Self]
+  // A listing is strict, so a backend failure is reported here, through the caller's tactic.
+  def children(path: Path on Self)(using Tactic[Io.Error]): Chain[Path on Self]
