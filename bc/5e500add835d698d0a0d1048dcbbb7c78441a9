@@ -1,0 +1,36 @@
+{
+  "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAZcAAAAHc3NoLXJzYQAAAAMBAAEAAAGBANKeZiOgGy2ygR1XnKHjPk\nGD1dnDP8rPMDkaTfybosrPoQPXc6dnx28ZedTB+gQmW1RbBeFO4xOUWdP6MbJZbmQHko3e\n+OQAnqn8RD3zmJ4HYqG+OF1n9dS89tEG0yrlJaoMfWSm5uMK/iGeBVIAHPPPejKY41X0AP\nU/4G5o7+3Yv2JKcK/nB5vd1A0XBOnGJCOQGzOxxFAIX1t3btuEPyL04540eAOAtm6OxuMX\ntpy057iBQr89StE3OoQxU9Nxd8Qd0+6G1bqVjjdhhy+BU5D8Md3jkEyQP6Uan+nmcxA+TD\nG1m0ZNkusZqWtojXjgxqTCZqSiNO87JyyKtOpWLEeRlm9+hA7Xa8HPu8hsR+e0JhotXpLe\nxJvCBVK60ZTdzfmhCujT8GrXiRjMDMF7rHPyBaLIbUl5EuoU1yJyfu4pZdJgpxe1zHQX5I\nGGy8MXuOsJ9J2IqX9izuZINS5AsycfFX+Y1YvInzALxhAhEKjrsvyi/u3Kte/4hcoLvrbF\nwQAAAAxzb3VuZG5lc3MtY2kAAAAAAAAABnNoYTUxMgAAAZQAAAAMcnNhLXNoYTItNTEyAA\nABgGHj1k7EugJNezWdcjq59a3AHszTk/2S6xIQ98B3YS+h6pvVzbn5OE2mtvglcpAInA9W\n1tGMYNaj1AziPAD8xdp/++Wf4KUc1IQXEFpNRAWCcD8MMWXBRPAS38Xq5ZXyK+f60A31g6\n8oqSPhadn1aIwtn3LRz8mbXwkxzdF5vhVDHx1YLAp4AICQB/t/qXbPBoRkidN9sENLh3dU\no6R4ZgUApwm+JEf9JMLZ922Z5UftBO6sBsExhnr3AeZXkkDniiEo/8M4lFxBi/Ayh0B8P8\nSzlrtGSa5xw97jO+YAbPeCS3feFA04tMCqKGTFiyBVufQkARVALvTVCSX4zcPMBnTBuaKE\nDcxWRbjTrRh5nOrm/2nmnUlriNtmfq16iKuWIPLcBBAEaVOrB6a9I4BAkld+LQKjqdl3gn\nXdQEde1f1T6uxO9ZTd1jvxWwcutLo0IUuFBSMcmD6vQQ2oXf1n73JF9vUvAa74HM/cUVsp\nfNm7Eg1netM1U35xnFAUI1izqA==\n-----END SSH SIGNATURE-----\n",
+  "statement": {
+    "_type": "https://in-toto.io/Statement/v1",
+    "predicate": {
+      "commands": [
+        "./mill --no-daemon -j 6 --ticker false soundness.all.compile",
+        "./mill --no-daemon -j 6 --ticker false soundness.js.compile",
+        "./mill --no-daemon -j 6 --ticker false soundness.native.compile",
+        "./mill --no-daemon -j 6 --ticker false benches.compile",
+        "./mill --no-daemon -j 6 --ticker false nativelink.binary && ./out/nativelink/binary.dest/soundness-native",
+        "./mill --no-daemon -j 6 --ticker false nativelink.testSuites",
+        "./mill --no-daemon -j 6 --ticker false test.assembly",
+        "make ci",
+        "make wasm-e2e"
+      ],
+      "commit": "4b31a57a8aad75bb343ff28b0cd80452ea4fcd17",
+      "ranAt": "2026-11-01T17:11:00Z",
+      "ranBy": "jon.pretty@propensive.com",
+      "result": "pass",
+      "tooling": {
+        "mill": "1.1.5"
+      }
+    },
+    "predicateType": "https://soundness.dev/local-ci/v1",
+    "subject": [
+      {
+        "digest": {
+          "gitTree": "bc5e500add835d698d0a0d1048dcbbb7c78441a9",
+          "sha256": "9ea3f3a601d98fce42a0fbfc79dbdd4f790bf4b447801457e4456fa49f3a0cb5"
+        },
+        "name": "soundness-ci-inputs"
+      }
+    ]
+  }
+}
