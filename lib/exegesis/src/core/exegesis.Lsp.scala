@@ -1632,6 +1632,8 @@ object Lsp:
     ( using Stdio, Monitor, Probate )
   :   Unit =
 
+    // Ambient: discharges the stream's truncation tactic and the pump's framing one, which the
+    // loop retains; the pumps' `raises Framing.Error` is the follow-up (see `rep/DECISIONS.md`).
     import strategies.throwUnsafely
     import Json.jsonEncodableInText
 
@@ -2477,6 +2479,8 @@ object Lsp:
               environment: Environment, diagnostics: Diagnostics )
     :   Unit =
 
+      // Ambient: discharges the stream's truncation tactic and the pump's framing one, which the
+      // loop retains; the pumps' `raises Framing.Error` is the follow-up (see `rep/DECISIONS.md`).
       import strategies.throwUnsafely
       import Json.jsonEncodableInText
 

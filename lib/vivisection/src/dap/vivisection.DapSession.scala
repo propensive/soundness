@@ -106,6 +106,8 @@ private[vivisection] class DapSession(emit: Json => Unit)
           compile:     (CompileEvent is Loggable)^,
           note:        Diagnostics ):
 
+  // Ambient: the adapter's decodes run in callbacks and tasks held in registry slots, which may
+  // retain no tracked tactic; decoders summoned per call are the follow-up (`rep/DECISIONS.md`).
   import strategies.throwUnsafely
   import dynamicAccess.dynamicJson
 

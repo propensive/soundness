@@ -3320,3 +3320,44 @@ The scratch results (`rep/sepcheck-probes/p17`, `p21`, `p22`):
 
 Mainline residue: none of `SharedUnscoped`, `classifiermeet` or part 3 of classifier exclusion
 (scala/scala3#26409) is used; Scala 3.9 no longer compiles the capture-checked modules.
+
+## The ambient strategies are for entry points; library code says what it does (2026-11-01, #2328 follow-up)
+
+An audit of every `strategies.throwUnsafely` in non-test library sources (107 uses in 54 files)
+sorted them into: *infallible* (19 — a literal or library-built value re-read), *codec seal*
+(14 — a label-free tactic so a derived instance stays pure), *caught right there* (36),
+*should propagate* (18), *entry points and demos* (14) and *macro-time* (6). Only the entry
+points are what the ambient tactic is for. Rulings and findings:
+
+- **Honest forms, in order of preference.** A total API that carries the proof in the type
+  (`Relative(0, …)`, `Json.make`, an `Unsafe`-gated helper such as `Ergo.unsafeInterpolate` or
+  apoplexy's `unsafeMediaType`); otherwise a scoped `unsafely(…)` with the reason beside it —
+  repeating a check is fine where performance is not critical. A caught error goes through the
+  handler Contingency has for it (`safely`, `mitigate`, `recover`, a positioned `HaltTactic` at
+  macro time), never a new `try`/`catch`.
+- **The shadowing rule.** A method-local `import strategies.throwUnsafely` is nested deeper than
+  the method's own `raises` tactic and so wins implicit resolution for every `abort` below it:
+  the abort throws a raw exception instead of reporting through the caller. `Acp.connect`'s
+  `initialize` (`Incompatible`) was escaping this way; `EmailAddress.parse`'s was unreachable
+  in practice. Never import the ambient tactic above a `raises` method's own aborts.
+- **`mitigate` handlers build errors outside any `Diagnostics` context**: pass the inner
+  error's, `Y.Error(…)(using error.diagnostics)`, as jacinta's `unparsable` does.
+- **A context function cannot be spliced into a quote** with a matching capture set
+  (`'{unsafely(…)}` fails where seven older macros apparently succeed only because they are
+  not capture-checked); a gated helper called from the quote is the shape.
+- **`unsafely`'s `success` type variable widens a refined path type** (superlunary's
+  `(temporaryDirectory / uuid).on[Linux]`), so a scoped check belongs inside the API (`Path.on`
+  now carries its own), not around the call.
+- **What is structural, and why (the follow-ups).** A `->{any.only[Durable]}` dispatcher, a
+  registry slot, a proxy held by a `Durable` connection, a per-stream daemon body and a
+  `StreamDuplex` read on another daemon can retain no *tracked* tactic, so where their decoders
+  are summoned at expansion (`JsonRpc.proxy`'s result decoders, `DapSession`'s callbacks) or
+  their tactic is retained (the framing pumps' loops, `Http2Serve`, the child-process streams
+  in `Acp.connect` and `LspSessional.session`) the ambient tactic is the only one that can be
+  there today. The ratchet's `ambientStrategy` column holds them at 16 beside the 11 entry
+  points. The follow-ups: (1) `Explorable.children(path)(using Tactic[Io.Error])`; (2)
+  `raises Framing.Error` on the pumps, run under the reader task's own tactic, and
+  `Sessional`/`Acp.connect` launch failures through the caller's tactic; (3) decoders summoned
+  per call in the `serve`/`proxy` macros (`summonInline`; upstream #26547) and a slot type of
+  `Json -> (Tactic[…]) ?=> Json`; (4) `StreamDuplex` taking its truncation tactic at read time.
+
