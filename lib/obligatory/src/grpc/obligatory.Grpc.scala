@@ -92,11 +92,12 @@ object Grpc:
 
   object Endpoint:
     given sessional: [endpoint: {Connectable, Showable}]
-    =>  ( monitor:    Monitor,
-          probate:    Probate,
-          asyncError: Tactic[Async.Error],
-          loggable:   (Socket.Event is Loggable)^ )
-    =>  ( GrpcSessional[endpoint]^{monitor, asyncError, loggable, caps.any} ) =
+    =>  ( monitor:     Monitor,
+          probate:     Probate,
+          asyncError:  Tactic[Async.Error],
+          socketError: Tactic[Socket.Error],
+          loggable:    (Socket.Event is Loggable)^ )
+    =>  ( GrpcSessional[endpoint]^{monitor, asyncError, socketError, loggable, caps.any} ) =
 
       GrpcSessional()
 
@@ -124,7 +125,10 @@ object Grpc:
     // must be called inside a `supervise` scope.
     def apply[endpoint]
       ( endpoint: Http2.Endpoint[endpoint], defaults: Grpc.Metadata = Grpc.Metadata() )
-      ( using monitor: Monitor, probate: Probate, asyncError: Tactic[Async.Error] )
+      ( using monitor:     Monitor,
+              probate:     Probate,
+              asyncError:  Tactic[Async.Error],
+              socketError: Tactic[Socket.Error] )
     :   Channel^{monitor, caps.any} =
 
       new Channel(endpoint.connect(), endpoint.authority, defaults)

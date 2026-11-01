@@ -172,20 +172,23 @@ package socketBackends:
 
     //── Stream server (`Bindable` over TCP / Unix-domain) ──────────────────────────────────────
     def listenTcp(port: Tcp.Port, interface: Optional[MacAddress], options: List[Socket.Option])
-    :   ServerBinding =
+    :   ServerBinding raises Bind.Error =
 
       val address: Optional[jn.InetAddress] = interface.let(interfaceFor(_)).let(bindAddress(_))
 
       val socket =
-        address.let(jn.ServerSocket(port.number, 50, _)).or(jn.ServerSocket(port.number))
+        try address.let(jn.ServerSocket(port.number, 50, _)).or(jn.ServerSocket(port.number))
+        catch case error: ji.IOException => abort(Bind.Error(bindReason(error)))
 
       configure(socket, options)
       ServerBinding.Tcp(socket)
 
     // Unix-domain sockets need `UnixDomainSocketAddress` and `ServerSocketChannel`, neither of
     // which Scala Native's javalib provides; unsupported for now (TCP and UDP are the native cut).
-    def listenDomain(address: DomainSocket, options: List[Socket.Option]): ServerBinding =
-      throw UnsupportedOperationException("Unix-domain sockets are unsupported on Scala Native")
+    def listenDomain(address: DomainSocket, options: List[Socket.Option])
+    :   ServerBinding raises Bind.Error =
+
+      abort(Bind.Error(Bind.Error.Reason.Unsupported))
 
     def accept(socket: ServerBinding): Duplex raises Socket.Error = socket match
       case ServerBinding.Tcp(server) =>
@@ -383,31 +386,37 @@ package socketBackends:
       ( endpoint:  Endpoint[Tcp.Port],
         interface: Optional[MacAddress],
         options:   List[Socket.Option] )
-    :   ClientExchange =
+    :   ClientExchange raises Socket.Error =
 
       val socket =
-        interface.let(interfaceFor(_)).let(bindAddress(_)).let: local =>
-          jn.Socket(jn.InetAddress.getByName(endpoint.remote.s), endpoint.port.number, local, 0)
+        try
+          interface.let(interfaceFor(_)).let(bindAddress(_)).let: local =>
+            jn.Socket(jn.InetAddress.getByName(endpoint.remote.s), endpoint.port.number, local, 0)
 
-        . or(jn.Socket(jn.InetAddress.getByName(endpoint.remote.s), endpoint.port.number))
+          . or(jn.Socket(jn.InetAddress.getByName(endpoint.remote.s), endpoint.port.number))
+        catch case error: ji.IOException => abort(Socket.Error(connectReason(error)))
 
       configure(socket, options)
       ClientExchange.Tcp(socket)
 
     def dialTcpPort(port: Tcp.Port, interface: Optional[MacAddress], options: List[Socket.Option])
-    :   ClientExchange =
+    :   ClientExchange raises Socket.Error =
 
       val socket =
-        interface.let(interfaceFor(_)).let(bindAddress(_)).let: local =>
-          jn.Socket(jn.InetAddress.getLocalHost.nn, port.number, local, 0)
+        try
+          interface.let(interfaceFor(_)).let(bindAddress(_)).let: local =>
+            jn.Socket(jn.InetAddress.getLocalHost.nn, port.number, local, 0)
 
-        . or(jn.Socket(jn.InetAddress.getLocalHost.nn, port.number))
+          . or(jn.Socket(jn.InetAddress.getLocalHost.nn, port.number))
+        catch case error: ji.IOException => abort(Socket.Error(connectReason(error)))
 
       configure(socket, options)
       ClientExchange.Tcp(socket)
 
-    def dialDomain(address: DomainSocket, options: List[Socket.Option]): ClientExchange =
-      throw UnsupportedOperationException("Unix-domain sockets are unsupported on Scala Native")
+    def dialDomain(address: DomainSocket, options: List[Socket.Option])
+    :   ClientExchange raises Socket.Error =
+
+      abort(Socket.Error(Socket.Error.Reason.Unsupported))
 
     def request(exchange: ClientExchange, consume input: (Stream[Data] over Credit)^): Unit =
       exchange match
@@ -441,24 +450,28 @@ package socketBackends:
       ( endpoint:  Endpoint[Tcp.Port],
         interface: Optional[MacAddress],
         options:   List[Socket.Option] )
-    :   Duplex =
+    :   Duplex raises Socket.Error =
 
       // The JVM backend uses a `SocketChannel`; native has none, so a plain blocking `Socket` and
       // its input/output streams back the duplex through `streamsDuplex` (as `Serviceable`'s TCP
       // path already does).
       val socket =
-        interface.let(interfaceFor(_)).let(bindAddress(_)).let: local =>
-          jn.Socket(jn.InetAddress.getByName(endpoint.remote.s), endpoint.port.number, local, 0)
+        try
+          interface.let(interfaceFor(_)).let(bindAddress(_)).let: local =>
+            jn.Socket(jn.InetAddress.getByName(endpoint.remote.s), endpoint.port.number, local, 0)
 
-        . or(jn.Socket(jn.InetAddress.getByName(endpoint.remote.s), endpoint.port.number))
+          . or(jn.Socket(jn.InetAddress.getByName(endpoint.remote.s), endpoint.port.number))
+        catch case error: ji.IOException => abort(Socket.Error(connectReason(error)))
 
       configure(socket, options)
 
       streamsDuplex(socket.getInputStream.nn, socket.getOutputStream.nn): () =>
         socket.close()
 
-    def duplexDomain(address: DomainSocket, options: List[Socket.Option]): Duplex =
-      throw UnsupportedOperationException("Unix-domain sockets are unsupported on Scala Native")
+    def duplexDomain(address: DomainSocket, options: List[Socket.Option])
+    :   Duplex raises Socket.Error =
+
+      abort(Socket.Error(Socket.Error.Reason.Unsupported))
 
     //── Fire-and-forget datagram courier (`Routable`) ──────────────────────────────────────────
     def routeUdp
@@ -768,3 +781,30 @@ private[coaxial] def bioDuplex(bio: Ptr[Byte], context: Ptr[Byte]): Duplex =
     def close(): Unit =
       libcrypto.BIO_free_all(bio)
       libssl.SSL_CTX_free(context)
+
+// The `Bind.Error` for a failure to bind, classified by the JDK's exception and message.
+private[coaxial] def bindReason(error: ji.IOException): Bind.Error.Reason =
+  val message: String = error.getMessage match
+    case null          => ""
+    case text: String  => text
+
+  if message.contains("Permission denied") then Bind.Error.Reason.PermissionDenied
+  else if message.contains("in use") then Bind.Error.Reason.PortInUse
+  else Bind.Error.Reason.AddressUnavailable
+
+// The `Socket.Error` for a failure to connect, classified by the JDK's exception and message.
+private[coaxial] def connectReason(error: ji.IOException): Socket.Error.Reason = error match
+  case _: jn.UnknownHostException   => Socket.Error.Reason.Dns
+  case _: jn.SocketTimeoutException => Socket.Error.Reason.Timeout
+
+  case _: jn.ConnectException =>
+    val message: String = error.getMessage match
+      case null          => ""
+      case text: String  => text
+
+    if message.contains("refused") then Socket.Error.Reason.Refused
+    else if message.contains("timed out") then Socket.Error.Reason.Timeout
+    else Socket.Error.Reason.Connect
+
+  case _ =>
+    Socket.Error.Reason.Connect

@@ -121,6 +121,9 @@ extends octogenarian.Transport:
     given ssh: Tactic[Ssh.Error] = tactic.contramap: error =>
       Git.Error(Reason.Unreachable(address.host), error.message.text)(using Diagnostics.omit)
 
+    given socket: Tactic[Socket.Error] = tactic.contramap: error =>
+      Git.Error(Reason.Unreachable(address.host), error.message.text)(using Diagnostics.omit)
+
     val port = address.port.or(22)
     val user = address.user.or(credentials.user(address.host)).or(t"git")
 

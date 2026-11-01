@@ -47,10 +47,11 @@ import telekinesis.*
 // given: an anonymous subclass would freshen the capability types in its inferred
 // `Result` member.
 class GrpcSessional[endpoint: {Connectable, Showable}]
-  ( using monitor:    Monitor,
-          probate:    Probate,
-          asyncError: Tactic[Async.Error],
-          loggable:   (Socket.Event is Loggable)^ )
+  ( using monitor:     Monitor,
+          probate:     Probate,
+          asyncError:  Tactic[Async.Error],
+          socketError: Tactic[Socket.Error],
+          loggable:    (Socket.Event is Loggable)^ )
 extends Sessional:
   type Self = Grpc.Endpoint[endpoint]
 

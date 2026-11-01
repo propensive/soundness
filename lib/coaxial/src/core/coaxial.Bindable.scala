@@ -48,7 +48,9 @@ object Bindable:
     type Output = Data
 
     // A Unix-domain socket has no network interface, so `interface` is not applicable here.
-    def bind(domainSocket: DomainSocket, interface: Optional[MacAddress]): Binding =
+    def bind(domainSocket: DomainSocket, interface: Optional[MacAddress])
+    :   Binding raises Bind.Error =
+
       backend.listenDomain(domainSocket, options.values.to(List))
 
     def connect(binding: Binding): Duplex raises Socket.Error = backend.accept(binding)
@@ -65,7 +67,7 @@ object Bindable:
     type Input = Duplex
     type Output = Data
 
-    def bind(port: Tcp.Port, interface: Optional[MacAddress]): Binding =
+    def bind(port: Tcp.Port, interface: Optional[MacAddress]): Binding raises Bind.Error =
       backend.listenTcp(port, interface, options.values.to(List))
 
     def connect(binding: Binding): Duplex raises Socket.Error = backend.accept(binding)
@@ -82,7 +84,7 @@ object Bindable:
     type Input = Packet
     type Output = UdpResponse
 
-    def bind(port: Udp.Port, interface: Optional[MacAddress]): Binding =
+    def bind(port: Udp.Port, interface: Optional[MacAddress]): Binding raises Bind.Error =
       backend.listenUdp(port, interface, options.values.to(List))
 
     def connect(binding: Binding): Packet raises Socket.Error = backend.receive(binding)
@@ -102,7 +104,7 @@ trait Bindable extends Typeclass:
   type Input
   type Output
 
-  def bind(socket: Self, interface: Optional[MacAddress]): Binding
+  def bind(socket: Self, interface: Optional[MacAddress]): Binding raises Bind.Error
   def connect(binding: Binding): Input raises Socket.Error
   def transmit(binding: Binding, input: Input, output: Output): Unit raises Socket.Error
   def close(connection: Input): Unit raises Socket.Error

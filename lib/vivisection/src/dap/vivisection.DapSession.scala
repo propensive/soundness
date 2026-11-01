@@ -319,7 +319,12 @@ private[vivisection] class DapSession(emit: Json => Unit)
               // reason `Debuggee` documents: rebuilding the `Connectable` from the captured
               // `Online` fails `.duplex`'s empty-capture-set requirement.
               val duplex =
-                summon[(Endpoint[Tcp.Port] is Connectable)^].connect(endpoint, Unset)
+                mitigate:
+                  case error: Socket.Error =>
+                    Debugger.Error(Debugger.Error.Reason.Disconnected, t"could not connect")
+                      ( using error.diagnostics )
+
+                . protect(summon[(Endpoint[Tcp.Port] is Connectable)^].connect(endpoint, Unset))
 
               val open: Jdwp.Connection => Unit =
                 // [closure-capture] open callback over adapter self

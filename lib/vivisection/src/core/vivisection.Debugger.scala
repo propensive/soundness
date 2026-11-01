@@ -54,12 +54,13 @@ object Debugger:
   // `Connectable` captured as a field, rebuilt from a captured `Online`, does not: the `Online`
   // cannot flow into the empty capture set `.duplex` requires.)
   class Sessional[endpoint: {Connectable, Showable}]
-    ( using monitor:    Monitor,
-            probate:    Probate,
-            asyncError: Tactic[Async.Error],
-            loggable:   (Socket.Event is Loggable)^,
-            tactic:     Tactic[Error],
-            note:       Diagnostics )
+    ( using monitor:     Monitor,
+            probate:     Probate,
+            asyncError:  Tactic[Async.Error],
+            socketError: Tactic[Socket.Error],
+            loggable:    (Socket.Event is Loggable)^,
+            tactic:      Tactic[Error],
+            note:        Diagnostics )
   extends aperture.Sessional:
     type Self = Debugger[endpoint]
     type Result = Debug^
@@ -71,13 +72,14 @@ object Debugger:
         Jdwp.Connection.exchange(duplex): connection => lambda(using new Debug(connection))
 
   given sessional: [endpoint: {Connectable, Showable}]
-  =>  ( monitor:    Monitor,
-        probate:    Probate,
-        asyncError: Tactic[Async.Error],
-        loggable:   (Socket.Event is Loggable)^,
-        tactic:     Tactic[Error],
-        note:       Diagnostics )
-  =>  ( Sessional[endpoint]^{monitor, asyncError, loggable, tactic, caps.any} ) =
+  =>  ( monitor:     Monitor,
+        probate:     Probate,
+        asyncError:  Tactic[Async.Error],
+        socketError: Tactic[Socket.Error],
+        loggable:    (Socket.Event is Loggable)^,
+        tactic:      Tactic[Error],
+        note:        Diagnostics )
+  =>  ( Sessional[endpoint]^{monitor, asyncError, socketError, loggable, tactic, caps.any} ) =
     Sessional[endpoint]()
 
   object Error:

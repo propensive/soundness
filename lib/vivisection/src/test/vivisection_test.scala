@@ -53,7 +53,8 @@ case class Attach(duplex: Duplex)
 object Attach:
   given connectable: (Attach is Connectable) = new Connectable:
     type Self = Attach
-    def connect(attach: Attach, interface: Optional[MacAddress]): Duplex = attach.duplex
+    def connect(attach: Attach, interface: Optional[MacAddress]): Duplex raises Socket.Error =
+      attach.duplex
 
   given showable: Attach is Showable = _ => t"attach"
 

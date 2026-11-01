@@ -110,7 +110,7 @@ object Multicast:
     type Input = Packet
     type Output = Reply
 
-    def bind(multicast: Multicast, interface: Optional[MacAddress]): Binding =
+    def bind(multicast: Multicast, interface: Optional[MacAddress]): Binding raises Bind.Error =
       subscribable.join(multicast, interface)
 
     def connect(binding: Binding): Packet raises Socket.Error = subscribable.receive(binding)

@@ -106,7 +106,13 @@ class Agent(path: Text)(using backend: Socket.Backend, diagnostics: Diagnostics)
     reply.string()
 
   private def exchange(message: Data)(using Tactic[Ssh.Error]): Data =
-    val duplex = backend.duplexDomain(DomainSocket(path), Nil)
+    val duplex =
+      mitigate:
+        case error: Socket.Error =>
+          Ssh.Error(Reason.Agent(t"the agent's socket could not be opened"))
+            ( using error.diagnostics )
+
+      . protect(backend.duplexDomain(DomainSocket(path), Nil))
 
     try
       val framed = Wire.Writer()

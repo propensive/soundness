@@ -51,7 +51,9 @@ object Serviceable:
     type Output = Data
     type Connection = backend.Exchange
 
-    def connect(domainSocket: DomainSocket, interface: Optional[MacAddress]): Connection =
+    def connect(domainSocket: DomainSocket, interface: Optional[MacAddress])
+    :   Connection raises Socket.Error =
+
       backend.dialDomain(domainSocket, options.values.to(List))
 
     def transmit(connection: Connection, consume input: (Stream[Data] over Credit)^): Unit =
@@ -70,7 +72,9 @@ object Serviceable:
     type Output = Data
     type Connection = backend.Exchange
 
-    def connect(endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress]): Connection =
+    def connect(endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress])
+    :   Connection raises Socket.Error =
+
       backend.dialTcp(endpoint, interface, options.values.to(List))
 
     def transmit(connection: Connection, consume input: (Stream[Data] over Credit)^): Unit =
@@ -88,7 +92,7 @@ object Serviceable:
     type Output = Data
     type Connection = backend.Exchange
 
-    def connect(port: Tcp.Port, interface: Optional[MacAddress]): Connection =
+    def connect(port: Tcp.Port, interface: Optional[MacAddress]): Connection raises Socket.Error =
       backend.dialTcpPort(port, interface, options.values.to(List))
 
     def close(connection: Connection): Unit = backend.hangUp(connection)

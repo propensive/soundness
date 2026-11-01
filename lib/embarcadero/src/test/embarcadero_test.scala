@@ -399,7 +399,7 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
           runServer(serverSide, namespace, body)
 
           case class Loopback(duplex: Duplex)
-          given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Connectable) = Connectable((loopback, _) => loopback.duplex)
           given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
@@ -422,7 +422,7 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
           runServer(serverSide, namespace, body)
 
           case class Loopback(duplex: Duplex)
-          given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Connectable) = Connectable((loopback, _) => loopback.duplex)
           given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
@@ -444,7 +444,7 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
           runServer(serverSide, namespace, body)
 
           case class Loopback(duplex: Duplex)
-          given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Connectable) = Connectable((loopback, _) => loopback.duplex)
           given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
@@ -466,7 +466,7 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
           runServer(serverSide, namespace, body)
 
           case class Loopback(duplex: Duplex)
-          given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Connectable) = Connectable((loopback, _) => loopback.duplex)
           given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
@@ -490,7 +490,7 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
           runServer(serverSide, namespace, body)
 
           case class Loopback(duplex: Duplex)
-          given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Connectable) = Connectable((loopback, _) => loopback.duplex)
           given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
@@ -515,7 +515,7 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
           runServer(serverSide, namespace, body)
 
           case class Loopback(duplex: Duplex)
-          given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Connectable) = Connectable((loopback, _) => loopback.duplex)
           given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
@@ -533,7 +533,7 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
           runServer(serverSide, namespace, body)
 
           case class Loopback(duplex: Duplex)
-          given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Connectable) = Connectable((loopback, _) => loopback.duplex)
           given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
@@ -555,7 +555,7 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
           runServer(serverSide, namespace, body)
 
           case class Loopback(duplex: Duplex)
-          given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Connectable) = Connectable((loopback, _) => loopback.duplex)
           given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
@@ -654,7 +654,7 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
           runRouter(serverSide, calls, lifecycleResponses(5678))
 
           case class Loopback(duplex: Duplex)
-          given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Connectable) = Connectable((loopback, _) => loopback.duplex)
           given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
@@ -674,7 +674,7 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
           runRouter(serverSide, calls, lifecycleResponses(5678))
 
           case class Loopback(duplex: Duplex)
-          given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Connectable) = Connectable((loopback, _) => loopback.duplex)
           given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
@@ -698,7 +698,7 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
           runRouter(serverSide, calls, lifecycleResponses(5678))
 
           case class Loopback(duplex: Duplex)
-          given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Connectable) = Connectable((loopback, _) => loopback.duplex)
           given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
@@ -725,7 +725,7 @@ object Tests extends Suite("containers", m"Embarcadero OCI Tests"):
           runRouter(serverSide, calls, Map(), failures = Set(t"$containersService/Create"))
 
           case class Loopback(duplex: Duplex)
-          given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Connectable) = Connectable((loopback, _) => loopback.duplex)
           given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")

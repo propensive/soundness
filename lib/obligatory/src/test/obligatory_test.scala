@@ -259,7 +259,7 @@ object Tests extends Suite("rpc", m"Obligatory Tests"):
                 trailers(hpack, id, List(Hpack.Entry(t"grpc-status", t"0")), true) ))
 
           case class Loopback(duplex: Duplex)
-          given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Connectable) = Connectable((loopback, _) => loopback.duplex)
           given (Loopback is Showable) = _ => t"loopback"
 
           val channel = Grpc.Channel(Http2.Endpoint(Loopback(clientSide), t"localhost"))
@@ -277,7 +277,7 @@ object Tests extends Suite("rpc", m"Obligatory Tests"):
                 trailers(hpack, id, List(Hpack.Entry(t"grpc-status", t"0")), true) ))
 
           case class Loopback(duplex: Duplex)
-          given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Connectable) = Connectable((loopback, _) => loopback.duplex)
           given (Loopback is Showable) = _ => t"loopback"
 
           Grpc.Endpoint(Http2.Endpoint(Loopback(clientSide), t"localhost")).session: channel ?=>
@@ -293,7 +293,7 @@ object Tests extends Suite("rpc", m"Obligatory Tests"):
                 Hpack.Entry(t"grpc-status", t"5"), Hpack.Entry(t"grpc-message", t"absent")), true)))
 
           case class Loopback(duplex: Duplex)
-          given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Connectable) = Connectable((loopback, _) => loopback.duplex)
           given (Loopback is Showable) = _ => t"loopback"
 
           val channel = Grpc.Channel(Http2.Endpoint(Loopback(clientSide), t"localhost"))
@@ -317,7 +317,7 @@ object Tests extends Suite("rpc", m"Obligatory Tests"):
                 trailers(hpack, id, List(Hpack.Entry(t"grpc-status", t"0")), true) ))
 
           case class Loopback(duplex: Duplex)
-          given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Connectable) = Connectable((loopback, _) => loopback.duplex)
           given (Loopback is Showable) = _ => t"loopback"
 
           val channel = Grpc.Channel(Http2.Endpoint(Loopback(clientSide), t"localhost"))
@@ -335,7 +335,7 @@ object Tests extends Suite("rpc", m"Obligatory Tests"):
                 trailers(hpack, id, List(Hpack.Entry(t"grpc-status", t"0")), true) ))
 
           case class Loopback(duplex: Duplex)
-          given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Connectable) = Connectable((loopback, _) => loopback.duplex)
           given (Loopback is Showable) = _ => t"loopback"
 
           val channel = Grpc.Channel(Http2.Endpoint(Loopback(clientSide), t"localhost"))

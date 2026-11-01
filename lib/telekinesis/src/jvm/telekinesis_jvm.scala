@@ -182,10 +182,12 @@ given domainSocketHttpClient: (Tactic[Truncation.Error], Tactic[Connect.Error])
 
       // Typed binding: `transmit` and `parse` are both overloaded (lazy-list and
       // endpoint forms), so the expected type picks the endpoint pair.
-      val input: zephyrine.Stream[Data] over zephyrine.Credit = socket.transmit(request)
-
       mitigate:
+        case error: Socket.Error => socketConnectError(error)
+
         case error: Http.Response.Error =>
           Connect.Error(Connect.Error.Reason.Unknown)(using error.diagnostics)
 
-      . protect(Http.Response.parse(input))
+      . protect:
+        val input: zephyrine.Stream[Data] over zephyrine.Credit = socket.transmit(request)
+        Http.Response.parse(input)

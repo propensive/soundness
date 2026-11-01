@@ -302,7 +302,7 @@ object Http2Tests extends Suite("http2", m"Telekinesis HTTP/2 Tests"):
           // lets the real `Http.Client` given (which calls `target.connect()`) run
           // against the loopback without a socket.
           case class Loopback(duplex: Duplex)
-          given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Connectable) = Connectable((loopback, _) => loopback.duplex)
           given (Loopback is Showable) = _ => t"loopback"
 
           // Summon the HTTP/2 client given exactly as telekinesis's fetch machinery
@@ -644,7 +644,7 @@ object Http2Tests extends Suite("http2", m"Telekinesis HTTP/2 Tests"):
           import logging.silentLogging
 
           case class Loopback(duplex: Duplex)
-          given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Connectable) = Connectable((loopback, _) => loopback.duplex)
           given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"loopback")

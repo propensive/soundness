@@ -131,16 +131,10 @@ private def plaintextExchange
   val httpRequest = Http.Request(method, 1.1, host, target, headers, body)
 
   def connect(): Duplex =
-    try backend.duplexTcp(Endpoint(host.show, tcpPort), Unset, options.values.to(List)) catch
-      case error: jn.UnknownHostException => abort(Connect.Error(Dns))
+    mitigate:
+      case error: Socket.Error => socketConnectError(error)
 
-      case error: jn.ConnectException =>
-        error.getMessage() match
-          case "Connection refused"   => abort(Connect.Error(Refused))
-          case "Connection timed out" => abort(Connect.Error(Timeout))
-          case _                      => abort(Connect.Error(Unknown))
-
-      case error: ji.IOException => abort(Connect.Error(Unknown))
+    . protect(backend.duplexTcp(Endpoint(host.show, tcpPort), Unset, options.values.to(List)))
 
   def borrow(): Duplex | Null =
     val queue = idleConnections.get(origin)
