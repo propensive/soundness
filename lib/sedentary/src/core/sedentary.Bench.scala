@@ -537,19 +537,31 @@ extends Rig:
         comparison )
 
 
-  def stage(out: Path on Linux): Path on Linux = stageOn(device, out)
+  def stage(out: Path on Linux)(using Tactic[Rig.Error]): Path on Linux = stageOn(device, out)
 
   protected val scalac: Scalac[3.7, Universe.Classfile] = Scalac(List(scalacOptions.experimental))
 
-  protected def invoke[output](stage: Stage[output, Text, Path on Linux]): output =
-    stage.remote: input => unsafely(device.invoke(stage.target, input, heap, cpus, gc))
+  protected def invoke[output](stage: Stage[output, Text, Path on Linux])(using Tactic[Rig.Error])
+  :   output =
+
+    stage.remote: input =>
+      mitigate:
+        case error: Bench.Error => Rig.Error(Rig.Error.Reason.Invocation)(using error.diagnostics)
+
+      . protect(device.invoke(stage.target, input, heap, cpus, gc))
 
 // Builds a jar of the code under measurement, with superlunary's executor as its entry point,
 // and deploys it to `device`: the staging which `Bench`, `Stress` and `Profile` share.
-private[sedentary] def stageOn(device: BenchmarkDevice, out: Path on Linux)(using Environment)
+private[sedentary] def stageOn(device: BenchmarkDevice, out: Path on Linux)
+  ( using Environment, Tactic[Rig.Error] )
 :   Path on Linux =
 
-  unsafely:
+  mitigate:
+    case error: Link.Error  => Rig.Error(Rig.Error.Reason.Staging)(using error.diagnostics)
+    case error: Async.Error => Rig.Error(Rig.Error.Reason.Staging)(using error.diagnostics)
+    case error: Bench.Error => Rig.Error(Rig.Error.Reason.Staging)(using error.diagnostics)
+
+  . protect:
     val uuid = Uuid()
 
     val jarfile = supervise:

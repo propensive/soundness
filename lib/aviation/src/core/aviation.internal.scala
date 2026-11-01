@@ -580,7 +580,8 @@ object internal:
     val summoned: Option[Expr[RomanCalendar]] = Expr.summon[RomanCalendar]
 
     // The runtime check, used whenever the operands aren't all compile-time literals; defaults to
-    // the Gregorian calendar when nothing is in scope, preserving today's behaviour.
+    // the Gregorian calendar when nothing is in scope. A date that is not a literal may not
+    // exist, so its check raises `Moment.Error` through a tactic the expansion site supplies.
     def runtime: Expr[Date] =
       val calendar = summoned.getOrElse('{calendars.gregorianCalendar})
       // `Day(_)` is transparent here in aviation core (`opaque type Day = Int`), so the quoted tree
@@ -588,7 +589,16 @@ object internal:
       // `inline` `jdn` expects at the (external) call site. The explicit ascription pins the tree's
       // type to `Day`.
       val day: Expr[Day] = '{Day($right): Day}
-      '{unsafely($calendar.jdn($left.year, $left.month, $day))}
+
+      Expr.summon[Tactic[Moment.Error]] match
+        case Some(tactic) => '{$calendar.jdn($left.year, $left.month, $day)(using $tactic)}
+
+        case None =>
+          halt
+            ( m"""
+                the date's year, month and day are not all literals, so it is checked when it
+                is made, which needs a `Tactic[Moment.Error]` in scope
+              """ )
 
     // Identify a contextual calendar as one of this module's calendar givens (matched by leaf name,
     // since it may be reached through the `soundness` re-export rather than its `aviation` origin;
