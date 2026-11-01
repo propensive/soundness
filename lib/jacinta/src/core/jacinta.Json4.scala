@@ -384,8 +384,7 @@ trait Json4:
     // where the root offers alternatives (`anyOf`/`oneOf`) of which one is such an object — a
     // configuration file which may also be written as a bare string, say — the provider reads
     // that object form.
-    def fieldsOf(schema: Json): List[(Text, Member)] =
-      import strategies.throwUnsafely
+    def fieldsOf(schema: Json)(using Tactic[Json.Error]): List[(Text, Member)] =
       val walk = Walk(schema)
 
       walk.rootRecord(schema) match
@@ -403,8 +402,9 @@ trait Json4:
     // resolve against the document, so a schema embedded in one — a response schema within an
     // OpenAPI document, referring to `#/components/schemas/…` — reads as it would alone. An
     // object reads as a `Member.Record`, an array of objects as one of `Multiplicity.Many`.
-    def memberOf(document: Json, node: Json, limit: Int = Int.MaxValue): Member =
-      import strategies.throwUnsafely
+    def memberOf(document: Json, node: Json, limit: Int = Int.MaxValue)(using Tactic[Json.Error])
+    :   Member =
+
       Walk(document, limit).member(node, scala.collection.immutable.Set())
 
     // The walk from a schema node to the `Member` reading a value it describes. `seen` holds
@@ -415,10 +415,9 @@ trait Json4:
     // `Json`: an API's error schema may refer into a graph of thousands of properties, of which
     // a caller wants the first level or two as a record. References already followed are
     // memoised, so a graph is walked once, not once per path into it.
-    // The schema is read as the macro expands, where a schema it cannot read is a compile error
-    // rather than a value to report, so the walk throws.
-    private class Walk(root: Json, limit: Int = Int.MaxValue):
-      import strategies.throwUnsafely
+    // A schema the walk cannot read is reported through the tactic its caller supplies: a
+    // provider's, at macro expansion, throws (see `Provider.fields`).
+    private class Walk(root: Json, limit: Int = Int.MaxValue)(using Tactic[Json.Error]):
 
       private val followed = scala.collection.mutable.HashMap[Text, Member]()
       private type Sl[element] = scala.collection.immutable.List[element]
@@ -840,4 +839,6 @@ trait Json4:
   abstract class Provider(schema0: into[Json.Provider.Schema]) extends Provider.Primitives:
     val schema: Json = schema0.json
 
-    def fields: List[(Text, Member)] = Json.Provider.fieldsOf(schema)
+    // Read as the macro expands, where a schema it cannot read is a compile error rather than a
+    // value to report, so the reading throws.
+    def fields: List[(Text, Member)] = unsafely(Json.Provider.fieldsOf(schema))

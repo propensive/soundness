@@ -80,7 +80,10 @@ object internal:
     ' {
         json =>
           import dynamicAccess.dynamicJson
-          given Tactic[Json.Error] = strategies.throwUnsafely
+          // Minted per dispatch, on the thread that runs it: the dispatcher is retained by a
+          // task, so it may hold no tactic of its own, and a decode failure is caught by the
+          // serving loop as an error response.
+          given tactic: (Tactic[Json.Error]^) = ThrowTactic()
 
           (safely(json.method.as[Text]): @scala.unchecked) match
             case Unset =>
@@ -154,15 +157,17 @@ object internal:
 
                     CaseDef(Literal(StringConstant(method.name)), None, rhs.asTerm)
 
-                  val wildcard = Expr.summon[Tactic[JsonRpc.Error]] match
-                    case Some(tactic) =>
-                      val rhs =
-                        '{abort(JsonRpc.Error(JsonRpc.Error.Reason.UnknownMethod))(using $tactic)}
+                  // An unknown method is a fault the serving loop reports as an error response;
+                  // the tactic is minted here, as the decoders' is, since the dispatcher may
+                  // retain none.
+                  val wildcard =
+                    val rhs =
+                      ' {
+                          abort(JsonRpc.Error(JsonRpc.Error.Reason.UnknownMethod))
+                            ( using ThrowTactic() )
+                        }
 
-                      CaseDef(Wildcard(), None, rhs.asTerm)
-
-                    case None =>
-                      halt(728, m"could not find a contextual `Tactic[JsonRpc.Error]` instance")
+                    CaseDef(Wildcard(), None, rhs.asTerm)
 
                   Match('method.asTerm, cases :+ wildcard).asExprOf[Optional[Json]]
                 }

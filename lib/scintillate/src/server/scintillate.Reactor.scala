@@ -38,7 +38,7 @@ import java.nio.channels as jnc
 import java.util.concurrent as juc
 
 import anticipation.*
-import contingency.*, strategies.throwUnsafely
+import contingency.*
 import gossamer.*
 import prepositional.*
 import proscenium.*
@@ -317,6 +317,9 @@ object Reactor:
       // `consume`-typed `respond` (the planned follow-up) retires it.
       // [by-name-receiver] response by-name captures connection it is delivered on
       scala.caps.unsafe.unsafeAssumeSeparate:
+        // A truncated write to the channel is thrown on the lane, whose loop handles it.
+        given (Tactic[Truncation.Error]^) = ThrowTactic()
+
         connection.respond:
           try reactor.invoke(connection)
           catch case throwable: Throwable => reactor.errors.handle(throwable, connection)

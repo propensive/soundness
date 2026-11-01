@@ -1743,6 +1743,11 @@ object Lsp:
   extends JsonRpc, anticipation.Durable:
     type Origin = Lsp
 
+    // The proxy macro summons each method's result decoder at expansion, and the decoders of the
+    // unanchored result types (`Optional[Hover]`, `List[Location]`, …) retain the tactic they
+    // are summoned under; a tracked one could not be held by this shared connection, so the
+    // ambient throwing tactic is the only one that can. The honest shape — decoders summoned per
+    // call, under the call's own tactic — is a change to the macro (see `rep/DECISIONS.md`).
     import strategies.throwUnsafely
 
     // One proxy module per sub-interface, all sharing this instance's outgoing channel. The split
@@ -1941,7 +1946,6 @@ object Lsp:
   object Dispatch:
     private object lifecycleRoute:
       def apply(server: Lsp): Json => Optional[Json] =
-        import strategies.throwUnsafely
         JsonRpc.serve[LspLifecycle](server)
 
     // Materialized here because the `JsonRpc.serve` macro's `Expr.summon` cannot
@@ -1954,37 +1958,30 @@ object Lsp:
 
     private object languageRoute:
       def apply(server: Lsp): Json => Optional[Json] =
-        import strategies.throwUnsafely
         JsonRpc.serve[LspLanguage](server)
 
     private object navigationRoute:
       def apply(server: Lsp): Json => Optional[Json] =
-        import strategies.throwUnsafely
         JsonRpc.serve[LspNavigation](server)
 
     private object editingRoute:
       def apply(server: Lsp): Json => Optional[Json] =
-        import strategies.throwUnsafely
         JsonRpc.serve[LspEditing](server)
 
     private object advancedRoute:
       def apply(server: Lsp): Json => Optional[Json] =
-        import strategies.throwUnsafely
         JsonRpc.serve[LspAdvanced](server)
 
     private object workspaceRoute:
       def apply(server: Lsp): Json => Optional[Json] =
-        import strategies.throwUnsafely
         JsonRpc.serve[LspWorkspace](server)
 
     private object resolveRoute:
       def apply(server: Lsp): Json => Optional[Json] =
-        import strategies.throwUnsafely
         JsonRpc.serve[LspResolve](server)
 
     def apply(server: Lsp): Json => Optional[Json] =
       import dynamicAccess.dynamicJson
-      import strategies.throwUnsafely
 
       // Each expansion is bound to a bare local, and the routing is an if-chain over locals
       // rather than a list of tuples: an expected type at the expansion site freshens the opaque
@@ -2007,7 +2004,7 @@ object Lsp:
       val resolve = resolveRoute(server)
 
       json =>
-        val method: Optional[Text] = try json.method.as[Text] catch case _: Exception => Unset
+        val method: Optional[Text] = safely(json.method.as[Text])
 
         // A message with no method is a response, which any dispatcher handles; an unknown
         // method is dropped.
@@ -2583,20 +2580,18 @@ object Lsp:
     // alone: a fault is not a payload, and a rewriter typed for the payload could not read it.
     private def rewriteResult(json: Json, rewrite: Json => Json): Json =
       import dynamicAccess.dynamicJson
-      import strategies.throwUnsafely
 
-      try
+      safely:
         val result = json.result
         Map(t"jsonrpc" -> t"2.0".in[Json], t"result" -> rewrite(result), t"id" -> json.id).in[Json]
 
-      catch case _: Exception => json
+      . or(json)
 
     // The `params` of a notification or of a request the server made of its client, rewritten.
     private def rewriteParams(json: Json, rewrite: Json => Json): Json =
       import dynamicAccess.dynamicJson
-      import strategies.throwUnsafely
 
-      try
+      safely:
         val method: Json = json.method
         val params: Json = rewrite(json.params)
 
@@ -2614,7 +2609,7 @@ object Lsp:
 
             . in[Json]
 
-      catch case _: Exception => json
+      . or(json)
 
     // The slots are an erased rim, as `Lsp.Registry`'s are, and each is restored by a single
     // annotated cast at the one place that reads it.

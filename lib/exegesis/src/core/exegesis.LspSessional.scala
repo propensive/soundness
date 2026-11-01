@@ -98,7 +98,6 @@ object LspSessional:
     ( using Monitor, Probate, Diagnostics )
   :   result =
 
-    import strategies.throwUnsafely
     import Json.jsonEncodableInText
 
     // Sealed: the connection captures this session's monitor and diagnostics, and an honest

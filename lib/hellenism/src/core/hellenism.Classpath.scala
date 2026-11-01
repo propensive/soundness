@@ -81,11 +81,11 @@ object Classpath extends Root(t""):
   =>  ( classloader: Classloader )
   =>  path is Streamable by Data =
 
-    // Built over `throwUnsafely` (unscoped, merely throws) and the pure classloader, so the
-    // instance retains no scoped capability; laundered pure (the codec-thunk seal pattern).
+    // Built over a throwing tactic (which merely throws) and the pure classloader, so the
+    // instance retains nothing scoped in effect; laundered pure (the codec-thunk seal pattern).
     // [field-purity] given streamable codec, codec-thunk seal
     caps.unsafe.unsafeAssumePure:
-      given Tactic[Truncation.Error] = strategies.throwUnsafely
+      given (Tactic[Truncation.Error]^) = ThrowTactic()
 
       Streamable.inputStream.contramap: path => classloader.inputStream(path.encode)
 
@@ -96,7 +96,7 @@ object Classpath extends Root(t""):
     // See `streamable` above; laundered pure for the same reason.
     // [field-purity] given streamable codec, codec-thunk seal
     caps.unsafe.unsafeAssumePure:
-      given Tactic[Truncation.Error] = strategies.throwUnsafely
+      given (Tactic[Truncation.Error]^) = ThrowTactic()
 
       Streamable.inputStream.contramap: path => classloader.inputStream(path.encode)
 

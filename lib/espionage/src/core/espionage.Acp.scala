@@ -900,8 +900,6 @@ object Acp:
   extends JsonRpc, anticipation.Durable:
     type Origin = AcpAgent
 
-    import strategies.throwUnsafely
-
     // One proxy module per sub-interface, both sharing this instance's outgoing channel. The
     // connection is confined by its own type and each proxy is a member of it, so sealing the
     // reference the generated modules hold is sound; the macro cannot take a capability-typed
@@ -1262,7 +1260,6 @@ object Acp:
       ( using Monitor^, Probate, Diagnostics )
     :   result =
 
-      import strategies.throwUnsafely
       import Json.jsonEncodableInText
 
       // Sealed: the connection captures this exchange's monitor and diagnostics, and an honest

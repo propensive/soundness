@@ -58,7 +58,6 @@ import urticose.*
 import vacuous.*
 
 import rudiments.sortingAlgorithms.timsort
-import strategies.throwUnsafely
 import zephyrine.Parse
 
 object Apoplexy:
@@ -83,8 +82,8 @@ object Apoplexy:
     specs.synchronized:
       specs.at(key(source, content)).or:
         val doc =
-          try content.read[OpenApi]
-          catch case error: Exception => halt(m"apoplexy: the OpenAPI spec at $source is not valid")
+          safely(content.read[OpenApi]).or:
+            halt(m"apoplexy: the OpenAPI spec at $source is not valid")
 
         specs(key(source, content)) = doc
         doc
@@ -203,8 +202,12 @@ object Apoplexy:
 
     given OpenApi = doc
 
-    try referable()
-    catch case error: OpenApi.Error => halt(m"apoplexy: ${error.message}")
+    given HaltTactic[OpenApi.Error, Any] = new HaltTactic[OpenApi.Error, Any]:
+      override def abort(error: Diagnostics ?=> OpenApi.Error): Nothing =
+        val error0: OpenApi.Error = error
+        halt(m"apoplexy: ${error0.message}")
+
+    referable()
 
   // The parameters of an operation: those its path item declares for every operation, overridden
   // by its own on the same name and location, each resolved through the components.
@@ -423,8 +426,8 @@ object Apoplexy:
           case ref: JsonSchema.Ref if depth < 8 =>
             given OpenApi = doc
 
-            try follow(OpenApi.apply(ref: JsonSchema)(), depth + 1)
-            catch case error: OpenApi.Error => ref
+            // A reference that does not resolve reads as itself, and so as `Json`.
+            safely(OpenApi.apply(ref: JsonSchema)()).lay(ref)(follow(_, depth + 1))
 
           case other =>
             other
@@ -526,12 +529,10 @@ object Apoplexy:
 
   // A media type the spec names, as a `MediaType` value in the generated code, if it parses
   private def mediaTypeExpr(using Quotes)(media: Text): Optional[Expr[MediaType]] =
-    try
-      Media.parse(media)
-      // Already parsed above, so the generated parse cannot fail; a gated helper rather than a
-      // spliced `unsafely`, whose context function a quote cannot match under capture checking.
-      Optional('{unsafeMediaType(${Expr(media.s)}.tt)(using Unsafe)})
-    catch case error: MediaType.Error => Unset
+    // Parsed here first, so the generated parse cannot fail; a gated helper rather than a
+    // spliced `unsafely`, whose context function a quote cannot match under capture checking.
+    safely(Media.parse(media)).let: _ =>
+      '{unsafeMediaType(${Expr(media.s)}.tt)(using Unsafe)}
 
   // How a declared error response is raised: by the class of its status, a range class for
   // `4XX`-style keys (and for a numbered status telekinesis does not name), or `OtherError` for
@@ -576,7 +577,11 @@ object Apoplexy:
       val pointer: Text = schemaPointer(status, referable, media)
 
       // An error payload's record follows references two levels deep; beyond, raw `Json`
-      Json.Provider.memberOf(specJson(source), schemaNode(source, pointer), 2) match
+      val member: Member =
+        safely(Json.Provider.memberOf(specJson(source), schemaNode(source, pointer), 2)).or:
+          halt(m"apoplexy: the schema at $pointer could not be read")
+
+      member match
         case Member.Record(fields, Multiplicity.One)  => Payload.Record(relaxed(fields), false)
         case Member.Record(fields, Multiplicity.Many) => Payload.Record(relaxed(fields), true)
         case _                                        => Payload.Carrier(media)
@@ -991,8 +996,8 @@ object Apoplexy:
         if server.starts(t"/")
         then halt(m"apoplexy: the spec's server URL $server is relative; pass a `base` URL")
 
-        try server.as[HttpUrl]
-        catch case error: Url.Error => halt(m"apoplexy: the spec's server URL $server is not valid")
+        safely(server.as[HttpUrl]).or:
+          halt(m"apoplexy: the spec's server URL $server is not valid")
 
         // Validated above, so the generated decoding cannot fail (see `mediaTypeExpr`).
         '{unsafeHttpUrl($serverExpr.tt)(using Unsafe)}
@@ -1148,8 +1153,8 @@ object Apoplexy:
     specJsons.synchronized:
       specJsons.at(key(source, content)).or:
         val json =
-          try OpenApi.sourceJson(content)
-          catch case error: Exception => halt(m"apoplexy: the OpenAPI spec at $source is not valid")
+          safely(OpenApi.sourceJson(content)).or:
+            halt(m"apoplexy: the OpenAPI spec at $source is not valid")
 
         specJsons(key(source, content)) = json
         json
@@ -1159,13 +1164,13 @@ object Apoplexy:
     val segments = pointer.cut(t"/").skip(1)
 
     segments.fold(specJson(source)): (node, segment) =>
-      try node(segment.sub(t"~1", t"/").sub(t"~0", t"~"))
-      catch case error: Exception => halt(m"apoplexy: could not resolve the schema at $pointer")
+      safely(node(segment.sub(t"~1", t"/").sub(t"~0", t"~"))).or:
+        halt(m"apoplexy: could not resolve the schema at $pointer")
 
   // Resolve the response-schema `JsonSchema` at a JSON-pointer into the spec.
   private def resolveSchema(using Quotes)(source: Text, pointer: Text): JsonSchema =
-    try schemaNode(source, pointer).as[JsonSchema]
-    catch case error: Exception => halt(m"apoplexy: the response schema at $pointer is not valid")
+    safely(schemaNode(source, pointer).as[JsonSchema]).or:
+      halt(m"apoplexy: the response schema at $pointer is not valid")
 
   // The response's schema pointer and spec source, from its refinements, once the response is
   // known to be JSON
@@ -1193,7 +1198,11 @@ object Apoplexy:
   private def responseMember(using Quotes)(source: Text, pointer: Text, what: Text)
   :   (List[(Text, Member)], Boolean) =
 
-    Json.Provider.memberOf(specJson(source), schemaNode(source, pointer)) match
+    val member: Member =
+      safely(Json.Provider.memberOf(specJson(source), schemaNode(source, pointer))).or:
+        halt(m"apoplexy: the schema at $pointer could not be read")
+
+    member match
       case Member.Record(fields, Multiplicity.One)  => (fields, false)
       case Member.Record(fields, Multiplicity.Many) => (fields, true)
 
