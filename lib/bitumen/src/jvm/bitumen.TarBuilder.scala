@@ -164,10 +164,7 @@ object TarBuilder:
             range =>
               val interval: Interval = range
 
-              out.write
-                ( unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]),
-                  interval.start.n0,
-                  interval.size )
+              region.borrow(range)(out.write(_, _, _))
         finally out.close()
 
         jnf.Files.move(temporary, target, jnf.StandardCopyOption.ATOMIC_MOVE,

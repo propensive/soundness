@@ -302,7 +302,7 @@ extension [plane: Filesystem](path: Path on plane)
     given CreateNonexistentParents on plane =
       filesystemOptions.createNonexistentParents[plane]
 
-    val file2: Path on plane = unsafely(destination.unsafeChild(path.descent.head))
+    val file2: Path on plane = destination.unsafeChild(path.descent.head)(using Unsafe)
     copyTo(file2)
 
 
@@ -336,7 +336,7 @@ extension [plane: Filesystem](path: Path on plane)
   :   Path on plane raises Io.Error =
 
     import filesystemOptions.createNonexistentParents
-    moveTo(unsafely(destination.unsafeChild(path.descent.head)))
+    moveTo(destination.unsafeChild(path.descent.head)(using Unsafe))
 
 
   def symlinkTo(destination: Path on plane)
@@ -367,7 +367,7 @@ extension [plane: Filesystem](path: Path on plane)
   :   Path on plane raises Io.Error =
 
     import filesystemOptions.createNonexistentParents
-    symlinkTo(unsafely(destination.unsafeChild(path.descent.head)))
+    symlinkTo(destination.unsafeChild(path.descent.head)(using Unsafe))
 
 
   def modified[instant: Instantiable across Instants from Long as instantiable]()

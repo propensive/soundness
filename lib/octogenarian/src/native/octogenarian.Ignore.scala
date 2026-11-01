@@ -163,7 +163,7 @@ private[octogenarian] object Ignore:
       def visit(children: List[Path on Linux], acc: List[Rule]): List[Rule] = children match
         case child :: rest =>
           if child.name == t".git" then visit(rest, acc)
-          else if unsafely(child.entry()) == Directory then
+          else if child.entry() == Directory then
             val childBase = if base.length == 0 then child.name else t"$base/${child.name}"
             visit(rest, acc + recur(child, childBase))
           else

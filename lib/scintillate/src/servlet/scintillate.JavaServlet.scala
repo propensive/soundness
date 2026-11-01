@@ -137,8 +137,7 @@ open class JavaServlet(handle: Http.Connection => Http.Response) extends jsh.Htt
                   range =>
                     val interval: Interval = range
 
-                    out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]),
-                        interval.start.n0, interval.size)
+                    region.borrow(range)(out.write(_, _, _))
 
                 out.flush()
                 stream.skip(count)

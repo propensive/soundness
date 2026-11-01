@@ -337,30 +337,18 @@ private[pneumatic] class XzStage(engine0: => XzEngine^) extends Duct[Data, Data]
   :   Duct.Progress =
 
     val sourceInterval: Interval = range
-    val targetInterval: Interval = space
-    val bytes = unsafely(source.unsafeRaw.asInstanceOf[scala.Array[Byte]])
 
-    val out: scala.Array[Byte]^ =
-      unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
+    source.borrow(range): (bytes, offset, length) =>
+      engine.accept(bytes.asInstanceOf[Array[Byte]^{caps.any.rd}], offset, length)
 
-    engine.accept(bytes.asInstanceOf[Array[Byte]^{caps.any.rd}], sourceInterval.start.n0,
-        sourceInterval.size)
-
-    Duct.Progress
-      ( sourceInterval.size,
-        engine.deliver(out, targetInterval.start.n0, targetInterval.size) )
+    Duct.Progress(sourceInterval.size, target.borrow(space)(engine.deliver(_, _, _)))
 
   override update def flush(target: Slate[Data])(space: Interval in target.type): Int =
     if !finishing then
       engine.finish()
       finishing = true
 
-    val targetInterval: Interval = space
-
-    val out: scala.Array[Byte]^ =
-      unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
-
-    engine.deliver(out, targetInterval.start.n0, targetInterval.size)
+    target.borrow(space)(engine.deliver(_, _, _))
 
 object Xz:
   inline val DefaultPreset = 6

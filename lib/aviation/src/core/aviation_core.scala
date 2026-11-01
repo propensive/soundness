@@ -469,9 +469,11 @@ package nonexistentLeapDays:
     import calendars.gregorianCalendar
     unsafely(Date(year, Feb, Day(28)))
 
+  // Raised through the tactic the given captures, not thrown: the `unsafely` that stood here
+  // shadowed it, so a missing 29 February escaped the caller as an exception.
   given raiseErrorsLeapDay: Tactic[Moment.Error] => Anniversary.NonexistentLeapDay = year =>
     import calendars.gregorianCalendar
-    unsafely(Date(year, Feb, Day(29)))
+    abort(Moment.Error(_.Invalid(year(), 2, 29, gregorianCalendar)))
 
 // The default interpretation of an `Instant`'s `Long` (used by `Instant(…)`, decoding, etc.).
 // Import one of these to choose the timeline bare instants count on; convert with `.over[…]`.

@@ -176,8 +176,7 @@ extends RequestServable:
             val interval: Interval = range
 
             try
-              val raw = unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]])
-              out.write(raw, interval.start.n0, interval.size)
+              region.borrow(range)(out.write(_, _, _))
               if flushEach then out.flush()
               true
             catch case error: ji.IOException => false

@@ -419,9 +419,7 @@ package socketBackends:
           range =>
             val interval: Interval = range
 
-            out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
-                interval.size)
-
+            region.borrow(range)(out.write(_, _, _))
             out.flush()
 
     def response(exchange: ClientExchange)(using Buffering, Tactic[Truncation.Error])
@@ -651,9 +649,7 @@ private[coaxial] def streamsDuplex(in: ji.InputStream, out: ji.OutputStream)(shu
         range =>
           val interval: Interval = range
 
-          out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
-              interval.size)
-
+          region.borrow(range)(out.write(_, _, _))
           out.flush()
 
     def close(): Unit = shutdown()
@@ -758,7 +754,10 @@ private[coaxial] def bioDuplex(bio: Ptr[Byte], context: Ptr[Byte]): Duplex =
           val interval: Interval = range
           val start = interval.start.n0
           val count = interval.size
-          val array = unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]])
+          // A pointer into the raw array for `BIO_write`: genuinely unsafe, so the evidence is
+          // given explicitly, with no tactic beside it.
+          given Unsafe = Unsafe
+          val array = region.unsafeRaw.asInstanceOf[scala.Array[Byte]]
           var written = 0
 
           while written < count do

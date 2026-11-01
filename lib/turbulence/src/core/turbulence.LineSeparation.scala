@@ -42,6 +42,7 @@ import contingency.*
 import denominative.*
 import prepositional.*
 import rudiments.reverse
+import vacuous.*
 import zephyrine.*
 
 object LineSeparation:
@@ -182,10 +183,12 @@ object LineSeparation:
             val targetInterval: Interval = space
             val targetOffset = targetInterval.start.n0
             val targetSpace = targetInterval.size
-            val chars = unsafely(source.unsafeRaw.asInstanceOf[scala.Array[Char]])
+            // The kernel's own index arithmetic: it takes responsibility for the bounds.
+            given Unsafe = Unsafe
+            val chars = source.unsafeRaw.asInstanceOf[scala.Array[Char]]
 
             val slots: scala.Array[AnyRef]^ =
-              unsafely(target.unsafeRaw.asInstanceOf[scala.Array[AnyRef]])
+              target.unsafeRaw.asInstanceOf[scala.Array[AnyRef]]
               . asInstanceOf[scala.Array[AnyRef]^]
 
             var consumed: Int = 0
@@ -301,7 +304,9 @@ object LineSeparation:
             var count: Int = 0
 
             val slots: scala.Array[AnyRef]^ =
-              unsafely(target.unsafeRaw.asInstanceOf[scala.Array[AnyRef]])
+              // The kernel's own index arithmetic: it takes responsibility for the bounds.
+              given Unsafe = Unsafe
+              target.unsafeRaw.asInstanceOf[scala.Array[AnyRef]]
               . asInstanceOf[scala.Array[AnyRef]^]
 
             while count < targetSpace && !tail.nil do
@@ -443,10 +448,12 @@ object LineSeparation:
         val targetInterval: Interval = space
         val targetOffset = targetInterval.start.n0
         val targetSpace = targetInterval.size
-        val bytes = unsafely(source.unsafeRaw.asInstanceOf[scala.Array[Byte]])
+        // The kernel's own index arithmetic: it takes responsibility for the bounds.
+        given Unsafe = Unsafe
+        val bytes = source.unsafeRaw.asInstanceOf[scala.Array[Byte]]
 
         val slots: scala.Array[AnyRef]^ =
-          unsafely(target.unsafeRaw.asInstanceOf[scala.Array[AnyRef]])
+          target.unsafeRaw.asInstanceOf[scala.Array[AnyRef]]
           . asInstanceOf[scala.Array[AnyRef]^]
 
         var consumed: Int = 0
@@ -546,7 +553,9 @@ object LineSeparation:
         var count: Int = 0
 
         val slots: scala.Array[AnyRef]^ =
-          unsafely(target.unsafeRaw.asInstanceOf[scala.Array[AnyRef]])
+          // The kernel's own index arithmetic: it takes responsibility for the bounds.
+          given Unsafe = Unsafe
+          target.unsafeRaw.asInstanceOf[scala.Array[AnyRef]]
           . asInstanceOf[scala.Array[AnyRef]^]
 
         while count < targetSpace && !tail.nil do

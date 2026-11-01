@@ -116,14 +116,13 @@ object Watch:
     def path[directory](using instantiable: (directory is Instantiable across Paths from Text)^)
     :   directory =
 
-      unsafely:
-        val relPath = this match
-          case NewFile(_, file)      => file
-          case NewDirectory(_, path) => path
-          case Modify(_, file)       => file
-          case Delete(_, path)       => path
+      val relPath = this match
+        case NewFile(_, file)      => file
+        case NewDirectory(_, path) => path
+        case Modify(_, file)       => file
+        case Delete(_, path)       => path
 
-          instantiable(jnf.Paths.get(dir.s, relPath.show.s).nn.normalize.nn.toString.show)
+        instantiable(jnf.Paths.get(dir.s, relPath.show.s).nn.normalize.nn.toString.show)
 
   // One quiet period's worth of events, oldest first: what `batches` yields once the watched
   // tree has stopped changing for the requested interval.

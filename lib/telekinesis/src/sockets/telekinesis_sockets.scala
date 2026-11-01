@@ -171,7 +171,7 @@ private def plaintextExchange
       duplex.close()
       abort(Connect.Error(Unknown))
 
-    val data: Data = unsafely(response.body.stream.memoize)
+    val data: Data = response.body.stream.memoize
 
     // The connection can be kept alive only when the body's extent was
     // explicit — a framed body, or none at all — and neither side asked to
@@ -236,7 +236,7 @@ private[telekinesis] def sequentialFetch(duplex: Duplex, request: Http.Request)
 
     if response.status == Http.SwitchingProtocols then abort(Connect.Error(Unknown))
 
-    repackage(response, unsafely(response.body.stream.memoize))
+    repackage(response, response.body.stream.memoize)
 
   catch
     case error: Http.Response.Error    => abort(Connect.Error(Unknown))

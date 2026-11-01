@@ -150,7 +150,7 @@ private[octogenarian] object Refstore:
           children match
             case child :: rest =>
               val childName = t"$name/${child.name}"
-              val entry = unsafely(child.entry())
+              val entry = child.entry()
 
               val found =
                 if entry == Directory then loose(child, childName)

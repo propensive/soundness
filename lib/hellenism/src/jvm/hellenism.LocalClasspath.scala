@@ -134,4 +134,4 @@ extends Classpath:
       case Classpath.Entry.Jar(jar)             => List(jar)
       case _                                    => Nil
 
-    . join(unsafely(System.properties.path.separator()))
+    . join(System.properties.path.separator().show)

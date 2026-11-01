@@ -177,11 +177,8 @@ extension [source: Streamable by Data over Credit](source: source)
         range =>
           val interval: Interval = range
 
-          val storage = unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]])
-
-          digestion.append
-            ( storage.asInstanceOf[Array[Byte]^{caps.any.rd}],
-              interval.start.n0, interval.size )
+          region.borrow(range): (storage, offset, length) =>
+            digestion.append(storage.asInstanceOf[Array[Byte]^{caps.any.rd}], offset, length)
 
     digester.apply
 

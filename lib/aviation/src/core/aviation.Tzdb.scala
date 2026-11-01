@@ -210,7 +210,7 @@ object Tzdb:
         case line0 #:: rest =>
           val line: Text = line0.upto(_ == '#')
 
-          line.cut(unsafely(r"\s+")) match
+          line.cut(r"\s+") match
             case t"Rule" :: tail =>
               recur(lineNo + 1, rest, parseRule(lineNo, tail) :: (pending(zone) + entries))
 

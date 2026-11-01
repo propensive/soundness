@@ -81,7 +81,7 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
     io(Gitconfig.effective(gitDir, commonDir(gitDir)))
 
   private def setting(gitDir: Path on Linux, key: Text)(using Tactic[Git.Error]): Optional[Text] =
-    Operations.setting(config(gitDir), unsafely(Git.Config.Key.parse(key)))
+    Operations.setting(config(gitDir), Git.Config.Key.parse(key))
 
   private def identity(gitDir: Path on Linux)(using Tactic[Git.Error]): Git.Identity =
     Git.Identity
@@ -104,7 +104,7 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
 
     if !path.existent() then Unset
     else if dotGit.existent() then
-      unsafely(dotGit.entry()) match
+      dotGit.entry() match
         case Directory =>
           Git.Backend.Location(dotGit, commonDir(dotGit), path)
 
