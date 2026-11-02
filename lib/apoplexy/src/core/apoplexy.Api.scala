@@ -75,7 +75,7 @@ object Api:
   // The specification `record()` and `tuple()` build their values over: JSON's reading
   // primitives, with the fields supplied per response by the macro
   object Records extends Json.Provider.Primitives:
-    def fields: List[(Text, Member)] = Nil
+    def fields(using Tactic[Specification.Error]): List[(Text, Member)] = Nil
 
     // The records of an array response, one per element
     def list(json: Json, transform: Text => Json => Any)(using Tactic[Json.Provider.Error])
