@@ -454,9 +454,10 @@ object Http2:
           probate:     Probate,
           http2Error:  Tactic[Http2.Error],
           asyncError:  Tactic[Async.Error],
-          socketError: Tactic[Socket.Error] )
+          socketError: Tactic[Socket.Error],
+          truncation:  Tactic[Truncation.Error] )
     =>  ( (Http.Client onto Endpoint[endpoint])
-          ^{monitor, http2Error, asyncError, socketError, caps.any} ) =
+          ^{monitor, http2Error, asyncError, socketError, truncation, caps.any} ) =
 
       new Http.Client:
         type Target = Endpoint[endpoint]
@@ -771,7 +772,7 @@ object Http2:
     // pseudo-headers the request type doesn't carry. Trailers (e.g. gRPC status) are
     // available afterwards via `stream.trailers`.
     def fetch(request: Http.Request, scheme: Text, authority: Text)
-      ( using Tactic[Http2.Error], Tactic[Async.Error] )
+      ( using Tactic[Http2.Error], Tactic[Async.Error], Tactic[Truncation.Error] )
     :   (Http2.Stream, Http.Response) =
 
       Log.fine(Http2.Event.RequestSent(authority))

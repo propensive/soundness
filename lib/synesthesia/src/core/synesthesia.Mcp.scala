@@ -107,6 +107,12 @@ object Mcp:
 
         . mcpSessionId = id
 
+      case error: Truncation.Error =>
+        Http.Response(Http.Ok):
+          JsonRpc.failure(-32700, t"Parse error: ${error.message}".show)
+
+        . mcpSessionId = id
+
       case error: Json.Error =>
         Http.Response(Http.Ok):
           JsonRpc.failure(-32600, t"Invalid request: ${error.message}".show)

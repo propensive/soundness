@@ -208,6 +208,7 @@ object JsonRpc:
       case MediaType.Error(_, _) => ()
       case Connect.Error(_)      => ()
       case Http.Error(_, _)      => ()
+      case Truncation.Error(_)   => ()
 
     . protect:
         target.submit(Http.Post)(request).receive[Text]

@@ -64,7 +64,11 @@ object CaptureTests extends Suite("httpd-capture", m"Connection confinement test
           ( using Monitor, Probate, (Httpd.Event is Loggable)^, Tactic[Httpd.Error] )
         :   Unit =
           server.handle:
-            Http.Response(Http.Ok)(Http.Body.Flowing(() => foreign))
+            Http.Response(Http.Ok):
+              Http.Body.Flowing:
+                new Spring[Data]:
+                  def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                    foreign
 
           ()
     . assert(!_.nil)

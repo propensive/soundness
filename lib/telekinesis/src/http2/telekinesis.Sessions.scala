@@ -39,6 +39,7 @@ import scala.caps
 import anticipation.*
 import coaxial.*
 import contingency.*
+import fulminate.*
 import gossamer.*
 import parasite.*
 import prepositional.*
@@ -68,6 +69,11 @@ private[telekinesis] object Sessions:
     :   Http.Response^{this, caps.any} =
 
       import Connect.Error.Reason.*
+
+      // A request body cut short is the exchange's failure.
+      given Tactic[Truncation.Error] = summon[Tactic[Connect.Error]].contramap: error =>
+        given Diagnostics = error.diagnostics
+        Connect.Error(Unknown)
 
       pending.let: stream =>
         try stream.asInstanceOf[(Stream[Data] over Credit)^].drain { _ => _ => () } catch
@@ -118,8 +124,9 @@ private[telekinesis] object Sessions:
         val framedRef: AnyRef = framed.asInstanceOf[AnyRef]
         pending = framedRef
 
-        val spring: Spring[Data]^ = () =>
-          framedRef.asInstanceOf[(Stream[Data] over Credit)^]
+        val spring: Spring[Data]^ = new Spring[Data]:
+          def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+            framedRef.asInstanceOf[(Stream[Data] over Credit)^]
 
         head.status(head.headers, Http.Body.Flowing(spring))
 

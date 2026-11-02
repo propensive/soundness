@@ -63,10 +63,13 @@ object Multipart:
       case _               => capacity(substrate)
 
 
-  def parse[input: Streamable by Data over Credit](input: input, boundary0: Optional[Text] = Unset)
-  :   Multipart raises Multipart.Error =
+  // The evidence is a capturing `using` parameter rather than a context bound: a body's
+  // instance retains the tactic its pull raises a cut-short read through.
+  def parse[input](input: input, boundary0: Optional[Text] = Unset)
+    ( using streamable: (input is Streamable by Data over Credit)^, tactic: Tactic[Multipart.Error] )
+  :   Multipart =
 
-    val cursor = Cursor[Data](input.source[Data])
+    val cursor = Cursor[Data](streamable.stream(input))
 
     inline def expected(char: Char): Diagnostics ?=> Multipart.Error =
       Multipart.Error(Multipart.Error.Reason.Expected(char))
@@ -147,8 +150,15 @@ object Multipart:
       private val stream: AnyRef =
         streamOf(cursorRef.asInstanceOf[Cursor[Data, {}]^], delimiter).asInstanceOf[AnyRef]
 
-      def apply(): (Stream[Data] over Credit)^ =
-        if open then stream.asInstanceOf[(Stream[Data] over Credit)^] else Stream(Chain[Data]())
+      private def current: (Stream[Data] over Credit)^ =
+        stream.asInstanceOf[(Stream[Data] over Credit)^]
+
+      def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+        if open then current else Stream(Chain[Data]())
+
+      // Skips what remains of the body: the parse's own drain of the cursor's stream, which
+      // pulls nothing a tactic could report.
+      def skip(): Unit = if open then current.drain: region => range => ()
 
     def parsePart(headers: Map[Text, Text], stream: Spring[Data])
     :   Part =
@@ -206,7 +216,7 @@ object Multipart:
       // it, close it, consume the boundary and read what follows — the next part's headers
       // or the closing `--`.
       def rest(): Chain[Part] =
-        body().drain: region => range => ()
+        body.skip()
         body.close()
 
         // The body's stream leaves the cursor after the delimiter, or exhausted if the input
@@ -244,12 +254,14 @@ object Multipart:
       case BadBoundaryEnding    extends Reason(3)
       case MediaType            extends Reason(4)
       case BadDisposition       extends Reason(5)
+      case Truncated            extends Reason(6)
 
     given communicable: Reason is Communicable =
       case Multipart.Error.Reason.Expected(char)    => m"the character '$char' was expected"
       case Multipart.Error.Reason.StreamContinues   => m"the stream continues beyond the last part"
       case Multipart.Error.Reason.BadBoundaryEnding => m"unexpected content followed the boundary"
       case Multipart.Error.Reason.MediaType         => m"the media type is invalid"
+      case Multipart.Error.Reason.Truncated         => m"the body ended before its closing boundary"
 
       case Multipart.Error.Reason.BadDisposition =>
         m"the `Content-Disposition` header has the wrong format"

@@ -40,6 +40,7 @@ import anticipation.*
 import coaxial.*
 import contingency.*
 import distillate.*
+import fulminate.*
 import gigantism.*
 import gossamer.*
 import prepositional.*
@@ -128,6 +129,11 @@ private def plaintextExchange
 
   import Connect.Error.Reason.*
 
+  // A request or response body cut short is the exchange's failure.
+  given Tactic[Truncation.Error] = summon[Tactic[Connect.Error]].contramap: error =>
+    given Diagnostics = error.diagnostics
+    Connect.Error(Unknown)
+
   val httpRequest = Http.Request(method, 1.1, host, target, headers, body)
 
   def connect(): Duplex =
@@ -199,9 +205,7 @@ private def plaintextExchange
           Connect.Error(Unknown)(using error.diagnostics)
 
       . protect(attempt(duplex))
-    catch
-      case error: Truncation.Error => duplex.close(); abort(Connect.Error(Unknown))
-      case error: ji.IOException   => duplex.close(); abort(Connect.Error(Unknown))
+    catch case error: ji.IOException => duplex.close(); abort(Connect.Error(Unknown))
 
   borrow() match
     case null => fresh()
@@ -214,9 +218,7 @@ private def plaintextExchange
             fresh()
 
         . protect(attempt(duplex))
-      catch
-        case error: Truncation.Error => duplex.close(); fresh()
-        case error: ji.IOException   => duplex.close(); fresh()
+      catch case error: ji.IOException => duplex.close(); fresh()
 
 
 // One sequential HTTP/1.1 exchange over an open connection: send the request,
@@ -229,6 +231,11 @@ private[telekinesis] def sequentialFetch(duplex: Duplex, request: Http.Request)
 :   Http.Response =
 
   import Connect.Error.Reason.*
+
+  // A request or response body cut short is the exchange's failure.
+  given Tactic[Truncation.Error] = summon[Tactic[Connect.Error]].contramap: error =>
+    given Diagnostics = error.diagnostics
+    Connect.Error(Unknown)
 
   try
     duplex.send(Http.Request.serialize(request))
@@ -247,7 +254,5 @@ private[telekinesis] def sequentialFetch(duplex: Duplex, request: Http.Request)
 
     repackage(response, response.body.stream.memoize)
 
-  catch
-    case error: Truncation.Error => abort(Connect.Error(Unknown))
-    case error: ji.IOException   => abort(Connect.Error(Unknown))
+  catch case error: ji.IOException => abort(Connect.Error(Unknown))
 

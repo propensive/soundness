@@ -32,6 +32,7 @@
                                                                                                   */
 package zephyrine
 
+import contingency.*
 import prepositional.*
 
 // A re-materializable source of streams: each `apply()` mints a fresh,
@@ -43,4 +44,4 @@ import prepositional.*
 // its result is re-leveled at each call site. Being a SAM trait, `Spring`
 // is still constructed from plain lambdas: `() => ....stream`.
 trait Spring[medium]:
-  def apply(): (Stream[medium] over Credit)^
+  def apply()(using Tactic[Truncation.Error]): (Stream[medium] over Credit)^

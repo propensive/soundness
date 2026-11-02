@@ -352,6 +352,9 @@ object Llm:
     given decodeTactic: (Tactic[Charset.Error]^) = tactic.contramap: _ =>
       Error(Error.Reason.Malformed, t"the stream was not valid UTF-8")
 
+    given truncation: (Tactic[Truncation.Error]^) = tactic.contramap: _ =>
+      Error(Error.Reason.Malformed, t"the stream was cut short")
+
     response.body.stream.via(summon[Charset]).chunks.frames[Sse]
 
   // A frame no server can send — `data:` lines never contain a NUL — marking the end of the

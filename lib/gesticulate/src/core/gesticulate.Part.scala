@@ -33,13 +33,16 @@
 package gesticulate
 
 import anticipation.*
+import contingency.*
 import prepositional.*
 import turbulence.*
-import zephyrine.{Credit, Spring}
 import vacuous.*
+import zephyrine.{Credit, Spring}
 
 object Part:
-  given streamable: Part is Streamable by Data over Credit = _.body()
+  given streamable: (tactic: Tactic[Truncation.Error])
+  =>  ( (Part is Streamable by Data over Credit)^{tactic} ) =
+    _.body()
 
 // `body` is lent from the input being parsed, zero-copy: it is readable until the next part
 // is read (which skips whatever remains of it), after which it reads as empty. Each `body()`

@@ -82,8 +82,9 @@ private[telekinesis] object Secure:
         // The connection's reader/writer daemons live under a request-scoped
         // supervisor: the eager body drain means nothing outlives this call.
         mitigate:
-          case error: Http2.Error => Connect.Error(Unknown)(using error.diagnostics)
-          case error: Async.Error => Connect.Error(Unknown)(using error.diagnostics)
+          case error: Http2.Error      => Connect.Error(Unknown)(using error.diagnostics)
+          case error: Async.Error      => Connect.Error(Unknown)(using error.diagnostics)
+          case error: Truncation.Error => Connect.Error(Unknown)(using error.diagnostics)
 
         . protect:
           supervise:

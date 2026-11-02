@@ -97,11 +97,10 @@ open class JavaServlet(handle: Http.Connection => Http.Response) extends jsh.Htt
           version     = Http.Version.parse(request.getProtocol.nn.tt),
           host        = request.getServerName.nn.tt.as[Hostname],
           target      = target,
-          body        = () =>
-            Streamable.inputStream
-              ( using streamError0.asInstanceOf[Tactic[Truncation.Error]] )
-
-            . stream(in.asInstanceOf[ji.InputStream]),
+          body        =
+            new Spring[Data]:
+              def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                Streamable.inputStream.stream(in.asInstanceOf[ji.InputStream]),
           textHeaders = headers )
 
     val respond: Http.Connection.Respond^ = new Http.Connection.Respond:

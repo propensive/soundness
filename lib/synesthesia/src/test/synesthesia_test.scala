@@ -74,7 +74,15 @@ object Tests extends Suite("mcp", m"Synesthesia Tests"):
           session.lay(proscenium.List())(id => proscenium.List(Http.Header(t"Mcp-Session-Id", id)))
 
         given request: Http.Request =
-          Http.Request(method, 1.1, t"localhost".as[Host], t"/mcp", headers, () => Http.emptyBody())
+          Http.Request
+            ( method,
+              1.1,
+              t"localhost".as[Host],
+              t"/mcp",
+              headers,
+              new Spring[Data]:
+                def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                  Http.emptyBody() )
 
         supervise(TestMcpServer.serve.status)
 

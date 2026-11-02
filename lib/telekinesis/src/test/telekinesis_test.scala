@@ -500,7 +500,10 @@ object Tests extends Suite("http", m"Telekinesis tests"):
       . assert(_ == true)
 
       test(m"Streaming body is framed with chunked transfer-encoding"):
-        val body = Http.Body.Flowing(() => Stream(Chain(t"Hello".in[Data], t"World".in[Data])))
+        val body = Http.Body.Flowing:
+          new Spring[Data]:
+            def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+              Stream(Chain(t"Hello".in[Data], t"World".in[Data]))
         wire(Http.Response(Http.Ok)(body))
 
       . assert: text =>
@@ -510,7 +513,10 @@ object Tests extends Suite("http", m"Telekinesis tests"):
           && text.ends(t"0\r\n\r\n")
 
       test(m"Streaming body skips zero-length blocks"):
-        val body = Http.Body.Flowing(() => Stream(Chain(t"ab".in[Data], t"".in[Data], t"cd".in[Data])))
+        val body = Http.Body.Flowing:
+          new Spring[Data]:
+            def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+              Stream(Chain(t"ab".in[Data], t"".in[Data], t"cd".in[Data]))
         wire(Http.Response(Http.Ok)(body))
 
       . assert(_.contains(t"2\r\nab\r\n2\r\ncd\r\n"))
@@ -617,7 +623,9 @@ object Tests extends Suite("http", m"Telekinesis tests"):
           ( t"http://127.0.0.1:$port$target",
             method,
             Nil,
-            () => if body == t"" then Http.emptyBody() else body.in[Data].stream )
+            new Spring[Data]:
+              def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                if body == t"" then Http.emptyBody() else body.in[Data].stream )
 
       test(m"Fetch a fixed-length response over a raw TCP socket"):
         val response = fetchNative(t"/fixed")
@@ -657,7 +665,9 @@ object Tests extends Suite("http", m"Telekinesis tests"):
 
         target.session: session ?=>
           val request = Http.Request(Http.Get, 1.1, t"127.0.0.1".as[Host], t"/port", Nil,
-              () => Http.emptyBody())
+              new Spring[Data]:
+                def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                  Http.emptyBody())
 
           val first = session.fetch(request).body.stream.memoize.utf8
           val second = session.fetch(request).body.stream.memoize.utf8
@@ -672,7 +682,9 @@ object Tests extends Suite("http", m"Telekinesis tests"):
 
         target.session: session ?=>
           val request = Http.Request(Http.Get, 1.1, t"127.0.0.1".as[Host], t"/fixed", Nil,
-              () => Http.emptyBody())
+              new Spring[Data]:
+                def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                  Http.emptyBody())
 
           session.fetch(request) // never consumed
           session.fetch(request).body.stream.memoize.utf8
@@ -737,7 +749,10 @@ object Tests extends Suite("http", m"Telekinesis tests"):
         val port = server.getAddress.nn.getPort
 
         val response =
-          backend.request(t"https://localhost:$port/tls", Http.Get, Nil, () => Http.emptyBody())
+          backend.request(t"https://localhost:$port/tls", Http.Get, Nil,
+            new Spring[Data]:
+              def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                Http.emptyBody())
 
         server.stop(0)
         (response.status, response.body.stream.memoize.utf8)
@@ -799,7 +814,10 @@ object Tests extends Suite("http", m"Telekinesis tests"):
         val port = serverSocket.getLocalPort
 
         val response =
-          backend.request(t"https://localhost:$port/", Http.Get, Nil, () => Http.emptyBody())
+          backend.request(t"https://localhost:$port/", Http.Get, Nil,
+            new Spring[Data]:
+              def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                Http.emptyBody())
 
         serverSocket.close()
         (response.status, response.body.stream.memoize.utf8)
@@ -813,7 +831,9 @@ object Tests extends Suite("http", m"Telekinesis tests"):
 
         val texts = target.session: session ?=>
           val request = Http.Request(Http.Get, 1.1, t"localhost".as[Host], t"/", Nil,
-              () => Http.emptyBody())
+              new Spring[Data]:
+                def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                  Http.emptyBody())
 
           // Bound one at a time: a `List(…)` of capturing responses has no `Mappable` instance.
           val first = session.fetch(request).body.stream.memoize.utf8

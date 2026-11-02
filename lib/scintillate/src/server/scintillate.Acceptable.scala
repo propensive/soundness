@@ -51,7 +51,8 @@ object Acceptable:
   given multipart: (tactic: Tactic[Multipart.Error])
   =>  ( (Multipart is Acceptable)^{tactic, caps.any} ) = request =>
     mitigate:
-      case _: MediaType.Error => Multipart.Error(Multipart.Error.Reason.MediaType)
+      case _: MediaType.Error  => Multipart.Error(Multipart.Error.Reason.MediaType)
+      case _: Truncation.Error => Multipart.Error(Multipart.Error.Reason.Truncated)
 
     . protect:
         val contentType = request.headers.contentType.head.or:

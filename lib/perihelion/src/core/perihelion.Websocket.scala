@@ -140,6 +140,11 @@ class Reader(body: Spring[Data]^, channel: Channel)(using Tactic[Websocket.Error
       // A neutral reference with an inline accessor: the parsing defs below
       // close over the cursor, which a capability-typed binding would hide
       // from them under the statement rule.
+      // The body cut short is the connection's abnormal closure.
+      given Tactic[Truncation.Error] = summon[Tactic[Websocket.Error]].contramap: error =>
+        given Diagnostics = error.diagnostics
+        Websocket.Error(Websocket.Error.Reason.Truncated)
+
       val cursorRef: AnyRef = Cursor[Data](body()).asInstanceOf[AnyRef]
       inline def cursor: Cursor[Data, {}]^ = cursorRef.asInstanceOf[Cursor[Data, {}]^]
 
@@ -226,7 +231,10 @@ object Websocket:
           upgrade             = t"websocket" )
         // The channel's reader endpoint is a singleton: the upgrade body is
         // materialized exactly once, by the server's response writer.
-        (Http.Body.Flowing{ () => websocket.channel.stream })
+        ( Http.Body.Flowing:
+            new Spring[Data]:
+              def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                websocket.channel.stream )
 
   // WsUrl → Websocket.Url
   // A `ws://` or `wss://` URL. `Url` decoding is scheme-generic, so a `Websocket.Url` parses
@@ -250,6 +258,7 @@ object Websocket:
       case BadClose                extends Reason(8, 1002)
       case Masked                  extends Reason(9, 1002)
       case Handshake(detail: Text) extends Reason(10, 1002)
+      case Truncated               extends Reason(11, 1006)
 
     given communicable: Reason is Communicable =
       case Reason.Unmasked          => m"the client sent an unmasked frame"
@@ -301,9 +310,11 @@ object Websocket:
     def messages(using Tactic[Websocket.Error]): (Stream[Data] over Credit)^{this, caps.any} =
       given Masking = masking
 
-      val stream =
-        Reader(() => inbound.asInstanceOf[(Stream[Data] over Credit)^], channel)
-        . messages.map(_.bytes)
+      val spring: Spring[Data]^ = new Spring[Data]:
+        def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+          inbound.asInstanceOf[(Stream[Data] over Credit)^]
+
+      val stream = Reader(spring, channel).messages.map(_.bytes)
 
       Stream(stream)
 
