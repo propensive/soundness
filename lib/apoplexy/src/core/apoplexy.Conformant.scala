@@ -33,6 +33,7 @@
 package apoplexy
 
 import anticipation.*
+import contingency.*
 import distillate.*
 import hieroglyph.*
 import prepositional.*
@@ -60,7 +61,8 @@ trait Conformant3:
   given decodableText: [value, carrier]
   =>  ( aggregable: carrier is Aggregable by Text,
         decodable:  value is Decodable in carrier,
-        decoder:    Charset )
+        decoder:    Charset,
+        truncation: Tactic[Truncation.Error] )
   =>  (value is Conformant) over carrier =
     response =>
       val data: Data = response.body.stream.memoize
@@ -69,7 +71,9 @@ trait Conformant3:
 trait Conformant2 extends Conformant3:
   // A body decoded to any value decodable from a byte-read carrier
   given decodable: [value, carrier]
-  =>  ( aggregable: carrier is Aggregable by Data, decodable: value is Decodable in carrier )
+  =>  ( aggregable: carrier is Aggregable by Data,
+        decodable:  value is Decodable in carrier,
+        truncation: Tactic[Truncation.Error] )
   =>  (value is Conformant) over carrier =
     response =>
       val data: Data = response.body.stream.memoize
@@ -78,7 +82,7 @@ trait Conformant2 extends Conformant3:
   // The body as a carrier read from text. The bytes are decoded to `Text` (through the
   // `Charset`) before the carrier's parser sees them.
   given carrierText: [carrier]
-  =>  ( aggregable: carrier is Aggregable by Text, decoder: Charset )
+  =>  ( aggregable: carrier is Aggregable by Text, decoder: Charset, truncation: Tactic[Truncation.Error] )
   =>  (carrier is Conformant) over carrier =
     response =>
       val data: Data = response.body.stream.memoize
@@ -94,7 +98,8 @@ object Conformant extends Conformant2:
   given unit: [transport] => (Unit is Conformant) over transport = response => ()
 
   // The body as a carrier read from bytes
-  given carrier: [carrier] => (aggregable: carrier is Aggregable by Data)
+  given carrier: [carrier]
+  =>  ( aggregable: carrier is Aggregable by Data, truncation: Tactic[Truncation.Error] )
   =>  (carrier is Conformant) over carrier =
     response =>
       val data: Data = response.body.stream.memoize

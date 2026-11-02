@@ -44,6 +44,7 @@ import prepositional.*
 import rudiments.*
 import turbulence.read
 import vacuous.*
+import zephyrine.*
 
 // The decoding shared by `Xml.Provider`'s readers, in a module of its own: one nested in the
 // provider would make each reader capture it.
@@ -728,16 +729,33 @@ trait Xml4:
       =>  ( Conversion[source, Schema]^{readable} ) =
         source => Schema.parse(source.read[Text](using readable))
 
-    // A schema is read as the provider object is made, where a schema it cannot read is a
-    // compile error rather than a value to report, so its parsing throws.
+    // A schema is parsed when the provider first reads it: by the `record`/`tuple` macro, which
+    // reports a schema it cannot read as a compile error at the use site.
     object Schema extends Schema2:
-      private[Provider] def parse(text: Text): Schema = unsafely(Schema(Xsd.parse(text)))
+      private[Provider] def parse(text: Text): Schema = new Schema:
+        def xsd(using Tactic[Specification.Error]): Xsd =
+          mitigate:
+            case error: Xsd.Error   => Specification.Error(error.message)(using error.diagnostics)
+            case error: Parse.Error => Specification.Error(error.message)(using error.diagnostics)
 
-      given xsd: Conversion[Xsd, Schema] = Schema(_)
-      given xml: Conversion[Xml, Schema] = xml => unsafely(Schema(Xsd.parse(xml)))
+          . protect(Xsd.parse(text))
+
+      given xsd: Conversion[Xsd, Schema] = parsed =>
+        new Schema:
+          def xsd(using Tactic[Specification.Error]): Xsd = parsed
+
+      given xml: Conversion[Xml, Schema] = document =>
+        new Schema:
+          def xsd(using Tactic[Specification.Error]): Xsd =
+            mitigate:
+              case error: Xsd.Error => Specification.Error(error.message)(using error.diagnostics)
+
+            . protect(Xsd.parse(document))
+
       given text: Conversion[Text, Schema] = parse(_)
 
-    class Schema(val xsd: Xsd)
+    trait Schema:
+      def xsd(using Tactic[Specification.Error]): Xsd
 
     object Error:
       enum Reason(val number: Int) extends Clarification:
@@ -794,11 +812,22 @@ trait Xml4:
     type Form = Xml.Provider
     type Failure = Xml.Provider.Error
 
-    val xsd: Xsd = schema0.xsd
+    // The schema, read once: by the `record`/`tuple` macro, which reports one it cannot read as
+    // a compile error, and otherwise at the first use, where a schema never read at expansion
+    // is a defect of the provider rather than of a document.
+    private lazy val reading: Attempt[Xsd, Specification.Error] =
+      given Diagnostics = Diagnostics.omit
+      attempt[Specification.Error](schema0.xsd)
 
-    private lazy val layout: Xml.Provider.Layout = Xml.Provider.layout(xsd, root)
+    def xsd(using Tactic[Specification.Error]): Xsd = reading()
 
-    def fields: List[(Text, Member)] = layout.fields
+    private lazy val layout: Xml.Provider.Layout = reading match
+      case Attempt.Success(xsd)   => Xml.Provider.layout(xsd, root)
+      case Attempt.Failure(error) => panic(error.message)
+
+    def fields(using Tactic[Specification.Error]): List[(Text, Member)] = reading match
+      case Attempt.Success(_)     => layout.fields
+      case Attempt.Failure(error) => abort(error)
 
     // The element a value stands for: the document element of a parse result, or the element
     private def elementOf(xml: Xml): Optional[Xml.Element] = xml match

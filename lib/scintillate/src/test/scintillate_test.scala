@@ -340,7 +340,11 @@ object Tests extends Suite("httpd", m"Scintillate tests"):
             // The upgraded response's stream reads the live connection for the rest
             // of the exchange; the handler result type `Http.Response^{connection}`
             // expresses that retention honestly, so no seal is needed.
-            Http.Response(Http.SwitchingProtocols)(Http.Body.Flowing(() => request.body()))
+            Http.Response(Http.SwitchingProtocols):
+              Http.Body.Flowing:
+                new Spring[Data]:
+                  def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                    request.body()
 
           val port = server.port
 
@@ -398,18 +402,20 @@ object Tests extends Suite("httpd", m"Scintillate tests"):
             // [test-harness] test response sealed mimicking Servable.serve boundary
             caps.unsafe.unsafeAssumePure:
               Http.Response(Http.Ok):
-                Http.Body.Flowing: () =>
-                  val producer = Producer[Data]()
-                  val output = producer.iterator
+                Http.Body.Flowing:
+                  new Spring[Data]:
+                    def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                      val producer = Producer[Data]()
+                      val output = producer.iterator
 
-                  producer.transfer: (producer, _, _) ?=>
-                    var i = 0
-                    while i < 4000 do
-                      producer().put(t"line-$i\n".in[Data])
-                      i += 1
-                    producer().finish()
+                      producer.transfer: (producer, _, _) ?=>
+                        var i = 0
+                        while i < 4000 do
+                          producer().put(t"line-$i\n".in[Data])
+                          i += 1
+                        producer().finish()
 
-                  Stream(output)
+                      Stream(output)
 
           val port = server.port
 
@@ -724,7 +730,10 @@ object Tests extends Suite("httpd", m"Scintillate tests"):
       . assert(_.contains(t"431"))
 
       test(m"A streaming response to HTTP/1.0 is close-delimited, not chunked"):
-        val body = Http.Body.Flowing(() => Stream(Chain(t"Hello".in[Data], t"World".in[Data])))
+        val body = Http.Body.Flowing:
+          new Spring[Data]:
+            def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+              Stream(Chain(t"Hello".in[Data], t"World".in[Data]))
         inProcess(Http.Response(Http.Ok)(body), t"GET / HTTP/1.0\r\nHost: x\r\n\r\n")
 
       . assert: response =>

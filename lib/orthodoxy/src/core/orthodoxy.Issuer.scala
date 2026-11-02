@@ -93,6 +93,7 @@ class Issuer
       case Http.Ok =>
         mitigate:
           case Parse.Error(_, _, _)  => OAuth.Error(OAuth.Error.Reason.InvalidJsonResponse)
+          case Truncation.Error(_)   => OAuth.Error(OAuth.Error.Reason.InvalidJsonResponse)
           case Http.Error(status, _) => OAuth.Error(OAuth.Error.Reason.UnexpectedHttpStatus(status))
 
         . protect(Authorization.parse(response.receive[Json]))

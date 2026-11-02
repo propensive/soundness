@@ -83,8 +83,9 @@ object Http2Serve:
 
           // The request body streams the stream's inbound DATA frames, per the
           // `Spring` re-lending contract.
-          val body: Spring[Data]^ = () =>
-            zephyrine.Stream(stream0.body.stream.records)
+          val body: Spring[Data]^ = new Spring[Data]:
+            def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+              zephyrine.Stream(stream0.body.stream.records)
 
           val request = PseudoHeaders.requestOf(entries, body)
 

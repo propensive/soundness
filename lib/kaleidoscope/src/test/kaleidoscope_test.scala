@@ -735,7 +735,7 @@ object Tests extends Suite("regex", m"Kaleidoscope tests"):
 
         patterns.each: pattern =>
           val jvmRegex = Regex.parse(List(pattern))
-          val re2Regex = jvmRegex.to[Re2]
+          val re2Regex = jvmRegex.re2
 
           inputs.each: input =>
             given (Scanner^) = Scanner(Unset)

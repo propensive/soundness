@@ -81,8 +81,10 @@ private def buildJavaRequest
   // The publisher pulls a fresh pull endpoint each time it is subscribed (the
   // JDK may re-subscribe on retry), draining it lazily through an
   // `InputStream` so the body is never held whole in memory.
+  // The JDK pulls the body on its own thread, under no tactic of ours: a pull cut short can
+  // only throw there, which the JDK reports as the request's failure.
   lazy val body =
-    jnh.HttpRequest.BodyPublishers.ofInputStream { () => bodyFn().inputStream }.nn
+    jnh.HttpRequest.BodyPublishers.ofInputStream { () => unsafely(bodyFn().inputStream) }.nn
 
   method match
     case Http.Delete  => request.DELETE().nn
@@ -135,11 +137,10 @@ private def buildResponse(response: jnh.HttpResponse[ji.InputStream])(using Tact
   val headers: List[Http.Header] = response.headers.nn.map().nn.to[List].bind:
     (key, values) => values.to[List].map: value => Http.Header(key.tt, value.tt)
 
-  // [spring] The body is pulled after `request` has returned, outside the scope of any tactic;
-  // a read the JDK cuts short throws from the pull.
-  val body = Http.Body.Flowing: () =>
-    unsafely:
-      summon[ji.InputStream is Streamable by Data over Credit].stream(response.body().nn)
+  val body = Http.Body.Flowing:
+    new Spring[Data]:
+      def apply()(using Tactic[Truncation.Error]): Stream[Data] over Credit =
+        summon[ji.InputStream is Streamable by Data over Credit].stream(response.body().nn)
 
   status(headers, body)
 
@@ -159,7 +160,8 @@ package httpBackends:
       buildResponse(send(buildJavaRequest(jn.URI.create(url.s).nn, method, headers, body)))
 
 // A request is transmitted over a raw socket as its HTTP/1.1 wire form.
-given requestTransmissible: Http.Request is Transmissible = Http.Request.serialize(_)
+given requestTransmissible: Tactic[Truncation.Error] => Http.Request is Transmissible =
+  Http.Request.serialize(_)
 
 // Fetch from a Unix domain socket, speaking HTTP/1.1 directly over the socket
 // (e.g. the Docker daemon's API). The request's `Host` is `localhost`.

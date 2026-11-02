@@ -1324,9 +1324,13 @@ object Apoplexy:
           val advice = t"a `Tactic[Parse.Error]` is needed"
           halt(m"apoplexy: reading the ${failure.key} response of $verb $key; $advice")
 
+        val truncation = Expr.summon[Tactic[Truncation.Error]].getOrElse:
+          val advice = t"a `Tactic[Truncation.Error]` is needed"
+          halt(m"apoplexy: reading the ${failure.key} response of $verb $key; $advice")
+
         refined.absolve match
           case '[type refined <: Record; refined] =>
-            val json = '{Api.jsonOf($response)(using $parse)}
+            val json = '{Api.jsonOf($response)(using $parse, $truncation)}
 
             if many then
               val tactic = providerTactic(m"reading the ${failure.key} response of $verb $key")
@@ -1361,8 +1365,14 @@ object Apoplexy:
     val violationTactic = Expr.summon[Tactic[Api.Violation]].getOrElse:
       halt(m"apoplexy: a `Tactic[Api.Violation]` is needed, for a status $verb $key does not declare")
 
+    val truncation = Expr.summon[Tactic[Truncation.Error]].getOrElse:
+      halt(m"apoplexy: a `Tactic[Truncation.Error]` is needed, for a response body cut short")
+
     val violation: Expr[Nothing] =
-      '{$violationTactic.abort(Api.Violation($status0, Api.dataOf($response))(using $diagnostics))}
+      ' {
+          $violationTactic.abort
+            ( Api.Violation($status0, Api.dataOf($response)(using $truncation))(using $diagnostics) )
+        }
 
     val undeclared: Expr[Nothing] = declared.seek(_.key == t"default") match
       case Unset            => violation

@@ -37,6 +37,7 @@ import contingency.*
 import distillate.*
 import legerdemain.*
 import prepositional.*
+import turbulence.*
 import vacuous.*
 
 object Parameter:
@@ -51,8 +52,11 @@ trait Parameter(val name: Text) extends Topical:
   def encode(value: Topic): Query
   def apply(value: Topic): Query = encode(value)
 
-  inline def apply()(using request: Http.Request): Topic raises Query.Error =
+  // A form-encoded body cut short is reported as the parameter's absence from the query.
+  inline def apply()(using request: Http.Request, truncation: Tactic[Truncation.Error])
+  :   Topic raises Query.Error =
+
     decode(request.query(name))
 
   def unapply(scrutinee: Http.Request): Option[Topic] =
-    safely(decode(scrutinee.query(name))).option
+    safely[Query.Error | Truncation.Error](decode(scrutinee.query(name))).option

@@ -54,20 +54,28 @@ object Regex:
   object Engine:
     private val motifs: TrieMap[String, Motif] = TrieMap()
 
-    // The praxinoscope form of `regex`, cached by its rendered pattern. `r"…"` literals compiled
-    // under `regexBackends.re2` were validated during macro expansion; a `Regex` retagged with
-    // `to[Re2]` at runtime is validated here on first use instead, throwing `Motif.Error` if it
-    // strays outside the RE2 subset.
-    private[kaleidoscope] def motif(regex: Regex): Motif = compile(regex.plainPattern)
+    // The praxinoscope form of `regex`, by its rendered pattern. Every `Regex in Re2` was
+    // admitted to the cache when it was made: an `r"…"` literal compiled under
+    // `regexBackends.re2` by its expansion, and a `Regex` retagged at runtime by `re2`, which
+    // parses it then; a pattern absent here is a defect, not an input error.
+    private[kaleidoscope] def motif(regex: Regex): Motif =
+      val pattern: Text = regex.plainPattern
+
+      motifs.get(pattern.s).getOrElse:
+        panic(m"the pattern $pattern was never admitted for the RE2 engine")
 
     // Pre-seeds the cache with a Motif staged at compile time, so an `r"…"` literal compiled
     // under `regexBackends.re2` never parses or compiles its pattern at runtime.
     private[kaleidoscope] def install(motif: Motif): Unit =
       if !motifs.contains(motif.pattern.s) then motifs(motif.pattern.s) = motif
 
-    // Throws by contract (see `motif`): a cache has no caller tactic to raise through.
-    private[kaleidoscope] def compile(pattern: Text): Motif =
-      motifs.getOrElseUpdate(pattern.s, unsafely(Motif.parse(pattern)))
+    // The praxinoscope form of a group's body within an admitted pattern, cached like the
+    // whole: a sub-expression of a pattern in the RE2 subset is in the subset too, so a body
+    // which does not parse is a defect of the admission.
+    private def compile(pattern: Text): Motif =
+      motifs.getOrElseUpdate
+        ( pattern.s,
+          safely(Motif.parse(pattern)).or(panic(m"the group body $pattern is not RE2")) )
 
     // `Re2`'s companion sits below this library, so per issue #1632 the instance lives in the
     // typeclass companion. It bridges to praxinoscope: the pattern is re-rendered with a plain
@@ -520,7 +528,15 @@ object Regex:
     ( m"the regular expression could not be parsed because $reason at $index" )
 
 case class Regex(pattern: Text, groups: List[Regex.Group]) extends Formal:
-  def to[form: Regex.Engine]: Regex in form = asInstanceOf[Regex in form]
+  // A retag alone: an engine which validates its patterns (RE2) admits them through its own
+  // method, `re2`, so that every `Regex in Re2` has been checked against its subset.
+  private[kaleidoscope] def to[form: Regex.Engine]: Regex in form = asInstanceOf[Regex in form]
+
+  // This regex for the RE2 engine, parsed into its praxinoscope form now, so that a pattern
+  // outside the RE2 subset is raised here rather than at its first use.
+  def re2: Regex in Re2 raises Motif.Error =
+    Regex.Engine.install(Motif.parse(plainPattern))
+    to[Re2]
 
   def unapply(text: Text)(using engine: Form is Regex.Engine): Boolean =
     engine.matches(this, text)(using Scanner(Unset))

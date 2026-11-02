@@ -280,7 +280,10 @@ object Http2Tests extends Suite("http2", m"Telekinesis HTTP/2 Tests"):
           connection.start()
 
           val request = Http.Request(Http.Post, 2.0, unsafely(t"unix".as[Host]),
-              t"/echo.Service/Call", Nil, () => Stream(ascii(t"ping")))
+              t"/echo.Service/Call", Nil,
+              new Spring[Data]:
+                def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                  Stream(ascii(t"ping")))
 
           val (stream, response) = connection.fetch(request, t"http", t"unix")
           val bodyText = ascii(t"pong").to[List] == response.body.stream.memoize.to[List]
@@ -312,7 +315,10 @@ object Http2Tests extends Suite("http2", m"Telekinesis HTTP/2 Tests"):
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"unix")
 
           val request = Http.Request(Http.Get, 2.0, unsafely(t"unix".as[Host]),
-              t"/echo.Service/Call", Nil, () => Iterator.empty[Data].stream)
+              t"/echo.Service/Call", Nil,
+              new Spring[Data]:
+                def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                  Iterator.empty[Data].stream)
 
           client.request(request, endpoint).status.code
       . assert(_ == 200)
@@ -335,7 +341,11 @@ object Http2Tests extends Suite("http2", m"Telekinesis HTTP/2 Tests"):
               server0.accepted.stream.records.each: stream =>
                 unsafely:
                   val entries = stream.headers.await()
-                  val request = PseudoHeaders.requestOf(entries, () => Http.emptyBody())
+                  val empty: Spring[Data] = new Spring[Data]:
+                    def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                      Http.emptyBody()
+
+                  val request = PseudoHeaders.requestOf(entries, empty)
 
                   // A `Data` (byte) body selects the `Fixed` servable, so the
                   // response body is a plain fixed stream.
@@ -353,7 +363,9 @@ object Http2Tests extends Suite("http2", m"Telekinesis HTTP/2 Tests"):
             serverStarted.await()
 
           val request = Http.Request(Http.Get, 2.0, unsafely(t"unix".as[Host]), t"/hello", Nil,
-              () => Http.emptyBody())
+              new Spring[Data]:
+                def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                  Http.emptyBody())
 
           val (_, response) = client.fetch(request, t"http", t"unix")
           val body = response.body.stream.memoize.utf8
@@ -393,7 +405,9 @@ object Http2Tests extends Suite("http2", m"Telekinesis HTTP/2 Tests"):
             serverStarted.await()
 
           val request = Http.Request(Http.Post, 2.0, unsafely(t"unix".as[Host]), t"/call", Nil,
-              () => Stream(ascii(t"ping")))
+              new Spring[Data]:
+                def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                  Stream(ascii(t"ping")))
 
           val (stream, response) = client.fetch(request, t"http", t"unix")
           val body = response.body.stream.memoize.utf8
@@ -469,7 +483,9 @@ object Http2Tests extends Suite("http2", m"Telekinesis HTTP/2 Tests"):
             serverStarted.await()
 
           val request = Http.Request(Http.Get, 2.0, unsafely(t"unix".as[Host]), t"/big", Nil,
-              () => Http.emptyBody())
+              new Spring[Data]:
+                def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                  Http.emptyBody())
 
           val (_, response) = client.fetch(request, t"http", t"unix")
           val received = response.body.stream.memoize
@@ -515,7 +531,9 @@ object Http2Tests extends Suite("http2", m"Telekinesis HTTP/2 Tests"):
             serverStarted.await()
 
           val request = Http.Request(Http.Get, 2.0, unsafely(t"unix".as[Host]), t"/slow", Nil,
-              () => Http.emptyBody())
+              new Spring[Data]:
+                def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                  Http.emptyBody())
 
           val (_, response) = client.fetch(request, t"http", t"unix")
 
@@ -587,7 +605,10 @@ object Http2Tests extends Suite("http2", m"Telekinesis HTTP/2 Tests"):
           val payload: Data = Array.tabulate(20000)(i => (i%256).toByte)
 
           val request = Http.Request(Http.Post, 2.0, unsafely(t"unix".as[Host]), t"/upload",
-              Nil, () => Stream(payload))
+              Nil,
+                new Spring[Data]:
+                  def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                    Stream(payload))
 
           // [test-harness] test async fetch over shared client
           val fetched = scala.caps.unsafe.unsafeAssumeSeparate:
@@ -653,7 +674,10 @@ object Http2Tests extends Suite("http2", m"Telekinesis HTTP/2 Tests"):
           // the connection is torn down when the scope ends.
           endpoint.session: connection ?=>
             val request = Http.Request(Http.Post, 2.0, unsafely(t"unix".as[Host]),
-                t"/echo.Service/Call", Nil, () => Stream(ascii(t"ping")))
+                t"/echo.Service/Call", Nil,
+                new Spring[Data]:
+                  def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                    Stream(ascii(t"ping")))
 
             val (_, first) = connection.fetch(request, t"http", t"loopback")
             val (_, second) = connection.fetch(request, t"http", t"loopback")

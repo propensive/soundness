@@ -240,7 +240,7 @@ lib/galilei/src/core/galilei.Windows.scala	0	0	0	0	0	0	0	2	0	0	0	0	0	0	0	0	0
 lib/galilei/src/core/galilei_core.scala	0	6	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
 lib/galilei/src/jvm/galilei.Ram.scala	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
 lib/galilei/src/jvm/galilei_jvm.scala	0	0	0	0	0	2	0	0	0	0	0	0	0	0	0	0	0
-lib/galilei/src/native/galilei_native.scala	2	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
+lib/galilei/src/native/galilei_native.scala	0	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
 lib/galilei/src/test/galilei_test.scala	0	22	0	0	1	2	0	0	1	1	0	0	0	0	0	0	0
 lib/galilei/src/wasi/galilei_wasi.scala	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
 lib/gastronomy/src/core-jvm/gastronomy.JavaBaseHashing.scala	0	0	0	0	1	4	0	0	0	0	0	0	0	0	0	0	0
@@ -482,7 +482,7 @@ lib/savagery/src/core/savagery.Figure.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0	0
 lib/savagery/src/core/savagery.Svg.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/savagery/src/test/savagery_test.scala	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0
 lib/scintillate/src/bench/scintillate.Benchmarks.scala	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
-lib/scintillate/src/server/scintillate.Connections.scala	1	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
+lib/scintillate/src/server/scintillate.Connections.scala	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
 lib/scintillate/src/server/scintillate.Http2Serve.scala	1	3	0	0	0	0	0	0	6	0	0	0	0	0	0	0	0
 lib/scintillate/src/server/scintillate.Reactor.scala	0	1	1	0	0	0	0	0	4	2	0	0	0	0	0	0	0
 lib/scintillate/src/server/scintillate.SocketServer.scala	2	5	0	0	0	0	0	0	6	1	0	0	0	0	0	0	0
@@ -568,13 +568,13 @@ lib/telekinesis/src/core/telekinesis.Cookie.scala	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	
 lib/telekinesis/src/core/telekinesis.Http.scala	4	0	1	0	1	0	0	0	7	8	0	0	0	0	0	0	0
 lib/telekinesis/src/core/telekinesis.Receivable.scala	0	0	0	0	0	0	0	0	2	2	0	0	0	0	0	0	0
 lib/telekinesis/src/core/telekinesis.Servable.scala	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0
-lib/telekinesis/src/core/telekinesis.internal.scala	3	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0	0
+lib/telekinesis/src/core/telekinesis.internal.scala	4	0	0	0	0	0	0	0	0	0	0	0	0	0	2	0	0
 lib/telekinesis/src/core/telekinesis_core.scala	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
 lib/telekinesis/src/http2/telekinesis.ByteBuf.scala	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
 lib/telekinesis/src/http2/telekinesis.FlowWindow.scala	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
 lib/telekinesis/src/http2/telekinesis.FrameReader.scala	0	0	0	0	0	0	0	0	1	1	0	0	0	0	0	0	0
 lib/telekinesis/src/http2/telekinesis.Hpack.scala	0	0	0	0	1	0	0	0	0	0	0	0	0	0	1	0	0
-lib/telekinesis/src/http2/telekinesis.Http2.scala	2	2	1	0	0	0	0	0	8	7	0	0	0	0	1	0	0
+lib/telekinesis/src/http2/telekinesis.Http2.scala	2	2	1	0	0	0	0	0	9	7	0	0	0	0	1	0	0
 lib/telekinesis/src/http2/telekinesis.PseudoHeaders.scala	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0
 lib/telekinesis/src/http2/telekinesis.Sessions.scala	1	0	0	0	0	0	0	0	1	2	0	0	0	0	0	0	0
 lib/telekinesis/src/http2/telekinesis_http2.scala	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0

@@ -39,6 +39,7 @@ import scala.annotation.nowarn
 import anticipation.*
 import contingency.*
 import distillate.*
+import fulminate.*
 import gossamer.*
 import hellenism.*
 import hypotenuse.*
@@ -79,6 +80,11 @@ package httpBackends:
         body:    Spring[Data] )
       ( using Tactic[Connect.Error] )
     :   Http.Response =
+
+      // A request body cut short is the exchange's failure.
+      given Tactic[Truncation.Error] = summon[Tactic[Connect.Error]].contramap: error =>
+        given Diagnostics = error.diagnostics
+        Connect.Error(Connect.Error.Reason.Unknown)
 
       // The URL arrives fully resolved; split it into the scheme, authority and path-with-query
       // the `outgoing-request` setters take.
@@ -263,7 +269,9 @@ object WasiHttpServer:
           Localhost,
           target,
           textHeaders,
-          () => Stream(Iterator(content)) )
+          new Spring[Data]:
+            def apply()(using Tactic[Truncation.Error]): Stream[Data] over Credit =
+              Stream(Iterator(content)) )
 
     val response = handler(httpRequest)
 
@@ -296,10 +304,12 @@ object WasiHttpServer:
 
     responseOutparam.set(outparamHandle, responseHandle).call[Unit]()
 
+    // The component's exported `handle` has no caller to report to: a response body the
+    // handler cuts short traps the component, as any other failure of the export does.
     val payload: Data = response.body match
       case Http.Body.Fixed(data) => data
       case Http.Body.Empty       => Array.empty[Byte]
-      case body                  => body.stream.memoize
+      case body                  => unsafely(body.stream.memoize)
 
     val outBody: Foreign of "outgoing-body" from Wit = outBodyHandle
 

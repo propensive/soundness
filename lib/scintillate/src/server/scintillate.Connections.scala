@@ -86,14 +86,6 @@ private[scintillate] object Connections:
 
     lazy val in = exchange.getRequestBody.nn
 
-    // The Source evidence closes over `unsafely`'s ThrowTactic, which is `caps.Unscoped`
-    // (it throws in place, capturing nothing scoped), so it is truthfully sealed once here
-    // rather than leaking out of the per-mint `unsafely` scope through the body thunk.
-    val source: ji.InputStream is Streamable by Data over Credit =
-      unsafely:
-        // [fresh-in-lambda] source evidence minted inside unsafely block
-        caps.unsafe.unsafeAssumePure(summon[(ji.InputStream is Streamable by Data over Credit)^])
-
     val request =
       Http.Request
         ( method      = method,
@@ -101,9 +93,12 @@ private[scintillate] object Connections:
           host        = host,
           target      = target,
           // Each mint reads on from the same live request stream — the
-          // single-owner discipline (explicit `memoize` for re-reads). A read
-          // failure throws, as the raw `InputStream` did before.
-          body        = () => source.stream(in),
+          // single-owner discipline (explicit `memoize` for re-reads) — under the
+          // tactic of the pull, through which a read cut short is raised.
+          body        =
+            new Spring[Data]:
+              def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                summon[(ji.InputStream is Streamable by Data over Credit)^].stream(in),
           textHeaders = headers )
 
     Log.fine(Httpd.Event.Received(request))

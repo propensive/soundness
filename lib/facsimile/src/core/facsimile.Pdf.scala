@@ -1365,7 +1365,7 @@ extends caps.ExclusiveCapability:
     val decrypted: Optional[Data] = if encryptedStream(body) then raw(body) else Unset
 
     new Spring[Data]:
-      def apply(): (Stream[Data] over Credit)^ =
+      def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
         // Both branches build the pipeline over this document's own single-owner data.
         // [by-name-receiver] lay lambda builds pipeline over same document's data
         scala.caps.unsafe.unsafeAssumeSeparate:

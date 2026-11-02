@@ -36,6 +36,7 @@ import scala.caps
 
 import anticipation.*
 import contingency.*
+import fulminate.*
 import galilei.*
 import gossamer.*
 import gossamer.collationComparable, gossamer.collations.codepointCollation
@@ -89,11 +90,17 @@ object Archive:
         Member(path, name, backend.stat(path, follow))
 
     // The whole of a regular file, read through the backend.
-    def contents[plane](path: Path on plane)(using backend: FilesystemBackend on plane)
+    def contents[plane: Filesystem](path: Path on plane)(using backend: FilesystemBackend on plane)
     :   Data raises Io.Error =
 
-      backend.open(path, List(OpenFlag.Read), Unset): handle =>
-        summon[Data is Aggregable by Data].accept(Stream(handle.reader()))
+      mitigate:
+        case error: Truncation.Error =>
+          given Diagnostics = error.diagnostics
+          Io.Error(path, Io.Error.Operation.Read, Io.Error.Reason.Physical)
+
+      . protect:
+        backend.open(path, List(OpenFlag.Read), Unset): handle =>
+          summon[Data is Aggregable by Data].accept(Stream(handle.reader()))
 
     // The owner and timestamp an entry records, after the flags have had their say.
     def owner(stat: Stat, flags: List[Flag]): (UnixUser, UnixGroup) =

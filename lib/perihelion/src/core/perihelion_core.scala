@@ -42,6 +42,7 @@ import coaxial.socketBackends.javaBaseSockets
 import contingency.*
 import denominative.capped
 import distillate.*
+import fulminate.Diagnostics
 import fulminate.Hazard
 import gastronomy.*
 import gigantism.*
@@ -56,6 +57,7 @@ import symbolism.*
 import telekinesis.*
 import urticose.*
 import vacuous.*
+import zephyrine.*
 import alphabets.base64Standard
 import cryptoPermits.permitDeprecatedCrypto
 import providers.javaBaseProvider
@@ -234,7 +236,14 @@ given wsClient: ( online:            Online,
                 Http.Header(t"Upgrade", t"websocket"),
                 Http.Header(t"Sec-WebSocket-Key", key),
                 Http.Header(t"Sec-WebSocket-Version", t"13") ),
-            () => Http.emptyBody() )
+            new Spring[Data]:
+              def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                Http.emptyBody() )
+
+      // An empty request body cannot be cut short; the serialization asks nonetheless.
+      given Tactic[Truncation.Error] = summon[Tactic[Websocket.Error]].contramap: error =>
+        given Diagnostics = error.diagnostics
+        Websocket.Error(Websocket.Error.Reason.Truncated)
 
       duplex.send(Http.Request.serialize(request))
 

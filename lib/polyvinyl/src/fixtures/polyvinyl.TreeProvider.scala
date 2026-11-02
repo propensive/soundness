@@ -85,7 +85,8 @@ case class OtherError()(using Diagnostics) extends Error(m"some other error")
 case class TreeError(reason: Text)(using Diagnostics)
 extends Error(m"the tree could not be read because $reason")
 
-abstract class TreeProvider(val fields: List[(Text, Member)]) extends Specification:
+abstract class TreeProvider(fields0: List[(Text, Member)]) extends Specification:
+  def fields(using Tactic[Specification.Error]): List[(Text, Member)] = fields0
   type Origin = Tree
   type Form = TreeProvider
   type Failure = TreeError

@@ -204,14 +204,32 @@ trait Tel4:
     // composition declares and the base does not was introduced by a layer, and reads as
     // optional.
     //
-    // Both are first composed as the macro expands, where a schema which does not compose is a
-    // compile error rather than a value to report, so the composition throws; a schema which
-    // composed then composes again when a record reads it.
-    private lazy val base: Tels = unsafely(Tels.Layers.compose(tels, List()))
-    private lazy val composed: Tels = unsafely(Tels.Layers.compose(tels))
+    // Both are composed once: by the `record`/`tuple` macro, which reports a schema which does
+    // not compose as a compile error at the use site, and otherwise at the first use, where a
+    // schema never composed at expansion is a defect of the provider.
+    private lazy val composition: Attempt[(Tels, Tels), Specification.Error] =
+      given Diagnostics = Diagnostics.omit
 
-    def fields: List[(Text, Member)] =
-      Tel.Provider.fieldsOf(composed.document, composed, base, base.document)
+      attempt[Specification.Error]:
+        mitigate:
+          case error: Tel.Error =>
+            Specification.Error(error.message)(using error.diagnostics)
+
+          case error: Tels.Resolution.Error =>
+            Specification.Error(error.message)(using error.diagnostics)
+
+        . protect((Tels.Layers.compose(tels, List()), Tels.Layers.compose(tels)))
+
+    private def composed: Tels = composition match
+      case Attempt.Success((_, composed)) => composed
+      case Attempt.Failure(error)         => panic(error.message)
+
+    def fields(using Tactic[Specification.Error]): List[(Text, Member)] = composition match
+      case Attempt.Success((base, composed)) =>
+        Tel.Provider.fieldsOf(composed.document, composed, base, base.document)
+
+      case Attempt.Failure(error) =>
+        abort(error)
 
     // The layers whose root members a document carries — the layers a value built from it was
     // composed with, for a writer serving an acceptance.

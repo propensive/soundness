@@ -165,7 +165,13 @@ object Tests extends Suite("websocket", m"Perihelion tests"):
 
     def readMessages(frames: scala.Array[Byte]*): List[perihelion.Message] =
       val stream = Chain(frames*).map(Array.unsafeFrozen(_))
-      Reader(() => zephyrine.Stream(stream), Channel()).messages.to[List]
+      val spring: Spring[Data] = new Spring[Data]:
+        def apply()(using Tactic[Truncation.Error])
+        :   zephyrine.Stream[Data] over zephyrine.Credit =
+
+          zephyrine.Stream(stream)
+
+      Reader(spring, Channel()).messages.to[List]
 
     def texts(messages: List[perihelion.Message]): List[Text] = messages.map:
       case perihelion.Message.Text(text) => text

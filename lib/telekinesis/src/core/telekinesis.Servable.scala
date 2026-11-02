@@ -67,7 +67,11 @@ object Servable:
     def serve(content: Content): Http.Response =
       val headers = List(Http.Header(t"content-type", content.media.show))
 
-      Http.Ok(headers, Http.Body.Flowing{ () => Stream(content.stream) })
+      val spring: Spring[Data] = new Spring[Data]:
+        def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+          Stream(content.stream)
+
+      Http.Ok(headers, Http.Body.Flowing(spring))
 
   given bytes: [response: Abstractable across HttpStreams to HttpStreams.Content]
   =>  response is Servable =
@@ -79,8 +83,10 @@ object Servable:
       . or(panic(m"the content's media type ${response.generic(value)(0)} is malformed"))
 
     Servable[response](mediaType): value =>
-      Http.Body.Flowing: () =>
-        response.generic(value)(1).stream
+      Http.Body.Flowing:
+        new Spring[Data]:
+          def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+            response.generic(value)(1).stream
 
   given data: Data is Servable =
     Servable[Data](media"application/octet-stream")(Http.Body.Fixed(_))
@@ -108,7 +114,11 @@ object Servable:
     case streamable: (`media` is Streamable by Data over Credit) =>
       value =>
         val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
-        Http.Ok(headers, Http.Body.Flowing{ () => streamable.stream(value) })
+        val spring: Spring[Data]^ = new Spring[Data]:
+          def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+            streamable.stream(value)
+
+        Http.Ok(headers, Http.Body.Flowing(spring))
 
     case streamable: (`media` is Streamable by Text over Credit) =>
       val encoder0: hieroglyph.Codepage = compiletime.summonInline[hieroglyph.Codepage]
@@ -118,10 +128,11 @@ object Servable:
         val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
         given buffering: zephyrine.Buffering = buffering0
 
-        Http.Ok
-          ( headers,
-            Http.Body.Flowing: () =>
-              streamable.stream(value).via(encoder0).asInstanceOf[(Stream[Data] over Credit)^] )
+        val spring: Spring[Data]^ = new Spring[Data]:
+          def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+            streamable.stream(value).via(encoder0).asInstanceOf[(Stream[Data] over Credit)^]
+
+        Http.Ok(headers, Http.Body.Flowing(spring))
 
 trait Servable extends Typeclass:
   def serve(content: Self): Http.Response

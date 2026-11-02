@@ -793,6 +793,11 @@ object WebDriver:
     // directly, as `apoplexy.Conformant` does. A reply that is not JSON at all (a crashed driver,
     // an interposed proxy) still becomes a `Error`, carrying the raw body as its detail.
     private def outcome(response: Http.Response): Json =
+      // A reply cut short is a failed action with nothing to decode.
+      given Tactic[Truncation.Error] = tactic.contramap: error =>
+        given Diagnostics = error.diagnostics
+        Error(Error.Reason.Other(t"truncated"), t"the reply was cut short", Nil)
+
       // The body's own stream, not `read`/`receive`: both consult the status first and would
       // abort with an `Http.Error` that has already discarded what we came for.
       val body: Text = response.body.stream.memoize.read[Text]

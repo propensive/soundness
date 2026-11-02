@@ -839,6 +839,8 @@ trait Json4:
   abstract class Provider(schema0: into[Json.Provider.Schema]) extends Provider.Primitives:
     val schema: Json = schema0.json
 
-    // Read as the macro expands, where a schema it cannot read is a compile error rather than a
-    // value to report, so the reading throws.
-    def fields: List[(Text, Member)] = unsafely(Json.Provider.fieldsOf(schema))
+    def fields(using Tactic[Specification.Error]): List[(Text, Member)] =
+      mitigate:
+        case error: Json.Error => Specification.Error(error.message)(using error.diagnostics)
+
+      . protect(Json.Provider.fieldsOf(schema))

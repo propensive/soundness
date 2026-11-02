@@ -307,7 +307,9 @@ object Reactor:
             head.host,
             head.target,
             head.headers,
-            () => bodyRef.asInstanceOf[Stream[Data] over Credit] )
+            new Spring[Data]:
+              def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                bodyRef.asInstanceOf[Stream[Data] over Credit] )
 
       val connection = new Http.Connection(request, false, reactor.port, respond)
 
@@ -327,6 +329,8 @@ object Reactor:
     // Queue an error response and close once it drains.
     private update def refuse(status: Http.Status): Unit =
       val response = Http.Response(status)() + closeHeader
+      // The server's own response has no body to cut short.
+      given (Tactic[Truncation.Error]^) = ThrowTactic()
       enqueue(Http.Response.serialize(response).memoize)
       closing = true
 

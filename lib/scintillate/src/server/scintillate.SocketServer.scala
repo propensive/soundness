@@ -281,7 +281,9 @@ extends RequestServable:
                 head.host,
                 head.target,
                 head.headers,
-                () => bodyRef.asInstanceOf[Stream[Data] over Credit] )
+                new Spring[Data]:
+                  def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                    bodyRef.asInstanceOf[Stream[Data] over Credit] )
 
           var upgraded = false
           var keep = keepAlive(head, facts)

@@ -162,7 +162,9 @@ object Grpc:
           Http.Header(t"te", t"trailers") ::
           metadataHeaders
 
-      val body: Spring[Data] = () => Stream(Framing.encode(message))
+      val body: Spring[Data] = new Spring[Data]:
+        def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+          Stream(Framing.encode(message))
       Http.Request(Http.Post, 2.0, host, method.path, headers, body)
 
     // gRPC requires HTTP status 200; anything else is a transport-level failure.
@@ -200,6 +202,12 @@ object Grpc:
 
       summon[Protobuf is Encodable in Data].encoded(encodable.encoded(value))
 
+    // A response cut short is an internal failure of the call.
+    private def truncated(using tactic: Tactic[Error]): Tactic[Truncation.Error] =
+      tactic.contramap: error =>
+        given Diagnostics = error.diagnostics
+        Error(Grpc.Status.Internal, t"the response was cut short")
+
     private def decodeMessage[value](bytes: Data)(using decodable: value is Decodable in Protobuf)
     :   value raises Protobuf.Error =
 
@@ -213,6 +221,8 @@ object Grpc:
       ( using Monitor^ )
       ( using Tactic[Error], Tactic[Http2.Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
     :   response =
+
+      given Tactic[Truncation.Error] = truncated
 
       val (stream, response) =
         connection.fetch(httpRequest(method, metadata, encodeMessage(value)), t"http", authority)
@@ -240,6 +250,8 @@ object Grpc:
       ( using Monitor^ )
       ( using Tactic[Error], Tactic[Http2.Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
     :   Chain[response] =
+
+      given Tactic[Truncation.Error] = truncated
 
       val (stream, response) =
         connection.fetch(httpRequest(method, metadata, encodeMessage(value)), t"http", authority)

@@ -32,13 +32,6 @@
                                                                                                   */
 package turbulence
 
-import fulminate.*
-import rudiments.*
-
-// A stream that ended before it had delivered everything. Named for the state of the
-// data rather than for a raiser: `Streamable`, `Writable` and `Sink` all report it, so
-// none of them owns it — and `Stream` itself belongs to the prelude.
-object Truncation:
-  // StreamError → Truncation.Error
-  case class Error(total: Bytes)(using Diagnostics)
-  extends fulminate.Error(264, 0)(m"the stream was cut prematurely after $total")
+// `Truncation` moved to zephyrine, with `Spring`, whose pull raises it; the name is kept here
+// for the modules that import it from turbulence.
+export zephyrine.Truncation

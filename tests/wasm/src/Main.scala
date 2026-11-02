@@ -96,7 +96,13 @@ object Main extends Run:
 
     val url = environment.variable(t"URL").or(t"http://example.com/")
     val backend = summon[Http.Backend]
-    val response = backend.request(url, Http.Get, proscenium.Nil, () => Stream(Iterator.empty[anticipation.Data]))
+    val empty: zephyrine.Spring[anticipation.Data] = new zephyrine.Spring[anticipation.Data]:
+      def apply()(using contingency.Tactic[zephyrine.Truncation.Error])
+      :   (Stream[anticipation.Data] over zephyrine.Credit)^ =
+
+        Stream(Iterator.empty[anticipation.Data])
+
+    val response = backend.request(url, Http.Get, proscenium.Nil, empty)
     System.out.nn.println("http: " + response.status.code)
 
   @WitExport("wasi:cli/run@0.2.0", "run")

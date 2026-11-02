@@ -57,7 +57,10 @@ object Sse:
     import codepages.utf8Codepage
 
     Servable[Chain[Sse]](_ => media"text/event-stream"): stream =>
-      Http.Body.Flowing(() => zephyrine.Stream(stream.map(_.encode.in[Data])))
+      Http.Body.Flowing:
+        new Spring[Data]:
+          def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+            zephyrine.Stream(stream.map(_.encode.in[Data]))
 
   given framable: Text is Framable by Sse = input =>
     // The frame reader owns its cursor exclusively for the whole parse.
