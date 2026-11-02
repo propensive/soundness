@@ -33,7 +33,6 @@
 package serpentine
 
 import anticipation.*
-import contingency.*
 import prepositional.*
 
 // A path's root rendered as text: the pure half of a root type's path algebra. Its reading
