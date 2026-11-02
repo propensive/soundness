@@ -55,9 +55,15 @@ object Searchpath:
     new Radical:
       type Self = %.type
       type Plane = plane
-      def length(text: Text): Int raises Path.Error = 0
-      def decode(text: Text): %.type raises Path.Error = %
       def encode(root: %.type): Text = t""
+
+  // A searchpath's root is implicit in every entry's text, so reading it cannot fail.
+  given eradicable: [plane <: Searchpath] => (%.type is Eradicable on plane) =
+    new Eradicable:
+      type Self = %.type
+      type Plane = plane
+      def length(text: Text): Int = 0
+      def decode(text: Text): %.type = %
 
 // A *searchpath plane*: a virtual path plane joining an ordered list of real directories into
 // a single searchable, navigable view — XDG's `$XDG_DATA_DIRS`, or `$PATH` (issue #602).

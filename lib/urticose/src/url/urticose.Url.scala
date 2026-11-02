@@ -188,5 +188,4 @@ extends Root(t"${origin.scheme}:${origin.authority.lay(t"")(t"//"+_.show)}$locat
   def authority: Optional[Authority] = origin.authority
   def requestTarget: Text = location+query.lay(t"")(t"?"+_)
   def host: Optional[Host] = authority.let(_.host)
-  // `Www`'s `Radical` always succeeds, so decoding the path cannot fail.
-  def path: Path on Www = unsafely(location.as[Path on Www])
+  def path: Path on Www = location.as[Path on Www]

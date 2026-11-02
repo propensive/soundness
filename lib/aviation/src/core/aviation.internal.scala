@@ -579,40 +579,37 @@ object internal:
     // compile time when we recognise it as one whose validation we can run here.
     val summoned: Option[Expr[RomanCalendar]] = Expr.summon[RomanCalendar]
 
-    // The runtime check, used whenever the operands aren't all compile-time literals; defaults to
-    // the Gregorian calendar when nothing is in scope. A date that is not a literal may not
-    // exist, so its check raises `Moment.Error` through a tactic the expansion site supplies.
-    def runtime: Expr[Date] =
-      val calendar = summoned.getOrElse('{calendars.gregorianCalendar})
-      // `Day(_)` is transparent here in aviation core (`opaque type Day = Int`), so the quoted tree
-      // would carry an `Int` type; a spliced `Int` then mismatches the opaque `Day` that the now-
-      // `inline` `jdn` expects at the (external) call site. The explicit ascription pins the tree's
-      // type to `Day`.
-      val day: Expr[Day] = '{Day($right): Day}
-
-      Expr.summon[Tactic[Moment.Error]] match
-        case Some(tactic) => '{$calendar.jdn($left.year, $left.month, $day)(using $tactic)}
-
-        case None =>
-          halt
-            ( m"""
-                the date's year, month and day are not all literals, so it is checked when it
-                is made, which needs a `Tactic[Moment.Error]` in scope
-              """ )
+    // `Monthstamp - day` is for dates the expansion can check: when a year, month, day or
+    // calendar is not known here, the expression is a compile error naming it, rather than a
+    // check deferred to runtime. A date made of values computed at runtime is built with the
+    // calendar's `jdn`, under a `Tactic[Moment.Error]`.
+    def unresolved(what: Message): Nothing =
+      halt
+        ( m"""
+            $what, so this date cannot be checked at compile time; a `Monthstamp - day` needs
+            literal operands, and a date computed at runtime is made with the calendar's `jdn`
+            under a `Tactic[Moment.Error]`
+          """ )
 
     // Identify a contextual calendar as one of this module's calendar givens (matched by leaf name,
     // since it may be reached through the `soundness` re-export rather than its `aviation` origin;
-    // the `.calendars.` guard stops an unrelated user calendar being misidentified), or `Unset` if
-    // we don't recognise it, in which case compile-time validation is skipped.
+    // the `.calendars.` guard stops an unrelated user calendar being misidentified). A local
+    // alias of one (`given julian: RomanCalendar = calendars.julianCalendar`) is followed to its
+    // right-hand side, which is available for a definition in the current compilation unit.
+    // Anything else is `Unset`, and the expansion halts.
     def recognise(expr: Expr[RomanCalendar]): Optional[RomanCalendar] =
       val symbol = strip(expr.asTerm).symbol
 
-      if !symbol.fullName.contains(".calendars.") then Unset else symbol.name match
+      if symbol.fullName.contains(".calendars.") then symbol.name match
         case "gregorianCalendar" => calendars.gregorianCalendar
         case "julianCalendar"    => calendars.julianCalendar
         case "papalCutover"      => calendars.papalCutover
         case "britishCutover"    => calendars.britishCutover
         case _                   => Unset
+      else if symbol.isValDef then symbol.tree match
+        case ValDef(_, _, Some(rhs)) => recognise(rhs.asExprOf[RomanCalendar])
+        case _                       => Unset
+      else Unset
 
     // The calendar to validate against at compile time: the recognised contextual one, or the
     // Gregorian default when none is in scope.
@@ -634,13 +631,13 @@ object internal:
                   case Left(error) => halt(error)
 
               case _ =>
-                runtime
+                unresolved(m"the calendar in scope is not one of the standard calendars")
 
           case _ =>
-            runtime
+            unresolved(m"the year, month or day is not a literal")
 
       case _ =>
-        runtime
+        unresolved(m"the month is not a literal `Monthstamp`")
 
   def validTime(time: Expr[Double], pm: Boolean): Macro[Clockface] =
     import quotes.reflect.*

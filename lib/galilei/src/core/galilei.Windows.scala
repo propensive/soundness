@@ -65,13 +65,18 @@ object Windows:
 
   given radical: Drive is Radical:
     type Plane = Windows
-
-    def decode(text: Text): Drive raises Path.Error =
-      if text.length >= 3 && text(Sec) == ':' && text(Ter) == '\\'
-      then text.head.let(Drive(_)).or(abort(Path.Error(_.InvalidRoot)))
-      else abort(Path.Error(_.InvalidRoot))
-
-    def length(text: Text): Int raises Path.Error = 3
     def encode(drive: Drive): Text = t"${drive.letter}:\\"
+
+  given eradicable: (tactic: Tactic[Path.Error]) => ((Drive is Eradicable on Windows)^{tactic}) =
+    new Eradicable:
+      type Self = Drive
+      type Plane = Windows
+
+      def decode(text: Text): Drive =
+        if text.length >= 3 && text(Sec) == ':' && text(Ter) == '\\'
+        then text.head.let(Drive(_)).or(abort(Path.Error(_.InvalidRoot)))
+        else abort(Path.Error(_.InvalidRoot))
+
+      def length(text: Text): Int = 3
 
 sealed trait Windows extends Platform

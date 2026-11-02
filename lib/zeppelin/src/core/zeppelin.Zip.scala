@@ -73,10 +73,13 @@ object Zip:
 
   given radical: %.type is Radical:
     type Plane = Zip
-
-    def length(text: Text): Int raises Path.Error = 0
-    def decode(text: Text): %.type raises Path.Error = %
     def encode(root: %.type): Text = t""
+
+  // An archive's root is implicit in every entry's text, so reading it cannot fail.
+  given eradicable: %.type is Eradicable:
+    type Plane = Zip
+    def length(text: Text): Int = 0
+    def decode(text: Text): %.type = %
 
   // Anchored here so `path.open[Zip]()` and `data.open[Zip]()` resolve with no import. A path
   // is read through the filesystem backend in scope, so archives open on every platform with

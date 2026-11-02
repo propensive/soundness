@@ -59,13 +59,17 @@ object MacOs:
 
   given radical: %.type is Radical:
     type Plane = MacOs
-
-    def length(text: Text): Int raises Path.Error = 1
-
-    def decode(text: Text): %.type raises Path.Error =
-      if text.starts(t"/") then % else abort(Path.Error(_.InvalidRoot))
-
     def encode(root: %.type): Text = t"/"
+
+  given eradicable: (tactic: Tactic[Path.Error]) => ((%.type is Eradicable on MacOs)^{tactic}) =
+    new Eradicable:
+      type Self = %.type
+      type Plane = MacOs
+
+      def length(text: Text): Int = 1
+
+      def decode(text: Text): %.type =
+        if text.starts(t"/") then % else abort(Path.Error(_.InvalidRoot))
 
   given submissible: %.type is Submissible on MacOs = _ => ()
 

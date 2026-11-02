@@ -53,13 +53,18 @@ object Classpath extends Root(t""):
 
   given radical: Classpath.type is Radical:
     type Plane = Classpath
-
-    def length(text: Text): Int raises Path.Error = 1
-
-    def decode(text: Text): Classpath.type raises Path.Error =
-      if text.starts(t"/") then Classpath else abort(Path.Error(_.InvalidRoot))
-
     def encode(root: Classpath.type): Text = t""
+
+  given eradicable: (tactic: Tactic[Path.Error])
+  =>  ( (Classpath.type is Eradicable on Classpath)^{tactic} ) =
+    new Eradicable:
+      type Self = Classpath.type
+      type Plane = Classpath
+
+      def length(text: Text): Int = 1
+
+      def decode(text: Text): Classpath.type =
+        if text.starts(t"/") then Classpath else abort(Path.Error(_.InvalidRoot))
 
   object Directory:
     def apply[path: Abstractable across Paths to Text](path: path): Classpath.Entry.Directory =
