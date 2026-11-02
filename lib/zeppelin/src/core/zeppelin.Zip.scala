@@ -76,7 +76,7 @@ object Zip:
     def encode(root: %.type): Text = t""
 
   // An archive's root is implicit in every entry's text, so reading it cannot fail.
-  given radicle: %.type is Radicle:
+  given eradicable: %.type is Eradicable:
     type Plane = Zip
     def length(text: Text): Int = 0
     def decode(text: Text): %.type = %

@@ -71,8 +71,8 @@ object Notes:
     type Plane = Notes
     def encode(hash: Git.Hash): Text = t"${hash.text}/"
 
-  given radicle: (tactic: Tactic[Path.Error]) => ((Git.Hash is Radicle on Notes)^{tactic}) =
-    new Radicle:
+  given eradicable: (tactic: Tactic[Path.Error]) => ((Git.Hash is Eradicable on Notes)^{tactic}) =
+    new Eradicable:
       type Self = Git.Hash
       type Plane = Notes
       def length(text: Text): Int = 41

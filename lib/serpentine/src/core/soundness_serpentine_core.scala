@@ -34,8 +34,8 @@ package soundness
 
 export
   serpentine
-  . { %, ?, ^, Admissible, Ascent, Case, Compliant, Filesystem, Navigable, Path, Radical, Radicle,
-      Relative, Root, Submissible }
+  . { %, ?, ^, Admissible, Ascent, Case, Compliant, Eradicable, Filesystem, Navigable, Path,
+      Radical, Relative, Root, Submissible }
 
 package pathInterfaces:
   export anticipation.pathInterfaces.textPath

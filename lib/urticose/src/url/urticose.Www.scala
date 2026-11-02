@@ -49,7 +49,7 @@ object Www:
 
   // A web path's root is the leading `/`, present or not, so reading it cannot fail: a path
   // on the web decodes with no tactic.
-  given radicle: %.type is Radicle:
+  given eradicable: %.type is Eradicable:
     type Plane = Www
     def length(text: Text): Int = if text.starts(t"/") then 1 else 0
     def decode(text: Text): %.type = %

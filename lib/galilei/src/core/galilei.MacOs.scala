@@ -61,8 +61,8 @@ object MacOs:
     type Plane = MacOs
     def encode(root: %.type): Text = t"/"
 
-  given radicle: (tactic: Tactic[Path.Error]) => ((%.type is Radicle on MacOs)^{tactic}) =
-    new Radicle:
+  given eradicable: (tactic: Tactic[Path.Error]) => ((%.type is Eradicable on MacOs)^{tactic}) =
+    new Eradicable:
       type Self = %.type
       type Plane = MacOs
 

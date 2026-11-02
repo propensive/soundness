@@ -67,8 +67,8 @@ object Windows:
     type Plane = Windows
     def encode(drive: Drive): Text = t"${drive.letter}:\\"
 
-  given radicle: (tactic: Tactic[Path.Error]) => ((Drive is Radicle on Windows)^{tactic}) =
-    new Radicle:
+  given eradicable: (tactic: Tactic[Path.Error]) => ((Drive is Eradicable on Windows)^{tactic}) =
+    new Eradicable:
       type Self = Drive
       type Plane = Windows
 

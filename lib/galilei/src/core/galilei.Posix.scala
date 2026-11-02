@@ -59,8 +59,8 @@ object Posix:
     type Plane = Posix
     def encode(root: %.type): Text = t"/"
 
-  given radicle: (tactic: Tactic[Path.Error]) => ((%.type is Radicle on Posix)^{tactic}) =
-    new Radicle:
+  given eradicable: (tactic: Tactic[Path.Error]) => ((%.type is Eradicable on Posix)^{tactic}) =
+    new Eradicable:
       type Self = %.type
       type Plane = Posix
 

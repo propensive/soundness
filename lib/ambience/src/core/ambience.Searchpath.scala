@@ -58,8 +58,8 @@ object Searchpath:
       def encode(root: %.type): Text = t""
 
   // A searchpath's root is implicit in every entry's text, so reading it cannot fail.
-  given radicle: [plane <: Searchpath] => (%.type is Radicle on plane) =
-    new Radicle:
+  given eradicable: [plane <: Searchpath] => (%.type is Eradicable on plane) =
+    new Eradicable:
       type Self = %.type
       type Plane = plane
       def length(text: Text): Int = 0

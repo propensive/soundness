@@ -40,6 +40,6 @@ import prepositional.*
 // error: a root which can be malformed takes its `Tactic[Path.Error]` in the given's signature
 // and retains it, and a root which cannot (the web, a zip archive, a searchpath) has a pure
 // instance, so a path decoded against it needs no tactic at all.
-trait Radicle extends Typeclass, Planar:
+trait Eradicable extends Typeclass, Planar:
   def decode(text: Text): Self
   def length(text: Text): Int

@@ -58,8 +58,8 @@ object Linux:
     type Plane = Linux
     def encode(root: %.type): Text = t"/"
 
-  given radicle: (tactic: Tactic[Path.Error]) => ((%.type is Radicle on Linux)^{tactic}) =
-    new Radicle:
+  given eradicable: (tactic: Tactic[Path.Error]) => ((%.type is Eradicable on Linux)^{tactic}) =
+    new Eradicable:
       type Self = %.type
       type Plane = Linux
 

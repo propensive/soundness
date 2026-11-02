@@ -55,8 +55,9 @@ object Classpath extends Root(t""):
     type Plane = Classpath
     def encode(root: Classpath.type): Text = t""
 
-  given radicle: (tactic: Tactic[Path.Error]) => ((Classpath.type is Radicle on Classpath)^{tactic}) =
-    new Radicle:
+  given eradicable: (tactic: Tactic[Path.Error])
+  =>  ( (Classpath.type is Eradicable on Classpath)^{tactic} ) =
+    new Eradicable:
       type Self = Classpath.type
       type Plane = Classpath
 

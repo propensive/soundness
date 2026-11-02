@@ -65,8 +65,9 @@ object Local:
       case Drive(letter) => t"$letter:\\"
       case %             => t"/"
 
-  given radicle: (tactic: Tactic[Path.Error]) => (((%.type | Drive) is Radicle on Local)^{tactic}) =
-    new Radicle:
+  given eradicable: (tactic: Tactic[Path.Error])
+  =>  ( ((%.type | Drive) is Eradicable on Local)^{tactic} ) =
+    new Eradicable:
       type Self = %.type | Drive
       type Plane = Local
 
