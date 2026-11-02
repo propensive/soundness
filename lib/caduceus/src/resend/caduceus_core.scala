@@ -119,6 +119,7 @@ package couriers:
             case Http.Error(status, _)     => Out.println(status.communicate) yet error
             case Json.Error(reason)        => Out.println(reason.communicate) yet error
             case MediaType.Error(_, _)     => error
+            case Truncation.Error(_)       => error
 
           . protect:
             // The request and its decoding share only the resolution-scoped tactic.
