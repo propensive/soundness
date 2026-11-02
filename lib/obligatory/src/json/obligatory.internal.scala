@@ -264,14 +264,18 @@ object internal:
                           ' {
                               val json = Map(${Varargs(entries)}*).in[Json]
 
-                              unsafely:
-                                val response =
-                                  JsonRpc.request($url, $methodName, json)
-                                    ( using $monitor, $probate, $online )
+                              // An explicit throwing tactic rather than `unsafely`, as in
+                              // `client` below: the await's failure throws in place for the
+                              // caller of the generated method, which declares no tactic.
+                              val tactic: ThrowTactic[Async.Error]^ = ThrowTactic()
 
-                                  . await()(using $monitor)
+                              val response =
+                                JsonRpc.request($url, $methodName, json)
+                                  ( using $monitor, $probate, $online )
 
-                                $decoder.decoded(response)
+                                . await()(using $monitor)(using tactic)
+
+                              $decoder.decoded(response)
                             }
 
                           . asTerm

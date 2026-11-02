@@ -763,13 +763,12 @@ object Mcp:
     :   GetPrompt =
 
       // The RPC proxy's awaits are scoped to this call, so it runs under its own supervision.
-      // [dispatcher] The service's methods carry no tactic (the JSON-RPC dispatcher's
-      // call-time tactics are a follow-up), so a supervision failure escapes as the
-      // dispatcher's internal error.
+      // The service's methods declare no tactic: a supervision failure throws in place, for the
+      // dispatcher's catch, which answers it as an internal error.
       import threads.platformThreads
+      given Tactic[Async.Error] = ThrowTactic()
 
-      val messages = unsafely(supervise:
-        spec.invokePrompt(server, client, name, arguments.or(Map()))).map:
+      val messages = supervise(spec.invokePrompt(server, client, name, arguments.or(Map()))).map:
         case Human(message) => PromptMessage(Role.User, TextContent(message))
         case Agent(message) => PromptMessage(Role.Assistant, TextContent(message))
 
@@ -800,14 +799,16 @@ object Mcp:
       import formatting.compactJsonFormatting
 
       // A tool's own failure is a result the model can read (`isError`), distinct from a
-      // protocol failure: an unknown tool or a missing parameter is still a JSON-RPC error.
-      // [dispatcher] As in `prompts/get`: the method carries no tactic, so the supervision
-      // failure escapes, and a protocol failure is rethrown for the dispatcher to report.
+      // protocol failure: an unknown tool or a missing parameter is still a JSON-RPC error. As
+      // in `prompts/get`, the method declares no tactic: a supervision failure throws in place
+      // for the dispatcher's catch, and a protocol failure is rethrown the same way.
+      given Tactic[Async.Error] = ThrowTactic()
+
       try
-        val result = unsafely(supervise(spec.invokeTool(server, client, name, arguments)))
+        val result = supervise(spec.invokeTool(server, client, name, arguments))
         CallTool(content = List(TextContent(result.show)), structuredContent = result)
       catch
-        case error: Mcp.Error => unsafely(throw error)
+        case error: Mcp.Error => ThrowTactic[Mcp.Error]().abort(error)
 
         case error: Throwable =>
           val message = error.getMessage match
