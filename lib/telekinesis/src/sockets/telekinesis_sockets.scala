@@ -205,7 +205,10 @@ private def plaintextExchange
           Connect.Error(Unknown)(using error.diagnostics)
 
       . protect(attempt(duplex))
-    catch case error: ji.IOException => duplex.close(); abort(Connect.Error(Unknown))
+    // A block, not `=> a; b` on one line: the parser would end the case at the `;`.
+    catch case error: ji.IOException =>
+      duplex.close()
+      abort(Connect.Error(Unknown))
 
   borrow() match
     case null => fresh()
@@ -218,7 +221,9 @@ private def plaintextExchange
             fresh()
 
         . protect(attempt(duplex))
-      catch case error: ji.IOException => duplex.close(); fresh()
+      catch case error: ji.IOException =>
+        duplex.close()
+        fresh()
 
 
 // One sequential HTTP/1.1 exchange over an open connection: send the request,
