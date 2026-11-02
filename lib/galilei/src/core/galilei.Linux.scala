@@ -56,13 +56,17 @@ object Linux:
 
   given radical: %.type is Radical:
     type Plane = Linux
-
-    def length(text: Text): Int raises Path.Error = 1
-
-    def decode(text: Text): %.type raises Path.Error =
-      if text.starts(t"/") then % else abort(Path.Error(_.InvalidRoot))
-
     def encode(root: %.type): Text = t"/"
+
+  given radicle: (tactic: Tactic[Path.Error]) => ((%.type is Radicle on Linux)^{tactic}) =
+    new Radicle:
+      type Self = %.type
+      type Plane = Linux
+
+      def length(text: Text): Int = 1
+
+      def decode(text: Text): %.type =
+        if text.starts(t"/") then % else abort(Path.Error(_.InvalidRoot))
 
   given submissible: %.type is Submissible on Linux = _ => ()
 

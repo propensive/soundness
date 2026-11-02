@@ -36,9 +36,9 @@ import anticipation.*
 import contingency.*
 import prepositional.*
 
-// The platform `Radical` instances (POSIX/Linux/macOS/Windows-drive/local roots) live with the
-// OS platform types in galilei; `Radical` itself is generic path-algebra and stays here.
+// A path's root rendered as text: the pure half of a root type's path algebra. Its reading
+// counterpart is `Radicle`, whose instances carry the tactic a malformed root is raised
+// through. The platform instances (POSIX/Linux/macOS/Windows-drive/local roots) live with the
+// OS platform types in galilei; the traits themselves are generic path algebra and stay here.
 trait Radical extends Typeclass, Planar:
-  def decode(text: Text): Self raises Path.Error
-  def length(text: Text): Int raises Path.Error
   def encode(self: Self): Text

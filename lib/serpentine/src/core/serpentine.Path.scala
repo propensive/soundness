@@ -57,24 +57,26 @@ object Path:
     type Topic = EmptyTuple
     type Limit = %.type
 
-  given decodable: [filesystem: Filesystem, root] => (radical: root is Radical on filesystem)
-  =>  ( tactic: Tactic[Path.Error] )
-  =>  ( ((Path on filesystem) is Decodable in Text)^{tactic} ) =
+  // The decoders retain the `Radicle` they read the root with, and with it whatever tactic
+  // that instance retains: a root which cannot be malformed gives a pure decoder.
+  given decodable: [filesystem: Filesystem, root]
+  =>  ( radical: root is Radical on filesystem, radicle: (root is Radicle on filesystem)^ )
+  =>  ( ((Path on filesystem) is Decodable in Text)^{radicle} ) =
 
     text =>
-      val root = radical.encode(radical.decode(text))
-      val parts = text.skip(radical.length(text)).cut(filesystem.separator).stdlib
+      val root = radical.encode(radicle.decode(text))
+      val parts = text.skip(radicle.length(text)).cut(filesystem.separator).stdlib
       val parts2 = if parts.last == t"" then parts.init else parts
 
       Path(root, (parts2.reverse.map(filesystem.unescape(_))).to(List))
 
-  given decodable2: [filesystem: Filesystem, root] => (radical: root is Radical on filesystem)
-  =>  ( tactic: Tactic[Path.Error] )
-  =>  ( ((Path on filesystem under root) is Decodable in Text)^{tactic} ) =
+  given decodable2: [filesystem: Filesystem, root]
+  =>  ( radical: root is Radical on filesystem, radicle: (root is Radicle on filesystem)^ )
+  =>  ( ((Path on filesystem under root) is Decodable in Text)^{radicle} ) =
 
     text =>
-      val root = radical.encode(radical.decode(text))
-      val parts = text.skip(radical.length(text)).cut(filesystem.separator).stdlib
+      val root = radical.encode(radicle.decode(text))
+      val parts = text.skip(radicle.length(text)).cut(filesystem.separator).stdlib
       val parts2 = if parts.last == t"" then parts.init else parts
 
       Path(root, (parts2.reverse.map(filesystem.unescape(_))).to(List))
@@ -82,20 +84,20 @@ object Path:
   given nominable: [filesystem] => (Path on filesystem) is Nominable = path =>
     path.descent.to(List).head.or(path.root)
 
-  given trustedInstantiable: [filesystem: Filesystem]
-  =>  ( radical: Tactic[Path.Error] ?=> Radical on filesystem )
-  =>  ( ((Path on filesystem) is Instantiable across Paths from Paths.Trusted)^{radical} ) =
+  given trustedInstantiable: [filesystem: Filesystem, root]
+  =>  ( radical: root is Radical on filesystem,
+        radicle: (tactic: Tactic[Path.Error]) ?=> (root is Radicle on filesystem)^{tactic} )
+  =>  ( ((Path on filesystem) is Instantiable across Paths from Paths.Trusted)^{radicle} ) =
 
     // The input is already-trusted path data, so decoding it cannot fail; the tactic is
-    // minted per call by `unsafely`, so the instance captures only the `radical` context.
+    // minted per call by `unsafely`, so the instance captures only the `radicle` context.
     trusted => unsafely:
-      given Radical on filesystem = radical
+      given reading: ((root is Radicle on filesystem)^{radicle, caps.any}) = radicle
       trusted.text.as[Path on filesystem]
 
-  given instantiable: [filesystem: Filesystem]
-  =>  Radical on filesystem
-  =>  ( tactic: Tactic[Path.Error] )
-  =>  ( ((Path on filesystem) is Instantiable across Paths from Text)^{tactic} ) =
+  given instantiable: [filesystem: Filesystem, root]
+  =>  ( radical: root is Radical on filesystem, radicle: (root is Radicle on filesystem)^ )
+  =>  ( ((Path on filesystem) is Instantiable across Paths from Text)^{radicle} ) =
 
     _.as[Path on filesystem]
 
@@ -145,14 +147,13 @@ object Path:
     conversion(_.on[filesystem])
 
   transparent inline given quotient: [filesystem, root, path <: Path on filesystem under root]
-  =>  ( radical: root is Radical on filesystem )
-  =>  ( Tactic[Path.Error]^ )
+  =>  ( radicle: (root is Radicle on filesystem)^ )
   =>  path is Quotient =
 
     ( path =>
         if path.nil then None
-        else if path.descent.length == 1 then Some((radical.decode(path.root), path.descent.head))
-        else Some((radical.decode(path.root), Relative(0, path.descent*))) )
+        else if path.descent.length == 1 then Some((radicle.decode(path.root), path.descent.head))
+        else Some((radicle.decode(path.root), Relative(0, path.descent*))) )
     :   path is Quotient of root over (Relative on filesystem) | Text
 
   // These carried a `Precise` bound which, resolved through the prelude's export, silently did
@@ -264,10 +265,12 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
         case limit: (Limit is Submissible on `filesystem`)                 => limit.check(root)
 
         // `root` already belongs to a valid `Path`, so re-validating it cannot fail in
-        // practice; the check is scoped `unsafely` (a genuine mismatch throws) so `on` stays
-        // total and usable from `Conversion`.
+        // practice; the check is scoped `unsafely` (a genuine mismatch throws), which also
+        // supplies the tactic a fallible root's `Radicle` retains, so `on` stays total and
+        // usable from `Conversion`.
         case radical: (Limit is Radical on `filesystem`) =>
-          unsafely(radical.decode(root))
+          unsafely:
+            summonInline[(Limit is Radicle on filesystem)^].decode(root)
 
         case filesystem: (`filesystem` is (Filesystem { type UniqueRoot = true })) =>
           infer[Plane is (Filesystem { type UniqueRoot = true })]

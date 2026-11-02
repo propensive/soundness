@@ -61,17 +61,23 @@ object Local:
   given radical: (%.type | Drive) is Radical:
     type Plane = Local
 
-    def length(text: Text): 1 | 3 raises Path.Error =
-      if text.starts(t"/") then 1 else if text.s.charAt(1) == ':' && text.s.charAt(2) == '\\' then 3
-      else abort(Path.Error(_.InvalidRoot))
-
-    def decode(text: Text): %.type | Drive raises Path.Error =
-      length(text) match
-        case 1 => %
-        case 3 => Drive(text.s.charAt(0).lest(Path.Error(_.InvalidRoot)))
-
     def encode(root: %.type | Drive): Text = root match
       case Drive(letter) => t"$letter:\\"
       case %             => t"/"
+
+  given radicle: (tactic: Tactic[Path.Error]) => (((%.type | Drive) is Radicle on Local)^{tactic}) =
+    new Radicle:
+      type Self = %.type | Drive
+      type Plane = Local
+
+      def length(text: Text): 1 | 3 =
+        if text.starts(t"/") then 1
+        else if text.s.charAt(1) == ':' && text.s.charAt(2) == '\\' then 3
+        else abort(Path.Error(_.InvalidRoot))
+
+      def decode(text: Text): %.type | Drive =
+        length(text) match
+          case 1 => %
+          case 3 => Drive(text.s.charAt(0).lest(Path.Error(_.InvalidRoot)))
 
 sealed trait Local extends Platform

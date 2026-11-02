@@ -45,10 +45,14 @@ object Www:
 
   given radical: %.type is Radical:
     type Plane = Www
-
-    def length(text: Text): Int raises Path.Error = if text.starts(t"/") then 1 else 0
     def encode(root: %.type): Text = "/"
-    def decode(text: Text): %.type raises Path.Error = %
+
+  // A web path's root is the leading `/`, present or not, so reading it cannot fail: a path
+  // on the web decodes with no tactic.
+  given radicle: %.type is Radicle:
+    type Plane = Www
+    def length(text: Text): Int = if text.starts(t"/") then 1 else 0
+    def decode(text: Text): %.type = %
 
   given filesystem: Www is Filesystem:
     type UniqueRoot = false
