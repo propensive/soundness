@@ -83,6 +83,13 @@ object internal:
     case divisible: (`a` is Divisible by `b`) =>
       divisible.divide(left.asInstanceOf, right.asInstanceOf).asInstanceOf[r]
 
+  // Negation has no `Op` counterpart in symbolism, so only the instance itself is summoned —
+  // as a `summonFrom` pattern, not `summonInline`, which would type it as the trait and box
+  // through the erased `negate`; the pattern binds it at its own type, whose `inline def
+  // negate` is one instruction.
+  private[mosquito] inline def negated[a, r](operand: a): r = summonFrom:
+    case negatable: (`a` is Negatable) => negatable.negate(operand.asInstanceOf).asInstanceOf[r]
+
   object Vector:
     // The elements' common type gives the storage its class: a `Vector(1.0, 2.0)` is a
     // `double[]`, a vector of quantities (opaquely `Double`) likewise, so element reads and the
@@ -160,8 +167,16 @@ object internal:
       type Result = Vector[result, size]
 
       inline def negate(operand: vector): Vector[result, size] =
-        val negation = summonInline[value is Negatable]
-        operand.map(negation.negate(_).asInstanceOf[result])
+        val length = operand.data.length
+
+        val arr = Array.build[result](length): array =>
+          var i = 0
+
+          while i < length do
+            array(i) = negated[value, result](operand.data.readUnchecked(i))
+            i += 1
+
+        new Vector[result, size](arr)
 
     inline given subtractable
     :   [ value,
@@ -186,6 +201,106 @@ object internal:
           while i < length do
             array(i) =
               minus[value, value2, result](left.data.readUnchecked(i), right.data.readUnchecked(i))
+
+            i += 1
+
+        new Vector[result, size](arr)
+
+    // Multiplication and division each have two shapes — by a scalar and element-wise by a
+    // vector of the same size — as separate instances distinguished by `Operand`. The scalar
+    // instance's operand is unconstrained, but it applies only where the elements themselves
+    // multiply by it, which no element does by a `Vector`, so a vector operand reaches only
+    // the element-wise instance. The scalar product of two vectors is `dot`, not `*`.
+    inline given scalarMultiplicable
+    :   [ value, size <: Int, left <: Vector[value, size], scalar, result ]
+    =>  ( multiplication: value is Multiplicable by scalar to result, classTag: ClassTag[result] )
+    =>  left is Multiplicable:
+
+      type Operand = scalar
+      type Result = Vector[result, size]
+
+      inline def multiply(left: left, right: scalar): Vector[result, size] =
+        val length = left.data.length
+
+        // A loop, not `indices.each`: the closure's fresh capability leaks from the expansion.
+        val arr = Array.build[result](length): array =>
+          var i = 0
+
+          while i < length do
+            array(i) = times[value, scalar, result](left.data.readUnchecked(i), right)
+            i += 1
+
+        new Vector[result, size](arr)
+
+    inline given scalarDivisible
+    :   [ value, size <: Int, left <: Vector[value, size], scalar, result ]
+    =>  ( division: value is Divisible by scalar to result, classTag: ClassTag[result] )
+    =>  left is Divisible:
+
+      type Operand = scalar
+      type Result = Vector[result, size]
+
+      inline def divide(left: left, right: scalar): Vector[result, size] =
+        val length = left.data.length
+
+        val arr = Array.build[result](length): array =>
+          var i = 0
+
+          while i < length do
+            array(i) = over[value, scalar, result](left.data.readUnchecked(i), right)
+            i += 1
+
+        new Vector[result, size](arr)
+
+    inline given vectorMultiplicable
+    :   [ value,
+          size   <: Int,
+          left   <: Vector[value, size],
+          value2,
+          right  <: Vector[value2, size],
+          result ]
+    =>  ( multiplication: value is Multiplicable by value2 to result, classTag: ClassTag[result] )
+    =>  left is Multiplicable:
+
+      type Operand = right
+      type Result = Vector[result, size]
+
+      inline def multiply(left: left, right: right): Vector[result, size] =
+        val length = left.data.length
+
+        val arr = Array.build[result](length): array =>
+          var i = 0
+
+          while i < length do
+            array(i) =
+              times[value, value2, result](left.data.readUnchecked(i), right.data.readUnchecked(i))
+
+            i += 1
+
+        new Vector[result, size](arr)
+
+    inline given vectorDivisible
+    :   [ value,
+          size   <: Int,
+          left   <: Vector[value, size],
+          value2,
+          right  <: Vector[value2, size],
+          result ]
+    =>  ( division: value is Divisible by value2 to result, classTag: ClassTag[result] )
+    =>  left is Divisible:
+
+      type Operand = right
+      type Result = Vector[result, size]
+
+      inline def divide(left: left, right: right): Vector[result, size] =
+        val length = left.data.length
+
+        val arr = Array.build[result](length): array =>
+          var i = 0
+
+          while i < length do
+            array(i) =
+              over[value, value2, result](left.data.readUnchecked(i), right.data.readUnchecked(i))
 
             i += 1
 

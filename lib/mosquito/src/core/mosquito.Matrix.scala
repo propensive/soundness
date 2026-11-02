@@ -160,6 +160,25 @@ object Matrix:
 
       new Matrix[result, rows, columns](left.rows, left.columns, arr)
 
+  inline given negatable
+  :   [ element, rows <: Int, columns <: Int, matrix <: Matrix[element, rows, columns], result ]
+  =>  ( negatable: element is Negatable to result, classTag: ClassTag[result] )
+  =>  matrix is Negatable:
+
+    type Result = Matrix[result, rows, columns]
+
+    inline def negate(operand: matrix): Matrix[result, rows, columns] =
+      val length = operand.elements.length
+
+      val arr = Array.build[result](length): array =>
+        var i = 0
+
+        while i < length do
+          array(i) = mosquito.internal.negated[element, result](operand.elements.readUnchecked(i))
+          i += 1
+
+      new Matrix[result, rows, columns](operand.rows, operand.columns, arr)
+
   // The three shapes of multiplication — by scalar, by matrix and by vector — are separate
   // instances distinguished by `Operand`; the scalar instance's operand is unconstrained, but
   // it applies only where the elements themselves multiply by it (issue #687).
