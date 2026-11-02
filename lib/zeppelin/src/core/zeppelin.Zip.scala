@@ -135,8 +135,14 @@ object Zip:
           then Zip.Entry.at(ref, Array.empty[Byte], stat.modified).asDirectory
           else
             val contents: Data =
-              backend.open(path, List(OpenFlag.Read), Unset): handle =>
-                summon[Data is Aggregable by Data].accept(Stream(handle.reader()))
+              mitigate:
+                case error: Truncation.Error =>
+                  given Diagnostics = error.diagnostics
+                  Io.Error(path, Io.Error.Operation.Read, Io.Error.Reason.Physical)
+
+              . protect:
+                backend.open(path, List(OpenFlag.Read), Unset): handle =>
+                  summon[Data is Aggregable by Data].accept(Stream(handle.reader()))
 
             Zip.Entry.at(ref, contents, stat.modified)
 

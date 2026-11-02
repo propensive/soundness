@@ -37,6 +37,7 @@ import java.nio.file as jnf
 import anticipation.*
 import contingency.*
 import denominative.*
+import fulminate.*
 import gigantism.Every
 import kaleidoscope.*
 import prepositional.*
@@ -44,9 +45,10 @@ import rudiments.*
 import serpentine.*
 import spectacular.*
 import symbolism.*
+import turbulence.*
 import turbulence.{Aggregable, Streamable}
-import zephyrine.Credit
 import vacuous.*
+import zephyrine.Credit
 
 import Io.Error.{Operation, Reason}
 
@@ -96,7 +98,14 @@ extension [plane: Filesystem](path: Path on plane)
     // process's filesystem.
     Fdtable.resolve(fdtables, Path.encodable.encode(path)) match
       case descriptor: Fdtable.Descriptor =>
-        try descriptor.open(List(OpenFlag.Write)): handle => handle.writer(Chain(bytes))
+        try
+          mitigate:
+            case error: Truncation.Error =>
+              given Diagnostics = error.diagnostics
+              Io.Error(path, Operation.Write, Io.Error.Reason.Physical)
+
+          . protect:
+            descriptor.open(List(OpenFlag.Write)): handle => handle.writer(Chain(bytes))
         catch case refusal: Fdtable.Refusal =>
           abort(Io.Error(path, Operation.Write, refusal.reason))
 

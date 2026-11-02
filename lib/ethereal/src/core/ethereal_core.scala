@@ -195,7 +195,7 @@ def cli[bus <: Matchable](using executive: Executive)
   def hashScript(script: Path on Local): Optional[Text] = safely:
     import gastronomy.*, providers.javaBaseProvider
     import monotonous.*, alphabets.hexLowerCase
-    script.open[File](Read)(file.checksum[Sha2[256]].serialize[Hex])
+    script.open[File](Read)(file.stream.read[Data]).checksum[Sha2[256]].serialize[Hex]
 
   // The identity of the launcher this daemon was started from, hashed once at
   // startup — which also preloads the hashing classes, so verification can still
