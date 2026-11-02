@@ -160,6 +160,25 @@ object Matrix:
 
       new Matrix[result, rows, columns](left.rows, left.columns, arr)
 
+  inline given negatable
+  :   [ element, rows <: Int, columns <: Int, matrix <: Matrix[element, rows, columns], result ]
+  =>  ( negatable: element is Negatable to result, classTag: ClassTag[result] )
+  =>  matrix is Negatable:
+
+    type Result = Matrix[result, rows, columns]
+
+    inline def negate(operand: matrix): Matrix[result, rows, columns] =
+      val length = operand.elements.length
+
+      val arr = Array.build[result](length): array =>
+        var i = 0
+
+        while i < length do
+          array(i) = mosquito.internal.negated[element, result](operand.elements.readUnchecked(i))
+          i += 1
+
+      new Matrix[result, rows, columns](operand.rows, operand.columns, arr)
+
   // The three shapes of multiplication — by scalar, by matrix and by vector — are separate
   // instances distinguished by `Operand`; the scalar instance's operand is unconstrained, but
   // it applies only where the elements themselves multiply by it (issue #687).
@@ -307,7 +326,10 @@ object Matrix:
       new Vector[result, rows](arr)
 
 
-  def identity[element, dimension <: Int]
+  // The constructors are inline so that the element writes are typed array stores at a call
+  // site with a concrete element: inside an ordinary generic method they are boxing
+  // `ScalaRunTime.array_update`s.
+  inline def identity[element, dimension <: Int]
     ( using unital:        element is Unital,
             zeroic:        element is Zeroic,
             classTag:      ClassTag[element],
@@ -333,7 +355,7 @@ object Matrix:
     new Matrix[element, dimension, dimension](size, size, arr)
 
 
-  def zero[element, rowCount <: Int, columnCount <: Int]
+  inline def zero[element, rowCount <: Int, columnCount <: Int]
     ( using zeroic:   element is Zeroic,
             classTag: ClassTag[element],
             rowValue: ValueOf[rowCount],
@@ -456,13 +478,18 @@ object Matrix:
       laplaceExpansion(matrix.elements, dimension, fullMask, fullMask, dimension)
 
 
-    def trace(using addition: element is Addable by element to element): element =
+    // Inline, with the addition resolved at the call site as the instances' is.
+    inline def trace(using addition: element is Addable by element to element): element =
       val dimension = matrix.rows
-      var sum: element = matrix(0, 0)
+      val elements = matrix.elements
+      var sum: element = elements.readUnchecked(0)
       var i = 1
 
       while i < dimension do
-        sum = sum + matrix(i, i)
+        sum =
+          mosquito.internal.plus[element, element, element]
+            ( sum, elements.readUnchecked(dimension*i + i) )
+
         i += 1
 
       sum
@@ -798,11 +825,15 @@ object Matrix:
 class Matrix[element, rows <: Int, columns <: Int]
   ( val rows: Int, val columns: Int, val elements: Array[element]^{} ):
 
-  def apply(row: Int, column: Int): element = elements.readUnchecked(columns*row + column)
+  // Inline, so that a read from a `Matrix[Double, m, n]` is a `daload`, not a boxing generic
+  // array access: `elements`' element type is only concrete at the call site.
+  inline def apply(row: Int, column: Int): element = elements.readUnchecked(columns*row + column)
 
   // A row or column is a vector over the same element array class as the matrix, which the
-  // matrix's own storage supplies: no `ClassTag` is asked of the caller.
-  private def slice(from: Int, step: Int, count: Int): Array[element]^{} =
+  // matrix's own storage supplies: no `ClassTag` is asked of the caller. Where one is in
+  // scope anyway (the element is concrete at the call site), the inline `row` and `column`
+  // take it and copy with typed array access instead of this reflective, element-boxing walk.
+  private[mosquito] def slice(from: Int, step: Int, count: Int): Array[element]^{} =
     val source = Array.unsafeJvm(elements)
 
     val target: scala.Array[element]^ =
@@ -817,13 +848,28 @@ class Matrix[element, rows <: Int, columns <: Int]
 
     Array.unsafeFrozen(target)
 
-  def row(index: Int): Vector[element, columns] =
-    new Vector[element, columns](slice(columns*index, 1, columns))
+  inline def row(index: Int): Vector[element, columns] =
+    new Vector[element, columns](strip(columns*index, 1, columns))
 
-  def column(index: Int): Vector[element, rows] =
-    new Vector[element, rows](slice(index, columns, rows))
+  inline def column(index: Int): Vector[element, rows] =
+    new Vector[element, rows](strip(index, columns, rows))
 
-  def transpose(using ClassTag[element]): Matrix[element, columns, rows] =
+  // The backticks keep `element` the class's parameter rather than a fresh pattern variable.
+  private inline def strip(from: Int, step: Int, count: Int): Array[element]^{} = summonFrom:
+    case classTag: ClassTag[`element`] =>
+      val source = elements
+
+      Array.build[element](count): array =>
+        var i = 0
+
+        while i < count do
+          array(i) = source.readUnchecked(from + step*i)
+          i += 1
+
+    case _ =>
+      slice(from, step, count)
+
+  inline def transpose(using ClassTag[element]): Matrix[element, columns, rows] =
     val arr = Array.build[element](rows*columns): array =>
       var row = 0
 
@@ -839,7 +885,7 @@ class Matrix[element, rows <: Int, columns <: Int]
     new Matrix[element, columns, rows](columns, rows, arr)
 
 
-  def submatrix(droppedRow: Int, droppedColumn: Int)(using ClassTag[element])
+  inline def submatrix(droppedRow: Int, droppedColumn: Int)(using ClassTag[element])
   :   Matrix[element, rows - 1, columns - 1] =
 
     val newRows = rows - 1
@@ -862,7 +908,9 @@ class Matrix[element, rows <: Int, columns <: Int]
     new Matrix[element, rows - 1, columns - 1](newRows, newCols, arr)
 
 
-  def frobeniusNorm
+  // Inline, with the element arithmetic resolved at the call site (`times` and `plus`), as
+  // `Vector`'s `norm` is: a `Matrix[Double, m, n]` sums its squares without boxing.
+  inline def frobeniusNorm
     ( using multiplicable: element is Multiplicable by element,
             addable:       multiplicable.Result is Addable by multiplicable.Result
                            to multiplicable.Result,
@@ -870,11 +918,20 @@ class Matrix[element, rows <: Int, columns <: Int]
   :   element =
 
     val length = elements.length
-    var sum: multiplicable.Result = elements.readUnchecked(0)*elements.readUnchecked(0)
+
+    var sum: multiplicable.Result =
+      mosquito.internal.times[element, element, multiplicable.Result]
+        ( elements.readUnchecked(0), elements.readUnchecked(0) )
+
     var i = 1
 
     while i < length do
-      sum = addable.add(sum, elements.readUnchecked(i)*elements.readUnchecked(i))
+      val x = elements.readUnchecked(i)
+
+      sum =
+        mosquito.internal.plus[multiplicable.Result, multiplicable.Result, multiplicable.Result]
+          ( sum, mosquito.internal.times[element, element, multiplicable.Result](x, x) )
+
       i += 1
 
     sum.sqrt

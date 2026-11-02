@@ -79,10 +79,18 @@ val v = Vector(1, 2, 3)               // Vector[Int, 3]
 val w: Vector[Int, 2] = Vector(1, 3, 4)   // does not compile: three components
 ```
 
-Vectors of one dimension add and subtract; `dot` and, in three dimensions, `cross` compute the
-products, carrying units through where the components are quantities:
+Vectors of one dimension add and subtract, and a vector negates, multiplies and divides
+component by component — by a scalar, or by another vector of the same dimension — whenever
+its components do. `dot` and, in three dimensions, `cross` compute the vector products,
+carrying units through where the components are quantities:
 
 ```scala
+Vector(1, 2, 3) + Vector(3, 4, 5)    // Vector(4, 6, 8)
+-Vector(1, -2, 3)                    // Vector(-1, 2, -3)
+Vector(1, 2, 3)*2                    // Vector(2, 4, 6)
+Vector(2.0, 4.0)/2.0                 // Vector(1.0, 2.0)
+Vector(1, 2, 3)*Vector(4, 5, 6)      // Vector(4, 10, 18), element-wise
+
 Vector(1, 2, 3).dot(Vector(4, 3, 7))     // 31
 Vector(1, 2, 3).cross(Vector(4, 3, 7))   // Vector(5, 5, -5)
 
@@ -100,6 +108,8 @@ val m2 = Matrix[3, 2]((7, 8), (9, 10), (11, 12))
 
 m1*m2   // Matrix[2, 2]((58, 64), (139, 154))
 m1*Vector(7, 8, 9)   // Vector(50, 122)
+m1*10   // Matrix[2, 3]((10, 20, 30), (40, 50, 60))
+-m1     // Matrix[2, 3]((-1, -2, -3), (-4, -5, -6))
 ```
 
 A product whose dimensions do not agree is a compile error, not a runtime shape check. Square

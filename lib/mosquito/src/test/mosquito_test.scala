@@ -255,6 +255,93 @@ object Tests extends Suite("matrix", m"Mosquito tests"):
         m1/2
       . assert(_ == Matrix[2, 3]((0, 1, 1), (2, 2, 3)))
 
+    suite(m"Vector scalar and element-wise arithmetic"):
+      test(m"Multiply an integer vector by a scalar"):
+        Vector(1, 2, 3)*2
+      . assert(_ == Vector(2, 4, 6))
+
+      test(m"Divide a Double vector by a scalar"):
+        Vector(2.0, 4.0)/2.0
+      . assert(_ == Vector(1.0, 2.0))
+
+      test(m"Divide an integer vector by a scalar"):
+        Vector(7, 8, 9)/2
+      . assert(_ == Vector(3, 4, 4))
+
+      test(m"Multiply two vectors element-wise"):
+        Vector(1, 2, 3)*Vector(4, 5, 6)
+      . assert(_ == Vector(4, 10, 18))
+
+      test(m"Divide two vectors element-wise"):
+        Vector(8, 9)/Vector(2, 3)
+      . assert(_ == Vector(4, 3))
+
+      test(m"Multiply a vector of quantities by a Double"):
+        Vector(1.0*Metre, 2.0*Metre)*2.0
+      . assert(_ == Vector(2.0*Metre, 4.0*Metre))
+
+      test(m"Divide a vector of quantities by a Double"):
+        Vector(1.0*Metre, 2.0*Metre)/2.0
+      . assert(_ == Vector(0.5*Metre, 1.0*Metre))
+
+      test(m"Element-wise product of quantity vectors multiplies the units"):
+        Vector(2.0*Metre, 3.0*Metre)*Vector(2.0*Metre, 2.0*Metre)
+      . assert(_ == Vector(4.0*Metre*Metre, 6.0*Metre*Metre))
+
+      test(m"Type error if element-wise product sizes differ"):
+        demilitarize:
+          Vector(1, 2, 3)*Vector(1, 2)
+      . assert(!_.nil)
+
+      test(m"Negate a Double vector"):
+        -Vector(1.5, -2.5)
+      . assert(_ == Vector(-1.5, 2.5))
+
+      test(m"Negate an integer matrix"):
+        -Matrix[2, 2]((1, -2), (3, 4))
+      . assert(_ == Matrix[2, 2]((-1, 2), (-3, -4)))
+
+      test(m"Negate a Double matrix"):
+        -Matrix[2, 2]((1.5, 0.0), (-2.0, 4.0))
+      . assert(_ == Matrix[2, 2]((-1.5, -0.0), (2.0, -4.0)))
+
+      test(m"Negation of a matrix is its scalar product with minus one"):
+        val mat = Matrix[2, 3]((1, 2, 3), (4, 5, 6))
+        -mat == mat*(-1)
+      . assert(_ == true)
+
+      test(m"A vector of mixed element types does not compile"):
+        demilitarize:
+          Vector(1, 2.0)
+      . assert(!_.nil)
+
+      test(m"A constructed vector has its reduced element type"):
+        demilitarize:
+          val vector: Vector[Double, 2] = Vector(2.0, 4.0)
+          val mono: Vector[Int, 1] = Vector(Mono(42))
+        .map(_.message)
+      . assert(_ == Nil)
+
+    suite(m"Affine transformations"):
+      // By name: under `import soundness.*`, same-named generic extensions (savagery's
+      // `transform`, functions' `andThen`) outrank the companion extensions.
+      import mosquito.Affine.{andThen, transform}
+
+      test(m"Transform a point"):
+        Affine[Double](2.0, 0.0, 0.0, 3.0, 5.0, 7.0).transform(1.0, 1.0)
+      . assert(_ == (7.0, 10.0))
+
+      test(m"Compose two transformations"):
+        val scale = Affine[Double](2.0, 0.0, 0.0, 3.0, 0.0, 0.0)
+        val shift = Affine[Double](1.0, 0.0, 0.0, 1.0, 5.0, 7.0)
+        scale.andThen(shift).transform(1.0, 1.0)
+      . assert(_ == (7.0, 10.0))
+
+      test(m"Composition with the identity is the transformation"):
+        val affine = Affine[Double](2.0, 1.0, 3.0, 4.0, 5.0, 6.0)
+        affine.andThen(Affine.identity[Double]) == affine
+      . assert(_ == true)
+
     suite(m"Rational elements"):
       test(m"Dot product of rational vectors"):
         Vector(Q64(1, 2), Q64(1, 3)).dot(Vector(Q64(2), Q64(3)))

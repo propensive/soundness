@@ -140,8 +140,8 @@ lib/metamorphose/src/core/metamorphose.Permutation.scala	1	0	0
 lib/monotonous/src/core/monotonous.Alphabet.scala	5	11	1
 lib/monotonous/src/core/monotonous.Deserializable.scala	0	0	1
 lib/monotonous/src/core/monotonous.Serializable.scala	6	2	0
-lib/mosquito/src/core/mosquito.Matrix.scala	51	38	0
-lib/mosquito/src/core/mosquito.internal.scala	10	17	0
+lib/mosquito/src/core/mosquito.Matrix.scala	53	41	0
+lib/mosquito/src/core/mosquito.internal.scala	15	26	0
 lib/murmuration/src/core/murmuration.Inclusive.scala	1	1	0
 lib/murmuration/src/core/murmuration.Iterator.scala	13	0	0
 lib/murmuration/src/core/murmuration.SortAlgorithm.scala	29	0	0
