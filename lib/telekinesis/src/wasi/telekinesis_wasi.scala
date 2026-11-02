@@ -222,7 +222,7 @@ object WasiHttpServer:
     val incoming: Foreign of "incoming-request" from Wit = requestHandle
 
     val method: Http.Method =
-      unsafely(incoming.method.call[Wasm.Case of "method"]().name.upper.as[Http.Method])
+      incoming.method.call[Wasm.Case of "method"]().name.upper.as[Http.Method]
 
     val target: Text = incoming.`path-with-query`.call[Optional[Text]]().or(t"/")
 

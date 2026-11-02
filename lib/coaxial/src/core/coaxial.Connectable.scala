@@ -34,6 +34,7 @@ package coaxial
 
 import scala.caps
 
+import contingency.*
 import gigantism.*
 import prepositional.*
 import urticose.*
@@ -46,10 +47,22 @@ import vacuous.*
 // read loop parks in `read` instead of busy-polling, and applies socket options
 // (and, for TCP, a local interface bind) before connecting.
 object Connectable:
+  // An instance over a connection which cannot fail to open — an endpoint whose duplex is
+  // already in hand, say — from a plain function: the trait's `connect` declares an error, so
+  // a lambda does not convert to it.
+  def apply[self](lambda: (self, Optional[MacAddress]) -> Duplex): self is Connectable =
+    new Connectable:
+      type Self = self
+
+      def connect(endpoint: self, interface: Optional[MacAddress]): Duplex raises Socket.Error =
+        lambda(endpoint, interface)
+
   given domainSocket: (backend: Socket.Backend, options: Every[Socket.Option.Domain])
   =>  DomainSocket is Connectable:
     // A Unix-domain socket has no network interface, so `interface` is not applicable here.
-    def connect(domainSocket: DomainSocket, interface: Optional[MacAddress]): Duplex =
+    def connect(domainSocket: DomainSocket, interface: Optional[MacAddress])
+    :   Duplex raises Socket.Error =
+
       backend.duplexDomain(domainSocket, options.values.to(List))
 
   // Honestly tracked: the instance is resolvable only with `Online` permission, so it is a
@@ -61,8 +74,10 @@ object Connectable:
     new Connectable:
       type Self = Endpoint[Tcp.Port]
 
-      def connect(endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress]): Duplex =
+      def connect(endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress])
+      :   Duplex raises Socket.Error =
+
         backend.duplexTcp(endpoint, interface, options.values.to(List))
 
 trait Connectable extends Typeclass:
-  def connect(endpoint: Self, interface: Optional[MacAddress]): Duplex
+  def connect(endpoint: Self, interface: Optional[MacAddress]): Duplex raises Socket.Error

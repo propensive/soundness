@@ -628,8 +628,10 @@ object internal:
     val joined: String = parts.mkString("\u0000")
 
     val expression: Expression =
-      try unsafely(XPathReader.parse(joined.tt, holes = true)) catch
+      recover:
         case error: Parse.Error => halt(error.message, translate(error.span.offset.lay(0)(_.n0)))
+
+      . protect(XPathReader.parse(joined.tt, holes = true))
 
     // The prefixes of every name test in the path, bound through the `Namespace` givens here
     def prefixesOf(expression: Expression): SSet[Text] = expression match

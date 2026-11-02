@@ -140,4 +140,11 @@ object internal:
 
     internal.validateLiteral(raw.tt).let(halt(_))
 
-    '{unsafely(Media.parse(${Expr(raw)}.tt))}
+    // `validateLiteral` checks the group, the subtype and the registry; the suffixes and the
+    // parameters are checked only by the parser, so a literal it would reject halts here too.
+    recover:
+      case error: MediaType.Error => halt(error.message)
+
+    . protect(Media.parse(raw.tt))
+
+    '{Media.unsafeParse(${Expr(raw)}.tt)(using Unsafe)}

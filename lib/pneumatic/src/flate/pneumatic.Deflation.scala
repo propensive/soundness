@@ -82,89 +82,78 @@ extends Duct[Data, Data]:
     (target: Slate[Data])(space: Interval in target.type)
   :   Duct.Progress =
 
-    val sourceInterval: Interval = range
-    val sourceOffset = sourceInterval.start.n0
-    val sourceLength = sourceInterval.size
-    val targetInterval: Interval = space
-    val targetOffset = targetInterval.start.n0
-    val targetSpace = targetInterval.size
-    val bytes = unsafely(source.unsafeRaw.asInstanceOf[scala.Array[Byte]])
+    source.borrow(range): (bytes, sourceOffset, sourceLength) =>
+      target.borrow(space): (out, targetOffset, targetSpace) =>
 
-    val out: scala.Array[Byte]^ =
-      unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
+        var consumed: Int = 0
+        var produced: Int = 0
 
-    var consumed: Int = 0
-    var produced: Int = 0
+        // The header needs ten bytes of space, as `flush` already checks; with less, nothing is
+        // consumed or produced, and the next step tries again.
+        if !headerDone && targetSpace >= 10 then
+          header(out, targetOffset)
+          produced += 10
+          headerDone = true
 
-    if !headerDone then
-      header(out, targetOffset)
-      produced += 10
-      headerDone = true
+        // Feed the deflater directly from the source window — no staging copy. As
+        // in `Inflation`, the reference is released before this step returns, and
+        // only the bytes the deflater actually consumed (`getBytesRead` measures
+        // them; `Deflater` has no `getRemaining`) are claimed; the remainder stays
+        // in the window for the next step to re-feed.
+        if sourceLength > 0 then deflater.setInput(bytes, sourceOffset, sourceLength)
 
-    // Feed the deflater directly from the source window — no staging copy. As
-    // in `Inflation`, the reference is released before this step returns, and
-    // only the bytes the deflater actually consumed (`getBytesRead` measures
-    // them; `Deflater` has no `getRemaining`) are claimed; the remainder stays
-    // in the window for the next step to re-feed.
-    if sourceLength > 0 then deflater.setInput(bytes, sourceOffset, sourceLength)
+        val before: Long = deflater.getBytesRead
+        var run: Int = 1
 
-    val before: Long = deflater.getBytesRead
-    var run: Int = 1
+        while run > 0 && produced < targetSpace do
+          run = deflater.deflate(out, targetOffset + produced, targetSpace - produced)
+          produced += run
 
-    while run > 0 && produced < targetSpace do
-      run = deflater.deflate(out, targetOffset + produced, targetSpace - produced)
-      produced += run
+        consumed = (deflater.getBytesRead - before).toInt
+        deflater.setInput(empty)
 
-    consumed = (deflater.getBytesRead - before).toInt
-    deflater.setInput(empty)
+        // The consumed range is a contiguous prefix of the window, so the checksum
+        // sees exactly the stream the deflater compressed, in order.
+        if gzip && consumed > 0 then
+          crc.update(bytes, sourceOffset, consumed)
+          size += consumed
 
-    // The consumed range is a contiguous prefix of the window, so the checksum
-    // sees exactly the stream the deflater compressed, in order.
-    if gzip && consumed > 0 then
-      crc.update(bytes, sourceOffset, consumed)
-      size += consumed
-
-    Duct.Progress(consumed, produced)
+        Duct.Progress(consumed, produced)
 
   override update def flush(target: Slate[Data])(space: Interval in target.type): Int =
-    val targetInterval: Interval = space
-    val targetOffset = targetInterval.start.n0
-    val targetSpace = targetInterval.size
+    target.borrow(space): (out, targetOffset, targetSpace) =>
 
-    val out: scala.Array[Byte]^ =
-      unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
+      var produced: Int = 0
 
-    var produced: Int = 0
+      if !headerDone && targetSpace >= 10 then
+        header(out, targetOffset)
+        produced += 10
+        headerDone = true
 
-    if !headerDone && targetSpace >= 10 then
-      header(out, targetOffset)
-      produced += 10
-      headerDone = true
+      if headerDone then
+        if !finishing then
+          deflater.finish()
+          finishing = true
 
-    if headerDone then
-      if !finishing then
-        deflater.finish()
-        finishing = true
+        var run: Int = 1
 
-      var run: Int = 1
+        while run > 0 && produced < targetSpace do
+          run = deflater.deflate(out, targetOffset + produced, targetSpace - produced)
+          produced += run
 
-      while run > 0 && produced < targetSpace do
-        run = deflater.deflate(out, targetOffset + produced, targetSpace - produced)
-        produced += run
+        if deflater.finished && gzip then
+          val value = crc.value
 
-      if deflater.finished && gzip then
-        val value = crc.value
+          while trailer < 8 && produced < targetSpace do
+            val datum =
+              if trailer < 4 then (value >>> (trailer*8)) & 0xff
+              else (size >>> ((trailer - 4)*8)) & 0xff
 
-        while trailer < 8 && produced < targetSpace do
-          val datum =
-            if trailer < 4 then (value >>> (trailer*8)) & 0xff
-            else (size >>> ((trailer - 4)*8)) & 0xff
+            out(targetOffset + produced) = datum.toByte
+            produced += 1
+            trailer += 1
 
-          out(targetOffset + produced) = datum.toByte
-          produced += 1
-          trailer += 1
-
-    produced
+      produced
 
 // Streaming decompression, the inverse of `Deflation`, over the pure-Scala `Inflater`,
 // with the gzip header parsed by a small state machine ahead of the inflater
@@ -257,70 +246,57 @@ extends Duct[Data, Data]:
     (target: Slate[Data])(space: Interval in target.type)
   :   Duct.Progress =
 
-    val sourceInterval: Interval = range
-    val sourceOffset = sourceInterval.start.n0
-    val sourceLength = sourceInterval.size
-    val targetInterval: Interval = space
-    val targetOffset = targetInterval.start.n0
-    val targetSpace = targetInterval.size
-    val bytes = unsafely(source.unsafeRaw.asInstanceOf[scala.Array[Byte]])
+    source.borrow(range): (bytes, sourceOffset, sourceLength) =>
+      target.borrow(space): (out, targetOffset, targetSpace) =>
 
-    val out: scala.Array[Byte]^ =
-      unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
+        var consumed: Int = 0
+        var produced: Int = 0
 
-    var consumed: Int = 0
-    var produced: Int = 0
+        while header != Header.Done && consumed < sourceLength do
+          header = advance(bytes(sourceOffset + consumed) & 0xff, headerPosition)
+          headerPosition += 1
+          consumed += 1
 
-    while header != Header.Done && consumed < sourceLength do
-      header = advance(bytes(sourceOffset + consumed) & 0xff, headerPosition)
-      headerPosition += 1
-      consumed += 1
+        if header == Header.Done then
+          if !inflater.finished then
+            // Feed the inflater directly from the source window — no staging copy.
+            // The reference cannot outlive the window's validity, because the input
+            // is unconditionally released before this step returns: only the bytes
+            // the inflater actually consumed are claimed, and the remainder stays
+            // in the window for the next step to re-feed. (zlib's own position is
+            // held bit-exactly in the inflater's state, so re-supplying the unread
+            // whole bytes later is the same stream.)
+            val fed = sourceLength - consumed
+            if fed > 0 then inflater.setInput(bytes, sourceOffset + consumed, fed)
 
-    if header == Header.Done then
-      if !inflater.finished then
-        // Feed the inflater directly from the source window — no staging copy.
-        // The reference cannot outlive the window's validity, because the input
-        // is unconditionally released before this step returns: only the bytes
-        // the inflater actually consumed are claimed, and the remainder stays
-        // in the window for the next step to re-feed. (zlib's own position is
-        // held bit-exactly in the inflater's state, so re-supplying the unread
-        // whole bytes later is the same stream.)
-        val fed = sourceLength - consumed
-        if fed > 0 then inflater.setInput(bytes, sourceOffset + consumed, fed)
+            var run: Int = 1
 
-        var run: Int = 1
+            while run > 0 && produced < targetSpace && !inflater.finished do
+              run = inflater.inflate(out, targetOffset + produced, targetSpace - produced)
+              produced += run
 
-        while run > 0 && produced < targetSpace && !inflater.finished do
-          run = inflater.inflate(out, targetOffset + produced, targetSpace - produced)
-          produced += run
+            consumed += fed - inflater.getRemaining
+            inflater.setInput(empty)
 
-        consumed += fed - inflater.getRemaining
-        inflater.setInput(empty)
+          if inflater.finished && trailer > 0 then
+            // Unconsumed input was never claimed, so the trailer begins exactly at
+            // `consumed`; skip as much of it as this window holds.
+            val skip = trailer.min(sourceLength - consumed)
+            consumed += skip
+            trailer -= skip
 
-      if inflater.finished && trailer > 0 then
-        // Unconsumed input was never claimed, so the trailer begins exactly at
-        // `consumed`; skip as much of it as this window holds.
-        val skip = trailer.min(sourceLength - consumed)
-        consumed += skip
-        trailer -= skip
-
-    Duct.Progress(consumed, produced)
+        Duct.Progress(consumed, produced)
 
   // The inflater may hold far more pending output than one step's space, so
   // it must keep draining after the upstream ends.
   override update def flush(target: Slate[Data])(space: Interval in target.type): Int =
-    val targetInterval: Interval = space
-    val targetOffset = targetInterval.start.n0
-    val targetSpace = targetInterval.size
+    target.borrow(space): (out, targetOffset, targetSpace) =>
 
-    val out: scala.Array[Byte]^ =
-      unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]]).asInstanceOf[scala.Array[Byte]^]
+      var produced: Int = 0
+      var run: Int = 1
 
-    var produced: Int = 0
-    var run: Int = 1
+      while run > 0 && produced < targetSpace && !inflater.finished do
+        run = inflater.inflate(out, targetOffset + produced, targetSpace - produced)
+        produced += run
 
-    while run > 0 && produced < targetSpace && !inflater.finished do
-      run = inflater.inflate(out, targetOffset + produced, targetSpace - produced)
-      produced += run
-
-    produced
+      produced

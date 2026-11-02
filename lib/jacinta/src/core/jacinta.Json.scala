@@ -3281,12 +3281,12 @@ object Json extends Json1, Dynamic:
 
     import dynamicAccess.dynamicJson
 
-    def rewrite(kind: Text, json: Json): Json = unsafely(json.updateDynamic(key)(kind))
+    def rewrite(kind: Text, json: Json): Json = json.updateDynamic(key)(kind)
     // Reads the discriminator through direct AST access rather than a `Decodable` summon:
     // the summoned instance would capture `safely`'s scoped tactic, which the summon's
     // invariant `Self` bound cannot absorb.
     def discriminate(json: Json): Optional[Text] = safely(json.selectField(key).root.string)
-    def variant(json: Json): Json = unsafely(json.updateDynamic(key)(Unset))
+    def variant(json: Json): Json = json.updateDynamic(key)(Unset)
 
   // `{"Circle": {"radius": 1.0}}` — a single-key object whose key is the
   // tag and whose value is the variant's payload.
@@ -3540,21 +3540,23 @@ extends Dynamic, Topical, Original derives CanEqual:
     Json.ast(Json.Ast.arr(Array.freeze(updated)))
 
 
+  // Total: a field is set or replaced, and a non-object carrier is a programming error
+  // (`modify` has no path that raises).
   def updateDynamic(field: String)[value: anticipation.Encodable in Json](value: value)
     ( using erased dynamical: (? >: Json) is Dynamical )
-  :   Json raises Json.Error =
+  :   Json =
 
     modify(field, value.encode)
 
 
   def updateDynamic(field: String)[value](unset: Unset.type)
     ( using erased dynamical: (? >: Json) is Dynamical )
-  :   Json raises Json.Error =
+  :   Json =
 
     delete(field)
 
 
-  private[jacinta] def modify(field: String, value: Json): Json raises Json.Error =
+  private[jacinta] def modify(field: String, value: Json): Json =
     val arr = root.asInstanceOf[Array[Any]^{}]
     val len = arr.length
     val n = len/2
@@ -3573,7 +3575,7 @@ extends Dynamic, Topical, Original derives CanEqual:
         out(index*2 + 1) = value.root
         Json.ast(Json.Ast(Array.freeze(out)))
 
-  private[jacinta] def delete(field: String): Json raises Json.Error =
+  private[jacinta] def delete(field: String): Json =
     val arr = root.asInstanceOf[Array[Any]^{}]
     val len = arr.length
 

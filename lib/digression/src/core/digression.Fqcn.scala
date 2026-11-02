@@ -54,6 +54,10 @@ object Fqcn:
     char >= 'A' && char <= 'Z' || char >= 'a' && char <= 'z' || char >= '0' && char <= '9' ||
       char == '_' || char == '$'
 
+  // For the `fqcn"…"` interpolator, which has validated the name at expansion: the gate asserts
+  // that, so the re-parse of the canonical form cannot fail.
+  def unsafeFrom(name: Text)(using erased unsafe: Unsafe): Fqcn = unsafely(Fqcn(name))
+
   def apply(name: Text): Fqcn raises Fqcn.Error =
     val parts = List.from(name.s.split("\\.").nn.iterator.map(_.nn.tt))
 

@@ -53,9 +53,11 @@ object SelectorList:
     def strategy: Text = t"css selector"
     def focus(selectorList: SelectorList): Text = selectorList.show
 
-  // A non-raising parse of already-validated selector text, used by the `css"…"`
-  // interpolator to rebuild a rule's selector at runtime.
-  def read(text: Text): SelectorList = unsafely(SelectorParser.parse(text))
+  def parse(text: Text)(using Tactic[Css.Error]): SelectorList = SelectorParser.parse(text)
+
+  // For the `css"…"` interpolator, which has parsed the selector at expansion: the gate asserts
+  // that, so rebuilding the rule's selector at runtime cannot fail.
+  def unsafeRead(text: Text)(using erased unsafe: Unsafe): SelectorList = unsafely(parse(text))
 
 case class SelectorList(selectors: List[Selector]) derives CanEqual
 

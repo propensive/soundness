@@ -3392,3 +3392,43 @@ entry points. What each took, and the traps:
 - **hellenism** `Streamable` givens declare `^{classpath, truncation}` and lose both seals; the
   bundled-resource readers (`scintillate` error pages, ethereal's schema) use `unsafely`.
 
+
+## `unsafely` is a last resort: 210 sites audited, 60 remain (2026-11-01)
+
+After the ambient strategies were confined to entry points, 210 `unsafely` sites remained in
+library sources. Each was classified by what makes the operation safe, and the ruling is that
+the proof should be carried by the code rather than asserted: a total API or a type-level
+proof first, a `mitigate` into a named error second, and a scoped `unsafely` with its proof in
+a comment only where neither applies.
+
+- **Macro-checked literals** (`media"…"`, `jp"…"`, YAML paths, `telp"…"`, `fqcn"…"`, `css"…"`
+  selectors, `ClassList[…]()`): the expansion validates the literal under `recover { case
+  error => halt(error.message, position) }.protect(parse)`, and the generated code calls an
+  `Unsafe`-gated constructor (`Media.unsafeParse(text)(using Unsafe)`) whose body is the one
+  `unsafely`, rather than splicing `unsafely` into every expansion. The gate names the
+  assertion; the macro supplies the token. `ClassList`'s labels are checked at expansion with
+  nomenclature's own rules, so a class name that is not a CSS identifier is a compile error.
+- **Valid by construction**: a constructor that validates and builds is split into the check
+  and a private unchecked builder (`Permutation.apply`/`unchecked`, `Factoradic`, `permute`),
+  so a value the code itself produced is built without repeating the check.
+- **Defects** (key material the module generated, a media type an `Abstractable` instance
+  states) are `safely(…).or(panic(…))`: named, not asserted.
+- **Honest signatures**, where the throw was the only thing hiding an error from a caller:
+  `Socket.Backend`'s listen methods raise `Bind.Error` and its dial/duplex methods
+  `Socket.Error`, classified from the JDK's exceptions in the backend once, so the HTTP, SSH,
+  gRPC and debugger consumers map a *reason* rather than an exception message (and
+  `listen`'s long-declared `Bind.Error` is finally raised); `Rig.stage`/`invoke` and
+  `Computable.compute` take the tactic they needed; a non-literal `Monthstamp - day` needs a
+  `Tactic[Moment.Error]` at the expression.
+- **Left, with the proof written beside each**: bundled resources and schemas (a packaging
+  error), macro-time schema readers (`Specification.fields` throws at expansion; making it
+  lazy under a tactic is a trait change for another PR), thunks that run after the call
+  returns (`Spring`/`Handle` endpoints, the JVM HTTP body), the JSON-RPC dispatcher's service
+  methods (call-time tactics are the follow-up), the pure `Subtractable` witness, and
+  `kaleidoscope`'s cache.
+
+Traps: a method with a `using` clause or a context-function result is not a SAM, so the
+typeclasses that gained a tactic (`Computable`, `Connectable`) got factories for lambda-shaped
+instances; `mitigate` inside an `inline def` cannot supply the protected call's tactic
+(delegate to a non-inline method); and `daemon[E]:` demands a pure body, so a daemon that
+also uses a tactic carries the error out through a promise.

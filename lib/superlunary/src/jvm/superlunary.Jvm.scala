@@ -55,15 +55,21 @@ object Jvm extends Rig(using Classloader[Jvm.type]):
   type Target = LocalClasspath
   type Transport = Json
 
-  def stage(out: Path on Linux): LocalClasspath = classpath(out)
+  def stage(out: Path on Linux)(using Tactic[Rig.Error]): LocalClasspath = classpath(out)
 
   val scalac: Scalac[3.6, Universe.Classfile] = Scalac[3.6](List(scalacOptions.experimental))
 
-  protected def invoke[output](stage: Stage[output, Form, Target]): output =
+  protected def invoke[output](stage: Stage[output, Form, Target])(using Tactic[Rig.Error])
+  :   output =
+
     import workingDirectories.systemWorkingDirectory
     import environments.javaBaseEnvironment
     import logging.silentLogging
 
     stage.remote: input =>
       val cmd = sh"java -classpath ${stage.target()} superlunary.Executor $input"
-      unsafely(cmd.exec[Text]())
+
+      mitigate:
+        case error: Exec.Error => Rig.Error(Rig.Error.Reason.Invocation)(using error.diagnostics)
+
+      . protect(cmd.exec[Text]())

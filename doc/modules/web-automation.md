@@ -61,7 +61,7 @@ typecheck
 ##
 WebDriver.Chrome.headless.session:
   val heading = browser.element(H1)                    // by tag
-  val items = browser \ SelectorList.read(t"nav li")   // by CSS selector
+  val items = browser \ SelectorList.parse(t"nav li")  // by CSS selector
   val field = browser.element(Name[DomId](t"query"))   // by id
   val button = browser.element(Button)
 

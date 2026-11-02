@@ -64,7 +64,7 @@ def run(): Unit =
   import strategies.throwUnsafely
 
   val response =
-    unsafely(DomainSocket(% / "var" / "run" / "docker.sock"))(t"/images/json").fetch()
+    DomainSocket(% / "var" / "run" / "docker.sock")(t"/images/json").fetch()
 
   import hieroglyph.*, codepages.utf8Codepage
 

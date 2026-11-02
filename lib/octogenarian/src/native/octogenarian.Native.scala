@@ -68,20 +68,28 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
     commonDir(gitDir) / "objects"
 
   // A linked worktree's git directory names the shared one in `commondir`.
+  // A path a repository's own files name — a `commondir`, a `gitdir`, the user's home — is
+  // external text; one that does not make a path is reported as the repository's fault.
+  private def absolute(text: Text)(using Tactic[Git.Error]): Path on Linux =
+    mitigate:
+      case error: Path.Error => Git.Error(Git.Error.Reason.Unexpected)(using error.diagnostics)
+
+    . protect(text.as[Path on Linux])
+
   private def commonDir(gitDir: Path on Linux)(using Tactic[Git.Error]): Path on Linux = io:
     val file = gitDir / "commondir"
 
     if !file.existent() then gitDir else
       val target = Objects.text(file.read[Data]).trim
 
-      if target.starts(t"/") then unsafely(target.as[Path on Linux])
+      if target.starts(t"/") then absolute(target)
       else Refstore.descend(gitDir, target.cut(t"/").filter(_ != dot))
 
   private def config(gitDir: Path on Linux)(using Tactic[Git.Error]): List[(Git.Config.Key, Text)] =
     io(Gitconfig.effective(gitDir, commonDir(gitDir)))
 
   private def setting(gitDir: Path on Linux, key: Text)(using Tactic[Git.Error]): Optional[Text] =
-    Operations.setting(config(gitDir), unsafely(Git.Config.Key.parse(key)))
+    Operations.setting(config(gitDir), Git.Config.Key.parse(key))
 
   private def identity(gitDir: Path on Linux)(using Tactic[Git.Error]): Git.Identity =
     Git.Identity
@@ -104,7 +112,7 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
 
     if !path.existent() then Unset
     else if dotGit.existent() then
-      unsafely(dotGit.entry()) match
+      dotGit.entry() match
         case Directory =>
           Git.Backend.Location(dotGit, commonDir(dotGit), path)
 
@@ -116,7 +124,7 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
             val target = content.skip(8).trim
 
             val gitDir =
-              if target.starts(t"/") then unsafely(target.as[Path on Linux])
+              if target.starts(t"/") then absolute(target)
               else Refstore.descend(path, target.cut(t"/").filter(_ != dot))
 
             Git.Backend.Location(gitDir, commonDir(gitDir), path)
@@ -592,10 +600,10 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
         commonDir(gitDir) / "config"
 
       case Git.Config.Source.Repository(_, Git.Config.Scope.Global) =>
-        unsafely(t"${System.getProperty("user.home").nn}/.gitconfig".as[Path on Linux])
+        absolute(t"${System.getProperty("user.home").nn}/.gitconfig")
 
       case Git.Config.Source.Repository(_, Git.Config.Scope.System) =>
-        unsafely(t"/etc/gitconfig".as[Path on Linux])
+        % / "etc" / "gitconfig"
 
       case Git.Config.Source.Effective(gitDir)                      => commonDir(gitDir) / "config"
 
@@ -718,8 +726,9 @@ class Native(transports: List[Transport] = Nil) extends Git.Backend:
 
         val target: Optional[Path on Linux] =
           if gitdirFile.existent() then
+            // A `gitdir` that is not an absolute path names no working tree.
             val text = Objects.text(gitdirFile.read[Data]).trim
-            unsafely(text.as[Path on Linux]).parent
+            safely(text.as[Path on Linux]).let(_.parent)
           else
             Unset
 

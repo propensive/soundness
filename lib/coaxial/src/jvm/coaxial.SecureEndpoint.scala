@@ -34,11 +34,13 @@ package coaxial
 
 import java.net as jn
 import java.util as ju
+import java.io as ji
 import javax.net.ssl as jns
 
 import scala.caps
 
 import anticipation.*
+import contingency.*
 import denominative.nil
 import gigantism.*
 import gossamer.*
@@ -62,13 +64,17 @@ object SecureEndpoint:
     new Connectable:
       type Self = SecureEndpoint
 
-      def connect(endpoint: SecureEndpoint, interface: Optional[MacAddress]): Duplex =
+      def connect(endpoint: SecureEndpoint, interface: Optional[MacAddress])
+      :   Duplex raises Socket.Error =
+
         val context = tls.context.or(jns.SSLContext.getDefault.nn)
         val socket = context.getSocketFactory.nn.createSocket().nn.asInstanceOf[jns.SSLSocket]
         configure(socket, options.values.to(List))
 
-        interface.let(interfaceFor(_)).let(bindAddress(_)).let: local =>
-          socket.bind(jn.InetSocketAddress(local, 0))
+        try
+          interface.let(interfaceFor(_)).let(bindAddress(_)).let: local =>
+            socket.bind(jn.InetSocketAddress(local, 0))
+        catch case error: ji.IOException => abort(Socket.Error(connectReason(error)))
 
         // SNI lets the server select its certificate; endpoint identification then checks
         // that certificate against the hostname (skipped only when verification is off).
@@ -88,8 +94,15 @@ object SecureEndpoint:
 
         socket.setSSLParameters(params)
 
-        socket.connect(jn.InetSocketAddress(endpoint.host.s, endpoint.port))
-        socket.startHandshake()
+        try
+          socket.connect(jn.InetSocketAddress(endpoint.host.s, endpoint.port))
+          socket.startHandshake()
+        catch
+          case error: jns.SSLException =>
+            abort(Socket.Error(Socket.Error.Reason.Handshake))
+
+          case error: ji.IOException =>
+            abort(Socket.Error(connectReason(error)))
 
         // `getApplicationProtocol` is `""` when nothing was negotiated (and, defensively,
         // could be `null`); either way the transport carries no ALPN protocol.

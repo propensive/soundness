@@ -42,6 +42,7 @@ import scala.scalanative.unsafe.*
 import unsafeExceptions.canThrowAny
 
 import anticipation.*
+import contingency.*
 import gigantism.*
 import urticose.*
 import vacuous.*
@@ -67,13 +68,15 @@ object SecureEndpoint:
     new Connectable:
       type Self = SecureEndpoint
 
-      def connect(endpoint: SecureEndpoint, interface: Optional[MacAddress]): Duplex =
+      def connect(endpoint: SecureEndpoint, interface: Optional[MacAddress])
+      :   Duplex raises Socket.Error =
+
         // A connect BIO resolves and opens its socket internally, so neither a local-interface
         // bind nor per-socket `options` can be applied; both are ignored (as `listenUdp`
         // ignores `interface`).
         val nullPtr = null.asInstanceOf[Ptr[Byte]]
         val context = libssl.SSL_CTX_new(libssl.TLS_client_method())
-        if context == null then throw ji.IOException("TLS: SSL_CTX_new failed: "+opensslError())
+        if context == null then abort(Socket.Error(Socket.Error.Reason.Handshake))
 
         try
           if libssl.SSL_CTX_set_default_verify_paths(context) != 1
@@ -121,8 +124,15 @@ object SecureEndpoint:
             libcrypto.BIO_free_all(bio)
             throw error
 
-        catch case error: Throwable =>
-          libssl.SSL_CTX_free(context)
-          throw error
+        catch
+          // The BIO's own failures to resolve, connect or handshake, thrown above as
+          // `IOException`s, are the connection's failure.
+          case error: ji.IOException =>
+            libssl.SSL_CTX_free(context)
+            abort(Socket.Error(Socket.Error.Reason.Handshake))
+
+          case error: Throwable =>
+            libssl.SSL_CTX_free(context)
+            throw error
 
 case class SecureEndpoint(host: Text, port: Int)

@@ -76,10 +76,15 @@ object SshKeygen:
     val output = job.await()
     (output, job.status())
 
-  private def temporary(content: Text): Path on Linux =
+  private def temporary(content: Text)(using Tactic[Git.Error]): Path on Linux =
     val file = java.nio.file.Files.createTempFile("octogenarian-", ".sig").nn
     java.nio.file.Files.writeString(file, content.s)
-    unsafely(file.toString.tt.as[Path on Linux])
+
+    // Absolute by construction on POSIX; reported, not thrown, should the JDK ever disagree.
+    mitigate:
+      case error: Path.Error => Git.Error(Git.Error.Reason.Unexpected)(using error.diagnostics)
+
+    . protect(file.toAbsolutePath.nn.toString.tt.as[Path on Linux])
 
   // Signs with the private key in `key`.
   class Signer(key: Path on Linux)

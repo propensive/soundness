@@ -224,9 +224,15 @@ extends Rig:
       inclusion.include(runner.report, testId, hotspots)
 
 
-  def stage(out: Path on Linux): Path on Linux = stageOn(device, out)
+  def stage(out: Path on Linux)(using Tactic[Rig.Error]): Path on Linux = stageOn(device, out)
 
   protected val scalac: Scalac[3.7, Universe.Classfile] = Scalac(List(scalacOptions.experimental))
 
-  protected def invoke[output](stage: Stage[output, Text, Path on Linux]): output =
-    stage.remote: input => unsafely(device.invoke(stage.target, input, heap, cpus))
+  protected def invoke[output](stage: Stage[output, Text, Path on Linux])(using Tactic[Rig.Error])
+  :   output =
+
+    stage.remote: input =>
+      mitigate:
+        case error: Bench.Error => Rig.Error(Rig.Error.Reason.Invocation)(using error.diagnostics)
+
+      . protect(device.invoke(stage.target, input, heap, cpus))

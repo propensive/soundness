@@ -126,12 +126,14 @@ extends Subprocess, Process.Ref, anticipation.Durable:
     sink.intake(head.getOutputStream.nn)
 
 
-  def await()(using computable: (result is Computable)^): result =
+  def await()(using computable: (result is Computable)^, truncation: Tactic[Truncation.Error])
+  :   result =
+
     computable.compute(this)
 
   def await[duration: Abstractable across Durations to Long](duration: duration)
-    ( using computable: (result is Computable)^ )
-  :   (Tactic[Async.Error]^) ?->{this, computable} result =
+    ( using computable: (result is Computable)^, truncation: Tactic[Truncation.Error] )
+  :   (Tactic[Async.Error]^) ?->{this, computable, truncation} result =
 
     if tail.waitFor(duration.generic/1_000_000L, juc.TimeUnit.MILLISECONDS)
     then computable.compute(this)

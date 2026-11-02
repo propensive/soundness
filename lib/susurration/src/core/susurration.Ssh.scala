@@ -209,7 +209,13 @@ object Ssh:
 
       val endpoint = urticose.Endpoint(target.host, urticose.Port.unsafe[urticose.Tcp](target.port))
       val connectable = summon[(urticose.Endpoint[urticose.Tcp.Port] is Connectable)^]
-      val duplex = connectable.connect(endpoint, Unset)
+
+      val duplex =
+        mitigate:
+          case error: Socket.Error =>
+            Ssh.Error(Error.Reason.Unreachable(error.reason))(using error.diagnostics)
+
+        . protect(connectable.connect(endpoint, Unset))
 
       try
         val transport = Transport(duplex, target.host, target.port)
@@ -234,6 +240,7 @@ object Ssh:
       case Reason.Agent(detail)            => m"the SSH agent $detail"
       case Reason.ChannelRefused(detail)   => m"the server refused to open a channel: $detail"
       case Reason.RequestRefused(kind)     => m"the server refused the $kind request"
+      case Reason.Unreachable(reason)      => m"the server could not be reached: $reason"
 
     enum Reason(val number: Int) extends Clarification:
       case Malformed(detail: Text) extends Reason(1)
@@ -249,6 +256,7 @@ object Ssh:
       case Agent(detail: Text) extends Reason(11)
       case ChannelRefused(detail: Text) extends Reason(12)
       case RequestRefused(kind: Text) extends Reason(13)
+      case Unreachable(reason: Socket.Error.Reason) extends Reason(14)
 
   case class Error(reason: Error.Reason)(using Diagnostics)
   extends fulminate.Error(600, reason.number)(m"the SSH connection failed because $reason")

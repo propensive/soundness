@@ -40,7 +40,6 @@ import nomenclature.*
 import prepositional.*
 import rudiments.*
 import symbolism.*
-import typonym.*
 
 object ClassList:
   // Polymorphic for the same reason as `Tag.focusable`: `ClassList["checkbox"]()` has the refined
@@ -48,14 +47,9 @@ object ClassList:
   given focusable: [classes <: ClassList] => classes is Focusable =
     Focusable(t"css selector", _.classes.join(t".", t".", t""))
 
-  def apply[name <: Label: Reifiable to List[String]](): ClassList of name =
-    // A named method rather than a lambda: `Name`'s construction runs an implicit search, and
-    // doing that inside a lambda passed to a collection combinator, while the combinator's
-    // element type is still uninstantiated, trips dotc's `wildApprox` assertion.
-    def cssClass(label: String): Name[CssClass] = unsafely(Name[CssClass](label.tt))
-
-    val classes = name.reify.map(cssClass).to[Set]
-    new ClassList(classes) { type Topic = name }
+  // Each label of `name` is checked against `CssClass`'s rules as the expansion runs, so a
+  // class name which is not a CSS identifier is a compile error rather than a throw.
+  inline def apply[name <: Label](): ClassList of name = ${honeycomb.internal.classList[name]}
 
   given addable: ClassList is Addable by ClassList to ClassList =
     Addable: (classes, additions) => ClassList(classes.classes + additions.classes)

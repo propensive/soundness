@@ -204,7 +204,7 @@ object Git:
       validateSegment(branch)
       Git.Refs / t"remotes" / remote / branch
 
-    val defaultNotes: Git.Ref = unsafely(Git.Refs.notes(t"commits"))
+    val defaultNotes: Git.Ref = Git.Refs / t"notes" / t"commits"
     val stash: Git.Ref = Git.Refs / t"stash"
 
     // Decodes a fully-qualified name such as `refs/heads/main`.

@@ -81,22 +81,20 @@ private[telekinesis] object Secure:
 
         // The connection's reader/writer daemons live under a request-scoped
         // supervisor: the eager body drain means nothing outlives this call.
-        try
-          unsafely:
-            supervise:
-              val connection = Http2.Connection(duplex)
+        mitigate:
+          case error: Http2.Error => Connect.Error(Unknown)(using error.diagnostics)
+          case error: Async.Error => Connect.Error(Unknown)(using error.diagnostics)
 
-              try
-                connection.start()
-                val (stream, response) = connection.fetch(httpRequest, t"https", authority)
-                repackage(response, response.body.stream.memoize)
+        . protect:
+          supervise:
+            val connection = Http2.Connection(duplex)
 
-              finally connection.close()
+            try
+              connection.start()
+              val (stream, response) = connection.fetch(httpRequest, t"https", authority)
+              repackage(response, response.body.stream.memoize)
 
-        catch
-          case error: Http2.Error      => abort(Connect.Error(Unknown))
-          case error: Async.Error      => abort(Connect.Error(Unknown))
-          case error: Truncation.Error => abort(Connect.Error(Unknown))
+            finally connection.close()
 
       case _ =>
         // One-shot HTTP/1.1 over the negotiated connection. `Connection: close`

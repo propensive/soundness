@@ -111,8 +111,8 @@ object Main:
     // The kernel's listen backlog completes the handshake and buffers the payload, so the
     // single-threaded dial → write → accept → read sequence never blocks.
     val tcpPort = Port.unsafe[Tcp](55556)
-    val tcpServer = sb.listenTcp(tcpPort, Unset, Nil)
-    val client = sb.dialTcpPort(tcpPort, Unset, Nil)
+    val tcpServer = unsafely(sb.listenTcp(tcpPort, Unset, Nil))
+    val client = unsafely(sb.dialTcpPort(tcpPort, Unset, Nil))
     sb.request(client, summon[Data is Streamable by Data over Credit].stream(payload))
     sb.hangUp(client)
     val duplex = unsafely(sb.accept(tcpServer))
@@ -170,7 +170,7 @@ object Main:
     if java.lang.System.getenv("SOUNDNESS_CI_ONLINE") == "1" then
       import internetAccess.online
       val secure = coaxial.SecureEndpoint(t"example.com", 443)
-      val tlsDuplex = summon[coaxial.SecureEndpoint is Connectable].connect(secure, Unset)
+      val tlsDuplex = unsafely(summon[coaxial.SecureEndpoint is Connectable].connect(secure, Unset))
       val request = t"HEAD / HTTP/1.0\r\nHost: example.com\r\nConnection: close\r\n\r\n".in[Data]
       tlsDuplex.send(summon[Data is Streamable by Data over Credit].stream(request))
       val response = unsafely(tlsDuplex.source.memoize)

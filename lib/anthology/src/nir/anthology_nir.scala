@@ -156,7 +156,14 @@ object nativeEdges:
           . withCompilerConfig(settings)
 
         val artifact = Await.result(Build.build(config), 1800.seconds)
-        Deliverable.Product(unsafely(artifact.toString.tt.as[Path on Linux]))
+        val path: Path on Linux =
+          mitigate:
+            case error: Path.Error =>
+              Link.Error(Link.Error.Reason.Packaging(error.message.text))(using error.diagnostics)
+
+          . protect(artifact.toString.tt.as[Path on Linux])
+
+        Deliverable.Product(path)
 
       catch case suc.NonFatal(error) =>
         abort(Link.Error(Link.Error.Reason.Failed(error.stackTrace)))

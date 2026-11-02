@@ -92,11 +92,12 @@ object Grpc:
 
   object Endpoint:
     given sessional: [endpoint: {Connectable, Showable}]
-    =>  ( monitor:    Monitor,
-          probate:    Probate,
-          asyncError: Tactic[Async.Error],
-          loggable:   (Socket.Event is Loggable)^ )
-    =>  ( GrpcSessional[endpoint]^{monitor, asyncError, loggable, caps.any} ) =
+    =>  ( monitor:     Monitor,
+          probate:     Probate,
+          asyncError:  Tactic[Async.Error],
+          socketError: Tactic[Socket.Error],
+          loggable:    (Socket.Event is Loggable)^ )
+    =>  ( GrpcSessional[endpoint]^{monitor, asyncError, socketError, loggable, caps.any} ) =
 
       GrpcSessional()
 
@@ -124,7 +125,10 @@ object Grpc:
     // must be called inside a `supervise` scope.
     def apply[endpoint]
       ( endpoint: Http2.Endpoint[endpoint], defaults: Grpc.Metadata = Grpc.Metadata() )
-      ( using monitor: Monitor, probate: Probate, asyncError: Tactic[Async.Error] )
+      ( using monitor:     Monitor,
+              probate:     Probate,
+              asyncError:  Tactic[Async.Error],
+              socketError: Tactic[Socket.Error] )
     :   Channel^{monitor, caps.any} =
 
       new Channel(endpoint.connect(), endpoint.authority, defaults)
@@ -140,8 +144,9 @@ object Grpc:
   class Channel
     ( connection: Http2.Connection^, authority: Text, defaults: Grpc.Metadata = Grpc.Metadata() ):
     // The `:authority` pseudo-header is supplied to `fetch` separately; the request's
-    // `Host` is unused by the HTTP/2 transport, so the hostname is parsed leniently.
-    private val host: Host = unsafely(authority.cut(t":").head.as[Host])
+    // `Host` is unused by the HTTP/2 transport, so an authority which is not a hostname
+    // (a bracketed IPv6 literal, say) stands as the loopback host.
+    private val host: Host = safely(authority.cut(t":").head.as[Host]).or(Localhost)
 
     // Build the gRPC HTTP/2 request: POST to `/package.Service/Method` with the
     // mandatory content-type and `te: trailers`, plus any custom metadata, and a body

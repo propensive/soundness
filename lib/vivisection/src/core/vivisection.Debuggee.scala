@@ -108,6 +108,7 @@ object Debuggee:
 
       given execTactic: (Tactic[Exec.Error]^) = tactic.contramap(_ => launchFailed)
       given portTactic: (Tactic[Port.Error]^) = tactic.contramap(_ => badPort)
+      given socketTactic: (Tactic[Socket.Error]^) = tactic.contramap(_ => unresponsive)
 
       val job = target.agented.fork[Exit]()
       val console = new Debug.Console()

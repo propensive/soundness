@@ -449,7 +449,8 @@ object JavaBaseCrypto extends Crypto:
 
   // Key material this module generated itself; a failure to parse it back is a defect, not an
   // input error.
-  private def decode(data: Data): Asn1 = unsafely(Der(data).as[Asn1])
+  private def decode(data: Data): Asn1 =
+    safely(Der(data).as[Asn1]).or(panic(m"the key material this module generated did not parse"))
 
   // The shared shape of the two digest-parameterized signature schemes: a JCE `Signature`
   // transformation and a `KeyFactory` for the key algorithm. Key generation and public-key

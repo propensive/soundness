@@ -49,6 +49,7 @@ import gossamer.*
 import guillotine.*
 import hellenism.*
 import jacinta.*
+import nomenclature.*
 import parasite.*
 import prepositional.*
 import rudiments.*
@@ -202,13 +203,19 @@ extends Rig uses parasite.threads:
   type Target = Path on Linux
   type Transport = Json
 
-  def stage(out: Path on Linux): Path on Linux =
-    // Children of the per-stage `out` directory (not `peer` siblings): each staged build's
-    // artifacts must stay in its own directory, or two builds of the same tool name — an
-    // upgrade test's v1 and v2 — would collide at the same path.
-    val target = unsafely(out / name)
+  def stage(out: Path on Linux)(using Tactic[Rig.Error]): Path on Linux =
+    mitigate:
+      case error: Name.Error  => Rig.Error(Rig.Error.Reason.Staging)(using error.diagnostics)
+      case error: Link.Error  => Rig.Error(Rig.Error.Reason.Staging)(using error.diagnostics)
+      case error: Async.Error => Rig.Error(Rig.Error.Reason.Staging)(using error.diagnostics)
+      case error: Exec.Error  => Rig.Error(Rig.Error.Reason.Staging)(using error.diagnostics)
 
-    unsafely:
+    . protect:
+      // Children of the per-stage `out` directory (not `peer` siblings): each staged build's
+      // artifacts must stay in its own directory, or two builds of the same tool name — an
+      // upgrade test's v1 and v2 — would collide at the same path.
+      val target: Path on Linux = out / name
+
       // `Fqcn.apply` rather than the `fqcn""` interpolator: the macro's synthesized tree
       // fails capture-variable unification when expanded in a capture-checked module.
       val executor: Fqcn =
@@ -216,14 +223,13 @@ extends Rig uses parasite.threads:
         . or(panic(m"the constant fully-qualified class name is well-formed"))
 
       val jarfile = supervise:
-        unsafely:
-          Toolchain(jarEdges()).produce
-            ( Deliverable.Emission(out, Bundler.applicationClasspath),
-              Universe.Classfile,
-              Artifact.Jar,
-              out,
-              List(jarOptions.name(t"$name.jar")),
-              List(EntryPoint(executor)) )
+        Toolchain(jarEdges()).produce
+          ( Deliverable.Emission(out, Bundler.applicationClasspath),
+            Universe.Classfile,
+            Artifact.Jar,
+            out,
+            List(jarOptions.name(t"$name.jar")),
+            List(EntryPoint(executor)) )
 
       // Package the staged jar into an executable for this platform with the published `xek`
       // builder (spec lives in the `propensive/xek` repo), which fetches the runner stub it
@@ -241,11 +247,14 @@ extends Rig uses parasite.threads:
   protected val scalac: Scalac[3.8, Universe.Classfile] = Scalac(List(scalacOptions.experimental))
 
 
-  protected def invoke[output](stage: Stage[output, Text, Path on Linux])
+  protected def invoke[output](stage: Stage[output, Text, Path on Linux])(using Tactic[Rig.Error])
   :   Enclave.Launcher =
 
     stage.remote: input =>
-      unsafely:
+      mitigate:
+        case error: Exec.Error => Rig.Error(Rig.Error.Reason.Invocation)(using error.diagnostics)
+
+      . protect:
         variables(inputParameters = input):
           sh"${stage.target}".exec[Exit]()
 

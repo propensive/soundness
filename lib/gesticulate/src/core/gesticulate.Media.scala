@@ -95,6 +95,10 @@ object Media:
       case CborSeq => t"cbor-seq"
       case other   => other.toString.tt.uncamel.kebab
 
+  // For the `media"…"` interpolator, which has parsed the literal at expansion: the gate asserts
+  // that, so the runtime re-parse cannot fail.
+  def unsafeParse(text: Text)(using erased unsafe: Unsafe): MediaType = unsafely(parse(text))
+
   def parse(string: Text)(using Tactic[MediaType.Error]^): MediaType =
     def parseParams(ps: List[Text]): List[(Text, Text)] =
       ps match

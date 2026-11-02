@@ -101,10 +101,15 @@ object Property:
 
     (value, name) => value.lest(Property.Error(name))
 
-  given javaClassVersion: ("java.runtime.version" is Property of Int) =
-    // Decoded under `unsafely`, whose unscoped tactic is minted per call: the lambda captures
-    // nothing, so the instance is pure and can be stored as a global given.
-    Property: text => unsafely(text.as[Int])
+  // The class-file version is a decimal, `65.0` for Java 21; its major part is what is wanted.
+  // (It was read from `java.runtime.version`, `21.0.2+13-LTS`, which never decodes as an
+  // `Int`.) Decoded under the tactic the instance captures, as `javaRuntimeVersion` is.
+  given javaClassVersion: (tactic: Tactic[Property.Error])
+  =>  ( ("java.class.version" is Property of Int)^{tactic} ) =
+
+    (value, name) =>
+      val text: Text = value.lest(Property.Error(name))
+      safely(text.as[Double]).lest(Property.Error(name)).toInt
 
   // given javaExtDirs: [path: Instantiable across Paths from Text]
   // =>  ( system: System, property: Tactic[Property.Error] )

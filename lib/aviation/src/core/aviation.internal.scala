@@ -181,7 +181,7 @@ object internal:
     catch case _: jt.zone.ZoneRulesException =>
       halt(m"${name.tt} is not a valid timezone identifier")
 
-    '{unsafely(Timezone(${Expr(name)}.tt))}
+    '{Timezone.unsafeFrom(${Expr(name)}.tt)(using Unsafe)}
 
   // A timestamp literal classified by its precision. The `ts"…"` macro maps each case to a
   // distinct result type: a bare year to `Year`, a year-month to `Monthstamp`, a date to
@@ -390,11 +390,12 @@ object internal:
             if second == 60 then
               '{Timestamp(Date.julianDay(${Expr(jdn)}), Clockface(Base24(${Expr(hour)}),
                   Base60(${Expr(minute)}), Base60(59), ${Expr(nanos)}))
-                  .in(unsafely(Timezone(${Expr(zone)}.tt))).copy(leap = Leap.Inserted)}
+                  .in(Timezone.unsafeFrom(${Expr(zone)}.tt)(using Unsafe))
+                  .copy(leap = Leap.Inserted)}
             else
               '{Timestamp(Date.julianDay(${Expr(jdn)}), Clockface(Base24(${Expr(hour)}),
                   Base60(${Expr(minute)}), Base60(${Expr(second)}), ${Expr(nanos)}))
-                  .in(unsafely(Timezone(${Expr(zone)}.tt)))}
+                  .in(Timezone.unsafeFrom(${Expr(zone)}.tt)(using Unsafe))}
 
         result
 
@@ -497,11 +498,12 @@ object internal:
             if second == 60 then
               build('{Timestamp(Date.julianDay(${Expr(jdn)}), Clockface(Base24(${Expr(hour)}),
                   Base60(${Expr(minute)}), Base60(59), ${Expr(nanos)}))
-                  .in(unsafely(Timezone(${Expr(zone)}.tt))).copy(leap = Leap.Inserted)})
+                  .in(Timezone.unsafeFrom(${Expr(zone)}.tt)(using Unsafe))
+                  .copy(leap = Leap.Inserted)})
             else
               build('{Timestamp(Date.julianDay(${Expr(jdn)}), Clockface(Base24(${Expr(hour)}),
                   Base60(${Expr(minute)}), Base60(${Expr(second)}), ${Expr(nanos)}))
-                  .in(unsafely(Timezone(${Expr(zone)}.tt)))})
+                  .in(Timezone.unsafeFrom(${Expr(zone)}.tt)(using Unsafe))})
 
           case Right(_) =>
             halt
@@ -578,7 +580,8 @@ object internal:
     val summoned: Option[Expr[RomanCalendar]] = Expr.summon[RomanCalendar]
 
     // The runtime check, used whenever the operands aren't all compile-time literals; defaults to
-    // the Gregorian calendar when nothing is in scope, preserving today's behaviour.
+    // the Gregorian calendar when nothing is in scope. A date that is not a literal may not
+    // exist, so its check raises `Moment.Error` through a tactic the expansion site supplies.
     def runtime: Expr[Date] =
       val calendar = summoned.getOrElse('{calendars.gregorianCalendar})
       // `Day(_)` is transparent here in aviation core (`opaque type Day = Int`), so the quoted tree
@@ -586,7 +589,16 @@ object internal:
       // `inline` `jdn` expects at the (external) call site. The explicit ascription pins the tree's
       // type to `Day`.
       val day: Expr[Day] = '{Day($right): Day}
-      '{unsafely($calendar.jdn($left.year, $left.month, $day))}
+
+      Expr.summon[Tactic[Moment.Error]] match
+        case Some(tactic) => '{$calendar.jdn($left.year, $left.month, $day)(using $tactic)}
+
+        case None =>
+          halt
+            ( m"""
+                the date's year, month and day are not all literals, so it is checked when it
+                is made, which needs a `Tactic[Moment.Error]` in scope
+              """ )
 
     // Identify a contextual calendar as one of this module's calendar givens (matched by leaf name,
     // since it may be reached through the `soundness` re-export rather than its `aviation` origin;

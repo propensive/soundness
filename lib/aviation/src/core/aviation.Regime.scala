@@ -98,5 +98,8 @@ class Regime(name: Text, segments: List[Regime.Segment]) extends RomanCalendar(n
   override def validDate(year: Year, month: Month, day: Day): Boolean =
     locate(year, month, day).present
 
+  // `computeJdn`'s contract is a date `validDate` accepts, which `locate` then finds; a caller
+  // that breaks it is a programming error, not a date to report.
   override def computeJdn(year: Year, month: Month, day: Day): Date =
-    locate(year, month, day).or(Date.julianDay(0))
+    locate(year, month, day).or:
+      panic(m"the date $year/${month} $day lies in a cutover gap of the regime")

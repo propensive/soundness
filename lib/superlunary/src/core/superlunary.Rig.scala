@@ -63,11 +63,15 @@ object Rig:
       case Serialization   extends Reason(1)
       case Deserialization extends Reason(2)
       case Unknown         extends Reason(3)
+      case Staging         extends Reason(4)
+      case Invocation      extends Reason(5)
 
     given Reason is Showable =
       case Reason.Serialization   => t"the output could not be serialized"
       case Reason.Deserialization => t"the input could not be deserialized"
       case Reason.Unknown         => t"of an unknown reason"
+      case Reason.Staging         => t"the staged code could not be built or deployed"
+      case Reason.Invocation      => t"the staged code could not be invoked"
 
   case class Error(reason: Rig.Error.Reason)(using Diagnostics)
   extends fulminate.Error(306, reason.number)
@@ -79,7 +83,9 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
 
   protected val scalac: Scalac[?, ?]
 
-  protected def invoke[output](stage: Stage[output, Form, Target]): Result[output]
+  // Runs the staged function remotely; a failure to launch or to reach it is a `Rig.Error`.
+  protected def invoke[output](stage: Stage[output, Form, Target])(using Tactic[Rig.Error])
+  :   Result[output]
 
   // Keyed by call site AND the staged tree's printed form: one call site may legitimately
   // dispatch different trees (an axial benchmark stages one tree per implementation), and
@@ -101,7 +107,8 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
 
   lazy val compiler2: staging.Compiler = staging.Compiler.make(classloader.java)(using settings2)
 
-  def stage(path: Path on Linux): Target
+  // Builds and deploys the staged code under `path`; a failure to do so is a `Rig.Error`.
+  def stage(path: Path on Linux)(using Tactic[Rig.Error]): Target
 
 
   inline def dispatch[output]

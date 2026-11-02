@@ -280,11 +280,13 @@ object Ductile:
             val targetOffset = targetInterval.start.n0
             val targetSpace = targetInterval.size
 
-            val bytes = unsafely(source.unsafeRaw.asInstanceOf[scala.Array[Byte]])
+            // The kernel's own index arithmetic: it takes responsibility for the bounds.
+            given Unsafe = Unsafe
+            val bytes = source.unsafeRaw.asInstanceOf[scala.Array[Byte]]
             // The exclusive cast is sound for the same reason as `Conduit.put`'s:
             // the target is the stage's single-owner output buffer.
             val chars =
-              unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Char]])
+              target.unsafeRaw.asInstanceOf[scala.Array[Char]]
               . asInstanceOf[scala.Array[Char]^]
 
             if staging.position == 0 then
@@ -314,7 +316,9 @@ object Ductile:
               val targetInterval: Interval = space
               val targetOffset = targetInterval.start.n0
               val targetSpace = targetInterval.size
-              val chars = unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Char]])
+              // The kernel's own index arithmetic: it takes responsibility for the bounds.
+              given Unsafe = Unsafe
+              val chars = target.unsafeRaw.asInstanceOf[scala.Array[Char]]
               val out = jn.CharBuffer.wrap(chars, targetOffset, targetSpace).nn
               staging.flip()
               decode(staging, out, total, true)
@@ -375,8 +379,10 @@ object Ductile:
             val targetOffset = targetInterval.start.n0
             val targetSpace = targetInterval.size
 
-            val chars = unsafely(source.unsafeRaw.asInstanceOf[scala.Array[Char]])
-            val bytes = unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]])
+            // The kernel's own index arithmetic: it takes responsibility for the bounds.
+            given Unsafe = Unsafe
+            val chars = source.unsafeRaw.asInstanceOf[scala.Array[Char]]
+            val bytes = target.unsafeRaw.asInstanceOf[scala.Array[Byte]]
             val copy = sourceLength.min(staging.remaining)
             staging.put(chars, sourceOffset, copy)
             staging.flip()
@@ -392,7 +398,9 @@ object Ductile:
               val targetInterval: Interval = space
               val targetOffset = targetInterval.start.n0
               val targetSpace = targetInterval.size
-              val bytes = unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]])
+              // The kernel's own index arithmetic: it takes responsibility for the bounds.
+              given Unsafe = Unsafe
+              val bytes = target.unsafeRaw.asInstanceOf[scala.Array[Byte]]
               val out = jn.ByteBuffer.wrap(bytes, targetOffset, targetSpace).nn
               staging.flip()
               encoder.encode(staging, out, true)

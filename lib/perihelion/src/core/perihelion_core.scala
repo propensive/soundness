@@ -193,7 +193,9 @@ given wsClient: ( online:            Online,
     type Output = Data
     type Connection = Websocket.Connection
 
-    def connect(url: Websocket.Url, interface: Optional[MacAddress]): Websocket.Connection =
+    def connect(url: Websocket.Url, interface: Optional[MacAddress])
+    :   Websocket.Connection raises Socket.Error =
+
       val secure: Boolean = url.scheme.name == t"wss"
 
       val host: Host = url.host.or:
@@ -295,9 +297,10 @@ given wsClient: ( online:            Online,
 // fit a per-message handler. A named instance class rather than an anonymous given: an
 // anonymous subclass would freshen the capability types in its inferred `Result` member.
 class WsSessional
-  ( using duplexable: ((Websocket.Url is Duplexable) { type Output = Data
-                                               type Connection = Websocket.Connection })^,
-          monitor:    Monitor )
+  ( using duplexable:  ((Websocket.Url is Duplexable) { type Output = Data
+                                                type Connection = Websocket.Connection })^,
+          monitor:     Monitor,
+          socketError: Tactic[Socket.Error] )
 extends Sessional:
   type Self = Websocket.Url
 
@@ -310,9 +313,10 @@ extends Sessional:
     val connection = duplexable.connect(target, Unset)
     try lambda(using connection) finally connection.close()
 
-given wsSessional: ( duplexable: ((Websocket.Url is Duplexable) { type Output = Data
-                                    type Connection = Websocket.Connection })^,
-                     monitor:    Monitor )
-=>  ( WsSessional^{duplexable, monitor, caps.any} ) =
+given wsSessional: ( duplexable:  ((Websocket.Url is Duplexable) { type Output = Data
+                                     type Connection = Websocket.Connection })^,
+                     monitor:     Monitor,
+                     socketError: Tactic[Socket.Error] )
+=>  ( WsSessional^{duplexable, monitor, socketError, caps.any} ) =
 
   WsSessional()

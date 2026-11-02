@@ -80,6 +80,8 @@ object Geolocation:
   given decoder: (tactic: Tactic[Geolocation.Error])
   =>  ( (Geolocation is Decodable in Text)^{tactic} ) =
     case r"geo:$latitude(-?[0-9]+(\.[0-9]+)?),$longitude(-?[0-9]+(\.[0-9]+)?)$more(.*)" =>
+      // Each coordinate matched `-?[0-9]+(\.[0-9]+)?`, which is a `Double`, so decoding it
+      // cannot fail; `Location` takes any angles.
       val location =
         unsafely(Location(latitude.as[Double].deg, longitude.as[Double].deg))
 
@@ -89,6 +91,7 @@ object Geolocation:
 
         case r",$more(.*)" => more match
           case r"$altitude0(-?[0-9]+(\.[0-9]+)?)$more(.*)" =>
+            // As above: the altitude matched a `Double`.
             val altitude = unsafely(altitude0.as[Double])
 
             more match

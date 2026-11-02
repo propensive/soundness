@@ -47,6 +47,7 @@ import gossamer.*
 import kaleidoscope.*
 import rudiments.*
 import spectacular.*
+import turbulence.*
 import vacuous.*
 
 sealed trait Executable:
@@ -71,7 +72,14 @@ sealed trait Executable:
     ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
   :   result =
 
-    fork[result]().await()
+    mitigate:
+      case error: Truncation.Error => Exec.Error(failing)(using error.diagnostics)
+
+    . protect(fork[result]().await())
+
+  // The command whose failure is the executable's: for a pipeline, the last, whose output and
+  // exit status speak for it.
+  protected def failing: Command
 
 
   // Inline, so the context-function sugar never becomes a checked result type (which would
@@ -83,7 +91,7 @@ sealed trait Executable:
             computable:          (intelligible.Result is Computable)^ )
   :   intelligible.Result raises Exec.Error logs Exec.Event =
 
-    fork[intelligible.Result]().await()
+    exec[intelligible.Result]()
 
 
   def apply(command: Executable): Pipeline = command match
@@ -180,7 +188,11 @@ object Command:
       ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
     :   result =
 
-      lend(computable.compute(_))
+      lend: job =>
+        mitigate:
+          case error: Truncation.Error => Exec.Error(command)(using error.diagnostics)
+
+        . protect(computable.compute(job))
 
 
     private[guillotine] def lend[result](lambda: OnTerminal.Job[Label] => result)
@@ -240,6 +252,8 @@ object Command:
       found.lay(name)(_.getAbsolutePath.nn.tt)
 
 case class Command(arguments: Text*) extends Executable:
+  protected def failing: Command = this
+
   def fork[result]()(using working: WorkingDirectory, environment: Environment)
     ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
   :   Job[Exec, result]^ =
@@ -281,6 +295,8 @@ object Pipeline:
   given showable: Pipeline is Showable = _.commands.map(_.show).join(t" | ")
 
 case class Pipeline(commands: Command*) extends Executable:
+  protected def failing: Command = commands.last
+
   def fork[result]()(using working: WorkingDirectory, environment: Environment)
     ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
   :   Job[Exec, result]^ =

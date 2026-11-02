@@ -35,6 +35,7 @@ package embarcadero
 import scala.caps
 
 import anticipation.*
+import coaxial.*
 import contingency.*
 import gossamer.*
 import locomotion.*
@@ -78,7 +79,10 @@ object Containerd:
   // Must be called inside a `supervise` scope (the connection runs background daemons).
   def apply[endpoint]
     ( endpoint: Http2.Endpoint[endpoint], namespace: Text )
-    ( using monitor: Monitor, probate: Probate, asyncError: Tactic[Async.Error] )
+    ( using monitor:     Monitor,
+            probate:     Probate,
+            asyncError:  Tactic[Async.Error],
+            socketError: Tactic[Socket.Error] )
   :   Containerd^{monitor, caps.any} =
 
     val metadata = Grpc.Metadata(List(t"containerd-namespace" -> namespace))

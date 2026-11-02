@@ -32,6 +32,7 @@
                                                                                                   */
 package coaxial
 
+import java.io as ji
 import java.net as jn
 import javax.net.ssl as jns
 
@@ -61,7 +62,7 @@ object SecurePort:
     type Input = Duplex
     type Output = Data
 
-    def bind(port: SecurePort, interface: Optional[MacAddress]): Binding =
+    def bind(port: SecurePort, interface: Optional[MacAddress]): Binding raises Bind.Error =
       val context = tls.context.or(jns.SSLContext.getDefault.nn)
       val factory = context.getServerSocketFactory.nn
 
@@ -69,10 +70,12 @@ object SecurePort:
         interface.let(interfaceFor(_)).let(bindAddress(_))
 
       val socket: jns.SSLServerSocket =
-        address.let(factory.createServerSocket(port.port.number, 50, _))
-        . or(factory.createServerSocket(port.port.number))
-        . nn
-        . asInstanceOf[jns.SSLServerSocket]
+        try
+          address.let(factory.createServerSocket(port.port.number, 50, _))
+          . or(factory.createServerSocket(port.port.number))
+          . nn
+          . asInstanceOf[jns.SSLServerSocket]
+        catch case error: ji.IOException => abort(Bind.Error(bindReason(error)))
 
       configure(socket, options.values.to(List))
 
