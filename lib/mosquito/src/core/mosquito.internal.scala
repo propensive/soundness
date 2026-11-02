@@ -90,22 +90,66 @@ object internal:
   private[mosquito] inline def negated[a, r](operand: a): r = summonFrom:
     case negatable: (`a` is Negatable) => negatable.negate(operand.asInstanceOf).asInstanceOf[r]
 
+  // The product of the `i`th element of one array and the `j`th of another, for the cross
+  // products: at this level, not nested in them, as nested inline methods are not supported.
+  private[mosquito] inline def productAt[a, b, r]
+    ( lefts: Array[a]^{}, rights: Array[b]^{}, i: Int, j: Int )
+  :   r =
+    times[a, b, r](lefts.readUnchecked(i), rights.readUnchecked(j))
+
+  // One component of the seven-dimensional cross product: p1 - n1 + p2 - n2 + p3 - n3 over
+  // three index pairs, each pair's product taken in both orders.
+  private[mosquito] inline def fano[a, b, r]
+    ( lefts: Array[a]^{}, rights: Array[b]^{},
+      i1: Int, j1: Int, i2: Int, j2: Int, i3: Int, j3: Int )
+  :   r =
+
+    var acc: r = productAt[a, b, r](lefts, rights, i1, j1)
+    acc = minus[r, r, r](acc, productAt[a, b, r](lefts, rights, j1, i1))
+    acc = plus[r, r, r](acc, productAt[a, b, r](lefts, rights, i2, j2))
+    acc = minus[r, r, r](acc, productAt[a, b, r](lefts, rights, j2, i2))
+    acc = plus[r, r, r](acc, productAt[a, b, r](lefts, rights, i3, j3))
+    acc = minus[r, r, r](acc, productAt[a, b, r](lefts, rights, j3, i3))
+    acc
+
+  // A tuple's elements as a typed array; `Vector.apply`'s runtime, kept out of line so that
+  // the transparent constructor expands to one call.
+  private[mosquito] def elements[element: ClassTag](tuple: Tuple): Array[element]^{} =
+    val buffer = Array.allocate[element](tuple.size)
+    val iterator = tuple.productIterator
+    var i = 0
+
+    while iterator.hasNext do
+      buffer(i) = iterator.next().asInstanceOf[element]
+      i += 1
+
+    Array.freeze(buffer)
+
   object Vector:
     // The elements' common type gives the storage its class: a `Vector(1.0, 2.0)` is a
     // `double[]`, a vector of quantities (opaquely `Double`) likewise, so element reads and the
     // arithmetic below never box. A tuple of mixed types has no `ClassTag` and is rejected.
-    def apply(tuple: Tuple)(using ClassTag[Tuple.Union[tuple.type]])
-    :   Vector[Tuple.Union[tuple.type], Tuple.Size[tuple.type]] =
+    //
+    // Transparent, so that the call site's type is the *reduced* element type (`Double`), not
+    // the applied match type `Tuple.Union[(Double, Double)]`: the latter, arriving in an
+    // arithmetic instance through type inference, erases to `Object` and turns every element
+    // read into a boxing `ScalaRunTime.array_apply`, while the same type written out reduces
+    // and reads with `daload`. An ordinary method's result, however spelt, has the first form.
+    // The tuple is a type parameter rather than a path (`tuple.type`), and the `ClassTag` is
+    // summoned in the body rather than taken as a parameter: a constructed tuple such as
+    // `Mono(42)` has a capture-annotated `EmptyTuple` tail, over which `Tuple.Union` does not
+    // reduce in a parameter's type (the found `ClassTag[Tuple.Union[Int *: EmptyTuple.type]]`
+    // fails to match it), while the expansion-site summon sees the reduced element.
+    transparent inline def apply[tuple <: Tuple](tuple: tuple)
+    :   Vector[Tuple.Union[tuple], Tuple.Size[tuple]] =
 
-      val buffer = Array.allocate[Tuple.Union[tuple.type]](tuple.size)
-      val iterator = tuple.productIterator
-      var i = 0
+      // The elements share one type: a union of two (`Vector(1, 2.0)`) has a synthesized
+      // `ClassTag` (of `Object`), so the tag alone no longer rejects it; the union must be
+      // the head's type, which it is exactly when every element has that type.
+      summonInline[Tuple.Union[tuple] =:= Tuple.Head[tuple]]
 
-      while iterator.hasNext do
-        buffer(i) = iterator.next().asInstanceOf[Tuple.Union[tuple.type]]
-        i += 1
-
-      new Vector(Array.freeze(buffer))
+      new Vector[Tuple.Union[tuple], Tuple.Size[tuple]]
+        ( elements[Tuple.Union[tuple]](tuple)(using summonInline[ClassTag[Tuple.Union[tuple]]]) )
 
     def take[element: ClassTag](list: List[element], size: Int)
     :   Optional[Vector[element, size.type]] =
@@ -341,24 +385,41 @@ object internal:
           // the opaque extension and reject the stdlib `middle`.
           (top :: middle ::: bottom :: scala.Nil).join(t"\n")
 
+  // The products are inline, with the element arithmetic resolved at the call site (`times`,
+  // `minus`, `plus`) as the instances' is, so a cross product of `Double` vectors is six
+  // `dmul`s and three `dsub`s over `daload`s. The typeclass parameters fix the result types.
   extension [left](left: Vector[left, 3])
-    def cross[right](right: Vector[right, 3])
+    inline def cross[right](right: Vector[right, 3])
       ( using multiplication: left is Multiplicable by right,
               addition:       multiplication.Result is Addable by multiplication.Result,
               subtraction:    multiplication.Result is Subtractable by multiplication.Result,
               classTag:       ClassTag[subtraction.Result] )
     :   Vector[subtraction.Result, 3] =
 
-      val first = left.element(1)*right.element(2) - left.element(2)*right.element(1)
-      val second = left.element(2)*right.element(0) - left.element(0)*right.element(2)
-      val third = left.element(0)*right.element(1) - left.element(1)*right.element(0)
+      val lefts = left.data
+      val rights = right.data
+
+      val first =
+        minus[multiplication.Result, multiplication.Result, subtraction.Result]
+          ( productAt[left, right, multiplication.Result](lefts, rights, 1, 2),
+            productAt[left, right, multiplication.Result](lefts, rights, 2, 1) )
+
+      val second =
+        minus[multiplication.Result, multiplication.Result, subtraction.Result]
+          ( productAt[left, right, multiplication.Result](lefts, rights, 2, 0),
+            productAt[left, right, multiplication.Result](lefts, rights, 0, 2) )
+
+      val third =
+        minus[multiplication.Result, multiplication.Result, subtraction.Result]
+          ( productAt[left, right, multiplication.Result](lefts, rights, 0, 1),
+            productAt[left, right, multiplication.Result](lefts, rights, 1, 0) )
 
       new Vector[subtraction.Result, 3](Array[subtraction.Result](first, second, third))
 
 
   extension [left](left: Vector[left, 7])
     @targetName("cross7")
-    def cross[right](right: Vector[right, 7])
+    inline def cross[right](right: Vector[right, 7])
       ( using multiplication: left is Multiplicable by right,
               addition:       multiplication.Result is Addable by multiplication.Result,
               subtraction:    multiplication.Result is Subtractable by multiplication.Result,
@@ -367,43 +428,27 @@ object internal:
               classTag:       ClassTag[multiplication.Result] )
     :   Vector[multiplication.Result, 7] =
 
-      val a0 = left.element(0); val a1 = left.element(1); val a2 = left.element(2)
-      val a3 = left.element(3); val a4 = left.element(4); val a5 = left.element(5)
-      val a6 = left.element(6)
+      val lefts = left.data
+      val rights = right.data
 
-      val b0 = right.element(0); val b1 = right.element(1); val b2 = right.element(2)
-      val b3 = right.element(3); val b4 = right.element(4); val b5 = right.element(5)
-      val b6 = right.element(6)
-
-      def combine
-        ( p1: multiplication.Result, n1: multiplication.Result,
-          p2: multiplication.Result, n2: multiplication.Result,
-          p3: multiplication.Result, n3: multiplication.Result )
-      :   multiplication.Result =
-
-        var acc: multiplication.Result = p1
-        acc = acc - n1
-        acc = acc + p2
-        acc = acc - n2
-        acc = acc + p3
-        acc = acc - n3
-        acc
-
-      val c0 = combine(a1*b3, a3*b1, a2*b6, a6*b2, a4*b5, a5*b4)
-      val c1 = combine(a2*b4, a4*b2, a3*b0, a0*b3, a5*b6, a6*b5)
-      val c2 = combine(a3*b5, a5*b3, a4*b1, a1*b4, a6*b0, a0*b6)
-      val c3 = combine(a4*b6, a6*b4, a5*b2, a2*b5, a0*b1, a1*b0)
-      val c4 = combine(a5*b0, a0*b5, a6*b3, a3*b6, a1*b2, a2*b1)
-      val c5 = combine(a6*b1, a1*b6, a0*b4, a4*b0, a2*b3, a3*b2)
-      val c6 = combine(a0*b2, a2*b0, a1*b5, a5*b1, a3*b4, a4*b3)
+      // Each component is `fano` over one of the Fano plane's index triples.
+      val c0 = fano[left, right, multiplication.Result](lefts, rights, 1, 3, 2, 6, 4, 5)
+      val c1 = fano[left, right, multiplication.Result](lefts, rights, 2, 4, 3, 0, 5, 6)
+      val c2 = fano[left, right, multiplication.Result](lefts, rights, 3, 5, 4, 1, 6, 0)
+      val c3 = fano[left, right, multiplication.Result](lefts, rights, 4, 6, 5, 2, 0, 1)
+      val c4 = fano[left, right, multiplication.Result](lefts, rights, 5, 0, 6, 3, 1, 2)
+      val c5 = fano[left, right, multiplication.Result](lefts, rights, 6, 1, 0, 4, 2, 3)
+      val c6 = fano[left, right, multiplication.Result](lefts, rights, 0, 2, 1, 5, 3, 4)
 
       new Vector[multiplication.Result, 7](Array[multiplication.Result](c0, c1, c2, c3, c4, c5, c6))
 
 
   extension [size <: Int, left](left: Vector[left, size])
-    def element(index: Int): left = left.data.readUnchecked(index)
+    // Inline, so that a read from a `Vector[Double, n]` is a `daload`, not a boxing generic
+    // array access: `data`'s element type is only concrete at the call site.
+    inline def element(index: Int): left = left.data.readUnchecked(index)
 
-    def apply(index: Int): left = left.data.readUnchecked(index)
+    inline def apply(index: Int): left = left.data.readUnchecked(index)
     def list: List[left] = left.data.to[List]
     def iarray: Array[left]^{} = left.data
     def size(using ValueOf[size]): Int = valueOf[size]
@@ -435,7 +480,9 @@ object internal:
       sum.sqrt
 
 
-    def map[left2: ClassTag](fn: left => left2): Vector[left2, size] =
+    // Inline with an inline lambda: the function is applied in the loop body, not through a
+    // `Function1` which boxes a primitive element on the way in and out.
+    inline def map[left2: ClassTag](inline fn: left => left2): Vector[left2, size] =
       val length = left.data.length
 
       val arr = Array.build[left2](length): array =>
@@ -448,7 +495,7 @@ object internal:
       new Vector[left2, size](arr)
 
 
-    def unitary[square]
+    inline def unitary[square]
       ( using multiplicable: left is Multiplicable by left to square,
               addable:       square is Addable by square to square,
               rootable:      square is Rootable[2] to left,
@@ -462,7 +509,7 @@ object internal:
         var i = 0
 
         while i < length do
-          array(i) = left.data.readUnchecked(i)/magnitude
+          array(i) = over[left, left, Double](left.data.readUnchecked(i), magnitude)
           i += 1
 
       new Vector[Double, size](arr)

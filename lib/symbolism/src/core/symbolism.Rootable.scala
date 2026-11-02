@@ -47,10 +47,37 @@ object Rootable:
       def root(operand: operand): result = lambda(operand)
 
 
-  given sqrt: Double is Rootable[2] to Double = math.sqrt(_)
-  given cbrt: Double is Rootable[3] to Double = math.cbrt(_)
-  given sqrtFloat: Float is Rootable[2] to Float = math.sqrt(_).toFloat
-  given cbrtFloat: Float is Rootable[3] to Float = math.cbrt(_).toFloat
+  // Singleton objects with `inline def root`, given at their own singleton types, as
+  // `Addable`'s primitive instances are: `x.sqrt` on a `Double` then inlines to `Math.sqrt`
+  // with no boxing and nothing allocated, where a lambda-built instance is an erased call.
+  object DoubleSquareRoot extends Rootable[2]:
+    type Self = Double
+    type Result = Double
+
+    inline def root(value: Double): Double = math.sqrt(value)
+
+  object DoubleCubeRoot extends Rootable[3]:
+    type Self = Double
+    type Result = Double
+
+    inline def root(value: Double): Double = math.cbrt(value)
+
+  object FloatSquareRoot extends Rootable[2]:
+    type Self = Float
+    type Result = Float
+
+    inline def root(value: Float): Float = math.sqrt(value).toFloat
+
+  object FloatCubeRoot extends Rootable[3]:
+    type Self = Float
+    type Result = Float
+
+    inline def root(value: Float): Float = math.cbrt(value).toFloat
+
+  inline given sqrt: DoubleSquareRoot.type = DoubleSquareRoot
+  inline given cbrt: DoubleCubeRoot.type = DoubleCubeRoot
+  inline given sqrtFloat: FloatSquareRoot.type = FloatSquareRoot
+  inline given cbrtFloat: FloatCubeRoot.type = FloatCubeRoot
 
 trait Rootable[degree <: Int & Singleton] extends Typeclass, Resultant:
   def root(value: Self): Result

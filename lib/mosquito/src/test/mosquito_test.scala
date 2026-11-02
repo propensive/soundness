@@ -310,6 +310,38 @@ object Tests extends Suite("matrix", m"Mosquito tests"):
         -mat == mat*(-1)
       . assert(_ == true)
 
+      test(m"A vector of mixed element types does not compile"):
+        demilitarize:
+          Vector(1, 2.0)
+      . assert(!_.nil)
+
+      test(m"A constructed vector has its reduced element type"):
+        demilitarize:
+          val vector: Vector[Double, 2] = Vector(2.0, 4.0)
+          val mono: Vector[Int, 1] = Vector(Mono(42))
+        .map(_.message)
+      . assert(_ == Nil)
+
+    suite(m"Affine transformations"):
+      // By name: under `import soundness.*`, same-named generic extensions (savagery's
+      // `transform`, functions' `andThen`) outrank the companion extensions.
+      import mosquito.Affine.{andThen, transform}
+
+      test(m"Transform a point"):
+        Affine[Double](2.0, 0.0, 0.0, 3.0, 5.0, 7.0).transform(1.0, 1.0)
+      . assert(_ == (7.0, 10.0))
+
+      test(m"Compose two transformations"):
+        val scale = Affine[Double](2.0, 0.0, 0.0, 3.0, 0.0, 0.0)
+        val shift = Affine[Double](1.0, 0.0, 0.0, 1.0, 5.0, 7.0)
+        scale.andThen(shift).transform(1.0, 1.0)
+      . assert(_ == (7.0, 10.0))
+
+      test(m"Composition with the identity is the transformation"):
+        val affine = Affine[Double](2.0, 1.0, 3.0, 4.0, 5.0, 6.0)
+        affine.andThen(Affine.identity[Double]) == affine
+      . assert(_ == true)
+
     suite(m"Rational elements"):
       test(m"Dot product of rational vectors"):
         Vector(Q64(1, 2), Q64(1, 3)).dot(Vector(Q64(2), Q64(3)))
