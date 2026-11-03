@@ -145,7 +145,32 @@ in from `workingDirectory`, each resolved to the path type asked for.
 `Architecture` names the processor a program is running on, parsed from the platform's own
 reporting into a typed value — `X86(64)`, `Arm(64)`, `Ppc(64, littleEndian = true)` and the rest —
 so code that must choose a native library or a code path by architecture matches on a value
-rather than on a string whose spelling varies by platform.
+rather than on a string whose spelling varies by platform. `Os` does the same for the operating
+system — `Linux`, `MacOs`, `Windows`, `FreeBsd` and the other BSDs, `Solaris`, `Aix`, or
+`Other(name)` for one it does not know — decoded from the many spellings `os.name` takes
+(`Mac OS X`, `Windows Server 2022`, `SunOS`). Both are read from the `System` in scope, so a test
+can run the same code as if on another platform by handing it a fixed `System`:
+
+```scala
+System.os            // Os.MacOs
+System.architecture  // Architecture.Arm(64)
+```
+
+A program naming a release asset to download, say, matches on the pair rather than on the raw
+property text:
+
+```scala
+val platform: Optional[Text] = (System.os, System.architecture) match
+  case (Os.Linux, Architecture.X86(64))   => t"linux-x64"
+  case (Os.Linux, Architecture.Arm(64))   => t"linux-arm64"
+  case (Os.MacOs, Architecture.Arm(64))   => t"macos-arm64"
+  case (Os.Windows, Architecture.X86(64)) => t"windows-x64"
+  case _                                  => Unset
+```
+
+The third facet of the platform is the virtual machine itself. `Vm` names it, and is where the
+events the VM raises — its shutdown, an uncaught exception, a garbage collection — are
+intercepted, through `Vm.intercept` in the [concurrency](concurrency.md) module.
 
 `termcaps.environmentTermcap` reports what the terminal can do, deciding color depth from
 `COLORTERM` where it is set and from `tput` otherwise, which is how styled output degrades

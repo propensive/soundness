@@ -35,6 +35,7 @@ package parasite
 import scala.caps
 import scala.language.experimental.pureFunctions
 
+import ambience.Vm
 import rudiments.*
 
 object Fault:
@@ -53,9 +54,9 @@ object Fault:
     Thread.setDefaultUncaughtExceptionHandler(Handler) yet Handler
 
   given interceptable: Fault is Interceptable:
-    type Target = Os.type
+    type Target = Vm.type
 
-    def register(value: Os.type, action: Fault => Unit): () => Unit =
+    def register(value: Vm.type, action: Fault => Unit): () => Unit =
       // [registry-lifetime] action stored in global uncaught-exception handler registry
       val handle: Fault -> Unit = caps.unsafe.unsafeAssumePure(action(_))
       handler.tasks.since(_ + handle)

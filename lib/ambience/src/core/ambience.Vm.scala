@@ -30,6 +30,9 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package parasite
+package ambience
 
-object Os
+// The virtual machine the program runs in: the target of parasite's `Vm.intercept[Shutdown]`,
+// `Vm.intercept[Fault]` and `Vm.intercept[GarbageCollection]`. Only the JVM provides those events
+// today, but none of them is JVM-specific in principle, and `Jvm` is superlunary's staging rig.
+object Vm

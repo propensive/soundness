@@ -1811,7 +1811,7 @@ object Tests extends Suite("threads", m"Parasite tests"):
           val caught = juca.AtomicInteger(0)
           val signal = Promise[Int]()
 
-          val hook = Os.intercept[Fault]:
+          val hook = Vm.intercept[Fault]:
             signal.offer(1)
 
           handle:
@@ -1842,7 +1842,7 @@ object Tests extends Suite("threads", m"Parasite tests"):
 
         test(m"A thrown exception in a daemon escalates rather than vanishing silently"):
           val signal = Promise[Int]()
-          val hook = Os.intercept[Fault]:
+          val hook = Vm.intercept[Fault]:
             signal.offer(1)
 
           daemon(throw RuntimeException("boom"))
@@ -1850,6 +1850,12 @@ object Tests extends Suite("threads", m"Parasite tests"):
           hook.cancel()
           delivered
         . assert(_ == 1)
+
+        test(m"A shutdown hook can be registered and cancelled"):
+          val hook = Vm.intercept[Shutdown](())
+          hook.cancel()
+          true
+        . assert(_ == true)
 
       suite(m"Failures while a strand is shutting down"):
         // A probate whose `trap` throws stands in for anything which can fail on the way out of a
@@ -1865,7 +1871,7 @@ object Tests extends Suite("threads", m"Parasite tests"):
         test(m"A daemon whose trap throws still settles its promise"):
           given probate: Probate = brokenProbate
           val signal = Promise[Int]()
-          val hook = Os.intercept[Fault](signal.offer(1))
+          val hook = Vm.intercept[Fault](signal.offer(1))
           val d = daemon(raise(FooError(1)))
 
           // Attended from a separate strand so that the assertion can time out rather than hang if
@@ -1879,7 +1885,7 @@ object Tests extends Suite("threads", m"Parasite tests"):
         test(m"A daemon whose trap throws escalates the failure"):
           given probate: Probate = brokenProbate
           val signal = Promise[Int]()
-          val hook = Os.intercept[Fault](signal.offer(1))
+          val hook = Vm.intercept[Fault](signal.offer(1))
           daemon(throw RuntimeException("boom"))
           val delivered = safely(signal.await(5.0*Second)).or(0)
           hook.cancel()

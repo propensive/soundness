@@ -289,6 +289,30 @@ computation that has finished. A daemon that fails therefore escalates as a `Fau
 program intercepts where it handles the unexpected, rather than silently reaching a handler that
 was never intended for it.
 
+### Intercepting the VM
+
+Some events belong to no scope: the VM shutting down, an exception escaping a thread that nothing
+owns, the collector running. These are intercepted on `Vm`, which stands for the running virtual
+machine, and the action runs each time the event occurs until the returned `Hook` is cancelled:
+
+```scala
+val hook = Vm.intercept[Fault]:
+  println("A thread died")
+
+hook.cancel()
+```
+
+`Vm.intercept[Shutdown]` runs its action once, when the VM exits — by `System.exit`, by the last
+non-daemon thread ending, or on a `SIGINT` or `SIGTERM` — which is where a server removes the
+socket file it listened on, so a stale one never greets the next process. Shutdown actions run on
+threads of their own, concurrently and in no particular order, and an exception in one is
+swallowed so that it cannot prevent the others from running:
+
+```scala
+Vm.intercept[Shutdown]:
+  println("Exiting")
+```
+
 ### Cancellation in both directions
 
 Cancelling a scope cancels its children, and the *probate* decides what happens to a child that is

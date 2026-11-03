@@ -35,6 +35,7 @@ package turbulence
 import scala.caps
 
 import java.io as ji
+import java.lang as jl
 import java.util.concurrent.atomic.AtomicLong
 
 import soundness.*
@@ -56,8 +57,8 @@ object Tests extends Suite("streams", m"Turbulence tests"):
     suite(m"Stdio"):
       test(m"a capture keeps what the JVM's streams were given, beside the result"):
         Stdio.capture:
-          System.out.nn.print("shown")
-          System.err.nn.print("warned")
+          jl.System.out.nn.print("shown")
+          jl.System.err.nn.print("warned")
           7
       . assert(_ == Stdio.Capture(7, t"shown", t"warned"))
 
@@ -70,15 +71,15 @@ object Tests extends Suite("streams", m"Turbulence tests"):
       . assert(_ == t"routed")
 
       test(m"the JVM's streams are restored after a diversion"):
-        val before = System.out
-        Stdio.capture(System.out.nn.print("gone"))
-        System.out.nn eq before.nn
+        val before = jl.System.out
+        Stdio.capture(jl.System.out.nn.print("gone"))
+        jl.System.out.nn eq before.nn
       . assert(_ == true)
 
       test(m"the JVM's streams are restored when the block throws"):
-        val before = System.out
+        val before = jl.System.out
         safely(Stdio.capture[Unit](throw Exception("boom")))
-        System.out.nn eq before.nn
+        jl.System.out.nn eq before.nn
       . assert(_ == true)
 
 

@@ -36,10 +36,15 @@ import scala.language.dynamics
 
 import anticipation.*
 import beneficence.*
+import distillate.*
 import prepositional.*
 import vacuous.*
 
 object System:
+  // The running platform, normalised from the `os.name` and `os.arch` properties.
+  def os(using System): Os = properties.os.name[Text]().as[Os]
+  def architecture(using System): Architecture = properties.os.arch[Architecture]()
+
   object properties extends Dynamic:
     def apply[property](property: Text)
       ( using properties: System, reader: (String is Property of property)^ )

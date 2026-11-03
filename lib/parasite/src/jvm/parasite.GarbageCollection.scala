@@ -41,6 +41,7 @@ import scala.language.experimental.pureFunctions
 
 import com.sun.management as csm
 
+import ambience.Vm
 import anticipation.*
 import denominative.*
 import rudiments.*
@@ -89,9 +90,9 @@ object GarbageCollection:
       case other                          => Some(Other(text))
 
   given interceptable: GarbageCollection is Interceptable:
-    type Target = Os.type
+    type Target = Vm.type
 
-    def register(value: Os.type, action: GarbageCollection => Unit): () => Unit =
+    def register(value: Vm.type, action: GarbageCollection => Unit): () => Unit =
       val listeners =
         jlm.ManagementFactory.getGarbageCollectorMXBeans().nn.to[List].bind:
           case emitter: jm.NotificationEmitter =>

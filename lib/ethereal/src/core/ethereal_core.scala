@@ -532,7 +532,7 @@ def cli[bus <: Matchable](using executive: Executive)
     import stdios.fileDescriptorStdio
     import probates.awaitProbate
 
-    Os.intercept[Shutdown]:
+    Vm.intercept[Shutdown]:
       wipeState()
 
     supervise:

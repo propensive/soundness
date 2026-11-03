@@ -145,8 +145,8 @@ object Upgrade:
     root/name
 
 
-  private def windows(using System): Boolean =
-    safely(System.properties.os.name[Text]().lower.starts(t"windows")).or(false)
+  private def windows(using system: System): Boolean =
+    system(t"os.name").let(_.as[Os]) == Os.Windows
 
   object Outcome:
     object Result:
