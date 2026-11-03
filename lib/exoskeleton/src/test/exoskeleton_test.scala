@@ -1130,6 +1130,44 @@ object Tests extends Suite("cli", m"Exoskeleton Tests"):
 
           (app(using invocation).exitStatus, invocation)
 
+        test(m"An optional Int flag reads its operand purely"):
+          def app(using cli: Cli): Execution =
+            execute:
+              val port: Optional[Int] = Flag[Optional[Int]](t"port")()
+              if port == 8080 then Exit.Ok else Exit.Fail(1)
+
+          invoke(app)(t"--port", t"8080")(0)
+        . check(_ == Exit.Ok)
+
+        test(m"A malformed optional Int flag is unset rather than an error"):
+          def app(using cli: Cli): Execution =
+            execute:
+              val port: Optional[Int] = Flag[Optional[Int]](t"port")()
+              if port.absent then Exit.Ok else Exit.Fail(1)
+
+          invoke(app)(t"--port", t"80x")(0)
+        . check(_ == Exit.Ok)
+
+        test(m"A list flag reads every occurrence of a repeatable flag"):
+          def app(using cli: Cli): Execution =
+            execute:
+              val tags: Optional[List[Text]] = Flag[List[Text]](t"tag", repeatable = true)()
+              if tags == List(t"a", t"b") then Exit.Ok else Exit.Fail(1)
+
+          invoke(app)(t"--tag", t"a", t"--tag", t"b")(0)
+        . check(_ == Exit.Ok)
+
+        test(m"A list of optional Ints is unset if any operand is malformed"):
+          def app(using cli: Cli): Execution =
+            execute:
+              val sizes: Optional[List[Optional[Int]]] =
+                Flag[List[Optional[Int]]](t"size", repeatable = true)()
+
+              if sizes.absent then Exit.Ok else Exit.Fail(1)
+
+          invoke(app)(t"--size", t"1", t"--size", t"x")(0)
+        . check(_ == Exit.Ok)
+
         test(m"A flag applied in the pure section yields a prospective handle"):
           def app(using cli: Cli): Execution =
             val count: Prospective[Text] = Flag[Text](t"count")()

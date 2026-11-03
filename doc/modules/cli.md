@@ -146,8 +146,21 @@ def tool2(args: List[Text]): Unit = application(args):
 ```
 
 `aliases` gives short forms, so `--jobs 4`, `-j 4`, and `--jobs=4` are read alike.
-`repeatable = true` allows a flag to appear more than once. A flag that takes no value —
-an on-or-off option — is a `Switch`:
+`repeatable = true` allows a flag to appear more than once. A repeatable flag's occurrences are
+read together through a `List` topic — `--tag a --tag b` as `List(t"a", t"b")`, each operand
+interpreted as the element type — and an `Optional` topic reads an operand that may be malformed
+as `Unset` rather than raising, which is what a flag read in the pure section, before `execute`,
+must do:
+
+```scala
+def tool3(args: List[Text]): Unit = application(args):
+  val tags: Optional[List[Text]] = Flag[List[Text]](t"tag", repeatable = true)()
+  val port: Optional[Int] = Flag[Optional[Int]](t"port")()
+  Out.println(t"${tags.or(Nil).size} tags on port ${port.or(80)}")
+  Exit.Ok
+```
+
+A flag that takes no value — an on-or-off option — is a `Switch`:
 
 ```scala
 val verbose = Switch(t"verbose", aliases = List('v'), description = t"print detail")
