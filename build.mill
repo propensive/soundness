@@ -2088,7 +2088,7 @@ object fulminate extends Library:
 
 object galilei extends Library:
   object core extends Component(aperture.core, serpentine.core, ambience.core, turbulence.core,
-      kaleidoscope.core, inimitable.core):
+      kaleidoscope.core, inimitable.core, gastronomy.core):
     // The native `FilesystemBackend` (`filesystemBackends.scalaNativeFilesystem`) is folded into the native cross
     // via `nativeSources` — native has a single OS filesystem, so (unlike the JVM/WASI backends,
     // which are separate modules) it need not be an opt-in dependency.

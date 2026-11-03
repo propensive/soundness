@@ -38,6 +38,8 @@ import soundness.collations.codepointCollation
 import soundness.sortingAlgorithms.timsort
 
 import filesystemBackends.javaBaseFilesystem
+import providers.javaBaseProvider
+import alphabets.hexLowerCase
 
 // A document type with a byte-native `Loadable`, to exercise `load` on a path: the metadata
 // is the byte count.
@@ -264,6 +266,64 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
               (first / "stolen.txt").overwrite(t"nope")
         . map(_.message)
       . assert(!_.nil)
+
+    suite(m"Content-addressed storage"):
+      import errorDiagnostics.emptyDiagnostics
+      val casLeaf: Text = Uuid().show
+      val casRoot: Path on Linux = unsafely((% / "tmp" / casLeaf).on[Linux])
+      unsafely(casRoot.create[Directory]())
+      val cas: Cas in Sha2[256] on (Path on Linux) = Cas[Sha2[256]](casRoot, t".blob")
+      val content: Data = t"content".in[Data]
+      val expected: Digest in Sha2[256] = content.digest[Sha2[256]]
+      val other: Digest in Sha2[256] = t"other".in[Data].digest[Sha2[256]]
+      val unstored: Digest in Sha2[256] = t"unstored".in[Data].digest[Sha2[256]]
+
+      test(m"A blob is stored under its own digest"):
+        unsafely(cas() = content)
+      . assert(_ == expected)
+
+      test(m"A stored blob is present and reads back"):
+        unsafely(cas.has(expected) && cas(expected).let(_.utf8) == t"content")
+      . assert(_ == true)
+
+      test(m"The blob's name is lowercase hex plus the suffix"):
+        cas.name(expected)
+      . assert(_ == t"ed7002b439e9ac845f22357d822bac1444730fbdb6016d3ec9432297b9ec9f73.blob")
+
+      test(m"Storing data under a digest it does not have is an error"):
+        unsafely(capture[Cas.Error](cas(other) = content))
+      . assert(_.expected == other.serialize[Hex])
+
+      test(m"A mismatched store writes nothing"):
+        cas.has(other)
+      . assert(_ == false)
+
+      test(m"Storing data under its true digest succeeds"):
+        val other: Data = t"other".in[Data]
+        unsafely(cas(other.digest[Sha2[256]]) = other)
+        cas.has(other.digest[Sha2[256]])
+      . assert(_ == true)
+
+      test(m"Only absent digests are missing"):
+        cas.missing(List(expected, unstored))
+      . assert(_ == List(unstored))
+
+      test(m"The digests listed are those stored, ignoring other files"):
+        unsafely((casRoot / "stray.txt").write(t"stray"))
+        unsafely(cas.digests.to[Set])
+      . assert(_ == Set(expected, t"other".in[Data].digest[Sha2[256]]))
+
+      test(m"The store is a collection of its digests"):
+        (cas.size, cas.has(expected), cas.defines(expected), cas.at(expected).let(_.utf8))
+      . assert(_ == (2, true, true, t"content"))
+
+      test(m"Pruning deletes every blob not kept, and counts them"):
+        unsafely((cas.prune(Set(expected)), cas.digests))
+      . assert(_ == (1, List(expected)))
+
+      test(m"An absent digest reads as unset"):
+        unsafely(cas(unstored))
+      . assert(_ == Unset)
 
     suite(m"Creating entries"):
       import errorDiagnostics.emptyDiagnostics
