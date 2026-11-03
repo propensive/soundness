@@ -70,7 +70,7 @@ public class Bootstrap {
     File cache = (cacheEnv == null || cacheEnv.isEmpty())
         ? new File(new File(System.getProperty("user.home")), ".cache")
         : new File(cacheEnv);
-    return new File(cache, "burdock");
+    return new File(new File(cache, "soundness"), "jars");
   }
 
   static String hex(byte[] bytes) {

@@ -74,7 +74,7 @@ object Tests extends Suite("bootstrap", m"Burdock Tests"):
 
       test(m"every hash is hard-linked into the Burdock cache"):
         hashes.all: hash =>
-          val jar: Text = t"$home/.cache/burdock/$hash.jar"
+          val jar: Text = t"$home/.cache/soundness/jars/$hash.jar"
           _root_.java.nio.file.Files.exists(_root_.java.nio.file.Paths.get(jar.s).nn)
       .assert(_ == true)
 
@@ -503,7 +503,7 @@ object Tests extends Suite("bootstrap", m"Burdock Tests"):
       def exists(path: Text): Boolean = jnf.Files.exists(jnf.Paths.get(path.s))
 
       def leftovers(cache: Text): Int =
-        val dir = jnf.Paths.get(cache.s, "burdock")
+        val dir = jnf.Paths.get(cache.s, "soundness", "jars")
         if !jnf.Files.isDirectory(dir) then 0
         else jnf.Files.list(dir).nn.filter(_.nn.getFileName.nn.toString.nn.endsWith(".tmp")).nn.count().toInt
 
@@ -583,7 +583,7 @@ object Tests extends Suite("bootstrap", m"Burdock Tests"):
       . check(_ == 2)
 
       test(m"the requirements are cached under XDG_CACHE_HOME"):
-        (exists(t"$cache/burdock/$hashOne.jar"), exists(t"$cache/burdock/$hashTwo.jar"))
+        (exists(t"$cache/soundness/jars/$hashOne.jar"), exists(t"$cache/soundness/jars/$hashTwo.jar"))
       . check(_ == (true, true))
 
       test(m"the downloads overlap"):
@@ -604,7 +604,7 @@ object Tests extends Suite("bootstrap", m"Burdock Tests"):
         (warmOutput, requests.get() - coldRequests)
       . check(_ == (t"probe", 0))
 
-      jnf.Files.write(jnf.Paths.get(t"$cache/burdock/$hashOne.jar".s), "corrupted".getBytes("UTF-8").nn)
+      jnf.Files.write(jnf.Paths.get(t"$cache/soundness/jars/$hashOne.jar".s), "corrupted".getBytes("UTF-8").nn)
 
       test(m"a corrupted cached requirement is rejected with status 1"):
         status(jar, cache)

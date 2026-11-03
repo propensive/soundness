@@ -114,10 +114,10 @@ def repackage(arguments: List[Text]): Unit = application(arguments):
       val bootstrapClass: Data = (Classpath/"burdock"/"Bootstrap.class").read[Data]
 
       // Unpublished dependencies are reconstructed from the build-time hard-links in
-      // `~/.cache/burdock/<sha256>.jar` (see `externalize`); published ones resolve via
+      // `~/.cache/soundness/jars/<sha256>.jar` (see `externalize`); published ones resolve via
       // deps.dev and are referenced by URL rather than inlined.
       val home: Text = _root_.java.lang.System.getProperty("user.home").nn.tt
-      val cacheDir: Path on Linux = t"$home/.cache/burdock".as[Path on Linux]
+      val cacheDir: Path on Linux = t"$home/.cache/soundness/jars".as[Path on Linux]
 
       def cached(hash: Text): Optional[List[Zip.Entry]] =
         val cacheJar: Path on Linux = cacheDir/t"$hash.jar"
