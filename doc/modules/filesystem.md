@@ -301,6 +301,14 @@ spanning directories:
 directory.glob(glob"*.txt").map(_.name)   // List(t"renamed.txt", …)
 ```
 
+Two paths can name one entry through symbolic links, or through `/tmp` and `/private/tmp` on
+macOS. `canonical` is the entry's path as the filesystem itself knows it, every link resolved,
+which is what a registry keyed by path should store:
+
+```scala
+(directory / "renamed.txt").canonical()   // the same path, with any symlinks resolved
+```
+
 ### Extended attributes and volumes
 
 The filesystem a path sits on is a typed fact about it: `Ext4`, `Btrfs`, `Apfs`, `Ntfs` and

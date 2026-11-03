@@ -100,7 +100,7 @@ case object Directory extends WindowsEntry, UnixEntry:
 
       // The register works on real paths, so two routes to one directory (via symlinks, or via
       // `.` and repeated separators) register as the same subtree.
-      val real: Text = value.nioPath.toRealPath().nn.toString.tt
+      val real: Text = backend.realPath(value)
 
       if !AccessRegister.acquire(real, mode.atoms)
       then abort(Io.Error(value, Operation.Open, Reason.Busy))

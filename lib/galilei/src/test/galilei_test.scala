@@ -824,6 +824,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       . assert(_ == false)
 
     suite(m"Inode metadata"):
+      import errorDiagnostics.emptyDiagnostics
       import filesystemOptions.createNonexistentParents
       import filesystemOptions.deleteRecursively
       import filesystemOptions.overwritePreexisting
@@ -835,6 +836,31 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       val link: Path on Linux = unsafely((% / "tmp" / linkLeaf).on[Linux])
       unsafely(file.write(t"content"))
       unsafely(file.symlinkTo(link))
+
+      test(m"A symlink's canonical path is its target's"):
+        unsafely(link.canonical() == file.canonical())
+      . assert(_ == true)
+
+      test(m"A canonical path has no symlink left in it"):
+        val dirLeaf: Text = Uuid().show
+        val dirLinkLeaf: Text = Uuid().show
+        val dir: Path on Linux = unsafely((% / "tmp" / dirLeaf).on[Linux])
+        val dirLink: Path on Linux = unsafely((% / "tmp" / dirLinkLeaf).on[Linux])
+        unsafely:
+          dir.create[Directory]()
+          (dir / "inner.txt").write(t"inner")
+          dir.symlinkTo(dirLink)
+          (dirLink / "inner.txt").canonical() == (dir / "inner.txt").canonical()
+      . assert(_ == true)
+
+      test(m"A canonical path reads back the same content"):
+        unsafely(link.canonical().read[Text])
+      . assert(_ == t"content")
+
+      test(m"An absent path has no canonical form"):
+        val absentLeaf: Text = Uuid().show
+        unsafely(capture[Io.Error](unsafely((% / "tmp" / absentLeaf).on[Linux]).canonical()).reason)
+      . assert(_ == Io.Error.Reason.Nonexistent)
 
       test(m"A regular file's stat carries the whole st_mode, type bits included"):
         unsafely(backend.stat(file, true)).mode.let(_ & 61440)

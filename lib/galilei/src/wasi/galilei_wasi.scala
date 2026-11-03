@@ -192,6 +192,11 @@ package filesystemBackends:
           val directory: Foreign of "descriptor" from Wit = descriptor
           try directory.`readlink-at`(relative).call[Text]() finally descriptor.dispose()
 
+      // `wasi:filesystem` has no `realpath`: a guest sees only preopened directories, and a
+      // link's target is text it cannot resolve against them in general.
+      def realPath(path: Path on Plane)(using Tactic[Io.Error]): Text =
+        abort(Io.Error(path, Operation.Metadata, Reason.Unsupported))
+
       def exists(path: Path on Plane, dereference: Boolean): Boolean =
         safely(stat(path, dereference) yet true).or(false)
 
