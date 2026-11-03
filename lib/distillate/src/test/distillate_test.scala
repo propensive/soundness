@@ -34,6 +34,9 @@ package distillate
 
 import soundness.*
 
+import strategies.throwUnsafely
+import errorDiagnostics.emptyDiagnostics
+
 object Tests extends Suite("decode", m"Distillate Tests"):
   def run(): Unit =
     test(m"Extract an int"):
@@ -87,3 +90,30 @@ object Tests extends Suite("decode", m"Distillate Tests"):
       given Decodable.Absence in Text = Decodable.Absence(true)
       summon[Decodable.Absence in Text].strict
     . assert(_ == true)
+
+    suite(m"Boolean decoding"):
+      test(m"true decodes as a Boolean"):
+        t"true".as[Boolean]
+      . assert(_ == true)
+
+      test(m"The spelling is matched in any case, with space around it"):
+        t" FALSE ".as[Boolean]
+      . assert(_ == false)
+
+      test(m"A spelling not in scope is an error"):
+        capture(t"yes".as[Boolean])
+      . assert(_ == Truth.Error(t"yes"))
+
+      test(m"An imported spelling is accepted beside true and false"):
+        import truths.yesNoTruth
+        (t"yes".as[Boolean], t"no".as[Boolean], t"true".as[Boolean])
+      . assert(_ == (true, false, true))
+
+      test(m"Several imported spellings compose"):
+        import truths.{onOffTruth, oneZeroTruth}
+        List(t"on", t"OFF", t"1", t"0").map(_.as[Boolean])
+      . assert(_ == List(true, false, true, false))
+
+      test(m"Nonsense is an error"):
+        capture(t"maybe".as[Boolean])
+      . assert(_ == Truth.Error(t"maybe"))
