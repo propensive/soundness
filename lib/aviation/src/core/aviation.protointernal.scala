@@ -36,6 +36,7 @@ import java.time as jt
 
 import anticipation.*
 import contingency.*
+import fulminate.*
 import gossamer.*
 import hypotenuse.*
 import prepositional.*
@@ -58,6 +59,9 @@ object protointernal:
 
   object Duration:
     def apply(millis: Long): Duration = Quantity(millis/1000.0)
+
+    case class Error(text: Text)(using Diagnostics)
+    extends fulminate.Error(335, 0)(m"$text is not a recognized duration")
 
     given generic: [units <: Measure: Normalizable to Seconds[1]]
     =>  Quantity[units] is Abstractable & Instantiable across Durations from Long to Long =

@@ -40,7 +40,7 @@ import distillate.*
 import gossamer.*
 import hieroglyph.*
 import prepositional.*
-import quantitative.Radix
+import quantitative.{Quantity, Radix, Seconds}
 import rudiments.*
 import spectacular.*
 import symbolism.*
@@ -403,6 +403,48 @@ package timeSeparators:
   given colonTimeSeparator: Clockface.Separation = () => t":"
   given noneTimeSeparator: Clockface.Separation = () => t""
   given frenchTimeSeparator: Clockface.Separation = () => t"h"
+
+// A duration as it is written on a command line — `30m`, `1.5h`, `250ms`, `90` — a decimal count
+// followed by a unit (`ms`, `s`, `m`, `h` or `d`), or seconds when there is no unit. A negative
+// or malformed text raises `Duration.Error`; zero is a zero duration.
+package durationDecodables:
+  given compactDurationDecodable: Tactic[Duration.Error] => Duration is Decodable in Text = text =>
+    val trimmed: Text = text.trim
+
+    val units: List[(Text, Double)] =
+      List(t"ms" -> 0.001, t"s" -> 1.0, t"m" -> 60.0, t"h" -> 3600.0, t"d" -> 86400.0)
+
+    val unit: Optional[(Text, Double)] = units.seek: unit => trimmed.ends(unit(0))
+    val factor: Double = unit.lay(1.0)(_(1))
+
+    val number: Text =
+      unit.lay(trimmed): unit => trimmed.keep(trimmed.length - unit(0).length).trim
+
+    if !number.s.matches("[0-9]+(\\.[0-9]+)?") then abort(Duration.Error(text))
+    else Quantity[Seconds[1]](java.lang.Double.parseDouble(number.s)*factor)
+
+// The compact rendering of a duration: the coarsest unit present first and every unit after it
+// down to seconds (`5s`, `2m 5s`, `1h 0m 5s`, `2d 1h 0m 5s`), so that a column of them lines
+// up, and milliseconds alone below a second (`420ms`). In place of quantitative's `1.5 s`.
+package durationFormats:
+  given compactDurationFormat: Duration is Showable = duration =>
+    val millis: Long = (duration.value.abs*1000.0).round
+    val sign: Text = if duration.value < 0.0 then t"-" else t""
+
+    if millis < 1000L then t"$sign${millis}ms" else
+      val seconds: Long = millis/1000L
+      val days: Long = seconds/86400L
+      val hours: Long = seconds%86400L/3600L
+      val minutes: Long = seconds%3600L/60L
+      val rest: Long = seconds%60L
+
+      val body: Text =
+        if days > 0 then t"${days}d ${hours}h ${minutes}m ${rest}s"
+        else if hours > 0 then t"${hours}h ${minutes}m ${rest}s"
+        else if minutes > 0 then t"${minutes}m ${rest}s"
+        else t"${rest}s"
+
+      t"$sign$body"
 
 // A human-readable, relative rendering of a `Timespan`, in place of the default ISO-8601 duration:
 // "in 18 minutes", "8 minutes ago", "just now", and their French/German/Spanish equivalents. Only
