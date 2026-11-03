@@ -37,7 +37,6 @@ import contingency.*
 import distillate.*
 import gossamer.*
 import hieroglyph.*
-import rudiments.*
 import vacuous.*
 
 private[facsimile] object CosLexer:

@@ -32,21 +32,16 @@
                                                                                                   */
 package telekinesis
 
-import java.io as ji
-
 import anticipation.*
 import coaxial.*
 import contingency.*
-import distillate.*
 import gigantism.*
 import gossamer.*
 import parasite.*
-import prepositional.*
 import rudiments.*
 import spectacular.*
 import turbulence.*
 import urticose.*
-import vacuous.*
 import zephyrine.*
 
 // The JVM's `https` exchange for `httpBackends.soundnessHttp`: ALPN offers `h2` then `http/1.1`
@@ -79,28 +74,28 @@ private[telekinesis] object Secure:
         val authority: Text = if port == 443 then host.show else t"${host.show}:$port"
 
         // RFC 7540 §8.1.2.2: connection-specific headers must not appear in h2.
-        val headers2: List[Http.Header] = headers.filter: header => header.key.lower != t"connection"
+        val headers2: List[Http.Header] =
+          headers.filter: header => header.key.lower != t"connection"
 
         val httpRequest = Http.Request(method, 1.1, host, target, headers2, body)
 
         // The connection's reader/writer daemons live under a request-scoped
         // supervisor: the eager body drain means nothing outlives this call.
-        try
-          unsafely:
-            supervise:
-              val connection = Http2.Connection(duplex)
+        mitigate:
+          case error: Http2.Error      => Connect.Error(Unknown)(using error.diagnostics)
+          case error: Async.Error      => Connect.Error(Unknown)(using error.diagnostics)
+          case error: Truncation.Error => Connect.Error(Unknown)(using error.diagnostics)
 
-              try
-                connection.start()
-                val (stream, response) = connection.fetch(httpRequest, t"https", authority)
-                repackage(response, response.body.stream.memoize)
+        . protect:
+          supervise:
+            val connection = Http2.Connection(duplex)
 
-              finally connection.close()
+            try
+              connection.start()
+              val (stream, response) = connection.fetch(httpRequest, t"https", authority)
+              repackage(response, response.body.stream.memoize)
 
-        catch
-          case error: Http2.Error      => abort(Connect.Error(Unknown))
-          case error: Async.Error      => abort(Connect.Error(Unknown))
-          case error: Truncation.Error => abort(Connect.Error(Unknown))
+            finally connection.close()
 
       case _ =>
         // One-shot HTTP/1.1 over the negotiated connection. `Connection: close`

@@ -108,7 +108,7 @@ package teletypeables:
     val packages: Map[Text, Color in Srgb] =
 
       dedup[Text](stack.frames.map(_.method.prefix), Set(), Nil)
-      . indexed.map { (prefix, index) => prefix -> accent(index.n0) }
+      . indexed.map: (prefix, index) => prefix -> accent(index.n0)
       . to[Map]
 
     val fullClass = e"$Italic(${stack.component}.$Bold(${stack.className}))"

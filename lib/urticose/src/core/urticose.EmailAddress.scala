@@ -117,23 +117,25 @@ object EmailAddress:
     val domain =
       if index >= text.length.limit then abort(EmailAddress.Error(MissingDomain))
       else if text(index) == '[' then
-        try
-          if text.ult.let(text(_)) != ']' then abort(EmailAddress.Error(UnclosedIpAddress))
-          import strategies.throwUnsafely
+        if text.ult.let(text(_)) != ']' then abort(EmailAddress.Error(UnclosedIpAddress))
 
-          val ipAddress =
-            text.pen.lay(abort(EmailAddress.Error(UnclosedIpAddress))): (pen: Ordinal) =>
-              text.segment(index.next thru pen)
+        val ipAddress =
+          text.pen.lay(abort(EmailAddress.Error(UnclosedIpAddress))): (pen: Ordinal) =>
+            text.segment(index.next thru pen)
 
-          if ipAddress.starts(t"IPv6:") then ipAddress.skip(5).as[Ipv6] else ipAddress.as[Ipv4]
-        catch case error: IpAddress.Error => abort(EmailAddress.Error(InvalidDomain(error)))
+        mitigate:
+          case error: IpAddress.Error =>
+            EmailAddress.Error(InvalidDomain(error))(using error.diagnostics)
+
+        . protect:
+            if ipAddress.starts(t"IPv6:") then ipAddress.skip(5).as[Ipv6] else ipAddress.as[Ipv4]
 
       else
-        try
-          import strategies.throwUnsafely
-          text.skip(index.n0).as[Hostname]
-        catch case error: Hostname.Error =>
-          abort(EmailAddress.Error(InvalidDomain(error)))
+        mitigate:
+          case error: Hostname.Error =>
+            EmailAddress.Error(InvalidDomain(error))(using error.diagnostics)
+
+        . protect(text.skip(index.n0).as[Hostname])
 
     EmailAddress(Unset, localPart, domain)
 

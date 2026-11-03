@@ -33,7 +33,6 @@
 package octogenarian
 
 import anticipation.*
-import aperture.*
 import contingency.*
 import distillate.*
 import galilei.*
@@ -64,7 +63,9 @@ import providers.javaBaseProvider
 private[octogenarian] object Store:
   import Git.Error.Reason as Reason
 
-  private def loosePath(objects: Path on Linux, hash: Git.Hash): Path on Linux =
+  private def loosePath(objects: Path on Linux, hash: Git.Hash)(using Tactic[Git.Error])
+  :   Path on Linux =
+
     Refstore.descend(objects, List(hash.text.keep(2), hash.text.skip(2)))
 
   private def packs(objects: Path on Linux)
@@ -86,7 +87,9 @@ private[octogenarian] object Store:
 
       recur(directory.children.to[List], Nil)
 
-  private def alternates(objects: Path on Linux)(using Tactic[Io.Error]): List[Path on Linux] =
+  private def alternates(objects: Path on Linux)(using Tactic[Io.Error], Tactic[Git.Error])
+  :   List[Path on Linux] =
+
     val file = objects / "info" / "alternates"
 
     if !file.existent() then Nil else
@@ -94,7 +97,16 @@ private[octogenarian] object Store:
         case line :: rest =>
           if line.length == 0 then recur(rest, acc) else
             val target = if line.starts(t"/") then line else t"${objects.encode}/$line"
-            recur(rest, unsafely(target.as[Path on Linux]) :: acc)
+
+            // An alternates line that does not make a path is the repository's fault.
+            val path: Path on Linux =
+              mitigate:
+                case error: Path.Error =>
+                  Git.Error(Git.Error.Reason.Unexpected)(using error.diagnostics)
+
+              . protect(target.as[Path on Linux])
+
+            recur(rest, path :: acc)
 
         case _ => acc.reverse
 

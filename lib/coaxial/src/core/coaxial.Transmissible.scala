@@ -33,7 +33,6 @@
 package coaxial
 
 import anticipation.*
-import gossamer.*
 import hieroglyph.*
 import prepositional.*
 import zephyrine.*

@@ -34,12 +34,6 @@ package escapade
 
 import anticipation.*
 import gossamer.*
-import hieroglyph.*
-import iridescence.*
-import prepositional.*
-import rudiments.*
-import spectacular.*
-import vacuous.*
 
 package teletypeables:
   given graphicalTeletype: [graphical: Graphical] => graphical is Teletypeable = graphic =>

@@ -33,7 +33,6 @@
 package quantitative
 
 import anticipation.*
-import rudiments.*
 
 object Hundredweights:
   given designation: Designation[Hundredweights[1]] = () => "cwt".tt

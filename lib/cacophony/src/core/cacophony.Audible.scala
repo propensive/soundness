@@ -39,9 +39,7 @@ import anticipation.*
 import contingency.*
 import gesticulate.*
 import prepositional.*
-import rudiments.*
 import turbulence.*
-import vacuous.*
 import zephyrine.*
 
 trait Audible extends Typeclass:

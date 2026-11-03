@@ -39,7 +39,6 @@ import scala.math.Ordering
 import anticipation.*
 import digression.*
 import rudiments.*
-import symbolism.*
 import vacuous.*
 
 object Report:

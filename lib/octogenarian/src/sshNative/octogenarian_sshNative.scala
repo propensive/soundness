@@ -32,11 +32,7 @@
                                                                                                   */
 package octogenarian
 
-import scala.caps
-
-import anticipation.*
 import coaxial.*
-import enigmatic.*
 import fulminate.*
 import gastronomy.*
 import gigantism.*

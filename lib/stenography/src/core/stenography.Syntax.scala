@@ -71,15 +71,16 @@ object Syntax:
   // runs long before the capture checker turns them into capturing types. `T^{a, b}` carries
   // `@retains[a.type | b.type]`, `T^` carries `@retainsCap`, and an impure by-name type
   // carries `@retainsByName`. The refinements a capability can have within a set — reach,
-  // read-only and classifier restriction — are annotations on the reference itself. These are
-  // compared by full name rather than by symbol so that a compiler version which does not
-  // define one of them cannot break the others.
+  // read-only and the classifier restrictions `only` and `except` — are annotations on the
+  // reference itself. These are compared by full name rather than by symbol so that a compiler
+  // version which does not define one of them cannot break the others.
   private val Into = "scala.annotation.internal.$into"
   private val Retains = "scala.annotation.retains"
   private val RetainsCap = "scala.annotation.retainsCap"
   private val Reach = "scala.annotation.internal.reachCapability"
   private val ReadOnly = "scala.annotation.internal.readOnlyCapability"
   private val Only = "scala.annotation.internal.onlyCapability"
+  private val Except = "scala.annotation.internal.exceptCapability"
   private val RetainsByName = "scala.annotation.retainsByName"
   private val CapSet = "scala.caps.CapSet"
 
@@ -151,10 +152,13 @@ object Syntax:
           case Reach    => Suffix(captureRef(tpe), "*")
           case ReadOnly => Suffix(captureRef(tpe), ".rd")
 
-          case Only => annotation.tpe.absolve match
+          case name@(Only | Except) => annotation.tpe.absolve match
             case AppliedType(_, scala.List(classifier)) =>
-              val only: List[Syntax] = List(Primitive(".only["), apply(classifier), Primitive("]"))
-              Compound(captureRef(tpe) :: only)
+              val restriction = if name == Only then ".only[" else ".except["
+              val restricted: List[Syntax] =
+                List(Primitive(restriction), apply(classifier), Primitive("]"))
+
+              Compound(captureRef(tpe) :: restricted)
 
             case _ =>
               captureRef(tpe)
@@ -532,7 +536,7 @@ object Syntax:
             case RetainsCap =>
               functionSyntax(tpe, Nil, true).or(Capturing(apply(tpe), Unset))
 
-            case Reach | ReadOnly | Only =>
+            case Reach | ReadOnly | Only | Except =>
               captureRef(repr)
 
             // Every other annotation, including the markers the capture checker leaves on

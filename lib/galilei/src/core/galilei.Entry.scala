@@ -39,9 +39,7 @@ import aperture.*
 import contingency.*
 import gossamer.*
 import prepositional.*
-import rudiments.*
 import serpentine.*
-import spectacular.*
 import vacuous.*
 import Io.Error.{Operation, Reason}
 

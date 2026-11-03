@@ -217,7 +217,7 @@ object Tests extends Suite("webdriver", m"Tarantula tests"):
       . assert(_ == (t"xpath", t"/html[1]/body[1]"))
 
       test(m"a CSS selector is located as a CSS selector"):
-        val json = located(browser.element(SelectorList.read(t".menu li")))
+        val json = located(browser.element(unsafely(SelectorList.parse(t".menu li"))))
         json.selectDynamic("using").as[Text]
       . assert(_ == t"css selector")
 

@@ -37,10 +37,10 @@ import contingency.*
 import fulminate.*
 import gossamer.*
 import monotonous.*
+import prepositional.*
 import rudiments.*
 import symbolism.*
 import telekinesis.*
-import turbulence.*
 import vacuous.*
 import zephyrine.*
 
@@ -94,13 +94,22 @@ object SmartHttp:
           if status.category != Http.Status.Category.Successful
           then abort(Git.Error(Reason.Unexpected, t"the server answered ${status.code}"))
 
+      // The response cut short is the server's unexpected answer.
+      given Tactic[Truncation.Error] = summon[Tactic[Git.Error]].contramap: error =>
+        given Diagnostics = error.diagnostics
+        Git.Error(Reason.Unexpected, t"the response was cut short")
+
       Pktline.Reader.from(response.body.stream)
 
     // The advertisement, with the `# service=…` line and its flush, which the HTTP form adds in
     // front, skipped.
     def advertise(service: Text)(using Tactic[Git.Error]): Pktline.Reader =
       val target = t"$base/info/refs?service=$service"
-      val reader = request(target, Http.Get, headers(service, Nil), () => Http.emptyBody())
+      val empty: Spring[Data] = new Spring[Data]:
+        def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+          Http.emptyBody()
+
+      val reader = request(target, Http.Get, headers(service, Nil), empty)
       val input = java.io.PushbackInputStream(reader.underlying, 65540)
       val probe = Pktline.Reader(input)
 
@@ -122,7 +131,11 @@ object SmartHttp:
           ( Http.Header(t"content-type", t"application/x-$service-request"),
             Http.Header(t"accept", t"application/x-$service-result") )
 
-      this.request(t"$base/$service", Http.Post, headers(service, extra), () => request.stream)
+      val body: Spring[Data] = new Spring[Data]:
+        def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+          request.stream
+
+      this.request(t"$base/$service", Http.Post, headers(service, extra), body)
 
     def close(): Unit = ()
 

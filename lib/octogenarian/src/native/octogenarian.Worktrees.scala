@@ -33,7 +33,6 @@
 package octogenarian
 
 import anticipation.*
-import aperture.*
 import contingency.*
 import distillate.*
 import galilei.*
@@ -68,7 +67,8 @@ private[octogenarian] object Worktrees:
 
   // The working tree a registry entry names: the parent of the `.git` file in its `gitdir`.
   def workingTree(entry: Path on Linux)(using Tactic[Io.Error]): Optional[Path on Linux] =
-    readText(entry / "gitdir").let: text => unsafely(text.as[Path on Linux]).parent
+    // A `gitdir` that is not an absolute path names no working tree.
+    readText(entry / "gitdir").let: text => safely(text.as[Path on Linux]).let(_.parent)
 
   def entries(commonDir: Path on Linux)(using Tactic[Io.Error]): List[Path on Linux] =
     val directory = registry(commonDir)
@@ -86,7 +86,7 @@ private[octogenarian] object Worktrees:
     . or(abort(Git.Error(Reason.NoSuchWorktree(path.encode))))
 
   // A registry name for a new worktree: its directory's name, suffixed with a number if taken.
-  private def freshName(commonDir: Path on Linux, base: Text): Text =
+  private def freshName(commonDir: Path on Linux, base: Text)(using Tactic[Git.Error]): Text =
     def recur(suffix: Int): Text =
       val candidate = if suffix == 0 then base else t"$base$suffix"
 

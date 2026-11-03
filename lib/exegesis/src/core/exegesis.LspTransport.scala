@@ -38,8 +38,6 @@ import gossamer.*
 import hieroglyph.*
 import obligatory.*
 import prepositional.*
-import rudiments.*
-import turbulence.*
 import zephyrine.*
 
 // The framing shared by both roles. A Language Server exchange is `Content-Length`-framed JSON-RPC
@@ -59,11 +57,11 @@ private[exegesis] object LspTransport:
   // Reads framed messages from a channel until it is exhausted, handing each to `receive`. The
   // observer sees the message as it arrived — before parsing, so a malformed message is observed
   // too, and without the framing, so both directions read alike in a log.
+  // A malformed frame is reported through the tactic the reader task supplies.
   def pump(consume source: (Stream[Data] over Credit)^, observer: Lsp.Observer^)
     ( receive: Text => Unit )
+    ( using Tactic[Framing.Error] )
   :   Unit =
-
-    import strategies.throwUnsafely
 
     source.chunks.frames[ContentLength].each: frame =>
       val message: Text = frame.utf8

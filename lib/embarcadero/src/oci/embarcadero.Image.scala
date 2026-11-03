@@ -330,7 +330,7 @@ object Image:
 
       block
         ( using new Image.Handle
-            ( Tarfile.read(value.stream).to(List).asInstanceOf[List[bitumen.Tar.Entry]] )
+            ( Tarfile.read(value.stream).to[List] )
           with Granting[grants] {} )
 
 case class Image

@@ -27,6 +27,7 @@
 ┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
 ┃    either express or implied. See the License for the specific language governing permissions    ┃
 ┃    and limitations under the License.                                                            ┃
+┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package stratiform
@@ -103,6 +104,10 @@ object Telp:
   // delimiter; the remainder splits at every further occurrence. The
   // delimiter alone is the root path. Components are non-empty and may
   // not contain `LF` or `CR`.
+  // For the `telp"…"` interpolator, which has parsed the literal at expansion: the gate asserts
+  // that, so the runtime re-parse cannot fail.
+  def unsafeParse(text: Text)(using erased unsafe: Unsafe): Telp = unsafely(parse(text))
+
   def parse(text: Text): Telp raises Telp.Error =
     val s = text.s
     if s.isEmpty then abort(Telp.Error(Error.Reason.Syntax, 0))
@@ -164,7 +169,8 @@ object Telp:
 
   private def resolved(t: Tels.Type, schema: Tels): Optional[Tels.Type] = t match
     case Tels.Reference(name) =>
-      schema.records.seek(_.name == name).let { record => Tels.Struct(record.members, record.validators) }
+      schema.records.seek(_.name == name)
+      . let { record => Tels.Struct(record.members, record.validators) }
       . or:
           schema.scalars.seek(_.name == name)
           . let { scalar => Tels.Scalar(scalar.validators, scalar.encoding, scalar.patterns) }

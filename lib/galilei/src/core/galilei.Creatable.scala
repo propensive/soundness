@@ -64,7 +64,7 @@ object Creation:
     if flags.has(Parents) then
       def ancestors(current: Path on filesystem): List[Path on filesystem] =
         safely(current.parent)
-        . let { parent => (parent :: ancestors(parent)): List[Path on filesystem] }
+        . let: parent => (parent :: ancestors(parent)): List[Path on filesystem]
         . or(Nil)
 
       ancestors(path).reverse.each: ancestor =>

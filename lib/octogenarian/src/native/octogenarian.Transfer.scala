@@ -44,7 +44,6 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 
-import filesystemOptions.createNonexistentParents
 import filesystemOptions.deleteRecursively
 import filesystemOptions.overwritePreexisting
 
@@ -340,7 +339,12 @@ private[octogenarian] object Transfer:
 
     val refs = peer.refs().filter(!_(0).ends(t"^{}"))
 
-    def parseRefspec(text: Text): Git.Refspec = unsafely(Git.Refspec.parse(text))
+    // A configured refspec that does not parse is the repository's fault, not a throw.
+    def parseRefspec(text: Text): Git.Refspec =
+      mitigate:
+        case error: Git.RefError => Git.Error(Git.Error.Reason.Unexpected)(using error.diagnostics)
+
+      . protect(Git.Refspec.parse(text))
 
     val configured =
       if refspecs != Nil then refspecs

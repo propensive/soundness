@@ -33,7 +33,6 @@
 package quantitative
 
 import anticipation.*
-import rudiments.*
 
 object Pounds:
   given designation: Designation[Pounds[1]] = () => "lb".tt

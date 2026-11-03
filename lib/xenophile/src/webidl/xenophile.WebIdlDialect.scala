@@ -54,10 +54,10 @@ import vacuous.*
 // transitively. Constructors, special operations and intrinsic declarations are not navigable.
 object WebIdlDialect extends Dialect:
 
-  def parse(source: Text): Map[Text, Map[Text, Prototype]] = parse0(source)
+  // Total, as `CHeader.Dialect.parse` is.
+  def parse(source: Text): Map[Text, Map[Text, Prototype]] = safely(parse0(source)).or(Map())
 
-  private def parse0(source: Text): Map[Text, Map[Text, Prototype]] =
-    import strategies.throwUnsafely
+  private def parse0(source: Text)(using Tactic[WebIdl.Error]): Map[Text, Map[Text, Prototype]] =
     val definitions: List[WebIdl.Definition] = WebIdl.Parser.parse(source)
 
     var types = Map[Text, Map[Text, Prototype]]()

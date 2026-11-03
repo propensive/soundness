@@ -35,8 +35,6 @@ package facsimile
 import anticipation.*
 import contingency.*
 import gossamer.*
-import rudiments.*
-import vacuous.*
 
 // The PNG (10–15) and TIFF (2) predictors of ISO 32000-2 §7.4.4.4, which decorrelate rows
 // before Flate or LZW compression. Cross-reference streams are routinely predictor-encoded,

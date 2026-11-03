@@ -50,7 +50,6 @@ import gossamer.*
 import hypotenuse.Bcd
 import prepositional.*
 import rudiments.*
-import symbolism.*
 import vacuous.*
 import wisteria.{Discriminable, Variant}
 import zephyrine.*
@@ -89,7 +88,7 @@ object internal:
 
     val start: Int = firstOrigin[origins]
 
-    try unsafely(raw.tt.as[JsonPointer]) catch
+    recover:
       case error: JsonPointer.Error =>
         val sourceFile = Position.ofMacroExpansion.sourceFile
 
@@ -105,7 +104,9 @@ object internal:
 
         halt(error.message, position)
 
-    '{unsafely(${Expr(raw)}.tt.as[JsonPointer])}
+    . protect(raw.tt.as[JsonPointer])
+
+    '{JsonPointer.unsafeParse(${Expr(raw)}.tt)(using Unsafe)}
 
   // Compile-time navigation for schema-typed `Json` values. A `Json of P from R`
   // carries a phantom *position* (`Topic = P`, a Scala model type) within a *root
@@ -358,7 +359,7 @@ object internal:
 
     val (parts2, spreads) = preprocess(parts)
     // The parts are `String`s, so `join` (which is `Text`-only) does not apply.
-    val source: String = parts2.stdlib.mkString(MarkerString)
+    val source: String = parts2.map(_.tt).join(MarkerString.tt).s
     import hieroglyph.codepages.utf8Codepage
     val data: Array[Byte]^{} = source.tt.in[Data]
 
@@ -488,9 +489,15 @@ object internal:
           def unbrand(repr: TypeRepr): TypeRepr = repr.dealias match
             case AndType(left, right) =>
               val l = unbrand(left)
+
               l match
-                case AppliedType(constructor, _) if aliasCollectionSyms.has(constructor.typeSymbol) => l
-                case _ => unbrand(right)
+                case AppliedType(constructor, _)
+                  if aliasCollectionSyms.has(constructor.typeSymbol) =>
+                  l
+
+                case _ =>
+                  unbrand(right)
+
             case other => other
 
           unbrand(TypeRepr.of[tpe].widen) match
@@ -564,9 +571,9 @@ object internal:
               '{Iterable($v)}
 
         ' {
-            // `Expr.ofList` takes a stdlib list.
-            val all = ${Expr.ofList(pieces.stdlib)}
-            . foldLeft(scala.collection.immutable.List.empty[Json.Ast])(_ ++ _)
+            val all = ${List.quoted(pieces)}.fuse(scala.collection.immutable.List.empty[Json.Ast]):
+              state ++ next
+
             Json.Ast.arr(Array.from(all).asInstanceOf[Array[Any]^{}])
           }
 
@@ -686,7 +693,7 @@ object internal:
     abortive:
       val (parts2, spreads) = preprocess(parts)
       // The parts are `String`s, so `join` (which is `Text`-only) does not apply.
-      val source: String = parts2.stdlib.mkString(MarkerString)
+      val source: String = parts2.map(_.tt).join(MarkerString.tt).s
       import hieroglyph.codepages.utf8Codepage
       val data: Array[Byte]^{} = source.tt.in[Data]
       val ast: Json.Ast = Json.Ast.parse(data, true)

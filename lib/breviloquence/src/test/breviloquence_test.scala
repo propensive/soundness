@@ -418,11 +418,11 @@ object Tests extends Suite("cbor", m"Breviloquence Tests"):
       val whole = Cbor.Ast.encodable.encoded(Cbor.unseal(cbor)).to[List].stdlib
 
       test(m"the pulled blocks are the tree's bytes"):
-        Cbor.emit(cbor).flatMap(_.to[List].stdlib).toList
+        Cbor.emit(cbor).flatMap(_.to[List]).to[List].stdlib
       . assert(_ == whole)
 
       test(m"a tree is emitted in several blocks"):
-        Cbor.emit(cbor).length
+        Cbor.emit(cbor).size
       . assert(_ > 1)
 
       test(m"the pushed blocks are the tree's bytes"):

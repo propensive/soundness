@@ -135,6 +135,11 @@ class LarcenyTransformer() extends PluginPhase:
     val zflags = config.Proscala.features.filter(config.Proscala.enabled(_)).map: feature =>
       s"-Z${feature.name}"
 
+    // `-preview` enables the features that have graduated from `-language:experimental` into
+    // preview (relaxed lambda syntax among them); without it, helper code outside a region fails
+    // to parse in the sub-compilation, and every capture comes back empty.
+    val preview = if ctx.settings.preview.value then List("-preview") else Nil
+
     // Warnings used to be invisible to `demilitarize` in all but one case. The sub-compilation
     // starts from `initCtx.fresh` -- a compiler-default context, not the parent's -- so none of
     // the parent's warning flags applied, and every flag-gated warning (deprecation and unused
@@ -200,7 +205,7 @@ class LarcenyTransformer() extends PluginPhase:
     val errors: List[CompileError] =
       Subcompiler.compile
         ( language, classpath, source, regions, plugins, ccNew, yimports, noPredef, warnings,
-          zflags )
+          zflags ++ preview )
 
     object transformer extends UntypedTreeMap:
       override def transform(tree: Tree)(using Context): Tree = tree match

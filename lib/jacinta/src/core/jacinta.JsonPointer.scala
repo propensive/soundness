@@ -80,6 +80,11 @@ object JsonPointer extends Root(""):
   // offset of any error. URL-bearing references begin with a non-`#` character
   // and so are rejected as `ExpectedHash`; same-document refs are all OpenAPI's
   // `$ref`s use, and are JSON Pointer fragments per RFC 6901.
+  // For the pointer interpolator, which has parsed the literal at expansion: the gate asserts
+  // that, so the runtime re-parse cannot fail.
+  def unsafeParse(text: Text)(using erased unsafe: Unsafe): JsonPointer =
+    unsafely(text.as[JsonPointer])
+
   given decodable: (tactic: Tactic[JsonPointer.Error])
   =>  ( (JsonPointer is Decodable in Text)^{tactic} ) = text =>
     val string = text.s

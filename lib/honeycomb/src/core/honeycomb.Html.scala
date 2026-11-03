@@ -310,7 +310,7 @@ object Html extends Tag.Container
     val block = formatting.indented
 
     // The reader side is taken first; the producer itself is then owned by the writing task.
-    val output = producer.iterator
+    val output: Iterator[BaseText]^ = producer.iterator
 
     producer.transfer: (producer, _, _) ?=>
       writeHtml(producer(), dom, dom.doctype, 0, block, Mode.Whitespace)
@@ -677,11 +677,12 @@ object Html extends Tag.Container
     private def attribute(element: Element, data: Array[Int]^{}, offset: Int, name: BaseText)
     :   Optional[Position] =
 
-      val index = element.attributes.keys.indexOf(name)
+      val index = element.attributes.keys.indexed.seek(_(0) == name)(-1)(_(1))
 
       if index < 0 || index >= data.readUnchecked(offset + 4) then Unset
       else
         val base = offset + data.readUnchecked(offset + 6 + index)
+
         Position
           ( data.readUnchecked(base + 1).z,
             data.readUnchecked(base + 2).z,
@@ -1073,7 +1074,7 @@ object Html extends Tag.Container
       new HtmlParser(Cursor[BaseText](input), permissive)
 
     // The legacy interoperation shape: a stdlib `Iterator` of chunks.
-    def fromIterator(input: Iterator[BaseText], permissive: Boolean = false)(using Dom)
+    def fromIterator(input: Iterator[BaseText]^, permissive: Boolean = false)(using Dom)
     :   HtmlParser^ =
 
       new HtmlParser(Cursor[BaseText](input), permissive)
@@ -2166,7 +2167,7 @@ object Html extends Tag.Container
   // Public entry points.
 
   private[honeycomb] def parse[dom <: Dom]
-    ( input:       Iterator[BaseText],
+    ( input:       Iterator[BaseText]^,
       root:        Tag,
       callback:    Optional[(Ordinal, Hole) => Unit] = Unset,
       fastforward: Int                               = 0,
@@ -2259,13 +2260,12 @@ object Html extends Tag.Container
         case fragment: Fragment =>
           Element
             ( label, attributes,
-              ( Array.from(fragment.nodes).asInstanceOf[Array[Node]^{}] + children )
-
+              (Array.from(fragment.nodes).asInstanceOf[Array[Node]^{}] + children)
               . asInstanceOf[Array[Node]^{}],
               foreign )
 
         case node: Node =>
-          Element(label, attributes, Array.from(children.stdlib.prepended(node)), foreign)
+          Element(label, attributes, Array.concat(Array(node), children), foreign)
 
       . of[this.Topic]
       . over[this.Transport]
@@ -2298,7 +2298,7 @@ object Html extends Tag.Container
 
     override def hashCode: Int =
       ju.Arrays.hashCode(Array.unsafeJvm(children).asInstanceOf[scala.Array[Object | Null]]) ^
-        attributes.hashAttributes ^ label.hashCode
+        attributes.hashAttributes ^ label.##
 
     transparent inline def selectDynamic(name: Label): Any =
 

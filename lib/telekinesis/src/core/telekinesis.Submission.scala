@@ -32,7 +32,6 @@
                                                                                                   */
 package telekinesis
 
-import anticipation.*
 import contingency.*
 import fulminate.Hazard
 import distillate.*

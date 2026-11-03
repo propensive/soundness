@@ -37,17 +37,23 @@ import scala.language.experimental.pureFunctions
 
 import fulminate.*
 
-// `caps.SharedUnscoped`: a throwing tactic captures nothing (`CanThrow` is erased), so it is
-// safe at any level — the classifier lets a use-site instantiation flow into the `raises`
-// existential of a non-inline method result, which an ordinary fresh capability may not, even
-// when it is minted inside a derivation's synthesised field thunk (rep/sepcheck-probes/p17).
-// It is the shared counterpart of `caps.Unscoped` (which is exclusive, and so cannot classify
-// a shared `Tactic`); Proscala provides it. Boundary-based tactics, which really do capture
-// their `Label`, remain scoped.
-// The `CanThrow` evidence lives on the `strategies` givens that mint throwing tactics, not on
+object ThrowTactic:
+  // The ambient throwing tactic behind `strategies.throwUnsafely`: a pure value, as upstream's
+  // `unsafeExceptions.canThrowAny` is (`caps.unsafe.unsafeErasedValue`, sealed by design). An
+  // unscoped throw retains no return point, so nothing is lost by not tracking it, and tracking
+  // it would be worse than useless: a fresh tactic per summon cannot satisfy a `raises` resolved
+  // inside a derivation's synthesised by-name thunk, and a static tracked one would be captured
+  // by every lambda that raises through it. The scoped tactics stay tracked `caps.Control`
+  // capabilities, which is what keeps them out of a body that runs on another thread.
+  // [ambient-strategy]
+  val ambient: ThrowTactic[Hazard]^{} = caps.unsafe.unsafeAssumePure(ThrowTactic())
+
+// A throwing tactic captures nothing (`CanThrow` is erased), so it is the natural ambient
+// strategy; the scoped forms (`unsafely`, `throwErrors`) mint their own. Contravariant in `error`
+// so that the ambient `ThrowTactic[Hazard]` satisfies every `Tactic[error]`.
+// The `CanThrow` evidence lives on the `strategies` givens that provide throwing tactics, not on
 // the class: even an erased constructor parameter is a retained capture under capture checking.
-class ThrowTactic[error <: Hazard, success]()
-extends Tactic[error], caps.SharedUnscoped:
+class ThrowTactic[-error <: Hazard]() extends Tactic[error]:
   def diagnostics: Diagnostics = Diagnostics.capture
 
   // `canThrowAny` is imported method-locally rather than retained from the constructor: the

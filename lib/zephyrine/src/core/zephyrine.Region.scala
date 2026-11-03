@@ -27,12 +27,14 @@
 ┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
 ┃    either express or implied. See the License for the specific language governing permissions    ┃
 ┃    and limitations under the License.                                                            ┃
+┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package zephyrine
 
 import scala.caps
 
+import anticipation.*
 import denominative.*
 import prepositional.*
 import rudiments.*
@@ -162,3 +164,17 @@ object Region:
     // The only branded-ordinal producer, for the trusted combinators above.
     private inline def ordinal(inline n: Int): Ordinal in region.type =
       Ordinal.zerary(n).asInstanceOf[Ordinal in region.type]
+
+  // A bounded borrow of a byte region's raw storage, for the JDK and engine APIs that take an
+  // `(array, offset, length)` triple — `OutputStream.write`, `ByteBuffer.wrap`,
+  // `Deflater.setInput`, a digest's `update`. The offset and length are the branded interval's,
+  // so the triple is in range by construction and no `Unsafe` is needed; the array is visible
+  // only for the duration of the call, which must neither retain it nor index outside the
+  // triple (a kernel whose index arithmetic outruns the triple takes `unsafeRaw` instead).
+  extension (region: Region[Data])
+    inline def borrow[result](range: Interval in region.type)
+      ( inline lambda: (scala.Array[Byte], Int, Int) => result )
+    :   result =
+
+      val interval: Interval = range
+      lambda(region.asInstanceOf[scala.Array[Byte]], interval.start.n0, interval.size)

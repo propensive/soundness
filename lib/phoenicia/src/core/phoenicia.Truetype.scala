@@ -37,9 +37,7 @@ import contingency.*
 import denominative.*
 import gossamer.*
 import hypotenuse.*
-import polaris.*
 import prepositional.*
-import quantitative.*
 import rudiments.*
 import symbolism.*
 import turbulence.*

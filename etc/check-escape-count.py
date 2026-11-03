@@ -72,11 +72,21 @@ IMPORT = re.compile(r'^\s*import\s+scala\.collection\b')
 
 STDLIB = ['stdlib', 'stdlibGate', 'stdlibRound', 'stdlibIterator', 'collectionImport']
 
-COLUMNS = [name for name, _ in HATCHES+WRAPPERS]+CASTS+STDLIB+['untagged']
+# The ambient error strategies — `strategies.throwUnsafely` and its siblings — are the single
+# import that switches exception checking off: what prototyping, a `@main` and a demo want, and
+# what library code should never need (a scoped `unsafely`, `safely`, `mitigate` or a `raises`
+# is the honest form). Counted in core sources only; the rows left in the baseline are the
+# sanctioned entry points and demos (`ethereal.cli`, `embarcadero/docker.scala`, `src/demo`,
+# `src/example`, `tarantula_image.scala`, `stratiform.CheckedTests.scala`) and the umbrella's
+# delegating given.
+AMBIENT = re.compile(r'\bstrategies\s*\.\s*(?:throwUnsafely|throwSafely|uncheckedErrors|fatalErrors)\b')
+
+COLUMNS = [name for name, _ in HATCHES+WRAPPERS]+CASTS+STDLIB+['untagged', 'ambientStrategy']
 
 # The closed vocabulary. Each tag names a blocker; `rep/DECISIONS.md` has the case behind it.
 TAGS = {
   'abstract-storage':   'an abstract `Storage` type cannot carry `^` (probe P5)',
+  'ambient-strategy':   'an ambient error strategy, pure by design as upstream\'s `canThrowAny` is',
   'aliased-read':       'an array read while another exclusive receiver holds its owner',
   'aliased-graph':      'mutable nodes reachable from several references (a linked or shared graph)',
   'anon-fresh-field':   'a fresh-typed field in an anonymous template hides its capability',
@@ -96,7 +106,8 @@ TAGS = {
   'quote-wall':         'a capture crossing a quote/splice boundary',
   'registry-lifetime':  'a handle smuggled through an application-lifetime registry',
   'stdio-readonly':     'a writer held through a read-only standard-streams reference',
-  'stdlib-iterator':    'state in a `scala.Iterator`, whose methods cannot be `update`',
+  'iterator-inner':     'the inner iterator of `Iterator.flatMap`, held untyped because no field may hold a fresh capability',
+  'stdlib-boundary':    'the stdlib iterator view minted for a stdlib or JDK API',
   'synchronized':       'state shared across threads under a lock, atomic or volatile: the honest model',
   'test-harness':       'test-only scaffolding, not library behaviour',
   'transfer':           'a resource moved into a task, whose previous owner consumed it',
@@ -162,6 +173,7 @@ def census(path):
       row['stdlibRound'] += len(ROUND.findall(line))
       row['stdlibIterator'] += len(ITERATOR.findall(line))
       row['collectionImport'] += 1 if IMPORT.match(line) else 0
+      if '/src/test/' not in path: row['ambientStrategy'] += len(AMBIENT.findall(line))
 
       for match in SHAPE.finditer(line):
         shape = '.stdlib'+re.sub(r'\s+', '', match.group(1) or '')

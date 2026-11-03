@@ -35,6 +35,7 @@ package escapade
 import anticipation.*
 import denominative.*
 import gossamer.*
+import rudiments.*
 
 object Ribbon:
   def apply[color: Chromatic](colors: color*): Ribbon = Ribbon(colors.map(Bg(_))*)
@@ -44,11 +45,11 @@ case class Ribbon(colors: Bg*):
     if colors.isEmpty then parts.join(e" ") else
       val array = Array.from(colors.zip(parts))
 
-      array.stdlib.indices.map: index =>
-        val (background, text) = array.readUnchecked(index)
+      array.extent.tabulate: index =>
+        val (background, text) = array(index)
 
-        val arrow = if index >= (array.length - 1) then e"${background.fg}()" else
-          e"${background.fg}(${array.readUnchecked(index + 1)(0)}())"
+        val arrow = if index.n0 >= (array.length - 1) then e"${background.fg}()" else
+          e"${background.fg}(${array.readUnchecked(index.n0 + 1)(0)}())"
 
         e"$background( ${background.highContrast}($text) )$arrow"
 

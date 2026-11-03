@@ -32,15 +32,11 @@
                                                                                                   */
 package panopticon
 
-import scala.caps
-
-import anticipation.*
 import denominative.*
-import fulminate.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
-import denominative.dysasymptotics.{linearSize, linearAccess}
+import denominative.dysasymptotics.linearAccess
 
 object Optical:
   given ordinalList: [element] => Ordinal is Optical from List[element] onto element =

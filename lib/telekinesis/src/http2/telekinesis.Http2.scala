@@ -33,10 +33,9 @@
 package telekinesis
 
 import scala.caps
+import scala.collection.concurrent as scc
 
-import scala.collection.mutable as scm
-
-import anticipation.{Data as Bytes, *}
+import anticipation.{Data as Bytes}
 import coaxial.*
 import contingency.*
 import fulminate.*
@@ -51,7 +50,6 @@ import vacuous.*
 import Http2.Error.Reason
 import anticipation.*
 import denominative.*
-import scala.collection.concurrent as scc
 import hieroglyph.*, codepages.asciiCodepage
 import proscenium.*
 import turbulence.*
@@ -372,24 +370,40 @@ object Http2:
     // Returns once the HTTP/2 handshake has completed.
     // Named using-parameters, de-sugared from `raises`: the result retains the
     // connection's capabilities, so it must name its evidence rather than hide it.
-    def connect()(using monitor: Monitor, probate: Probate, asyncError: Tactic[Async.Error])
+    def connect()
+      ( using monitor:     Monitor,
+              probate:     Probate,
+              asyncError:  Tactic[Async.Error],
+              socketError: Tactic[Socket.Error] )
     :   Http2.Connection^{monitor, caps.any} =
 
       // A neutral carrier: the connection (a capability) crosses the daemon and the
       // promise as an `AnyRef`.
       val ready: Promise[AnyRef] = Promise()
 
+      // The socket's failure to open, when that is why the connection never became ready: it
+      // crosses the daemon as an `AnyRef` too, for the caller to raise through its own tactic.
+      val failure: Promise[AnyRef] = Promise()
+
       daemon:
         try
-          endpoint.duplex: duplex =>
-            val connection = Http2.Connection(duplex)
-            connection.start()
-            ready.offer(connection.asInstanceOf[AnyRef])
-            Promise[Unit]().await()
+          recover:
+            case error: Socket.Error => failure.offer(error.asInstanceOf[AnyRef])
+
+          . protect:
+            endpoint.duplex: duplex =>
+              val connection = Http2.Connection(duplex)
+              connection.start()
+              ready.offer(connection.asInstanceOf[AnyRef])
+              Promise[Unit]().await()
 
         finally if !ready.ready then ready.cancel()
 
-      ready.await().asInstanceOf[Http2.Connection^{monitor, caps.any}]
+      def unready(): Nothing =
+        if failure.ready then abort(failure.await().asInstanceOf[Socket.Error])
+        else abort(Async.Error(Async.Error.Reason.Cancelled))
+
+      safely(ready.await()).lay(unready())(_.asInstanceOf[Http2.Connection^{monitor, caps.any}])
 
   // A scoped session on an `Http2.Endpoint`: the multiplexed connection is opened
   // and its handshake completed, then the live `Http2.Connection` is lent to the
@@ -403,10 +417,11 @@ object Http2:
   // subclass would freshen the capability types in its inferred `Result`
   // member, which then fails to match the declared refinement.
   class EndpointSessional[endpoint: {Connectable, Showable}]
-    ( using monitor:    Monitor,
-            probate:    Probate,
-            asyncError: Tactic[Async.Error],
-            loggable:   (Socket.Event is Loggable)^ )
+    ( using monitor:     Monitor,
+            probate:     Probate,
+            asyncError:  Tactic[Async.Error],
+            socketError: Tactic[Socket.Error],
+            loggable:    (Socket.Event is Loggable)^ )
   extends Sessional:
     type Self = Endpoint[endpoint]
     type Result = Http2.Connection^{caps.any}
@@ -420,11 +435,12 @@ object Http2:
         try lambda(using connection) finally connection.close()
 
   given sessional: [endpoint: {Connectable, Showable}]
-  =>  ( monitor:    Monitor,
-        probate:    Probate,
-        asyncError: Tactic[Async.Error],
-        loggable:   (Socket.Event is Loggable)^ )
-  =>  ( EndpointSessional[endpoint]^{monitor, asyncError, loggable, caps.any} ) =
+  =>  ( monitor:     Monitor,
+        probate:     Probate,
+        asyncError:  Tactic[Async.Error],
+        socketError: Tactic[Socket.Error],
+        loggable:    (Socket.Event is Loggable)^ )
+  =>  ( EndpointSessional[endpoint]^{monitor, asyncError, socketError, loggable, caps.any} ) =
     EndpointSessional[endpoint]()
 
   // An `Http.Client` that speaks HTTP/2 (prior-knowledge h2c) to an `Http2.Endpoint`.
@@ -434,11 +450,14 @@ object Http2:
   // now; pooling is a later refinement.
   object Client:
     given http2: [endpoint]
-    =>  ( monitor:    Monitor,
-          probate:    Probate,
-          http2Error: Tactic[Http2.Error],
-          asyncError: Tactic[Async.Error] )
-    =>  ( (Http.Client onto Endpoint[endpoint])^{monitor, http2Error, asyncError, caps.any} ) =
+    =>  ( monitor:     Monitor,
+          probate:     Probate,
+          http2Error:  Tactic[Http2.Error],
+          asyncError:  Tactic[Async.Error],
+          socketError: Tactic[Socket.Error],
+          truncation:  Tactic[Truncation.Error] )
+    =>  ( (Http.Client onto Endpoint[endpoint])
+          ^{monitor, http2Error, asyncError, socketError, truncation, caps.any} ) =
 
       new Http.Client:
         type Target = Endpoint[endpoint]
@@ -753,7 +772,7 @@ object Http2:
     // pseudo-headers the request type doesn't carry. Trailers (e.g. gRPC status) are
     // available afterwards via `stream.trailers`.
     def fetch(request: Http.Request, scheme: Text, authority: Text)
-      ( using Tactic[Http2.Error], Tactic[Async.Error] )
+      ( using Tactic[Http2.Error], Tactic[Async.Error], Tactic[Truncation.Error] )
     :   (Http2.Stream, Http.Response) =
 
       Log.fine(Http2.Event.RequestSent(authority))
@@ -765,7 +784,7 @@ object Http2:
       val stream = this.request(headerBlock, payload)
       val responseHeaders = stream.headers.await()
 
-      (stream, PseudoHeaders.response(responseHeaders, Chain.from(stream.body.stream.records)))
+      (stream, PseudoHeaders.response(responseHeaders, stream.body.stream.records.chain))
 
     def close(): Unit =
       send(Frame.GoAway(0, ErrorCode.NoError.code, Array.empty[Byte]))
@@ -844,7 +863,7 @@ object Http2:
     // batched replenishment.
     private[telekinesis] val unreplenished: Atomic[Int] = Atomic(0)
 
-    val body: Stream.Body = Stream.Body{ count => onConsume(this, count) }
+    val body: Stream.Body = Stream.Body: count => onConsume(this, count)
 
     // Untracked: written only by the connection's single reader daemon.
     // [synchronized] plain var written by single reader daemon

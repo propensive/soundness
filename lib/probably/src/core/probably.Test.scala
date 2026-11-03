@@ -32,8 +32,6 @@
                                                                                                   */
 package probably
 
-import scala.deriving.*
-import scala.math
 import scala.reflect
 
 import anticipation.*

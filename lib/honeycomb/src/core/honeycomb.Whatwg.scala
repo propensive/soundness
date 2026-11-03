@@ -37,7 +37,6 @@ import scala.language.dynamics
 import adversaria.*
 import anticipation.*
 import gossamer.*
-import hieroglyph.*
 import prepositional.*
 import rudiments.*
 import typonym.*
@@ -695,8 +694,12 @@ class Whatwg() extends Dom:
     val html4 = EntityData.html4Names.length
 
     val pairs = List.tabulate(html4 + EntityData.extraNames.length): index =>
-      if index < html4 then (EntityData.html4Names.readUnchecked(index).tt, EntityData.html4Values.readUnchecked(index).tt)
-      else (EntityData.extraNames.readUnchecked(index - html4).tt, EntityData.extraValues.readUnchecked(index - html4).tt)
+      if index < html4 then
+        ( EntityData.html4Names.readUnchecked(index).tt,
+          EntityData.html4Values.readUnchecked(index).tt )
+      else
+        ( EntityData.extraNames.readUnchecked(index - html4).tt,
+          EntityData.extraValues.readUnchecked(index - html4).tt )
 
     Dictionary(pairs*)
 

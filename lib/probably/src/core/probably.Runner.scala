@@ -35,7 +35,6 @@ package probably
 import java.util as ju
 import java.util.concurrent as juc
 
-import anticipation.*
 import beneficence.*
 import denominative.*
 import denominative.dysasymptotics.linearSize

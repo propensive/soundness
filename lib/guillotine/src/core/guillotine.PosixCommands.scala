@@ -48,8 +48,8 @@ trait PosixCommands:
   erased given batch: ("batch" is Intelligible to Text) = Intelligible.Evidence["batch", Text]()
   erased given bc: ("bc" is Intelligible to Text) = Intelligible.Evidence["bc", Text]()
 
-  erased given cat: ("cat" is Intelligible to Iterator[Text]) =
-    Intelligible.Evidence["cat", Iterator[Text]]()
+  erased given cat: ("cat" is Intelligible to Chain[Text]) =
+    Intelligible.Evidence["cat", Chain[Text]]()
 
   erased given chgrp: ("chgrp" is Intelligible to Exit) = Intelligible.Evidence["chgrp", Exit]()
   erased given chmod: ("chmod" is Intelligible to Exit) = Intelligible.Evidence["chmod", Exit]()
@@ -93,13 +93,13 @@ trait PosixCommands:
   erased given getopts: ("getopts" is Intelligible to Text) =
     Intelligible.Evidence["getopts", Text]()
 
-  erased given grep: ("grep" is Intelligible to Iterator[Text]) =
-    Intelligible.Evidence["grep", Iterator[Text]]()
+  erased given grep: ("grep" is Intelligible to Chain[Text]) =
+    Intelligible.Evidence["grep", Chain[Text]]()
 
   erased given hash: ("hash" is Intelligible to Text) = Intelligible.Evidence["hash", Text]()
 
-  erased given head: ("head" is Intelligible to Iterator[Text]) =
-    Intelligible.Evidence["head", Iterator[Text]]()
+  erased given head: ("head" is Intelligible to Chain[Text]) =
+    Intelligible.Evidence["head", Chain[Text]]()
 
   erased given iconv: ("iconv" is Intelligible to Text) = Intelligible.Evidence["iconv", Text]()
   erased given id: ("id" is Intelligible to Text) = Intelligible.Evidence["id", Text]()
@@ -118,14 +118,14 @@ trait PosixCommands:
 
   erased given lp: ("lp" is Intelligible to Text) = Intelligible.Evidence["lp", Text]()
 
-  erased given ls: ("ls" is Intelligible to Iterator[Text]) =
-    Intelligible.Evidence["ls", Iterator[Text]]()
+  erased given ls: ("ls" is Intelligible to Chain[Text]) =
+    Intelligible.Evidence["ls", Chain[Text]]()
 
   erased given m4: ("m4" is Intelligible to Text) = Intelligible.Evidence["m4", Text]()
   erased given mailx: ("mailx" is Intelligible to Text) = Intelligible.Evidence["mailx", Text]()
 
-  erased given man: ("man" is Intelligible to Iterator[Text]) =
-    Intelligible.Evidence["man", Iterator[Text]]()
+  erased given man: ("man" is Intelligible to Chain[Text]) =
+    Intelligible.Evidence["man", Chain[Text]]()
 
   erased given mesg: ("mesg" is Intelligible to Text) = Intelligible.Evidence["mesg", Text]()
   erased given mkdir: ("mkdir" is Intelligible to Exit) = Intelligible.Evidence["mkdir", Exit]()
@@ -150,24 +150,24 @@ trait PosixCommands:
   erased given rm: ("rm" is Intelligible to Exit) = Intelligible.Evidence["rm", Exit]()
   erased given rmdir: ("rmdir" is Intelligible to Exit) = Intelligible.Evidence["rmdir", Exit]()
 
-  erased given sed: ("sed" is Intelligible to Iterator[Text]) =
-    Intelligible.Evidence["sed", Iterator[Text]]()
+  erased given sed: ("sed" is Intelligible to Chain[Text]) =
+    Intelligible.Evidence["sed", Chain[Text]]()
 
   erased given sleep: ("sleep" is Intelligible to Exit) = Intelligible.Evidence["sleep", Exit]()
 
-  erased given sort: ("sort" is Intelligible to Iterator[Text]) =
-    Intelligible.Evidence["sort", Iterator[Text]]()
+  erased given sort: ("sort" is Intelligible to Chain[Text]) =
+    Intelligible.Evidence["sort", Chain[Text]]()
 
   erased given split: ("split" is Intelligible to Text) = Intelligible.Evidence["split", Text]()
 
-  erased given strings: ("strings" is Intelligible to Iterator[Text]) =
-    Intelligible.Evidence["strings", Iterator[Text]]()
+  erased given strings: ("strings" is Intelligible to Chain[Text]) =
+    Intelligible.Evidence["strings", Chain[Text]]()
 
   erased given stty: ("stty" is Intelligible to Text) = Intelligible.Evidence["stty", Text]()
   erased given tabs: ("tabs" is Intelligible to Text) = Intelligible.Evidence["tabs", Text]()
 
-  erased given tail: ("tail" is Intelligible to Iterator[Text]) =
-    Intelligible.Evidence["tail", Iterator[Text]]()
+  erased given tail: ("tail" is Intelligible to Chain[Text]) =
+    Intelligible.Evidence["tail", Chain[Text]]()
 
   erased given tee: ("tee" is Intelligible to Text) = Intelligible.Evidence["tee", Text]()
   erased given test: ("test" is Intelligible to Text) = Intelligible.Evidence["test", Text]()
@@ -186,8 +186,8 @@ trait PosixCommands:
   erased given unexpand: ("unexpand" is Intelligible to Text) =
     Intelligible.Evidence["unexpand", Text]()
 
-  erased given uniq: ("uniq" is Intelligible to Iterator[Text]) =
-    Intelligible.Evidence["uniq", Iterator[Text]]()
+  erased given uniq: ("uniq" is Intelligible to Chain[Text]) =
+    Intelligible.Evidence["uniq", Chain[Text]]()
 
   erased given uudecode: ("uudecode" is Intelligible to Text) =
     Intelligible.Evidence["uudecode", Text]()

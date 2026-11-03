@@ -38,7 +38,6 @@ import java.util.concurrent.atomic as juca
 import java.util.concurrent.locks as jucl
 
 import scala.caps
-import scala.compiletime.asMatchable
 
 import anticipation.*
 import vacuous.*

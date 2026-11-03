@@ -32,8 +32,6 @@
                                                                                                   */
 package quantitative
 
-import scala.language.experimental.into
-
 import anticipation.*
 import gossamer.*
 

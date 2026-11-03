@@ -604,7 +604,7 @@ object Tests extends Suite("errors", m"Contingency"):
 
       test(m"throwSafely requires CanThrow and throws on record"):
         import unsafeExceptions.canThrowAny
-        val tactic: Tactic[ErrorA] = strategies.throwSafely[ErrorA, Any]
+        val tactic: Tactic[ErrorA] = strategies.throwSafely[ErrorA]
         try { tactic.record(ErrorA(55)); -1 }
         catch case e: ErrorA => e.value
       . assert(_ == 55)
@@ -621,20 +621,20 @@ object Tests extends Suite("errors", m"Contingency"):
     suite(m"Tactic shape"):
       test(m"ThrowTactic.certify is a no-op"):
         import unsafeExceptions.canThrowAny
-        val t = new ThrowTactic[ErrorA, Any]()
+        val t = new ThrowTactic[ErrorA]()
         t.certify()
         "ok"
       . assert(_ == "ok")
 
       test(m"ThrowTactic.record throws the error immediately"):
         import unsafeExceptions.canThrowAny
-        val t = new ThrowTactic[ErrorA, Any]()
+        val t = new ThrowTactic[ErrorA]()
         try { t.record(ErrorA(2)); -1 } catch case e: ErrorA => e.value
       . assert(_ == 2)
 
       test(m"Tactic.contramap routes records through the transform"):
         import unsafeExceptions.canThrowAny
-        val outer = ThrowTactic[ErrorB, Any]()
+        val outer = ThrowTactic[ErrorB]()
         val inner = outer.contramap[ErrorA](a => ErrorB(a.value + 100))
         try { inner.record(ErrorA(5)); -1 } catch case e: ErrorB => e.value
       . assert(_ == 105)

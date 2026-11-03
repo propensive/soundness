@@ -39,7 +39,6 @@ import distillate.*
 import gossamer.*
 import hieroglyph.*, codepages.utf8Codepage
 import rudiments.*
-import symbolism.*
 import vacuous.*
 
 object Pax:

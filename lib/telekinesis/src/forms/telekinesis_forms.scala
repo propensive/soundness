@@ -39,11 +39,11 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import fulminate.Hazard
-import gossamer.*
 import honeycomb.*
 import legerdemain.*
 import prepositional.*
 import vacuous.*
+import zephyrine.*
 import htmlDoms.whatwg, whatwg.*
 
 // An `Orchestrate` is a capability: it retains the caller's `process`/`render` function, which
@@ -54,7 +54,7 @@ class Orchestrate[value: Encodable in Query, result](initial: Optional[value] = 
 extends caps.ExclusiveCapability:
   def otherwise(validate: (query: Query) ?=> Validation)(using Formulation, value is Formulaic)
     ( using decodable: Tactic[Hazard] ?=> value is Decodable in Query )
-    ( using request: Http.Request, tactic: Tactic[Query.Error] )
+    ( using request: Http.Request, tactic: Tactic[Query.Error], truncation: Tactic[Truncation.Error] )
   :   result =
 
     request.method match

@@ -32,6 +32,7 @@
                                                                                                   */
 package acyclicity
 
+import murmuration.Iterator
 import prepositional.*
 
 // A graph that can answer which nodes point *at* a node — its dependants, under the dependency
@@ -40,4 +41,4 @@ import prepositional.*
 // predecessors of one node there costs O(n + e) in data outside the question's scope, and the
 // gate makes a program say so where it accepts that cost (`import dysasymptotics.linearScan`).
 trait Bidirectional extends Typeclass.Pure, Operable:
-  def predecessors(self: Self, node: Operand): Iterator[Operand]
+  def predecessors(self: Self, node: Operand): Iterator[Operand]^

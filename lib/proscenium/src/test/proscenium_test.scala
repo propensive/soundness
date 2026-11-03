@@ -134,14 +134,14 @@ object Tests extends Suite("prelude", m"Proscenium Tests"):
       test(m"an exclusive array is updated in place"):
         val buffer = Array.allocate[Int](3)
         buffer(1) = 42
-        buffer.stdlib.toList
-      . assert(_ == scala.List(0, 42, 0))
+        Array.freeze(buffer).to[List]
+      . assert(_ == List(0, 42, 0))
 
       test(m"fill overwrites every position"):
         val buffer = Array.allocate[Int](3)
         buffer.fill(8)
-        buffer.stdlib.toList
-      . assert(_ == scala.List(8, 8, 8))
+        Array.freeze(buffer).to[List]
+      . assert(_ == List(8, 8, 8))
 
       test(m"an array destructures by pattern"):
         Array(1, 2, 3) match
@@ -169,21 +169,21 @@ object Tests extends Suite("prelude", m"Proscenium Tests"):
       test(m"place transfers a window"):
         val buffer = Array.allocate[Int](4)
         buffer.place(Array(1, 2, 3, 4), 1, 0, 2)
-        buffer.stdlib.toList
-      . assert(_ == scala.List(2, 3, 0, 0))
+        Array.freeze(buffer).to[List]
+      . assert(_ == List(2, 3, 0, 0))
 
       test(m"growing preserves the existing content"):
         val buffer = Array.allocate[Int](2)
         buffer(0) = 5
         buffer(1) = 6
-        Array.grow(buffer, 4).stdlib.toList
-      . assert(_ == scala.List(5, 6, 0, 0))
+        Array.freeze(Array.grow(buffer, 4)).to[List]
+      . assert(_ == List(5, 6, 0, 0))
 
       test(m"growing to a shorter size truncates"):
         val buffer = Array.allocate[Int](4)
         buffer.fill(3)
-        Array.grow(buffer, 2).stdlib.toList
-      . assert(_ == scala.List(3, 3))
+        Array.freeze(Array.grow(buffer, 2)).to[List]
+      . assert(_ == List(3, 3))
 
       test(m"freezing preserves the content"):
         val buffer = Array.allocate[Int](2)
@@ -196,13 +196,13 @@ object Tests extends Suite("prelude", m"Proscenium Tests"):
       // A `Ledger` is exactly a `Map` that promises insertion order; that promise is the
       // whole reason the type exists, and it is what these tests check.
       test(m"a ledger iterates in insertion order"):
-        Ledger(t"c" -> 3, t"a" -> 1, t"b" -> 2).stdlib.keys.toList
-      . assert(_ == scala.List(t"c", t"a", t"b"))
+        Ledger(t"c" -> 3, t"a" -> 1, t"b" -> 2).keys.to[List]
+      . assert(_ == List(t"c", t"a", t"b"))
 
       test(m"insertion order survives many entries, where a Map's would not"):
         val pairs = (0 until 32).map { n => (n, n*n) }
-        Ledger.from(pairs).stdlib.keys.toList
-      . assert(_ == (0 until 32).toList)
+        Ledger.from(pairs).keys.to[List]
+      . assert(_ == List.from(0 until 32))
 
       test(m"an empty ledger has no entries"):
         Ledger.empty[Text, Int].size
@@ -217,8 +217,8 @@ object Tests extends Suite("prelude", m"Proscenium Tests"):
       . assert(_ == 2)
 
       test(m"a collection converts to a ledger"):
-        scala.List((1, t"one"), (2, t"two")).to(Ledger).stdlib.keys.toList
-      . assert(_ == scala.List(1, 2))
+        scala.List((1, t"one"), (2, t"two")).to(Ledger).keys.to[List]
+      . assert(_ == List(1, 2))
 
     suite(m"Set, Map and Sequence"):
       test(m"a set discards duplicates"):

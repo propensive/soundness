@@ -34,11 +34,10 @@ package adversaria
 
 import java.lang as jl
 
-import scala.collection.immutable.{List, Nil, ::}
+import scala.collection.immutable.{List, Nil}
 import scala.quoted.*
 
 import anticipation.*
-import denominative.*
 import fulminate.*
 import gigantism.*
 import panopticon.*
@@ -194,7 +193,7 @@ object internal:
         symbol.fieldMembers
         . filter(_.info <:< TypeRepr.of[value])
         . filter(TypeRepr.of[value] <:< _.info)
-        . filter { field => names.contains(field.name) }
+        . filter: field => names.contains(field.name)
         . map: field =>
             val name = '{${Literal(StringConstant(field.name)).asExprOf[String]}.tt}
 

@@ -43,7 +43,9 @@ object PropertyDef:
   // time (`CssData`); only each entry's `syntax` is kept.
   lazy val list: List[PropertyDef] =
     List.tabulate(CssData.propertyNames.length): index =>
-      PropertyDef(CssData.propertyNames.readUnchecked(index).tt, CssData.propertySyntaxes.readUnchecked(index).tt)
+      PropertyDef
+        ( CssData.propertyNames.readUnchecked(index).tt,
+          CssData.propertySyntaxes.readUnchecked(index).tt )
 
   // The same properties keyed by name in a `Dictionary` for fast lookup.
   lazy val all: Dictionary[PropertyDef] =
@@ -60,6 +62,5 @@ object PropertyDef:
 // dataset (`css/properties.json`, CC0). `syntax` is the raw value grammar (CSS
 // Value Definition Css.Syntax); `grammar` is its parsed form, computed on demand.
 case class PropertyDef(name: Text, syntax: Text) derives CanEqual:
-  lazy val grammar: Css.Syntax =
-    import contingency.strategies.throwUnsafely
-    SyntaxParser.parse(syntax)
+  // The bundled dataset's grammars all parse (the test suite checks every entry).
+  lazy val grammar: Css.Syntax = unsafely(SyntaxParser.parse(syntax))

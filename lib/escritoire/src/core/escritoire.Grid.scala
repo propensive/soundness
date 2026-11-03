@@ -37,11 +37,9 @@ import scala.collection.immutable.IndexedSeq
 import scala.language.experimental.pureFunctions
 
 import anticipation.*
-import fulminate.*
 import gossamer.*
 import hieroglyph.*
 import rudiments.*
-import spectacular.*
 import symbolism.*
 import tessellate.*
 import vacuous.*
@@ -71,7 +69,7 @@ object Grid:
     val midEdge = Textual(t"${style.charset(top = style.innerLines, bottom = style.innerLines)}")
 
     (0 until row.height).map: lineNumber =>
-      widths.stdlib.indices.map: index =>
+      IndexedSeq.tabulate(widths.length): index =>
         val cell = row(index)
 
         val offset = cell.verticalAlign match

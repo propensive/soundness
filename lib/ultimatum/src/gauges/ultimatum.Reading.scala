@@ -49,7 +49,7 @@ class Reading[status](initial: status):
 
   // A no-op until the cell is bound into a running form. Atomic too, so that a task updating the
   // cell sees the callback the form bound, rather than a stale no-op that never wakes the form.
-  private val onChange: Atomic.Ref[() -> Unit] = Atomic.Ref(() => ())
+  private val onChange: Atomic.Ref[() -> Unit] = Atomic.Ref { () => () }
 
   // Install the running form's repaint trigger. As in `Panes.bindWake`, the callback genuinely
   // captures the form's event loop and escapes into this longer-lived cell — a growing capture set

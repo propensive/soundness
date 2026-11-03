@@ -3276,3 +3276,159 @@ The rationals' arithmetic instances are inline (as symbolism's primitives, #2282
   bounds are as they were. Lesson: a generic erased cast is a latent `Nothing` whenever the
   type argument is left to inference under a type-parameter expected type — making it inline
   is how you find out.
+
+## Tactics are `caps.Control`; the ambient strategies are pure; `DurableUnscoped` is gone (2026-10-31, #2328)
+
+The exploration asked whether classifier exclusion (`->{any.except[Control]}`, Scala 3.10) could
+replace the `Durable` allow-list and, with it, Proscala's `sharedunscoped` and `classifiermeet`.
+The scratch results (`rep/sepcheck-probes/p17`, `p21`, `p22`):
+
+- **Exclusion is strict, not fail-open.** `except[Control]` admits only what is *known* unrelated
+  to `Control`: a sibling classifier, an exclusive capability, or a lambda capturing those. A bare
+  `SharedCapability` (Control's ancestor), an unclassified function and an outer `CanThrow` are
+  rejected. So a sibling classifier for the shared, thread-crossing capabilities is unavoidable:
+  `Durable` stays.
+- **Exclusion is not a classification.** A body a `Durable` worker, loop or timeout *retains*
+  is a field of a classified class, and "field classifiers have to conform to the classifier of
+  the containing class" — an `except`-typed field is "unclassified" and rejected, and an
+  `except`-typed probate cannot flow into the `only[Durable]` one the worker holds (the
+  `Containment` chain failed first). Every one of the 29 `only[Durable]` sites retains its body,
+  so **`only[Durable]` on retained bodies is upstream's own rule, not an allow-list**; the
+  exclusion form is right only for a body that is merely run on another thread, which Soundness
+  does not have. The sites are unchanged.
+- **Why the ambient tactics needed `SharedUnscoped`, precisely:** the strategy givens were
+  polymorphic *methods* minting a fresh tactic per summon, and a fresh capability minted inside a
+  derivation's synthesised by-name thunk cannot flow out (p17). A given that is a *value* is a
+  static capability, visible from every level — which is why every other `DurableUnscoped`
+  (sinks, supervisors, watchers, `Internet`) is plain `Durable` now with nothing else changed. A
+  static *tracked* tactic object was tried and rejected again (the roadmap records the earlier
+  attempt): a top-level field of capability type forces `object strategies … uses …`, and every
+  lambda raising through the tactic then captures `strategies` — distillate's
+  `safely(decodable(using strategies.throwUnsafely)…)` lambdas were the first to fail. The
+  resolution is upstream's own for the same problem: `unsafeExceptions.canThrowAny` is an
+  `inline given … = caps.unsafe.unsafeErasedValue`, a deliberately untracked ambient throw
+  permission, while a `try`'s `CanThrow` is tracked `Control`. So `ThrowTactic.ambient`,
+  `UncheckedTactic.ambient` and `fatalErrors` are sealed pure (tag `ambient-strategy`; an
+  unscoped throw or a process exit retains no return point), and `throwSafely` carries
+  `^{canThrow}`, the scoped evidence it throws under.
+- **`Emit` is `caps.Control`.** The correct label: a tactic captures a return point on the stack
+  that installed it. Consequence: a `Control` capability may retain only `Control` capabilities,
+  so `Emit.apply`'s handler bound is `only[caps.Control]` (a `handle` case body may raise into an
+  outer emitter but not log through a `Durable` logger — log outside the handler).
+- `ThrowTactic[-error]` lost its phantom `success` parameter and is contravariant, so the one
+  ambient `ThrowTactic[Hazard]` satisfies every `Tactic[error]`.
+
+Mainline residue: none of `SharedUnscoped`, `classifiermeet` or part 3 of classifier exclusion
+(scala/scala3#26409) is used; Scala 3.9 no longer compiles the capture-checked modules.
+
+## The ambient strategies are for entry points; library code says what it does (2026-11-01, #2328 follow-up)
+
+An audit of every `strategies.throwUnsafely` in non-test library sources (107 uses in 54 files)
+sorted them into: *infallible* (19 — a literal or library-built value re-read), *codec seal*
+(14 — a label-free tactic so a derived instance stays pure), *caught right there* (36),
+*should propagate* (18), *entry points and demos* (14) and *macro-time* (6). Only the entry
+points are what the ambient tactic is for. Rulings and findings:
+
+- **Honest forms, in order of preference.** A total API that carries the proof in the type
+  (`Relative(0, …)`, `Json.make`, an `Unsafe`-gated helper such as `Ergo.unsafeInterpolate` or
+  apoplexy's `unsafeMediaType`); otherwise a scoped `unsafely(…)` with the reason beside it —
+  repeating a check is fine where performance is not critical. A caught error goes through the
+  handler Contingency has for it (`safely`, `mitigate`, `recover`, a positioned `HaltTactic` at
+  macro time), never a new `try`/`catch`.
+- **The shadowing rule.** A method-local `import strategies.throwUnsafely` is nested deeper than
+  the method's own `raises` tactic and so wins implicit resolution for every `abort` below it:
+  the abort throws a raw exception instead of reporting through the caller. `Acp.connect`'s
+  `initialize` (`Incompatible`) was escaping this way; `EmailAddress.parse`'s was unreachable
+  in practice. Never import the ambient tactic above a `raises` method's own aborts.
+- **`mitigate` handlers build errors outside any `Diagnostics` context**: pass the inner
+  error's, `Y.Error(…)(using error.diagnostics)`, as jacinta's `unparsable` does.
+- **A context function cannot be spliced into a quote** with a matching capture set
+  (`'{unsafely(…)}` fails where seven older macros apparently succeed only because they are
+  not capture-checked); a gated helper called from the quote is the shape.
+- **`unsafely`'s `success` type variable widens a refined path type** (superlunary's
+  `(temporaryDirectory / uuid).on[Linux]`), so a scoped check belongs inside the API (`Path.on`
+  now carries its own), not around the call.
+- **What is structural, and why (the follow-ups).** A `->{any.only[Durable]}` dispatcher, a
+  registry slot, a proxy held by a `Durable` connection, a per-stream daemon body and a
+  `StreamDuplex` read on another daemon can retain no *tracked* tactic, so where their decoders
+  are summoned at expansion (`JsonRpc.proxy`'s result decoders, `DapSession`'s callbacks) or
+  their tactic is retained (the framing pumps' loops, `Http2Serve`, the child-process streams
+  in `Acp.connect` and `LspSessional.session`) the ambient tactic is the only one that can be
+  there today. The ratchet's `ambientStrategy` column holds them at 16 beside the 11 entry
+  points. The follow-ups: (1) `Explorable.children(path)(using Tactic[Io.Error])`; (2)
+  `raises Framing.Error` on the pumps, run under the reader task's own tactic, and
+  `Sessional`/`Acp.connect` launch failures through the caller's tactic; (3) decoders summoned
+  per call in the `serve`/`proxy` macros (`summonInline`; upstream #26547) and a slot type of
+  `Json -> (Tactic[…]) ?=> Json`; (4) `StreamDuplex` taking its truncation tactic at read time.
+
+### The four follow-ups, done (2026-11-01)
+
+All four landed in the next PR, and the ratchet's `ambientStrategy` column is at the eleven
+entry points. What each took, and the traps:
+
+- **Pumps and exchanges.** `LspTransport.pump`/`DapTransport.pump` take `using
+  Tactic[Framing.Error]`; the exchanges take a `Writing`/`Reading` pair — *traits with a
+  `using`-tactic method*, whose anonymous instances capture only the observer and a stream or
+  job (all `Durable`) — and mint the sink and channel inside the writer and reader tasks under
+  each task's own tactic. The function-typed forms were tried first and are not available: a
+  `(receive: Text => Unit) ->{…} (Tactic[…] ?->{receive} Unit)` is a *curried dependent context
+  function type* ("not yet supported"), and a context function in any container (an
+  `Optional`, a `Slot`) freshens its capture set at each adaptation, so the task's tactic
+  "cannot flow into {any}". A trait method has neither problem.
+- **Rewriters** are `Lsp.Proxy.Rewriter` instances for the same reason; `rewrite.result`/
+  `notification` take `inline lambda: Tactic[Json.Error] ?=> Json => Json`, which is inlined
+  into the instance's method, never stored as a value.
+- **Macros.** `summonFrom` is an inline-only intrinsic and cannot appear in a quote spliced by
+  a non-inline macro; `summonInline` can. Both `serve` and `proxy` now summon decoders inside
+  the generated code, so the expansion site needs no tactic and `Lsp.Connection` holds none.
+- **`DapSession`.** Every decode is in `dispatch`, which takes `using Tactic[Hazard]`: one
+  tactic per request, minted in `handle` ("every error a request raises fails that request"),
+  thrown into the existing catch. `parseValue`'s `try … catch … => Unset` is `safely`.
+- **`StreamDuplex`** was a copy of coaxial's `streamsDuplex` (now public), whose read side ends
+  at EOF and retains no tactic; `Http2Serve.open` builds the connection over it, `start()`'s
+  `Tactic[Async.Error]` is threaded from the accept daemon (`daemon[Async.Error]`), and each
+  stream's daemon is `daemon[Http2.Error | Truncation.Error | Async.Error]`.
+- **`Explorable.children(path)(using Tactic[Io.Error])`**: every caller already had one.
+- **hellenism** `Streamable` givens declare `^{classpath, truncation}` and lose both seals; the
+  bundled-resource readers (`scintillate` error pages, ethereal's schema) use `unsafely`.
+
+
+## `unsafely` is a last resort: 210 sites audited, 60 remain (2026-11-01)
+
+After the ambient strategies were confined to entry points, 210 `unsafely` sites remained in
+library sources. Each was classified by what makes the operation safe, and the ruling is that
+the proof should be carried by the code rather than asserted: a total API or a type-level
+proof first, a `mitigate` into a named error second, and a scoped `unsafely` with its proof in
+a comment only where neither applies.
+
+- **Macro-checked literals** (`media"…"`, `jp"…"`, YAML paths, `telp"…"`, `fqcn"…"`, `css"…"`
+  selectors, `ClassList[…]()`): the expansion validates the literal under `recover { case
+  error => halt(error.message, position) }.protect(parse)`, and the generated code calls an
+  `Unsafe`-gated constructor (`Media.unsafeParse(text)(using Unsafe)`) whose body is the one
+  `unsafely`, rather than splicing `unsafely` into every expansion. The gate names the
+  assertion; the macro supplies the token. `ClassList`'s labels are checked at expansion with
+  nomenclature's own rules, so a class name that is not a CSS identifier is a compile error.
+- **Valid by construction**: a constructor that validates and builds is split into the check
+  and a private unchecked builder (`Permutation.apply`/`unchecked`, `Factoradic`, `permute`),
+  so a value the code itself produced is built without repeating the check.
+- **Defects** (key material the module generated, a media type an `Abstractable` instance
+  states) are `safely(…).or(panic(…))`: named, not asserted.
+- **Honest signatures**, where the throw was the only thing hiding an error from a caller:
+  `Socket.Backend`'s listen methods raise `Bind.Error` and its dial/duplex methods
+  `Socket.Error`, classified from the JDK's exceptions in the backend once, so the HTTP, SSH,
+  gRPC and debugger consumers map a *reason* rather than an exception message (and
+  `listen`'s long-declared `Bind.Error` is finally raised); `Rig.stage`/`invoke` and
+  `Computable.compute` take the tactic they needed; a non-literal `Monthstamp - day` needs a
+  `Tactic[Moment.Error]` at the expression.
+- **Left, with the proof written beside each**: bundled resources and schemas (a packaging
+  error), macro-time schema readers (`Specification.fields` throws at expansion; making it
+  lazy under a tactic is a trait change for another PR), thunks that run after the call
+  returns (`Spring`/`Handle` endpoints, the JVM HTTP body), the JSON-RPC dispatcher's service
+  methods (call-time tactics are the follow-up), the pure `Subtractable` witness, and
+  `kaleidoscope`'s cache.
+
+Traps: a method with a `using` clause or a context-function result is not a SAM, so the
+typeclasses that gained a tactic (`Computable`, `Connectable`) got factories for lambda-shaped
+instances; `mitigate` inside an `inline def` cannot supply the protected call's tactic
+(delegate to a non-inline method); and `daemon[E]:` demands a pure body, so a daemon that
+also uses a tactic carries the error out through a promise.

@@ -1,0 +1,594 @@
+tel 1.0
+
+base hellenism
+import soundness
+
+info   the JVM classpath, its classloaders and its resources as typed values
+detail
+    _Hellenism_ represents the three things the JVM uses to find code and data — the
+    **classpath** (an ordered list of directories, JAR files and the Java runtime), the
+    **classloaders** which search it, and the **resources** bundled on it — as immutable,
+    typed values, in place of the standard API's nullable lookups and mutable global state.
+
+    A resource is a path on the `Classpath` plane, read with the same `read[Data]` or
+    `read[Text]` as any other source, and the `cp"…"` interpolator checks that the resource
+    exists while the code compiles. A classpath is a value whose `Classpath.Entry`s can be
+    listed and matched, and a classloader is a `Classloader` value, chosen explicitly as a
+    contextual value from the `classloaders` package rather than reached for through the
+    thread's mutable state.
+
+    ```scala
+    import soundness.*
+    import classloaders.threadContextClassloader
+    import strategies.throwUnsafely
+    import systems.javaBaseSystem
+
+    val bytes: Data = cp"/scala/Option.class".read[Data]
+    val classpath: LocalClasspath = System.properties.java.`class`.path().as[LocalClasspath]
+    val loader: Classloader = classpath.classloader(Classloader.Delegation.Deferential)
+    ```
+
+    The library is split into three source sets, by what each platform can do:
+
+    - `hellenism.core` — `Classpath`, `Resource`, `cp"…"`, `Classloader`, `ClassRef` and the
+      `classloaders` package. Compiles for the JVM, Scala.js and Scala Native; on Native a
+      program's classpath is linked into its binary, and `cp"…"` resources reach the
+      javalib's embedded resources.
+    - `hellenism.core` on the JVM and Scala.js additionally has the extensions which need
+      `java.net.URL`, `URLClassLoader` and `ServiceLoader`: `classloader`, `services`,
+      `javaUrl` and `classpathEntry`.
+    - `hellenism.jvm` — `LocalClasspath` and everything backed by the filesystem:
+      `classpathSubstantiable`, `Classloader#classpath` and `Classpath.of`.
+
+    Everything is exported to the `soundness` umbrella, and the `classloaders` choice
+    package merges with the umbrella's own, so a user writes `import soundness.*` and then
+    imports one classloader by name.
+
+refer hellenism.Classpath
+refer hellenism.Classloader
+refer hellenism.LocalClasspath
+
+entry .Classloader   a Java `ClassLoader` as a value: resolves names, reads resources, scopes itself
+  detail
+      A `Classloader` wraps a `java.lang.ClassLoader`, whose raw instance is `#java`. It is
+      the context every resource read resolves against — the `Streamable` givens for
+      `Resource` and for a `Path on Classpath` take one as a contextual parameter — and is
+      chosen by importing one of the `classloaders` package's givens by name, or by building
+      one over a `Classpath` with `classloader`.
+
+      Two classloaders may resolve the same path to different resources, or one to nothing at
+      all, which is why the choice is never implicit: a `Classloader` is always a value or a
+      named given in scope.
+
+      ```scala
+      import soundness.*
+      import classloaders.threadContextClassloader
+
+      val loader: Classloader = Classloader[Option[Int]]
+      loader.parent
+      loader.on(t"scala.Option")
+      loader.use:
+        Classloader.threadContext == loader
+      ```
+
+      A classloader is `Findable`, with the `Classpath` as its `#Plane`, so a `Path on
+      Classpath` can be tested for existence against it (`classpathSubstantiable`, in
+      `hellenism.jvm`).
+  refer hellenism.classloaders
+  refer hellenism.classloader
+  entry .threadContext   the current thread's context classloader, as a value
+      The classloader `Thread.currentThread.getContextClassLoader` returns at the moment of
+      the call. `classloaders.threadContextClassloader` is the given built from it, and
+      `#use` installs another classloader as the thread's context for the duration of a block.
+  entry .apply   the classloader which loaded a type, as `Classloader[T]`
+      `Classloader[T]` is a macro which finds the class of `T` through `ClassRef[T]` and
+      returns the classloader which loaded it. This is how a plugin's own classloader is
+      reached from one of its classes, and how a program finds the classpath it was itself
+      loaded from (`LocalClasspath.of(Classloader[Main.type])`), which under a host such as a
+      test runner differs from the `java.class.path` property.
+
+      The type may be a proper type, an object's type or an unapplied type constructor, and
+      may be nested in an object or a class: the macro resolves it to its JVM binary name
+      (`Outer$Nested`), where a lookup by the dotted source name would fail.
+
+      ```scala
+      import soundness.*
+
+      object Outer:
+        class Nested
+
+      Classloader[Outer.Nested].java == classOf[Outer.Nested].getClassLoader
+      ```
+  entry .Delegation   which side wins when a loader and its parent both offer a class
+    detail
+        A classloader built over a classpath with `classloader` must say how it resolves a
+        name which both it and its parent can load. The JVM's own order consults the parent
+        first; the reverse prefers the loader's own entries, which isolates a plugin's
+        versions of shared libraries from its host's. The choice is always spelled out, since
+        the two give different classes for the same name and neither is right for every use.
+
+        ```scala
+        import soundness.*
+
+        val contract = LocalClasspath(Classpath.Entry.Jar(t"/lib/contract.jar"))
+        val plugin = LocalClasspath(Classpath.Entry.Jar(t"/lib/plugin.jar"))
+        val shared = contract.classloader(Classloader.Delegation.Deferential)
+        val isolated = plugin.classloader(Classloader.Delegation.Preferential, parent = shared)
+        ```
+
+        Here the plugin sees the contract it was written against through its parent, while
+        everything else it bundles is its own.
+
+        `Deferential` is parent-first, the JVM's standard order: the loader asks its parent
+        for every name before looking in its own entries, which is what a plain
+        `URLClassLoader` does, so a class the parent can load is shared with the code being
+        loaded. `Preferential` is child-first: the loader looks in its own entries first and
+        defers to its parent only for a name it cannot find, so the classpath's versions of
+        shared libraries shadow the parent's. A `Preferential` loader still honours the
+        `ClassLoader` contract: it consults `findLoadedClass` under the per-name loading lock
+        before defining a class, so a second request for the same name, or two threads
+        racing on it, never reaches `defineClass` twice.
+  entry #java   the underlying `java.lang.ClassLoader`
+      The raw Java classloader, for the Java APIs which take one. Two `Classloader`s are the
+      same loader when their `java` instances are.
+  entry #Plane   the plane this classloader finds paths on: `Classpath`
+  entry #parent   the parent classloader, or `Unset` for the bootstrap loader
+      Every JVM classloader but the bootstrap loader has a parent it delegates to; this walks
+      one step up the chain, wrapped as a `Classloader`.
+  entry #use   runs a block with this as the thread's context classloader
+      Installs this classloader as the current thread's context classloader, evaluates the
+      block, and restores the previous one in a `finally`, so a change of classloader is
+      scoped to exactly the code which needs it — loading a plugin, or calling a Java library
+      which reads the context loader — rather than left set for the thread.
+
+      ```scala
+      import soundness.*
+
+      classloaders.systemClassloader.use:
+        Classloader[Option[Int]]
+      ```
+  entry #on   loads and initialises a class by its binary name, if this loader has it
+      `Class.forName(name, true, java)`: the class is initialised, and the result is `Unset`
+      rather than a thrown `ClassNotFoundException` when the loader cannot find it. The name
+      is the JVM binary name, with `$` between a nested class and its owner.
+  entry #resource   the bytes of a resource, or `Unset` if this loader does not have it
+      Reads the whole of `getResourceAsStream(path)` and closes the stream. The path is
+      relative, without a leading `/`, as the Java API takes it. The method takes no
+      capability, so its result retains nothing and the read may sit inside a `safely` block;
+      `#apply` is the same read with the result logged.
+
+      ```scala
+      import soundness.*
+      import classloaders.threadContextClassloader
+
+      safely(threadContextClassloader.resource(t"scala/Option.class")).let(_.length)
+      ```
+  entry #apply   the bytes of a resource, logged as a `Classpath.Event` when found
+      As `#resource`, and logs `Classpath.Event.ResourceLoaded` at `fine` level when the
+      resource is present. It needs a `Classpath.Event is Loggable` in scope, such as
+      `logging.silentLogging`.
+
+entry .Classpath   the root of the classpath plane, and a classpath as a list of entries
+  detail
+      `Classpath` is two things which share a name. As a **type**, it is a classpath: an
+      ordered list of `#entries`, each a `Classpath.Entry`, which `LocalClasspath` and
+      `OnlineClasspath` implement. As an **object**, it is the root of the classpath
+      **plane**, so a resource is a `Path on Classpath` built from it:
+
+      ```scala
+      import soundness.*
+      import classloaders.threadContextClassloader
+      import strategies.throwUnsafely
+
+      val path: Path on Classpath = Classpath / "scala" / "Option.class"
+      val same: Path on Classpath = t"/scala/Option.class".as[Path on Classpath]
+      path.read[Data]
+      ```
+
+      A path on the classpath encodes as `/`-separated text with no root prefix, each segment
+      held to `.Rules`: no `/`, not beginning with a digit, and only letters, digits, `_`,
+      `$` and `.`. The path is read through the `Classloader` given in scope (`.streamable`),
+      and raises `Classpath.Error` if that loader does not have it.
+
+      On the JVM, the extensions `classloader` and `services` build a classloader over a
+      classpath and enumerate its service providers; `Classpath.of` reads one back from a
+      `URLClassLoader`.
+  refer hellenism.LocalClasspath
+  refer hellenism.OnlineClasspath
+  refer hellenism.Resource
+  entry .Plane   the plane type of classpath paths: `Classpath` itself
+  entry .Rules   what a segment of a classpath path may be
+      A segment must not contain `/`, must not begin with a digit, and must match
+      `[a-zA-Z0-9_$.]+`: the characters a class file or package directory name may use. A
+      path which breaks a rule fails to decode with a `Path.Error`.
+  entry .nominative   the given which holds classpath paths to `.Rules`
+  entry .radical   how the classpath root is read from and written to text
+      The root encodes as the empty text, so a path reads as `/scala/Option.class`; decoding
+      accepts only text beginning with `/`, and fails with `Path.Error(InvalidRoot)` otherwise.
+  entry .filesystem   the classpath as a `Filesystem`: `/`-separated, with one root
+      Named `Java classpath`, with `/` as its separator and `.` and `..` as the self and
+      parent segments, and a single root, so a path on the classpath is always absolute.
+  entry .Directory   makes a `Classpath.Entry.Directory` from any path type
+      `Classpath.Directory(path)` takes any value which is `Abstractable across Paths to
+      Text` — a galilei `Path`, or text — and makes the directory entry for it.
+  entry .Jar   makes a `Classpath.Entry.Jar` from any path type
+      `Classpath.Jar(path)` takes any value which is `Abstractable across Paths to Text` and
+      makes the JAR entry for it.
+  entry .streamable   reads a `Path on Classpath` as bytes, through the `Classloader` in scope
+      The given which lets a classpath path be `read[Data]` (or `read[Text]`, or as any type
+      decodable from a stream). It needs a `Classloader` given and a `Tactic[Classpath.Error]`,
+      which is raised when the classloader does not have the resource.
+  entry .source   reads a `Path on Classpath` as a stream metered by `Credit`
+      As `.streamable`, with a `Buffering` in scope, for reading the resource lazily as a
+      stream rather than all at once.
+  entry .Entry   one entry of a classpath: a directory, a JAR, a URL or the Java runtime
+    detail
+        A sealed hierarchy of the places a classpath entry can point to. A `LocalClasspath`
+        holds only `Directory`, `Jar` and `JavaRuntime` entries, so a match over its entries
+        need not handle `Url`; an `OnlineClasspath` may hold any.
+
+        ```scala
+        import soundness.*
+
+        val entries: List[Classpath.Entry] =
+          List(Classpath.Entry.Jar(t"/lib/app.jar"), Classpath.Entry.Directory(t"/classes/"))
+
+        entries.map:
+          case Classpath.Entry.Directory(path) => t"directory $path"
+          case Classpath.Entry.Jar(path)       => t"archive $path"
+          case Classpath.Entry.Url(url)        => t"remote $url"
+          case Classpath.Entry.JavaRuntime     => t"the Java runtime"
+        ```
+
+        On the JVM, `javaUrl` converts any entry to the `java.net.URL` a `URLClassLoader`
+        takes.
+    entry .Directory   a directory of class files and resources, by its path
+      entry #path    the directory's path, as text
+      entry #apply   the directory as a path type of the caller's choosing
+          `entry[Path on Linux]()` (or any `Instantiable across Paths from Text`) makes a
+          typed path from the entry's text.
+    entry .Jar   a JAR file, by its path
+      entry #path    the archive's path, as text
+      entry #apply   the archive as a path type of the caller's choosing
+    entry .Url   an entry fetched over the network, by its URL
+      entry #url     the URL, as text
+      entry #apply   the entry as a URL type of the caller's choosing
+          `entry[HttpUrl]()` (or any `Instantiable across Urls from Text`) makes a typed URL
+          from the entry's text.
+    entry .JavaRuntime   the JDK's own modules, the `jrt:/` filesystem
+        The entry which supplies `java.lang.String` and the rest of the JDK. It has no path:
+        a `URLClassLoader` cannot load from `jrt:/`, so `classloader` omits it and relies on
+        the platform loader at the root of every parent chain, and `LocalClasspath#apply`
+        drops it from the text it renders.
+  entry .Error   raised when a resource is not on the classpath
+    detail
+        Error 540: _the resource `path` was not on the classpath_. Raised by the `Streamable`
+        givens for `Resource` and `Path on Classpath` when the `Classloader` in scope does
+        not have the resource. A `cp"…"` resource is checked at compile time against the
+        compiler's classpath, so this error at runtime means the program was launched with a
+        different one.
+    entry #resource   the path which was asked for
+  entry .Event   what a classloader logs as it reads resources
+    detail
+        Every `Event` is tagged `Log.Runtime` and `Log.Resource`, so a logging configuration
+        can select or silence them by tag. `Classloader#apply` logs `ResourceLoaded` at
+        `fine`, and a failed read logs `ResourceMissing` as a warning before raising
+        `Classpath.Error`. A `Classpath.Event is Loggable` must be in scope for the logged
+        reads; `logging.silentLogging` discards them.
+    entry .communicable   renders each event as a message
+    entry .ResourceLoaded   a resource was read: _loaded the classpath resource `path`_
+      entry #path   the resource's path
+    entry .ResourceMissing   a resource was not found: _the classpath resource `path` was not found_
+      entry #path   the resource's path
+  entry #entries   the classpath's entries, in search order
+
+entry .OnlineClasspath   a classpath whose entries may be fetched over the network
+  detail
+      A `Classpath` of any `Classpath.Entry`s, including `Url`s. `Classpath.of` builds one
+      from a `URLClassLoader` whose URLs include an `http` or `https` one; a classpath of
+      local entries alone is a `LocalClasspath`, whose entries are typed to exclude URLs.
+  refer hellenism.LocalClasspath
+  entry #entries   the entries, in search order
+
+entry .Resource   a resource on the classpath, named by `cp"…"` and checked at compile time
+  detail
+      A `Resource` is a `Path on Classpath` which the compiler has confirmed exists: the only
+      way to make one is the `cp"…"` interpolator, whose macro looks the path up on the
+      compiler's own classpath. Its type carries the path as the literal type `Locus`, so
+      `cp"/data/table.csv"` is a `Resource { type Locus = "/data/table.csv" }`.
+
+      A resource reads like any other source, through the `Classloader` given in scope:
+
+      ```scala
+      import soundness.*
+      import classloaders.threadContextClassloader
+      import strategies.throwUnsafely
+
+      val data: Data = cp"/scala/Option.class".read[Data]
+      ```
+
+      The runtime classloader may still lack what the compiler's classpath had, in which case
+      the read raises `Classpath.Error`.
+  refer hellenism.cp
+  entry .streamable   reads a `Resource` as bytes, through the `Classloader` in scope
+      The given which lets a resource be `read[Data]`, `read[Text]`, or read as any type
+      decodable from a stream. The `Classpath.Error` for a missing resource is thrown
+      unscoped rather than raised through a tactic, since a `cp"…"` resource has been checked
+      at compile time.
+  entry .source   reads a `Resource` as a stream metered by `Credit`
+      As `.streamable`, with a `Buffering` in scope, for reading the resource lazily.
+  entry .nominable   a resource's name: the first segment of its path, or `/`
+  entry #path   the resource's path on the classpath plane
+
+entry .cp   the `cp"…"` interpolator: a classpath resource, checked as the code compiles
+    `cp"/path/to/resource"` names a resource on the classpath and checks, while the code
+    compiles, that it exists on the compiler's classpath (through the compiler's thread
+    context classloader). The result is a `Resource` whose `Locus` type member is the path's
+    literal type. A path which is not a valid classpath path is a compile error, _hellenism:
+    the path `foobar` is not a valid classpath path_, and one which exists nowhere on the
+    compiler's classpath is another, _hellenism: the path `/missing.txt` is not on the
+    classpath_.
+
+    ```scala
+    import soundness.*
+    import classloaders.threadContextClassloader
+    import strategies.throwUnsafely
+
+    cp"/scala/Option.class".read[Data].length
+    ```
+
+    The path should begin with `/`, as a classpath path is always absolute; the macro
+    tolerates one without, but the `Classpath` plane does not decode such text. The
+    interpolator takes no `$`-substitutions: the path must be a literal, since it is checked
+    at compile time.
+
+entry .classloaders   the standard classloaders, each a given to import by name
+  detail
+      Which classloader resolves a resource is decided by the `Classloader` given in scope,
+      and the choice is deliberately never implicit: `import soundness.*` brings none of
+      these in, and one is imported by name.
+
+      ```scala
+      import soundness.*
+      import classloaders.threadContextClassloader
+      ```
+
+      The thread's context classloader suits most applications. The system and platform
+      loaders are the JVM's own, and `scalaClassloader` is whichever loaded the Scala
+      library. A classloader built from a `Classpath` with `classloader` can be bound as a
+      local given instead.
+  entry .threadContextClassloader   the current thread's context classloader
+      Built from `Classloader.threadContext` when the given is first used, so it is the
+      context loader of the thread which first asked for it.
+  entry .systemClassloader   the JVM's system (application) classloader
+      `ClassLoader.getSystemClassLoader`: the loader over the `java.class.path` property, at
+      the top of the application's delegation chain.
+  entry .platformClassloader   the JVM's platform classloader
+      `ClassLoader.getPlatformClassLoader`: the loader of the JDK's own modules, and the
+      default parent of a classloader built with `classloader`.
+  entry .scalaClassloader   the classloader which loaded the Scala library
+      `Classloader[List]`: the loader the Scala standard library came from, which is the
+      application loader in a plain `java -cp` process and the host's under a plugin system.
+
+entry .ClassRef   a `Class[?]` found from a type, as `ClassRef[T]`
+    `ClassRef` is the opaque type `hellenism.internal.ClassRef`, exported here. `ClassRef[T]`
+    is a macro which resolves a type to its runtime class: a proper type is linked with
+    `classOf`, binding the class the caller itself links against, and an unapplied type
+    constructor is looked up by its JVM binary name. A type nested in an object or a class
+    resolves to its binary name (`Outer$Nested`), where `Class.forName` on the dotted source
+    name would fail. `ClassRef(javaClass)` wraps a class already in hand.
+
+    ```scala
+    import soundness.*
+
+    object Outer:
+      class Nested
+
+    ClassRef[Outer.Nested].getName.nn.tt == t"Outer$$Nested"
+    ClassRef[Outer.type].getName.nn.tt
+    ClassRef[scala.Option].getName.nn.tt == t"scala.Option"
+    ```
+
+    A `ClassRef` is a `Class[?]`, so every Java method of a class is available on it. Its
+    `classloader` extension gives the `Classloader` which loaded it, and on the JVM
+    `classpathEntry` gives the `Classpath.Entry` it was loaded from. It inspects as the source
+    which would produce it, `classOf[java.lang.String]`, rather than the two-word
+    `class java.lang.String` of `Class#toString`.
+
+entry .internal   the macro implementations behind `cp"…"`, `ClassRef[T]` and `Classloader[T]`
+  hidden
+  detail
+      Not for direct use: the object exists so that the macros have a stable home. `ClassRef`
+      is exported from here to the `hellenism` package.
+  entry .ClassRef   a `Class[?]` found from a type; see `hellenism.ClassRef`
+    detail
+        The opaque type `ClassRef <: Class[?]`, with the macro `ClassRef[T]` and the wrapper
+        `ClassRef(javaClass)`. Its page under the `hellenism` package has the full account.
+    entry .apply   `ClassRef[T]` resolves a type to its class; `ClassRef(cls)` wraps one
+        The macro form takes a type of any kind: a proper type is linked with `classOf`, an
+        unapplied type constructor is looked up by its JVM binary name, and a type with no
+        class at all is a compile error, _hellenism: the type `T` does not have a class_.
+    entry .inspectable   renders a class reference as `classOf[java.lang.String]`
+  entry .classloader   the classloader which loaded a `ClassRef`'s class
+      An extension on `ClassRef`: `classRef.getClassLoader`, wrapped as a `Classloader`.
+      `Classloader[T]` is `ClassRef[T].classloader`.
+  entry .classpath   the macro behind `cp"…"`
+      Reads the interpolator's one literal part, decodes it as a `Path on Classpath`, looks it
+      up on the compiler's context classloader, and splices a `Resource` whose `Locus` type is
+      the literal.
+
+entry .Hellenism2   the trait which holds the `ClassRef[T]` macro implementation
+  hidden
+  detail
+      Mixed into `internal`; not for direct use.
+  entry #makeClass   the macro behind `ClassRef[T]`: a type to its class, by `classOf` or binary name
+
+entry .classloader   builds a classloader over a classpath, with a chosen delegation and parent
+  detail
+      A JVM-only extension on `Classpath` (absent on Scala Native, where the classpath is
+      linked into the binary). It builds a `URLClassLoader` over the classpath's entries —
+      `JavaRuntime` is omitted, since a `URLClassLoader` cannot load from `jrt:/` and the
+      platform loader at the root of every chain supplies the JDK anyway — delegating to
+      `parent` as `delegation` says.
+
+      ```scala
+      import soundness.*
+
+      val plugin = LocalClasspath(Classpath.Entry.Jar(t"/lib/plugin.jar"))
+      val loader = plugin.classloader(Classloader.Delegation.Preferential)
+      loader.parent.let(_.java == ClassLoader.getPlatformClassLoader.nn)
+      ```
+
+      The delegation is required: `Deferential` is the JVM's parent-first order, which shares
+      the parent's classes with what is loaded; `Preferential` is child-first, which isolates
+      the classpath's own versions of its libraries from the parent's. See
+      `Classloader.Delegation`. The parent is the platform classloader
+      (`classloaders.platformClassloader`) unless another is given.
+
+entry .services   the providers of a service interface declared on a classpath
+  detail
+      A JVM-only extension on `Classpath`. `classpath.services[Service]` finds every
+      implementation of `Service` registered under `META-INF/services/<Service>` on the
+      classpath's entries, through `java.util.ServiceLoader`, instantiates each, and returns
+      them as a `Set` typed to the service. The lookup uses a fresh `URLClassLoader` over the
+      entries whose parent is the loader of the service class itself (or the system loader,
+      for a JDK interface), so a provider is linked against the same `Service` the caller
+      named; providers are deduplicated by their class.
+
+      ```scala
+      import soundness.*
+
+      val classpath = LocalClasspath.of(Classloader[Option[Int]])
+      classpath.services[java.nio.file.spi.FileSystemProvider].map(_.getScheme.nn.tt)
+      ```
+
+      The `Set` is unordered: a service whose providers must be ranked needs a key of its
+      own.
+
+entry .javaUrl   a classpath entry as the `java.net.URL` a `URLClassLoader` takes
+    A JVM-only extension on `Classpath.Entry`. A `Directory` or `Jar` becomes a `file:` URL
+    from its path, a `Url` is parsed as written, and `JavaRuntime` is `jrt:/`.
+
+entry .classpathEntry   the classpath entry a class was loaded from, if it is known
+    A JVM-only extension on `ClassRef`. Reads the class's protection domain's code source
+    location and classifies it as a `Classpath.Entry`: a `file:` URL ending in `/` is a
+    `Directory`, any other `file:` URL a `Jar`, `http` and `https` a `Url`, and `jrt` the
+    `JavaRuntime`. A URL of any other protocol is `Unset`.
+
+    ```scala
+    import soundness.*
+
+    ClassRef[Option[Int]].classpathEntry
+    ```
+
+entry .classpathSubstantiable   tests whether a `Path on Classpath` exists, through the `Classloader` in scope
+    The `Substantiable` given for classpath paths, in `hellenism.jvm`: `path.existent()` is
+    whether the classloader in scope has a resource at that path, so a program can check for
+    an optional resource rather than handle a `Classpath.Error`. It is a top-level given, so
+    it must be imported by name: `import soundness.classpathSubstantiable`.
+
+    ```scala
+    import soundness.*
+    import soundness.classpathSubstantiable
+    import classloaders.threadContextClassloader
+
+    val path: Path on Classpath = Classpath / "scala" / "Option.class"
+    path.existent()
+    ```
+
+entry .classpath   the classpath a classloader loads from, if it is a `URLClassLoader`
+    An extension on `Classloader` in `hellenism.jvm`. Walks the loader and its parents to the
+    nearest `URLClassLoader` and reads its URLs back as a `Classpath` with `Classpath.of`; a
+    chain with no `URLClassLoader` in it gives `Unset`. Under a host such as a test runner,
+    which isolates each suite in a `URLClassLoader` of its own, this is the classpath the
+    suite's classes actually came from, where the `java.class.path` property names the
+    host's jars; `LocalClasspath.of(classloader)` combines the two.
+
+entry .of   reads a `Classpath` back from a `URLClassLoader`'s URLs, as `Classpath.of`
+    An extension on the `Classpath` object, in `hellenism.jvm`. Each URL becomes a
+    `Classpath.Entry` by its protocol (`file:` to a `Directory` or `Jar`, `http`/`https` to a
+    `Url`, `jrt` to `JavaRuntime`; any other protocol is dropped). The result is an
+    `OnlineClasspath` if any entry is a `Url`, and otherwise a `LocalClasspath`, whose
+    entries are typed to exclude URLs.
+
+entry .LocalClasspath   a classpath of local entries alone: directories, JARs and the Java runtime
+  detail
+      The classpath of a running program, as a value. Its `#entries` are typed as
+      `Directory | Jar | JavaRuntime`, so a match over them need not handle `Url`, and it
+      round-trips to the text the `java.class.path` property holds: `.decodable` reads one
+      from the property, and `#apply` writes one back, each using the platform's path
+      separator and so needing a `System` in scope.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+
+      val running: LocalClasspath = System.properties.java.`class`.path().as[LocalClasspath]
+      val own: LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
+
+      own.entries.map:
+        case Classpath.Entry.Directory(path) => t"directory $path"
+        case Classpath.Entry.Jar(path)       => t"archive $path"
+        case Classpath.Entry.JavaRuntime     => t"the Java runtime"
+      ```
+
+      A classpath is built from entries with `apply`, from one path with `of`, and extended
+      with `+ path`, which adds a directory or a JAR according to what is on disk and
+      ignores an entry already present. The `classloader` and `services` extensions then
+      build a loader over it or enumerate its providers.
+  refer hellenism.Classpath
+  refer hellenism.classloader
+  entry .encodable   renders a classpath as `java.class.path` text, with the platform separator
+      Needs a `System` in scope for the `path.separator` property. `JavaRuntime` entries are
+      dropped, since the property has no spelling for them.
+  entry .inspectable   a debug rendering: `classpath⟨/x.jar:/a/b/⟩`, always with `:`
+      Always available, with no `System`, so it cannot be mistaken for the platform text
+      `.encodable` produces: the entries are joined with `:` whatever the platform, and
+      `JavaRuntime` shows as `‹jrt›`.
+  entry .decodable   reads a classpath from `java.class.path` text
+      Splits the text on the platform's `path.separator` (needing a `System`, and raising
+      `Property.Error` if it is unset). An element ending in `/` is a `Directory`, one ending
+      in `.jar` a `Jar`, and anything else a `Directory`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+
+      t"/classes/:/lib/app.jar".as[LocalClasspath]
+      ```
+  entry .of   the classpath a classloader loads from, or one of a single path
+      `LocalClasspath.of(classloader)` is the classpath a `URLClassLoader` over local entries
+      loads from, found through `Classloader#classpath`, and otherwise the `java.class.path`
+      property. Code which launches a JVM to run its own classes should take its classpath
+      from this, with the classloader of one of its own classes
+      (`LocalClasspath.of(Classloader[Main.type])`): under a host such as a test runner,
+      which isolates each suite in a `URLClassLoader`, the property names the host's own
+      jars, not the code's.
+
+      `LocalClasspath.of(path)` is the classpath of one entry, by its path: a `Directory` or a
+      `Jar` according to what is on disk (so it may raise `Path.Error` or `Io.Error`, and needs
+      a `DereferenceSymlinks` policy). It is `of`, not `apply`, because a single
+      `Classpath.Entry` is itself a path, and `LocalClasspath(entry)` would be ambiguous with
+      the entries' `apply`.
+  entry .apply   a classpath of the given entries, in order
+      Takes any number of `Classpath.Entry.Directory`, `Classpath.Entry.Jar` and
+      `Classpath.Entry.JavaRuntime` entries, in search order. For a single path, use `of`.
+
+      ```scala
+      import soundness.*
+
+      LocalClasspath(Classpath.Entry.Jar(t"/x.jar"), Classpath.Entry.Directory(t"/a/b/"))
+      ```
+  entry .paths   `classpath + path`: adds a directory or JAR, by what is on disk
+      The `Addable` given which extends a classpath with any path type. The path is read as a
+      `Path on Linux` and checked on disk: a directory becomes a `Directory` entry, anything
+      else a `Jar`, and an entry already present leaves the classpath as it was. It needs a
+      `Tactic[Path.Error]`, a `Tactic[Io.Error]` and a `DereferenceSymlinks` policy in scope.
+  entry #entries   the entries, in search order, typed to exclude URLs
+  entry #entrySet   the entries as a set, for the membership check `+ path` makes
+  entry #apply   the classpath as `java.class.path` text, with the platform separator
+      Needs a `System` in scope for the `path.separator` property. `Directory` and `Jar`
+      entries are joined in order; `JavaRuntime` is dropped, since the property has no
+      spelling for it.

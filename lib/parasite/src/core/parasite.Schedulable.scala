@@ -34,7 +34,6 @@ package parasite
 
 import java.lang as jl
 
-import scala.language.experimental.into
 import scala.language.experimental.pureFunctions
 
 import anticipation.*

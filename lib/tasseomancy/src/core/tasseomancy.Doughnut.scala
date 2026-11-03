@@ -203,6 +203,7 @@ object Doughnut:
         // circle of radius `distance`; `Unset` where it passes the circle by.
         def corner(angle: Double, offset: Double, distance: Double, sign: Double)
         :   Optional[Double] =
+
           if offset > distance then Unset else angle + sign*asin(offset/distance).double
 
         // Where a sector's two edges, each moved into it by its offset, cross, as a distance and
@@ -210,6 +211,7 @@ object Doughnut:
         // the centre.
         def crossing(start: Double, end: Double, offset1: Double, offset2: Double)
         :   (Double, Double) =
+
           val det = sin(end - start).double
 
           if det.abs < Scale.tolerance then (-1.0, 0.0) else
@@ -226,6 +228,7 @@ object Doughnut:
           ( start: Double, end: Double, inner: Double, outer: Double, gapStart: Boolean,
             gapEnd: Boolean )
         :   List[Stroke] =
+
           val offset1 = if gapStart then offset else 0.0
           val offset2 = if gapEnd then offset else 0.0
 
@@ -248,8 +251,8 @@ object Doughnut:
                         List
                           ( Stroke.Close,
                             arc(inner, c - d > π, Sweep.Counterclockwise, d),
-                            Stroke.DrawTo(rim(c, inner)) )
-                        + outside
+                            Stroke.DrawTo(rim(c, inner)) ) +
+                          outside
 
         // A whole ring cannot be one arc, whose ends would coincide: it is two half-turns, and
         // its hole is cut by the even-odd rule.

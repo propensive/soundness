@@ -41,9 +41,7 @@ import anticipation.*
 import hellenism.*
 import hypotenuse.*
 import prepositional.*
-import rudiments.*
 import soundness.{call, dispose}
-import vacuous.*
 import xenophile.*
 
 // The WIT definitions the navigation below is typechecked against, and which the `call`

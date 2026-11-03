@@ -611,7 +611,7 @@ object Benchmarks extends Suite("json-bench", m"Jacinta JSON parser benchmarks")
             val utf8 = java.nio.charset.StandardCharsets.UTF_8.nn
 
             supervise:
-              Json.emit(jacinta.Benchmarks.logsJson).foreach: chunk =>
+              Json.emit(jacinta.Benchmarks.logsJson).each: chunk =>
                 out.write(chunk.s.getBytes(utf8).nn)
         }
 

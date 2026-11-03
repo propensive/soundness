@@ -347,10 +347,16 @@ object Tests extends Suite("time", m"Aviation Tests"):
           (1582-Oct-10).jdn
       . assert(!_.nil)
 
-      test(m"Papal cutover rejects a gap date at runtime"):
-        import calendars.papalCutover
-        val day = 10
-        capture((1582-Oct-day).jdn)
+      test(m"A non-literal day does not compile under the Papal cutover"):
+        demilitarize:
+          import calendars.papalCutover
+          val day = 10
+          (1582-Oct-day).jdn
+        . map(_.message)
+      . assert(_.exists(_.tt.contains(t"is not a literal")))
+
+      test(m"A gap date computed at runtime is rejected by the regime's `jdn`"):
+        capture(calendars.papalCutover.jdn(Year(1582), Oct, Day(10)))
       . assert(_ == Moment.Error(_.Invalid(1582, 10, 10, calendars.papalCutover)))
 
       test(m"A pre-cutover date uses the Julian calendar under the Papal regime"):

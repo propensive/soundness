@@ -32,17 +32,14 @@
                                                                                                   */
 package stratiform
 
+import scala.caps
 import scala.collection.immutable.Vector
-import scala.collection.immutable.{List, Nil, ::}
+import scala.collection.immutable.{List, Nil}
 import scala.collection.mutable as scm
 import scala.quoted.*
-import scala.{annotation, caps}
 
 import anticipation.*
 import contingency.*
-import gigantism.*
-import gossamer.*
-import prepositional.*
 import vacuous.*
 
 // The machinery behind `stratiform.Inlinable`: expansion-time instance

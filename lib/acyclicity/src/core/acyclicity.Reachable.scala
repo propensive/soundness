@@ -46,7 +46,7 @@ object Reachable:
     _.reachable(_)
 
   def generic[self, node](nodal: self is Nodal by node): self is Reachable by node =
-    (graph, start) => Search.reachable(start, nodal.successors(graph, _))
+    (graph, start) => Search.reachable(start, nodal.successors(graph, _).stdlib)
 
 trait Reachable extends Typeclass.Pure, Operable:
   def reachable(self: Self, node: Operand): Set[Operand]

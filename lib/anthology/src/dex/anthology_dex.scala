@@ -47,7 +47,6 @@ import digression.*
 import galilei.*
 import gossamer.*
 import hellenism.*
-import murmuration.map
 import parasite.*
 import prepositional.*
 import rudiments.{bind, partition, to}

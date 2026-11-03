@@ -226,7 +226,11 @@ package filesystemBackends:
         protect(path, Operation.Create):
           val command = java.util.ArrayList[String]()
           command.add("mkfifo")
-          mode.let { mode => command.add("-m"); command.add(Integer.toOctalString(mode).nn) }
+
+          mode.let: mode =>
+            command.add("-m")
+            command.add(Integer.toOctalString(mode).nn)
+
           command.add(Path.encodable.encode(path).s)
           val process = new ProcessBuilder(command).start().nn
 
@@ -501,7 +505,10 @@ package filesystemBackends:
         val channel =
           protect(path, Operation.Open):
             val optionSet = java.util.HashSet[jnf.OpenOption]()
-            options2.foreach { option => optionSet.add(option); () }
+
+            options2.foreach: option =>
+              optionSet.add(option)
+              ()
 
             val channel =
               jnc.FileChannel
@@ -545,11 +552,22 @@ package filesystemBackends:
 
           try
             lambda:
-              Handle
-                ( () => unsafely(zephyrine.chain(Streamable.channel.stream(channel))),
-                  data => unsafely(Writable.channel.write(channel, zephyrine.Stream(data))) )
-                ( () => unsafely(Streamable.channel.stream(channel)),
-                  () => unsafely(Sink.channel.intake(channel)) )
+              new Handle:
+                def reader()(using Tactic[Truncation.Error]): Chain[Data] =
+                  zephyrine.chain(Streamable.channel.stream(channel))
+
+                def writer(data: Chain[Data])(using Emit[Truncation.Error]): Unit =
+                  Writable.channel.write(channel, zephyrine.Stream(data))
+
+                def source()(using Tactic[Truncation.Error])
+                :   zephyrine.Stream[Data] over zephyrine.Credit =
+
+                  Streamable.channel.stream(channel)
+
+                def intake()(using Emit[Truncation.Error])
+                :   zephyrine.Intake[Data] over zephyrine.Credit =
+
+                  Sink.channel.intake(channel)
           finally lock.foreach: held =>
             // Closing the channel already releases the lock, and a fully-consumed stream
             // closes the channel itself, so release after that is a no-op.

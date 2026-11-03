@@ -46,6 +46,7 @@ import spectacular.*
 import telekinesis.*
 import urticose.*
 import vacuous.*
+import zephyrine.*
 
 import errorDiagnostics.stackTracesDiagnostics
 import httpBackends.javaNetHttp
@@ -70,6 +71,7 @@ extension (issuer: Issuer)
         case error@Path.Error(reason, path) => OAuth.Error(OAuth.Error.Reason.Other)
         case error@Uuid.Error(_)            => OAuth.Error(OAuth.Error.Reason.Other)
         case error@Query.Error(_)           => OAuth.Error(OAuth.Error.Reason.Other)
+        case error@Truncation.Error(_)      => OAuth.Error(OAuth.Error.Reason.Other)
 
         case error@Connect.Error(reason) =>
           OAuth.Error(OAuth.Error.Reason.Connection(issuer.exchange, reason))

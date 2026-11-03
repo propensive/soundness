@@ -38,6 +38,7 @@ import scala.collection.immutable.Seq
 import scala.quoted.*
 
 import anticipation.*
+import contingency.*
 import fulminate.*
 import gigantism.*
 import gossamer.*
@@ -46,6 +47,7 @@ import rudiments.*
 import spectacular.*
 import urticose.*
 import vacuous.*
+import zephyrine.*
 
 object internal:
   def expand
@@ -163,7 +165,13 @@ object internal:
                   host,
                   path,
                   contentType :: $headers,
-                  () => postable0.stream($payload) )
+                  // Staging-boundary seal, as for `postable0`: the inliner sees through the
+                  // sealed given to the evidence proxy, which the spring would retain.
+                  // [quote-wall] staging-boundary seal of the request body's spring
+                  caps.unsafe.unsafeAssumePure:
+                    new Spring[Data]:
+                      def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                        postable0.stream($payload) )
 
             $client.request(request, $submit.target)
           }
@@ -196,7 +204,14 @@ object internal:
 
             val request =
               Http.Request
-                ( $method, 1.1, $fetch.host, path, $headers, () => Http.emptyBody() )
+                ( $method,
+                  1.1,
+                  $fetch.host,
+                  path,
+                  $headers,
+                  new Spring[Data]:
+                    def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                      Http.emptyBody() )
 
             $client.request(request, $fetch.target)
           }

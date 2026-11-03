@@ -90,18 +90,18 @@ object KeyAlgorithm:
   // an `RSAPrivateKey` (after its version) or the first of an `RSAPublicKey`.
   def rsaModulus(material: Material): Optional[BigInt] = material match
     case Material.Private(octets) => safely(Der(octets).as[Asn1]) match
-      case Asn1.Sequence(_ :: Asn1.Integer(modulus) :: _) => modulus
+      case Asn1.Sequence(_ :: Asn1.Integer(modulus) :: _)  => modulus
       case _                                               => Unset
 
     case Material.Public(bits) => safely(Der(bits).as[Asn1]) match
-      case Asn1.Sequence(Asn1.Integer(modulus) :: _) => modulus
+      case Asn1.Sequence(Asn1.Integer(modulus) :: _)  => modulus
       case _                                          => Unset
 
   // A human-readable name for what a key document carries, for the `Mismatch` error: the known
   // algorithms by name and size, and anything else by its dotted object identifier.
   def describe(algorithm: Asn1, material: Material): Text =
     identifier(algorithm).lay(t"an unrecognized algorithm"): (arcs, parameters) =>
-      if arcs == Rsa then rsaModulus(material).lay(t"RSA")(modulus => t"RSA-${modulus.bitLength}")
+      if arcs == Rsa then rsaModulus(material).lay(t"RSA"): modulus => t"RSA-${modulus.bitLength}"
       else if arcs == Ed25519 then t"Ed25519"
       else if arcs == X25519 then t"X25519"
       else if arcs == Ec then parameters match

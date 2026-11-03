@@ -36,6 +36,7 @@ import anticipation.*
 import denominative.*
 import gossamer.*
 import symbolism.*
+import rudiments.skip
 import vacuous.*
 
 sealed trait ProgrammingLanguage:
@@ -64,8 +65,8 @@ object Scala extends ProgrammingLanguage:
 
   override def postprocess(code: SourceCode, context: Optional[Context]): SourceCode =
     context match
-      case Context.Term => code.copy(lines = Array.from(code.lines.stdlib.init.tail))
-      case Context.Type => code.copy(lines = Array.from(code.lines.stdlib.tail))
+      case Context.Term => code.copy(lines = code.lines.skip(1).skip(1, Bidi.Rtl))
+      case Context.Type => code.copy(lines = code.lines.skip(1))
       case _            => code
 
 object Java extends ProgrammingLanguage:

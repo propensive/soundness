@@ -32,14 +32,14 @@
                                                                                                   */
 package anticipation
 
-import scala.caps
+import java.nio.charset.StandardCharsets
 
+import scala.caps
 import scala.compiletime.*
 import scala.quoted.*
 import scala.reflect.*
 import scala.util.*
 
-import java.nio.charset.StandardCharsets
 import prepositional.*
 import symbolism.*
 
@@ -53,6 +53,7 @@ object internal:
 
     def apply(string: String): Text = make(string)
     def apply(chars: Array[Char]^{}): Text = make(String(chars.asInstanceOf[scala.Array[Char]]))
+
     def apply(bytes: Array[Byte]^{}): Text =
       make(String(bytes.asInstanceOf[scala.Array[Byte]], StandardCharsets.US_ASCII))
 
@@ -92,18 +93,25 @@ object internal:
     // libraries between `proscenium` and here); implicit scope finds them equally well
     // from the subject's companion. `Self` is subtype-parametric throughout, so
     // intersections like `Text & Populated` (from `occupied`) also match.
-    given traversable: [text <: Text] => text is murmuration.Traversable by Char = _.s.iterator
+    given traversable: [text <: Text] => text is murmuration.Traversable by Char =
+      text => murmuration.Iterator.from(text.s.iterator)
 
     given reshapable: [text <: Text]
     =>  text is murmuration.Reshapable.Stable by Char to Text =
-      chars => make(String(chars.toArray))
+      chars =>
+        val builder = java.lang.StringBuilder()
+        chars.each(builder.append(_))
+        make(builder.toString)
 
     given inclusive: Text is murmuration.Inclusive by Char =
       (text, char) => text.s.indexOf(char.toInt) >= 0
 
     given convertible: [self] => (traversable: self is murmuration.Traversable by Char)
     =>  self is murmuration.Convertible in Text to Text =
-      self => make(traversable.traverse(self).mkString)
+      self =>
+        val builder = java.lang.StringBuilder()
+        traversable.traverse(self).each(builder.append(_))
+        make(builder.toString)
 
     // `StringBuilder#reverse` is surrogate-pair-aware.
     given reversible: [text <: Text] => (text is murmuration.Reversible { type Result = Text }) =

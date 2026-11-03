@@ -41,10 +41,6 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import turbulence.*
-import vacuous.*
-import zephyrine.*
-
-import filesystemBackends.javaBaseFilesystem
 
 // Opening a filesystem path as an archive, or creating one on disk, needs `bitumen.jvm`;
 // re-exported through `soundness.*`, so `path.open[Tar]` and `path.create[Tar]` resolve as

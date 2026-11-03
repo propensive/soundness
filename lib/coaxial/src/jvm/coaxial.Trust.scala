@@ -40,7 +40,6 @@ import anticipation.*
 import fulminate.*
 import gastronomy.*
 import gossamer.*
-import prepositional.*
 import rudiments.*
 import vacuous.*
 

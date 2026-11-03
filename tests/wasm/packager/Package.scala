@@ -3,6 +3,7 @@ package wasme2e
 import java.nio.file as jnf
 
 import anticipation.*
+import contingency.*
 import embarcadero.*
 import gossamer.*
 import rudiments.*
@@ -44,7 +45,8 @@ object Package:
 
         if !file.getName.nn.endsWith(".wit") then search(index + 1) else
           val text = String(jnf.Files.readAllBytes(file.toPath).nn, "UTF-8").tt
-          WitDialect.worlds(text).stdlib.get(world).optional.or(search(index + 1))
+          // A file that does not parse, like one without the world, contributes nothing.
+          safely(WitDialect.worlds(text)).let(_.stdlib.get(world).optional).or(search(index + 1))
 
     val found = search(0).or:
       System.err.nn.println(s"wasm-e2e: no world `${world.s}` under ${witDir}")

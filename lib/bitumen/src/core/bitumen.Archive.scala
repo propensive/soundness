@@ -90,11 +90,17 @@ object Archive:
         Member(path, name, backend.stat(path, follow))
 
     // The whole of a regular file, read through the backend.
-    def contents[plane](path: Path on plane)(using backend: FilesystemBackend on plane)
+    def contents[plane: Filesystem](path: Path on plane)(using backend: FilesystemBackend on plane)
     :   Data raises Io.Error =
 
-      backend.open(path, List(OpenFlag.Read), Unset): handle =>
-        summon[Data is Aggregable by Data].accept(Stream(handle.reader()))
+      mitigate:
+        case error: Truncation.Error =>
+          given Diagnostics = error.diagnostics
+          Io.Error(path, Io.Error.Operation.Read, Io.Error.Reason.Physical)
+
+      . protect:
+        backend.open(path, List(OpenFlag.Read), Unset): handle =>
+          summon[Data is Aggregable by Data].accept(Stream(handle.reader()))
 
     // The owner and timestamp an entry records, after the flags have had their say.
     def owner(stat: Stat, flags: List[Flag]): (UnixUser, UnixGroup) =
@@ -157,17 +163,16 @@ object Archive:
 
     // The body's chunks, replayed from the start; unread chunks pull from the
     // producer as the iterator advances.
-    def chunks: Iterator[Data] = new Iterator[Data]:
-      // [stdlib-iterator] index state in anonymous Iterator
-      @scala.caps.unsafe.untrackedCaptures
+    def chunks: Iterator[Data]^{this, caps.any} = new Iterator[Data]:
       private var index: Int = 0
+      private var chunk: Data = Array.empty[Byte]
 
-      def hasNext: Boolean = index < memo.length || fetch()
-
-      def next(): Data =
-        val chunk = memo(index)
+      update def advance(): Boolean = (index < memo.length || fetch()) && {
+        chunk = memo(index)
         index += 1
-        chunk
+        true }
+
+      def current: Data = chunk
 
     // A fresh stream over the body's chunks, replayed from the start.
     def stream: (Stream[Data] over Credit)^ = Stream(chunks)
@@ -189,48 +194,40 @@ object Archive:
   // A lookahead iterator over a sequential archive. The subclass's `parse()` either `emit`s
   // the next entry — with its lazily-pulled body, if the entry lends one — or `finish`es;
   // before each parse, whatever of the previous entry's body was not yet read is drained, so
-  // the cursor stands at the next header. A stdlib class cannot extend `Stateful`, so its
-  // state is untracked (the record-iterator precedent).
+  // the cursor stands at the next header.
   private[bitumen] abstract class Lookahead[entry] extends Iterator[entry]:
-    // [stdlib-iterator] lookahead extends Iterator, cannot be Stateful
-    @caps.unsafe.untrackedCaptures
     private var lookahead: Optional[entry] = Unset
-
-    // [stdlib-iterator]
-    @caps.unsafe.untrackedCaptures
     private var unread: Optional[Archive.Body] = Unset
-
-    // [stdlib-iterator]
-    @caps.unsafe.untrackedCaptures
     private var finished: Boolean = false
+    private var head: entry = null.asInstanceOf[entry]
 
     // Parse forward from the cursor to the next entry, or to the end of the archive.
-    protected def parse(): Unit
+    protected update def parse(): Unit
 
-    protected def emit(entry: entry, body: Optional[Archive.Body] = Unset): Unit =
+    protected update def emit(entry: entry, body: Optional[Archive.Body] = Unset): Unit =
       lookahead = entry
       unread = body
 
-    protected def finish(): Unit = finished = true
+    protected update def finish(): Unit = finished = true
     protected def pending: Boolean = lookahead.present
     protected def done: Boolean = finished
 
-    private def advance(): Boolean =
+    private update def refresh(): Unit =
       unread.let(_.drain())
       unread = Unset
       parse()
-      lookahead.present
 
-    def hasNext: Boolean = lookahead.present || (!finished && advance())
+    // A parse may emit nothing without finishing (a skipped record), so it is retried until an
+    // entry is at hand or the archive has ended.
+    update def advance(): Boolean =
+      while lookahead.absent && !finished do refresh()
 
-    // `lay` rather than a type test: the entry type is erased.
-    def next(): entry =
-      def exhausted: entry =
-        if !finished && advance() then next() else panic(m"the archive has no more entries")
-
-      lookahead.lay(exhausted): entry =>
+      lookahead.lay(false): entry =>
+        head = entry
         lookahead = Unset
-        entry
+        true
+
+    def current: entry = head
 
   // Exactly `count` bytes off the cursor, or the caller's abort.
   private[bitumen] def takeExactly(cursor: Cursor[Data, {}]^, count: Int)
@@ -248,26 +245,26 @@ object Archive:
     ( truncated: (Int, Int) => Nothing )
   :   () ->{cursor, truncated} Optional[Data] =
 
-    // [closure-capture] local counter captured by returned pull closure
-    @caps.unsafe.untrackedCaptures
-    var consumed: Long = 0L
+    // An atomic cell rather than a `var`: the returned closure may only capture `cursor` and
+    // `truncated`, and a cell is pure, where a captured local `var` is a capability.
+    val consumed = Atomic.Long(0L)
 
     val chunkSize: Int = 65536
 
     () =>
-      if consumed >= size then
-        if consumed < padded then
-          val remainder = (padded - consumed).toInt
+      if consumed() >= size then
+        if consumed() < padded then
+          val remainder = (padded - consumed()).toInt
           cursor.take(truncated(remainder, cursor.available))(remainder)
-          consumed = padded
+          consumed() = padded
 
         Unset
       else
-        val count = (size - consumed).min(chunkSize.toLong).toInt
+        val count = (size - consumed()).min(chunkSize.toLong).toInt
 
         // The inline `take` expansion re-infers a fresh `any.rd` on the frozen chunk; the
         // cast reasserts the frozen form, which `take` already guarantees.
         val data = cursor.take(truncated(count, cursor.available))(count).asInstanceOf[Data]
 
-        consumed += count
+        consumed() = consumed() + count
         data

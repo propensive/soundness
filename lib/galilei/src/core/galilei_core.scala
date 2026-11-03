@@ -32,12 +32,12 @@
                                                                                                   */
 package galilei
 
-import java.io as ji
 import java.nio.file as jnf
 
 import anticipation.*
 import contingency.*
 import denominative.*
+import fulminate.*
 import gigantism.Every
 import kaleidoscope.*
 import prepositional.*
@@ -45,9 +45,10 @@ import rudiments.*
 import serpentine.*
 import spectacular.*
 import symbolism.*
+import turbulence.*
 import turbulence.{Aggregable, Streamable}
-import zephyrine.Credit
 import vacuous.*
+import zephyrine.Credit
 
 import Io.Error.{Operation, Reason}
 
@@ -75,7 +76,9 @@ package filesystemTraversal:
 
 extension [plane: Filesystem](path: Path on plane)
 
-  inline def children(using explorable: plane is Explorable): Chain[Path on plane] =
+  inline def children(using explorable: plane is Explorable, tactic: Tactic[Io.Error])
+  :   Chain[Path on plane] =
+
     explorable.children(path)
 
   // Write `content` to the file in its entirety as a single, direct operation: the whole file is
@@ -95,7 +98,14 @@ extension [plane: Filesystem](path: Path on plane)
     // process's filesystem.
     Fdtable.resolve(fdtables, Path.encodable.encode(path)) match
       case descriptor: Fdtable.Descriptor =>
-        try descriptor.open(List(OpenFlag.Write)): handle => handle.writer(Chain(bytes))
+        try
+          mitigate:
+            case error: Truncation.Error =>
+              given Diagnostics = error.diagnostics
+              Io.Error(path, Operation.Write, Io.Error.Reason.Physical)
+
+          . protect:
+            descriptor.open(List(OpenFlag.Write)): handle => handle.writer(Chain(bytes))
         catch case refusal: Fdtable.Refusal =>
           abort(Io.Error(path, Operation.Write, refusal.reason))
 
@@ -301,7 +311,7 @@ extension [plane: Filesystem](path: Path on plane)
     given CreateNonexistentParents on plane =
       filesystemOptions.createNonexistentParents[plane]
 
-    val file2: Path on plane = unsafely(destination.unsafeChild(path.descent.head))
+    val file2: Path on plane = destination.unsafeChild(path.descent.head)(using Unsafe)
     copyTo(file2)
 
 
@@ -335,7 +345,7 @@ extension [plane: Filesystem](path: Path on plane)
   :   Path on plane raises Io.Error =
 
     import filesystemOptions.createNonexistentParents
-    moveTo(unsafely(destination.unsafeChild(path.descent.head)))
+    moveTo(destination.unsafeChild(path.descent.head)(using Unsafe))
 
 
   def symlinkTo(destination: Path on plane)
@@ -366,7 +376,7 @@ extension [plane: Filesystem](path: Path on plane)
   :   Path on plane raises Io.Error =
 
     import filesystemOptions.createNonexistentParents
-    symlinkTo(unsafely(destination.unsafeChild(path.descent.head)))
+    symlinkTo(destination.unsafeChild(path.descent.head)(using Unsafe))
 
 
   def modified[instant: Instantiable across Instants from Long as instantiable]()
@@ -526,7 +536,7 @@ extension [plane: Filesystem, transport <: Attributed](path: Path on plane over 
       case Unset => Unset
 
       case data: Data =>
-        summon[content is Aggregable by Data].accept(zephyrine.Stream(scala.Iterator(data)))
+        summon[content is Aggregable by Data].accept(zephyrine.Stream(Iterator(data)))
 
   def attribute(name: Text, value: Data)(using backend: FilesystemBackend on plane)
   :   Unit raises Io.Error =

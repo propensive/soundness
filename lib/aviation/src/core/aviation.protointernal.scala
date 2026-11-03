@@ -167,9 +167,9 @@ object protointernal:
       val zone = jt.ZoneId.of(timezone.name.s).nn
       val zonedTime = jt.Instant.ofEpochMilli(unix).nn.atZone(zone).nn
 
-      val date = zonedTime.getMonthValue.absolve match
-        case Month(month) =>
-          unsafely(Date(Year(zonedTime.getYear), month, Day(zonedTime.getDayOfMonth)))
+      // The Julian day straight from the epoch day: total, and in the proleptic Gregorian
+      // calendar java.time counts in, rather than rebuilt in whatever calendar is contextual.
+      val date = Date.julianDay((zonedTime.toLocalDate.nn.toEpochDay + 2440588L).toInt)
 
       val time = (zonedTime.getHour, zonedTime.getMinute, zonedTime.getSecond).absolve match
         case (Base24(hour), Base60(minute), Base60(second)) => Clockface(hour, minute, second)

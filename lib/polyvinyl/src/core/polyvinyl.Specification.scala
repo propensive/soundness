@@ -42,6 +42,11 @@ import rudiments.map
 import vacuous.*
 
 object Specification:
+  // The failure to read a specification — a schema which cannot be parsed or composed — which
+  // the `record` and `tuple` macros report as a compile error at the use site.
+  case class Error(detail: Message)(using Diagnostics)
+  extends fulminate.Error(m"the specification could not be read because $detail")
+
   // A specification whose fields read from `origin` in `form`, raising `failure`
   type Raising[form, origin, failure <: Hazard] =
     (Specification in form from origin) { type Failure = failure }
@@ -51,6 +56,7 @@ object Specification:
   :   Expr[Record] =
 
     val (target, specification) = locate[self, origin, form, failure]
+    given Tactic[Specification.Error] = HaltTactic[Specification.Error, Any]()
 
     val (refined, transform) =
       Expansion[origin, form, failure](target).record(specification.fields)
@@ -64,6 +70,7 @@ object Specification:
   :   Expr[NamedTuple.AnyNamedTuple] =
 
     val (target, specification) = locate[self, origin, form, failure]
+    given Tactic[Specification.Error] = HaltTactic[Specification.Error, Any]()
     val (tuple, make) = Expansion[origin, form, failure](target).tuple(specification.fields)
 
     tuple.absolve match
@@ -236,8 +243,7 @@ object Specification:
 
       def elements(data: Expr[origin], tactic: Expr[Tactic[failure]]): Expr[scala.Seq[Object]] =
         Varargs:
-          members.map: field =>
-            '{${read(field.reading, data, tactic)}.asInstanceOf[Object]}
+          members.map: field => '{${read(field.reading, data, tactic)}.asInstanceOf[Object]}
 
       val reading: Reading =
         ' {
@@ -454,8 +460,9 @@ trait Specification extends Original:
   type Failure <: Hazard
 
   // The fields in order: a record's members are unordered, but a named tuple's elements follow
-  // this order.
-  def fields: List[(Text, Member)]
+  // this order. A schema which cannot be read is raised, which the `record` and `tuple` macros
+  // turn into a compile error.
+  def fields(using Tactic[Specification.Error]): List[(Text, Member)]
 
   // The field's own value within a document, which may be a sentinel for a missing field
   def access(name: Text, value: Origin)(using Tactic[Failure]): Origin

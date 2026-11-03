@@ -33,8 +33,8 @@
 package baroque
 
 import scala.annotation.*
-import scala.{compiletime, math}
 import scala.compiletime.*
+import scala.{compiletime, math}
 
 import anticipation.*
 import geodesy.*
@@ -59,6 +59,7 @@ object Complex:
 
     override def hashCode: Int =
       31*java.lang.Double.hashCode(real) + java.lang.Double.hashCode(imaginary)
+
     override def toString: String = s"Complex($real, $imaginary)"
 
   final class Boxed[component](val real: component, val imaginary: component)
@@ -140,8 +141,10 @@ object Complex:
         complex.asInstanceOf[Doubles[component]].imaginary.asInstanceOf[component]
 
       case _ => complex match
-        case doubles: Doubles[component] @scala.unchecked => doubles.imaginary.asInstanceOf[component]
-        case boxed: Boxed[component] @scala.unchecked     => boxed.imaginary
+        case doubles: Doubles[component] @scala.unchecked =>
+          doubles.imaginary.asInstanceOf[component]
+
+        case boxed: Boxed[component] @scala.unchecked => boxed.imaginary
 
     inline def argument
       ( using multiplication: component is Multiplicable by component,
@@ -351,12 +354,13 @@ object Complex:
 
   inline given negatable: [component, negated]
   =>  ( negation: component is Negatable to negated )
-  =>  (Negatable { type Self = Complex[component]; type Result = Complex[negated] }):
+  =>  ( Negatable { type Self = Complex[component]; type Result = Complex[negated] } ):
 
     type Negated = negated
 
     inline def negate(complex: Complex[component]): Complex[Negated] =
       val negation = summonInline[component is Negatable]
+
       Complex[Negated]
         ( negation.negate(complex.real).asInstanceOf[Negated],
           negation.negate(complex.imaginary).asInstanceOf[Negated] )

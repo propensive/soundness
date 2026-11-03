@@ -60,7 +60,7 @@ object Histogram:
   =>  ( continuous: y is Continuous, calibration: y is Calibration )
   =>  collection is Plottable in Histogram to Histogram.Fit by Histogram.Style =
     plottable[collection, y]: collection =>
-      List.from(traversable.traverse(collection).map(positions(_)))
+      traversable.traverse(collection).map(positions(_)).to[List]
 
   private[tasseomancy] def positions[y: Continuous as continuous](samples: Samples[y])
   :   (Text, Sequence[Double]) =

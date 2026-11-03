@@ -47,7 +47,6 @@ import gastronomy.*
 import gastronomy.cryptoPermits.permitDisallowedCrypto
 import gastronomy.providers.javaBaseProvider
 import gossamer.*
-import hieroglyph.*
 import prepositional.*
 import rudiments.*
 import symbolism.*

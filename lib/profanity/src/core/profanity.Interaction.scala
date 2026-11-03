@@ -130,19 +130,19 @@ trait Interaction[answer, question]:
 
   @tailrec
   final def recur
-    ( events: Iterator[Terminal.Event], state: question, oldState: Optional[question] )
+    ( events: Iterator[Terminal.Event]^, state: question, oldState: Optional[question] )
     ( key: (question, Terminal.Event) => question )
   :   Optional[answer] =
 
     render(oldState, state)
 
-    if !events.hasNext then Unset
-    else events.next() match
-      case Keypress.Ctrl('C' | 'D')       => Unset
-      case Keypress.Escape                => Unset
-      case event if submits(event, state) => result(state)
+    events.next() match
+      case Iterator.Exhausted                             => Unset
+      case Keypress.Ctrl('C' | 'D')                       => Unset
+      case Keypress.Escape                                => Unset
+      case event: Terminal.Event if submits(event, state) => result(state)
 
-      case other =>
+      case other: Terminal.Event =>
         // `react` may transform the state (e.g. inserting a completion); `oldState`
         // stays the just-rendered `state`, so the next render's cursor maths match
         // where the cursor actually is.
@@ -150,7 +150,7 @@ trait Interaction[answer, question]:
         recur(events, key(reacted, other), state)(key)
 
 
-  def apply(events: Iterator[Terminal.Event], state: question)
+  def apply(events: Iterator[Terminal.Event]^, state: question)
     ( key: (question, Terminal.Event) => question )
   :   Optional[answer] =
 

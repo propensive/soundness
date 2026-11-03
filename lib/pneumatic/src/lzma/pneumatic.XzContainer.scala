@@ -34,9 +34,6 @@ package pneumatic
 
 import scala.collection.mutable as scm
 
-import rudiments.*
-import vacuous.*
-
 // The `.xz` stream container: a 12-byte header (6-byte magic, 2-byte flags naming the check type, a
 // CRC-32 of the flags), then one or more blocks, then an index and a footer. Each block has a
 // self-describing header (its filter chain — here always the single LZMA2 filter, whose one

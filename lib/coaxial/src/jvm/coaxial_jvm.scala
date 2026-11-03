@@ -98,6 +98,15 @@ private def interfacesOf(interfaces: List[NetworkInterface]): List[jn.NetworkInt
         case nic: jn.NetworkInterface => nic :: interfacesOf(tail)
         case _                        => interfacesOf(tail)
 
+// The JDK address from an IP: `getByAddress` copies the bytes it is handed, so one readable
+// view serves every call.
+private def inetAddress(ip: Ipv4 | Ipv6): jn.InetAddress =
+  jn.InetAddress.getByAddress(Array.unsafeJvm(ip.bytes)).nn
+
+// A datagram carrying `data` to `address`: the packet reads the array but never writes it.
+private def datagram(data: Data, address: jn.InetAddress, port: Int): jn.DatagramPacket =
+  jn.DatagramPacket(Array.unsafeJvm(data), data.length, address, port)
+
 // The address of a received datagram's sender; every `InetAddress` is four or sixteen bytes, so
 // one decoder accepts it.
 private def senderOf(address: jn.InetSocketAddress): Ipv4 | Ipv6 =
@@ -176,23 +185,29 @@ package socketBackends:
 
     //── Stream server (`Bindable` over TCP / Unix-domain) ──────────────────────────────────────
     def listenTcp(port: Tcp.Port, interface: Optional[MacAddress], options: List[Socket.Option])
-    :   ServerBinding =
+    :   ServerBinding raises Bind.Error =
 
       val address: Optional[jn.InetAddress] = interface.let(interfaceFor(_)).let(bindAddress(_))
 
       val socket =
-        address.let(jn.ServerSocket(port.number, 50, _)).or(jn.ServerSocket(port.number))
+        try address.let(jn.ServerSocket(port.number, 50, _)).or(jn.ServerSocket(port.number))
+        catch case error: ji.IOException => abort(Bind.Error(bindReason(error)))
 
       configure(socket, options)
       ServerBinding.Tcp(socket)
 
-    def listenDomain(address: DomainSocket, options: List[Socket.Option]): ServerBinding =
+    def listenDomain(address: DomainSocket, options: List[Socket.Option])
+    :   ServerBinding raises Bind.Error =
+
       val socketAddress = jn.UnixDomainSocketAddress.of(address.address.s)
 
       val channel = jnc.ServerSocketChannel.open(jn.StandardProtocolFamily.UNIX).nn
       channel.configureBlocking(true)
       configure(channel, options)
-      channel.bind(socketAddress)
+
+      try channel.bind(socketAddress)
+      catch case error: ji.IOException => abort(Bind.Error(bindReason(error)))
+
       ServerBinding.Domain(channel)
 
     def accept(socket: ServerBinding): Duplex raises Socket.Error = socket match
@@ -251,11 +266,7 @@ package socketBackends:
     def reply(binding: UdpBinding, sender: Ipv4 | Ipv6, port: Udp.Port, data: Data)
     :   Unit raises Socket.Error =
 
-      val ip: jn.InetAddress = jn.InetAddress.getByAddress(Array.unsafeJvm(sender.bytes)).nn
-
-      val packet = jn.DatagramPacket(Array.unsafeJvm(data), data.length, ip, port.number)
-
-      try binding.socket.send(packet)
+      try binding.socket.send(datagram(data, inetAddress(sender), port.number))
       catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Transmit))
 
     def unbind(binding: UdpBinding): Unit = binding.socket.close()
@@ -265,7 +276,7 @@ package socketBackends:
       ( multicast: Multicast, interfaces: List[NetworkInterface], options: List[Socket.Option] )
     :   MulticastBinding =
 
-      val group = jn.InetAddress.getByAddress(Array.unsafeJvm(multicast.group.bytes)).nn
+      val group = inetAddress(multicast.group)
 
       val family =
         if group.isInstanceOf[jn.Inet4Address] then jn.StandardProtocolFamily.INET
@@ -330,8 +341,7 @@ package socketBackends:
     def sendTo(binding: MulticastBinding, destination: Ipv4 | Ipv6, port: Udp.Port, data: Data)
     :   Unit raises Socket.Error =
 
-      val address = jn.InetAddress.getByAddress(Array.unsafeJvm(destination.bytes)).nn
-      val target = jn.InetSocketAddress(address, port.number)
+      val target = jn.InetSocketAddress(inetAddress(destination), port.number)
 
       try binding.synchronized(binding.channel.send(ByteBuffer.wrap(Array.unsafeJvm(data)), target))
       catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Transmit))
@@ -350,10 +360,7 @@ package socketBackends:
       val courier = routeUdp(endpoint, interface, options)
 
       try
-        val packet =
-          jn.DatagramPacket(Array.unsafeJvm(data), data.length, courier.address, courier.port)
-
-        try courier.socket.send(packet)
+        try courier.socket.send(datagram(data, courier.address, courier.port))
         catch case _: ji.IOException => abort(Socket.Error(Socket.Error.Reason.Transmit))
 
         receiveFrom(courier.socket, datagramSize(options))
@@ -365,34 +372,43 @@ package socketBackends:
       ( endpoint:  Endpoint[Tcp.Port],
         interface: Optional[MacAddress],
         options:   List[Socket.Option] )
-    :   ClientExchange =
+    :   ClientExchange raises Socket.Error =
 
       val socket =
-        interface.let(interfaceFor(_)).let(bindAddress(_)).let: local =>
-          jn.Socket(jn.InetAddress.getByName(endpoint.remote.s), endpoint.port.number, local, 0)
+        try
+          interface.let(interfaceFor(_)).let(bindAddress(_)).let: local =>
+            jn.Socket(jn.InetAddress.getByName(endpoint.remote.s), endpoint.port.number, local, 0)
 
-        . or(jn.Socket(jn.InetAddress.getByName(endpoint.remote.s), endpoint.port.number))
+          . or(jn.Socket(jn.InetAddress.getByName(endpoint.remote.s), endpoint.port.number))
+        catch case error: ji.IOException => abort(Socket.Error(connectReason(error)))
 
       configure(socket, options)
       ClientExchange.Tcp(socket)
 
     def dialTcpPort(port: Tcp.Port, interface: Optional[MacAddress], options: List[Socket.Option])
-    :   ClientExchange =
+    :   ClientExchange raises Socket.Error =
 
       val socket =
-        interface.let(interfaceFor(_)).let(bindAddress(_)).let: local =>
-          jn.Socket(jn.InetAddress.getLocalHost.nn, port.number, local, 0)
+        try
+          interface.let(interfaceFor(_)).let(bindAddress(_)).let: local =>
+            jn.Socket(jn.InetAddress.getLocalHost.nn, port.number, local, 0)
 
-        . or(jn.Socket(jn.InetAddress.getLocalHost.nn, port.number))
+          . or(jn.Socket(jn.InetAddress.getLocalHost.nn, port.number))
+        catch case error: ji.IOException => abort(Socket.Error(connectReason(error)))
 
       configure(socket, options)
       ClientExchange.Tcp(socket)
 
-    def dialDomain(address: DomainSocket, options: List[Socket.Option]): ClientExchange =
+    def dialDomain(address: DomainSocket, options: List[Socket.Option])
+    :   ClientExchange raises Socket.Error =
+
       val socketAddress = jn.UnixDomainSocketAddress.of(jnf.Path.of(address.address.s))
       val channel = jnc.SocketChannel.open(jn.StandardProtocolFamily.UNIX).nn
       configure(channel, options)
-      channel.connect(socketAddress)
+
+      try channel.connect(socketAddress)
+      catch case error: ji.IOException => abort(Socket.Error(connectReason(error)))
+
       channel.configureBlocking(false)
       ClientExchange.Domain(channel)
 
@@ -405,21 +421,13 @@ package socketBackends:
           range =>
             val interval: Interval = range
 
-            out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
-                interval.size)
-
+            region.borrow(range)(out.write(_, _, _))
             out.flush()
 
       case ClientExchange.Domain(channel) =>
         input.drain: region =>
           range =>
-            val interval: Interval = range
-
-            channel.write
-              ( ByteBuffer.wrap
-                  ( unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]),
-                    interval.start.n0,
-                    interval.size ) )
+            channel.write(region.borrow(range)(ByteBuffer.wrap(_, _, _)))
 
         channel.shutdownOutput()
 
@@ -445,25 +453,33 @@ package socketBackends:
       ( endpoint:  Endpoint[Tcp.Port],
         interface: Optional[MacAddress],
         options:   List[Socket.Option] )
-    :   Duplex =
+    :   Duplex raises Socket.Error =
 
       val address = jn.InetSocketAddress(endpoint.remote.s, endpoint.port.number)
       val channel = jnc.SocketChannel.open().nn
       channel.configureBlocking(true)
       configure(channel, options)
 
-      interface.let(interfaceFor(_)).let(bindAddress(_)).let: local =>
-        channel.bind(jn.InetSocketAddress(local, 0))
+      try
+        interface.let(interfaceFor(_)).let(bindAddress(_)).let: local =>
+          channel.bind(jn.InetSocketAddress(local, 0))
 
-      channel.connect(address)
+        channel.connect(address)
+      catch case error: ji.IOException => abort(Socket.Error(connectReason(error)))
+
       channelDuplex(channel)
 
-    def duplexDomain(address: DomainSocket, options: List[Socket.Option]): Duplex =
+    def duplexDomain(address: DomainSocket, options: List[Socket.Option])
+    :   Duplex raises Socket.Error =
+
       val socketAddress = jn.UnixDomainSocketAddress.of(jnf.Path.of(address.address.s))
       val channel = jnc.SocketChannel.open(jn.StandardProtocolFamily.UNIX).nn
       channel.configureBlocking(true)
       configure(channel, options)
-      channel.connect(socketAddress)
+
+      try channel.connect(socketAddress)
+      catch case error: ji.IOException => abort(Socket.Error(connectReason(error)))
+
       channelDuplex(channel)
 
     //── Fire-and-forget datagram courier (`Routable`) ──────────────────────────────────────────
@@ -497,10 +513,7 @@ package socketBackends:
     def dispatch(courier: UdpCourier, consume input: (Stream[Data] over Credit)^): Unit =
       val bytes = input.memoize
 
-      val packet =
-        jn.DatagramPacket(Array.unsafeJvm(bytes), bytes.length, courier.address, courier.port)
-
-      courier.socket.send(packet)
+      courier.socket.send(datagram(bytes, courier.address, courier.port))
 
 // Applies `Socket.Option`s to freshly-constructed sockets and resolves a `MacAddress` to a network
 // interface. The Java socket kinds share no common Scala interface for `setOption`/`setSoTimeout`,
@@ -604,7 +617,7 @@ private[coaxial] def bindAddress(nic: jn.NetworkInterface): Optional[jn.InetAddr
 // stream. The stream/write shape mirrors `channelDuplex` and `Serviceable`'s socket path.
 // `shutdown` is a pure function: its closures hold only untracked OS resources (like
 // `channelDuplex`'s socket), so the `Duplex` remains capture-free under capture checking.
-private[coaxial] def streamsDuplex
+def streamsDuplex
   ( in: ji.InputStream, out: ji.OutputStream, negotiated: Optional[Text] = Unset )
   ( shutdown: () -> Unit )
 :   Duplex =
@@ -655,9 +668,7 @@ private[coaxial] def streamsDuplex
         range =>
           val interval: Interval = range
 
-          out.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]), interval.start.n0,
-              interval.size)
-
+          region.borrow(range)(out.write(_, _, _))
           out.flush()
 
     def close(): Unit = shutdown()
@@ -670,8 +681,7 @@ private[coaxial] def channelDuplex(socketChannel: jnc.SocketChannel): Duplex = n
       range =>
         val interval: Interval = range
 
-        val out = ByteBuffer.wrap(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]),
-            interval.start.n0, interval.size).nn
+        val out = region.borrow(range)(ByteBuffer.wrap(_, _, _).nn)
 
         while out.hasRemaining do socketChannel.write(out)
 
@@ -717,3 +727,30 @@ private[coaxial] def channelDuplex(socketChannel: jnc.SocketChannel): Duplex = n
               case count =>
                 limit0 = count
                 count
+
+// The `Bind.Error` for a failure to bind, classified by the JDK's exception and message.
+private[coaxial] def bindReason(error: ji.IOException): Bind.Error.Reason =
+  val message: String = error.getMessage match
+    case null          => ""
+    case text: String  => text
+
+  if message.contains("Permission denied") then Bind.Error.Reason.PermissionDenied
+  else if message.contains("in use") then Bind.Error.Reason.PortInUse
+  else Bind.Error.Reason.AddressUnavailable
+
+// The `Socket.Error` for a failure to connect, classified by the JDK's exception and message.
+private[coaxial] def connectReason(error: ji.IOException): Socket.Error.Reason = error match
+  case _: jn.UnknownHostException   => Socket.Error.Reason.Dns
+  case _: jn.SocketTimeoutException => Socket.Error.Reason.Timeout
+
+  case _: jn.ConnectException =>
+    val message: String = error.getMessage match
+      case null          => ""
+      case text: String  => text
+
+    if message.contains("refused") then Socket.Error.Reason.Refused
+    else if message.contains("timed out") then Socket.Error.Reason.Timeout
+    else Socket.Error.Reason.Connect
+
+  case _ =>
+    Socket.Error.Reason.Connect

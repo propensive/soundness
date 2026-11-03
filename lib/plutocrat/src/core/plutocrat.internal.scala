@@ -262,9 +262,15 @@ object internal:
 
       Price(left, Money(left.currency, left.value*rate).to[currency])
 
+    // Within this scope `Money` is visibly a `Long`, so `/` and `-` here would be the `Long`
+    // operators, dividing the packed currency code along with the amount; the arithmetic is on
+    // `value`, and the currency is packed back in.
     @tailrec
     def share(right: Int, result: List[Money in currency] = Nil): List[Money in currency] =
       if right == 1 then left :: result else
-        val share: Money in currency = (left/right).to[currency]
-        val remainder: Money in currency = (left - share).to[currency]
+        val share: Money in currency = Money(left.currency, left.value/right).to[currency]
+
+        val remainder: Money in currency =
+          Money(left.currency, left.value - share.value).to[currency]
+
         remainder.share(right - 1, share :: result)

@@ -115,12 +115,6 @@ release:
 	@echo "See propensive/.github." >&2
 	@exit 1
 
-# Install every library pinned in etc/refs (none: Soundness depends on nothing propensive) and
-# the jars of every tool pinned in etc/tools (the flare compiler plugin) into the local ivy
-# repository, as CI does.
-sync-deps:
-	./etc/shared sync-deps.sh
-
 # Install the commands pinned in etc/tools (fume, flare) through their releases' installers.
 tools:
 	./etc/shared tools.sh
@@ -166,4 +160,4 @@ matrix:
 	    $(foreach scala,3.6.1 3.6.2 3.6.3 3.6.4 3.7.0 3.7.1 3.7.1 main, \
 			    $(MAKE) bootstrap/$(scala):$(jdk);))
 
-.PHONY: publishLocal build dev ci check-givens check-while check-escapes unsafety wasm-e2e doccheck fuelcheck test bench matrix attest verify-attest push release sync-deps tools snapshot snapshot-prune xek-fetch
+.PHONY: publishLocal build dev ci check-givens check-while check-escapes unsafety wasm-e2e doccheck fuelcheck test bench matrix attest verify-attest push release tools snapshot snapshot-prune xek-fetch

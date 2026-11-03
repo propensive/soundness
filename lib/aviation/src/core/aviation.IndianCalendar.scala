@@ -60,7 +60,7 @@ class IndianCalendar() extends Enumerated[IndianMonth](IndianMonth.fromOrdinal):
   private def yearStart(saka: Int): Int =
     val gregorian = saka + 78
     val day = if gregorianLeap(gregorian) then 21 else 22
-    unsafely(calendars.gregorianCalendar.jdn(Year(gregorian), Mar, Day(day))).jdn
+    calendars.gregorianCalendar.computeJdn(Year(gregorian), Mar, Day(day)).jdn
 
   private def daysBeforeMonth(ordinal: Int, leap: Boolean): Int =
     if ordinal == 0 then 0 else

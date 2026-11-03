@@ -53,7 +53,8 @@ case class Attach(duplex: Duplex)
 object Attach:
   given connectable: (Attach is Connectable) = new Connectable:
     type Self = Attach
-    def connect(attach: Attach, interface: Optional[MacAddress]): Duplex = attach.duplex
+    def connect(attach: Attach, interface: Optional[MacAddress]): Duplex raises Socket.Error =
+      attach.duplex
 
   given showable: Attach is Showable = _ => t"attach"
 
@@ -277,7 +278,7 @@ object Tests extends Suite("debugger", m"Vivisection tests"):
 
       val reader = async:
         import strategies.throwUnsafely
-        safely(clientIn.source[Data].chain.stdlib.iterator.frames[ContentLength].each:
+        safely(clientIn.source[Data].chain.frames[ContentLength].each:
           frame => client.enqueue(frame.read[Json]))
         ()
 

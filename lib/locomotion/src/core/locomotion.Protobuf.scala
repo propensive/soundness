@@ -32,17 +32,14 @@
                                                                                                   */
 package locomotion
 
-import scala.collection.immutable.Vector
-
-import scala.caps
-
-import scala.language.experimental.pureFunctions
-
 import java.lang as jl
 import java.nio.charset.StandardCharsets.UTF_8
 
+import scala.caps
 import scala.collection.Factory
+import scala.collection.immutable.Vector
 import scala.compiletime.*
+import scala.language.experimental.pureFunctions
 import scala.reflect.ClassTag
 
 import adversaria.*
@@ -511,10 +508,10 @@ object Protobuf extends Protobuf1:
     def emit[value](value: value)
       ( using printable: value is Protobuf.Printable )
       ( using Monitor, Probate, Buffering )
-    :   Iterator[Data] =
+    :   Iterator[Data]^ =
 
       val producer = Producer[Data]()
-      val output = producer.iterator
+      val output: Iterator[Data]^ = producer.iterator
 
       producer.transfer: (producer, _, _) ?=>
         emit(value, producer().put(_))
@@ -623,7 +620,9 @@ object Protobuf extends Protobuf1:
     var index = 0
 
     repeat(numberView.length):
-      size += ProtobufPrinter.fieldSize(numberView.readUnchecked(index), wireView.readUnchecked(index))
+      size +=
+        ProtobufPrinter.fieldSize(numberView.readUnchecked(index), wireView.readUnchecked(index))
+
       index += 1
 
     sized(size): printer =>
@@ -636,9 +635,9 @@ object Protobuf extends Protobuf1:
   // Chain a message's wire bytes incrementally (chunked); the producing code runs on a separate
   // fiber. The bytes themselves are already assembled (Protobuf length-prefixes nested messages, so
   // their lengths must be known up front); this hands them out in bounded chunks.
-  def emit(value: Protobuf)(using Monitor, Probate): Iterator[Data] =
+  def emit(value: Protobuf)(using Monitor, Probate): Iterator[Data]^ =
     val producer = Producer[Data]()
-    val output = producer.iterator
+    val output: Iterator[Data]^ = producer.iterator
 
     producer.transfer: (producer, _, _) ?=>
       producer().put(value.payload)
@@ -685,25 +684,25 @@ object Protobuf extends Protobuf1:
     bytes => Wire(WireType.Len, bytes)
 
   given intDecodable: (tactic: Tactic[Protobuf.Error])
-  =>  ( (Int is Decodable in Protobuf)^{tactic, caps.any} ) =
+  =>  ( (Int is Decodable in Protobuf)^{tactic} ) =
     readVarint(_).toInt
 
   given longDecodable: (tactic: Tactic[Protobuf.Error])
-  =>  ( (Long is Decodable in Protobuf)^{tactic, caps.any} ) =
+  =>  ( (Long is Decodable in Protobuf)^{tactic} ) =
     readVarint(_)
 
   given booleanDecodable: (tactic: Tactic[Protobuf.Error])
-  =>  ( (Boolean is Decodable in Protobuf)^{tactic, caps.any} ) =
+  =>  ( (Boolean is Decodable in Protobuf)^{tactic} ) =
     readVarint(_) != 0
 
   given doubleDecodable: (tactic: Tactic[Protobuf.Error])
-  =>  ( (Double is Decodable in Protobuf)^{tactic, caps.any} ) =
+  =>  ( (Double is Decodable in Protobuf)^{tactic} ) =
     protobuf =>
       if protobuf.isAbsent then 0.0
       else jl.Double.longBitsToDouble(ProtobufParser.fixed64Of(protobuf.payload))
 
   given floatDecodable: (tactic: Tactic[Protobuf.Error])
-  =>  ( (Float is Decodable in Protobuf)^{tactic, caps.any} ) =
+  =>  ( (Float is Decodable in Protobuf)^{tactic} ) =
     protobuf =>
       if protobuf.isAbsent then 0.0f
       else jl.Float.intBitsToFloat(ProtobufParser.fixed32Of(protobuf.payload))
@@ -736,27 +735,27 @@ object Protobuf extends Protobuf1:
     b64 => Wire(WireType.I64, ProtobufPrinter.fixedData(b64.s64.long, 8))
 
   given u32Decodable: (tactic: Tactic[Protobuf.Error])
-  =>  ( (U32 is Decodable in Protobuf)^{tactic, caps.any} ) =
+  =>  ( (U32 is Decodable in Protobuf)^{tactic} ) =
     readVarint(_).toInt.bits.u32
 
   given u64Decodable: (tactic: Tactic[Protobuf.Error])
-  =>  ( (U64 is Decodable in Protobuf)^{tactic, caps.any} ) =
+  =>  ( (U64 is Decodable in Protobuf)^{tactic} ) =
     readVarint(_).bits.u64
 
   given s32Decodable: (tactic: Tactic[Protobuf.Error])
-  =>  ( (S32 is Decodable in Protobuf)^{tactic, caps.any} ) =
+  =>  ( (S32 is Decodable in Protobuf)^{tactic} ) =
     protobuf => unzigzag(readVarint(protobuf)).toInt.bits.s32
 
   given s64Decodable: (tactic: Tactic[Protobuf.Error])
-  =>  ( (S64 is Decodable in Protobuf)^{tactic, caps.any} ) =
+  =>  ( (S64 is Decodable in Protobuf)^{tactic} ) =
     protobuf => unzigzag(readVarint(protobuf)).bits.s64
 
   given b32Decodable: (tactic: Tactic[Protobuf.Error])
-  =>  ( (B32 is Decodable in Protobuf)^{tactic, caps.any} ) =
+  =>  ( (B32 is Decodable in Protobuf)^{tactic} ) =
     readFixed32(_).bits
 
   given b64Decodable: (tactic: Tactic[Protobuf.Error])
-  =>  ( (B64 is Decodable in Protobuf)^{tactic, caps.any} ) =
+  =>  ( (B64 is Decodable in Protobuf)^{tactic} ) =
     readFixed64(_).bits
 
   given optionalEncodable: [inner <: value, value >: Unset.type: Mandatable to inner]
@@ -835,9 +834,9 @@ object Protobuf extends Protobuf1:
   given packedListDecodable: [list <: List, element]
   =>  ( decodable: => (element is Decodable in Protobuf)^, packable: element is Packable )
   =>  ( tactic: Tactic[Protobuf.Error] )
-  =>  ( (list[element] is Decodable in Protobuf)^{tactic, caps.any} ) =
+  =>  ( (list[element] is Decodable in Protobuf)^{tactic} ) =
     packedDecodable[scala.collection.immutable.List, element]
-    . asInstanceOf[(list[element] is Decodable in Protobuf)^{tactic, caps.any}]
+    . asInstanceOf[(list[element] is Decodable in Protobuf)^{tactic}]
 
   given packedSetEncodable: [set <: Set, element]
   =>  ( encodable: => (element is Encodable in Protobuf)^, packable: element is Packable )
@@ -848,9 +847,9 @@ object Protobuf extends Protobuf1:
   given packedSetDecodable: [set <: Set, element]
   =>  ( decodable: => (element is Decodable in Protobuf)^, packable: element is Packable )
   =>  ( tactic: Tactic[Protobuf.Error] )
-  =>  ( (set[element] is Decodable in Protobuf)^{tactic, caps.any} ) =
+  =>  ( (set[element] is Decodable in Protobuf)^{tactic} ) =
     packedDecodable[scala.collection.immutable.Set, element]
-    . asInstanceOf[(set[element] is Decodable in Protobuf)^{tactic, caps.any}]
+    . asInstanceOf[(set[element] is Decodable in Protobuf)^{tactic}]
 
   given packedSeriesEncodable: [sequence <: Sequence, element]
   =>  ( encodable: => (element is Encodable in Protobuf)^, packable: element is Packable )
@@ -861,9 +860,9 @@ object Protobuf extends Protobuf1:
   given packedSeriesDecodable: [sequence <: Sequence, element]
   =>  ( decodable: => (element is Decodable in Protobuf)^, packable: element is Packable )
   =>  ( tactic: Tactic[Protobuf.Error] )
-  =>  ( (sequence[element] is Decodable in Protobuf)^{tactic, caps.any} ) =
+  =>  ( (sequence[element] is Decodable in Protobuf)^{tactic} ) =
     packedDecodable[Vector, element]
-    . asInstanceOf[(sequence[element] is Decodable in Protobuf)^{tactic, caps.any}]
+    . asInstanceOf[(sequence[element] is Decodable in Protobuf)^{tactic}]
 
   // A frozen array of packable scalars — `Array[Long]^{}`, `Array[Double]^{}` — is a packed
   // `repeated` field too, in the unboxed representation: a generated parser fills it without
@@ -904,23 +903,23 @@ object Protobuf extends Protobuf1:
     packedArray(floatEncodable, _)
 
   given intArrayDecodable: (tactic: Tactic[Protobuf.Error])
-  =>  ( ((Array[Int]^{}) is Decodable in Protobuf)^{tactic, caps.any} ) =
+  =>  ( ((Array[Int]^{}) is Decodable in Protobuf)^{tactic} ) =
     unpackedArray(intDecodable, _)
 
   given longArrayDecodable: (tactic: Tactic[Protobuf.Error])
-  =>  ( ((Array[Long]^{}) is Decodable in Protobuf)^{tactic, caps.any} ) =
+  =>  ( ((Array[Long]^{}) is Decodable in Protobuf)^{tactic} ) =
     unpackedArray(longDecodable, _)
 
   given booleanArrayDecodable: (tactic: Tactic[Protobuf.Error])
-  =>  ( ((Array[Boolean]^{}) is Decodable in Protobuf)^{tactic, caps.any} ) =
+  =>  ( ((Array[Boolean]^{}) is Decodable in Protobuf)^{tactic} ) =
     unpackedArray(booleanDecodable, _)
 
   given doubleArrayDecodable: (tactic: Tactic[Protobuf.Error])
-  =>  ( ((Array[Double]^{}) is Decodable in Protobuf)^{tactic, caps.any} ) =
+  =>  ( ((Array[Double]^{}) is Decodable in Protobuf)^{tactic} ) =
     unpackedArray(doubleDecodable, _)
 
   given floatArrayDecodable: (tactic: Tactic[Protobuf.Error])
-  =>  ( ((Array[Float]^{}) is Decodable in Protobuf)^{tactic, caps.any} ) =
+  =>  ( ((Array[Float]^{}) is Decodable in Protobuf)^{tactic} ) =
     unpackedArray(floatDecodable, _)
 
   // `Map[K, V]` encodes as a `repeated` message of map entries, each a two-field
@@ -1009,6 +1008,7 @@ object Protobuf extends Protobuf1:
           build[derivation]:
             [field0] => context =>
               val wire = table(annotated(label).let(_.stdlib.head.number).or(index + 1))
+
               if wire.isAbsent then default.or(context.decoded(Protobuf.Absent))
               else context.decoded(wire) }
 
@@ -1027,6 +1027,7 @@ object Protobuf extends Protobuf1:
             delegate(label):
               [variant <: derivation] => context =>
                 val wire = table(index.n1)
+
                 if wire.isAbsent then abort(Protobuf.Error(Reason.MissingField(index.n1)))
                 else context.decoded(wire) }
 

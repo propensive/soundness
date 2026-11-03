@@ -37,12 +37,16 @@ import scala.language.experimental.pureFunctions
 
 import fulminate.*
 
+object UncheckedTactic:
+  // The ambient instance behind `strategies.uncheckedErrors`: pure, for the reasons
+  // `ThrowTactic.ambient` is.
+  // [ambient-strategy]
+  val ambient: UncheckedTactic[Hazard]^{} = caps.unsafe.unsafeAssumePure(UncheckedTactic())
+
 // A tactic that throws its error unchecked, evidenced at the summon site by `error is Unchecked`
 // (an erased obligation carried by `strategies.uncheckedErrors`, not retained here: even an erased
-// constructor parameter is a capture under capture checking). `caps.SharedUnscoped`, like
-// `ThrowTactic`: it captures no scoped capability, so it may satisfy a `raises` requirement at
-// any level.
-class UncheckedTactic[error <: Hazard]() extends Tactic[error], caps.SharedUnscoped:
+// constructor parameter is a capture under capture checking).
+class UncheckedTactic[-error <: Hazard]() extends Tactic[error]:
   given diagnostics: Diagnostics = errorDiagnostics.stackTracesDiagnostics
 
   def record(error: Diagnostics ?=> error): Unit =
@@ -56,10 +60,10 @@ class UncheckedTactic[error <: Hazard]() extends Tactic[error], caps.SharedUnsco
   def certify(): Unit = ()
 
 // A tactic that terminates the process with the error's exit status, for errors marked `Fatal`.
-// The `Fatal` evidence is an ordinary (untracked) typeclass instance, so retaining it does not
-// conflict with the `caps.SharedUnscoped` classification.
+// The `Fatal` evidence is an ordinary (untracked) typeclass instance. Ambient like `ThrowTactic`,
+// and provided pure by `strategies.fatalErrors` for the same reasons.
 class FatalTactic[exception <: Hazard]()(using fatal: exception is Fatal)
-extends Tactic[exception], caps.SharedUnscoped:
+extends Tactic[exception]:
   given diagnostics: Diagnostics = errorDiagnostics.stackTracesDiagnostics
 
   def record(error: Diagnostics ?=> exception): Unit = fatal.status(error).terminate()

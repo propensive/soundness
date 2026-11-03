@@ -32,15 +32,11 @@
                                                                                                   */
 package anthology
 
-import scala.caps
-
 import anticipation.*
 import contingency.*
-import murmuration.fold
 import parasite.*
 import prepositional.*
 import rudiments.Atomic
-import rudiments.each
 import rudiments.reverse
 import turbulence.*
 import vacuous.*

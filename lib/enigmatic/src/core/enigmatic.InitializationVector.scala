@@ -33,8 +33,6 @@
 package enigmatic
 
 import anticipation.*
-import rudiments.*
-import vacuous.*
 
 // A strategy for producing an initialization vector of a given block size. It is
 // supplied *explicitly* at the encryption site (e.g. `data.encrypt(iv.random)`),

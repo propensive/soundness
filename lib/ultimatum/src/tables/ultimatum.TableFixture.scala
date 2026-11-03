@@ -38,7 +38,7 @@ import anticipation.*
 import denominative.*
 import denominative.dysasymptotics.linearSize
 import escapade.*
-import hypotenuse.{maximum, minimum}
+import hypotenuse.maximum
 import escritoire.*
 import hieroglyph.*
 import polysyllabic.*

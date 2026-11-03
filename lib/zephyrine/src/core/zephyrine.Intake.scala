@@ -33,8 +33,6 @@
 package zephyrine
 
 import denominative.*
-import prepositional.*
-import rudiments.*
 import vacuous.*
 
 // The push endpoint of a streaming pipeline: a mutable buffer whose writable

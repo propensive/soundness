@@ -76,6 +76,17 @@ computed indices. Lengths combine at the type level:
 carried symbolically otherwise. Prefer the brand to a `readUnchecked` with a comment whenever
 the layout is fixed: the byte-probe tests (`header(156.z)`) are exactly this case.
 
+## Editing a frozen array
+
+A frozen array (`Array[e]^{}`) is never written through; an edit is a copy, and the copy's
+shape names the edit. One slot is `xs.define(i, v)`; one slot removed is `xs.omit(i)`; a
+segment replaced is `Array.concat(xs.before(i), replacement, xs.after(i))` (segments are
+`before`/`upto`/`from`/`after` around an ordinal, or `keep`/`skip` by count), which copies the
+three parts once; and several slots at once are `Array.thaw(xs)`, which
+yields an exclusive copy to write through with `copy(i) = v`, frozen again by `Array.freeze`.
+None of these goes through the stdlib view: `xs.stdlib.updated`, `take ++ … ++ drop` and an
+`ArrayBuffer.from(xs.stdlib)` are the shapes they replace.
+
 ## When a `while` may stay
 
 A `while` may remain only when no expression in its condition is compared against the size of
@@ -89,6 +100,47 @@ a collection that the body indexes. Three shapes qualify.
    with that comment as their proof.
 3. **The vocabulary's own internals**, in denominative, concordance, zephyrine and proscenium,
    which implement the combinators the rest of the library uses.
+
+## When an `Iterator` is the honest type
+
+`murmuration.Iterator[element]` (exported by rudiments and the umbrella) is a one-shot,
+stateful pull, and that is exactly what it should denote: a source read from the outside world
+once (a socket's frames, an HTTP event stream, a terminal's keypresses, an archive serialized
+chunk by chunk as each entry's payload opens), or a cursor a backtracking search resumes from.
+It is a `caps.Stateful` capability, so a method that advances it is an `update def`, a
+combinator that takes it over is a `consume def`, and the compiler refuses a second use of an
+iterator that has been consumed. There is no `hasNext`/`next()` pair: the three honest ways to
+read one are
+
+1. **A terminal operation** — `each`, `fold`, `exists`, `all`, `count`, `size`, `seek`,
+   `chain`, `to[result]` — which drains the iterator in place. `each` is the loop.
+2. **`next()`**, for a stateful consumer that holds the iterator in a field (a `Stream`
+   source, a terminal's event pump): one call advances and yields `element |
+   Iterator.Exhausted`, so the caller must match on `Iterator.Exhausted` before it has an
+   element.
+3. **The moving style**, `pull`, for a hand-written loop that needs the element and the
+   right to stop between elements: `iterator.pull` consumes the iterator and yields
+   `Iterator.Exhausted` or a `Cursor[element]^` that owns it; `cursor.value` reads the
+   element and `cursor.pull` consumes the cursor to advance. Branch with a typed pattern
+   (`case cursor: Iterator.Cursor[Int]`), rebind the handle each step, and read
+   `cursor.value` before `cursor.pull` in the same expression. Reusing a consumed cursor,
+   or reading a value with no cursor, does not compile.
+
+Implementations provide the fast core — `update def advance(): Boolean`, which moves and
+materialises the element into a `var`, and `def current: element`, a plain read — and
+inherit everything else. Lazy combinators (`map`, `filter`, `sweep`, `keep`, `skip`,
+`zip`, `indexed`, `trace`, `excerpt`, `batched`, `distinct`, `concat`, `flatMap`) consume
+their receiver and return a fresh iterator whose capture set names the lambda, so a lambda
+that captures an exclusive value makes the result exclusive too; `flatMap` takes a lambda
+returning a *collection* (`Traversable`), never an iterator.
+
+A `scala.collection.Iterator` is reached only at a boundary: `Iterator.from(javaIterator)`
+and `Iterator.from(stdlibIterator)` wrap one on the way in, and `iterator.stdlib` hands one
+out to a stdlib or JDK API that insists on it, tagged `[stdlib-boundary]` as every bridge is.
+Everything that reached for `.stdlib.iterator` before had a native form: a stream or cursor
+over a `Chain` is `Stream(chain)`/`Cursor(chain)`; a framer over a `Chain` is
+`chain.frames[F]`; a live chain is drained with `each`; a lockstep walk is `zip(…).each` or
+`indexed.each`; a lazy first-match scan is `fuse` with a by-name `or`.
 
 ## Proof comments
 

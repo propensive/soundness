@@ -144,9 +144,10 @@ dependency of Soundness, none of the three could be released first).
 1. Never satisfy the plugin pin with a `publishLocal` or a snapshot from a flare checkout: the
    build then compiles against bytes CI cannot see, and `deps.py` rejects a snapshot in
    `etc/tools` anyway. A plugin change Soundness needs is *released* from flare first, and the
-   pin bumped to that release. `make sync-deps` installs the plugin's jars (and repairs a jar
-   whose digest differs); `make tools` installs the commands. Run `make sync-deps` after
-   editing either file.
+   pin bumped to that release. The build resolves the plugin (and the Proscala compiler) straight
+   from their GitHub releases through crux (propensive/crux), so nothing is installed locally;
+   `make tools` installs the commands. A stale `~/.ivy2/local/dev.propensive` from the earlier
+   `sync-deps` flow shadows the releases — remove it.
 2. The release runs `deps.py check`, which confirms every pin in `etc/refs` is a published
    release, transitively, and every tool in `etc/tools` a published release.
 3. `make snapshot` publishes *this* commit's jars (all six hundred, at `<next minor>-<hex>`)

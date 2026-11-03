@@ -36,7 +36,6 @@ import anticipation.*
 import clavichord.Keypress
 import contingency.*
 import denominative.*
-import fulminate.*
 import gossamer.*
 import hieroglyph.*, textMetrics.wideCharacterWidthMetric
 import rudiments.*
@@ -186,10 +185,10 @@ extends Question[Text]:
 
 
   def ask
-    ( using interactivity: Interactivity[Terminal.Event],
+    ( using interactivity: Interactivity[Terminal.Event]^,
             interaction:   Interaction[Text, LineEditor] )
     [ result ]
-    ( lambda: Interactivity[Terminal.Event] ?=> Text => result )
+    ( lambda: Interactivity[Terminal.Event]^ ?=> Text => result )
     ( using Tactic[Question.Error] )
   :   result =
 

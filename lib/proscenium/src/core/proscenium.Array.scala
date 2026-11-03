@@ -106,6 +106,24 @@ object Array:
     array.place(right, left.length)
     freeze(array)
 
+  // The three-operand form, for splicing: `Array.concat(xs.before(i), replacement,
+  // xs.after(i))` rebuilds a frozen array with a segment replaced, in one pass. A fixed arity
+  // rather than a repeated parameter: a frozen array as the element of a varargs `Seq` is
+  // re-freshened to `^{any.rd}` by the alias-captures rule, and the segments' element types
+  // then fail to unify under the invariant `Array` -- so until that is lifted, a splice is
+  // exactly three parts, which is what every splice of a fixed layout needs.
+  def concat[element: ClassTag]
+    ( left:   Array[element]^{caps.any.rd},
+      middle: Array[element]^{caps.any.rd},
+      right:  Array[element]^{caps.any.rd} )
+  :   Array[element]^{} =
+
+    val array: Array[element]^ = allocate[element](left.length + middle.length + right.length)
+    array.place(left)
+    array.place(middle, left.length)
+    array.place(right, left.length + middle.length)
+    freeze(array)
+
   def concat[element: ClassTag, left <: Int, right <: Int]
     ( leftArray:  Array[element]^{caps.any.rd} & Sized[left],
       rightArray: Array[element]^{caps.any.rd} & Sized[right] )
@@ -175,6 +193,49 @@ object Array:
   def freeze[element](consume array: Array[element]^): Array[element]^{} =
     // [transfer] freeze: consume retires writers, drops write capability
     caps.unsafe.unsafeAssumePure(array)
+
+  // The native counterpart of `Expr.ofList` for a frozen array (see `List.quoted`): a list of
+  // lifted elements becomes one lifted frozen array. The element's `ClassTag` is resolved at
+  // the expansion site, where the element type is concrete.
+  def quoted[element: scala.quoted.Type](elements: List[scala.quoted.Expr[element]])
+    ( using quotes: scala.quoted.Quotes )
+  :   scala.quoted.Expr[Array[element]^{}] =
+
+    quotedElements(elements.stdlib)
+
+  // The same, from a frozen array of lifted elements, which is what a macro walking an array
+  // of children naturally holds.
+  def quoted[element: scala.quoted.Type](elements: Array[scala.quoted.Expr[element]]^{})
+    ( using quotes: scala.quoted.Quotes )
+  :   scala.quoted.Expr[Array[element]^{}] =
+
+    quotedElements(elements.stdlib)
+
+  private def quotedElements[element: scala.quoted.Type]
+    ( elements: scala.collection.immutable.Seq[scala.quoted.Expr[element]] )
+    ( using quotes: scala.quoted.Quotes )
+  :   scala.quoted.Expr[Array[element]^{}] =
+
+    scala.quoted.Expr.summon[ClassTag[element]] match
+      case Some(classTag) =>
+        // Cast-erased: a frozen array's `^{}` is re-freshened to `any.rd` inside a quote, so
+        // the lifted tree's type is restated here, once, for every macro that lifts an array.
+        '{Array.from[element](${scala.quoted.Expr.ofList(elements)})(using $classTag)}
+        . asInstanceOf[scala.quoted.Expr[Array[element]^{}]]
+
+      case None =>
+        quotes.reflect.report.errorAndAbort
+          ("no ClassTag is available for the elements of the array")
+
+  // The inverse of `freeze`: an exclusive copy of any readable array, which the caller may
+  // write through -- `copy(i) = value` -- and then `freeze` again. This is the shape for an
+  // edit of several slots; a one-slot edit is `define`, and a splice is `concat` of segments.
+  // A copy, never the array itself: the source may be frozen or shared, so other readers
+  // must keep seeing it unchanged, and nothing is laundered.
+  def thaw[element: ClassTag](array: Array[element]^{caps.any.rd}): Array[element]^ =
+    val copy: Array[element]^ = allocate[element](array.length)
+    copy.place(array)
+    copy
 
   // The trusted boundary cast: asserts that the caller retains no writer to `array`. For
   // interop edges that cannot thread `consume`. A read-only reference cannot feed

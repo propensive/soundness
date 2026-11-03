@@ -43,6 +43,7 @@ import rudiments.*
 import serpentine.*
 import spectacular.*
 import symbolism.*
+import vacuous.*
 
 import filesystemBackends.javaBaseFilesystem
 
@@ -84,8 +85,9 @@ object LocalClasspath:
   def of(classloader: Classloader)(using System): LocalClasspath = classloader.classpath match
     case classpath: LocalClasspath => classpath
 
+    // A JVM always defines `java.class.path`; were it absent, the classpath would be empty.
     case _ =>
-      unsafely(System.properties.java.`class`.path().as[LocalClasspath])
+      safely(System.properties.java.`class`.path().as[LocalClasspath]).or(LocalClasspath())
 
   def apply
     ( entries:
@@ -134,4 +136,4 @@ extends Classpath:
       case Classpath.Entry.Jar(jar)             => List(jar)
       case _                                    => Nil
 
-    . join(unsafely(System.properties.path.separator()))
+    . join(System.properties.path.separator().show)

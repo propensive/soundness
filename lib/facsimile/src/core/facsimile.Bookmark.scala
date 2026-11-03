@@ -33,7 +33,6 @@
 package facsimile
 
 import anticipation.*
-import rudiments.*
 import vacuous.*
 
 // One entry of the document outline (ISO 32000-2 §12.3.3), fully materialized as a pure

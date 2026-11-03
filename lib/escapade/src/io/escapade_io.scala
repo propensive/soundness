@@ -32,12 +32,8 @@
                                                                                                   */
 package escapade
 
-import anticipation.*
 import prepositional.*
-import rudiments.*
-import symbolism.*
 import turbulence.*
-import vacuous.*
 import zephyrine.*
 
 // Teletype values are records, so their streams travel on the boxed medium

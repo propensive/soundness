@@ -33,7 +33,6 @@
 package quantitative
 
 import anticipation.*
-import rudiments.*
 
 object Furlongs:
   given designation: Designation[Furlongs[1]] = () => "fur".tt

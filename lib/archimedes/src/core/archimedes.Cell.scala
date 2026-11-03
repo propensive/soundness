@@ -46,7 +46,6 @@ import symbolism.*
 import vacuous.*
 
 import Mathml.*
-import denominative.dysasymptotics.linearSize
 
 // A `Cell` is a rectangular block of monospaced character cells with a `baseline`
 // — the row index (from the top) of the mathematical axis that composition aligns
@@ -97,7 +96,7 @@ object Cell:
     Cell(Sequence(writing), summon[Writing is Measurable].width(writing), 0)
 
   def blank(width: Int, height: Int, baseline: Int): Cell =
-    Cell(Sequence.from(Iterator.fill(max(height, 1))(spaces(width))), max(width, 0), baseline)
+    Cell(Iterator.fill(max(height, 1))(spaces(width)).to[Sequence], max(width, 0), baseline)
 
   // Horizontal, baseline-aligned concatenation — the workhorse for `<mrow>`. Each
   // cell is framed with blank rows so every baseline lines up, then rows are joined.
@@ -105,15 +104,18 @@ object Cell:
     case Nil => empty
 
     case _ =>
-      val ascent = cells.stdlib.map(_.baseline).reduceLeft(max)
-      val descent = cells.stdlib.map { cell => cell.height - 1 - cell.baseline }.reduceLeft(max)
+      val ascent = cells.map(_.baseline).maximize(identity(_)).or(0)
+
+      val descent =
+        cells.map { cell => cell.height - 1 - cell.baseline }.maximize(identity(_)).or(0)
+
       val framed = cells.stdlib.map(_.framed(ascent, descent))
 
       // Every framed cell has exactly `ascent + descent + 1` lines, so joining row-wise is an
       // n-ary zip of the line sequences — no indexing, hence no bounds obligation to discharge.
       val rows =
         framed
-        . map { cell => cell.lines.stdlib.map(_.text) }
+        . map: cell => cell.lines.stdlib.map(_.text)
         . reduceLeft: (left, right) => left.zip(right).map { (l, r) => t"$l$r" }
 
       Cell(Sequence.from(rows.map(Writing(_))), cells.map(_.width).total, ascent)
@@ -427,12 +429,11 @@ object Cell:
   // Lay out a sequence of nodes as a row, stretching any bracket or integral
   // operators to the height of the surrounding (non-stretchy) content.
   def row(nodes: List[Mathml]): Cell =
-    val content = nodes.stdlib.filter { node => stretchyChar(node).absent }.map(of)
-    val ascent = if content.isEmpty then 0 else content.map(_.baseline).reduceLeft(max)
+    val content = nodes.filter { node => stretchyChar(node).absent }.map(of)
+    val ascent = content.map(_.baseline).maximize(identity(_)).or(0)
 
     val descent =
-      if content.isEmpty then 0
-      else content.map { cell => cell.height - 1 - cell.baseline }.reduceLeft(max)
+      content.map { cell => cell.height - 1 - cell.baseline }.maximize(identity(_)).or(0)
 
     val height = ascent + descent + 1
 
@@ -498,7 +499,6 @@ case class Cell(lines: Sequence[Writing], width: Int, baseline: Int):
     val blank = Cell.spaces(width)
 
     Cell
-      ( Sequence.from(Iterator.fill(above)(blank)) + lines +
-        Sequence.from(Iterator.fill(below)(blank)),
+      ( Iterator.fill(above)(blank).to[Sequence] + lines + Iterator.fill(below)(blank).to[Sequence],
         width,
         ascent )

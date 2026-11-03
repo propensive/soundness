@@ -230,7 +230,10 @@ object Timespan:
     val day = calendar.diurnal(date)()
     val length = calendar.daysInMonth(month, Year(year))
 
-    if day <= length then unsafely(Date(Year(year), month, Day(day)))
+    // A day the calendar knows is real is built totally; one it does not — past the month's
+    // end, or in a regime's cutover gap — is the disambiguation's to resolve.
+    if calendar.validDate(Year(year), month, Day(day))
+    then calendar.computeJdn(Year(year), month, Day(day))
     else disambiguation.resolve(Year(year), month, day)
 
   // A span with a year but no month advances whole years in any calendar (resolving Feb-29-style

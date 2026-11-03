@@ -32,11 +32,9 @@
                                                                                                   */
 package profanity
 
-import anticipation.*
 import clavichord.Keypress
 import contingency.*
 import denominative.*
-import fulminate.*
 import gossamer.*
 import rudiments.{at, last, head, where}
 import vacuous.*
@@ -68,10 +66,10 @@ extends Question[item]:
 
 
   def ask
-    ( using interactivity: Interactivity[Terminal.Event],
+    ( using interactivity: Interactivity[Terminal.Event]^,
             interaction:   Interaction[item, SelectMenu[item]] )
     [ result ]
-    ( lambda: Interactivity[Terminal.Event] ?=> item => result )
+    ( lambda: Interactivity[Terminal.Event]^ ?=> item => result )
     ( using Tactic[Question.Error] )
   :   result =
 

@@ -32,15 +32,11 @@
                                                                                                   */
 package jacinta
 
-import scala.caps
-
-import anticipation.*
 import contingency.*
 import denominative.*
 import panopticon.*
 import prepositional.*
 import rudiments.*
-import vacuous.*
 
 // The panopticon lens and optic instances for `Json`. These are the only reason `jacinta.core`
 // needed panopticon, so they live here instead of in `Json`'s companion. That takes them out of

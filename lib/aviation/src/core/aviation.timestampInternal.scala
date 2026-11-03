@@ -298,14 +298,18 @@ object timestampInternal:
           case Endianness.LittleEndian => t"${monthstamp.year}$separator${monthstamp.month}"
           case _                       => t"${monthstamp.month}$separator${monthstamp.year}"
 
-    // `monthstamp - dayOfMonth` → the `Date` of that day; the result-type witness and runtime
-    // fallback for the `2012-Mar - 8` operator.
+    // `monthstamp - dayOfMonth` → the `Date` of that day; the result-type witness for the
+    // `2012-Mar - 8` operator, whose expansion always takes `monthstampSubtraction`'s inline
+    // path. A `Subtractable` is pure, so this `subtract` carries no tactic.
     given monthstampSubtractable: Monthstamp is Subtractable:
       type Result = Date
       type Operand = Int
 
+      // Reached only by a direct call: the operator's expansion checks a literal date, and
+      // rejects any other, so a day the month does not have here is a precondition violation.
       def subtract(monthstamp: Monthstamp, day: Int): Date =
-        unsafely(calendars.gregorianCalendar.jdn(monthstamp.year, monthstamp.month, Day(day)))
+        safely(calendars.gregorianCalendar.jdn(monthstamp.year, monthstamp.month, Day(day))).or:
+          panic(m"the day $day is not a day of the month; the operator checks this at expansion")
 
     inline given monthstampSubtraction: Monthstamp.MonthstampSubtraction =
       Monthstamp.MonthstampSubtraction()

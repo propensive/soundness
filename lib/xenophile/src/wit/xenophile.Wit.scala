@@ -38,7 +38,6 @@ import fulminate.*
 import gossamer.*
 import hypotenuse.*
 import prepositional.*
-import rudiments.*
 import vacuous.*
 
 import Wit.Error.Reason

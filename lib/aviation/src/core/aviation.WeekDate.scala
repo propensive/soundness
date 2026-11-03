@@ -49,8 +49,8 @@ object WeekDate:
     (dayOfYear - isoWeekday(date) + 10)/7
 
   // The number of ISO weeks in a week-year: 28 December always lies in the last week.
-  private def weekCount(year: Year)(using RomanCalendar): Int =
-    rawWeek(unsafely(Date(year, Dec, Day(28))))
+  private def weekCount(year: Year)(using calendar: RomanCalendar): Int =
+    rawWeek(calendar.computeJdn(year, Dec, Day(28)))
 
   def weekYear(date: Date)(using calendar: RomanCalendar): Year =
     val week = rawWeek(date)

@@ -32,8 +32,6 @@
                                                                                                   */
 package anticipation
 
-import scala.language.experimental.into
-
 object Log:
   // `message` is by-name: with no sink in scope (or none accepting the level), `Loggable.fanOut`
   // never forces it, so the logged value is not even constructed.

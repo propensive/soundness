@@ -32,7 +32,6 @@
                                                                                                   */
 package synesthesia
 
-import scala.annotation
 import scala.annotation.*
 import scala.collection.immutable.Seq
 import scala.quoted.*

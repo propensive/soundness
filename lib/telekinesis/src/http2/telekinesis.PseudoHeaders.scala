@@ -38,6 +38,7 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import gossamer.*
+import prepositional.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
@@ -85,7 +86,12 @@ object PseudoHeaders:
     val status: Http.Status =
       Http.Status.unapply(code).optional.lest(Http2.Error(Reason.Protocol(t"missing :status")))
 
-    status(headers.to(List), Http.Body.Flowing{ () => zephyrine.Stream(body) })
+    status
+      ( headers.to(List),
+        Http.Body.Flowing:
+          new Spring[Data]:
+            def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+              zephyrine.Stream(body) )
 
   // Reconstruct an `Http.Request` from a decoded request HEADERS block and the
   // body spring: `:method`/`:path` select the method and target, `:authority`

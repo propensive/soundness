@@ -33,9 +33,7 @@
 package surveillance
 
 import anticipation.*
-import contingency.*
 import prepositional.*
-import rudiments.*
 
 // The contextual watch handle within an `open[Watch]` block, in the manner of galilei's
 // `file`. Transparent inline so the handle's precise (capturing) type is preserved.
@@ -44,7 +42,7 @@ transparent inline def watch(using handle: Watch.Handle^): handle.type = handle
 export Watch.Event.{NewFile, NewDirectory, Modify, Delete}
 
 // An object rather than a package, since its given is a capability.
-object watchers extends anticipation.DurableUnscoped uses JavaBaseWatcher:
+object watchers extends anticipation.Durable uses JavaBaseWatcher:
   given javaBaseWatcher: Watcher = JavaBaseWatcher
 
   def polling[duration: Abstractable across Durations to Long](interval: duration): Watcher =

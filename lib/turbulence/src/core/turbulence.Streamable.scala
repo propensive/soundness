@@ -87,7 +87,9 @@ object Streamable:
 
   // A spring mints a fresh endpoint per call, so it can be `read` (or handed to a parser)
   // as it is: a request's body, a multipart part's.
-  given spring: Spring[Data] is Streamable by Data over Credit = _()
+  given spring: (tactic: Tactic[Truncation.Error])
+  =>  ( (Spring[Data] is Streamable by Data over Credit)^{tactic} ) =
+    _()
 
   given inputStream: [input <: ji.InputStream]
   =>  ( tactic: Tactic[Truncation.Error], buffering: Buffering )

@@ -37,7 +37,6 @@ import scala.caps
 import denominative.*
 import fulminate.*
 import prepositional.*
-import rudiments.*
 import vacuous.*
 
 // The asynchronous boundary of a streaming pipeline: a factory yielding an `Intake` for

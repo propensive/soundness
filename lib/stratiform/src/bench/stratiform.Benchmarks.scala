@@ -223,7 +223,7 @@ object Benchmarks extends Suite("tel-bench", m"Stratiform parser benchmarks"):
             val utf8 = java.nio.charset.StandardCharsets.UTF_8.nn
 
             supervise:
-              Tel.emit(stratiform.Benchmarks.logsParsed).foreach: chunk =>
+              Tel.emit(stratiform.Benchmarks.logsParsed).each: chunk =>
                 out.write(chunk.s.getBytes(utf8).nn)
         }
 
@@ -269,7 +269,7 @@ object Benchmarks extends Suite("tel-bench", m"Stratiform parser benchmarks"):
             val utf8 = java.nio.charset.StandardCharsets.UTF_8.nn
 
             supervise:
-              Tel.emit(stratiform.Benchmarks.logsEncoded).foreach: chunk =>
+              Tel.emit(stratiform.Benchmarks.logsEncoded).each: chunk =>
                 out.write(chunk.s.getBytes(utf8).nn)
         }
 

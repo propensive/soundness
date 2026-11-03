@@ -37,7 +37,6 @@ import scala.collection.immutable.IndexedSeq
 import scala.collection.mutable.{ArrayBuffer, HashMap}
 
 import anticipation.*
-import prepositional.*
 
 object Countable:
   // NOT subtype-parametric, unlike `Traversable`'s instances: several parametric instances in

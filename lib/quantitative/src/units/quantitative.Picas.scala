@@ -33,7 +33,6 @@
 package quantitative
 
 import anticipation.*
-import rudiments.*
 
 object Picas:
   given designation: Designation[Picas[1]] = () => "pc".tt

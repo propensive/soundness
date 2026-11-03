@@ -253,7 +253,7 @@ object internal:
 
         Expr[Byte](char.toByte)
 
-      '{Ascii(Data(${Varargs(bytes.stdlib)}*))}
+      '{Ascii(${Array.quoted(bytes)})}
 
     def recur(first: List[Expr[Ascii]], second: List[Expr[Ascii]], expr: Expr[Ascii]): Expr[Ascii] =
       first match

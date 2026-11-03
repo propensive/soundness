@@ -102,7 +102,7 @@ object Boxes:
   =>  ( continuous: y is Continuous, calibration: y is Calibration )
   =>  collection is Plottable in Boxes to Boxes.Fit by Boxes.Style =
     plottable[collection, y]: collection =>
-      List.from(traversable.traverse(collection).map(Histogram.positions(_)))
+      traversable.traverse(collection).map(Histogram.positions(_)).to[List]
 
   private def plottable[data, y: {Continuous as continuous, Calibration as calibration}]
     ( extract: data -> List[(Text, Sequence[Double])] )

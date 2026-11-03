@@ -668,13 +668,11 @@ object Xml extends Tag.Container
         type Form = Xml
 
         private def childOf(entry: Element, label: BaseText): Xml =
-          val found = entry.children.stdlib.find:
+          entry.children.seek:
             case element: Element => element.label == label
             case _                => false
 
-          found match
-            case Some(node) => node
-            case None       => Absent
+          . or(Absent)
 
         def decoded(xml: Xml): Map[key, value] =
           var accumulator = Map.empty[key, value]
@@ -2077,9 +2075,7 @@ object Xml extends Tag.Container
     case _ =>
       summonInline[derivation is Annotated by xmlns] match
         case fields: Annotated.AnnotatedFields[Xml.xmlns, ?, ?, ?] @unchecked =>
-          fields.annotations.stdlib.headOption
-          . map { annotation => (annotation.uri, annotation.qualified) }
-          . optional
+          fields.annotations.head.let: annotation => (annotation.uri, annotation.qualified)
 
         case _ =>
           Unset
@@ -2308,7 +2304,7 @@ object Xml extends Tag.Container
 
   // The legacy interoperation shape: a stdlib `Iterator` of chunks.
   private[xylophone] def parseDirect[value]
-    ( input: Iterator[BaseText], parsable: (value is Xml.Parsable)^ )
+    ( input: Iterator[BaseText]^, parsable: (value is Xml.Parsable)^ )
     ( using schema:      XmlSchema,
             scope:       Scope,
             namespacing: Namespacing,
@@ -2437,10 +2433,10 @@ object Xml extends Tag.Container
   // written to a socket or file before it is fully rendered.
   def emit(document: Document[Xml])
     ( using formatting: Formatting, monitor: Monitor, probate: Probate )
-  :   Iterator[BaseText] =
+  :   Iterator[BaseText]^ =
 
     val producer = Producer[BaseText]()
-    val output = producer.iterator
+    val output: Iterator[BaseText]^ = producer.iterator
 
     producer.transfer: (producer, _, _) ?=>
       writeDocument(new Textual(producer()), formatting, document)
@@ -2920,7 +2916,7 @@ object Xml extends Tag.Container
         attrName: BaseText )
     :   Optional[Position] =
 
-      val i = element.attributes.keys.indexOf(attrName)
+      val i = element.attributes.keys.indexed.seek(_(0) == attrName)(-1)(_(1))
 
       if i < 0 then Unset
       else
@@ -3065,12 +3061,12 @@ object Xml extends Tag.Container
 
     // `true` and `false` packed LSB-first, for the boolean content fast path.
     private[xylophone] val TrueWord: Long =
-      ('t'.toLong & 0xFF) | (('r'.toLong & 0xFF) << 8) | (('u'.toLong & 0xFF) << 16)
-        | (('e'.toLong & 0xFF) << 24)
+      ('t'.toLong & 0xFF) | (('r'.toLong & 0xFF) << 8) | (('u'.toLong & 0xFF) << 16) |
+        (('e'.toLong & 0xFF) << 24)
 
     private[xylophone] val FalseWord: Long =
-      ('f'.toLong & 0xFF) | (('a'.toLong & 0xFF) << 8) | (('l'.toLong & 0xFF) << 16)
-        | (('s'.toLong & 0xFF) << 24) | (('e'.toLong & 0xFF) << 32)
+      ('f'.toLong & 0xFF) | (('a'.toLong & 0xFF) << 8) | (('l'.toLong & 0xFF) << 16) |
+        (('s'.toLong & 0xFF) << 24) | (('e'.toLong & 0xFF) << 32)
 
     // The stop bytes of the SWAR scans, replicated into every lane (see `zephyrine.Words`).
     private[xylophone] val LtRepl:       Long = Words.replicate('<')
@@ -3148,8 +3144,8 @@ object Xml extends Tag.Container
       new XmlParser(Cursor[Data](utf8(input)), tracking = false, charOffsets = true)
 
     // The legacy interoperation shape: a stdlib `Iterator` of chunks.
-    def fromIterator(input: Iterator[BaseText])(using XmlSchema, Scope, Namespacing): XmlParser^ =
-      fromChain(Chain.from(input))
+    def fromIterator(input: Iterator[BaseText]^)(using XmlSchema, Scope, Namespacing): XmlParser^ =
+      fromChain(input.chain)
 
     // Tracking-mode constructors build the cursor with a `\n`-aware
     // `Lineation` so `cursor.line` / `cursor.column` reflect real source
@@ -3181,10 +3177,10 @@ object Xml extends Tag.Container
       new XmlParser(Cursor[Data](utf8(input)), tracking = true, charOffsets = true)
 
     // The legacy interoperation shape: a stdlib `Iterator` of chunks.
-    def fromIteratorTracked(input: Iterator[BaseText])(using XmlSchema, Scope, Namespacing)
+    def fromIteratorTracked(input: Iterator[BaseText]^)(using XmlSchema, Scope, Namespacing)
     :   XmlParser^ =
 
-      fromChainTracked(Chain.from(input))
+      fromChainTracked(input.chain)
 
   private[xylophone] final class XmlParser
     ( cursor1:                           Cursor[Data, ?]^,
@@ -5084,17 +5080,17 @@ object Xml extends Tag.Container
   // Back-compat for macro interpolators: matches the previous cursor-based
   // signature (Iterator[Text] + callback).
   private[xylophone] def parse[schema <: XmlSchema]
-    ( input:      Iterator[BaseText],
+    ( input:      Iterator[BaseText]^,
       root:       Tag,
       callback:   (Ordinal, Hole) => Unit              = (_, _) => (),
       keepHeader: Boolean                             = false )
     ( using schema: XmlSchema )
-  :   (Tactic[Parse.Error]^) ?->{callback} Xml =
+  :   (Tactic[Parse.Error]^) ?->{callback, input} Xml =
 
     // Lenient: a literal may use a prefix bound only by a `Namespace` given at its call site,
     // which the interpolator checks after parsing
     new XmlParser
-      ( Cursor[Data](XmlParser.utf8(Chain.from(input))), tracking = false, callback,
+      ( Cursor[Data](XmlParser.utf8(input.chain)), tracking = false, callback,
         charOffsets = true )
       ( using schema, Scope.xml, Namespacing.Lenient )
 
@@ -5327,7 +5323,7 @@ object Xml extends Tag.Container
   sealed trait Node extends Xml, caps.Pure
 
   case class Comment(text: BaseText) extends Node:
-    override def hashCode: Int = text.hashCode*31 + 0x436F6D6D
+    override def hashCode: Int = text.## * 31 + 0x436F6D6D
 
     override def equals(that: Any): Boolean = that match
       case Comment(text0)           => text0 == text
@@ -5335,7 +5331,7 @@ object Xml extends Tag.Container
       case _                        => false
 
   case class Doctype(text: BaseText) extends Node:
-    override def hashCode: Int = text.hashCode*31 + 0x44637470
+    override def hashCode: Int = text.## * 31 + 0x44637470
 
     override def equals(that: Any): Boolean = that match
       case Doctype(text0)           => text0 == text
@@ -5343,7 +5339,7 @@ object Xml extends Tag.Container
       case _                        => false
 
   case class Cdata(text: BaseText) extends Node:
-    override def hashCode: Int = text.hashCode*31 + 0x43646174
+    override def hashCode: Int = text.## * 31 + 0x43646174
 
     override def equals(that: Any): Boolean = that match
       case Cdata(text0)           => text0 == text
@@ -5351,7 +5347,7 @@ object Xml extends Tag.Container
       case _                      => false
 
   case class ProcessingInstruction(target: BaseText, data: BaseText) extends Node:
-    override def hashCode: Int = (target.hashCode*31 + data.hashCode)*31 + 0x50494E73
+    override def hashCode: Int = (target.## * 31 + data.##)*31 + 0x50494E73
 
     override def equals(that: Any): Boolean = that match
       case ProcessingInstruction(target0, data0)           => target0 == target && data0 == data
@@ -5361,7 +5357,7 @@ object Xml extends Tag.Container
   case class Text(text: BaseText) extends Node:
     type Topic = "#text"
 
-    override def hashCode: Int = text.hashCode*31 + 0x54657874
+    override def hashCode: Int = text.## * 31 + 0x54657874
 
     override def equals(that: Any): Boolean = that match
       case Fragment(textual: Text) => this == textual
@@ -5396,7 +5392,7 @@ object Xml extends Tag.Container
       val scope:      Scope = xylophone.internal.Scope.empty )
   extends Node, Topical, Transportive:
     override def toString(): String =
-      s"<$label>${children.stdlib.mkString}</$label>"
+      s"<$label>${children.map(_.toString.tt).join}</$label>"
 
     // The bindings in force at this element: its scope, extended by any declarations among its
     // own attributes — which are all a hand-built element has
@@ -5458,7 +5454,7 @@ object Xml extends Tag.Container
     override def hashCode: Int =
       ju.Arrays.hashCode(Array.unsafeJvm(children).asInstanceOf[scala.Array[Object | Null]]) ^
         attributes.hashAttributes ^
-        label.hashCode
+        label.##
 
 
     def selectDynamic(name: Label)
@@ -5503,7 +5499,7 @@ object Xml extends Tag.Container
       positionIndex: Optional[Xml.PositionIndex] = Unset )
   extends Node:
     override def hashCode: Int =
-      ((version.hashCode*31 + encoding.hashCode)*31 + standalone.hashCode)*31 + 0x48646572
+      ((version.## * 31 + encoding.##)*31 + standalone.##)*31 + 0x48646572
 
     override def equals(that: Any): Boolean = that match
       case Fragment(header: Header) => equals(header)

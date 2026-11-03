@@ -42,9 +42,7 @@ import gastronomy.*, providers.javaBaseProvider
 import gossamer.*
 import monotonous.*
 import prepositional.*
-import rudiments.*
 import spectacular.*
-import vacuous.*
 
 import KeyAlgorithm.Material
 

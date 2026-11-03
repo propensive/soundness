@@ -45,7 +45,6 @@ import denominative.*
 import galilei.CreateFlag
 import gossamer.*
 import hypotenuse.*
-import pneumatic.*
 import prepositional.*
 import rudiments.*
 import turbulence.*
@@ -165,10 +164,7 @@ object TarBuilder:
             range =>
               val interval: Interval = range
 
-              out.write
-                ( unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]),
-                  interval.start.n0,
-                  interval.size )
+              region.borrow(range)(out.write(_, _, _))
         finally out.close()
 
         jnf.Files.move(temporary, target, jnf.StandardCopyOption.ATOMIC_MOVE,
@@ -194,11 +190,11 @@ class TarBuilder private[bitumen]
   ( sink: Optional[ji.RandomAccessFile], format: LongNameFormat )
   ( using Tactic[Tar.Error] )
 extends caps.ExclusiveCapability:
-  // [field-purity] entry stack in non-Stateful exclusive builder
-  @scala.caps.unsafe.untrackedCaptures
-  private var stack: List[Tar.Entry] = Nil
+  // A cell rather than a `var`: a cell is a pure value a non-`Stateful` class may hold.
+  private val stack: Atomic.Ref[List[Tar.Entry]] = Atomic.Ref(Nil)
 
-  def insert(entry: Tar.Entry): Unit = sink.lay(stack ::= entry)(writeEntry(_, entry))
+  def insert(entry: Tar.Entry): Unit =
+    sink.lay(stack() = entry :: stack())(writeEntry(_, entry))
 
   def insert[data: Streamable by Data over Credit as streamable](name: Tar.Ref, data: data)
   :   Unit =
@@ -207,7 +203,10 @@ extends caps.ExclusiveCapability:
 
     insert(Tar.Entry.File
       ( name, UnixMode(), UnixUser(0), UnixGroup(0), 0.bits.u32,
-        Archive.Body.deferred{ () => if iterator.hasNext then iterator.next() else Unset } ))
+        Archive.Body.deferred { () =>
+          iterator.next() match
+            case Iterator.Exhausted => Unset
+            case chunk: Data        => chunk } ))
 
   // Author one entry with a streamed, unknown-length body: the block writes
   // chunks through the lent `TarEntryWriter`. On an uncompressed target the
@@ -258,7 +257,7 @@ extends caps.ExclusiveCapability:
 
         var count: Long = 0
 
-        file.data.chunks.foreach: chunk =>
+        file.data.chunks.each: chunk =>
           write(out, chunk)
           count += chunk.length
 
@@ -287,4 +286,4 @@ extends caps.ExclusiveCapability:
     write(out, Tarfile.zeroBlock)
 
   private[bitumen] def tarfile(format: LongNameFormat): Tarfile =
-    Tarfile(stack.reverse, format)
+    Tarfile(stack().reverse, format)

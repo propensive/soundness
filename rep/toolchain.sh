@@ -26,11 +26,11 @@ set -euo pipefail
 root=$(cd "$(dirname "$0")/.." && pwd)
 build="$root/build.mill"
 
-default() { sed -n "s/.*\"$1\", \"\([^\"]*\)\".*/\1/p" "$build" | head -1; }
-release=${SOUNDNESS_SCALA_RELEASE:-$(default SOUNDNESS_SCALA_RELEASE)}
-base=${SOUNDNESS_SCALA_BASE:-$(default SOUNDNESS_SCALA_BASE)}
-# A release from 1.0.0 on is built for several Scala versions; an earlier one is versioned as its tag
-if [[ "$release" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then version="$base-pro-$release"; else version="$release"; fi
+# `settings.scalaVersion` is a literal in build.mill; the release/base pair overrides it.
+release=${SOUNDNESS_SCALA_RELEASE:-}
+base=${SOUNDNESS_SCALA_BASE:-}
+if [[ -n "$release" && -n "$base" ]]; then version="$base-pro-$release"
+else version=$(sed -n 's/.*val scalaVersion = "\([^"]*\)".*/\1/p' "$build" | head -1); fi
 version=${SOUNDNESS_SCALA_VERSION:-$version}
 if [[ -n "${SOUNDNESS_SCALA_HOME:-}" ]]; then lib="$SOUNDNESS_SCALA_HOME/lib"
 else lib="$HOME/.cache/soundness/proscala/$version/lib"; fi

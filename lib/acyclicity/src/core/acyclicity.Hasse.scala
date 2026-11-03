@@ -35,6 +35,7 @@ package acyclicity
 import scala.collection.immutable as sci
 import scala.collection.mutable as scm
 
+import murmuration.Iterator
 import prepositional.*
 
 object Hasse:
@@ -131,21 +132,21 @@ object Hasse:
   given nodal: [element] => (Hasse[element] is Nodal by element) = new Nodal:
     type Self = Hasse[element]
     type Operand = element
-    def nodes(self: Hasse[element]): Iterator[element] = self.greater.keysIterator
+    def nodes(self: Hasse[element]): Iterator[element]^ = Iterator.from(self.greater.keysIterator)
 
     def has(self: Hasse[element], node: element): Boolean =
       self.greater.contains(self.canonical(node))
 
-    def successors(self: Hasse[element], node: element): Iterator[element] =
-      self.lesser.getOrElse(self.canonical(node), sci.Set()).iterator
+    def successors(self: Hasse[element], node: element): Iterator[element]^ =
+      Iterator.from(self.lesser.getOrElse(self.canonical(node), sci.Set()).iterator)
 
   given bidirectional: [element] => (Hasse[element] is Bidirectional by element) =
     new Bidirectional:
       type Self = Hasse[element]
       type Operand = element
 
-      def predecessors(self: Hasse[element], node: element): Iterator[element] =
-        self.greater.getOrElse(self.canonical(node), sci.Set()).iterator
+      def predecessors(self: Hasse[element], node: element): Iterator[element]^ =
+        Iterator.from(self.greater.getOrElse(self.canonical(node), sci.Set()).iterator)
 
   given topological: [element] => Hasse[element] is Topological =
     new Topological { type Self = Hasse[element] }

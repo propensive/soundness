@@ -328,7 +328,9 @@ class CollationTable private[hieroglyph]
           // Longest contiguous match first (UCA S2.1): with keys of at most three
           // codepoints, that means trying length three, then two.
           if index + 2 < n && !consumed(index + 1) && !consumed(index + 2) then
-            val key3 = matchKey | cps.readUnchecked(index + 1).toLong << 21 | cps.readUnchecked(index + 2).toLong
+            val key3 =
+              matchKey | cps.readUnchecked(index + 1).toLong << 21 |
+                cps.readUnchecked(index + 2).toLong
 
             if searchLong(contractionKeys, key3) >= 0 then
               matchKey = key3
@@ -514,7 +516,8 @@ class CollationTable private[hieroglyph]
         if third != 0 then sci.Vector(first, second, third) else sci.Vector(first, second)
 
       val elements =
-        (contractionOffsetsView.readUnchecked(index) until contractionOffsetsView.readUnchecked(index + 1))
+        ( contractionOffsetsView.readUnchecked(index) until
+            contractionOffsetsView.readUnchecked(index + 1) )
         . map(contractionElementsView.readUnchecked(_)).to(sci.Vector)
 
       entries(key) = elements

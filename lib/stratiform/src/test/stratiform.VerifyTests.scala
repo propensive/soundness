@@ -67,9 +67,9 @@ object Tint:
 
 object VerifyTests extends Suite("tel-verify", m"Stratiform verify tests"):
   def keywords(struct: Tels.Struct): List[Text] =
-    struct.members.to[List].stdlib.collect:
+    struct.members.to[List].sweep:
       case field: Tels.Field => field.keyword
-    . to(List)
+    . to[List]
 
   def run(): Unit =
     suite(m"Runtime verification"):
@@ -120,42 +120,42 @@ object VerifyTests extends Suite("tel-verify", m"Stratiform verify tests"):
 
       test(m"A required field has implicit polarity, as a hand-written field does"):
 
-          Tels.tels[Worker](t"worker").document.members.to[List].stdlib.collect:
+          Tels.tels[Worker](t"worker").document.members.to[List].sweep:
             case field: Tels.Field if field.keyword == t"name" => field.required
-          . to(List)
+          . to[List]
       . assert(_ == List(Tels.Polarity.Implicit))
 
       test(m"An Optional field loosens to Loose polarity"):
 
-          Tels.tels[Nicked](t"nicked").document.members.to[List].stdlib.collect:
+          Tels.tels[Nicked](t"nicked").document.members.to[List].sweep:
             case field: Tels.Field if field.keyword == t"nick" => field.required
-          . to(List)
+          . to[List]
       . assert(_ == List(Tels.Polarity.Loose))
 
       test(m"A collection field is repeatable, referencing the element's record"):
           val schema = Tels.tels[Crew](t"crew")
 
-          schema.document.members.to[List].stdlib.collect:
+          schema.document.members.to[List].sweep:
             case field: Tels.Field if field.keyword == t"members" =>
               field.repeatable -> field.fieldType
-          . collect:
+          . sweep:
               case (repeatable, Tels.Reference(name)) =>
                 repeatable -> schema.records.seek(_.name == name).let: record =>
                   keywords(Tels.Struct(record.members, record.validators))
                 . or(List())
-          . to(List)
+          . to[List]
       . assert(_ == List(Tels.Polarity.Loose -> List(t"name", t"age")))
 
       test(m"A map field's type is a Struct of repeatable `entries` of key/value"):
 
-          Tels.tels[Config](t"config").document.members.to[List].stdlib.collect:
+          Tels.tels[Config](t"config").document.members.to[List].sweep:
             case field: Tels.Field if field.keyword == t"prefs" => field.fieldType
-          . collect:
-              case struct: Tels.Struct => struct.members.to[List].stdlib.collect:
+          . sweep:
+              case struct: Tels.Struct => struct.members.to[List].sweep:
                 case field: Tels.Field if field.keyword == t"entries" => field.fieldType
-          . flatten.collect:
+          . flat.sweep:
               case struct: Tels.Struct => keywords(struct)
-          . to(List)
+          . to[List]
       . assert(_ == List(List(t"key", t"value")))
 
     suite(m"Schema coherence (the carried shape tracks the codec)"):

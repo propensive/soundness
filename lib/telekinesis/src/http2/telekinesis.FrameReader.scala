@@ -39,7 +39,6 @@ import contingency.*
 import denominative.capped
 import gossamer.*
 import prepositional.*
-import rudiments.*
 import symbolism.*
 import vacuous.*
 import Http2.Error.Reason

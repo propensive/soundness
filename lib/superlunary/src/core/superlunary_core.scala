@@ -57,15 +57,15 @@ package embeddings:
       val allocation: Int = refs.allocate(encoded)
 
       ' {
-          import strategies.throwUnsafely
           val array = ${refs.array}
           val cached = array(${Expr(allocation)})
 
           if cached.isInstanceOf[References.Boxed]
           then cached.asInstanceOf[References.Boxed].value.asInstanceOf[value]
           else
+            // The transport was embedded by this same `Stageable`, so it extracts.
             val extracted =
-              stageable.extract[value](cached.asInstanceOf[refs.Transport])
+              unsafely(stageable.extract[value](cached.asInstanceOf[refs.Transport]))
 
             array(${Expr(allocation)}) = References.Boxed(extracted)
             extracted

@@ -72,11 +72,13 @@ object AutobahnClient:
               safely(connection.channel.close(error.reason.closeCode))
 
           . protect:
-              Reader
-                ( () =>
-                    connection.inbound
-                    . asInstanceOf[zephyrine.Stream[Data] over zephyrine.Credit],
-                  connection.channel )
+              val inbound: Spring[Data] = new Spring[Data]:
+                def apply()(using Tactic[Truncation.Error])
+                :   zephyrine.Stream[Data] over zephyrine.Credit =
+
+                  connection.inbound.asInstanceOf[zephyrine.Stream[Data] over zephyrine.Credit]
+
+              Reader(inbound, connection.channel)
               . messages.each:
                 consume(connection.channel)(_)
 

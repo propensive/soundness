@@ -34,6 +34,7 @@ package coaxial
 
 import anticipation.*
 import beneficence.*
+import contingency.*
 import gigantism.*
 import prepositional.*
 import urticose.*
@@ -45,7 +46,9 @@ object Routable:
   =>  Endpoint[Udp.Port] is Routable:
     type Connection = backend.Courier
 
-    def connect(endpoint: Endpoint[Udp.Port], interface: Optional[MacAddress]): Connection =
+    def connect(endpoint: Endpoint[Udp.Port], interface: Optional[MacAddress])
+    :   Connection raises Socket.Error =
+
       backend.routeUdp(endpoint, interface, options.values.to(List))
 
     def transmit(connection: Connection, consume input: (Stream[Data] over Credit)^): Unit =
@@ -55,7 +58,9 @@ object Routable:
   =>  Udp.Port is Routable:
     type Connection = backend.Courier
 
-    def connect(port: Udp.Port, interface: Optional[MacAddress]): Connection =
+    def connect(port: Udp.Port, interface: Optional[MacAddress])
+    :   Connection raises Socket.Error =
+
       backend.routeUdpPort(port, interface, options.values.to(List))
 
     def transmit(connection: Connection, consume input: (Stream[Data] over Credit)^): Unit =
@@ -65,5 +70,5 @@ trait Routable extends Findable:
   type Self
   type Connection
 
-  def connect(endpoint: Self, interface: Optional[MacAddress]): Connection
+  def connect(endpoint: Self, interface: Optional[MacAddress]): Connection raises Socket.Error
   def transmit(connection: Connection, consume input: (Stream[Data] over Credit)^): Unit

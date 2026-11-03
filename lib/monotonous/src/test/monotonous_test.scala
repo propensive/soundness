@@ -61,7 +61,7 @@ object Tests extends Suite("serialization", m"Monotonous tests"):
       // `Text.deserialize` produces. Strides not aligned to the group size
       // exercise the carry at every intra-group offset.
       def chunks(text: Text, size: Int): (Stream[Text] over Credit)^ =
-        Stream(text.s.grouped(size).map(_.tt))
+        Stream(Iterator.from(text.s.grouped(size).map(_.tt)))
 
       val base64Text = allNumbers.serialize[Base64]
       val hexText = allNumbers.serialize[Hex]

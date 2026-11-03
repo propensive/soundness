@@ -32,8 +32,6 @@
                                                                                                   */
 package archimedes
 
-import scala.math
-
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -399,10 +397,10 @@ object Mathml:
         abort(Mathml.Error(Mathml.Error.Reason.NotMathml(labelOf(other))))
 
     private def childElements(elem: Xml.Element): List[Xml.Element] =
-      elem.children.stdlib.collect { case element: Xml.Element => element }.to(List)
+      elem.children.sweep { case element: Xml.Element => element }.to[List]
 
     private def textOf(elem: Xml.Element): Text =
-      elem.children.stdlib.collect { case Xml.Text(text) => text }.to(List).join
+      elem.children.sweep { case Xml.Text(text) => text }.to[List].join
 
     private def children(elem: Xml.Element)(using Tactic[Mathml.Error]): List[Mathml] =
       childElements(elem).map(decodeNode)
@@ -511,7 +509,7 @@ object Mathml:
 
     private def toXmlElement(element: honeycomb.Html.Element): Xml.Element =
       val pairs: List[(Text, Text)] =
-        element.attributes.keys.map { key => (key, element.attributes(key).or(t"")) }.to(List)
+        element.attributes.keys.map { key => (key, element.attributes(key).or(t"")) }.to[List]
 
       val nodes: Array[Xml.Node]^{} = element.children.remap(toXmlNode)
       Xml.Element(element.label, Attributes(pairs*), nodes)

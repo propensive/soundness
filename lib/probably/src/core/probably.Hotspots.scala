@@ -34,7 +34,6 @@ package probably
 
 import anticipation.*
 import murmuration.*
-import vacuous.*
 
 object Hotspots:
   given inclusion: Inclusion[Report, Hotspots]:

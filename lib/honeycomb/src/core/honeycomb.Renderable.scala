@@ -38,7 +38,7 @@ import fulminate.*
 import gossamer.*
 import htmlDoms.whatwg.*
 import prepositional.*
-import rudiments.{bind, flatMap, map}
+import rudiments.{bind, map}
 import spectacular.*
 import vacuous.*
 

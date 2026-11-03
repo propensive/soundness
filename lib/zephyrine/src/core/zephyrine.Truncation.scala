@@ -30,26 +30,15 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package distillate
+package zephyrine
 
-import scala.caps
+import fulminate.*
+import rudiments.*
 
-import anticipation.*
-import contingency.*
-import fulminate.Hazard
-import prepositional.*
-import vacuous.*
-
-object Requirable:
-  given decodable: [value] => (decodable: Tactic[Hazard]^ ?=> value is Decodable in Text)
-  =>  ( (value is Requirable)^{decodable} ) =
-
-    // The `Decodable` is resolved against `throwUnsafely` (a label-free tactic) rather than the
-    // ambient `safely`-scoped `OptionalTactic`, so the decoded value does not retain that scoped
-    // capability — mirroring `Extractable.decodable`. It captures the context function it decodes
-    // with.
-    () => safely(decodable(using strategies.throwUnsafely).decoded("".tt)).absent
-
-trait Requirable extends Typeclass:
-  protected def isRequired(): Boolean
-  def required: Boolean = isRequired()
+// A stream that ended before it had delivered everything. Named for the state of the
+// data rather than for a raiser: a `Spring`'s pull and turbulence's `Streamable`, `Writable`
+// and `Sink` all report it, so none of them owns it; it sits with `Stream` and `Spring`.
+object Truncation:
+  // StreamError → Truncation.Error
+  case class Error(total: Bytes)(using Diagnostics)
+  extends fulminate.Error(264, 0)(m"the stream was cut prematurely after $total")

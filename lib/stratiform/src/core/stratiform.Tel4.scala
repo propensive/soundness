@@ -83,6 +83,7 @@ trait Tel4:
     given sigil: Intensional.Reading["sigil", Tel.Provider, Tel, Char, Tel.Provider.Error] =
       Intensional.Reading: (tel, _) =>
         val text = tel.primaryAtom
+
         if text.length == 1 then text.s.charAt(0)
         else abort(Tel.Provider.Error(Tel.Provider.Error.Reason.NotSigil(text)))
 
@@ -120,14 +121,13 @@ trait Tel4:
         baseStruct: Optional[Tels.Struct] = Unset )
     :   List[(Text, Member)] =
 
-      val declared: scala.collection.immutable.Set[Text] =
-        baseStruct.lay(scala.collection.immutable.Set()): struct =>
-          struct.members.stdlib.toList.collect { case field: Tels.Field => field.keyword }
-          . to(scala.collection.immutable.Set)
+      val declared: Set[Text] =
+        baseStruct.lay(Set()): struct =>
+          struct.members.sweep { case field: Tels.Field => field.keyword }.to[Set]
 
       struct.members.stdlib.toList.flatMap:
         case field: Tels.Field =>
-          val layered = base.present && !declared.contains(field.keyword)
+          val layered = base.present && !declared.has(field.keyword)
           scala.List(field.keyword -> memberOf(field, schema, base, layered))
 
         // A select member is one of its definition's variants, each a field of its own
@@ -204,19 +204,32 @@ trait Tel4:
     // composition declares and the base does not was introduced by a layer, and reads as
     // optional.
     //
-    // Both are first composed as the macro expands, where a schema which does not compose is a
-    // compile error rather than a value to report, so the composition throws; a schema which
-    // composed then composes again when a record reads it.
-    private lazy val base: Tels =
-      import strategies.throwUnsafely
-      Tels.Layers.compose(tels, List())
+    // Both are composed once: by the `record`/`tuple` macro, which reports a schema which does
+    // not compose as a compile error at the use site, and otherwise at the first use, where a
+    // schema never composed at expansion is a defect of the provider.
+    private lazy val composition: Attempt[(Tels, Tels), Specification.Error] =
+      given Diagnostics = Diagnostics.omit
 
-    private lazy val composed: Tels =
-      import strategies.throwUnsafely
-      Tels.Layers.compose(tels)
+      attempt[Specification.Error]:
+        mitigate:
+          case error: Tel.Error =>
+            Specification.Error(error.message)(using error.diagnostics)
 
-    def fields: List[(Text, Member)] =
-      Tel.Provider.fieldsOf(composed.document, composed, base, base.document)
+          case error: Tels.Resolution.Error =>
+            Specification.Error(error.message)(using error.diagnostics)
+
+        . protect((Tels.Layers.compose(tels, List()), Tels.Layers.compose(tels)))
+
+    private def composed: Tels = composition match
+      case Attempt.Success((_, composed)) => composed
+      case Attempt.Failure(error)         => panic(error.message)
+
+    def fields(using Tactic[Specification.Error]): List[(Text, Member)] = composition match
+      case Attempt.Success((base, composed)) =>
+        Tel.Provider.fieldsOf(composed.document, composed, base, base.document)
+
+      case Attempt.Failure(error) =>
+        abort(error)
 
     // The layers whose root members a document carries — the layers a value built from it was
     // composed with, for a writer serving an acceptance.

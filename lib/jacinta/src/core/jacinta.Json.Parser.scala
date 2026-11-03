@@ -32,7 +32,6 @@
                                                                                                   */
 package jacinta
 
-import scala.collection.mutable as scm
 import scala.compiletime.*
 import scala.language.dynamics
 import scala.language.experimental.pureFunctions
@@ -42,9 +41,6 @@ import scala.{caps, math}
 import anticipation.*
 import contingency.*
 import denominative.*
-import fulminate.*
-import gossamer.*
-import hieroglyph.*
 import hypotenuse.Bcd
 import prepositional.*
 import proscenium.*
@@ -155,7 +151,7 @@ private[jacinta] object Parser:
     parser.numberMode = mode
     parser.parse()
 
-  def parse(input: Iterator[Data], mode: NumberMode): Raw raises Parse.Error =
+  def parse(consume input: Iterator[Data]^, mode: NumberMode)(using Tactic[Parse.Error]): Raw =
     val parser = borrow()
     parser.tracking = false
     parser.resetIterator(input)
@@ -163,7 +159,10 @@ private[jacinta] object Parser:
     parser.numberMode = mode
     parser.parse()
 
-  def parse(input: Iterator[Data], holes: Boolean, mode: NumberMode): Raw raises Parse.Error =
+  def parse(consume input: Iterator[Data]^, holes: Boolean, mode: NumberMode)
+    ( using Tactic[Parse.Error] )
+  :   Raw =
+
     val parser = borrow()
     parser.tracking = false
     parser.resetIterator(input)
@@ -182,8 +181,9 @@ private[jacinta] object Parser:
     val raw = parser.parse()
     (raw.asInstanceOf[Json.Ast], Json.PositionIndex(parser.rootIndex.nn))
 
-  def parseTracked(input: Iterator[Data], mode: NumberMode)
-  :   (Json.Ast, Json.PositionIndex) raises Parse.Error =
+  def parseTracked(consume input: Iterator[Data]^, mode: NumberMode)
+  ( using Tactic[Parse.Error] )
+  :   (Json.Ast, Json.PositionIndex) =
 
     val parser = borrow()
     parser.tracking = true
@@ -193,7 +193,10 @@ private[jacinta] object Parser:
     val raw = parser.parse()
     (raw.asInstanceOf[Json.Ast], Json.PositionIndex(parser.rootIndex.nn))
 
-  def parse(consume input: (Stream[Data] over Credit)^, mode: NumberMode): Raw raises Parse.Error =
+  def parse(consume input: (Stream[Data] over Credit)^, mode: NumberMode)
+    ( using Tactic[Parse.Error] )
+  :   Raw =
+
     val parser = borrow()
     parser.tracking = false
     // consume-to-consume forwarding is not admitted; the hop re-asserts the transfer
@@ -204,7 +207,8 @@ private[jacinta] object Parser:
     parser.parse()
 
   def parseTracked(consume input: (Stream[Data] over Credit)^, mode: NumberMode)
-  :   (Json.Ast, Json.PositionIndex) raises Parse.Error =
+  ( using Tactic[Parse.Error] )
+  :   (Json.Ast, Json.PositionIndex) =
 
     val parser = borrow()
     parser.tracking = true
@@ -302,7 +306,7 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
     indexBufferId = -1
     rootIndex = null
 
-  update def resetIterator(input: Iterator[Data]): Unit =
+  update def resetIterator(consume input: Iterator[Data]^): Unit =
     if tracking then
       import zephyrine.lineation.linefeedByte
       val fresh = Cursor[Data](input)
@@ -431,7 +435,7 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
   // `syncTo`/`syncFrom` round-trip. The slow path retains full BOM
   // semantics (including rolling back if only the first byte matches).
   protected update def bom(): Unit =
-    if !more || peek != -17.toByte then return
+    if !more || peek != (-17).toByte then return
 
     // Block-scoped like `reconcileLineation`, with parser state read before the cursor
     // binding and one binding used throughout (each cursor access through `this` would
@@ -446,9 +450,9 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
         val mk = current.mark
 
         val bom =
-          current.more && current.unsafeDatum(using Unsafe) == -17.toByte &&
-            { current.next(); current.more && current.unsafeDatum(using Unsafe) == -69.toByte } &&
-            { current.next(); current.more && current.unsafeDatum(using Unsafe) == -65.toByte }
+          current.more && current.unsafeDatum(using Unsafe) == (-17).toByte &&
+            { current.next(); current.more && current.unsafeDatum(using Unsafe) == (-69).toByte } &&
+            { current.next(); current.more && current.unsafeDatum(using Unsafe) == (-65).toByte }
 
         if bom then current.next() else current.cue(mk)
 
@@ -885,7 +889,7 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
     // byte-by-byte `expect` chain only at a buffer boundary.
     if pos + 5 <= bufEnd then
       val word: Long =
-        (cells(pos)     & 0xFFL)         |
+        (cells(pos)     & 0xFFL) |
           ((cells(pos + 1) & 0xFFL) <<  8) |
           ((cells(pos + 2) & 0xFFL) << 16) |
           ((cells(pos + 3) & 0xFFL) << 24) |
@@ -905,7 +909,7 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
   private update def parseTrue()(using Tactic[Parse.Error]): true =
     if pos + 4 <= bufEnd then
       val word: Int =
-        (cells(pos)     & 0xFF)         |
+        (cells(pos)     & 0xFF) |
           ((cells(pos + 1) & 0xFF) <<  8) |
           ((cells(pos + 2) & 0xFF) << 16) |
           ((cells(pos + 3) & 0xFF) << 24)
@@ -923,7 +927,7 @@ extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
   private update def parseNull()(using Tactic[Parse.Error]): Json.JsonNull.type =
     if pos + 4 <= bufEnd then
       val word: Int =
-        (cells(pos)     & 0xFF)         |
+        (cells(pos)     & 0xFF) |
           ((cells(pos + 1) & 0xFF) <<  8) |
           ((cells(pos + 2) & 0xFF) << 16) |
           ((cells(pos + 3) & 0xFF) << 24)

@@ -33,8 +33,6 @@
 package pneumatic
 
 import anticipation.*
-import rudiments.*
-import vacuous.*
 import zephyrine.*
 
 // LZW, the compression of TIFF and PDF streams, implemented natively (the JDK offers none)

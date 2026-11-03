@@ -96,26 +96,12 @@ private def parsedIterator[value](consume reader: DsvReader^, parsable: value is
 :   Iterator[value]^ =
 
   new Iterator[value]:
-    // [stdlib-iterator] state in anonymous Iterator
-    @caps.unsafe.untrackedCaptures
-    private var pending: Optional[value] = Unset
-    // [stdlib-iterator]
-    @caps.unsafe.untrackedCaptures
-    private var finished: Boolean = false
+    private var row: value = null.asInstanceOf[value]
 
-    def hasNext: Boolean =
-      if pending.present then true
-      else if finished then false
-      else
-        pending = if reader.nextRow() then parsable.parse(reader, 0) else Unset
-        if pending.absent then finished = true
-        pending.present
+    update def advance(): Boolean =
+      reader.nextRow() && { row = parsable.parse(reader, 0); true }
 
-    def next(): value =
-      if !hasNext then Iterator.empty.next()
-      val row = pending.or(Iterator.empty.next())
-      pending = Unset
-      row
+    def current: value = row
 
 // Panopticon optics for tabular data (no nesting, so they mirror the row/cell
 // structure rather than JSON's map/array). `dsvCellLens` reads/writes a cell by column
@@ -128,8 +114,10 @@ package optics:
     . or(t"")
 
   private def withCell(row: Dsv, name: String, value: Text): Dsv =
-    row.columns.let(_(name.tt)).lay(row): index =>
-      row.copy(data = Array.from(row.data.stdlib.updated(index, value)))
+    // A row has few cells, so copying them to replace one is cheap.
+    import denominative.dysasymptotics.linearSize
+
+    row.columns.let(_(name.tt)).lay(row): index => row.copy(data = row.data.define(index.z, value))
 
   given dsvCellLens: [name <: Label: ValueOf] => (erased dynamical: (? >: Dsv) is Dynamical)
   =>  name is Lens from Dsv onto Text =

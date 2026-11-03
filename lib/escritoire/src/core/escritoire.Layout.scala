@@ -72,12 +72,11 @@ case class Cells[text](lines: Array[Array[text]^{}]^{}, metrics: Array[Metrics]^
 object Layout:
   // Empty aggregates, one per column, for a layout that has admitted nothing yet.
   def nothing[row, text](columns: Array[Column[row, text]]^{}): Array[Metrics]^{} =
-    Array.from(columns.stdlib.indices.map { _ => Metrics(0, 0) })
+    Array.fill(columns.length)(Metrics(0, 0))
 
   def aggregate(aggregates: Array[Metrics]^{}, cells: Cells[?]): Array[Metrics]^{} =
-    Array.from:
-      aggregates.stdlib.indices.map: index =>
-        aggregates.readUnchecked(index).max(cells.metrics.readUnchecked(index))
+    Array.tabulate(aggregates.length): index =>
+      aggregates.readUnchecked(index).max(cells.metrics.readUnchecked(index))
 
   // Solves the columns' widths at `width` from their aggregate claims: each column's flex from
   // its aggregate, the columns that can occupy no width at all dropped, and the rest allotted
@@ -92,13 +91,13 @@ object Layout:
   :   Layout[row, text] =
 
     val flexes: IndexedSeq[Flex] =
-      columns.stdlib.indices.map: index =>
+      IndexedSeq.tabulate(columns.length): index =>
         columns.readUnchecked(index).sizing.flex(aggregates.readUnchecked(index), width)
 
     // A column that can never occupy any width (e.g. a `Paragraph` column whose every cell is
     // empty) vanishes entirely, as it would otherwise still cost padding and a rule.
     val visible: IndexedSeq[Int] =
-      columns.stdlib.indices.filter: index =>
+      flexes.indices.filter: index =>
         flexes(index).metrics.min > 0 || flexes(index).max.or(flexes(index).metrics.natural) > 0
 
     // The chrome around k columns is k*columnCost + 1 = (k - 1) gaps of columnCost, plus one
@@ -147,9 +146,9 @@ case class Layout[row, text: ClassTag]
     Cells.of(columns, row)
 
   def accommodates(cells: Cells[text]): Boolean =
-    columns.stdlib.indices.all: index =>
-      columns.readUnchecked(index).sizing.accommodates
-        ( aggregates.readUnchecked(index), cells.metrics.readUnchecked(index) )
+    columns.extent.all: index =>
+      columns(index).sizing.accommodates
+        ( aggregates.readUnchecked(index.n0), cells.metrics.readUnchecked(index.n0) )
 
   // This layout, if the row cannot move a column; else the aggregates widened by the row's
   // cells and the widths re-solved at the same width.
@@ -189,7 +188,7 @@ case class Layout[row, text: ClassTag]
             decoration )
 
     val height =
-      if survivors.isEmpty then 0 else tableCells.stdlib.maxBy(_.minHeight).minHeight
+      tableCells.maximize(_.minHeight).lay(0)(_.minHeight)
 
     TableRow(tableCells, false, height)
 

@@ -35,7 +35,6 @@ package enigmatic
 import anticipation.*
 import breviloquence.*
 import contingency.*
-import corpuscular.*
 import enigmatic.*
 import fulminate.*
 import gastronomy.*

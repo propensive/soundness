@@ -184,7 +184,7 @@ object Http:
     // owned material -- but it is consumed here and now, into a `Map`, and nothing writes to
     // an enum's `values`.
     private lazy val all: Map[Int, Status] =
-      Array.unsafeFrozen(values).stdlib.bi.map(_.code -> _).to(Map)
+      Array.unsafeFrozen(values).bi.map(_.code -> _).to[Map]
 
     def unapply(code: Int): Option[Status] = all.at(code).option
 
@@ -261,29 +261,31 @@ object Http:
   export Status.*
 
   // One chunk of a chunked body (RFC 9112 §7.1): its size in hex, the data, and a line end.
-  private def frame(data: Data): Iterator[Data] =
+  private def frame(data: Data): List[Data] =
     import codepages.asciiCodepage
-    Iterator(t"${Integer.toHexString(data.length).nn.tt}\r\n".in[Data], data, t"\r\n".in[Data])
+    List(t"${Integer.toHexString(data.length).nn.tt}\r\n".in[Data], data, t"\r\n".in[Data])
 
   object Request:
     given showable: Request is Showable = request =>
-      val bodySample: Text =
-        try request.body().memoize.utf8 catch case error: Truncation.Error  => t"[-/-]"
+      val bodySample: Text = safely(request.body().memoize.utf8).or(t"[-/-]")
 
       val headers: Text =
         request.textHeaders.map: (header: Header) => t"${header.key}: ${header.value}"
         . join(t"\n          ")
 
+      // A form body cut short has no parameters to show.
+      val query: Optional[Query] = safely(request.query)
+
       val params: Text =
-        request.query.values.map: (key, value) => t"$key = \"$value\""
-        . join(t"\n          ")
+        query.lay(t"[-/-]"): query =>
+          query.values.map { (key, value) => t"$key = \"$value\"" }.join(t"\n          ")
 
       Ledger[Text, Text](
         t"content" ->
           ( safely(request.headers.contentType.head.or(media"application/octet-stream").show)
             . or(t"?") ),
         t"method"   -> request.method.show,
-        t"query"    -> request.query.show,
+        t"query"    -> query.lay(t"[-/-]")(_.show),
         t"hostname" -> request.host.show,
         t"path"     -> request.location,
         t"body"     -> bodySample,
@@ -298,7 +300,7 @@ object Http:
     // a `Transmissible`). The body is probed one block at a time: a body that
     // ends within the first block is framed with `Content-Length`; anything
     // longer streams with chunked transfer encoding.
-    def serialize(request: Request)(using buffering: Buffering)
+    def serialize(request: Request)(using buffering: Buffering, tactic: Tactic[Truncation.Error])
     :   (Stream[Data] over Credit)^ =
 
       import codepages.asciiCodepage
@@ -361,11 +363,11 @@ object Http:
           val text = head(t"Transfer-Encoding: chunked")
 
           Stream
-            ( Iterator(text.in[Data]) ++
-              frame(first) ++
-              frame(second) ++
-              Iterator.continually(pull()).takeWhile(_.present).flatMap(_.lay(Iterator())(frame)) ++
-              Iterator(t"0\r\n\r\n".in[Data]) )
+            ( Iterator(text.in[Data])
+              . concat(Iterator.from(List.iterator(frame(first))))
+              . concat(Iterator.from(List.iterator(frame(second))))
+              . concat(Iterator.continually(pull()).keep(_.present).flatMap(_.lay(Nil)(frame)))
+              . concat(Iterator(t"0\r\n\r\n".in[Data])) )
 
         case _ =>
           val data = first.or(Array.empty[Byte])
@@ -550,7 +552,9 @@ object Http:
           head.host,
           head.target,
           head.headers,
-          () => Stream(cursor.remainder) )
+          new Spring[Data]:
+            def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+              Stream(cursor.remainder) )
 
     // The endpoint form: the request parses straight off the connection's pull
     // endpoint. The body spring lends the cursor's remainder as a SINGLE-OWNER
@@ -569,8 +573,9 @@ object Http:
       // hiding rule where the JVM row does not).
       val cursorRef: AnyRef = cursor.asInstanceOf[AnyRef]
 
-      val spring: Spring[Data]^ =
-        () => streamOf(cursorRef.asInstanceOf[Cursor[Data, {}]^])
+      val spring: Spring[Data]^ = new Spring[Data]:
+        def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+          streamOf(cursorRef.asInstanceOf[Cursor[Data, {}]^])
 
       Request
         ( head.method,
@@ -709,8 +714,9 @@ object Http:
     case Empty
 
     // A fresh pull endpoint over this body's content: mintable repeatedly for
-    // `Fixed`/`Empty`, and per the `Spring` contract for `Flowing`.
-    def stream: (Stream[Data] over Credit)^ = this match
+    // `Fixed`/`Empty`, and per the `Spring` contract for `Flowing`, whose pull may be cut
+    // short, which the tactic reports.
+    def stream(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ = this match
       case Body.Fixed(data)     => data.stream
       case Body.Empty           => Iterator.empty[Data].stream
       case Body.Flowing(source) => source()
@@ -729,9 +735,7 @@ object Http:
 
     inline def request: this.type = this
 
-    // `Www`'s `Radical` always succeeds, so decoding the path cannot fail.
-    lazy val path: Path on Www under %.type =
-      unsafely(location.as[Path on Www under %.type])
+    lazy val path: Path on Www under %.type = location.as[Path on Www under %.type]
 
     def on[scheme <: "http" | "https"](origin: Origin[scheme]): HttpUrl =
       Url[scheme](origin, target)
@@ -739,7 +743,7 @@ object Http:
     private lazy val queryText: Text =
       target.offsetOf(t"?").lay(t""): ordinal => target.skip(ordinal.n1)
 
-    lazy val query: Query =
+    def query(using Tactic[Truncation.Error]): Query =
       contentType.let(_.base.show) match
         case t"application/x-www-form-urlencoded" =>
           queryText.as[Query] ++ body().memoize.utf8.as[Query]
@@ -763,7 +767,7 @@ object Http:
 
     lazy val textCookies: Map[Text, Text] =
       headers.cookie.bind: (cookie: List[Cookie.Value]) =>
-        cookie.map { value => value.name -> value.value }
+        cookie.map: value => value.name -> value.value
 
       . to[Map]
 
@@ -823,8 +827,8 @@ object Http:
             // [field-fresh-param] body field's capture-polymorphic declared type
             caps.unsafe.unsafeAssumePure(response.body) )
 
-    given streamable: (tactic: Tactic[Http.Error])
-    =>  ( (Response is Streamable by Data over Credit)^{tactic} ) = response =>
+    given streamable: (tactic: Tactic[Http.Error], truncation: Tactic[Truncation.Error])
+    =>  ( (Response is Streamable by Data over Credit)^{tactic, truncation} ) = response =>
       response.status.category match
         case Http.Status.Category.Successful => response.body.stream
 
@@ -843,7 +847,7 @@ object Http:
     // `101` upgrades (where the caller pipes the post-handshake stream raw). The
     // inverse of `parse`.
     def serialize(response: Response^, includeBody: Boolean = true, version: Version = 1.1)
-      ( using buffering: Buffering )
+      ( using buffering: Buffering, tactic: Tactic[Truncation.Error] )
     :   (Stream[Data] over Credit)^ =
 
       import codepages.asciiCodepage
@@ -852,7 +856,7 @@ object Http:
       val (head, chunked) = framing(response, version)
 
       // Materialize successive blocks off a pull endpoint as a chunk iterator.
-      def pulls(endpoint: (Stream[Data] over Credit)^): Iterator[Data]^{endpoint} =
+      def pulls(consume endpoint: (Stream[Data] over Credit)^): Iterator[Data]^ =
         val block = buffering.capacity(Substrate.Bytes)
 
         Iterator.continually:
@@ -878,7 +882,7 @@ object Http:
 
           result
 
-        . takeWhile(_.present).flatMap(_.lay(Iterator())(Iterator(_)))
+        . keep(_.present).flatMap(_.lay(Nil)(List(_)))
 
       def bodyBytes: Iterator[Data]^ =
         if !includeBody then Iterator.empty
@@ -888,7 +892,7 @@ object Http:
           case Body.Fixed(data) => Iterator(data)
 
           case Body.Flowing(source) =>
-            if chunked then pulls(source()).flatMap(frame) ++ Iterator(t"0\r\n\r\n".in[Data])
+            if chunked then pulls(source()).flatMap(frame).concat(Iterator(t"0\r\n\r\n".in[Data]))
             else pulls(source())
 
       if !includeBody then Stream(head) else response.body match
@@ -898,7 +902,7 @@ object Http:
         case _ =>
           // Hoisted: a by-name `++` operand may not mint a fresh capability.
           val chunks = bodyBytes
-          Stream(Iterator(head) ++ chunks)
+          Stream(Iterator(head).concat(chunks))
 
     // The serialized head alone — the framing headers exactly as `serialize` writes them —
     // for a server that delivers a fixed body straight from the handler's own frozen
@@ -1172,8 +1176,9 @@ object Http:
       val cursorRef: AnyRef = cursor.asInstanceOf[AnyRef]
 
       def remainder(): Http.Body =
-        val spring: Spring[Data]^ =
-          () => streamOf(cursorRef.asInstanceOf[Cursor[Data, {}]^])
+        val spring: Spring[Data]^ = new Spring[Data]:
+          def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+            streamOf(cursorRef.asInstanceOf[Cursor[Data, {}]^])
 
         // [live-view] pure client Response body over live cursor
         Http.Body.Flowing(caps.unsafe.unsafeAssumePure(spring))
@@ -1181,15 +1186,16 @@ object Http:
       def framed(fixed: Optional[Int]): Http.Body =
         var stream0: Optional[AnyRef] = Unset
 
-        val spring: Spring[Data]^ = () =>
-          if stream0.absent then
-            stream0 =
-              fixed.lay(Request.chunkedBody(cursorRef.asInstanceOf[Cursor[Data, {}]^])):
-                length => Request.fixedBody(cursorRef.asInstanceOf[Cursor[Data, {}]^], length)
+        val spring: Spring[Data]^ = new Spring[Data]:
+          def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+            if stream0.absent then
+              stream0 =
+                fixed.lay(Request.chunkedBody(cursorRef.asInstanceOf[Cursor[Data, {}]^])):
+                  length => Request.fixedBody(cursorRef.asInstanceOf[Cursor[Data, {}]^], length)
 
-              . asInstanceOf[AnyRef]
+                . asInstanceOf[AnyRef]
 
-          stream0.asInstanceOf[(Stream[Data] over Credit)^]
+            stream0.asInstanceOf[(Stream[Data] over Credit)^]
 
         // [live-view] pure client Response body over live cursor
         Http.Body.Flowing(caps.unsafe.unsafeAssumePure(spring))
@@ -1244,7 +1250,7 @@ object Http:
 
     // The successful response's body as a single-owner pull endpoint (explicit
     // `memoize` replaces the former implicit whole-body caching).
-    def successBody: Optional[(Stream[Data] over Credit)^] =
+    def successBody(using Tactic[Truncation.Error]): Optional[(Stream[Data] over Credit)^] =
       if status.category != Http.Status.Category.Successful then Unset else body.stream
 
     def receive[body](using receivable: (body is Receivable)^): body =
@@ -1401,7 +1407,10 @@ object Http:
 
                   val nextBody: AnyRef =
                     if nextMethod == method then bodyRef else
-                      val empty: Spring[Data] = () => Http.emptyBody()
+                      val empty: Spring[Data] = new Spring[Data]:
+                        def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                          Http.emptyBody()
+
                       empty.asInstanceOf[AnyRef]
 
                   loop(nextUri, nextMethod, nextBody, remaining - 1)

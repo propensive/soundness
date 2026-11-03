@@ -32,9 +32,7 @@
                                                                                                   */
 package aviation
 
-import anticipation.*
 import prepositional.*
-import spectacular.*
 import symbolism.*
 
 // The twelve months of the Persian (Solar Hijri) calendar: the first six of 31 days, the next five

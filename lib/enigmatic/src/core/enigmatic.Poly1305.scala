@@ -155,10 +155,10 @@ object Poly1305:
 
   // A little-endian 32-bit word at `offset`, as an unsigned `Long`.
   private def le32(bytes: scala.Array[Byte], offset: Int): Long =
-    (bytes(offset) & 0xffL)
-    | ((bytes(offset + 1) & 0xffL) << 8)
-    | ((bytes(offset + 2) & 0xffL) << 16)
-    | ((bytes(offset + 3) & 0xffL) << 24)
+    (bytes(offset) & 0xffL) |
+      ((bytes(offset + 1) & 0xffL) << 8) |
+      ((bytes(offset + 2) & 0xffL) << 16) |
+      ((bytes(offset + 3) & 0xffL) << 24)
 
   private def put32(bytes: scala.Array[Byte]^, offset: Int, value: Long): Unit =
     bytes(offset) = value.toByte

@@ -34,8 +34,6 @@ package turbulence
 
 import java.util.concurrent as juc
 
-import scala.caps
-
 import anticipation.*
 import prepositional.*
 import rudiments.reverse

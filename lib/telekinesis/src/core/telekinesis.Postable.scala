@@ -39,7 +39,6 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import distillate.*
-import fulminate.*
 import gesticulate.*
 import gossamer.*
 import hieroglyph.*

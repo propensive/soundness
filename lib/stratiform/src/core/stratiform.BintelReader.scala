@@ -36,7 +36,6 @@ import scala.caps
 
 import anticipation.*
 import contingency.*
-import vacuous.*
 
 object BintelReader:
   // Only stratiform's read path (`Bintel.parse`) constructs readers, so the

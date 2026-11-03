@@ -37,16 +37,12 @@ import scala.caps
 
 import anticipation.*
 import contingency.*
-import denominative.*
 import distillate.*
-import gigantism.*
 import gossamer.*
 import hellenism.*
 import hypotenuse.*
 import prepositional.*
-import rudiments.*
 import soundness.{call, dispose}
-import spectacular.*
 import turbulence.*
 import urticose.*
 import vacuous.*
@@ -88,11 +84,8 @@ package socketBackends:
     private def network(): Wasm.Handle of "network" =
       Foreign["instance-network", Wit].`instance-network`.call[Wasm.Handle of "network"]()
 
-    // Builds an `ip-socket-address` from a dotted-quad host and port. Only IPv4 literals are
-    // handled; a host that is not a literal address (needing DNS) raises.
-    private def address(host: Text, port: Int) =
-      val ip: Ipv4 = unsafely(host.as[Ipv4])
-
+    // Builds an `ip-socket-address` from an IPv4 address and port.
+    private def address(ip: Ipv4, port: Int) =
       val octets =
         ( U8(ip.byte0.toByte.bits), U8(ip.byte1.toByte.bits),
           U8(ip.byte2.toByte.bits), U8(ip.byte3.toByte.bits) )
@@ -112,12 +105,14 @@ package socketBackends:
     // Opens a TCP connection to `host:port` and drives `start-connect` to completion, blocking on
     // the socket's pollable. Returns the connection's stream halves and the socket handle.
     private def connect(host: Text, port: Int)(using Tactic[Socket.Error]): WasiExchange =
+      // Only IPv4 literals are handled; a host that is not one (needing DNS) is unresolvable.
+      val ip: Ipv4 = safely(host.as[Ipv4]).or(abort(Socket.Error(Socket.Error.Reason.Dns)))
       val net = network()
       val socketHandle = createSocket()
       val socket: Foreign of "tcp-socket" from Wit = socketHandle
 
       try
-        socket.`start-connect`(net, address(host, port)).call[Unit]()
+        socket.`start-connect`(net, address(ip, port)).call[Unit]()
         await(socketHandle)
 
         val (input, output) =
@@ -127,7 +122,7 @@ package socketBackends:
         WasiExchange(input, output, socketHandle)
       catch case error: Wasm.Error =>
         socketHandle.dispose()
-        abort(Socket.Error(Socket.Error.Reason.Accept))
+        abort(Socket.Error(Socket.Error.Reason.Connect))
 
     // Blocks until the socket is ready for the next step of a `start-`/`finish-` operation.
     private def await(socketHandle: Wasm.Handle of "tcp-socket"): Unit =
@@ -215,22 +210,27 @@ package socketBackends:
 
     //── Stream server (TCP; Unix-domain unsupported) ─────────────────────────────────────────────
     def listenTcp(port: Tcp.Port, interface: Optional[MacAddress], options: List[Socket.Option])
-    :   Wasm.Handle of "tcp-socket" =
+    :   Wasm.Handle of "tcp-socket" raises Bind.Error =
 
-      unsafely:
-        val net = network()
-        val socketHandle = createSocket()
-        val socket: Foreign of "tcp-socket" from Wit = socketHandle
-        socket.`start-bind`(net, address(t"0.0.0.0", port.number)).call[Unit]()
+      val net = network()
+      val socketHandle = createSocket()
+      val socket: Foreign of "tcp-socket" from Wit = socketHandle
+
+      try
+        socket.`start-bind`(net, address(Ipv4(0, 0, 0, 0), port.number)).call[Unit]()
         socket.`finish-bind`.call[Unit]()
         socket.`start-listen`.call[Unit]()
         socket.`finish-listen`.call[Unit]()
-        socketHandle
+      catch case error: Wasm.Error =>
+        socketHandle.dispose()
+        abort(Bind.Error(Bind.Error.Reason.AddressUnavailable))
+
+      socketHandle
 
     def listenDomain(address: DomainSocket, options: List[Socket.Option])
-    :   Wasm.Handle of "tcp-socket" =
+    :   Wasm.Handle of "tcp-socket" raises Bind.Error =
 
-      unsafely(abort(Socket.Error(Socket.Error.Reason.Accept)))
+      abort(Bind.Error(Bind.Error.Reason.Unsupported))
 
     def accept(socketHandle: Wasm.Handle of "tcp-socket"): Duplex raises Socket.Error =
       val socket: Foreign of "tcp-socket" from Wit = socketHandle
@@ -298,17 +298,19 @@ package socketBackends:
       ( endpoint:  Endpoint[Tcp.Port],
         interface: Optional[MacAddress],
         options:   List[Socket.Option] )
-    :   WasiExchange =
+    :   WasiExchange raises Socket.Error =
 
-      unsafely(connect(endpoint.remote, endpoint.port.number))
+      connect(endpoint.remote, endpoint.port.number)
 
     def dialTcpPort(port: Tcp.Port, interface: Optional[MacAddress], options: List[Socket.Option])
-    :   WasiExchange =
+    :   WasiExchange raises Socket.Error =
 
-      unsafely(connect(t"127.0.0.1", port.number))
+      connect(t"127.0.0.1", port.number)
 
-    def dialDomain(address: DomainSocket, options: List[Socket.Option]): WasiExchange =
-      unsafely(abort(Socket.Error(Socket.Error.Reason.Accept)))
+    def dialDomain(address: DomainSocket, options: List[Socket.Option])
+    :   WasiExchange raises Socket.Error =
+
+      abort(Socket.Error(Socket.Error.Reason.Unsupported))
 
     def request(exchange: WasiExchange, consume input: (Stream[Data] over Credit)^): Unit =
       drain(exchange.output, input)
@@ -329,12 +331,14 @@ package socketBackends:
       ( endpoint:  Endpoint[Tcp.Port],
         interface: Optional[MacAddress],
         options:   List[Socket.Option] )
-    :   Duplex =
+    :   Duplex raises Socket.Error =
 
-      duplexOf(unsafely(connect(endpoint.remote, endpoint.port.number)))
+      duplexOf(connect(endpoint.remote, endpoint.port.number))
 
-    def duplexDomain(address: DomainSocket, options: List[Socket.Option]): Duplex =
-      duplexOf(unsafely(abort(Socket.Error(Socket.Error.Reason.Accept))))
+    def duplexDomain(address: DomainSocket, options: List[Socket.Option])
+    :   Duplex raises Socket.Error =
+
+      abort(Socket.Error(Socket.Error.Reason.Unsupported))
 
     //── Fire-and-forget datagram courier (unsupported on WASI for now) ────────────────────────────
     def routeUdp

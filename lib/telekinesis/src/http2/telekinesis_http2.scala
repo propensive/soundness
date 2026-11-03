@@ -41,13 +41,11 @@ import scala.caps
 import anticipation.*
 import coaxial.*
 import contingency.*
+import fulminate.*
 import gigantism.*
 import gossamer.*
 import parasite.*
-import prepositional.*
-import rudiments.*
 import spectacular.*
-import turbulence.*
 import urticose.*
 import vacuous.*
 import zephyrine.*
@@ -81,8 +79,10 @@ extends Sessional uses parasite.threads:
       val tcpPort: Tcp.Port = safely(Port[Tcp](port)).or(abort(Connect.Error(Unknown)))
 
       val duplex: Duplex =
-        try backend.duplexTcp(Endpoint(host.show, tcpPort), Unset, options.values.to(List)) catch
-          case error: ji.IOException => abort(Connect.Error(Unknown))
+        mitigate:
+          case error: Socket.Error => socketConnectError(error)
+
+        . protect(backend.duplexTcp(Endpoint(host.show, tcpPort), Unset, options.values.to(List)))
 
       try lambda(using Sessions.Sequential(duplex)) finally duplex.close()
 
@@ -100,24 +100,23 @@ extends Sessional uses parasite.threads:
 
             // The connection's reader/writer daemons live under a session-scoped
             // supervisor: nothing outlives the lambda.
-            try
+            mitigate:
+              case error: Http2.Error => Connect.Error(Unknown)(using error.diagnostics)
+              case error: Async.Error => Connect.Error(Unknown)(using error.diagnostics)
+
+            . protect:
               // The session's tactic and the lambda share only the session-scoped
               // connection; no aliased writer.
               // [by-name-receiver] session tactic and lambda share the connection
               scala.caps.unsafe.unsafeAssumeSeparate:
-                unsafely:
-                  supervise:
-                    val connection = Http2.Connection(duplex)
+                supervise:
+                  val connection = Http2.Connection(duplex)
 
-                    try
-                      connection.start()
-                      lambda(using Sessions.Multiplexed(connection, authority))
+                  try
+                    connection.start()
+                    lambda(using Sessions.Multiplexed(connection, authority))
 
-                    finally connection.close()
-
-            catch
-              case error: Http2.Error => abort(Connect.Error(Unknown))
-              case error: Async.Error => abort(Connect.Error(Unknown))
+                  finally connection.close()
 
           case _ =>
             lambda(using Sessions.Sequential(duplex))
@@ -149,20 +148,21 @@ private[telekinesis] def secureConnect(host: Host, port: Int)
 
   val alpn: Tls = Tls(tls.context, tls.verify, List(t"h2", t"http/1.1"), tls.versions)
 
-  try
+  mitigate:
+    case error: Socket.Error => socketConnectError(error)
+
+  . protect:
     SecureEndpoint.connectable(using online)(using options, alpn)
     . connect(SecureEndpoint(host.show, port), Unset)
-  catch
-    case error: jns.SSLHandshakeException      => abort(Connect.Error(Ssl(Handshake)))
-    case error: jns.SSLProtocolException       => abort(Connect.Error(Ssl(Protocol)))
-    case error: jns.SSLPeerUnverifiedException => abort(Connect.Error(Ssl(Peer)))
-    case error: jns.SSLKeyException            => abort(Connect.Error(Ssl(Key)))
-    case error: jn.UnknownHostException        => abort(Connect.Error(Dns))
 
-    case error: jn.ConnectException =>
-      error.getMessage() match
-        case "Connection refused"   => abort(Connect.Error(Refused))
-        case "Connection timed out" => abort(Connect.Error(Timeout))
-        case _                      => abort(Connect.Error(Unknown))
+// The `Connect.Error` for a connection the socket backend could not make, by its reason.
+private[telekinesis] def socketConnectError(error: Socket.Error): Connect.Error =
+  import Connect.Error.Reason.*
+  given Diagnostics = error.diagnostics
 
-    case error: ji.IOException => abort(Connect.Error(Unknown))
+  error.reason match
+    case Socket.Error.Reason.Dns       => Connect.Error(Dns)
+    case Socket.Error.Reason.Refused   => Connect.Error(Refused)
+    case Socket.Error.Reason.Timeout   => Connect.Error(Timeout)
+    case Socket.Error.Reason.Handshake => Connect.Error(Ssl(Ssl.Reason.Handshake))
+    case _                             => Connect.Error(Unknown)

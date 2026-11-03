@@ -38,7 +38,6 @@ import gossamer.*
 import hieroglyph.*
 import obligatory.*
 import prepositional.*
-import rudiments.*
 import zephyrine.*
 
 // The Debug Adapter Protocol's base framing: `Content-Length`-framed JSON over a byte channel —
@@ -55,11 +54,11 @@ private[vivisection] object DapTransport:
     t"Content-Length: ${payload.length}\r\n\r\n$body".in[Data]
 
   // Reads framed messages from a channel until it is exhausted, handing each to `receive`.
+  // A malformed frame is reported through the tactic the reader supplies.
   def pump(consume source: (Stream[Data] over Credit)^, observer: Text => Unit)
     ( receive: Text => Unit )
+    ( using Tactic[Framing.Error] )
   :   Unit =
-
-    import strategies.throwUnsafely
 
     // `chunks` is the kernel's chunk-at-a-time terminal, and already the `Iterator` `frames`
     // deframes over — the traversal the memoizing `Chain` bridge gave, retaining nothing.

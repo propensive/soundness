@@ -40,7 +40,6 @@ import scala.compiletime
 import scala.language.adhocExtensions
 
 import anticipation.*
-import contingency.*
 import denominative.*
 import hieroglyph.*
 import hypotenuse.*
@@ -50,7 +49,6 @@ import symbolism.*
 import vacuous.*
 import zephyrine.*
 import LineSeparation.*
-import abstractables.epochMillisecondsAbstractable
 
 inline def more[value](using value: value aka "more"): value =
   // The explicit import outranks the deindexing `apply`, which would otherwise shadow the

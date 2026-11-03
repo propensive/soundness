@@ -443,7 +443,10 @@ object Mdns:
         loans -= 1
 
         if loans > 0 then Unset else
-          val ending = live.let: transport => handles.let { handles2 => (transport, handles2) }
+          val ending =
+            live.let: transport =>
+              handles.let: handles2 => (transport, handles2)
+
           live = Unset
           handles = Unset
           ending
@@ -455,10 +458,12 @@ object Mdns:
         handles2.receivers.each: (_, receiver) => receiver.asInstanceOf[Task[Unit]].attend()
         handles2.sweeper.asInstanceOf[Task[Unit]].attend()
 
-    // The transport, for a send within a loan, which is when one is always open.
-    private def transport: Transport = mutex(live.or(unsafely(open())))
+    // The open transport, if any: there is one within a loan, and none after the last release,
+    // when a message still in flight has nothing to be sent on.
+    private def transport: Optional[Transport] = mutex(live)
 
-    private def send(message: Dns.Message): Unit = safely(transport.send(message.in[Data]))
+    private def send(message: Dns.Message): Unit =
+      transport.let: transport => safely(transport.send(message.in[Data]))
 
     private def query(questions: List[Dns.Question], known: List[Dns.Record] = Nil): Unit =
       send(Dns.Message(tag, Dns.Flags(), questions, known))
@@ -510,7 +515,8 @@ object Mdns:
 
         if legacy then
           val response = respond(answers).copy(id = message.id)
-          safely(transport.reply(packet.sender, packet.port, response.in[Data]))
+          transport.let: transport =>
+            safely(transport.reply(packet.sender, packet.port, response.in[Data]))
         else if defence || answers.all(unique) then
           send(respond(answers))
         else
@@ -805,8 +811,8 @@ object Mdns:
       ( using monitor: Monitor^, probate: SharedProbate, tactic: Tactic[Discovery.Error] )
     :   Unit =
 
-      if !claim.withdrawn
-      then establish(claim, transport, 0)(using monitor, probate, tactic, Discovery.Activity.silent)
+      if !claim.withdrawn then transport.let: transport =>
+        establish(claim, transport, 0)(using monitor, probate, tactic, Discovery.Activity.silent)
 
     // ── Browsing ──────────────────────────────────────────────────────────────────────────────
     // Instances already known are reported at once; then the service type is queried, and
@@ -826,6 +832,7 @@ object Mdns:
           record.rdata.absolve match
             case Dns.Rdata.Ptr(target) => Discovery.Instance.parse(target).let(List(_)).or(Nil)
             case _                     => Nil
+
         . to[Set]
 
       val browsing = Discovery.Browsing(relay, () => instances())

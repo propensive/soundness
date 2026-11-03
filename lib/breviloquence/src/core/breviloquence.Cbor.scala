@@ -220,9 +220,8 @@ trait Cbor2:
             val key: Text = renames(label).or(label)
 
             def decodeNow(): field =
-              values.stdlib.get(key.s) match
-                case Some(value) => context.decoded(new Cbor(value))
-                case None        => default.or(context.decoded(new Cbor(Ast(Unset))))
+              values.at(key.s).lay(default.or(context.decoded(new Cbor(Ast(Unset))))): value =>
+                context.decoded(new Cbor(value))
 
             if !active then Venture(decodeNow())
             else
@@ -333,8 +332,11 @@ trait Cbor1 extends Cbor2:
         // A single in-memory block — the common case — is read in place; the general
         // path pulls the chain's cells as the parser needs them.
         bytes match
-          case block #:: rest if rest.nil => parseDirect(CborParser(block), parsable).asInstanceOf[value in Cbor]
-          case _                          => parseDirect(CborParser(bytes), parsable).asInstanceOf[value in Cbor]
+          case block #:: rest if rest.nil =>
+            parseDirect(CborParser(block), parsable).asInstanceOf[value in Cbor]
+
+          case _ =>
+            parseDirect(CborParser(bytes), parsable).asInstanceOf[value in Cbor]
 
       // The stream crosses as a neutral reference (see `CborParser.aggregable`).
       override def accept(stream: (Stream[Data] over Credit)^): value in Cbor =
@@ -773,7 +775,7 @@ object Cbor extends Cbor1, Dynamic:
           Array.empty[Cbor.Ast]
 
   final class Tag(val tag: Long, val value: Any):
-    override def hashCode: Int = (tag.hashCode*31)^value.hashCode
+    override def hashCode: Int = (tag.## * 31)^value.##
 
     override def equals(that: Any): Boolean = that match
       case that: Tag => tag == that.tag && value == that.value
@@ -783,19 +785,17 @@ object Cbor extends Cbor1, Dynamic:
   // stack of the nodes still to write, so serialization pauses between blocks without a fiber.
   // A block ends at the first node boundary past the `Buffering` capacity, so one long string
   // may overrun it. The bytes are those `.encode` writes.
-  def emit(cbor: Cbor)(using buffering: Buffering): Iterator[Data] =
+  def emit(cbor: Cbor)(using buffering: Buffering): Iterator[Data]^ =
     val block = buffering.capacity(summon[Data is Addressable].substrate)
 
     new Iterator[Data]:
-      // [stdlib-iterator] the walk's stack in an anonymous Iterator
-      @caps.unsafe.untrackedCaptures
       private var pending: List[Ast] = List(cbor.root)
+      private var block0: Data = Array.empty[Byte]
 
-      def hasNext: Boolean = !pending.nil
+      update def advance(): Boolean = !pending.nil && { block0 = emitBlock(); true }
+      def current: Data = block0
 
-      def next(): Data =
-        if pending.nil then Iterator.empty.next()
-
+      private update def emitBlock(): Data =
         Producer.collect[Data](block): out =>
           var size = 0
 
@@ -1217,7 +1217,7 @@ object Cbor extends Cbor1, Dynamic:
     values =>
       val roots = traversable.traverse(values).map: value => encodable.encoded(value).root: Any
 
-      ast(Ast.array(Array.from(roots).asInstanceOf[Array[Any]^{}]))
+      ast(Ast.array(roots.to[List].to[Array]))
 
   given collectionDecodable: [collection <: Iterable, element]
   =>  ( factory: sc.Factory[element, collection[element]], tactic:  Tactic[Cbor.Error] )
@@ -1540,7 +1540,7 @@ class Cbor(private[breviloquence] val root: Cbor.Ast) extends Dynamic derives Ca
       case -1    => Cbor.ast(Cbor.Ast(Unset))
       case index => Cbor(root.value(index))
 
-  override def hashCode: Int = root.hashCode
+  override def hashCode: Int = root.##
 
   override def equals(right: Any): Boolean = right match
     case right: Cbor => recur(root, right.root)

@@ -4,27 +4,24 @@
 ┃                                                   ╭───╮                                          ┃
 ┃                                                   │   │                                          ┃
 ┃                                                   │   │                                          ┃
-┃   ╭───────╮╭─────────╮╭───╮ ╭───╮╭───╮╭─────────╮│   │╭───╮╭─────────╮╭─────────╮╭─────────╮   ┃
-┃   │   ╭───╯│   ╭─╮   ││   │ │   ││   ││   ╭─╮   ││   ││   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮   │   ┃
-┃   │   ╰───╮│   │ │   ││   │ │   ││   ││   │ │   ││   ││   ││   ╰─╯   ││   ╰─╯   ││   ╰─╯   │   ┃
-┃   ╰───╮   ││   │ │   ││   │ │   ││   ││   │ │   ││   ││   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮   │   ┃
-┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   ││   ╰─╯   ││   ││   ││   │ │   ││   │ │   ││   │ │   │   ┃
-┃   ╰───────╯╰─────────╯╰────╮   ╭╯╰───╯╰─────────╯╰───╯╰───╯╰───╯ ╰───╯╰───╯ ╰───╯╰───╯ ╰───╯   ┃
-┃                       ╭─╮  │   │                                                                 ┃
-┃                       │ ╰──╯   │                                                                 ┃
-┃                       ╰────────╯                                                                 ┃
+┃   ╭───────╮╭─────────╮╭───╮ ╭───╮╭───╮╌────╮╭────╌┤   │╭───╮╌────╮╭────────╮╭───────╮╭───────╮   ┃
+┃   │   ╭───╯│   ╭─╮   ││   │ │   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮  ││   ╭───╯│   ╭───╯   ┃
+┃   │   ╰───╮│   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╰─╯  ││   ╰───╮│   ╰───╮   ┃
+┃   ╰───╮   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╭────╯╰───╮   │╰───╮   │   ┃
+┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
+┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
 ┃    Soundness, version 0.64.0.                                                                    ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
 ┃                                                                                                  ┃
-┃      https://soundness.dev/                                                                      ┃
+┃        https://soundness.dev/                                                                    ┃
 ┃                                                                                                  ┃
 ┃    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file     ┃
 ┃    except in compliance with the License. You may obtain a copy of the License at                ┃
 ┃                                                                                                  ┃
-┃      http://www.apache.org/licenses/LICENSE-2.0                                                  ┃
+┃        https://www.apache.org/licenses/LICENSE-2.0                                               ┃
 ┃                                                                                                  ┃
 ┃    Unless required by applicable law or agreed to in writing,  software distributed under the    ┃
 ┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
@@ -70,11 +67,11 @@ object Launcher:
   // Read through ethereal's own classloader, since the resource is in its jar and the first
   // thread to need the schema may carry any context classloader.
   lazy val schemaText: Text =
-    import strategies.throwUnsafely
     import charsets.utf8Charset
     import textSanitizers.strictSanitizer
     given classloader: Classloader = Classloader[Launcher.type]
-    cp"/ethereal/ethereal-launcher.tel".read[Text]
+    // The resource is in ethereal's own jar; its absence is a packaging error.
+    unsafely(cp"/ethereal/ethereal-launcher.tel".read[Text])
 
   // A file descriptor the client holds, as `init` advertises it: its number, `r`/`w`/`rw`,
   // its kind (`file`, `pipe`, `tty`, `socket`, `other`) and, for a regular file, its real path.
@@ -128,15 +125,12 @@ object Launcher:
     case Exited(code: Int)
 
   // Parsed once; a malformed schema text is a programming error, not a runtime condition.
-  lazy val schema: Tels =
-    import strategies.throwUnsafely
-    Tels.Validation.validate(schemaText.read[Tel].as[Tels])
+  lazy val schema: Tels = unsafely(Tels.Validation.validate(schemaText.read[Tel].as[Tels]))
 
   // The §8 palimpsest signature of the schema, carried by every document on the wire and
   // compared byte-for-byte on receipt.
   lazy val signature: Data =
-    import strategies.throwUnsafely
-    SchemaSignature.fromDocument(schemaText.read[Tel], Tels.Axiom.tels)
+    unsafely(SchemaSignature.fromDocument(schemaText.read[Tel], Tels.Axiom.tels))
 
   // The variant indices of `Message` in the document root's keyword order — a single
   // `SelectRef`, so its variants occupy indices 0 to 14 in declaration order.
@@ -265,9 +259,8 @@ object Launcher:
   // A message as one framed BinTEL document (§6.1): magic, length, signature, body. A `data`
   // document is framed by hand: its bytes go straight into the frame, with no BASE-256 text
   // in between, since every chunk of every stream passes this way.
-  def encode(message: Message): Data =
-    import strategies.throwUnsafely
-
+  // Library-built elements against the library's own schema: a frame cannot fail to encode.
+  def encode(message: Message): Data = unsafely:
     message match
       case Message.Data(stream, chunk) => Bintel.frame(dataBody(stream, chunk), signature)
 
@@ -315,10 +308,8 @@ object Launcher:
 
     document.root match
       case Tel.Element.Node(_, _, Array(Tel.Element.Node(index, _, children))) =>
-        def optional(field: Int): Optional[Text] = children.stdlib.collectFirst:
+        def optional(field: Int): Optional[Text] = children.reap:
           case Tel.Element.Value(`field`, _, text) => text
-
-        . optional
 
         def text(field: Int): Text = optional(field).or(abort(Launcher.Mismatch()))
 
@@ -337,10 +328,8 @@ object Launcher:
         def descriptors: List[Descriptor] =
           children.to[List].sweep:
             case Tel.Element.Node(16, _, fields) =>
-              def field(index: Int): Optional[Text] = fields.stdlib.collectFirst:
+              def field(index: Int): Optional[Text] = fields.reap:
                 case Tel.Element.Value(`index`, _, text) => text
-
-              . optional
 
               Descriptor
                 ( field(0).or(abort(Launcher.Mismatch())).as[Int],
@@ -348,20 +337,16 @@ object Launcher:
                   field(2).or(abort(Launcher.Mismatch())),
                   field(3) )
 
-
         def raws: List[Raw] =
           children.to[List].sweep:
             case Tel.Element.Node(17, _, fields) =>
-              def field(index: Int): Optional[Text] = fields.stdlib.collectFirst:
+              def field(index: Int): Optional[Text] = fields.reap:
                 case Tel.Element.Value(`index`, _, text) => text
-
-              . optional
 
               Raw
                 ( field(0).or(abort(Launcher.Mismatch())),
                   field(1).let(_.as[Int]),
                   Base256.decodeStrict(field(2).or(abort(Launcher.Mismatch()))) )
-
 
         index.or(-1) match
           case Variant.init =>

@@ -37,7 +37,7 @@ export
   . { Aggregable, condense,
       delineate, Document, Documentary, drop, Eof, inputStream,
       Line, LineSeparation, load, Loadable, more, read, Relay, shred, source,
-      Readable, Sink, Streamable, Truncation,
+      Readable, Sink, Streamable,
       StreamOutputStream, strict, take, Writable, writeTo, flow }
 
 package lineSeparation:

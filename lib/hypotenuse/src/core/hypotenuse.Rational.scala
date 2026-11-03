@@ -32,8 +32,6 @@
                                                                                                   */
 package hypotenuse
 
-import scala.language.experimental.into
-
 import anticipation.*
 import fulminate.*
 

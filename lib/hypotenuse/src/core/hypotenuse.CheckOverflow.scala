@@ -32,7 +32,7 @@
                                                                                                   */
 package hypotenuse
 
-import java.lang.{Integer as JInt, Long as JLong, Short as JShort, Byte as JByte}
+import java.lang.{Integer as JInt, Long as JLong}
 
 import contingency.*
 import prepositional.*

@@ -52,7 +52,8 @@ object Invertible:
   def generic[self, node](nodal: self is Nodal by node)
   :   self is Invertible by node to Digraph[node] =
 
-    graph => Digraph.of(Search.transpose(nodal.nodes(graph), nodal.successors(graph, _)))
+    graph =>
+      Digraph.of(Search.transpose(nodal.nodes(graph).stdlib, nodal.successors(graph, _).stdlib))
 
 trait Invertible extends Typeclass.Pure, Operable, Resultant:
   def invert(self: Self): Result

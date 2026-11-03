@@ -32,12 +32,10 @@
                                                                                                   */
 package serpentine
 
-import scala.collection.immutable.{List, Nil, ::}
+import scala.collection.immutable.{List, Nil}
 import scala.quoted.*
 
 import anticipation.*
-import denominative.*
-import fulminate.*
 import gigantism.*
 import prepositional.*
 import vacuous.*

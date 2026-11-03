@@ -81,15 +81,14 @@ object Diagnostic:
 
           if node.children.nil then node
           else if !seen.add(node)
-          then node.rebuild(node.label.lay(t"as above")(label => t"$label, as above"), Nil)
+          then node.rebuild(node.label.lay(t"as above") { label => t"$label, as above" }, Nil)
           else node.rebuild(node.label, node.children.map(collapse))
 
         val collapsed = children.map(collapse)
         val omitted = total - limit
 
         val ending =
-          if omitted <= 0 then e"\n"
-          else e"\n \e[38;5;243m… $omitted more\e[0m\n"
+          if omitted <= 0 then e"\n" else e"\n \e[38;5;243m… $omitted more\e[0m\n"
 
         TreeDiagram[Diagnostic](collapsed*).render(line).keep(limit)
         . join

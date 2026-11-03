@@ -34,8 +34,6 @@ package zephyrine
 
 import java.util.concurrent.atomic as juca
 
-import scala.caps
-
 import rudiments.*
 
 // A bounded single-producer/single-consumer pool of spent blocks, the return

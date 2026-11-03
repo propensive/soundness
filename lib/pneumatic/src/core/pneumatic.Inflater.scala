@@ -34,9 +34,6 @@ package pneumatic
 
 import scala.caps
 
-import rudiments.*
-import vacuous.*
-
 import Flate.*
 import FlateTables.*
 

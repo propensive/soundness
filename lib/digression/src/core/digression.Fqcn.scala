@@ -54,11 +54,16 @@ object Fqcn:
     char >= 'A' && char <= 'Z' || char >= 'a' && char <= 'z' || char >= '0' && char <= '9' ||
       char == '_' || char == '$'
 
+  // For the `fqcn"…"` interpolator, which has validated the name at expansion: the gate asserts
+  // that, so the re-parse of the canonical form cannot fail.
+  def unsafeFrom(name: Text)(using erased unsafe: Unsafe): Fqcn = unsafely(Fqcn(name))
+
   def apply(name: Text): Fqcn raises Fqcn.Error =
     val parts = List.from(name.s.split("\\.").nn.iterator.map(_.nn.tt))
 
     parts.each: part =>
       if part.s.length == 0 then raise(Fqcn.Error(name, Fqcn.Error.Reason.EmptyName))
+
       if digression.internal.javaKeywords.has(part.s)
       then raise(Fqcn.Error(name, Fqcn.Error.Reason.JavaKeyword(part)))
 
@@ -75,6 +80,7 @@ object Fqcn:
   private[digression] def join(parts: List[Text]): Text =
     parts.fold(StringBuilder()): (builder, part) =>
       (if builder.isEmpty then builder else builder.append('.')).append(part.s)
+
     . toString.tt
 
   given encodable: Fqcn is Encodable in Text = _.text

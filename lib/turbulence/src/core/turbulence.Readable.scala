@@ -91,7 +91,7 @@ object Readable extends Readable1:
     identity(_)
 
   given sizedDataText: [length <: Int] => (decoder: Charset)
-  =>  ((Data & Sized[length]) is Readable to Text) =
+  =>  ( (Data & Sized[length]) is Readable to Text ) =
     decoder.decoded(_)
 
   given dataToData: [source, result]

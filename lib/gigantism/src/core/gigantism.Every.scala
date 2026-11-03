@@ -32,7 +32,7 @@
                                                                                                   */
 package gigantism
 
-import scala.collection.immutable.{List, Nil, ::}
+import scala.collection.immutable.{List, Nil}
 import scala.quoted.*
 
 import dotty.tools.dotc.*

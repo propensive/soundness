@@ -39,7 +39,6 @@ import gossamer.*
 import hypotenuse.*
 import prepositional.*
 import spectacular.*
-import symbolism.*
 
 object internal:
   private given decimalizer: Decimalizer = Decimalizer(decimalPlaces = 6)

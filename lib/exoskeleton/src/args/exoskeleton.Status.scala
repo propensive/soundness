@@ -33,7 +33,6 @@
 package exoskeleton
 
 import anticipation.*
-import prepositional.*
 import rudiments.*
 
 // A meaningful exit status, declared alongside the `Flag`s and `Subcommand`s it accompanies,

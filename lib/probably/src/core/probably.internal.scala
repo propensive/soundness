@@ -34,14 +34,11 @@ package probably
 
 import scala.quoted.*
 
-import dotty.tools.dotc.util as dtdu
-
 import anticipation.*
 import chiaroscuro.*
 import denominative.*
 import fulminate.*
 import gigantism.*
-import gossamer.*
 import rudiments.*
 import spectacular.*
 import vacuous.*

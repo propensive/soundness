@@ -45,7 +45,6 @@ import gigantism.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
-import symbolism.*
 import vacuous.*
 
 // Compile-time machinery for the `tel"…"` interpolator and extractor.
@@ -122,8 +121,8 @@ object internal:
       if resolved.termSymbol.isNoSymbol then resolved.typeSymbol else resolved.termSymbol
 
     def root(symbol: Symbol): Boolean =
-      symbol.isNoSymbol || symbol == defn.RootClass || symbol == defn.RootPackage
-      || symbol == defn.EmptyPackageClass
+      symbol.isNoSymbol || symbol == defn.RootClass || symbol == defn.RootPackage ||
+        symbol == defn.EmptyPackageClass
 
     // An object's class is named with a trailing `$`, which is not part of the name a user wrote.
     def enclosing(symbol: Symbol): scala.List[String] =
@@ -272,7 +271,7 @@ object internal:
 
     given Diagnostics = Diagnostics.omit
 
-    try unsafely(Telp.parse(raw.tt)) catch
+    recover:
       case error: Telp.Error =>
         val position =
           contextual.Interpolation.sourcePosition
@@ -281,7 +280,9 @@ object internal:
 
         halt(error.message, position)
 
-    '{unsafely(Telp.parse(${Expr(raw)}.tt))}
+    . protect(Telp.parse(raw.tt))
+
+    '{Telp.unsafeParse(${Expr(raw)}.tt)(using Unsafe)}
 
   def interpolator[parts <: Tuple: Type, origins <: Tuple: Type]
     ( insertions0: Expr[Seq[Any]] )
@@ -406,24 +407,19 @@ object internal:
         '{Tel.Compound(${keywordExpr}.tt, $atomsExpr, $remarkExpr, $childrenExpr)}
 
       def emitBlock(b: Tel.Block): Expr[Tel.Block] =
-        val comments =
-          '{Array.from(${Expr.ofList(b.comments.stdlib.map(emitComment))})}
-          . asInstanceOf[Expr[Array[Tel.Comment]^{}]]
+        val comments = Array.quoted(b.comments.map(emitComment))
 
         val tab: Expr[Optional[Tel.Tabulation]] = b.tabulation match
           case t: Tel.Tabulation => '{${emitTabulation(t)}: Optional[Tel.Tabulation]}
           case _                 => '{Unset}
 
-        val compounds =
-          '{Array.from(${Expr.ofList(b.compounds.stdlib.map(emitCompound))})}
-          . asInstanceOf[Expr[Array[Tel.Compound]^{}]]
+        val compounds = Array.quoted(b.compounds.map(emitCompound))
 
         val tbl = Expr(b.trailingBlankLines)
         '{Tel.Block($comments, $tab, $compounds, $tbl)}
 
       def emitBlocks(blocks: Array[Tel.Block]^{}): Expr[Array[Tel.Block]^{}] =
-        '{Array.from(${Expr.ofList(blocks.stdlib.map(emitBlock))})}
-        . asInstanceOf[Expr[Array[Tel.Block]^{}]]
+        Array.quoted(blocks.map(emitBlock))
 
       val directiveExpr: Expr[Optional[Text]] = document.interpreterDirective match
         case text: Text => '{${Expr(text.s)}.tt: Optional[Text]}

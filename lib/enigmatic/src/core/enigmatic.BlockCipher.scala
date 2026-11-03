@@ -39,7 +39,6 @@ import contingency.*
 import denominative.*
 import gossamer.*
 import prepositional.*
-import rudiments.*
 import vacuous.*
 import zephyrine.*
 
@@ -181,29 +180,25 @@ extends Duct[Data, Data]:
     val targetInterval: Interval = space
     val targetOffset = targetInterval.start.n0
     val targetSpace = targetInterval.size
-    val bytes = unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]])
-
-    if offset < pending.length then Duct.Progress(0, deliver(bytes, targetOffset, targetSpace))
+    if offset < pending.length then Duct.Progress(0, target.borrow(space)(deliver(_, _, _)))
     else
       val chunk = source.materialize(range)
       total += sourceLength
       pending = session.update(chunk)
       offset = 0
-      Duct.Progress(sourceLength, deliver(bytes, targetOffset, targetSpace))
+      Duct.Progress(sourceLength, target.borrow(space)(deliver(_, _, _)))
 
   override update def flush(target: Slate[Data])(space: Interval in target.type): Int =
     val targetInterval: Interval = space
     val targetOffset = targetInterval.start.n0
     val targetSpace = targetInterval.size
-    val bytes = unsafely(target.unsafeRaw.asInstanceOf[scala.Array[Byte]])
-
-    if offset < pending.length then deliver(bytes, targetOffset, targetSpace)
+    if offset < pending.length then target.borrow(space)(deliver(_, _, _))
     else if !finished then
       finished = true
       finalise(total)
       pending = session.finish()
       offset = 0
-      deliver(bytes, targetOffset, targetSpace)
+      target.borrow(space)(deliver(_, _, _))
     else
       0
 
@@ -255,8 +250,8 @@ extends Duct[Data, Data]:
         val sourceInterval: Interval = range
         val take = sourceInterval.size.min(ivSize - headerFilled)
 
-        System.arraycopy(unsafely(source.unsafeRaw.asInstanceOf[scala.Array[Byte]]),
-            sourceInterval.start.n0, header, headerFilled, take)
+        source.borrow(range): (bytes, offset, _) =>
+          System.arraycopy(bytes, offset, header, headerFilled, take)
 
         headerFilled += take
         if headerFilled == ivSize then inner = begin().asInstanceOf[CipherDuct]

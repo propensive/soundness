@@ -38,8 +38,6 @@ import anticipation.*
 import gastronomy.ProcessingPermit
 import gastronomy.Signing
 import prepositional.*
-import rudiments.*
-import vacuous.*
 
 object SymmetricKey:
   def generate[cipher <: Cipher & Symmetric]()(using cipher: cipher, cloak: Cloak^)

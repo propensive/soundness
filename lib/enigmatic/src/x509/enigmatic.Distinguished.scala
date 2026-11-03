@@ -32,8 +32,6 @@
                                                                                                   */
 package enigmatic
 
-import scala.caps
-
 import anticipation.*
 import prepositional.*
 import rudiments.*

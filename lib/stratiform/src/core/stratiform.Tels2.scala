@@ -31,6 +31,7 @@
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package stratiform
+
 import adversaria.*
 import anticipation.*
 import contingency.*
@@ -128,7 +129,7 @@ object TelSchematic:
         case _           => false
 
       val renamed: Map[Identity, Text] = clashing.bind(resolve(_, 2)).to[Map]
-      val taken: List[Text] = types.map { identity => renamed(identity).or(identity.name) }
+      val taken: List[Text] = types.map: identity => renamed(identity).or(identity.name)
       val ambiguous: List[Text] = taken.filter { name => taken.count(_ == name) > 1 }.distinct
 
       new Naming(renamed, ambiguous)
@@ -355,6 +356,7 @@ trait Tels2:
       type Self = value
       def schema(): Tels.Type = schematic.schema()
       override def polarity: Tels.Polarity = Polarity.Loose
+
       override def schema(naming: TelSchematic.Naming): Tels.Type =
         TelSchematic.schemaOf(schematic, naming)
 
@@ -386,6 +388,7 @@ trait Tels2:
       def schema(): Tels.Type = schematic.schema()
       override def polarity: Tels.Polarity = Polarity.Loose
       override def repeatable: Tels.Polarity = Polarity.Loose
+
       override def schema(naming: TelSchematic.Naming): Tels.Type =
         TelSchematic.schemaOf(schematic, naming)
 
@@ -414,6 +417,7 @@ trait Tels2:
       def schema(): Tels.Type = schematic.schema()
       override def polarity: Tels.Polarity = Polarity.Loose
       override def repeatable: Tels.Polarity = Polarity.Loose
+
       override def schema(naming: TelSchematic.Naming): Tels.Type =
         TelSchematic.schemaOf(schematic, naming)
 
@@ -442,6 +446,7 @@ trait Tels2:
       def schema(): Tels.Type = schematic.schema()
       override def polarity: Tels.Polarity = Polarity.Loose
       override def repeatable: Tels.Polarity = Polarity.Loose
+
       override def schema(naming: TelSchematic.Naming): Tels.Type =
         TelSchematic.schemaOf(schematic, naming)
 
@@ -724,7 +729,9 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
   // `SelectRef` to its select, with no use for the record, which is dropped, so the schema of a
   // type whose only sum is its root is as it was (#2323).
   private def selectSchematic
-    ( identity: Identity, variants: List[(Text, TelSchematic)], retractions: scala.List[(Text, Text)] )
+    ( identity:    Identity,
+      variants:    List[(Text, TelSchematic)],
+      retractions: scala.List[(Text, Text)] )
   :   TelSchematic over Tels.Type =
 
     new TelSchematic:

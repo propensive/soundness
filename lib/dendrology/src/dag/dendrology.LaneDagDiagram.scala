@@ -33,16 +33,13 @@
 package dendrology
 
 import scala.collection.immutable.Vector
-
 // Deliberate stdlib opt-out: these internals consume acyclicity's `Dag`, whose set algebra
 // remains on the stdlib `Set` for now.
-import scala.collection.immutable.{List, Map, Nil, Set, ::}
-
+import scala.collection.immutable.{List, Map, Nil, Set}
 import scala.collection.mutable as scm
 
 import acyclicity.*
 import anticipation.*
-import contingency.*
 import gossamer.*
 import prepositional.*
 import spectacular.*
@@ -264,7 +261,7 @@ object LaneDagDiagram:
       val verticalCount = tiles.count(_ == Vertical)
       !(onlyPassThrough && verticalCount != 1)
 
-  private def defaultWidths(rows: Iterator[List[DagTile]]): List[Int] =
+  private def defaultWidths(rows: scala.collection.Iterator[List[DagTile]]): List[Int] =
     val maxCol = rows.map(_.length).maxOption.getOrElse(0)
     List.fill(maxCol)(2)
 

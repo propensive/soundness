@@ -799,7 +799,7 @@ object Benchmarks extends Suite("streams-bench", m"Streaming benchmarks: Soundne
     suite(m"Public read vs kernel memoize (4 MB)"):
       bench(m"Soundness  Stream.memoize (kernel)")
         ( target = 1*Second, operationSize = size ):
-        '{ turbulence.Benchmarks.inputChunks.stdlib.iterator.stream.memoize.length }
+        '{ Stream(turbulence.Benchmarks.inputChunks).memoize.length }
 
       bench(m"Soundness  read[Data]")(target = 1*Second, operationSize = size):
         '{ turbulence.Benchmarks.inputChunks.read[Data].length }

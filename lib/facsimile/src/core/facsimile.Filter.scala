@@ -38,9 +38,7 @@ import denominative.*
 import gossamer.*
 import pneumatic.*
 import rudiments.*
-import turbulence.*
 import vacuous.*
-import zephyrine.*
 
 // Stream filters (ISO 32000-2 §7.4). Image codecs — DCT, JPX, CCITT, JBIG2 — are *terminal*:
 // decoding stops before them and the caller receives the still-encoded image bytes, which is

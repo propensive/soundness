@@ -34,8 +34,6 @@ package geodesy
 
 import scala.math
 
-import rudiments.*
-
 object Compass:
   val points4: Array[CardinalWind]^{} =
     Array(North, East, South, West)

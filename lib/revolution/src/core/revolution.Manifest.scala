@@ -36,12 +36,9 @@ import java.io as ji
 import java.util.jar as juj
 
 import anticipation.*
-import contingency.*
 import denominative.*
-import gossamer.*
 import prepositional.*
 import rudiments.*
-import spectacular.*
 import symbolism.*
 import turbulence.*
 import vacuous.*

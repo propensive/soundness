@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 import soundness.*
 import denominative.dysasymptotics.linearSize // the suite counts small record lists
+import soundness.sortingAlgorithms.timsort
 
 import codepages.utf8Codepage, charsets.utf8Charset, textSanitizers.strictSanitizer
 import threads.platformThreads
@@ -93,7 +94,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
 
       shredded.each: stream =>
         test(m"correct length after shredding"):
-          stream.map(_.length).stdlib.total
+          stream.map(_.length).total
         . assert(_ == 1000)
 
         test(m"correct content after shredding"):
@@ -118,13 +119,13 @@ object Tests extends Suite("streams", m"Turbulence tests"):
         bs     <- 1 to 8
       do
         test(m"length tests"):
-          val stream = Chain.from(string.in[Data].stdlib.grouped(bs).map(Array.from(_)))
+          val stream = string.in[Data].batched(bs).to[Chain]
           val result = stream.read[Text]
           result.in[Data].length
         . assert(_ == string.in[Data].length)
 
         test(m"roundtrip tests"):
-          val stream = Chain.from(string.in[Data].stdlib.grouped(bs).map(Array.from(_)))
+          val stream = string.in[Data].batched(bs).to[Chain]
           val result = stream.read[Text]
 
           result.s
@@ -154,19 +155,19 @@ object Tests extends Suite("streams", m"Turbulence tests"):
 
     object Ref:
       given textSource: Ref is Streamable by Text over Credit =
-        ref => Stream(Chain.iterator(Chain(t"abc", t"def")))
+        ref => Stream(Chain(t"abc", t"def"))
       given dataSource: Ref is Streamable by Data over Credit =
-        ref => Stream(Chain.iterator(Chain(t"abc".in[Data], t"def".in[Data])))
+        ref => Stream(Chain(t"abc".in[Data], t"def".in[Data]))
 
     case class Ref()
 
     object Ref2:
-      given Ref2 is Streamable by Text over Credit = ref => Stream(Chain.iterator(Chain(t"abc", t"def")))
+      given Ref2 is Streamable by Text over Credit = ref => Stream(Chain(t"abc", t"def"))
 
     case class Ref2()
 
     object Ref3:
-      given Ref3 is Streamable by Data over Credit = ref => Stream(Chain.iterator(Chain(t"abc".in[Data], t"def".in[Data])))
+      given Ref3 is Streamable by Data over Credit = ref => Stream(Chain(t"abc".in[Data], t"def".in[Data]))
 
     case class Ref3()
 
@@ -464,7 +465,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
         relay.put(t"two")
         relay.put(t"three")
         relay.stop()
-        List.from(relay.stream.records)
+        relay.stream.records.to[List]
       . assert(_ == List(t"one", t"two", t"three"))
 
       test(m"records already queued batch into one window"):
@@ -484,7 +485,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
       test(m"an immediately-stopped relay yields no records"):
         val relay = Relay[Text]()
         relay.stop()
-        List.from(relay.stream.records)
+        relay.stream.records.to[List]
       . assert(_ == List())
 
       test(m"records after stop are not delivered"):
@@ -492,7 +493,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
         relay.put(t"before")
         relay.stop()
         relay.put(t"after")
-        List.from(relay.stream.records)
+        relay.stream.records.to[List]
       . assert(_ == List(t"before"))
 
       test(m"records queued before draining form one batch"):
@@ -545,7 +546,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
               async:
                 for value <- 1 to 25 do relay.put(t"${index*100 + value}")
 
-          val reader = async(Set.from(relay.stream.records))
+          val reader = async(relay.stream.records.to[Set])
           producers.each(_.await())
           relay.stop()
           unsafely(reader.await())
@@ -560,7 +561,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
         val relay = Relay[Text]()
         for _ <- 1 to 100000 do relay.put(t"x")
         relay.stop()
-        List.from(relay.stream.records).size
+        relay.stream.records.to[List].size
       . assert(_ == 100000)
 
       test(m"per-producer order is preserved through the relay"):
@@ -570,7 +571,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
             for value <- 1 to 100 do relay.put(t"$value")
             relay.stop()
 
-          unsafely(async(List.from(relay.stream.records)).await())
+          unsafely(async(relay.stream.records.to[List]).await())
       . assert(_ == List.from((1 to 100)).map { value => t"$value" })
 
     suite(m"Line splitting"):
@@ -587,8 +588,8 @@ object Tests extends Suite("streams", m"Turbulence tests"):
       // every case.
       def splitLines(input: Text, chunk: Int)(using LineSeparation): List[Text] =
         if chunk == -1 then input.delineate.to[List]
-        else if chunk == 0 then List.from(input.stream.delineate.records)
-        else List.from(input.s.grouped(chunk).map(_.tt).stream.delineate.records)
+        else if chunk == 0 then input.stream.delineate.records.to[List]
+        else Iterator.from(input.s.grouped(chunk).map(_.tt)).stream.delineate.records.to[List]
 
       // The same input through the byte-level duct (`Stream[Data].delineate`
       // under a UTF-8 decoder, which is ASCII-transparent, so the separators are
@@ -610,12 +611,12 @@ object Tests extends Suite("streams", m"Turbulence tests"):
             pieces += java.util.Arrays.copyOfRange(bytes, index, index + size).nn.asInstanceOf[Data]
             index += size
 
-        List.from(pieces.iterator.stream.delineate.records)
+        Iterator.from(pieces.iterator).stream.delineate.records.to[List]
 
       def check(policy: Text, cases: List[(Text, List[Text])])(using LineSeparation): Unit =
         for fragment <- List(-1, 0, 1, 3) do
-          cases.stdlib.zipWithIndex.each: (row, index) =>
-            test(m"$policy, case $index, chunk size $fragment"):
+          cases.indexed.each: (row, ordinal) =>
+            test(m"$policy, case ${ordinal.n0}, chunk size $fragment"):
               splitLines(row(0), fragment)
             . assert(_ == row(1))
 
@@ -623,8 +624,8 @@ object Tests extends Suite("streams", m"Turbulence tests"):
         // the byte duct must agree with it on every policy, every case and every
         // fragmentation.
         for fragment <- List(0, 1, 3) do
-          cases.stdlib.zipWithIndex.each: (row, index) =>
-            test(m"$policy, case $index, byte chunk size $fragment"):
+          cases.indexed.each: (row, ordinal) =>
+            test(m"$policy, case ${ordinal.n0}, byte chunk size $fragment"):
               splitBytes(row(0), fragment)
             . assert(_ == row(1))
 
@@ -700,13 +701,13 @@ object Tests extends Suite("streams", m"Turbulence tests"):
         import lineSeparation.adaptiveLinefeedLineSeparation
 
         test(m"lines splits a byte stream through the character decoder"):
-          List.from(t"first\nsecond\r\nthird".in[Data].stream.delineate.records)
+          t"first\nsecond\r\nthird".in[Data].stream.delineate.records.to[List]
         . assert(_ == List(t"first", t"second", t"third"))
 
         test(m"a line spanning many windows is reassembled"):
           val long = Text(String(scala.Array.fill(10000)('x')))
           val input = long + t"\ny"
-          List.from(input.s.grouped(7).map(_.tt).stream.delineate.records)
+          Iterator.from(input.s.grouped(7).map(_.tt)).stream.delineate.records.to[List]
         . assert(_ == List(Text(String(scala.Array.fill(10000)('x'))), t"y"))
 
         // Characters of two, three and four bytes, fragmented at every byte
@@ -732,7 +733,7 @@ object Tests extends Suite("streams", m"Turbulence tests"):
           . assert(_ == true)
 
         test(m"lines of an empty byte stream is empty"):
-          List.from(Iterator.empty[Data].stream.delineate.records)
+          Iterator.empty[Data].stream.delineate.records.to[List]
         . assert(_ == List())
 
     suite(m"Source and Sink tests"):
@@ -762,17 +763,16 @@ object Tests extends Suite("streams", m"Turbulence tests"):
         val stream = source.stream(reader)
         val builder = StringBuilder()
 
-        def recur(): Unit = scala.caps.unsafe.unsafeAssumeSeparate:  // [closure-capture]
-         stream.refill(Credit(64)) match
+        def recur(stream: (Stream[Text] over Credit)^): Unit = stream.refill(Credit(64)) match
           case count: Int =>
             val window = unsafely(stream.unsafeStorage).asInstanceOf[scala.Array[Char]]
             builder.append(String(window, stream.start, count))
             stream.skip(count)
-            scala.caps.unsafe.unsafeAssumeSeparate(recur())  // [closure-capture]
+            recur(stream)
 
           case _ => ()
 
-        scala.caps.unsafe.unsafeAssumeSeparate(recur())  // [closure-capture]
+        recur(stream)
         builder.toString.tt
       . assert(_ == original)
 
@@ -826,8 +826,8 @@ object Tests extends Suite("streams", m"Turbulence tests"):
 
           val merged = Confluence(endpoints.map(_.asInstanceOf[Stream[Data] over Credit])*)
           val gathered = Gather2().ingest(merged)
-          gathered.data.stdlib.sorted
-      . assert(_ == (1 to 4).flatMap { index => scala.List.fill(1000)(index.toByte) }.sorted)
+          gathered.data.to[List].sort
+      . assert(_ == List.from((1 to 4).flatMap { index => scala.List.fill(1000)(index.toByte) }))
 
       test(m"manifold delivers the whole stream to every subscriber"):
         supervise:
@@ -1007,15 +1007,15 @@ object Tests extends Suite("streams", m"Turbulence tests"):
 
       test(m"sink.buffered stages by the buffering block size"):
         given Buffering = probeBuffering(7, 2)
-        var sizes: sci.List[Int] = sci.Nil
+        var sizes: List[Int] = Nil
 
         val intake = Sink.buffered[Unit, Data]
-          ((), (_, chunks) => sizes = chunks.stdlib.to(sci.List).map(_.length))
+          ((), (_, chunks) => sizes = chunks.map(_.length).to[List])
 
         intake.put(Data.fill(8)(_.toByte))
         intake.finish()
         sizes
-      . assert(_ == sci.List(7, 1))
+      . assert(_ == List(7, 1))
 
       // `OutputStream.write` permits the caller to reuse its array afterwards, and the chunk
       // is read only when the stream is consumed, so aliasing the caller's array would let a

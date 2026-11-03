@@ -387,8 +387,8 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
 
     import dynamicAccess.dynamicJson
 
-    def rewrite(kind: Text, json: Json): Json = unsafely(json.updateDynamic("type")(kind.lower))
-    def variant(json: Json): Json = unsafely(json.updateDynamic("type")(Unset))
+    def rewrite(kind: Text, json: Json): Json = json.updateDynamic("type")(kind.lower)
+    def variant(json: Json): Json = json.updateDynamic("type")(Unset)
 
     def discriminate(json: Json): Optional[Text] =
       // Reads the AST directly rather than via `as[Text]`: the `Text` codec is a

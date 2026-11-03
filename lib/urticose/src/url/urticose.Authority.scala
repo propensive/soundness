@@ -38,7 +38,6 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import distillate.*
-import fulminate.*
 import gossamer.*
 import prepositional.*
 import rudiments.*

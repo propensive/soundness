@@ -34,7 +34,6 @@ package facsimile
 
 import anticipation.*
 import quantitative.*
-import rudiments.*
 
 // One show-text operation, decoded and positioned: its Unicode text, the font and effective
 // size it renders at, its baseline origin in unrotated page space, and its advance width —

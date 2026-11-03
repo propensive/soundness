@@ -91,10 +91,11 @@ constructor, and a `given`, which is summoned by type. Both are still gated, and
 the argument for why the gate is sound belongs in a comment beside them.
 
 The converse — an `unsafe`-prefixed method must be gated — is `S1.2`, and is
-advisory rather than strict for now. Ten definitions break it:
+advisory rather than strict for now. Eight definitions break it:
 `proscenium.Array.unsafeFrozen` and `unsafeJvm`, `vacuous.Optional.unsafeGet`,
-`archimedes.Ergo.unsafe` and `unsafeInterpolate`, and the `unsafe` factories on
-`urticose.Port`, `Git.Revision`, `Git.Tag`, `Git.Branch` and `Git.Hash`.
+and the `unsafe` factories on `urticose.Port`, `Git.Revision`, `Git.Tag`,
+`Git.Branch` and `Git.Hash` (`archimedes.Ergo.unsafeInterpolate` is gated since
+the ambient-strategy drain).
 
 Gating them is wanted and is tracked as a follow-up, not declined: a trial found
 the change reaches hundreds of call sites, a good share of which are colon-block

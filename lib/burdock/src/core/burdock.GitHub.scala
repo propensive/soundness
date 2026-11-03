@@ -123,6 +123,9 @@ object GitHub:
       case Parse.Error(_, _, _) =>
         UserError(m"the releases listing for $repository was not valid JSON")
 
+      case Truncation.Error(_) =>
+        UserError(m"the releases listing for $repository was cut short")
+
     . protect:
         def page(number: Int): List[Release] =
           val path: Text = t"repos/${repository.owner}/${repository.name}/releases"

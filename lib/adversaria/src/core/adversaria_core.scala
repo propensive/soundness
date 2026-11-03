@@ -66,8 +66,7 @@ inline def relabelling[self, format]: Map[Text, Text] =
   // The `lay` default is unreachable — `fieldAnnotations` keeps only non-nil sets — but it
   // coincides with the callers' documented fallback: the field's own name.
   val general:  Map[Text, Text] =
-    fieldAnnotations[self, name[Any]].remap: (field, set) =>
-      field -> set.head.let(_.name).or(field)
+    fieldAnnotations[self, name[Any]].remap: (field, set) => field -> set.head.let(_.name).or(field)
 
   val specific: Map[Text, Text] =
     fieldAnnotations[self, name[format]].remap: (field, set) =>

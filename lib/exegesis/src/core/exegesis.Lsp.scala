@@ -44,11 +44,9 @@ import beneficence.*
 import contingency.*
 import denominative.*
 import distillate.*
-import eucalyptus.*
 import fulminate.*
 import gossamer.*
 import guillotine.*
-import hieroglyph.*
 import jacinta.*
 import obligatory.*
 import parasite.*
@@ -1471,20 +1469,16 @@ object Lsp:
   // an error response has neither, so neither can read the id of an arbitrary message.
   private[exegesis] def identifier(json: Json): Optional[Json] = envelope(json).id
 
-  private[exegesis] def envelope(json: Json): Envelope =
-    import strategies.throwUnsafely
-    try json.as[Envelope] catch case _: Exception => Envelope()
+  private[exegesis] def envelope(json: Json): Envelope = safely(json.as[Envelope]).or(Envelope())
 
   // The `params` of a message, or the whole message if it has none.
   private[exegesis] def params(json: Json): Json =
     import dynamicAccess.dynamicJson
     try json.params catch case _: Exception => json
 
+  // An unreadable id is simply absent.
   private[exegesis] def requestId(json: Json): Optional[Json] =
-    // Throwing rather than `safely`: the request decodable cannot thread the boundary tactic
-    // under separation checking, and an unreadable id is simply absent.
-    import strategies.throwUnsafely
-    try json.as[JsonRpc.Request].id catch case _: Exception => Unset
+    safely(json.as[JsonRpc.Request]).let(_.id)
 
   // An observer of the raw traffic crossing the transport, for a server that exposes a log of the
   // messages it exchanges. Each message is reported as the text that was read from — or framed
@@ -1507,7 +1501,7 @@ object Lsp:
 
   // A shared capability: the writer task reports what it sends and the reader task what it
   // receives, so an observer is called from two tasks at once and must be safe to.
-  trait Observer extends anticipation.DurableUnscoped:
+  trait Observer extends anticipation.Durable:
     def received(message: Text): Unit
     def sent(message: Text): Unit
 
@@ -1575,9 +1569,10 @@ object Lsp:
                       diagnostics: Diagnostics,
                       working:     WorkingDirectory,
                       environment: Environment,
+                      tactic:      Tactic[Lsp.Error],
                       listener:    Lsp.Listener^,
                       observer:    Lsp.Observer^)
-    =>  ( LspSessional^{monitor} ) =
+    =>  ( LspSessional^{monitor, tactic} ) =
       // The listener and the observer are sealed into the instance: both are used only while the
       // session is open — which the lambda `session` lends to bounds — and admitting them to the
       // instance's type would put a capability in the type of anything that summons it, including
@@ -1616,12 +1611,13 @@ object Lsp:
   // monitor, which a hook needs to await an answer of its own; see `Lsp.Proxy`.
   // The registration block runs once, synchronously, and may capture the monitor freely: a
   // monitor is a durable capability.
-  def proxy(upstream: Server, observer: Observer = Observer.Silent)
+  def proxy(upstream: Server, observer: Optional[Observer^] = Unset)
     ( register: (proxy: Lsp.Proxy^) ?=> Unit )
-    ( using Stdio^, Monitor^, Probate, WorkingDirectory, Environment, Diagnostics )
+    ( using Stdio^, Monitor^, Probate, WorkingDirectory, Environment, Diagnostics,
+            Tactic[Lsp.Error], Tactic[Framing.Error], Tactic[Truncation.Error] )
   :   Unit =
 
-    Lsp.Proxy.run(upstream, observer)(register)
+    Lsp.Proxy.run(upstream, observer.or(Observer.Silent))(register)
 
   // Establishes a Language Server over the stdio transport. The block registers the server's
   // feature handlers on the lent registry; once it returns, the registry is consumed and frozen,
@@ -1633,13 +1629,11 @@ object Lsp:
   // nothing capability-carrying is ever stored in an application-lifetime object. `observer`, if
   // given, sees every message in both directions as it crosses the transport.
   // The standard streams are the process's own (pure): the writer task writes to them.
-  def listen(name: Text, version: Optional[Text] = Unset, observer: Observer^ = Observer.Silent)
+  def listen(name: Text, version: Optional[Text] = Unset, observer: Optional[Observer^] = Unset)
     ( register: (registry: Lsp.Registry^) ?=> Unit )
-    ( using Stdio, Monitor, Probate )
+    ( using Stdio, Monitor, Probate, Tactic[Framing.Error], Tactic[Truncation.Error] )
   :   Unit =
 
-    import codepages.utf8Codepage
-    import strategies.throwUnsafely
     import Json.jsonEncodableInText
 
     val registry: Lsp.Registry^ = Lsp.Registry()
@@ -1660,14 +1654,13 @@ object Lsp:
     val outgoing = session.outgoing
 
     val writer: Task[Unit] = async:
-      // The stdlib view is drained element by element, without memoizing the live chain.
-      outgoing.stdlib.iterator.each: json =>
+      outgoing.each: json =>
         val body: Text = json.encode
-        observer.sent(body)
+        observer.or(Observer.Silent).sent(body)
         summon[Stdio].write(LspTransport.frame(body))
         summon[Stdio].out.flush()
 
-    LspTransport.pump(summon[Stdio].in.source[Data], observer): message =>
+    LspTransport.pump(summon[Stdio].in.source[Data], observer.or(Observer.Silent)): message =>
       safely(message.as[Json]).lay(session.put(JsonRpc.failure(-32700, t"Parse error"))):
         json =>
           val response: Optional[Json] =
@@ -1699,7 +1692,6 @@ object Lsp:
   // spawned in a handler is legitimate), but scoping still confines it to the serving scope that
   // minted it — a client handle cannot be stashed for use after the session ends.
   trait Client extends Findable, anticipation.Durable:
-    import Lsp.*
 
     @rpc
     def `textDocument/publishDiagnostics`
@@ -1751,8 +1743,6 @@ object Lsp:
   class Connection private[exegesis] ()(using Monitor, Diagnostics)
   extends JsonRpc, anticipation.Durable:
     type Origin = Lsp
-
-    import strategies.throwUnsafely
 
     // One proxy module per sub-interface, all sharing this instance's outgoing channel. The split
     // mirrors `Lsp.Dispatch`: a single proxy for the whole protocol would inline a codec per method
@@ -1950,7 +1940,6 @@ object Lsp:
   object Dispatch:
     private object lifecycleRoute:
       def apply(server: Lsp): Json => Optional[Json] =
-        import strategies.throwUnsafely
         JsonRpc.serve[LspLifecycle](server)
 
     // Materialized here because the `JsonRpc.serve` macro's `Expr.summon` cannot
@@ -1963,37 +1952,30 @@ object Lsp:
 
     private object languageRoute:
       def apply(server: Lsp): Json => Optional[Json] =
-        import strategies.throwUnsafely
         JsonRpc.serve[LspLanguage](server)
 
     private object navigationRoute:
       def apply(server: Lsp): Json => Optional[Json] =
-        import strategies.throwUnsafely
         JsonRpc.serve[LspNavigation](server)
 
     private object editingRoute:
       def apply(server: Lsp): Json => Optional[Json] =
-        import strategies.throwUnsafely
         JsonRpc.serve[LspEditing](server)
 
     private object advancedRoute:
       def apply(server: Lsp): Json => Optional[Json] =
-        import strategies.throwUnsafely
         JsonRpc.serve[LspAdvanced](server)
 
     private object workspaceRoute:
       def apply(server: Lsp): Json => Optional[Json] =
-        import strategies.throwUnsafely
         JsonRpc.serve[LspWorkspace](server)
 
     private object resolveRoute:
       def apply(server: Lsp): Json => Optional[Json] =
-        import strategies.throwUnsafely
         JsonRpc.serve[LspResolve](server)
 
     def apply(server: Lsp): Json => Optional[Json] =
       import dynamicAccess.dynamicJson
-      import strategies.throwUnsafely
 
       // Each expansion is bound to a bare local, and the routing is an if-chain over locals
       // rather than a list of tuples: an expected type at the expansion site freshens the opaque
@@ -2016,7 +1998,7 @@ object Lsp:
       val resolve = resolveRoute(server)
 
       json =>
-        val method: Optional[Text] = try json.method.as[Text] catch case _: Exception => Unset
+        val method: Optional[Text] = safely(json.method.as[Text])
 
         // A message with no method is a response, which any dispatcher handles; an unknown
         // method is dropped.
@@ -2046,6 +2028,7 @@ object Lsp:
       case ContentModified      extends Reason(8, -32801)
       case ServerCancelled      extends Reason(9, -32802)
       case RequestFailed        extends Reason(10, -32803)
+      case Unstarted            extends Reason(11, -32000)
 
     // The inverse of `code`: recovers the reason from an error response's wire code, for a client
     // reading a fault a server sent it. A server may answer with a code outside the standard set —
@@ -2444,6 +2427,11 @@ object Lsp:
 
   // LspProxy → Lsp.Proxy
   object Proxy:
+    // A rewriter takes its tactic at each call, from the loop that applies it, so the instance a
+    // registry retains holds none; a message it cannot read passes through unchanged.
+    trait Rewriter:
+      def rewrite(json: Json)(using Tactic[Json.Error]): Json
+
     // The raw hooks' types, named because each is written three times — registered, read out of
     // the erased rim, and applied — and must be spelled identically at all three.
     private[exegesis] type OutboundHook = (Text, Json) => Transit
@@ -2483,13 +2471,13 @@ object Lsp:
     // it captures: a hook that asks the server something of its own needs the monitor to await the
     // answer, and separation checking would otherwise see the block and this method aliasing it.
     def run
-      ( upstream: Lsp.Server, observer: Lsp.Observer = Lsp.Observer.Silent )
+      ( upstream: Lsp.Server, observer: Optional[Lsp.Observer^] = Unset )
       ( register: (proxy: Lsp.Proxy^) ?=> Unit )
       ( using stdio: Stdio^, monitor: Monitor^, probate: Probate, working: WorkingDirectory,
-              environment: Environment, diagnostics: Diagnostics )
+              environment: Environment, diagnostics: Diagnostics, lsp: Tactic[Lsp.Error],
+              framing: Tactic[Framing.Error], truncation: Tactic[Truncation.Error] )
     :   Unit =
 
-      import strategies.throwUnsafely
       import Json.jsonEncodableInText
 
       val session: Upstream = Upstream()
@@ -2517,7 +2505,7 @@ object Lsp:
 
       def downstream(json: Json): Unit =
         val body: Text = json.encode
-        observer.sent(body)
+        observer.or(Lsp.Observer.Silent).sent(body)
         stdio.write(LspTransport.frame(body))
         stdio.out.flush()
 
@@ -2567,7 +2555,7 @@ object Lsp:
         // it: an editor's first request arrives before a server has finished starting up.
         val startup = if connected0 == null then null else async(connected0.nn())
 
-        try LspTransport.pump(stdio.in.source[Data], observer): message =>
+        try LspTransport.pump(stdio.in.source[Data], observer.or(Lsp.Observer.Silent)): message =>
           safely(message.as[Json]).let: json =>
             Lsp.method(json).let: method =>
               val id: Optional[Json] = Lsp.identifier(json)
@@ -2590,24 +2578,23 @@ object Lsp:
 
     // The `result` member of a response, rewritten in place. A response carrying an `error` is left
     // alone: a fault is not a payload, and a rewriter typed for the payload could not read it.
-    private def rewriteResult(json: Json, rewrite: Json => Json): Json =
+    private def rewriteResult(json: Json, rewrite: Lsp.Proxy.Rewriter): Json =
       import dynamicAccess.dynamicJson
-      import strategies.throwUnsafely
 
-      try
+      safely[Json.Error]:
         val result = json.result
-        Map(t"jsonrpc" -> t"2.0".in[Json], t"result" -> rewrite(result), t"id" -> json.id).in[Json]
+        val rewritten = rewrite.rewrite(result)
+        Map(t"jsonrpc" -> t"2.0".in[Json], t"result" -> rewritten, t"id" -> json.id).in[Json]
 
-      catch case _: Exception => json
+      . or(json)
 
     // The `params` of a notification or of a request the server made of its client, rewritten.
-    private def rewriteParams(json: Json, rewrite: Json => Json): Json =
+    private def rewriteParams(json: Json, rewrite: Lsp.Proxy.Rewriter): Json =
       import dynamicAccess.dynamicJson
-      import strategies.throwUnsafely
 
-      try
+      safely[Json.Error]:
         val method: Json = json.method
-        val params: Json = rewrite(json.params)
+        val params: Json = rewrite.rewrite(json.params)
 
         // Rebuilt rather than amended in place: a notification carries no id, and a request the
         // server made of its client must keep the one it chose.
@@ -2623,18 +2610,15 @@ object Lsp:
 
             . in[Json]
 
-      catch case _: Exception => json
+      . or(json)
 
     // The slots are an erased rim, as `Lsp.Registry`'s are, and each is restored by a single
     // annotated cast at the one place that reads it.
     // A rewriter read back out of the erased rim, restored by a single annotated cast.
-    private def rule(slot: scala.Option[AnyRef]): Optional[Json => Json] =
+    private def rule(slot: scala.Option[AnyRef]): Optional[Lsp.Proxy.Rewriter] =
       slot.getOrElse(null) match
-        case null => Unset
-
-        case value: AnyRef =>
-          val lambda: Json => Json = value.asInstanceOf[Lsp.Registry.Slot[Json => Json]].value
-          lambda
+        case null         => Unset
+        case value: AnyRef => value.asInstanceOf[Lsp.Proxy.Rewriter]
 
     private def outbound(hook: AnyRef | Null): Optional[(Text, Json) -> Transit] =
       if hook == null then Unset else
@@ -2654,9 +2638,7 @@ object Lsp:
 
     // The id of a message, if the peer chose a string for it: the form `JsonRpc.call` mints, and so
     // the form a response to a request the proxy made itself comes back under.
-    private def token(id: Json): Optional[Text] =
-      import strategies.throwUnsafely
-      try id.as[Text] catch case _: Exception => Unset
+    private def token(id: Json): Optional[Text] = safely(id.as[Text])
 
   // The target of the proxy's registration combinators, lent to the block given to `Lsp.proxy` for
   // its duration. An exclusive capability, so it cannot escape the block; its slots are public and

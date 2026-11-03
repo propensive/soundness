@@ -45,35 +45,20 @@ import vacuous.*
 import zephyrine.*
 
 object Resource:
+  // An instance retains the tactics it reads under — a missing resource, a truncated read — and
+  // the pure classloader, and says so (see `Classpath.streamable`).
   given streamable: [resource <: Resource]
-  =>  ( classloader: Classloader )
-  =>  resource is Streamable by Data =
-    // See `Classpath.streamable`: unscoped throwing tactic + pure classloader; laundered pure.
-    // [field-purity] given streamable codec, codec-thunk seal
-    caps.unsafe.unsafeAssumePure:
-      given Tactic[Truncation.Error | Classpath.Error] = strategies.throwUnsafely
+  =>  ( tactic: Tactic[Truncation.Error | Classpath.Error], classloader: Classloader )
+  =>  ( (resource is Streamable by Data)^{tactic} ) =
 
-      // The lambda and the codec share only the unscoped throwing tactic; no aliased writer.
-      // [by-name-receiver] contramap lambda and codec share throwing tactic
-      scala.caps.unsafe.unsafeAssumeSeparate:
-        Streamable.inputStream.contramap: (resource: resource) =>
-          classloader.inputStream(resource.path.encode)
+    Streamable.inputStream.contramap: (resource: resource) =>
+      classloader.inputStream(resource.path.encode)
 
   given source: [resource <: Resource]
-  =>  ( classloader: Classloader, buffering: Buffering )
-  =>  resource is Streamable by Data over Credit =
-    // See `streamable` above: unscoped throwing tactic + pure classloader; laundered pure.
-    // [field-purity] given streamable codec, codec-thunk seal
-    caps.unsafe.unsafeAssumePure:
-      given Tactic[Truncation.Error | Classpath.Error] = strategies.throwUnsafely
+  =>  ( tactic: Tactic[Truncation.Error | Classpath.Error], classloader: Classloader,
+        buffering: Buffering )
+  =>  ( (resource is Streamable by Data over Credit)^{tactic} ) =
 
-      // As `streamable` above.
-      // [by-name-receiver] contramap lambda and codec share throwing tactic
-      scala.caps.unsafe.unsafeAssumeSeparate:
-        Streamable.inputStream.contramap: (resource: resource) =>
-          classloader.inputStream(resource.path.encode)
-
-  given nominable: [resource <: Resource] => resource is Nominable =
-    _.path.descent.to(List).head.or(t"/")
-
+    Streamable.inputStream.contramap: (resource: resource) =>
+      classloader.inputStream(resource.path.encode)
 case class Resource private[hellenism](path: Path on Classpath) extends Locative

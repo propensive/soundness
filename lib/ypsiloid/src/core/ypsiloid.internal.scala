@@ -126,7 +126,7 @@ object internal:
 
     val start: Int = firstOrigin[origins]
 
-    try unsafely(raw.tt.as[YamlPath]) catch
+    recover:
       case error: YamlPath.Error =>
         val sourceFile = Position.ofMacroExpansion.sourceFile
 
@@ -142,7 +142,9 @@ object internal:
 
         halt(error.message, position)
 
-    '{unsafely(${Expr(raw)}.tt.as[YamlPath])}
+    . protect(raw.tt.as[YamlPath])
+
+    '{YamlPath.unsafeParse(${Expr(raw)}.tt)(using Unsafe)}
 
   def interpolator[parts <: Tuple: Type, origins <: Tuple: Type]
     ( insertions0: Expr[Seq[Any]] )

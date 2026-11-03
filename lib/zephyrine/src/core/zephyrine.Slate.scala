@@ -27,12 +27,14 @@
 ┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
 ┃    either express or implied. See the License for the specific language governing permissions    ┃
 ┃    and limitations under the License.                                                            ┃
+┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package zephyrine
 
 import scala.caps
 
+import anticipation.*
 import denominative.*
 import prepositional.*
 import vacuous.*
@@ -78,3 +80,14 @@ object Slate:
 
     inline def unsafeRaw(using Unsafe): addressable.Storage^ =
       slate.asInstanceOf[addressable.Storage^]
+
+  // The writable twin of `Region#borrow`: the raw array, exclusive, with the branded interval's
+  // offset and length, for the APIs that fill an `(array, offset, length)` triple —
+  // `Deflater.deflate`, `InputStream.read`, an engine's `deliver`.
+  extension (slate: Slate[Data])
+    inline def borrow[result](space: Interval in slate.type)
+      ( inline lambda: (scala.Array[Byte]^, Int, Int) => result )
+    :   result =
+
+      val interval: Interval = space
+      lambda(slate.asInstanceOf[scala.Array[Byte]^], interval.start.n0, interval.size)

@@ -34,7 +34,6 @@ package xenophile
 
 import anticipation.*
 import fulminate.*
-import gossamer.*
 
 // The C header front end: the declaration model a header parses to, the `Dialect` that
 // projects it for the FFI backends, the parser itself, and the error it raises. `Dialect`
@@ -104,17 +103,17 @@ object CHeader:
     import contingency.*
     import gossamer.*
     import rudiments.*
-    import symbolism.*
     import vacuous.*
 
     import denominative.nil
 
     val library: Text = t"library"
 
-    def parse(source: Text): Map[Text, Map[Text, Prototype]] = parse0(source)
+    // `Dialect.parse` is total: a header that does not parse defines nothing, and the macro
+    // reports "the foreign type is not defined" from the empty result.
+    def parse(source: Text): Map[Text, Map[Text, Prototype]] = safely(parse0(source)).or(Map())
 
-    private def parse0(source: Text): Map[Text, Map[Text, Prototype]] =
-      import strategies.throwUnsafely
+    private def parse0(source: Text)(using Tactic[CHeader.Error]): Map[Text, Map[Text, Prototype]] =
       val declarations: List[Declaration] = Parser.parse(source)
 
       val typedefs: Map[Text, Foreign.Type] =
@@ -241,11 +240,7 @@ object CHeader:
 
     import anticipation.*
     import contingency.*
-    // `Error as _`: an inner wildcard import of `fulminate` would make the bare `Error` ambiguous
-    // with this object's sibling `CHeader.Error`.
-    import fulminate.{Error as _, *}
     import gossamer.*
-    import rudiments.*
     import vacuous.*
 
     import Error.Reason

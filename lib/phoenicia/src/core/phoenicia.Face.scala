@@ -107,7 +107,7 @@ object Face:
       case other: Feature => other.tag == tag
       case _              => false
 
-    override def hashCode: Int = tag.hashCode
+    override def hashCode: Int = tag.##
     override def toString: String = tag.s
 
   // A face of a typeface: regular and upright unless told otherwise. The typeface's family is

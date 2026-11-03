@@ -42,7 +42,6 @@ import denominative.dysasymptotics.linearSize
 import fulminate.*
 import gigantism.*
 import gossamer.*
-import hypotenuse.minimize
 import rudiments.*
 import vacuous.*
 
@@ -60,7 +59,9 @@ object internal:
   // The registered media types, from the string table compiled from the IANA registry at build
   // time (`MediaTypeData`).
   private lazy val systemMediaTypes: Set[Text] =
-    scala.Range(0, MediaTypeData.registered.length).map(MediaTypeData.registered.readUnchecked(_).tt).to(Set)
+    scala.Range(0, MediaTypeData.registered.length)
+    . map(MediaTypeData.registered.readUnchecked(_).tt)
+    . to(Set)
 
   private val validGroups: Set[Text] =
     Set
@@ -94,17 +95,15 @@ object internal:
     // is itself a separator, not a body character.
     val segments: List[Text] = subtype.cut(t"+")
 
-    // The stdlib view gives a lazy scan that stops at the first offending character.
-    val badChar: Option[Char] = segments.stdlib.iterator.flatMap: seg =>
-      seg.chars.seek { c => c.isWhitespace || c.isControl || specials.has(c) }.option
-
-    . nextOption()
+    // `or` is by-name, so the scan stops at the first segment with an offending character.
+    val badChar: Optional[Char] = segments.fuse(Unset: Optional[Char]):
+      state.or(next.chars.seek { c => c.isWhitespace || c.isControl || specials.has(c) })
 
     badChar match
-      case Some(char) =>
+      case char: Char =>
         m"$char is not a valid character in a media-type subtype"
 
-      case None =>
+      case Unset =>
         val main: Text = segments.absolve match
           case segment :: _ => segment
         val isStandard =
@@ -141,4 +140,11 @@ object internal:
 
     internal.validateLiteral(raw.tt).let(halt(_))
 
-    '{unsafely(Media.parse(${Expr(raw)}.tt))}
+    // `validateLiteral` checks the group, the subtype and the registry; the suffixes and the
+    // parameters are checked only by the parser, so a literal it would reject halts here too.
+    recover:
+      case error: MediaType.Error => halt(error.message)
+
+    . protect(Media.parse(raw.tt))
+
+    '{Media.unsafeParse(${Expr(raw)}.tt)(using Unsafe)}

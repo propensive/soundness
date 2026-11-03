@@ -105,7 +105,8 @@ extends caps.ExclusiveCapability, caps.Stateful:
     if position + count <= buffer.length then
       System.arraycopy(Array.unsafeJvm(data), 0, target, position, count)
       position += count
-    else rawOverflowing(data)
+    else
+      rawOverflowing(data)
 
   private update def rawOverflowing(data: Data): Unit =
     if oversized(data.length) then
@@ -194,7 +195,8 @@ object ProtobufPrinter:
     Array.freeze(bytes)
 
   // A printer of exactly `size` bytes, whose `data()` is that array, uncopied.
-  def exact(size: Int): ProtobufPrinter^ = new ProtobufPrinter(new scala.Array[Byte](size), false, null)
+  def exact(size: Int): ProtobufPrinter^ =
+    new ProtobufPrinter(new scala.Array[Byte](size), false, null)
 
   // A printer of bytes of unknown length, from a buffer of `hint` bytes.
   def growing(hint: Int): ProtobufPrinter^ =
@@ -218,7 +220,6 @@ object ProtobufPrinter:
   // The length of a field's tag: one byte up to field number 15, as a varint thereafter.
   def tagSize(number: Int): Int = varintSize(number.toLong << 3)
 
-
   // The number of bytes `field(number, value)` writes, which it must mirror exactly: a scribe
   // of fixed size drops whatever is written past its end.
   def fieldSize(number: Int, value: Protobuf): Int = value match
@@ -227,6 +228,7 @@ object ProtobufPrinter:
 
     case Protobuf.Wire(wireType, bytes) =>
       val tag = varintSize((number.toLong << 3) | wireType.id)
+
       if wireType == WireType.Len then tag + varintSize(bytes.length) + bytes.length
       else tag + bytes.length
 

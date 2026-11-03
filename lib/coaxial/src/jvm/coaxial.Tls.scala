@@ -34,13 +34,10 @@ package coaxial
 
 import java.io as ji
 import java.security as js
-import javax.net.ssl as jns
 import javax.net.ssl.SSLContext
 
 import anticipation.*
 import gastronomy.*
-import gossamer.*
-import rudiments.*
 import vacuous.*
 
 import providers.javaBaseProvider

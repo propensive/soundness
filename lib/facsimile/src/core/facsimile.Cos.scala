@@ -72,7 +72,7 @@ object Cos:
   // PDFDocEncoding.
   private[facsimile] def decodeText(bytes: Data): Text =
     if bytes.length >= 2 && (bytes.readUnchecked(0) & 0xff) == 0xfe &&
-        (bytes.readUnchecked(1) & 0xff) == 0xff
+      (bytes.readUnchecked(1) & 0xff) == 0xff
     then charsets.utf16BeCharset.decoded(bytes.skip(2))
     else if bytes.length >= 3 &&
       (bytes.readUnchecked(0) & 0xff) == 0xef && (bytes.readUnchecked(1) & 0xff) == 0xbb &&

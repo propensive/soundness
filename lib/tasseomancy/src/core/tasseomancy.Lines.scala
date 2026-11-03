@@ -75,7 +75,7 @@ object Lines:
   =>  ( continuousY: y is Continuous, calibrationY: y is Calibration )
   =>  collection is Plottable in Lines to Lines.Fit by Lines.Style =
     plottable[collection, x, y]: collection =>
-      List.from(traversable.traverse(collection).map(traceOf(_)))
+      traversable.traverse(collection).map(traceOf(_)).to[List]
 
   // The fit shared with a scatter plot: each axis over the extent of its positions (and, on the
   // ordinate, of their intervals), neither anchored at zero.

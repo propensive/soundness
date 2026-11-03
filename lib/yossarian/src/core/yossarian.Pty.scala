@@ -113,10 +113,8 @@ object Pty:
       pending:            Text    = t"" )
 
 case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
-  // The legacy view of the reply relay (the audited bridge).
-  // `Chain.from`, not `.to[Chain]`: the conversion route lets the live iterator's fresh
-  // capture contaminate the result, where `from`'s signature is pure.
-  def stream: Chain[Text] = Chain.from(output.stream.records)
+  // The lazy view of the reply relay: the chain pulls records as it is forced.
+  def stream: Chain[Text] = output.stream.records.chain
 
   def title: Text = state.title
   def cursor: Ordinal = state.cursor
@@ -141,18 +139,17 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
     var lastGrapheme: Grapheme = Grapheme(" ")
 
     object cursor:
-      // [field-purity] index var in method-local cursor object
-      @scala.caps.unsafe.untrackedCaptures
-      private var index: Ordinal = state.cursor
+      // A cell rather than a `var`: an object's field is a capability unless it is pure.
+      private val index: Atomic.Ref[Ordinal] = Atomic.Ref(state.cursor)
 
-      def apply(): Ordinal = index
+      def apply(): Ordinal = index()
 
       def update(value: Ordinal): Unit =
         pendingWrap = false
-        index = value
+        index() = value
 
-      def x: Ordinal = (index.n0%buffer2.width).z
-      def y: Ordinal = (index.n0/buffer2.width).z
+      def x: Ordinal = (index().n0%buffer2.width).z
+      def y: Ordinal = (index().n0/buffer2.width).z
 
       def x_=(x2: Ordinal): Unit =
         pendingWrap = false
@@ -160,7 +157,7 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
         val clamped: Ordinal =
           if x2 < Prim then Prim else if x2 >= buffer2.width.z then (buffer2.width - 1).z else x2
 
-        index = (y.n0*buffer2.width + clamped.n0).z
+        index() = (y.n0*buffer2.width + clamped.n0).z
 
       def y_=(y2: Ordinal): Unit =
         pendingWrap = false
@@ -168,10 +165,10 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
         val clamped: Ordinal =
           if y2 < Prim then Prim else if y2 >= buffer2.height.z then (buffer2.height - 1).z else y2
 
-        index = (clamped.n0*buffer2.width + x.n0).z
+        index() = (clamped.n0*buffer2.width + x.n0).z
 
       // Internal advancement that does NOT clear pendingWrap (used by put).
-      def setIndex(value: Ordinal): Unit = index = value
+      def setIndex(value: Ordinal): Unit = index() = value
 
     var style = state.style
     var state2 = state

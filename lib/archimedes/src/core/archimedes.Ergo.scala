@@ -32,13 +32,11 @@
                                                                                                   */
 package archimedes
 
-import scala.collection.immutable.Seq
 // Deliberate stdlib opt-out, as in `Cell`.
+import scala.collection.immutable.Seq
 import scala.collection.immutable.{Map, Set}
 import scala.collection.mutable.ListBuffer
-import scala.math
 
-import anticipation.*
 import anticipation.*
 import contingency.*
 import fulminate.*
@@ -142,17 +140,12 @@ object Ergo:
   // sentinel, and each hole yields the corresponding already-encoded `atoms` node
   // as a single atom, in left-to-right order.
   def interpolate(parts: Seq[Text], atoms: Seq[Mathml])(using Tactic[Ergo.Error]): Math =
-    Parser(parts.map(_.s).mkString(Hole.toString), atoms.iterator).parseTop()
+    Parser(parts.map(_.s).mkString(Hole.toString), Iterator.from(atoms.iterator)).parseTop()
 
-  // Parse-or-throw, for callers (in particular the `ergo""` interpolator's
-  // generated code) that have already established the literal is well-formed.
-  def unsafe(input: Text): Math =
-    import strategies.throwUnsafely
-    parse(input)
-
-  def unsafeInterpolate(parts: Seq[Text], atoms: Seq[Mathml]): Math =
-    import strategies.throwUnsafely
-    interpolate(parts, atoms)
+  // Parse-or-throw, gated by `Unsafe`, for the `ergo""` interpolator's generated code, which
+  // has already established at expansion that the literal is well-formed.
+  def unsafeInterpolate(parts: Seq[Text], atoms: Seq[Mathml])(using erased unsafe: Unsafe): Math =
+    unsafely(interpolate(parts, atoms))
 
   // ── Serialisation: an archimedes `Math` tree → ergo shorthand text ──────────
   //
@@ -283,7 +276,7 @@ object Ergo:
       case (glyph, Directive.Fixed(n, v)) if n == name && v == value => glyph.show
       case (glyph, Directive.Param(n)) if n == name                  => t"$glyph($value)"
 
-  private class Parser(s: String, holes: Iterator[Mathml])(using Tactic[Ergo.Error])
+  private class Parser(s: String, holes: Iterator[Mathml]^)(using Tactic[Ergo.Error])
   extends scala.caps.Stateful:
     private var pos = 0
     private var open = '('
@@ -461,12 +454,20 @@ object Ergo:
       skipSpaces()
       val c = peek
 
-      if c == Hole then { advance(); holes.next() }
-      else if c == open then rooted(parseGroup())
-      else if c == Radical then { advance(); Msqrt(parsePrimary()) }
-      else if c == Matrix then parseMatrix()
-      else if c == RowVec then parseVector(row = true)
-      else if c == ColVec then parseVector(row = false)
+      if c == Hole then
+        advance()
+        holes.seek(_ => true)(throw java.util.NoSuchElementException())(identity(_))
+      else if c == open then
+        rooted(parseGroup())
+      else if c == Radical then
+        advance()
+        Msqrt(parsePrimary())
+      else if c == Matrix then
+        parseMatrix()
+      else if c == RowVec then
+        parseVector(row = true)
+      else if c == ColVec then
+        parseVector(row = false)
       else if Character.isLetter(c) then
         val start = pos
         while pos < s.length && Character.isLetter(s.charAt(pos)) do pos += 1

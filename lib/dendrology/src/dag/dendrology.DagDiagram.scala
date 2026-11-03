@@ -32,13 +32,11 @@
                                                                                                   */
 package dendrology
 
+import scala.collection.immutable.List
 import scala.collection.immutable.Vector
-import scala.collection.immutable.{List, Nil, ::}
-import scala.reflect.*
 
 import acyclicity.*
 import anticipation.*
-import contingency.*
 import gossamer.*
 import prepositional.*
 import spectacular.*

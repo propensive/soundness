@@ -45,7 +45,6 @@ import gesticulate.*
 import gigantism.*
 import gossamer.*
 import hellenism.*
-import hieroglyph.*
 import jacinta.*
 import legerdemain.*
 import orthodoxy.*
@@ -57,11 +56,8 @@ import telekinesis.*
 import turbulence.*
 import urticose.*
 import vacuous.*
-import xylophone.*
 
-import codepages.utf8Codepage
 import rudiments.sortingAlgorithms.timsort
-import strategies.throwUnsafely
 import zephyrine.Parse
 
 object Apoplexy:
@@ -78,7 +74,7 @@ object Apoplexy:
 
   // The caches are keyed by the resource's content as well as its name, so that a spec edited
   // between two compilations in the same compiler process is read afresh.
-  private def key(source: Text, content: Text): Text = t"$source#${content.hashCode}"
+  private def key(source: Text, content: Text): Text = t"$source#${content.##}"
 
   private def spec(using Quotes)(source: Text): OpenApi =
     val content = resource(source)
@@ -86,8 +82,8 @@ object Apoplexy:
     specs.synchronized:
       specs.at(key(source, content)).or:
         val doc =
-          try content.read[OpenApi]
-          catch case error: Exception => halt(m"apoplexy: the OpenAPI spec at $source is not valid")
+          safely(content.read[OpenApi]).or:
+            halt(m"apoplexy: the OpenAPI spec at $source is not valid")
 
         specs(key(source, content)) = doc
         doc
@@ -206,8 +202,12 @@ object Apoplexy:
 
     given OpenApi = doc
 
-    try referable()
-    catch case error: OpenApi.Error => halt(m"apoplexy: ${error.message}")
+    given HaltTactic[OpenApi.Error, Any] = new HaltTactic[OpenApi.Error, Any]:
+      override def abort(error: Diagnostics ?=> OpenApi.Error): Nothing =
+        val error0: OpenApi.Error = error
+        halt(m"apoplexy: ${error0.message}")
+
+    referable()
 
   // The parameters of an operation: those its path item declares for every operation, overridden
   // by its own on the same name and location, each resolved through the components.
@@ -426,8 +426,8 @@ object Apoplexy:
           case ref: JsonSchema.Ref if depth < 8 =>
             given OpenApi = doc
 
-            try follow(OpenApi.apply(ref: JsonSchema)(), depth + 1)
-            catch case error: OpenApi.Error => ref
+            // A reference that does not resolve reads as itself, and so as `Json`.
+            safely(OpenApi.apply(ref: JsonSchema)()).lay(ref)(follow(_, depth + 1))
 
           case other =>
             other
@@ -529,13 +529,10 @@ object Apoplexy:
 
   // A media type the spec names, as a `MediaType` value in the generated code, if it parses
   private def mediaTypeExpr(using Quotes)(media: Text): Optional[Expr[MediaType]] =
-    try
-      Media.parse(media)
-      // Already parsed above, so the generated parse cannot fail: it throws unsafely rather
-      // than going through an `unsafely` block, whose context function a spliced closure
-      // cannot match under Scala 3.10's capture checking.
-      Optional('{ { import contingency.strategies.throwUnsafely; Media.parse(${Expr(media.s)}.tt) } })
-    catch case error: MediaType.Error => Unset
+    // Parsed here first, so the generated parse cannot fail; a gated helper rather than a
+    // spliced `unsafely`, whose context function a quote cannot match under capture checking.
+    safely(Media.parse(media)).let: _ =>
+      '{Media.unsafeParse(${Expr(media.s)}.tt)(using Unsafe)}
 
   // How a declared error response is raised: by the class of its status, a range class for
   // `4XX`-style keys (and for a numbered status telekinesis does not name), or `OtherError` for
@@ -580,7 +577,11 @@ object Apoplexy:
       val pointer: Text = schemaPointer(status, referable, media)
 
       // An error payload's record follows references two levels deep; beyond, raw `Json`
-      Json.Provider.memberOf(specJson(source), schemaNode(source, pointer), 2) match
+      val member: Member =
+        safely(Json.Provider.memberOf(specJson(source), schemaNode(source, pointer), 2)).or:
+          halt(m"apoplexy: the schema at $pointer could not be read")
+
+      member match
         case Member.Record(fields, Multiplicity.One)  => Payload.Record(relaxed(fields), false)
         case Member.Record(fields, Multiplicity.Many) => Payload.Record(relaxed(fields), true)
         case _                                        => Payload.Carrier(media)
@@ -995,11 +996,11 @@ object Apoplexy:
         if server.starts(t"/")
         then halt(m"apoplexy: the spec's server URL $server is relative; pass a `base` URL")
 
-        try server.as[HttpUrl]
-        catch case error: Url.Error => halt(m"apoplexy: the spec's server URL $server is not valid")
+        safely(server.as[HttpUrl]).or:
+          halt(m"apoplexy: the spec's server URL $server is not valid")
 
         // Validated above, so the generated decoding cannot fail (see `mediaTypeExpr`).
-        '{ { import contingency.strategies.throwUnsafely; $serverExpr.tt.as[HttpUrl] } }
+        '{unsafeHttpUrl($serverExpr.tt)(using Unsafe)}
 
       case supplied: Expr[HttpUrl] @unchecked =>
         if server.starts(t"/") then '{Api.extend($supplied, $serverExpr.tt)} else supplied
@@ -1152,8 +1153,8 @@ object Apoplexy:
     specJsons.synchronized:
       specJsons.at(key(source, content)).or:
         val json =
-          try OpenApi.sourceJson(content)
-          catch case error: Exception => halt(m"apoplexy: the OpenAPI spec at $source is not valid")
+          safely(OpenApi.sourceJson(content)).or:
+            halt(m"apoplexy: the OpenAPI spec at $source is not valid")
 
         specJsons(key(source, content)) = json
         json
@@ -1163,13 +1164,13 @@ object Apoplexy:
     val segments = pointer.cut(t"/").skip(1)
 
     segments.fold(specJson(source)): (node, segment) =>
-      try node(segment.sub(t"~1", t"/").sub(t"~0", t"~"))
-      catch case error: Exception => halt(m"apoplexy: could not resolve the schema at $pointer")
+      safely(node(segment.sub(t"~1", t"/").sub(t"~0", t"~"))).or:
+        halt(m"apoplexy: could not resolve the schema at $pointer")
 
   // Resolve the response-schema `JsonSchema` at a JSON-pointer into the spec.
   private def resolveSchema(using Quotes)(source: Text, pointer: Text): JsonSchema =
-    try schemaNode(source, pointer).as[JsonSchema]
-    catch case error: Exception => halt(m"apoplexy: the response schema at $pointer is not valid")
+    safely(schemaNode(source, pointer).as[JsonSchema]).or:
+      halt(m"apoplexy: the response schema at $pointer is not valid")
 
   // The response's schema pointer and spec source, from its refinements, once the response is
   // known to be JSON
@@ -1197,7 +1198,11 @@ object Apoplexy:
   private def responseMember(using Quotes)(source: Text, pointer: Text, what: Text)
   :   (List[(Text, Member)], Boolean) =
 
-    Json.Provider.memberOf(specJson(source), schemaNode(source, pointer)) match
+    val member: Member =
+      safely(Json.Provider.memberOf(specJson(source), schemaNode(source, pointer))).or:
+        halt(m"apoplexy: the schema at $pointer could not be read")
+
+    member match
       case Member.Record(fields, Multiplicity.One)  => (fields, false)
       case Member.Record(fields, Multiplicity.Many) => (fields, true)
 
@@ -1319,14 +1324,19 @@ object Apoplexy:
           val advice = t"a `Tactic[Parse.Error]` is needed"
           halt(m"apoplexy: reading the ${failure.key} response of $verb $key; $advice")
 
+        val truncation = Expr.summon[Tactic[Truncation.Error]].getOrElse:
+          val advice = t"a `Tactic[Truncation.Error]` is needed"
+          halt(m"apoplexy: reading the ${failure.key} response of $verb $key; $advice")
+
         refined.absolve match
           case '[type refined <: Record; refined] =>
-            val json = '{Api.jsonOf($response)(using $parse)}
+            val json = '{Api.jsonOf($response)(using $parse, $truncation)}
 
             if many then
               val tactic = providerTactic(m"reading the ${failure.key} response of $verb $key")
               '{Api.Records.list($json, $transform)(using $tactic).asInstanceOf[List[refined]]}
-            else '{Api.Records.build($json, $transform).asInstanceOf[refined]}
+            else
+              '{Api.Records.build($json, $transform).asInstanceOf[refined]}
 
     // The raise of one declared failure: the error constructed by class, with its payload and
     // (for a range or `default` class) the status, through its own tactic
@@ -1355,8 +1365,14 @@ object Apoplexy:
     val violationTactic = Expr.summon[Tactic[Api.Violation]].getOrElse:
       halt(m"apoplexy: a `Tactic[Api.Violation]` is needed, for a status $verb $key does not declare")
 
+    val truncation = Expr.summon[Tactic[Truncation.Error]].getOrElse:
+      halt(m"apoplexy: a `Tactic[Truncation.Error]` is needed, for a response body cut short")
+
     val violation: Expr[Nothing] =
-      '{$violationTactic.abort(Api.Violation($status0, Api.dataOf($response))(using $diagnostics))}
+      ' {
+          $violationTactic.abort
+            ( Api.Violation($status0, Api.dataOf($response)(using $truncation))(using $diagnostics) )
+        }
 
     val undeclared: Expr[Nothing] = declared.seek(_.key == t"default") match
       case Unset            => violation
@@ -1386,11 +1402,11 @@ object Apoplexy:
   // with the schema's properties, built over `Api.Records` with the expansion polyvinyl makes
   // of the schema's fields
   def recordMacro(self: Expr[Api.Response], json: Expr[Json]): Macro[Any] =
-    import quotes.reflect.*
 
     val (pointer, source) = jsonResponse(self, t"record()")
     val (fields, many) = responseMember(source, pointer, t"record()")
     val target = '{Api.Records}
+
     val (refined, transform) =
       Specification.recordExpansion[Json, Json.Provider, Json.Provider.Error](target, fields)
 
@@ -1399,15 +1415,16 @@ object Apoplexy:
         if many then
           val tactic = providerTactic(m"reading a response with record()")
           '{Api.Records.list($json, $transform)(using $tactic).asInstanceOf[List[refined]]}
-        else '{Api.Records.build($json, $transform).asInstanceOf[refined]}
+        else
+          '{Api.Records.build($json, $transform).asInstanceOf[refined]}
 
   // `Api.Response.tuple()`: as `record()`, as a named tuple read eagerly
   def tupleMacro(self: Expr[Api.Response], json: Expr[Json]): Macro[Any] =
-    import quotes.reflect.*
 
     val (pointer, source) = jsonResponse(self, t"tuple()")
     val (fields, many) = responseMember(source, pointer, t"tuple()")
     val target = '{Api.Records}
+
     val (tuple, make) =
       Specification.tupleExpansion[Json, Json.Provider, Json.Provider.Error](target, fields)
 
@@ -1416,7 +1433,8 @@ object Apoplexy:
         if many then
           val tactic = providerTactic(m"reading a response with tuple()")
           '{Api.Records.repeated(t"", $json)(using $tactic).map($make(_)).asInstanceOf[List[tuple]]}
-        else '{$make($json).asInstanceOf[tuple]}
+        else
+          '{$make($json).asInstanceOf[tuple]}
 
   // The `Tactic` through which an array response's elements are read, found where the macro is
   // expanded: an array response which is not an array fails through it
@@ -1492,3 +1510,8 @@ object Apoplexy:
       conformsTo(valueRepr, resolveSchema(source, pointer))
 
     '{()}
+
+// The URL decoding the generated code performs on a value the macro has already validated at
+// expansion: gated by `Unsafe` (which the macro supplies) rather than discharged by a spliced
+// `unsafely`, whose context function a quote cannot match under capture checking.
+def unsafeHttpUrl(text: Text)(using erased unsafe: Unsafe): HttpUrl = unsafely(text.as[HttpUrl])

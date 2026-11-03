@@ -159,6 +159,7 @@ def diff[element]
 
     val delPos =
       if deletes == 0 then 0 else count(row.readUnchecked(deletes - 1) + 1, inserts - deletes)
+
     val insPos = if inserts == 0 then 0 else count(row.readUnchecked(deletes), inserts - deletes)
     val best = if deletes + inserts == 0 then count(0, 0) else delPos.max(insPos)
 

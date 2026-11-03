@@ -53,13 +53,18 @@ object Classpath extends Root(t""):
 
   given radical: Classpath.type is Radical:
     type Plane = Classpath
-
-    def length(text: Text): Int raises Path.Error = 1
-
-    def decode(text: Text): Classpath.type raises Path.Error =
-      if text.starts(t"/") then Classpath else abort(Path.Error(_.InvalidRoot))
-
     def encode(root: Classpath.type): Text = t""
+
+  given eradicable: (tactic: Tactic[Path.Error])
+  =>  ( (Classpath.type is Eradicable on Classpath)^{tactic} ) =
+    new Eradicable:
+      type Self = Classpath.type
+      type Plane = Classpath
+
+      def length(text: Text): Int = 1
+
+      def decode(text: Text): Classpath.type =
+        if text.starts(t"/") then Classpath else abort(Path.Error(_.InvalidRoot))
 
   object Directory:
     def apply[path: Abstractable across Paths to Text](path: path): Classpath.Entry.Directory =
@@ -77,28 +82,21 @@ object Classpath extends Root(t""):
     val self: Text = "."
     val parent: Text = ".."
 
-  given streamable: [path <: Path on Classpath] => Tactic[Classpath.Error]
-  =>  ( classloader: Classloader )
-  =>  path is Streamable by Data =
+  // An instance retains the tactics it reads under — a missing resource, a truncated read — and
+  // the pure classloader, and says so.
+  given streamable: [path <: Path on Classpath]
+  =>  ( classpath: Tactic[Classpath.Error], truncation: Tactic[Truncation.Error],
+        classloader: Classloader )
+  =>  ( (path is Streamable by Data)^{classpath, truncation} ) =
 
-    // Built over `throwUnsafely` (unscoped, merely throws) and the pure classloader, so the
-    // instance retains no scoped capability; laundered pure (the codec-thunk seal pattern).
-    // [field-purity] given streamable codec, codec-thunk seal
-    caps.unsafe.unsafeAssumePure:
-      given Tactic[Truncation.Error] = strategies.throwUnsafely
+    Streamable.inputStream.contramap: path => classloader.inputStream(path.encode)
 
-      Streamable.inputStream.contramap: path => classloader.inputStream(path.encode)
+  given source: [path <: Path on Classpath]
+  =>  ( classpath: Tactic[Classpath.Error], truncation: Tactic[Truncation.Error],
+        classloader: Classloader, buffering: Buffering )
+  =>  ( (path is Streamable by Data over Credit)^{classpath, truncation} ) =
 
-  given source: [path <: Path on Classpath] => Tactic[Classpath.Error]
-  =>  ( classloader: Classloader, buffering: Buffering )
-  =>  path is Streamable by Data over Credit =
-
-    // See `streamable` above; laundered pure for the same reason.
-    // [field-purity] given streamable codec, codec-thunk seal
-    caps.unsafe.unsafeAssumePure:
-      given Tactic[Truncation.Error] = strategies.throwUnsafely
-
-      Streamable.inputStream.contramap: path => classloader.inputStream(path.encode)
+    Streamable.inputStream.contramap: path => classloader.inputStream(path.encode)
 
   // ClasspathEntry → Classpath.Entry
   object Entry:

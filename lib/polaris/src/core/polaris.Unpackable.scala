@@ -35,7 +35,6 @@ package polaris
 import denominative.*
 import prepositional.*
 import rudiments.*
-import vacuous.*
 
 object Unpackable:
   given frozenArray: [pack: Debufferable] => ClassTag[pack] => (Array[pack]^{}) is Unpackable:

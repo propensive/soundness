@@ -32,8 +32,7 @@
                                                                                                   */
 package xenophile
 
-import scala.collection.immutable as sci
-import scala.collection.immutable.{List, Nil, ::}
+import scala.collection.immutable.{List, Nil}
 import scala.quoted.*
 
 import anticipation.*

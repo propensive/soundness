@@ -33,11 +33,8 @@
 package chiaroscuro
 
 import anticipation.*
-import denominative.*
 import gossamer.*
-import prepositional.*
 import rudiments.*
-import spectacular.*
 import symbolism.*
 import vacuous.*
 

@@ -589,6 +589,63 @@ object Benchmarks extends Suite("collections-bench", m"Murmuration benchmarks"):
 
     // What the typeclass machinery costs over calling the standard library directly, on the
     // algorithm the standard library uses.
+    // The iterator against the standard library's: the same list walked by `each`, by `fold`,
+    // by the moving `pull` loop and by a `while hasNext/next` loop. Allocation is the column to
+    // read: a step of the native iterator mints nothing, and the pull loop's `Cursor` is the
+    // iterator reference itself, so none of the four should allocate beyond the walk's setup.
+    suite(m"Iteration"):
+      bench(m"stdlib while hasNext/next over a List")(target = 250*Milli(Second))
+      . over(Axis(t"size")(sizes*)): size =>
+          '{
+              val iterator = murmuration.Benchmarks.data(0, $size).stdlib.iterator
+              var total = 0
+              while iterator.hasNext do total += iterator.next()
+              total
+          }
+
+      bench(m"Iterator.each over a List")(target = 250*Milli(Second))
+      . over(Axis(t"size")(sizes*)): size =>
+          '{
+              var total = 0
+              murmuration.Benchmarks.data(0, $size).iterator.each(total += _)
+              total
+          }
+
+      bench(m"Iterator.fold over a List")(target = 250*Milli(Second))
+      . over(Axis(t"size")(sizes*)): size =>
+          '{ murmuration.Benchmarks.data(0, $size).iterator.fold(0)(_ + _) }
+
+      bench(m"pull loop over a List")(target = 250*Milli(Second))
+      . over(Axis(t"size")(sizes*)): size =>
+          '{
+              def recur(pull: Iterator.Pull[Int], total: Int): Int = pull match
+                case Iterator.Exhausted             => total
+                case cursor: Iterator.Cursor[Int] =>
+                  val value = cursor.value
+                  recur(cursor.pull, total + value)
+
+              recur(murmuration.Benchmarks.data(0, $size).iterator.pull, 0)
+          }
+
+      bench(m"Iterator.each over a frozen array")(target = 250*Milli(Second))
+      . over(Axis(t"size")(sizes*)): size =>
+          '{
+              val array: Array[Int] = murmuration.Benchmarks.data(0, $size).to[Array]
+              var total = 0
+              array.iterator.each(total += _)
+              total
+          }
+
+      bench(m"stdlib while over a frozen array's elements")(target = 250*Milli(Second))
+      . over(Axis(t"size")(sizes*)): size =>
+          '{
+              val array: Array[Int] = murmuration.Benchmarks.data(0, $size).to[Array]
+              val iterator = array.stdlib.iterator
+              var total = 0
+              while iterator.hasNext do total += iterator.next()
+              total
+          }
+
     suite(m"Against the standard library"):
       bench(m"Timsort through Sortable")(target = 250*Milli(Second))
       . over(Axis(t"size")(sizes*)): size =>

@@ -593,36 +593,36 @@ object Tests extends Suite("ffi", m"Xenophile tests"):
             }"""
 
       test(m"a world's imports are read in order, as Component Model ids"):
-        WitDialect.worlds(source).at(t"service").lay(Nil)(_.imports)
+        unsafely(WitDialect.worlds(source)).at(t"service").lay(Nil)(_.imports)
       . assert(_ == List(t"wasi:io/streams@0.2.0", t"wasi:clocks/monotonic-clock@0.2.0"))
 
       test(m"a world's exports are read separately from its imports"):
-        WitDialect.worlds(source).at(t"service").lay(Nil)(_.exports)
+        unsafely(WitDialect.worlds(source)).at(t"service").lay(Nil)(_.exports)
       . assert(_ == List(t"wasi:http/incoming-handler@0.2.0"))
 
       test(m"a bare interface name is qualified with the package id"):
         val wit = t"package test:demo@1.0.0; world w { import helper; }"
-        WitDialect.worlds(wit).at(t"w").lay(Nil)(_.imports)
+        unsafely(WitDialect.worlds(wit)).at(t"w").lay(Nil)(_.imports)
       . assert(_ == List(t"test:demo/helper@1.0.0"))
 
       test(m"an inline function import references no interface"):
         val wit = t"package test:demo@1.0.0; world w { import log: func(message: string); }"
-        WitDialect.worlds(wit).at(t"w").lay(Nil)(_.imports)
+        unsafely(WitDialect.worlds(wit)).at(t"w").lay(Nil)(_.imports)
       . assert(_ == List())
 
       test(m"an inline interface export references no interface"):
         val wit = t"package test:demo@1.0.0; world w { export handler: interface { go: func(); } }"
-        WitDialect.worlds(wit).at(t"w").lay(Nil)(_.exports)
+        unsafely(WitDialect.worlds(wit)).at(t"w").lay(Nil)(_.exports)
       . assert(_ == List())
 
       test(m"a world does not capture items from an interface beside it"):
         val wit = t"package test:demo@1.0.0; interface i { go: func(); } world w { import wasi:io/streams@0.2.0; }"
-        WitDialect.worlds(wit).at(t"w").lay(Nil)(_.imports)
+        unsafely(WitDialect.worlds(wit)).at(t"w").lay(Nil)(_.imports)
       . assert(_ == List(t"wasi:io/streams@0.2.0"))
 
       test(m"every world in a source is read"):
         val wit = t"package test:demo@1.0.0; world a { export x:y/z@1.0.0; } world b { import p:q/r@1.0.0; }"
-        List.from(WitDialect.worlds(wit).stdlib.keySet).sort
+        unsafely(WitDialect.worlds(wit)).keys.to[List].sort
       . assert(_ == List(t"a", t"b"))
 
     suite(m"WebIDL (synthetic sample)"):

@@ -58,7 +58,7 @@ class Panes(initial: Pane*):
   // freely collected and traversed; the installed callback genuinely captures the running form's
   // event loop, reconciled in `bindWake`. Atomic so that a mutating task sees the callback the
   // form bound.
-  private val onChange: Atomic.Ref[() -> Unit] = Atomic.Ref(() => ())
+  private val onChange: Atomic.Ref[() -> Unit] = Atomic.Ref { () => () }
 
   // Install the running form's repaint trigger. The callback captures the form's event loop, which
   // outlives this assignment, so it escapes into the long-lived container — a growing capture set

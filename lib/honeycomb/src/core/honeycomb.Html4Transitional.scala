@@ -37,7 +37,6 @@ import scala.language.dynamics
 import adversaria.*
 import anticipation.*
 import gossamer.*
-import hieroglyph.*
 import prepositional.*
 import rudiments.*
 import typonym.*
@@ -520,7 +519,8 @@ class Html4Transitional() extends Dom:
 
   val entities: Dictionary[Text] =
     val pairs = List.tabulate(EntityData.html4Names.length): index =>
-      (EntityData.html4Names.readUnchecked(index).tt, EntityData.html4Values.readUnchecked(index).tt)
+      ( EntityData.html4Names.readUnchecked(index).tt,
+        EntityData.html4Values.readUnchecked(index).tt )
 
     Dictionary(pairs*)
 

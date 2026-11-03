@@ -33,7 +33,6 @@
 package aviation
 
 import anticipation.*
-import contingency.*
 import symbolism.*
 
 abstract class RomanCalendar(val name: Text) extends Enumerated[Month](Month.fromOrdinal):

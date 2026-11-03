@@ -32,19 +32,15 @@
                                                                                                   */
 package jacinta
 
-import scala.compiletime.*
 import scala.language.dynamics
 import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import contextual.*
-import denominative.*
 import gossamer.*
 import prepositional.*
-import spectacular.*
 import vacuous.*
 import wisteria.*
-import zephyrine.*
 
 // `Bcd` lives in hypotenuse now; re-exported so every file in package `jacinta` still sees it.
 export hypotenuse.Bcd

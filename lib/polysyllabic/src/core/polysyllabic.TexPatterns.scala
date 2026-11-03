@@ -32,10 +32,7 @@
                                                                                                   */
 package polysyllabic
 
-import scala.collection.mutable.ArrayBuilder
-
 import anticipation.*
-import rudiments.*
 import vacuous.*
 
 private[polysyllabic] object TexPatterns:

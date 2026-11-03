@@ -107,8 +107,8 @@ object Sheet:
         // neutral reference; each accept delivers a single-use stream.
         sheet(parseRows(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]))
 
-      private def sheet(iterator: Iterator[Dsv]^): Sheet =
-        val rows = Array.from(iterator)
+      private def sheet(consume iterator: Iterator[Dsv]^): Sheet =
+        val rows = iterator.to[Array]
 
         if format.header then Sheet(rows, format, rows.head.let(_.header)) else Sheet(rows, format)
 
@@ -129,7 +129,7 @@ object Sheet:
     t"Sheet(format:${sheet.format.lay(t"○")(_.inspect)} ╱ columns:$columns ╱ rows:$rows)"
 
   given streamable: Dsv.Format => Sheet is Streamable by Text over Credit = sheet =>
-    Stream(sheet.rows.stdlib.iterator.map(_.show+t"\n"))
+    Stream(sheet.rows.map(_.show+t"\n").to[Chain])
 
   // Parse rows from a pull endpoint as a single-consumer iterator, one
   // block-credit refill per chunk. Each call builds a fresh parser over the
@@ -184,28 +184,13 @@ object Sheet:
 
   private def rowIterator(consume parser: Parser^): Iterator[Dsv]^ =
     new Iterator[Dsv]:
-      // Untracked: a stdlib `Iterator` cannot extend `Stateful`; the fields
-      // are reached only through this iterator's own methods.
-      // [stdlib-iterator] state in anonymous Iterator
-      @caps.unsafe.untrackedCaptures
-      private var pending: Optional[Dsv] = Unset
-      // [stdlib-iterator]
-      @caps.unsafe.untrackedCaptures
-      private var finished: Boolean = false
+      private var row: Dsv = null.asInstanceOf[Dsv]
 
-      def hasNext: Boolean =
-        if pending.present then true
-        else if finished then false
-        else
-          pending = parser.nextRow()
-          if pending.absent then finished = true
-          pending.present
+      update def advance(): Boolean = parser.nextRow().lay(false): next =>
+        row = next
+        true
 
-      def next(): Dsv =
-        if !hasNext then Iterator.empty.next()
-        val row = pending.or(Iterator.empty.next())
-        pending = Unset
-        row
+      def current: Dsv = row
 
   private[caesura] class Parser(load: () => Optional[Text])
     ( using format: Dsv.Format, tactic: Tactic[Dsv.Error] )
@@ -414,7 +399,7 @@ case class Sheet
 
   override def hashCode: Int =
     (ju.Arrays.hashCode(Array.unsafeJvm(rows).asInstanceOf[scala.Array[Object | Null]])*31 +
-      format.hashCode)*31 +
+      format.##)*31 +
       columns.lay(-1): array =>
         ju.Arrays.hashCode(Array.unsafeJvm(array).asInstanceOf[scala.Array[Object | Null]])
 

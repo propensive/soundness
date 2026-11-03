@@ -152,7 +152,7 @@ object DirectParsingTests extends Suite("xml-direct", m"Xylophone direct parsing
         . stream
 
       def dribbleText(text: Text, size: Int): Stream[Text] over Credit =
-        text.s.grouped(size).nn.map(_.tt).stream
+        Iterator.from(text.s.grouped(size).nn.map(_.tt)).stream
 
       val team = t"<root><name>Crew</name><members><name>Zoë</name><age>3</age></members>"+
         t"<members><name>Bob</name><age>40</age></members></root>"

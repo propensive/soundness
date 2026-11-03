@@ -35,6 +35,7 @@ package superlunary
 import anthology.*
 import anticipation.*
 import austronesian.*
+import contingency.*
 import galilei.*
 import gossamer.*
 import hellenism.*
@@ -52,12 +53,14 @@ object Isolation extends Rig(using Classloader[Isolation.type]):
   type Target = Classloader
   type Transport = Pojo
 
-  def stage(out: Path on Linux): Classloader =
+  def stage(out: Path on Linux)(using Tactic[Rig.Error]): Classloader =
     classpath(out).classloader(Classloader.Delegation.Preferential)
 
   val scalac: Scalac[3.6, Universe.Classfile] = Scalac[3.6](List(scalacOptions.experimental))
 
-  protected def invoke[output](stage: Stage[output, Form, Target]): output =
+  protected def invoke[output](stage: Stage[output, Form, Target])(using Tactic[Rig.Error])
+  :   output =
+
     // The bridge crosses through an `AnyRef` rim (the kernel-module-sep idiom): a directly
     // typed lambda mints fresh read capabilities that cannot match the stage's own.
     val bridge: AnyRef = ((input: scala.Array[Pojo]) =>

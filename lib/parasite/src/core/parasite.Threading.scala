@@ -37,5 +37,5 @@ import scala.language.experimental.pureFunctions
 import beneficence.*
 
 // A capability: it hands out a supervisor, which is one.
-trait Threading extends Findable, anticipation.DurableUnscoped:
+trait Threading extends Findable, anticipation.Durable:
   def supervisor(): Supervisor

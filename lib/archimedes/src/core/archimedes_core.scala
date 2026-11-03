@@ -32,8 +32,6 @@
                                                                                                   */
 package archimedes
 
-import scala.math
-
 import anticipation.*
 import contextual.*
 import gossamer.*

@@ -81,14 +81,16 @@ object Multiplicable:
     type Operand = Short
     type Result = Short
 
-    inline def multiply(multiplicand: Short, multiplier: Short): Short = (multiplicand*multiplier).toShort
+    inline def multiply(multiplicand: Short, multiplier: Short): Short =
+      (multiplicand*multiplier).toShort
 
   object ByteMultiplication extends Multiplicable:
     type Self = Byte
     type Operand = Byte
     type Result = Byte
 
-    inline def multiply(multiplicand: Byte, multiplier: Byte): Byte = (multiplicand*multiplier).toByte
+    inline def multiply(multiplicand: Byte, multiplier: Byte): Byte =
+      (multiplicand*multiplier).toByte
 
   inline given double: DoubleMultiplication.type = DoubleMultiplication
   inline given long: LongMultiplication.type = LongMultiplication

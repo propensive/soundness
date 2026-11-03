@@ -144,19 +144,19 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
 
     test(m"PEM parses from a stream through accept"):
       import alphabets.base64Standard
-      val stream = request.s.grouped(7).map(_.tt).stream
+      val stream = Iterator.from(request.s.grouped(7).map(_.tt)).stream
       summon[Pem is Aggregable by Text].accept(stream).data.digest[Md5].serialize[Base64]
     . assert(_ == t"iMwRdyDFStqq08vqjPbzYw==")
 
     test(m"PEM parses from a single-char-chunk stream"):
-      val stream = request.s.grouped(1).map(_.tt).stream
+      val stream = Iterator.from(request.s.grouped(1).map(_.tt)).stream
       summon[Pem is Aggregable by Text].accept(stream).label
     . assert(_ == Pem.Label.CertificateRequest)
 
     test(m"PEM certificate chain parses lazily from a stream"):
       val example = t"-----BEGIN EXAMPLE-----\nAAAA\n-----END EXAMPLE-----\n"
       val chain = t"subject=/CN=example\n$example\nissuer comment\n$example$example"
-      val stream = chain.s.grouped(11).map(_.tt).stream
+      val stream = Iterator.from(chain.s.grouped(11).map(_.tt)).stream
       summon[Chain[Pem] is Aggregable by Text].accept(stream).map(_.label).to[List]
     . assert(_ == List.fill(3)(Pem.Label.Proprietary(t"EXAMPLE")))
 
@@ -238,8 +238,8 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
       val key = SymmetricKey.generate[Aes[256]]()
       key.uncloak:
         val plain = t"The quick brown fox jumps over the lazy dog".in[Data]
-        val encrypted = plain.stdlib.grouped(1).map(Array.from(_)).iterator.stream.encrypt(InitializationVector.random)
-        encrypted.memoize.stdlib.grouped(1).map(Array.from(_)).iterator.stream.decrypt.memoize.to[List]
+        val encrypted = Stream(plain.batched(1).to[Chain]).encrypt(InitializationVector.random)
+        Stream(encrypted.memoize.batched(1).to[Chain]).decrypt.memoize.to[List]
     . assert(_ == t"The quick brown fox jumps over the lazy dog".in[Data].to[List])
 
     test(m"CTR/NoPadding streams roundtrip (stream-aligned check at end)"):
@@ -256,7 +256,7 @@ object Tests extends Suite("crypto", m"Enigmatic tests"):
       val key = SymmetricKey.generate[Aes[256]]()
       key.uncloak:
         val plain = t"Hello world".in[Data]
-        val chunks = Chain.from(plain.stdlib.grouped(1).map { chunk => Array.from(chunk) })
+        val chunks = plain.batched(1).to[Chain]
         chunks.encrypt(InitializationVector.random).fold(Array.empty[Byte])(_ + _).decrypt.as[Text]
     . assert(_ == t"Hello world")
 

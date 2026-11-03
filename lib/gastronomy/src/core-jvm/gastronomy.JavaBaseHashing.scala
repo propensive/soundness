@@ -53,30 +53,21 @@ object JavaBaseHashing extends Hashing:
   // The JDK has `java.util.zip` CRC-32 and Adler-32 (both intrinsified) but no CRC-64, so this
   // provider simply does not offer `crc64`; the structural refinement means a CRC-64 digest
   // resolves only under the Soundness provider, exactly as BLAKE3 does.
-  def adler32: Hashing.Function = new Hashing.Function:
+  def adler32: Hashing.Function = checksum: () => juz.Adler32()
+  def crc32: Hashing.Function = checksum: () => juz.CRC32()
+
+  // `Adler32` and `CRC32` share `java.util.zip.Checksum` and both yield a 32-bit value, written
+  // big-endian; one digester serves both, so the JDK crossing is made in one place.
+  private def checksum(fresh: () -> juz.Checksum): Hashing.Function = new Hashing.Function:
     def digestion(): Digestion^ = new Digestion:
-      private val state: juz.Adler32 = juz.Adler32()
+      private val state: juz.Checksum = fresh()
       update def append(bytes: Data): Unit = state.update(Array.unsafeJvm(bytes))
 
       override update def append(array: Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
         state.update(Array.unsafeJvm(array), start, count)
 
       update def digest(): Data =
-        val v = state.getValue
-
-        Array(((v >>> 24) & 0xff).toByte, ((v >>> 16) & 0xff).toByte, ((v >>> 8) & 0xff).toByte,
-              (v & 0xff).toByte)
-
-  def crc32: Hashing.Function = new Hashing.Function:
-    def digestion(): Digestion^ = new Digestion:
-      private val state: juz.CRC32 = juz.CRC32()
-      update def append(bytes: Data): Unit = state.update(Array.unsafeJvm(bytes))
-
-      override update def append(array: Array[Byte]^{caps.any.rd}, start: Int, count: Int): Unit =
-        state.update(Array.unsafeJvm(array), start, count)
-
-      update def digest(): Data =
-        val value = state.getValue()
+        val value = state.getValue
         Array[Byte]((value >> 24).toByte, (value >> 16).toByte, (value >> 8).toByte, value.toByte)
 
   private def messageDigest(name: Text): Hashing.Function = new Hashing.Function:

@@ -39,7 +39,6 @@ import gossamer.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
-import vacuous.*
 
 trait Elicitable2:
   given decodable: [value: Encodable in Text] => value is Elicitable:
@@ -63,7 +62,7 @@ object Elicitable extends Elicitable2:
     def widget(id: Text, label: Text, value: Text): Combobox =
       Combobox
         ( id,
-          (enumerable.values.stdlib.map(enumerable.name(_))).to(List),
+          enumerable.values.map(enumerable.name(_)).to[List],
           value )
 
   given reference: [entity <: Entity: {Listable, Showable, Referenceable}]

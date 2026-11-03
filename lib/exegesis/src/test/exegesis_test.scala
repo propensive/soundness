@@ -315,13 +315,14 @@ object Tests extends Suite("lsp", m"Exegesis Tests"):
 
     suite(m"Content-Length framing"):
       test(m"a framed message is unframed to its body"):
-        List.from(Iterator(t"Content-Length: 5\r\n\r\n12345".in[Data]).frames[ContentLength].map(_.utf8))
+        Iterator(t"Content-Length: 5\r\n\r\n12345".in[Data]).frames[ContentLength].map(_.utf8)
+        . to[List]
       . assert(_ == List(t"12345"))
 
       test(m"a multi-byte UTF-8 body is framed by byte length, not character count"):
         val body = t"""{"k":"café"}"""
         val message = t"Content-Length: ${body.in[Data].length}\r\n\r\n"+body
-        List.from(Iterator(message.in[Data]).frames[ContentLength].map(_.utf8))
+        Iterator(message.in[Data]).frames[ContentLength].map(_.utf8).to[List]
       . assert(_ == List(t"""{"k":"café"}"""))
 
     suite(m"Dispatch"):
@@ -344,7 +345,7 @@ object Tests extends Suite("lsp", m"Exegesis Tests"):
           . as[Json]
 
         TestServer.dispatch(request)
-        TestServer.session.outgoing.stdlib.iterator.next().as[JsonRpc.Request].method
+        TestServer.session.outgoing.head.let(_.as[JsonRpc.Request].method)
       . assert(_ == t"textDocument/publishDiagnostics")
 
       test(m"a hover request is answered from the ambient document"):
@@ -446,7 +447,7 @@ object Tests extends Suite("lsp", m"Exegesis Tests"):
           . as[Json]
 
         TestServer.dispatch(request)
-        TestServer.session.outgoing.stdlib.iterator.next().as[JsonRpc.Request].method
+        TestServer.session.outgoing.head.let(_.as[JsonRpc.Request].method)
       . assert(_ == t"$$/progress")
 
       test(m"a completionItem/resolve request decodes a bare item and resolves it"):
@@ -491,7 +492,7 @@ object Tests extends Suite("lsp", m"Exegesis Tests"):
           . as[Json]
 
         TestServer.roundtrip(request)
-        TestServer.session.outgoing.stdlib.iterator.next().as[JsonRpc.Request].method
+        TestServer.session.outgoing.head.let(_.as[JsonRpc.Request].method)
       . assert(_ == t"window/logMessage")
 
     suite(m"Traffic observation"):

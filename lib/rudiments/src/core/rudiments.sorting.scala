@@ -39,9 +39,10 @@ import scala.compiletime.summonFrom
 import scala.reflect.ClassTag
 
 import denominative.Countable
-import murmuration.{Reshapable, SortAlgorithm, Traversable}
+import murmuration.{Iterator, Reshapable, SortAlgorithm, Traversable}
 import prepositional.*
 import symbolism.*
+import vacuous.*
 
 // The sorting operations live here rather than in murmuration, beside the other operations over
 // `Traversable`, because sizing the scratch array needs `Countable`, which is denominative's and
@@ -80,6 +81,20 @@ extension [self, element](self: self)(using traversable: self is Traversable by 
 
     reshapable.reshape
       ( sorting.sorted(algorithm, traversable.traverse(self), comparable, sizeHint) )
+
+  // The element whose key is greatest (`maximize`) or least (`minimize`), or `Unset` on an
+  // empty receiver. Beside `order` because they ask the same question of the same
+  // `Comparable`: `xs.maximize(f)` is the last element of `xs.order(f)`, found in one pass
+  // with no sort. The first of several equal-keyed elements wins, as the stable sort would
+  // place it. Over `Comparable`, not hypotenuse's numeric `Commensurable`, so any ordered key
+  // -- a `Text`, an `Ordinal`, a date -- selects.
+  def maximize[key](lambda: element => key)(using comparable: key is Comparable)
+  :   Optional[element] =
+    sorting.extremum(traversable.traverse(self), lambda, comparable, true)
+
+  def minimize[key](lambda: element => key)(using comparable: key is Comparable)
+  :   Optional[element] =
+    sorting.extremum(traversable.traverse(self), lambda, comparable, false)
 
   // How many elements are coming, when that is known and the caller has accepted the cost of
   // asking. `Countable` is complexity-gated — a `List` answers only where `linearSize` has been
@@ -132,6 +147,34 @@ object sorting:
   // an element is its own key — so only `order` pays for it.
   class Entry(val key: Any, val element: Any)
 
+  // One pass over the elements, keeping the one whose key compares `More` (or `Less`) than
+  // every key seen so far; a tie keeps the earlier element.
+  def extremum[element, key]
+    ( iterator:   Iterator[element]^,
+      lambda:     element => key,
+      comparable: key is Comparable,
+      greatest:   Boolean )
+  :   Optional[element] =
+
+    var started = false
+    var current: element = null.asInstanceOf[element]
+    var best: key = null.asInstanceOf[key]
+
+    iterator.each: element =>
+      if !started then
+        current = element
+        best = lambda(element)
+        started = true
+      else
+        val next = lambda(element)
+        val comparison = comparable.compare(next, best)
+
+        if (if greatest then comparison.more else comparison.less) then
+          current = element
+          best = next
+
+    if started then current else Unset
+
   // The comparator the algorithms take, from a `Comparable` over the elements themselves.
   def comparator[element](comparable: element is Comparable): ju.Comparator[AnyRef] =
     (left, right) =>
@@ -141,15 +184,15 @@ object sorting:
   // interior scratch, never escaping, and holding it untyped avoids demanding a `ClassTag` for
   // an element type the caller has no reason to have one for.
   def sorted[element]
-    ( algorithm:  SortAlgorithm,
-      elements:   Iterator[element]^,
-      comparable: element is Comparable,
-      size:       Int )
+    ( algorithm:          SortAlgorithm,
+      consume elements:   Iterator[element]^,
+      comparable:         element is Comparable,
+      size:               Int )
   :   Iterator[element]^ =
 
     val array = drain(elements.map(_.asInstanceOf[AnyRef]), size)
     algorithm.sort(array, comparator(comparable))
-    array.iterator.map(_.asInstanceOf[element])
+    Iterator.array(array).map(_.asInstanceOf[element])
 
   // The elements of a traversal, in the order of a projection of them. Each element is paired
   // with its key before sorting, so the projection is applied once per element rather than twice
@@ -161,11 +204,11 @@ object sorting:
   // element in one array — measured at a third faster — but every algorithm would then have to
   // move two cells at a time, which `java.util.Arrays.sort`, and so Timsort, cannot.
   def ordered[element, key]
-    ( algorithm:  SortAlgorithm,
-      elements:   Iterator[element]^,
-      project:    element => key,
-      comparable: key is Comparable,
-      size:       Int )
+    ( algorithm:          SortAlgorithm,
+      consume elements:   Iterator[element]^,
+      project:            element => key,
+      comparable:         key is Comparable,
+      size:               Int )
   :   Iterator[element]^ =
 
     val entries =
@@ -180,29 +223,41 @@ object sorting:
       comparable.compare(leftKey, rightKey).sign
 
     algorithm.sort(array, keyComparator)
-    array.iterator.map(_.asInstanceOf[Entry].element.asInstanceOf[element])
+    Iterator.array(array).map(_.asInstanceOf[Entry].element.asInstanceOf[element])
+
+  // The slow drain: into a growing buffer, when the count is unknown or was wrong.
+  private def gather(elements: Iterator[AnyRef]^): scala.Array[AnyRef]^ =
+    val buffer = scala.collection.mutable.ArrayBuffer[AnyRef]()
+    elements.each(buffer += _)
+    buffer.toArray(using ClassTag.AnyRef)
 
   // An iterator's elements as an array. Given the count, the array is allocated once and filled;
   // without it, a builder grows one, which reallocates and copies as it goes. The count is
   // treated as a hint rather than a promise: an instance that answers with the wrong number
   // yields a shorter or longer array, not a broken one.
   private def drain(elements: Iterator[AnyRef]^, size: Int): scala.Array[AnyRef]^ =
-    if size < 0 then elements.toArray(using ClassTag.AnyRef) else
+    if size < 0 then gather(elements) else
       val array = new scala.Array[AnyRef](size)
       var index = 0
+      var exhausted = false
 
-      while index < size && elements.hasNext do
-        array(index) = elements.next()
-        index += 1
+      while index < size && !exhausted do
+        elements.next() match
+          case Iterator.Exhausted => exhausted = true
+          case element: AnyRef    =>
+            array(index) = element
+            index += 1
 
-      if !elements.hasNext then (if index == size then array else truncated(array, index))
+      if exhausted then (if index == size then array else truncated(array, index))
       else
         // More elements than the count promised: the rest are drained the slow way and joined.
-        val extra = elements.toArray(using ClassTag.AnyRef)
-        val whole = new scala.Array[AnyRef](index + extra.length)
-        jl.System.arraycopy(array, 0, whole, 0, index)
-        jl.System.arraycopy(extra, 0, whole, index, extra.length)
-        whole
+        val extra = gather(elements)
+
+        if extra.length == 0 then array else
+          val whole = new scala.Array[AnyRef](index + extra.length)
+          jl.System.arraycopy(array, 0, whole, 0, index)
+          jl.System.arraycopy(extra, 0, whole, index, extra.length)
+          whole
 
   private def truncated(array: scala.Array[AnyRef]^, size: Int): scala.Array[AnyRef]^ =
     val shorter = new scala.Array[AnyRef](size)

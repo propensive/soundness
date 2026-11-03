@@ -37,21 +37,18 @@ import scala.caps
 import anticipation.*
 import coaxial.*
 import contingency.*
-import enigmatic.*
 import fulminate.*
 import gastronomy.*
 import gigantism.*
 import gossamer.*
 import prepositional.*
 import proscenium.*
-import rudiments.*
 import susurration.*
-import turbulence.*
 import urticose.*
 import vacuous.*
 import zephyrine.*
 
-import Git.Error.Reason as Reason
+import Git.Error.Reason
 
 object SshNative:
   // One SSH connection per peer, with a channel per exchange: the server runs
@@ -124,11 +121,13 @@ extends octogenarian.Transport:
     given ssh: Tactic[Ssh.Error] = tactic.contramap: error =>
       Git.Error(Reason.Unreachable(address.host), error.message.text)(using Diagnostics.omit)
 
+    given socket: Tactic[Socket.Error] = tactic.contramap: error =>
+      Git.Error(Reason.Unreachable(address.host), error.message.text)(using Diagnostics.omit)
+
     val port = address.port.or(22)
     val user = address.user.or(credentials.user(address.host)).or(t"git")
 
-    if port < 1 || port > 65535
-    then abort(Git.Error(Reason.Unsupported(t"the port $port")))
+    if port < 1 || port > 65535 then abort(Git.Error(Reason.Unsupported(t"the port $port")))
 
     val endpoint = Endpoint(address.host, Port.unsafe[Tcp](port))
     val duplex = backend.duplexTcp(endpoint, Unset, options.values.to(List))

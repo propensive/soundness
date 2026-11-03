@@ -32,7 +32,6 @@
                                                                                                   */
 package gossamer
 
-import scala.language.experimental.into
 import scala.language.experimental.pureFunctions
 
 import fulminate.*

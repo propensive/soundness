@@ -35,7 +35,6 @@ package embarcadero
 import anticipation.*
 import fulminate.*
 import gesticulate.*
-import gossamer.*
 import vacuous.*
 
 // A namespace for OCI document types whose natural names are too generic to live at the

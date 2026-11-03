@@ -35,7 +35,6 @@ package aviation
 import java.lang.Math.{floorDiv, floorMod}
 
 import anticipation.*
-import contingency.*
 import gossamer.*
 
 // The Persian (Solar Hijri) calendar, using the arithmetical 2820-year cycle (Birashk's algorithm)

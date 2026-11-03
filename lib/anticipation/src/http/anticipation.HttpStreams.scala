@@ -54,9 +54,9 @@ object HttpStreams:
           position = end
           chunk
 
-    // A chunked body from a legacy iterator; `limit` cannot bound the
-    // chunks' own sizes.
-    def apply(chunks: Iterator[Array[Byte]^{}]): Body = limit =>
+    // A chunked body from a legacy iterator (this module sits below murmuration, so it is the
+    // stdlib's); `limit` cannot bound the chunks' own sizes.
+    def apply(chunks: scala.collection.Iterator[Array[Byte]^{}]^): Body^{chunks} = limit =>
       if chunks.hasNext then chunks.next() else null
 
     // A chunked body from a lazy chain of chunks, forced one cell per call;

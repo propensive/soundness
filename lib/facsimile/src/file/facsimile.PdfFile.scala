@@ -36,7 +36,6 @@ import ambience.*
 import anticipation.*
 import aperture.*
 import contingency.*
-import distillate.*
 import enigmatic.*
 import eucalyptus.*
 import fulminate.errorDiagnostics.stackTracesDiagnostics

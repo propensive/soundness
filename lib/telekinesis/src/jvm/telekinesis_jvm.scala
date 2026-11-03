@@ -42,17 +42,12 @@ import anticipation.*
 import coaxial.*
 import coaxial.socketBackends.javaBaseSockets
 import contingency.*
-import distillate.*
 import gigantism.*
-import gossamer.*
-import parasite.*
 import prepositional.*
 import rudiments.*
-import spectacular.*
 import telekinesis.*
 import turbulence.*
 import urticose.*
-import vacuous.*
 import zephyrine.*
 
 // Build the underlying Java client with redirect-following disabled — the
@@ -86,8 +81,10 @@ private def buildJavaRequest
   // The publisher pulls a fresh pull endpoint each time it is subscribed (the
   // JDK may re-subscribe on retry), draining it lazily through an
   // `InputStream` so the body is never held whole in memory.
+  // The JDK pulls the body on its own thread, under no tactic of ours: a pull cut short can
+  // only throw there, which the JDK reports as the request's failure.
   lazy val body =
-    jnh.HttpRequest.BodyPublishers.ofInputStream { () => bodyFn().inputStream }.nn
+    jnh.HttpRequest.BodyPublishers.ofInputStream { () => unsafely(bodyFn().inputStream) }.nn
 
   method match
     case Http.Delete  => request.DELETE().nn
@@ -140,9 +137,10 @@ private def buildResponse(response: jnh.HttpResponse[ji.InputStream])(using Tact
   val headers: List[Http.Header] = response.headers.nn.map().nn.to[List].bind:
     (key, values) => values.to[List].map: value => Http.Header(key.tt, value.tt)
 
-  val body = Http.Body.Flowing: () =>
-    unsafely:
-      summon[ji.InputStream is Streamable by Data over Credit].stream(response.body().nn)
+  val body = Http.Body.Flowing:
+    new Spring[Data]:
+      def apply()(using Tactic[Truncation.Error]): Stream[Data] over Credit =
+        summon[ji.InputStream is Streamable by Data over Credit].stream(response.body().nn)
 
   status(headers, body)
 
@@ -162,7 +160,8 @@ package httpBackends:
       buildResponse(send(buildJavaRequest(jn.URI.create(url.s).nn, method, headers, body)))
 
 // A request is transmitted over a raw socket as its HTTP/1.1 wire form.
-given requestTransmissible: Http.Request is Transmissible = Http.Request.serialize(_)
+given requestTransmissible: Tactic[Truncation.Error] => Http.Request is Transmissible =
+  Http.Request.serialize(_)
 
 // Fetch from a Unix domain socket, speaking HTTP/1.1 directly over the socket
 // (e.g. the Docker daemon's API). The request's `Host` is `localhost`.
@@ -175,15 +174,22 @@ given domainSocketFetchable: DomainSocket.Endpoint is Fetchable onto DomainSocke
     def text(endpoint: DomainSocket.Endpoint): Text = endpoint.path
     def hostname(endpoint: DomainSocket.Endpoint): Host = Localhost
 
-given domainSocketHttpClient: Tactic[Truncation.Error] => Http.Client onto DomainSocket =
+given domainSocketHttpClient: (Tactic[Truncation.Error], Tactic[Connect.Error])
+=>  Http.Client onto DomainSocket =
   new Http.Client:
     type Target = DomainSocket
 
     def request(request: Http.Request, socket: DomainSocket)(using Http.Event is Loggable)
     :   Http.Response =
 
-      unsafely:
-        // Typed binding: `transmit` and `parse` are both overloaded (lazy-list and
-        // endpoint forms), so the expected type picks the endpoint pair.
+      // Typed binding: `transmit` and `parse` are both overloaded (lazy-list and
+      // endpoint forms), so the expected type picks the endpoint pair.
+      mitigate:
+        case error: Socket.Error => socketConnectError(error)
+
+        case error: Http.Response.Error =>
+          Connect.Error(Connect.Error.Reason.Unknown)(using error.diagnostics)
+
+      . protect:
         val input: zephyrine.Stream[Data] over zephyrine.Credit = socket.transmit(request)
         Http.Response.parse(input)

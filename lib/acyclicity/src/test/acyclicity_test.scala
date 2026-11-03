@@ -182,7 +182,7 @@ object Tests extends Suite("dag", m"Acyclicity Tests"):
       test(m"each node is linearized after everything it depends on"):
         val order = diamond.linearized.stdlib
 
-        diamond.edges.stdlib.forall: (from, to) =>
+        diamond.edges.all: (from, to) =>
           order.indexOf(to) < order.indexOf(from)
 
       . assert(_ == true)
@@ -346,7 +346,7 @@ object Tests extends Suite("dag", m"Acyclicity Tests"):
       test(m"a reduction keeps only existing edges"):
         (1 to 40).forall: seed =>
           val dag = generated(seed)
-          dag.reduction.edges.stdlib.subsetOf(dag.edges.stdlib)
+          dag.reduction.edges.all(dag.edges.has(_))
       . assert(_ == true)
 
     suite(m"Frozen topologies"):
@@ -455,7 +455,7 @@ object Tests extends Suite("dag", m"Acyclicity Tests"):
     suite(m"Traversal"):
       test(m"a traversal sees each node's dependencies already computed"):
         val depth = diamond.traversal[Int]: (below, node) =>
-          if below.nil then 0 else below.stdlib.max + 1
+          below.maximize(identity(_)).lay(0)(_ + 1)
 
         (depth(t"d"), depth(t"b"), depth(t"a"))
       . assert(_ == (0, 1, 2))
@@ -519,7 +519,7 @@ object Tests extends Suite("dag", m"Acyclicity Tests"):
     suite(m"Topology"):
       test(m"a topology keeps a valid order as edges arrive"):
         val order = topologyOrder.stdlib
-        topologyEdges.stdlib.forall { (from, to) => order.indexOf(to) < order.indexOf(from) }
+        topologyEdges.all { (from, to) => order.indexOf(to) < order.indexOf(from) }
       . assert(_ == true)
 
       test(m"a topology's sources and sinks are maintained"):
@@ -542,7 +542,7 @@ object Tests extends Suite("dag", m"Acyclicity Tests"):
       test(m"bypassing reroutes and keeps the order valid"):
         val order = bypassedOrder.stdlib
         bypassedEdges.has((1, 4)) && !order.contains(2)
-        && bypassedEdges.stdlib.forall { (from, to) => order.indexOf(to) < order.indexOf(from) }
+        && bypassedEdges.all { (from, to) => order.indexOf(to) < order.indexOf(from) }
       . assert(_ == true)
 
       test(m"a consumed topology freezes to the same edges"):

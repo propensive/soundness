@@ -34,7 +34,6 @@ package pneumatic
 
 import anticipation.*
 import rudiments.*
-import vacuous.*
 
 // One-shot gzip/gunzip for a whole `Data` block, over the pure-Scala DEFLATE implementation, and
 // therefore available on every platform.

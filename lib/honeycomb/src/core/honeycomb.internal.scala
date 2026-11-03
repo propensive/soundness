@@ -34,7 +34,6 @@ package honeycomb
 
 import java.lang as jl
 
-import scala.caps
 import scala.collection.immutable.IndexedSeq
 import scala.collection.immutable.Seq
 import scala.collection.immutable.VectorMap
@@ -49,6 +48,7 @@ import denominative.*
 import fulminate.*
 import gigantism.*
 import gossamer.*
+import nomenclature.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
@@ -58,6 +58,32 @@ import vacuous.*
 import zephyrine.*
 
 object internal:
+  // The names of a `ClassList[name]()`: each label of the type is checked against `CssClass`'s
+  // rules here, so an invalid class name halts the expansion, and the names the expansion
+  // yields need no check when the list is made.
+  def classList[name <: Label: Type]: Macro[ClassList of name] =
+    import quotes.reflect.*
+
+    def labels(repr: TypeRepr): List[String] = repr.dealias match
+      case OrType(left, right)                => labels(left) ++ labels(right)
+      case ConstantType(StringConstant(text)) => List(text)
+      case other => halt(m"the class names should be string literals, not ${other.show}")
+
+    val limit: TypeRepr = Expr.summon[CssClass is Nominative].absolve match
+      case Some('{type limit; $nominative: (Nominative { type Limit = limit })}) =>
+        TypeRepr.of[limit]
+
+      case None =>
+        halt(m"the rules for a CSS class name were not found")
+
+    val names: List[Expr[Name[CssClass]]] = labels(TypeRepr.of[name]).map: label =>
+      if !nomenclature.protointernal.planeAccepts(label.tt, limit)
+      then halt(m"${label.tt} is not a valid CSS class name")
+
+      '{${Expr(label)}.tt.asInstanceOf[Name[CssClass]]}
+
+    '{new ClassList(Set(${Varargs(names)}*)) { type Topic = name }}
+
   def extractor[parts <: Tuple: Type, origins <: Tuple: Type]
     ( scrutinee: Expr[Html] )
   :   Macro[Extrapolation[Html]] =
@@ -90,7 +116,10 @@ object internal:
         Html.parse(Iterator(parts.mkString("\u0000").tt), whatwg.generic, capture(_, _))
 
       val holes2 = holes.to(List).sortBy(_(0).n0).map(_(1))
+      // The holes are walked through the stdlib's iterator: this is the quotes API's own list, and
+      // the walk is shared by the local defs below (a reflect boundary).
       val iterator = holes2.iterator
+      def nextHole() = if iterator.hasNext then iterator.next() else halt(m"too few holes")
       var index: Int = -1
 
       var types: List[TypeRepr] = Nil
@@ -133,8 +162,8 @@ object internal:
           case "\u0000" :: tail =>
             index += 1
             types ::= TypeRepr.of[Map[Text, Optional[Text]]]
-            iterator.next()
-            val others = Expr.ofList(pattern.attributes.keys.to(List).map(Expr(_)))
+            nextHole()
+            val others = Expr.ofList(pattern.attributes.keys.stdlib.toList.map(Expr(_)))
 
             ' {
                 $expr &&
@@ -149,7 +178,7 @@ object internal:
                 case "\u0000" =>
                   index += 1
                   types ::= TypeRepr.of[Text]
-                  iterator.next()
+                  nextHole()
                   '{$array(${Expr(index)}) = $scrutinee.attributes(${Expr(head)}); true}
 
                 case text: Text =>
@@ -157,7 +186,7 @@ object internal:
 
               '{$expr && $boolean}
 
-        val attributesChecked = attributes(pattern.attributes.keys.toList)('{true})
+        val attributesChecked = attributes(pattern.attributes.keys.stdlib.toList)('{true})
 
         // The children access is quoted in one piece: splicing a `val children` Expr gives
         // the frozen array a reach capture (`children*.rd`) that cannot subsume into the
@@ -186,7 +215,7 @@ object internal:
         pattern match
           case Html.Comment("\u0000") =>
             index += 1
-            iterator.next()
+            nextHole()
             types ::= TypeRepr.of[Text]
 
             ' {
@@ -198,7 +227,7 @@ object internal:
           case Html.Text("\u0000") =>
             index += 1
 
-            iterator.next() match
+            nextHole() match
               case Html.Hole.Node(label) =>
                 val tpe = whatwg.elements(label).lay(TypeRepr.of[Html.Node]): tag =>
                   // Deliberate stdlib opt-out: the macro works in the quotes API's stdlib `List`.
@@ -232,7 +261,7 @@ object internal:
           case Html.Element("\u0000", _, _, _) =>
             index += 1
 
-            iterator.next() match
+            nextHole() match
               case Html.Hole.Element(label) =>
                 val tpe = whatwg.elements(label).lay(TypeRepr.of[Html.Element]): tag =>
                   // Deliberate stdlib opt-out: the macro works in the quotes API's stdlib `List`.
@@ -393,7 +422,8 @@ object internal:
 
     abortive:
 
-      val iterator: Iterator[Expr[Any]] =
+      // The quotes API's own lists are walked through the stdlib's iterator (a reflect boundary).
+      val iterator: scala.collection.Iterator[Expr[Any]] =
         holes.to(List).sortBy(_(0).n0).map(_(1)).zip(insertions).map: (hole, expr) =>
           expr.absolve match
             case '{$expr: value} => hole match
@@ -502,7 +532,7 @@ object internal:
         case Html.Fragment(children*) => children.flatMap(serialize(_))
 
         case Html.Element(label, attributes, children, foreign) =>
-          val exprs = attributes.iterator.toList.map: (key, value) =>
+          val exprs = attributes.iterator.stdlib.toList.map: (key, value) =>
             ' {
                 ( ${Expr(key)},
                   $ {
@@ -518,7 +548,7 @@ object internal:
           // Cast-erased: the per-element `Expr` types are fresh-decorated, which an
           // outer seal cannot reach.
           val elements =
-            '{Array(${Expr.ofList(children.flatMap(serialize(_)).asInstanceOf[Array[Expr[Html.Node]]^{}].stdlib)}*)}
+            Array.quoted(children.flatMap(serialize(_)).asInstanceOf[Array[Expr[Html.Node]]^{}])
 
           List('{Html.Element(${Expr(label)}, $attrs, $elements, ${Expr(foreign)})})
 
@@ -766,44 +796,25 @@ object internal:
 
         false
 
-      def keys: Iterator[Text] =
+      // The keys at the even slots of the storage, read in place.
+      def keys: Iterator[Text]^ =
         val a = storage(attrs)
 
-        // Sealed: the iterator reads immutable storage through a read-only view.
-        // [stdlib-iterator] anonymous Iterator over immutable storage sealed pure
-        caps.unsafe.unsafeAssumePure:
-          new Iterator[Text]:
-            // Untracked: a plain index over immutable storage.
-            // [stdlib-iterator] index var in anonymous Iterator
-            @caps.unsafe.untrackedCaptures
-            private var i: Int = 0
+        new Iterator[Text]:
+          private var i: Int = -2
+          update def advance(): Boolean = { i += 2; i < a.length }
+          def current: Text = a(i).asInstanceOf[Text]
 
-            def hasNext: Boolean = i < a.length
-
-            def next(): Text =
-              val k = a(i).asInstanceOf[Text]
-              i += 2
-              k
-
-      def iterator: Iterator[(Text, Optional[Text])] =
+      def iterator: Iterator[(Text, Optional[Text])]^ =
         val a = storage(attrs)
 
-        // Sealed: the iterator reads immutable storage through a read-only view.
-        // [stdlib-iterator] anonymous Iterator over immutable storage sealed pure
-        caps.unsafe.unsafeAssumePure:
-          new Iterator[(Text, Optional[Text])]:
-            // Untracked: a plain index over immutable storage.
-            // [stdlib-iterator] index var in anonymous Iterator
-            @caps.unsafe.untrackedCaptures
-            private var i: Int = 0
+        new Iterator[(Text, Optional[Text])]:
+          private var i: Int = -2
+          update def advance(): Boolean = { i += 2; i < a.length }
 
-            def hasNext: Boolean = i < a.length
-
-            def next(): (Text, Optional[Text]) =
-              val k = a(i).asInstanceOf[Text]
-              val v = a(i + 1)
-              i += 2
-              (k, if v == null then Unset else v.asInstanceOf[Text])
+          def current: (Text, Optional[Text]) =
+            val v = a(i + 1)
+            (a(i).asInstanceOf[Text], if v == null then Unset else v.asInstanceOf[Text])
 
       def toMap: Map[Text, Optional[Text]] =
         val a = storage(attrs)
@@ -988,7 +999,7 @@ object internal:
           val k = a(i)
           val v = a(i + 1)
           val kh = if k == null then 0 else k.hashCode
-          val vh = if v == null then Unset.hashCode else v.hashCode
+          val vh = if v == null then Unset.## else v.hashCode
           h = h ^ (kh*31 ^ vh)
           i += 2
 

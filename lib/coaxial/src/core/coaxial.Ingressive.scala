@@ -34,7 +34,6 @@ package coaxial
 
 import anticipation.*
 import distillate.*
-import gossamer.*
 import hieroglyph.*
 import prepositional.*
 

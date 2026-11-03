@@ -58,7 +58,7 @@ object Scatter:
   =>  ( continuousY: y is Continuous, calibrationY: y is Calibration )
   =>  collection is Plottable in Scatter to Scatter.Fit by Scatter.Style =
     plottable[collection, x, y]: collection =>
-      List.from(traversable.traverse(collection).map(traceOf(_)))
+      traversable.traverse(collection).map(traceOf(_)).to[List]
 
   private def plottable[data, x: {Continuous, Calibration}, y: {Continuous, Calibration}]
     ( traces: data -> List[Trace] )

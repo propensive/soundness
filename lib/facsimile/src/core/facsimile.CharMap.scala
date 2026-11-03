@@ -83,7 +83,8 @@ private[facsimile] object CharMap:
           case "endbfchar" =>
             operands.batched(2).each:
               case List(source, destination) =>
-                code(source).let: code => target(destination).let { text => entries += code -> text }
+                code(source).let: code =>
+                  target(destination).let: text => entries += code -> text
 
               case _ =>
                 ()

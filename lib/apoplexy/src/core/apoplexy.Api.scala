@@ -38,12 +38,10 @@ import scala.language.dynamics
 import anticipation.*
 import contingency.*
 import denominative.*
-import distillate.*
 import fulminate.*
 import gesticulate.*
 import gossamer.*
 import hellenism.*
-import hieroglyph.*
 import jacinta.*
 import legerdemain.*
 import orthodoxy.*
@@ -55,7 +53,6 @@ import telekinesis.*
 import turbulence.*
 import urticose.*
 import vacuous.*
-import xylophone.*
 import zephyrine.*
 
 object Api:
@@ -78,7 +75,7 @@ object Api:
   // The specification `record()` and `tuple()` build their values over: JSON's reading
   // primitives, with the fields supplied per response by the macro
   object Records extends Json.Provider.Primitives:
-    def fields: List[(Text, Member)] = Nil
+    def fields(using Tactic[Specification.Error]): List[(Text, Member)] = Nil
 
     // The records of an array response, one per element
     def list(json: Json, transform: Text => Json => Any)(using Tactic[Json.Provider.Error])
@@ -110,11 +107,12 @@ object Api:
     Http.Header(t"authorization", credential.value.bearer.show)
 
   // A response body read as JSON, for `record()` and `tuple()`
-  def jsonOf(response: Http.Response)(using Tactic[Parse.Error]): Json =
+  def jsonOf(response: Http.Response)(using Tactic[Parse.Error], Tactic[Truncation.Error]): Json =
     summon[Json is Aggregable by Data].aggregate(Chain(dataOf(response)))
 
   // A response body's bytes, for a violation's payload
-  def dataOf(response: Http.Response): Data = response.body.stream.memoize
+  def dataOf(response: Http.Response)(using Tactic[Truncation.Error]): Data =
+    response.body.stream.memoize
 
   // The runtime send (invoked by the code `.call` emits): the URL is the base with the
   // substituted path template appended and the query attached; the `accept` header names the
@@ -139,7 +137,9 @@ object Api:
     val base = request.base
     val url: HttpUrl = Url(base.origin, t"${base.location}$substituted", query, base.fragment)
 
-    val empty: Spring[Data] = () => Iterator.empty[Data].stream
+    val empty: Spring[Data] = new Spring[Data]:
+      def apply()(using Tactic[Truncation.Error]): Stream[Data] over Credit =
+        Iterator.empty[Data].stream
 
     val (contentType, body): (Optional[MediaType], Spring[Data]) = request.body match
       case Api.Body.Empty                  => (Unset, empty)
@@ -183,7 +183,11 @@ object Api:
     def content[carrier](mediaType: MediaType, value: carrier)(using postable: carrier is Postable)
     :   Body =
 
-      Body.Content(mediaType, () => postable.stream(value))
+      val spring: Spring[Data] = new Spring[Data]:
+        def apply()(using Tactic[Truncation.Error]): Stream[Data] over Credit =
+          postable.stream(value)
+
+      Body.Content(mediaType, spring)
 
     // A frozen `Data` body, by a method whose signature names the frozen type in ordinary code:
     // a frozen type spliced through a quote is re-minted with a fresh read capability (the
@@ -278,11 +282,12 @@ object Api:
     // `Json.Provider`). Only for a JSON response; the schema must describe an object or an array
     // of objects.
     transparent inline def record()
-      ( using online:   Online,
-              loggable: Http.Event is Loggable,
-              connect:  Tactic[Connect.Error],
-              parse:    Tactic[Parse.Error],
-              client:   Http.Client onto Origin["http" | "https"] )
+      ( using online:     Online,
+              loggable:   Http.Event is Loggable,
+              connect:    Tactic[Connect.Error],
+              parse:      Tactic[Parse.Error],
+              truncation: Tactic[Truncation.Error],
+              client:     Http.Client onto Origin["http" | "https"] )
     :   Any =
 
       val response = Api.send(request)(using online, loggable, connect)(using client)
@@ -291,11 +296,12 @@ object Api:
 
     // As `record()`, but an eagerly-read named tuple, in the schema's property order
     transparent inline def tuple()
-      ( using online:   Online,
-              loggable: Http.Event is Loggable,
-              connect:  Tactic[Connect.Error],
-              parse:    Tactic[Parse.Error],
-              client:   Http.Client onto Origin["http" | "https"] )
+      ( using online:     Online,
+              loggable:   Http.Event is Loggable,
+              connect:    Tactic[Connect.Error],
+              parse:      Tactic[Parse.Error],
+              truncation: Tactic[Truncation.Error],
+              client:     Http.Client onto Origin["http" | "https"] )
     :   Any =
 
       val response = Api.send(request)(using online, loggable, connect)(using client)

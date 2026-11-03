@@ -36,12 +36,10 @@ import java.io as ji
 import java.util.concurrent as juc
 
 import scala.caps
-import scala.jdk.StreamConverters.StreamHasToScala
 import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import contingency.*
-import gossamer.*
 import parasite.*
 import prepositional.*
 import rudiments.*
@@ -128,12 +126,14 @@ extends Subprocess, Process.Ref, anticipation.Durable:
     sink.intake(head.getOutputStream.nn)
 
 
-  def await()(using computable: (result is Computable)^): result =
+  def await()(using computable: (result is Computable)^, truncation: Tactic[Truncation.Error])
+  :   result =
+
     computable.compute(this)
 
   def await[duration: Abstractable across Durations to Long](duration: duration)
-    ( using computable: (result is Computable)^ )
-  :   (Tactic[Async.Error]^) ?->{this, computable} result =
+    ( using computable: (result is Computable)^, truncation: Tactic[Truncation.Error] )
+  :   (Tactic[Async.Error]^) ?->{this, computable, truncation} result =
 
     if tail.waitFor(duration.generic/1_000_000L, juc.TimeUnit.MILLISECONDS)
     then computable.compute(this)
@@ -155,13 +155,7 @@ extends Subprocess, Process.Ref, anticipation.Durable:
   def process(using Tactic[Pid.Error]^): Process^ = Process(pid)
 
   def startTime[instant: Instantiable across Instants from Long]: Optional[instant] =
-    try
-      import strategies.throwUnsafely
-      process.startTime[instant]
-    catch case _: Pid.Error => Unset
+    safely(process.startTime[instant])
 
   def cpuUsage[instant: Instantiable across Durations from Long]: Optional[instant] =
-    try
-      import strategies.throwUnsafely
-      process.cpuUsage[instant]
-    catch case _: Pid.Error => Unset
+    safely(process.cpuUsage[instant])

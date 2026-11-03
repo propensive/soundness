@@ -32,8 +32,7 @@
                                                                                                   */
 package mercator
 
-import scala.annotation
-import scala.collection.immutable.{List, Nil, ::}
+import scala.collection.immutable.List
 import scala.compiletime.*
 import scala.quoted.*
 

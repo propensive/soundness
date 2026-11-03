@@ -83,9 +83,9 @@ object Socket:
     type ServerSocket
 
     def listenTcp(port: Tcp.Port, interface: Optional[MacAddress], options: List[Option])
-    :   ServerSocket
+    :   ServerSocket raises Bind.Error
 
-    def listenDomain(address: DomainSocket, options: List[Option]): ServerSocket
+    def listenDomain(address: DomainSocket, options: List[Option]): ServerSocket raises Bind.Error
 
     // Accept the next incoming connection, blocking until one arrives, as a `Duplex`: the handler
     // reads the request from its `source` and the accept loop writes the response with `send`.
@@ -142,12 +142,12 @@ object Socket:
 
     def dialTcp
       ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[Option] )
-    :   Exchange
+    :   Exchange raises Socket.Error
 
     def dialTcpPort(port: Tcp.Port, interface: Optional[MacAddress], options: List[Option])
-    :   Exchange
+    :   Exchange raises Socket.Error
 
-    def dialDomain(address: DomainSocket, options: List[Option]): Exchange
+    def dialDomain(address: DomainSocket, options: List[Option]): Exchange raises Socket.Error
 
     // Stream the request out, half-closing the output side; then read the response as a fresh
     // single-use pull endpoint whose refill blocks until data arrives or the peer half-closes.
@@ -163,9 +163,9 @@ object Socket:
     // no half-close.
     def duplexTcp
       ( endpoint: Endpoint[Tcp.Port], interface: Optional[MacAddress], options: List[Option] )
-    :   Duplex
+    :   Duplex raises Socket.Error
 
-    def duplexDomain(address: DomainSocket, options: List[Option]): Duplex
+    def duplexDomain(address: DomainSocket, options: List[Option]): Duplex raises Socket.Error
 
     //── Fire-and-forget datagram courier (`Routable`) ────────────────────────────────────────────
     type Courier
@@ -239,18 +239,26 @@ object Socket:
   // ConnectionError → Socket.Error
   object Error:
     enum Reason(val number: Int) extends Clarification:
-      case Accept   extends Reason(1)
-      case Transmit extends Reason(2)
-      case Close    extends Reason(3)
-      case Handshake extends Reason(4)
-      case Timeout  extends Reason(5)
+      case Accept      extends Reason(1)
+      case Transmit    extends Reason(2)
+      case Close       extends Reason(3)
+      case Handshake   extends Reason(4)
+      case Timeout     extends Reason(5)
+      case Connect     extends Reason(6)
+      case Refused     extends Reason(7)
+      case Dns         extends Reason(8)
+      case Unsupported extends Reason(9)
 
     given communicable: Reason is Communicable =
-      case Reason.Accept    => m"a new connection could not be accepted"
-      case Reason.Transmit  => m"data could not be transmitted to the connection"
-      case Reason.Close     => m"the connection could not be closed cleanly"
-      case Reason.Handshake => m"the TLS handshake with the peer failed"
-      case Reason.Timeout   => m"no response arrived before the timeout"
+      case Reason.Accept      => m"a new connection could not be accepted"
+      case Reason.Transmit    => m"data could not be transmitted to the connection"
+      case Reason.Close       => m"the connection could not be closed cleanly"
+      case Reason.Handshake   => m"the TLS handshake with the peer failed"
+      case Reason.Timeout     => m"no response arrived before the timeout"
+      case Reason.Connect     => m"the connection could not be established"
+      case Reason.Refused     => m"the peer refused the connection"
+      case Reason.Dns         => m"the host could not be resolved"
+      case Reason.Unsupported => m"the kind of socket is not supported on this platform"
 
   case class Error(reason: Socket.Error.Reason)(using Diagnostics)
   extends fulminate.Error(266, reason.number)(m"the connection failed because $reason")

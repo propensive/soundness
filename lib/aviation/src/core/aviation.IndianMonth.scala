@@ -32,9 +32,7 @@
                                                                                                   */
 package aviation
 
-import anticipation.*
 import prepositional.*
-import spectacular.*
 import symbolism.*
 
 // The twelve months of the Indian national (Saka) calendar. Chaitra has 30 days (31 in a leap

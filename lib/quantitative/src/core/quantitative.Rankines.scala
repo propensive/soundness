@@ -33,7 +33,6 @@
 package quantitative
 
 import anticipation.*
-import rudiments.*
 
 object Rankines:
   given designation: Designation[Rankines[1]] = () => "°R".tt

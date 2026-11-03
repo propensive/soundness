@@ -33,22 +33,18 @@
 package telekinesis
 
 import java.io as ji
-import java.net as jn
-import javax.net.ssl as jns
 
 import scala.caps
 
 import anticipation.*
 import coaxial.*
 import contingency.*
-import gigantism.*
+import fulminate.*
 import gossamer.*
 import parasite.*
 import prepositional.*
 import rudiments.*
-import spectacular.*
 import turbulence.*
-import urticose.*
 import vacuous.*
 import zephyrine.*
 
@@ -74,6 +70,11 @@ private[telekinesis] object Sessions:
 
       import Connect.Error.Reason.*
 
+      // A request body cut short is the exchange's failure.
+      given Tactic[Truncation.Error] = summon[Tactic[Connect.Error]].contramap: error =>
+        given Diagnostics = error.diagnostics
+        Connect.Error(Unknown)
+
       pending.let: stream =>
         try stream.asInstanceOf[(Stream[Data] over Credit)^].drain { _ => _ => () } catch
           case error: ji.IOException => abort(Connect.Error(Unknown))
@@ -86,9 +87,12 @@ private[telekinesis] object Sessions:
       val cursor = Cursor[Data](duplex.source)
 
       val head: Http.Response.Head =
-        try unsafely(Http.Response.parseHead(cursor)) catch
-          case error: Http.Response.Error => abort(Connect.Error(Unknown))
-          case error: ji.IOException      => abort(Connect.Error(Unknown))
+        try
+          mitigate:
+            case error: Http.Response.Error => Connect.Error(Unknown)(using error.diagnostics)
+
+          . protect(Http.Response.parseHead(cursor))
+        catch case error: ji.IOException => abort(Connect.Error(Unknown))
 
       // A `101` body is the upgraded protocol's unending stream; refuse it.
       if head.status == Http.SwitchingProtocols then abort(Connect.Error(Unknown))
@@ -120,8 +124,9 @@ private[telekinesis] object Sessions:
         val framedRef: AnyRef = framed.asInstanceOf[AnyRef]
         pending = framedRef
 
-        val spring: Spring[Data]^ = () =>
-          framedRef.asInstanceOf[(Stream[Data] over Credit)^]
+        val spring: Spring[Data]^ = new Spring[Data]:
+          def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+            framedRef.asInstanceOf[(Stream[Data] over Credit)^]
 
         head.status(head.headers, Http.Body.Flowing(spring))
 
@@ -150,23 +155,21 @@ private[telekinesis] object Sessions:
             // [field-fresh-param] body field's capture-polymorphic declared type
             caps.unsafe.unsafeAssumePure(request.body) )
 
-      // Distinct throwing tactics per error type (a single shared tactic would
-      // alias across `fetch`'s two using-parameters, tripping separation).
-      import strategies.throwUnsafely
+      // One tactic per error type (a single shared tactic would alias across `fetch`'s two
+      // using-parameters, tripping separation), each reporting as a connection failure.
+      mitigate:
+        case error: Http2.Error      => Connect.Error(Unknown)(using error.diagnostics)
+        case error: Async.Error      => Connect.Error(Unknown)(using error.diagnostics)
+        case error: Truncation.Error => Connect.Error(Unknown)(using error.diagnostics)
 
-      try
-        val (_, response) = connection.fetch(request2, t"https", authority)
-        val data: Data = response.body.stream.memoize
+      . protect:
+          val (_, response) = connection.fetch(request2, t"https", authority)
+          val data: Data = response.body.stream.memoize
 
-        val body: Http.Body = response.body match
-          case Http.Body.Empty => Http.Body.Empty
+          val body: Http.Body = response.body match
+            case Http.Body.Empty => Http.Body.Empty
 
-          case _ =>
-            if data.length == 0 then Http.Body.Empty else Http.Body.Fixed(data)
+            case _ =>
+              if data.length == 0 then Http.Body.Empty else Http.Body.Fixed(data)
 
-        response.status(response.textHeaders, body)
-
-      catch
-        case error: Http2.Error      => abort(Connect.Error(Unknown))
-        case error: Async.Error      => abort(Connect.Error(Unknown))
-        case error: Truncation.Error => abort(Connect.Error(Unknown))
+          response.status(response.textHeaders, body)

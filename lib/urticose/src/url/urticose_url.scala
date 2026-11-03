@@ -32,8 +32,6 @@
                                                                                                   */
 package urticose
 
-import prepositional.*
-
 extension (inline context: StringContext)
   transparent inline def url(inline parts: Any*): Url[Label] =
     ${urticose.protointernal.refined('context, 'parts)}

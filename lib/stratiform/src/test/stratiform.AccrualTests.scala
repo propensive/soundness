@@ -33,6 +33,7 @@
 package stratiform
 
 import soundness.*
+import soundness.sortingAlgorithms.timsort
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
@@ -523,8 +524,8 @@ object AccrualTests extends Suite("tel-accrual", m"Stratiform multi-error accrua
         && !strictExemptions.has(testcase.stem)
         then
           test(m"accrues exactly the reference diagnostics on ${testcase.stem}"):
-            validateRead(testcase.source.utf8).items.map(_(1).reason.number).stdlib.sorted
-          . assert(_ == expected.stdlib.sorted)
+            validateRead(testcase.source.utf8).items.map(_(1).reason.number).sort
+          . assert(_ == expected.sort)
 
       CorpusLoader.positive.each: testcase =>
         test(m"accrues no diagnostics on ${testcase.stem}"):

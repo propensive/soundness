@@ -32,6 +32,7 @@
                                                                                                   */
 package acyclicity
 
+import murmuration.Iterator
 import prepositional.*
 
 // A finite directed graph seen through its nodes: an enumerable node set and, for each node, the
@@ -56,26 +57,26 @@ object Nodal:
   given map: [node, map <: Map[node, Set[node]]] => (map is Nodal by node) = new Nodal:
     type Self = map
     type Operand = node
-    def nodes(self: map): Iterator[node] = Set.iterator(Map.keys(self))
+    def nodes(self: map): Iterator[node]^ = Iterator.from(Set.iterator(Map.keys(self)))
     def has(self: map, node: node): Boolean = Map.defines(self, node)
 
-    def successors(self: map, node: node): Iterator[node] =
+    def successors(self: map, node: node): Iterator[node]^ =
       Map.read(self, node) match
-        case Some(targets) => Set.iterator(targets)
+        case Some(targets) => Iterator.from(Set.iterator(targets))
         case None          => Iterator.empty
 
   given ledger: [node, ledger <: Ledger[node, Set[node]]] => (ledger is Nodal by node) = new Nodal:
     type Self = ledger
     type Operand = node
-    def nodes(self: ledger): Iterator[node] = List.iterator(Ledger.keys(self))
+    def nodes(self: ledger): Iterator[node]^ = Iterator.from(List.iterator(Ledger.keys(self)))
     def has(self: ledger, node: node): Boolean = Ledger.defines(self, node)
 
-    def successors(self: ledger, node: node): Iterator[node] =
+    def successors(self: ledger, node: node): Iterator[node]^ =
       Ledger.read(self, node) match
-        case Some(targets) => Set.iterator(targets)
+        case Some(targets) => Iterator.from(Set.iterator(targets))
         case None          => Iterator.empty
 
 trait Nodal extends Typeclass.Pure, Operable:
-  def nodes(self: Self): Iterator[Operand]
-  def successors(self: Self, node: Operand): Iterator[Operand]
+  def nodes(self: Self): Iterator[Operand]^
+  def successors(self: Self, node: Operand): Iterator[Operand]^
   def has(self: Self, node: Operand): Boolean

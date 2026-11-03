@@ -33,7 +33,6 @@
 package quantitative
 
 import anticipation.*
-import rudiments.*
 
 object Lightyears:
   given designation: Designation[Lightyears[1]] = () => "ly".tt

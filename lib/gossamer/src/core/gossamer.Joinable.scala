@@ -32,7 +32,6 @@
                                                                                                   */
 package gossamer
 
-import scala.language.experimental.into
 import scala.language.experimental.pureFunctions
 
 import fulminate.*
@@ -74,7 +73,7 @@ object Joinable:
       traversable.traverse(_)
 
   trait Source extends Typeclass.Pure, Operable:
-    def traverse(self: Self): Iterator[Operand]
+    def traverse(self: Self): Iterator[Operand]^
 
   // How a receiver's elements (`Operand`) are assembled into the `Result` of `join`, and what
   // type its separators (`Part`) take. Two assemblies exist, tried in priority order, and the
@@ -101,7 +100,9 @@ object Joinable:
         type Result = textual
         type Part = textual
 
-        def assemble(parts: Iterator[textual]): textual = joinable.join(parts.to(Iterable))
+        def assemble(parts: Iterator[textual]^): textual =
+          joinable.join
+            ( Reshapable.build(parts, scala.collection.immutable.List.newBuilder[textual]) )
 
     trait Fallback:
       given interleaving: [self, element, result]
@@ -113,11 +114,11 @@ object Joinable:
           type Result = result
           type Part = element
 
-          def assemble(parts: Iterator[element]): result = reshapable.reshape(parts)
+          def assemble(parts: Iterator[element]^): result = reshapable.reshape(parts)
 
   trait Assembly extends Typeclass.Pure, Operable, Resultant:
     type Part >: Operand
-    def assemble(parts: Iterator[Part]): Result
+    def assemble(parts: Iterator[Part]^): Result
 
 trait Joinable extends Typeclass.Pure, Operable:
   def join(elements: Iterable[Self]): Self

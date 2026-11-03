@@ -182,7 +182,7 @@ object internal:
       caps.unsafe.unsafeAssumePure:
         case array: scala.Array[Pojo @unchecked] =>
           factory.newBuilder.pipe: builder =>
-            array.iterator.each(builder += decodable.decoded(_))
+            array.iterator.foreach(builder += decodable.decoded(_))
             builder.result()
 
         case other =>

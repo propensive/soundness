@@ -34,7 +34,6 @@ package enigmatic
 
 import anticipation.*
 import corpuscular.*
-import gastronomy.*
 import gossamer.*
 import monotonous.*
 import prepositional.*

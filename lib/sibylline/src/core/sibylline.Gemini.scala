@@ -401,6 +401,6 @@ extends Llm.Dialect, caps.ExclusiveCapability:
     // A sentinel closes out the message after the last frame: this wire has no terminal event.
     // stdlib bridge: this method's contract is a stdlib `Iterator`, which the native `List`
     // has no accessor for — the boundary is the return type, not the interior.
-    (Llm.frames(response) ++ Iterator(Llm.Terminal)).flatMap: frame =>
-      if frame == Llm.Terminal then progress.finish().stdlib.iterator
-      else Gemini.events(progress, Gemini.frame(frame)).stdlib.iterator
+    Llm.frames(response).concat(Iterator(Llm.Terminal)).flatMap: frame =>
+      if frame == Llm.Terminal then progress.finish()
+      else Gemini.events(progress, Gemini.frame(frame))

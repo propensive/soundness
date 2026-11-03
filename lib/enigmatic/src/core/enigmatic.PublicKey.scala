@@ -91,7 +91,7 @@ object PublicKey:
   def raw[cipher <: Cipher](bits: Data)(using algorithm: cipher is KeyAlgorithm)
   :   Optional[PublicKey[cipher]] =
 
-    algorithm.algorithm.let(identifier => PublicKey(Spki.wrap(identifier, bits)))
+    algorithm.algorithm.let: identifier => PublicKey(Spki.wrap(identifier, bits))
 
   private[enigmatic] def adopt[cipher <: Cipher](data: Data)
     ( using algorithm: cipher is KeyAlgorithm )

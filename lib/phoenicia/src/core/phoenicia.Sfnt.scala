@@ -117,13 +117,18 @@ object Sfnt:
   def assemble(version: Data, tables: List[(Text, Data)]): Data =
     def padded(length: Int): Int = (length + 3)/4*4
 
-    val sorted = tables.stdlib.sortBy(_(0).s)
-    val count = sorted.length
+    // A font has a handful of tables, so counting them is cheap.
+    import denominative.dysasymptotics.linearSize
+    import denominative.size
+    import rudiments.sortingAlgorithms.timsort
+
+    val sorted = tables.order(_(0).s)
+    val count = sorted.size
     val entrySelector = 31 - Integer.numberOfLeadingZeros(count)
     val searchRange = (1 << entrySelector)*16
     val tablesStart = 12 + count*16
 
-    val total = tablesStart + sorted.sumBy: entry => padded(entry(1).length)
+    val total = tablesStart + sorted.fuse(0)(state + padded(next(1).length))
 
     val buffer = Array.allocate[Byte](total)
 
@@ -166,9 +171,9 @@ object Sfnt:
     var offset = tablesStart
     var headOffset = -1
 
-    sorted.indices.each: index =>
-      val (tag, table) = sorted(index)
-      val directory = 12 + index*16
+    sorted.indexed.each: (entry, index) =>
+      val (tag, table) = entry
+      val directory = 12 + index.n0*16
       val tagBytes = tag.s.getBytes(StandardCharsets.US_ASCII).nn
 
       (0 until 4).each: position => buffer(directory + position) = tagBytes(position)
@@ -208,7 +213,7 @@ trait Sfnt:
   def advanceWidth(char: Char): Int raises Font.Error = hmtx.advanceWidth(glyph(char).id)
 
   def width(text: Text): Quantity[Ems[1]] raises Font.Error =
-    text.chars.stdlib.sumBy(advanceWidth).toDouble*Em/head.unitsPerEm.int.toDouble
+    text.chars.fuse(0)(state + advanceWidth(next)).toDouble*Em/head.unitsPerEm.int.toDouble
 
   def leftSideBearing(char: Char): Int raises Font.Error =
     hmtx.leftSideBearing(glyph(char).id)
@@ -446,7 +451,7 @@ trait Sfnt:
         case (1, 0)  => 4
         case _       => 5
 
-      candidates.occupied.let(_.stdlib.minBy(rank).decode)
+      candidates.minimize(rank).let(_.decode)
 
   case class CmapTable(offset: Int):
     case class GlyphEncoding(platformId: Int, encodingId: Int, offset: Int):

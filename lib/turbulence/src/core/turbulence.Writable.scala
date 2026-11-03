@@ -41,8 +41,6 @@ import denominative.*
 import hieroglyph.*
 import prepositional.*
 import rudiments.*
-import symbolism.*
-import vacuous.*
 import zephyrine.{stream as _, *}
 
 object Writable:
@@ -65,10 +63,7 @@ object Writable:
           val interval: Interval = range
 
           try
-            outputStream.write
-              ( unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]),
-                interval.start.n0,
-                interval.size )
+            region.borrow(range)(outputStream.write(_, _, _))
 
             total += interval.size
           catch case error: ji.IOException => failed = true
@@ -145,13 +140,7 @@ object Writable:
           if !failed then
             val interval: Interval = range
 
-            val buffer =
-              jn.ByteBuffer.wrap
-                ( unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]),
-                  interval.start.n0,
-                  interval.size )
-
-              . nn
+            val buffer = region.borrow(range)(jn.ByteBuffer.wrap(_, _, _).nn)
 
             try
               while buffer.hasRemaining do

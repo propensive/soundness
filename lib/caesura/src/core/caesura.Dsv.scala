@@ -96,7 +96,8 @@ trait Dsv2:
       // Only the first record is read from a stream, and only as far as it extends.
       override def accept(stream: (Stream[Text] over Credit)^): value in Dsv =
         Sheet.parseRows(Dsv.adopted(stream))
-        . next().as[value].asInstanceOf[value in Dsv]
+        . seek(_ => true)(throw java.util.NoSuchElementException())(_.as[value])
+        . asInstanceOf[value in Dsv]
 
 trait Dsv1 extends Dsv2:
   this: Dsv.type =>
@@ -487,47 +488,46 @@ object Dsv extends Dsv1:
         // The decode lambda may capture the consumer's `Tactic` (field decoders are
         // tactic-taking givens), with the same lifetime as the instance's given resolution;
         // the fresh (`^`) result honestly admits the capture — no seal.
-        DsvProductDecoder[derivation](
-          (row: Dsv) =>
-            val foci = infer[Foci[CellRef]]
+        DsvProductDecoder[derivation]: (row: Dsv) =>
+          val foci = infer[Foci[CellRef]]
 
-            // Positional mode (`columns` Unset): read the field's span starting at `count`.
-            // Header mode: locate the field by column name; an absent column hands the field
-            // an empty `Dsv` so `Optional` fields decode to `Unset` rather than misreading by
-            // position.
-            def fieldRow(label: Text, count: Int): Dsv =
-              row.columns.lay(Dsv(row.data.skip(count))): columns =>
-                columns(label).lay(Dsv(Array[Text]())): i =>
-                  Dsv(row.data.skip(i))
+          // Positional mode (`columns` Unset): read the field's span starting at `count`.
+          // Header mode: locate the field by column name; an absent column hands the field
+          // an empty `Dsv` so `Optional` fields decode to `Unset` rather than misreading by
+          // position.
+          def fieldRow(label: Text, count: Int): Dsv =
+            row.columns.lay(Dsv(row.data.skip(count))): columns =>
+              columns(label).lay(Dsv(Array[Text]())): i =>
+                Dsv(row.data.skip(i))
 
-            // A SINGLE field traversal serving both modes, branching on `foci.active` per
-            // field. One traversal is load-bearing: every wisteria traversal re-summons each
-            // field's decoder (`summonInline`), recursively deriving nested types, so
-            // traversals multiply EXPONENTIALLY with nesting depth at compile time.
-            //
-            // Accruing mode: each slot is marked failed if its decode registered any focus,
-            // and the record is constructed only when every slot is clean — user constructor
-            // code never sees a garbage fallback value. On failure the returned value is never
-            // used (the caller's scope is tainted), and siblings keep accruing in the
-            // meantime. Fail-fast mode: the first recorded error escapes through the tactic,
-            // so no focus bookkeeping and no failure scan are needed.
-            val active = foci.active
-            var count = 0
+          // A SINGLE field traversal serving both modes, branching on `foci.active` per
+          // field. One traversal is load-bearing: every wisteria traversal re-summons each
+          // field's decoder (`summonInline`), recursively deriving nested types, so
+          // traversals multiply EXPONENTIALLY with nesting depth at compile time.
+          //
+          // Accruing mode: each slot is marked failed if its decode registered any focus,
+          // and the record is constructed only when every slot is clean — user constructor
+          // code never sees a garbage fallback value. On failure the returned value is never
+          // used (the caller's scope is tainted), and siblings keep accruing in the
+          // meantime. Fail-fast mode: the first recorded error escapes through the tactic,
+          // so no focus bookkeeping and no failure scan are needed.
+          val active = foci.active
+          var count = 0
 
-            val slots: Array[Venture[Any]]^{} =
-              contexts[derivation]()[Venture[Any]]:
-                [field] => context =>
-                  val row2 = fieldRow(label, count)
-                  count += spans.readUnchecked(index)
+          val slots: Array[Venture[Any]]^{} =
+            contexts[derivation]()[Venture[Any]]:
+              [field] => context =>
+                val row2 = fieldRow(label, count)
+                count += spans.readUnchecked(index)
 
-                  if !active then Venture(contextual.decoded(row2))
-                  else
-                    focus(CellRef(Prim, label)):
-                      val before = foci.length
-                      val value: field = contextual.decoded(row2)
-                      if foci.length > before then Venture.failed else Venture(value)
+                if !active then Venture(contextual.decoded(row2))
+                else
+                  focus(CellRef(Prim, label)):
+                    val before = foci.length
+                    val value: field = contextual.decoded(row2)
+                    if foci.length > before then Venture.failed else Venture(value)
 
-            gate[derivation](infer[ProductReflection[derivation]], slots, active))
+          gate[derivation](infer[ProductReflection[derivation]], slots, active)
 
   object EncodableDerivation extends ProductDerivable[Encodable in Dsv]:
     inline def conjunction[derivation <: Product: ProductReflection]
@@ -616,12 +616,14 @@ case class Dsv(data: Array[Text]^{}, columns: Optional[Map[Text, Int]] = Unset) 
     columns.let(_(field)).let { index => data.at(index.z) }.let(value.decoded(_))
 
   override def hashCode: Int =
-    data.stdlib.indices.fuse(0)(state*31 + data.readUnchecked(next).hashCode)
+    var hash = 0
+    data.extent.each: index => hash = hash*31 + data(index).##
+    hash
 
   override def equals(that: Any): Boolean = that.asMatchable match
     case row: Dsv =>
-      data.length == row.data.length && data.stdlib.indices.all: index =>
-        data.readUnchecked(index) == row.data.readUnchecked(index)
+      data.length == row.data.length && data.extent.all: index =>
+        data(index) == row.data.readUnchecked(index.n0)
 
     case _ =>
       false

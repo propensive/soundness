@@ -35,6 +35,7 @@ package obligatory
 import anticipation.*
 import contingency.*
 import gossamer.*
+import murmuration.Iterator
 import prepositional.*
 import vacuous.*
 import zephyrine.*

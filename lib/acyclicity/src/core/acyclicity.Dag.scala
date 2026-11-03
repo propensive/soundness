@@ -84,7 +84,9 @@ object Dag:
     new Dag(adjacency)
 
   extension (dag: Dag[Text])
-    def dot: Dot = unsafely:
+    // A node's text names its DOT node, so a text which is not a DOT identifier (empty, or
+    // containing a double-quote or a newline) cannot be rendered.
+    def dot: Dot raises Name.Error =
       val edges = Set.iterator(dag.edges).map: (a, b) => Name[Dot.Id](a) --> Name[Dot.Id](b)
       Dot.Digraph(None, false, edges.toSeq*)
 
@@ -104,26 +106,28 @@ object Dag:
   given nodal: [node] => (Dag[node] is Nodal by node) = new Nodal:
     type Self = Dag[node]
     type Operand = node
-    def nodes(self: Dag[node]): Iterator[node] = self.adjacency.keysIterator
+    def nodes(self: Dag[node]): Iterator[node]^ = Iterator.from(self.adjacency.keysIterator)
     def has(self: Dag[node], node: node): Boolean = self.adjacency.contains(node)
 
-    def successors(self: Dag[node], node: node): Iterator[node] =
-      self.adjacency.get(node).fold(Iterator.empty)(_.iterator)
+    def successors(self: Dag[node], node: node): Iterator[node]^ =
+      self.adjacency.get(node) match
+        case Some(targets) => Iterator.from(targets.iterator)
+        case None          => Iterator.empty
 
   given bidirectional: [node] => (complexity: Dysasymptotic.LinearScan)
   =>  ( Dag[node] is Bidirectional by node ) = new Bidirectional:
     type Self = Dag[node]
     type Operand = node
 
-    def predecessors(self: Dag[node], node: node): Iterator[node] =
-      self.transpose.getOrElse(node, sci.Set()).iterator
+    def predecessors(self: Dag[node], node: node): Iterator[node]^ =
+      Iterator.from(self.transpose.getOrElse(node, sci.Set()).iterator)
 
   given topological: [node] => Dag[node] is Topological = new Topological { type Self = Dag[node] }
 
   // As a collection, a `Dag` is its nodes, in topological order; `map` renames them, answering a
   // `Digraph` since two nodes may merge into a cycle, with the merged nodes' edges united.
   given traversable: [node] => Dag[node] is Traversable by node =
-    dag => List.iterator(dag.linearized)
+    dag => Iterator.from(List.iterator(dag.linearized))
 
   given inclusive: [node] => Dag[node] is Inclusive by node =
     (dag, node) => dag.adjacency.contains(node)

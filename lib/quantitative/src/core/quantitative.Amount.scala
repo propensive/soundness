@@ -35,7 +35,6 @@ package quantitative
 import scala.language.implicitConversions
 
 import anticipation.*
-import rudiments.*
 
 object Amount:
   // The evidence an erased `Amount` given is built from: never instantiated at runtime, since

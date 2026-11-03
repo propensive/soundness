@@ -33,15 +33,12 @@
 package anticipation
 
 // A shared capability that may be retained across a thread boundary: a monitor, a running
-// process, a connection, a channel, a logger. A task's body is retained by the worker running it,
-// on another thread, so what it captures is restricted to these (`DurableUnscoped` ones
-// included). A `Tactic` is shared but not durable: raising through one from a task would unwind a
-// stack that is not the task's own, so a task raises only through its own tactic.
+// process, a connection, a channel, a logger, a log sink. A task's body is retained by the worker
+// running it, on another thread, and the worker is itself a shared capability classified
+// `Durable`, so what it retains must be classified `Durable` too: a body is typed
+// `->{caps.any.only[Durable]}`. A `Tactic` is a `caps.Control` capability — it captures a return
+// point on the stack of the code that installed it — and so is not `Durable`: a task raises only
+// through its own tactic. (Exclusion, `->{caps.any.except[caps.Control]}`, says what a body that
+// is merely *run* on another thread may capture, but it is not a classification, so a body a
+// shared object *retains* cannot be typed by it.)
 trait Durable extends scala.caps.SharedCapability, scala.caps.Classifier
-
-// A durable capability that is also exempt from the level check, as the ambient strategies are:
-// a log sink, network access, a transport observer. These are importable givens or
-// application-lifetime values, so they must be storable statically, and they are used from
-// every task at once. A classifier meet of `Durable` and `SharedUnscoped` (proscala
-// `classifiermeet`), so a durable holder may retain one and `only[Durable]` admits it.
-trait DurableUnscoped extends Durable, scala.caps.SharedUnscoped, scala.caps.Classifier

@@ -35,21 +35,23 @@ package galilei
 import scala.annotation.nowarn
 import scala.caps
 
+
+import Io.Error.{Operation, Reason}
 import anticipation.*
 import contingency.*
+import fulminate.*
 import gossamer.*
 import hellenism.*
 import hypotenuse.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
-import vacuous.*
 import soundness.{call, dispose}
-import turbulence.Aggregable
-import xenophile.*
-
-import Io.Error.{Operation, Reason}
 import symbolism.*
+import turbulence.*
+import turbulence.Aggregable
+import vacuous.*
+import xenophile.*
 
 // The WIT definitions the navigation below is typechecked against, and which the `call`
 // materializer consults (at its downstream expansion site) for module ids, resource methods and
@@ -191,11 +193,7 @@ package filesystemBackends:
           try directory.`readlink-at`(relative).call[Text]() finally descriptor.dispose()
 
       def exists(path: Path on Plane, dereference: Boolean): Boolean =
-        import strategies.throwUnsafely
-
-        try
-          stat(path, dereference) yet true
-        catch case error: Exception => false
+        safely(stat(path, dereference) yet true).or(false)
 
       def children(path: Path on Plane)(using Tactic[Io.Error]): Chain[Text] =
         protect(path, Operation.Read):
@@ -289,8 +287,19 @@ package filesystemBackends:
         ( using Tactic[Io.Error] )
       :   Unit =
 
-        val content = open(source, List(OpenFlag.Read), Unset)(_.reader())
+        // A read or write the file cuts short is the operation's failure.
+        val content =
+          given Tactic[Truncation.Error] = summon[Tactic[Io.Error]].contramap: error =>
+            given Diagnostics = error.diagnostics
+            Io.Error(source, Operation.Read, Reason.Physical)
+
+          open(source, List(OpenFlag.Read), Unset)(_.reader())
+
         val flags = List(OpenFlag.Write, OpenFlag.Create, OpenFlag.Truncate)
+
+        given Tactic[Truncation.Error] = summon[Tactic[Io.Error]].contramap: error =>
+          given Diagnostics = error.diagnostics
+          Io.Error(destination, Operation.Write, Reason.Physical)
 
         open(destination, flags, Unset): handle => handle.writer(content)
 
@@ -558,14 +567,20 @@ package filesystemBackends:
 
               streamHandle.dispose()
 
-            // The `source`/`intake` endpoints are spelled out rather than defaulted: the
-            // defaults' thunks carry root capabilities in the default-getter methods' result
-            // types, which are not visible from the downstream site this `inline given`
-            // expands at under capture checking.
             val handle =
-              Handle(() => read(), write(_))
-                ( () => zephyrine.Stream(read()),
-                  () => turbulence.Sink.buffered((), (_, stream) => write(stream)) )
+              new Handle:
+                def reader()(using Tactic[Truncation.Error]): Chain[Data] = read()
+                def writer(data: Chain[Data])(using Emit[Truncation.Error]): Unit = write(data)
+
+                def source()(using Tactic[Truncation.Error])
+                :   (zephyrine.Stream[Data] over zephyrine.Credit)^ =
+
+                  zephyrine.Stream(read())
+
+                def intake()(using Emit[Truncation.Error])
+                :   zephyrine.Intake[Data] over zephyrine.Credit =
+
+                  turbulence.Sink.buffered((), (_, stream) => write(stream))
 
             try lambda(handle) finally opened.dispose()
           finally descriptor.dispose()

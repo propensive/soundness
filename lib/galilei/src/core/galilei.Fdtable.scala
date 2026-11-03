@@ -33,7 +33,6 @@
 package galilei
 
 import anticipation.*
-import contingency.*
 import gigantism.Every
 import vacuous.*
 

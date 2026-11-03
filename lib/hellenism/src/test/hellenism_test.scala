@@ -65,7 +65,7 @@ object Tests extends Suite("classpath", m"Hellenism Tests"):
     . assert(_ == Classpath / "scala" / "Option.class")
 
     test(m"check that a classpath file is streamable"):
-      cp"/scala/Option.class".read[Data]
+      unsafely(cp"/scala/Option.class".read[Data])
     . assert(_.length > 0)
 
     test(m"a classpath file on the classpath exists"):

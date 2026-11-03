@@ -46,6 +46,7 @@ import gossamer.*
 import guillotine.*
 import hieroglyph.*
 import jacinta.*
+import obligatory.*
 import parasite.*
 import proscenium.*
 import turbulence.*
@@ -74,6 +75,8 @@ object Dap:
             options:      Every[Socket.Option.Tcp],
             system:       System,
             asyncError:   Tactic[Async.Error],
+            framing:      Tactic[Framing.Error],
+            truncation:   Tactic[Truncation.Error],
             working:      WorkingDirectory,
             environment:  Environment,
             consume stdio: Stdio^,
@@ -83,7 +86,6 @@ object Dap:
             note:         Diagnostics )
   :   Unit =
 
-    import strategies.throwUnsafely
     import codepages.utf8Codepage
 
     val outgoing: Relay[Json] = Relay()
@@ -124,45 +126,36 @@ object Dap:
       command: Optional[Text] = Unset,
       event:   Optional[Text] = Unset )
 
-  def envelope(json: Json): Envelope =
-    import strategies.throwUnsafely
-    try json.as[Envelope] catch case _: Exception => Envelope()
+  def envelope(json: Json): Envelope = safely(json.as[Envelope]).or(Envelope())
 
   // Message constructors. The `seq` is supplied by the session, which owns the outgoing
-  // counter. Throwing tactics: attaching a field to a freshly-built object cannot fail.
+  // counter. Each object is built in one total step from its field list (`type` is a keyword,
+  // and `body` is present only when given), so no tactic is involved.
+  private def message(fields: List[(String, Json)], body: Optional[Json]): Json =
+    Json.applyDynamicNamed("make")(body.lay(fields)(body => List.append(fields, "body" -> body))*)
+
   def response(seq: Int, request: Envelope, body: Optional[Json]): Json =
-    import strategies.throwUnsafely
-
-    val base =
-      Json.make
-        ( seq         = seq.in[Json],
-          request_seq = request.seq.or(0).in[Json],
-          success     = true.in[Json],
-          command     = request.command.or(t"").in[Json] )
-
-    val typed = base.updateDynamic("type")(t"response".in[Json])
-
-    body.lay(typed): body => typed.updateDynamic("body")(body)
+    message
+      ( List
+          ( "seq"         -> seq.in[Json],
+            "request_seq" -> request.seq.or(0).in[Json],
+            "success"     -> true.in[Json],
+            "command"     -> request.command.or(t"").in[Json],
+            "type"        -> t"response".in[Json] ),
+        body )
 
   def failure(seq: Int, request: Envelope, message: Text): Json =
-    import strategies.throwUnsafely
-
-    val base =
-      Json.make
-        ( seq         = seq.in[Json],
-          request_seq = request.seq.or(0).in[Json],
-          success     = false.in[Json],
-          command     = request.command.or(t"").in[Json],
-          message     = message.in[Json] )
-
-    base.updateDynamic("type")(t"response".in[Json])
+    Json.applyDynamicNamed("make")
+      ( "seq"         -> seq.in[Json],
+        "request_seq" -> request.seq.or(0).in[Json],
+        "success"     -> false.in[Json],
+        "command"     -> request.command.or(t"").in[Json],
+        "message"     -> message.in[Json],
+        "type"        -> t"response".in[Json] )
 
   def event(seq: Int, name: Text, body: Optional[Json]): Json =
-    import strategies.throwUnsafely
-    val base = Json.make(seq = seq.in[Json], event = name.in[Json])
-    val typed = base.updateDynamic("type")(t"event".in[Json])
-
-    body.lay(typed): body => typed.updateDynamic("body")(body)
+    message
+      ( List("seq" -> seq.in[Json], "event" -> name.in[Json], "type" -> t"event".in[Json]), body )
 
   object ExceptionFilter:
     given encodable: ExceptionFilter is Json.Encodable = Json.EncodableDerivation.derived

@@ -69,7 +69,7 @@ private[facsimile] object PdfWriter:
     ascii(t"%PDF-1.7\n")
     raw(Array[Byte]('%'.toByte, 0xe2.toByte, 0xe3.toByte, 0xcf.toByte, 0xd3.toByte, '\n'.toByte))
 
-    val maxNumber = pdf.nextNumber - 1
+    val maxNumber = pdf.nextNumber() - 1
     val offsets = scala.collection.mutable.HashMap[Int, Long]()
 
     (1 to maxNumber).each: number =>
@@ -133,9 +133,9 @@ private[facsimile] object PdfWriter:
 
       // In an encrypted document, new and edited objects — held in the overlay as cleartext —
       // are encrypted with their own per-object key as they are written.
-      val encryption = pdf.guard.let((_, number, generation))
+      val encryption = pdf.guard().let((_, number, generation))
 
-      val value = pdf.guard.lay(pdf.overlay(number)):
+      val value = pdf.guard().lay(pdf.overlay(number)):
         guard => encryptStrings(pdf.overlay(number), guard, number, generation)
 
       // The writer thunks share only this append pass's own accumulators.
@@ -191,7 +191,7 @@ private[facsimile] object PdfWriter:
 
             ascii(t"${pad(offsets(number), 10)} ${pad(generation, 5)} n \n")
 
-      ascii(t"trailer\n<< /Size ${pdf.nextNumber}")
+      ascii(t"trailer\n<< /Size ${pdf.nextNumber()}")
 
       entries.each: (key, value) =>
         ascii(t" /$key ")
@@ -222,7 +222,7 @@ private[facsimile] object PdfWriter:
   (using Tactic[Pdf.Error])
   :   Unit =
 
-    val number = pdf.nextNumber
+    val number = pdf.nextNumber()
     val rows = (numbers :+ number).distinct.sort
 
     // `/W [1 4 2]`: one byte of entry type, four of offset — enough for any file this side of

@@ -43,7 +43,6 @@ import contingency.*
 import distillate.*
 import eucalyptus.*
 import fulminate.*
-import gossamer.*
 import guillotine.*
 import jacinta.*
 import obligatory.*
@@ -91,16 +90,26 @@ object LspSessional:
   // A free function, not a method: the reader is supplied as a partly-applied `pump`, whose
   // closure captures the observer, and a method of the session would have that same observer in
   // its own prefix — an overlap separation checking rejects.
+  // The two sides of a transport, as the exchange's tasks run them: the sink and the channel
+  // are minted *inside* the writer and reader tasks, each under its task's own tactic, so a
+  // truncated write or read, or a malformed frame, is that task's fault, reported to the
+  // probate, and neither task retains a tactic from outside. An instance captures only what a
+  // task may retain: the observer, a stream or a job.
+  private[exegesis] trait Writing:
+    def sink(using Tactic[Truncation.Error]): (Intake[Data] over Credit)^
+
+  private[exegesis] trait Reading:
+    def read(receive: Text => Unit)(using Tactic[Framing.Error | Truncation.Error]): Unit
+
   private[exegesis] def exchange[result]
     ( listener: Lsp.Listener,
       observer: Lsp.Observer,
-      consume sink: (Intake[Data] over Credit)^,
-      consume read: (Text => Unit) => Unit )
+      writing:  Writing^{caps.any.only[anticipation.Durable]},
+      reading:  Reading^{caps.any.only[anticipation.Durable]} )
     ( lambda: Lsp.Connection => result )
     ( using Monitor, Probate, Diagnostics )
   :   result =
 
-    import strategies.throwUnsafely
     import Json.jsonEncodableInText
 
     // Sealed: the connection captures this session's monitor and diagnostics, and an honest
@@ -121,23 +130,27 @@ object LspSessional:
     // A single writer, so writes never interleave. The observer sees the encoded body, not the
     // framing, matching `listen`.
     // The writer task owns the sink it frames messages onto.
-    val writer: Task[Unit] = sink.transfer: (sink, _, _) ?=>
+    val writer: Task[Unit] = async[Unit, Truncation.Error]: (_, tactic) ?=>
+      val sink0 = writing.sink(using tactic)
+
       // The stdlib view is drained element by element, without memoizing the live chain; the
       // sink is finished when the drain ends, or when the task is cancelled.
       try
-        connection.outgoing.stdlib.iterator.each: json =>
+        connection.outgoing.each: json =>
           val body: Text = json.encode
           observer.sent(body)
-          sink().put(LspTransport.frame(body))
-          sink().flush()
-      finally sink().finish()
+          sink0.put(LspTransport.frame(body))
+          sink0.flush()
+      finally sink0.finish()
 
     // The channel is read by a partly-applied `pump`, rather than by handing the stream over: the
     // stream is single-owner, so it is minted and consumed within the reader task, which also
     // keeps this thread off the channel's first refill — a blocking read that would otherwise
     // happen before the writer that unblocks it has started.
-    val reader: Task[Unit] = read.transfer: (read, _, _) ?=>
-      read(): message =>
+    val reader: Task[Unit] = async[Unit, Framing.Error | Truncation.Error]: (_, tactic) ?=>
+      given Tactic[Framing.Error | Truncation.Error] = tactic
+
+      reading.read: message =>
         safely(message.as[Json]).let: json =>
           if listener.intercept(json) then Unset
           else Lsp.method(json).lay(dispatch(json)): method =>
@@ -156,38 +169,49 @@ object LspSessional:
 class LspSessional
   ( listener: Lsp.Listener = Lsp.Listener.Quiet,
     observer: Lsp.Observer = Lsp.Observer.Silent )
-  ( using Monitor, Probate, Diagnostics, WorkingDirectory, Environment )
+  ( using Monitor, Probate, Diagnostics, WorkingDirectory, Environment, Tactic[Lsp.Error] )
 extends Sessional:
   type Self = Lsp.Server
   type Result = Lsp.Connection^
 
   def session[result](target: Lsp.Server)(lambda: (session: Result) ?=> result): result =
-    import strategies.throwUnsafely
-
     target match
       case Lsp.Server.Streams(input, output) =>
-        val streamable = summon[(ji.InputStream is Streamable by Data over Credit)^]
-        val sink = summon[(ji.OutputStream is Sink by Data over Credit)^].intake(output)
+        // The sink and the channel are minted by the exchange's writer and reader tasks, each
+        // under its own tactic (see `exchange`).
+        val writing = new LspSessional.Writing:
+          def sink(using Tactic[Truncation.Error]): (Intake[Data] over Credit)^ =
+            summon[(ji.OutputStream is Sink by Data over Credit)^].intake(output)
 
-        // The sink is owned, and finished, by the exchange's writer task.
-        LspSessional.exchange
-          ( listener, observer, sink, LspTransport.pump(streamable.stream(input), observer)(_) )
-          ( lambda(using _) )
+        val reading = new LspSessional.Reading:
+          def read(receive: Text => Unit)(using Tactic[Framing.Error | Truncation.Error]): Unit =
+            val streamable = summon[(ji.InputStream is Streamable by Data over Credit)^]
+            LspTransport.pump(streamable.stream(input), observer)(receive)
+
+        LspSessional.exchange(listener, observer, writing, reading)(lambda(using _))
 
       case Lsp.Server.Process(command) =>
-        // Launched with a silent logger and a throwing tactic: `Sessional#session` fixes the
-        // signature, so a failure to launch cannot be raised through a caller's `Tactic`, and an
-        // exec log has no channel to reach — a language server owns standard output.
+        // Launched with a silent logger — an exec log has no channel to reach, since a language
+        // server owns standard output — and a failure to launch reported as `Unstarted` through
+        // the session's tactic, since `Sessional#session` fixes the signature.
         import logging.silentLogging
 
-        val job = command.fork[Exit]()
+        val job =
+          mitigate:
+            case error: Exec.Error =>
+              Lsp.Error(Lsp.Error.Reason.Unstarted, error.message.text)(using error.diagnostics)
+
+          . protect(command.fork[Exit]())
 
         // The child is killed rather than waited for: a server that ignores `exit`, or that never
         // receives it because the exchange ended early, would otherwise outlive the session it
         // was lent to.
-        try
-          LspSessional.exchange
-            ( listener, observer, job.intake, LspTransport.pump(job.stdout(), observer)(_) )
-            ( lambda(using _) )
+        val writing = new LspSessional.Writing:
+          def sink(using Tactic[Truncation.Error]): (Intake[Data] over Credit)^ = job.intake
 
+        val reading = new LspSessional.Reading:
+          def read(receive: Text => Unit)(using Tactic[Framing.Error | Truncation.Error]): Unit =
+            LspTransport.pump(job.stdout(), observer)(receive)
+
+        try LspSessional.exchange(listener, observer, writing, reading)(lambda(using _))
         finally job.abort()

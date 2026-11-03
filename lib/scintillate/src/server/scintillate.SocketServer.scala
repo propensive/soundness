@@ -141,7 +141,7 @@ case class SocketServer
   ( port: Int, local: Boolean = true, ssl: Optional[jns.SSLContext] = Unset )
   ( using errorPage: WebserverErrorPage )
 extends RequestServable:
-  import SocketServer.{containsIgnoreCase, HeadFacts, factsOf, keepAlive, isUpgrade,
+  import SocketServer.{HeadFacts, factsOf, keepAlive, isUpgrade,
       expectsContinue, errorStatus}
 
   // Cap on the bytes an unconsumed request body will be drained before the
@@ -176,8 +176,7 @@ extends RequestServable:
             val interval: Interval = range
 
             try
-              val raw = unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]])
-              out.write(raw, interval.start.n0, interval.size)
+              region.borrow(range)(out.write(_, _, _))
               if flushEach then out.flush()
               true
             catch case error: ji.IOException => false
@@ -282,7 +281,9 @@ extends RequestServable:
                 head.host,
                 head.target,
                 head.headers,
-                () => bodyRef.asInstanceOf[Stream[Data] over Credit] )
+                new Spring[Data]:
+                  def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                    bodyRef.asInstanceOf[Stream[Data] over Credit] )
 
           var upgraded = false
           var keep = keepAlive(head, facts)
@@ -464,7 +465,7 @@ extends RequestServable:
           safely(serverSocket.accept().nn).let: socket =>
             val socket0: AnyRef = socket
 
-            daemon:
+            daemon[Async.Error]:
               val socket1 = socket0.asInstanceOf[jn.Socket]
 
               try

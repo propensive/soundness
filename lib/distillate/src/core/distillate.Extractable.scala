@@ -47,8 +47,8 @@ object Extractable:
   =>  ( decodable: Tactic[Hazard]^ ?=> result is Decodable in Text )
   =>  ( (text is Extractable to result)^{decodable} ) =
 
-    // Captures the context function it decodes with.
-    value => safely(decodable(using strategies.throwUnsafely).decoded(value))
+    // Captures the context function it decodes with; `safely` supplies its tactic.
+    value => safely(decodable.decoded(value))
 
   given optional: [result: Extractable]
   =>  Optional[result] is Extractable to result.Result =

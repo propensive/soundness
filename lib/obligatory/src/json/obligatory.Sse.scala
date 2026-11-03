@@ -57,7 +57,10 @@ object Sse:
     import codepages.utf8Codepage
 
     Servable[Chain[Sse]](_ => media"text/event-stream"): stream =>
-      Http.Body.Flowing(() => zephyrine.Stream(stream.map(_.encode.in[Data])))
+      Http.Body.Flowing:
+        new Spring[Data]:
+          def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+            zephyrine.Stream(stream.map(_.encode.in[Data]))
 
   given framable: Text is Framable by Sse = input =>
     // The frame reader owns its cursor exclusively for the whole parse.
@@ -198,7 +201,7 @@ object Sse:
         if current - start - 1 > capacity then abort(Error(Error.Reason.CapacityExceeded)) else
           ((start + 1) until current).map: index => spool.put(buffer(index%capacity))
 
-      Chain.from(spool.stream.records)
+      spool.stream.records.chain
 
 case class Sse
   ( event: Text           = "message",

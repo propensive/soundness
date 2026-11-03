@@ -32,11 +32,8 @@
                                                                                                   */
 package probably
 
-import scala.deriving.*
-
 import chiaroscuro.*
 import denominative.*
-import distillate.*
 import rudiments.each
 import vacuous.*
 

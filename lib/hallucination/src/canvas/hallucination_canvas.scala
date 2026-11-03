@@ -32,8 +32,6 @@
                                                                                                   */
 package hallucination
 
-import aperture.*
-
 // `Canvas`'s `Openable` instance. It was a member of `Canvas`'s companion, and so in implicit
 // scope; it lives here with `CanvasHandle` and `RasterOpenable` so that decoding an image does
 // not also compile the scoped-resource machinery. `Openable` has no generic fallback, so a call

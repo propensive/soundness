@@ -81,6 +81,11 @@ object YamlPath extends Root(""):
   // Parses a same-document YAML path (`#`, `#/`, `#/a/b`), reporting the offset
   // of any error. Modelled on `jacinta.JsonPointer`'s decoder, with the same
   // RFC 6901 escaping.
+  // For the path interpolator, which has parsed the literal at expansion: the gate asserts
+  // that, so the runtime re-parse cannot fail.
+  def unsafeParse(text: Text)(using erased unsafe: Unsafe): YamlPath =
+    unsafely(text.as[YamlPath])
+
   given decodable: (tactic: Tactic[YamlPath.Error])
   =>  ( (YamlPath is Decodable in Text)^{tactic} ) = text =>
     val string = text.s

@@ -214,6 +214,33 @@ extension [form](range: Interval in form)
       lambda(Ordinal.zerary(index).asInstanceOf[Ordinal in form])
       index += 1
 
+// Whether every ordinal of the interval satisfies the predicate, stopping at the first that does
+// not; the same two overloads, so that a confined extent's predicate reads totally.
+extension (interval: Interval)
+  inline def all(inline predicate: Ordinal => Boolean): Boolean =
+    var index: Int = interval.start.n0
+    val end: Int = interval.limit.n0
+    var result = true
+
+    while result && index < end do
+      result = predicate(Ordinal.zerary(index))
+      index += 1
+
+    result
+
+extension [form](range: Interval in form)
+  inline def all(inline predicate: (Ordinal in form) => Boolean): Boolean =
+    val interval: Interval = range
+    var index: Int = interval.start.n0
+    val end: Int = interval.limit.n0
+    var result = true
+
+    while result && index < end do
+      result = predicate(Ordinal.zerary(index).asInstanceOf[Ordinal in form])
+      index += 1
+
+    result
+
 // The collecting counterpart of `each`, with the same two overloads for the same reason: the
 // branded one yields a confined ordinal per element, so `range.tabulate { i => xs(i) }` reads
 // bare elements over any sub-interval (`capped`, `beyond`, `thru`) of a branded extent.

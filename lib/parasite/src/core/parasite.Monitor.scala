@@ -32,15 +32,13 @@
                                                                                                   */
 package parasite
 
-import scala.caps
-
-import scala.language.experimental.pureFunctions
-
 import java.lang as jl
 import java.util.concurrent.atomic as juca
 import java.util.concurrent.locks as jucl
 
 import scala.annotation.*
+import scala.caps
+import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import contingency.*
@@ -49,11 +47,10 @@ import fulminate.*
 import nomenclature.*
 import prepositional.*
 import rudiments.*
-import symbolism.*
 import vacuous.*
 
-import Async.nominative
 import Async.Error.Reason
+import Async.nominative
 import Fulfillment.*
 import beneficence.*
 import unsafeExceptions.canThrowAny
@@ -65,7 +62,8 @@ import unsafeExceptions.canThrowAny
 // `supervise` and the `await` that joins it with the same monitor are; the capture itself is
 // still tracked, so neither a handle nor the monitor can leave the `supervise` block
 // (`rep/sepcheck-probes/p19-*`). Durable, because a task's body may capture only durable
-// capabilities — never a tactic, whose stack is not the task's own (`p21-*`).
+// capabilities — never a tactic, a `caps.Control` capability whose stack is not the task's own
+// (`p21-*`).
 sealed trait Monitor extends Resultant, Findable, anticipation.Durable:
   self: Monitor^ =>
   val promise: Promise[Result]
@@ -130,9 +128,9 @@ sealed trait Monitor extends Resultant, Findable, anticipation.Durable:
 // a backend for a different execution model (an event loop over WASIp3 waitable-sets, say) is a
 // `Supervisor` implementation, selected by a `Threading` given; nothing else in parasite touches
 // the platform. A supervisor is a capability: forking and parking are effects, and a pool holds
-// live threads and queues. It is `DurableUnscoped` — shared by every task at once, retained
-// across thread boundaries, and, like the global strategy singletons (`PlatformSupervisor`
-// etc.), exempt from the level check. The supervision tree (capability-tracked `Monitor`s) is
+// live threads and queues. It is `Durable` — shared by every task at once and retained
+// across thread boundaries; the global singletons (`PlatformSupervisor` etc.) are static
+// capabilities, visible from every level. The supervision tree (capability-tracked `Monitor`s) is
 // rooted locally per `supervise` block by a `Root`, which retains its supervisor.
 //
 // The WASIp3 (Component Model async) mapping, for a future `parasite.wasi` backend:
@@ -145,7 +143,7 @@ sealed trait Monitor extends Resultant, Findable, anticipation.Durable:
 // implementable once the compiler can CPS-transform suspending code; until then such a backend
 // serves the monadic dialect (`Task.bind`/`map`, `Task.sleep`, `Promise#task`), whose
 // continuations are already reified.
-trait Supervisor extends anticipation.DurableUnscoped:
+trait Supervisor extends anticipation.Durable:
   def name: Name[Async]
 
   // `name` is a thunk: computing a worker's name (`Worker.stack`) walks the whole parent chain

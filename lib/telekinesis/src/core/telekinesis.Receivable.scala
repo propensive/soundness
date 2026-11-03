@@ -37,13 +37,12 @@ import contingency.*
 import gossamer.*
 import prepositional.*
 import turbulence.*
-import vacuous.*
 import zephyrine.*
 
 trait Receivable2:
   given instantiable: [content: Instantiable across HttpRequests from Text]
-  =>  ( tactic: Tactic[Http.Error] )
-  =>  ( (content is Receivable)^{tactic} ) =
+  =>  ( tactic: Tactic[Http.Error], truncation: Tactic[Truncation.Error] )
+  =>  ( (content is Receivable)^{tactic, truncation} ) =
 
     Receivable:
       body =>
@@ -61,21 +60,22 @@ object Receivable extends Receivable2:
 
   // The reader receives the response body as a single-owner pull endpoint;
   // whole-value consumers go through their `Aggregable`'s `accept`.
-  def apply[result](lambda: Reader[result]^)(using tactic: Tactic[Http.Error])
-  :   ((result is Receivable)^{lambda, tactic}) =
+  def apply[result](lambda: Reader[result]^)
+    ( using tactic: Tactic[Http.Error], truncation: Tactic[Truncation.Error] )
+  :   ((result is Receivable)^{lambda, tactic, truncation}) =
 
     response =>
       if response.status.category != Http.Status.Category.Successful
       then abort(Http.Error(response.status, response.textHeaders))
       else lambda.read(response.body.stream)
 
-  given text: (tactic: Tactic[Http.Error])
-  =>  ( (Text is Receivable)^{tactic} ) =
+  given text: (tactic: Tactic[Http.Error], truncation: Tactic[Truncation.Error])
+  =>  ( (Text is Receivable)^{tactic, truncation} ) =
     Receivable(_.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^].memoize.utf8)
 
   given streamable: [stream] => (aggregable: (stream is Aggregable by Data)^)
-  =>  ( tactic: Tactic[Http.Error] )
-  =>  ( (stream is Receivable)^{aggregable, tactic} ) =
+  =>  ( tactic: Tactic[Http.Error], truncation: Tactic[Truncation.Error] )
+  =>  ( (stream is Receivable)^{aggregable, tactic, truncation} ) =
     Receivable(aggregable.accept(_))
 
   given httpStatus: Http.Status is Receivable = _.status

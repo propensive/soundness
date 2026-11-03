@@ -1,39 +1,39 @@
-// P21: durable capabilities. A task's body is retained by a worker on another thread, so it may
-// capture only what is safe across a thread boundary: a `Durable` capability (a monitor, a
-// connection, a logger), `DurableUnscoped` ones (a log sink, network access) included: those are
-// the declared meet of `Durable` and `SharedUnscoped`, which proscala `classifiermeet` (from
-// 3.9.1-dev-p20) accepts. Level exemption still comes from deriving `SharedUnscoped`, so the
-// ambient sink and the ambient `ThrowTactic` pass the level check from inside a synthesised thunk.
+// P21: durable capabilities. A task's body is retained by a worker on another thread — itself a
+// shared capability classified `Durable` — so what the body captures must be classified
+// `Durable` too: a monitor, a connection, a logger, a log sink. An ambient sink given as a
+// *value* is a static capability, visible from every level, so it passes the level check from
+// inside a synthesised thunk with no fork classifier (the `DurableUnscoped` meet of `Durable`
+// and proscala's `SharedUnscoped` is gone since #2328). The ambient `ThrowTactic` is pure (p17).
 import language.experimental.captureChecking
 import language.experimental.separationChecking
 
 trait Durable extends caps.SharedCapability, caps.Classifier
-trait DurableUnscoped extends Durable, caps.SharedUnscoped, caps.Classifier
 
-trait Sink extends DurableUnscoped:
+trait Sink extends Durable:
   def log(message: String): Unit
 
 trait Monitor extends Durable:
   def cancelled: Boolean
 
-trait Tactic extends caps.SharedCapability:
+trait Tactic extends caps.Control:
   def abort(message: String): Nothing
 
-class ThrowTactic extends Tactic, caps.SharedUnscoped:
+class ThrowTactic extends Tactic:
   def abort(message: String): Nothing = throw Exception(message)
 
 def task(body: () ->{caps.any.only[Durable]} Unit): Unit = body()
 
-def use(monitor: Monitor^, sink: Sink^, tactic: Tactic^): Unit =
+def use(monitor: Monitor^, sink: Sink^): Unit =
   task { () => if monitor.cancelled then () }     // durable: fine
-  task { () => sink.log("x") }                     // durable and level-exempt: fine
+  task { () => sink.log("x") }                     // durable and static: fine
   task { () => sink.log("y"); monitor.cancelled }  // both: fine
 
-// The ambient sink still passes the level check from inside a synthesised thunk.
+// The ambient sink, a value, passes the level check from inside a synthesised thunk.
 given ambient: Sink = new Sink { def log(message: String): Unit = () }
 def lazily(sink: => Sink^): Unit = sink.log("z")
 def ambientUse(): Unit = lazily(summon[Sink])
 
-// And an ambient ThrowTactic is still level-exempt (not Durable).
-given throwing: (ThrowTactic^) = ThrowTactic()
-def ambientTactic(): Unit = (summon[ThrowTactic]).abort("ok")
+// And the pure ambient ThrowTactic does too.
+given throwing: (ThrowTactic^{}) = caps.unsafe.unsafeAssumePure(ThrowTactic())
+def lazyTactic(tactic: => ThrowTactic^): Unit = ()
+def ambientTactic(): Unit = lazyTactic(summon[ThrowTactic])

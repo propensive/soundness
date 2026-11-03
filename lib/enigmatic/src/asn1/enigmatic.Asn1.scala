@@ -43,7 +43,6 @@ import distillate.*
 import prepositional.*
 import rudiments.*
 import turbulence.*
-import vacuous.*
 import zephyrine.*
 
 import Asn1.Error.Reason

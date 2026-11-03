@@ -83,8 +83,7 @@ class ClasspathIndex private (local: Map[Text, ClassSurface], classloader: jn.UR
       Optional(classloader.getResourceAsStream(t"$name.class".s)).let: stream =>
         // Same erasure: the bytes are read and never retained, so no freezing capability is
         // needed to hand them to the parser.
-        try ClassSurface(Array.unsafeFrozen(stream.readAllBytes().nn))
-        finally stream.close()
+        try ClassSurface(Array.unsafeFrozen(stream.readAllBytes().nn)) finally stream.close()
 
   // The transitive supertype closure of `name`, nearest first, excluding `name` itself. Classes
   // that cannot be resolved are reported rather than skipped: an unresolvable supertype means

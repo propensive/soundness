@@ -57,7 +57,7 @@ object Tests extends Suite("derivation", m"Wisteria tests"):
         val prefix = inline if tuple[derivation] then t"" else typeName[derivation]
         fields(value):
           [field] => field => s"$index:$label=${contextual.present(field)}".tt
-        .stdlib.mkString((prefix.s+"("), ", ", ")").tt
+        .join(t"$prefix(", t", ", t")")
 
     inline def disjunction[derivation: SumReflection]: Presentation[derivation] = value =>
       variant(value):
@@ -270,7 +270,7 @@ object Tests extends Suite("derivation", m"Wisteria tests"):
     inline def conjunction[derivation <: Product: ProductReflection]: derivation is Display = value =>
       fields(value):
         [field] => field => contextual.display(field)
-      .stdlib.mkString(",").tt
+      .join(t",")
 
     inline def disjunction[derivation: SumReflection]: derivation is Display = value =>
       variant(value):
@@ -548,7 +548,7 @@ object Tests extends Suite("derivation", m"Wisteria tests"):
             case root.cto.name() => nameCodec
             case root.ceo.age()  => ageCodec
 
-        wisteria.internal.overridePaths[CodecJson, Company].stdlib.pipe(Set.from(_))
+        wisteria.internal.overridePaths[CodecJson, Company].to[Set]
       . assert(_ == Set(t"cto.name", t"ceo.age"))
 
       test(m"A Specific for a different typeclass is ignored"):

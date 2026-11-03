@@ -27,6 +27,7 @@
 ┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
 ┃    either express or implied. See the License for the specific language governing permissions    ┃
 ┃    and limitations under the License.                                                            ┃
+┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package scintillate
@@ -37,7 +38,7 @@ import java.nio.channels as jnc
 import java.util.concurrent as juc
 
 import anticipation.*
-import contingency.*, strategies.throwUnsafely
+import contingency.*
 import gossamer.*
 import prepositional.*
 import proscenium.*
@@ -306,7 +307,9 @@ object Reactor:
             head.host,
             head.target,
             head.headers,
-            () => bodyRef.asInstanceOf[Stream[Data] over Credit] )
+            new Spring[Data]:
+              def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                bodyRef.asInstanceOf[Stream[Data] over Credit] )
 
       val connection = new Http.Connection(request, false, reactor.port, respond)
 
@@ -316,6 +319,9 @@ object Reactor:
       // `consume`-typed `respond` (the planned follow-up) retires it.
       // [by-name-receiver] response by-name captures connection it is delivered on
       scala.caps.unsafe.unsafeAssumeSeparate:
+        // A truncated write to the channel is thrown on the lane, whose loop handles it.
+        given (Tactic[Truncation.Error]^) = ThrowTactic()
+
         connection.respond:
           try reactor.invoke(connection)
           catch case throwable: Throwable => reactor.errors.handle(throwable, connection)
@@ -323,6 +329,8 @@ object Reactor:
     // Queue an error response and close once it drains.
     private update def refuse(status: Http.Status): Unit =
       val response = Http.Response(status)() + closeHeader
+      // The server's own response has no body to cut short.
+      given (Tactic[Truncation.Error]^) = ThrowTactic()
       enqueue(Http.Response.serialize(response).memoize)
       closing = true
 

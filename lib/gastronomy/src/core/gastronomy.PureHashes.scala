@@ -54,6 +54,7 @@ private[gastronomy] object PureHashes:
       val state = new scala.Array[Int](initial.length)
       java.lang.System.arraycopy(initial, 0, state, 0, initial.length)
       state
+
     private var w: scala.Array[Int]^ = new scala.Array[Int](64)
 
     protected def bitLengthBytes: Int = 8
@@ -108,6 +109,7 @@ private[gastronomy] object PureHashes:
       val state = new scala.Array[Long](initial.length)
       java.lang.System.arraycopy(initial, 0, state, 0, initial.length)
       state
+
     private var w: scala.Array[Long]^ = new scala.Array[Long](80)
 
     // The message length is a 128-bit big-endian count of bits; inputs never approach 2^64 bytes,

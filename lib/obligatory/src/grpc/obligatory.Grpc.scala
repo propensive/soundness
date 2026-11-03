@@ -92,11 +92,12 @@ object Grpc:
 
   object Endpoint:
     given sessional: [endpoint: {Connectable, Showable}]
-    =>  ( monitor:    Monitor,
-          probate:    Probate,
-          asyncError: Tactic[Async.Error],
-          loggable:   (Socket.Event is Loggable)^ )
-    =>  ( GrpcSessional[endpoint]^{monitor, asyncError, loggable, caps.any} ) =
+    =>  ( monitor:     Monitor,
+          probate:     Probate,
+          asyncError:  Tactic[Async.Error],
+          socketError: Tactic[Socket.Error],
+          loggable:    (Socket.Event is Loggable)^ )
+    =>  ( GrpcSessional[endpoint]^{monitor, asyncError, socketError, loggable, caps.any} ) =
 
       GrpcSessional()
 
@@ -124,7 +125,10 @@ object Grpc:
     // must be called inside a `supervise` scope.
     def apply[endpoint]
       ( endpoint: Http2.Endpoint[endpoint], defaults: Grpc.Metadata = Grpc.Metadata() )
-      ( using monitor: Monitor, probate: Probate, asyncError: Tactic[Async.Error] )
+      ( using monitor:     Monitor,
+              probate:     Probate,
+              asyncError:  Tactic[Async.Error],
+              socketError: Tactic[Socket.Error] )
     :   Channel^{monitor, caps.any} =
 
       new Channel(endpoint.connect(), endpoint.authority, defaults)
@@ -140,8 +144,9 @@ object Grpc:
   class Channel
     ( connection: Http2.Connection^, authority: Text, defaults: Grpc.Metadata = Grpc.Metadata() ):
     // The `:authority` pseudo-header is supplied to `fetch` separately; the request's
-    // `Host` is unused by the HTTP/2 transport, so the hostname is parsed leniently.
-    private val host: Host = unsafely(authority.cut(t":").head.as[Host])
+    // `Host` is unused by the HTTP/2 transport, so an authority which is not a hostname
+    // (a bracketed IPv6 literal, say) stands as the loopback host.
+    private val host: Host = safely(authority.cut(t":").head.as[Host]).or(Localhost)
 
     // Build the gRPC HTTP/2 request: POST to `/package.Service/Method` with the
     // mandatory content-type and `te: trailers`, plus any custom metadata, and a body
@@ -157,7 +162,9 @@ object Grpc:
           Http.Header(t"te", t"trailers") ::
           metadataHeaders
 
-      val body: Spring[Data] = () => Stream(Framing.encode(message))
+      val body: Spring[Data] = new Spring[Data]:
+        def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+          Stream(Framing.encode(message))
       Http.Request(Http.Post, 2.0, host, method.path, headers, body)
 
     // gRPC requires HTTP status 200; anything else is a transport-level failure.
@@ -195,6 +202,12 @@ object Grpc:
 
       summon[Protobuf is Encodable in Data].encoded(encodable.encoded(value))
 
+    // A response cut short is an internal failure of the call.
+    private def truncated(using tactic: Tactic[Error]): Tactic[Truncation.Error] =
+      tactic.contramap: error =>
+        given Diagnostics = error.diagnostics
+        Error(Grpc.Status.Internal, t"the response was cut short")
+
     private def decodeMessage[value](bytes: Data)(using decodable: value is Decodable in Protobuf)
     :   value raises Protobuf.Error =
 
@@ -209,12 +222,17 @@ object Grpc:
       ( using Tactic[Error], Tactic[Http2.Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
     :   response =
 
+      given Tactic[Truncation.Error] = truncated
+
       val (stream, response) =
         connection.fetch(httpRequest(method, metadata, encodeMessage(value)), t"http", authority)
 
       expectOk(response)
       val messages = stream.body.stream.records.frames[Framing]
-      val first: Optional[Data] = if messages.hasNext then messages.next() else Unset
+
+      val first: Optional[Data] = messages.next() match
+        case Iterator.Exhausted => Unset
+        case message: Data      => message
 
       // Verify the trailing status before demanding a body, so a Trailers-Only error
       // response surfaces its real status rather than "no message".
@@ -233,21 +251,24 @@ object Grpc:
       ( using Tactic[Error], Tactic[Http2.Error], Tactic[Async.Error], Tactic[Protobuf.Error] )
     :   Chain[response] =
 
+      given Tactic[Truncation.Error] = truncated
+
       val (stream, response) =
         connection.fetch(httpRequest(method, metadata, encodeMessage(value)), t"http", authority)
 
       expectOk(response)
       val messages = stream.body.stream.records.frames[Framing]
 
-      def recur(): Chain[response] =
-        if messages.hasNext then
-          // Successive pulls from the same single-owner message iterator.
-          // [closure-capture] local recur def pulls same message iterator repeatedly
-          scala.caps.unsafe.unsafeAssumeSeparate
-            ( decodeMessage[response](messages.next()) #:: recur() )
-        else
+      def recur(): Chain[response] = messages.next() match
+        case Iterator.Exhausted =>
           expectStatus(stream)
           Chain()
+
+        case message: Data =>
+          // Successive pulls from the same single-owner message iterator.
+          // [by-name-capture] the lazy tail captures the single-owner message iterator
+          scala.caps.unsafe.unsafeAssumeSeparate
+            ( decodeMessage[response](message) #:: recur() )
 
       recur()
 

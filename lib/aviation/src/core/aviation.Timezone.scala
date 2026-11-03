@@ -43,12 +43,17 @@ import distillate.*
 import fulminate.*
 import prepositional.*
 import rudiments.*
+import vacuous.*
 
 object Timezone:
   private val ids: Set[Text] =
     (ju.TimeZone.getAvailableIDs.nn.iterator.map(_.nn).map(_.tt)).to(Set)
 
   def apply(name: Text): Timezone raises Timezone.Error = name.as[Timezone]
+
+  // For the `tz"…"` and `ts"…"` macros, which have validated the name at expansion with the
+  // same `ZoneId.of` check: the gate asserts that, and the generated code re-checks nothing.
+  def unsafeFrom(name: Text)(using erased unsafe: Unsafe): Timezone = new Timezone(name)
 
   given decodable: Tactic[Timezone.Error] => Timezone is Decodable in Text = name =>
     try jt.ZoneId.of(name.s) yet new Timezone(name)

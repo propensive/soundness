@@ -33,7 +33,6 @@
 package aviation
 
 import anticipation.*
-import contingency.*
 
 // A calendar that shares another's months and days but renumbers its years by a constant offset —
 // e.g. the Thai/Buddhist calendar (Gregorian + 543) or the Minguo/Republic-of-China calendar

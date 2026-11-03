@@ -39,8 +39,6 @@ import parasite.*
 import prepositional.*
 import zephyrine.*
 
-import probates.awaitProbate
-
 extension [medium, transport](consume stream: (Stream[medium] over transport)^)
   // The detached pump: `pump` on its own parasite task, for fire-and-forget
   // transfers and genuinely concurrent pipeline halves. This is the "one

@@ -5,6 +5,7 @@ import componentmodel.exports.wasi.http.IncomingHandler
 import scala.scalajs.wasi.http.types.{IncomingRequest, ResponseOutparam}
 
 import anticipation.*
+import contingency.*
 import gesticulate.*
 import gossamer.*
 import hieroglyph.*, codepages.utf8Codepage
@@ -27,7 +28,8 @@ object Service extends IncomingHandler:
   @WitExport("wasi:http/incoming-handler@0.2.0", "handle")
   def handle(request: IncomingRequest, responseOut: ResponseOutparam): Unit =
     WasiHttpServer.handle(request, responseOut): request =>
-      val body = request.body().memoize.utf8
+      // The component's export has no caller to report to: a request body cut short traps it.
+      val body = unsafely(request.body().memoize.utf8)
       val echo = t"${request.method} ${request.target}\n${body}"
 
       Http.Response(Http.Ok, contentType = media"text/plain")(echo)

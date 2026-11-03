@@ -277,7 +277,9 @@ object inlining:
           case '[variantType] => resolve[variantType](cache).isDefined
 
       if !resolvable then None
-      else Inlinable.Stager.discriminantAttribute[field].map: attribute => Inlinable.SumInlinable[field](attribute)
+      else
+        Inlinable.Stager.discriminantAttribute[field].map: attribute =>
+          Inlinable.SumInlinable[field](attribute)
 
   // The variants of a stageable sealed sum: `(label, type)` per variant, or
   // `None` when the shape is unsupported.

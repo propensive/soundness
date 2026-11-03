@@ -968,11 +968,12 @@ object Tel extends Tel2:
                       then raise(Tel.Error(Tel.Error.Reason.NonRepeatableTooMany))(using tactic)
 
                       reader.skipEntry(indent)
-                    else values(found) =
-                      if focused
-                      then focusing(foci, reader, keys.readUnchecked(found).tt):
-                        entries.readUnchecked(found)(1).parse(reader, indent)
-                      else entries.readUnchecked(found)(1).parse(reader, indent)
+                    else
+                      values(found) =
+                        if focused
+                        then focusing(foci, reader, keys.readUnchecked(found).tt):
+                          entries.readUnchecked(found)(1).parse(reader, indent)
+                        else entries.readUnchecked(found)(1).parse(reader, indent)
 
           index = 0
           var failedSlots = false
@@ -1432,15 +1433,15 @@ object Tel extends Tel2:
               case s: Tels.SelectRef =>
                 val selectDef = selectDefinitionOf(s, schema)
 
-                selectDef.variants.stdlib.zipWithIndex.find(_._1.keyword == atomText) match
-                  case Some((_, variantOffset)) =>
-                    results += Tel.Element.Node(flatPos + variantOffset, Tels.Flag, Array.empty)
+                selectDef.variants.indexed.seek(_(0).keyword == atomText) match
+                  case (_, variantOffset: Ordinal) =>
+                    results += Tel.Element.Node(flatPos + variantOffset.n0, Tels.Flag, Array.empty)
 
                     if s.repeatable != Tels.Polarity.Loose then
                       flatPos += selectDef.variants.length
                       pos += 1
 
-                  case None =>
+                  case Unset =>
                     // §20.2 step 3d: no variant keyword matches the atom at a
                     // required all-Flag SelectRef. Recovery drops the atom.
                     recoverNode(Reason.AtomVariantUnmatched)(())
@@ -1623,7 +1624,7 @@ object Tel extends Tel2:
             keyFlat.let: keyIdx =>
               var value: Optional[Text] = Unset
 
-              node.children.stdlib.foreach:
+              node.children.each:
                 case Tel.Element.Value(idx, _, text) =>
                   if idx == keyIdx && value.absent then value = text
 
@@ -1969,7 +1970,7 @@ object Tel extends Tel2:
         else Unset
 
       count.let: n =>
-        val xor = data.stdlib.foldLeft(0): (acc, byte) => acc ^ (byte & 0xff)
+        val xor = data.fuse(0)(state ^ (next & 0xff))
         if xor == 0x79 then n else Unset
 
   trait Codec:
@@ -2639,16 +2640,17 @@ object Tel extends Tel2:
 
         def domainValid(domain: String): Boolean =
           def label(l: String): Boolean =
-            l.nonEmpty && l.forall { ch => ch.isLetterOrDigit && ch <= 'z' || ch == '-' }
-              && !l.startsWith("-") && !l.endsWith("-")
+            l.nonEmpty &&
+              l.forall { ch => ch.isLetterOrDigit && ch <= 'z' || ch == '-' } &&
+              !l.startsWith("-") && !l.endsWith("-")
 
           domain.nonEmpty && domain.split("\\.", -1).nn.forall: l => label(l.nn)
 
         def nameValid(name: String): Boolean =
           def kebab(segment: String): Boolean =
             segment.nonEmpty && segment.charAt(0).isLower &&
-              segment.forall { ch => ch.isLower || ch.isDigit || ch == '-' }
-              && !segment.endsWith("-") && !segment.contains("--")
+              segment.forall { ch => ch.isLower || ch.isDigit || ch == '-' } &&
+              !segment.endsWith("-") && !segment.contains("--")
 
           name.nonEmpty && name.split("[/.]", -1).nn.forall: segment => kebab(segment.nn)
 
@@ -2667,7 +2669,8 @@ object Tel extends Tel2:
                 Unset
           else if selector.charAt(0).isLetter &&
             selector.forall { ch => ch.isLetterOrDigit || ch == '-' || ch == '.' }
-          then Selector.Tag(selector.tt)
+          then
+            Selector.Tag(selector.tt)
           else
             Unset
 
@@ -2690,7 +2693,7 @@ object Tel extends Tel2:
     // selector names a published release by version or tag and a bare
     // reference is a local-only development handle.
     case class Reference(domain: Text, name: Text, selector: Optional[Reference.Selector]):
-      def text: Text = t"$domain/$name${selector.lay(t"")(s => t":${s.text}")}"
+      def text: Text = t"$domain/$name${selector.lay(t"") { s => t":${s.text}" }}"
 
       // Whether this is the built-in `tels` meta-schema's coordinate,
       // with or without its version pin.
@@ -2840,7 +2843,7 @@ object Tel extends Tel2:
         case o: Inline => text == o.text && precedingSpaces == o.precedingSpaces
         case _         => false
 
-      override def hashCode: Int = text.hashCode * 31 + precedingSpaces
+      override def hashCode: Int = text.## * 31 + precedingSpaces
 
       override def toString: String = s"Inline($text,$precedingSpaces)"
 
@@ -3224,6 +3227,7 @@ object Tel extends Tel2:
       type Operand = Data
 
       def aggregate(source: Chain[Data]): Tel = parseTracking(concatenate(source))
+
       override def accept(stream: (Stream[Data] over Credit)^): Tel =
         parseTracking(streamed(stream))
 
@@ -3472,8 +3476,7 @@ object Tel extends Tel2:
 
   // The byte form, the parser's own input: parsed as it arrives, with no transcoding.
   given loadableData: (tactic: Tactic[Tel.Error], buffering: Buffering, tracking: PositionTracking)
-  =>  ( (Tel is Loadable by Data)^{tactic} ) = stream =>
-    loaded(parseTracking(streamed(stream)))
+  =>  ( (Tel is Loadable by Data)^{tactic} ) = stream => loaded(parseTracking(streamed(stream)))
 
   // The metadata comes off the parsed `Tel`'s own subtree rather than from a second, untracked
   // `Tel.Parser.parse`, so that under `parsing.trackPositions` the loaded document keeps its
@@ -3725,9 +3728,9 @@ object Tel extends Tel2:
 
   // Serializes on a fiber, handing out text as it is produced, so a large document can be
   // written to a socket or file before it is fully rendered — the model of `Xml.emit`.
-  def emit(tel: Tel)(using monitor: Monitor, probate: Probate): Iterator[Text] =
+  def emit(tel: Tel)(using monitor: Monitor, probate: Probate): Iterator[Text]^ =
     val producer = Producer[Text]()
-    val output = producer.iterator
+    val output: Iterator[Text]^ = producer.iterator
 
     producer.transfer: (producer, _, _) ?=>
       Serializer(new Textual(producer()), document(tel)).write()
@@ -3808,28 +3811,19 @@ object Tel extends Tel2:
     ( blocks: Array[Block]^{}, keyword: Text, compound: Compound )
   :   Array[Block]^{} =
 
-    var b = 0
-    var found = false
-    val out = scala.collection.mutable.ArrayBuffer.from(blocks.stdlib)
+    var replaced: Optional[Array[Block]^{}] = Unset
 
-    while b < out.length && !found do
-      val cs = out(b).compounds
+    blocks.extent.each: index =>
+      if replaced.absent then
+        val block = blocks(index)
 
-      cs.where(_.keyword == keyword).let: ordinal =>
-        out(b) =
-          out(b).copy(compounds = Array.from(cs.stdlib.updated(ordinal.n0, compound)))
+        block.compounds.where(_.keyword == keyword).let: ordinal =>
+          val compounds = block.compounds.define(ordinal, compound)
+          replaced = blocks.define(index, block.copy(compounds = compounds))
 
-        found = true
-
-      b += 1
-
-    if !found then
-      if out.isEmpty then out += Block(Array.empty, Unset, Array(compound), 0)
-      else
-        val lastIdx = out.length - 1
-        out(lastIdx) = out(lastIdx).copy(compounds = out(lastIdx).compounds :+ compound)
-
-    Array.from(out)
+    replaced.or:
+      blocks.ult.lay(Array(Block(Array.empty, Unset, Array(compound), 0))): last =>
+        blocks.define(last, blocks(last).copy(compounds = blocks(last).compounds :+ compound))
 
   // Replace the `index`-th child compound (flattened across blocks) by applying
   // `transform`, preserving block structure and surrounding formatting. An
@@ -3841,21 +3835,19 @@ object Tel extends Tel2:
 
     var offset = 0
 
-    Array.from:
-      blocks.stdlib.map: block =>
-        val compounds = block.compounds
-        val base = offset
-        offset += compounds.length
+    blocks.map: block =>
+      val compounds = block.compounds
+      val base = offset
+      offset += compounds.length
 
-        if index >= base && index < base + compounds.length
-        then
-          block.copy
-            ( compounds =
-                Array.from
-                  ( compounds.stdlib.updated
-                      ( index - base, transform(compounds.readUnchecked(index - base)) ) ) )
-        else
-          block
+      if index >= base && index < base + compounds.length
+      then
+        block.copy
+          ( compounds =
+              compounds.define
+                ( (index - base).z, transform(compounds.readUnchecked(index - base)) ) )
+      else
+        block
 
   // Apply `transform` to every child compound (flattened across blocks),
   // preserving block structure. Used by the panopticon `Each` optic.
@@ -4069,7 +4061,6 @@ object Tel extends Tel2:
     import java.nio.charset.StandardCharsets
     import scala.language.unsafeNulls
     import denominative.*
-    import fulminate.*
     import Tel.Error.Reason
 
     import Parser.*
@@ -4888,8 +4879,10 @@ object Tel extends Tel2:
       if head.separator then
         consumeSeparatorLine()
         (doc, true)
-      else if documentIsEmpty(doc) then (Unset, false)
-      else (doc, false)
+      else if documentIsEmpty(doc) then
+        (Unset, false)
+      else
+        (doc, false)
 
     // A document with no prologue and no children: the empty document yielded
     // between two separators, or the absence of any document at the end of a
@@ -5043,7 +5036,8 @@ object Tel extends Tel2:
           pos += run
           count += run
           false
-      } do ()
+      }
+      do ()
 
       while more && peek == SP do
         advance()
@@ -5140,8 +5134,8 @@ object Tel extends Tel2:
 
       def kebab(t: String): Boolean =
         t.nonEmpty && t.charAt(0).isLower &&
-          t.forall { ch => ch.isLower || ch.isDigit || ch == '-' }
-          && !t.endsWith("-") && !t.contains("--")
+          t.forall { ch => ch.isLower || ch.isDigit || ch == '-' } &&
+          !t.endsWith("-") && !t.contains("--")
 
       var index = 2
 
@@ -5545,7 +5539,8 @@ object Tel extends Tel2:
             while lastIx >= start && {
               val last = scratchBlocks(lastIx)
               last.comments.nil && last.tabulation.absent && last.compounds.nil
-            } do lastIx -= 1
+            }
+            do lastIx -= 1
 
             val reason =
               if lastIx < start then Reason.OverIndentation
@@ -8100,7 +8095,9 @@ extends scala.Dynamic, Documentary, Topical, Original:
   // needs a `Locus`-fixing mixin and a lowest-priority adapter given; here the
   // focus type is already fixed by the `tracks Tel.Focus` clause, so the
   // enrichment is called directly.)
-  inline def as[value](using value: (value is Decodable in Tel)^): value raises Tel.Error tracks Tel.Focus =
+  inline def as[value](using value: (value is Decodable in Tel)^)
+  :   value raises Tel.Error tracks Tel.Focus =
+
     val result = value.decoded(this)
     Tel.supplementPositions(this)
     result
@@ -8158,11 +8155,10 @@ extends scala.Dynamic, Documentary, Topical, Original:
   // this is always empty since the root has no atoms.
   def atomTexts: Array[Text]^{} = subtree match
     case c: Tel.Compound =>
-      Array.from:
-        c.atoms.stdlib.map:
-          case Tel.Atom.Inline(text, _)  => text
-          case Tel.Atom.Source(text)     => text
-          case Tel.Atom.Literal(_, text) => text
+      c.atoms.map:
+        case Tel.Atom.Inline(text, _)  => text
+        case Tel.Atom.Source(text)     => text
+        case Tel.Atom.Literal(_, text) => text
 
     case _: Tel.Document => Array.empty
 

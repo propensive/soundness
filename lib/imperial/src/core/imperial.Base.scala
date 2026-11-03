@@ -32,12 +32,9 @@
                                                                                                   */
 package imperial
 
-import ambience.*
 import anticipation.*
-import contingency.*
 import gossamer.*
 import guillotine.*
-import prepositional.*
 import vacuous.*
 
 object Base extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):

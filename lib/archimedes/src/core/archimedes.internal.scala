@@ -85,20 +85,22 @@ object internal:
     locally:
       // An interpolation has few substitutions, so counting them is cheap.
       import denominative.dysasymptotics.linearSize
-      import strategies.throwUnsafely
       import errorDiagnostics.emptyDiagnostics
 
-      try Ergo.interpolate(parts.stdlib.map(_.tt), List.fill(atoms.size)(Mi(t"?")).stdlib)
-      catch case error: Ergo.Error =>
-        // The parser's offset refers to the parts joined with a one-character hole sentinel
-        // per substitution; clamp end-of-input errors onto the last character.
-        val joinedLength = parts.map(_.length).total + atoms.size
-        val offset = error.offset.min(joinedLength - 1).max(0)
+      // A positioned halt: the parser's offset refers to the parts joined with a one-character
+      // hole sentinel per substitution; clamp end-of-input errors onto the last character.
+      given HaltTactic[Ergo.Error, Math] = new HaltTactic[Ergo.Error, Math]:
+        override def abort(error: Diagnostics ?=> Ergo.Error): Nothing =
+          val error0: Ergo.Error = error
+          val joinedLength = parts.map(_.length).total + atoms.size
+          val offset = error0.offset.min(joinedLength - 1).max(0)
 
-        halt
-          ( m"the ergo expression could not be parsed because ${error.reason}",
-            Interpolation.sourcePosition
-              ( parts, Interpolation.decodeOrigins[origins], 1, offset ) )
+          halt
+            ( m"the ergo expression could not be parsed because ${error0.reason}",
+              Interpolation.sourcePosition
+                ( parts, Interpolation.decodeOrigins[origins], 1, offset ) )
+
+      Ergo.interpolate(parts.stdlib.map(_.tt), List.fill(atoms.size)(Mi(t"?")).stdlib)
 
     // Hoisted from the `map` below: a quote inside a combinator lambda in a macro risks the
     // `wildApprox` crash.
@@ -106,4 +108,4 @@ object internal:
 
     val partExprs: Expr[Seq[Text]] = Lifts.varargs(parts.map(liftText))
 
-    '{Ergo.unsafeInterpolate($partExprs, ${Lifts.varargs(atoms)})}
+    '{Ergo.unsafeInterpolate($partExprs, ${Lifts.varargs(atoms)})(using Unsafe)}

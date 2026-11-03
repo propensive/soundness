@@ -39,7 +39,6 @@ import scala.caps
 import com.sun.net.httpserver as csnh
 
 import anticipation.*
-import beneficence.*
 import contingency.*
 import denominative.*
 import distillate.*
@@ -87,14 +86,6 @@ private[scintillate] object Connections:
 
     lazy val in = exchange.getRequestBody.nn
 
-    // The Source evidence closes over `unsafely`'s ThrowTactic, which is `caps.Unscoped`
-    // (it throws in place, capturing nothing scoped), so it is truthfully sealed once here
-    // rather than leaking out of the per-mint `unsafely` scope through the body thunk.
-    val source: ji.InputStream is Streamable by Data over Credit =
-      unsafely:
-        // [fresh-in-lambda] source evidence minted inside unsafely block
-        caps.unsafe.unsafeAssumePure(summon[(ji.InputStream is Streamable by Data over Credit)^])
-
     val request =
       Http.Request
         ( method      = method,
@@ -102,9 +93,12 @@ private[scintillate] object Connections:
           host        = host,
           target      = target,
           // Each mint reads on from the same live request stream — the
-          // single-owner discipline (explicit `memoize` for re-reads). A read
-          // failure throws, as the raw `InputStream` did before.
-          body        = () => source.stream(in),
+          // single-owner discipline (explicit `memoize` for re-reads) — under the
+          // tactic of the pull, through which a read cut short is raised.
+          body        =
+            new Spring[Data]:
+              def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                summon[(ji.InputStream is Streamable by Data over Credit)^].stream(in),
           textHeaders = headers )
 
     Log.fine(Httpd.Event.Received(request))
@@ -141,30 +135,28 @@ private[scintillate] object Connections:
             catch case _: ji.IOException => abort(Truncation.Error(count.b))
 
           case Http.Body.Flowing(source) =>
-            val stream = source()
-
-            def recur(): Unit = stream.refill(Credit(Long.MaxValue)) match
+            // The stream is passed explicitly rather than closed over, so the tail re-entry is
+            // a call over a parameter, not a read-back of a captured exclusive.
+            def recur(stream: (Stream[Data] over Credit)^): Unit =
+              stream.refill(Credit(Long.MaxValue)) match
               case size: Int =>
                 try
                   stream.lend: region =>
                     range =>
                       val interval: Interval = range
 
-                      responseBody.write(unsafely(region.unsafeRaw.asInstanceOf[scala.Array[Byte]]),
-                          interval.start.n0, interval.size)
+                      region.borrow(range)(responseBody.write(_, _, _))
 
                   count += size
                   responseBody.flush()
                 catch case _: ji.IOException => abort(Truncation.Error(count.b))
 
                 stream.skip(size)
-                // Tail re-entry over the same single-owner stream.
-                // [closure-capture] local def tail re-entry over single-owner stream
-                scala.caps.unsafe.unsafeAssumeSeparate(recur())
+                recur(stream)
 
               case _ => ()
 
-            recur()
+            recur(source())
 
           case Http.Body.Empty =>
             try responseBody.flush()

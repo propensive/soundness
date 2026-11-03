@@ -34,7 +34,6 @@ package telekinesis
 
 import java.nio.charset.StandardCharsets
 
-import scala.caps
 import scala.collection.mutable as scm
 
 import anticipation.*

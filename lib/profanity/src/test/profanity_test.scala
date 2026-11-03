@@ -72,7 +72,8 @@ object Tests extends Suite("terminal", m"Profanity Tests"):
                       Out.println(t"READY")
                       val iter = terminal.eventIterator()
                       var done = false
-                      while !done && iter.hasNext do iter.next() match
+                      while !done do iter.next() match
+                        case Iterator.Exhausted => done = true
                         case Keypress.CharKey(c) =>
                           Out.println(t"GOT:$c")
                           done = true
@@ -247,10 +248,10 @@ object Tests extends Suite("terminal", m"Profanity Tests"):
 
       def selected(events: Terminal.Event*): Optional[Text] =
         val menu = SelectMenu(List(t"alpha", t"beta", t"gamma"), t"alpha")
-        noopMenu(events.iterator, menu)(_(_))
+        noopMenu(Iterator.from(events.iterator), menu)(_(_))
 
       def edited(events: Terminal.Event*): Optional[Text] =
-        noopEditor(events.iterator, LineEditor())(_(_))
+        noopEditor(Iterator.from(events.iterator), LineEditor())(_(_))
 
       // A no-op interaction whose submit decision follows the editor's own mode.
       val multilineEditor = new Interaction[Text, LineEditor]:
@@ -261,7 +262,7 @@ object Tests extends Suite("terminal", m"Profanity Tests"):
           editor.submitsOn(event)
 
       def editedWith(editor: LineEditor)(events: Terminal.Event*): Optional[Text] =
-        multilineEditor(events.iterator, editor)(_(_))
+        multilineEditor(Iterator.from(events.iterator), editor)(_(_))
 
       val shiftSubmit: LineEditor = LineEditor(mode = LineEditor.Mode.Multiline(_ => false))
 
@@ -379,8 +380,8 @@ object Tests extends Suite("terminal", m"Profanity Tests"):
                 case _            => editor
 
           completingEditor
-           ( Chain.iterator(Chain(Keypress.CharKey('g'), Keypress.CharKey('e'), Keypress.Tab,
-                    Keypress.Enter)),
+           ( Iterator(Keypress.CharKey('g'), Keypress.CharKey('e'), Keypress.Tab,
+                    Keypress.Enter),
              LineEditor() )
            (_(_))
         . assert(_ == t"geography")

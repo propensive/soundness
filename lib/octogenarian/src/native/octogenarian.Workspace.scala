@@ -33,10 +33,8 @@
 package octogenarian
 
 import anticipation.*
-import aperture.*
 import contingency.*
 import dissonance.*
-import distillate.*
 import galilei.*
 import gossamer.*
 import prepositional.*
@@ -74,7 +72,7 @@ private[octogenarian] object Workspace:
     else if (mode & 0x49) != 0 then Git.Object.Tree.Mode.Executable
     else Git.Object.Tree.Mode.Regular
 
-  def file(worktree: Path on Linux, path: Text): Path on Linux =
+  def file(worktree: Path on Linux, path: Text)(using Tactic[Git.Error]): Path on Linux =
     Refstore.descend(worktree, path.cut(t"/"))
 
   // Every blob in a tree, by path.
@@ -120,12 +118,12 @@ private[octogenarian] object Workspace:
   // still matches is trusted, any other is hashed, a conflicted path gets a null entry, and a
   // deleted file has none. A checkout from this snapshot rewrites exactly what differs.
   def workingSnapshot(gitDir: Path on Linux, worktree: Path on Linux, contents: Index.Contents)
-    ( using Tactic[Io.Error] )
+    ( using Tactic[Io.Error], Tactic[Git.Error] )
   :   Snapshot =
 
     val indexModified = Index.modified(gitDir)
 
-    def working(entry: Index.Entry): Optional[(Text, (Int, Git.Hash))] =
+    def working(entry: Index.Entry)(using Tactic[Git.Error]): Optional[(Text, (Int, Git.Hash))] =
       val target = file(worktree, entry.path)
 
       if !target.existent() then Unset
@@ -174,14 +172,20 @@ private[octogenarian] object Workspace:
     recur(worktree, t"", Nil)
 
   // A working file's content as git would store it: a symbolic link is the text of its target.
-  def content(worktree: Path on Linux, path: Text, mode: Int)(using Tactic[Io.Error]): Data =
+  def content(worktree: Path on Linux, path: Text, mode: Int)
+    ( using Tactic[Io.Error], Tactic[Git.Error] )
+  :   Data =
+
     val target = file(worktree, path)
 
     if mode == Index.symlink
     then Objects.bytes(summon[FilesystemBackend on Linux].linkTarget(target))
     else target.read[Data]
 
-  def hashFile(worktree: Path on Linux, path: Text, mode: Int)(using Tactic[Io.Error]): Git.Hash =
+  def hashFile(worktree: Path on Linux, path: Text, mode: Int)
+    ( using Tactic[Io.Error], Tactic[Git.Error] )
+  :   Git.Hash =
+
     Store.hash(Git.Object.Kind.Blob, content(worktree, path, mode))
 
   // ───────────────────────────────────────────── Status ───────────────────────────────────────
@@ -666,7 +670,10 @@ private[octogenarian] object Workspace:
     if branch.present then Refstore.writeSymbolic(gitDir, commonDir, t"HEAD", branchRef)
     else Refstore.detach(gitDir, commonDir, commit, previous, identity, message, logging)
 
-  def describeHead(gitDir: Path on Linux, commonDir: Path on Linux)(using Tactic[Io.Error]): Text =
+  def describeHead(gitDir: Path on Linux, commonDir: Path on Linux)
+    ( using Tactic[Io.Error], Tactic[Git.Error] )
+  :   Text =
+
     Refstore.read(gitDir, commonDir, t"HEAD") match
       case Git.Backend.Target.Symbolic(ref) =>
         if ref.starts(t"refs/heads/") then ref.skip(11) else ref
@@ -889,7 +896,10 @@ private[octogenarian] object Workspace:
 
     (_, _, hash) => Store.readOr(objects, hash)(1)
 
-  def working(worktree: Path on Linux)(using Tactic[Io.Error]): (Text, Int, Git.Hash) => Data =
+  def working(worktree: Path on Linux)
+    ( using Tactic[Io.Error], Tactic[Git.Error] )
+  :   (Text, Int, Git.Hash) => Data =
+
     (path, mode, _) => content(worktree, path, mode)
 
   def diffWorktree

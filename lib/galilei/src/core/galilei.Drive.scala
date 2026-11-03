@@ -49,4 +49,4 @@ class Drive(val letter: Char) extends Root(t"$letter:\\"):
     case drive: Drive => letter == drive.letter
     case _            => false
 
-  override def hashCode: Int = letter.hashCode
+  override def hashCode: Int = letter.##

@@ -35,6 +35,7 @@ package coaxial
 import scala.caps
 
 import anticipation.*
+import contingency.*
 import prepositional.*
 import spectacular.*
 
@@ -45,8 +46,8 @@ import spectacular.*
 // so `import coaxial.*` (which every socket consumer already has) brings this
 // instance into scope.
 given connectableSessional: [endpoint: {Connectable, Showable}]
-=>  ( loggable: (Socket.Event is Loggable)^ )
-=>  ( (endpoint is Sessional to Duplex)^{loggable, caps.any} ) =
+=>  ( loggable: (Socket.Event is Loggable)^, socketError: Tactic[Socket.Error] )
+=>  ( (endpoint is Sessional to Duplex)^{loggable, socketError, caps.any} ) =
 
   new Sessional:
     type Self = endpoint
