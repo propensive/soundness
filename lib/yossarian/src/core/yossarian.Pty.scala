@@ -470,12 +470,16 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
 
     import Style.{Bit, Foreground, Background}, Bit.*
 
+    // A colour the output sets is no longer the default.
+    def fg(chroma: Chroma): Style = DefaultForeground(Foreground(style) = chroma) = false
+    def bg(chroma: Chroma): Style = DefaultBackground(Background(style) = chroma) = false
+
     def sgr(params: List[Int]): Unit = params match
       case Nil                            => ()
-      case 38 :: 5 :: n :: tail           => style = Foreground(style) = color8(n); sgr(tail)
-      case 38 :: 2 :: r :: g :: b :: tail => style = Foreground(style) = Chroma(r, g, b); sgr(tail)
-      case 48 :: 5 :: n :: tail           => style = Background(style) = color8(n); sgr(tail)
-      case 48 :: 2 :: r :: g :: b :: tail => style = Background(style) = Chroma(r, g, b); sgr(tail)
+      case 38 :: 5 :: n :: tail           => style = fg(color8(n)); sgr(tail)
+      case 38 :: 2 :: r :: g :: b :: tail => style = fg(Chroma(r, g, b)); sgr(tail)
+      case 48 :: 5 :: n :: tail           => style = bg(color8(n)); sgr(tail)
+      case 48 :: 2 :: r :: g :: b :: tail => style = bg(Chroma(r, g, b)); sgr(tail)
 
       case head :: tail =>
         style = head match
@@ -500,12 +504,12 @@ case class Pty(buffer: Screen[Style], state: Pty.State, output: Relay[Text]):
           case 27                            => Reverse(style) = false
           case 28                            => Conceal(style) = false
           case 29                            => Strike(style) = false
-          case n if 30 <= n <= 37            => Foreground(style) = palette(n - 30)
-          case 39                            => Foreground(style) = Chroma(255, 255, 255)
-          case n if 40 <= n <= 47            => Background(style) = palette(n - 40)
-          case 49                            => Background(style) = Chroma(0, 0, 0)
-          case n if 90 <= n <= 97            => Foreground(style) = palette(n - 82)
-          case n if 100 <= n <= 107          => Background(style) = palette(n - 92)
+          case n if 30 <= n <= 37            => fg(palette(n - 30))
+          case 39                            => DefaultForeground(fg(Chroma(255, 255, 255))) = true
+          case n if 40 <= n <= 47            => bg(palette(n - 40))
+          case 49                            => DefaultBackground(bg(Chroma(0, 0, 0))) = true
+          case n if 90 <= n <= 97            => fg(palette(n - 82))
+          case n if 100 <= n <= 107          => bg(palette(n - 92))
 
           case _ =>
             abort(Pty.Error(BadSgrParameters(params.map(_.show).join(t";"))))

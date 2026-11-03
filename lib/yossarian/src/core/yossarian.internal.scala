@@ -185,8 +185,16 @@ object internal:
     def foreground: Chroma = Style.Foreground(style)
     def background: Chroma = Style.Background(style)
 
+    // Whether the colour is the terminal's own default rather than one the output set: the
+    // chroma is then only what this terminal shows for it, and a renderer may use its own.
+    def defaultForeground: Boolean = Style.Bit.DefaultForeground(style)
+    def defaultBackground: Boolean = Style.Bit.DefaultBackground(style)
+
   object Style:
-    def apply(): Style = Foreground(0L) = Chroma(255, 255, 255)
+    // White on black, both marked as the defaults.
+    def apply(): Style =
+      val colored: Style = Background(Foreground(0L) = Chroma(255, 255, 255)) = Chroma(0, 0, 0)
+      Bit.DefaultBackground(Bit.DefaultForeground(colored) = true) = true
 
     class Bits(offset: Int, mask: Long):
       def apply(style: Style): Chroma = Chroma(((style >>> offset) & 0xffffff).toInt)
@@ -211,13 +219,19 @@ object internal:
           t"Bl" -> Bit.Blink(style),
           t"U"  -> Bit.Underline(style),
           t"C"  -> Bit.Conceal(style),
-          t"R"  -> Bit.Reverse(style) )
+          t"R"  -> Bit.Reverse(style),
+          t"DF" -> Bit.DefaultForeground(style),
+          t"DB" -> Bit.DefaultBackground(style) )
 
       .   remap: (key, value) => if value then key else t"!$key"
       .   join(t"[", t" ", t" ${Foreground(style).inspect} ${Background(style).inspect}]")
 
     enum Bit:
       case Bold, Faint, Italic, Strike, Blink, Underline, Conceal, Reverse
+
+      // Set while the colour is the terminal's default (SGR 39 and 49, and at a reset), and
+      // cleared by any colour the output sets.
+      case DefaultForeground, DefaultBackground
 
       def bit: Int = 15 - ordinal
       def apply(style: Style): Boolean = ((style >>> bit) & 1L) == 1L

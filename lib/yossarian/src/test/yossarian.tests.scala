@@ -302,6 +302,28 @@ object Tests extends Suite("pty", m"Yossarian Tests"):
         black != brightBlack
       . assert(_ == true)
 
+    suite(m"Default colours"):
+      test(m"a fresh cell has the default foreground and background"):
+        val style = fresh.consume(t"A").buffer.style(Prim, Prim)
+        (style.defaultForeground, style.defaultBackground)
+      . assert(_ == (true, true))
+
+      test(m"SGR 31 makes the foreground explicit and leaves the background default"):
+        val style = fresh.consume(t"$Esc[31mA").buffer.style(Prim, Prim)
+        (style.defaultForeground, style.defaultBackground)
+      . assert(_ == (false, true))
+
+      test(m"SGR 39 restores the default foreground"):
+        fresh.consume(t"$Esc[31m$Esc[39mA").buffer.style(Prim, Prim).defaultForeground
+      . assert(_ == true)
+
+      test(m"SGR 48;2 makes the background explicit, and SGR 0 restores the default"):
+        val pty = fresh.consume(t"$Esc[48;2;1;2;3mA$Esc[0mB")
+        val first = pty.buffer.style(Prim, Prim)
+        val second = pty.buffer.style(Sec, Prim)
+        (first.defaultBackground, first.background, second.defaultBackground)
+      . assert(_ == (false, Chroma(1, 2, 3), true))
+
     suite(m"Tab"):
       test(m"tab from column 0 advances to column 8"):
         fresh.consume(t"\tX").state.cursor
