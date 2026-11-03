@@ -36,6 +36,7 @@ import scala.language.experimental.pureFunctions
 
 import anticipation.*
 import contingency.*
+import distillate.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
@@ -112,8 +113,9 @@ object Directories:
     if isWindows then List(programData[path]) else Xdg.configDirs[path]
 
 
+  // Lenient, unlike `System.os`: a `System` with no `os.name` (empty or fixed) is not Windows.
   private def isWindows(using system: System): Boolean =
-    system(t"os.name").or(t"").lower.starts(t"windows")
+    system(t"os.name").let(_.as[Os]) == Os.Windows
 
   private def localAppDataText(using environment: Environment, system: System): Text =
     safely(Environment[Text](t"LOCALAPPDATA")).or(t"${homeText}\\AppData\\Local")

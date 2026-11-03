@@ -37,6 +37,7 @@ import java.util.concurrent as juc
 import scala.caps
 import scala.language.experimental.pureFunctions
 
+import ambience.Vm
 import anticipation.*
 import denominative.*
 import digression.*
@@ -115,7 +116,7 @@ object Logger:
           try writable0.write(destination, spool.stream(using addressable0))
           catch case _: Truncation.Error => ()
 
-      Os.intercept[Shutdown]:
+      Vm.intercept[Shutdown]:
         stopped() = true
         spool.stop()
 

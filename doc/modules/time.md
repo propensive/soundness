@@ -274,6 +274,22 @@ t"P1Y2M3DT4H5M6S".as[Timespan] // the same span
 dur"P1Y2M3DT4H5M6S"                // checked at compiletime
 ```
 
+A tool reads a duration from a flag and shows one in a report, and both have a compact form.
+With `durationDecodables.compactDurationDecodable` in scope, text such as `30m`, `1.5h`,
+`250ms` or a bare `90` (seconds) decodes to a `Duration`, and anything else — a negative, a
+word — raises a `Duration.Error`; with `durationFormats.compactDurationFormat`, a duration
+shows as its coarsest unit followed by every unit down to seconds, so a column of them lines
+up, or as milliseconds alone below a second:
+
+```scala
+import durationDecodables.compactDurationDecodable
+import durationFormats.compactDurationFormat
+
+t"1.5h".as[Duration].value   // 5400.0
+Duration(3605000L).show      // 1h 0m 5s
+Duration(420L).show          // 420ms
+```
+
 ### Periods
 
 Two points of the same kind bound a `Period` with `~`, which is a half-open interval: the start is

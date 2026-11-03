@@ -39,21 +39,21 @@ import prepositional.*
 
 object Architecture:
   given decodable: Architecture is Decodable in Text =
-    case t"x86" | t"i386"     => X86(32)
-    case t"x86_64" | t"amd64" => X86(64)
-    case t"arm"               => Arm(32)
-    case t"aarch64"           => Arm(64)
-    case t"ppc"               => Ppc(32)
-    case t"ppc64"             => Ppc(64)
-    case t"ppc64le"           => Ppc(64, true)
-    case t"sparc"             => Sparc(32)
-    case t"sparcv9"           => Sparc(64)
-    case t"mips"              => Mips(32)
-    case t"mips64"            => Mips(64)
-    case t"riscv64"           => RiscV
-    case t"s390"              => S390(31)
-    case t"s390x"             => S390(64)
-    case name                 => Other(name)
+    case t"x86" | t"i386"      => X86(32)
+    case t"x86_64" | t"amd64"  => X86(64)
+    case t"arm"                => Arm(32)
+    case t"aarch64" | t"arm64" => Arm(64)
+    case t"ppc"                => Ppc(32)
+    case t"ppc64"              => Ppc(64)
+    case t"ppc64le"            => Ppc(64, true)
+    case t"sparc"              => Sparc(32)
+    case t"sparcv9"            => Sparc(64)
+    case t"mips"               => Mips(32)
+    case t"mips64"             => Mips(64)
+    case t"riscv64"            => RiscV
+    case t"s390"               => S390(31)
+    case t"s390x"              => S390(64)
+    case name                  => Other(name)
 
 enum Architecture:
   case X86(bits: 32 | 64)

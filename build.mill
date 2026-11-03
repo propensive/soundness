@@ -2088,7 +2088,7 @@ object fulminate extends Library:
 
 object galilei extends Library:
   object core extends Component(aperture.core, serpentine.core, ambience.core, turbulence.core,
-      kaleidoscope.core, inimitable.core):
+      kaleidoscope.core, inimitable.core, gastronomy.core):
     // The native `FilesystemBackend` (`filesystemBackends.scalaNativeFilesystem`) is folded into the native cross
     // via `nativeSources` — native has a single OS filesystem, so (unlike the JVM/WASI backends,
     // which are separate modules) it need not be an opt-in dependency.
@@ -2759,7 +2759,7 @@ object parasite extends Library:
   // The virtual-thread (Loom) supervisors live in `core-jvm`; Scala Native compiles twins that
   // fork platform threads instead (`core-native`) — no Loom on native.
   object core extends Component(digression.core, mercator.core, anticipation.time,
-      nomenclature.core):
+      nomenclature.core, ambience.core):
     override def sources = Task.Sources(moduleDir, moduleDir / os.up / "core-jvm")
     override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "core-native")
     override def scalacOptions = Task:

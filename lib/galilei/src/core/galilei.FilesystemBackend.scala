@@ -63,6 +63,10 @@ trait FilesystemBackend extends Planar:
   // The text a symbolic link points at, exactly as stored: relative links stay relative.
   def linkTarget(path: Path on Plane)(using Tactic[Io.Error]): Text
 
+  // The path as the filesystem knows it: absolute, normalized, every symbolic link in it
+  // resolved — `realpath(3)`. The entry must exist.
+  def realPath(path: Path on Plane)(using Tactic[Io.Error]): Text
+
   def exists(path: Path on Plane, dereference: Boolean): Boolean
 
   // The names (not paths) of the directory's immediate children.

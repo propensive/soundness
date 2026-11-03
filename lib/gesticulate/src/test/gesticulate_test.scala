@@ -208,9 +208,9 @@ object Tests extends Suite("mime", m"Gesticulate tests"):
 
         val tail = (t"\r\n" + rest).in[Data]
         val wire = new scala.Array[Byte](head.length + body.length + tail.length)
-        System.arraycopy(Array.unsafeJvm(head), 0, wire, 0, head.length)
-        System.arraycopy(Array.unsafeJvm(body), 0, wire, head.length, body.length)
-        System.arraycopy(Array.unsafeJvm(tail), 0, wire, head.length + body.length, tail.length)
+        java.lang.System.arraycopy(Array.unsafeJvm(head), 0, wire, 0, head.length)
+        java.lang.System.arraycopy(Array.unsafeJvm(body), 0, wire, head.length, body.length)
+        java.lang.System.arraycopy(Array.unsafeJvm(tail), 0, wire, head.length + body.length, tail.length)
         Array.unsafeFrozen(wire)
 
       def same(left: Data, right: Data): Boolean =

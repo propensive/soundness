@@ -37,6 +37,7 @@ import scala.reflect
 
 import anticipation.*
 import contingency.*
+import gigantism.Every
 import prepositional.*
 import rudiments.*
 import vacuous.*
@@ -92,6 +93,16 @@ object Decodable extends Decodable2:
         abort(Number.Error(text, Float, Number.Error.Reason.Unparseable))
 
   given char: Char is Decodable in Text = _.s.charAt(0)
+
+  // Every `Truth` in scope is consulted, lowercased and trimmed, so `true`/`false` is always
+  // read and the spellings in `truths` join it by import.
+  given boolean: (tactic: Tactic[Truth.Error]^, truths: Every[Truth])
+  =>  ( (Boolean is Decodable in Text)^{tactic, caps.any} ) =
+    text =>
+      val normalized: Text = text.s.trim.nn.toLowerCase.nn.tt
+
+      truths.values.iterator.map(_(normalized)).find(_.present).optional
+      . or(abort(Truth.Error(text)))
 
   given enumeration: [enumeration <: reflect.Enum: {Enumerable, Identifiable as identifiable}]
   =>  ( tactic: Tactic[Enumerable.Error]^ )

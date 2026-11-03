@@ -40,9 +40,12 @@ import anticipation.*
 import aperture.*
 import contingency.*
 import fulminate.*
+import gastronomy.*
 import gigantism.Every
+import gossamer.*
 import inimitable.*
 import prepositional.*
+import rudiments.*
 import serpentine.*
 import turbulence.*
 import turbulence.Aggregable
@@ -63,6 +66,43 @@ object Platform:
 
   given uuidNavigable: [uuid <: Uuid, filesystem <: Platform] => uuid is Navigable on filesystem =
     _.text
+
+  // What a path's `checksum` digests. A file contributes its bytes, so its checksum is its
+  // content's. A directory contributes its regular files in the order of their paths relative to
+  // it, each as its relative path and its content, every part preceded by its length, so that a
+  // rename, a move or a change of content changes the digest, two directories holding the same
+  // files digest alike wherever they are, and an empty directory has the digest of nothing.
+  // Symbolic links are followed, or not, as the `DereferenceSymlinks` in scope decides, which
+  // the same policy reads through `descendants`.
+  given pathChecksummable: [plane <: Platform: Filesystem, path <: Path on plane]
+  =>  ( backend:  FilesystemBackend on plane,
+        symlinks: DereferenceSymlinks,
+        tactic:   Tactic[Io.Error],
+        fdtables: Every[Fdtable] )
+  =>  ( (path is Checksummable)^{tactic} ) =
+    (digestion, path) =>
+      import gossamer.collationComparable, gossamer.collations.codepointCollation
+      import rudiments.sortingAlgorithms.timsort
+      given TraversalOrder = TraversalOrder.PreOrder
+
+      def part(text: Text): Unit =
+        summon[Int is Digestible].digest(digestion, text.length)
+        summon[Text is Digestible].digest(digestion, text)
+
+      def content(file: Path on plane): Data =
+        Platform.pathReadable[plane, Path on plane, Data].read(file)
+
+      if path.entry() == Directory then
+        val prefix: Int = path.encode.length + summon[plane is Filesystem].separator.length
+
+        path.descendants.to[List].order(_.encode).each: file =>
+          if file.entry() == File then
+            part(file.encode.skip(prefix))
+            val bytes: Data = content(file)
+            summon[Int is Digestible].digest(digestion, bytes.length)
+            digestion.append(bytes)
+      else
+        digestion.append(content(path))
 
   // Read a path in its entirety as a single, direct operation: the whole file is read into memory
   // at once, holding no handle and needing no scope — unlike streaming a path, which must be

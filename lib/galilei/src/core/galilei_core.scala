@@ -39,6 +39,7 @@ import contingency.*
 import denominative.*
 import fulminate.*
 import gigantism.Every
+import gossamer.*
 import kaleidoscope.*
 import prepositional.*
 import rudiments.*
@@ -378,6 +379,21 @@ extension [plane: Filesystem](path: Path on plane)
     import filesystemOptions.createNonexistentParents
     symlinkTo(destination.unsafeChild(path.descent.head)(using Unsafe))
 
+
+  // The path with every symbolic link resolved — `realpath` — as a path on the same plane. The
+  // descent is rebuilt from the filesystem's text, which is well-formed by construction; a real
+  // path under another root (a junction onto another drive) is `Unsupported`.
+  def canonical()(using backend: FilesystemBackend on plane): Path on plane raises Io.Error =
+    val filesystem: plane is Filesystem = summon[plane is Filesystem]
+    val real: Text = backend.realPath(path)
+
+    if !real.starts(path.root) then abort(Io.Error(path, Operation.Metadata, Reason.Unsupported))
+
+    val names: List[Text] =
+      real.skip(path.root.length).cut(filesystem.separator).filter(_ != t"")
+      . map(filesystem.unescape(_))
+
+    Path[plane, path.Limit, Tuple](path.root, names.reverse)
 
   def modified[instant: Instantiable across Instants from Long as instantiable]()
     ( using backend: FilesystemBackend on plane )

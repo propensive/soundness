@@ -115,6 +115,12 @@ package timespanFormats:
     . { englishRelativeTimespan, frenchRelativeTimespan, germanRelativeTimespan,
         spanishRelativeTimespan }
 
+package durationDecodables:
+  export aviation.durationDecodables.compactDurationDecodable
+
+package durationFormats:
+  export aviation.durationFormats.compactDurationFormat
+
 package hourFormats:
   export aviation.hourFormats.{twelveHourClock, twelveHourSecondsClock, twentyFourHourClock,
       twentyFourHourSecondsClock}

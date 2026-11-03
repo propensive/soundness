@@ -34,8 +34,8 @@ package soundness
 
 export
   ambience
-  . { Architecture, Configurator, Directories, Environment, Property, Protovariable, System,
-      Searchpath, TemporaryDirectory, temporaryDirectory, Variable, variables,
+  . { Architecture, Configurator, Directories, Environment, Os, Property, Protovariable, System,
+      Searchpath, TemporaryDirectory, temporaryDirectory, Variable, variables, Vm,
       WorkingDirectory, workingDirectory, Xdg }
 
 package systems:

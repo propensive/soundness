@@ -103,6 +103,45 @@ object Tests extends Suite("environment", m"Ambience Tests"):
         t"vax".as[Architecture]
       . assert(_ == Architecture.Other(t"vax"))
 
+    suite(m"Os tests"):
+      test(m"Decode Linux"):
+        t"Linux".as[Os]
+      . assert(_ == Os.Linux)
+
+      test(m"Decode macOS from its JVM name"):
+        t"Mac OS X".as[Os]
+      . assert(_ == Os.MacOs)
+
+      test(m"Decode a versioned Windows name"):
+        t"Windows Server 2022".as[Os]
+      . assert(_ == Os.Windows)
+
+      test(m"Decode FreeBSD"):
+        t"FreeBSD".as[Os]
+      . assert(_ == Os.FreeBsd)
+
+      test(m"Decode Solaris from SunOS"):
+        t"SunOS".as[Os]
+      . assert(_ == Os.Solaris)
+
+      test(m"An unrecognized operating system keeps its name"):
+        t"Plan 9".as[Os]
+      . assert(_ == Os.Other(t"Plan 9"))
+
+      test(m"Decode the macOS spelling of 64-bit ARM"):
+        t"arm64".as[Architecture]
+      . assert(_ == Architecture.Arm(64))
+
+      test(m"The running operating system is read from os.name"):
+        given system: System = fixedSystem(t"os.name" -> t"Mac OS X", t"os.arch" -> t"aarch64")
+        System.os
+      . assert(_ == Os.MacOs)
+
+      test(m"The running architecture is read from os.arch"):
+        given system: System = fixedSystem(t"os.name" -> t"Mac OS X", t"os.arch" -> t"aarch64")
+        System.architecture
+      . assert(_ == Architecture.Arm(64))
+
     suite(m"Environment tests"):
       test(m"Read a defined environment variable"):
         given environment: Environment = fixedEnvironment(t"HOME" -> t"/home/jack")

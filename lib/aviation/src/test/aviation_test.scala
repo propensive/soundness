@@ -1489,6 +1489,48 @@ object Tests extends Suite("time", m"Aviation Tests"):
         Instant(12345L).long
       . assert(_ == 12345L)
 
+    suite(m"Compact duration decoding"):
+      import durationDecodables.compactDurationDecodable
+
+      test(m"A bare number is seconds"):
+        t"90".as[Duration].value
+      . assert(_ == 90.0)
+
+      test(m"A unit scales the number"):
+        List(t"10m", t"2h", t"1d", t"250ms", t"1.5m").map(_.as[Duration].value)
+      . assert(_ == List(600.0, 7200.0, 86400.0, 0.25, 90.0))
+
+      test(m"Surrounding space is ignored"):
+        t" 30 s ".as[Duration].value
+      . assert(_ == 30.0)
+
+      test(m"Zero is a zero duration"):
+        t"0".as[Duration].value
+      . assert(_ == 0.0)
+
+      test(m"A negative duration is an error"):
+        capture(t"-5s".as[Duration])
+      . assert(_ == Duration.Error(t"-5s"))
+
+      test(m"Nonsense is an error"):
+        capture(t"soon".as[Duration])
+      . assert(_ == Duration.Error(t"soon"))
+
+      test(m"Empty text is an error"):
+        capture(t"".as[Duration])
+      . assert(_ == Duration.Error(t""))
+
+    suite(m"Compact duration formatting"):
+      import durationFormats.compactDurationFormat
+
+      test(m"The coarsest unit comes first, then every unit down to seconds"):
+        List(5000L, 125000L, 3605000L, 90005000L, 420L).map(Duration(_).show)
+      . assert(_ == List(t"5s", t"2m 5s", t"1h 0m 5s", t"1d 1h 0m 5s", t"420ms"))
+
+      test(m"A negative duration carries its sign"):
+        Duration(-125000L).show
+      . assert(_ == t"-2m 5s")
+
     suite(m"Duration construction"):
       test(m"Duration(1000L) is one second"):
         Duration(1000L).value

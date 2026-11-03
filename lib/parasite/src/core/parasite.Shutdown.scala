@@ -34,14 +34,22 @@ package parasite
 
 import scala.language.experimental.pureFunctions
 
+import ambience.Vm
+
+// The VM shutting down: `Vm.intercept[Shutdown]` runs its action once, on `System.exit`, on the
+// last non-daemon thread ending, or on SIGINT/SIGTERM — a JVM shutdown hook. Hooks run on their
+// own threads, concurrently and in no defined order; an exception in the action is swallowed, so
+// one hook never prevents the others from running. `Hook.cancel()` removes it.
 object Shutdown:
   private val instance: Shutdown = Shutdown()
 
   given interceptable: Shutdown is Interceptable:
-    type Target = Os.type
+    type Target = Vm.type
 
-    def register(value: Os.type, action: Shutdown => Unit): () => Unit =
-      val runnable: Runnable^{action} = () => action(instance)
+    def register(value: Vm.type, action: Shutdown => Unit): () => Unit =
+      val runnable: Runnable^{action} = () =>
+        try action(instance) catch case _: Exception => ()
+
       val thread: Thread = Thread(runnable)
       Runtime.getRuntime.nn.addShutdownHook(thread)
 

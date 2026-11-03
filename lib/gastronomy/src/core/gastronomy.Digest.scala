@@ -37,7 +37,9 @@ import java.util as ju
 import scala.compiletime.*
 
 import anticipation.*
+import contingency.*
 import corpuscular.*
+import distillate.*
 import monotonous.*
 import prepositional.*
 import spectacular.*
@@ -50,6 +52,13 @@ object Digest:
     _.data.serialize[Base64]
 
   given encodable: [digest <: Algorithm] => Digest in digest is Encodable in Data = _.data
+
+  // Hexadecimal text, as `serialize[Hex]` writes it; the alphabet in scope decides which case is
+  // accepted. The algorithm is a phantom, so the text is not checked against its length.
+  given decodable: [digest <: Algorithm]
+  =>  ( deserializable: Deserializable in Hex, tactic: Tactic[Serialization.Error] )
+  =>  ( ((Digest in digest) is Decodable in Text)^{tactic} ) =
+    text => Digest[digest](deserializable.deserialize(text))
 
   // `showable` needs an `Alphabet[Base64]`, and a debug rendering must always be available, so
   // the bytes are rendered here as full-width lowercase hexadecimal instead — every byte shown,

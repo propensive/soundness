@@ -250,6 +250,39 @@ file.moveTo(directory / "renamed.txt")
 `delete` removes a single entry, while `wipe` removes a directory and everything beneath it,
 which is why recursive deletion is a policy that must be enabled deliberately.
 
+### Content-addressed storage
+
+A directory of blobs, each named by the digest of its own bytes, is a *content-addressed store*:
+a blob is written once, verified as it is written, and found by anything that knows its digest.
+`Cas` is that store, with the hash algorithm in its type and in the type of every digest it
+accepts, so a SHA-256 store cannot be asked for a BLAKE3 digest:
+
+```scala
+import providers.javaBaseProvider
+
+val store: Cas in Sha2[256] on (Path on Linux) = Cas[Sha2[256]](directory, t".blob")
+val digest: Digest in Sha2[256] = store() = t"some bytes".in[Data]
+store(digest)                       // the bytes, or Unset
+store.has(digest)                   // true
+```
+
+`store() = data` stores the data under its own digest, which it returns, and does nothing if
+the blob is already there; `store(digest) = data` does the same after checking that the data
+really has that digest, raising a `Cas.Error` if it does not. `missing` reports which of a list
+of digests are not yet stored, `digests` lists what is, and `prune` deletes every blob not in
+the set it is given, so a cache can be trimmed to what is still referenced:
+
+```scala
+store.missing(List(digest))         // Nil
+store.prune(Set(digest))            // 0: nothing else to delete
+```
+
+A blob is written to a uniquely-named sibling and moved into place atomically, so a reader
+never sees a partial blob. The store's root is a `Path` on any platform here, but its type is
+the type of that root: a `Cas.Storage` instance for another kind of root makes a store over it
+with the same interface. As a collection, a store is its digests: `store.size`,
+`store.has(digest)`, `store.at(digest)` and traversal all work on it.
+
 ### Listing and inspecting
 
 A directory's immediate children stream from `children`, and its whole subtree from
@@ -266,6 +299,14 @@ spanning directories:
 
 ```scala
 directory.glob(glob"*.txt").map(_.name)   // List(t"renamed.txt", …)
+```
+
+Two paths can name one entry through symbolic links, or through `/tmp` and `/private/tmp` on
+macOS. `canonical` is the entry's path as the filesystem itself knows it, every link resolved,
+which is what a registry keyed by path should store:
+
+```scala
+(directory / "renamed.txt").canonical()   // the same path, with any symlinks resolved
 ```
 
 ### Extended attributes and volumes

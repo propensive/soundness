@@ -35,7 +35,10 @@ package soundness
 export
   distillate
   . { As, as, Codecs, Decodable, Decodable2, Enumerable, Extractable, Identifiable,
-      Irrefutable, Number, Parsable }
+      Irrefutable, Number, Parsable, Truth }
+
+package truths:
+  export distillate.truths.{onOffTruth, oneZeroTruth, yesNoTruth}
 
 package codecs:
   export

@@ -36,7 +36,7 @@ export
   parasite
   . { AdaptiveSupervisor, async, Async, cancel, Probate, Daemon, daemon, transfer, SharedProbate,
       Destruction, Fault, Fulfillment, Hook, intercept,
-      Interceptable, JavascriptSupervisor, Monitor, monitor, Observation, Os, Perseverance,
+      Interceptable, JavascriptSupervisor, Monitor, monitor, Observation, Perseverance,
       PlatformSupervisor, PooledSupervisor, PoolingSupervisor, Promise,
       relent, retry, Schedulable, Shutdown, sleep, snooze, Strand, supervise, Supervisor, Task,
       task, Tenacity, Threading, Timeout, Transgression, contain, Containment, VirtualSupervisor,

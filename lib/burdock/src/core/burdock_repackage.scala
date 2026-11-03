@@ -47,6 +47,7 @@ import fulminate.*
 // scope, so printing a `Message` needs it imported by name.
 import fulminate.printables.messagePrintable
 import galilei.*
+import gastronomy.*
 import gossamer.*
 import hellenism.*, classloaders.threadContextClassloader
 import prepositional.*
@@ -70,6 +71,8 @@ import executives.directExecutive
 import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.dereferenceSymlinks
 import interpreters.posixInterpreter
+import monotonous.alphabets.hexLowerCase
+import providers.javaBaseProvider
 import stdios.fileDescriptorStdio
 import systems.javaBaseSystem
 import termcaps.environmentTermcap
@@ -114,16 +117,18 @@ def repackage(arguments: List[Text]): Unit = application(arguments):
       val bootstrapClass: Data = (Classpath/"burdock"/"Bootstrap.class").read[Data]
 
       // Unpublished dependencies are reconstructed from the build-time hard-links in
-      // `~/.cache/burdock/<sha256>.jar` (see `externalize`); published ones resolve via
+      // `~/.cache/soundness/jars/<sha256>.jar` (see `externalize`); published ones resolve via
       // deps.dev and are referenced by URL rather than inlined.
       val home: Text = _root_.java.lang.System.getProperty("user.home").nn.tt
-      val cacheDir: Path on Linux = t"$home/.cache/burdock".as[Path on Linux]
 
+      val cache: Cas in Sha2[256] on (Path on Linux) =
+        Cas[Sha2[256]](t"$home/.cache/soundness/jars".as[Path on Linux], t".jar")
+
+      // Hashes arrive as text (from `burdock.deps` and the release index), so this is the one
+      // place they become typed digests; text that is not a digest is simply not cached.
       def cached(hash: Text): Optional[List[Zip.Entry]] =
-        val cacheJar: Path on Linux = cacheDir/t"$hash.jar"
-
-        if !cacheJar.existent() then Unset else
-          Zipfile.read(cacheJar).entries.filter: entry =>
+        safely(hash.as[Digest in Sha2[256]]).let(cache(_)).let: data =>
+          Zipfile.read(data).entries.filter: entry =>
             !entry.directory && entry.ref.show != t"META-INF/MANIFEST.MF"
 
           . to[List]

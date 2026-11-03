@@ -40,7 +40,7 @@ import scala.quoted.*
 
 // The compile-time half of Burdock. The `externalize` macro captures the build's
 // classpath, computes each dependency JAR's SHA-256, hard-links it into the Burdock
-// cache (`~/.cache/burdock/<sha256>.jar`) so its bytes stay retrievable by hash
+// cache (`~/.cache/soundness/jars/<sha256>.jar`) so its bytes stay retrievable by hash
 // locally, and embeds the SHA-256 list as the `META-INF/burdock.deps` resource. The
 // published-vs-unpublished decision is deferred to repackage (where deps.dev is
 // queried); the cache covers anything deps.dev cannot resolve.
@@ -80,7 +80,7 @@ object internal:
   // soundness runtime. Hard-links fall back to a copy across filesystems.
   private def hashAndCache(classpath: String): List[String] =
     val home: String = System.getProperty("user.home").nn
-    val cacheDir: jnf.Path = jnf.Paths.get(home, ".cache", "burdock").nn
+    val cacheDir: jnf.Path = jnf.Paths.get(home, ".cache", "soundness", "jars").nn
     jnf.Files.createDirectories(cacheDir)
 
     val entries: scala.Array[String | Null] = classpath.split(java.io.File.pathSeparator).nn

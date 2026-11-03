@@ -103,6 +103,19 @@ This is what makes a digest computable over a [stream](streams.md) with bounded 
 why hashing composes with [compression](compression.md) and [encryption](cryptography.md) in one
 pipeline rather than requiring the data to be materialized between them.
 
+`checksum` digests what is *behind* a value: a stream's bytes, and, for a
+[filesystem](filesystem.md) path, a file's content or a directory's. A directory's checksum
+covers its regular files in the order of their paths relative to it, each contributing its
+relative path and its content, so a rename, a move or an edit changes it, two directories
+holding the same files have the same checksum wherever they are, and an empty directory has one
+too — the identity a build keys its caches by:
+
+```scala
+import filesystemOptions.dereferenceSymlinks
+
+directory.checksum[Blake3]   // Digest in Blake3
+```
+
 ### BLAKE3
 
 `Blake3` is the pure-Scala implementation, and it offers the algorithm's three modes: an ordinary

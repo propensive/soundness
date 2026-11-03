@@ -31,7 +31,7 @@ JAR that will fail later.
 
 The application wraps its entry point in `externalize`. The macro leaves the body alone at
 runtime; at compiletime it captures the build's classpath, hashes each dependency JAR,
-hard-links it into the Burdock cache at `~/.cache/burdock/<sha256>.jar` so the bytes stay
+hard-links it into the Burdock cache at `~/.cache/soundness/jars/<sha256>.jar` so the bytes stay
 retrievable by hash on the build machine, and embeds the list of hashes as the resource
 `META-INF/burdock.deps` in the compiled output.
 
@@ -84,7 +84,7 @@ command-line entry point is a thin rendering of that call, and `DepsDev.mavenUrl
 ### Running a repackaged JAR
 
 A repackaged JAR runs with `java -jar app.jar`, exactly as before. The bootstrap reads
-`Burdock-Require`, downloads every requirement that is not already in `~/.cache/burdock/` (in
+`Burdock-Require`, downloads every requirement that is not already in `~/.cache/soundness/jars/` (in
 parallel, bounded to a handful of connections per host), verifies each download's SHA-256
 against the hash in the manifest, builds the classpath in manifest order and invokes
 `Burdock-Main`. A checksum mismatch stops the launch: the application never starts against

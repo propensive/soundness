@@ -35,7 +35,6 @@ package gastronomy
 import scala.caps
 
 import anticipation.*
-import contingency.*
 import corpuscular.*
 import denominative.*
 import prepositional.*
@@ -167,20 +166,33 @@ extension [digestible: Digestible](value: digestible)
     val digester = Digester(digestible.digest(_, value))
     digester.apply
 
-extension [source: Streamable by Data over Credit](source: source)
-  def checksum[hash <: Algorithm]
-    ( using hashed: Hash in hash, erased weakness: Permit[HashWeakness[hash]] )
-  :   Digest in hash =
-
-    val digester = Digester: digestion =>
-      source.source[Data].drain: region =>
+// What `checksum` digests: the content behind a value rather than the value itself. Any source
+// of bytes (`Streamable by Data`) is checksummed by draining it; galilei adds a path, whose
+// content is a file's bytes or a directory's files.
+object Checksummable:
+  given streamable: [source]
+  =>  ( streamable: (source is Streamable by Data over Credit)^ )
+  =>  ( (source is Checksummable)^{streamable} ) =
+    (digestion, source) =>
+      streamable.stream(source).drain: region =>
         range =>
           val interval: Interval = range
 
           region.borrow(range): (storage, offset, length) =>
             digestion.append(storage.asInstanceOf[Array[Byte]^{caps.any.rd}], offset, length)
 
-    digester.apply
+trait Checksummable extends Typeclass:
+  def checksum(digestion: Digestion^, value: Self): Unit
+
+extension [source](source: source)
+  def checksum[hash <: Algorithm]
+    ( using checksummable: (source is Checksummable)^, hashed: Hash in hash,
+            erased weakness: Permit[HashWeakness[hash]] )
+  :   Digest in hash =
+
+    val accumulator: Digestion^ = hashed.initialize()
+    checksummable.checksum(accumulator, source)
+    Digest[hash](accumulator.digest())
 
 
 // The concession of a hash algorithm: MD5 and SHA-1 are cryptographically weak, and the

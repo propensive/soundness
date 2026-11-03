@@ -38,6 +38,8 @@ import soundness.collations.codepointCollation
 import soundness.sortingAlgorithms.timsort
 
 import filesystemBackends.javaBaseFilesystem
+import providers.javaBaseProvider
+import alphabets.hexLowerCase
 
 // A document type with a byte-native `Loadable`, to exercise `load` on a path: the metadata
 // is the byte count.
@@ -264,6 +266,64 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
               (first / "stolen.txt").overwrite(t"nope")
         . map(_.message)
       . assert(!_.nil)
+
+    suite(m"Content-addressed storage"):
+      import errorDiagnostics.emptyDiagnostics
+      val casLeaf: Text = Uuid().show
+      val casRoot: Path on Linux = unsafely((% / "tmp" / casLeaf).on[Linux])
+      unsafely(casRoot.create[Directory]())
+      val cas: Cas in Sha2[256] on (Path on Linux) = Cas[Sha2[256]](casRoot, t".blob")
+      val content: Data = t"content".in[Data]
+      val expected: Digest in Sha2[256] = content.digest[Sha2[256]]
+      val other: Digest in Sha2[256] = t"other".in[Data].digest[Sha2[256]]
+      val unstored: Digest in Sha2[256] = t"unstored".in[Data].digest[Sha2[256]]
+
+      test(m"A blob is stored under its own digest"):
+        unsafely(cas() = content)
+      . assert(_ == expected)
+
+      test(m"A stored blob is present and reads back"):
+        unsafely(cas.has(expected) && cas(expected).let(_.utf8) == t"content")
+      . assert(_ == true)
+
+      test(m"The blob's name is lowercase hex plus the suffix"):
+        cas.name(expected)
+      . assert(_ == t"ed7002b439e9ac845f22357d822bac1444730fbdb6016d3ec9432297b9ec9f73.blob")
+
+      test(m"Storing data under a digest it does not have is an error"):
+        unsafely(capture[Cas.Error](cas(other) = content))
+      . assert(_.expected == other.serialize[Hex])
+
+      test(m"A mismatched store writes nothing"):
+        cas.has(other)
+      . assert(_ == false)
+
+      test(m"Storing data under its true digest succeeds"):
+        val other: Data = t"other".in[Data]
+        unsafely(cas(other.digest[Sha2[256]]) = other)
+        cas.has(other.digest[Sha2[256]])
+      . assert(_ == true)
+
+      test(m"Only absent digests are missing"):
+        cas.missing(List(expected, unstored))
+      . assert(_ == List(unstored))
+
+      test(m"The digests listed are those stored, ignoring other files"):
+        unsafely((casRoot / "stray.txt").write(t"stray"))
+        unsafely(cas.digests.to[Set])
+      . assert(_ == Set(expected, t"other".in[Data].digest[Sha2[256]]))
+
+      test(m"The store is a collection of its digests"):
+        (cas.size, cas.has(expected), cas.defines(expected), cas.at(expected).let(_.utf8))
+      . assert(_ == (2, true, true, t"content"))
+
+      test(m"Pruning deletes every blob not kept, and counts them"):
+        unsafely((cas.prune(Set(expected)), cas.digests))
+      . assert(_ == (1, List(expected)))
+
+      test(m"An absent digest reads as unset"):
+        unsafely(cas(unstored))
+      . assert(_ == Unset)
 
     suite(m"Creating entries"):
       import errorDiagnostics.emptyDiagnostics
@@ -572,6 +632,51 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
           outer.open[Directory](Read & Exclusive) { true }
       . assert(_ == true)
 
+    suite(m"Checksums"):
+      import filesystemOptions.dereferenceSymlinks
+
+      val rootLeaf: Text = Uuid().show
+      val twinLeaf: Text = Uuid().show
+      val emptyLeaf: Text = Uuid().show
+      val root: Path on Linux = unsafely((% / "tmp" / rootLeaf).on[Linux])
+      val twin: Path on Linux = unsafely((% / "tmp" / twinLeaf).on[Linux])
+      val empty: Path on Linux = unsafely((% / "tmp" / emptyLeaf).on[Linux])
+
+      unsafely:
+        root.create[Directory]()
+        (root / "a.txt").write(t"alpha")
+        (root / "sub").create[Directory]()
+        (root / "sub" / "b.txt").write(t"beta")
+        twin.create[Directory]()
+        (twin / "sub").create[Directory]()
+        (twin / "sub" / "b.txt").write(t"beta")
+        (twin / "a.txt").write(t"alpha")
+        empty.create[Directory]()
+
+      test(m"A file's checksum is the digest of its bytes"):
+        unsafely((root / "a.txt").checksum[Sha2[256]])
+      . assert(_ == t"alpha".in[Data].digest[Sha2[256]])
+
+      test(m"Directories with the same files checksum alike, wherever they are"):
+        unsafely(root.checksum[Sha2[256]] == twin.checksum[Sha2[256]])
+      . assert(_ == true)
+
+      test(m"An empty directory has a checksum"):
+        unsafely(empty.checksum[Sha2[256]].serialize[Hex].length)
+      . assert(_ == 64)
+
+      test(m"Adding a file changes a directory's checksum"):
+        val before: Digest in Sha2[256] = unsafely(twin.checksum[Sha2[256]])
+        unsafely((twin / "c.txt").write(t"gamma"))
+        unsafely(twin.checksum[Sha2[256]]) == before
+      . assert(_ == false)
+
+      test(m"Changing a file's content changes a directory's checksum"):
+        val before: Digest in Sha2[256] = unsafely(root.checksum[Sha2[256]])
+        unsafely((root / "a.txt").write(t"ALPHA"))
+        unsafely(root.checksum[Sha2[256]]) == before
+      . assert(_ == false)
+
     suite(m"Glob expansion"):
       import filesystemOptions.createNonexistentParents
       import filesystemOptions.overwritePreexisting
@@ -764,6 +869,7 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       . assert(_ == false)
 
     suite(m"Inode metadata"):
+      import errorDiagnostics.emptyDiagnostics
       import filesystemOptions.createNonexistentParents
       import filesystemOptions.deleteRecursively
       import filesystemOptions.overwritePreexisting
@@ -775,6 +881,31 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
       val link: Path on Linux = unsafely((% / "tmp" / linkLeaf).on[Linux])
       unsafely(file.write(t"content"))
       unsafely(file.symlinkTo(link))
+
+      test(m"A symlink's canonical path is its target's"):
+        unsafely(link.canonical() == file.canonical())
+      . assert(_ == true)
+
+      test(m"A canonical path has no symlink left in it"):
+        val dirLeaf: Text = Uuid().show
+        val dirLinkLeaf: Text = Uuid().show
+        val dir: Path on Linux = unsafely((% / "tmp" / dirLeaf).on[Linux])
+        val dirLink: Path on Linux = unsafely((% / "tmp" / dirLinkLeaf).on[Linux])
+        unsafely:
+          dir.create[Directory]()
+          (dir / "inner.txt").write(t"inner")
+          dir.symlinkTo(dirLink)
+          (dirLink / "inner.txt").canonical() == (dir / "inner.txt").canonical()
+      . assert(_ == true)
+
+      test(m"A canonical path reads back the same content"):
+        unsafely(link.canonical().read[Text])
+      . assert(_ == t"content")
+
+      test(m"An absent path has no canonical form"):
+        val absentLeaf: Text = Uuid().show
+        unsafely(capture[Io.Error](unsafely((% / "tmp" / absentLeaf).on[Linux]).canonical()).reason)
+      . assert(_ == Io.Error.Reason.Nonexistent)
 
       test(m"A regular file's stat carries the whole st_mode, type bits included"):
         unsafely(backend.stat(file, true)).mode.let(_ & 61440)

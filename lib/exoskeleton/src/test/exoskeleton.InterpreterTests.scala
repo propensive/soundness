@@ -54,6 +54,19 @@ object InterpreterTests extends Suite("cli-interpreter", m"Commandline interpret
     val clustering = interpreters.posixClusteringInterpreter
     val posix = interpreters.posixInterpreter
 
+    suite(m"Repeatable flags"):
+      test(m"a repeatable flag gathers every occurrence's operands, in order"):
+        reading(posix, Flag(t"tag", repeatable = true), t"--tag", t"a", t"--tag", t"b")
+      . assert(_ == t"[a b]")
+
+      test(m"a flag that is not repeatable reads its first occurrence"):
+        reading(posix, Flag(t"tag"), t"--tag", t"a", t"--tag", t"b")
+      . assert(_ == t"[a]")
+
+      test(m"a repeatable flag present once reads as before"):
+        reading(posix, Flag(t"tag", repeatable = true), t"--tag", t"a")
+      . assert(_ == t"[a]")
+
     suite(m"POSIX clustering interpreter"):
       test(m"`-abc` sets the flag `-a`"):
         reading(clustering, Flag('a'), t"-abc")

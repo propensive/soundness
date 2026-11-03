@@ -64,6 +64,11 @@ object Tests extends Suite("hashing", m"Gastronomy tests"):
       t"Hello world".digest[Sha2[256]].serialize[Hex]
     . assert(_ == t"64EC88CA00B268E5BA1A35678A1B5316D212F4F366B2477232534A8AECA37F3C")
 
+    test(m"A digest decodes from its hexadecimal text"):
+      unsafely:
+        t"64ec88ca00b268e5ba1a35678a1b5316d212f4f366b2477232534a8aeca37f3c".as[Digest in Sha2[256]]
+    . assert(_ == t"Hello world".digest[Sha2[256]])
+
     test(m"Md5, Base64"):
       import alphabets.base64Standard
       t"Hello world".digest[Md5].serialize[Base64]

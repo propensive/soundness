@@ -173,6 +173,10 @@ package filesystemBackends:
         protect(path, Operation.Metadata):
           jnf.Files.readSymbolicLink(javaPath(path)).nn.toString.nn.tt
 
+      def realPath(path: Path on Plane)(using Tactic[Io.Error]): Text =
+        protect(path, Operation.Metadata):
+          javaPath(path).toRealPath().nn.toString.nn.tt
+
       def exists(path: Path on Plane, dereference: Boolean): Boolean =
         if dereference then jnf.Files.exists(javaPath(path))
         else jnf.Files.exists(javaPath(path), jnf.LinkOption.NOFOLLOW_LINKS)

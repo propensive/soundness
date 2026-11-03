@@ -60,7 +60,18 @@ capture[Number.Error](t"abc".as[Byte]).reason   // Number.Error.Reason.Unparseab
 ```
 
 Instances come built in for the primitive number types, for `Char`, and for types
-defined elsewhere in Soundness such as `Uuid` and `Fqcn`. Other modules add their
+defined elsewhere in Soundness such as `Uuid` and `Fqcn`. A `Boolean` decodes from
+`true` or `false`, in any case and with space around it, and raises a `Truth.Error` for
+anything else; the other spellings a tool might accept — `yes`/`no`, `on`/`off`, `1`/`0` — are
+each a `Truth` in the `truths` package, and every one in scope is accepted beside the default,
+so importing is additive rather than a choice:
+
+```scala
+import truths.yesNoTruth
+
+t"yes".as[Boolean]    // true
+t"True".as[Boolean]   // true, still
+``` Other modules add their
 own, which is why the same `as` reads a date, a hostname or a URL once the
 relevant module is imported:
 

@@ -452,7 +452,7 @@ object Tests extends Suite("mdns", m"Syndesis tests"):
             supervise:
               val backend = summon[Discovery.Backend]
               val service = Discovery.Service(t"soundness", Tcp)
-              val label = t"syndesis-${java.lang.Long.toHexString(System.nanoTime).nn}"
+              val label = t"syndesis-${java.lang.Long.toHexString(java.lang.System.nanoTime).nn}"
               val txt = Discovery.Txt(t"token" -> label)
               val description = Discovery.Description(label, tcp"8443", txt)
 

@@ -36,6 +36,7 @@ import scala.language.experimental.pureFunctions
 
 import contingency.*
 import rudiments.*
+import rudiments.sortingAlgorithms.timsort
 import vacuous.*
 
 case class Commandline
@@ -44,14 +45,22 @@ case class Commandline
     postpositional: List[Argument]                = Nil,
     focus:          Optional[Argument]            = Unset ):
 
-  def at(flag: Flag): List[Argument] =
-    parameters.seek { (key, value) => flag.matches(key) }.let(_(1)).or(Nil)
+  def at(flag: Flag): List[Argument] = locate(flag).or(Nil)
 
-  // Unlike `at`, distinguishes a flag which is absent (`Unset`) from one which is present with
-  // no operands (`Nil`), which `validate` needs in order to tell a missing flag from a
-  // malformed one.
+  // The flag's operands: those of its first occurrence, or, for a repeatable flag, of every
+  // occurrence in command-line order. Unlike `at`, distinguishes a flag which is absent
+  // (`Unset`) from one which is present with no operands (`Nil`), which `validate` needs in
+  // order to tell a missing flag from a malformed one.
   def locate(flag: Flag): Optional[List[Argument]] =
-    parameters.seek { (key, value) => flag.matches(key) }.let(_(1))
+    val occurrences: List[(Argument, List[Argument])] =
+      parameters.to[List].filter { (key, _) => flag.matches(key) }.order(_(0).position)
+
+    val result: Optional[List[Argument]] = occurrences match
+      case Nil                  => Unset
+      case _ if flag.repeatable => occurrences.bind(_(1))
+      case (_, operands) :: _   => operands
+
+    result
 
   def read[operand: Interpretable](flag: Flag)
     ( using cli: Cli, discoverable: (? <: operand) is Discoverable )
@@ -59,6 +68,6 @@ case class Commandline
 
     cli.register(flag, discoverable, operand.operandName)
 
-    parameters.seek { (key, _) => flag.matches(key) }.let: (_, operands) =>
+    locate(flag).let: operands =>
       cli.present(flag)
       safely(operand.interpret(operands))

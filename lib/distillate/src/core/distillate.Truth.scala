@@ -30,6 +30,28 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package parasite
+package distillate
 
-object Os
+import anticipation.*
+import fulminate.*
+import vacuous.*
+
+// A spelling of truth and falsity in text: a word for each, matched after lowercasing and
+// trimming. Several may be in scope at once — the `Boolean` decoder collects `Every[Truth]` —
+// so `true`/`false`, from this companion, is always accepted, and `import truths.yesNoTruth`
+// accepts `yes`/`no` beside it rather than instead of it.
+object Truth:
+  given trueFalse: Truth = Truth("true".tt, "false".tt)
+
+  case class Error(text: Text)(using Diagnostics)
+  extends fulminate.Error(406, 0)(m"$text is not a recognized Boolean")
+
+case class Truth(affirmative: Text, negative: Text):
+  def apply(text: Text): Optional[Boolean] =
+    if text == affirmative then true else if text == negative then false else Unset
+
+// Further spellings of a `Boolean`, each accepted beside `true`/`false` when imported.
+package truths:
+  given yesNoTruth: Truth = Truth("yes".tt, "no".tt)
+  given onOffTruth: Truth = Truth("on".tt, "off".tt)
+  given oneZeroTruth: Truth = Truth("1".tt, "0".tt)
