@@ -632,6 +632,51 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
           outer.open[Directory](Read & Exclusive) { true }
       . assert(_ == true)
 
+    suite(m"Checksums"):
+      import filesystemOptions.dereferenceSymlinks
+
+      val rootLeaf: Text = Uuid().show
+      val twinLeaf: Text = Uuid().show
+      val emptyLeaf: Text = Uuid().show
+      val root: Path on Linux = unsafely((% / "tmp" / rootLeaf).on[Linux])
+      val twin: Path on Linux = unsafely((% / "tmp" / twinLeaf).on[Linux])
+      val empty: Path on Linux = unsafely((% / "tmp" / emptyLeaf).on[Linux])
+
+      unsafely:
+        root.create[Directory]()
+        (root / "a.txt").write(t"alpha")
+        (root / "sub").create[Directory]()
+        (root / "sub" / "b.txt").write(t"beta")
+        twin.create[Directory]()
+        (twin / "sub").create[Directory]()
+        (twin / "sub" / "b.txt").write(t"beta")
+        (twin / "a.txt").write(t"alpha")
+        empty.create[Directory]()
+
+      test(m"A file's checksum is the digest of its bytes"):
+        unsafely((root / "a.txt").checksum[Sha2[256]])
+      . assert(_ == t"alpha".in[Data].digest[Sha2[256]])
+
+      test(m"Directories with the same files checksum alike, wherever they are"):
+        unsafely(root.checksum[Sha2[256]] == twin.checksum[Sha2[256]])
+      . assert(_ == true)
+
+      test(m"An empty directory has a checksum"):
+        unsafely(empty.checksum[Sha2[256]].serialize[Hex].length)
+      . assert(_ == 64)
+
+      test(m"Adding a file changes a directory's checksum"):
+        val before: Digest in Sha2[256] = unsafely(twin.checksum[Sha2[256]])
+        unsafely((twin / "c.txt").write(t"gamma"))
+        unsafely(twin.checksum[Sha2[256]]) == before
+      . assert(_ == false)
+
+      test(m"Changing a file's content changes a directory's checksum"):
+        val before: Digest in Sha2[256] = unsafely(root.checksum[Sha2[256]])
+        unsafely((root / "a.txt").write(t"ALPHA"))
+        unsafely(root.checksum[Sha2[256]]) == before
+      . assert(_ == false)
+
     suite(m"Glob expansion"):
       import filesystemOptions.createNonexistentParents
       import filesystemOptions.overwritePreexisting
