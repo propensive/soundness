@@ -205,13 +205,15 @@ object Tests extends Suite("testing", m"Probably Tests"):
       . assert(_ == true)
 
     suite(m"The plain runner"):
+      // `Probe` fails two of its tests on purpose, so the status is 1.
       test(m"A suite's tests are printed one per line, with a summary, and the status answered"):
         val captured = Stdio.capture:
           import stdios.javaLangSystemStdio, termcapDefinitions.basicTermcap
           Suite.run(t"", Probe())
 
-        (captured.result, captured.out.contains(t"[pass] "), captured.out.contains(t" passed, "))
-      . assert(_ == (0, true, true))
+        val out: Text = captured.out
+        (captured.result, out.contains(t"[pass] "), out.contains(t"[fail] "), out.contains(t" passed, "))
+      . assert(_ == (1, true, true, true))
 
     suite(m"Queued execution"):
       test(m"--workers parses, and defaults to none"):

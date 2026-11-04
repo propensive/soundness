@@ -615,8 +615,9 @@ object Tests extends Suite("shell", m"Guillotine tests"):
         sh"echo detached".detach(log)
 
         def read(remaining: Int): Text =
-          val content: Optional[Text] = safely(log.read[Text])
-          if content.present || remaining == 0 then content.or(t"")
+          // The log exists, empty, from the moment the process starts.
+          val content: Text = safely(log.read[Text]).or(t"")
+          if content != t"" || remaining == 0 then content
           else
             Thread.sleep(100)
             read(remaining - 1)

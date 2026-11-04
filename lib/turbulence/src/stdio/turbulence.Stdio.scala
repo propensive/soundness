@@ -94,31 +94,40 @@ object Stdio:
   // descriptors directly.
   private val diversions: InheritableThreadLocal[Stdio | Null] = InheritableThreadLocal()
 
-  private def dispatcher(select: Stdio -> ji.PrintStream, original: ji.PrintStream)
-  :   ji.OutputStream =
+  private class Dispatcher(select: Stdio -> ji.PrintStream, original: ji.PrintStream)
+  extends ji.OutputStream:
+    private def target: ji.PrintStream = diversions.get match
+      case null         => original
+      case stdio: Stdio => select(stdio)
 
-    new ji.OutputStream:
-      private def target: ji.PrintStream = diversions.get match
-        case null         => original
-        case stdio: Stdio => select(stdio)
+    def write(byte: Int): Unit = target.write(byte)
 
-      def write(byte: Int): Unit = target.write(byte)
+    override def write(bytes: scala.Array[Byte] | Null, offset: Int, length: Int): Unit =
+      target.write(bytes, offset, length)
 
-      override def write(bytes: scala.Array[Byte] | Null, offset: Int, length: Int): Unit =
-        target.write(bytes, offset, length)
+    override def flush(): Unit = target.flush()
 
-      override def flush(): Unit = target.flush()
+  private class Dispatching(dispatcher: Dispatcher)
+  extends ji.PrintStream(dispatcher, true, "UTF-8")
 
-  private lazy val installed: Unit =
-    System.setOut(ji.PrintStream(dispatcher(_.out, System.out.nn), true, "UTF-8"))
-    System.setErr(ji.PrintStream(dispatcher(_.err, System.err.nn), true, "UTF-8"))
+  // Installed afresh whenever the stream in place is not a dispatcher: anything else that sets
+  // `System.out` — a host's own capture, say, which restores what it found when it is done —
+  // would otherwise leave every later diversion writing to a dispatcher no longer attached.
+  private def install(): Unit = synchronized:
+    System.out match
+      case _: Dispatching => ()
+      case out            => System.setOut(Dispatching(Dispatcher(_.out, out.nn)))
+
+    System.err match
+      case _: Dispatching => ()
+      case err            => System.setErr(Dispatching(Dispatcher(_.err, err.nn)))
 
   // The stdio this thread's `System` writes are diverted to, if any: what a task carries to
   // the thread it runs on.
   def diverted: Optional[Stdio] = Optional(diversions.get)
 
   def divert[result](stdio: Stdio)(block: => result): result =
-    installed
+    install()
     val previous: Stdio | Null = diversions.get
     diversions.set(stdio)
 
