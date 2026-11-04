@@ -1,0 +1,562 @@
+tel 1.0
+
+base gesticulate
+import soundness
+
+info   media types as structured values, checked against the IANA registry as the code compiles, and multipart bodies
+detail
+    _Gesticulate_ represents a [media type](https://www.iana.org/assignments/media-types/) —
+    `application/json`, `text/html; charset=UTF-8`, `image/svg+xml` — as a `MediaType` with a
+    typed group, subtype, suffixes and parameters, in place of a string whose misspelling a
+    browser silently mishandles. The `media"…"` interpolator checks a literal against a copy of
+    IANA's registry while the code compiles, so `media"application/jsom"` is a compile error
+    with the registered name it probably meant; text met at runtime is parsed with
+    `as[MediaType]`, which raises `MediaType.Error` naming what was wrong.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    val json: MediaType = media"application/json"
+    val html: MediaType = media"text/html"(charset = t"UTF-8")
+    html.show                                            // t"text/html; charset=UTF-8"
+    t"image/svg+xml".as[MediaType].suffixes              // List(Media.Suffix.Xml)
+    t"application/json; charset=UTF-8".as[MediaType].at(t"charset")   // t"UTF-8"
+    ```
+
+    Around the type are three further pieces. The `Media` typeclass gives a *type* its media
+    type — text is `text/plain`, anything with a filename guesses from its extension through
+    `Extensions` — which is how an HTTP response, a served file or an attachment labels itself
+    without re-stating what it is, and `ascribe` pairs any byte source with an explicit media
+    type as a `Content`. The `Construable` typeclass maps a media type, as a singleton string,
+    to the Scala type a body of that type is read as and written from, so that an HTTP client
+    can construe a response by its `Content-Type`: each mapping is a given in the
+    `construables` choice package, imported by name. And `Multipart` parses the
+    `multipart/form-data` format of file uploads into typed `Part`s, incrementally, each
+    part's body lent from the input as it is read.
+
+    The library is one source set, `gesticulate.core`, which compiles for the JVM, Scala.js
+    and Scala Native; the registry the `media"…"` check consults is compiled into the library
+    at build time, so the check needs no network and no classpath resource. Everything is
+    exported to the `soundness` umbrella, and the `construables` choice package merges with
+    the umbrella's own, which gathers the mappings every format library declares —
+    `jsonConstruable`, `xmlConstruable`, `pngConstruable`, … — so a user writes
+    `import soundness.*` and then imports the construables they want by name.
+
+refer gesticulate.MediaType
+refer gesticulate.Media
+refer gesticulate.Multipart
+refer gesticulate.Construable
+
+entry .MediaType   a media type as a value: its group, subtype, suffixes and parameters
+  detail
+      A `MediaType` is the four parts RFC 2046 defines, each typed: `#group` is one of the
+      eleven top-level types (`Media.Group`), `#subtype` is registered, vendor, personal or
+      experimental (`Media.Subtype`), `#suffixes` are the `+xml`, `+json`, `+zip` structured
+      syntax suffixes (`Media.Suffix`), and `#parameters` are the `key=value` pairs, of which
+      `charset` is much the most common. It is written as `media"…"`, checked as the code
+      compiles, or parsed from text with `as[MediaType]` (the `.decodable` given) or matched
+      with `.unapply`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val mediaType = t"application/json; charset=UTF-8".as[MediaType]
+      mediaType.group               // Media.Group.Application
+      mediaType.subtype             // Media.Subtype.Standard(t"json")
+      mediaType.basic               // t"application/json"
+      mediaType.base                // media"application/json"
+      mediaType.at(t"charset")      // t"UTF-8"
+      media"text/html"(charset = t"UTF-8").show   // t"text/html; charset=UTF-8"
+      ```
+
+      A media type shows as it is written on the wire (`.showable`, `.encodable`), with each
+      parameter as `; key=value`, and inspects as the source which would make it,
+      `media"text/html; charset=UTF-8"`. Two media types are equal when their parts are, so a
+      `Content-Type` with parameters compares unequal to its `media"…"` literal: compare `#base`
+      or `#basic` when the parameters do not matter.
+  refer gesticulate.media
+  refer gesticulate.Media
+  refer gesticulate.Extensions
+  entry .inspectable   a debug rendering as the literal which would make it: `media"text/html"`
+  entry .showable   renders a media type as it is written: `type/subtype+suffix; key=value`
+      The group and subtype in lower case, each suffix with its `+`, then each parameter as
+      `; key=value`. What `.encodable` and the `inspectable` rendering are built on, and what
+      a `Content-Type` header carries: a media type with a `charset` or `boundary` parameter
+      keeps it here, where `#basic` would drop it.
+  entry .encodable   `MediaType is Encodable in Text`, as `.showable` renders it
+  entry .decodable   `text.as[MediaType]`: parses text as a media type, raising `MediaType.Error`
+      The given which lets any text be decoded as a `MediaType`, through `Media.parse`. It
+      needs a `Tactic[MediaType.Error]` in scope, which it retains, so the instance is typed
+      `(MediaType is Decodable in Text)^{tactic}`. The parse accepts the registered, `vnd.`,
+      `prs.`, `x-` and `x.` subtype forms, hyphenated suffixes (`json-seq`), and parameters
+      separated by `;` with surrounding whitespace trimmed, and does not consult the registry:
+      an unregistered standard subtype parses, where the `media"…"` literal would not compile.
+  entry .unapply   matches text which parses as a media type, as an `Option`
+      `MediaType.unapply(t"text/plain")` is `Some(mediaType)`, and `None` for text which is
+      not a media type, so `case MediaType(mediaType) =>` matches a header's value without a
+      tactic in scope.
+  entry .interpolable   the given behind the `media"…"` interpolator
+      The `Interpolable` whose `interpolate` is the macro: it validates the one literal part
+      against the registry and the parser at expansion time and splices the parsed value. A
+      user writes `media"…"` rather than touching this.
+  entry .Error   raised when text is not a media type
+    detail
+        Error 353: _the value `value` is not a valid media type; `reason`_. Raised through a
+        `Tactic[MediaType.Error]` by `Media.parse`, and so by `as[MediaType]`, and reported as
+        a compile error by `media"…"`. The `.Reason` says what was wrong, and its number is the
+        error's sub-number (353.1 to 353.5).
+
+        ```scala
+        import soundness.*
+        import errorDiagnostics.stackTracesDiagnostics
+
+        capture[MediaType.Error](t"applicationjson".as[MediaType]).reason
+        // MediaType.Error.Reason.NotOneSlash
+        ```
+    entry .Reason   why text was not a media type
+      detail
+          `NotOneSlash` (1): _a media type should always contain exactly one '/' character_;
+          `MissingParam` (2): _a terminal ';' suggests that a parameter is missing_, also for a
+          parameter with no `=`; `InvalidGroup` (3): _the type must be one of: application,
+          audio, … or haptics_; `InvalidChar(char)` (4): _the character 'c' is not allowed_ —
+          whitespace, a control character, or one of the `tspecials`; and
+          `InvalidSuffix(suffix)` (5): _the suffix 's' is not recognized_ — not one of
+          `Media.Suffix`'s cases. Each has a `number` and a `message`.
+      entry #number   the reason's number, `1` to `5`, which is the error's sub-number
+      entry #message   the reason as a sentence
+    entry #value   the text which was not a media type
+    entry #reason   why it was not
+  entry #group   the top-level type: `Media.Group.Application`, `Text`, `Image`, …
+      Called `group` rather than `type` only because `type` is a Scala keyword.
+  entry #subtype   the subtype, as `Media.Subtype.Standard`, `Vendor`, `Personal` or `X`
+      Which of the four trees a subtype is in is part of the value, not a matter of reading
+      its prefix: `t"application/vnd.api+json".as[MediaType].subtype` is
+      `Media.Subtype.Vendor(t"api")`.
+  entry #suffixes   the structured syntax suffixes, in order, as `Media.Suffix`es
+      `List(Media.Suffix.Xml)` for `image/svg+xml`; `Nil` for most media types. A suffix
+      carries meaning — `svg+xml` is XML — which is why it is a typed part rather than a
+      character of the subtype.
+  entry #parameters   the `key=value` parameters, in order, as pairs of text
+      `charset`, `boundary`, `version`, …. `#at` looks one up by name; `apply` with named
+      arguments adds some.
+  entry #basic   the media type without its parameters, as text: `application/json`
+      The group, subtype and suffixes rendered; what a `Content-Type` is matched by when its
+      `charset` or `boundary` should not take part in the comparison.
+  entry #base   the media type without its parameters, as a `MediaType`
+      `contentType.base == media"multipart/form-data"` is the comparison a request handler
+      makes before reading the `boundary` parameter.
+  entry #at   the value of a named parameter, or `Unset`
+      `mediaType.at(t"charset")`; the first parameter of that name if there are several.
+  entry #applyDynamicNamed   `mediaType(charset = t"UTF-8")`: the media type with parameters added
+      The `Dynamic` application which lets parameters be written as named arguments:
+      `media"text/html"(charset = t"UTF-8")`. Each argument's name is the parameter's key and
+      its `Text` value the parameter's value, appended after any existing parameters.
+
+entry .media   the `media"…"` interpolator: a media type literal, checked against the registry as the code compiles
+    `media"application/json"` is a `MediaType`, checked while the code compiles: the group
+    must be one of the eleven top-level types, the subtype must contain no forbidden
+    character, and a subtype in the standard tree — not `vnd.`, `prs.`, `x-` or `x.` — must be
+    in IANA's registry, or the literal is a compile error naming the nearest registered type,
+    _application/jsom is not a registered media type; did you mean application/json?_. The
+    suffixes and parameters are then parsed exactly as `as[MediaType]` parses them, so an
+    unknown suffix or a dangling `;` is a compile error too.
+
+    ```scala
+    import soundness.*
+
+    media"application/json"
+    media"application/epub+zip"
+    media"application/vnd.example.widget+json"   // vendor types are not looked up
+    media"text/html"(charset = t"UTF-8")
+    media"application/jsom"                      // does not compile
+    ```
+
+    The registry is a copy of IANA's published list compiled into the library at build time,
+    so the check needs no network. The interpolator takes no `$`-substitutions, since the
+    literal is checked at compile time; a media type known only at runtime is parsed with
+    `as[MediaType]`, which does not consult the registry.
+
+entry .Media   a type's own media type, and the grammar of media types: groups, subtypes, suffixes
+  detail
+      As a **typeclass**, `Media` gives a type its media type: a value which `is Media` has
+      `#mediaType`, which is how an HTTP response, a served file or an attachment labels
+      itself without anyone re-stating what it is. `Text` is `text/plain` (`.text`); anything
+      `Nominable` — a file, a path, a named asset — guesses from the extension of its name
+      (`.nominable`, through `Extensions.guess`); and the format libraries each declare their
+      own (`Json is Media`, `Html is Media`, …) in their companions.
+
+      ```scala
+      import soundness.*
+
+      t"hello".mediaType   // media"text/plain"
+
+      case class Upload(name: Text)
+
+      given Upload is Media:
+        extension (upload: Upload) def mediaType: MediaType = media"application/octet-stream"
+      ```
+
+      As an **object**, `Media` holds the grammar: the enumerations `.Group`, `.Subtype` and
+      `.Suffix` of which a `MediaType` is made, and `.parse`, the parser behind
+      `as[MediaType]`, `MediaType.unapply` and `media"…"`.
+  refer gesticulate.MediaType
+  refer gesticulate.Extensions
+  refer gesticulate.ascribe
+  entry .text   `Text is Media`: `text/plain`
+      In implicit scope, so plain text served or attached is labelled `text/plain` with no
+      import.
+  entry .nominable   anything `Nominable` is `Media`, by the extension of its name
+      The given which gives a named thing — a file, a path, an asset — a media type guessed
+      from the text after the last `.` of its name, through `Extensions.guess`:
+      `report.pdf` is `application/pdf`, and a name with an unknown or no extension is
+      `application/octet-stream`.
+  entry .Group   the top-level type: one of exactly eleven
+    detail
+        `Application`, `Audio`, `Image`, `Message`, `Multipart`, `Text`, `Video`, `Font`,
+        `Example`, `Model` and `Haptics` — the top-level types IANA registers, with `Haptics`
+        the newest (RFC 9695). `#name` is the lower-case form written in a media type, and a
+        group shows and inspects as that (`.showable`, `.inspectable`).
+        Text with any other group fails to parse with `MediaType.Error.Reason.InvalidGroup`.
+    entry .inspectable   a debug rendering as the group in lower case: `application`
+    entry .showable   renders a group as written in a media type: `application`
+    entry #name   the group in lower case, as written in a media type
+  entry .Subtype   a subtype, and which of the four registration trees it is in
+    detail
+        `Standard(value)` is a subtype in the standards tree, registered with IANA
+        (`json`, `html`); `Vendor(value)` is `vnd.value`, a vendor's own; `Personal(value)` is
+        `prs.value`, a person's own; and `X(value)` is `x-value`, the old experimental prefix
+        (`x.value` parses to the same). The tree is part of the value, so a match on
+        `Media.Subtype.Vendor(_)` finds vendor types without inspecting a prefix. `#name`
+        renders the subtype with its prefix, and the parser accepts each prefix in turn.
+    entry .showable   renders a subtype as written: `vnd.api`, `prs.thing`, `x-tar`
+    entry #name   the subtype with its tree's prefix, as written in a media type
+  entry .Suffix   a structured syntax suffix: `+xml`, `+json`, `+zip`, …
+    detail
+        The suffixes IANA registers: `Xml`, `Json`, `Ber`, `Cbor`, `Der`, `FastInfoset`,
+        `Wbxml`, `Zip`, `Tlv`, `JsonSeq`, `Sqlite3`, `Jwt`, `Gzip`, `CborSeq` and `Zstd`. A
+        media type may carry several, in order (`application/thing+xml+gzip`). `#name` is the
+        kebab-case form written in a media type — `json-seq`, `fast-infoset` — and the parser
+        reads that form back case-insensitively; a suffix not in this list fails to parse with
+        `MediaType.Error.Reason.InvalidSuffix`.
+    entry .showable   renders a suffix as written in a media type: `json-seq`, not `JsonSeq`
+    entry #name   the suffix in kebab case, as written after the `+`
+  entry .unsafeParse   parses a literal the `media"…"` macro has already checked
+      For the interpolator's expansion, which re-parses at runtime text verified at compile
+      time, and so takes the `Unsafe` token in place of a tactic. Not for application code:
+      use `as[MediaType]` or `MediaType.unapply`.
+  entry .parse   parses text as a media type, raising `MediaType.Error` for what is wrong
+      The parser behind `as[MediaType]`, `MediaType.unapply` and `media"…"`. It splits on
+      `;` for parameters (trimming whitespace), on `/` for the group, and on `+` for suffixes;
+      the group must be a `Media.Group` (case-insensitively), each suffix a `Media.Suffix` by
+      its kebab-case name, and each parameter a `key=value`. Needs a `Tactic[MediaType.Error]`.
+      A `MissingParam` or `NotOneSlash` fault is *raised* rather than aborting, so under a
+      tolerant tactic the parse continues with a best guess (`text` as the group, the
+      parameter dropped); the others abort.
+  entry #mediaType   the media type of a value whose type `is Media`
+      The extension every `Media` instance provides: `t"hello".mediaType`,
+      `path.mediaType`, `json.mediaType`.
+
+entry .ascribe   `value.ascribe(mediaType)`: any byte source paired with an explicit media type, as a `Content`
+    An extension on any value which `is Streamable by Data over Credit` — a `Data`, a file, a
+    stream — whose bytes are read as a `Chain[Data]` and paired with the given media type.
+    For bytes with no intrinsic media type, where `Media` would have nothing to go on. Needs
+    a `Buffering` in scope.
+
+    ```scala
+    import soundness.*
+    import codepages.utf8Codepage
+
+    val data: Data = t"raw bytes".in[Data]
+    val content: Content = data.ascribe(media"application/octet-stream")
+    content.media             // media"application/octet-stream"
+    content.named(t"raw.bin")   // an Asset
+    ```
+
+entry .Content   bytes together with their media type
+  detail
+      A `Content` is a `#stream` of bytes and the `#media` type which says what they mean:
+      what `ascribe` produces, and what an HTTP response or an attachment is built from when
+      the bytes carry no media type of their own. `#named` adds a name, making an `Asset`.
+  refer gesticulate.ascribe
+  refer gesticulate.Asset
+  entry #media   the media type of the bytes
+  entry #stream   the bytes, as a chain of chunks
+  entry #named   the content with a name, as an `Asset`
+
+entry .Asset   a named stream of bytes with its media type: an attachment, a served file
+  detail
+      An `Asset` is a `Content` with a `#name`: the three things an email attachment or a
+      file in a multipart upload needs. `Asset(name, value)` makes one from any value which
+      `is Media` and `is Streamable by Data over Credit`, taking the media type from the
+      value's own `Media` instance; `Content#named` makes one from explicit content.
+
+      ```scala
+      import soundness.*
+      import codepages.utf8Codepage
+
+      val asset: Asset = Asset(t"notes.txt", t"some text")
+      asset.media   // media"text/plain", from `Media.text`
+      ```
+  refer gesticulate.Content
+  entry .apply   an asset from a name and any value which `is Media` and is streamable as bytes
+      The media type comes from the value's `Media` instance and the bytes from its
+      `Streamable`, read whole into a chain of chunks. For bytes with no `Media` of their own, use
+      `data.ascribe(mediaType).named(name)` instead.
+  entry #name   the asset's name, such as a filename
+  entry #media   the asset's media type
+  entry #stream   the asset's bytes, as a chain of chunks
+
+entry .Extensions   the media types of file extensions, for guessing from a filename
+  detail
+      A table of some eighty common extensions — `png`, `json`, `pdf`, `docx`, `woff2`, … —
+      and the media type each conventionally means, with `.guess` for the lookup. It is what
+      `Media.nominable` uses to label a file by its name.
+
+      ```scala
+      import soundness.*
+
+      Extensions.guess(t"png")      // media"image/png"
+      Extensions.guess(t"wobble")   // media"application/octet-stream"
+      ```
+  refer gesticulate.Media
+  entry .guess   the media type for an extension, or `application/octet-stream` for an unknown one
+      The extension is given without its dot, in lower case: `t"svg"`, not `t".SVG"`.
+  entry .mediaTypes   the table itself, from extension to media type
+      A `Map[Text, MediaType]`, for a program which wants to add to it or enumerate it.
+
+entry .Multipart   a `multipart/form-data` body parsed into its parts, each lent from the input as it is read
+  detail
+      The format of a file upload: a body of parts separated by a boundary line, each with
+      its own headers — a `Content-Disposition` giving the field's name and filename, perhaps
+      a `Content-Type` — and a body. `Multipart.parse` reads one incrementally from any
+      source of bytes, so a large upload streams rather than accumulating, and gives a
+      `Multipart` whose `#parts` are a lazy `Chain[Part]`; `#at` finds a part by its field
+      name.
+
+      ```scala fuel
+      frame
+        label A body begins with the boundary line
+        code
+            import soundness.*
+            import codepages.utf8Codepage
+            import strategies.throwUnsafely
+
+            val body =
+              t"--xyz\r\n"
+      frame
+        label A part has headers, a blank line and a body, and the boundary line follows it
+        code
+            val body =
+              t"--xyz\r\n" +
+              t"Content-Disposition: form-data; name=\"avatar\"; filename=\"me.png\"\r\n" +
+              t"Content-Type: image/png\r\n" +
+              t"\r\n" +
+              t"pixels\r\n" +
+              t"--xyz\r\n"
+      frame
+        label A second part, and the closing boundary with its trailing `--`
+        code
+            val body =
+              t"--xyz\r\n" +
+              t"Content-Disposition: form-data; name=\"avatar\"; filename=\"me.png\"\r\n" +
+              t"Content-Type: image/png\r\n" +
+              t"\r\n" +
+              t"pixels\r\n" +
+              t"--xyz\r\n" +
+              t"Content-Disposition: form-data; name=\"caption\"\r\n" +
+              t"\r\n" +
+              t"Me, at the beach\r\n" +
+              t"--xyz--\r\n"
+      frame
+        label Parsed, the parts are typed
+        code
+            val upload = Multipart.parse(Chain(body.in[Data]))
+            upload.at(t"avatar").let(_.filename)                 // t"me.png"
+            upload.at(t"avatar").let(_.headers.at(t"Content-Type"))   // t"image/png"
+            upload.parts.map(_.read[Data].utf8)                  // Chain(t"pixels", t"Me, at the beach")
+      ##
+      ```
+
+      A part's body is **lent** from the input, zero-copy, for as long as that part is the
+      current one: read it (`part.read[Data]`, or `part.body()` for the stream) before moving
+      on to the next part, because forcing the next part skips whatever remained of this one,
+      after which it reads as empty. A `Chain` memoises, so `parts.size` followed by
+      `parts.head.let(_.read[Data])` reads nothing. Bodies are found by a bulk search for the
+      delimiter, so a 100 KB binary body arrives as a few large regions whatever the chunking
+      of the input, and a body may be read in pieces, each `body()` continuing where the last
+      stopped.
+
+      A malformed body raises `Multipart.Error` with a `.Error.Reason`; scintillate's
+      `Acceptable.multipart` reads a request's `Content-Type` for the boundary and parses the
+      request body with this.
+  refer gesticulate.Part
+  refer gesticulate.MediaType
+  entry .Disposition   how a part is meant to be presented: `Inline`, `Attachment` or `FormData`
+      The token of the part's `Content-Disposition` header. A form upload's parts are
+      `FormData`; `Inline` and `Attachment` are the dispositions of a message's parts. A
+      token other than these fails the parse with `Multipart.Error.Reason.BadDisposition`.
+  entry .parse   parses a multipart body from any source of bytes, lending each part as it is reached
+      `Multipart.parse(input)` takes any value which `is Streamable by Data over Credit` — a
+      `Chain[Data]`, a request body, a file — and reads the boundary from its first line
+      (`--boundary`), so the boundary need not be known in advance; the second parameter,
+      `boundary`, is accepted for a caller which has it from a `Content-Type` header but is
+      not consulted. It needs a `Tactic[Multipart.Error]`, which the result retains (a part's
+      body raises a cut-short read through it), and raises `Multipart.Error` at the first
+      malformed byte: `Expected(char)` for a boundary or line ending that is not there,
+      `BadDisposition` for an unreadable `Content-Disposition`. Headers are read as ASCII; a
+      part with no `Content-Disposition` is `FormData` with no name.
+
+      ```scala
+      import soundness.*
+      import codepages.utf8Codepage
+      import errorDiagnostics.stackTracesDiagnostics
+
+      capture[Multipart.Error](Multipart.parse(Chain[Data]())).reason   // Expected('-')
+      ```
+  entry .Error   raised when a multipart body cannot be read
+    detail
+        Error 937: _multipart data could not be read because `reason`_. Raised through a
+        `Tactic[Multipart.Error]` by `Multipart.parse` as it reaches the fault, which, since
+        the parts are read lazily, may be while a later part is forced rather than at the
+        call. The `.Reason`'s number is the error's sub-number (937.1 to 937.6).
+    entry .Reason   why a multipart body could not be read
+      detail
+          `Expected(char)` (1): _the character 'c' was expected_ — a boundary without its
+          `--`, a header line or a boundary line without its `\r\n`, a header without `: `;
+          `StreamContinues` (2): _the stream continues beyond the last part_;
+          `BadBoundaryEnding` (3): _unexpected content followed the boundary_; `MediaType`
+          (4): _the media type is invalid_ — raised by scintillate's `Acceptable.multipart`
+          for a request whose `Content-Type` is not `multipart/form-data` with a `boundary`;
+          `BadDisposition` (5): _the `Content-Disposition` header has the wrong format_; and
+          `Truncated` (6): _the body ended before its closing boundary_, which
+          `Acceptable.multipart` raises for a request body cut short.
+      entry #number   the reason's number, `1` to `6`, which is the error's sub-number
+    entry .communicable   renders each reason as its message
+    entry #reason   why the body could not be read
+  entry #parts   the parts, in order, as a lazy chain
+      Each part is parsed as the chain is forced, and forcing a part's successor skips and
+      closes the part's body. The chain memoises, so it may be traversed more than once, but
+      a body may be read only while its part is the latest forced.
+  entry #at   the part with a field name, or `Unset`
+      `upload.at(t"avatar")` finds the first part whose `Content-Disposition` names the
+      field. Finding it forces every part up to it, and so closes the bodies of the parts
+      before it.
+
+entry .Part   one part of a multipart body: its disposition, headers, name, filename and lent body
+  detail
+      A `Part` is what `Multipart.parse` yields for each section of the body: the
+      `#disposition` and the `#name` and `#filename` parameters from its `Content-Disposition`
+      header, all of its `#headers` by name, and its `#body`, a `Spring[Data]` lent from the
+      input. A part `is Streamable by Data over Credit` (`.streamable`), so its body is read
+      with the usual verbs — `part.read[Data]`, `part.read[Text]` with a `Charset` in scope,
+      or `part.body()` for the stream itself.
+
+      ```scala
+      import soundness.*
+      import codepages.utf8Codepage
+      import strategies.throwUnsafely
+
+      val body =
+        t"--xyz\r\n" +
+        t"Content-Disposition: form-data; name=\"file\"; filename=\"hello.txt\"\r\n" +
+        t"Content-Type: text/plain\r\n" +
+        t"\r\n" +
+        t"file content\r\n" +
+        t"--xyz--\r\n"
+
+      val part: Optional[Part] = Multipart.parse(Chain(body.in[Data])).parts.head
+      part.let(_.filename)                     // t"hello.txt"
+      part.let(_.disposition)                  // Multipart.Disposition.FormData
+      part.let(_.headers.at(t"Content-Type"))  // t"text/plain"
+      part.let(_.read[Data].utf8)              // t"file content"
+      ```
+
+      The body is zero-copy: it is readable until the next part is forced, which skips
+      whatever remains of it, after which it reads as empty. Each `body()` continues from
+      wherever the previous read stopped, so a body may be taken in two pieces, but it cannot
+      be read twice: a part whose body is wanted later must be read into a `Data` first.
+  refer gesticulate.Multipart
+  entry .streamable   `Part is Streamable by Data over Credit`: a part's body, for `read[Data]` and the other stream verbs
+      In implicit scope. It needs a `Tactic[Truncation.Error]`, which the instance retains,
+      for a body whose input ends before the closing boundary.
+  entry #disposition   `Inline`, `Attachment` or `FormData`, or `Unset` if the part had no `Content-Disposition`
+  entry #headers   every header of the part, by name as written
+      Header names are matched exactly as they appear in the body, `Content-Type` and not
+      `content-type`.
+  entry #name   the field name from the `Content-Disposition` header, or `Unset`
+  entry #filename   the filename from the `Content-Disposition` header, or `Unset`
+      Present for a file field of a form; absent for a text field.
+  entry #body   the part's bytes, lent from the input: `body()` is the stream
+      A `Spring[Data]`: `body()` gives the `Stream[Data] over Credit` from wherever the
+      previous read stopped, and needs a `Tactic[Truncation.Error]`. It reads as empty once
+      the next part has been forced.
+
+entry .Construable   the Scala type a media type is read as and written from, for an HTTP client's use
+  detail
+      `("image/png" is Construable to (Raster in Png))` says that a body of `image/png` is
+      read as, and written from, a `Raster in Png`. The `Self` is the media type without its
+      parameters, as a singleton string type, so that a client which learns a media type from
+      a specification — an OpenAPI document, say — can ask, as the code compiles, what to
+      construe a response of that type as. The trait itself carries no operations: the result
+      type's own `Aggregable` reads the body and its `Postable` writes one. `Construable()`
+      makes an instance, with the two types as arguments.
+      Its `Result`, the Scala type a body of that media type is read as and written from, is
+      inherited from `prepositional.Resultant`.
+
+      Each mapping is a given in the `construables` choice package, imported by name, so
+      nothing is construed without a deliberate choice: this library declares
+      `plainTextConstruable` and `octetStreamConstruable`, and each format library declares
+      its own — `jsonConstruable` in jacinta's HTTP module, `xmlConstruable` and
+      `textXmlConstruable` in xylophone's, `pngConstruable` in hallucination's, and so on —
+      all merged into the umbrella's `construables` package. Without the right one in scope, a
+      client which reads responses by their `Content-Type` falls back to the raw body.
+
+      ```scala
+      import soundness.*
+      import construables.plainTextConstruable
+
+      summon["text/plain" is Construable to Text]
+      ```
+  refer gesticulate.construables
+  refer gesticulate.MediaType
+  entry .Bound   a `Construable` with its media type and result fixed as type arguments
+    detail
+        `Construable.Bound[media, result]` is the class `Construable()` instantiates: a
+        `Construable` whose `Self` is `media` and `Result` is `result`.
+    entry #Self   the media type, as a singleton string
+    entry #Result   the Scala type the media type is construed as
+  entry .apply   `Construable[media, result]()`: a mapping from a media type literal to a type
+      Written with the `is … to …` syntax as a given's type, the type arguments are inferred:
+      `given csvConstruable: ("text/csv" is Construable to Sheet) = Construable()`.
+  entry #Self   the media type, without parameters, as a singleton string type
+
+entry .construables   the mappings from media types to Scala types, each a given to import by name
+  detail
+      Which type a body of some media type is construed as is a `Construable` given in scope,
+      and `import soundness.*` brings none of these in: each is imported by name. This package
+      holds the two mappings which need no format library, and the umbrella's `construables`
+      package merges them with every format library's own.
+
+      ```scala
+      import soundness.*
+      import construables.{plainTextConstruable, octetStreamConstruable}
+      ```
+  entry .plainTextConstruable   `text/plain` is construed as `Text`
+      Reading the body as text needs a `Charset` in scope, and writing one a `Codepage`.
+  entry .octetStreamConstruable   `application/octet-stream` is construed as `Data`
+
+entry .internal   the macro behind `media"…"` and its registry check
+  hidden
+  detail
+      Not for direct use: the object exists so that the macro has a stable home, and is kept
+      self-contained so that it can run at expansion time.
+  entry .validateLiteral   checks a media type literal's group, subtype characters and registration, as a message or `Unset`
+      The compile-time check: the group must be one of the eleven, the subtype's segments
+      must contain no forbidden character, and a standard-tree subtype must be in the
+      registry, else a message naming the nearest registered type by Levenshtein distance.
+      Suffixes and parameters are left to the parser.
+  entry .mediaInterpolator   the macro: validates the one literal part and splices the parsed media type
+      Halts for a literal with substitutions, for a `validateLiteral` message, or for a
+      `MediaType.Error` from the parser.

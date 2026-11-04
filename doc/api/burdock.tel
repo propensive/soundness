@@ -1,0 +1,359 @@
+tel 1.0
+
+base burdock
+import soundness
+
+info   slim application JARs: dependencies named by content hash, fetched, verified and cached at launch
+detail
+    _Burdock_ makes an application JAR small without making it fragile. A JAR which carries
+    every dependency it needs ships tens of megabytes of library code, most of it already
+    published somewhere public; Burdock replaces each published dependency with a reference to
+    it, named by the SHA-256 of the exact bytes the compiler read, and a small bootstrap loader
+    fetches, verifies and caches them when the application starts.
+
+    The work happens in three stages:
+
+    - **at compile time**, `externalize` wraps the application's entry point; its macro hashes
+      every dependency JAR on the build's classpath, hard-links each into the Burdock cache,
+      and embeds the list of hashes in the compiled output as the resource
+      META-INF/burdock.deps;
+    - **after the build**, the `soundness.repackage` entry point (the `repackage` method here)
+      rewrites the JAR in place: each hash which resolves to a public URL — through the release
+      assets of hinted GitHub repositories (`GitHub`) or through deps.dev (`DepsDev`) — becomes
+      a `Burdock-Require` reference, and anything else is inlined from the cache;
+    - **at launch**, `Bootstrap`, the one class the repackaged JAR adds, downloads every
+      requirement not already cached, checks each against its hash, and starts the
+      application on a classpath in manifest order.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+
+    @main
+    def myApp(): Unit = externalize:
+      Out.println(t"hello, world")
+    ```
+
+    ```sh
+    java -cp app.jar:burdock.jar soundness.repackage --github propensive/soundness
+    java -jar app.jar
+    ```
+
+    **The cache.** Dependency JARs are kept, by hash, as `~/.cache/soundness/jars/<sha256>.jar`.
+    The `externalize` macro and the repackager use that directory under the user's home; the
+    bootstrap honours `XDG_CACHE_HOME`, using `$XDG_CACHE_HOME/soundness/jars` when it is set
+    and non-empty. Earlier releases used `~/.cache/burdock`; nothing migrates it, so the first
+    launch after upgrading downloads every requirement again, and the old directory may be
+    deleted.
+
+    Because a reference names exact bytes, the completeness invariant holds: every dependency
+    is either referenced or present, a hash which is neither stops the repackage with a
+    `Repackager.RepackageError`, and a download whose checksum does not match stops the launch.
+
+    The library has two JVM-only source sets: `burdock.core`, with `externalize`, the
+    `Repackager` and its resolvers, which is exported to the `soundness` umbrella together with
+    the `soundness.repackage` command-line entry point; and `burdock.boot`, the single Java
+    class `Bootstrap`, which depends on nothing but the JDK so that it can run before any
+    dependency has been fetched.
+
+refer burdock.externalize
+refer burdock.Repackager
+refer burdock.Bootstrap
+refer burdock.repackage
+
+entry .externalize   wraps an application's entry point so that Burdock can externalize its dependencies
+    `externalize(block)` returns `block` unchanged at runtime. Its macro, while the code
+    compiles, reads the compiler's classpath, computes the SHA-256 of every dependency JAR on
+    it, hard-links each into the cache at `~/.cache/soundness/jars/<sha256>.jar` (copying where
+    the cache is on another filesystem), and writes the hashes, one per line, to the resource
+    META-INF/burdock.deps in the compile output, so it is packaged into the JAR like any
+    other resource.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+
+    @main
+    def myApp(): Unit = externalize:
+      Out.println(t"hello, world")
+    ```
+
+    Nothing else about the application changes: it is built, tested and run as an ordinary
+    JAR, and the resource is inert until `repackage` reads it. Whether each dependency is
+    published is decided later, by the repackager; the cache covers whatever cannot be
+    resolved. The hard-links live on the build machine, so a JAR with unpublished dependencies
+    must be repackaged where it was built.
+
+entry .repackage   rewrites the running application's JAR in place, externalizing its published dependencies
+  detail
+      The command-line logic behind `soundness.repackage`, launched with the application JAR
+      and Burdock on the classpath:
+
+      ```sh
+      java -cp app.jar:burdock.jar soundness.repackage --github owner/repo
+      ```
+
+      It locates the application JAR as the classpath entry holding META-INF/burdock.deps
+      (raising `Repackager.UserError` if there is none, or if that entry is a directory), reads
+      the `Bootstrap` class from Burdock's own JAR, builds a resolver which consults the
+      hinted GitHub repositories before deps.dev, and calls `Repackager.repackage` into a
+      temporary sibling, which then atomically replaces the original. A `GITHUB_TOKEN`
+      environment variable, if set, lifts GitHub's unauthenticated rate limit.
+
+      Only arguments of the form `--github owner/repo`, `--github=owner/repo` or a
+      comma-separated list of either are accepted (see `parseArguments`). While resolving, a
+      progress bar is drawn in place when standard output is a terminal, and suppressed when
+      it is redirected; at the end a summary is printed: entries read and written, classes kept,
+      inlined and stripped, the GitHub assets indexed, and each externalized requirement. Any
+      error is printed and the process exits with status 1.
+
+      This method is not exported to the `soundness` umbrella: the umbrella's own
+      `soundness.repackage`, a `@main` method taking the arguments as `Text*`, is the entry
+      point to launch, and calls `burdock.repackage`.
+  refer burdock.Repackager
+  refer burdock.parseArguments
+
+entry .parseArguments   parses `--github` hints into GitHub repositories
+    Accepts `--github owner/repo`, `--github=owner/repo`, and comma-separated lists in either
+    form, any number of times. An unrecognized argument, a `--github` with no operand, or a
+    repository not of the form owner/repo raises `Repackager.UserError` with a usage line,
+    _usage: soundness.repackage [--github owner/repo]..._. It is not exported to the
+    `soundness` umbrella, so it is reached as `burdock.parseArguments`.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    burdock.parseArguments(List(t"--github", t"propensive/soundness,propensive/fuel"))
+    ```
+
+entry .Repackager   rewrites a JAR: published dependencies become references, others are inlined from the cache
+  detail
+      The repackager's core, free of I/O beyond reading the input JAR and writing the output.
+      `.repackage` keeps the application's own classes, drops the bundled classes of every
+      dependency it can resolve to a URL (listing them instead in the `Burdock-Require`
+      manifest attribute), inlines the classes of the rest from the cache, adds the
+      `Bootstrap` class, and rewrites the manifest so that `Main-Class` is `burdock.Bootstrap`
+      and `Burdock-Main` the original entry point.
+
+      The resolver, the cache lookup and the progress callback are injected, so the logic is
+      testable without the network or the filesystem:
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val published = url"https://repo1.maven.org/maven2/g/a/1/a-1.jar"
+      val resolve: Repackager.Resolver = hash => if hash == t"aaa" then published else Unset
+      val cached: Repackager.CacheReader = _ => (List[Zip.Entry](): List[Zip.Entry])
+
+      val (requirements, inlined) = Repackager.partition(List(t"aaa", t"bbb"), resolve, cached)
+      ```
+
+      Entries are copied verbatim, still compressed, so a Stored entry stays Stored and a
+      Deflated one keeps its CRC and compressed size; only the new manifest and the bootstrap
+      class are compressed afresh. Directory entries are dropped, and where two entries share
+      a name the first is kept: the force-included bootstrap over any bundled copy, and an
+      application class over a cached one.
+  refer burdock.Bootstrap
+  refer burdock.DepsDev
+  refer burdock.GitHub
+  entry .partition   splits dependency hashes into requirements to reference and cached entries to inline
+      `partition(hashes, resolve, cached, progress)` classifies every hash: one which `resolve`
+      maps to a URL becomes a `Requirement`, one which `cached` finds contributes its entries,
+      and one which is neither raises `Repackager.RepackageError`, _dependency `hash` is
+      neither published nor cached_. Lookups run concurrently on virtual threads, sixteen at a
+      time, and `progress` is called with `(completed, total)` after each group, on the calling
+      thread. Results are in the order of `hashes`, which is the classpath order.
+  entry .repackage   rewrites `inputJar` into `outputJar`, returning a `Repackager.Summary`
+      Takes the input and output paths, a `Resolver`, a `CacheReader`, the bytes of the
+      `Bootstrap` class and an optional `Progress` callback, and raises
+      `Repackager.RepackageError` when the JAR has no manifest, no META-INF/burdock.deps
+      resource or no `Main-Class`, when a dependency is neither published nor cached, and for
+      any filesystem, stream or archive failure. Published dependencies found in the cache have
+      their bundled entries stripped; one absent from the cache cannot be identified, so its
+      entries stay bundled: still correct, only not slimmed.
+  entry .Resolver   resolves a dependency hash to its public download URL, or `Unset`
+      `Text => Optional[HttpUrl]`. The command line composes `GitHub.index` with
+      `DepsDev.mavenUrl`.
+  entry .Progress   a callback receiving `(completed, total)` after each group of dependencies is classified
+  entry .CacheReader   looks a dependency hash up in the local cache, giving its entries or `Unset`
+      `Text => Optional[List[Zip.Entry]]`. Directories and the manifest are excluded, and the
+      payloads stay lazy, so stripping a published dependency's entries by name does not read
+      the cached JAR's contents.
+  entry .Requirement   an externalized dependency: its URL and the SHA-256 it must match
+    entry #url   where the bootstrap downloads the dependency from
+    entry #digest   the dependency's SHA-256, as lowercase hex
+    entry #text   the requirement as it appears in `Burdock-Require`: `<sha256>:<url>`
+  entry .Summary   what a repackage did, for the caller to report
+    entry #inputEntries   how many entries the input JAR had
+    entry #directoriesSkipped   how many directory entries were dropped
+    entry #ownKept   how many of the application's own entries were kept
+    entry #externalized   the requirements written to `Burdock-Require`, in classpath order
+    entry #inlined   how many entries were inlined from cached dependencies
+    entry #stripped   how many bundled entries of published dependencies were removed
+    entry #outputEntries   how many entries the output JAR has, the manifest included
+  entry .UserError   a mistake in how the repackager was invoked
+    detail
+        Raised for a JAR which was not built with Burdock (_this JAR was not built with Burdock
+        (no META-INF/burdock.deps)_), one which is a directory rather than a file, a malformed
+        argument or repository hint, and a failure to list a hinted repository's releases.
+    entry #detail   what was wrong
+  entry .RepackageError   a JAR which could not be repackaged
+    detail
+        Raised by `Repackager.repackage` and `Repackager.partition`: no manifest, no
+        `Main-Class`, no META-INF/burdock.deps resource, a dependency neither published nor
+        cached, or a filesystem, stream, archive or concurrency failure.
+    entry #detail   what went wrong
+  entry .BurdockMain   the `Burdock-Main` manifest attribute: the application's own entry point
+  entry .BurdockRequire   the `Burdock-Require` manifest attribute: the externalized dependencies
+  entry .BurdockVerbosity   the `Burdock-Verbosity` manifest attribute: how much the bootstrap prints
+      One of `silent`, `error` (the default), `info` or `debug`; the repackager writes
+      `silent`. Any other value stops the launch with status 2.
+  entry .burdockMain   writes `Burdock-Main` as a fully-qualified class name
+  entry .burdockRequire   writes `Burdock-Require` as space-separated `<sha256>:<url>` items
+  entry .burdockVerbosity   writes `Burdock-Verbosity` as text
+
+entry .Bootstrap   the runtime entry point of a repackaged JAR: fetches, verifies and loads its dependencies
+  detail
+      A Java class in `burdock.boot`, and the only class a repackaged JAR adds: it must run
+      before any dependency is present, so it uses only the JDK, and compiles to a single class
+      file. `java -jar app.jar` starts it as the manifest's `Main-Class`.
+
+      It reads `Burdock-Require`, downloads every requirement not already in the cache —
+      `$XDG_CACHE_HOME/soundness/jars` if that variable is set and non-empty, otherwise
+      `~/.cache/soundness/jars` — up to eight at a time with connect and read timeouts, and
+      checks each download's SHA-256 against the manifest's hash (and a cached file's too). It
+      then builds a classloader over the JAR and the requirements, in manifest order, sets it
+      as the thread's context classloader, and invokes `main` on the class `Burdock-Main`
+      names.
+
+      A checksum mismatch exits with status 1; a malformed `Burdock-Require` item, an invalid
+      `Burdock-Verbosity`, a missing manifest or entry point, or any failure to launch exits
+      with status 2. A launcher which supervises startup may set the system property
+      `burdock.progress` to a file path: while fetching, the bootstrap keeps one line in it,
+      `<completed> <total> <bytes>`, written atomically, and deletes it when done.
+  entry .main   launches the application named by `Burdock-Main`, after fetching its requirements
+
+entry .DepsDev   resolves a dependency's SHA-256 to its Maven Central URL through Google's deps.dev
+  detail
+      deps.dev ("Open Source Insights") indexes published artifacts by content hash. `.mavenUrl`
+      asks its query API which Maven artifact has a hash and builds the artifact's URL on
+      repo1.maven.org; anything deps.dev does not know as a Maven artifact is `Unset`, and the
+      repackager then inlines the dependency from the cache instead. The case classes model the
+      part of the API's JSON response which matters.
+  entry .mavenUrl   the Maven Central URL of the JAR with a given SHA-256, or `Unset`
+      Takes the hash as hex, sends it base64-encoded as the API expects, and picks the first
+      result whose system is `MAVEN`. It logs `DepsEvent.Querying` at `fine` and
+      `DepsEvent.Resolved` at `info`, so it needs a `DepsEvent is Loggable` in scope. Every
+      failure — the network, an unexpected response, an unknown artifact — gives `Unset`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import logging.silentLogging
+
+      DepsDev.mavenUrl(t"a"*64)
+      ```
+  entry .Unresolved   a hash which is not a known Maven artifact
+      _not a known Maven artifact_. Raised and caught within `.mavenUrl`, which answers `Unset`.
+  entry .VersionKey   an artifact's identity in a deps.dev response
+    entry #system   the package system, such as `MAVEN`
+    entry #name   the artifact's name, `group:artifact` for Maven
+    entry #version   the artifact's version
+  entry .Version   one version in a deps.dev response
+    entry #versionKey   the version's identity
+  entry .Result   one match in a deps.dev response
+    entry #version   the matching version
+  entry .QueryResult   a deps.dev hash query's response
+    entry #results   every artifact version with the hash
+
+entry .GitHub   resolves dependency hashes against the release assets of hinted GitHub repositories
+  detail
+      GitHub keeps no global index by hash, but its REST API lists a repository's releases,
+      and each asset carries a `digest` (`sha256:<hex>`). So the repositories named with
+      `--github` are indexed up front — a few requests each, rather than one per dependency —
+      and the index is consulted before deps.dev, since a repository the user named should take
+      precedence.
+
+      ```scala
+      import soundness.*
+
+      val release = GitHub.Release(List(GitHub.Asset(t"lib-1.jar",
+        t"https://github.com/o/r/releases/download/v1/lib-1.jar", t"sha256:${t"a"*64}")))
+
+      GitHub.indexReleases(List(release))
+      ```
+  refer burdock.Repackager
+  entry .Repository   a GitHub repository, as an owner and a name
+    entry .parse   reads `owner/repo`, raising `Repackager.UserError` for anything else
+        Exactly one slash, with both parts non-empty: `t"owner"`, `t"owner/"`, `t"/repo"` and
+        `t"a/b/c"` are all rejected, with _`text` is not a GitHub repository of the form
+        owner/repo_.
+    entry .showable   shows a repository as `owner/repo`
+    entry #owner   the user or organization which owns the repository
+    entry #name   the repository's name
+    entry #text   the repository as `owner/repo`
+  entry .Asset   one release asset, as the releases API describes it
+    entry #name   the asset's file name
+    entry #url   the asset's download URL, read from the JSON field `browser_download_url`
+    entry #digest   the asset's digest, `sha256:<hex>`, or `Unset` for an asset uploaded before GitHub computed them
+  entry .Release   one release of a repository, with its assets
+    entry #assets   the release's assets
+  entry .indexReleases   indexes a list of releases' `.jar` assets by their SHA-256
+      Pure, so it needs no network. Every asset whose name ends in .jar and whose digest is a
+      SHA-256 is keyed by the lowercase hex; other assets are skipped. The API lists the newest
+      release first, so where one hash appears in several releases the first, newest URL wins.
+  entry .releases   lists every release of a repository through the GitHub API
+      Pages through the API a hundred releases at a time until a page comes back empty. An
+      optional token is sent as a bearer token. It logs `DepsEvent.Indexing` and raises
+      `Repackager.UserError` for an HTTP error, a failure to connect, or a response which is
+      not the expected JSON.
+  entry .index   one index, from SHA-256 to download URL, across all the hinted repositories
+      Lists and indexes each repository in turn, logging `DepsEvent.Indexed` with the number
+      of assets found, and keeps the first URL for a hash found in more than one.
+
+entry .DepsEvent   what Burdock logs as it resolves dependencies
+  detail
+      Every event is tagged `Log.Dependency`, and the two which make requests `Log.Network`
+      too. `DepsDev.mavenUrl` logs `Querying` at `fine` and `Resolved` at `info`;
+      `GitHub.releases` logs `Indexing` at `fine`, and `GitHub.index` logs `Indexed` at `info`.
+      A `DepsEvent is Loggable` must be in scope; `logging.silentLogging` discards them.
+  entry .communicable   renders each event as a message
+  entry .Querying   a deps.dev lookup began: _querying deps.dev for the artifact with hash `hash`_
+    entry #hash   the dependency's SHA-256
+  entry .Resolved   a hash was resolved: _resolved hash `hash` to `url`_
+    entry #hash   the dependency's SHA-256
+    entry #url   the URL it resolved to
+  entry .Indexing   a repository's releases are being listed: _listing the GitHub releases of `repository`_
+    entry #repository   the repository, as `owner/repo`
+  entry .Indexed   a repository was indexed: _indexed `assets` release assets of `repository`_
+    entry #repository   the repository, as `owner/repo`
+    entry #assets   how many assets were indexed
+
+entry .ProgressBar   the repackager's progress bar: a forty-cell gauge in ember colours
+  detail
+      The drawing is ultimatum's gauge, with the smooth eighth-block bar, Unicode glyphs and
+      the ember palette fixed; redrawing it in place is left to the caller.
+  entry .width   the bar's width in cells: 40
+  entry .render   renders a fraction of completion as a `Teletype` bar
+      The fraction is clamped to the range from 0 to 1. An empty bar is all spaces, a full one
+      all full blocks, and a fraction between cells ends with one partial block; the bar is
+      always forty cells wide.
+
+      ```scala
+      import soundness.*
+
+      ProgressBar.render(0.5)
+      ```
+
+entry .internal   the macro implementation behind `externalize`
+  hidden
+  detail
+      Not for direct use: the compile-time half of Burdock, written against the JDK alone since
+      it runs in the compiler's JVM.
+  entry .ResourcePath   the resource holding the dependency hashes: `META-INF/burdock.deps`
+  entry .externalize   the macro: hashes and caches the classpath's JARs, writes the resource, returns the block

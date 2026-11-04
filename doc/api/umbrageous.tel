@@ -1,0 +1,65 @@
+tel 1.0
+
+base umbrageous
+import soundness
+
+info   a compiler plugin which shades packages, moving their declarations beneath a new prefix as they compile
+detail
+    _Umbrageous_ relocates ("shades") packages at compile time. Given a mapping from a package
+    to a new prefix, every declaration of that package, and of its subpackages, is compiled as
+    if it had been written beneath the prefix, so that two versions of a library, or a library
+    and a copy vendored into another, can live on one classpath without their classes
+    colliding. Unlike a bytecode shading tool, it works on the source as it is parsed, so the
+    shaded names are what the typer, the TASTy and every later phase see.
+
+    The plugin is enabled by passing its jar to the compiler as `-Xplugin:<path to the
+    umbrageous plugin jar>` (the jar's `plugin.properties` names `umbrageous.ShaderPlugin`),
+    and each mapping as a plugin option of the form `<package>:<new-prefix>`:
+
+    ```text
+    -Xplugin:umbrageous-plugin.jar
+    -P:umbrageous:testing:shaded.v1
+    ```
+
+    With that mapping, a source declaring `package testing.quux` compiles to
+    `shaded.v1.testing.quux`. For each source it rewrites three things:
+
+    - a `package` clause whose name is a mapped package, or within one, is moved beneath the
+      prefix; where several mappings match, the longest package wins;
+    - every `package` clause gains a wildcard import of each mapping's prefix (except the
+      mapping which moved that clause), so `import testing.quux.*` in another package
+      still resolves, now to the shaded package;
+    - a fully-qualified reference `_root_.testing.…` to a mapped package is redirected to
+      `_root_.shaded.v1.testing.…`.
+
+    An option which is not of the form `<package>:<new-prefix>` is reported as a warning and
+    ignored. The prefix may contain dots.
+
+    The library is the single JVM-only source set `umbrageous.plugin`, depending on the Scala
+    compiler and nothing of Soundness's. It is published as a standalone artifact rather than
+    in a Soundness bundle, since a `-Xplugin` jar must declare exactly one plugin. Its two
+    classes are exported to the `soundness` umbrella, though no program needs them at run time.
+
+refer umbrageous.ShaderPlugin
+refer umbrageous.Shader
+
+entry .ShaderPlugin   the compiler plugin class, named in umbrageous's `plugin.properties`
+  detail
+      The `StandardPlugin` the compiler instantiates when umbrageous's jar is passed with
+      `-Xplugin:`. It installs a single phase, `Shader`, handing it the plugin's options, each
+      of which is a mapping `<package>:<new-prefix>` given as `-P:umbrageous:<package>:<new-prefix>`.
+      It is not used directly.
+  refer umbrageous.Shader
+  entry #name   the plugin's name, `umbrageous`, by which its options are addressed
+
+entry .Shader   the plugin phase which moves mapped packages beneath their prefixes, after parsing
+  detail
+      A phase named `shade`, running after `parser` and before `typer`, over the untyped tree
+      of each compilation unit. It is constructed by `ShaderPlugin` with the plugin's options,
+      and parses each as a `<package>:<new-prefix>` mapping, warning about and skipping any
+      other. It then rewrites each `package` clause of a mapped package beneath its prefix,
+      adds a wildcard import of every other mapping's prefix to each `package` clause, and
+      redirects each `_root_`-qualified reference into a mapped package. It is not used
+      directly.
+  refer umbrageous.ShaderPlugin
+  entry #phaseName   the phase's name, `shade`

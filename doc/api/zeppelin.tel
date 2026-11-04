@@ -1,0 +1,545 @@
+tel 1.0
+
+base zeppelin
+import soundness
+
+info   ZIP archives and JARs as immutable values: typed entry paths, streamed content, scoped reading
+detail
+    _Zeppelin_ reads and writes ZIP archives, and the JAR files which are ZIP archives with a
+    manifest, without the mutable random-access objects of `java.util.zip`. A `Zipfile` is an
+    immutable list of `Zip.Entry`s, each with a validated archive-relative path — a `Path on
+    Zip`, which cannot be absolute or climb above the archive's root, so an entry name such as
+    `../../etc/passwd` is rejected rather than extracted — and content which is produced as a
+    stream when it is read. An archive serializes as a stream of bytes, so writing one is
+    writing any other value, and reading one inflates each entry incrementally, in bounded
+    chunks, only when that entry is read.
+
+    ```scala
+    import soundness.*
+    import charsets.utf8Charset
+    import codepages.utf8Codepage
+    import filesystemBackends.javaBaseFilesystem
+    import filesystemOptions.{createNonexistentParents, overwritePreexisting}
+    import logging.silentLogging
+    import strategies.throwUnsafely
+    import temporaryDirectories.systemTemporaryDirectory
+    import textSanitizers.skipSanitizer
+
+    val path: Path on Linux = temporaryDirectory[Path on Linux] / "hello.zip"
+    val entry = Zip.Entry(t"docs/hello.txt".as[Path on Zip], t"Hello world".in[Data])
+    path.write(Zipfile(List(entry)))
+
+    Zipfile.read(path).entry(t"docs/hello.txt".as[Path on Zip]).read[Text]
+    ```
+
+    An archive is used in one of two ways. `Zipfile.read` gives a detached `Zipfile`, whose
+    entries re-open the file for each read and so stay usable anywhere. `path.open[Zip]()` (or
+    `data.open[Zip]()`) instead opens a scope in which `zipfile` is a `Zip.Handle` reading
+    through one view of the file held open for the block, so entries must be consumed within
+    it; `path.open[Jar]()` gives a `Jar.JarHandle`, the same handle with the parsed manifest.
+    `directory.archive[Zip]()` archives a whole directory tree, deterministically.
+
+    An entry read from an archive keeps every header field around its content, so writing it
+    back reproduces the original byte for byte, the ZIP64 records excepted, which are rebuilt;
+    entries can be aligned for memory-mapping, as Android's `zipalign` does; an archive may carry
+    a `prefix` of leading bytes, which is how a self-extracting or directly executable archive
+    is made; and archives beyond the 4 GiB and 65,535-entry limits of the original format are
+    written and read with ZIP64 records.
+
+    Compression is a contextual `Zip.Compression` policy: deflation by default, through
+    pneumatic's pure-Scala deflater, falling back to storing whenever deflation would not make
+    an entry smaller. Every failure is a `Zip.Error` whose `Zip.Error.Reason` says what was
+    wrong.
+
+    The library has one source set, `zeppelin.core`, which compiles wherever galilei's
+    `FilesystemBackend` does, since every file is read through the backend in scope. Archives
+    open read-only for now: a `Write` mode is refused. Everything is exported to the `soundness`
+    umbrella.
+
+refer zeppelin.Zipfile
+refer zeppelin.Zip
+refer zeppelin.Jar
+refer zeppelin.zipfile
+
+entry .Zip   the ZIP form and plane: entries, compression, errors and the scoped archive handle
+  detail
+      `Zip` is two things which share a name. As a **type**, it is the archive's _form_, named
+      in `path.open[Zip]()` and `directory.archive[Zip]()`, and the **plane** of paths within an
+      archive: an entry's path is a `Path on Zip`, `/`-separated and relative to the archive's
+      root, each segment held to `.Rules`. As an **object**, it holds the types every archive
+      uses — `Entry`, `Compression`, `Method`, `Error`, `Event` and `Handle` — and the givens
+      which make the form and the plane work with no import.
+
+      ```scala
+      import soundness.*
+      import charsets.utf8Charset
+      import filesystemBackends.javaBaseFilesystem
+      import strategies.throwUnsafely
+
+      val ref: Path on Zip = t"META-INF/services/app.Plugin".as[Path on Zip]
+
+      val archive: Data =
+        Zipfile(List(Zip.Entry(ref, t"app.DefaultPlugin".in[Data]))).serialize.read[Data]
+
+      archive.open[Zip]():
+        zipfile.entry(ref).read[Text]
+      ```
+
+      A path on the `Zip` plane encodes without a leading `/`, since ZIP entry names are
+      relative and `java -jar` rejects an absolute one; a text which names an absolute path,
+      climbs with `..`, or holds a character that Windows or the format forbids does not decode.
+  refer zeppelin.Zipfile
+  refer zeppelin.Zip.Entry
+  refer zeppelin.Zip.Handle
+  entry .Rules   what a segment of a path within a ZIP archive may be
+      A segment must not contain `\`, `"`, `/`, `:`, `*`, `?`, `<`, `>` or `|`, and must not be
+      `.` or `..`. The rules are applied to every entry name an archive is read with, so a
+      traversing (Zip Slip) name raises `Zip.Error` with reason `InvalidName` rather than
+      producing a path which escapes the archive.
+  entry .compliant   says that a Linux path segment is a valid ZIP entry segment
+      The `Linux is Compliant on Zip` given, which lets a path on a Linux filesystem be
+      reinterpreted as one within an archive.
+  entry .compliant2   says that a macOS path segment is a valid ZIP entry segment
+      The `MacOs is Compliant on Zip` given, as `.compliant` is for Linux.
+  entry .nominative   the given which holds ZIP path segments to `.Rules`
+  entry .submissible   accepts the root `%` of any path moved onto the ZIP plane with `path.on[Zip]`
+      A path's root is checked when the path is moved to another plane; an archive's root is
+      implicit, so the check always passes.
+  entry .filesystem   the ZIP plane as a `Filesystem`: `/`-separated, with no unique root
+      Named `ZIP`, with `/` as its separator and `.` and `..` as the self and parent segments.
+  entry .radical   writes the archive root as the empty text, so a path encodes as `a/b.txt`
+  entry .eradicable   reads the archive root from text, which cannot fail
+      An archive's root is implicit in every entry's name, so it occupies no characters and any
+      text decodes to the root `%`.
+  entry .openable   opens an archive at a path as `Zip`: `path.open[Zip]()`
+      The `Openable` given for any path type on a plane with a `FilesystemBackend` in scope. It
+      needs that backend, a `Tactic[Zip.Error]` and a `Tactic[Io.Error]`, and is in the
+      companion of `Zip`, so it needs no import. Its result is a `Zip.Handle`, reached in the
+      block as `zipfile`.
+  entry .dataOpenable   opens an in-memory archive as `Zip`: `data.open[Zip]()`
+      The `Openable` given for `Data`, needing a `Tactic[Zip.Error]`. No channel is involved,
+      but access is scoped all the same, for consistency with an archive opened from a path.
+  entry .archivable   archives a directory tree as a `Zipfile`: `directory.archive[Zip]()`
+      In the companion of `Zip`, so it needs no import. It needs a `FilesystemBackend`, a
+      `Tactic[Io.Error]`, a `Tactic[Zip.Error]` and a `Zip.Compression` (the default deflation
+      is in implicit scope). See `Zip.Archivable` for what is archived.
+  entry .Archivable   the archiver behind `directory.archive[Zip]()`: every descendant, in a fixed order
+    detail
+        Every descendant of the directory becomes an entry — a directory as a directory entry, a
+        file with its contents and modification time — in pre-order, each directory's children
+        sorted in codepoint order, so the same tree always yields the same archive, byte for
+        byte. ZIP as zeppelin writes it has no symbolic links, so links are followed. The
+        contextual `Zip.Compression` applies unless one is passed as a flag.
+
+        ```scala
+        import soundness.*
+        import filesystemBackends.javaBaseFilesystem
+        import strategies.throwUnsafely
+        import temporaryDirectories.systemTemporaryDirectory
+
+        val tree: Path on Linux = temporaryDirectory[Path on Linux]
+
+        tree.archive[Zip]()
+        tree.archive[Zip](Zip.Compression.Stored)
+        ```
+
+        A name which cannot be a `Path on Zip` raises `Zip.Error` with reason `InvalidName`,
+        and an unreadable file raises `Io.Error`.
+    entry #archive   archives the tree beneath a path, with an optional `Zip.Compression` flag
+  entry .Method   the compression method recorded on an entry: `Stored` or `Deflate`
+    detail
+        What an entry's bytes actually are in the archive, as opposed to the `Zip.Compression`
+        policy asked for: an entry whose deflated form would be no smaller than its content is
+        `Stored` whatever the policy. An archive using any other method raises `Zip.Error` with
+        reason `UnsupportedMethod` when it is read.
+    entry #id   the method's number in a ZIP header: `0` for `Stored`, `8` for `Deflate`
+  entry .Compression   the policy for compressing new entries: store them, or deflate them
+    detail
+        Consulted, as a contextual value, when a `Zip.Entry` is made from raw content, and
+        passed as a flag to `directory.archive[Zip]`. `Stored` keeps every entry's bytes as they
+        are; `Deflate(level)` deflates, falling back to storing any entry which deflation would
+        not make smaller. Deflation is pneumatic's, which has a single compression level, so
+        `Deflate(0)` stores, as zlib's level 0 would, and every other level deflates alike.
+
+        ```scala fuel
+        frame
+          label The default policy deflates
+          code
+              import charsets.utf8Charset
+
+              Zip.Entry(t"log.txt".as[Path on Zip], (t"tick "*1000).in[Data]).method
+              // Zip.Method.Deflate
+        frame
+          label A stored policy keeps the bytes as they are
+          code
+              import charsets.utf8Charset
+
+              locally:
+                given Zip.Compression = Zip.Compression.Stored
+                Zip.Entry(t"log.txt".as[Path on Zip], (t"tick "*1000).in[Data]).method
+                // Zip.Method.Stored
+        frame
+          label Deflating at level 0 stores too, as zlib's level 0 would
+          code
+              import charsets.utf8Charset
+
+              locally:
+                given Zip.Compression = Zip.Compression.Deflate(0)
+                Zip.Entry(t"log.txt".as[Path on Zip], (t"tick "*1000).in[Data]).method
+                // Zip.Method.Stored
+        ##
+        ```
+    entry .default   the default policy, `Deflate(-1)`, found in implicit scope with no import
+    entry .Deflate   deflates each entry, unless deflation would not make it smaller
+      entry #level   the requested level; `0` stores, and every other level deflates alike
+  entry .Entry   one entry of a ZIP archive: its path, its compressed content and its header fields
+    detail
+        An immutable value: an archive-relative `#ref`, the `#method` its bytes are stored with,
+        their CRC-32 and sizes, a producer of the stored bytes, a DOS timestamp, and every
+        other header field an archive can carry. An entry is made from any content which is
+        `Streamable by Data`, compressed once under the contextual `Zip.Compression`, and it
+        reads, inflating incrementally, as any type through the `.streamable` given.
+
+        ```scala
+        import soundness.*
+        import charsets.utf8Charset
+
+        val ref: Path on Zip = t"notes/today.txt".as[Path on Zip]
+        val entry: Zip.Entry = Zip.Entry(ref, t"Hello world".in[Data])
+        val stamped: Zip.Entry = Zip.Entry.at(ref, t"Hello world".in[Data], 1709214330000L)
+
+        entry.read[Text]
+        (entry.method, entry.uncompressedSize, entry.compressedSize)
+        ```
+
+        The header fields after `#alignment` exist so that an archive read apart can be written
+        back byte for byte: `Unset` means the value zeppelin derives itself (the UTF-8 flag
+        exactly when the name needs it; version 20, or 45 for a ZIP64 entry; external attribute
+        `0x10` for a directory and 0 otherwise; no extra field), and a value is written verbatim.
+        They are changed with `#withHeaders`, the alignment with `#aligned` and the directory
+        flag with `#asDirectory`: the case class's own `copy` cannot be called from
+        capture-checked code, since it would pass the `#storedBytes` producer through a pure
+        parameter.
+    refer zeppelin.Zip.Compression
+    refer zeppelin.Zipfile
+    entry .apply   an entry made from any streamable content, compressed under the policy in scope
+        `Zip.Entry(ref, content)` reads the content once, computes its CRC-32, and stores or
+        deflates it as the contextual `Zip.Compression` says, with the DOS epoch (1 January
+        1980) as its timestamp. The case class's full constructor, which takes every field
+        explicitly, is the same name.
+    entry .at   an entry made from content, with a modification time given as any instant type
+        As `.apply`, with the time recorded in the entry's DOS date and time fields, in UTC,
+        since a ZIP timestamp records no zone. The instant may be any type `Abstractable
+        across Instants to Long`; an instant before 1980, which DOS cannot represent, is recorded
+        as the first second of 1980, and DOS times are stored to two-second precision.
+
+        ```scala
+        import soundness.*
+
+        Zip.Entry.at(t"a.txt".as[Path on Zip], t"x".in[Data], 1709214330000L)
+        ```
+    entry .streamable   reads an entry's decompressed content as bytes, or as any decodable type
+        The `Streamable by Data over Credit` given, so an entry can be `read[Text]`, `read[Data]`
+        or read as anything decodable from a stream; each read is a fresh stream of `#contents`.
+    entry #ref   the entry's path within the archive
+    entry #method   the compression method its bytes are stored with, as a `Zip.Method`
+    entry #crc32   the CRC-32 of the uncompressed content
+    entry #uncompressedSize   the size of the content, in bytes
+    entry #compressedSize   the size of the bytes stored in the archive
+    entry #storedBytes   a producer of the stored (possibly compressed) bytes, called once per read
+        Called afresh for each read, so an entry read from a detached `Zipfile` re-opens its
+        source each time and stays reusable. `#contents` is the decompressed form.
+    entry #dosTime   the modification time, in the packed DOS time format
+    entry #dosDate   the modification date, in the packed DOS date format
+    entry #directory   whether the entry is a directory, written with a trailing `/` on its name
+    entry #comment   the entry's comment, or `Unset`
+    entry #alignment   the byte multiple at which the entry's data must begin; `1` for none
+    entry #flags   the general-purpose bit flags, or `Unset` for those zeppelin derives
+        Bit 3 marks the entry as streamed (`#streamed`): its CRC and sizes are written in a data
+        descriptor after the payload, which is how an archive is written to a sink that cannot
+        seek. Bit 11, that the name is UTF-8, is set by default exactly when the name needs it.
+    entry #versionMadeBy   the central header's "version made by", or `Unset` for zeppelin's own
+    entry #localVersion   the local header's "version needed to extract", or `Unset` for zeppelin's own
+    entry #centralVersion   the central header's "version needed to extract", or `Unset` for zeppelin's own
+    entry #internalAttributes   the internal file attributes, or `Unset` for none
+    entry #externalAttributes   the external file attributes, where a Unix mode lives, or `Unset` for the default
+        The default is `0x10`, the DOS directory attribute, for a directory, and 0 otherwise. A
+        Unix mode is held in the upper sixteen bits.
+    entry #localExtra   the local header's extra field, without its ZIP64 record, or `Unset`
+    entry #centralExtra   the central header's extra field, without its ZIP64 record, or `Unset`
+        The ZIP64 record is left out of both extra fields because the writer reconstructs it from
+        the entry's sizes and offset.
+    entry #localSizes   whether a streamed entry's local header repeats its CRC and sizes
+        Writers differ: some repeat them, some leave them zero for the data descriptor alone.
+        Ignored for an entry which is not streamed.
+    entry #streamed   whether a data descriptor follows the entry's payload, by bit 3 of `#flags`
+    entry #contents   the entry's decompressed content, as a fresh stream per call
+        A `Deflate` entry is inflated incrementally, so a payload of any size, including one
+        beyond 2 GiB, is read, inflated and consumed in bounded chunks.
+    entry #aligned   the same entry, its data required to begin at a multiple of a byte offset
+        Achieved by padding the local header's extra field with zero bytes, as `zipalign` does.
+        It is meaningful only for a stored entry, whose bytes a reader may memory-map directly:
+        an aligned `classes.dex` or `resources.arsc`, or a page-aligned (`4096`) native library,
+        needs no copy.
+
+        ```scala
+        import soundness.*
+        import charsets.utf8Charset
+
+        given Zip.Compression = Zip.Compression.Stored
+
+        Zip.Entry(t"lib/libapp.so".as[Path on Zip], t"payload".in[Data]).aligned(4096)
+        ```
+    entry #asDirectory   the same entry, recorded as a directory
+        Its name serializes with a trailing `/` and the DOS directory attribute is set.
+    entry #withHeaders   the same entry with some of its header fields replaced
+        Each parameter — `flags`, `versionMadeBy`, `localVersion`, `centralVersion`,
+        `internalAttributes`, `externalAttributes`, `localExtra`, `centralExtra` and
+        `localSizes` — defaults to the entry's present value, so a call names only the fields it
+        sets.
+
+        ```scala
+        import soundness.*
+        import charsets.utf8Charset
+
+        val entry = Zip.Entry(t"run.sh".as[Path on Zip], t"echo hi".in[Data])
+        entry.withHeaders(externalAttributes = 0x81ed0000L, versionMadeBy = 0x031e)
+        ```
+  entry .Error   a failure to read, write or open a ZIP archive, with the reason
+    detail
+        Error 751: _the ZIP operation failed because `reason`_, with the
+        `Zip.Error.Reason`'s number as its subcode. Raised by `Zipfile.read`, by
+        `Zipfile#entry`, by serializing a `Zipfile`, by opening an archive as `Zip` or `Jar`, and
+        by `Zipfile.rebase`.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        capture[Zip.Error](Zipfile.read(t"not a zip file".in[Data])).reason
+        // Zip.Error.Reason.MissingEocd
+        ```
+    entry .Reason   what was wrong with a ZIP archive or operation, each with a stable number
+      detail
+          `DuplicateEntry(path)` (1), two entries with one path, refused before any byte is
+          serialized; `NotFound(path)` (2), an entry which is not in the archive;
+          `InvalidName(name)` (3), an entry name which is not a valid `Path on Zip`;
+          `UnsupportedMethod(method)` (4), a compression method other than stored or deflate;
+          `MissingEocd` (5), no end-of-central-directory record, so the bytes are not a ZIP
+          archive; `TruncatedArchive` (6), an archive which ends too soon;
+          `BadSignature(expected)` (7), a record whose signature is not the one expected;
+          `Zip64Error` (8), ZIP64 metadata which cannot be interpreted; `WriteUnsupported` (9),
+          an archive opened in a mode with `Write`; `AlreadyExists` (10), an archive already at
+          the path; and `CannotWrite(detail)` (11), an archive which could not be written.
+      entry .DuplicateEntry   two entries in one archive share a path
+        entry #path   the duplicated path
+      entry .NotFound   the archive has no entry at the path asked for
+        entry #path   the path which was asked for
+      entry .InvalidName   an entry name is not a valid path within an archive
+        entry #name   the name, as the archive spelled it
+      entry .UnsupportedMethod   an entry uses a compression method other than stored or deflate
+        entry #method   the method's number, from the entry's header
+      entry .BadSignature   a record's signature is not the one expected at that position
+        entry #expected   the signature that was expected
+      entry .CannotWrite   an archive could not be written
+        entry #detail   what went wrong
+      entry #number   the reason's subcode, from 1 to 11
+    entry .communicable   renders each `Zip.Error.Reason` as a sentence, such as _the ZIP archive ended unexpectedly_
+    entry #reason   what was wrong, as a `Zip.Error.Reason`
+  entry .Event   what reading a ZIP archive logs
+    detail
+        `Zipfile.read` from a path logs `Read` at `info` level, tagged `Log.Serialization`. A
+        `Zip.Event is Loggable` must be in scope for that read; `logging.silentLogging`
+        discards it.
+    entry .communicable   renders each event as a message
+    entry .Read   an archive was read: _read `entries` entries from the zip archive `path`_
+      entry #path   the archive's path, as text
+      entry #entries   the number of entries it held
+  entry .Handle   an archive opened for the duration of a block, reached as `zipfile`
+    detail
+        The scoped handle `path.open[Zip]()` and `data.open[Zip]()` provide, which `zipfile`
+        names inside the block. Unlike a detached `Zipfile`, whose entries re-open the file for
+        every read, a `Zip.Handle` reads through one view of the file, held open by the
+        filesystem backend for the duration of the block, so entries are read with no per-read
+        open and close — and, correspondingly, must be consumed within the block.
+
+        ```scala
+        import soundness.*
+        import filesystemBackends.javaBaseFilesystem
+        import strategies.throwUnsafely
+        import charsets.utf8Charset
+
+        val archive: Path on Linux = t"/tmp/app.zip".as[Path on Linux]
+
+        archive.open[Zip]():
+          zipfile.entries.map(_.ref.encode)
+          zipfile.entry(t"README".as[Path on Zip]).read[Text]
+        ```
+
+        It is a capability, so for callers compiled with capture checking the handle and the
+        entries it yields are confined to the block.
+    refer zeppelin.zipfile
+    refer zeppelin.Jar.JarHandle
+    entry #entries   the archive's entries, in the order of its central directory
+    entry #entry   the entry at a path, raising `Zip.Error` with reason `NotFound` if there is none
+    entry #comment   the archive's comment, or `Unset`
+  entry .Openable   the opener behind `path.open[Zip]()`, for a path on any plane with a filesystem backend
+    detail
+        Built by the `Zip.openable` given; a caller never names the class. A mode with `Write`
+        raises `Zip.Error` with reason `WriteUnsupported`, since archives open read-only for now.
+    entry #open   parses the archive through the backend's view of the file, and runs the block
+  entry .DataOpenable   the opener behind `data.open[Zip]()`, for an archive already in memory
+    detail
+        Built by the `Zip.dataOpenable` given. A mode with `Write` raises `Zip.Error` with reason
+        `WriteUnsupported`.
+    entry #open   parses the archive from the bytes, and runs the block with its handle
+
+entry .Zipfile   a ZIP archive as an immutable value: its entries, comment and leading bytes
+  detail
+      A `Zipfile` is the whole archive in hand: a `List` of `Zip.Entry`s, an optional archive
+      comment, and an optional `prefix` of raw bytes to place before the archive proper. It is
+      made directly from entries, read from a path or from bytes with `.read`, or produced by
+      `directory.archive[Zip]()`, and it serializes as a stream, so it is written to any
+      destination with `write`.
+
+      ```scala
+      import soundness.*
+      import charsets.utf8Charset
+      import filesystemBackends.javaBaseFilesystem
+      import filesystemOptions.{createNonexistentParents, overwritePreexisting}
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import temporaryDirectories.systemTemporaryDirectory
+
+      val path: Path on Linux = temporaryDirectory[Path on Linux] / "notes.zip"
+      val entries = List(Zip.Entry(t"a.txt".as[Path on Zip], t"alpha".in[Data]))
+
+      path.write(Zipfile(entries, comment = t"generated"))
+
+      val notes: Zipfile = Zipfile.read(path)
+      notes.entries.map(_.ref.encode)
+      notes.entry(t"a.txt".as[Path on Zip]).read[Text]
+      ```
+
+      The entries of a `Zipfile` read from a path are detached: each read re-opens the file
+      through the backend, so the value is usable anywhere, at the cost of an open per read.
+      `path.open[Zip]()` reads through one open view instead, for the duration of a block.
+
+      A ZIP reader locates the archive's directory from the end of the file rather than the
+      start, and every offset it records is relative, so an archive concatenated onto arbitrary
+      leading bytes still reads. That is what the `prefix` is for: a self-extracting or directly
+      executable archive is a launcher followed by a ZIP. Reading an archive with leading bytes
+      gives them back as its `prefix`.
+  refer zeppelin.Zip.Entry
+  refer zeppelin.Zip.Handle
+  entry .read   reads an archive from a path, or from bytes in memory
+      `Zipfile.read(path)` reads the central directory through the `FilesystemBackend` in scope,
+      needing a `Tactic[Io.Error]` and a `Tactic[Zip.Error]`, and logs `Zip.Event.Read`, so a
+      `Zip.Event is Loggable` must be in scope too. `Zipfile.read(data)` reads from bytes and
+      logs nothing. Only the directory and each entry's local header are read here; payloads are
+      read as entries are. Raises `Zip.Error` with reason `MissingEocd` for bytes which are not
+      a ZIP archive, and `InvalidName` for an entry name which would escape the archive.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      capture[Zip.Error](Zipfile.read(t"this is not a zip file".in[Data])).reason
+      ```
+  entry .rebase   shifts a ZIP64 archive's one physical offset, after bytes are prepended to it
+      Every offset a ZIP archive records is relative to its central directory, with one
+      exception: the ZIP64 locator's pointer to the ZIP64 end-of-central-directory record is a
+      physical offset in the file. Prepending a prefix to an archive by concatenation, or
+      cutting bytes from one, invalidates exactly that field. Zeppelin's reader tolerates it,
+      but the JDK's follows the pointer and then declines to open the archive, with no
+      diagnostic. `Zipfile.rebase(path, delta)` shifts the pointer by `delta` bytes, in place,
+      through the `FilesystemBackend` in scope; an archive with no ZIP64 locator — anything of
+      fewer than 65,535 entries and 4 GiB, which is nearly everything — is left untouched. A
+      pointer which would leave the file raises `Zip.Error` with reason `Zip64Error`.
+
+      A `Zipfile` written with a `prefix` needs no rebasing, since its offsets are computed
+      with the prefix in place.
+  entry .streamable   serializes a `Zipfile` as a stream of bytes, so it can be written anywhere
+      The `Streamable by Data over Credit` given, which needs a `Tactic[Zip.Error]` since
+      serializing refuses duplicate entry names. It is in the companion of `Zipfile`, so
+      `path.write(zipfile)` needs no import.
+  entry #entries   the archive's entries, in the order they are written
+  entry #comment   the archive's comment, or `Unset`
+  entry #prefix   raw bytes placed before the archive proper, or `Unset`
+  entry #entry   the entry at a path, raising `Zip.Error` with reason `NotFound` if there is none
+  entry #serialize   the archive as a lazy stream of bytes, its entries' payloads opened in turn
+      Raises `Zip.Error` with reason `DuplicateEntry` before any bytes are produced if two
+      entries share a path, since no reader could resolve them. The prefix comes first, then each
+      entry's local header, payload and data descriptor — each payload opened only when the
+      stream reaches it, and drained in bounded chunks — then the central directory and the end
+      records, with ZIP64 records wherever an entry, an offset or the entry count overflows the
+      original format.
+
+entry .Jar   the form for Java archives: `path.open[Jar]()` gives a ZIP handle with the parsed manifest
+  detail
+      A JAR is a ZIP, so opening one as `Jar` gives a `Jar.JarHandle`, a `Zip.Handle` refined
+      with the main attributes of `META-INF/MANIFEST.MF`; entries and their content behave
+      exactly as they do for the `Zip` form. A JAR is written as any other `Zipfile`, with the
+      entry `Jar.manifest` makes first.
+
+      ```scala
+      import soundness.*
+      import charsets.utf8Charset
+      import filesystemBackends.javaBaseFilesystem
+      import filesystemOptions.{createNonexistentParents, overwritePreexisting}
+      import strategies.throwUnsafely
+      import temporaryDirectories.systemTemporaryDirectory
+
+      val manifest = Jar.manifest(t"Manifest-Version" -> t"1.0", t"Main-Class" -> t"app.Main")
+      val jar: Path on Linux = temporaryDirectory[Path on Linux] / "app.jar"
+      jar.write(Zipfile(List(manifest)))
+
+      jar.open[Jar]():
+        zipfile.manifest
+      ```
+  refer zeppelin.Zip.Handle
+  refer zeppelin.Zipfile
+  entry .manifest   the `META-INF/MANIFEST.MF` entry for a list of main attributes
+      Each attribute is written as `Key: value`, with lines wrapped at the JAR specification's 72
+      bytes by continuation lines beginning with a space, `\r\n` line endings, and a blank line
+      ending the main section. The entry is compressed under the `Zip.Compression` in scope, and
+      convention prefers it first in the `Zipfile`.
+  entry .JarHandle   an opened JAR: a `Zip.Handle` with the main attributes of its manifest
+    detail
+        What `zipfile` names inside a `path.open[Jar]()` or `data.open[Jar]()` block. Its
+        entries, and reading them, are those of a `Zip.Handle`.
+    entry #manifest   the manifest's main attributes, or an empty map if the archive has none
+        Read from `META-INF/MANIFEST.MF`: continuation lines (beginning with a space) rejoin the
+        attribute before them, as the specification requires, and parsing stops at the first
+        blank line, which ends the main section, so per-entry sections are not included.
+  entry .JarOpenable   the opener behind `path.open[Jar]()`, for a path on any plane with a filesystem backend
+    detail
+        Built by the `Jar.openable` given. A mode with `Write` raises `Zip.Error` with reason
+        `WriteUnsupported`.
+    entry #open   parses the archive through the backend's view of the file, and runs the block
+  entry .JarDataOpenable   the opener behind `data.open[Jar]()`, for a JAR already in memory
+    detail
+        Built by the `Jar.dataOpenable` given.
+    entry #open   parses the archive from the bytes, and runs the block with its handle
+  entry .openable   opens a JAR at a path as `Jar`: `path.open[Jar]()`
+      Needs a `FilesystemBackend` for the path's plane, a `Tactic[Zip.Error]` and a
+      `Tactic[Io.Error]`. In the companion of `Jar`, so it needs no import.
+  entry .dataOpenable   opens an in-memory JAR as `Jar`: `data.open[Jar]()`
+      Needs a `Tactic[Zip.Error]`. In the companion of `Jar`, so it needs no import.
+
+entry .zipfile   the archive handle in scope, inside a `path.open[Zip]()` or `open[Jar]` block
+    Names the contextual `Zip.Handle`, as galilei's `file` names an open file. It is
+    transparent, so its type is the handle's own precise type: a `Jar.JarHandle`, with
+    `manifest`, inside an `open[Jar]` block.
+
+    ```scala
+    import soundness.*
+    import filesystemBackends.javaBaseFilesystem
+    import strategies.throwUnsafely
+    import denominative.dysasymptotics.linearSize
+
+    val archive: Path on Linux = t"/tmp/app.zip".as[Path on Linux]
+
+    archive.open[Zip]():
+      zipfile.entries.size
+    ```

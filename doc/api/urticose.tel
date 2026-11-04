@@ -1,0 +1,1582 @@
+tel 1.0
+
+base urticose
+import soundness
+
+info   the identifiers of a network — hostnames, IP addresses, URLs, email addresses, ports, MAC addresses and DNS names — as typed values
+detail
+    _Urticose_ gives each identifier of a network its own type, and validates it at the earliest
+    moment it can: a literal as the code compiles, through an interpolator, and text at the
+    instant it is decoded, through `as[T]`. A `Hostname`, an `Ipv4` or `Ipv6` address, an
+    `HttpUrl`, an `EmailAddress`, a `Port` or a `MacAddress` is therefore known to be well-formed
+    wherever it is held, and its parts are typed too: a URL's host is a `Hostname | Ipv4 | Ipv6`
+    (the `Host` alias), its port a number, and a port's type records its transport (`Port over
+    Tcp`) and, for a literal, its number (`Port over Tcp of 25`).
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    val home: HttpUrl = url"https://example.com:8080/path?query=1#top"
+    val address: Ipv6 = ip"2001:db8::1"
+    val mail: EmailAddress = email"test@example.com"
+    val smtp: Port over Tcp = tcp"smtp"   // port 25, named by its IANA service name
+
+    home.host                           // Hostname `example.com`
+    t"192.168.0.1".as[Ipv4].subnet(24)  // a subnet, masked to its prefix
+    t"www..com".as[Hostname]            // raises Hostname.Error: a DNS label cannot be empty
+    ```
+
+    A value that is not valid is a compile error where it is written (`ip"192.168.0.0.0.1"` does
+    not compile), and text that does not conform raises a typed error naming what was wrong:
+    `Hostname.Error`, `IpAddress.Error`, `EmailAddress.Error`, `Url.Error`, `MacAddress.Error`,
+    `Port.Error` or `Dns.Error`, each with a `Reason` a program can report rather than merely
+    reject.
+
+    Network **access** is a capability. A method which reaches the network takes an `Online`
+    (or its supertype `Internet`) as a contextual parameter, and a program grants it by
+    importing `internetAccess.online` by name, or scopes it with `internet(true)` and tests it
+    with `online`; `internetAccess.offline` denies it, raising `Internet.Error` as soon as the
+    capability is asked for.
+
+    The library is split into four source sets:
+
+    - `urticose.core` — `Hostname`, `DnsLabel`, `Ipv4`, `Ipv6`, `Ipv4Subnet`, `Ipv6Subnet`,
+      `MacAddress`, `EmailAddress`, `Port` with `Tcp`, `Udp` and `Quic`, `Endpoint` and the
+      `on` extension, `NetworkInterface`, `Internet`/`Online` and the `internetAccess` package,
+      and the `ip"…"`, `subnet"…"`, `mac"…"`, `tcp"…"` and `udp"…"` interpolators.
+    - `urticose.url` — `Url` with `HttpUrl`, `Scheme`, `Authority`, `Origin`, the `Www` plane on
+      which a URL's path lives, and the `url"…"`, `host"…"` and `email"…"` interpolators.
+    - `urticose.ansi` — the `teletypeables.urlTeletype` given, which renders a URL underlined
+      and coloured in a terminal, with `UrlPalette` for its colour; kept apart so that parsing
+      URLs does not draw in the ANSI stack.
+    - `urticose.dns` — `Dns`: the RFC 1035 vocabulary of names, questions, records and
+      messages, their wire codec, `Dns.resolve` through the platform resolver, the `dns"…"`
+      interpolator and the `dnsName` and `reverseName` extensions.
+
+    Everything is exported to the `soundness` umbrella, and the choice packages
+    (`internetAccess`, `teletypeables`, and the `emailAddressInterfaces`, `hostnameInterfaces`,
+    `ipAddressInterfaces` and `urlInterfaces` packages which name urticose's types as the
+    representatives of anticipation's network domains) merge with the umbrella's own, so a user
+    writes `import soundness.*` and then imports one given by name: `import soundness.*` alone
+    brings in no givens from a package.
+
+refer urticose.Hostname
+refer urticose.Ipv4
+refer urticose.Ipv6
+refer urticose.Url
+refer urticose.HttpUrl
+refer urticose.EmailAddress
+refer urticose.Port
+refer urticose.Online
+refer urticose.Dns
+
+entry .Hostname   a DNS hostname: dot-separated labels, each held to the rules for a label
+  detail
+      A `Hostname` is a sequence of `DnsLabel`s, written `host"www.example.com"` (checked as the
+      code compiles) or decoded from text with `as[Hostname]`, which raises `Hostname.Error`
+      when the text breaks a rule: each label may hold only letters, digits and `-`, may not
+      begin with `-`, may not be empty (so no leading, trailing or doubled dots) and may not
+      exceed 63 characters, and the whole name may not exceed 253 characters.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val site: Hostname = host"www.example.com"
+      t"www.example.com".as[Hostname] == Hostname(DnsLabel(t"www"), DnsLabel(t"example"), DnsLabel(t"com"))
+      site.show   // t"www.example.com"
+      t"www.-maybe.com".as[Hostname]   // raises Hostname.Error (InitialDash)
+      ```
+
+      A hostname is a `Host` (with `Ipv4` and `Ipv6`), and so the host of an `Authority` or an
+      `EmailAddress`'s domain; it is `Remotable`, so `host"example.com" on tcp"80"` makes an
+      `Endpoint`; and in `urticose.dns`, `dnsName` converts it to a `Dns.Name` and
+      `Dns.resolve` looks it up. `Localhost` is the hostname `localhost`.
+  refer urticose.DnsLabel
+  refer urticose.Host
+  refer urticose.host
+  entry .showable   renders a hostname as its labels joined with dots
+  entry .inspectable   a debug rendering, the same as the shown form
+      Dotted labels identify a hostname on sight, so inspection needs no decoration.
+  entry .decodable   reads a hostname from text, raising `Hostname.Error` if it is not valid
+      Needs a `Tactic[Hostname.Error]`; the given captures it.
+  entry .encodable   encodes a hostname as text, the same as the shown form
+  entry .toExpr   lifts a hostname into a quoted expression, for macros which build one
+  entry .Error   raised when text is not a valid hostname
+    detail
+        Error 892: _the hostname is not valid because `reason`_. Raised by `as[Hostname]`
+        (through `Hostname.decodable`) and, as a compile error, by `host"…"`. The `#text` is
+        the whole text which was decoded and the `#reason` says what was wrong with it.
+    entry .Reason   why a hostname was rejected
+      detail
+          An enum with five cases: `LongDnsLabel(label)` for a label of more than 63 characters;
+          `LongHostname` for a name of more than 253; `InvalidChar(char)` for a character other
+          than a letter, digit, `-` or `.`; `EmptyDnsLabel(n)` for an empty label (a leading,
+          trailing or doubled dot), where `n` is how many labels preceded it; and
+          `InitialDash(label)` for a label beginning with `-`. Each has a message through
+          `Reason.communicable`.
+      entry .communicable   renders each reason as a message
+    entry #text   the text which was decoded
+    entry #reason   why it was rejected
+  entry #dnsLabels   the labels of the hostname, in order from the leftmost
+
+entry .DnsLabel   one label of a hostname, between the dots
+  detail
+      An opaque type over `Text`, made with `DnsLabel(text)` and read back with its `text`
+      extension; it is not validated on construction, since `Hostname.parse` has already held it
+      to the rules for a label. A `Hostname` is a sequence of these, and `Hostname#dnsLabels`
+      gives them back. It is `Showable` as its text. The `text` extension is declared in
+      `urticose.internal.Opaques`, the opaque type's home.
+
+      Its companion's members are declared in `internal.Opaques.DnsLabel`, from which the type
+      is exported, and documented there.
+
+entry .Host   a hostname or an IP address: `Hostname | Ipv4 | Ipv6`
+    The type of the host part of an `Authority` and of `Url#host`: the three things a host can
+    be. A `Host` is `Showable` through `Ipv6.hostShowable`, which brackets an IPv6 address as a
+    URL does (`[::1]`), and decodes from text through `Ipv6.hostDecodable`, which tries IPv6,
+    then IPv4, then a hostname, raising `Hostname.Error` when none fits.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    t"[::1]".as[Host]
+    t"example.com".as[Host]
+    ```
+
+entry .Localhost   the hostname `localhost`, as a value
+
+entry .host   the `host"…"` interpolator: a hostname, checked as the code compiles
+    `host"www.example.com"` is a `Hostname`, and text which is not a valid hostname is a
+    compile error carrying the `Hostname.Error` message (`[↯SN-892.4] the hostname is not
+    valid because a DNS label cannot be empty` for `host"www..com"`). The interpolator takes
+    no substitutions. Declared in `urticose.url`.
+
+entry .Ipv4   an IPv4 address: four octets, as an opaque type over `Int`
+  detail
+      An `Ipv4` is written `ip"192.168.0.1"` (checked as the code compiles), built from its
+      octets with `Ipv4(192, 168, 0, 1)` or from a packed `Int`, or decoded from text with
+      `as[Ipv4]`, which raises `IpAddress.Error` for anything but exactly four dot-separated
+      numbers in the range 0–255. It is an opaque type over the packed 32-bit integer, so
+      holding one costs nothing more than an `Int`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val address: Ipv4 = ip"192.168.0.1"
+      address == Ipv4(192, 168, 0, 1)
+      address.byte0                        // 192
+      address.int                          // the packed integer
+      address.subnet(24).show              // t"192.168.0.0/24"
+      t"100.300.200.0".as[Ipv4]           // raises IpAddress.Error (Ipv4ByteOutOfRange(300))
+      ```
+
+      The extensions `byte0`, `byte1`, `byte2` and `byte3` read the octets, `int` the packed
+      integer, `subnet(size)` makes the `Ipv4Subnet` of a prefix length (masking the host
+      bits), and `bytes` the four octets in network order as `Data`; they are declared in
+      `urticose.internal`, the opaque type's home. An address encodes to and from `Data` too
+      (`in[Data]`, `data.as[Ipv4]`), as a resolver or a DNS `A` record carries it. The
+      `ip"…"` interpolator serves both families and takes its result type from the literal.
+
+      Its companion's members are declared in `internal.Opaques.Ipv4`, from which the type is
+      exported, and documented there.
+  refer urticose.Ipv6
+  refer urticose.Ipv4Subnet
+  refer urticose.ip
+  refer urticose.IpAddress
+
+entry .Ipv6   an IPv6 address: eight 16-bit groups, held as two `Long`s
+  detail
+      An `Ipv6` is written `ip"2001:db8::1"` (checked as the code compiles), built from its
+      eight groups with `Ipv6(0x2001, 0xdb8, 0, 0, 0, 0, 0, 1)` or decoded from text with
+      `as[Ipv6]`, which accepts the usual notation — up to eight colon-separated groups of one
+      to four hexadecimal digits, in either case, with at most one `::` standing for a run of
+      zero groups — and raises `IpAddress.Error` otherwise. It is a case class of `#highBits`
+      and `#lowBits`, the first and last four groups packed into a `Long` each.
+
+      ```scala fuel
+      frame
+        label An address written out in full
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            val address: Ipv6 = t"2001:0db8:0000:0000:0000:0000:0000:0001".as[Ipv6]
+      frame
+        label Leading zeroes drop from each group when it is shown
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            val address: Ipv6 = t"2001:0db8:0000:0000:0000:0000:0000:0001".as[Ipv6]
+            address.show   // t"2001:db8::1"
+      frame
+        label The longest run of zero groups becomes `::`
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            val address: Ipv6 = t"2001:0db8:0000:0000:0000:0000:0000:0001".as[Ipv6]
+            address.show   // t"2001:db8::1"
+            Ipv6(0, 0, 0, 0, 0, 0, 0, 0).show   // t"::"
+            Ipv6(8, 0, 0, 0, 0, 0, 0, 0).show   // t"8::"
+      ##
+      ```
+
+      The `subnet(size)` extension makes the `Ipv6Subnet` of a prefix length, and `bytes` the
+      sixteen octets in network order; both are declared in `urticose.internal`. An address
+      encodes to and from `Data` (`in[Data]`, `data.as[Ipv6]`), as a DNS `AAAA` record carries
+      it. The companion also holds the givens for the `Host` union, `hostShowable` and
+      `hostDecodable`, since a union has no companion of its own.
+
+      Its fields and its companion's members are declared in `internal.Ipv6`, from which it is
+      exported, and documented there.
+  refer urticose.Ipv4
+  refer urticose.Ipv6Subnet
+  refer urticose.ip
+  refer urticose.Host
+
+entry .ip   the `ip"…"` interpolator: an IPv4 or IPv6 address, checked as the code compiles
+    `ip"192.168.0.1"` is an `Ipv4` and `ip"2001:db8::1"` an `Ipv6`: the interpolator is
+    transparent, so the result has the type the literal's family gives it, chosen by whether
+    the text contains a dot. An invalid address is a compile error carrying the
+    `IpAddress.Error` message, with the same checks as decoding at runtime: for IPv4, four
+    groups of 0–255; for IPv6, at most eight groups, at most one `::`, one to four hexadecimal
+    digits in each.
+
+    ```scala
+    import soundness.*
+
+    ip"122.0.0.1" == Ipv4(122, 0, 0, 1)
+    ip"2001:db8::1:1:1:1" == Ipv6(0x2001, 0xdb8, 0, 0, 0x1, 0x1, 0x1, 0x1)
+    ip"192.168.0.0.0.1"   // does not compile
+    ```
+
+    The interpolator takes no substitutions.
+
+entry .IpAddress   the home of `IpAddress.Error`, raised for an IP address or subnet which is not valid
+  detail
+      `IpAddress` has no instances of its own: it holds the error that both address families
+      and both subnet types raise, so a program decoding either can handle one type.
+  entry .Error   raised when text or bytes are not a valid IPv4 or IPv6 address or subnet
+    detail
+        Error 77: _the IP address is not valid because `reason`_. Raised by `as[Ipv4]`,
+        `as[Ipv6]`, `as[Ipv4Subnet]` and `as[Ipv6Subnet]`, by the `Data` decoders, and as a
+        compile error by `ip"…"` and `subnet"…"`; it is also wrapped as the reason of an
+        `EmailAddress.Error` or `Url.Error` whose address part is bad.
+    entry .Reason   why an address or subnet was rejected
+      detail
+          An enum of fourteen cases, each with a message through `Reason.communicable`. For an
+          IPv4 address: `Ipv4ByteOutOfRange(byte)`, `Ipv4ByteNotNumeric(byte)`,
+          `Ipv4WrongNumberOfGroups(count)`, `Ipv4WrongNumberOfBytes(count)`. For an IPv6
+          address: `Ipv6GroupWrongLength(group)`, `Ipv6GroupNotHex(group)`,
+          `Ipv6TooManyNonzeroGroups(count)`, `Ipv6WrongNumberOfGroups(count)`,
+          `Ipv6MultipleDoubleColons`, `Ipv6WrongNumberOfBytes(count)`. For a subnet:
+          `Ipv4SubnetPrefixOutOfRange(prefix)` (0–32), `Ipv6SubnetPrefixOutOfRange(prefix)`
+          (0–128), `SubnetPrefixNotNumeric(prefix)` and `SubnetWrongFormat(count)` for text
+          without exactly one `/`.
+      entry .communicable   renders each reason as a message
+    entry #reason   why the address was rejected
+
+entry .Ipv4Subnet   an IPv4 network: an address and a prefix length, as `192.168.0.0/24`
+  detail
+      Made with `address.subnet(size)` on an `Ipv4`, written `subnet"192.168.0.0/24"` or
+      decoded from text with `as[Ipv4Subnet]`. The host bits below the prefix are masked
+      away on construction, so a subnet written carelessly is corrected rather than
+      misinterpreted: `subnet"255.123.143.0/12"` shows as `255.112.0.0/12`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      subnet"192.168.0.0/24" == ip"192.168.0.0".subnet(24)
+      t"10.0.0.0/8".as[Ipv4Subnet].show   // t"10.0.0.0/8"
+      t"10.0.0.0/40".as[Ipv4Subnet]       // raises IpAddress.Error (Ipv4SubnetPrefixOutOfRange(40))
+      ```
+
+      Its fields and its companion's members are declared in `internal.Ipv4Subnet`, from which
+      it is exported, and documented there.
+  refer urticose.Ipv4
+  refer urticose.subnet
+
+entry .Ipv6Subnet   an IPv6 network: an address and a prefix length, as `2001:db8::/32`
+  detail
+      Made with `address.subnet(size)` on an `Ipv6`, written `subnet"2001:db8::/32"` or
+      decoded from text with `as[Ipv6Subnet]`. The host bits below the prefix are masked away
+      on construction.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      subnet"2001:db8::/32" == ip"2001:db8::".subnet(32)
+      t"2001:db8::/130".as[Ipv6Subnet]   // raises IpAddress.Error (Ipv6SubnetPrefixOutOfRange(130))
+      ```
+
+      Its fields and its companion's members are declared in `internal.Ipv6Subnet`, from which
+      it is exported, and documented there.
+  refer urticose.Ipv6
+  refer urticose.subnet
+
+entry .subnet   the `subnet"…"` interpolator: an IPv4 or IPv6 subnet, checked as the code compiles
+    `subnet"192.168.0.0/24"` is an `Ipv4Subnet` and `subnet"2001:db8::/32"` an `Ipv6Subnet`:
+    the interpolator is transparent and takes its family from whether the address contains a
+    dot. The prefix is checked against the family's range (0–32 or 0–128), so an impossible
+    mask is a compile error (`[↯SN-077.9] … the prefix length 40 is not in the range 0-32`),
+    and host bits below the prefix are masked away. It takes no substitutions.
+
+    ```scala
+    import soundness.*
+
+    subnet"255.123.143.0/12".show   // t"255.112.0.0/12"
+    subnet"10.0.0.0/40"             // does not compile
+    ```
+
+entry .MacAddress   a 48-bit hardware address, as an opaque type over `Long`
+  detail
+      A `MacAddress` is written `mac"01-23-45-ab-cd-ef"` (checked as the code compiles), built
+      from six bytes with `MacAddress(1, 2, 3, 4, 5, 6)` or from its packed `Long`, or decoded
+      from text with `as[MacAddress]`, which requires six dash-separated groups of exactly two
+      hexadecimal digits and raises `MacAddress.Error` otherwise. A `NetworkInterface`
+      reports its hardware address as one.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      mac"01-23-45-ab-cd-ef".show                  // t"01-23-45-ab-cd-ef"
+      MacAddress(1, 2, 3, 4, 5, 6).show            // t"01-02-03-04-05-06"
+      t"01-23-45-ab-cd-ef".as[MacAddress].long     // 1251004370415L
+      t"01-23-45-6g-ab-cd".as[MacAddress]          // raises MacAddress.Error (NotHex(3, t"6g"))
+      ```
+
+      The extensions `byte0` to `byte5` read the six bytes, `text` renders the dashed
+      lowercase form and `long` gives the packed value; they are declared in
+      `urticose.internal.Opaques`, the opaque type's home.
+
+      Its companion's members are declared in `internal.Opaques.MacAddress`, from which the
+      type is exported, and documented there.
+  refer urticose.mac
+  refer urticose.NetworkInterface
+
+entry .mac   the `mac"…"` interpolator: a MAC address, checked as the code compiles
+    `mac"01-23-45-ab-cd-ef"` is a `MacAddress`; text which is not six dashed pairs of
+    hexadecimal digits is a compile error carrying the `MacAddress.Error` message
+    (`[↯SN-532.2] the MAC address is not valid because group 5 should be two hex digits, but
+    its length is 1`). It takes no substitutions.
+
+entry .Port   a port number whose type records its transport and, for a literal, its number
+  detail
+      A `Port` is an opaque type over `Int`, refined by two type members of `Port.Type`:
+      `Transport` names the protocol, so a `Port over Tcp` and a `Port over Udp` are distinct
+      types (`Tcp.Port` and `Udp.Port` are aliases for them), and `Topic` carries the literal
+      number, so `tcp"smtp"` is a `Port over Tcp of 25`. A server's `Protocolic` given can
+      therefore be bound to specific ports at the type level.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val smtp: Port over Tcp of 25 = tcp"smtp"   // by IANA service name
+      val https = tcp"443"
+      val dns: Udp.Port = Port[Udp](53)           // checked at runtime: raises Port.Error outside 1–65535
+      val free: Tcp.Port = Port[Tcp]()            // a port the system reports as unused
+      smtp.number       // 25
+      smtp.privileged   // true: below 1024
+      ```
+
+      `Port[Tcp]()` with no number asks the operating system for an ephemeral port by binding
+      and releasing a probe socket, which is what a test server or a dynamically-bound service
+      needs; nothing reserves it in between, so where the caller binds the port itself,
+      binding port 0 and reading the port it got (`Service#port`) is the race-free
+      alternative. The `number` and `privileged` extensions are declared in
+      `urticose.internal.Opaques`, the opaque type's home. A port is `Showable` and encodes as
+      its number; it inspects as `⌗25`, so that it is not mistaken for the `Int` it erases to.
+
+      Its companion's members are declared in `internal.Opaques.Port`, from which the type is
+      exported, and documented there.
+  refer urticose.Tcp
+  refer urticose.Udp
+  refer urticose.tcp
+  refer urticose.udp
+  refer urticose.serve
+
+entry .tcp   the `tcp"…"` interpolator: a TCP port by number or IANA service name, checked as the code compiles
+    `tcp"443"` is a `Port over Tcp of 443` and `tcp"smtp"` a `Port over Tcp of 25`: a name is
+    looked up in the IANA service-names registry bundled with the library, for the TCP
+    transport specifically, so a service registered only over UDP, or an unknown name, is a
+    compile error (`[↯SN-915] abcdef is not a valid TCP port`), as is a number outside
+    1–65535 (`[↯SN-340]`). It takes no substitutions.
+
+    ```scala
+    import soundness.*
+
+    tcp"smtp" == Port[Tcp](25)
+    tcp"abcdef"   // does not compile
+    ```
+
+entry .udp   the `udp"…"` interpolator: a UDP port by number or IANA service name, checked as the code compiles
+    As `tcp"…"`, for the UDP transport: `udp"53"` and `udp"domain"` are each a `Port over Udp
+    of 53`, and a name registered only over TCP does not compile (`[↯SN-915] docker is not a
+    valid UDP port`).
+
+    ```scala
+    import soundness.*
+
+    udp"docker"   // does not compile
+    ```
+
+entry .Tcp   the TCP transport, as a phantom type for ports and endpoints
+  detail
+      `Tcp` marks a `Port over Tcp`, which `Tcp.Port` abbreviates, and the `tcp"…"`
+      interpolator makes. Its companion's `allocatable` given lets `Port[Tcp]()` find an
+      unused port by binding a `ServerSocket` on port 0.
+  refer urticose.Port
+  entry .Port   the alias `urticose.Port over Tcp`
+  entry .allocatable   finds an unused TCP port, for `Port[Tcp]()`
+      Binds a `java.net.ServerSocket` on port 0, reads the port the system chose, and closes
+      it; the port is free at that moment but not reserved.
+
+entry .Udp   the UDP transport, as a phantom type for ports and endpoints
+  detail
+      `Udp` marks a `Port over Udp`, which `Udp.Port` abbreviates, and the `udp"…"`
+      interpolator makes. Its companion's `allocatable` given lets `Port[Udp]()` find an
+      unused port by binding a `DatagramSocket` on port 0.
+  refer urticose.Port
+  entry .Port   the alias `urticose.Port over Udp`
+  entry .allocatable   finds an unused UDP port, for `Port[Udp]()`
+      Binds a `java.net.DatagramSocket` on port 0, reads the port the system chose, and
+      closes it; the port is free at that moment but not reserved.
+
+entry .Quic   the QUIC transport, as a phantom type for ports
+    QUIC runs over UDP, but a `Port over Quic` is a distinct type from a `Port over Udp`. No
+    `Allocatable` instance is provided, so a QUIC port needs an explicit number,
+    `Port[Quic](443)`, and `Port[Quic]()` does not compile.
+
+entry .Allocatable   a transport for which the operating system can find an unused port
+  detail
+      The typeclass behind `Port[transport]()`: `Tcp.allocatable` and `Udp.allocatable` are
+      its instances, each binding a probe socket of the right kind on port 0 and releasing
+      it. It is keyed on the transport phantom type, since the transport is erased at runtime
+      and the probe must still be of the right kind.
+  entry #unused   a port number the system reported as free a moment ago
+
+entry .Service   a running server: how to stop it, and the port it is bound to
+  detail
+      What a `Protocolic` server (and `serve`) returns on platforms whose servers are
+      stopped by a callback. `#port` is the port actually bound, which is the one the system
+      chose when the server was asked for port 0, so asking for port 0 and reading `port` is
+      the race-free way to run a server on a free port.
+  entry #cancel   stops the server
+  entry #port   the port the server is bound to
+
+entry .Protocolic   a protocol which can serve a port: the typeclass behind `serve`
+  detail
+      A `protocol is Protocolic over port` says how a server for `protocol` is started on a
+      `port` of the matching transport: `scintillate` provides `Http is Protocolic over (Tcp.Port
+      of 8080)` and its siblings, so `tcp"8080".serve[Http](handler)` starts a web server. The
+      typeclass fixes a `Request` type (a capability, since a request is a live connection), a
+      `Response` type and a `Server` type, and its `server` method takes a handler which
+      receives each request contextually and may return a response capturing that request —
+      a streamed body legitimately retains the connection it answers.
+  refer urticose.serve
+  refer urticose.Port
+  entry #Request   the type of a request the handler receives, a capability
+  entry #Response   the type of a response the handler returns
+  entry #Server   the type of the running server, such as `Service`
+  entry #server   starts a server on a port, with a handler for each request
+
+entry .serve   `port.serve[Protocol](handler)`: starts a server for a protocol on a port
+    An extension on any port type which has a `Protocolic over` it: `tcp"8080".serve[Http]:
+    request ?=> …` starts the server the `Http is Protocolic` given in scope describes, with
+    the handler invoked for each request, and returns the protocol's `Server` (a `Service`,
+    for scintillate's). The given carries its own needs — a `Tactic`, a `Monitor`, logging —
+    so those are what the call site must have in scope.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import httpServers.jdkHttpserver
+    import logging.silentLogging
+    import probates.awaitProbate
+    import strategies.throwUnsafely
+    import threads.virtualThreads
+    import webserverErrorPages.minimalErrorPage
+
+    def hello(): Unit = supervise:
+      val service = tcp"8080".serve[Http]:
+        Http.Response(Http.Ok)(t"Hello, world!")
+
+      service.cancel()
+    ```
+
+entry .Endpoint   a remote and a port: where a connection is made
+  detail
+      An `Endpoint[port]` pairs the text of a remote — a hostname or IP address rendered —
+      with a port of any type, and is made with the `on` extension: `host"example.com" on
+      tcp"80"`. Socket libraries take one to connect, and an `Endpoint[Udp.Port]` is what
+      `coaxial.dns` sends DNS queries to.
+
+      ```scala
+      import soundness.*
+
+      val endpoint: Endpoint[Port over Tcp of 80] = host"example.com" on tcp"80"
+      endpoint.remote   // t"example.com"
+      endpoint.show     // t"example.com:80"
+      ```
+  refer urticose.on
+  refer urticose.Remotable
+  entry .showable   renders an endpoint as `remote:port`, for a port type which is `Showable`
+  entry .inspectable   a debug rendering with both parts inspected: `Endpoint(t"example.com":⌗80)`
+      The port is inspected rather than shown so that no `Showable` for the port type is
+      needed and the port keeps its own type's mark.
+  entry #remote   the remote, as text
+  entry #port   the port, of whatever type it was given
+
+entry .on   `remote on port`: makes an `Endpoint` from anything `Remotable` and a port
+    An infix extension on any value with a `Remotable` instance — a `Hostname`, an `Ipv4` or an
+    `Ipv6` — pairing its rendered text with a port of any type: `ip"127.0.0.1" on udp"53"`
+    is an `Endpoint[Port over Udp of 53]`.
+
+entry .Remotable   something which can be the remote of an `Endpoint`
+  detail
+      A typeclass rendering a value as the text of a remote; `Hostname`, `Ipv4` and `Ipv6`
+      have instances in this companion, and any other type may add one to be usable with
+      `on`.
+  entry .ipv4   an IPv4 address as a remote, in dotted-quad form
+  entry .ipv6   an IPv6 address as a remote, in its shortest form (unbracketed)
+  entry .hostname   a hostname as a remote, as its dotted labels
+  entry #remote   the text of the remote
+
+entry .EmailAddress   an email address: a local part, a domain, and optionally a display name
+  detail
+      An `EmailAddress` is written `email"test@example.com"` (checked as the code compiles) or
+      decoded from text with `as[EmailAddress]`, which raises `EmailAddress.Error` when the
+      text breaks the rules: the local part is at most 64 characters, either unquoted
+      (letters, digits, the symbols `!#$%&'*+-/=?^_\`{|}~` and periods, but no leading,
+      trailing or doubled period) or quoted (`"john..doe"@example.org`, with `\"` and `\\`
+      escapes), and the domain is a `Hostname` or a bracketed IP address, `[192.168.0.1]` or
+      `[IPv6:2001:db8::1]`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val address: EmailAddress = email"user.name+tag@example.com"
+      t"postmaster@[IPv6:2001:db8::1]".as[EmailAddress]
+      address.text                           // t"user.name+tag@example.com"
+      t"not..allowed@example.com".as[EmailAddress]   // raises EmailAddress.Error (SuccessivePeriods)
+      ```
+
+      A decoded address has no display name; `EmailAddress(t"Jon", localPart, domain)` gives
+      one, which `#text` renders as `Jon <local@domain>`. The `emailAddressInterfaces`
+      package names this type as the representative of anticipation's `EmailAddresses`
+      domain, for libraries which take any email-address type.
+  refer urticose.email
+  refer urticose.LocalPart
+  refer urticose.Hostname
+  entry .decodable   reads an address from text, raising `EmailAddress.Error` if it is not valid
+      Needs a `Tactic[EmailAddress.Error]`; the given captures it. A bad domain is reported as
+      `InvalidDomain`, wrapping the `Hostname.Error` or `IpAddress.Error` found.
+  entry .encodable   encodes an address as its text, with the display name if there is one
+  entry .showable   renders an address as its text
+  entry .inspectable   a debug rendering, the same as the shown form
+  entry .parse   reads an address from text, as `.decodable` does
+  entry .Error   raised when text is not a valid email address
+    detail
+        Error 159: _the email address is not valid because `reason`_. Raised by
+        `as[EmailAddress]` and, as a compile error, by `email"…"`.
+    entry .Reason   why an email address was rejected
+      detail
+          An enum of twelve cases, each with a message through `Reason.communicable`:
+          `Empty`; `InvalidDomain(error)`, wrapping the `IpAddress.Error` or `Hostname.Error`
+          of the domain; `LongLocalPart` (over 64 characters); `TerminalPeriod`,
+          `SuccessivePeriods` and `InitialPeriod` for periods where an unquoted local part
+          may not have them; `UnescapedQuote` and `UnclosedQuote` for a quoted local part;
+          `MissingDomain`; `MissingAtSymbol`; `UnclosedIpAddress` for a domain beginning with
+          `[` and not ending with `]`; and `InvalidChar(char)` for a character the local
+          part may not hold.
+      entry .communicable   renders each reason as a message
+    entry #reason   why the address was rejected
+  entry #displayName   the display name, or `Unset`
+  entry #localPart   the part before the `@`, quoted or unquoted
+  entry #domain   the part after the `@`: a hostname or an IP address
+  entry #text   the address as text: `local@domain`, or `name <local@domain>` with a display name
+      A quoted local part is rendered in its quotes, and an IPv6 domain in brackets, as the
+      address was written.
+
+entry .email   the `email"…"` interpolator: an email address, checked as the code compiles
+    `email"test@example.com"` is an `EmailAddress`, with the same checks as `as[EmailAddress]`
+    and a compile error carrying the `EmailAddress.Error` message where they fail. A quoted
+    local part needs a triple-quoted literal: `email""""test user"@example.com"""`. It takes no
+    substitutions. Declared in `urticose.url`.
+
+entry .LocalPart   the part of an email address before the `@`: quoted or unquoted
+    An enum of two cases, each holding its `text`: `Unquoted(text)`, the ordinary form, and
+    `Quoted(text)`, the text between the quotes of a quoted local part (`"john..doe"`), which
+    may hold characters an unquoted part may not. `EmailAddress#text` restores the quotes
+    when rendering.
+
+entry .NetworkInterface   one of the machine's network interfaces, with its addresses
+  detail
+      A snapshot of a `java.net.NetworkInterface` as a value: its name and display name,
+      index, hardware (MAC) address, the `InterfaceAddress`es bound to it, MTU, and whether it
+      is up, a loopback, point-to-point, multicast-capable or virtual. The companion
+      enumerates and looks interfaces up; each call raises `NetworkInterface.Error` if the
+      platform cannot enumerate or inspect them.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      NetworkInterface.all().exists(_.loopback)
+      NetworkInterface.byName(t"lo0").let(_.ipv4)
+      NetworkInterface.byAddress(ip"127.0.0.1").let(_.name)
+      ```
+  refer urticose.InterfaceAddress
+  refer urticose.MacAddress
+  entry .showable   renders an interface as its name
+  entry .all   every interface the platform reports, in the platform's order
+  entry .byName   the interface of a name such as `eth0`, or `Unset`
+  entry .byIndex   the interface of a platform index, or `Unset`
+  entry .byAddress   the interface an IP address is bound to, or `Unset`
+  entry .Error   raised when the platform cannot enumerate or inspect its interfaces
+    detail
+        Error 418: _the network interface could not be read because `reason`_, wrapping the
+        socket error's message.
+    entry .Reason   why the interfaces could not be read
+      detail
+          `Enumeration(message)` when the list of interfaces could not be obtained, and
+          `Inspection(name, message)` when one interface's details could not be read.
+      entry .communicable   renders each reason as a message
+    entry #reason   why the interfaces could not be read
+  entry #name   the interface's name, such as `eth0` or `lo0`
+  entry #displayName   the platform's descriptive name for the interface
+  entry #index   the platform's index for the interface
+  entry #hardware   the MAC address, or `Unset` for an interface without one
+  entry #addresses   the addresses bound to the interface, each with its prefix and broadcast address
+  entry #mtu   the maximum transmission unit, in bytes
+  entry #up   whether the interface is up and running
+  entry #loopback   whether the interface is a loopback interface
+  entry #pointToPoint   whether the interface is a point-to-point link
+  entry #multicast   whether the interface supports multicast
+  entry #virtual   whether the interface is a virtual (sub-)interface
+  entry #ipv4   the IPv4 addresses bound to the interface
+  entry #ipv6   the IPv6 addresses bound to the interface
+
+entry .InterfaceAddress   an address bound to a network interface, with its prefix length and broadcast address
+  detail
+      One of a `NetworkInterface`'s `addresses`: the address itself (IPv4 or IPv6), the length
+      of its subnet prefix, and for IPv4 the broadcast address.
+  entry #address   the address, IPv4 or IPv6
+  entry #prefix   the subnet prefix length, in bits
+  entry #broadcast   the broadcast address, or `Unset` for an IPv6 address
+
+entry .Internet   evidence of network access, as a capability, which may say the network is unavailable
+  detail
+      An `Internet` holds one fact, `#online`, and is a capability: a method which depends on
+      connectivity takes one contextually, so that its reach shows in its signature and the
+      capture sets of what it returns. `Online` is the subtype which asserts the network *is*
+      available, and is what network-reaching methods usually demand; an `Internet` that may
+      be offline is turned into one with `#require` (raising `Internet.Error` if not) or
+      `#appropriate` (yielding `Unset` if not). `internet(online)` runs a block with an
+      `Internet` in scope, and `online` reads the fact from the one in scope.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      def fetchSomething()(using Online): Text = t"…"
+
+      internet(true):
+        summon[Internet].require:
+          fetchSomething()
+      ```
+
+      The capability is unscoped and durable: it carries no state, so it may be stored and
+      used from every task at once, which is also why `internetAccess.online` can be a given.
+  refer urticose.Online
+  refer urticose.internetAccess
+  refer urticose.internet
+  entry .Error   raised when network access was required and is not available
+    detail
+        Error 770: _an Internet connection is not available_. Raised by `Internet#require` on
+        an offline `Internet`, and by `internetAccess.offline` as soon as an `Online` is
+        summoned.
+  entry #online   whether the network is available
+  entry #require   runs a block which needs `Online`, raising `Internet.Error` if offline
+      Needs a `Tactic[Internet.Error]`.
+  entry #appropriate   runs a block which needs `Online`, or yields `Unset` if offline
+
+entry .Online   the capability which asserts the network is available
+    `Online` is the `Internet` whose `online` is `true`: the contextual parameter a method
+    which reaches the network takes (`(using Online)`), so that nothing can reach it without
+    one being granted. It is granted by `import internetAccess.online`, by `Internet#require`
+    or `Internet#appropriate`, or by the companion, `Online`, which is itself an instance for
+    passing explicitly.
+
+    ```scala
+    import soundness.*
+    import internetAccess.online
+
+    def remoteCall()(using Online): Unit = ()
+    remoteCall()
+    ```
+
+entry .internet   `internet(online)(block)`: runs a block with an `Internet` in scope
+    `internet(true)` grants an `Internet` which is online, and `internet(false)` one which is
+    not, to the block, whose code may then call `online`, or `Internet#require` and
+    `Internet#appropriate` to obtain an `Online`. A test which should not reach the network
+    runs its code under `internet(false)`.
+
+entry .online   whether the `Internet` in scope says the network is available
+    Reads `Internet#online` from the contextual `Internet`; needs one in scope, such as the
+    one `internet(…)` provides.
+
+entry .internetAccess   the two policies for network access, each a given to import by name
+  detail
+      Whether code may reach the network is decided by whether an `Online` is in scope, and the
+      choice is deliberately never implicit: `import soundness.*` brings in neither of these,
+      and a program imports one by name.
+
+      ```scala
+      import soundness.*
+      import internetAccess.online
+      ```
+
+      `online` grants the capability everywhere it is imported; `offline` makes every attempt
+      to use it raise `Internet.Error`, which is how a program (or a test) proves that a code
+      path does not reach the network.
+  entry .online   grants `Online`: the network is available
+      An inline given, so each summon mints a fresh `Online` rather than sharing a static
+      field.
+  entry .offline   denies `Online`: summoning it raises `Internet.Error`
+      Needs a `Tactic[Internet.Error]`, which is raised the moment an `Online` is asked for,
+      before any network call is attempted.
+
+entry .Url   a URL: a scheme, an optional authority, a location, and optional query and fragment
+  detail
+      A `Url[scheme]` is written `url"https://example.com/path"` (checked as the code compiles)
+      or decoded from text with `as[HttpUrl]` or `as[Url[Label]]`, which raises `Url.Error`
+      when the text is not a URL. Its type parameter is the scheme as a literal type:
+      `HttpUrl` is `Url["https" | "http"]`, and `url"ftp://…"` is a `Url["ftp"]`, so a
+      function which takes an `HttpUrl` cannot be given a `mailto:` one. The parts are typed:
+      `#scheme` is a `Scheme`, `#authority` an `Authority` (user info, `Host` and port),
+      `#location` the path text, and `#query` and `#fragment` are `Optional[Text]`, absent
+      when the URL has no `?` or `#`.
+
+      ```scala fuel
+      frame
+        label A URL built from its parts
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            val origin = Origin(Scheme.Https, Authority(host"example.com", port = 8080))
+            val url: Url["https"] = Url(origin, t"/path/to/location")
+            url.show   // t"https://example.com:8080/path/to/location"
+      frame
+        label With a query and a fragment
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            val origin = Origin(Scheme.Https, Authority(host"example.com", port = 8080))
+            val url: Url["https"] = Url(origin, t"/path/to/location", t"query=1", t"top")
+            url.show   // t"https://example.com:8080/path/to/location?query=1#top"
+      frame
+        label The same URL written as a literal, and read back
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            val url: HttpUrl = url"https://example.com:8080/path/to/location?query=1#top"
+            url.host            // host"example.com"
+            url.authority.let(_.port)   // 8080
+            url.requestTarget   // t"/path/to/location?query=1"
+            url.path            // a Path on Www: /path/to/location
+      ##
+      ```
+
+      A URL is a `Root` of the `Www` plane, from which a `Path on Www` descends with the
+      web's `/` separator and percent-encoding. The authority is read strictly: a bad hostname
+      or IPv6 address is a `Url.Error` with the `BadHostname` or `BadIpv6` reason, and a
+      port must be a number in 0–65535. A URL without `//` after its scheme (`mailto:`,
+      `urn:`, `tel:`) has no authority and its whole remainder is the location. Only an
+      `HttpUrl` is `Abstractable across Urls`, which is how other libraries take one as
+      "any URL type"; `urlInterfaces.soundnessUrl` names it as the representative of that
+      domain.
+  refer urticose.HttpUrl
+  refer urticose.url
+  refer urticose.Authority
+  refer urticose.Origin
+  refer urticose.Scheme
+  refer urticose.Www
+  entry .abstractable   an `HttpUrl` as the text of anticipation's `Urls` domain
+  entry .showable   renders a URL as `scheme:` then `//authority`, location, `?query` and `#fragment`
+  entry .encodable   encodes a URL as its text
+  entry .inspectable   a debug rendering, the canonical URL text
+      `Url` is a plain class, not a case class, so without this it would inspect as its
+      `toString`; the URL text shows every part the type carries.
+  entry .decodable   reads a `Url[scheme]` from text, raising `Url.Error` if it is not a URL
+      Needs a `Tactic[Url.Error]`; the given captures it. The scheme is everything before the
+      first `:` (absent one, `Expected(Colon)` is raised); if `//` follows, the authority runs
+      to the next `/`, `?` or `#` and is decoded as an `Authority`; then the location, query
+      and fragment are split on the first `?` and the first `#` after it. The scheme type
+      parameter is not checked against the text: `t"ftp://x".as[HttpUrl]` succeeds, so use
+      `Url[Label]` for text of any scheme and check `scheme` where it matters.
+  entry .instantiable   makes an `HttpUrl` from text, for anticipation's `Urls` domain
+      The `Instantiable across Urls from Text` given, needing a `Tactic[Url.Error]`;
+      `urlInterfaces.soundnessUrl` is the same instance by name.
+  entry .Error   raised when text is not a valid URL
+    detail
+        Error 714: _the URL `text` is not valid: `reason` at `offset`_. Raised by
+        `as[HttpUrl]`, by `as[Authority]`, and as a compile error by `url"…"`. The `#offset`
+        is the position in the text where the fault was found.
+    entry .communicable   renders each reason as a message
+    entry .Reason   why a URL was rejected
+        `Expected(expectation)` for a character or part which was not where it should be;
+        `BadHostname(hostname, reason)` wrapping the `Hostname.Error.Reason` of a bad host;
+        and `BadIpv6(reason)` wrapping the `IpAddress.Error.Reason` of a bad bracketed
+        address.
+    entry .Expectation   what the parser was expecting when it failed
+      detail
+          `Colon` (no scheme separator), `More` (the text ended early, as after `[` with no
+          `]`), `LowerCaseLetter`, `PortRange` (a port number outside 0–65535) and `Number`
+          (a port which is not a number).
+      entry .communicable   renders each expectation as a phrase
+    entry #text   the text which was decoded
+    entry #offset   where in the text the fault was found
+    entry #reason   why it was rejected
+  entry .Fragment   a value substituted into the `url"…"` interpolator, and how it is spliced
+    detail
+        The `Insertion` type of the `url"…"` interpolator: each `$value` in the literal is
+        converted to a `Fragment` by a `Substitution` given, of which three are provided.
+        `Integral(value)` is an `Int`, which may only follow a `:` and becomes a port;
+        `Textual(value)` is text, which is URL-encoded where it is spliced; and
+        `RawTextual(value)` is text spliced as it is, without encoding (no provided
+        substitution produces it).
+
+        ```scala
+        import soundness.*
+
+        val port = 1234
+        val message: Text = t"Hello world!"
+        url"http://example.com:$port/$message".show   // t"http://example.com:1234/Hello+world%21"
+        ```
+    entry .apply   wraps text as a `Textual` fragment, or an `Int` as an `Integral` one
+    entry .text   substitutes `Text` into a URL, encoded
+    entry .int   substitutes an `Int` into a URL as a port number, after a `:`
+    entry .encodable   substitutes any `Encodable in Text` value into a URL, encoded
+  entry #origin   the scheme and authority together, as an `Origin`
+  entry #location   the path part, as text, beginning with `/` when there is an authority
+  entry #query   the text after `?`, or `Unset`
+  entry #fragment   the text after `#`, or `Unset`
+  entry #Plane   the plane the URL's path lives on: `Www`
+  entry #Topic   the path's root topic, `Zero`
+  entry #scheme   the scheme, typed to the URL's scheme parameter
+  entry #authority   the authority — user info, host and port — or `Unset` for a URL without `//`
+  entry #requestTarget   the location and query together, as an HTTP request line carries them
+  entry #host   the authority's host, or `Unset`
+  entry #path   the location as a `Path on Www`, with each segment percent-decoded
+      Decoding cannot fail: a web path's root is the leading `/`, present or not.
+
+entry .HttpUrl   `Url["https" | "http"]`: a URL whose scheme is one of the two web schemes
+    The type a web client takes and `url"https://…"` and `url"http://…"` produce. It alone has
+    `Url.abstractable` and `Url.instantiable`, so it is the URL type other libraries mean by
+    "a URL" through anticipation's `Urls` domain. Decoding text with `as[HttpUrl]` does not
+    check the scheme against the type.
+
+entry .url   the `url"…"` interpolator: a URL checked as the code compiles, with typed substitutions
+    `url"https://example.com/path"` is a `Url["https"]` (so an `HttpUrl`), and the literal is
+    parsed as the code compiles, so a malformed one is a compile error. Each `$value` is
+    spliced by a `Substitution[Url.Fragment, …]` given: an `Int` after a `:` becomes the
+    port, and `Text` or any `Encodable in Text` value is URL-encoded (`t"Hello world!"`
+    becomes `Hello+world%21`). The literal is checked with placeholder values at compile time
+    and parsed again with the real ones at runtime; a runtime value which makes the URL
+    invalid throws, since the checked literal cannot be reported as a typed error.
+
+    ```scala
+    import soundness.*
+
+    val port = 1234
+    url"http://user:pw@example.com:$port/path"
+    url"ftp://ftp.example.com/pub"   // a Url["ftp"], not an HttpUrl
+    ```
+
+    The result type carries the scheme as a literal type, read from the text before the
+    first `:`. Declared in `urticose.url`.
+
+entry .Scheme   a URL scheme, as `Scheme[scheme](name)` with the name also a literal type
+  detail
+      `Scheme.Http` and `Scheme.Https` are the two web schemes; `Scheme(t"ftp")` makes any
+      other. The type parameter is the scheme's name as a literal type, which is how `Url`
+      and `HttpUrl` carry it.
+  entry .showable   renders a scheme as its name
+  entry .inspectable   a debug rendering with a trailing colon, `https:`, as it appears in a URL
+  entry .Http   the `http` scheme, a `Scheme["http"]`
+  entry .Https   the `https` scheme, a `Scheme["https"]`
+  entry #name   the scheme's name, as text
+
+entry .Authority   the authority of a URL: optional user info, a host, and an optional port
+  detail
+      The part of a URL between `//` and the path, made with `Authority(host, userInfo, port)`
+      or decoded from text with `as[Authority]`, which raises `Hostname.Error`,
+      `IpAddress.Error` or `Url.Error`: everything before an `@` is the user info, the host is
+      a hostname, an IPv4 address or a bracketed IPv6 address, and a port after a `:` must be
+      a number in 0–65535.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      t"user:pw@example.com:8080".as[Authority]
+        == Authority(host"example.com", t"user:pw", 8080)
+      t"[::1]:8080".as[Authority] == Authority(Ipv6(0, 0, 0, 0, 0, 0, 0, 1), Unset, 8080)
+      t"example.com:no".as[Authority]   // raises Url.Error (Expected(Number))
+      ```
+  refer urticose.Url
+  refer urticose.Host
+  entry .showable   renders an authority as `userInfo@host:port`, each part only when present
+  entry .inspectable   a debug rendering introduced by `//`: `//user@example.com:8080`
+      The prefix says which part of a URL the value is, and keeps it from being mistaken for
+      a bare hostname.
+  entry .decodable   reads an authority from text, raising `Hostname.Error`, `IpAddress.Error` or `Url.Error`
+      Needs a `Tactic` for each of the three; the given captures them.
+  entry #host   the host: a `Hostname`, `Ipv4` or `Ipv6`
+  entry #userInfo   the text before the `@`, or `Unset`
+  entry #port   the port number, or `Unset`
+
+entry .Origin   a URL's scheme and authority together, as a web browser means the word
+  detail
+      `Origin(scheme, authority)` is what `Url` takes as its first parameter: the scheme, typed
+      by its literal name, and the authority, which is `Unset` for a URL without `//`.
+  entry #scheme   the scheme
+  entry #authority   the authority, or `Unset`
+
+entry .Www   the plane of URL paths: `/`-separated, percent-encoded, rooted at `/`
+  detail
+      A sealed trait used as the plane type of `Path on Www`, which `Url#path` returns and
+      which `url / "segment"` extends. Its companion holds the `Filesystem` for the web — named
+      `World Wide Web`, separator `/`, with `.` and `..` as the self and parent segments, and
+      percent-encoding as its escaping — and the root givens: the root is `%`, encoded as `/`,
+      and decoding it cannot fail, since a web path's leading `/` is read as the root whether
+      present or not.
+  refer urticose.Url
+  entry .submissible   lets `%` be the root a web path descends from
+  entry .admissible   lets a `Text` segment be appended to a web path
+  entry .admissible2   lets a `String` literal segment be appended to a web path
+  entry .radical   encodes the web root `%` as `/`
+  entry .eradicable   reads the web root from text: a leading `/` if there is one, else nothing
+      Pure, so a `Path on Www` decodes with no tactic.
+  entry .filesystem   the web as a `Filesystem`: `/`-separated, with `.` and `..`, percent-encoded
+      Not a unique-root filesystem: a path on the web may be relative.
+
+entry .UrlPalette   the colours a styled URL needs: a `Palette` in sRGB with a `link` colour
+    A refinement of `escapade`'s `Palette`, `Palette { type Form = Srgb; def link: Color in
+    Srgb }`, which `teletypeables.urlTeletype` takes contextually to colour a URL. Declared
+    in `urticose.ansi`.
+
+    ```scala
+    import soundness.*
+
+    given palette: UrlPalette = new Palette:
+      type Form = Srgb
+      def background: Color in Srgb = WebColors.Black
+      def foreground: Color in Srgb = WebColors.White
+      def link: Color in Srgb       = WebColors.DeepSkyBlue
+    ```
+
+entry .teletypeables   terminal rendering for URLs, a given to import by name
+  detail
+      A `Teletypeable` says how a value is rendered in an `e"…"` teletype string; this
+      package holds urticose's one instance, for URLs. It is imported by name, since `import
+      soundness.*` brings in no givens from a package, and it merges with the `teletypeables`
+      package of every other library in the umbrella.
+
+      ```scala
+      import soundness.*
+      import teletypeables.urlTeletype
+      ```
+
+      Without the import a URL still renders in an `e"…"` string, through escapade's fallback
+      for any `Showable` type, but unstyled: a lost import degrades silently rather than
+      failing to compile. Declared in `urticose.ansi`.
+  entry .urlTeletype   renders a `Url` underlined, in the palette's `link` colour
+      Needs a `UrlPalette` given in scope for the colour. The plain text of the rendering is
+      the URL's shown form.
+
+entry .Dns   the DNS vocabulary of RFC 1035: names, record types, questions, records, messages and their wire form
+  detail
+      `Dns` is the home of a typed DNS, in the `urticose.dns` source set. A `Dns.Name` is a
+      list of labels which may hold any UTF-8 — including dots and spaces, which DNS-SD
+      service instances (`Jon's Printer._ipp._tcp.local`) rely on — written `dns"…"` or
+      parsed from presentation form, and compared with ASCII case folded, as the DNS compares
+      names. A `Dns.Question` asks for a `Dns.Type` of record at a name; a `Dns.Record` holds
+      a name, a TTL and typed data, one of the `Dns.Rdata` cases over urticose's own addresses
+      (`A(ipv4)`, `Aaaa(ipv6)`, `Ptr`, `Srv`, `Txt`, …) or an `Unknown` carrying its bytes;
+      and a `Dns.Message` carries questions and records with its `Dns.Flags`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val question = Dns.Question(dns"example.com", Dns.Type.A)
+      val query: Data = Dns.Message.query(1, List(question)).in[Data]
+      val record = Dns.Record(dns"example.com", 3600, Dns.Rdata.A(ip"93.184.216.34"))
+      val reply: Data = Dns.Message.response(query.as[Dns.Message], List(record)).in[Data]
+      reply.as[Dns.Message].answers.map(_.rdata.show)   // List(t"93.184.216.34")
+      ```
+
+      Messages encode to and decode from `Data` with `in[Data]` and `as[Dns.Message]`:
+      writing compresses owner names and the names inside the well-known types, and is total,
+      since the length limits are held by `Name` and `Rdata.Txt` from construction; reading
+      is strict, follows compression pointers only backwards, and raises `Dns.Error` for
+      anything malformed. mDNS (RFC 6762) adds two bits which surface as plain fields
+      defaulting to `false`: a question's `unicast` and a record's `flush`. Exchanging
+      messages with a nameserver is `coaxial.dns`'s job; `Dns.resolve` reaches the platform
+      resolver.
+  refer urticose.dns
+  refer urticose.Hostname
+  refer urticose.Ipv4
+  refer urticose.Ipv6
+  entry .Name   a DNS name: labels which may hold any UTF-8, compared with ASCII case folded
+    detail
+        A `Name` is made with `Dns.Name(t"_fury", t"_tcp", t"local")` (labels taken verbatim,
+        so a label may contain a dot), with `dns"_fury._tcp.local"` (presentation form,
+        checked as the code compiles), from a `Hostname`, or by parsing presentation form
+        with `as[Dns.Name]`, where `\.` and `\\` escape a dot or backslash, `\DDD` is a
+        decimal character code, and a trailing dot is tolerated. The limits — 63 octets to a
+        label, 255 to the name — are checked on construction and composition, raising
+        `Dns.Error`, so encoding a name cannot fail.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        dns"Example.COM" == dns"example.com"           // true: equality folds ASCII case
+        dns"Example.COM".labels                        // List(t"Example", t"COM"): the case is kept
+        Dns.Name.parse(t"Jon\\.Printer._ipp._tcp.local").labels.head   // t"Jon.Printer"
+        (Dns.Name(t"_fury", t"_tcp") + Dns.Name.local).show               // t"_fury._tcp.local"
+        dns"Gondor._fury._tcp.local".parent.let(_.show)                   // t"_fury._tcp.local"
+        dns"gondor.local".endsWith(Dns.Name.local)                        // true
+        ```
+
+        `hashCode` folds case as `equals` does, so names may key a `Map`.
+    refer urticose.dns
+    refer urticose.dnsName
+    refer urticose.reverseName
+    entry .Root   the root name, with no labels, shown as `.`
+    entry .local   the name `local`, the mDNS domain
+    entry .apply   a name from labels taken verbatim, or from a `Hostname`
+        `Dns.Name(labels*)` raises `Dns.Error` for an empty label (`EmptyLabel`), one over 63
+        octets (`LongLabel`) or a name over 255 (`LongName`); `Dns.Name(hostname)` cannot
+        fail, since a hostname's labels already satisfy the limits.
+    entry .toExpr   lifts a name into a quoted expression, for macros which build one
+    entry .fold   folds a label's ASCII letters to lowercase, as the DNS compares them
+        Only ASCII letters fold (RFC 4343); every other character compares exactly. Also the
+        comparison DNS-SD applies to TXT keys.
+    entry .parse   reads a name from presentation form, raising `Dns.Error`
+        `.` or empty text is the root; otherwise dot-separated labels, with the escapes `\.`,
+        `\\` and `\DDD`; a malformed escape is `BadEscape`, and the limits apply.
+    entry .showable   renders a name in presentation form, re-escaping dots and backslashes in labels
+        The root renders as `.`; any other name without a trailing dot.
+    entry .inspectable   a debug rendering, the same as the shown form
+    entry .encodable   encodes a name as its presentation form
+    entry .decodable   reads a name from presentation form, raising `Dns.Error`
+        Needs a `Tactic[Dns.Error]`; the given captures it.
+    entry #labels   the labels, leftmost first, with the case they were written in
+    entry #+   `name + suffix`: the labels of both, raising `Dns.Error` if the result exceeds 255 octets
+    entry #prefix   a name with one more label in front, raising `Dns.Error` if too long
+    entry #parent   the name with its first label dropped, or `Unset` for the root
+    entry #endsWith   whether a name ends with another's labels, case folded
+    entry #octets   the length on the wire, uncompressed: each label plus its length byte, plus the terminator
+  entry .Type   a record type by number, with the well-known ones as values
+    detail
+        `Dns.Type(number)` wraps any number; `A`, `Ns`, `Cname`, `Soa`, `Ptr`, `Mx`, `Txt`,
+        `Aaaa`, `Srv`, `Opt`, `Nsec` and `Any` are the recognised ones. A type shows as its
+        mnemonic, or as `TYPE99` (RFC 3597) for an unknown number.
+    entry .A   type 1: an IPv4 address
+    entry .Ns   type 2: a nameserver
+    entry .Cname   type 5: a canonical name
+    entry .Soa   type 6: the start of authority
+    entry .Ptr   type 12: a pointer
+    entry .Mx   type 15: a mail exchange
+    entry .Txt   type 16: text strings
+    entry .Aaaa   type 28: an IPv6 address
+    entry .Srv   type 33: a service location
+    entry .Opt   type 41: the EDNS(0) pseudo-record
+    entry .Nsec   type 47: next secure, as mDNS uses it
+    entry .Any   type 255: any type, in a question
+    entry .showable   renders a type as its mnemonic, or `TYPE1234` for an unknown number
+    entry .inspectable   a debug rendering, the same as the shown form
+    entry #number   the type's number on the wire
+  entry .NetClass   a record's class: `Internet`, `Any`, or any number
+    detail
+        The class field without its top bit, which on the wire is an mDNS flag rather than
+        part of the class — except in an `OPT` record, whose class field is the sender's UDP
+        payload size (`Record#udpPayload`). Shows as `IN`, `ANY` or `CLASS123`.
+    entry .Internet   class 1, `IN`
+    entry .Any   class 255, in a question
+    entry .showable   renders a class as `IN`, `ANY` or `CLASS123`
+    entry .inspectable   a debug rendering, the same as the shown form
+    entry #number   the class's number on the wire
+  entry .Opcode   a message's operation: `Query`, `Notify`, `Update`, or any number
+    detail
+        Part of `Flags`; a query's opcode is `Query` unless set otherwise, and a response
+        echoes its query's.
+    entry .Query   opcode 0, a standard query
+    entry .Notify   opcode 4
+    entry .Update   opcode 5
+    entry #number   the opcode's number on the wire
+  entry .Rcode   a response code: `NoError`, `NxDomain`, `ServFail`, …, or any number
+    detail
+        The low four bits of a response's flags; an `OPT` record's `extendedRcode` carries the
+        high bits. Shows as `NOERROR`, `NXDOMAIN` and so on, or `RCODE12` for an unknown
+        number.
+    entry .NoError   code 0
+    entry .FormErr   code 1: the query could not be interpreted
+    entry .ServFail   code 2: the server failed
+    entry .NxDomain   code 3: the name does not exist
+    entry .NotImp   code 4: the operation is not supported
+    entry .Refused   code 5: the server refused
+    entry .showable   renders a code as its mnemonic, or `RCODE12` for an unknown number
+    entry #number   the code's number on the wire
+  entry .Question   a question in a message: a name, a type and a class
+    detail
+        `Dns.Question(name, rtype, netClass = NetClass.Internet, unicast = false)`. The
+        `unicast` field is mDNS's "QU" bit (RFC 6762 §5.4), set when the querier accepts a
+        unicast response; it is written as the top bit of the class on the wire and is off
+        for ordinary DNS.
+    entry .showable   renders a question as `name class type`
+    entry #name   the name asked about
+    entry #rtype   the record type asked for
+    entry #netClass   the class, `Internet` unless set otherwise
+    entry #unicast   whether a unicast response is accepted (mDNS)
+  entry .Rdata   the typed data of a record: one case per recognised type, or `Unknown`
+    detail
+        A sealed family over urticose's own addresses and names. `Srv`'s port is a bare
+        number, because the transport is a convention of the owner name (`_tcp`/`_udp`)
+        which the data does not see. The cases which carry octets (`Txt`, `Opt`, `Unknown`)
+        compare their bytes structurally, since `Data` itself compares by reference.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        val name = dns"ns.example.com"
+        Dns.Rdata.A(ip"10.0.0.1")
+        Dns.Rdata.Aaaa(ip"2001:db8::1")
+        Dns.Rdata.Mx(10, name)
+        Dns.Rdata.Srv(0, 0, 8080, dns"gondor.local")
+        Dns.Rdata.Txt(t"txtvers=1", t"path=/")
+        Dns.Rdata.Unknown(Dns.Type(99), hex"deadbeef")
+        ```
+    entry .A   an IPv4 address
+      entry #address   the address
+    entry .Aaaa   an IPv6 address
+      entry #address   the address
+    entry .Ptr   a pointer to another name, as a reverse lookup or a DNS-SD service instance
+      entry #target   the name pointed to
+    entry .Cname   the canonical name of an alias
+      entry #target   the canonical name
+    entry .Ns   a nameserver for the zone
+      entry #target   the nameserver's name
+    entry .Mx   a mail exchange, with its preference
+      entry #preference   the preference; lower is tried first
+      entry #exchange   the mail server's name
+    entry .Srv   a service location: priority, weight, port and target host
+      entry #priority   the priority; lower is tried first
+      entry #weight   the weight for choosing among equal priorities
+      entry #port   the port, as a bare number
+      entry #target   the host providing the service
+    entry .Soa   the start of authority: the primary server, the responsible mailbox and the zone's timings
+      entry #mname   the primary nameserver's name
+      entry #rname   the responsible person's mailbox, as a name
+      entry #serial   the zone's serial number
+      entry #refresh   the refresh interval, in seconds
+      entry #retry   the retry interval, in seconds
+      entry #expire   the expiry interval, in seconds
+      entry #minimum   the minimum TTL, in seconds
+    entry .Txt   character strings of at most 255 octets each, which DNS-SD reads as `key=value` pairs
+      detail
+          Made with `Dns.Rdata.Txt(t"a=1", t"b")` from texts (encoded as UTF-8) or from a list
+          of `Data`, either raising `Dns.Error` (`LongString`) for a string over 255 octets,
+          so that encoding cannot fail. An empty list encodes as one empty string. Compares
+          its bytes structurally.
+      entry .apply   a `Txt` from texts, or from a list of `Data`, raising `Dns.Error` for a string over 255 octets
+      entry #strings   the strings, as octets
+      entry #texts   the strings decoded as UTF-8
+    entry .Opt   the EDNS(0) options of an `OPT` record, as `(code, data)` pairs
+      detail
+          The record's other fields are reinterpreted for an `OPT` record: see `Record.opt`.
+          Compares its bytes structurally.
+      entry #options   the options, each a code and its data
+    entry .Unknown   a record type this vocabulary does not interpret, carried as its wire octets
+      detail
+          Round-trips any type (RFC 3597). Compares its bytes structurally.
+      entry #rtype   the record type
+      entry #data   the data, as it was on the wire
+    entry .showable   renders the data as a zone file would: an address, a name, `pref name`, quoted strings, …
+    entry #rtype   the record type this data belongs to
+  entry .Record   a resource record: a name, a TTL, typed data, a class and the mDNS flush bit
+    detail
+        `Dns.Record(name, ttl, rdata, netClass = NetClass.Internet, flush = false)`. The
+        record's type is its data's. The `flush` field is mDNS's cache-flush bit (RFC 6762
+        §10.2): the sender's record set for this name and type replaces whatever a receiver
+        has cached. It is written as the top bit of the class on the wire and is off for
+        ordinary DNS. A TTL read from the wire with its top bit set is taken as zero (RFC
+        2181 §8).
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        val instance = dns"Gondor._fury._tcp.local"
+        Dns.Record(instance, 120, Dns.Rdata.Srv(0, 0, 8080, dns"gondor.local"), flush = true)
+        Dns.Record.opt(udpPayload = 4096, dnssecOk = true)
+        ```
+    entry .opt   an EDNS(0) `OPT` pseudo-record, with the sender's UDP payload size and the DO bit
+        `Dns.Record.opt(udpPayload = 1232, dnssecOk = false, options = Nil)`: the record's
+        name is the root, its class field carries the payload size and its TTL field the
+        extended RCODE, version and DO bit, which `#udpPayload`, `#extendedRcode` and
+        `#dnssecOk` read back.
+    entry .showable   renders a record as `name ttl class type data`, with ` (flush)` when the bit is set
+    entry #name   the owner name
+    entry #ttl   the time to live, in seconds
+    entry #rdata   the typed data
+    entry #netClass   the class, `Internet` unless set otherwise
+    entry #flush   whether a receiver should flush its cache for this name and type (mDNS)
+    entry #rtype   the record type, taken from the data
+    entry #key   the record's identity in a cache: its name, type and data, without TTL or flush bit
+    entry #rdataBytes   the data in its uncompressed wire form
+        What RFC 6762 §8.2.1 compares lexicographically to break a tie between two hosts
+        probing the same name at once.
+    entry #udpPayload   for an `OPT` record, the sender's UDP payload size; otherwise `Unset`
+    entry #extendedRcode   for an `OPT` record, the high bits of the response code; otherwise `Unset`
+    entry #dnssecOk   for an `OPT` record, the DO bit; otherwise `Unset`
+  entry .Flags   the header bits of a message: response or query, opcode, the four flags and the response code
+    detail
+        `Dns.Flags()` is a plain query: every flag off, opcode `Query`, rcode `NoError`.
+        `Message.query` sets `recursionDesired` and `Message.response` sets `response`,
+        echoing the query's opcode and recursion request.
+    entry #response   whether the message is a response (QR)
+    entry #opcode   the operation
+    entry #authoritative   whether the responder is authoritative for the name (AA)
+    entry #truncated   whether the message was cut to fit its transport (TC)
+    entry #recursionDesired   whether the querier asks for recursion (RD)
+    entry #recursionAvailable   whether the responder offers recursion (RA)
+    entry #authentic   whether the data was authenticated (AD)
+    entry #checkingDisabled   whether the querier disabled DNSSEC checking (CD)
+    entry #rcode   the response code
+  entry .Message   a DNS message: an ID, flags, and the question, answer, authority and additional sections
+    detail
+        Built directly, or with `Message.query` and `Message.response`; encoded to `Data`
+        with `in[Data]` and decoded with `as[Dns.Message]`, which raises `Dns.Error` for a
+        malformed message. Encoding is total, since the limits a message could breach are
+        held by `Name` and `Rdata.Txt` from construction; a section of more than 65535
+        entries is written modulo 65536, since no DNS transport could carry it anyway.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        val query = Dns.Message.query(0x1234, List(Dns.Question(dns"example.com", Dns.Type.A)))
+        val bytes: Data = query.in[Data]
+        bytes.as[Dns.Message] == query   // true
+        ```
+    entry .query   a query message: an ID, questions, and recursion desired unless said otherwise
+    entry .response   a reply to a query: the same ID and questions, with answers and a response code
+        `Dns.Message.response(query, answers, authoritative = false, rcode = Rcode.NoError,
+        authority = Nil, additional = Nil)` echoes the query's opcode and recursion request.
+    entry .encodable   writes a message in its RFC 1035 wire form, compressing names
+        Owner names and the names inside the well-known types of RFC 1035 §4.1.4 are
+        compressed with backward pointers; names inside `SRV`, `TXT`, `OPT` and unknown types
+        are not (RFC 2782, RFC 3597).
+    entry .decodable   reads a message from its wire form, raising `Dns.Error` if malformed
+        Needs a `Tactic[Dns.Error]`. Compression pointers are followed only backwards
+        (`BadPointer` otherwise); a message cut short is `Truncated`, record data of the wrong
+        length `BadRdata`, and bytes after the last record `Trailing`. A compressed `SRV`
+        target is accepted, as mDNS senders emit it.
+    entry .showable   renders a message as `query|response id rcode [questions] [answers]`
+    entry #id   the message ID, which a response echoes
+    entry #flags   the header flags
+    entry #questions   the question section
+    entry #answers   the answer section
+    entry #authority   the authority section
+    entry #additional   the additional section
+  entry .resolve   the addresses of a name or hostname, through the platform's resolver
+      `Dns.resolve(name)` or `Dns.resolve(hostname)` asks the platform (through
+      `InetAddress.getAllByName`) for every address of the name and returns them as a list of
+      `Ipv4 | Ipv6`, raising `Dns.Error` with `Unresolved` when the name does not resolve. It
+      reaches the network through the platform's resolver and takes no `Online`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+
+      Dns.resolve(dns"localhost")
+      Dns.resolve(host"example.com").map(_.show)
+      ```
+  entry .Error   raised when a DNS name or message is not valid, or a name does not resolve
+    detail
+        Error 53: _the DNS message is not valid because `reason`_. Raised by name construction
+        and parsing, by `Rdata.Txt`, by decoding a message from `Data`, by `Dns.resolve`, and
+        as a compile error by `dns"…"`.
+    entry .Reason   why a name, message or lookup failed
+      detail
+          `Truncated(offset)`, `BadPointer(offset)`, `BadLabel(offset, kind)`, `BadRdata(rtype,
+          offset)` and `Trailing(offset)` for a malformed message; `LongLabel(label)`,
+          `LongName(name)`, `EmptyLabel(text)` and `BadEscape(text)` for a name; `LongString
+          (length)` for a TXT string over 255 octets; `Unresolved(name)` from `Dns.resolve`;
+          and `Timeout` and `Mismatch(id)`, which a transport such as `coaxial.dns` raises when
+          no response arrives or one arrives with the wrong ID. Each has a message through
+          `Reason.communicable`.
+      entry .communicable   renders each reason as a message
+    entry #reason   why it failed
+
+entry .dns   the `dns"…"` interpolator: a DNS name in presentation form, checked as the code compiles
+    `dns"_fury._tcp.local"` is a `Dns.Name`, parsed as `Dns.Name.parse` does — with `\.`,
+    `\\` and `\DDD` escapes and an optional trailing dot — and a name which breaks the limits
+    is a compile error carrying the `Dns.Error` message. It takes no substitutions. Declared
+    in `urticose.dns`.
+
+    ```scala
+    import soundness.*
+
+    dns"_fury._tcp.local" == Dns.Name(t"_fury", t"_tcp", t"local")
+    dns"a..b"   // does not compile
+    ```
+
+entry .dnsName   a `Hostname` as a `Dns.Name`, label for label
+    An extension on `Hostname`, in `urticose.dns`: `host"example.com".dnsName` is
+    `dns"example.com"`. It cannot fail, since a hostname's labels already satisfy the DNS
+    limits.
+
+entry .reverseName   the owner name of an address's reverse-mapping `PTR` record
+    An extension on `Ipv4 | Ipv6`, in `urticose.dns`: an IPv4 address's octets reversed under
+    `in-addr.arpa` (RFC 1035 §3.5), or an IPv6 address's 32 nibbles reversed under `ip6.arpa`
+    (RFC 3596 §2.5).
+
+    ```scala
+    import soundness.*
+
+    ip"192.0.2.1".reverseName.show   // t"1.2.0.192.in-addr.arpa"
+    ip"2001:db8::1".reverseName.show // t"1.0.0.…0.8.b.d.0.1.0.0.2.ip6.arpa"
+    ```
+
+entry .internal   the opaque types' home and the macro implementations behind the core interpolators
+  hidden
+  detail
+      Not for direct use: the object exists so that the opaque types `Ipv4`, `MacAddress`,
+      `DnsLabel` and `Port` (in `Opaques`), the case classes `Ipv6`, `Ipv4Subnet` and
+      `Ipv6Subnet`, and their extension methods have a stable home where the opaque types'
+      representations are visible, and so that the macros have one. The types are exported
+      to the `urticose` package, where their pages are; the extension methods declared here
+      resolve on those types through the implicit scope of their prefix.
+  entry .Opaques   the opaque types `Ipv4`, `MacAddress`, `DnsLabel` and `Port`, with their extensions
+    hidden
+    detail
+        Each type's page under the `urticose` package has the full account. The extension
+        methods on the types are declared here, beside their opaque definitions.
+    entry .Ipv4   an IPv4 address over `Int`; see `urticose.Ipv4`
+      detail
+          The companion of the opaque type `Ipv4`, exported with it to the `urticose` package.
+      entry .underlying   declares the opaque type's representation, `Int`, for the generic machinery
+      entry .showable   renders an address in dotted-quad form, `192.168.0.1`
+      entry .inspectable   a debug rendering, the dotted-quad form
+          Dotted-quad notation identifies an IPv4 address on sight; without this instance an
+          address would inspect as the `Int` it erases to.
+      entry .encodable   encodes an address as its dotted-quad text
+      entry .decodable   reads an address from dotted-quad text, raising `IpAddress.Error`
+          Needs a `Tactic[IpAddress.Error]`; the given captures it. Four dot-separated groups are
+          required (`Ipv4WrongNumberOfGroups`), each a number (`Ipv4ByteNotNumeric`) in the range
+          0–255 (`Ipv4ByteOutOfRange`).
+      entry .dataEncodable   encodes an address as its four octets in network order
+      entry .dataDecodable   reads an address from four octets, raising `IpAddress.Error` otherwise
+          `Ipv4WrongNumberOfBytes` for any `Data` whose length is not 4.
+      entry .Localhost   the loopback address `127.0.0.1`
+      entry .apply   an address from four octets, or from its packed `Int`
+          `Ipv4(192, 168, 0, 1)` packs four octets (each masked to its low eight bits);
+          `Ipv4(int)` reinterprets a packed integer, as `Ipv4#int` produces.
+      entry .parse   reads an address from dotted-quad text, as `.decodable` does
+    entry .MacAddress   a MAC address over `Long`; see `urticose.MacAddress`
+      detail
+          The companion of the opaque type `MacAddress`, exported with it to the `urticose`
+          package.
+      entry .underlying   declares the opaque type's representation, `Long`, for the generic machinery
+      entry .showable   renders an address as six lowercase hexadecimal pairs joined with `-`
+      entry .inspectable   a debug rendering, the same dashed form
+      entry .encodable   encodes an address as its dashed text
+      entry .decoder   reads an address from dashed text, raising `MacAddress.Error`
+          Needs a `Tactic[MacAddress.Error]`; the given captures it. This given is named
+          `decoder`, where the library's other text decoders are `decodable`.
+      entry .apply   an address from six bytes, or from its packed `Long`
+          `MacAddress(b0, b1, b2, b3, b4, b5)` packs six bytes, each masked so that a byte of
+          0x80 or above does not sign-extend; `MacAddress(long)` reinterprets a packed value.
+      entry .parse   reads an address from dashed text, as `.decoder` does
+      entry .Error   raised when text is not a valid MAC address
+        detail
+            Error 532: _the MAC address is not valid because `reason`_. Raised by
+            `as[MacAddress]` and, as a compile error, by `mac"…"`.
+        entry .Reason   why a MAC address was rejected
+          detail
+              `WrongGroupCount(count)` for other than six dash-separated groups,
+              `WrongGroupLength(group, length)` for a group not of two characters (the group is
+              numbered from 0), and `NotHex(group, content)` for a group which is not hexadecimal.
+          entry .communicable   renders each reason as a message
+        entry #reason   why the address was rejected
+    entry .DnsLabel   a hostname label over `Text`; see `urticose.DnsLabel`
+      detail
+          The companion of the opaque type `DnsLabel`, exported with it to the `urticose`
+          package.
+      entry .showable   renders a label as its text
+      entry .apply   wraps text as a label, unchecked
+    entry .Port   a port over `Int & Port.Type`; see `urticose.Port`
+      detail
+          The companion of the opaque type `Port`, exported with it to the `urticose` package.
+      entry .underlying   declares the opaque type's representation, `Int`, for the generic machinery
+      entry .showable   renders a port as its number
+      entry .encodable   encodes a port as its number's text
+      entry .inspectable   a debug rendering, `⌗8080`, for a port of any refinement
+          Parameterised over every subtype of `Port`, since a port is routinely refined more than
+          once (`Port over Tcp of 25`) and a typeclass's `Self` is invariant.
+      entry .showableOver   renders a transport-refined `Port over transport` as its number
+          Needed beside `.showable` because `Self` is invariant: the bare instance does not cover
+          `Port over Tcp`. A port refined further still, `Port over Tcp of 25`, is not covered
+          by either and falls back to its `toString` when shown; `number.show` is the sure form.
+      entry .decodable   reads a port from its number's text, raising `Number.Error` or `Port.Error`
+          Needs a `Tactic[Number.Error]` for text which is not a number and a
+          `Tactic[Port.Error]` for one outside 1–65535. The result is an unrefined `Port`.
+      entry .unsafe   casts a number to a `Port over transport` with no range check
+          For the interpolator macros, which have already checked the number; `.apply` is the
+          checked form.
+      entry .apply   `Port[Tcp](8080)`, a checked port number; `Port[Tcp]()`, one the system reports unused
+          `Port[transport](number)` raises `Port.Error` unless the number is in 1–65535; the
+          transport is given explicitly or inferred from the expected type (`val p: Udp.Port =
+          Port(53)`). `Port[transport]()` needs a `transport is Allocatable` — `Tcp.allocatable`
+          or `Udp.allocatable`; none exists yet for `Quic` — and binds then releases a probe
+          socket of that kind to find an ephemeral port, so the result was free a moment ago but
+          is not reserved.
+      entry .Error   raised when a port number is outside 1–65535
+        detail
+            Error 139: _the port is not in the valid range_. Raised by `Port[transport](number)`
+            and by decoding a port from text; the interpolators `tcp"…"` and `udp"…"` report an
+            out-of-range number as a compile error instead.
+      entry .Type   the structural bound of `Port`: the type members which refine it
+        detail
+            A sealed trait with two type members, which `Port over Tcp of 25` sets through the
+            `over` and `of` refinements of `prepositional`.
+        entry #Transport   the protocol: `Tcp`, `Udp`, `Quic`, …
+        entry #Topic   the literal port number, for a port whose number is known at compile time
+    entry .number   a `Port`'s number
+    entry .privileged   whether a `Port` is below 1024
+    entry .byte0   the first byte of a `MacAddress`, or the first octet of an `Ipv4`
+    entry .byte1   the second byte of a `MacAddress`, or the second octet of an `Ipv4`
+    entry .byte2   the third byte of a `MacAddress`, or the third octet of an `Ipv4`
+    entry .byte3   the fourth byte of a `MacAddress`, or the fourth octet of an `Ipv4`
+    entry .byte4   the fifth byte of a `MacAddress`
+    entry .byte5   the sixth byte of a `MacAddress`
+    entry .text   a `DnsLabel`'s text, or a `MacAddress` as six dashed hexadecimal pairs
+    entry .long   a `MacAddress` as its packed `Long`
+    entry .subnet   `ipv4.subnet(size)`: the `Ipv4Subnet` of a prefix length, host bits masked
+    entry .int   an `Ipv4` as its packed `Int`
+  entry .subnetPrefix   reads a subnet prefix from text and checks its range, for the subnet parsers
+  entry .Ipv4Subnet   an IPv4 subnet; see `urticose.Ipv4Subnet`
+    detail
+        The case class `Ipv4Subnet` and its companion, exported to the `urticose` package.
+    entry .showable   renders a subnet as `address/prefix`
+    entry .inspectable   a debug rendering, the same as the shown form
+    entry .encodable   encodes a subnet as `address/prefix` text
+    entry .decodable   reads a subnet from `address/prefix` text, raising `IpAddress.Error`
+        Needs a `Tactic[IpAddress.Error]`: `SubnetWrongFormat` without exactly one `/`,
+        `SubnetPrefixNotNumeric`, `Ipv4SubnetPrefixOutOfRange` beyond 32, and the address's
+        own reasons.
+    entry .parse   reads a subnet from text, as `.decodable` does
+    entry #ipv4   the network address, with its host bits masked to zero
+    entry #size   the prefix length, 0–32
+  entry .Ipv6   an IPv6 address; see `urticose.Ipv6`
+    detail
+        The case class `Ipv6` and its companion, exported to the `urticose` package.
+    entry .Localhost   the loopback address `::1`
+    entry .dataEncodable   encodes an address as its sixteen octets in network order
+        The high eight octets are `#highBits`, as `Ipv6.apply` packs the first four groups.
+    entry .dataDecodable   reads an address from sixteen octets, raising `IpAddress.Error` otherwise
+        `Ipv6WrongNumberOfBytes` for any `Data` whose length is not 16.
+    entry .hostShowable   renders a `Host`: a hostname or IPv4 address plainly, an IPv6 address in brackets
+        The `Showable` for the union `Hostname | Ipv4 | Ipv6`, housed here because a union has
+        no companion. An IPv6 address renders as `[2001:db8::1]`, the form a URL's authority
+        takes.
+    entry .hostDecodable   reads a `Host` from text: an IPv6 address, else IPv4, else a hostname
+        Tries each in turn and raises `Hostname.Error` when the text is none of them; needs a
+        `Tactic[Hostname.Error]`.
+    entry .decodable   reads an address from colon-separated hexadecimal text, raising `IpAddress.Error`
+        Needs a `Tactic[IpAddress.Error]`. The reasons: `Ipv6WrongNumberOfGroups` for a full
+        address without eight groups, `Ipv6TooManyNonzeroGroups` for a `::` address with more
+        than seven, `Ipv6MultipleDoubleColons`, `Ipv6GroupWrongLength` for a group of more than
+        four digits, and `Ipv6GroupNotHex`.
+    entry .toExpr   lifts an address into a quoted expression, for macros which build one
+    entry .showable   renders an address in its shortest form, with `::` for the longest zero run
+        Each group is lowercase hexadecimal without leading zeroes; the longest run of two or
+        more zero groups collapses to `::`, so `::1`, `8::` and `::` are the loopback, an
+        address with only its first group set, and the unspecified address.
+    entry .inspectable   a debug rendering, the same shortest form
+    entry .apply   an address from eight 16-bit groups
+        `Ipv6(g0, g1, g2, g3, g4, g5, g6, g7)`, each group masked to 16 bits; the case-class
+        constructor `Ipv6(highBits, lowBits)` takes the two packed halves.
+    entry .parseGroup   reads one group of one to four hexadecimal digits, raising `IpAddress.Error`
+    entry .pack   packs a list of 16-bit groups into a `Long`, high group first
+    entry .parse   reads an address from text, as `.decodable` does
+    entry #highBits   the first four groups, packed into a `Long`
+    entry #lowBits   the last four groups, packed into a `Long`
+  entry .Ipv6Subnet   an IPv6 subnet; see `urticose.Ipv6Subnet`
+    detail
+        The case class `Ipv6Subnet` and its companion, exported to the `urticose` package.
+    entry .showable   renders a subnet as `address/prefix`, the address in its shortest form
+    entry .inspectable   a debug rendering, the same as the shown form
+    entry .encodable   encodes a subnet as `address/prefix` text
+    entry .decodable   reads a subnet from `address/prefix` text, raising `IpAddress.Error`
+        Needs a `Tactic[IpAddress.Error]`: `SubnetWrongFormat`, `SubnetPrefixNotNumeric`,
+        `Ipv6SubnetPrefixOutOfRange` beyond 128, and the address's own reasons.
+    entry .parse   reads a subnet from text, as `.decodable` does
+    entry #ipv6   the network address, with its host bits masked to zero
+    entry #size   the prefix length, 0–128
+  entry .bytes   the octets of an `Ipv4 | Ipv6` in network order, four or sixteen, as `Data`
+      One extension over the union, since a given cannot target a union, so it resolves for
+      either address alone and for a `Host`-like union.
+  entry .subnet   `ipv6.subnet(size)`: the `Ipv6Subnet` of a prefix length; and the macro behind `subnet"…"`
+  entry .emailAddress   the macro behind `email"…"`
+  entry .hostname   the macro behind `host"…"`
+  entry .portService   the macro behind `tcp"…"` and `udp"…"`: a number or IANA service name to a port
+      Looks a name up in the service-names table bundled as a classpath resource (or
+      fetched from IANA if the resource is missing), for the transport asked.
+  entry .ip   the macro behind `ip"…"`
+  entry .mac   the macro behind `mac"…"`
+
+entry .protointernal   the macro and runtime behind the `url"…"` interpolator
+  hidden
+  detail
+      Not for direct use. `refined` is the macro: it checks the literal at compile time with
+      placeholder substitutions, and splices a runtime parse with the real ones, typed to the
+      scheme the literal names. `Runtime` is the interpolator state machine the spliced code
+      calls, and `UrlInterpolatorError` is what it throws when a substituted value makes the
+      URL invalid.
+  entry .UrlInterpolatorError   thrown when a runtime substitution makes the URL invalid
+    entry #detail   the message
+  entry .Runtime   the interpolator's state machine: parse, substitute, insert and complete
+    hidden
+    detail
+        Not for direct use: the methods the spliced code of `url"…"` calls.
+    entry .initial   the empty state
+    entry .parse   appends a literal part
+    entry .skip   stands in for a substitution with no known placeholder
+    entry .substitute   stands in for a substitution with its placeholder, at compile time
+    entry .insert   splices a `Url.Fragment`: a port after a colon, or text encoded or raw
+    entry .complete   parses the accumulated text as a `Url[Label]`
+  entry .refined   the macro behind `url"…"`

@@ -1,0 +1,201 @@
+tel 1.0
+
+base prescience
+import soundness
+
+info   a proof of concept: typeclass instances that generate code at macro expansion, evaluated live by the deriving macro
+detail
+    _Prescience_ demonstrates one technique: a typeclass, `Inlinable`, whose primary method is a
+    code generator — it takes an `Expr` of its input and returns an `Expr` of the decoded value —
+    so that a deriving macro can splice a hand-written instance's code directly into the code it
+    generates, rather than a call to the instance at runtime. It is the mechanism behind the
+    `Inlinable` typeclasses of the format libraries' staged readers and writers (`jacinta`,
+    `breviloquence`, `locomotion`, `stratiform`'s BinTEL), proved here in isolation over a toy
+    wire format.
+
+    The difficulty is that a macro holds only an `Expr` of an instance it summons, while it needs
+    the live instance to call `read` on. The deriving macro, `Prescience.read`, obtains it in up
+    to three tiers, per field:
+
+    - **Tier A**: an instance which is a reference to a precompiled static object, or a
+      parameterless member of one, is loaded through the macro classloader and used directly,
+      as the compiler's own splice interpreter loads a macro implementation.
+    - **Tier B** (`Prescience.readStaging` only): an instance which implicit search can find
+      from global scope (companions and package-level givens on the classpath), including a
+      conditional given, is summoned inside a fresh in-macro `staging.Compiler` and run, at the
+      cost of a full compiler run per instance, reported as an info diagnostic.
+    - **Runtime**: anything else — a lexically scoped given, or one compiled in the same run as
+      the use site — gets a spliced call to its `Inlinable#readRuntime` instead.
+
+    ```scala
+    import soundness.*
+    import prescience.*
+    import prescience.inlinables.{int, string, boolean}
+
+    case class Order(id: Int, name: String, active: Boolean)
+
+    Prescience.read[Order]("7,widget,true")   // Order(7, "widget", true)
+    ```
+
+    An instance defined in the compilation run that expands the macro is never evaluated,
+    in either tier: its classfile either does not exist yet or is stale from a previous
+    incremental compile, so it always takes the runtime tier, and clean and incremental builds
+    agree. The output is the same in every tier; only where the code was generated differs.
+
+    The library has two source sets, both JVM-only, since the technique needs the macro
+    classloader and the `scala3-compiler` and `scala3-staging` artifacts: `prescience.core`
+    (`Inlinable`, `Prescience` and the macro) and `prescience.leaves` (sample instances,
+    compiled one stage earlier than any use site, so that tier A can load them). Nothing is
+    exported to the `soundness` umbrella: import `prescience.*`, and the sample givens by name
+    from `prescience.inlinables`, since `import pkg.*` does not import givens.
+
+refer prescience.Inlinable
+refer prescience.Prescience
+refer prescience.inlinables
+
+entry .Inlinable   a typeclass whose instances generate the code which reads their type, for a deriving macro to inline
+  detail
+      `T is Inlinable` has two methods which must agree: `#read`, which is run at macro expansion
+      and returns the *code* reading a `T` from a `String` expression, and `#readRuntime`, the
+      same reading done at runtime, which the deriving macro calls when it cannot obtain the
+      live instance at expansion time.
+
+      ```scala
+      import soundness.*
+      import prescience.*
+      import scala.quoted.*
+
+      case class Rank(value: Int)
+
+      object Rank:
+        given inlinable: (Rank is Inlinable) = new Inlinable:
+          type Self = Rank
+
+          def read(input: Expr[String])(using Quotes): Expr[Rank] =
+            '{Rank(java.lang.Integer.parseInt($input.trim.nn))}
+
+          def readRuntime(input: String): Rank =
+            Rank(java.lang.Integer.parseInt(input.trim.nn))
+      ```
+
+      Whether `#read` is used depends on where the instance is: a static object or a member of
+      one, compiled earlier than the use site, is evaluated by `Prescience.read`; a conditional
+      given in a companion only by `Prescience.readStaging`; anything compiled in the same run,
+      or scoped lexically, only ever through `#readRuntime`.
+  refer prescience.Prescience
+  entry #read   the code reading a value of this type from a `String` expression, generated at macro expansion
+      Called by the deriving macro with an `Expr[String]` of the field's text and a `Quotes`; the
+      returned `Expr[Self]` is spliced into the generated reader in place of any call.
+  entry #readRuntime   reads a value of this type from text at runtime, when the instance cannot be evaluated at expansion
+      Must give the same result as the code `#read` generates, since which of the two is used
+      depends on where the instance is defined and how the program is being compiled.
+
+entry .Prescience   the deriving macros: a case-class reader assembled from its fields' `Inlinable` instances
+  detail
+      Each method derives, for a non-generic case class, a reader from a line of comma-separated
+      fields (a toy format: the mechanism is the point): the input is split once, and each
+      field's code comes from its type's `Inlinable` instance, inlined when the instance can be
+      evaluated at expansion time and a call to `Inlinable#readRuntime` otherwise.
+
+      ```scala
+      import soundness.*
+      import prescience.*
+      import prescience.inlinables.int
+
+      case class Point(x: Int, y: Int)
+
+      Prescience.read[Point]("3,4")   // Point(3, 4)
+      ```
+
+      A type which is not a case class, a generic case class, or a field type with no
+      `Inlinable` in scope, is a compile error.
+  refer prescience.Inlinable
+  entry .read   reads a case class from comma-separated text, inlining every statically evaluable field instance
+      Tier A only: an instance which resolves to a precompiled static object, or a
+      parameterless member of one, contributes its `Inlinable#read` code; any other instance is
+      called at runtime through `Inlinable#readRuntime`.
+  entry .readStaging   as `Prescience.read`, also evaluating conditional and derived givens under an in-macro compiler
+      For each field whose instance tier A cannot evaluate, runs the implicit search inside a
+      fresh `scala.quoted.staging.Compiler` over the macro classpath (less the current output
+      directory) and uses the instance it yields. This sees only givens reachable from global
+      scope (companions and package-level givens on the classpath), not lexically scoped ones,
+      works only for non-generic class types, and costs a full in-memory compiler run per
+      instance, each reported as an info diagnostic with its duration. A field it cannot serve
+      takes the runtime tier.
+
+entry .internal   the macro implementation behind `Prescience.read` and `Prescience.readStaging`
+  hidden
+  detail
+      Not for direct use. Its public `readStaged` is the macro `Prescience.read` and
+      `Prescience.readStaging` splice, with a flag choosing whether tier B runs.
+  entry .readStaged   the deriving macro: a reader for a case class, with or without the staging tier
+      Not for direct use; called from the splices of `Prescience.read` and `Prescience.readStaging`.
+
+entry .inlinables   sample `Inlinable` givens for `Int`, `String` and `Boolean`, as members of a static object
+  detail
+      Given aliases defined in `prescience.leaves`, so that they are compiled before any use site
+      and tier A can evaluate them through the member-access path (load the object, invoke the
+      parameterless accessor). Import them by name, since `import prescience.inlinables.*` does
+      not import givens:
+
+      ```scala
+      import soundness.*
+      import prescience.*
+      import prescience.inlinables.{int, string, boolean}
+
+      case class Order(id: Int, name: String, active: Boolean)
+
+      Prescience.read[Order]("7,widget,true")
+      ```
+
+      The instances' `Inlinable#readRuntime` methods throw an `AssertionError` by design, so a
+      reader which silently fell back to the runtime tier fails loudly: they are demonstrations
+      of tier A, not general-purpose instances.
+  refer prescience.IntInlinable
+  entry .int   `Int is Inlinable`, as `IntInlinable`
+  entry .string   `String is Inlinable`, as `StringInlinable`
+  entry .boolean   `Boolean is Inlinable`, as `BooleanInlinable`
+
+entry .IntInlinable   a static `Int is Inlinable` which parses the trimmed field text as an integer
+  detail
+      The generated code is `Integer.parseInt` of the trimmed text. Its `#readRuntime` throws an
+      `AssertionError`, since it exists to prove that tier A evaluated it at expansion time.
+  entry #Self   `Int`
+  entry #read   the code which parses a trimmed `String` expression as an `Int`
+  entry #readRuntime   always throws: this instance is meant only to be inlined
+
+entry .StringInlinable   a static `String is Inlinable` whose generated code is the field text itself
+  detail
+      Its `#readRuntime` throws an `AssertionError`, since it exists to prove that tier A
+      evaluated it at expansion time.
+  entry #Self   `String`
+  entry #read   the field's `String` expression, unchanged
+  entry #readRuntime   always throws: this instance is meant only to be inlined
+
+entry .BooleanInlinable   a static `Boolean is Inlinable` which parses the trimmed field text as a Boolean
+  detail
+      The generated code is `java.lang.Boolean.parseBoolean` of the trimmed text, so anything but
+      `true` (in any case) is `false`. Its `#readRuntime` throws an `AssertionError`.
+  entry #Self   `Boolean`
+  entry #read   the code which parses a trimmed `String` expression as a `Boolean`
+  entry #readRuntime   always throws: this instance is meant only to be inlined
+
+entry .Celsius   a sample type whose conditional companion given only the staging tier can evaluate
+  detail
+      `Celsius(degrees)` has a companion `Inlinable` given with a `DummyImplicit` parameter, so a
+      summoned instance is an application rather than a static path, and tier A cannot load it;
+      `Prescience.readStaging` resolves and runs it under the in-macro compiler, and inlines its
+      code. Its `Inlinable#readRuntime` throws, so a successful read proves the staging tier did
+      the work.
+
+      ```scala
+      import soundness.*
+      import prescience.*
+      import prescience.inlinables.string
+
+      case class Reading(celsius: Celsius, station: String)
+
+      Prescience.readStaging[Reading]("21,Kew")   // Reading(Celsius(21), "Kew")
+      ```
+  entry .inlinable   the conditional `Celsius is Inlinable` given, evaluable only by `Prescience.readStaging`
+  entry #degrees   the temperature, in whole degrees Celsius

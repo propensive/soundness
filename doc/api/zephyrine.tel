@@ -1,0 +1,1919 @@
+tel 1.0
+
+base zephyrine
+import soundness
+
+info   the streaming kernel: cursors for parsers, pull and push endpoints, ducts, producers and the buffering policy
+detail
+    _Zephyrine_ is the layer every Soundness parser and serializer stands on. It supplies
+    three things: a **`Cursor`**, the one-element-at-a-time view a parser reads through, over
+    a single contiguous buffer which refills from its source however the source was chunked;
+    the **streaming kernel** — a `Stream` is a pull endpoint, an `Intake` a push endpoint, a
+    `Duct` a synchronous transformation attachable to either, and a `Conduit` the one place
+    data crosses between threads — with demand (`Credit`) as the backpressure message; and a
+    **`Producer`**, the sink a serializer writes into, which the same writing code drives
+    either synchronously (`Producer.collect`) or as a stream of blocks (`Producer.apply`,
+    `Producer.sink`, `Producer.utf8`).
+
+    The format libraries parse over a `Cursor`: jacinta's JSON parser, stratiform's TEL
+    parser, locomotion's Protobuf parser, breviloquence's CBOR parser, xylophone, ypsiloid
+    and honeycomb each extend `Cursor.Snapshot`, keeping the cursor's buffer, read position
+    and write end in their own fields for register-resident hot loops, and sync back to the
+    cursor at every refill, mark and error. A protocol parser (telekinesis's request-head
+    parser) uses the cursor directly, through `peek`, `expect`, `seek`, `hold`, `mark` and
+    `grab`. On the writing side, those same formats render through a `Producer[Text]` or
+    `Producer[Data]`, so `show`, `emit` and `lend` share one writer.
+
+    ```scala
+    import soundness.*
+
+    val cursor = Cursor(Iterator(t"hello ", t"world"))
+    cursor.peek == 'h'        // true: the current character, without consuming it
+    cursor.advance()          // past it, never touching the source
+    cursor.position           // Sec: the second character
+
+    val word: Text = cursor.hold:
+      val start = cursor.mark
+      while cursor.peek != ' ' do cursor.advance()
+      cursor.grab(start, cursor.mark)   // t"ello", materialized across the two chunks
+    ```
+
+    A `Cursor` is built over a whole value (`Cursor(data)`, zero-copy for `Data`), an
+    `Iterator` of chunks, a `Chain` of chunks, a `Stream`, or a loader thunk, and its medium
+    is anything `Addressable`: `Data` (byte cursors), `Text` (char cursors) or a frozen array
+    of records. The **blocking-lookahead hazard** governs every parser on a live connection:
+    `more`, `finished`, `peek` and `next()` refill from the source once the buffer drains,
+    and a refill blocks until the source yields; a parser which stops at a message boundary
+    with no end-of-stream between messages must consume the final delimiter with `peek` (or
+    `expect`) then `advance()`, which never refills, and bound its reads with `available`,
+    `take` or an explicit length.
+
+    Streams compose on the consumer's thread with no queues: `stream.via(stage)` attaches any
+    value with a `Ductile` instance (a `Charset`, a `Codepage`, a compression scheme, a
+    cipher mode), and a terminal — `memoize`, `drain`, `gather`, `chunks`, `records` — drains
+    and closes it. A `Stream` is an exclusive capability: it is read once by one owner, and
+    the modules which use it compile with capture and separation checking, so aliasing a
+    stream or reading it after a consuming operation is a compile error.
+
+    ```scala
+    import soundness.*
+    import codepages.utf8Codepage
+    import charsets.utf8Charset
+
+    val bytes: Data = t"The quick brown fox".in[Data]
+    val text: Text = bytes.stream.via(summon[Charset]).memoize
+    bytes.stream.gather(0L): region => (count, range) => count + (range: Interval).size
+    ```
+
+    Every stage sizes its buffers through the `Buffering` given in scope (`Buffering.standard`
+    unless another is provided): 4096 bytes, 2048 chars or 256 records per staging block,
+    sixteen staging blocks per asynchronous transfer, and a conduit depth of sixteen.
+
+    The library is one component, `zephyrine.core`, for the JVM, Scala.js and Scala Native,
+    with the SWAR word read behind `Words.load` supplied per platform: `core-jvm` reads a
+    word through a byte-array `VarHandle`, `core-portable` by shift-and-or. Everything in
+    the export list is in the `soundness` umbrella, and the `lineation` and `parsing` choice
+    packages merge with the umbrella's own. `Region` and `Slate` are deliberately *not*
+    exported (their dependent-typed inline extensions do not survive export forwarders), nor
+    are the kernel's internals `Utf8`, `Words`, `WordLoad`, `Blockpool`, `Handoff` and
+    `Freelist`: these are reached as `zephyrine.Region`, `zephyrine.Utf8` and so on.
+
+    Givens imported by name, since `import soundness.*` imports none of them: a `Lineation`
+    which tracks line and column (`import lineation.linefeedChar` or `linefeedByte`; the
+    companion defaults `Lineation.untrackedChars`/`untrackedData` track nothing), and
+    `import parsing.trackPositions`, which makes the position-aware parsers record source
+    positions for `locate`.
+
+    Indexing discipline: a `Cursor`'s buffer is read through `lend`, which lends a `Region`
+    with a branded `Interval in region.type` so every index a consumer can form is in range,
+    or — for a trusted hot loop which snapshots the buffer into fields — through the
+    `unsafeBuffer`/`unsafePos`/`unsafeWriteEnd` triple behind an `Unsafe` token, whose
+    reference is valid only until the next operation which may refill, compact or grow the
+    buffer. `readUnchecked` and `charAt` reads inside the kernel are each justified by a
+    comment naming the invariant which keeps the index in range; consumer code should prefer
+    the branded combinators.
+
+refer zephyrine.Cursor
+refer zephyrine.Stream
+refer zephyrine.Intake
+refer zephyrine.Duct
+refer zephyrine.Producer
+refer zephyrine.Buffering
+refer zephyrine.Addressable
+
+entry .Cursor   a position over a buffered sequence of bytes, chars or records, refilling from its source as it advances
+  detail
+      A `Cursor[data, cap]` reads one element at a time from a single contiguous buffer, which
+      it refills from its source as the read position passes the end — so a parser sees one
+      unbroken run of elements however the source was chunked. `data` is the medium (`Data`,
+      `Text`, or a frozen `Array[record]^{}`) and `cap^` is the capture set of the loader:
+      `{}` for a cursor over a value, an iterator, a chain or a stream, or the capabilities a
+      streaming loader draws from, so a cursor over a file-reading loader cannot leave the
+      scope of the file.
+
+      A cursor is a stateful capability: a bare `Cursor` reference may only query `position`,
+      `line`, `column` and `available`, while the exclusive `Cursor[…]^` which the factories
+      return is needed for every navigating method (`advance`, `next`, `more`, `seek`,
+      `hold`, `mark`, `cue`, `take`…). It is `caps.Mutable`, so a consumer may hold one in a
+      field (a pooled parser does); a cursor built over an iterator or a stream is best used
+      inline, as a `consume` argument, rather than bound and reused.
+
+      ```scala fuel
+      frame
+        label A cursor over two chunks of text
+        code
+            import soundness.*
+
+            val cursor = Cursor(Iterator(t"name = ", t"Zephyrine"))
+            cursor.peek == 'n'   // true: the current character, without consuming it
+      frame
+        label Advance to the delimiter, materializing the key
+        code
+            import soundness.*
+
+            val cursor = Cursor(Iterator(t"name = ", t"Zephyrine"))
+
+            val key: Text = cursor.hold:
+              val start = cursor.mark
+              while cursor.peek != ' ' do cursor.advance()
+              cursor.grab(start, cursor.mark)   // t"name"
+      frame
+        label Take a snapshot, look ahead, and restore it
+        code
+            import soundness.*
+
+            val cursor = Cursor(Iterator(t"name = ", t"Zephyrine"))
+
+            val key: Text = cursor.hold:
+              val start = cursor.mark
+              while cursor.peek != ' ' do cursor.advance()
+              cursor.grab(start, cursor.mark)   // t"name"
+
+            val assigned: Boolean = cursor.lookahead:
+              cursor.next() && cursor.peek == '='   // true, and the cursor is cued back to the space
+      frame
+        label Consume the separator and the value, across the chunk boundary
+        code
+            import soundness.*
+
+            val cursor = Cursor(Iterator(t"name = ", t"Zephyrine"))
+
+            val key: Text = cursor.hold:
+              val start = cursor.mark
+              while cursor.peek != ' ' do cursor.advance()
+              cursor.grab(start, cursor.mark)   // t"name"
+
+            val assigned: Boolean = cursor.lookahead:
+              cursor.next() && cursor.peek == '='
+
+            cursor.consume(())("= ")                 // steps over the separator, stopping on its last character
+            cursor.advance()
+            val value: Text = cursor.take(t"")(9)   // t"Zephyrine", refilled from the second chunk
+            cursor.finished                          // true
+      ##
+      ```
+
+      Marks may be taken only inside `#hold`, which pins the buffer from the hold's start so
+      that compaction cannot discard a marked region; outside a hold the cursor is free to
+      drop what it has passed. `#grab` materializes the elements between two marks as one
+      value, `#clone` copies them into a builder, `#slice` lends the storage, and `#cue`
+      returns to a mark.
+
+      **Blocking-lookahead hazard.** Every operation which asks whether an element exists —
+      `#more`, `#finished`, `.peek`, and `#next` (whose trailing `more` runs after consuming)
+      — refills from the source once the buffer drains, and a refill blocks until the source
+      yields data or ends. On finite input that is prompt and harmless; on a live connection
+      with no end-of-stream between messages (HTTP keep-alive, any request/response
+      protocol), a parser must never look past a message's final element, since the peer
+      sends nothing more until it is answered. Consume the final delimiter with `.peek`
+      then `#advance` (as `.expect` and `#take` do), and bound reads with `#available`,
+      `#take` or an explicit length.
+
+      Line and column are tracked only when the `Lineation` in scope is active:
+      `import lineation.linefeedChar` (or `linefeedByte`) counts lines at `\n`; the companion
+      defaults `Lineation.untrackedChars` and `untrackedData` track nothing and cost nothing
+      per advance. A parser which runs a bulk scan and pushes the position back in one step
+      (`#unsafeAdvanceBy`) is responsible for its own line and column updates
+      (`#unsafeBumpLine`, `#unsafeBumpColumn`, `#unsafeSetColumn`).
+  refer zephyrine.Cursor.Snapshot
+  refer zephyrine.Datum
+  refer zephyrine.Addressable
+  refer zephyrine.Lineation
+  refer zephyrine.streamOf
+  entry .apply   a cursor over a value, an iterator or chain of chunks, a stream, or a loader thunk
+      Five factories, each needing the medium's `Addressable` (in implicit scope for `Data`,
+      `Text` and record arrays) and a `Lineation` for its element type (the untracked default
+      resolves unless a tracking one is imported by name):
+
+      - `Cursor(value)` — a pre-filled cursor over a whole value. A medium which exposes its
+        backing storage (`Data`) is borrowed in place with no copy, and the cursor is
+        *static*: it never writes its buffer, never pulls, and may be `#repoint`ed. Any other
+        medium is copied once.
+      - `Cursor(iterator)` — over a `murmuration.Iterator` of chunks, pulled one per refill.
+        The cursor's `Operand` and `Target` members are abstract on this form, so a direct
+        `clone` or `seek` casts its argument (`' '.toByte.asInstanceOf[cursor.addressable.Operand]`);
+        the per-medium extensions `peek`, `expect` and the typed buffers are unaffected.
+      - `Cursor(chain)` — over a lazy `Chain` of chunks, forcing at most one cell per refill.
+      - `Cursor(stream)` — over a consumed `Stream[data] over Credit` (needs a `Buffering`).
+        When nothing of its own is live the cursor reads the stream's next region in place,
+        with no copy, with a credit of the `Buffering`'s `window`; while a hold spans a
+        refill it transfers the region into its own buffer in one copy. The credit bounds what
+        any upstream stage produces per fill, so memory stays bounded through a parse of an
+        arbitrarily large input.
+      - `Cursor(load)` — a transparent inline factory over a thunk `() ->{cap} Optional[data]`,
+        yielding each chunk and `Unset` at the end; the thunk's capture set becomes the
+        cursor's `cap`.
+
+      ```scala
+      import soundness.*
+      import codepages.utf8Codepage
+
+      val bytes: Data = t"GET / HTTP/1.1\r\n".in[Data]
+      val direct = Cursor(bytes)
+      val chunked = Cursor(Iterator(t"one", t"two", t"three"))
+      val streamed = Cursor[Text](Stream(Iterator(t"ab", t"cd")))
+      ```
+
+      Every cursor pre-loads its first non-empty chunk, so `unsafeDatum` and `peek` are valid
+      before any `next()`.
+  entry .Mark   an absolute position in the stream, taken inside a hold, to return to or copy from
+    detail
+        An opaque `Long`: the absolute stream offset at which `Cursor#mark` was called. Marks
+        survive compaction, since they are stream positions rather than buffer indices, but a
+        mark may be taken only inside `Cursor#hold`, which keeps its region buffered. Two
+        marks bound a `grab`, a `clone` or a `slice`, and `cue` returns to one. `Mark.Initial`
+        is position zero; `Mark(absolute)` makes one from an offset. Marks compare by offset.
+        `Mark` is also exported at the package level, as `zephyrine.Mark`.
+    entry .Initial   the mark at the start of the stream: offset zero
+    entry .apply   a mark at an absolute stream offset
+    entry .comparable   marks compare and sort by their absolute offset
+  entry .Offset   a line and column packed into one `Long`, recorded for each mark when lineation is active
+    detail
+        `Offset(line, column)` packs two ordinals into a `Long`; `Cursor#offset(mark)` looks
+        up the offset recorded when a mark was taken, so that `cue` restores the line and
+        column along with the position. Offsets compare by their packed value. `Offset` is
+        also exported at the package level, as `zephyrine.Offset`.
+    entry .apply   an offset from a line and a column, both ordinals
+    entry .comparable   offsets compare by their packed value
+  entry .absolute   the absolute stream offset of a `Mark`, as a `Long`
+  entry .line   the line of an `Offset`, as an ordinal
+  entry .column   the column of an `Offset`, as an ordinal
+  entry .Held   the witness that a hold is open, required by `mark`
+      A stateless token: `Cursor#mark` takes a `using Cursor.Held`, which only `Cursor#hold`
+      (and `.lookahead`) provide, so a mark can only be taken where compaction cannot drop
+      the marked region. One shared instance, `.shared`, serves every hold.
+  entry .shared   the one `Cursor.Held` instance every hold supplies
+  entry .Loader   the loader thunk type: `() => Optional[data]`, a chunk per call and `Unset` at the end
+  entry .Filler   a refill strategy writing straight into the cursor's buffer, bypassing the chunk protocol
+    detail
+        `fill(storage, offset, space)` writes up to `space` elements into the cursor's buffer
+        at `offset` and returns the count written, `0` when nothing was granted (the cursor
+        retries) or `-1` at end-of-stream, so a pull endpoint's region is transferred into
+        the cursor in a single copy rather than materialized as a chunk and copied again.
+        `block` is the growth hint: the cursor grows its buffer towards `writeEnd + block`
+        before each fill. The stream factory `Cursor(stream)` installs one.
+    entry #block   the growth hint: how much space the cursor makes before each fill
+    entry #fill   writes up to `space` elements at `offset`, returning the count, `0` or `-1`
+  entry .Lender   a filler whose source can also lend a region to be read in place, with no copy
+    detail
+        `borrow()` exposes the source's next region — `lentStorage`, `lentStart` and the
+        returned count (`0` if nothing was granted, `-1` at the end) — which the cursor reads
+        in place whenever nothing in its own buffer is live. The region stays valid until the
+        next `borrow` or `fill`, so a source which recycles its blocks never overwrites one
+        the cursor is still reading.
+    entry #borrow   lends the source's next region, returning its count, `0` or `-1`
+    entry #lentStorage   the storage of the region last lent
+    entry #lentStart   the start of the region last lent, within its storage
+  entry .Delimiter   a byte sequence to be found in bulk, with its Horspool skip table computed once
+    detail
+        A multipart boundary, an archive signature, a line terminator: `Cursor.Delimiter(bytes)`
+        builds the shift table once, and `#find` probes the last byte of each candidate
+        window, shifting by the table, so on data unlike the delimiter it visits about one
+        byte in `length` instead of every byte. A `Cursor[Data]` searches its buffer for one
+        with `.distance`, and `streamOf(cursor, delimiter)` lends everything before the next
+        occurrence as a stream.
+
+        ```scala
+        import soundness.*
+        import codepages.utf8Codepage
+
+        val boundary = Cursor.Delimiter(t"\r\n--frontier".in[Data])
+        val cursor = Cursor(t"part one\r\n--frontier\r\npart two".in[Data])
+        cursor.distance(boundary)   // 8
+        ```
+    entry .apply   a delimiter over a byte sequence, building its skip table
+    entry #bytes   the delimiter's bytes
+    entry #length   the delimiter's length in bytes
+    entry #find   the index at which the delimiter first begins wholly within `from` until `end`, or `-1`
+  entry .Snapshot   the parser-local copy of a cursor's buffer, position and write end, as an inline trait
+    detail
+        A fast parser does not read every element through the cursor: it keeps its own copy
+        of the buffer reference (`cells`, a real `byte[]` or `char[]`), the read position
+        (`pos`) and the write end (`bufEnd`) in plain fields the JIT keeps in registers, and
+        syncs with the cursor only at refill, mark, slice and error points. `Snapshot[medium,
+        operand]` is that protocol as an inline trait: its body is copied into each parser
+        with `operand` substituted, so `Snapshot[Data, Byte]` gives a `byte[]` field and
+        `Snapshot[Text, Char]` a `char[]` one — a specialisation an ordinary trait cannot
+        express. The parser is the receiver (`this` is the parser), it needs no language
+        flag, and the cursor is held as a neutral `AnyRef` (`cursor0`) with an exclusive-view
+        accessor, so a pooled parser can re-point it at each reset.
+
+        The protected protocol a parser follows: assign `cursor0` and call `syncFrom()` to
+        start; read with `peek` and `advance()` while `more` holds; call `syncTo()` before any
+        cursor operation which consults the position and `syncFrom()` after any which may
+        compact, grow or adopt a buffer. Two hooks are abstract and **must** be implemented:
+        `reconcile()` (called before every refill, where a position-tracking parser catches
+        the cursor's lineation up with `reconcileLineation()`, `reconcileUtf8()` or
+        `reconcileUtf16()`; otherwise `()`) and `resynced()` (called after every `syncFrom()`,
+        for a parser which derives anything from the buffer's scale; otherwise `()`). They
+        are abstract deliberately: the copied body's calls to a member the receiver
+        *overrides* bind to the trait's own copy, not the override, so a hook with a default
+        body would never reach the parser's version. Overriding any concrete member of the
+        trait silently misbehaves for the same reason.
+
+        ```scala
+        import soundness.*
+        import scala.caps
+
+        final class Counter extends caps.ExclusiveCapability, caps.Stateful, Cursor.Snapshot[Data, Byte]:
+          protected update def reconcile(): Unit = ()
+          protected update def resynced(): Unit = ()
+
+          update def count(input: Data): Int =
+            cursor0 = Cursor(input).asInstanceOf[AnyRef]
+            syncFrom()
+            var commas = 0
+
+            while more do
+              if peek == ','.toByte then commas += 1
+              advance()
+
+            commas
+        ```
+
+        A snapshot may stand over a whole input with no cursor at all (`cells` the input's
+        own array, `cursor0` null); then the input ends at `bufEnd`. jacinta, xylophone,
+        stratiform, ypsiloid, honeycomb, locomotion and breviloquence each extend it.
+    entry #position   the absolute stream offset of the next element: what every error reports
+        `base + pos`, where `base` is re-anchored by every `syncFrom()` so the position
+        survives compaction. Public, as `#more` is: a parser's driver asks both of a finished
+        parse.
+    entry #more   whether another element is available, refilling from the source if the buffer is exhausted
+        `pos < bufEnd || moreSlow()`: the slow path syncs to the cursor, calls the
+        `reconcile()` hook, asks the cursor for more and syncs back, so the JIT keeps the
+        fast path as one register comparison. Subject to the blocking-lookahead hazard
+        described on `Cursor`.
+  entry .peek   the current element as a `Datum`, or `Datum.End` when the cursor is finished
+      An extension on `Cursor[data, cap]` for byte and char cursors (any other medium is a
+      compile error). Allocation-free: a byte is lifted unsigned (`0..255`) and a char by its
+      code, so the result compares directly with a `Char` or `Byte` literal and the comparison
+      compiles to one `int == int`. It may block to fetch the element being inspected (that
+      element must exist for any match) but never reads past it.
+
+      ```scala
+      import soundness.*
+
+      val cursor = Cursor(t"{}")
+      cursor.peek == '{'           // true
+      cursor.advance()
+      cursor.advance()
+      cursor.peek == Datum.End     // true
+      ```
+  entry .expect   matches the current element against a char, advancing past it or raising the given error
+      An extension on byte and char cursors. `cursor.expect('H')(Mismatch())` raises
+      `failure` through the `Tactic[error]` in scope on a mismatch or at end-of-stream, and
+      otherwise consumes the element with `advance()` — never `next()` — so consuming the
+      final delimiter of a message on a keep-alive stream does not force a blocking refill
+      for the byte after it. The target is a `Char` for both media, so a `Cursor[Data]` needs
+      no `.toByte`.
+
+      ```scala
+      import soundness.*
+      import codepages.utf8Codepage
+      import strategies.throwUnsafely
+
+      case class Mismatch()(using Diagnostics) extends Error(m"mismatch")
+
+      val cursor = Cursor(t"HTTP/1.1".in[Data])
+      cursor.expect('H')(Mismatch())
+      cursor.expect('T')(Mismatch())
+      cursor.peek == 'T'   // true
+      ```
+  entry .lookahead   runs an action inside a hold and restores the cursor to where it was on entry
+      An extension on any cursor: a non-consuming lookahead. Marks taken inside the action
+      are available through the implicit `Cursor.Held`, and the cursor is cued back on exit
+      whatever the result, so subsequent parsing sees the same elements. Inside an outer
+      hold, the outer marks are preserved.
+
+      ```scala
+      import soundness.*
+
+      val cursor = Cursor(t"abcd")
+      cursor.lookahead(cursor.next() && cursor.peek == 'b')   // true
+      cursor.peek == 'a'                                      // still true
+      ```
+  entry .unsafeDataBuffer   the current backing storage of a `Cursor[Data]`, as a `scala.Array[Byte]`
+      The typed form of `#unsafeBuffer`, behind an `Unsafe` token: the reference is valid
+      only until the next cursor operation which may compact or grow the buffer, and the
+      caller takes responsibility for indexing it within `unsafePos` until `unsafeWriteEnd`.
+  entry .distance   how far ahead of a `Cursor[Data]` a `Cursor.Delimiter` first begins within the buffer, or `-1`
+      Searches the buffered region in bulk; the cursor is not moved and nothing is refilled,
+      so unlike `#seek` this cannot block on a live stream. A scan which finds nothing should
+      consume all but the last `delimiter.length - 1` buffered bytes (a possible prefix of a
+      delimiter straddling the refill) and search again once more has arrived — which is
+      what `streamOf(cursor, delimiter)` does.
+  entry .unsafeTextBuffer   the current backing storage of a `Cursor[Text]`, as a `scala.Array[Char]`
+      As `.unsafeDataBuffer`, for char cursors.
+  entry #addressable   the medium's `Addressable` instance, a tracked value naming its `Storage`, `Operand` and `Target`
+  entry #lineation   the `Lineation` the cursor was built with
+  entry #repoint   re-points a static cursor at another borrowed region, resetting every position
+      Only a cursor built with `Cursor(value)` over a medium with an exposed backing (`Data`)
+      may be re-pointed; any other panics. It is the one-cursor-per-connection idiom: a
+      server parses each request head straight out of its accumulator without allocating a
+      cursor or copying the head out. The storage is the same neutral carrier the factory
+      takes (`storage: AnyRef`, a `scala.Array[Byte]` for `Data`), and the region must stay
+      unwritten until the parse which reads it has finished.
+  entry #advance   consumes the current element without touching the source
+      Increments the position (and the line or column, when lineation is active). It is
+      unchecked: the position may sit one past the buffer's end, since the next `more`,
+      `peek` or `next()` forces a refill before the buffer is read. It is therefore the
+      boundary-safe primitive: the only way to consume an element *without* a possible
+      refill, which is what a parser stopping at a message boundary on a live stream must
+      use for the final delimiter (as `.expect` and `#take` do).
+  entry #unsafeAdvanceWith   advances past an element already read, reusing it for lineation tracking
+      For a scan loop which has just read the current element from `#unsafeBuffer`: the
+      supplied operand feeds line and column tracking instead of being re-loaded.
+  entry #unsafeBumpPos   advances the position by `by` elements with no lineation update
+      A bulk-advance primitive for register-resident scan loops: the caller tracks newlines
+      itself and reconciles lineation in one step with `#unsafeBumpLine`,
+      `#unsafeBumpColumn` and `#unsafeSetColumn`.
+  entry #unsafeBumpLine   increases the line counter by `by`, leaving the column untouched
+  entry #unsafeBumpColumn   increases the column counter by `by`; must not be called across a newline
+  entry #unsafeSetColumn   sets the column directly, after a bulk advance over a range containing a newline
+  entry #next   advances and reports whether more remains: `advance(); more`
+      Returns `true` while elements remain and `false` once the source is exhausted. Its
+      trailing `more` blocks on a refill once the buffer drains, so it must never consume the
+      last element of a message on a live stream; use `peek` then `advance()` there.
+  entry #more   whether an element is available at the current position, refilling the buffer if it has drained
+      The hot path is one comparison, `pos < writeEnd`; only when the buffer is drained does
+      the out-of-line slow path refill. Blocks until the source yields data or ends.
+  entry #finished   whether the source is exhausted: `!more`
+  entry #position   the absolute stream position of the next element, as an ordinal
+  entry #available   how many elements are buffered beyond the current position, without refilling
+      The bound a live-stream parser reads within, since reading past it would refill.
+  entry #line   the current line, as an ordinal, when the `Lineation` tracks lines; `Prim` otherwise
+  entry #column   the current column, as an ordinal, when the `Lineation` tracks lines; `Prim` otherwise
+  entry #lineActive   whether the configured `Lineation` is active, cached at construction
+      Hot-loop callers test this rather than `lineation.active`, which would be an interface
+      dispatch per element.
+  entry #remainder   a lazy `Chain` of everything unconsumed from the current position onwards
+      The buffered tail first, as one chunk, then the loader's chunks as they are pulled.
+      Caller-driven: construction pulls nothing, so a protocol which withholds data until it
+      gets a reply (a WebSocket upgrade) is not deadlocked by building the chain. The cursor's
+      position moves to the end of its buffer.
+  entry #unsafeBuffer   the raw backing storage, behind `Unsafe`
+      The `addressable.Storage` the cursor is currently reading, which may be its own buffer
+      or a region its source lent. Valid only until the next operation which may refill,
+      compact or grow. A parser which snapshots it into a field casts it once to the concrete
+      array type (`Cursor.Snapshot` does this), so the JIT keeps the reference in a register;
+      reading through `addressable.storageAddress` instead costs an interface call and an
+      unbox per element. The typed forms are `.unsafeDataBuffer` and `.unsafeTextBuffer`.
+  entry #unsafePos   the read index into the buffer, behind `Unsafe`
+  entry #unsafeWriteEnd   the count of valid elements in the buffer, behind `Unsafe`
+  entry #lend   lends the readable region, with a branded interval, to a lambda
+      The bounds-safe view of elements `pos until writeEnd`: the lambda receives a
+      `Region[data]` and an `Interval in region.type`, so every index it can form is in
+      range, with no `Unsafe`. Valid only for the duration of the call. The preferred
+      boundary for a scan loop which does not cache the buffer across cursor operations.
+
+      ```scala
+      import soundness.*
+
+      val cursor = Cursor(t"abc")
+      val count: Int = cursor.lend: region => range => (range: Interval).size   // 3
+      cursor.unsafeAdvanceBy(count)(using Unsafe)
+      ```
+  entry #unsafeAdvanceBy   advances the position by `n` elements with no lineation tracking
+      For a parser maintaining its own copy of the position: push it back to the cursor at
+      refill, mark or slice points. The caller is responsible for line and column updates
+      when `#lineActive` holds.
+  entry #unsafeDatum   the current element, read through the `Addressable` instance, behind `Unsafe`
+      Valid only when the cursor is not `finished`; reading at the end sees stale storage.
+      `peek` is the safe form.
+  entry #lay   the lambda applied to the current element, or `otherwise` when the cursor is finished
+  entry #let   runs a lambda on the current element, if there is one
+  entry #process   runs a lambda on the current element, if there is one, discarding its result
+  entry #seek   advances to the next element equal to the target, reporting whether it was found
+      Stops *on* the match, without consuming it, and performs no refill after finding it.
+      The target is the medium's `Operand` (so a caller holding a cursor from the iterator
+      factory writes `' '.toByte.asInstanceOf[cursor.addressable.Operand]`); it is unboxed
+      once and compared at the primitive type, and a byte matches the ASCII char of the same
+      value. On a live stream a search which does not find its target refills until the
+      source ends.
+
+      ```scala
+      import soundness.*
+      import codepages.utf8Codepage
+
+      val cursor = Cursor(t"key=value".in[Data])
+      cursor.seek('='.toByte.asInstanceOf[cursor.addressable.Operand])   // true
+      cursor.peek == '='                                                   // true: stopped on it
+      ```
+  entry #consume   matches a literal string element by element, running `otherwise` on the first mismatch
+      A macro: `cursor.consume(fail())("--")` expands to one `next()` and comparison per
+      character of the literal, which must be a constant. Each character is compared *after*
+      a `next()`, so the cursor must stand on the element before the literal when it is
+      called, and stands on the literal's last character afterwards. Each step uses `next()`,
+      so it is not safe for the final bytes of a message on a live stream.
+  entry #mark   the current position as a `Cursor.Mark`, taken inside a hold
+      Needs a `Cursor.Held`, which only `#hold` and `.lookahead` provide. When lineation is
+      active the line and column are recorded beside the mark, in unboxed parallel arrays,
+      so `#cue` can restore them.
+  entry #offset   the line and column recorded when a mark was taken
+  entry #cue   returns the cursor to a mark, restoring its line and column
+      The mark must lie within the current hold, since only a held region is guaranteed to
+      still be buffered.
+  entry #hold   runs an action with the buffer pinned from the current position, so marks may be taken
+      From the start of the outermost hold until it ends, compaction may not discard anything
+      after the hold's start, so every mark taken inside is still buffered; nested holds
+      share the outer pin. Holds are closed, and marks released, when the outermost returns.
+      A hold spanning a very long region keeps all of it in memory.
+
+      ```scala
+      import soundness.*
+
+      val cursor = Cursor(Iterator(t"one", t"two", t"three"))
+
+      cursor.hold:
+        val start = cursor.mark
+        for i <- 1 to 7 do cursor.next()
+        cursor.grab(start, cursor.mark)   // t"onetwot"
+      ```
+  entry #grab   the elements between two marks, materialized as one value of the medium
+      An empty value when the marks coincide or are reversed. Both marks must lie in the
+      current hold.
+  entry #slice   lends the storage, offset and length between two marks to a lambda, zero-copy
+      The lambda must not retain the storage reference, which compaction may invalidate after
+      the call.
+  entry #clone   copies the elements between two marks into a builder of the medium's `Target` type
+      For `Text` the target is a `java.lang.StringBuilder`, for `Data` a `ByteArrayOutputStream`.
+  entry #take   the next `length` elements as one value, or `otherwise` if the source ends first
+      Makes each element present before consuming it and never refills after the last, so it
+      is safe for the final bytes of a message on a live stream (a WebSocket frame's mask
+      then payload, arriving a byte per chunk). If the stream ends early, yields `otherwise`.
+
+      ```scala
+      import soundness.*
+
+      val cursor = Cursor(Data.fill(20)(_.toByte): Data)
+      cursor.take(Data())(10)   // the first ten bytes
+      ```
+
+entry .Datum   a byte or char read by `peek`, or `Datum.End`, comparing directly with a `Char` or `Byte` literal
+  detail
+      An opaque `Int`, exported from `internal`: an unsigned byte (`0..255`), a char's code,
+      or the sentinel `Datum.End` (`-1`) for an exhausted cursor — the only datum not
+      derivable from a byte or char. It is distinct from a raw `Int` so that arithmetic or
+      byte/char confusion cannot happen silently; comparison with a literal goes through the
+      dedicated `CanEqual` givens and still compiles to a single `int == int`.
+
+      ```scala
+      import soundness.*
+
+      Datum('-'.toByte) == '-'.toByte   // true
+      Datum(0xff.toByte).asInt          // 255
+      Datum.End.isEnd                   // true
+      Datum.End == 0.toByte             // false
+      ```
+  refer zephyrine.Cursor.peek
+
+entry .Credit   fine-grained backpressure demand: how many more elements a consumer can accept
+  detail
+      An opaque `Long` (`<: Long`, so capture checking treats it as an untracked value),
+      exported from `internal`: a count of elements of the medium's `Operand` type — bytes,
+      chars or records — not a byte count, so its meaning changes across a `Duct` which
+      changes medium, and `Duct#translate` performs that conversion. `Credit(Long.MaxValue)`
+      is unbounded demand. It is the `Transport` of every endpoint the kernel's factories
+      build (`Stream[Data] over Credit`), and `Regulation.credit` is its arithmetic.
+
+      ```scala
+      import soundness.*
+
+      val stream = t"hello".stream
+      stream.refill(Credit(3))   // 3: three characters readable
+      ```
+  refer zephyrine.Regulation
+  refer zephyrine.Pace
+
+entry .Mark   `Cursor.Mark`, exported at the package level
+    The opaque mark type is `export`ed from the `Cursor` companion, so it is reachable as
+    `zephyrine.Mark` as well as `Cursor.Mark`; see `Cursor.Mark`.
+
+entry .Offset   `Cursor.Offset`, exported at the package level
+    The packed line-and-column type is `export`ed from the `Cursor` companion, so it is
+    reachable as `zephyrine.Offset` as well as `Cursor.Offset`; see `Cursor.Offset`.
+
+entry .Addressable   the typeclass of a streaming medium: its element, its storage, its builder, and the copies between them
+  detail
+      `medium is Addressable` is what lets a `Cursor`, a `Stream`, an `Intake`, a `Duct` or a
+      `Producer` be generic over `Data`, `Text` and chunks of records. It names three types —
+      `Operand`, the element (`Byte`, `Char` or the record type); `Storage`, the mutable
+      buffer (`scala.Array[Byte]`, `scala.Array[Char]` or an erased `scala.Array[AnyRef]`);
+      and `Target`, the builder (`ByteArrayOutputStream`, `StringBuilder`, `ArrayBuffer`) —
+      and the primitives which move elements between a value, its storage and a builder. The
+      instances are in the companion, so they resolve with no import: `.bytes` for `Data`,
+      `.text` for `Text`, `.texts` for `Array[Text]^{}`, `.frames` for `Array[Data]^{}` and
+      `.boxed` for any other `Array[record]^{}` with a `ClassTag`. The `Data` and `Text`
+      instances are `inline given`s, so a hot-path call site which resolves one at compile
+      time lowers to a direct array access.
+
+      A medium names its type exactly: a branded `Data & Sized[16]` is not a medium, so a
+      value meant for `Cursor(…)`, `Stream(…)` or `stream` is ascribed `: Data`.
+
+      The storage protocol is capture-typed: `allocate` mints a fresh exclusive buffer,
+      writers take it as `Storage^`, and readers as a read-only view. A consumer of the
+      kernel rarely calls these directly — `Region`, `Slate` and the endpoints wrap them —
+      but an implementation of a `Stream`, an `Intake` or a `Duct` does.
+  refer zephyrine.Substrate
+  refer zephyrine.Region
+  entry .bytes   `Data is Addressable`: bytes in a `scala.Array[Byte]`, built by a `ByteArrayOutputStream`
+      Exposes its backing array (`#backing`), so a `Data` chunk is lent to a cursor, a stream
+      or a conduit by reference, never copied, and `assemble` joins pieces with one copy.
+  entry .text   `Text is Addressable`: chars in a `scala.Array[Char]`, built by a `java.lang.StringBuilder`
+      A `String` is not a `char[]`, so a text chunk has no exposable backing and is copied into
+      a buffer; `assemble` joins pieces through `String.join`, sizing the result exactly.
+  entry .boxed   `Array[element]^{} is Addressable` for any reference element type with a `ClassTag`
+      The record medium: a chunk is a frozen array of records, the working storage an erased
+      `scala.Array[AnyRef]`, and credit counts records (`Substrate.Boxes`). The element must
+      erase to a reference type, and the `ClassTag` makes the materialized chunks genuine
+      `element[]`s. `Text` and `Data` elements, which are not `<: AnyRef`, have the dedicated
+      instances `.texts` and `.frames`.
+  entry .texts   `Array[Text]^{} is Addressable`: chunks of text records (lines, tokens)
+  entry .frames   `Array[Data]^{} is Addressable`: chunks of byte records (frames, messages)
+  entry #Storage   the mutable buffer type: `scala.Array[Byte]`, `scala.Array[Char]` or `scala.Array[AnyRef]`
+  entry #empty   the empty value of the medium
+  entry #substrate   how the storage is physically represented, for `Buffering` to size buffers
+  entry #blank   a fresh builder, sized by a hint
+  entry #build   the value a builder holds
+  entry #length   the number of elements in a value
+  entry #address   the element at an ordinal of a value
+  entry #clone   copies the elements of a value between two ordinals, inclusive, into a builder
+  entry #grab   the elements of a value between two ordinals, as a new value
+  entry #allocate   mints a fresh, exclusive buffer of `size` elements
+  entry #storageSize   the capacity of a buffer
+  entry #storageAddress   the element at an index of a buffer
+      Erases to an interface call returning `Object` plus an unbox when the instance is not
+      resolved at compile time, which is why hot loops cast the buffer once instead.
+  entry #storageUpdate   writes one element into an exclusive buffer at an index
+  entry #append   appends one element to a builder
+  entry #copyChunk   copies `len` elements of a value, from an offset, into a buffer at an offset
+  entry #transfer   copies `len` elements from one buffer to another
+  entry #materialize   a new value of `len` elements copied from a buffer at an offset
+  entry #cloneStorage   copies `len` elements of a buffer at an offset into a builder
+  entry #assemble   joins exact-size pieces, in order, into one value of their total length
+      The terminal of `memoize`: the default copies through fresh storage and `materialize`;
+      `Data` and `Text` override it to copy once.
+  entry #backing   the value's own storage, when the medium is immutable and its representation is its `Storage`
+      `Data` returns its array; `Text` returns `Unset`, and callers copy. An exposed backing
+      must never be written through: a cursor built over one is static, and a stream lending
+      one reports `regionStable`.
+
+entry .Substrate   how a buffer is physically represented: `Bytes`, `Chars` or `Boxes`
+    `Bytes` and `Chars` have deterministic footprints; `Boxes` (buffers of heap records) are
+    counted in references, so their memory use is not deterministically bounded, and
+    `Buffering.standard` sizes them smaller (256 per staging block against 4096 bytes or 2048
+    chars). An `Addressable` instance names its substrate.
+
+entry .Buffering   the contextual sizing policy every stage consults when it allocates a buffer
+  detail
+      A `Buffering` is pure sizing policy — it captures nothing — consulted once per stage at
+      construction, so an adaptive instance sees each new stage but never resizes a live one.
+      `.standard` is in implicit scope; a pipeline is retuned by binding another as a local
+      given. Its members: `#capacity(substrate)`, the staging block (cache-resident: 4096
+      bytes, 2048 chars, 256 records); `#transfer(substrate)`, a block crossing an
+      asynchronous boundary (sixteen staging blocks, since each costs a synchronized
+      hand-off); `#depth`, the transfer blocks of headroom a `Conduit` keeps between writer
+      and reader (16); `#window(substrate)`, the credit a cursor asks of a stream it reads in
+      place (one staging block); and `#recycle`, whether a conduit's drained blocks return to
+      its writer (on).
+
+      ```scala
+      import soundness.*
+
+      given Buffering:
+        def capacity(substrate: Substrate): Int = 64
+        def depth: Int = 4
+        override def transfer(substrate: Substrate): Int = 256
+      ```
+
+      A conduit's in-flight data is bounded by about `2*depth + 1` transfer blocks; hand-off
+      throughput collapses at very shallow depths and plateaus around the default for a
+      producer and consumer in lockstep, so a burst-heavy pipeline overrides `depth` to its
+      burst size in transfer blocks.
+  refer zephyrine.Conduit
+  refer zephyrine.Substrate
+  entry .standard   the default policy: 4096 bytes, 2048 chars or 256 records per block, depth 16
+  entry #capacity   the staging block size for a substrate: what a stage allocates for its own buffer
+  entry #depth   the number of transfer blocks a `Conduit` holds between its writer and reader
+  entry #transfer   the size of a block crossing an asynchronous boundary; sixteen staging blocks by default
+  entry #window   the credit a cursor asks of a stream it reads in place; one staging block by default
+      A borrowed region costs no buffer, so a larger window means only fewer fills and longer
+      bulk scans between them, bounded by what the credit lets an upstream stage produce.
+  entry #recycle   whether a `Conduit` recycles drained transfer blocks back to its writer; on by default
+      Off restores strict per-block allocation, or isolates the pool's effect in a
+      measurement.
+
+entry .Lineation   the policy deciding which element ends a line, so a cursor can track line and column
+  detail
+      `Lineation by Operand` has `active`, whether tracking is on at all, and `track(datum)`,
+      whether the element ends a line. A `Cursor` reads `active` once at construction, so an
+      inactive lineation costs nothing per advance. The companion's `.untrackedChars` and
+      `.untrackedData` are the defaults in implicit scope, tracking nothing; the tracking
+      policies live in the `lineation` choice package and are imported by name.
+
+      ```scala
+      import soundness.*
+      import lineation.linefeedChar
+
+      val cursor = Cursor(t"one\ntwo")
+      for i <- 1 to 4 do cursor.next()
+      (cursor.line, cursor.column)   // (Sec, Prim)
+      ```
+  refer zephyrine.lineation
+  entry .untrackedChars   the default for char cursors: no line or column tracking
+  entry .untrackedData   the default for byte cursors: no line or column tracking
+  entry #active   whether this policy tracks lines at all
+  entry #track   whether an element ends a line
+
+entry .lineation   the line-tracking policies, each a given to import by name
+  detail
+      `import soundness.*` brings none of these in: the untracked companion defaults resolve
+      unless one is imported by name, and a lexically imported given outranks the companion's.
+      Each is an `inline given`, so the per-element test inlines into the cursor's `advance`.
+
+      ```scala
+      import soundness.*
+      import codepages.utf8Codepage
+      import lineation.linefeedByte
+
+      val cursor = Cursor(t"a\nb\nc".in[Data])
+      while cursor.next() do ()
+      cursor.line   // Ter
+      ```
+  entry .linefeedChar   a char cursor's line ends at `\n`
+  entry .carriageReturnChar   a char cursor's line ends at `\r`
+  entry .linefeedByte   a byte cursor's line ends at byte 10
+  entry .carriageReturnByte   a byte cursor's line ends at byte 13
+
+entry .PositionTracking   the toggle, shared by every position-aware parser, for recording source positions
+  detail
+      `On` or `Off`. The companion's `.default` is `Off`, so the generic `read`/`load` entry
+      points of jacinta, stratiform, xylophone, ypsiloid and honeycomb parse without tracking
+      and pay no cost; `import parsing.trackPositions` overrides it with `On`, and the same
+      `read` then yields a value which `locate` can resolve to a source position. (Named
+      `PositionTracking` rather than `Tracking` so as not to clash with contingency's
+      `Tracking` under `import soundness.*`.)
+  refer zephyrine.parsing
+  refer zephyrine.Positionable
+  entry .default   the companion default: `Off`
+
+entry .parsing   the given which switches position tracking on, imported by name
+  detail
+      ```scala
+      import soundness.*
+      import parsing.trackPositions
+
+      summon[PositionTracking] == PositionTracking.On   // true
+      ```
+  entry .trackPositions   `PositionTracking.On`: the position-aware parsers record source positions
+
+entry .Positionable   links a parsed value to the path type which addresses its nodes and the position each resolves to
+  detail
+      `Json is Positionable by JsonPointer to Json.Ast.Position`, for example: `Operand` is
+      the path type, `Result` the concrete `Format.Position`. The uniform `locate` and
+      `locateKey` extensions dispatch through it, so every tracking-aware format exposes
+      position lookup the same way. A value parsed without `parsing.trackPositions` in scope
+      carries no positions, and every lookup is `Unset`.
+  entry #Result   the position type the format resolves to, a `Format.Position`
+  entry #locate   the position of the node a path addresses, or `Unset`
+  entry #locateKey   the position of the key matching the path's final segment, or `Unset`
+
+entry .locate   the source position of the node a path addresses within a parsed value, or `Unset`
+    An extension on any value with a `Positionable` instance; the path type is fixed by that
+    instance (a `Json` is located by a `JsonPointer`). `Unset` when the path does not resolve,
+    or when the value was parsed without position tracking.
+
+    ```scala
+    import soundness.*
+    import parsing.trackPositions
+    import strategies.throwUnsafely
+    import codepages.utf8Codepage
+
+    val json = t"""{"name": "zephyrine"}""".read[Json]
+    json.locate(JsonPointer / "name").let(_.describe)
+    ```
+
+entry .locateKey   the source position of the object or mapping key a path's final segment names, or `Unset`
+    As `locate`, but for the key rather than its value.
+
+entry .Format   a parsed format's name and the position and issue types its parse errors carry
+  detail
+      Each format object (jacinta's `Json`, stratiform's `Tel`, …) is a `Format`, naming its
+      `Position` (where in the source) and `Issue` (what was wrong) types so that `Parse.Error`
+      can report `the JSON was not valid at line 3, column 7 because …` uniformly.
+  refer zephyrine.Parse
+  entry .Position   where in the source an error was found
+    detail
+        `describe` renders the position; `offset` and `length`, both `Unset` by default, give a
+        character range; and `span` is the uniform `Span` the public error API exposes, built
+        from the offset and length unless a line-tracking implementor overrides it.
+    entry #describe   the position, rendered as text
+    entry #offset   the character offset, if known
+    entry #length   the length of the affected range, if known
+    entry #span   the position as a `Span`
+  entry .Issue   what was wrong with the input
+    entry #describe   the issue, as a message
+  entry #name   the format's name, as it reads in an error message
+  entry #Position   the format's position type
+  entry #Issue   the format's issue type
+
+entry .Parse   the error every format parser raises
+  detail
+      `Parse.Error(format, position, issue)` is error 594, _the `name` was not valid at
+      `position` because `issue`_, with the format's own position and issue types; `#span`
+      exposes the position as a `Span`. Raised through a `Tactic[Parse.Error]` by every
+      parser built on the kernel.
+  entry .Error   error 594: _the `format` was not valid at `position` because `issue`_
+    entry #format   the format which rejected the input
+    entry #position   where the input was rejected
+    entry #issue   why it was rejected
+    entry #span   the position as a uniform `Span`
+
+entry .Formatting   the marker trait of a serializer's output-formatting configuration
+    Indentation, line wrapping, trailing newlines and the like. Each format defines its own
+    subtype with the parameters which suit it (YAML forbids tab indentation; HTML whitespace
+    is structural) and exposes importable instances in its `formatting` namespace.
+
+entry .Truncation   a stream which ended before it had delivered everything
+  detail
+      Named for the state of the data rather than for a raiser: a `Spring`'s pull and
+      turbulence's `Streamable`, `Writable` and `Sink` all report it, so it sits with
+      `Stream` and `Spring`. turbulence re-exports it, so `Truncation` resolves through
+      `import soundness.*` and `import turbulence.*` alike.
+  entry .Error   error 264: _the stream was cut prematurely after `total`_
+    entry #total   how much had been delivered when the stream was cut
+
+entry .Expanse   a random-access view of an expanse of bytes, for formats whose access is positional
+  detail
+      ZIP central directories, PDF cross-reference tables and memory-mapped files are read by
+      offset, not sequentially; an `Expanse` is `size` and `read(offset, length)` over any
+      medium which can serve ranged reads — a file channel, an in-memory buffer, an HTTP
+      resource accepting `Range` requests. An implementation states its own lifetime
+      discipline (holding a resource open for a scope, or re-acquiring it per read).
+      `streamOf(expanse, offset, length)` reads a range of it as a stream, a transfer block
+      at a time.
+  refer zephyrine.Malleable
+  refer zephyrine.streamOf
+  entry #size   the expanse's length in bytes
+  entry #read   `length` bytes from `offset`, as `Data`
+
+entry .Malleable   an `Expanse` whose bytes may also be replaced in place, as a memory-mapped file's
+  detail
+      The region is fixed: `write` may not extend beyond `size`.
+  entry #write   replaces the bytes at `offset` with `data`
+
+entry .Spring   a re-materializable source of streams: each pull mints a fresh, exclusive endpoint over the same content
+  detail
+      A `Stream` is read once; a `Spring[medium]` can be pulled any number of times, each
+      `apply()` giving a new stream over the same content. It is a trait rather than a
+      function type because a lambda may not mint a fresh scoped capability as its result,
+      where a method's result is re-leveled at each call site; and since `apply` takes a
+      `Tactic[Truncation.Error]` (the pull is where a source cut short is reported), it is not
+      a single abstract method, so a spring is written as an anonymous class.
+
+      ```scala
+      import soundness.*
+      import codepages.utf8Codepage
+
+      val payload: Data = t"body".in[Data]
+
+      val spring: Spring[Data] = new Spring[Data]:
+        def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ = payload.stream
+      ```
+  entry #apply   a fresh stream over the content, raising `Truncation.Error` if it is cut short
+
+entry .Stream   the pull endpoint of a pipeline: a buffer whose readable region is lent zero-copy to one consumer
+  detail
+      A `Stream[medium] over transport` is read by calling `#refill(demand)` with the amount
+      the consumer is prepared to take, reading the region it reports (`#lend`, or
+      `#unsafeStorage` from `#start` to `#limit`), and `#skip`ping past what it has read.
+      Nothing is copied and nothing is retained; a consumer which does not refill demands
+      nothing, which is what makes backpressure the absence of a call. The `transport` is the
+      demand type, `Credit` for everything the kernel's factories build.
+
+      A stream is an exclusive capability: the `Stream[…]^` a factory returns is required to
+      refill, skip or close, it is passed to the combinators as a `consume` argument, and
+      using it after `via`, `pump`, `memoize` or any other consuming operation is a compile
+      error. Streams are built with `.apply` over a value, a chain or a chunk iterator, with
+      the `stream` extension, by `Conduit`, by `streamOf` over a cursor or an expanse, and by
+      turbulence's `Streamable` instances; they are transformed with `via`/`viaDuct`,
+      bounded with `truncate`/`discard`, connected to an intake with `pump`, and drained by a
+      terminal — `memoize`, `drain`, `gather`, `chunks`, `chain`, `records` — which closes
+      them.
+
+      ```scala
+      import soundness.*
+
+      val stream = Stream(Iterator(t"ab", t"cd"))
+
+      stream.refill(Credit(10))                              // 2: one chunk at a time
+      val first: Text = stream.lend(region => range => region.materialize(range))
+      stream.skip(2)
+      stream.refill(Credit(10))                              // 2 again, the second chunk
+      stream.close()
+      ```
+
+      Implementing one: provide `storage0` (the buffer, as `AnyRef`), `start`, `limit`,
+      `skip` and `refill`, and override `close` to release the source; the test suite's
+      `Recorder`, which wraps another stream and records the demands it sees, is the
+      smallest shape. A `Stream` extends `ExclusiveCapability, Stateful` rather than
+      `Mutable` so that an implementation may capture its source (an iterator, a queue, a
+      socket); the price is that a stream held in an exclusive field is read-only, so a
+      wrapper holds its upstream through a neutral `AnyRef` carrier and re-asserts
+      ownership in an accessor.
+  refer zephyrine.Intake
+  refer zephyrine.Duct
+  refer zephyrine.Conduit
+  refer zephyrine.memoize
+  refer zephyrine.via
+  entry .apply   a stream over a single value, a lazy chain of chunks, or a chunk iterator
+      `Stream(value)` is a single-region in-memory stream: a `Data` is shared by reference
+      (its region ranges are stable, so a fan-out may share them), and any other medium is
+      copied once on first refill. `Stream(chain)` forces at most one cell per refill, so
+      demand drives production exactly as far as the chain's laziness allows.
+      `Stream(iterator)` adapts a `murmuration.Iterator` of chunks, exposing each chunk
+      per refill as far as the demand grants; the iterator's own production is outside the
+      stream's control, and its captures are retained alongside the stream's own.
+  entry #addressable   the medium's `Addressable` instance
+  entry #Transport   the demand type: `Credit` for everything the kernel builds
+  entry #refill   ensures at least one element is readable, producing no more than `demand` permits, and returns how many
+      Blocks if necessary. Returns `0` only when `demand` grants nothing, `Unset` at
+      end-of-stream, and otherwise `limit - start`. Elements still unconsumed in the region
+      are reported without producing more: an unskipped region is reported, not extended.
+  entry #lend   lends the readable region and its branded interval to a lambda, zero-copy
+      The lambda receives a `Region[medium]` and an `Interval in region.type` covering
+      `start until limit`, so every index it can form is in range. Valid only until the next
+      `refill` or `close`.
+  entry #unsafeStorage   the raw backing storage, behind `Unsafe`
+      For fan-out plumbing which shares region ranges by reference, and for kernels whose
+      index arithmetic outruns the region combinators. The cast from the untyped `storage0`
+      is sound because `Addressable` instances are unique per medium.
+  entry #start   the index of the first readable element in the storage
+  entry #limit   the index one past the last readable element
+  entry #skip   consumes `count` elements of the region without materializing them
+  entry #regionStable   whether earlier region ranges stay valid after later refills; `false` unless overridden
+      True for a single fixed buffer which `refill` only extends and `skip` only advances
+      (`Stream(value)`, `streamOf(expanse, …)`), so a fan-out may share ranges by reference
+      rather than copying. A stream which reuses its buffer must never claim it.
+  entry #close   releases the stream's resources, propagating upstream through the whole chain
+
+entry .stream   `value.stream` or `iterator.stream`: an in-memory pull stream, fluently
+    Two extensions: on any `Addressable` value, `Stream(value)`; on a `murmuration.Iterator`
+    of chunks, `Stream(iterator)`. The value's type must name the medium exactly (`: Data`,
+    not a branded `Data & Sized[n]`).
+
+    ```scala
+    import soundness.*
+    import codepages.utf8Codepage
+
+    val bytes: Data = t"hello".in[Data]
+    bytes.stream.memoize                                // a copy of the bytes
+    Iterator(t"a", t"b").stream.memoize                 // t"ab"
+    ```
+
+entry .Intake   the push endpoint of a pipeline: a buffer whose writable region is lent zero-copy to one producer
+  detail
+      An `Intake[medium] over transport` reports its current `#demand` — how much it can
+      accept — and is written through the primitive protocol `#reserve`/`#unsafeBuffer`/
+      `#mark`/`#commit`: a writer reserves contiguous space, writes directly into the
+      storage at `mark`, then commits. `#put`, `#push` and `#absorb` are final loops over
+      that protocol, and since `Intake` extends `Producer`, serializing code written against
+      `put`/`push` drives a pipeline unchanged. `#finish` ends the stream (exactly once),
+      `#flush` propagates buffered data without ending it, and `#fail` aborts, propagating
+      the error to the reader at the next asynchronous boundary.
+
+      An intake is transformed into a differently-typed one with `accepting`/`acceptingDuct`,
+      fed a whole stream with `pump` (which consumes it) or `ingest` (which hands it back),
+      and built by `Conduit` for the writing thread of a cross-thread pipeline. Implementing
+      one means providing `demand`, `buffer0`, `mark`, `reserve`, `commit` and `finish`.
+
+      ```scala
+      import soundness.*
+      import codepages.utf8Codepage
+
+      Conduit[Data]() match
+        case (intake, stream) =>
+          intake.put(t"abc".in[Data])
+          intake.finish()
+          stream.memoize   // the three bytes
+      ```
+  refer zephyrine.Stream
+  refer zephyrine.Producer
+  refer zephyrine.Conduit
+  refer zephyrine.accepting
+  entry #addressable   the medium's `Addressable` instance
+  entry #Operand   the element type: `addressable.Operand`
+  entry #Transport   the demand type
+  entry #demand   the demand this intake currently reports: advisory for bounding upstream production
+      Computed on request and never cached; `reserve` is what actually blocks.
+  entry #reserve   ensures contiguous writable space of at least one element, blocking if necessary, and returns how much
+      `min` is a request: an implementation may return less (writers loop over
+      `reserve`/`commit`), but may also take a large request as a sizing hint — a `Conduit`
+      mints a correspondingly larger transfer block.
+  entry #unsafeBuffer   the storage, writable from `mark` up to the reserved space, behind `Unsafe`
+      Valid only until the next `commit`, `flush` or `finish`.
+  entry #mark   the index at which the next element is written
+  entry #commit   declares `count` elements written at `mark`; may cascade them synchronously downstream
+  entry #flush   propagates buffered data downstream now, without ending the stream
+  entry #finish   ends the stream: flushes, emits any terminal stage state, releases downstream; called once
+  entry #fail   aborts: propagates the error downstream so stages release resources; it is rethrown to the reader
+  entry #absorb   copies `count` elements of a storage, from an offset, through the reserve/commit loop
+  entry #put   writes a whole value, or `size` elements of it from an ordinal, through the reserve/commit loop
+      Overridable: an asynchronous boundary passes a large immutable chunk through by
+      reference instead, as `Conduit`'s intake does.
+  entry #push   writes one element
+
+entry .Conduit   the asynchronous boundary: an intake for the writing thread and a stream for the reading thread
+  detail
+      `Conduit[medium]()` yields `(intake, stream)`, with exactly one thread ever touching
+      each. Data crosses in blocks through a bounded lock-free ring (`Handoff`), so a writer
+      which outpaces its reader parks in `reserve` — cross-thread backpressure — and the free
+      capacity is the credit the intake reports as `demand`. It is the only synchronized
+      component of a pipeline; every other stage is single-owner state on one side or the
+      other. A chunk at least a block long whose medium exposes its backing (`Data`) crosses
+      by reference, with no copy; smaller writes coalesce into transfer blocks, which the
+      reader returns to the writer for reuse (`Buffering#recycle`), and then to the shared
+      `Blockpool` when the conduit ends. A producer's `fail(error)` is rethrown to the reader
+      at its next `refill`.
+
+      ```scala
+      import soundness.*
+      import codepages.utf8Codepage
+      import threads.virtualThreads
+      import supervisors.globalSupervisor
+      import probates.panicProbate
+      import strategies.throwUnsafely
+
+      val payload: Data = t"a long body".in[Data]
+
+      supervise:
+        Conduit[Data]() match
+          case (intake, stream) =>
+            val reader = stream.transfer: (stream, _, _) ?=>
+              stream().memoize
+
+            payload.stream.pump(intake)
+            reader.await()   // the payload, read on the other fiber
+      ```
+
+      Threading decides throughput at this boundary: a handful of pipelines on idle cores
+      run fastest on platform threads, whose spin budget catches most exchanges without a
+      kernel transition, while under heavy load — more pipelines than cores — both endpoints
+      should run on virtual threads, so every park suspends fiber-style on the carrier pool.
+      Needs a `Buffering` (for the block size, the transfer ceiling, the depth and the
+      recycling policy).
+  refer zephyrine.Handoff
+  refer zephyrine.Blockpool
+  refer zephyrine.Buffering
+  entry .apply   a fresh writer intake and reader stream over a shared ring, as a pair
+
+entry .Duct   a synchronous transformation stage, attachable to a stream with `viaDuct` or an intake with `acceptingDuct`
+  detail
+      A `Duct[operand, result]` is a buffer-to-buffer kernel: `#step` transforms the readable
+      range of a source `Region` into the writable space of a target `Slate`, returning how
+      much it consumed and produced; `#flush` emits terminal state once the upstream ends;
+      `#translate` converts downstream demand (in `result` elements) into the demand to
+      present upstream (in `operand` elements). The same instance serves both directions of
+      attachment, since demand is translated whichever way it is reported.
+
+      The contract `step` must keep: given at least one input element and at least
+      `#quantum` elements of output space, it consumes or produces at least one element;
+      input it cannot yet transform (a partial atom at the end of the offered input) is
+      consumed and carried in the duct's own state, never left unconsumed across steps. A
+      duct whose state can retain output beyond one step's space (a decompressor) must
+      override `flush`, which is called repeatedly until it returns `0`. `translate` must not
+      starve — whenever `demand` grants at least `quantum`, the translation grants at least
+      one — and must handle unbounded credit without overflow (ceiling divisions as
+      `n - n/2`). Conversions are conservative bounds, not exact arithmetic: surplus is
+      retained for the next transfer, which is what makes ducts with unknowable ratios
+      (compression) possible.
+
+      ```scala
+      import soundness.*
+      import codepages.utf8Codepage
+
+      // Doubles each byte: 1024 of downstream demand is 512 upstream.
+      class Doubler() extends Duct[Data, Data]:
+        type Transport = Credit
+        type Upstream = Credit
+
+        def regulation: Credit is Regulation = summon[Credit is Regulation]
+        def translate(demand: Credit): Credit = Credit(demand.count - demand.count/2)
+        override def quantum: Int = 2
+
+        def step(source: Region[Data])(range: Interval in source.type)
+          (target: Slate[Data])(space: Interval in target.type)
+        :   Duct.Progress =
+
+          val count = (range: Interval).size.min((space: Interval).size/2)
+          var written = 0
+
+          source.visit(range.capped(count)): index =>
+            val byte = source(index)
+            target.borrow(space): (out, offset, _) =>
+              out(offset + written) = byte
+              out(offset + written + 1) = byte
+            written += 2
+
+          Duct.Progress(count, written)
+
+      val doubled: Data = Duct.feed(t"ab".in[Data], Doubler())   // the bytes of "aabb"
+      ```
+
+      A duct is single-owner mutable state (compressors, partial atoms), so it is a stateful
+      capability: `step`, `flush` and `close` are `update` methods needing an exclusive
+      reference, while `translate`, `quantum` and `regulation` are pure queries. Its two
+      `Addressable` instances are plain members, `#input` and `#output`, not givens, so that
+      a same-medium duct does not see two ambiguous instances. A kernel wrapping an
+      offset-based JDK API (a charset coder, a cipher, a compressor) widens the branded
+      intervals back to offsets at its boundary through `Region.borrow`/`Slate.borrow`, or
+      `unsafeRaw` behind `Unsafe`.
+  refer zephyrine.Ductile
+  refer zephyrine.Region
+  refer zephyrine.Slate
+  refer zephyrine.viaDuct
+  entry .Progress   the unboxed (consumed, produced) pair `step` returns
+    detail
+        An opaque `Long` packing two `Int`s, so a step allocates nothing: `Duct.Progress(consumed,
+        produced)` builds one, `consumed` and `produced` read it back.
+    entry .apply   a progress of `consumed` input elements and `produced` output elements
+    entry .consumed   how many input elements the step consumed
+    entry .produced   how many output elements the step produced
+  entry .feed   drives a duct over a whole value, as if it were the single region of a stream
+      `Duct.feed(value, duct)` runs `step` over the value's storage (its backing directly when
+      the medium exposes one, else one copy in) until the input is consumed, accumulating
+      output into the medium's builder, then `flush`es and `close`s — the whole-value
+      counterpart of `stream.viaDuct(duct)`, with no endpoint, no credit accounting and no
+      refill cycle. Needs a `Buffering`, for the output window. This is how `compress[Gzip]`
+      and `encode[Base64]` run a streaming kernel over a value in hand.
+  entry #input   the operand medium's `Addressable` instance
+  entry #output   the result medium's `Addressable` instance
+  entry #Transport   the downstream demand type
+  entry #Upstream   the demand type presented upstream
+  entry #regulation   the `Regulation` of the downstream demand type
+  entry #translate   converts downstream demand into the demand this duct presents upstream
+  entry #quantum   the minimum output space `step` needs to guarantee progress; `1` by default
+      `2` for a duct whose smallest output atom is two elements (a hex encoder, a UTF-8
+      decoder emitting a surrogate pair).
+  entry #sizing   the output window a streaming driver allocates for this duct; the staging block by default
+      A duct whose kernel pays a large fixed cost per call (a JNI crossing) and expands its
+      input (decompression) overrides this to the transfer block, so the fixed cost is
+      amortised over sixteen times the output.
+  entry #step   transforms the readable range of a source region into the writable space of a target slate
+  entry #flush   emits terminal state after the upstream ends; called repeatedly until it returns `0`
+      The default returns `0`. A duct which can retain undelivered output beyond one step
+      (a decompressor) must override it: the first `0` is taken as the end of the stream.
+  entry #close   releases the duct's resources, once the pipeline is done with it
+
+entry .Ductile   makes a stage descriptor — a charset, a codepage, a compression scheme — attachable as a duct
+  detail
+      `stage is Ductile by in to out over transport` says the value describes a stage, and
+      `duct(stage)` builds the `Duct` for it, with `Upstream` (the demand type presented
+      upstream, `Credit` in almost every case) as a further member. `stream.via(stage)` and
+      `intake.accepting(stage)` summon it, so a `Charset`, a `Codepage`, a `Gzip` or a cipher
+      mode attaches directly, while a `Duct` itself — already a stage, not a description of
+      one — attaches with `viaDuct`/`acceptingDuct` and has no instance. The companion holds
+      `.charset` (bytes to text) and `.codepage` (text to bytes); compression and
+      cryptography libraries supply their own. An instance is not `Typeclass.Pure`: it may
+      capture what its ducts raise through, so it is passed as capturing evidence.
+
+      ```scala
+      import soundness.*
+      import charsets.utf8Charset
+      import codepages.utf8Codepage
+
+      val text: Text = t"résumé"
+      val bytes: Data = text.stream.via(summon[Codepage]).memoize
+      bytes.stream.via(summon[Charset]).memoize == text   // true
+      ```
+  refer zephyrine.Duct
+  refer zephyrine.via
+  refer zephyrine.accepting
+  entry .Instance   the fully-determined instance type, naming all five members: `Instance[stage, in, out, transport, upstream]`
+  entry .charset   character decoding as a stage: `Charset is Ductile by Data to Text over Credit`
+      Bytes are staged internally so a multi-byte character split across refills is carried,
+      and malformed input is substituted through the charset's `TextSanitizer`, exactly as
+      whole-value decoding does. UTF-8 takes a hand-rolled kernel — ASCII runs widen eight
+      bytes at a time, multi-byte sequences decode inline with strict validity — and falls
+      back to the JDK decoder only for malformed input. An astral character emits a
+      surrogate pair, so the duct's quantum is `2`.
+  entry .codepage   character encoding as a stage: `Codepage is Ductile by Text to Data over Credit`
+      A split surrogate pair at end-of-stream and an unmappable character are replaced,
+      mirroring whole-value encoding. Demand translates by the encoder's worst-case bytes
+      per char, floored at one.
+  entry #Transport   the downstream demand type of the duct built
+  entry #Upstream   the demand type the duct presents upstream
+  entry #duct   builds the duct for a stage, consuming the stage; needs a `Buffering`
+
+entry .Regulation   the arithmetic of a demand type: how much it grants, how it is spent, how it packs into a `Long`
+  detail
+      Demand values do not travel as messages: a stage computes its demand on request by
+      converting its downstream's (`Duct#translate`), bottoming out in shared state at an
+      asynchronous boundary. `encode`/`decode` pack every demand type into a `Long`, so that
+      shared state is one atomic value whatever the type. The companion holds `.credit` and
+      `.pace`.
+  entry .credit   `Credit is Regulation`: unbounded initially, granting the count clamped to `0..Int.MaxValue`
+  entry .pace   `Pace is Regulation`: `Halted` grants nothing, the others everything; `Measured` asks the pump to pace itself
+  entry #initial   the demand before any is reported
+  entry #grant   how many elements a demand grants, as an `Int`
+  entry #spend   the demand after `count` elements have been produced against it
+  entry #measured   whether the demand asks the pump to pace itself between blocks
+  entry #encode   the demand packed into a `Long`
+  entry #decode   a demand unpacked from a `Long`
+
+entry .Pace   coarse backpressure demand: `Free`, `Measured` or `Halted`
+    For a sink which cannot usefully count elements: `Free` asks the upstream to send
+    freely, `Measured` to pace itself between blocks, and `Halted` to stop producing until
+    demand is polled again. `Regulation.pace` is its arithmetic.
+
+entry .Records   a stream of parsed records: `Stream[Array[record]^{}] over Credit`
+    Each region is a frozen-array chunk of records, so credit counts records and `Buffering`
+    sizes buffers by reference count. Records are immutable values crossing stage and thread
+    boundaries by reference (a record must not itself hold a live endpoint); the record
+    type must erase to a reference type, and the `Addressable` given which admits it
+    (`Addressable.boxed`, `texts` or `frames`) governs at stream construction. `records`
+    iterates the records of such a stream, and `memoize` materializes them into one frozen
+    array.
+
+    ```scala
+    import soundness.*
+
+    case class Row(id: Int)
+    val rows: Records[Row] = Stream(Iterator(Array(Row(1), Row(2)), Array(Row(3))))
+    rows.records.to[List]   // List(Row(1), Row(2), Row(3))
+    ```
+
+entry .via   `stream.via(stage)`: a differently-typed stream pulling through a stage with a `Ductile` instance
+  detail
+      Pull-composition: the result's refills translate demand through the stage and pull from
+      the consumed upstream, entirely on the consumer's thread. The stage may be any value
+      with a `stage is Ductile by in` instance whose `Upstream` is the stream's transport: a
+      `Charset`, a `Codepage`, a compression scheme, a cipher mode. Needs a `Buffering`. A
+      stage which translates a productive demand into one granting nothing is a contract
+      violation and panics rather than livelocking.
+
+      ```scala
+      import soundness.*
+      import codepages.utf8Codepage
+      import charsets.utf8Charset
+
+      val bytes: Data = t"The quick brown fox".in[Data]
+      bytes.stream.via(summon[Charset]).memoize   // t"The quick brown fox"
+      ```
+
+      The forwarder in the `soundness` umbrella is hand-written, since a synthesized export
+      forwarder loses the dependent `ductile.Result` refinement under capture checking; it
+      behaves identically.
+  refer zephyrine.Ductile
+  refer zephyrine.viaDuct
+
+entry .viaDuct   `stream.viaDuct(duct)`: a differently-typed stream pulling through a `Duct` directly
+  detail
+      A `Duct` is a stage, not a description of one, so it needs no `Ductile` instance: the
+      duct type already states its operand, result and both transports. The duct and the
+      stream are both consumed; closing the result closes both. Going through `Ductile`
+      instead would mean instantiating it at the duct's own type, which capture checking
+      cannot express. With a `Duct[Data, Data]` named `Doubler`,
+      `bytes.stream.viaDuct(Doubler()).memoize` is the doubled bytes.
+  refer zephyrine.Duct
+
+entry .pump   `stream.pump(intake)`: drains a pull chain into a push chain on the calling thread
+  detail
+      The pump loop polls the intake's demand, refills the stream with it, and transfers the
+      region into the intake; it is the only place data crosses from the pull side to the
+      push side of a pipeline. Both endpoints are consumed, and the stream is closed when
+      the pump ends, so what the intake gathered must be read some other way — or through
+      `ingest`, which hands the intake back. A pump into a full `Conduit` parks until the
+      reader drains it.
+
+      ```scala
+      import soundness.*
+      import codepages.utf8Codepage
+
+      Conduit[Data]() match
+        case (intake, stream) =>
+          t"payload".in[Data].stream.pump(intake)
+          stream.memoize   // the bytes of "payload"
+      ```
+  refer zephyrine.ingest
+
+entry .ingest   `intake.ingest(stream)`: takes in a whole stream and returns the intake, typed as the caller's own class
+  detail
+      As `stream.pump(intake)`, but the intake is handed back once the stream is exhausted
+      and the intake finished, so what it gathered can be read through the one returned
+      reference — `Gather().ingest(bytes.stream).data` — with no second reference ever
+      existing. The stream is consumed and closed.
+
+entry .accepting   `intake.accepting(stage)`: a differently-typed intake pushing through a stage with a `Ductile` instance
+  detail
+      Push-composition: the result reports translated demand, and its commits step
+      synchronously through the stage into the consumed intake's writable region. The same
+      stage value serves `via` and `accepting`; only the attachment differs. Needs a
+      `Buffering`. The umbrella forwarder is hand-written for the reason `via`'s is.
+
+      ```scala
+      import soundness.*
+      import codepages.utf8Codepage
+
+      Conduit[Data]() match
+        case (intake, stream) =>
+          val text = intake.accepting(summon[Codepage])
+          text.put(t"résumé")
+          text.finish()
+          stream.memoize   // the UTF-8 bytes
+      ```
+  refer zephyrine.Ductile
+  refer zephyrine.acceptingDuct
+
+entry .acceptingDuct   `intake.acceptingDuct(duct)`: a differently-typed intake pushing through a `Duct` directly
+  detail
+      As `accepting`, for a `Duct` in hand rather than a descriptor. The duct's `flush` runs
+      when the result is finished, and its `close` on finish or failure.
+
+entry .drain   `stream.drain(operation)`: a terminal applying an operation to each successive region and its branded interval
+  detail
+      Drains and closes the stream, lending each region to `operation` as a `Region[medium]`
+      with an `Interval in region.type`; the operation must not retain the region beyond the
+      call. Each refill asks for a transfer block of credit, so a larger region is not sliced
+      into many partial refills. Needs a `Buffering`.
+
+      ```scala
+      import soundness.*
+
+      var count = 0
+
+      Stream(Iterator(t"ab", t"cde")).drain: region =>
+        range => region.visit(range) { index => count += 1 }
+
+      count   // 5
+      ```
+  refer zephyrine.gather
+  refer zephyrine.Region
+
+entry .memoize   `stream.memoize`: drains the stream into one immutable value of its medium
+  detail
+      The explicit, bounded replacement for a lazy list's implicit caching: the stream is
+      drained once and closed, and the result is frozen and freely shareable. Each region is
+      copied once at its exact size, and the pieces joined once at the end
+      (`Addressable#assemble`), so a value delivered in one region is copied once, and any
+      other twice. An empty stream yields the medium's `empty`. For a record stream the
+      result is one frozen array of every record. Needs a `Buffering`.
+
+      ```scala
+      import soundness.*
+
+      Stream(Iterator(t"ab", t"cd", t"e")).memoize   // t"abcde"
+      ```
+
+entry .gather   `stream.gather(initial)(operation)`: a terminal threading an accumulator through each region
+  detail
+      The accumulating counterpart of `drain`: the operation receives the running state with
+      each region and its branded interval, and the final state is returned once the stream
+      is drained and closed. Unlike an element-wise fold over a collection it exposes the
+      whole region, so a byte reduction runs over the array with no per-element boxing.
+
+      ```scala
+      import soundness.*
+
+      val bytes: Data = Data.fill(100)(_.toByte)
+
+      bytes.stream.gather(0L): region =>
+        (sum, range) =>
+          var total = sum
+          region.visit(range) { index => total += region(index) }
+          total
+      ```
+
+entry .truncate   `stream.truncate(count)`: the first `count` elements, then end-of-stream
+    The remainder of the upstream is released unread on `close`. Counts elements of the
+    medium — bytes, chars or records — not collection elements, which is why it does not
+    borrow the name `take`. Composes with `discard` into a slice, and with `via` into a
+    bounded pipeline.
+
+    ```scala
+    import soundness.*
+
+    val bytes: Data = Data.fill(20)(_.toByte)
+    bytes.stream.discard(5).truncate(5).memoize   // bytes 5 to 9
+    ```
+
+entry .discard   `stream.discard(count)`: skips the first `count` elements, then passes the rest through unchanged
+    The skipped elements are pulled and discarded on the first `refill`. Counts elements of
+    the medium, not collection elements, which is why it is not called `drop`.
+
+entry .chunks   `stream.chunks`: a single-consumer iterator of materialized chunks, one per refill
+    The bridge by which stream content interleaves with other values (archive payloads
+    between headers, parts between boundaries) without materializing the whole stream. The
+    iterator owns the endpoint: it closes the stream when it reports exhaustion, so a
+    consumer must drain it, or close the stream by other means, to release the upstream.
+    Needs a `Buffering`.
+
+entry .chain   `stream.chain`: a lazy `Chain` of one materialized chunk per refill, strictly demand-driven
+    Construction pulls nothing and each forced cell pulls at most one refill. This is the
+    audited bridge for consumers not yet converted to the kernel: a `Chain` is pure, so it
+    cannot carry the endpoint capability its cells close over, and beyond this point the
+    ownership discipline is suspended and every forced chunk is retained. Prefer the kernel
+    terminals (`memoize`, `drain`, `gather`, `chunks`).
+
+entry .records   `stream.records`: an iterator over the records of a `Records[record]` stream, in order
+    Element-wise access to a record stream, across its regions. The iterator owns the
+    endpoint and closes the stream when it reports exhaustion. Per-record combinators come
+    from the `Iterator` interface; region-level access for hot loops is `drain`/`gather`.
+
+    ```scala
+    import soundness.*
+
+    case class Row(id: Int)
+    Stream(Iterator(Array(Row(1), Row(2)), Array(Row(3)))).truncate(2).records.to[List]   // List(Row(1), Row(2))
+    ```
+
+entry .streamOf   a stream lending part of a cursor — by length or up to a delimiter — or a range of an `Expanse`
+  detail
+      Three factories, each yielding a `Stream[…] over Credit`:
+
+      - `streamOf(cursor, length)` — the next `length` elements of a cursor (or all remaining,
+        if `Unset`), exposed zero-copy from the cursor's own buffer; skipping the stream
+        advances the cursor. The cursor is **lent**, not consumed: closing the stream leaves
+        it open, positioned at the boundary, for the caller to resume. This is the shape of
+        a delimited payload inside a longer parse — an HTTP body before the next pipelined
+        request, an archive entry before the next header. While the lent stream is live the
+        caller must not touch the cursor, and bulk skips bypass lineation, so lend only
+        cursors whose lineation is inactive.
+      - `streamOf(cursor, delimiter)` — the bytes of a `Cursor[Data]` before the next
+        occurrence of a `Cursor.Delimiter`, found in bulk with `distance`. Bytes which might
+        begin a delimiter straddling the next fill are carried in a private scratch and
+        searched joined with the next region. At end-of-stream the cursor stands after the
+        delimiter, or is exhausted if the input ended first; the caller tells the two apart
+        with `finished`.
+      - `streamOf(expanse, offset, length)` — a range of an `Expanse`, read a transfer block
+        at a time as the consumer demands, so an unconsumed payload costs nothing and one of
+        any length streams in bounded memory. Its regions are stable (each refill installs a
+        fresh immutable chunk). Needs a `Buffering`.
+
+      ```scala
+      import soundness.*
+
+      val cursor = Cursor(Data.fill(10)(_.toByte): Data)
+      val head: Data = streamOf(cursor, 4).memoize       // bytes 0 to 3
+      cursor.remainder.to[List]                          // one chunk: bytes 4 to 9
+      ```
+  refer zephyrine.Cursor
+  refer zephyrine.Expanse
+
+entry .Producer   the sink a serializer writes into, in pieces: driven synchronously, as a channel of blocks, or as a push sink
+  detail
+      A `Producer[medium]` takes `#put(value)`, `#put(value, offset, size)` and `#push(element)`,
+      where `Operand` is `Char` for `Producer[Text]` and `Byte` for `Producer[Data]`. The
+      same producing code runs three ways without duplication: `.collect` runs it
+      synchronously into a builder and returns the whole value (`show` and `encode`);
+      `.apply` makes a `Channel` which stages blocks into a bounded queue drained through
+      `Channel#iterator` by another fiber (a streamed HTTP body); and `.sink` hands each
+      block to a consumer inline on the calling thread (a file, a socket, an `OutputStream`).
+      `.utf8` and `.lendUtf8` are text producers whose blocks are delivered as UTF-8 bytes,
+      encoded as the characters arrive, and `.Emission` chooses between `sink` and `utf8` by
+      the medium a format's push form is asked for. None of them allocates per `put` along a
+      contiguous run. An `Intake` is a `Producer`, so code written against one drives a
+      pipeline unchanged.
+
+      ```scala
+      import soundness.*
+      import codepages.utf8Codepage
+
+      val csv: Text = Producer.collect[Text](): producer =>
+        producer.put(t"name,count")
+        producer.push('\n')
+        producer.put(t"apples,3")
+
+      val encoded: Data = Producer.collect[Data](): producer =>
+        producer.push(0x01.toByte)
+        producer.put(t"payload".in[Data])
+      ```
+
+      A producer is a stateful capability: writing needs the exclusive `Producer[…]^` the
+      factories hand to the body, and the write methods are `update` methods. The byte-level
+      `.Utf8Writer` is the lower-level writer a text format's push form uses to encode and
+      escape straight into leased byte blocks, so a document is never built as a `Text` and
+      encoded again.
+  refer zephyrine.Intake
+  refer zephyrine.Addressable
+  refer zephyrine.Buffering
+  entry .Bytes   `Producer[Data]` with its element pinned to `Byte`: the shape binary encoders write into
+  entry .apply   a streaming producer: blocks are queued with backpressure and drained through its iterator
+      `Producer[medium](block, depth)` makes a `Channel`: `put`/`push` fill a staging block
+      of `block` elements (the `Buffering`'s capacity for the medium by default), each full
+      block is queued, and `Channel#iterator` drains the queue. `put` blocks once the queue
+      holds `depth` blocks (2 by default), so the producing code must run on a separate
+      fiber from the consumer; `finish()` flushes the partial last block and ends the
+      iterator.
+
+      ```scala
+      import soundness.*
+      import threads.virtualThreads
+      import supervisors.globalSupervisor
+      import probates.panicProbate
+      import strategies.throwUnsafely
+
+      supervise:
+        val producer = Producer[Text](4, 2)
+        val reader = producer.iterator
+
+        producer.transfer: (producer, _, _) ?=>
+          producer().put(t"12345678901")
+          producer().finish()
+
+        reader.to[List]   // List(t"1234", t"5678", t"901")
+      ```
+  entry .collect   runs a body against a producer synchronously and returns the whole value
+      `Producer.collect[Text](hint)(body)`: no concurrency, no chunk buffer, none of the
+      streaming path's single-thread deadlock risk. The hint sizes the initial builder, 256
+      by default, since the builder doubles as it fills and a large start is paid in full by
+      every small output.
+
+      ```scala
+      import soundness.*
+
+      Producer.collect[Text](): producer =>
+        producer.put(t"--hello--", 2.z, 5)   // t"hello"
+      ```
+  entry .sink   runs a body against a producer which hands each filled block to a consumer, inline
+      `Producer.sink[medium](deliver, block)(body)`: the synchronous streaming form, the
+      model of a generator writing to an `OutputStream`. Each staging block is handed to
+      `deliver` on the calling thread as it fills, so the consumer sees the output in pieces
+      before it is complete, with no fiber and no queue; the partial last block is flushed
+      once `body` returns. A pull consumer (an iterator, an HTTP body) needs `.apply`'s
+      channel instead. Needs a `Buffering`.
+
+      ```scala
+      import soundness.*
+
+      var blocks: List[Text] = Nil
+
+      Producer.sink[Text](text => blocks ::= text, 4): producer =>
+        producer.put(t"abcdefgh")
+
+      blocks.reverse   // List(t"abcd", t"efgh")
+      ```
+  entry .Staged   the staging shared by the streaming producers: a block of elements, published when full
+    detail
+        An abstract class over `Channel` and `Sink`: writes fill a block of `block` elements,
+        and each full block (and, at `finish`, the partial last one) is materialized and
+        handed to the protected `publishChunk`, which a subclass implements as a queue put or
+        a consumer call. Not normally extended by users; `.apply` and `.sink` build the two
+        subclasses.
+    entry #addressable   the medium's `Addressable` instance
+    entry #put   writes a value, or `size` elements of it from an ordinal, through the staging block
+    entry #push   writes one element
+    entry #finish   publishes the partial last block
+  entry .Channel   the streaming producer `Producer.apply` builds: blocks queued for an iterator on another fiber
+    detail
+        `Channel[medium, operand]` queues each full block in a bounded `ArrayBlockingQueue`
+        of `depth` blocks, parking the producer when it is full; `#iterator` is the reader's
+        view, a fresh iterator per call over the queue alone, so it outlives the producer's
+        transfer to its fiber. `#finish` queues the end marker.
+    entry #iterator   the reader-side view: an iterator of the queued blocks, ending after `finish`
+        A `def`, minting a fresh iterator over the queue each time it is called; it is owned
+        by the consuming thread and takes blocks as they are published, parking until one
+        arrives or the producer finishes.
+    entry #finish   publishes the partial last block and ends the iterator
+  entry .Sink   the push producer `Producer.sink` builds: each full block handed to a consumer inline
+  entry .Lending   the type of a consumer lent a filled block: `(region: Region[medium]) => (Interval in region.type) => Unit`
+      The block's storage is lent as a `Region` with its branded extent, valid only for the
+      duration of the call (the discipline of `Stream#lend`), so nothing is copied; a
+      consumer which must keep the bytes materializes them itself with `region.materialize(range)`.
+  entry .lendUtf8   a text producer whose blocks are lent as UTF-8 byte regions, encoded as characters arrive
+      `Producer.lendUtf8(lending, block)(body)`: characters are encoded straight into a byte
+      block of `block` bytes (the `Buffering`'s byte capacity by default), and each full block
+      is lent to `lending` inline, so a text serializer writes bytes to a socket without
+      materializing a `Text` per block and encoding it again, and without copying the block.
+      A lone surrogate encodes as U+FFFD, as `String.getBytes` would. The byte block and the
+      char scratch are leased from the `Blockpool` and returned when the body finishes.
+  entry .utf8   a text producer whose blocks are delivered as fresh UTF-8 `Data` the consumer may keep
+      The owning form of `.lendUtf8`: each block is materialized and passed to `deliver`.
+
+      ```scala
+      import soundness.*
+
+      var blocks: List[Data] = Nil
+
+      Producer.utf8(data => blocks ::= data): producer =>
+        producer.put(t"résumé")
+
+      blocks.map(_.length)   // List(8): six characters, two of them two bytes
+      ```
+  entry .Utf8Sink   the producer behind `lendUtf8` and `utf8`: a `Producer[Text]` encoding into a leased byte block
+    detail
+        Encoding goes through the JDK's UTF-8 `CharsetEncoder`, whose ASCII path is
+        vectorized: characters are inflated into a reused scratch and encoded into the byte
+        block, which is published through the `Lending` when full. A trailing high surrogate
+        is kept between calls, and a malformed pair encodes as U+FFFD.
+    entry #put   writes a text, or `size` characters of it from an ordinal
+    entry #push   writes one character
+    entry #finish   encodes the pending tail, publishes the last block, and returns the buffers to the pool
+  entry .Utf8Writer   a byte-level writer for a text format's push form: UTF-8 and escaping in one pass into leased blocks
+    detail
+        `Utf8Writer(lending, block)` encodes UTF-8 straight into a byte block leased from the
+        `Blockpool`, escaping each string through the format's table as it goes, and lends
+        each filled block to `lending` as `lendUtf8` does. A serializer writing through it
+        never builds a `Text` for its output, so nothing is encoded twice; it is the model
+        behind JSON's, XML's and TEL's byte writers, shared so that each format supplies only
+        its escapes. Written with `.lend`, which flushes when the body returns.
+
+        Its methods, all `update` methods: `#ascii` for text known to be ASCII (markup);
+        `#name` for a document's repeated names, through a cache of encoded names matched by
+        identity or equality; `#text` for text with nothing escaped; `#escaped` for text with
+        each ASCII character named in an `Escapes` table replaced by its entity; `#bytes` for
+        bytes already encoded; `#byte` for one byte; `#long` for a decimal integer; and
+        `#finish`. A lone surrogate encodes as U+FFFD, except in a `name`, where
+        `String.getBytes` writes `?` (no well-formed name contains one).
+
+        ```scala
+        import soundness.*
+
+        val escapes = Producer.Utf8Writer.escapes('<' -> "&lt;", '>' -> "&gt;", '&' -> "&amp;")
+        var blocks: List[Data] = Nil
+
+        Producer.Utf8Writer.lend(region => range => blocks ::= region.materialize(range)): writer =>
+          writer.ascii("<p>")
+          writer.escaped("a < b", escapes)
+          writer.ascii("</p>")
+
+        blocks   // one block: the bytes of "<p>a &lt; b</p>"
+        ```
+    entry .NameSlots   the number of slots in the writer's name cache: 256
+    entry .Escapes   an escape table: for each ASCII character, the entity which replaces it, if any
+      detail
+          Built by `.escapes`: `codes` holds, for each ASCII character, zero when it is written
+          as it is or the one-based number of its entity; `offsets` and `data` hold the
+          entities' bytes. Pure and flat, so the encoding loop tests one byte per character.
+      entry #codes   for each ASCII character, zero or the one-based entity number
+      entry #offsets   the entity boundaries within `data`
+      entry #data   the entities' bytes, concatenated
+    entry .escapes   an escape table replacing each listed ASCII character with its entity
+    entry .lend   writes with a body through a writer lending each block, then flushes it
+        `Producer.Utf8Writer.lend(lending, block)(body)`; the block size defaults to the
+        `Buffering`'s byte capacity.
+    entry #byte   writes one byte
+    entry #ascii   writes text known to be ASCII, one byte per character
+    entry #bytes   writes `source(from until end)`, bytes already encoded as UTF-8
+    entry #text   writes text as UTF-8 with nothing escaped
+    entry #name   writes a name as UTF-8, through the cache of recently written names
+    entry #escaped   writes text as UTF-8 with the characters an `Escapes` table names replaced by their entities
+    entry #long   writes a decimal integer
+    entry #finish   flushes the last block and returns the buffers to the pool; the writer is spent
+  entry .Emission   the media a text serializer's push form can be delivered as: `Text` blocks or UTF-8 `Data` blocks
+    detail
+        A format's `emit[medium](value, deliver)` summons `medium is Emission`, so the
+        serializer is written once against `Producer[Text]`: `.text` runs it through `.sink`,
+        `.data` through `.utf8`.
+    entry .text   delivers `Text` blocks, through `Producer.sink`
+    entry .data   delivers UTF-8 `Data` blocks, through `Producer.utf8`
+    entry #run   runs a body against a text producer, delivering blocks of the medium; needs a `Buffering`
+  entry #Operand   the element type: `Char` for `Producer[Text]`, `Byte` for `Producer[Data]`
+  entry #put   writes a whole value, or `size` elements of it from an ordinal
+  entry #push   writes a single element
+
+entry .Region   a bounds-safe fragment of a medium's storage: an opaque reference whose extent travels as a branded interval
+  detail
+      A `Region[medium]` grants no direct access — no length, no raw indexed read. Its valid
+      extent is lent beside it as an `Interval in region.type`, and the only producers of
+      branded ordinals are the trusted combinators here, so `apply` is total: no bounds check,
+      no `Optional`. A region plus its extent is one reference and one `Long`, allocation-free,
+      replacing the `(storage, offset, length)` triples the kernel once threaded through
+      streams and ducts. Validity is temporal — until the lender's next refill or reuse —
+      which the brand cannot express; that remains the single-owner discipline of
+      `Stream#lend` and `Cursor#lend`. `Slate` is the writable counterpart.
+
+      `Region` is not exported to the `soundness` umbrella (its dependent-typed inline
+      extensions do not survive export forwarders): write `import zephyrine.Region`, or
+      `import zephyrine.*`, where it is named. The accessors are extension methods in the
+      companion, found through implicit scope, so `region(index)`, `region.visit(range)` and
+      `region.materialize(range)` read as instance methods.
+
+      ```scala
+      import soundness.*
+      import zephyrine.Region
+
+      val storage = Array.scratch[Byte](10)
+      var visited = 0
+
+      Region.over[Data, Unit](storage, 2, 5): region =>
+        range => region.visit(range) { index => visited += 1 }
+
+      visited   // 3: the window is 2 until 5
+      ```
+
+      Within a kernel, a brand is widened away (`val interval: Interval = range`) before the
+      interval's own inline operations apply, since the inliner does not see through the
+      refinement.
+  refer zephyrine.Slate
+  refer zephyrine.Stream
+  entry .over   the trusted constructor: lends a region over a storage, with its extent clamped to the storage's true extent
+      `Region.over[medium, result](storage, offset, limit)(lambda)`, needing the medium's
+      `Addressable`: the region is bound to a stable name and the lambda receives it with its
+      branded interval, `offset until limit` clamped into the storage, so the totality
+      invariant is established by construction.
+  entry .apply   the element at a branded ordinal: total, with no bounds check
+  entry .visit   runs a lambda on each branded ordinal of a range, in order
+  entry .visit8   runs a lambda on eight consecutive ordinals at a time, with a second for the tail
+      The derived-index answer for unrolled hot loops: the `+1`..`+7` arithmetic is proven
+      once here, and user code only ever sees branded ordinals.
+  entry .materialize   a new value of the medium copied from a range
+  entry .cloneTo   copies a range into a builder of the medium's `Target` type
+  entry .transfer   copies as much of a range as fits a slate's space, returning the count
+  entry .unsafeRaw   the raw storage, behind `Unsafe`, for kernels whose index arithmetic outruns the combinators
+      Compressor back-references and the like: the caller takes back responsibility for
+      bounds.
+  entry .borrow   lends a byte region's raw array with the range's offset and length, for `(array, offset, length)` APIs
+      An extension on `Region[Data]`: `OutputStream.write`, `ByteBuffer.wrap`,
+      `Deflater.setInput` and a digest's `update` take a triple which is in range by
+      construction, so no `Unsafe` is needed; the array is visible only for the call, which
+      must neither retain it nor index outside the triple.
+
+entry .Slate   the writable counterpart of `Region`: a duct's output storage, written through branded ordinals
+  detail
+      `Slate[medium]` has `update` in place of `apply`, with the same branding discipline:
+      `slate(index) = element` writes at a branded ordinal, `visit` runs over a range, and
+      `borrow` lends the raw byte array with a range's offset and length for the APIs which
+      fill a triple (`Deflater.deflate`, `InputStream.read`). `Slate.over` lends one over
+      exclusive storage. Like `Region`, it is not exported to the umbrella: `import
+      zephyrine.Slate`.
+
+      ```scala
+      import soundness.*
+      import zephyrine.Slate
+
+      val target = Array.scratch[Byte](6)
+
+      Slate.over[Data, Unit](target, 2, 5): slate =>
+        space => slate.visit(space) { index => slate(index) = 7.toByte }
+
+      (target(1), target(2), target(5))   // (0, 7, 0)
+      ```
+  refer zephyrine.Region
+  refer zephyrine.Duct
+  entry .over   lends a slate over exclusive storage, with its extent clamped to the storage's true extent
+  entry .update   writes an element at a branded ordinal
+  entry .visit   runs a lambda on each branded ordinal of a range, in order
+  entry .unsafeRaw   the raw exclusive storage, behind `Unsafe`
+  entry .borrow   lends a byte slate's raw array, exclusively, with the space's offset and length
+
+entry .Utf8   strict UTF-8 over a byte buffer, for parsers which scan bytes and materialize text only for the slices they keep
+  detail
+      Decoding is strict, as `Ductile.charset`'s kernel is: overlong forms, encoded surrogates
+      and values above U+10FFFF are malformed, never substituted, so a parser can reject bad
+      input rather than silently carry U+FFFD into a document. An all-ASCII slice costs one
+      array copy, through the JDK's Latin-1 `String` constructor. Not exported to the
+      umbrella: reached as `zephyrine.Utf8`.
+
+      ```scala
+      import soundness.*
+
+      val bytes: scala.Array[Byte] = scala.Array('a'.toByte, 0xc3.toByte, 0xa9.toByte)
+      zephyrine.Utf8.decode(bytes, 0, 3)             // t"aé"
+      zephyrine.Utf8.point(bytes, 1, 3)              // 0xe9
+      zephyrine.Utf8.decode(bytes, 0, 2)             // Unset: the sequence is cut short
+      ```
+  refer zephyrine.Words
+  entry .Malformed   `point`'s result for an invalid sequence: `-1`
+  entry .Incomplete   `point`'s result for a valid prefix cut short by the end: `-2`
+      A caller with more input to come refills and retries.
+  entry .width   the number of bytes in the sequence a lead byte begins: 1 to 4, or 0 for a byte which cannot lead
+      A continuation byte, the overlong leads C0 and C1, and F5 to FF cannot lead a sequence.
+  entry .continuation   whether a byte is a continuation byte, `10xxxxxx`
+      Counting the bytes which are *not* continuations counts the code points in a range.
+  entry .point   the code point of the sequence beginning at an offset and lying wholly before `end`, or `Malformed` or `Incomplete`
+  entry .asciiEnd   the offset of the first non-ASCII byte in a range, or its end if there is none, scanning eight bytes per step
+  entry .ascii   the text of a range the caller knows to be ASCII: one copy, no validation
+  entry .decode   the text of a byte range, or `Unset` if it is not valid UTF-8
+  entry .append   appends the text of a byte range to a `StringBuilder`, or appends nothing and returns `false` if it is invalid
+
+entry .Words   SWAR primitives over a byte buffer: eight bytes read as one word and classified lane by lane
+  detail
+      `load` reads eight bytes as a little-endian `Long` (through the platform's `WordLoad`),
+      and the masks classify each lane with the classic has-zero-byte arithmetic, so a scan
+      for a stop byte advances eight bytes per step. Every mask has the high bit set in each
+      lane which satisfies the test; the borrow from one flagged lane can spill into the lanes
+      above it, so only the *lowest* flagged lane is exact — the one `first` reports, and the
+      only one a scan needs. The tests are valid for ASCII lanes: a lane with its own high
+      bit set is flagged by `nonAscii` and must be handled separately by a scan which cares.
+      Not exported to the umbrella: reached as `zephyrine.Words`.
+
+      ```scala
+      import soundness.*
+      import zephyrine.Words
+
+      val bytes: scala.Array[Byte] = "abc<efgh".getBytes.nn
+      val word = Words.load(bytes, 0)
+      Words.first(Words.matches(word, Words.replicate('<')))   // 3
+      ```
+  refer zephyrine.WordLoad
+  refer zephyrine.Utf8
+  entry .HighBits   the high bit of every lane: `0x8080808080808080L`
+  entry .EveryByte   one in every lane: `0x0101010101010101L`
+  entry .load   eight bytes from an index, as a little-endian `Long`
+  entry .replicate   a byte value replicated into all eight lanes, the comparand for `matches` and `below`
+  entry .zeroes   the lanes of a word which are zero
+  entry .matches   the lanes of a word equal to a replicated byte
+  entry .below   the lanes of a word below a replicated byte, both ASCII
+  entry .nonAscii   the lanes of a word holding a non-ASCII byte
+  entry .first   the offset within the word of the lowest flagged lane of a non-zero mask
+
+entry .WordLoad   the platform's little-endian 64-bit read over a byte buffer, behind `Words.load`
+  detail
+      Little-endian regardless of the platform, so `Words.first(mask)` is
+      `numberOfTrailingZeros(mask) >> 3` everywhere. The JVM variant (`core-jvm`) reads the
+      word through a byte-array view `VarHandle`; the Scala.js and Scala Native variant
+      (`core-portable`) assembles it by shift-and-or, since neither has `java.lang.invoke`.
+      Not exported to the umbrella.
+  entry .get   eight bytes from an index, as a little-endian `Long`
+
+entry .Blockpool   a process-wide, bounded pool of spent transfer blocks, shared across conduits and writers
+  detail
+      The second-level cache behind each `Conduit`'s `Freelist`: the freelist recycles blocks
+      between one writer and reader over a conduit's lifetime, and this pool carries them
+      *across* lifetimes, so a short-lived conduit, `Utf8Sink` or `Utf8Writer` mints its
+      blocks from its predecessors' instead of allocating afresh. Blocks are pooled by their
+      storage class and exact physical size, each class bounded to about 16 MiB retained
+      (floored at four blocks, capped at 256). Multi-producer and multi-consumer, both
+      operations non-blocking and best-effort: a `poll` miss means the caller allocates, an
+      `offer` over the bound discards. Contents are never read — a reused block is
+      overwritten before publication. Not exported to the umbrella.
+  refer zephyrine.Conduit
+  refer zephyrine.Freelist
+  entry .offer   caches a spent block of a class and exact physical size, or discards it if the class is at bound
+      The block must be fully relinquished by its offerer.
+  entry .poll   a pooled block of exactly this class and physical size, or `null`, in which case the caller allocates
+
+entry .Handoff   a bounded single-producer, single-consumer hand-off ring: the exchange behind `Conduit`
+  detail
+      Exactly one thread calls the producer operations (`offer`, `finish`) and exactly one the
+      consumer operations (`take`, `drain`, `close`). Both sides spin briefly before parking,
+      so a producer and consumer in lockstep exchange items without kernel transitions; the
+      unpark handshake is the Dekker pattern, so a wakeup is never missed. Interruption is
+      cancellation: a parked side raises `InterruptedException`, as a blocking queue's would.
+      Its guarantees come from volatile publication order, not aliasing analysis. Not
+      exported to the umbrella; parasite's queues build on it too.
+  refer zephyrine.Conduit
+  entry #width   the ring's slot count: the largest burst a `drain` can move
+  entry #size   approximate occupancy, for advisory demand calculations; never for synchronization
+  entry #free   the approximate number of free slots
+  entry #offer   producer side: spins then parks until a slot frees, unless the consumer has closed, when the item is discarded
+  entry #finish   producer side: no more items will be offered; idempotent
+  entry #drain   consumer side: adopts every buffered item into a caller-owned array in one step, blocking until at least one arrives
+      Returns the number moved: zero only once the producer has finished and the ring is
+      drained. One `head` publication and one producer unpark per burst, where a `take` loop
+      pays one of each per item.
+  entry #take   consumer side: the next item, or `null` once the producer has finished and the ring is drained
+  entry #close   consumer side: stops accepting, drains buffered items (releasing a parked producer) and discards later offers
+
+entry .Freelist   a bounded single-producer, single-consumer pool of spent blocks: a conduit's return path
+  detail
+      Lets a `Conduit`'s reader hand a drained block back to its writer for reuse instead of
+      dropping it to the collector while the writer mints a fresh one. Exactly one thread
+      offers (the reader) and one polls (the writer), and neither ever blocks: this is a
+      best-effort cache, not a rendezvous, so the writer can never stall on an empty pool —
+      which would deadlock against a reader parked waiting for that same writer. Not exported
+      to the umbrella.
+  refer zephyrine.Blockpool
+  entry #offer   caches a spent block, returning whether it was accepted; a full pool declines
+  entry #poll   a cached block to reuse, or `null` if the pool is empty
+
+entry .internal   the home of the `Credit` and `Datum` opaque types and the `consume` macro
+  hidden
+  detail
+      Not for direct use: `Credit` and `Datum` are exported from here to the `zephyrine`
+      package, and `consume` is the macro behind `Cursor#consume`.
+  entry .Credit   the demand type; see `zephyrine.Credit`
+    entry .apply   a credit of `count` elements
+    entry .count   the number of elements the credit grants, as a `Long`
+  entry .Datum   the peeked element type; see `zephyrine.Datum`
+    entry .End   the sentinel for an exhausted cursor
+    entry .apply   lifts an unsigned byte, or a char, into a `Datum`
+    entry .datumByte   `Datum == Byte` comparison
+    entry .byteDatum   `Byte == Datum` comparison
+    entry .datumChar   `Datum == Char` comparison
+    entry .charDatum   `Char == Datum` comparison
+    entry .datumDatum   `Datum == Datum` comparison
+    entry .asInt   the underlying `Int`; anywhere it leaks, the distinction is lost
+    entry .isEnd   whether the cursor which produced this datum was exhausted
+  entry .consume   the macro behind `Cursor#consume`: one `next()` and comparison per character of the literal

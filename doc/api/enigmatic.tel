@@ -1,0 +1,2915 @@
+tel 1.0
+
+base enigmatic
+import soundness
+
+info   encryption, signing, key agreement and message authentication, with every choice a type
+detail
+    _Enigmatic_ is cryptography whose *choices* — algorithm, key size, block-cipher mode,
+    padding, signature digest — are types, checked where the code is written. Encrypting with
+    AES-256 in CBC mode with PKCS#7 padding names all four decisions as `Aes[256] over Cbc
+    against Pkcs7`; a pairing the specifications forbid, such as a counter mode with a padding,
+    does not compile (`Permits`); and the weak choices — DES, RC2, Blowfish, 1024-bit RSA, DSA,
+    ECB, and *every* unauthenticated block-cipher mode — need a `cryptoPermits` permit imported
+    by name before they can be used at all, so a codebase's acceptance of legacy cryptography
+    is one searchable import.
+
+    Keys are typed by their cipher. A `PrivateKey[cipher]` or `SymmetricKey[cipher]` never
+    exposes its bytes: it is used inside an `uncloak` block, which lends the key to the block
+    as an `Encryptor` or `Decryptor` capability that capture checking confines there, so where
+    secret material is used is visible in the code's structure. Where it is *stored* between
+    uses is the `Cloak` in scope, imported by name from the `cloaks` package: on the heap, in
+    off-heap memory, or encrypted at rest under an ephemeral key. A `Password` is the same kind
+    of secret with no cipher attached. The algorithms themselves come from a `Crypto`
+    *provider*, also imported by name: the JDK's (`providers.javaBaseProvider`), OpenSSL's
+    (`providers.opensslProvider`) or the pure-Scala `SoundnessCrypto`
+    (`providers.soundnessProvider`).
+
+    ```scala
+    import soundness.*
+    import soundness.textDecodable
+    import charsets.utf8Charset
+    import codepages.utf8Codepage
+    import textSanitizers.skipSanitizer
+    import cloaks.heapCloak
+    import providers.javaBaseProvider
+    import strategies.throwUnsafely
+    import blockCipherModes.cbc
+    import blockCipherPaddings.pkcs7
+    import cryptoPermits.permitUnauthenticatedCrypto
+
+    val key = SymmetricKey.generate[Aes[256]]()
+
+    key.uncloak:
+      t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]   // t"Hello world"
+
+    val signer = PrivateKey.generate[Ed25519]()
+    signer.public.verify(t"document", signer.sign(t"document"))              // true
+    ```
+
+    The library's surface, by kind:
+
+    - **Symmetric encryption**: `SymmetricKey`, the block ciphers `Aes`, `Blowfish`, `Des`,
+      `TripleDes` and `Rc2` over the modes `Cbc`, `Ecb`, `Ctr`, `Cfb`, `Ofb` and paddings
+      `Pkcs7`, `Iso10126`, `NoPadding`, with the `encrypt`/`decrypt` extensions (whole values,
+      `Chain`s and `Stream`s), an explicit `InitializationVector` at every encryption site.
+    - **Authenticated encryption and keystreams**: `AesGcm` and `ChaCha20Poly1305` (`seal` and
+      `unseal` under a nonce with associated data), `ChaCha20` as a bare keystream (`xor`), and
+      `Poly1305` as a one-time authenticator.
+    - **Public-key cryptography**: `PrivateKey`/`PublicKey` over `Rsa` (encrypts and signs),
+      `Dsa`, `Ecdsa`, `Ed25519` and the post-quantum `MlDsa` (sign and verify with a `Signature`),
+      and `X25519` and `Ecdh` (`agree` on a shared secret).
+    - **Message authentication**: `hmac[Sha2[256]](key)` over any gastronomy hash, as an `Hmac`.
+    - **Key documents**: a `PrivateKey` reads from PEM or DER in PKCS#8, PKCS#1, SEC1 or
+      OpenSSH's own container, a `PublicKey` from `PUBLIC KEY`/`RSA PUBLIC KEY` blocks or an
+      OpenSSH `authorized_keys` line (`OpenSsh`), each checked against the cipher named;
+      `KeyAlgorithm` is the typeclass behind the check, `Pkcs8` and `Spki` the two document
+      shapes. Writing a private key out (`pem(Divulgence)`, `data(Divulgence)`) demands the
+      `Divulgence` token.
+    - **ASN.1 and DER** (`enigmatic.asn1`): `Asn1`, the universal types PKIX uses, with a
+      canonical `Der` codec and `Pem` armoring that parses a bundle of blocks lazily.
+    - **X.509** (`enigmatic.x509`): `Certificate.selfSigned` and `Certificate.issued` over a
+      `Distinguished` name and a `SignatureAlgorithm`, including ML-DSA-signed certificates.
+    - **COSE** (`enigmatic.cose`): `Cose` signed and MACed messages over `CanonicalCbor`, with
+      `HmacCipher` adapting HMAC to the key machinery and `authenticate[Cose](key)` verifying.
+    - **OpenSSL** (`enigmatic.openssl`): `OpensslCrypto`, a provider over `libcrypto`.
+    - **Keystores** (JVM only): a PKCS#12 store opened with `path.open[Keystore](password)`,
+      served by `keystore` inside the block.
+
+    The source sets are `enigmatic.asn1` (the lowest: `Asn1`, `Der`, `Pem`), `enigmatic.core`
+    (everything above that is platform-neutral, including the pure-Scala provider
+    `SoundnessCrypto`), and one platform slice each for the JVM, Scala.js and Scala Native.
+    The JVM slice has the real `JavaBaseCrypto` over `javax.crypto`, all four cloaks and
+    `Keystore`; the Scala.js and Scala Native slices have a `JavaBaseCrypto` twin which
+    forwards AES, HMAC, AES-GCM, ChaCha20, X25519 and Ed25519 to `SoundnessCrypto` and panics
+    on anything else (RSA, DSA, ECDSA, ML-DSA, the legacy block ciphers), and only `heapCloak`.
+    `enigmatic.openssl`, `enigmatic.x509` and `enigmatic.cose` sit above `core`.
+
+    Everything is exported to the `soundness` umbrella, where the choice packages `cloaks`,
+    `providers`, `blockCipherModes`, `blockCipherPaddings` and `signatureDigests` merge with
+    the umbrella's own. `import soundness.*` imports no givens, so a cloak, a provider and (for
+    a block cipher whose type does not name them) a mode and a padding are each imported by
+    name. Two givens are deliberately absent from those packages: `Ecb.mode` and
+    `NoPadding.padding` are reached only by naming them in the type (`over Ecb`, `against
+    NoPadding`), since each takes a contextual parameter — a permit and a `Tactic[Crypto.Error]`
+    respectively — which a re-exported given cannot carry.
+
+refer enigmatic.SymmetricKey
+refer enigmatic.PrivateKey
+refer enigmatic.PublicKey
+refer enigmatic.Crypto
+refer enigmatic.Cloak
+refer enigmatic.BlockCipher
+refer enigmatic.uncloak
+refer enigmatic.Certificate
+refer enigmatic.Pem
+
+entry .Crypto   a pluggable cryptographic provider: the algorithms the typed API delegates to
+  detail
+      A `Crypto` is the provider — the JDK's JCE, OpenSSL, or the pure-Scala `SoundnessCrypto`
+      — which supplies the raw implementations every typed operation delegates to. It is a
+      contextual value and is chosen by importing one provider by name:
+      `providers.javaBaseProvider` (gastronomy's JDK marker, from which `.javaBaseCrypto`
+      derives `JavaBaseCrypto`), `providers.soundnessProvider` (from which `.soundnessCrypto`
+      derives `SoundnessCrypto`), or `providers.opensslProvider` (`OpensslCrypto` directly).
+      The one import selects both hashing and cryptography.
+
+      Every provider implements the mandatory baseline — `#random`, `#aes`, `#rsa`, `#hmac` and
+      `#rsaSignature` — and offers anything else (DES, Blowfish, RC2, DSA, ECDSA, Ed25519,
+      ML-DSA, X25519, ECDH, AES-GCM, ChaCha20) as *additional* members, which the cipher givens
+      reach through a structural refinement such as `Crypto { def ecdsa(digest: Text):
+      Crypto.SignatureScheme }`. An algorithm a provider does not offer is therefore a compile
+      error at the use site, not a failure at run time.
+
+      All inputs and outputs are `Data` and `Text` descriptors: no platform crypto types appear
+      in the contract. Key material follows the JCE encodings — symmetric keys are raw bytes,
+      private keys PKCS#8, public keys X.509 `SubjectPublicKeyInfo` — and a symmetric
+      ciphertext is the IV followed by the raw ciphertext when the mode uses one.
+
+      A custom provider is an ordinary `given Crypto`, which is how a test fixes the randomness:
+
+      ```scala
+      import soundness.*
+      import cloaks.heapCloak
+      import strategies.throwUnsafely
+      import cryptoPermits.permitUnauthenticatedCrypto
+
+      given Crypto:
+        def random: Crypto.Random = size => Array.fill[Byte](size)(0.toByte)
+        def aes: Crypto.SymmetricCipher = JavaBaseCrypto.aes
+        def rsa: Crypto.PublicKeyCipher = JavaBaseCrypto.rsa
+        def hmac(algorithm: Text): Crypto.Mac = JavaBaseCrypto.hmac(algorithm)
+        def rsaSignature(digest: Text): Crypto.SignatureScheme = JavaBaseCrypto.rsaSignature(digest)
+
+      val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+      key.uncloak(t"Hello world".encrypt(InitializationVector.random))
+      ```
+  refer enigmatic.JavaBaseCrypto
+  refer enigmatic.SoundnessCrypto
+  refer enigmatic.OpensslCrypto
+  entry .javaBaseCrypto   the JDK provider, whenever `providers.javaBaseProvider` is imported
+      A given `JavaBaseCrypto.type` derived from gastronomy's `Provider.JavaBase` marker, so
+      the single `import providers.javaBaseProvider` enables both hashing and cryptography. On
+      Scala.js and Scala Native the `JavaBaseCrypto` it supplies is the twin which forwards the
+      portable algorithms to `SoundnessCrypto`.
+  entry .soundnessCrypto   the pure-Scala provider, whenever `providers.soundnessProvider` is imported
+      A given `SoundnessCrypto.type` derived from gastronomy's `SoundnessHashing` marker, so the
+      one import gives Scala implementations of both the hashes and the ciphers.
+  entry .SymmetricCipher   a block cipher as the provider sees it: JCE-style transformations over raw keys
+    detail
+        The contract `#aes` and the legacy block ciphers fulfil. `transformation` is the full
+        JCE spec a `BlockCipher` builds, such as `AES/CBC/PKCS5Padding`; `encrypt` and `decrypt`
+        frame the IV as the leading block of the ciphertext when one is supplied; `stream` and
+        `decryptStream` open a `Cipher.Session` for chunked processing.
+    entry #encrypt   encrypts `data` under `key`, prefixing `iv` to the ciphertext when one is given
+    entry #decrypt   decrypts `data`, reading the leading `ivSize` bytes as the IV when a size is given
+    entry #blockSize   the block size in bytes of a transformation: 16 for AES, 8 for DES, Triple-DES, Blowfish and RC2
+    entry #generateKey   fresh random key material of `bits` bits
+    entry #stream   a `Cipher.Session` encrypting under `key` with `iv` already applied
+    entry #decryptStream   a `Cipher.Session` decrypting under `key`, the IV already separated from the ciphertext
+  entry .PublicKeyCipher   an asymmetric cipher: encrypts toward a public key, decrypts with the private one
+    detail
+        The contract `#rsa` fulfils. Keys are PKCS#8 (private) and `SubjectPublicKeyInfo`
+        (public); `generateKeyPair` returns the private key, from which `privateToPublic`
+        recovers the public one.
+    entry #encrypt   encrypts `input` under a `SubjectPublicKeyInfo` public key
+    entry #decrypt   decrypts `input` with a PKCS#8 private key
+    entry #generateKeyPair   a fresh PKCS#8 private key of `bits` bits
+    entry #privateToPublic   the `SubjectPublicKeyInfo` of a PKCS#8 private key
+  entry .SignatureScheme   a signature scheme: sign with the private key, verify with the public
+    detail
+        The contract `#rsaSignature`, and the structural `dsa`, `ecdsa`, `ed25519` and `mlDsa`
+        members, fulfil. `verify` answers `false` rather than throwing when a signature is
+        undecodable (the JDK's ML-DSA throws on a corrupted final byte, which a provider must
+        catch).
+    entry #sign   the signature over `data` with a PKCS#8 private key
+    entry #verify   whether `signature` is a valid signature over `data` under a `SubjectPublicKeyInfo` key
+    entry #generateKeyPair   a fresh PKCS#8 private key, carrying its public half where the scheme cannot derive it
+    entry #privateToPublic   the `SubjectPublicKeyInfo` of a PKCS#8 private key
+  entry .Mac   a keyed message authentication code
+    entry #mac   the authentication code over `data` under `key`
+  entry .KeyAgreement   a Diffie–Hellman-style agreement: two key pairs, one shared secret
+    detail
+        The contract the structural `x25519` and `ecdh` members fulfil. `generateKeyPair`
+        returns a PKCS#8 private key carrying its public half, `privateToPublic` recovers that
+        half as a `SubjectPublicKeyInfo`, and `agree` is the raw shared secret, which a protocol
+        feeds to a key-derivation function rather than using directly.
+    entry #generateKeyPair   a fresh PKCS#8 private key carrying its public half
+    entry #privateToPublic   the `SubjectPublicKeyInfo` of a PKCS#8 private key
+    entry #agree   the raw shared secret of a private key and a peer's public key
+  entry .StreamCipher   a stream cipher as a keystream, applied by `xor`
+    detail
+        The contract the structural `chaCha20` member fulfils: `xor` applies the keystream for
+        the key, nonce and starting block counter to the data, which both encrypts and
+        decrypts.
+    entry #generateKey   fresh random key material of `bits` bits
+    entry #xor   `data` combined with the keystream of `key`, `nonce` and the block `counter`
+  entry .Aead   authenticated encryption with associated data: seal under a nonce, unseal or refuse
+    detail
+        The contract the structural `aesGcm` and `chaCha20Poly1305` members fulfil. `seal`
+        returns the ciphertext with the tag appended; `unseal` is `Unset` when the tag does not
+        verify.
+    entry #generateKey   fresh random key material of `bits` bits
+    entry #seal   the ciphertext of `plaintext` under `key` and `nonce`, authenticating `associated` too, with the tag appended
+    entry #unseal   the plaintext of `ciphertext`, or `Unset` if the tag does not verify
+  entry .Random   a source of cryptographically strong random bytes
+    entry #bytes   `size` random bytes
+  entry .Error   raised when decryption or unsealing fails: a wrong key, corrupt data, a bad tag
+    detail
+        Error 521: _could not decrypt the data because `reason`_. Encryption is total — the
+        types guarantee a valid transformation — so only the processing side can fail:
+        `Data#decrypt`, the streaming `decrypt` (as the final window is pulled), `unseal`, and
+        encrypting with `NoPadding` over misaligned input. A provider's own failures
+        (`javax.crypto.BadPaddingException` and the rest) are mapped to a `#reason` and their
+        message kept as `#detail`.
+
+        ```scala
+        import soundness.*
+        import cloaks.heapCloak
+        import providers.javaBaseProvider
+        import strategies.throwUnsafely
+        import cryptoPermits.permitUnauthenticatedCrypto
+
+        val key = SymmetricKey.generate[Aes[256] over Cbc against NoPadding]()
+
+        capture[Crypto.Error](key.uncloak(t"Hello world".encrypt(InitializationVector.random))).reason
+        // Crypto.Error.Reason.IllegalBlockSize
+        ```
+    entry .communicable   renders each reason as a message
+    entry .Reason   why the operation failed
+        `BadPadding` (1): _the ciphertext was corrupted or the key was wrong_. `IllegalBlockSize`
+        (2): _the input length was not valid for the cipher_, which is what `NoPadding` raises
+        for input that is not a multiple of the block size in a block-aligned mode. `InvalidKey`
+        (3): _the key was not valid for the cipher_, such as key material of the wrong length
+        adopted with `SymmetricKey(bytes)`. `InvalidAlgorithm` (4): _the algorithm was not
+        available_. `IoFailure` (5): _data could not be read or written_, the mapping of any
+        other `java.security.GeneralSecurityException`. `BadTag` (6): _the authentication tag
+        did not verify_, from `unseal`: a forgery, a wrong key, or a nonce or associated data
+        which differ from the sealing ones.
+    entry #reason   which failure it was
+    entry #detail   the provider's own message, if it gave one
+  entry #random   the provider's random source, from which `InitializationVector.random` draws
+  entry #aes   AES in the block-cipher modes and paddings; mandatory
+  entry #rsa   raw RSA encryption and decryption; mandatory
+  entry #hmac   the HMAC over a JCE-named algorithm, such as `HmacSHA256`; mandatory
+  entry #rsaSignature   RSASSA-PKCS1-v1_5 over the named digest, such as `SHA256`; mandatory
+      Signing is part of the baseline, unlike `dsa` and `ecdsa`, because `Rsa` both encrypts
+      and signs with one key pair and its given asks only for a `Crypto`.
+
+entry .JavaBaseCrypto   the `Crypto` provider over the JDK's `javax.crypto` and `java.security`
+  detail
+      The default provider, selected by `import providers.javaBaseProvider`, and the single
+      home of every `javax.crypto` and `java.security` call in the library. On the JVM it
+      offers the full set: the baseline, the legacy block ciphers, DSA, ECDSA, Ed25519, ML-DSA
+      (JDK 24 or later: an earlier JDK panics, _the JDK does not provide ML-DSA; JDK 24 or
+      later is required_, at the first use), X25519, ECDH, AES-GCM, ChaCha20 and
+      ChaCha20-Poly1305. Its signature verifiers answer `false` rather than throwing on a
+      signature the JDK cannot decode.
+
+      An EC, Ed25519, X25519 or ML-DSA private key offers no JCA route back to its public key,
+      so the provider embeds the public key in the PKCS#8 document at generation — inside the
+      SEC1 `ECPrivateKey` for EC, and in RFC 5958's top-level `[1]` field for the others — and
+      strips it again before any JCA call; a document that carries the field in OpenSSL's
+      implicit form is read too. A key read from a file without the field is rejected by
+      `PrivateKey` as `PublicKeyAbsent`.
+
+      On Scala.js and Scala Native, where `javax.crypto` does not exist, `JavaBaseCrypto` is a
+      twin which forwards `random`, `aes`, `hmac`, `aesGcm`, `chaCha20`, `chaCha20Poly1305`,
+      `x25519` and `ed25519` to `SoundnessCrypto` — so `import providers.javaBaseProvider`
+      works there unchanged for those — and panics on `rsa`, `rsaSignature`, `ecdsa` and the
+      legacy block ciphers at the first use.
+  refer enigmatic.Crypto
+  refer enigmatic.SoundnessCrypto
+  entry .random   `java.security.SecureRandom`
+  entry .aes   AES through `Cipher.getInstance`, in every mode and padding the JDK supports
+  entry .des   DES; needs `Permit[Concession.Des]`
+  entry .tripleDes   Triple-DES (`DESede`); needs `Permit[Concession.TripleDes]`
+  entry .blowfish   Blowfish; needs `Permit[Concession.Blowfish]`
+  entry .rc2   RC2; needs `Permit[Concession.Rc2]`
+  entry .hmac   `javax.crypto.Mac` over the named algorithm
+  entry .rsa   raw RSA through `Cipher.getInstance("RSA")`
+  entry .rsaSignature   `<digest>withRSA`
+  entry .ecdsa   `<digest>withECDSA` over P-256, P-384 or P-521 by key size
+  entry .ed25519   Ed25519, the public key embedded in the generated private key
+  entry .x25519   X25519 key agreement through `KeyAgreement.getInstance("X25519")`
+  entry .ecdh   ECDH over the NIST prime curves; its keys are the same documents as `.ecdsa`'s
+  entry .aesGcm   AES/GCM/NoPadding with a 128-bit tag
+  entry .chaCha20   the bare ChaCha20 keystream, with the IETF nonce and counter
+  entry .chaCha20Poly1305   the ChaCha20-Poly1305 AEAD
+  entry .mlDsa   ML-DSA-44, -65 or -87 by level; JDK 24 or later
+  entry .dsa   DSA signatures, the public key computed from the private one
+
+entry .SoundnessCrypto   the pure-Scala `Crypto` provider: cryptography wherever Scala runs
+  detail
+      The provider selected by `import providers.soundnessProvider` (with gastronomy's pure
+      hashes), implemented in Scala over gastronomy's hash functions so that cryptography runs
+      on Scala.js, WASI and Scala Native without OpenSSL as well as on the JVM. It offers AES
+      in the five block modes with the three paddings (streaming included), AES-GCM, HMAC over
+      every gastronomy hash, ChaCha20 and ChaCha20-Poly1305, X25519 and Ed25519: the
+      primitives SSH, TLS 1.3 and the rest of the modern internet are built on. Its ciphertexts
+      and signatures interoperate with the JDK's in both directions.
+
+      It does not offer RSA, DSA, ECDSA, ML-DSA or the legacy block ciphers: `.rsa` and
+      `.rsaSignature` panic, and the others are structural members it simply lacks, so asking
+      it for `Ecdsa[256]` is a compile error.
+
+      ```scala
+      import soundness.*
+      import cloaks.heapCloak
+      import providers.soundnessProvider
+      import strategies.throwUnsafely
+
+      val key = SymmetricKey.generate[AesGcm[256]]()
+      val nonce: Data = Array.fill[Byte](12)(1)
+      key.unseal(nonce, Data(), key.seal(nonce, Data(), t"message".bytestream)).read[Text]
+      ```
+
+      Caveat: this is portable, reviewable code, not a hardened library. It has had no
+      independent audit; its AES is a byte-oriented software implementation, so not immune to
+      cache timing; and its Curve25519 arithmetic uses `BigInt`, whose operations are not
+      constant-time (a signature takes milliseconds). Where a platform offers a native provider
+      — the JDK's or OpenSSL — prefer it for keys an adversary can time; this one exists so
+      that the browser and WASI are not left with nothing. Its randomness is `SecureRandom` on
+      the JVM, `crypto.getRandomValues` on Scala.js and `/dev/urandom` on Scala Native.
+  refer enigmatic.Crypto
+  refer enigmatic.JavaBaseCrypto
+  entry .random   the platform's entropy source
+  entry .aes   AES over a Scala Rijndael, in CBC, ECB, CTR, CFB and OFB with PKCS#7, ISO 10126 or no padding
+      CFB and OFB are the full-block (128-bit feedback) variants and CTR increments the whole
+      128-bit counter block, matching the JDK so a ciphertext made by one decrypts under the
+      other.
+  entry .hmac   RFC 2104 over `HmacMD5`, `HmacSHA1`, `HmacSHA224`, `HmacSHA256`, `HmacSHA384`, `HmacSHA512` or `HMAC-BLAKE3`
+  entry .rsa   not provided: panics, _RSA is not provided by SoundnessCrypto; select the JDK or OpenSSL provider_
+  entry .rsaSignature   not provided: panics as `.rsa` does
+  entry .aesGcm   AES-GCM with a table-free GHASH
+  entry .chaCha20   the ChaCha20 keystream of RFC 8439
+  entry .chaCha20Poly1305   the ChaCha20-Poly1305 AEAD of RFC 8439
+  entry .x25519   X25519 over `BigInt` field arithmetic; not constant-time
+  entry .ed25519   Ed25519 over `BigInt` field arithmetic; not constant-time
+      Unlike the JDK, this provider derives the public key from the secret, so it accepts a
+      PKCS#8 Ed25519 key that does not carry its public half.
+
+entry .Cipher   what every cipher type has: a key size, key generation, and the public half of a key
+  detail
+      The root of the cipher hierarchy. A cipher's instance is summoned as a given from its
+      companion (`Aes.value`, `Rsa.value`, …) with the `Crypto` provider in scope, and carries
+      the provider's implementation; `SymmetricKey.generate[cipher]()` and
+      `PrivateKey.generate[cipher]()` call its `#genKey`. The roles a cipher plays are its
+      other parents: `Encryption` (encrypts and decrypts), `Signing` (signs and verifies),
+      `Agreeing` (agrees on a secret), `Authenticated` (seals and unseals), `Keystream`
+      (`xor`), and `Symmetric` (its key is both halves).
+  refer enigmatic.BlockCipher
+  refer enigmatic.Encryption
+  refer enigmatic.Symmetric
+  entry .Session   a stateful streaming session owned by a provider: feed chunks, then finish
+    detail
+        Opened by `Crypto.SymmetricCipher#stream` or `#decryptStream` with the IV already
+        applied; `update` feeds successive chunks and `finish` flushes the final block, which
+        for a padded decryption is where the padding is stripped and a bad padding reported.
+    entry #update   the output for one more chunk of input, possibly empty while a block is buffered
+    entry #finish   the final output, after padding is applied or stripped
+  entry #Size   the key size in bits, as a literal type
+  entry #keySize   the key size in bits
+  entry #privateToPublic   the public half of a key, in provider encoding; the key itself for a symmetric cipher
+  entry #genKey   fresh key material from the provider: a raw key, or a PKCS#8 private key
+
+entry .Cloak   where secret material is stored while it is not in use
+  detail
+      A `Cloak` must be in scope to construct any secret value — a `Password`, a `SymmetricKey`,
+      a `PrivateKey`, a key read from a file — and the secret captures the cloak that stores
+      it, so a secret can never outlive its storage. There is deliberately no default given:
+      one is imported by name from the `cloaks` package, so the storage decision is always
+      written down.
+
+      ```scala
+      import soundness.*
+      import cloaks.heapCloak
+      import providers.javaBaseProvider
+
+      val password = Password(t"hunter2")
+      password.uncloak(String(cleartext.chars).tt)   // t"hunter2"
+      ```
+
+      `heapCloak` keeps the material in a private byte array, and is pure: a heap-cloaked
+      secret has an empty capture set and can be stored and returned freely. `offHeapCloak`
+      moves it out of the Java heap, so it does not appear in a heap dump; `veiledHeapCloak`
+      and `veiledOffHeapCloak` additionally keep it encrypted under an ephemeral AES-256-GCM
+      key between uses. Those three are capabilities: a secret made under one captures it, and
+      cannot be ascribed a pure type such as `SymmetricKey[Aes[256]]`. They exist only on the
+      JVM, where they need `java.lang.foreign`.
+
+      No cloak offers complete protection: a debugger or same-process attacker sees everything,
+      the JCE makes transient heap copies of key material, and construction from `Text` pins
+      an unzeroable `String` on the heap. What the stronger cloaks shrink is the *window*
+      during which cleartext is reachable from a heap dump or core file.
+  refer enigmatic.cloaks
+  refer enigmatic.Secret
+  entry #cloak   copies the bytes into the cloak's storage, zeroing the input, and returns the `Secret`
+      The input array is zeroed before the method returns, so the caller's copy of the
+      cleartext does not linger; the `Secret` captures this cloak.
+
+entry .Secret   the handle to one secret stored through a `Cloak`; not exported to `soundness`
+  detail
+      Not for direct use: user code reaches secrets only through `Password`, `PrivateKey` and
+      `SymmetricKey` and their `uncloak` methods. A `Secret` is not itself a capability; its
+      tracked-ness comes from the `Cloak` which made it — one from an off-heap or encrypting
+      cloak captures that cloak, one from the heap cloak is pure.
+  entry #uncloak   lends the secret to a block as a mutable byte array, zeroed when the block exits
+      The array is materialised from wherever the cloak stores it and zeroed in a `finally`
+      whether the block exits normally or abruptly, so it must not escape the block.
+
+entry .Password   a password held opaquely by a `Cloak`, readable only inside `uncloak`
+  detail
+      A `Password` is a cloaked secret with no cipher attached. Its cleartext is reachable only
+      inside `#uncloak`, as a `Cleartext` capability over a mutable char array which capture
+      checking confines to the block and which is zeroed when the block exits; its `show` and
+      inspection forms never reveal it. It needs a `Cloak` in scope to construct, and is the
+      flag `path.open[Keystore](…)` takes.
+
+      ```scala
+      import soundness.*
+      import cloaks.heapCloak
+
+      val password = Password(t"hunter2")
+      password.uncloak(String(cleartext.chars).tt)   // t"hunter2"
+      password.show                                  // t"Password(•••)"
+      ```
+  refer enigmatic.Cleartext
+  refer enigmatic.Cloak
+  entry .apply   a password from `Text`, or from a mutable `Array[Char]` which is zeroed
+      The `Text` overload has already pinned the cleartext on the heap as an immutable
+      `String`, where it cannot be zeroed, so the cloak protects only the copy it stores.
+      Prefer the `scala.Array[Char]` overload when the password comes from mutable input, such
+      as a console read: it encodes the chars to UTF-8, then zeroes both the input array and
+      the encoding buffer, leaving the cloaked copy as the only cleartext.
+  entry .showable   renders every password as `Password(•••)`
+  entry .inspectable   renders every password as `Password(•••)`, so a debugger or test report sees nothing
+  entry #uncloak   runs a block with the cleartext lent as a `Cleartext` capability
+      The block is a context function over `Cleartext^`, reached as `cleartext`; returning the
+      capability, or a closure over it, is a compile error, and the chars are zeroed when the
+      block exits, so they must not escape either.
+
+entry .Cleartext   the scoped view of a password's cleartext, lent within `Password#uncloak`
+  detail
+      A shared capability over a mutable char array, freely aliasable within the `uncloak`
+      block but not beyond it. There is deliberately no `Text` accessor: an immutable `String`
+      copy could be neither confined to the block nor zeroed after it. Reached as `cleartext`.
+  entry #chars   the cleartext as a mutable `scala.Array[Char]`, zeroed when the block exits
+
+entry .cleartext   the `Cleartext` lent by the enclosing `Password#uncloak`, reached contextually
+    `cleartext.chars` rather than `summon[Cleartext].chars`, in the manner of parasite's
+    `monitor`. Only meaningful inside a `Password#uncloak` block.
+
+entry .Divulgence   the token which must be passed to reveal a private key's material
+    `privateKey.pem(Divulgence)` and `symmetricKey.data(Divulgence)` return immutable `Data`
+    which outlives the cloak's zeroing, which is exactly why obtaining it demands this explicit
+    argument: every place secret material escapes its cloak is one searchable word.
+
+    ```scala
+    import soundness.*
+    import cloaks.heapCloak
+    import providers.javaBaseProvider
+
+    val key = PrivateKey.generate[Ed25519]()
+    key.pem(Divulgence).serialize   // t"-----BEGIN PRIVATE KEY-----…"
+    ```
+
+entry .Symmetric   the marker of a cipher whose key is both halves: `SymmetricKey.generate` requires it
+    `Aes`, `AesGcm`, `Blowfish`, `Des`, `TripleDes`, `Rc2`, `ChaCha20`, `ChaCha20Poly1305` and
+    `HmacCipher` are `Symmetric`; `SymmetricKey.generate[cipher]()` is bounded by `Cipher &
+    Symmetric`, so an RSA key cannot be generated as one.
+
+entry .Encryption   the role of a cipher which encrypts and decrypts: block ciphers and RSA
+  detail
+      The `encrypt` and `decrypt` extensions require their cipher to be `Encryption`. The IV
+      is supplied explicitly as an `InitializationVector` strategy; ciphers and modes which do
+      not use one (RSA, ECB) ignore it.
+  entry #encrypt   the ciphertext of `value` under `key`, with the IV `iv` produces
+  entry #decrypt   the plaintext of `bytes` under `key`
+
+entry .Encryptor   the capability `uncloak` lends for encrypting with a key
+    A stateless wrapper over the key material, lent to an `uncloak` block as a context value
+    which the `encrypt` extensions take. It is a `SharedCapability`, freely aliasable within
+    the block, and capture checking keeps it there: returning it, or a closure over it, fails
+    with _leaks into outer capture set_. Made only by `uncloak`.
+
+entry .Decryptor   the capability `uncloak` lends for decrypting with a key
+    The counterpart of `Encryptor`, taken by the `decrypt` extensions and confined to its
+    `uncloak` block in the same way. Made only by `uncloak`.
+
+entry .Agreeing   the role of a key-agreement cipher: `X25519` and `Ecdh`
+  detail
+      Two parties, each holding the other's public key, compute the same shared secret. The
+      keys are in provider encoding, and the result is the raw secret, which a protocol feeds
+      to a key-derivation function. Used through the `agree` extension on a `PrivateKey`.
+  entry #agree   the raw shared secret of a PKCS#8 private key and a `SubjectPublicKeyInfo` public key
+
+entry .Authenticated   the role of an AEAD cipher: `AesGcm` and `ChaCha20Poly1305`
+  detail
+      `seal` encrypts the plaintext and authenticates both it and the associated data under a
+      nonce, appending the tag to the ciphertext; `unseal` reverses it, and is `Unset` when
+      the tag does not verify — a forgery, a wrong key, or a nonce or associated data which
+      differ from the sealing ones. The nonce must never repeat under one key; a protocol
+      derives it from a counter, which is why it is a plain argument rather than an
+      `InitializationVector` drawn at random. Used through the `seal` and `unseal` extensions
+      on a `SymmetricKey`, which need no permit: an AEAD is not `Unauthenticated`.
+  entry #nonceSize   the nonce length in bytes: 12 for both ciphers
+  entry #tagSize   the tag length in bytes: 16 for both ciphers
+  entry #seal   the ciphertext with the tag appended
+  entry #unseal   the plaintext, or `Unset` if the tag does not verify
+
+entry .Keystream   the role of a stream cipher used as a keystream generator: `ChaCha20`
+  detail
+      `xor` combines the data with the keystream of the key, nonce and block counter, which
+      both encrypts and decrypts. It is the raw primitive a protocol builds its own
+      authenticated construction from — OpenSSH's `chacha20-poly1305@openssh.com` uses one
+      ChaCha20 keystream for the packet length and another for the payload — and the counter
+      is exposed for exactly that reason. A nonce must never repeat under a key. Used through
+      the `xor` extension on a `SymmetricKey`.
+  entry #nonceSize   the nonce length in bytes: 12
+  entry #xor   `data` combined with the keystream starting at block `counter`
+
+entry .InitializationVector   how the IV of a symmetric encryption is produced, supplied at the call
+  detail
+      A strategy for producing an initialization vector of the cipher's block size. It is
+      always supplied explicitly at the encryption site — `value.encrypt(InitializationVector.random)`
+      — never resolved implicitly, so the choice between a fresh random IV and a repeatable
+      one is visible where it is made. Ciphers and modes which use no IV (RSA, ECB) ignore it;
+      a block-cipher ciphertext begins with the IV, so decryption needs no strategy.
+
+      ```scala
+      import soundness.*
+      import cloaks.heapCloak
+      import providers.javaBaseProvider
+      import strategies.throwUnsafely
+      import cryptoPermits.permitUnauthenticatedCrypto
+      import alphabets.hexUpperCase
+
+      val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+      val iv = InitializationVector.fixed(t"0123456789abcdef".in[Data])
+
+      key.uncloak:
+        t"Hello world".encrypt(iv).serialize[Hex] == t"Hello world".encrypt(iv).serialize[Hex]
+      // true: a fixed IV makes CBC deterministic, where `random` would differ run to run
+      ```
+  entry .random   a fresh random IV from the `Crypto` provider in scope, for every encryption
+  entry .fixed   the given bytes as the IV, every time: deterministic, for tests and known-answer vectors
+  entry .zero   an all-zero IV
+  entry #apply   the IV for a block size, in bytes
+
+entry .Permits   evidence that a block-cipher mode may be combined with a padding
+  detail
+      `mode Permits padding` is the compile-time check that `Aes[256] over mode against padding`
+      is a combination the providers support: the block-structured and feedback modes (ECB,
+      CBC, CFB, OFB) take all three paddings, and the counter mode takes only `NoPadding`, so
+      `Aes[128] over Ctr against Pkcs7` has no given and does not compile. The thirteen givens
+      live in the companion and resolve without any import.
+  entry .ecbNoPadding   ECB with no padding
+  entry .ecbPkcs7   ECB with PKCS#7 padding
+  entry .ecbIso10126   ECB with ISO 10126 padding
+  entry .cbcNoPadding   CBC with no padding
+  entry .cbcPkcs7   CBC with PKCS#7 padding
+  entry .cbcIso10126   CBC with ISO 10126 padding
+  entry .cfbNoPadding   CFB with no padding
+  entry .cfbPkcs7   CFB with PKCS#7 padding
+  entry .cfbIso10126   CFB with ISO 10126 padding
+  entry .ofbNoPadding   OFB with no padding
+  entry .ofbPkcs7   OFB with PKCS#7 padding
+  entry .ofbIso10126   OFB with ISO 10126 padding
+  entry .ctrNoPadding   CTR with no padding: the only padding a counter mode permits
+
+entry .Weakness   the concession a cipher type needs a permit for, as a match type
+    `Weakness[cipher]` maps a (possibly `over`/`against`-refined) cipher type to the
+    gastronomy `Concession` its use requires: `Des` to `Concession.Des`, `TripleDes[?]` to
+    `TripleDes`, `Rc2[?]` to `Rc2`, `Blowfish[?]` to `Blowfish`, `Rsa[1024]` to `SmallRsa`,
+    `Dsa[?]` to `Dsa`, and anything else — AES, RSA-2048 and above, ECDSA, Ed25519, ML-DSA —
+    to `Acceptable`, which needs no permit. `encrypt` and `sign` demand a
+    `Permit[Weakness[cipher]]`; `decrypt` and `verify` the weaker `ProcessingPermit`, so
+    `cryptoPermits.permitLegacyCrypto` allows reading old data without writing more of it.
+
+entry .Authentication   whether a cipher type is unauthenticated, as a match type
+    `Authentication[cipher]` is `Concession.Unauthenticated` for every `BlockCipher` — no
+    block-cipher mode authenticates what it encrypts — and `Acceptable` for anything else,
+    including the AEAD ciphers and RSA. `encrypt` and `decrypt` on a block cipher therefore
+    need `cryptoPermits.permitUnauthenticatedCrypto` (or any permit which subsumes it) in
+    scope.
+
+entry .SymmetricKey   a cipher's key, held by a `Cloak`, lent to a block as both `Encryptor` and `Decryptor`
+  detail
+      A `SymmetricKey[cipher]` is a `PrivateKey` whose public half is itself: generated for a
+      `Symmetric` cipher with `.generate`, or adopted from existing material with `.apply`,
+      and stored by the `Cloak` in scope, which the key captures. Its `uncloak` lends both an
+      `Encryptor` and a `Decryptor` to its block; `seal`/`unseal` (an `Authenticated` cipher)
+      and `xor` (a `Keystream` cipher) take the key directly.
+
+      ```scala
+      import soundness.*
+      import cloaks.heapCloak
+      import providers.javaBaseProvider
+      import strategies.throwUnsafely
+      import cryptoPermits.permitUnauthenticatedCrypto
+
+      val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+
+      key.uncloak:
+        t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]   // t"Hello world"
+      ```
+
+      The cipher's mode and padding may be left out of the type when givens for them are
+      imported — `SymmetricKey.generate[Aes[256]]()` with `blockCipherModes.cbc` and
+      `blockCipherPaddings.pkcs7` in scope is the same key type as above — and a block cipher
+      needs `cryptoPermits.permitUnauthenticatedCrypto` to encrypt or decrypt at all.
+  refer enigmatic.PrivateKey
+  refer enigmatic.uncloak
+  refer enigmatic.seal
+  refer enigmatic.Cloak
+  entry .generate   a fresh random key for a `Symmetric` cipher, from the provider in scope
+      Needs the cipher's given (and so a `Crypto`, and for a block cipher a mode and padding)
+      and a `Cloak^`. The result captures the cloak.
+  entry .apply   adopts existing key material — a derived key, a test vector — as a symmetric key
+      Takes `Data`, or a mutable `scala.Array[Byte]` which is zeroed as it is cloaked, leaving
+      the cloaked copy as the only key material; prefer the array overload where the material
+      is mutable. The bytes must be a valid key length for the cipher — an invalid length
+      surfaces when the key is used, as a `Crypto.Error` with reason `InvalidKey` — and the
+      type is the caller's claim: `SymmetricKey[AesGcm[128]](bytes)`.
+  entry #verify   checks a signature made with this key, for a `Signing` symmetric cipher such as `HmacCipher`
+      `key.public.verify(value, signature)`; needs a `ProcessingPermit[Weakness[cipher]]`.
+  entry #data   the raw key bytes, on presentation of the `Divulgence` token
+      The immutable `Data` outlives the cloak's zeroing, which is why obtaining it demands the
+      explicit `Divulgence` argument.
+
+entry .PrivateKey   a private key held by a `Cloak`: signs, decrypts, agrees, and yields its public half
+  detail
+      A `PrivateKey[cipher]` is held opaquely by whichever `Cloak` was in scope when it was
+      made — generated with `.generate`, or read from a key document with `.pemDecodable` and
+      `.derDecodable` — and captures that cloak. Operations which need the material
+      (`#public`, `#sign`, `uncloak`, `agree`) materialise it transiently through the cloak and
+      zero the copy as soon as they finish; only `#pem`, gated on `Divulgence`, lets it escape.
+
+      ```scala
+      import soundness.*
+      import cloaks.heapCloak
+      import providers.javaBaseProvider
+      import strategies.throwUnsafely
+
+      val key = PrivateKey.generate[Ecdsa[256]]()
+      val signature: Signature[Ecdsa[256]] = key.sign(t"an important document")
+      key.public.verify(t"an important document", signature)   // true
+      key.public.verify(t"a forged document", signature)       // false
+      ```
+
+      A key which already exists — in `~/.ssh`, or written by `openssl` — reads into a
+      `PrivateKey` of the cipher named, from any of the forms a key file takes, and the type is
+      checked against the document rather than assumed from it:
+
+      ```scala
+      import soundness.*
+      import cloaks.heapCloak
+      import providers.javaBaseProvider
+      import strategies.throwUnsafely
+      ```
+
+      ```scala fuel
+      frame
+        label An OpenSSH key, read from its PEM armor
+        code
+            val keyText = t"""-----BEGIN OPENSSH PRIVATE KEY-----
+            b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+            QyNTUxOQAAACARh+kfLi/QMMO/o5yyEp0Lt5IoJSSmMjnCpbwie7/sUgAAAJB+g2KdfoNi
+            nQAAAAtzc2gtZWQyNTUxOQAAACARh+kfLi/QMMO/o5yyEp0Lt5IoJSSmMjnCpbwie7/sUg
+            AAAEDTzzy05nIC9r9aKtXYNJMgY1F/g5ZiPNyksGUvj8yR6xGH6R8uL9Aww7+jnLISnQu3
+            kiglJKYyOcKlvCJ7v+xSAAAADHRlc3RAZXhhbXBsZQE=
+            -----END OPENSSH PRIVATE KEY-----"""
+
+            val sshKey = keyText.read[PrivateKey[Ed25519] in Pem]
+      frame
+        label The key signs a message
+        code
+            val sshKey = keyText.read[PrivateKey[Ed25519] in Pem]
+            val signature = sshKey.sign(t"message")
+      frame
+        label Its public half verifies the signature
+        code
+            val sshKey = keyText.read[PrivateKey[Ed25519] in Pem]
+            val signature = sshKey.sign(t"message")
+            sshKey.public.verify(t"message", signature)   // true
+      frame
+        label The public half is the line `id_ed25519.pub` holds
+        code
+            val sshKey = keyText.read[PrivateKey[Ed25519] in Pem]
+            OpenSsh.line(sshKey.public, t"test@example")
+            // t"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBGH6R8uL9Aww7+jnLISnQu3kiglJKYyOcKlvCJ7v+xS test@example"
+      frame
+        label Reading it as another cipher is a mismatch, not a lie
+        code
+            keyText.read[PrivateKey[Rsa[2048]] in Pem]
+            // raises PrivateKey.Error: a RSA-2048 key was expected but Ed25519 was found
+      ##
+      ```
+
+      A `PrivateKey` is a `Showable` as a SHA-256 fingerprint of its material and an
+      `Inspectable` as `PrivateKey(•••)`, so neither a log nor a test report reveals it.
+  refer enigmatic.PublicKey
+  refer enigmatic.SymmetricKey
+  refer enigmatic.KeyAlgorithm
+  refer enigmatic.OpenSsh
+  refer enigmatic.Divulgence
+  entry .generate   a fresh key pair for a cipher, from the provider in scope
+      Needs the cipher's given (and so a `Crypto`, and for `Rsa` and `Ecdsa` a
+      `Signature.Digest`) and a `Cloak^`. The result captures the cloak. The provider embeds
+      the public key in the PKCS#8 document for the ciphers which cannot derive it.
+  entry .derDecodable   reads a PKCS#8 `PrivateKeyInfo` as a `PrivateKey` of the cipher named
+      The given behind `der.as[PrivateKey[Rsa[2048]]]`, for any cipher with a `KeyAlgorithm`.
+      It needs a `Cloak^`, a `Tactic[PrivateKey.Error]` and `Diagnostics`; the result captures
+      the cloak and the tactic. The document's algorithm identifier and the key material's
+      size must be those of the cipher (`Mismatch` otherwise), and an EC, Ed25519 or ML-DSA key
+      written without its optional public-key field is `PublicKeyAbsent`, since `#public`
+      could not be answered later. The decoded `Data`, and the ASN.1 values and base64 text it
+      came through, are immutable and cannot be zeroed: a key read from text is only as
+      private as the heap it was read into.
+  entry .pemDecodable   reads a `PrivateKey` from any of the PEM forms a key file takes
+      The given behind `text.read[PrivateKey[Ed25519] in Pem]` and `pem.as[PrivateKey[…]]`.
+      `PRIVATE KEY` (PKCS#8) is read as is; `RSA PRIVATE KEY` (PKCS#1) and `EC PRIVATE KEY`
+      (SEC1) are wrapped into PKCS#8 by `Pkcs8.fromPkcs1` and `Pkcs8.fromSec1`; `OPENSSH
+      PRIVATE KEY` is converted by `OpenSsh.privateKey`. `ENCRYPTED PRIVATE KEY`, or an OpenSSH
+      container with a cipher, is `PrivateKey.Error` with reason `Encrypted` — passphrase-
+      protected keys cannot yet be read — and any other label is a `Mismatch` naming the block
+      found. Needs the same contextual values as `.derDecodable`.
+  entry .inspectable   renders every private key as `PrivateKey(•••)`
+      Redacted entirely, not even a digest: an inspection is produced in far more places than
+      a `show` — a test's output, a debugger, a nested rendering of an enclosing value.
+  entry .showable   renders a private key as `PrivateKey(<base64 SHA-256 of its material>)`
+      A fingerprint, so two renderings of the same key compare equal and nothing of the key
+      itself appears.
+  entry .Error   raised when a key document cannot be read as the `PrivateKey` requested
+    detail
+        Error 597: _could not read the private key because `reason`_. Raised by
+        `.pemDecodable`, `.derDecodable`, `Pkcs8` and `OpenSsh.privateKey`.
+    entry .communicable   renders each reason as a message
+    entry .Reason   why the document was refused
+        `Malformed(detail)` (1): _the key document was malformed: `detail`_ — not DER, not a
+        `PrivateKeyInfo`, not an `RSAPrivateKey`, a truncated OpenSSH container.
+        `Mismatch(expected, found)` (2): _a `expected` key was expected but `found` was found_,
+        where the names are the `KeyAlgorithm`'s, such as `RSA-4096` and `RSA-2048`, `ECDSA
+        P-384` and `ECDSA P-256`, or `private` and `a public key block`. `Encrypted` (3): _the
+        key is protected by a passphrase_. `Unsupported(detail)` (4): _the key uses an
+        unsupported `detail`_, such as an OpenSSH container holding several keys or a key type
+        OpenSSH names but this library does not. `PublicKeyAbsent` (5): _the key does not carry
+        its public key_, for an EC, Ed25519 or ML-DSA document without its optional public-key
+        field, which no provider can recompute.
+    entry #reason   why the document was refused
+  entry #public   the key's public half, as a `PublicKey[cipher]`
+      Computed from the private material through the cipher's `privateToPublic`: derived
+      arithmetically for RSA and DSA, and read from the embedded public-key field for EC,
+      Ed25519, X25519 and ML-DSA. Needs the cipher's given.
+  entry #sign   the signature over a value encodable as `Data`, for a `Signing` cipher
+      Needs the cipher's given and a `Permit[Weakness[cipher]]` (so DSA and 1024-bit RSA need
+      a permit; the rest are `Acceptable`). The value is encoded with its `Encodable in Data`,
+      so `Text` signs as its bytes. RSA and ECDSA sign the digest the `Signature.Digest` in
+      scope names (SHA-256 unless one is imported from `signatureDigests`); Ed25519 and ML-DSA
+      sign the message directly.
+  entry #pem   the key as a `PRIVATE KEY` PEM block, on presentation of the `Divulgence` token
+      PKCS#8 `PrivateKeyInfo`, as every provider holds a key. The immutable `Data` outlives the
+      cloak's zeroing, which is why obtaining it demands the explicit `Divulgence` argument.
+
+entry .PublicKey   the public half of a key pair: verifies signatures, encrypts toward the owner
+  detail
+      A `PublicKey[cipher]` is a plain value — its `#bytes` are an X.509 `SubjectPublicKeyInfo`,
+      not a secret — obtained from a private key's `public`, read from a `PUBLIC KEY` or `RSA
+      PUBLIC KEY` block (`.pemDecodable`), from DER (`.derDecodable`), from an OpenSSH line
+      (`OpenSsh.publicKey`) or from the raw bytes a wire protocol carries (`.raw`). It
+      verifies signatures, encrypts toward its owner inside `uncloak` (an `Encryption` cipher
+      such as `Rsa`), and is the peer's half of a key agreement.
+
+      ```scala
+      import soundness.*
+      import cloaks.heapCloak
+      import providers.javaBaseProvider
+      import strategies.throwUnsafely
+
+      val key = PrivateKey.generate[Rsa[2048]]()
+
+      val message: Data = key.public.uncloak:
+        t"secret".encrypt(InitializationVector.random)
+
+      key.uncloak(message.decrypt.as[Text])   // t"secret"
+      key.public.pem.serialize                // t"-----BEGIN PUBLIC KEY-----…"
+      ```
+  refer enigmatic.PrivateKey
+  refer enigmatic.Signature
+  refer enigmatic.OpenSsh
+  entry .derDecodable   reads a `SubjectPublicKeyInfo` as a `PublicKey` of the cipher named
+      The given behind `der.as[PublicKey[Ecdsa[256]]]`, for any cipher with a `KeyAlgorithm`;
+      needs a `Tactic[PublicKey.Error]` and `Diagnostics`. The algorithm identifier, with its
+      curve, must be the cipher's (`Mismatch` otherwise).
+  entry .pemDecodable   reads a `PublicKey` from a `PUBLIC KEY` or `RSA PUBLIC KEY` block
+      The given behind `text.read[PublicKey[Rsa[2048]] in Pem]`. A PKCS#1 `RSAPublicKey` is
+      wrapped into a `SubjectPublicKeyInfo` by `Spki.fromPkcs1`; any other label is a
+      `Mismatch` naming the block found. OpenSSH's single-line form is not PEM: it is read with
+      `OpenSsh.publicKey`.
+  entry .raw   a public key from its raw form: the content of the `SubjectPublicKeyInfo`'s bit string
+      What a wire protocol such as SSH or TLS carries: 32 bytes for X25519 or Ed25519, an
+      uncompressed point for an EC key. The cipher's `KeyAlgorithm` must have a fixed
+      identifier (`algorithm` not `Unset`), so a DSA key, whose parameters only the key knows,
+      cannot be made this way and the result is `Unset`. The inverse of `#raw`.
+
+      ```scala
+      import soundness.*
+      import providers.javaBaseProvider
+      import alphabets.hexUpperCase
+
+      val point = t"8520F0098930A754748B7DDCB43EF75A0DBF3A0D26381AF4EBA4A98EAA9B4E6A".deserialize[Hex]
+      PublicKey.raw[X25519](point).let(_.raw).let(_.serialize[Hex])   // the same hex
+      ```
+  entry .showable   renders a public key as `PublicKey(<lowercase hex of its bytes>)`
+  entry .encodable   a public key encodes as its `SubjectPublicKeyInfo` bytes
+  entry .inspectable   renders a public key in full hexadecimal, needing no `Alphabet` in scope
+  entry .Error   raised when a key document cannot be read as the `PublicKey` requested
+    detail
+        Error 598: _could not read the public key because `reason`_. Raised by
+        `.pemDecodable`, `.derDecodable`, `Spki` and `OpenSsh.publicKey`.
+    entry .communicable   renders each reason as a message
+    entry .Reason   why the document was refused
+        `Malformed(detail)` (1): _the key document was malformed: `detail`_ — not a
+        `SubjectPublicKeyInfo`, not an `RSAPublicKey`, a line which is not base64 or not a
+        public key. `Mismatch(expected, found)` (2): _a `expected` key was expected but `found`
+        was found_, with the `KeyAlgorithm` names, such as `ECDSA P-256` and `Ed25519`.
+        `Unsupported(detail)` (3): _the key uses an unsupported `detail`_, such as an OpenSSH
+        key type or curve this library has no name for.
+    entry #reason   why the document was refused
+  entry #bytes   the X.509 `SubjectPublicKeyInfo`, DER-encoded
+  entry #verify   whether a signature is valid over a value, for a `Signing` cipher
+      Needs the cipher's given and a `ProcessingPermit[Weakness[cipher]]`. `false` for a
+      signature over different content, from a different key, under a different
+      `Signature.Digest` than the one in scope, or one too corrupt to decode. The value is
+      encoded with its `Encodable in Data`, as `PrivateKey#sign` encoded it.
+  entry #pem   the key as a `PUBLIC KEY` PEM block
+  entry #raw   the raw key, the bit string's content, or `Unset` if the bytes are not a `SubjectPublicKeyInfo`
+      32 bytes for X25519 or Ed25519, an uncompressed point for an EC key; the inverse of
+      `.raw`.
+
+entry .KeyAlgorithm   how a cipher's keys are identified in a key document: the typeclass behind reading keys
+  detail
+      A PKCS#8 `PrivateKeyInfo` and an X.509 `SubjectPublicKeyInfo` both carry an
+      `AlgorithmIdentifier` — an object identifier with optional parameters, such as the curve
+      of an EC key — and key material whose size, for RSA and DSA, is the only record of the
+      key's strength. Reading a file into a `PrivateKey[Rsa[2048]]` has to check both, since
+      the JDK would happily sign with a 4096-bit key handed to it under that type, and the
+      type would then be a lie. `cipher is KeyAlgorithm` is that check, with a given in the
+      companion of every cipher which has key documents: `Rsa`, `Dsa`, `Ecdsa`, `Ecdh`,
+      `Ed25519`, `X25519` and `MlDsa`. The companion holds the object-identifier arcs the
+      library knows, for recognising an identifier and for naming what was found.
+  refer enigmatic.PrivateKey
+  refer enigmatic.Pkcs8
+  entry .Material   the half of a key document an algorithm checks: private octets or public bits
+      `Private(octets)` is the content of a `PrivateKeyInfo`'s `privateKey` OCTET STRING;
+      `Public(bits)` the content of a `SubjectPublicKeyInfo`'s `subjectPublicKey` BIT STRING.
+  entry .Rsa   the arcs of `rsaEncryption`, 1.2.840.113549.1.1.1
+  entry .Ec   the arcs of `id-ecPublicKey`, 1.2.840.10045.2.1
+  entry .Ed25519   the arcs of `id-Ed25519`, 1.3.101.112
+  entry .X25519   the arcs of `id-X25519`, 1.3.101.110
+  entry .Dsa   the arcs of `id-dsa`, 1.2.840.10040.4.1
+  entry .MlDsa   the arcs of ML-DSA-44, -65 or -87 by level (RFC 9881)
+  entry .P256   the arcs of the P-256 curve, `secp256r1`
+  entry .P384   the arcs of the P-384 curve, `secp384r1`
+  entry .P521   the arcs of the P-521 curve, `secp521r1`
+  entry .curve   the curve arcs for a key size: 256 is P-256, 384 is P-384, anything else P-521
+  entry .identifier   the arcs and optional parameters of an `AlgorithmIdentifier`, or `Unset` if the value is not one
+  entry .rsaModulus   the modulus of RSA key material, from which the key's size is read
+      The second integer of an `RSAPrivateKey` (after its version) or the first of an
+      `RSAPublicKey`; `Unset` if the material is neither.
+  entry .describe   a readable name for what a document carries, for a `Mismatch` error
+      `RSA-2048`, `Ed25519`, `X25519`, `ECDSA P-256`, `DSA-1024`, `ML-DSA-65`, or for anything
+      else _the object identifier 1.2.3.4_.
+  entry #name   the algorithm's name with its size, such as `RSA-2048` or `ECDSA P-256`
+  entry #sshName   the algorithm's name in OpenSSH's formats, or `Unset` if OpenSSH has none
+      `ssh-rsa`, `ssh-ed25519`, `ecdsa-sha2-nistp256`; `Unset` for DSA, ECDH, X25519 and ML-DSA,
+      so `OpenSsh.line` is `Unset` for their keys.
+  entry #algorithm   the `AlgorithmIdentifier` of a key of this type, or `Unset` where only the key knows its parameters
+      Used by `PublicKey.raw` to build a document around raw material; `Unset` for DSA.
+  entry #conforms   whether an `AlgorithmIdentifier` names this algorithm, with its parameters, and the material is this size
+
+entry .Signature   a signature made by a `PrivateKey`, typed by its cipher
+  detail
+      `Signature[cipher]` wraps the raw signature bytes, so a signature can only be verified
+      against a `PublicKey` of the same cipher. It is covariant in the cipher. Made by
+      `PrivateKey#sign`, checked by `PublicKey#verify`; `Showable` as base64, `Inspectable` as
+      hexadecimal, and `Encodable in Data` as its bytes.
+  refer enigmatic.PrivateKey
+  refer enigmatic.signatureDigests
+  entry .showable   renders a signature as `Signature(<base64>)`, with the `Alphabet[Base64]` in scope
+  entry .encodable   a signature encodes as its raw bytes
+  entry .inspectable   renders a signature in full hexadecimal, needing no `Alphabet` in scope
+  entry .Digest   the digest an RSA or ECDSA signature is taken over
+    detail
+        RSA and ECDSA sign a hash of the message rather than the message itself, and the choice
+        of hash is part of the signature algorithm's identity — `SHA256withRSA` is a different
+        algorithm from `SHA384withRSA`, with its own object identifier — so it is fixed when
+        the cipher is summoned rather than chosen per signature. SHA-256 is the default, from
+        `.sha256Signature` in this companion; importing `signatureDigests.sha384Signature` or
+        `signatureDigests.sha512Signature` overrides it, since an imported given outranks a
+        companion one. A signature made under one digest does not verify under another.
+        Ed25519 and ML-DSA sign the message directly and take no digest.
+    entry .sha256Signature   the default, SHA-256; in implicit scope with no import
+    entry #token   the digest's name as it appears in a JCE transformation, such as `SHA256`
+        No hyphen, unlike the same digest's name as a `Hash`.
+  entry #bytes   the raw signature
+
+entry .signatureDigests   the digest an RSA or ECDSA signature is taken over, each a given to import by name
+  detail
+      `Signature.Digest`'s companion supplies SHA-256, so importing one of these is only
+      necessary to choose something else; the imported given outranks the companion's.
+
+      ```scala
+      import soundness.*
+      import cloaks.heapCloak
+      import providers.javaBaseProvider
+      import signatureDigests.sha512Signature
+
+      val key = PrivateKey.generate[Rsa[2048]]()
+      key.public.verify(t"document", key.sign(t"document"))   // SHA512withRSA
+      ```
+  entry .sha256Signature   SHA-256, the same as the default
+  entry .sha384Signature   SHA-384
+  entry .sha512Signature   SHA-512
+
+entry .BlockCipher   the base of every block cipher: a mode, a padding, and the provider's mechanics
+  detail
+      A `BlockCipher` holds a block cipher's type-level *policy* — which `BlockCipherMode` and
+      `BlockCipherPadding` apply, whether an IV is needed, how input length is checked — and
+      delegates the byte-level *mechanics* to the `Crypto.SymmetricCipher` captured from the
+      provider when the cipher's given was summoned. `Aes`, `Blowfish`, `Des`, `TripleDes`
+      and `Rc2` extend it, and each is refined with its mode and padding as `Aes[256] over Cbc
+      against Pkcs7`: the `over` type member is `#Transport` and the `against` member
+      `#Contrast`, and the cipher's given demands `mode Permits padding`.
+
+      The mode and padding may be written in the type, or inferred from givens imported from
+      `blockCipherModes` and `blockCipherPaddings`; the same plaintext encrypts differently
+      under each:
+
+      ```scala
+      import soundness.*
+      import cloaks.heapCloak
+      import providers.javaBaseProvider
+      import strategies.throwUnsafely
+      import cryptoPermits.permitUnauthenticatedCrypto
+      ```
+
+      ```scala fuel
+      frame
+        label CBC with PKCS#7 padding, named in the type
+        code
+            locally:
+              val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+              key.uncloak(t"Hello world".encrypt(InitializationVector.zero).length)   // 32: an IV block and a padded block
+      frame
+        label The same, with the mode and padding imported instead
+        code
+            locally:
+              import blockCipherModes.cbc, blockCipherPaddings.pkcs7
+              val key = SymmetricKey.generate[Aes[256]]()
+              key.uncloak(t"Hello world".encrypt(InitializationVector.zero).length)   // 32
+      frame
+        label A counter mode needs no padding, and takes none
+        code
+            locally:
+              val key = SymmetricKey.generate[Aes[256] over Ctr against NoPadding]()
+              key.uncloak(t"Hello world".encrypt(InitializationVector.zero).length)   // 27: an IV block and eleven bytes
+      frame
+        label CBC with no padding insists on whole blocks
+        code
+            locally:
+              val key = SymmetricKey.generate[Aes[256] over Cbc against NoPadding]()
+              key.uncloak(t"Hello world".encrypt(InitializationVector.zero))   // raises Crypto.Error: IllegalBlockSize
+      ##
+      ```
+
+      Every block cipher is `Unauthenticated`, so encrypting or decrypting with one needs
+      `cryptoPermits.permitUnauthenticatedCrypto` (or a permit which subsumes it); the
+      authenticated alternatives are `AesGcm` and `ChaCha20Poly1305`. A whole-value
+      ciphertext is the IV followed by the ciphertext when the mode uses one; a stream
+      ciphertext emits the IV as its first chunk.
+  refer enigmatic.Aes
+  refer enigmatic.BlockCipherMode
+  refer enigmatic.BlockCipherPadding
+  refer enigmatic.Permits
+  refer enigmatic.encrypt
+  entry #algorithm   the algorithm's JCE name: `AES`, `DES`, `DESede`, `Blowfish` or `RC2`
+  entry #Transport   the mode, as the `over` refinement
+  entry #Contrast   the padding, as the `against` refinement
+  entry #encrypt   encrypts a whole value, or a `Stream[Data]` as a pipeline stage
+      The whole-value form checks the padding's length rule, draws the IV from the
+      `InitializationVector` for the block size when the mode uses one, and returns IV then
+      ciphertext. The stream form drives a `Cipher.Session` through a duct, emitting the IV
+      first and running `NoPadding`'s alignment check at end-of-stream, where the total length
+      is finally known; it needs a `Buffering`.
+  entry #encryptStream   encrypts a `Chain[Data]` lazily, chunk by chunk, the IV as the first chunk
+      Mirrors `turbulence.Compression`: each chunk goes through the provider's session and the
+      `NoPadding` check runs at the end. Drain the chain inside the `uncloak` block which made
+      it: a lazily-encrypted stream drained after the block ends reads key bytes the cloak has
+      already zeroed.
+  entry #decrypt   decrypts a whole value, or a `Stream[Data]` as a pipeline stage
+      The whole-value form reads the leading block as the IV when the mode uses one. The
+      stream form consumes the IV off the stream before the session begins, needs a
+      `Buffering` and a `Tactic[Crypto.Error]`, and raises the provider's end-of-stream failure
+      (corrupt padding, a bad tag) as a `Crypto.Error` as the final window is pulled.
+  entry #genKey   fresh key material of `keySize` bits from the provider
+  entry #privateToPublic   the key itself: a block cipher is symmetric
+
+entry .BlockCipherMode   the typeclass of a block-cipher mode: its JCE name, whether it uses an IV, whether it is block-aligned
+  detail
+      `mode is BlockCipherMode` is the evidence `Aes[256] over mode` needs, supplied by the
+      companion of each of `Cbc`, `Ecb`, `Ctr`, `Cfb` and `Ofb` as `mode`, and re-exported for
+      import-based inference by `blockCipherModes` (all but `Ecb`, whose given takes a
+      permit). `blockAligned` is true for the block-structured modes, ECB and CBC, which with
+      `NoPadding` require the input length to be a multiple of the block size, and false for
+      the stream-style modes CTR, CFB and OFB, which accept any length.
+  refer enigmatic.blockCipherModes
+  refer enigmatic.Permits
+  entry .apply   makes a mode's evidence from its JCE name, whether it uses an IV, and whether it is block-aligned
+  entry #name   the mode's name in a JCE transformation: `CBC`, `ECB`, `CTR`, `CFB` or `OFB`
+  entry #usesIv   whether the mode takes an initialization vector; only ECB does not
+  entry #blockAligned   whether, with `NoPadding`, the input must be a multiple of the block size
+
+entry .Cbc   cipher block chaining: each block chained to the last, under a random IV
+  detail
+      The block-structured mode most legacy formats use: it needs an IV, is block-aligned, and
+      takes any of the three paddings. The same plaintext encrypts differently under
+      `InitializationVector.random` each time, and identically under a fixed IV.
+  entry .mode   the `Cbc is BlockCipherMode` evidence; in implicit scope, and `blockCipherModes.cbc`
+
+entry .Ecb   electronic codebook: each block encrypted independently; gated as disallowed
+  detail
+      ECB reveals plaintext structure — equal blocks give equal ciphertext — so it is gated:
+      summoning its mode evidence, for either direction or even key generation, needs
+      `Permit[Concession.Ecb]`, which `cryptoPermits.permitDisallowedCrypto` supplies. It uses
+      no IV (the `InitializationVector` is ignored), is block-aligned, and takes any padding.
+      `Ecb.mode` is not re-exported by `blockCipherModes`, since a given with a contextual
+      parameter cannot be re-exported; write the mode in the type, `Aes[256] over Ecb`.
+  entry .mode   the `Ecb is BlockCipherMode` evidence, requiring an erased `Permit[Concession.Ecb]`
+
+entry .Ctr   counter mode: a keystream from an incrementing counter block, any length
+  detail
+      A stream-style mode: it needs an IV, is not block-aligned, and accepts only
+      `NoPadding` (`Permits.ctrNoPadding` is its one pairing). The counter increments over the
+      whole 128-bit block, as the JDK does.
+  entry .mode   the `Ctr is BlockCipherMode` evidence; in implicit scope, and `blockCipherModes.ctr`
+
+entry .Cfb   cipher feedback: a stream-style mode in its full-block variant
+  detail
+      Needs an IV, is not block-aligned, and takes any padding. The feedback is the full
+      block (128 bits for AES), as the JDK's `CFB` is.
+  entry .mode   the `Cfb is BlockCipherMode` evidence; in implicit scope, and `blockCipherModes.cfb`
+
+entry .Ofb   output feedback: a stream-style mode in its full-block variant
+  detail
+      Needs an IV, is not block-aligned, and takes any padding. The feedback is the full
+      block, as the JDK's `OFB` is.
+  entry .mode   the `Ofb is BlockCipherMode` evidence; in implicit scope, and `blockCipherModes.ofb`
+
+entry .BlockCipherPadding   the typeclass of a block-cipher padding: its JCE name and its length rule
+  detail
+      `padding is BlockCipherPadding` is the evidence `Aes[256] over Cbc against padding`
+      needs, supplied by the companions of `Pkcs7`, `Iso10126` and `NoPadding` as `padding`,
+      and re-exported for import-based inference by `blockCipherPaddings` (all but
+      `NoPadding`, whose given takes a tactic). `verify` is a no-op for the paddings which
+      accept any input length; `NoPadding` overrides it to reject misaligned input.
+  refer enigmatic.blockCipherPaddings
+  refer enigmatic.Permits
+  entry .apply   makes a padding's evidence from its JCE name, with the no-op length rule
+  entry #name   the padding's name in a JCE transformation: `PKCS5Padding`, `ISO10126Padding` or `NoPadding`
+  entry #verify   checks an input length against the block size; raises `Crypto.Error` only for `NoPadding`
+
+entry .Pkcs7   PKCS#7 padding: the last block filled with the count of padding bytes
+  detail
+      The usual padding, deterministic, so a fixed IV gives a byte-identical ciphertext. The
+      JDK calls it `PKCS5Padding` for historical reasons. Corrupt padding on decryption —
+      a wrong key — is a `Crypto.Error` with reason `BadPadding`.
+  entry .padding   the `Pkcs7 is BlockCipherPadding` evidence; in implicit scope, and `blockCipherPaddings.pkcs7`
+
+entry .Iso10126   ISO 10126 padding: random bytes with the count last
+  detail
+      Random padding bytes, so the same plaintext under a fixed IV still differs in its final
+      block. A JCE-only scheme: `OpensslCrypto` does not offer it.
+  entry .padding   the `Iso10126 is BlockCipherPadding` evidence; in implicit scope, and `blockCipherPaddings.iso10126`
+
+entry .NoPadding   no padding: the input must already fit the mode
+  detail
+      With a block-aligned mode (ECB, CBC) the input length must be a multiple of the block
+      size, checked as `Crypto.Error` with reason `IllegalBlockSize` — before encrypting a
+      whole value, and at end-of-stream for a stream; with a stream-style mode (CTR, CFB, OFB)
+      any length is accepted. The given captures a `Tactic[Crypto.Error]`, which is why
+      constructing a `NoPadding` cipher — and so generating or using a key for one — needs
+      that tactic in scope while every other padding is total, and why `NoPadding.padding` is
+      not re-exported by `blockCipherPaddings`: write it in the type, `against NoPadding`.
+  entry .padding   the `NoPadding is BlockCipherPadding` evidence, capturing a `Tactic[Crypto.Error]`
+
+entry .Aes   AES with a 128-, 192- or 256-bit key, in a block-cipher mode with a padding
+  detail
+      `Aes[bits] over mode against padding` is the Advanced Encryption Standard as a
+      `BlockCipher`, through the provider's mandatory `aes`, so every provider offers it. The
+      key size is a literal type, `Aes[128]`, `Aes[192]` or `Aes[256]`; the mode and padding
+      are either written in the type or inferred from `blockCipherModes` and
+      `blockCipherPaddings` imports. It is unauthenticated, so it needs
+      `cryptoPermits.permitUnauthenticatedCrypto`; for authenticated encryption use `AesGcm`.
+
+      ```scala
+      import soundness.*
+      import cloaks.heapCloak
+      import providers.javaBaseProvider
+      import strategies.throwUnsafely
+      import cryptoPermits.permitUnauthenticatedCrypto
+
+      val key = SymmetricKey.generate[Aes[128] over Ctr against NoPadding]()
+      key.uncloak(t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text])
+      ```
+  refer enigmatic.BlockCipher
+  refer enigmatic.AesGcm
+  refer enigmatic.SymmetricKey
+  entry .value   the given `Aes[bits] over mode against padding`, from a mode, a padding, their `Permits` evidence and a `Crypto`
+  entry #keySize   128, 192 or 256
+
+entry .AesGcm   AES in Galois/Counter Mode: authenticated encryption with a 96-bit nonce and a 128-bit tag
+  detail
+      The AEAD of SSH's `aes256-gcm@openssh.com`, TLS's `AES_*_GCM` suites and most of the
+      modern internet, as `AesGcm[128]` or `AesGcm[256]`. It is a different primitive from
+      `Aes over Cbc` and the other block-cipher modes — it authenticates, takes associated
+      data, and takes a nonce the caller must never repeat — so it is its own `Cipher &
+      Symmetric & Authenticated` rather than a `BlockCipherMode`, needs no permit, and is used
+      through `seal` and `unseal` rather than `encrypt` and `decrypt`. Reached through the
+      provider's structural `aesGcm` member, which every bundled provider has.
+
+      ```scala
+      import soundness.*
+      import cloaks.heapCloak
+      import providers.javaBaseProvider
+      import strategies.throwUnsafely
+
+      val key = SymmetricKey.generate[AesGcm[256]]()
+      val nonce: Data = Array.fill[Byte](12)(0)
+      val box = key.seal(nonce, t"header".bytestream, t"message".bytestream)
+      key.unseal(nonce, t"header".bytestream, box).read[Text]   // t"message"
+      ```
+  refer enigmatic.seal
+  refer enigmatic.Authenticated
+  refer enigmatic.ChaCha20Poly1305
+  entry .value   the given `AesGcm[bits]`, from a `Crypto { def aesGcm: Crypto.Aead }`
+  entry #keySize   128 or 256
+  entry #genKey   fresh key material from the provider
+  entry #privateToPublic   the key itself
+  entry #nonceSize   12
+  entry #tagSize   16
+  entry #seal   the ciphertext with the tag appended
+  entry #unseal   the plaintext, or `Unset` if the tag does not verify
+
+entry .Blowfish   Blowfish with a 128-, 256- or 448-bit key; disallowed, needs a permit
+  detail
+      A `BlockCipher` with an 8-byte block, reached through the provider's structural
+      `blowfish` member (the JDK's only). Its `Weakness` is `Concession.Blowfish`, so using it
+      needs `cryptoPermits.permitDisallowedCrypto` or `permitCryptoThrough2014`, as well as
+      the unauthenticated permit every block cipher needs.
+  entry .value   the given `Blowfish[bits] over mode against padding`
+  entry #keySize   128, 256 or 448
+
+entry .Des   DES with its 56-bit key; disallowed, needs a permit
+  detail
+      A `BlockCipher` with an 8-byte block, reached through the provider's structural `des`
+      member (the JDK's only). Its `Weakness` is `Concession.Des`: broken, and permitted only
+      by `cryptoPermits.permitDisallowedCrypto` or the year-based permits, for reading what
+      was encrypted long ago.
+  entry .value   the given `Des over mode against padding`
+  entry #keySize   56
+
+entry .TripleDes   Triple-DES (`DESede`) with a 112- or 168-bit key; deprecated, needs a permit
+  detail
+      A `BlockCipher` with an 8-byte block, reached through the provider's structural
+      `tripleDes` member (the JDK's only). Its `Weakness` is `Concession.TripleDes`:
+      `cryptoPermits.permitDeprecatedCrypto` allows encrypting with it, and
+      `permitLegacyCrypto` only decrypting.
+  entry .value   the given `TripleDes[bits] over mode against padding`
+  entry #keySize   112 or 168
+
+entry .Rc2   RC2 with a 40-, 64- or 128-bit key; disallowed, needs a permit
+  detail
+      A `BlockCipher` with an 8-byte block, reached through the provider's structural `rc2`
+      member (the JDK's only). Its `Weakness` is `Concession.Rc2`, permitted by
+      `cryptoPermits.permitDisallowedCrypto` or `permitCryptoThrough2014`.
+  entry .value   the given `Rc2[bits] over mode against padding`
+  entry #keySize   40, 64 or 128
+
+entry .ChaCha20   the ChaCha20 keystream of RFC 8439: a 256-bit key, a 96-bit nonce, a 32-bit counter
+  detail
+      The bare stream cipher, as a `Cipher & Symmetric & Keystream`, used through the `xor`
+      extension on a `SymmetricKey[ChaCha20]`: applying the keystream twice restores the
+      plaintext. It is the raw primitive OpenSSH's `chacha20-poly1305@openssh.com` assembles
+      with `Poly1305` (two keys, an encrypted length); for an ordinary authenticated message
+      use `ChaCha20Poly1305`. Reached through the provider's structural `chaCha20` member,
+      which every bundled provider has.
+
+      ```scala
+      import soundness.*
+      import cloaks.heapCloak
+      import providers.javaBaseProvider
+      import strategies.throwUnsafely
+
+      val key = SymmetricKey.generate[ChaCha20]()
+      val nonce: Data = Array.fill[Byte](12)(7)
+      key.xor(nonce, 1, key.xor(nonce, 1, t"message".bytestream)).read[Text]   // t"message"
+      ```
+  refer enigmatic.xor
+  refer enigmatic.Keystream
+  refer enigmatic.Poly1305
+  entry .value   the given `ChaCha20`, from a `Crypto { def chaCha20: Crypto.StreamCipher }`
+  entry #keySize   256
+  entry #genKey   32 fresh random bytes from the provider
+  entry #privateToPublic   the key itself
+  entry #nonceSize   12
+  entry #xor   `data` combined with the keystream starting at block `counter`
+
+entry .ChaCha20Poly1305   the ChaCha20-Poly1305 AEAD of RFC 8439: TLS 1.3's other cipher, WireGuard's
+  detail
+      Authenticated encryption built on `ChaCha20` with a 128-bit Poly1305 tag, as a `Cipher &
+      Symmetric & Authenticated`, used through `seal` and `unseal` exactly as `AesGcm` is: a
+      256-bit key, a 12-byte nonce which must never repeat under the key, associated data
+      authenticated but not encrypted, and the tag appended to the ciphertext. Reached through
+      the provider's structural `chaCha20Poly1305` member, which every bundled provider has.
+  refer enigmatic.seal
+  refer enigmatic.AesGcm
+  entry .value   the given `ChaCha20Poly1305`, from a `Crypto { def chaCha20Poly1305: Crypto.Aead }`
+  entry #keySize   256
+  entry #genKey   32 fresh random bytes from the provider
+  entry #privateToPublic   the key itself
+  entry #nonceSize   12
+  entry #tagSize   16
+  entry #seal   the ciphertext with the tag appended
+  entry #unseal   the plaintext, or `Unset` if the tag does not verify
+
+entry .Rsa   RSA with a 1024-, 2048-, 3072- or 4096-bit key: encrypts toward the public key, and signs
+  detail
+      RSA both encrypts and signs, two distinct primitives sharing one key pair: `encrypt` and
+      `decrypt` (inside `uncloak`) use raw RSA, while `sign` and `verify` use RSASSA-PKCS1-v1_5
+      over the digest the `Signature.Digest` in scope names (SHA-256 unless one is imported
+      from `signatureDigests`). Both are part of every provider's mandatory baseline. The IV
+      an encryption is given is ignored. `Rsa[1024]` has `Weakness` `Concession.SmallRsa`, so
+      it needs `cryptoPermits.permitDisallowedCrypto` or `permitCryptoThrough2014`; the larger
+      sizes need no permit.
+
+      ```scala
+      import soundness.*
+      import cloaks.heapCloak
+      import providers.javaBaseProvider
+      import strategies.throwUnsafely
+
+      val key = PrivateKey.generate[Rsa[2048]]()
+      val message: Data = key.public.uncloak(t"secret".encrypt(InitializationVector.random))
+      key.uncloak(message.decrypt.as[Text])                   // t"secret"
+      key.public.verify(t"document", key.sign(t"document"))   // true
+      ```
+
+      Its keys read from `PRIVATE KEY`, `RSA PRIVATE KEY` (PKCS#1), `PUBLIC KEY` and `RSA
+      PUBLIC KEY` blocks, and from `ssh-rsa` lines and OpenSSH containers; the modulus size
+      must match the type's.
+  refer enigmatic.PrivateKey
+  refer enigmatic.Signature
+  entry .value   the given `Rsa[bits]`, from a `Signature.Digest` and a `Crypto`
+  entry .keyAlgorithm   `Rsa[bits] is KeyAlgorithm`: `rsaEncryption` with a modulus of `bits` bits, `ssh-rsa`
+  entry #keySize   1024, 2048, 3072 or 4096
+  entry #privateToPublic   the public key computed from the private one
+  entry #decrypt   raw RSA decryption with the private key
+  entry #encrypt   raw RSA encryption toward the public key; the IV is ignored
+  entry #genKey   a fresh PKCS#8 key pair of `keySize` bits
+  entry #sign   an RSASSA-PKCS1-v1_5 signature over the chosen digest
+  entry #verify   whether a signature verifies under the public key
+
+entry .Dsa   DSA with a 512-, 1024-, 2048- or 3072-bit key; disallowed, needs a permit
+  detail
+      A `Cipher & Signing` reached through the provider's structural `dsa` member (the JDK's
+      only). Its `Weakness` is `Concession.Dsa` — removed in FIPS 186-5 — so signing needs
+      `cryptoPermits.permitDisallowedCrypto` or `permitCryptoThrough2024`, and verifying an
+      old signature needs at least `permitLegacyCrypto`. A DSA key's parameters live only in
+      the key, so its `KeyAlgorithm` has no fixed identifier, no OpenSSH name, and
+      `PublicKey.raw` cannot build one.
+  entry .value   the given `Dsa[bits]`, from a `Crypto { def dsa: Crypto.SignatureScheme }`
+  entry .keyAlgorithm   `Dsa[bits] is KeyAlgorithm`: `id-dsa` with a prime `p` of `bits` bits; no OpenSSH name
+  entry #keySize   512, 1024, 2048 or 3072
+  entry #genKey   a fresh PKCS#8 key pair
+  entry #sign   a DSA signature
+  entry #privateToPublic   the public key computed from the private one
+  entry #verify   whether a signature verifies under the public key
+
+entry .Ecdsa   ECDSA over a NIST prime curve chosen by key size: P-256, P-384 or P-521
+  detail
+      `Ecdsa[256]` is P-256 (`secp256r1`), `Ecdsa[384]` P-384 and `Ecdsa[521]` P-521: a
+      `Cipher & Signing` which signs the digest the `Signature.Digest` in scope names. Unlike
+      `Rsa`, it is not in the mandatory baseline, so it is reached through the structural
+      `ecdsa(digest)` member — the JDK's and OpenSSL's; `SoundnessCrypto` does not offer it,
+      and asking it is a compile error. Its keys read from `PRIVATE KEY`, `EC PRIVATE KEY`
+      (SEC1) and `PUBLIC KEY` blocks, and from `ecdsa-sha2-nistp*` lines and OpenSSH
+      containers; the curve must match the type's. No permit is needed.
+
+      ```scala
+      import soundness.*
+      import cloaks.heapCloak
+      import providers.javaBaseProvider
+      import strategies.throwUnsafely
+
+      val key = PrivateKey.generate[Ecdsa[256]]()
+      key.public.verify(t"document", key.sign(t"document"))   // true
+      ```
+  refer enigmatic.Ecdh
+  refer enigmatic.Signature
+  entry .value   the given `Ecdsa[bits]`, from a `Signature.Digest` and a `Crypto { def ecdsa(digest: Text): Crypto.SignatureScheme }`
+  entry .keyAlgorithm   `Ecdsa[bits] is KeyAlgorithm`: `id-ecPublicKey` with the curve of `bits`; `ecdsa-sha2-nistp<bits>`
+  entry #keySize   256, 384 or 521
+  entry #genKey   a fresh PKCS#8 key pair, carrying its public key in the SEC1 structure
+  entry #privateToPublic   the public key read from the private document's embedded field
+  entry #sign   an ECDSA signature over the chosen digest
+  entry #verify   whether a signature verifies under the public key
+
+entry .Ecdh   ECDH key agreement over a NIST prime curve chosen by key size
+  detail
+      The key agreement of SSH's `ecdh-sha2-nistp*` and TLS's `secp*r1` groups, as `Ecdh[256]`,
+      `Ecdh[384]` or `Ecdh[521]`: a `Cipher & Agreeing`, used through the `agree` extension.
+      The keys are ordinary EC keys — a `PrivateKey[Ecdh[256]]` and a `PrivateKey[Ecdsa[256]]`
+      are the same document, and an EC key file reads as either — but using one key for both
+      agreement and signing is a mistake the distinct types prevent. Reached through the
+      provider's structural `ecdh` member (the JDK's only). The shared secret is 32, 48 or 66
+      bytes.
+  refer enigmatic.agree
+  refer enigmatic.X25519
+  entry .value   the given `Ecdh[bits]`, from a `Crypto { def ecdh: Crypto.KeyAgreement }`
+  entry .keyAlgorithm   `Ecdh[bits] is KeyAlgorithm`: `id-ecPublicKey` with the curve of `bits`; no OpenSSH name
+  entry #keySize   256, 384 or 521
+  entry #genKey   a fresh PKCS#8 key pair
+  entry #privateToPublic   the public key read from the private document's embedded field
+  entry #agree   the raw shared secret with a peer's public key
+
+entry .Ed25519   Ed25519 (RFC 8032): OpenSSH's default key type, one of TLS 1.3's signature schemes
+  detail
+      The Edwards-curve signature scheme over Curve25519, as a `Cipher & Signing` with the
+      fixed key size of 256 and no size parameter. It signs the message directly (the "pure"
+      variant), so no `Signature.Digest` participates. Reached through the provider's
+      structural `ed25519` member, which every bundled provider has — the pure-Scala one over
+      `BigInt`, which is slow and not constant-time. Its keys read from `PRIVATE KEY` and
+      `PUBLIC KEY` blocks, `ssh-ed25519` lines and OpenSSH containers; a PKCS#8 document
+      without its public-key field is `PublicKeyAbsent` under the JDK, since the JDK cannot
+      derive it. No permit is needed.
+
+      ```scala
+      import soundness.*
+      import cloaks.heapCloak
+      import providers.javaBaseProvider
+      import strategies.throwUnsafely
+
+      val key = PrivateKey.generate[Ed25519]()
+      key.public.verify(t"document", key.sign(t"document"))   // true
+      ```
+  refer enigmatic.OpenSsh
+  refer enigmatic.X25519
+  entry .value   the given `Ed25519`, from a `Crypto { def ed25519: Crypto.SignatureScheme }`
+  entry .keyAlgorithm   `Ed25519 is KeyAlgorithm`: `id-Ed25519` with no parameters; `ssh-ed25519`
+  entry #keySize   256
+  entry #genKey   a fresh PKCS#8 key pair, the public key embedded at RFC 5958's `[1]`
+  entry #privateToPublic   the public key read from the private document's embedded field
+  entry #sign   an Ed25519 signature over the message itself
+  entry #verify   whether a signature verifies under the public key
+
+entry .MlDsa   ML-DSA (FIPS 204), the post-quantum lattice signature, at level 44, 65 or 87
+  detail
+      The module-lattice signature scheme standardised from CRYSTALS-Dilithium, as
+      `MlDsa[44]`, `MlDsa[65]` or `MlDsa[87]` (the dimensions of the matrix, 6×5 for
+      ML-DSA-65): a `Cipher & Signing` which signs the message directly, so no
+      `Signature.Digest` participates. Reached through the provider's structural `mlDsa(level)`
+      member, which only the JDK's has, and only on JDK 24 or later (an earlier JDK panics at
+      the first use). No permit is needed.
+
+      An ML-DSA key signs a certificate the same way as any other (`Certificate.selfSigned`),
+      but a TLS stack may not handshake with a post-quantum key — the JDK's cannot — so a
+      service whose identity is an ML-DSA key has that key *issue* a certificate over a
+      classical key it can present (`Certificate.issued`).
+
+      ```scala
+      import soundness.*
+      import cloaks.heapCloak
+      import providers.javaBaseProvider
+      import strategies.throwUnsafely
+
+      val key = PrivateKey.generate[MlDsa[65]]()
+      key.public.verify(t"document", key.sign(t"document"))   // true
+      ```
+  refer enigmatic.Certificate
+  refer enigmatic.SignatureAlgorithm
+  entry .value   the given `MlDsa[level]`, from a `Crypto { def mlDsa(level: Int): Crypto.SignatureScheme }`
+  entry .keyAlgorithm   `MlDsa[level] is KeyAlgorithm`: the level's own identifier (RFC 9881), no parameters; no OpenSSH name
+  entry #keySize   44, 65 or 87, the parameter set
+  entry #genKey   a fresh PKCS#8 key pair, the public key embedded at RFC 5958's `[1]`
+  entry #privateToPublic   the public key read from the private document's embedded field
+  entry #sign   an ML-DSA signature over the message itself
+  entry #verify   whether a signature verifies under the public key; `false` for one too corrupt to decode
+
+entry .X25519   X25519 (RFC 7748), Diffie–Hellman over Curve25519: TLS 1.3's default group, SSH's `curve25519-sha256`
+  detail
+      A `Cipher & Agreeing` with the fixed key size of 256 and no size parameter, used
+      through the `agree` extension: two parties who hold each other's public keys compute
+      the same 32-byte secret, which a protocol hashes into session keys. Reached through the
+      provider's structural `x25519` member, which every bundled provider has. A public key's
+      raw 32-byte form is `PublicKey#raw`, and `PublicKey.raw[X25519](bytes)` builds one from
+      what a peer sent.
+
+      ```scala
+      import soundness.*
+      import cloaks.heapCloak
+      import providers.javaBaseProvider
+      import strategies.throwUnsafely
+
+      val alice = PrivateKey.generate[X25519]()
+      val bob = PrivateKey.generate[X25519]()
+
+      alice.agree(bob.public): one =>
+        bob.agree(alice.public): other =>
+          Array.same(one, other) && one.length == 32   // true
+      ```
+  refer enigmatic.agree
+  refer enigmatic.Ecdh
+  entry .value   the given `X25519`, from a `Crypto { def x25519: Crypto.KeyAgreement }`
+  entry .keyAlgorithm   `X25519 is KeyAlgorithm`: `id-X25519` with no parameters; no OpenSSH name
+  entry #keySize   256
+  entry #genKey   a fresh PKCS#8 key pair, the public key embedded at RFC 5958's `[1]`
+  entry #privateToPublic   the public key read from the private document's embedded field
+  entry #agree   the raw 32-byte shared secret with a peer's public key
+
+entry .Hmac   an HMAC over a hash algorithm, as a value
+  detail
+      `Hmac in algorithm` is the result of the `hmac` extension: the authentication code's
+      bytes, with the hash algorithm as the phantom type member `#Form`. It is `Showable` as
+      base64 (with an `Alphabet[Base64]` in scope), `Inspectable` as hexadecimal, and
+      `Encodable in Data`, so it serialises through any base encoding.
+
+      ```scala
+      import soundness.*
+      import providers.javaBaseProvider
+      import alphabets.hexLowerCase
+
+      val secret = t"shared secret".in[Data]
+      t"an important document".hmac[Sha2[256]](secret).serialize[Hex]
+      ```
+  refer enigmatic.hmac
+  entry .apply   wraps authentication-code bytes as an `Hmac in scheme`
+  entry .showable   renders an HMAC as `Hmac(<base64>)`, with the `Alphabet[Base64]` in scope
+  entry .encodable   an HMAC encodes as its bytes
+  entry .inspectable   renders an HMAC in full hexadecimal, needing no `Alphabet` in scope
+  entry #bytes   the authentication code
+  entry #Form   the hash algorithm, as a phantom type
+
+entry .hmac   `value.hmac[Sha2[256]](key)`: the HMAC of any encodable value under a key
+    An extension on any value `Encodable in Data`. It needs the `Hash in algorithm` for the
+    hash named, a `Crypto` provider (whose `hmac` is called with the hash's JCE name, such as
+    `HmacSHA256`), and a `Permit[HashWeakness[algorithm]]`, so an HMAC over MD5 or SHA-1 needs
+    the matching `cryptoPermits` import while SHA-2 and BLAKE3 need none. The result is an
+    `Hmac in algorithm`. The key is plain `Data`: an HMAC key is a shared secret, which the
+    `HmacCipher` adapter in `enigmatic.cose` lets a `SymmetricKey` hold instead.
+
+    ```scala
+    import soundness.*
+    import providers.javaBaseProvider
+    import alphabets.hexLowerCase
+
+    t"message".hmac[Sha2[256]](t"secret".in[Data]).serialize[Hex]
+    ```
+
+entry .encrypt   encrypts a value, a `Chain[Data]` or a `Stream[Data]` with the `Encryptor` lent by `uncloak`
+  detail
+      Three extensions sharing a name. On any value `Encodable in Data`,
+      `value.encrypt[cipher](iv)` is the whole-value ciphertext — IV then ciphertext when the
+      mode uses one — for any `Encryption` cipher, block or RSA. On a `Chain[Data]` and on a
+      `(Stream[Data] over Credit)^` it is lazy, chunk-by-chunk encryption for a `BlockCipher`
+      only: the IV is the first chunk and `NoPadding`'s alignment check runs at end-of-stream,
+      and the stream form needs a `Buffering`. Each takes the `Encryptor[cipher]` from the
+      enclosing `uncloak`, the cipher's given, a `Permit[Weakness[cipher]]` and a
+      `Permit[Authentication[cipher]]` — so a block cipher needs
+      `cryptoPermits.permitUnauthenticatedCrypto`, and a weak algorithm its own permit. The
+      cipher type is inferred from the `Encryptor` in scope.
+
+      Encryption is total: the types guarantee a valid transformation, so it cannot fail,
+      except that `NoPadding` over misaligned input raises `Crypto.Error`.
+
+      ```scala
+      import soundness.*
+      import cloaks.heapCloak
+      import providers.javaBaseProvider
+      import strategies.throwUnsafely
+      import codepages.utf8Codepage
+      import cryptoPermits.permitUnauthenticatedCrypto
+
+      val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+
+      key.uncloak:
+        t"Hello world".in[Data].stream.encrypt(InitializationVector.random).memoize.decrypt.as[Text]
+      ```
+
+      Drain a lazy stream inside the `uncloak` block which made it. The ciphertext `Chain` is
+      pure, so capture checking lets it leave the block, but a stream drained after the block
+      ends reads key bytes the cloak has already zeroed.
+  refer enigmatic.decrypt
+  refer enigmatic.uncloak
+  refer enigmatic.InitializationVector
+
+entry .decrypt   decrypts `Data` or a `Stream[Data]` with the `Decryptor` lent by `uncloak`
+  detail
+      Two extensions sharing a name. On `Data`, `data.decrypt[T]` decrypts the whole value
+      (reading the leading IV when the mode uses one) and decodes the plaintext as any type
+      `Decodable in Data` — `decrypt.as[Text]`, with a `Text` decoder in scope — for any
+      `Encryption` cipher. On a `(Stream[Data] over Credit)^` it is lazy decryption of the
+      IV-then-ciphertext framing for a `BlockCipher`, yielding plaintext as it becomes
+      available; it needs a `Buffering`. Each takes the `Decryptor[cipher]` from the enclosing
+      `uncloak`, the cipher's given, and a `ProcessingPermit` for the cipher's `Weakness` and
+      `Authentication`, so reading old data needs only `cryptoPermits.permitLegacyCrypto` for
+      the algorithm and the unauthenticated permit for the mode.
+
+      Decryption is where cryptography fails: a wrong key, corrupted ciphertext or malformed
+      input raises `Crypto.Error` (`BadPadding`, `IllegalBlockSize`, `InvalidKey`, …), for the
+      stream form as its final window is pulled. Decrypting with the wrong key never recovers
+      the plaintext, but with a stream-style mode or no padding it may not raise either: it
+      simply yields garbage, which is what an authenticated cipher exists to prevent.
+
+      ```scala
+      import soundness.*
+      import cloaks.heapCloak
+      import providers.javaBaseProvider
+      import strategies.throwUnsafely
+      import cryptoPermits.permitUnauthenticatedCrypto
+
+      val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+      val ciphertext = key.uncloak(t"Hello world".encrypt(InitializationVector.random))
+      key.uncloak(ciphertext.decrypt.as[Text])   // t"Hello world"
+      ```
+  refer enigmatic.encrypt
+  refer enigmatic.Crypto
+
+entry .uncloak   lends a key to a block as `Encryptor` and `Decryptor` capabilities confined to it
+  detail
+      Three extensions: `publicKey.uncloak(block)` lends an `Encryptor[cipher]`,
+      `privateKey.uncloak(block)` a `Decryptor[cipher]`, and `symmetricKey.uncloak(block)`
+      both at once. Each is a delimited scope: the block is a context function over the
+      capabilities, which the `encrypt` and `decrypt` extensions pick up, and capture checking
+      confines them — returning a capability, or a closure which would encrypt or decrypt
+      later, or stashing one in an outer variable, is a compile error (_leaks into outer
+      capture set_, _outlives its scope_). The key material is materialised through the key's
+      cloak for the duration of the block and zeroed when it exits; the lent capabilities view
+      that transient array, so their view dies with it, which is why a lazily-encrypted stream
+      must be drained inside the block.
+
+      ```scala
+      import soundness.*
+      import cloaks.heapCloak
+      import providers.javaBaseProvider
+      import strategies.throwUnsafely
+
+      val key = PrivateKey.generate[Rsa[2048]]()
+      val message = key.public.uncloak(t"secret".encrypt(InitializationVector.random))
+      key.uncloak(message.decrypt.as[Text])   // t"secret"
+
+      val later = key.uncloak(() => message.decrypt.as[Text])   // does not compile
+      ```
+
+      A `Password#uncloak` is the same idea for a password, lending a `Cleartext` instead.
+  refer enigmatic.Encryptor
+  refer enigmatic.Decryptor
+  refer enigmatic.encrypt
+  refer enigmatic.decrypt
+  refer enigmatic.Password
+
+entry .agree   `privateKey.agree(peerPublicKey)(block)`: lends the shared secret of a key agreement to a block
+    An extension on a `PrivateKey` of an `Agreeing` cipher (`X25519`, `Ecdh`). The raw shared
+    secret is lent to the block as a transient `Data` view of an array that is zeroed when
+    the block exits, as `uncloak` lends key material: a protocol hashes the secret into its
+    session keys and has no use for it afterwards, so nothing of it should outlive the block.
+
+    ```scala
+    import soundness.*
+    import cloaks.heapCloak
+    import providers.javaBaseProvider
+    import strategies.throwUnsafely
+
+    val alice = PrivateKey.generate[X25519]()
+    val bob = PrivateKey.generate[X25519]()
+    alice.agree(bob.public) { secret => secret.length }   // 32
+    ```
+
+entry .seal   `key.seal(nonce, associated, plaintext)`: authenticated encryption under a nonce
+    An extension on a `SymmetricKey` of an `Authenticated` cipher (`AesGcm`,
+    `ChaCha20Poly1305`). The plaintext is encrypted and both it and the associated data
+    authenticated, the tag appended to the ciphertext. No permit is needed, since an AEAD is
+    not `Unauthenticated`; the discipline it does need — never repeating a nonce under a key
+    — is the caller's, which is why the nonce is a plain argument rather than an
+    `InitializationVector` strategy. Associated data may be empty, `Data()`.
+
+    ```scala
+    import soundness.*
+    import cloaks.heapCloak
+    import providers.javaBaseProvider
+    import strategies.throwUnsafely
+
+    val key = SymmetricKey.generate[AesGcm[256]]()
+    val nonce: Data = Array.fill[Byte](12)(0)
+    val box = key.seal(nonce, t"header".bytestream, t"message".bytestream)
+    box.length - t"message".bytestream.length   // 16: the tag
+    ```
+
+entry .unseal   `key.unseal(nonce, associated, ciphertext)`: the plaintext, or `Crypto.Error` if the tag fails
+    An extension on a `SymmetricKey` of an `Authenticated` cipher. The counterpart of `seal`,
+    needing a `Tactic[Crypto.Error]` and `Diagnostics`: a tampered ciphertext, a wrong key, or
+    a nonce or associated data which differ from the sealing ones raise `Crypto.Error` with
+    reason `BadTag`, and nothing of the plaintext is released. Named `unseal` rather than
+    `open` because `open` is aperture's in the umbrella.
+
+    ```scala
+    import soundness.*
+    import cloaks.heapCloak
+    import providers.javaBaseProvider
+    import strategies.throwUnsafely
+
+    val key = SymmetricKey.generate[AesGcm[256]]()
+    val nonce: Data = Array.fill[Byte](12)(0)
+    val box = key.seal(nonce, t"header".bytestream, t"message".bytestream)
+    key.unseal(nonce, t"header".bytestream, box).read[Text]                           // t"message"
+    capture[Crypto.Error](key.unseal(nonce, t"other".bytestream, box)).reason         // BadTag
+    ```
+
+entry .xor   `key.xor(nonce, counter, data)`: applies a keystream, encrypting and decrypting alike
+    An extension on a `SymmetricKey` of a `Keystream` cipher (`ChaCha20`). The data is
+    combined with the keystream of the key and nonce starting at block `counter`; applying it
+    twice restores the plaintext. The counter lets a protocol start partway through the
+    stream, as OpenSSH does to keep block zero for the Poly1305 key. A nonce must never repeat
+    under a key, and the result is unauthenticated: this is a building block, not a message
+    format.
+
+entry .Pkcs8   the shape of a PKCS#8 `PrivateKeyInfo`, and the conversions of other key forms into it
+  detail
+      RFC 5958's `OneAsymmetricKey`: a version, an `AlgorithmIdentifier`, the key material as
+      an OCTET STRING, and whatever follows — attributes, and in version 2 the optional public
+      key. This is the form every `Crypto` provider takes a private key in, so each other
+      format a key file may use is converted to it here, and the conversions are plain ASN.1
+      surgery: a PKCS#1 `RSAPrivateKey` and a SEC1 `ECPrivateKey` are *exactly* what a
+      PKCS#8 wrapper's OCTET STRING holds for an RSA or EC key. `PrivateKey.pemDecodable` uses
+      these; direct use is for code assembling key documents by hand.
+  refer enigmatic.PrivateKey
+  refer enigmatic.Spki
+  refer enigmatic.OpenSsh
+  entry .unwrap   takes a DER `PrivateKeyInfo` apart into its `Pkcs8` fields
+      Raises `PrivateKey.Error` with reason `Malformed` if the bytes are not DER or not a
+      `PrivateKeyInfo`.
+  entry .wrap   a version-0 `PrivateKeyInfo` around an `AlgorithmIdentifier` and key octets, as DER
+  entry .fromPkcs1   a PKCS#1 `RSAPrivateKey` wrapped into PKCS#8 under `rsaEncryption` with NULL parameters
+      Raises `PrivateKey.Error` (`Malformed`) if the document is not an `RSAPrivateKey`.
+  entry .fromSec1   a SEC1 `ECPrivateKey` wrapped into PKCS#8, the curve taken from its own `[0]` field
+      RFC 5915 lets a document omit the curve only when it is known from elsewhere, as it is
+      not here: a SEC1 key naming no curve is `Malformed`.
+  entry .carriesPublicKey   whether `PrivateKey#public` could be answered for a key document
+      An RSA or DSA public key is computed from the private one, but an EC, Ed25519, X25519 or
+      ML-DSA public key is a point no provider recomputes, so it must be carried in the
+      document: inside the `ECPrivateKey` for EC (RFC 5915's `[1]`), and at the top level of
+      the `OneAsymmetricKey` for the others (RFC 5958's `[1]`, in either its explicit or its
+      implicit form).
+  entry #version   the `PrivateKeyInfo` version: 0, or 1 when a public key is carried
+  entry #identifier   the `AlgorithmIdentifier`
+  entry #octets   the key material, the content of the `privateKey` OCTET STRING
+  entry #rest   whatever follows the key material: attributes, and the optional public key
+
+entry .Spki   the shape of an X.509 `SubjectPublicKeyInfo`: an `AlgorithmIdentifier` and the key as a BIT STRING
+  detail
+      The form every provider takes a public key in. `PublicKey.pemDecodable` and
+      `PublicKey.raw` use these; direct use is for code assembling key documents by hand.
+  refer enigmatic.PublicKey
+  refer enigmatic.Pkcs8
+  entry .unwrap   takes a DER `SubjectPublicKeyInfo` apart into its `Spki` fields
+      Raises `PublicKey.Error` with reason `Malformed` if the bytes are not one.
+  entry .wrap   a `SubjectPublicKeyInfo` around an `AlgorithmIdentifier` and key bits, as DER
+  entry .fromPkcs1   a PKCS#1 `RSAPublicKey` wrapped into a `SubjectPublicKeyInfo` under `rsaEncryption`
+      Raises `PublicKey.Error` (`Malformed`) if the document is not an `RSAPublicKey`.
+  entry #identifier   the `AlgorithmIdentifier`
+  entry #bits   the key, the content of the `subjectPublicKey` BIT STRING
+
+entry .OpenSsh   OpenSSH's two key formats: the `openssh-key-v1` container and the `authorized_keys` line
+  detail
+      The container `ssh-keygen` has written private keys in since OpenSSH 7.8 (armored as
+      `OPENSSH PRIVATE KEY`, which `PrivateKey.pemDecodable` reads through `.privateKey`), and
+      the single line — type, base64 blob, optional comment — which `id_*.pub`,
+      `authorized_keys` and `known_hosts` hold a public key as. Both are built from the SSH
+      wire encoding (RFC 4251 §5); neither is ASN.1, so each is converted to the PKCS#8 or
+      `SubjectPublicKeyInfo` document the providers take. The key types OpenSSH names and this
+      library reads are `ssh-ed25519`, `ssh-rsa` and `ecdsa-sha2-nistp256`/`384`/`521`.
+
+      ```scala
+      import soundness.*
+      import providers.javaBaseProvider
+      import strategies.throwUnsafely
+
+      val line = t"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBGH6R8uL9Aww7+jnLISnQu3kiglJKYyOcKlvCJ7v+xS test@example"
+      val key: PublicKey[Ed25519] = OpenSsh.publicKey[Ed25519](line)
+      OpenSsh.line(key, t"test@example") == line   // true
+      ```
+
+      Only unencrypted private keys are read: a passphrase-protected container (a cipher and
+      KDF other than `none`) needs bcrypt's KDF, which no provider offers, and is reported as
+      `PrivateKey.Error` with reason `Encrypted`.
+  refer enigmatic.PrivateKey
+  refer enigmatic.PublicKey
+  refer enigmatic.KeyAlgorithm
+  entry .privateKey   the PKCS#8 form of the one private key in an `openssh-key-v1` container
+      Needs a `Tactic[PrivateKey.Error]` and `Diagnostics`. An Ed25519 key becomes RFC 8410's
+      `CurvePrivateKey` with the public key at RFC 5958's `[1]`; an ECDSA key a SEC1 structure
+      naming its curve; an RSA key a PKCS#1 structure with the two CRT exponents OpenSSH leaves
+      out computed, since the JDK's RSA key needs them. A container which is not one is
+      `Malformed`, an encrypted one `Encrypted`, one holding several keys or an unknown key
+      type `Unsupported`.
+  entry .publicKey   `OpenSsh.publicKey[cipher](line)`: a public key from its single-line form, checked against the cipher
+      Needs a `Tactic[PublicKey.Error]` and `Diagnostics`. The line is `<type> <base64>
+      [comment]`; a line which is not one, or whose blob is not base64, is `Malformed`, and a
+      key of another algorithm a `Mismatch`, as `OpenSsh.publicKey[Rsa[2048]]` on an
+      `ssh-ed25519` line reports _a RSA-2048 key was expected but Ed25519 was found_.
+  entry .spki   the `SubjectPublicKeyInfo` form of a wire-encoded public-key blob
+      The blob a line's base64 holds, or a container's public section: the SSH protocol's
+      key encoding (RFC 4253 §6.6), decoded to the document the providers take.
+  entry .line   a public key in its single-line form, with a comment if one is given
+      `Unset` for a key whose algorithm OpenSSH has no name for (DSA, ECDH, X25519, ML-DSA, as
+      their `KeyAlgorithm#sshName` says), or whose bytes are not a well-formed document.
+  entry .blob   a public key in its wire form: what the SSH protocol sends in authentication and key exchange
+      The bytes a line's base64 encodes, RFC 4253 §6.6; `Unset` on the same conditions as
+      `.line`.
+
+entry .Poly1305   the one-time authenticator of RFC 8439, in Scala
+  detail
+      `Poly1305.mac(key, message)` is a 16-byte tag over a message under a 32-byte key which
+      must be used once, which is why a protocol derives the key from a keystream per message.
+      It is written here rather than taken from a provider because the JDK offers Poly1305
+      only fused with ChaCha20 as `ChaCha20Poly1305`, and OpenSSH's
+      `chacha20-poly1305@openssh.com` needs it alone, over a key taken from block zero of a
+      `ChaCha20` keystream. The arithmetic runs in constant time with respect to the message
+      content.
+
+      ```scala
+      import soundness.*
+      import alphabets.hexUpperCase
+
+      val key = t"85D6BE7857556D337F4452FE42D506A80103808AFB0DB2FD4ABFF6AF4149F51B".deserialize[Hex]
+      Poly1305.mac(key, t"Cryptographic Forum Research Group".bytestream).serialize[Hex]
+      // t"A8061DC1305136C6C22B8BAF0C0127A9"
+      ```
+  entry .mac   the 16-byte tag over `message` under a 32-byte one-time `key`
+
+entry .blockCipherModes   the block-cipher modes, each a given to import by name for inference
+  detail
+      A block cipher's mode may be written in its type, `Aes[256] over Cbc`, or left out and
+      inferred from the mode given in scope. The companions already supply the givens in
+      implicit scope when the type names the mode; these re-exports are for the other case,
+      `SymmetricKey.generate[Aes[256]]()` with `import blockCipherModes.cbc`. `Ecb.mode` is
+      not here, since it takes an erased permit and a re-exported given cannot: write `over
+      Ecb`.
+
+      ```scala
+      import soundness.*
+      import cloaks.heapCloak
+      import providers.javaBaseProvider
+      import strategies.throwUnsafely
+      import cryptoPermits.permitUnauthenticatedCrypto
+      import blockCipherModes.cbc
+      import blockCipherPaddings.pkcs7
+
+      val key = SymmetricKey.generate[Aes[256]]()   // Aes[256] over Cbc against Pkcs7
+      ```
+  refer enigmatic.BlockCipherMode
+  refer enigmatic.blockCipherPaddings
+  entry .cbc   cipher block chaining, `Cbc.mode`
+  entry .ctr   counter mode, `Ctr.mode`; pairs only with `NoPadding`, which must be named in the type
+  entry .cfb   cipher feedback, `Cfb.mode`
+  entry .ofb   output feedback, `Ofb.mode`
+
+entry .blockCipherPaddings   the block-cipher paddings, each a given to import by name for inference
+  detail
+      As `blockCipherModes` for the padding: `import blockCipherPaddings.pkcs7` lets
+      `Aes[256] over Cbc` resolve without `against Pkcs7`. `NoPadding.padding` is not here,
+      since it captures a `Tactic[Crypto.Error]` and a re-exported given cannot: write
+      `against NoPadding`.
+  refer enigmatic.BlockCipherPadding
+  refer enigmatic.blockCipherModes
+  entry .pkcs7   PKCS#7 padding, `Pkcs7.padding`
+  entry .iso10126   ISO 10126 padding, `Iso10126.padding`
+
+entry .cloaks   where secrets are stored, each a given to import by name
+  detail
+      There is deliberately no default `Cloak`: constructing any secret — a `Password`, a
+      `SymmetricKey`, a `PrivateKey`, a key read from a file — needs one in scope, so the
+      storage decision is always written down. `heapCloak` exists on every platform; the other
+      three need `java.lang.foreign` and exist only on the JVM. The three JVM strategies are
+      capabilities, so their givens are `transparent inline`: each summon site instantiates a
+      fresh cloak — with its own arena and, for the encrypting strategies, its own ephemeral
+      key — which the secrets built with it capture, so such a secret cannot be ascribed a
+      pure type.
+
+      ```scala
+      import soundness.*
+      import providers.javaBaseProvider
+      import strategies.throwUnsafely
+      ```
+
+      ```scala fuel
+      frame
+        label On the heap: pure, portable, visible in a heap dump
+        code
+            locally:
+              import cloaks.heapCloak
+              val key: SymmetricKey[Aes[256] over Cbc against Pkcs7] =
+                SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+      frame
+        label Off the heap: the same key, now a capability
+        code
+            locally:
+              import cloaks.offHeapCloak
+              val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()   // SymmetricKey[…]^{offHeapCloak}
+      frame
+        label Encrypted on the heap under an off-heap key
+        code
+            locally:
+              import cloaks.veiledHeapCloak
+              val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+      frame
+        label Encrypted off the heap under a heap-resident key
+        code
+            locally:
+              import cloaks.veiledOffHeapCloak
+              val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+      ##
+      ```
+
+      Under every strategy the key is used the same way, inside `uncloak`. No cloak defends
+      against a debugger in the same process; what the stronger ones shrink is the window
+      during which cleartext is reachable from a heap dump or core file.
+  refer enigmatic.Cloak
+  entry .heapCloak   cleartext on the heap, as a private byte array; every platform
+      The weakest strategy — the material is visible in a heap dump for the secret's lifetime
+      — but portable and pure: heap-cloaked secrets have empty capture sets, so they can be
+      stored and returned without tracking.
+  entry .offHeapCloak   cleartext in off-heap memory: nothing at rest on the heap at all; JVM only
+      Each secret gets a `java.lang.foreign` shared arena, zeroed and released by a cleaner
+      when the secret becomes unreachable. A fresh cloak per summon site.
+  entry .veiledHeapCloak   ciphertext on the heap, under an ephemeral AES-256-GCM key held off-heap; JVM only
+      At rest the heap holds only ciphertext (with a fresh nonce per secret, and the GCM tag
+      authenticating it against tampering), and the key needed to read it is off-heap. A
+      fresh cloak, with a fresh key, per summon site.
+  entry .veiledOffHeapCloak   ciphertext off the heap, under an ephemeral AES-256-GCM key held on the heap; JVM only
+      The mirror image, for when bulk secret material should stay out of the heap but a
+      32-byte heap-resident key is acceptable. A fresh cloak, with a fresh key, per summon
+      site.
+
+entry .providers   the cryptographic providers, each a given to import by name
+  detail
+      The `Crypto` provider is chosen by one import, which selects hashing too. Two of the
+      givens are gastronomy's: `providers.javaBaseProvider` (the JDK, from which
+      `Crypto.javaBaseCrypto` derives `JavaBaseCrypto`) and `providers.soundnessProvider`
+      (pure Scala, from which `Crypto.soundnessCrypto` derives `SoundnessCrypto`). This
+      package adds the OpenSSL one, from `enigmatic.openssl`.
+  refer enigmatic.Crypto
+  refer enigmatic.OpensslCrypto
+  entry .opensslProvider   `OpensslCrypto`, the provider over `libcrypto`
+      The given `OpensslCrypto.type`. Native today for randomness, HMAC and AES in PKCS#7 or
+      no padding; RSA delegates to the JDK provider, so it is JVM-only in practice.
+
+entry .Keystore   a PKCS#12 keystore, opened for the duration of a scope with a `Password`; JVM only
+  detail
+      `path.open[Keystore](Password(t"…"))` opens the store at a path (any type `Abstractable
+      across Paths to Text`) for the block, with the password as a flag — an opaque `Password`,
+      so its cleartext is reached only through the scoped `Cleartext` and the char array the
+      platform needs is zeroed once the store is loaded. Inside the block, `keystore` is the
+      open `.KeystoreHandle`, serving the store's aliases and DER-encoded certificates. Opening
+      needs a `Tactic[Keystore.Error]`. Backed by `java.security.KeyStore`, so it exists only
+      on the JVM; read-only until keystore writing lands.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import cloaks.heapCloak
+      import strategies.throwUnsafely
+      import pathInterfaces.pathOnLinux
+      import temporaryDirectories.javaBaseTemporaryDirectory
+
+      val storePath = temporaryDirectory[Path on Linux] / "cryptography" / "store.p12"
+
+      storePath.open[Keystore](Password(t"sesame")):
+        keystore.certificate(t"server")   // Unset, unless the store holds that alias
+        keystore.aliases
+      ```
+
+      A wrong password and a corrupt store are deliberately indistinguishable — both are
+      `Unreadable` — since telling them apart would say which of the two went wrong to
+      someone guessing. A missing password loads the store without an integrity check, as
+      `KeyStore.load` does.
+  refer enigmatic.keystore
+  refer enigmatic.Password
+  entry .KeystoreHandle   the open store within an `open[Keystore]` block, reached as `keystore`
+    detail
+        An exclusive capability over the loaded `java.security.KeyStore`, confined to the
+        block.
+    entry #aliases   every alias in the store, as a `List[Text]`
+    entry #certificate   the DER-encoded X.509 certificate stored under an alias, or `Unset`
+        Decode it with `Der(bytes).as[Certificate]` or inspect it as `Asn1`.
+  entry .KeystoreOpenable   the `Openable` which opens a path as a keystore; a named class for its given
+    detail
+        The implementation behind `.openable`, with `Form = Keystore`, `Operand = Password`
+        and `Result = KeystoreHandle`. A named class rather than an anonymous given instance
+        so the type can be spoken of; summoned through `.openable`.
+    entry #open   loads the PKCS#12 store at the path and runs the block with the handle
+        Refuses a `Write` mode with `Keystore.Error` (`WriteUnsupported`) before touching the
+        file; the first `Password` flag, if any, is uncloaked for the load and zeroed after.
+    entry #loadKeystore   loads a `java.security.KeyStore` from a stream under a char-array password
+        Any of the JDK's load-time exceptions — bad password, bad format, truncation — becomes
+        `Keystore.Error` with reason `Unreadable`.
+  entry .openable   the given which lets `path.open[Keystore](password)` resolve
+      For any path type `Abstractable across Paths to Text`; captures the
+      `Tactic[Keystore.Error]` in scope.
+  entry .Error   raised when a keystore cannot be read, or is opened for writing
+    detail
+        Error 522: _the keystore operation failed because `reason`_.
+    entry .communicable   renders each reason as a message
+    entry .Reason   why the operation failed
+        `Unreadable` (1): _the keystore could not be read with the given password_ — a wrong
+        password or a corrupt store, deliberately not distinguished. `WriteUnsupported` (2):
+        _keystores cannot yet be opened for writing_, for an `open[Keystore](Write, …)`.
+    entry #reason   why the operation failed
+
+entry .keystore   the open `Keystore.KeystoreHandle` within an `open[Keystore]` block, reached contextually
+    `keystore.aliases` rather than `summon[Keystore.KeystoreHandle].aliases`, in the manner of
+    galilei's `file`. Transparent inline, so the handle's precise grant-refined type is kept.
+    Only meaningful inside the block; JVM only.
+
+entry .Asn1   an ASN.1 value, in the universal types PKIX uses, with a strict DER codec
+  detail
+      `Asn1` is an enumeration of the ASN.1 universal types that certificates, keys and
+      signing requests are built from, and the codec between such a value and its
+      [DER](https://en.wikipedia.org/wiki/X.690#DER_encoding) octets, held as a `Der`
+      document. `value.in[Der]` encodes, `der.as[Asn1]` decodes, and
+      `bytes.read[Asn1 in Der]` reads a value straight from a source of bytes.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val value: Asn1 = Asn1.Sequence(List(Asn1.Integer(BigInt(1)), Asn1.Utf8String(t"hello")))
+      val der: Der = value.in[Der]
+      der.as[Asn1] == value
+      ```
+
+      The cases are the universal types, each a case class whose fields are the value:
+
+      - `Boolean(value: scala.Boolean)` and `Integer(value: BigInt)`, which encodes minimally
+        with two's-complement sign extension;
+      - `BitString(bytes: Data, unusedBits: Int)`, with the count of unused trailing bits
+        (`0` for a signature or a public key), and `OctetString(bytes: Data)`;
+      - `Null`;
+      - `ObjectId(arcs: List[Int])`, an object identifier as its arcs, so
+        `sha256WithRSAEncryption` is `Asn1.ObjectId(List(1, 2, 840, 113549, 1, 1, 11))`;
+      - `Utf8String`, `PrintableString` and `Ia5String`, each over a `Text`;
+      - `UtcTime(timestamp: Long)` and `GeneralizedTime(timestamp: Long)`, both in seconds
+        since the Unix epoch, written and read only in DER's one permitted form
+        (`YYMMDDHHMMSSZ` and `YYYYMMDDHHMMSSZ`, no fractions, no offset), with a `UTCTime`
+        year read as 1950–2049;
+      - `Sequence(elements: List[Asn1])` and `Set(elements: List[Asn1])`, whose members DER
+        sorts by their encodings when writing (and requires sorted when reading);
+      - `Tagged(tag: Int, explicit: scala.Boolean, value: Asn1)`, a context-class tag: an
+        explicit tag wraps the whole inner value, and an implicit one replaces the inner
+        value's tag; and
+      - `Unknown(tagClass: Int, tag: Int, constructed: scala.Boolean, content: Data)`, any
+        other value, with its content octets verbatim.
+
+      Decoding is **total**: a tag not modelled here — `T61String`, `BMPString`,
+      `ENUMERATED`, an application or private tag — decodes to `Unknown`, and a constructed
+      context tag decodes to `Tagged(_, true, _)` only when its content is exactly one
+      well-formed value, and to `Unknown` otherwise. An *implicit* tag is therefore
+      write-only: `[0] IMPLICIT INTEGER` and `[0] IMPLICIT OCTET STRING` are byte-identical,
+      and telling them apart needs the module's schema, so the decoder yields
+      `Unknown(Asn1.Context, 0, false, bytes)` for a primitive implicit tag. This is why an
+      authority key identifier written by `Certificate.issued` reads back as `Unknown`.
+      Because nothing is dropped, decoding and re-encoding reproduce the original bytes
+      exactly, which is what verifying a signature over a certificate's `TBSCertificate`
+      depends on.
+
+      The codec is **strict**: it writes DER and accepts only DER, so an indefinite length,
+      an overlong length or tag, a non-minimal integer, a constructed string, an unsorted
+      set, a malformed time or trailing bytes all raise an `Asn1.Error` whose reason names
+      the fault and the byte offset at which it was found. BER that is not also DER is
+      rejected.
+
+      The byte-carrying cases hold `Data`, whose equality is by identity, so two values which
+      differ only in the contents of an `OctetString` may still compare unequal; compare
+      their encodings (`value.in[Der]`, which `Der` compares by its bytes) instead. The
+      component is pure byte manipulation with no crypto provider, so it compiles for the
+      JVM, Scala.js and Scala Native alike.
+  refer enigmatic.Der
+  refer enigmatic.Pem
+  refer enigmatic.Certificate
+  entry .Universal   the universal tag class, `0`
+      The two high bits of an identifier octet name the tag class; `Universal` is the class
+      of every modelled type, and the `tagClass` of an `Asn1.Unknown` holding an unmodelled
+      universal type.
+  entry .Application   the application tag class, `1`
+      Application-class tags are not modelled, so a value with one decodes to `Asn1.Unknown`
+      with this as its `tagClass`.
+  entry .Context   the context-specific tag class, `2`
+      The class of every `Asn1.Tagged` value, and the `tagClass` of an `Asn1.Unknown` read
+      from an implicit context tag, as in `Asn1.Unknown(Asn1.Context, 1, false, bytes)`.
+  entry .Private   the private tag class, `3`
+      Private-class tags are not modelled, so a value with one decodes to `Asn1.Unknown`
+      with this as its `tagClass`.
+  entry .encodable   encodes a value as DER, as `value.in[Der]`
+      The `Asn1 is Encodable in Der` given, in implicit scope. Each node renders its own
+      content first, since a definite length must precede the content it measures and a
+      `SET` is ordered by its members' encodings, costing one copy per level of nesting:
+      immaterial for the kilobyte-scale structures this serves. Encoding never fails: an
+      `ObjectId` with fewer than two arcs is written with its arcs as they are.
+  entry .decodable   decodes a DER document, as `der.as[Asn1]`
+      The `Asn1 is Decodable in Der` given, in implicit scope, needing a
+      `Tactic[Asn1.Error]`, which it captures. It parses the whole document and raises
+      `Asn1.Error` for anything that is not strict DER, including bytes after the value
+      (`Reason.Trailing`).
+  entry .aggregable   reads a value from a source of bytes, as `bytes.read[Asn1 in Der]`
+      The `(Asn1 in Der) is Aggregable by Data` given, needing a `Tactic[Asn1.Error]`. The
+      whole source is read before parsing; the result is the `Asn1` value.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      t"A003020102".deserialize[Hex].read[Asn1 in Der]   // Asn1.Tagged(0, true, Asn1.Integer(BigInt(2)))
+      ```
+  entry .Parser   the strict DER reader behind `.decodable`
+    hidden
+    detail
+        Not for direct use: the reader `Asn1.decodable` and `Asn1.aggregable` run, an
+        exclusive, stateful cursor over one document whose constructor is internal. It
+        rejects every construct BER allows but DER forbids, so that whatever it accepts
+        re-encodes to the bytes it was read from. Its public surface is `#offset`, the
+        current position, and `#value`, which reads one value up to a limit.
+    entry #offset   the position of the next byte to read
+    entry #value   reads one value ending at or before the limit, raising `Asn1.Error`
+  entry .Error   raised when bytes are not a strict DER encoding
+    detail
+        Error 523: _could not process the ASN.1 value because `reason`_, where the reason
+        is an `Asn1.Error.Reason` naming the fault and the byte offset. Raised by
+        `Asn1.decodable` and `Asn1.aggregable` (and so by anything decoding through them:
+        `Certificate.decodable`, the key decoders, `text.read[Asn1 in Pem]`) when the input
+        is truncated, uses an indefinite or overlong length, an overlong tag, a non-minimal
+        or empty integer, a length too large to represent, trailing bytes, the reserved
+        tag `0`, a malformed object identifier or an arc beyond `Int`, an unsorted `SET`, a
+        malformed time, a boolean other than `0x00`/`0xFF`, a wrong length for a `BOOLEAN`,
+        `NULL` or `BIT STRING`, bad unused-bit padding, a constructed string or a primitive
+        `SEQUENCE`/`SET`.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        capture[Asn1.Error](Der(t"0480".deserialize[Hex]).as[Asn1]).reason
+        // Asn1.Error.Reason.IndefiniteLength(1)
+        ```
+    entry .Reason   what was wrong with the bytes, and at which offset
+      detail
+          An enum of nineteen cases, each carrying the byte `offset` of the fault, and
+          numbered as the error's sub-number: `Truncated` (1), `IndefiniteLength` (2),
+          `NonMinimalLength` (3), `NonMinimalTag` (4), `NonMinimalInteger` (5),
+          `EmptyInteger` (6), `Overflow` (7, a length or tag too large), `Trailing` (8),
+          `InvalidUtf8` (9), `ReservedTag` (10), `BadOid` (11), `OidArcOverflow` (12),
+          `UnsortedSet` (13), `BadTime` (14), `BadBoolean(offset, byte)` (15),
+          `BadLength(offset, tag, length)` (16), `BadUnusedBits(offset, count)` (17),
+          `NotPrimitive(offset, tag)` (18) and `NotConstructed(offset, tag)` (19). Each
+          case's `number` is its sub-number.
+      entry .communicable   renders each reason as a message naming the fault and its byte offset
+    entry #reason   the `Asn1.Error.Reason` for the failure
+
+entry .Der   a DER document: the canonical encoding of one ASN.1 value, compared by its bytes
+  detail
+      `Der` holds the bytes of a single DER-encoded value, and is the *form* of the ASN.1
+      codec: `asn1.in[Der]` and `der.as[Asn1]` are its two directions, as `Cbor` is the form
+      of the CBOR codec. It is a distinct type rather than an alias for `Data` so that
+      `value.in[Der]` and `bytes.read[Der]` are unambiguous, and so that two documents
+      compare **by their bytes** — `Data` compares by identity — which is how a round trip
+      is checked:
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val der: Der = Asn1.Sequence(List(Asn1.Null)).in[Der]
+      der.as[Asn1].in[Der] == der   // true
+      ```
+
+      A `Der` is read from any source of bytes with `read[Der]`, written to one as its
+      bytes (`in[Data]`, or streamed), armored as PEM with `Pem(label, der)`, and reached
+      from a PEM block with `pem.as[Der]`. `PrivateKey` and `PublicKey` decode from a `Der`
+      holding a PKCS#8 `PrivateKeyInfo` or a `SubjectPublicKeyInfo`, and a `Certificate`
+      from one holding an X.509 certificate.
+  refer enigmatic.Asn1
+  refer enigmatic.Pem
+  entry .encodable   a document's bytes, as `der.in[Data]`
+  entry .streamable   streams a document's bytes, as a `Stream[Data]` metered by `Credit`
+  entry .aggregable   reads a document from a source of bytes, as `bytes.read[Der]`
+      Collects the whole source into one `Der`. Nothing is parsed: the bytes are taken as
+      they are, and `as[Asn1]` checks them.
+  entry .showable   shows a document as hexadecimal, with an `Alphabet[Hex]` in scope
+      Needs an `Alphabet[Hex]` such as `alphabets.hexUpperCase` or `alphabets.hexLowerCase`.
+  entry .inspectable   a debug rendering: `Der(…)` with the whole document as lowercase hex
+      Always available, with no alphabet in scope. Nothing is abbreviated: a DER document is
+      defined by its bytes, and two which differ in one byte decode to different values, so
+      an inspection which dropped bytes would hide what is being looked for.
+  entry #data   the document's bytes
+
+entry .Pem   a PEM block: a label and the bytes its base64 armor carries
+  detail
+      [PEM](https://en.wikipedia.org/wiki/Privacy-Enhanced_Mail) is the armored text form in
+      which certificates, keys and requests are exchanged: a `-----BEGIN LABEL-----` line,
+      base64 in 64-character lines, and an `-----END LABEL-----` line. A `Pem` value is the
+      `#label` and the decoded `#data`; `#serialize` renders the armor, and
+      `text.read[Pem]` parses it.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val armored: Text = t"""-----BEGIN EXAMPLE-----
+      MIIB9TCCAWACAQAwgbgxGTAXBgNVBAoMEFF1b1ZhZGlzIExpbWl0ZWQxHDAaBgNV
+      -----END EXAMPLE-----"""
+
+      val pem: Pem = armored.read[Pem]
+      pem.label                 // Pem.Label.Proprietary(t"EXAMPLE")
+      pem.serialize == armored  // true
+      ```
+
+      The label is always given explicitly when a block is built (`Pem(Pem.Label.Certificate,
+      certificate.in[Der])`): it is a fact about the value, not a mode of the encoding, and
+      the parser does not check it against the content. Parsing is streaming and line by
+      line, so a document reads from any source in bounded memory, and a source holding
+      many blocks — a certificate chain, a bundle of keys — reads as a lazy `Chain[Pem]`
+      with `read[Chain[Pem]]`, skipping the text between blocks (the `subject=…` lines
+      OpenSSL writes) and reading an input with no blocks as empty rather than an error.
+      Leading whitespace is skipped; only `\n` ends a line, so a `\r` stays on it and fails
+      the boundary match.
+
+      Two liftings read a *decoded* value from armored text in one step: `text.read[X in
+      Pem]` is `X`'s `Decodable in Pem` (`PrivateKey`, `PublicKey`, through `.aggregableInPem`)
+      where there is one, and otherwise its `Decodable in Der` applied to the block's bytes
+      (`aggregableIn`, inherited from `Pem2`), which is how `text.read[Asn1 in Pem]`,
+      `text.read[Certificate in Pem]` and `text.read[Der in Pem]` work.
+
+      `Pem` lives in the `enigmatic.asn1` component, with `Asn1` and `Der`, so it is
+      available on every platform and without a crypto provider.
+  refer enigmatic.Der
+  refer enigmatic.Asn1
+  refer enigmatic.Certificate
+  entry .apply   armors a DER document under a label: `Pem(Pem.Label.Certificate, der)`
+      Takes a `Pem.Label` and a `Der`, and keeps the document's bytes. `Pem(label, data)` is
+      the case-class constructor over raw bytes.
+  entry .derDecodable   the block's payload as a `Der` document, as `pem.as[Der]`
+      Every label this module knows armors DER, except `OPENSSH PRIVATE KEY`, whose payload
+      is OpenSSH's own binary container and which `PrivateKey`'s PEM decoder handles by
+      label. The label is not checked here.
+  entry .aggregableInPem   `text.read[X in Pem]` for an `X` with a `Decodable in Pem`
+      Parses the first block of the text and hands the whole `Pem`, label included, to
+      `X`'s `Decodable in Pem`. It needs that decodable, a `Tactic[Pem.Error]` and
+      `Diagnostics`, and outranks `Pem.aggregableIn`, inherited from `Pem2` (the same lifting over a `Decodable
+      in Der`), so a value which has both decodes by label: `text.read[PrivateKey[Ed25519]
+      in Pem]` can tell a `PRIVATE KEY` block from an `OPENSSH PRIVATE KEY` one.
+  entry .aggregable   parses the first PEM block of a text source, as `text.read[Pem]`
+      Needs a `Tactic[Pem.Error]` and `Diagnostics`. Leading whitespace is skipped; the
+      first line must then be a `BEGIN` boundary, else `Pem.Error(BeginMissing)`; the body
+      accumulates until an `END` boundary (whose label is not required to match), else
+      `Pem.Error(EndMissing)`; and a body that is not base64 is `Pem.Error(BadBase64)`. The
+      input is consumed as a stream, chunk by chunk, whatever the chunk boundaries.
+  entry .aggregableAll   every block of a text source, lazily, as `text.read[Chain[Pem]]`
+      Needs a `Tactic[Pem.Error]` and `Diagnostics`. One block parses per forced cell of the
+      `Chain`; text between blocks is skipped, and an input without blocks is the empty
+      chain.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val block: Text = t"-----BEGIN EXAMPLE-----\nAAAA\n-----END EXAMPLE-----\n"
+      val chain: Text = t"subject=/CN=example\n$block\nissuer comment\n$block$block"
+      chain.read[Chain[Pem]].map(_.label).to[List]   // three Proprietary(t"EXAMPLE") labels
+      ```
+  entry .inspectable   a debug rendering: `Pem(LABEL:…)` with the payload as lowercase hex
+      The armored form is multi-line, so it is not what an inspection shows: the label
+      identifies the block and the payload is full-width hexadecimal on one line, with
+      nothing dropped.
+  entry .streamable   the armored form one line at a time, as a `Stream[Text]`
+      The `serialize` counterpart for streaming consumers: `pem.read[Text]` or
+      `pem.stream[Text]` yields the `BEGIN` line, 64-character base64 lines and the `END`
+      line, each with its `\n`.
+  entry .Error   raised when text is not a PEM block
+    detail
+        Error 389: _could not parse PEM content because `reason`_. Raised by `Pem.aggregable`,
+        `Pem.aggregableAll` and the `read[X in Pem]` liftings when the first non-blank line
+        is not a `BEGIN` boundary (`BeginMissing`, 1), the input ends before an `END`
+        boundary (`EndMissing`, 2), or the body is not base64 (`BadBase64`, 3). The reason
+        `EmptyFile` (4) is declared but not raised by the current parser, which reports an
+        empty input as `BeginMissing`.
+    entry .communicable   renders each reason as a message
+    entry .Reason   `BeginMissing`, `EndMissing`, `BadBase64` or `EmptyFile`, numbered 1 to 4
+    entry #reason   the `Pem.Error.Reason` for the failure
+  entry .Label   the label between `BEGIN` and `END`: a known kind, or a proprietary one
+    detail
+        An enum of the labels PEM blocks carry in practice, each spelled on the wire as its
+        name split into upper-case words: `Certificate` (`CERTIFICATE`),
+        `CertificateRequest`, `NewCertificateRequest`, `PrivateKey` (`PRIVATE KEY`, PKCS#8),
+        `RsaPrivateKey` (`RSA PRIVATE KEY`, PKCS#1), `DsaPrivateKey`, `EcPrivateKey`
+        (`EC PRIVATE KEY`, SEC1), `EncryptedPrivateKey`, `PublicKey` (`PUBLIC KEY`),
+        `Pkcs7`, `Cms`, `DhParameters`, `X509Crl`, `AttributeCertificate`,
+        `EncryptedMessage`, `SignedMessage`, `RsaPublicKey`, `DsaPublicKey` and
+        `OpensshPrivateKey` (`OPENSSH PRIVATE KEY`). Any other label parses as
+        `Proprietary(label: Text)`, holding the text as written.
+
+        ```scala
+        import soundness.*
+
+        Pem.Label.OpensshPrivateKey.show   // t"OPENSSH PRIVATE KEY"
+
+        t"CERTIFICATE REQUEST" match
+          case Pem.Label(label) => label   // Pem.Label.CertificateRequest
+        ```
+    entry .index   every known label, keyed by its wire spelling
+        A lazy `Map[Text, Pem.Label]` from `CERTIFICATE`, `PRIVATE KEY`, … to the case, which
+        `.unapply` consults.
+    entry .showable   a label's wire spelling: upper-case words, or the proprietary text as given
+    entry .unapply   a label from its wire text, always matching: a known case, else `Proprietary`
+        `Pem.Label(text)` as an extractor never fails, so it can sit inside a pattern such as
+        `r"-----BEGIN ${Pem.Label(label)}([ A-Z]+)-----"`.
+  entry #label   the block's `Pem.Label`
+  entry #data   the decoded payload, usually a DER document
+  entry #serialize   the armored text: `BEGIN` line, base64 in 64-character lines, `END` line
+      The lines are joined with `\n` and there is no trailing newline, so a parsed block
+      re-serializes to its trimmed source. `Pem.streamable` is the same text as a stream.
+
+entry .Pem2   the parent trait of the `Pem` companion, holding the lower-priority `read[X in Pem]` lifting
+  hidden
+  detail
+      Not for direct use: the trait exists so that `Pem.aggregableInPem`, defined in the
+      companion itself, outranks the lifting defined here when a value has both a
+      `Decodable in Pem` and a `Decodable in Der`. The given is reached as
+      `Pem.aggregableIn`.
+  entry #aggregableIn   `text.read[X in Pem]` for an `X` with a `Decodable in Der`: parses the armor, decodes the payload
+      Needs the `X is Decodable in Der`, a `Tactic[Pem.Error]` and `Diagnostics`, and
+      captures the decodable and the tactic. `text.read[Asn1 in Pem]`,
+      `text.read[Certificate in Pem]` and, through the identity decodable,
+      `text.read[Der in Pem]` resolve to it. A failure in the DER decoding raises that
+      decoder's own error (`Asn1.Error`), under the tactic it captured.
+
+entry .Cose   a COSE message (RFC 9052): a payload signed or MACed under a key, as tagged CBOR
+  detail
+      `Cose` is a [CBOR Object Signing and Encryption](https://www.rfc-editor.org/rfc/rfc9052)
+      message: a `#payload`, a `#protectedHeader` (the serialized map of header parameters
+      the signature covers), an `#unprotectedHeader`, and the `#recipients` whose
+      `authentication` is the signature or MAC tag. The key's type chooses the variant —
+      a `SymmetricKey` makes a `COSE_Mac0` (CBOR tag 17) and a `PrivateKey` a `COSE_Sign1`
+      (tag 18) — through the `Cose.Authenticator` given for it, and the message's phantom
+      types `#Form` (`Cose.Mac0`, `Cose.Sign1`, …) and `#Operand` (the cipher) record the
+      choice.
+
+      The two operations are `Cose(payload, key)`, which builds and authenticates a message,
+      and `bytes.authenticate[Cose](key)`, which parses a wire message and verifies it:
+
+      ```scala fuel
+      frame
+        label A key for HMAC-SHA-256
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+            import providers.javaBaseProvider
+            import cloaks.heapCloak
+
+            val key: SymmetricKey[HmacCipher[Sha2[256]]] =
+              SymmetricKey(t"a-32-byte-key-for-hmac-sha256!!!".in[Data])
+      frame
+        label The message, authenticated under it
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+            import providers.javaBaseProvider
+            import cloaks.heapCloak
+
+            val key: SymmetricKey[HmacCipher[Sha2[256]]] =
+              SymmetricKey(t"a-32-byte-key-for-hmac-sha256!!!".in[Data])
+
+            val message = Cose(t"hello".in[Data], key)   // a Cose in Cose.Mac0 by HmacCipher[Sha2[256]]
+      frame
+        label Its wire form: CBOR tag 17
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+            import providers.javaBaseProvider
+            import cloaks.heapCloak
+
+            val key: SymmetricKey[HmacCipher[Sha2[256]]] =
+              SymmetricKey(t"a-32-byte-key-for-hmac-sha256!!!".in[Data])
+
+            val message = Cose(t"hello".in[Data], key)
+            val wire: Data = message.in[Data]            // begins 0xD1: major type 6, tag 17
+      frame
+        label Verified by the receiver
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+            import providers.javaBaseProvider
+            import cloaks.heapCloak
+
+            val key: SymmetricKey[HmacCipher[Sha2[256]]] =
+              SymmetricKey(t"a-32-byte-key-for-hmac-sha256!!!".in[Data])
+
+            val message = Cose(t"hello".in[Data], key)
+            val wire: Data = message.in[Data]
+            wire.authenticate[Cose](key)                 // true; false under another key, or after tampering
+      ##
+      ```
+
+      The protected header holds only the algorithm (`1 → alg`), with the identifier the
+      key's cipher has under `Cose.Algorithm`, and is encoded as canonical CBOR
+      (`CanonicalCbor`), as is the `Sig_structure`/`MAC_structure` which is signed. The
+      unprotected header is empty, and the external AAD is empty. A message read back with
+      `Cose.parse` has the general `Form` and `Operand`, since the wire form does not say
+      which cipher was used; `#verifyWith` checks it against a key of any `Cose.Verifier`
+      type whose variant matches.
+
+      The shipped `Cose.Algorithm` givens are the three HMAC-SHA-2 identifiers, so a
+      `SymmetricKey[HmacCipher[Sha2[256 | 384 | 512]]]` builds a `Mac0` message out of the
+      box. Building a `Sign1` message with a `PrivateKey[Ecdsa[256]]` or another signing
+      cipher needs a `Cose.Algorithm` given for that cipher (its IANA identifier, such as
+      `-7` for ES256), which the caller supplies; *verifying* a `Sign1` message with a
+      `PublicKey` needs none. The `Sign` and `Mac` multi-recipient variants (tags 98 and 97)
+      are parsed, but no constructor builds them and the shipped verifiers match only
+      `Sign1` and `Mac0`.
+
+      `Cose` lives in the `enigmatic.cose` component, which adds breviloquence (CBOR) to
+      `enigmatic.core`.
+  refer enigmatic.HmacCipher
+  refer enigmatic.CanonicalCbor
+  refer enigmatic.authenticate
+  entry .encodable   serializes a message to its tagged wire form, as `cose.in[Data]`
+      The `cose is Encodable in Data` given, bounded by `Cose` so that the refined `Cose in
+      Mac0 by cipher` a constructor returns resolves it. A `Sign1` or `Mac0` message is the
+      four-element array `[protected, unprotected, payload, signature]` under its tag; a
+      `Sign` or `Mac` message carries an array of `[protected, unprotected, signature]`
+      triples in place of the single signature.
+  entry .apply   builds a message over a payload, authenticated under a key
+      `Cose(source, key)` reads the payload from any `source` which is `Readable to Data`,
+      and signs or MACs it with the `Cose.Authenticator` given for the key's type: a
+      `SymmetricKey[cipher]` gives a `Cose in Cose.Mac0 by cipher`, and a
+      `PrivateKey[cipher]` a `Cose in Cose.Sign1 by cipher`. The key's cipher needs a
+      `cipher & Signing` given and a `cipher is Cose.Algorithm` for the algorithm
+      identifier; the call needs a `Tactic[Cbor.Error]` and raises `Cose.Error`. It is
+      inline, so the payload is read at the call site under the caller's own readability
+      and tactics.
+  entry .parse   reads a tagged COSE envelope back from its bytes
+      Decodes the CBOR, requires a tag of 17, 18, 97 or 98 (else
+      `Cose.Error(UnknownTag(tag))`), and a four-element array with byte-string protected
+      header and payload and a map for the unprotected header (else `MalformedStructure`);
+      a multi-recipient message's recipients must each be a three-element array. Needs a
+      `Tactic[Cbor.Error]` and a `Tactic[Cose.Error]`. The result is a plain `Cose` whose
+      `Form` and `Operand` are their upper bounds, and whose `#verifyWith` checks it.
+      `bytes.authenticate[Cose](key)` is parse-then-verify in one call.
+  entry .make   the constructor behind `.apply`, refining the `Form` and `Operand` types
+      Builds a `Cose in scheme by cipher` from its six fields with no authentication done:
+      the caller supplies the protected header bytes, unprotected header, payload, context
+      string, CBOR tag and recipients. For a message authenticated under a key, use
+      `.apply`.
+  entry .Algorithm   the COSE algorithm identifier of a cipher: `cipher is Cose.Algorithm`
+    detail
+        A typeclass mapping a cipher type to its entry in the IANA COSE Algorithms
+        registry (RFC 9053), which `Cose.apply` writes into the protected header as the
+        `alg` parameter. The companion's givens cover the HMAC family: `HmacCipher[Sha2[256]]`
+        is 5 (HMAC 256/256), `[384]` is 6 and `[512]` is 7. A signing cipher needs its own
+        instance, in scope where `Cose(payload, privateKey)` is called:
+
+        ```scala
+        import soundness.*
+
+        given Ecdsa[256] is Cose.Algorithm:
+          def algId: Long = -7L   // ES256
+        ```
+    entry .hmacSha256   HMAC 256/256, identifier 5, for `HmacCipher[Sha2[256]]`
+    entry .hmacSha384   HMAC 384/384, identifier 6, for `HmacCipher[Sha2[384]]`
+    entry .hmacSha512   HMAC 512/512, identifier 7, for `HmacCipher[Sha2[512]]`
+    entry #Self   the cipher type
+    entry #algId   the registry identifier, as written in the `alg` header parameter
+  entry .Authenticator   how a key type signs or MACs a message, and which variant it makes
+    detail
+        `key is Cose.Authenticator in form by cipher` is what `Cose.apply` summons for its
+        key: it fixes the message variant (`Form`), the cipher, the algorithm identifier, the
+        context string of the structure to be signed (`Signature1` or `MAC0`), the CBOR tag,
+        and how the to-be-signed bytes are authenticated with the key. The two givens select
+        by key type: `SymmetricKey[cipher]` is `Mac0` and `PrivateKey[cipher]` is `Sign1`;
+        since `SymmetricKey` extends `PrivateKey`, the more specific symmetric instance wins
+        for a symmetric key. Both need a `cipher & Signing` and a `cipher is Cose.Algorithm`.
+    entry .asymmetric   a `PrivateKey[cipher]` makes a `Sign1` message, signing with the cipher
+        For any `cipher <: Cipher & Signing` with a `Cose.Algorithm`. The private key's secret
+        is uncloaked for the duration of the signing.
+    entry .symmetric   a `SymmetricKey[cipher]` makes a `Mac0` message, MACing with the cipher
+        For any `cipher <: Cipher & Symmetric & Signing` with a `Cose.Algorithm`, which is to
+        say `HmacCipher[…]` with the shipped givens.
+    entry #Self   the key type
+    entry #Form   the variant made: `Cose.Sign1` or `Cose.Mac0`
+    entry #Operand   the cipher
+    entry #algId   the algorithm identifier written to the protected header
+    entry #contextString   `Signature1` or `MAC0`: the context of the structure signed
+    entry #cborTag   the tag of the envelope: 18 for `Sign1`, 17 for `Mac0`
+    entry #authenticate   signs or MACs the to-be-signed bytes with the key
+  entry .Verifier   how a key type checks a message's signature or MAC
+    detail
+        `key is Cose.Verifier in form by cipher` is what `Cose#verifyWith` and
+        `authenticate[Cose]` summon: it fixes the variant the key can check and how the
+        signature is checked. A `PublicKey[cipher]` verifies a `Sign1` message and a
+        `SymmetricKey[cipher]` a `Mac0` one; both need only a `cipher & Signing` given, not
+        a `Cose.Algorithm`. The verifier compares its context string with the message's, so
+        a `Mac0` message checked with a public key, or a `Sign1` with a symmetric key, raises
+        `Cose.Error(VariantMismatch)` rather than returning `false`. The algorithm named in
+        the protected header is not compared with the key's cipher.
+    entry .asymmetric   a `PublicKey[cipher]` checks a `Sign1` message's signature
+    entry .symmetric   a `SymmetricKey[cipher]` recomputes a `Mac0` message's tag and compares it
+        The comparison is `HmacCipher#verify`, which runs in constant time.
+    entry #Self   the key type
+    entry #Form   the variant checked: `Cose.Sign1` or `Cose.Mac0`
+    entry #Operand   the cipher
+    entry #contextString   `Signature1` or `MAC0`, which must equal the message's
+    entry #cborTag   the tag of the envelope the verifier expects
+    entry #check   whether the authentication bytes are valid for the to-be-signed bytes under the key
+  entry .Error   raised when a COSE message cannot be parsed or verified
+    detail
+        Error 596: _could not process the COSE message because `reason`_. Raised by
+        `Cose.parse` (and so by `authenticate[Cose]`) for an envelope that is not a tag
+        (`MalformedStructure`), a tag other than 17, 18, 97 or 98 (`UnknownTag(tag)`), or a
+        body of the wrong shape (`MalformedStructure`); by `Cose#verifyWith` when the key's
+        variant is not the message's (`VariantMismatch(expected, actual)`); and by
+        `Cose.apply` through its `raises` clause. Malformed CBOR itself is a `Cbor.Error`,
+        raised through the `Tactic[Cbor.Error]` the same calls take.
+    entry .Reason   why the message was rejected
+      detail
+          `MalformedStructure` (1), `UnknownTag(tag)` (2), `UnsupportedAlgorithm(id)` (3),
+          `AlgorithmMismatch(expected, actual)` (4), `VariantMismatch(expected, actual)` (5,
+          the two context strings as `Text`), `VerificationFailed` (6), `CborParseError` (7)
+          and `DetachedPayloadRequired` (8). Of these, the current code raises
+          `MalformedStructure`, `UnknownTag` and `VariantMismatch`; a failed check is
+          reported as `false` from `verifyWith`, not as `VerificationFailed`.
+      entry .communicable   renders each reason as a message
+    entry #reason   the `Cose.Error.Reason` for the failure
+  entry .Recipient   one signature or MAC on a message: its own headers and the authentication bytes
+    detail
+        A `Sign1` or `Mac0` message has exactly one recipient, with empty headers; a `Sign`
+        or `Mac` message read by `Cose.parse` has one per `[protected, unprotected,
+        signature]` triple on the wire.
+    entry #protectedHeader   the recipient's serialized protected header; empty for `Sign1`/`Mac0`
+    entry #unprotectedHeader   the recipient's unprotected header map, as `Cbor`
+    entry #authentication   the signature or MAC tag bytes
+  entry .Structure   the root of the variant taxonomy: the bound of a message's `Form`
+    detail
+        `Cose.Signed` and `Cose.Maced` divide it, and `Cose.Sign` (tag 98), `Cose.Sign1`
+        (18), `Cose.Mac` (97) and `Cose.Mac0` (17) are the four RFC 9052 message types. A
+        message's `Form` is one of them: `Cose in Cose.Mac0 by HmacCipher[Sha2[256]]`.
+  entry .Signed   the signed variants, `Cose.Sign` and `Cose.Sign1`
+  entry .Maced   the MACed variants, `Cose.Mac` and `Cose.Mac0`
+  entry .Sign   `COSE_Sign`: many signers, CBOR tag 98; parsed but not constructed
+  entry .Sign1   `COSE_Sign1`: one signer, CBOR tag 18; what a `PrivateKey` makes
+  entry .Mac   `COSE_Mac`: many recipients, CBOR tag 97; parsed but not constructed
+  entry .Mac0   `COSE_Mac0`: one MAC, CBOR tag 17; what a `SymmetricKey` makes
+  entry .Tag   the CBOR tag numbers of the four message types, as inline constants
+    detail
+        `Cose.Tag.Sign1` is 18, `Mac0` 17, `Sign` 98 and `Mac` 97 (RFC 9052 §2). The first
+        byte of a `Mac0` wire message is `0xD1`: major type 6 with the tag value 17.
+    entry .Sign1   18
+    entry .Mac0   17
+    entry .Sign   98
+    entry .Mac   97
+  entry .Context   the context strings of the structures signed, as inline constants
+    detail
+        The first element of the `Sig_structure` or `MAC_structure` which is actually
+        signed (RFC 9052 §4.4 and §6.3): `Signature1` for `Sign1`, `Signature` for `Sign`,
+        `MAC0` for `Mac0` and `MAC` for `Mac`. A message carries its own as
+        `Cose#contextString`, and a verifier matches on it.
+    entry .Signature1   `Signature1`
+    entry .Signature   `Signature`
+    entry .Mac0   `MAC0`
+    entry .Mac   `MAC`
+  entry #Form   the variant: a subtype of `Cose.Structure`, refined by the constructor
+  entry #Operand   the cipher the message was authenticated with, refined by the constructor
+  entry #protectedHeader   the serialized protected header: a canonical CBOR map, `{1: alg}` when built here
+  entry #unprotectedHeader   the unprotected header map, as `Cbor`; empty when built here
+  entry #payload   the payload bytes
+  entry #contextString   `Signature1`, `Signature`, `MAC0` or `MAC`: which structure the recipients signed
+  entry #cborTag   the tag the envelope is written under: 18, 98, 17 or 97
+  entry #recipients   the signatures or MACs on the message; exactly one for `Sign1` and `Mac0`
+  entry #verifyWith   whether any recipient's authentication is valid under a key
+      Rebuilds the to-be-signed structure from the message's own context string, protected
+      header and payload (with empty external AAD), and asks the key's `Cose.Verifier` to
+      check each recipient, returning whether any passes. Raises
+      `Cose.Error(VariantMismatch)` when the verifier's context string is not the
+      message's; returns `false` for a wrong key or a tampered message.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import providers.javaBaseProvider
+      import cloaks.heapCloak
+
+      val key: SymmetricKey[HmacCipher[Sha2[256]]] =
+        SymmetricKey(t"a-32-byte-key-for-hmac-sha256!!!".in[Data])
+
+      Cose.parse(Cose(t"hello".in[Data], key).in[Data]).verifyWith(key)   // true
+      ```
+
+entry .CoseVerify   the carrier of `bytes.authenticate[Cose]`, waiting for its key
+  detail
+      `source.authenticate[Cose]` returns a `CoseVerify[source]`, so that the scheme is named
+      as a type argument while the key's type is still inferred from the value argument of
+      the `#apply` that follows: `bytes.authenticate[Cose](key)`. It is not meant to be
+      held; write the two calls together.
+  entry #source   the source the message is read from
+  entry #apply   parses the source as a COSE message and verifies it under the key
+      Reads the source as `Data` (it must be `Readable to Data`), parses it with `Cose.parse`
+      and checks it with `Cose#verifyWith`. The key needs a `Cose.Verifier`; the call needs a
+      `Tactic[Cbor.Error]` and raises `Cose.Error`. The result is whether the signature or
+      MAC verifies.
+
+entry .authenticate   `bytes.authenticate[Cose](key)`: parses a COSE message and verifies it under a key
+    An extension on any source which is `Readable to Data`. The scheme is always `Cose`
+    (the type parameter is bounded by it); the result of `authenticate[Cose]` is a
+    `CoseVerify` whose `apply` takes the key, so the whole expression is
+    `wire.authenticate[Cose](key)` and is `true` when the message's signature or MAC is
+    valid under that key. A `Mac0` message is checked with the `SymmetricKey` that made it,
+    a `Sign1` message with the signer's `PublicKey`. It is `authenticate`, not `verify`,
+    because `verify` in the umbrella is jacinta's schema check.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+    import providers.javaBaseProvider
+    import cloaks.heapCloak
+
+    val key: SymmetricKey[HmacCipher[Sha2[256]]] =
+      SymmetricKey(t"a-32-byte-key-for-hmac-sha256!!!".in[Data])
+
+    val wire: Data = Cose(t"hello".in[Data], key).in[Data]
+    wire.authenticate[Cose](key)   // true
+
+    val other: SymmetricKey[HmacCipher[Sha2[256]]] =
+      SymmetricKey(t"this-is-a-different-key-bytes!!!".in[Data])
+
+    wire.authenticate[Cose](other)   // false
+    ```
+
+entry .HmacCipher   HMAC over a hash, as a symmetric signing cipher: `SymmetricKey[HmacCipher[Sha2[256]]]`
+  detail
+      `HmacCipher[algorithm]` presents HMAC as a `Cipher & Signing & Symmetric`, so that an
+      HMAC key is a `SymmetricKey` and plugs into the same key machinery as every other
+      cipher — which is what lets `Cose(payload, key)` make a `Mac0` message from it. (The
+      `hmac` extension on data is the other, output-typed route to an HMAC.) The key is 32
+      bytes (`Size = 256`), `genKey` draws it from the `Crypto` provider's random source,
+      `sign` is the provider's HMAC under the hash's `hmacName`, and `verify` recomputes it
+      and compares in constant time.
+
+      ```scala
+      import soundness.*
+      import providers.javaBaseProvider
+      import cloaks.heapCloak
+
+      val key: SymmetricKey[HmacCipher[Sha2[256]]] =
+        SymmetricKey(t"a-32-byte-key-for-hmac-sha256!!!".in[Data])
+      ```
+
+      An instance for any hash `algorithm` is given by `.value`, which needs a `Hash in
+      algorithm` (gastronomy's, in implicit scope) and a `Crypto` provider, imported by name
+      from `providers`.
+  refer enigmatic.Cose
+  entry .value   the given `HmacCipher[algorithm]` for any hash with a `Hash` and a `Crypto` in scope
+  entry #Size   `256`: the key size in bits
+  entry #keySize   `256`
+  entry #genKey   32 random bytes from the provider
+  entry #privateToPublic   the key itself: a MAC key has no public half
+  entry #sign   the HMAC of the data under the key, through the provider
+  entry #verify   whether a tag equals the HMAC of the data under the key, compared in constant time
+
+entry .CanonicalCbor   deterministic CBOR encoding (RFC 8949 §4.2.1), as COSE requires
+  detail
+      COSE signs the serialized form of its headers and structures, so the encoding must be
+      deterministic: shortest-form integers, definite lengths, and map keys in bytewise
+      lexicographic order of their encodings. breviloquence's `Cbor.Ast` encoder already
+      emits the first two; `CanonicalCbor.encode` adds the key ordering, recursively through
+      maps, arrays and tags, and encodes the result. `Cose` uses it for the protected header
+      and the to-be-signed structure.
+  entry .encode   encodes a `Cbor.Ast` deterministically, with every map's keys sorted by their encodings
+
+entry .OpensslCrypto   the `Crypto` provider backed by OpenSSL's `libcrypto`, on the JVM and Scala Native
+  detail
+      A `Crypto` provider which calls OpenSSL 3's `libcrypto` through xenophile's typed C
+      navigation: the prototypes in the bundled `/enigmatic/openssl.h` header are parsed
+      as the code compiles, and each call is a Panama downcall on the JVM and a direct C
+      call on Scala Native, from one source. It is selected by importing
+      `providers.opensslProvider` by name, or bound as a local `given Crypto = OpensslCrypto`
+      for one block, and every cipher, key and HMAC then runs through it:
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import providers.opensslProvider
+      import cloaks.heapCloak
+
+      val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+      key.uncloak(t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text])
+      ```
+
+      What it implements natively: `#random` (`RAND_bytes`), `#hmac` (one-shot `HMAC` over
+      SHA-256, SHA-384, SHA-512, SHA-1 and MD5), and `#aes` through the EVP cipher API, as
+      `aes-<bits>-<mode>` with PKCS#7 or no padding (ISO 10126 padding is a JCE-only scheme
+      and is not offered; a block cipher other than AES panics). Its output agrees with the
+      JDK provider's byte for byte, so a ciphertext made under one decrypts under the other.
+      RSA — `.rsa`, `.rsaSignature` and `.ecdsa` — is delegated to `JavaBaseCrypto`, so it
+      works on the JVM and is unavailable on Scala Native, where that provider is a
+      panicking stub. On Scala Native the library is linked statically (`-lcrypto`); on the
+      JVM `libcrypto` is loaded from the Homebrew paths, `/usr/local/opt/openssl@3`, or
+      `libcrypto.so.3`/`libcrypto.so`/`libcrypto.dylib` on the library path, and the JVM
+      needs `--enable-native-access=ALL-UNNAMED`. There is no Scala.js build.
+
+      `OpensslCrypto` lives in the `enigmatic.openssl` component, which adds xenophile's
+      native FFI to `enigmatic.core`.
+  entry .random   `RAND_bytes`: a `Crypto.Random` whose `bytes(n)` are OpenSSL's random bytes
+  entry .hmac   a one-shot HMAC under a JCE-style name: `HmacSHA256`, `HmacSHA384`, `HmacSHA512`, `HmacSHA1`, `HmacMD5`
+      Any other algorithm name panics. The name is what gastronomy's `Hash#hmacName` gives,
+      so `data.hmac[Sha2[256]](key)` reaches it without naming it.
+  entry .aes   AES through the EVP cipher API, one-shot and streaming, in every mode the key type names
+      The `Crypto.SymmetricCipher` for `Aes[128 | 192 | 256]`: a transformation
+      `AES/<mode>/<padding>` becomes OpenSSL's `aes-<bits>-<mode>`, with padding disabled
+      for `NoPadding`. `encrypt` prepends the IV to the ciphertext when one is given and
+      `decrypt` strips it; `stream` and `decryptStream` hold an EVP context open across
+      chunks and free it at `finish`. A key is generated from `random`.
+  entry .rsa   RSA, delegated to the JDK provider; unavailable on Scala Native
+  entry .rsaSignature   RSASSA-PKCS1-v1_5 over a digest, delegated to the JDK provider
+  entry .ecdsa   ECDSA over a digest, delegated to the JDK provider
+
+entry .Certificate   an X.509 certificate, held as the ASN.1 value it is
+  detail
+      A [certificate](https://en.wikipedia.org/wiki/X.509) binds a public key to a
+      `Distinguished` name for a period of validity, signed by its issuer. A `Certificate`
+      is its `#asn1` value, so it encodes to DER through the ordinary codec
+      (`certificate.in[Der]`, `.encodable`), reads back from DER (`der.as[Certificate]`,
+      `.decodable`) or from armored text (`text.read[Certificate in Pem]`), and is armored as
+      `#pem`; because the ASN.1 codec is total and canonical, a certificate read from the
+      wire re-encodes byte for byte, which is what `#verify` depends on.
+
+      Two constructors build a version-3 certificate: `.selfSigned`, where the subject is
+      its own issuer — a root authority, or the throwaway certificate a development server
+      mints for itself — and `.issued`, where one key's certificate is signed by another's.
+      Both need, besides the key's cipher, a `cipher is SignatureAlgorithm` (which names the
+      cipher-and-digest pair as an `AlgorithmIdentifier`), a `Signature.Digest` (SHA-256 by
+      default; `signatureDigests.sha384Signature` or `sha512Signature` to change it), a
+      `Hash in Sha2[256]` for the key identifiers, a permit for the cipher's weakness, and
+      tactics for `Certificate.Error` and `Asn1.Error`.
+
+      ```scala fuel
+      frame
+        label An identity and a validity period
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+            import providers.javaBaseProvider
+            import cloaks.heapCloak
+            import chronometries.unixChronometry
+
+            val subject = Distinguished(commonName = t"example.com", organization = t"Example", country = t"GB")
+            val validity = Instant(1_700_000_000_000L) ~ Instant(1_900_000_000_000L)
+      frame
+        label A self-signed root, marked as an authority
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+            import providers.javaBaseProvider
+            import cloaks.heapCloak
+            import chronometries.unixChronometry
+
+            val subject = Distinguished(commonName = t"example.com", organization = t"Example", country = t"GB")
+            val validity = Instant(1_700_000_000_000L) ~ Instant(1_900_000_000_000L)
+
+            val rootKey = PrivateKey.generate[MlDsa[65]]()
+            val identity = Distinguished(commonName = t"root.example.com")
+            val root = Certificate.selfSigned(identity, rootKey, validity, BigInt(1), authority = true)
+      frame
+        label A leaf over a classical key, issued by the root
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+            import providers.javaBaseProvider
+            import cloaks.heapCloak
+            import chronometries.unixChronometry
+
+            val subject = Distinguished(commonName = t"example.com", organization = t"Example", country = t"GB")
+            val validity = Instant(1_700_000_000_000L) ~ Instant(1_900_000_000_000L)
+
+            val rootKey = PrivateKey.generate[MlDsa[65]]()
+            val identity = Distinguished(commonName = t"root.example.com")
+            val root = Certificate.selfSigned(identity, rootKey, validity, BigInt(1), authority = true)
+
+            val tlsKey = PrivateKey.generate[Ecdsa[256]]()
+
+            val leaf =
+              Certificate.issued(subject, tlsKey.public, identity, rootKey, validity, BigInt(2), alternatives = List(t"example.com"))
+      frame
+        label Both verify against the root's key, and travel as PEM
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+            import providers.javaBaseProvider
+            import cloaks.heapCloak
+            import chronometries.unixChronometry
+
+            val subject = Distinguished(commonName = t"example.com", organization = t"Example", country = t"GB")
+            val validity = Instant(1_700_000_000_000L) ~ Instant(1_900_000_000_000L)
+
+            val rootKey = PrivateKey.generate[MlDsa[65]]()
+            val identity = Distinguished(commonName = t"root.example.com")
+            val root = Certificate.selfSigned(identity, rootKey, validity, BigInt(1), authority = true)
+
+            val tlsKey = PrivateKey.generate[Ecdsa[256]]()
+
+            val leaf =
+              Certificate.issued(subject, tlsKey.public, identity, rootKey, validity, BigInt(2), alternatives = List(t"example.com"))
+
+            leaf.verify(rootKey.public)   // true
+            root.verify(rootKey.public)   // true
+            t"${leaf.pem.serialize}\n${root.pem.serialize}".read[Chain[Pem]].to[List].length   // 2
+      ##
+      ```
+
+      That chain is the shape a post-quantum identity takes today: an ML-DSA key signs
+      certificates with the FIPS 204 identifiers and the JDK's `CertificateFactory` parses
+      and checks them, but no TLS stack can yet *handshake* with an ML-DSA key, so the
+      service presents an ECDSA leaf issued by the ML-DSA key together with that key's
+      self-signed root, and a peer which knows the ML-DSA key verifies the leaf against it.
+      (On the JDK, such a chain handshakes with the `SunX509` key manager and an
+      `X509ExtendedTrustManager`; the `PKIX` manager runs an algorithm check over the chain
+      and refuses.)
+
+      What a built certificate contains: version 3, the serial, the signature algorithm
+      identifier, the issuer, a validity written as `UTCTime` before 2050 and
+      `GeneralizedTime` from then, the subject, the key as the `SubjectPublicKeyInfo` the
+      provider wrote (`PublicKey#bytes`, embedded as it is), and extensions: critical basic
+      constraints (`cA` true for an authority, empty otherwise), critical key usage
+      (`keyCertSign` and `cRLSign` for an authority; `digitalSignature` and
+      `keyEncipherment` for an end entity), a subject key identifier (RFC 7093 method 1: the
+      first 160 bits of the SHA-256 of the key), an authority key identifier when issued,
+      and `dNSName` subject alternative names for the `alternatives`, which is what a TLS
+      client checks in place of the common name.
+
+      `Certificate` lives in the `enigmatic.x509` component, which adds aviation (for the
+      validity `Period`) to `enigmatic.core`.
+  refer enigmatic.Distinguished
+  refer enigmatic.SignatureAlgorithm
+  refer enigmatic.Asn1
+  refer enigmatic.Pem
+  entry .encodable   a certificate as DER, as `certificate.in[Der]`: its `asn1` value, encoded
+  entry .decodable   a certificate from DER, as `der.as[Certificate]`
+      Decodes the document as `Asn1` and wraps it, raising `Asn1.Error` for bytes that are
+      not strict DER; it does not check that the value has a certificate's shape, so a
+      document of any other structure decodes and then fails `#verify`.
+      `text.read[Certificate in Pem]` reads one from its armor.
+  entry .selfSigned   a certificate whose subject is its own issuer, signed with the key it carries
+      `Certificate.selfSigned(subject, key, validity, serial, authority = false, alternatives
+      = Nil)` builds a certificate over `key.public`, with `subject` as both subject and
+      issuer, and signs it with `key`. `authority = true` makes a certificate authority
+      (basic constraints `cA`, key usage `keyCertSign` and `cRLSign`); `false` an end entity
+      (`digitalSignature` and `keyEncipherment`). `alternatives` are `dNSName` subject
+      alternative names. The `serial` must be positive and the `validity` must end after it
+      starts, else `Certificate.Error`.
+
+      The key's cipher must have a `SignatureAlgorithm` given — `Rsa[2048 | 3072 | 4096]`,
+      `Ecdsa[256 | 384 | 521]`, `Ed25519` or `MlDsa[44 | 65 | 87]` do — and the
+      `Signature.Digest` in scope must be one that cipher has an identifier for (SHA-256,
+      SHA-384 or SHA-512 for RSA and ECDSA), else `Certificate.Error(UnknownAlgorithm)`;
+      Ed25519 and ML-DSA ignore the digest. Also needs a `Hash in Sha2[256]`, a
+      `Permit[Weakness[cipher]]` (a weak cipher such as `Rsa[1024]` needs a `cryptoPermits`
+      import), `Tactic[Certificate.Error]`, `Tactic[Asn1.Error]` and `Diagnostics`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import providers.javaBaseProvider
+      import cloaks.heapCloak
+      import chronometries.unixChronometry
+
+      val subject = Distinguished(commonName = t"example.com", organization = t"Example", country = t"GB")
+      val validity = Instant(1_700_000_000_000L) ~ Instant(1_900_000_000_000L)
+      val key = PrivateKey.generate[Rsa[2048]]()
+
+      val certificate =
+        Certificate.selfSigned(subject, key, validity, BigInt(1), alternatives = List(t"example.com"))
+
+      certificate.pem.serialize   // t"-----BEGIN CERTIFICATE-----…"
+      ```
+  entry .issued   a certificate over one key, signed by another: what an authority does
+      `Certificate.issued(subject, key, issuer, issuerKey, validity, serial, authority =
+      false, alternatives = Nil)` builds a certificate binding `subject` to the public `key`,
+      names `issuer` as its issuer and signs it with `issuerKey`. It is `.selfSigned` with
+      the two halves separated, plus the authority key identifier RFC 5280 requires of an
+      issued certificate — the issuer key's subject key identifier, by which a verifier
+      finds the certificate that signed it in a chain. The contextual parameters are those
+      of `.selfSigned`, for the *signer's* cipher: the holder's cipher needs nothing, so a
+      classical `Ecdsa[256]` key can be certified by an `MlDsa[65]` one. Raises
+      `Certificate.Error(BadPublicKey)` if either key's bytes are not a
+      `SubjectPublicKeyInfo`.
+  entry .Error   raised when a certificate cannot be built
+    detail
+        Error 524: _could not build the certificate because `reason`_. Raised by
+        `Certificate.selfSigned` and `Certificate.issued`: `UnknownAlgorithm(digest)` (1)
+        when the cipher and the `Signature.Digest` in scope have no object identifier
+        between them (RSA or ECDSA with a digest other than SHA-256/384/512);
+        `BadPublicKey` (2) when a key's bytes are not a `SubjectPublicKeyInfo`;
+        `BadSerialNumber` (3) for a serial of zero or less; and `BadValidity` (4) for a
+        period which ends at or before its start. Reading and verifying never raise it:
+        `#verify` is `false` for a malformed certificate.
+    entry .communicable   renders each reason as a message
+    entry .Reason   `UnknownAlgorithm(digest)`, `BadPublicKey`, `BadSerialNumber` or `BadValidity`, numbered 1 to 4
+    entry #reason   the `Certificate.Error.Reason` for the failure
+  entry #asn1   the certificate as an `Asn1` value: `Sequence(List(tbsCertificate, algorithm, BitString(signature, 0)))`
+      Every field is reachable by matching this structure; the first element is the
+      `TBSCertificate` the signature covers, and re-encodes to exactly the bytes signed.
+  entry #pem   the certificate armored as PEM, under the label `CERTIFICATE`
+      `Pem(Pem.Label.Certificate, asn1.in[Der])`; `pem.serialize` is the text a server
+      configuration or a `cat` of a `.crt` file shows.
+  entry #verify   whether the signature was made over this certificate by the private half of a public key
+      `certificate.verify(issuer)` re-encodes the `TBSCertificate` and checks the signature
+      bit string against `issuer` with the cipher's `verify`; for a self-signed certificate
+      the issuer is its own key. It needs the `cipher & Signing` given and a
+      `ProcessingPermit[Weakness[cipher]]`. For a digest-taking scheme (RSA, ECDSA) the
+      digest used is the `Signature.Digest` in scope, not the one the certificate's
+      algorithm identifier names, so the two must agree; ML-DSA and Ed25519 have no digest
+      to agree on. A certificate which is not the three-element structure a signed
+      certificate is, a tampered one, or one signed by another key, is `false`.
+
+entry .Distinguished   an X.501 distinguished name: the subject or issuer of a certificate
+  detail
+      A `Distinguished` is the name a certificate binds a key to, as the attributes which
+      appear in practice, each an `Optional[Text]` defaulting to `Unset` and simply not
+      encoded when absent: `#commonName` (`CN`), `#organization` (`O`),
+      `#organizationalUnit` (`OU`), `#locality` (`L`), `#state` (`ST`), `#country` (`C`) and
+      `#email` (`emailAddress`, the PKCS#9 attribute).
+
+      ```scala
+      import soundness.*
+
+      val subject = Distinguished(commonName = t"example.com", organization = t"Example", country = t"GB")
+      ```
+
+      It encodes (`.encodable`, `name.in[Der]`) as a `SEQUENCE OF RelativeDistinguishedName`
+      with each attribute in its own single-member `SET`, in the conventional order, most
+      general first — country, state, locality, organization, organizational unit, common
+      name, email — which is also the order `openssl x509` prints, so the JDK reads the
+      example above as `CN=example.com,O=Example,C=GB`. The country is a `PrintableString`
+      and the email an `IA5String`, as their definitions require; everything else is a
+      `UTF8String`. There is no decoder: a name read from a certificate is matched in its
+      `Asn1` form.
+  refer enigmatic.Certificate
+  entry .encodable   a name as DER, as `name.in[Der]`: a `SEQUENCE` of single-attribute `SET`s
+  entry #commonName   the `CN` attribute (`2.5.4.3`), a `UTF8String`, if given
+  entry #organization   the `O` attribute (`2.5.4.10`), if given
+  entry #organizationalUnit   the `OU` attribute (`2.5.4.11`), if given
+  entry #locality   the `L` attribute (`2.5.4.7`), if given
+  entry #state   the `ST` attribute (`2.5.4.8`), if given
+  entry #country   the `C` attribute (`2.5.4.6`), a `PrintableString`, if given
+  entry #email   the `emailAddress` attribute (`1.2.840.113549.1.9.1`), an `IA5String`, if given
+
+entry .SignatureAlgorithm   the `AlgorithmIdentifier` a cipher-and-digest pair has in a certificate
+  detail
+      `cipher is SignatureAlgorithm` gives, for a `Signature.Digest`, the ASN.1
+      `AlgorithmIdentifier` naming the signature scheme a certificate was signed with, or
+      `Unset` when the pair has no identifier. It is a property of the *pair*, not of the
+      cipher alone — `sha256WithRSAEncryption` and `sha384WithRSAEncryption` are different
+      object identifiers over the same key type — except for a scheme like Ed25519 or
+      ML-DSA which takes no digest, whose identifier names the cipher alone. `Certificate`
+      summons it for the signing key's cipher, and turns `Unset` into
+      `Certificate.Error(UnknownAlgorithm)` rather than writing an identifier no verifier
+      would recognise.
+
+      The companion gives instances for `Rsa` (1024 to 4096 bits), `Ecdsa` (256, 384, 521),
+      `Ed25519` and `MlDsa` (44, 65, 87), all in implicit scope. A cipher without one
+      cannot sign a certificate; an instance for another cipher is a one-line given
+      returning the right `Asn1.Sequence`.
+  refer enigmatic.Certificate
+  entry .rsa   RSASSA-PKCS1-v1_5: `sha256WithRSAEncryption`, `sha384…` or `sha512…`, under the PKCS#1 arc
+      `1.2.840.113549.1.1.11`, `.12` or `.13` by digest, with the parameters field present
+      and `NULL`, as RFC 3279 requires. Any other digest is `Unset`.
+  entry .ecdsa   ECDSA: `ecdsa-with-SHA256`, `-SHA384` or `-SHA512`, under the ANSI X9.62 arc
+      `1.2.840.10045.4.3.2`, `.3` or `.4` by digest, with the parameters field absent, as
+      RFC 5758 requires, since the curve is already named by the public key. Any other
+      digest is `Unset`.
+  entry .ed25519   Ed25519: `1.3.101.112`, with no parameters; the digest is ignored
+      RFC 8410's identifier names the curve alone, since the scheme fixes its own hash.
+  entry .mlDsa   ML-DSA: `id-ml-dsa-44`, `-65` or `-87` under the NIST arc; the digest is ignored
+      `2.16.840.1.101.3.4.3.17`, `.18` or `.19` by parameter set (RFC 9881), with the
+      parameters field absent. ML-DSA signs the message itself rather than a digest of it,
+      so the `Signature.Digest` plays no part.
+  entry #Self   the cipher type
+  entry #identifier   the `AlgorithmIdentifier` for a digest, as an `Asn1.Sequence`, or `Unset`

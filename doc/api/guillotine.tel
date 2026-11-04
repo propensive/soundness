@@ -1,0 +1,1132 @@
+tel 1.0
+
+base guillotine
+import soundness
+
+info   external processes as typed values: commands checked at compile time, run, piped and read as types
+detail
+    _Guillotine_ runs external programs. A command is a `Command` — a list of arguments, with no
+    shell in between — built by the `sh"…"` interpolator, which parses quotes and escapes as a
+    POSIX shell would **while the code compiles**: an unclosed quote is a compile error, and a
+    value substituted into the command is escaped for the position it lands in, so a filename
+    with a space stays one argument. Commands join into a `Pipeline` with `|`, and either runs
+    synchronously with `exec[T]()`, whose type parameter decides how the process's output is
+    read, or starts in the background with `fork[T]()`, which returns a `Job` to write to, read
+    from, await, abort or kill.
+
+    ```scala
+    import soundness.*
+    import environments.javaBaseEnvironment
+    import logging.silentLogging
+    import strategies.throwUnsafely
+    import workingDirectories.javaBaseWorkingDirectory
+
+    val file = t"notes of the day.txt"
+    val lines: List[Text] = sh"cat $file".exec[List[Text]]()
+    val status: Exit = sh"false".exec[Exit]()
+    val count: Text = (sh"cat $file" | sh"wc -l").exec[Text]().trim
+    ```
+
+    Every run needs four contextual values: a `WorkingDirectory` (the process's working
+    directory; `workingDirectories.javaBaseWorkingDirectory` is this JVM's), an `Environment`
+    (its variables; `environments.javaBaseEnvironment` inherits this process's,
+    `environments.emptyEnvironment` gives it none, and `variables(…)` adds to either), a
+    `Tactic[Exec.Error]` (`strategies.throwUnsafely`, or a `tend`/`mitigate` block), and an
+    `Exec.Event is Loggable` (`logging.silentLogging`, or a real log). None of these comes with
+    `import soundness.*`, since each selects a policy: `import pkg.*` does not import givens,
+    so each is imported by name.
+
+    The result type of `exec` and `fork` is anything with a `Computable` instance: `Text` and
+    `String` (the whole of standard output, read when the process ends), `List[Text]` and
+    `Chain[Text]` (its lines, the chain pulled lazily as the process writes), `Data` (the raw
+    bytes), `Stderr` (standard error as text), `Exit` (the exit status, `Exit.Ok` or
+    `Exit.Fail(code)`), `Unit` (wait, and discard the output), and any path type (the trimmed
+    output, decoded). A command whose name is a POSIX utility may be applied with no type at
+    all — `sh"echo hi"()` — and the `Intelligible` givens in `PosixCommands` choose the result
+    type the command implies.
+
+    A command may also be run on a pseudo-terminal with `Command#pty`, so that it finds a
+    terminal on its standard streams, and driven interactively through a `session`; its line
+    discipline is a `Termios`. A process which should outlive this one is started with
+    `detach`, which keeps only its `Pid`. `Process` is a handle to any process on the system,
+    by `Pid`, with its parent, children, start time and CPU time; `Pid.Error` is raised when no
+    such process is running.
+
+    The library is the single component `guillotine.core`, which compiles for the JVM and
+    Scala Native (not Scala.js, which has no `ProcessBuilder`). Three private pieces are split
+    by platform: the pseudo-terminal (through the foreign function API on the JVM, through C
+    interop on Native, on Linux and macOS in both cases), the wiring of a pipeline (the JDK's
+    `startPipeline` on the JVM; on Native each stage is started on pipes and a daemon thread
+    copies its predecessor's output into it), and a process's start time and CPU time, which
+    the Native javalib cannot report, so `Process#startTime` and `Process#cpuUsage` are `Unset`
+    there. Everything is exported to the `soundness` umbrella.
+
+refer guillotine.Command
+refer guillotine.sh
+refer guillotine.Job
+refer guillotine.Computable
+refer guillotine.Process
+refer guillotine.Exec
+
+entry .sh   the `sh"…"` interpolator: a `Command` parsed as the code compiles, with escaped substitutions
+    `sh"ls -la $directory"` is a `Command` whose arguments are the words of the literal, split on
+    whitespace with single quotes, double quotes and backslash escapes honoured as a POSIX shell
+    honours them. No shell runs: the arguments go straight to the program, so a metacharacter
+    in a substituted value is never interpreted. The parsing happens while the code compiles,
+    through the `Sh.Runtime` parser, and an error is reported at the character which caused
+    it: _this single quote is never closed_ and _this double quote is never closed_ at the
+    quote that was opened, _a command cannot end with an escape character_ at the trailing
+    backslash, and _an escape character cannot appear immediately before a substitution_ at a
+    backslash written before a `$`.
+
+    ```scala
+    import soundness.*
+
+    val file = t"a file.txt"
+    sh"cat $file"                   // Command(t"cat", t"a file.txt"): one argument
+    sh"""echo "quoted $file" x"""   // Command(t"echo", t"quoted a file.txt", t"x")
+    sh"echo 'Hello world"           // does not compile
+    ```
+
+    A substituted value is escaped for the position it lands in. Unquoted, a `Text` is exactly
+    one argument whatever it contains, and a `List[Text]` is one argument per element (an empty
+    list contributes none); inside quotes, a list's elements are joined with spaces into the
+    one argument the quotes delimit. A value adjacent to literal text joins it (`${a}x` gives
+    `ax`). A `Command` substitutes as its arguments, so that `sh"sh -c '$inner'"` passes an
+    inner command to a shell as a single argument. Any other type substitutes through a
+    `Parameterizable` instance — `Pid` renders as `↯42`, and anything `Encodable in Text`
+    (a `Path`, a URL) as its encoding — and a type with none is a compile error, _can't
+    substitute `T` into a sh-interpolator_. The selection of a `val` member of an enclosing
+    class (`$config.host`) cannot be substituted; bind it to a local first.
+
+    The result's static type is a refinement, `Command { type Exec = "ls" }`, carrying the
+    command's name as a literal type, which is what `Executable#apply()` uses to find the
+    `Intelligible` evidence giving the command's implied result type. Two commands written
+    with different whitespace or quoting are equal when their arguments are.
+
+entry .Executable   what can be run: a `Command` or a `Pipeline`, with `exec`, `fork`, `detach` and `|`
+  detail
+      The sealed trait of the two runnable things, `Command` and `Pipeline`, and the home of
+      the operations shared by both. Each run takes a `WorkingDirectory` and an `Environment`
+      for the child (an environment which can enumerate its variables replaces this process's
+      entirely, and a bare command name is then looked up on *that* environment's `PATH`,
+      since the JDK would search this JVM's), a `Tactic[Exec.Error]` for a process which
+      cannot be started, and an `Exec.Event is Loggable` for the start, exit, abort and kill
+      events.
+
+      ```scala
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import workingDirectories.javaBaseWorkingDirectory
+
+      sh"echo hi".exec[Text]()                    // waits; t"hi\n"
+      val job = sh"sleep 5".fork[Unit]()          // returns at once
+      job.abort()
+      (sh"echo a" | sh"tr a b").exec[Text]()      // a pipeline runs the same way
+      ```
+
+      `exec` waits for the process and interprets its output as the type named; `fork` starts
+      it and returns the `Job`; `detach` starts it and keeps only its `Pid`. The nullary
+      `apply()` is `exec` with the result type implied by the command's name.
+  refer guillotine.Command
+  refer guillotine.Pipeline
+  refer guillotine.Job
+  refer guillotine.Computable
+  entry #Exec   the command's name as a literal type, when known
+      A `Command` built by `sh"…"` has `Exec` set to its first word (`sh"ls -la"` is a `Command
+      { type Exec = "ls" }`); one built with `Command(…)` leaves it abstract. `apply()` uses it
+      to summon `Exec is Intelligible`, the evidence for the result type a command implies, and
+      a `Job`'s first type parameter is it.
+  entry #fork   starts the process and returns its `Job` without waiting
+      `fork[result]()` starts the command (or every stage of a pipeline, wired together) and
+      returns a `Job[Exec, result]^` at once: the result type is fixed now, and read with
+      `Job#await()` later. The job is a capability, tracked fresh, so it cannot escape into an
+      untracked value. Needs a `WorkingDirectory`, an `Environment`, a `Tactic[Exec.Error]`
+      (raised when the program cannot be started) and an `Exec.Event is Loggable`, and logs
+      `Exec.Event.ProcessStart` or `PipelineStart` at `info`.
+
+      ```scala
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import workingDirectories.javaBaseWorkingDirectory
+
+      val job = sh"cat".fork[Text]()
+      job.stdin(Stream(Data(104, 105, 10)))
+      job.await().trim   // t"hi"
+      ```
+  entry #detach   starts the process to outlive this one, keeping only its `Pid`
+      For a child which should run beyond this program — a server, a daemon. Its standard
+      input is the null device, and its output and errors are discarded (`detach()`) or
+      appended to a log file (`detach(log)`, taking any path type `Abstractable across Paths
+      to Text`, and making the log's parent directories). A `fork`ed child inherits pipes
+      nobody drains, and a server writing to them eventually blocks; a detached one cannot.
+      For a pipeline, the head reads the null device, the tail writes the log, and every
+      stage's errors go with the tail's; the `Pid` is the tail's. The child's environment is
+      the `Environment` in scope, so `environments.emptyEnvironment` with `variables(…)` gives
+      it exactly the variables named. Logs `ProcessStart`, and raises `Exec.Error` if the
+      program cannot be started.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import workingDirectories.javaBaseWorkingDirectory
+
+      val pid: Pid = sh"server --port 8080".detach(t"/var/log/server.log")
+      ```
+  entry #exec   runs the process to completion and reads its output as the type named
+      `exec[result]()` is `fork[result]().await()`: the process runs, and its output is
+      interpreted by the `result is Computable` instance in scope — `Text`, `List[Text]`,
+      `Chain[Text]`, `Data`, `Stderr`, `Exit`, `Unit`, or a path type (see `Computable`).
+      The type decides more than a conversion: which stream is read, whether a non-zero status
+      is a failure or an answer, and whether the call returns when the process ends (`Text`)
+      or as soon as it has started (`Chain[Text]`, whose lines arrive lazily).
+
+      ```scala
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import workingDirectories.javaBaseWorkingDirectory
+
+      sh"echo hello".exec[Text]().trim            // t"hello"
+      sh"printf 'a\nb\nc\n'".exec[List[Text]]()   // List(t"a", t"b", t"c")
+      sh"false".exec[Exit]()                      // Exit.Fail(1)
+      sh"sh -c 'echo oops 1>&2'".exec[Stderr]()   // Stderr(t"oops\n")
+      ```
+
+      `Exec.Error` is raised when the program cannot be started — a missing binary, a
+      directory which is not executable — and names the command that failed; a read of the
+      output which is cut short (a `Truncation.Error`) is reported as the same error, with the
+      last command of a pipeline as its command. A program which runs and exits non-zero is
+      not an error: ask for an `Exit` to see its status.
+  entry #apply   `command()`: runs it with the result type its name implies; `a(b)`: the pipeline `b | a`
+      The nullary `apply()` runs the command as `exec` does, with the result type chosen by
+      the `Intelligible` evidence for the command's `Exec` name: `sh"echo hi"()` is a `Text`,
+      `sh"ls"()` a `Chain[Text]`, `sh"sleep 1"()` an `Exit`, as the givens in `PosixCommands`
+      say. It is `inline`, and needs the same `WorkingDirectory`, `Environment`, `Computable`,
+      `Tactic[Exec.Error]` and `Exec.Event is Loggable` as `exec`. A command whose name has no
+      `Intelligible` instance, or which was built with `Command(…)` rather than `sh"…"`, does
+      not compile this way: name the type with `exec[T]()`.
+
+      ```scala
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import workingDirectories.javaBaseWorkingDirectory
+
+      sh"echo hi"().trim                   // t"hi"
+      sh"head -n 1 /dev/null"().to[List]   // Nil
+      sh"sleep 0.01"()                     // Exit.Ok
+      ```
+
+      `apply(command: Executable)` is the other way round from `|`: `b(a)` is `a | b`, the
+      pipeline in which `a`'s output feeds `b`. Both flatten, so a pipeline applied to a
+      pipeline is one pipeline of all their commands.
+  entry #|   `a | b`: the pipeline whose first stage's output is its second's input
+      Builds a `Pipeline`, flattening: `a | b | c` is one `Pipeline` of three commands, and a
+      pipeline piped into a command, or a command into a pipeline, extends it rather than
+      nesting. The pipeline's output and exit status are its last command's, and input written
+      to it goes to its first.
+
+      ```scala
+      import soundness.*
+
+      (sh"echo a" | sh"cat" | sh"wc").commands.length   // 3
+      ```
+
+entry .Command   a program and its arguments, as a value: built by `sh"…"`, run with `exec`, `fork` or `pty`
+  detail
+      A `Command` is a list of `#arguments`, the first naming the program, with no shell in
+      between: each argument reaches the program exactly as it is held. It is an
+      `Executable`, so `exec[T]()`, `fork[T]()`, `detach`, `apply()` and `|` are the ways to
+      run and combine it. `sh"…"` is the usual way to build one, and `Command(t"ls", t"-la")`
+      the direct one; the two are equal when their arguments are, though only the interpolated
+      form carries its name in its `Exec` type.
+
+      ```scala fuel
+      frame
+        label A command, with a value escaped into one argument
+        code
+            import soundness.*
+
+            val file = t"notes of the day.txt"
+            sh"cat $file"                         // Command(t"cat", t"notes of the day.txt")
+      frame
+        label Piped into a second command
+        code
+            import soundness.*
+
+            val file = t"notes of the day.txt"
+            sh"cat $file" | sh"grep -c TODO"      // a Pipeline of two commands
+      frame
+        label Run, with its output read as the type named
+        code
+            import soundness.*
+            import environments.javaBaseEnvironment
+            import logging.silentLogging
+            import strategies.throwUnsafely
+            import workingDirectories.javaBaseWorkingDirectory
+
+            val file = t"notes of the day.txt"
+            val todos: Int = (sh"cat $file" | sh"grep -c TODO").exec[Text]().trim.decode[Int]
+      ##
+      ```
+
+      A command renders two ways: `show` gives it as it would be typed at a shell, each argument
+      quoted only if it needs to be (`echo 'a b'`), and `inspect` gives the source which would
+      build it (`sh"echo 'a b'"`, in triple quotes if a double quote is needed). `#escape`
+      gives the strict form, every argument single-quoted, for passing a whole command to a
+      shell. A command is also substitutable into another `sh"…"`, as its arguments.
+
+      On the JVM and on Scala Native, `#pty` runs the command on a pseudo-terminal rather than
+      on pipes; `Command.OnTerminal` is the value it returns.
+  refer guillotine.sh
+  refer guillotine.Executable
+  refer guillotine.Pipeline
+  refer guillotine.Command.OnTerminal
+  entry .inspectable   renders a command as the `sh"…"` source which builds it
+      `sh"echo 'a b'"`, with each argument quoted as `show` quotes it, and triple-quoted when an
+      argument contains a double quote. The given is bounded over subtypes of `Command`, so
+      the refined type `sh"…"` expands to finds it too.
+  entry .showable   renders a command as it would be typed at a shell
+      Each argument is written bare if it is plain, in single quotes if it contains a space,
+      tab, backslash or double quote, in double quotes if it contains a single quote, and in
+      double quotes with the double quotes escaped if it contains both; the arguments are
+      joined with spaces. `sh"echo 'a b'".show` is `echo 'a b'`.
+  entry .OnTerminal   a command to be run on a fresh pseudo-terminal of a given size
+    detail
+        What `Command#pty` returns: the command, the terminal's `#width` and `#height` in
+        characters, and the `#termios` line discipline to set before it starts, or `Unset` to
+        leave the system's. It is a description, not a terminal: each `#exec` or `session`
+        allocates a pseudo-terminal with `posix_openpt`, runs the command on its slave side as
+        a session leader (so the terminal is its controlling terminal, and `^C` typed at it
+        interrupts it), and releases the terminal afterwards. On the JVM this goes through the
+        foreign function API, so run with `--enable-native-access=ALL-UNNAMED` to silence the
+        JDK's warning; on Scala Native through C interop. Linux and macOS only.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import environments.javaBaseEnvironment
+        import logging.silentLogging
+        import strategies.throwUnsafely
+        import workingDirectories.javaBaseWorkingDirectory
+
+        sh"stty size".pty(100, 30).exec[Text]().trim   // t"30 100"
+
+        sh"sh -c 'read line; stty size'".pty().session: terminal ?=>
+          terminal.resize(132, 50)   // the program receives SIGWINCH
+          t"\r".writeTo(terminal)    // press Return
+          terminal.text().trim       // t"50 132"
+        ```
+
+        A `session` (aperture's extension, through `.sessional`) lends the running command to
+        a block as a `Command.OnTerminal.Job`, and ends it when the block returns or throws:
+        a command still running is hung up on (`SIGHUP`), as closing a real terminal would,
+        and killed if it has not exited within a second. The job's output is everything the
+        program writes to the terminal, standard error included, escape sequences and all;
+        anything `Writable` to it — `Text`, `Data`, a stream — is typed at the terminal. A
+        terminal has no end of input: a program reading until end of file is sent the
+        end-of-file character, `^D` (byte 4), rather than having its input closed.
+    refer guillotine.Termios
+    refer guillotine.Command.OnTerminal.Job
+    entry .showable   renders the command and its terminal's size: `stty size on 80×24`
+    entry .Sessional   the `Sessional` instance class: lends a running `OnTerminal.Job` to a block
+        The class behind `.sessional`, a named class (as a `Sessional` instance must be) which
+        takes the `WorkingDirectory`, `Environment`, `Tactic[Exec.Error]` and `Exec.Event is
+        Loggable` the command's run needs, and whose `session` starts the command on a fresh
+        terminal, passes its `Job` to the block as a contextual value, and ends it afterwards.
+    entry .sessional   the given which makes `onTerminal.session: terminal ?=> …` work
+        In implicit scope, so it needs no import, but it needs a `WorkingDirectory`, an
+        `Environment`, a `Tactic[Exec.Error]` and an `Exec.Event is Loggable` in scope where
+        `session` is called. The block receives a `Command.OnTerminal.Job` as its contextual
+        `session` value, which may be used inside the block but not kept.
+    entry .Job   a `Job` running on a pseudo-terminal: resizable, with a settable line discipline
+      detail
+          The handle a `session` lends: a `guillotine.Job` whose result type is `Exit`, with
+          everything a job has — `text()`, `stdin`, `await()`, `exitStatus()`, `kill()` — and
+          three things only a terminal has. Its output stream is the terminal's, carrying
+          standard error too, and its error stream is empty.
+
+          ```scala fuel
+          typecheck
+          ##
+          import soundness.*
+          import environments.javaBaseEnvironment
+          import logging.silentLogging
+          import strategies.throwUnsafely
+          import workingDirectories.javaBaseWorkingDirectory
+
+          sh"head -c 2".pty(termios = Termios.raw).session: terminal ?=>
+            t"hi".writeTo(terminal)      // delivered at once, without a newline
+            terminal.mode.canonical      // false
+            terminal.mode = Termios.cooked
+            terminal.text()              // t"hi", unechoed
+          ```
+      entry #resize   sets the terminal's size, in characters; the program receives `SIGWINCH`
+      entry #mode   the terminal's line discipline, as a `Termios`, readable and assignable while the command runs
+          `terminal.mode` reads the switches `Termios` names from the terminal, and
+          `terminal.mode = Termios.raw` sets them, leaving the rest of the discipline as it
+          is — what the program itself would do with `stty`. Turning `canonical` off also
+          makes a read return as soon as one byte has arrived.
+    entry #command   the command to run
+    entry #width   the terminal's width, in characters
+    entry #height   the terminal's height, in characters
+    entry #termios   the line discipline to set before the command starts, or `Unset` for the system's
+    entry #exec   runs the command on its terminal to completion, reading its output as the type named
+        As `Executable#exec`, but on a fresh pseudo-terminal: the output read is the
+        terminal's, with standard error mixed in, and the exit status is reported as on pipes
+        (`Exit.Fail(137)` for a killed command). Needs a `Computable` for the result, a
+        `WorkingDirectory`, an `Environment`, a `Tactic[Exec.Error]` — raised for a command
+        which cannot be found or started — and an `Exec.Event is Loggable`.
+  entry #arguments   the program and its arguments, in order
+  entry #detach   starts the command to outlive this program, keeping only its `Pid`
+      The command's input is the null device, and its output and errors go nowhere, or are
+      appended to the log file given (its parent directories made). See `Executable#detach`.
+  entry #fork   starts the command and returns its `Job` without waiting
+      Starts the program on pipes, in the `WorkingDirectory` and with the `Environment` in
+      scope, logs `Exec.Event.ProcessStart`, and returns a `Job[Exec, result]^`. Raises
+      `Exec.Error` if the program cannot be started. See `Executable#fork`.
+  entry #pty   this command, to be run on a pseudo-terminal of the given size
+      `pty(width = 80, height = 24, termios = Unset)` returns a `Command.OnTerminal`: nothing
+      runs until its `exec` or a `session`. A `Termios` given here is set before the command
+      starts; `Termios.raw` is what a full-screen program wants.
+  entry #escape   the command as one line a POSIX shell parses back into these arguments
+      Every argument single-quoted, with a single quote inside one written as `'\''`, since
+      nothing is escapable inside single quotes. `Command(t"echo", t"a b").escape` is
+      `'echo' 'a b'`. This is the form to hand a whole command to `sh -c`, `ssh` or anything
+      else which re-parses it.
+
+entry .Pipeline   several commands, each one's output the next's input, run as one
+  detail
+      Built with `|` (or `apply`) from `Command`s, and always flat: `#commands` holds every
+      stage, however the pipeline was assembled. It is an `Executable`, run as a command is:
+      `exec[T]()` reads the last stage's output as `T`, and the last stage's exit status is
+      the pipeline's; `fork[T]()` gives a `Job` whose `stdin` writes to the first stage and
+      whose streams read from the last (the JDK replaces every later stage's input with a
+      stream which throws on write); `detach` starts every stage detached.
+
+      ```scala
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import workingDirectories.javaBaseWorkingDirectory
+
+      (sh"echo 'a b c'" | sh"tr ' ' '\n'" | sh"wc -l").exec[Text]().trim   // t"3"
+      ```
+
+      On the JVM the stages are wired in the kernel by `ProcessBuilder.startPipeline`; on
+      Scala Native each stage is started on pipes and a daemon thread copies its
+      predecessor's output into its input, closing it at end of stream. A pipeline renders
+      with `show` and `inspect` as its commands joined by ` | `.
+  refer guillotine.Command
+  refer guillotine.Executable
+  entry .communicable   a pipeline as a message: its commands' `show` forms joined by ` | `
+  entry .inspectable   renders a pipeline as its commands' `sh"…"` forms joined by ` | `
+  entry .showable   renders a pipeline as its commands' shell forms joined by ` | `
+  entry #commands   the stages, in order, flattened
+  entry #detach   starts every stage detached, keeping only the last stage's `Pid`
+      The first stage reads the null device, the last writes the log (or nowhere), and every
+      stage's standard error goes where the last's output goes. See `Executable#detach`.
+  entry #fork   starts every stage, wired together, and returns the `Job` of the whole
+      Logs `Exec.Event.PipelineStart`. The job's output, exit status and `pid` are the last
+      stage's; its `stdin` and `intake` write to the first. See `Executable#fork`.
+
+entry .Job   a running subprocess, from `fork`: its streams, its result, its exit and its lifetime
+  detail
+      `Job[exec, result]` is what `Executable#fork[result]()` returns: a live handle to the
+      process, tracked as a capability (fresh from `fork`, so it cannot be stored in an
+      untracked value, though it may be shared among tasks: one draining each stream, another
+      awaiting it, a third aborting it). It is a `Subprocess` (the streams and status a
+      `Computable` reads), a `Process.Ref` (the pid and the signals), and `Durable`. Its
+      `result` type was fixed at the fork, and `#await` reads it through the `Computable`
+      in scope.
+
+      ```scala
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import workingDirectories.javaBaseWorkingDirectory
+
+      val job = sh"cat".fork[Text]()
+      job.alive                              // true
+      job.stdin(Stream(Data(104, 105, 10)))  // writes, then closes the pipe
+      job.await().trim                       // t"hi"
+      job.exitStatus()                       // Exit.Ok
+      ```
+
+      For a pipeline the job has a process at each end: output, exit status and `pid` are the
+      last stage's, and `stdin` and `intake` write to the first. A job on a pseudo-terminal is
+      a `Command.OnTerminal.Job`, which adds `resize` and `mode`.
+  refer guillotine.Executable
+  refer guillotine.Computable
+  refer guillotine.Process
+  refer guillotine.Command.OnTerminal.Job
+  entry .writable   `stream.writeTo(job)`: any stream the job's `Process.Input` can take, to its standard input
+      The `Writable` given for a tracked `Job^`, by any chunk type for which `Process.Input
+      is Writable` — `Data` (needing an `Emit[Truncation.Error]`) or `Text` (and a
+      `Codepage`). It delegates to `#stdin`, which closes the pipe when the stream ends.
+  entry .writableText   `text.writeTo(job)`: text encoded with the system codepage, to standard input
+      The `Writable by Text` given for a tracked `Job^`, needing only an
+      `Emit[Truncation.Error]`: the text is encoded with `Codepage.system`. This is what
+      `t"hi\r".writeTo(terminal)` uses in a pseudo-terminal session.
+  entry #pid   the process's `Pid`; a pipeline's is its last stage's
+  entry #alive   whether the process is still running
+  entry #attend   waits for the process to exit, discarding its status and output
+  entry #stdout   standard output as a lazy byte stream, read on from the live pipe
+      A `Stream[Data] over Credit`, pulled as it is forced; each call reads on from where the
+      pipe is, and nothing is cached unless `memoize` is called. Needs a
+      `Tactic[Truncation.Error]`, raised if the stream ends before its framing says it should.
+  entry #stderr   standard error as a lazy byte stream
+      As `#stdout`, from the error pipe. On a pseudo-terminal the error stream is empty, since
+      the program's standard error is the terminal.
+
+      ```scala
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import workingDirectories.javaBaseWorkingDirectory
+
+      val job = sh"sh -c 'echo err 1>&2'".fork[Unit]()
+      val bytes = job.stderr().memoize
+      job.await()
+      bytes.utf8.trim   // t"err"
+      ```
+  entry #text   the whole of standard output, as UTF-8 text, read to the end of the stream
+      Blocks until the process closes its output (normally, until it exits).
+  entry #errorText   the whole of standard error, as UTF-8 text, read to the end of the stream
+  entry #lines   standard output as a lazy stream of its lines
+      UTF-8, with `\n`, `\r\n` and `\r` each ending a line, as `BufferedReader.readLine`
+      treats them; a `Stream[Array[Text]] over Credit` whose `records` are the lines one at a
+      time. Needs a `Tactic[Truncation.Error]`. The `Chain[Text]` and `List[Text]`
+      `Computable` instances read this.
+  entry #status   waits for the process to exit, and gives its raw exit code
+      `0` for success; for a process ended by a signal, 128 plus the signal number
+      (`137` for `SIGKILL`). `#exitStatus` gives the same as an `Exit`, logged.
+  entry #stdin   writes a whole stream to standard input and closes the pipe when it ends
+      `job.stdin(stream)` takes a `Stream[chunk] over Credit` for any chunk type `Process.Input
+      is Writable by` — `Data`, or `Text` with a `Codepage` in scope — writes it, and closes
+      the process's input, which suits a program that reads its input to the end and exits.
+      For a pipeline the stream goes to the first stage. A long-lived child driven message by
+      message wants `#intake` instead.
+  entry #intake   standard input as a push endpoint, for driving a live process incrementally
+      An `Intake[Data] over Credit` on the process's input pipe: each `put` is written and
+      `flush` sends it, with the pipe left open, so a language server or a REPL can be fed a
+      message, its reply read, and another sent; `finish` closes the pipe. Needs a
+      `java.io.OutputStream is Sink by Data over Credit`, which turbulence provides.
+
+      ```scala
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import workingDirectories.javaBaseWorkingDirectory
+
+      val job = sh"cat".fork[Text]()
+      val intake = job.intake
+      intake.put(Data(104, 105, 10))
+      intake.flush()
+      job.alive              // true: the pipe is open and cat is still echoing
+      intake.put(Data(98, 121, 101, 10))
+      intake.finish()
+      job.await().trim       // t"hi\nbye"
+      ```
+  entry #await   the job's result, through the `Computable` in scope, now or within a duration
+      `await()` computes the `result` the job was forked for: for `Text` it waits for the
+      output to end, for `Exit` for the process to exit, for `Chain[Text]` it returns at once
+      with a lazy chain. It needs the `result is Computable` and a
+      `Tactic[Truncation.Error]`, raised if the output ends before its framing says it should.
+
+      `await(duration)` takes any duration type `Abstractable across Durations to Long`
+      (nanoseconds; a plain `Long` of milliseconds with
+      `abstractables.millisecondsAbstractable`), waits at most that long for the process to
+      exit, and then computes the result; if it has not exited, raises
+      `Async.Error(Async.Error.Reason.Timeout)` through a `Tactic[Async.Error]`.
+
+      ```scala
+      import soundness.*
+      import abstractables.millisecondsAbstractable
+      import environments.javaBaseEnvironment
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import workingDirectories.javaBaseWorkingDirectory
+
+      val job = sh"sleep 1".fork[Unit]()
+      val outcome = capture[Async.Error](job.await(50L))   // Reason.Timeout
+      job.kill()
+      ```
+  entry #exitStatus   waits for the process to exit and gives its status as an `Exit`, logged
+      `Exit.Ok` for zero, otherwise `Exit.Fail(code)`; logs `Exec.Event.ProcessExit` at `fine`
+      for zero and as a warning otherwise, so it needs an `Exec.Event is Loggable`. A killed
+      process reports `Exit.Fail(137)`, and one interrupted by `^C` at its terminal
+      `Exit.Fail(130)`.
+  entry #abort   asks the process to stop, with `SIGTERM`
+      `destroy()`: the process may catch the signal and clean up, or ignore it. Logs
+      `Exec.Event.AbortProcess` at `info`.
+  entry #kill   stops the process, with `SIGKILL`
+      `destroyForcibly()`: the process cannot ignore it. Logs `Exec.Event.KillProcess` as a
+      warning.
+  entry #process   the operating-system `Process` behind the job, by its pid
+      `Process(pid)`, so it needs a `Tactic[Pid.Error]`, raised if the process has already
+      gone; the result is a tracked `Process^`, with the parent, children and process tree
+      a `Job` does not have.
+  entry #startTime   when the process started, as any instant type, or `Unset`
+      Through `Process#startTime`, swallowing a `Pid.Error` as `Unset`; takes an instant type
+      `Instantiable across Instants from Long` (milliseconds). Always `Unset` on Scala Native.
+  entry #cpuUsage   the CPU time the process has used, as any duration type, or `Unset`
+      Through `Process#cpuUsage`; takes a duration type `Instantiable across Durations from
+      Long` (nanoseconds). Always `Unset` on Scala Native.
+
+entry .Subprocess   what a `Computable` reads: a running process's streams and exit status, platform-free
+  detail
+      The trait a `Computable` instance computes its result from: standard output and error
+      as lazy byte streams or as whole text, the output's lines, and the exit status, with no
+      mention of `java.lang.Process` or any other platform type. `Job` is its one
+      implementation. A new `Computable` is written against this.
+  refer guillotine.Computable
+  refer guillotine.Job
+  entry #stdout   standard output as a lazy byte stream; needs a `Tactic[Truncation.Error]`
+  entry #stderr   standard error as a lazy byte stream; needs a `Tactic[Truncation.Error]`
+  entry #text   the whole of standard output as UTF-8 text, read to its end
+  entry #errorText   the whole of standard error as UTF-8 text, read to its end
+  entry #lines   standard output as a lazy stream of lines; needs a `Tactic[Truncation.Error]`
+  entry #status   waits for the exit, and gives the raw exit code
+
+entry .Computable   how a process's output becomes a result of type `T`: the typeclass behind `exec[T]`
+  detail
+      `T is Computable` says how to read a `Subprocess` as a `T`: which stream, when, and what
+      the exit status means. `exec[T]()` and `Job#await()` summon it for their type
+      parameter, so the type named *is* the interpretation. The instances in the companion,
+      found with no import:
+
+      - `Text`, `String`: the whole of standard output, when the process closes it.
+      - `List[Text]`: the lines of standard output, when it ends.
+      - `Chain[Text]`: the lines as a lazy, memoizing chain, pulled as the process writes
+        them, so the call returns at once; needs a `Buffering`. (An exclusive `Iterator`
+        cannot be the result of the erased `Intelligible` evidence, which is why the
+        line-at-a-time type is a `Chain`.)
+      - `Data`: the whole of standard output as bytes, memoized; needs a `Buffering`. For the
+        bytes lazily, use `Subprocess#stdout()` on a forked `Job`.
+      - `Exit`: the exit status, `Exit.Ok` or `Exit.Fail(code)`; non-zero is an answer, not an
+        error.
+      - `Unit`: waits for the exit and discards everything.
+      - `Stderr`: standard error, as `Stderr(text)` (the given is in `Stderr`'s companion).
+      - any path type `Instantiable across Paths from Text`: standard output, trimmed, decoded
+        as the path — `sh"which git".exec[Path on Linux]()`.
+
+      A type not covered gains an instance by mapping one (`Computable` is a functor) or
+      through the `.apply` factory, taking the `Subprocess` and the `Tactic[Truncation.Error]`
+      its reads need:
+
+      ```scala
+      import soundness.*
+
+      case class Count(value: Int)
+
+      given Count is Computable = summon[Text is Computable].map: text =>
+        Count(text.trim.s.toInt)
+
+      given List[Data] is Computable = Computable: (process, tactic) =>
+        given Tactic[Truncation.Error] = tactic
+        process.stdout().to[List]
+      ```
+
+      A read cut short — the stream ending before its framing says it should — is a
+      `Truncation.Error` through the tactic, which `exec` reports as `Exec.Error` for the
+      command.
+  refer guillotine.Subprocess
+  refer guillotine.Executable
+  refer guillotine.Stderr
+  entry .apply   makes an instance from a function of the `Subprocess` and the truncation tactic
+      `Computable[T]((process, tactic) => …)`: the factory to write an instance with, since a
+      method with a `using` clause is not a single abstract method and a lambda does not
+      convert to one. The tactic is passed as a plain second argument; bind it with
+      `given Tactic[Truncation.Error] = tactic` where a read needs it.
+  entry .lineStream   `Chain[Text]`: the lines of standard output, lazily, as the process writes them
+      Needs a `Buffering` in scope. The chain is pure and memoizing: forcing it pulls the next
+      line from the live pipe, and a line once read is kept.
+  entry .list   `List[Text]`: the lines of standard output, once it has ended
+  entry .text   `Text`: the whole of standard output, UTF-8, once the process closes it
+  entry .string   `String`: as `.text`, as a Java string
+  entry .data   `Data`: the whole of standard output as bytes, memoized; needs a `Buffering`
+  entry .exitStatus   `Exit`: `Exit.Ok` for zero, `Exit.Fail(code)` otherwise, once the process exits
+  entry .unit   `Unit`: waits for the process to exit and discards its output and status
+  entry .instantiable   any path type: standard output, trimmed, decoded as the path
+      For a type `Instantiable across Paths from Text`, such as `Path on Linux`: what
+      `sh"which git".exec[Path on Linux]()` and the `which` command's implied result use.
+  entry #compute   reads the `Subprocess` as a `Self`, raising `Truncation.Error` for a read cut short
+  entry #map   an instance for another type, by a function of this one's result
+      `summon[Text is Computable].map(_.trim)` is a `Text is Computable` which trims, and
+      `map(Count(_))` one for a `Count`: the usual way to cover a new type.
+
+entry .Stderr   a process's standard error as text: `exec[Stderr]()`
+  detail
+      A wrapper for a result read from the error stream rather than the output stream. Its
+      companion's `Computable` instance reads the whole of standard error, once the process
+      closes it, as UTF-8 text.
+
+      ```scala
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import workingDirectories.javaBaseWorkingDirectory
+
+      sh"sh -c 'echo oops 1>&2'".exec[Stderr]().text.trim   // t"oops"
+      ```
+  refer guillotine.Computable
+  entry .computable   reads the whole of standard error, as text, into a `Stderr`
+  entry #text   what the process wrote to standard error
+
+entry .Process   a handle to any process on the system, by `Pid`: its tree, lifetime and signals
+  detail
+      A `Process` wraps a `ProcessHandle`: a live, tracked handle to an operating-system
+      process, whether this program started it or not. `Process()` is the current process,
+      `Process(pid)` any running one (raising `Pid.Error` if none has that pid), `Process.all`
+      every process visible to this one and `Process.roots` those with no parent. It is a
+      `Process.Ref` — `pid`, `alive`, `attend()`, `kill()`, `abort()` — with `#parent` and
+      `#children` for walking the tree, and `Durable`. It is a shared capability: several
+      tasks may observe it and one may abort it.
+
+      ```scala
+      import soundness.*
+      import logging.silentLogging
+      import strategies.throwUnsafely
+
+      val me: Process = Process()
+      me.pid
+      me.parent.lay(t"none")(_.pid.show)
+      me.children.map(_.pid)
+      ```
+
+      Under `import soundness.*`, `Process` is this type, not `java.lang.Process`; write the
+      latter in full where it is meant. A `Job` reaches its own `Process` with `Job#process`.
+  refer guillotine.Pid
+  refer guillotine.Job
+  entry .apply   `Process()`: this process; `Process(pid)`: the running process with that pid
+      `Process(pid)` needs a `Tactic[Pid.Error]`, raised when no process with that pid is
+      running. The result is tracked (`Process^`), so it may be used but not stored in an
+      untracked value; take its `pid` or another plain value out of a `capture` or a task.
+  entry .all   every process visible to this one
+  entry .roots   every visible process which has no parent
+  entry .Input   a process's standard input as a sink, written to by `Job#stdin`
+    detail
+        The type a `Job`'s input is written through, so that `java.io.OutputStream` never
+        appears in the API: `Process.Input is Writable by Data` and `by Text` are the givens
+        in its companion, and `Job.writable` lifts them to the job itself. A user does not
+        construct one; its constructor is internal.
+    entry .data   writes a `Data` stream to a process's input; needs an `Emit[Truncation.Error]`
+    entry .text   writes a `Text` stream to a process's input, through the `Codepage` in scope
+        Needs a `Codepage` (`codepages.utf8Codepage`) and an `Emit[Truncation.Error]`.
+  entry .Ref   what every process handle can do: `pid`, `alive`, `attend`, `kill`, `abort`, timings
+    detail
+        The trait `Process` and `Job` share: a reference to a process on the system, by pid,
+        with its lifetime, the two signals, and its start time and CPU usage where the platform
+        reports them. Code which only needs to wait for or stop a process can take a
+        `Process.Ref` and be handed either.
+    entry #pid   the process's `Pid`
+    entry #kill   stops the process with `SIGKILL`; needs an `Exec.Event is Loggable`
+    entry #abort   asks the process to stop with `SIGTERM`; needs an `Exec.Event is Loggable`
+    entry #alive   whether the process is still running
+    entry #attend   waits for the process to exit
+    entry #startTime   when the process started, as any instant type `Instantiable across Instants from Long`, or `Unset`
+    entry #cpuUsage   the CPU time used, as any duration type `Instantiable across Durations from Long`, or `Unset`
+  entry #pid   the process's `Pid`
+  entry #kill   stops the process with `SIGKILL`, through `ProcessHandle.destroyForcibly`
+  entry #abort   asks the process to stop with `SIGTERM`, through `ProcessHandle.destroy`
+  entry #alive   whether the process is still running
+  entry #attend   blocks until the process exits
+  entry #parent   the parent process, or `Unset` for a process with none
+      `Process().parent` is the shell or launcher which started this program. The element is
+      a tracked `Process`, so match on it or take its `pid` with `lay`.
+  entry #children   the process's direct children, as `Process` handles
+  entry #startTime   when the process started, in any instant type, from `ProcessHandle.Info`
+      Takes a type `Instantiable across Instants from Long` (milliseconds since the epoch):
+      `startTime[Moment]` with aviation. `Unset` when the platform does not report it, and
+      always on Scala Native, whose javalib lacks `java.time`.
+  entry #cpuUsage   the total CPU time the process has used, in any duration type
+      Takes a type `Instantiable across Durations from Long` (nanoseconds). `Unset` when the
+      platform does not report it, and always on Scala Native.
+
+entry .Pid   a process identifier, as its own type: renders as `↯1234`, parses from a number
+  detail
+      `Pid(value: Long)` is a process id, distinct from an exit code or a descriptor number
+      so the three cannot be confused. It shows, encodes and inspects as the number marked
+      with `↯` (`Pid(1234L).show` is `↯1234`), decodes from a plain number (`t"42".as[Pid]`),
+      and substitutes into `sh"…"` as its shown form. `Job#pid` and `Process#pid` give one,
+      `Process(pid)` looks one up, and `Executable#detach` returns one.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      Pid(123L).show      // t"↯123"
+      t"42".as[Pid]       // Pid(42L)
+      t"abc".as[Pid]      // raises Number.Error
+      ```
+  refer guillotine.Process
+  refer guillotine.Pid.Error
+  entry .showable   renders a pid as `↯` followed by its number
+  entry .encodable   encodes a pid in text, as `↯1234`
+  entry .inspectable   the debug rendering, the same `↯1234`
+  entry .decodable   reads a pid from a decimal number in text, raising `Number.Error` otherwise
+      `t"42".as[Pid]` is `Pid(42L)`; the text is parsed as a `Long`, and a malformed value
+      raises `Number.Error(text, Long, Unparseable)` through a `Tactic[Number.Error]`.
+  entry .sshAgentPid   the `SSH_AGENT_PID` environment variable, read as a `Pid`
+      An ambience `Variable["sshAgentPid", Pid]`, so `Environment.sshAgentPid` (with an
+      `Environment` in scope) is the pid of the running SSH agent; raises `Number.Error` if
+      the variable is not a number. Needs a `Tactic[Number.Error]`.
+  entry .Error   raised when no process with a given pid is running
+    detail
+        Error 909: _the process with PID `1234` is not running_. Raised by `Process(pid)`, and
+        so by `Job#process`, when `ProcessHandle.of` finds nothing: the process has exited,
+        or never existed. Needs a `Diagnostics` in scope to construct.
+    entry #pid   the pid that was looked up
+  entry #value   the number
+
+entry .Exec   the vocabulary of running a command: `Exec.Error` and the `Exec.Event`s logged
+  detail
+      A namespace, not a type: an execution itself is a `Job` or a `Process`. `Exec.Error`
+      is raised when a command cannot be run, and `Exec.Event` is what the starts, exits and
+      signals log. (`Executable#Exec`, the type member holding a command's name, is a
+      different thing which shares the word.)
+  refer guillotine.Executable
+  entry .Error   raised when a command cannot be run: a missing binary, or a read of its output cut short
+    detail
+        Error 691: _execution of the command `ls -la` failed_. Raised by `exec`, `fork`,
+        `detach` and `Command.OnTerminal#exec` when the program cannot be started — it is not
+        on the `PATH`, or the file is not executable — and by `exec` when a read of the output
+        is cut short (a `Truncation.Error`, re-raised as this for the command; the last
+        command of a pipeline). It names the `#command`, so a failure reports what was
+        attempted rather than an errno; the `#stdout` and `#stderr` fields are empty unless
+        the raiser had output to attach.
+
+        ```scala
+        import soundness.*
+        import environments.javaBaseEnvironment
+        import logging.silentLogging
+        import workingDirectories.javaBaseWorkingDirectory
+
+        capture[Exec.Error](sh"no-such-binary".exec[Text]()).command.arguments.head
+        // t"no-such-binary"
+        ```
+
+        A program which starts and exits non-zero does not raise this: its status is its
+        result, read as an `Exit`.
+    entry #command   the command which could not be run
+    entry #stdout   any standard output attached, as `Data`; empty by default
+    entry #stderr   any standard error attached, as `Data`; empty by default
+  entry .Event   what running a command logs: starts, exits, aborts and kills
+    detail
+        Every `Event` is tagged `Log.Process`. `ProcessStart(command)` is logged at `info` by
+        `fork`, `exec`, `detach` and a terminal session; `PipelineStart(commands)` likewise for
+        a pipeline; `ProcessExit(pid, code)` by `Job#exitStatus()`, at `fine` for zero and as
+        a warning otherwise; `AbortProcess(pid)` at `info` by `Job#abort()`; and
+        `KillProcess(pid)` as a warning by `Job#kill()`. An `Exec.Event is Loggable` must be
+        in scope wherever these run; `logging.silentLogging` discards them.
+    entry .communicable   renders each event as a message
+        _starting the process `ls -la`_, _starting the pipeline `cat x` `wc -l`_, _the process
+        with PID `↯1234` exited with code `0`_, _aborted the process with PID `↯1234`_,
+        _killed the process with PID `↯1234`_.
+
+entry .Intelligible   evidence that a command's name implies its result type, for `sh"…"()`
+  detail
+      `"ls" is Intelligible to Chain[Text]` says that a command named `ls` is read as a
+      `Chain[Text]` when it is applied with no type: `sh"ls -la"()` summons the `Intelligible`
+      evidence for the `Exec` type member of the command (its name, as a literal type) and
+      runs `exec` with the evidence's `Result` type (inherited from `Resultant`). The trait is sealed and its instances are
+      erased: they exist only for the compiler to choose a type, and cost nothing at run
+      time. The companion extends `PosixCommands`, so every POSIX utility's evidence is in
+      implicit scope with no import; a command outside that list has no implied type and is
+      run with `exec[T]()`.
+
+      ```scala
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import workingDirectories.javaBaseWorkingDirectory
+
+      sh"echo hi"()          // Text
+      sh"ls"()               // Chain[Text]
+      sh"mkdir -p tmp"()     // Exit
+      ```
+
+      An instance for a program of one's own is an `erased given ("mytool" is Intelligible
+      to Text)` — written as the `PosixCommands` givens are — but its construction needs the
+      companion's private `Evidence` class, so in practice the list is the library's.
+  refer guillotine.PosixCommands
+  refer guillotine.Executable
+  refer guillotine.Computable
+  entry #Self   the command's name, as a literal type such as `"ls"`
+
+entry .PosixCommands   the result type each POSIX utility implies, one erased given per command
+  detail
+      The trait holding an `Intelligible` given for each of the POSIX shell utilities, mixed
+      into `Intelligible`'s companion so they are found with no import. Each says what
+      `sh"<command> …"()` returns: `Text` for a utility whose output is a report read whole
+      (`echo`, `date`, `wc`, `pwd`, `uname`, most of the list); `Chain[Text]` for one whose
+      output is lines worth reading as they arrive (`cat`, `grep`, `head`, `ls`, `man`,
+      `sed`, `sort`, `strings`, `tail`, `uniq`); `Exit` for one whose effect, not its output,
+      is the point (`chgrp`, `chmod`, `chown`, `cp`, `kill`, `ln`, `mkdir`, `mkfifo`,
+      `mknod`, `mv`, `newgrp`, `rm`, `rmdir`, `sleep`, `touch`); and for `which`, any path
+      type the caller asks for. All are `erased`: no instance exists at run time, and the
+      choice is made entirely by the compiler. The given for `wait` is named `waitCommand`,
+      since `wait` is a method of every object.
+
+      ```scala
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import workingDirectories.javaBaseWorkingDirectory
+
+      val lines: Chain[Text] = sh"ls -la"()
+      val today: Text = sh"date"()
+      val made: Exit = sh"mkdir -p build"()
+      ```
+  refer guillotine.Intelligible
+  refer guillotine.Computable
+  entry #alias   `alias` (lists or defines shell aliases) runs as `Text`: the whole of its output, once it ends
+  entry #ar   `ar` (maintains archive libraries) runs as `Text`: the whole of its output, once it ends
+  entry #at   `at` (queues a command to run later) runs as `Text`: the whole of its output, once it ends
+  entry #awk   `awk` (the pattern-scanning language) runs as `Text`: the whole of its output, once it ends
+  entry #basename   `basename` (strips a path to its last segment) runs as `Text`: the whole of its output, once it ends
+  entry #batch   `batch` (queues a command to run when the load allows) runs as `Text`: the whole of its output, once it ends
+  entry #bc   `bc` (the arbitrary-precision calculator) runs as `Text`: the whole of its output, once it ends
+  entry #cat   `cat` (concatenates files) runs as `Chain[Text]`: its lines, lazily
+  entry #chgrp   `chgrp` (changes a file's group) runs as `Exit`: its status is its result
+  entry #chmod   `chmod` (changes a file's mode) runs as `Exit`: its status is its result
+  entry #chown   `chown` (changes a file's owner) runs as `Exit`: its status is its result
+  entry #cksum   `cksum` (a file's CRC checksum and size) runs as `Text`: the whole of its output, once it ends
+  entry #cmp   `cmp` (compares two files byte by byte) runs as `Text`: the whole of its output, once it ends
+  entry #comm   `comm` (the lines two sorted files share or do not) runs as `Text`: the whole of its output, once it ends
+  entry #command   `command` (runs a command bypassing shell functions) runs as `Text`: the whole of its output, once it ends
+  entry #cp   `cp` (copies files) runs as `Exit`: its status is its result
+  entry #crontab   `crontab` (edits the cron table) runs as `Text`: the whole of its output, once it ends
+  entry #csplit   `csplit` (splits a file by context) runs as `Text`: the whole of its output, once it ends
+  entry #cut   `cut` (selects columns of each line) runs as `Text`: the whole of its output, once it ends
+  entry #date   `date` (prints or sets the date) runs as `Text`: the whole of its output, once it ends
+  entry #dd   `dd` (copies and converts blocks) runs as `Text`: the whole of its output, once it ends
+  entry #df   `df` (free disk space) runs as `Text`: the whole of its output, once it ends
+  entry #diff   `diff` (the differences between two files) runs as `Text`: the whole of its output, once it ends
+  entry #dirname   `dirname` (strips a path to its directory) runs as `Text`: the whole of its output, once it ends
+  entry #du   `du` (disk usage) runs as `Text`: the whole of its output, once it ends
+  entry #echo   `echo` (writes its arguments) runs as `Text`: the whole of its output, once it ends
+  entry #ed   `ed` (the line editor) runs as `Text`: the whole of its output, once it ends
+  entry #env   `env` (prints or modifies the environment) runs as `Text`: the whole of its output, once it ends
+  entry #expand   `expand` (turns tabs into spaces) runs as `Text`: the whole of its output, once it ends
+  entry #expr   `expr` (evaluates an expression) runs as `Text`: the whole of its output, once it ends
+  entry #file   `file` (guesses a file's type) runs as `Text`: the whole of its output, once it ends
+  entry #find   `find` (walks a directory tree) runs as `Text`: the whole of its output, once it ends
+  entry #fold   `fold` (wraps long lines) runs as `Text`: the whole of its output, once it ends
+  entry #gencat   `gencat` (builds a message catalogue) runs as `Text`: the whole of its output, once it ends
+  entry #getconf   `getconf` (configuration values) runs as `Text`: the whole of its output, once it ends
+  entry #getopts   `getopts` (parses option arguments) runs as `Text`: the whole of its output, once it ends
+  entry #grep   `grep` (the lines matching a pattern) runs as `Chain[Text]`: its lines, lazily
+  entry #hash   `hash` (the shell's command hash table) runs as `Text`: the whole of its output, once it ends
+  entry #head   `head` (the first lines of a file) runs as `Chain[Text]`: its lines, lazily
+  entry #iconv   `iconv` (converts between character encodings) runs as `Text`: the whole of its output, once it ends
+  entry #id   `id` (the user's and groups' identities) runs as `Text`: the whole of its output, once it ends
+  entry #join   `join` (joins two files on a common field) runs as `Text`: the whole of its output, once it ends
+  entry #kill   `kill` (sends a signal) runs as `Exit`: its status is its result
+  entry #ln   `ln` (makes a link) runs as `Exit`: its status is its result
+  entry #locale   `locale` (locale information) runs as `Text`: the whole of its output, once it ends
+  entry #localedef   `localedef` (compiles a locale definition) runs as `Text`: the whole of its output, once it ends
+  entry #logger   `logger` (writes to the system log) runs as `Text`: the whole of its output, once it ends
+  entry #logname   `logname` (the login name) runs as `Text`: the whole of its output, once it ends
+  entry #lp   `lp` (sends a file to a printer) runs as `Text`: the whole of its output, once it ends
+  entry #ls   `ls` (lists a directory) runs as `Chain[Text]`: its lines, lazily
+  entry #m4   `m4` (the macro processor) runs as `Text`: the whole of its output, once it ends
+  entry #mailx   `mailx` (sends and reads mail) runs as `Text`: the whole of its output, once it ends
+  entry #man   `man` (a manual page) runs as `Chain[Text]`: its lines, lazily
+  entry #mesg   `mesg` (permits or denies messages to the terminal) runs as `Text`: the whole of its output, once it ends
+  entry #mkdir   `mkdir` (makes a directory) runs as `Exit`: its status is its result
+  entry #mkfifo   `mkfifo` (makes a named pipe) runs as `Exit`: its status is its result
+  entry #mknod   `mknod` (makes a special file) runs as `Exit`: its status is its result
+  entry #mv   `mv` (moves files) runs as `Exit`: its status is its result
+  entry #newgrp   `newgrp` (changes the current group) runs as `Exit`: its status is its result
+  entry #od   `od` (dumps a file in octal or another base) runs as `Text`: the whole of its output, once it ends
+  entry #paste   `paste` (joins files line by line) runs as `Text`: the whole of its output, once it ends
+  entry #patch   `patch` (applies a diff) runs as `Text`: the whole of its output, once it ends
+  entry #patchchk   `patchchk` (checks a patch) runs as `Text`: the whole of its output, once it ends
+  entry #pax   `pax` (the portable archiver) runs as `Text`: the whole of its output, once it ends
+  entry #pr   `pr` (paginates a file for printing) runs as `Text`: the whole of its output, once it ends
+  entry #printf   `printf` (formatted output) runs as `Text`: the whole of its output, once it ends
+  entry #ps   `ps` (the running processes) runs as `Text`: the whole of its output, once it ends
+  entry #pwd   `pwd` (the working directory) runs as `Text`: the whole of its output, once it ends
+  entry #read   `read` (reads a line into variables) runs as `Text`: the whole of its output, once it ends
+  entry #renice   `renice` (alters a process's priority) runs as `Text`: the whole of its output, once it ends
+  entry #rm   `rm` (removes files) runs as `Exit`: its status is its result
+  entry #rmdir   `rmdir` (removes an empty directory) runs as `Exit`: its status is its result
+  entry #sed   `sed` (the stream editor) runs as `Chain[Text]`: its lines, lazily
+  entry #sleep   `sleep` (pauses for a time) runs as `Exit`: its status is its result
+  entry #sort   `sort` (sorts lines) runs as `Chain[Text]`: its lines, lazily
+  entry #split   `split` (splits a file into pieces) runs as `Text`: the whole of its output, once it ends
+  entry #strings   `strings` (the printable strings in a binary) runs as `Chain[Text]`: its lines, lazily
+  entry #stty   `stty` (reads or sets the terminal's line discipline) runs as `Text`: the whole of its output, once it ends
+  entry #tabs   `tabs` (sets the terminal's tab stops) runs as `Text`: the whole of its output, once it ends
+  entry #tail   `tail` (the last lines of a file) runs as `Chain[Text]`: its lines, lazily
+  entry #tee   `tee` (copies input to files and to output) runs as `Text`: the whole of its output, once it ends
+  entry #test   `test` (evaluates a condition) runs as `Text`: the whole of its output, once it ends
+  entry #touch   `touch` (updates a file's timestamps, making it if needed) runs as `Exit`: its status is its result
+  entry #tput   `tput` (terminal capabilities) runs as `Text`: the whole of its output, once it ends
+  entry #tr   `tr` (translates characters) runs as `Text`: the whole of its output, once it ends
+  entry #tsort   `tsort` (a topological sort) runs as `Text`: the whole of its output, once it ends
+  entry #tty   `tty` (the terminal's device name) runs as `Text`: the whole of its output, once it ends
+  entry #umask   `umask` (the file creation mask) runs as `Text`: the whole of its output, once it ends
+  entry #unalias   `unalias` (removes an alias) runs as `Text`: the whole of its output, once it ends
+  entry #uname   `uname` (the system's name) runs as `Text`: the whole of its output, once it ends
+  entry #unexpand   `unexpand` (turns spaces into tabs) runs as `Text`: the whole of its output, once it ends
+  entry #uniq   `uniq` (drops or counts repeated lines) runs as `Chain[Text]`: its lines, lazily
+  entry #uudecode   `uudecode` (decodes a uuencoded file) runs as `Text`: the whole of its output, once it ends
+  entry #uuencode   `uuencode` (encodes a file for mail) runs as `Text`: the whole of its output, once it ends
+  entry #waitCommand   `wait` (waits for a background job) runs as `Text`: the whole of its output, once it ends
+  entry #wc   `wc` (counts lines, words and bytes) runs as `Text`: the whole of its output, once it ends
+  entry #who   `who` (who is logged in) runs as `Text`: the whole of its output, once it ends
+  entry #write   `write` (writes to another user's terminal) runs as `Text`: the whole of its output, once it ends
+  entry #which   `which` (finds a program on the `PATH`) runs as the path type the caller asks for
+      An inline given, for any type `Instantiable across Paths from Text`: `val git: Path on
+      Linux = sh"which git"()` reads the trimmed output as a path, through the `Computable`
+      instance for path types. The type must be fixed by the expected type, since the
+      command alone cannot choose it.
+
+entry .Parameterizable   how a value of a type is rendered as a command argument in `sh"…"`
+  detail
+      `T is Parameterizable` lets a `T` be substituted into the `sh"…"` interpolator:
+      `#show` renders it as the text of one argument, which the interpolator then escapes for
+      its position, so the instance never concerns itself with quoting. The companion's
+      `.encodable` covers every type `Encodable in Text` — a `Path`, a URL, a `Pid` — and a
+      type with neither is a compile error at the substitution. `Text`, `List[Text]` and
+      `Command` substitute through their own `Sh` insertions rather than this.
+
+      ```scala
+      import soundness.*
+
+      case class Tag(value: Int)
+      given Tag is Parameterizable = summon[Text is Parameterizable].contramap(tag => t"<${tag.value}>")
+
+      sh"echo ${Tag(7)}"   // Command(t"echo", t"<7>")
+      ```
+  refer guillotine.sh
+  entry .encodable   any type `Encodable in Text` substitutes as its encoding
+      A `Path on Linux` substitutes as `/etc/hosts`, a `Pid` as `↯42`, a URL as its text.
+  entry #show   the value as the text of one command argument
+  entry #contramap   an instance for another type, by a function to this one's
+      `summon[Text is Parameterizable].contramap(f)` is the usual way to write an instance for
+      a type which has a textual form of its own.
+
+entry .Termios   a terminal's line discipline: the `stty` switches a program most often changes
+  detail
+      The settings of a pseudo-terminal which decide how what is typed reaches the program
+      and how what it writes reaches the screen, named after the POSIX `termios` flags they
+      stand for, each a `Boolean` defaulting to on. `.cooked` is everything on — line editing,
+      echo, signals and the translations a shell expects — and `.raw` everything off, as a
+      full-screen program sets before it draws. A `Termios` given to `Command#pty` is set
+      before the command starts, and a running command's is read and changed through
+      `Command.OnTerminal.Job#mode`.
+
+      ```scala
+      import soundness.*
+
+      Termios.raw.show                               // t"-echo -icanon -isig -iexten -icrnl -ixon -opost"
+      Termios(echo = false)                          // cooked, but unechoed: for typing a password
+      Termios.raw == Termios(false, false, false, false, false, false, false)
+      ```
+  refer guillotine.Command.OnTerminal
+  entry .cooked   every switch on: input edited and echoed a line at a time, `^C` a signal
+  entry .raw   every switch off: each byte delivered as typed, unechoed, `^C` an ordinary byte
+      What `stty raw -echo` sets, and what a full-screen program such as an editor needs.
+      Turning `canonical` off also sets the read to return each byte as it arrives.
+  entry .showable   renders the switches as `stty` reports them: `echo -icanon isig …`
+      Each switch by its POSIX flag name, prefixed with `-` when off, in the order `echo`,
+      `icanon`, `isig`, `iexten`, `icrnl`, `ixon`, `opost`.
+  entry #echo   `echo`: whether typed characters are echoed back to the terminal
+  entry #canonical   `icanon`: whether input is gathered and edited a line at a time, or delivered as typed
+  entry #signals   `isig`: whether `^C` and `^Z` signal the foreground program
+  entry #extensions   `iexten`: whether the extra line-editing characters are interpreted
+  entry #translateReturn   `icrnl`: whether a typed carriage return arrives as a newline
+  entry #flowControl   `ixon`: whether `^S` and `^Q` pause and resume output
+  entry #postprocessing   `opost` with `onlcr`: whether a newline the program writes is sent as carriage return and newline
+
+entry .Sh   the `sh"…"` interpolator's parser and its insertion rules
+  detail
+      The machinery behind `sh"…"`: the parser (`.Runtime`) which both the macro runs at
+      compile time, to check the literal, and the generated code runs at run time, to
+      assemble the arguments with the substituted values; the parser's `.State` and
+      `.Context`; the `.Parameters` a substitution contributes; the `.Error` a malformed
+      literal raises; and the contextual `Insertion` givens which say how a `Text`, a
+      `List[Text]`, a `Command` or any `Parameterizable` value becomes parameters. A program
+      does not call these directly, but a `given Insertion[Sh.Parameters, T]` in scope at the
+      interpolation is one way to substitute a type, where `Parameterizable` is the usual.
+  refer guillotine.sh
+  refer guillotine.Parameterizable
+  entry .Context   where the parser is: `Awaiting` a word, in an `Unquoted` word, in `Quotes2` or `Quotes1`
+      `Awaiting` is between arguments, `Unquoted` inside a bare word, `Quotes2` inside double
+      quotes and `Quotes1` inside single quotes, where a backslash is literal.
+  entry .State   the parser's state: context, a pending escape, the arguments so far, and offsets
+    detail
+        `State(current, escape, arguments, offset, quoteStart)`: the `Context`, whether the
+        last character was an unconsumed backslash, the arguments completed and in progress,
+        how many characters have been consumed (each substitution counting as one), and the
+        offset of the opening quote of the current quoted context, or `-1`, so that an
+        unclosed quote is reported where it was opened.
+    entry #current   the parsing context
+    entry #escape   whether a backslash is pending
+    entry #arguments   the arguments so far, the last possibly still being built
+    entry #offset   characters consumed, each substitution counting as one
+    entry #quoteStart   the offset of the open quote of the current quoted context, or `-1`
+  entry .Parameters   what one substitution contributes: zero or more argument texts
+    detail
+        A `Text` contributes one, a `List[Text]` one per element, a `Command` its arguments.
+        Unquoted, each is an argument of its own (joined to any adjacent literal text);
+        inside quotes they are joined with spaces into the one argument the quotes delimit.
+    entry #params   the texts contributed
+  entry .Error   a malformed `sh"…"` literal: an unclosed quote or a stray escape, with its offset
+    detail
+        Thrown by the parser and reported by the macro as a compile error at the offending
+        character: _this double quote is never closed_, _this single quote is never closed_,
+        _a command cannot end with an escape character_, _an escape character cannot appear
+        immediately before a substitution_. At run time, the literal having already been
+        checked, it cannot arise.
+    entry #detail   the message
+    entry #offset   where in the literal the fault is, counting each substitution as one character
+  entry .Runtime   the parser: `initial`, `parse`, `insert`, `skip` and `complete`
+    detail
+        A small state machine over the characters of the literal parts, which the macro drives
+        with `skip` in place of each substitution to check the literal, and the generated code
+        drives with `insert` to splice the real values. Not for direct use.
+    entry .initial   the state before any character: awaiting a word, with no arguments
+    entry .parse   feeds the characters of a literal part to the state
+    entry .insert   splices a substitution's `Parameters` into the state, according to its context
+    entry .skip   advances past a substitution at compile time, when its value is not yet known
+    entry .complete   finishes: the `Command`, or `Sh.Error` for an unclosed quote or trailing escape
+  entry .nothing   a `Nothing` substitution contributes the empty argument
+  entry .text   a `Text` substitution is exactly one argument, whatever it contains
+  entry .list   a `List[Text]` substitution is one argument per element, or, in quotes, one joined by spaces
+  entry .command   a `Command` substitution is its arguments, so `sh"sh -c '$inner'"` passes it as one
+  entry .parameterizable   any `Parameterizable` value substitutes as its `show` text, as one argument
+
+entry .internal   the macro implementation behind `sh"…"`
+  hidden
+  detail
+      Not for direct use: the object exists so that the `sh` macro has a stable home.
+  entry .sh   the macro: parses the literal parts at compile time, positions errors, and splices the runtime parse
+      Checks the literal with `Sh.Runtime` (reporting a `Sh.Error` at the character which
+      caused it, mapped back through `$$` and unicode escapes to the source), summons an
+      `Insertion[Sh.Parameters, T]` for each substituted type (failing with _can't substitute
+      `T` into a sh-interpolator_), and produces a `Command` refined with its first word as
+      the `Exec` type.

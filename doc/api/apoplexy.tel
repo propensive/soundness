@@ -1,0 +1,1084 @@
+tel 1.0
+
+base apoplexy
+import soundness
+
+info   typed HTTP clients derived from an OpenAPI specification as the code compiles
+detail
+    _Apoplexy_ turns an [OpenAPI](https://www.openapis.org/) document — the paths, parameters,
+    request and response schemas and security schemes of a REST API — into a **typed client**
+    without generating any code. `Api(cp"/spec.json")` reads the specification from the
+    classpath while the code compiles, and the value it returns navigates by path: each
+    segment, each path parameter, each query or header parameter, each request body and each
+    response type is checked against the document, so a call the API does not offer, or a
+    parameter of the wrong type, is a compile error where the call is written. The client *is*
+    the specification, interpreted by the compiler, and drift between code and contract fails
+    the build rather than a request.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+    import internetAccess.online
+    import logging.silentLogging
+    import classloaders.threadContextClassloader
+    import construables.jsonConstruable
+    import postables.jsonPostable
+    import codepages.utf8Codepage
+    import charsets.utf8Charset
+    import formatting.compactJsonFormatting
+    import httpBackends.javaNetHttp
+
+    case class Pet(id: Int, name: Text, tag: Optional[Text] = Unset)
+    case class NewPet(name: Text, tag: Optional[Text] = Unset)
+
+    val api = Api(cp"/openapi/local/petstore.json")
+
+    api.pets(42).get.call[Pet]()                      // GET /pets/42, decoded by the schema
+    api.pets.get(limit = 10).call[List[Pet]]()        // a query parameter
+    api.pets.post(NewPet(t"Milo", tag = t"cat")).call[Pet]()   // a JSON request body
+    api.sessions(t"abc").delete.call()                // 204, no body: Unit
+    api.pets(42).get.record().name                    // a record typed by the schema
+    ```
+
+    Three groups of types make up the library. `Api` is the navigable client: a value refined
+    with its position in the API (`Api at "/pets/{petId}"`) and the wire format the
+    specification declares (`Api over Json`), whose `Dynamic` members the compiler resolves
+    against the document; invoking a verb on it gives an `Api.Response`, whose `call`,
+    `attempt`, `record` and `tuple` perform the request. `Api.Error` is the family of errors a
+    response outside the success range raises, one class per status, and `Api.Violation` is a
+    status the specification never declared. `OpenApi` is the document itself as a value — info,
+    servers, paths, operations, parameters, bodies, responses, components and security
+    schemes — decoded from JSON or YAML with `read[OpenApi]`, for tooling that inspects an API
+    rather than calling it; `OpenApi.Error` names what is wrong with a document that will not
+    load.
+
+    How a response body becomes a value is decided by its **media type**. The specification
+    names the media type of each body, and a `gesticulate.Construable` given — `("application/json"
+    is Construable to Json)`, `("image/png" is Construable to (Raster in Png))` — names the
+    Soundness type which carries it. Every such mapping is a given in the `construables`
+    family, declared by the format's own library (`jacinta.http` for JSON, `xylophone.http`
+    for XML, `hallucination` for the raster formats, `gesticulate` for plain text and octet
+    streams, …) and **imported by name**, since `import soundness.*` does not import givens:
+    nothing is construed without a deliberate choice, and a response whose media type nothing
+    in scope construes is read as the raw `Http.Response`, with a compile-time warning. A
+    request body is written by the carrier's `telekinesis.Postable`, likewise imported by name
+    from `postables`. The `Conformant` typeclass joins the two: `call[T]()` reads the carrier
+    and decodes `T` from it, so any `T` with a `Decodable in Json` can be asked for from a JSON
+    response.
+
+    Credentials come from `orthodoxy`: a `Credential` given named for the security scheme
+    (`("api_key" is Credential to Text)`, `("basicAuth" is Credential to Auth)`,
+    `("petstore_auth" is Credential to Authorization)`) is summoned where the call is written
+    and presented as the scheme dictates — a header, a query parameter, a cookie or a `Bearer`
+    authorization — and an operation whose requirements no credentials in scope satisfy does
+    not compile, the error naming the givens which would.
+
+    The library has one source set, `apoplexy.core`, on the JVM only; its macros read the
+    specification through the compiler's classloader, so the document must be a classpath
+    resource named by the literal-only `cp"…"` interpolator. `Api`, `Conformant` and `OpenApi`
+    are exported to the `soundness` umbrella; the top-level given `yamlEncodableInJson`
+    is not, and is imported as `apoplexy.yamlEncodableInJson` where a YAML document is to be
+    read as JSON by hand.
+
+refer apoplexy.Api
+refer apoplexy.OpenApi
+refer apoplexy.Conformant
+refer gesticulate.Construable
+refer orthodoxy.Credential
+
+entry .Api   a client navigated by path, each step checked against the specification
+  detail
+      An `Api` is a position in an API: the request so far (`#request`, an `Api.Request`
+      holding the method, base URL, path template, substitutions, query, headers, body and
+      `accept` media type) together with a refined type which records the position as the
+      literal `Locus` (`Api at "/pets/{petId}"`), the specification resource as `Source`, and
+      the wire format the document's responses share as `Transport` (`Api over Json`, or
+      `over Xml`). Every member access is `Dynamic`: `#selectDynamic`, `#applyDynamic` and
+      `#applyDynamicNamed` are macros which re-read the specification and halt the
+      compilation when the path, parameter or verb is not there.
+
+      ```scala
+      import soundness.*
+
+      val api = Api(cp"/openapi/local/petstore.json")
+
+      val pets: Api at "/pets" = api.pets
+      val one: Api at "/pets/{petId}" = api.pets(42)
+      api.pets(42).photos.request.path          // t"/pets/{petId}/photos"
+      api.unicorns                              // does not compile
+      api.pets(t"notAnInt")                     // does not compile
+      ```
+
+      Navigation follows four rules. A **segment** is a member access, `api.pets`; a segment
+      the specification writes with characters Scala does not allow in an identifier goes in
+      backticks, `` api.`museum-hours` `` or `` api.users.`@me` ``. A **path parameter** is a
+      positional argument on the segment before it, `api.pets(42)`, typed by the parameter's
+      schema: `type: integer` is an `Int`, `format: int64` a `Long` (an `Int` is accepted
+      too), `number` a `Double`, `boolean` a `Boolean`, and anything else `Text`. A **verb** —
+      `get`, `put`, `post`, `delete`, `patch`, `head`, `options`, `trace` — on a complete path
+      invokes the operation, with query and header parameters as named arguments and the
+      request body as the one positional argument, and yields an `Api.Response`. An endpoint
+      with exactly one operation other than `DELETE` may be invoked without its verb, by
+      applying arguments to the segment directly, `api.pets(42).photos(width = 10)` or
+      `api.login(credentials)`; an endpoint with several operations needs the verb, and
+      `DELETE` is always explicit. A required parameter left out, a parameter of the wrong
+      type, a path item with no such verb and a verb-less application to a multi-operation
+      endpoint are each compile errors.
+
+      ```scala fuel
+      frame
+        label The root of the specification
+        code
+            val api = Api(cp"/openapi/local/petstore.json")   // Api at "/" over Json
+      frame
+        label A segment, checked to begin a path
+        code
+            val pets = api.pets                               // Api at "/pets"
+      frame
+        label A path parameter, typed by its schema
+        code
+            val pet = api.pets(42)                            // Api at "/pets/{petId}", 42 an Int
+      frame
+        label A verb with its parameters: an `Api.Response`
+        code
+            val response = api.pets(42).photos.get(width = 10)   // Api.Response over Json
+      frame
+        label The call, decoded as the type asked for
+        code
+            case class Photo(url: Text, width: Optional[Int] = Unset, height: Optional[Int] = Unset)
+            val photos: List[Photo] = api.pets(42).photos.get(width = 10).call[List[Photo]]()
+      ##
+      ```
+
+      Parameters declared on the path item apply to every operation on it, a parameter,
+      response or request body written as a `$ref` into the document's components is
+      followed, and a query or header parameter is rendered with its argument's `Showable`.
+      Where an operation declares several success responses, `200` is preferred, then `201`,
+      then the lowest.
+
+      The base URL comes from the specification's first server, with its `{variables}` at
+      their defaults, parsed as a URL as the code compiles; a relative server (`/api/v3`) or
+      no server at all needs `Api(resource, base)`. The specification is read from the
+      classpath through the compiler's context classloader, so the resource must be a
+      `cp"…"` literal on the compiler's classpath, as JSON or YAML, OpenAPI 3.0 or 3.1.
+      Cookie parameters, `callbacks`, `links`, `webhooks` and references into other
+      documents are not acted on, and a `multipart/form-data` body is not construed.
+  refer apoplexy.Api.Response
+  refer apoplexy.Api.Request
+  refer apoplexy.Api.Error
+  refer apoplexy.OpenApi
+  refer gesticulate.Construable
+  entry .apply   `Api(cp"/spec.json")`, or `Api(resource, base)`: the root of a specification's client
+      A macro which reads the `Resource`'s `Locus` — so the argument must be a `cp"…"` literal,
+      whose existence the `cp` interpolator has already checked — loads and validates the
+      document while the code compiles, and returns an `Api at "/"` carrying the resource's
+      path in its `Source` type, for the navigation macros to re-read. Its `Transport` is the
+      carrier type every operation's success response shares, through the `Construable`
+      givens in scope at the call, or `Json` where the document mixes formats; each operation
+      recomputes its own.
+
+      The one-argument form takes the base URL from the specification's first server, with
+      each `{variable}` at its default (`OpenApi.Server#resolved`), and halts the compilation
+      if that is not an absolute `http` or `https` URL: _apoplexy: the server URL `/api/v3` is
+      relative; supply a base URL_. The two-argument form takes the base from the caller; a
+      relative server URL is appended to it with `Api.extend`, and an absolute one is replaced
+      by it outright.
+
+      ```scala
+      import soundness.*
+
+      val local = Api(cp"/openapi/local/petstore.json")
+      val remote = Api(cp"/openapi/local/refstore.json", base = url"https://ref.example.com")
+      remote.request.base.show      // t"https://ref.example.com/v2": the base plus the server /v{version}
+      ```
+
+      A document that will not parse, declares a version other than 3.x or names a parameter
+      location other than `path`, `query`, `header` or `cookie` is a compile error carrying the
+      `OpenApi.Error` message.
+  entry .extend   a relative server URL appended to a caller's base
+      `Api.extend(base, server)` is the `HttpUrl` whose origin, query and fragment are
+      `base`'s and whose location is `base`'s followed by `server`: what `Api(resource, base)`
+      does with a specification whose server is `/api/v3`. The server text is appended as it
+      is, so a base ending in `/` and a server beginning with one give a doubled slash.
+  entry .make   an `Api` over a given `Api.Request`
+      The constructor the navigation macros emit: a plain `Api` whose `#request` is the one
+      given, cast afterwards to its refined type. It carries no refinement itself, so an `Api`
+      made by hand cannot be navigated — the macros halt with _apoplexy: the receiver has no
+      spec `Source`_ — but it can be sent with `Api.send`.
+  entry .Records   the JSON reading primitives `record()` and `tuple()` build their values over
+    hidden
+    detail
+        A `Json.Provider.Primitives` with no fields of its own: the `record()` and `tuple()`
+        macros supply the fields of each response's schema, and read each member through these
+        primitives from the response's JSON. Not for direct use.
+    entry .fields   no fields of its own: the macros supply each response's from its schema
+    entry .list   the records of an array response, one per element
+        `Api.Records.list(json, transform)` splits a JSON array into one record per element,
+        each built over the same primitives; how `record()` reads an array-of-objects
+        response as a `List` of records. Raises `Json.Provider.Error` for a non-array.
+  entry .apiKey   an API key as the header the scheme names
+      `Api.apiKey(credential, name)` is `Http.Header(name, credential.value)`: how the
+      invoking macro presents a `Credential to Text` for an `apiKey` scheme whose `in` is
+      `header`. One for a scheme whose `in` is `query` becomes a query parameter instead, and
+      `.cookieKey` handles `cookie`.
+  entry .cookieKey   an API key as a `cookie` header, `name=value`
+      `Api.cookieKey(credential, name)` is `Http.Header(t"cookie", t"$name=${credential.value}")`,
+      the presentation of a `Credential to Text` for an `apiKey` scheme whose `in` is
+      `cookie`. `Api.send` joins every `cookie` header into one with `; `, as RFC 6265 asks.
+  entry .httpAuth   HTTP authentication as an `authorization` header
+      `Api.httpAuth(credential)` renders a `Credential to Auth` — `Auth.Basic(user, password)`,
+      `Auth.Bearer(token)` — as the `authorization` header, for an `http` scheme. A token
+      obtained elsewhere may be presented this way for an `oauth2` or `openIdConnect` scheme
+      too, when the credential is an `Auth` rather than an `Authorization`.
+  entry .tokenAuth   an OAuth 2 `Authorization` as a `Bearer` header, checked against the required scopes
+      `Api.tokenAuth(credential, scopes)` takes a `Credential to Authorization` and the scopes
+      the security requirement names, and, before the request is sent, raises `OAuth.Error`
+      with `Reason.InsufficientPrivileges(scope)` for the first scope the token does not
+      grant; otherwise it is `Http.Header(t"authorization", …)` with the token's `bearer`
+      rendering. It needs a `Tactic[OAuth.Error]` and `Diagnostics` in scope, which the
+      invoking macro summons where the call is written.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val api = Api(cp"/openapi/swagger/petstore3.json", base = url"https://petstore3.swagger.io")
+
+      given narrower: ("petstore_auth" is Credential to Authorization) =
+        Credential(Authorization(t"tok-2", List(t"read:pets"), Unset, Unset))
+
+      capture[OAuth.Error](api.pet.findByStatus.get(status = t"sold")).reason
+      // OAuth.Error.Reason.InsufficientPrivileges(t"write:pets")
+      ```
+  entry .jsonOf   a response body read as `Json`
+      `Api.jsonOf(response)` memoizes the body's stream and aggregates it as `Json`, raising
+      `Parse.Error` for malformed JSON and `Truncation.Error` for a body cut short. `record()`
+      and `tuple()` read their response through it, as do the error payloads which are records.
+  entry .dataOf   a response body's bytes, memoized
+      `Api.dataOf(response)` is the whole body as `Data`, needing a `Tactic[Truncation.Error]`.
+      The invoking code uses it for the payload of an `Api.Violation`, whose body no schema
+      describes.
+  entry .send   performs an `Api.Request` through the `Http.Client` in scope, giving the raw response
+      The runtime send which `Api.Response#call`, `#attempt`, `#record` and `#tuple` emit.
+      The URL is the request's base with the path template's `{name}` placeholders replaced
+      by their substitutions — each percent-encoded as a path segment, a space as `%20` — and
+      the query attached, or the base's own query when the request has none. The headers are
+      the `accept` media type the specification declares for the response, the `content-type`
+      of the body, the request's own headers, and every `cookie` header joined into one with
+      `; `. The request then goes as HTTP/1.1 through the `Http.Client onto Origin["http" |
+      "https"]` in scope, which uses whichever `Http.Backend` is in scope, so a test can
+      substitute a recording backend for the network.
+
+      It needs `Online` (import `internetAccess.online`), an `Http.Event is Loggable` (such as
+      `logging.silentLogging`), a `Tactic[Connect.Error]` for a failed connection, and the
+      client. Nothing is checked against the specification here: a request built by hand is
+      sent as it is.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import internetAccess.online
+      import logging.silentLogging
+      import httpBackends.javaNetHttp
+
+      val request = Api.Request(Http.Get, url"https://api.example.com/v1", t"/pets/{petId}",
+          substitutions = Map(t"petId" -> t"42"))
+
+      Api.send(request).status
+      ```
+  entry .Body   a request body: nothing, or a media type with bytes sprung afresh for each send
+    detail
+        `Api.Body` is an enum of two cases. `Empty` is a request with no body, the default of
+        `Api.Request`. `Content(mediaType, spring)` is a body of the `MediaType` the
+        specification declares for it and a `Spring[Data]`, which yields the bytes anew each
+        time the request is sent, so a retried request is not sent from a drained stream.
+
+        The invoking macro builds a `Content` from the positional argument of a call: the
+        argument is encoded to the media type's carrier through its `Encodable in Carrier`
+        (`NewPet` to `Json` by `jsonEncodable`), or sent as it is when it already is the
+        carrier — a `Query` for `application/x-www-form-urlencoded`, `Data` for
+        `application/octet-stream` — and the carrier's `Postable`, imported by name from
+        `postables`, writes the bytes. The `Postable`'s own media parameters are copied onto
+        the specification's media type, so a JSON body sent with `jsonPostable` carries the
+        charset the `Codepage` in scope gives.
+
+        ```scala
+        import soundness.*
+
+        val api = Api(cp"/openapi/local/xmlstore.json")
+        case class NewNote(text: Text)
+
+        api.notes.post(NewNote(t"hi")).request.body match
+          case Api.Body.Content(media, _) => media == media"application/xml"
+          case Api.Body.Empty             => false
+        ```
+    entry .content   a body from a carrier value and its `Postable`
+        `Api.Body.content[Carrier](mediaType, value)` makes a `Content` whose spring runs the
+        `Carrier is Postable` in scope over `value` each time it is drawn. It is the helper
+        the invoking macro calls, so that the stream is built outside the call site's
+        capture checking.
+    entry .data   a body of frozen `Data`, as `application/octet-stream` bodies are
+        `Api.Body.data(mediaType, value)` is `content[Data](mediaType, value)` by a method whose
+        signature names `Data` in ordinary code: the macro cannot write `content[Data]`
+        itself, since a frozen type spliced through a quote is re-minted with a fresh read
+        capability.
+  entry .Request   the request a navigated `Api` or an `Api.Response` will send, as a value
+    detail
+        What `request` on any `Api` or `Api.Response` holds: the HTTP method, the base
+        `HttpUrl` from the specification's server (or the caller's), the still-templated
+        path, the substitutions which bind each `{name}` to its rendered argument, the
+        `Query`, the body, the headers (parameters declared `in: header`, and credentials
+        presented as headers or cookies) and the `accept` media type the specification
+        declares for the response. Navigation copies and refines it one field at a time, so
+        what is about to be sent can be inspected, or tested, before it is.
+
+        ```scala
+        import soundness.*
+
+        val api = Api(cp"/openapi/local/petstore.json")
+        val request = api.pets(42).photos(width = 10, height = 20).request
+
+        request.method           // Http.Get
+        request.path             // t"/pets/{petId}/photos"
+        request.substitutions    // Map(t"petId" -> t"42")
+        request.query.values     // List(t"width" -> t"10", t"height" -> t"20")
+        request.body             // Api.Body.Empty
+        ```
+    entry #method   the HTTP method: `Http.Get` until a verb is invoked
+    entry #base   the base URL: the specification's first server at its defaults, or the caller's
+    entry #path   the path template as the specification writes it, `/pets/{petId}`
+    entry #substitutions   the values bound to the path's `{name}` templates, each rendered as text
+    entry #query   the query parameters, from named arguments and `apiKey` schemes sent in the query
+    entry #body   the request body, `Api.Body.Empty` unless an operation took one
+    entry #headers   header parameters and credentials presented as headers or cookies
+    entry #accept   the media type the response is expected in, or `Unset` where none is declared
+        The media type the specification declares for the success response, chosen as the
+        first the `Construable` givens in scope construe (`application/json` first, then by
+        name), and sent as the `accept` header.
+  entry .Response   an operation ready to send: `call`, `attempt`, `record` or `tuple` perform it
+    detail
+        Invoking a verb on an `Api` gives an `Api.Response`, which holds the `#request` and a
+        refined type recording the operation: `#Result`, a JSON pointer to the success
+        response's schema within the document; `#Form`, the specification resource; `#Locus`
+        and `#Verb`, the path and method; `Transport`, the carrier type the success response's
+        media type construes; and `#Failure`, the union of the `Api.Error` types the
+        operation's declared error responses raise. Nothing has been sent yet: `#call`,
+        `#attempt`, `#record` and `#tuple` perform the request, and each needs `Online`
+        (`internetAccess.online`), an `Http.Event is Loggable`, a `Tactic[Connect.Error]`, a
+        `Tactic[Api.Violation]` and one `Tactic` for each member of `Failure`, and the
+        `Http.Client` in scope.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import internetAccess.online
+        import logging.silentLogging
+        import construables.jsonConstruable
+        import httpBackends.javaNetHttp
+
+        case class Pet(id: Int, name: Text, tag: Optional[Text] = Unset)
+        val api = Api(cp"/openapi/local/petstore.json")
+        val response: Api.Response over Json = api.pets(42).get
+
+        response.call[Pet]()            // decoded as Pet, checked against the schema
+        response.call()                 // the Json itself
+        response.call[Http.Response]()  // the raw response, unchecked
+        response.record().name          // a record typed by the schema
+        ```
+    refer apoplexy.Api.Error
+    refer apoplexy.Conformant
+    entry .make   an `Api.Response` over a given `Api.Request`
+        The constructor the invoking macro emits, cast afterwards to its refined type. A
+        response made by hand carries no refinement, so `call`, `record` and `tuple` on it halt
+        the compilation; `Api.send(response.request)` sends it unchecked.
+    entry #Result   a JSON pointer to the success response's schema within the specification
+        `#/paths/~1pets~1{petId}/get/responses/200/content/application~1json/schema`, or a
+        pointer into the components when the response is a `$ref`; `call[T]()` checks `T`
+        against the schema it names, and `record()` builds its fields from it.
+    entry #Form   the classpath path of the specification resource, as a literal type
+    entry #Locus   the operation's path as the specification keys it, `/pets/{petId}`
+    entry #Verb   the operation's method, lowercase: `get`, `post`, …
+    entry #Failure   the union of the `Api.Error` types the operation's declared error responses raise
+        A subtype of `Hazard`: `Api.NotFound[Unit] | Api.BadRequest[Problem]`, say, where each
+        payload is the type the specification declares for that response. `#attempt` yields an
+        `Attempt` over exactly this union, and `#call` demands a `Tactic` for each member.
+    entry #request   the request this response will send, as an `Api.Request`
+    entry #ensure   raises the declared error for a response outside the success range
+        A macro which inspects the `Http.Response`'s status: a `2xx` status passes; a status
+        the specification declares raises the `Api.Error` of that status (an exact status
+        first, then a `4XX`-style range, then `default` as `Api.OtherError`), with the body
+        construed as the payload type the specification gives it; and any other status raises
+        `Api.Violation` with the body's bytes. The `Tactic` for each declared error, and for
+        `Violation`, is summoned where the call is written, which is what makes handling
+        exhaustive: a handler missing one is a compile error naming it. `#call`, `#record`
+        and `#tuple` run this on every response before reading it.
+    entry #call   performs the request and reads the response as the type asked for
+        `call[T]()` first checks, as the code compiles, that `T` conforms to the response
+        schema — a case class whose fields match the schema's properties, a `List[T]` for an
+        array, `Json` or the raw `Http.Response` without any check — then sends the request,
+        runs `#ensure` on the response and reads `T` through the `(T is Conformant) over
+        Transport` in scope: the carrier's own `Aggregable` and `T`'s `Decodable in` the
+        carrier, so `List[Pet]` resolves its decoder like any other `Decodable`. A `T` the
+        schema does not support is a compile error.
+
+        A bare `call()` leaves the type to `Defaulting to Transport`, which makes it the
+        response's own carrier — the `Json`, the `Raster in Png`, the `Text` of a `text/plain`
+        response — or `Unit` for a response which declares no body, as a `204` does, or the
+        raw `Http.Response` when nothing in scope construes the media type.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import internetAccess.online
+        import logging.silentLogging
+        import construables.{jsonConstruable, pngConstruable, plainTextConstruable}
+        import httpBackends.javaNetHttp
+
+        val refs = Api(cp"/openapi/local/refstore.json", base = url"https://ref.example.com")
+        given queryKey: ("queryKey" is Credential to Text) = Credential(t"q-1")
+        case class Item(id: Long, name: Text)
+
+        refs.items(7).get.call[Item]()                  // decoded by the schema
+        val icon: Raster in Png = refs.items(7).icon.get.call()
+        val label: Text = refs.items(7).label.get.call()
+        ```
+
+        The empty parentheses mark the side effect. Besides the givens of `#request`'s send
+        (`Online`, `Http.Event is Loggable`, `Tactic[Connect.Error]`, the `Http.Client`), a
+        `Tactic` for `Api.Violation` and for each error in `#Failure` must be in scope, and
+        the `Conformant` may need a `Charset` and a `Tactic[Truncation.Error]`.
+    entry #attempt   the call as an `Attempt` over the declared errors, for an exhaustive `match`
+        `attempt[T]()` performs `call[T]()` inside `contingency.attempt[Failure]`, so the
+        result is an `Attempt[T, Failure]`: `Attempt.Success(value)` or
+        `Attempt.Failure(error)` with `error` one of the operation's declared `Api.Error`s. A
+        `match` over it is checked for exhaustiveness by the compiler, and a case for a status
+        the specification does not declare does not compile; `recover` takes a partial
+        function and is not. `Api.Violation` is not in the union: it is raised through its own
+        `Tactic`, as the contract's breach rather than one of its cases. The type argument is
+        needed explicitly when the transport is a record-bearing response.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import internetAccess.online
+        import logging.silentLogging
+        import construables.jsonConstruable
+        import httpBackends.javaNetHttp
+
+        val refs = Api(cp"/openapi/local/refstore.json", base = url"https://ref.example.com")
+        given queryKey: ("queryKey" is Credential to Text) = Credential(t"q-1")
+        case class Item(id: Long, name: Text)
+
+        refs.items(7).get.attempt[Item]() match
+          case Attempt.Success(item)                        => item.name
+          case Attempt.Failure(Api.NotFound(problem))       => problem.message
+          case Attempt.Failure(Api.OtherError(_, problem))  => problem.message
+        ```
+    entry #record   performs the request and reads a JSON response as a record typed by its schema
+        `record()` needs no mirror class: the result is a polyvinyl record with one member
+        per property of the response schema, at the type the schema declares — `Text`, `Int`,
+        `Long` for `int64`, `Double`, `Boolean`, nested objects and `$ref`s to component
+        schemas as nested records, arrays as `List`s — and an array-of-objects response is a
+        `List` of such records. Only for a JSON response whose schema describes an object or
+        an array of objects: a response construed as anything else, or a schema of another
+        shape, is a compile error suggesting `call[T]()`. It needs a `Tactic[Parse.Error]` and
+        a `Tactic[Truncation.Error]` besides the send's givens, and raises
+        `Json.Provider.Error` when a member read does not fit its schema.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import internetAccess.online
+        import logging.silentLogging
+        import construables.jsonConstruable
+        import httpBackends.javaNetHttp
+
+        val api = Api(cp"/openapi/local/petstore.json")
+        val pet = api.pets(42).get.record()
+        (pet.id, pet.name, pet.tag)                    // (Int, Text, Optional[Text])
+        api.pets.get(limit = 10).record().map(_.name)  // List[Text]
+        ```
+    entry #tuple   performs the request and reads a JSON response as a named tuple, eagerly
+        As `#record`, but the schema's properties become the fields of a named tuple, in the
+        schema's order, every one read when the response arrives rather than on access:
+        `api.pets(42).get.tuple().name`. The same restriction applies: a JSON response whose
+        schema is an object or an array of objects.
+  entry .Error   a response outside the success range, raised as the error class of its status
+    detail
+        Error 914.1: _the server responded with an unsuccessful status, `status`_. The sealed
+        parent of one case class per status telekinesis names — `Api.NotFound`,
+        `Api.BadRequest`, `Api.TooManyRequests`, … — with `Api.Informational`,
+        `Api.Redirection`, `Api.ClientError` and `Api.ServerError` for the `1XX`–`5XX` range
+        keys (and for a numbered status telekinesis does not name) and `Api.OtherError` for a
+        `default` response. Each carries `#status` and `#payload`: the error body construed as
+        the type the specification declares for that response — a record typed by the error
+        schema for a JSON object, else the media type's carrier, else `Text`, or `Unit` where
+        no body is declared — so `Api.NotFound(())` matches a bodiless `404` and
+        `Api.NotFound(problem)` one with a schema, whose `problem.message` is typed.
+
+        An operation's declared error responses form a union of these classes, the `Failure`
+        of its `Api.Response`; `attempt` yields an `Attempt` over exactly that union, and
+        `call` demands one `Tactic` per member, so every declared error is handled or the
+        code does not compile. Contingency tells the classes apart by class, not by payload
+        type, which is why each status has a class of its own. The payload is covariant. A
+        constrained member of an error payload's record — `string!`, `enum`, `pattern` — is
+        relaxed to its plain type, since a raising member would make the error a capability.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import internetAccess.online
+        import logging.silentLogging
+        import construables.jsonConstruable
+        import httpBackends.javaNetHttp
+
+        val refs = Api(cp"/openapi/local/refstore.json", base = url"https://ref.example.com")
+        given queryKey: ("queryKey" is Credential to Text) = Credential(t"q-1")
+        case class Item(id: Long, name: Text)
+
+        refs.items(7).get.attempt[Item]().recover:
+          case Api.NotFound(problem)      => Item(0L, problem.message)
+          case Api.OtherError(_, problem) => Item(1L, problem.message)
+        ```
+
+        A status the specification does not declare is not an `Api.Error` at all but an
+        `Api.Violation`.
+    refer apoplexy.Api.Violation
+    refer apoplexy.Api.Response
+    entry #status   the HTTP status the server responded with
+    entry #payload   the error body, construed as the type the specification declares for that response
+  entry .Violation   a response with a status the specification does not declare
+    detail
+        Error 914.2: _the server responded with an undeclared status, `status`_. The server
+        has broken its contract, which every call may meet and must handle apart from the
+        declared errors: it is raised through its own `Tactic[Api.Violation]`, is never a
+        member of a response's `Failure`, and carries the status and the body's raw bytes,
+        since no schema describes them.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import internetAccess.online
+        import logging.silentLogging
+        import construables.jsonConstruable
+        import httpBackends.javaNetHttp
+
+        val api = Api(cp"/openapi/local/petstore.json")
+        case class Pet(id: Int, name: Text, tag: Optional[Text] = Unset)
+
+        capture[Api.Violation](api.pets(42).get.call[Pet]()).status
+        ```
+    entry #status   the undeclared status
+    entry #body   the response body's bytes
+  entry .Continue   a declared `100 Continue` response, with its payload construed
+  entry .SwitchingProtocols   a declared `101 Switching Protocols` response, with its payload construed
+  entry .EarlyHints   a declared `103 Early Hints` response, with its payload construed
+  entry .MultipleChoices   a declared `300 Multiple Choices` response, with its payload construed
+  entry .MovedPermanently   a declared `301 Moved Permanently` response, with its payload construed
+  entry .Found   a declared `302 Found` response, with its payload construed
+  entry .SeeOther   a declared `303 See Other` response, with its payload construed
+  entry .NotModified   a declared `304 Not Modified` response, with its payload construed
+  entry .TemporaryRedirect   a declared `307 Temporary Redirect` response, with its payload construed
+  entry .PermanentRedirect   a declared `308 Permanent Redirect` response, with its payload construed
+  entry .BadRequest   a declared `400 Bad Request` response, with its payload construed
+  entry .Unauthorized   a declared `401 Unauthorized` response, with its payload construed
+  entry .PaymentRequired   a declared `402 Payment Required` response, with its payload construed
+  entry .Forbidden   a declared `403 Forbidden` response, with its payload construed
+  entry .NotFound   a declared `404 Not Found` response, with its payload construed
+      The commonest member of an operation's `Failure`. `Api.NotFound(())` is a `404` the
+      specification declares without a body; `Api.NotFound(problem)` one whose body the
+      declared schema types.
+  entry .MethodNotAllowed   a declared `405 Method Not Allowed` response, with its payload construed
+  entry .NotAcceptable   a declared `406 Not Acceptable` response, with its payload construed
+  entry .ProxyAuthenticationRequired   a declared `407 Proxy Authentication Required` response
+  entry .RequestTimeout   a declared `408 Request Timeout` response, with its payload construed
+  entry .Conflict   a declared `409 Conflict` response, with its payload construed
+  entry .Gone   a declared `410 Gone` response, with its payload construed
+  entry .LengthRequired   a declared `411 Length Required` response, with its payload construed
+  entry .PreconditionFailed   a declared `412 Precondition Failed` response, with its payload construed
+  entry .PayloadTooLarge   a declared `413 Payload Too Large` response, with its payload construed
+  entry .UriTooLong   a declared `414 URI Too Long` response, with its payload construed
+  entry .UnsupportedMediaType   a declared `415 Unsupported Media Type` response, with its payload construed
+  entry .RangeNotSatisfiable   a declared `416 Range Not Satisfiable` response, with its payload construed
+  entry .ExpectationFailed   a declared `417 Expectation Failed` response, with its payload construed
+  entry .UnprocessableEntity   a declared `422 Unprocessable Entity` response, with its payload construed
+  entry .TooEarly   a declared `425 Too Early` response, with its payload construed
+  entry .UpgradeRequired   a declared `426 Upgrade Required` response, with its payload construed
+  entry .PreconditionRequired   a declared `428 Precondition Required` response, with its payload construed
+  entry .TooManyRequests   a declared `429 Too Many Requests` response, with its payload construed
+  entry .RequestHeaderFieldsTooLarge   a declared `431 Request Header Fields Too Large` response
+  entry .UnavailableForLegalReasons   a declared `451 Unavailable For Legal Reasons` response
+  entry .InternalServerError   a declared `500 Internal Server Error` response, with its payload construed
+  entry .NotImplemented   a declared `501 Not Implemented` response, with its payload construed
+  entry .BadGateway   a declared `502 Bad Gateway` response, with its payload construed
+  entry .ServiceUnavailable   a declared `503 Service Unavailable` response, with its payload construed
+  entry .GatewayTimeout   a declared `504 Gateway Timeout` response, with its payload construed
+  entry .HttpVersionNotSupported   a declared `505 HTTP Version Not Supported` response
+  entry .VariantAlsoNegotiates   a declared `506 Variant Also Negotiates` response, with its payload construed
+  entry .InsufficientStorage   a declared `507 Insufficient Storage` response, with its payload construed
+  entry .LoopDetected   a declared `508 Loop Detected` response, with its payload construed
+  entry .NotExtended   a declared `510 Not Extended` response, with its payload construed
+  entry .NetworkAuthenticationRequired   a declared `511 Network Authentication Required` response
+  entry .Informational   a declared `1XX` range response, or a `1xx` status telekinesis does not name
+      Unlike the per-status classes, the range classes take the actual status as their first
+      field: `Api.Informational(status, payload)`.
+  entry .Redirection   a declared `3XX` range response, or a `3xx` status telekinesis does not name
+      `Api.Redirection(status, payload)`; the actual status is its first field.
+  entry .ClientError   a declared `4XX` range response, or a `4xx` status telekinesis does not name
+      `Api.ClientError(status, payload)`; the actual status is its first field. A `404`
+      declared exactly is `Api.NotFound`, not this, even when `4XX` is declared too: an exact
+      status is matched before its range.
+  entry .ServerError   a declared `5XX` range response, or a `5xx` status telekinesis does not name
+      `Api.ServerError(status, payload)`; the actual status is its first field.
+  entry .OtherError   a declared `default` response: any status no other declared response covers
+      `Api.OtherError(status, payload)`, the actual status its first field. Stripe's
+      specification, for one, declares every error as `default`, so every error from it is
+      an `OtherError` whose payload is a record of the `error` schema.
+  entry #request   the request so far, as an `Api.Request`
+      The method, base URL, path template, substitutions, query, headers, body and `accept`
+      media type the navigation has accumulated: inspectable before anything is sent.
+  entry #selectDynamic   `api.segment`: a path segment, checked to begin some path of the specification
+      A macro: `api.pets` joins `pets` to the current `Locus` and halts the compilation unless
+      some path of the specification begins with the result (_apoplexy: no path begins with
+      /unicorns_); the result is an `Api` refined to the new locus. A verb name (`get`, `put`,
+      `post`, `delete`, `patch`, `head`, `options`, `trace`) which the current path item
+      defines invokes that operation with no arguments instead, giving an `Api.Response`.
+  entry #applyDynamic   `api.segment(x)`: a path parameter, or an invocation with positional arguments
+      A macro. When `segment` is a verb the path item defines, the positional argument is the
+      request body and the result an `Api.Response`. Otherwise `segment` is navigated as
+      `#selectDynamic` would, and if the next segment of some deeper path is a `{template}`,
+      the argument fills it — typed by the parameter's schema, rendered with its `Showable` —
+      giving an `Api at "/pets/{petId}"`; failing that, the arguments invoke the endpoint's
+      sole non-`DELETE` operation, as `api.login(credentials)` does.
+  entry #applyDynamicNamed   `api.segment(name = x)`: an invocation with query and header parameters
+      A macro. Each named argument fills the query or header parameter of that name declared
+      on the operation or its path item, type-checked against the parameter's schema and
+      rendered with its `Showable`; a positional argument among them is the request body. A
+      verb invokes that operation; a segment with a sole non-`DELETE` operation invokes that
+      one. An unknown name, a wrong type or a missing required parameter halts the
+      compilation.
+
+entry .OpenApi   an OpenAPI 3.x document as a value: info, servers, paths, components and security
+  detail
+      The specification itself, decoded from JSON or YAML with `read[OpenApi]` into typed
+      parts for tooling that inspects an API rather than calling it: `#info`, `#servers`
+      (with their variables), `#paths` of `OpenApi.PathItem`s holding `OpenApi.Operation`s,
+      `#components` (schemas, parameters, responses, request bodies and security schemes) and
+      the document-wide `#security` requirements. The `Api` macros read the same model to
+      check each call.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import charsets.utf8Charset
+      import classloaders.threadContextClassloader
+
+      val document: OpenApi = cp"/openapi/local/refstore.json".read[Text].read[OpenApi]
+
+      document.openapi                                          // t"3.0.3"
+      document.paths(t"/items").let(_.get).let(_.operationId)
+      document.servers.head.let(_.resolved)                     // t"/v2"
+      ```
+
+      A YAML document is translated to JSON (`yamlEncodableInJson`) and read by the one
+      decoder, so the two forms cannot drift; which form the text is in is told by its first
+      character, `{` for JSON. A parameter, response or request body written as a `$ref` is
+      kept as an `OpenApi.Ref` in an `OpenApi.Referable` position and resolved on demand by
+      `apply()`, given the document; a `JsonSchema.Ref` resolves the same way, one hop at a
+      time, so cyclic schemas stay finite. The `responses` map of an operation is keyed by
+      status text (`200`, `4XX`, `default`), which `response` interprets for a concrete
+      status. A document that will not parse, declares a version other than 3.x or uses a
+      parameter location other than `path`, `query`, `header` or `cookie` raises
+      `OpenApi.Error`.
+
+      The model is exercised against a corpus of published descriptions — the OpenAPI
+      Initiative's examples, Swagger's Petstore, Redocly's Museum, Twilio, Kubernetes,
+      Discord, Box and Stripe (1,538 schemas) — and loads GitHub's, OpenAI's and
+      Cloudflare's. `callbacks`, `links`, `webhooks` and references into other documents are
+      not modelled.
+  refer apoplexy.Api
+  refer apoplexy.OpenApi.Error
+  refer jacinta.JsonSchema
+  entry .decodable   reads an `OpenApi` from `Json`, with each nested part through its own anchored decoder
+      The companion given `OpenApi is Json.Decodable`, derived once here so that `as[OpenApi]`
+      does not inline the whole document graph at every call site. It needs
+      `Tactic[Json.Error]`, `Tactic[JsonPointer.Error]` and `Tactic[OpenApi.Error]`.
+  entry .aggregable   reads an `OpenApi` from text, JSON or YAML, checking the version is 3.x
+      The `OpenApi is Aggregable by Text` given behind `text.read[OpenApi]` and
+      `url.fetch().receive[Text].read[OpenApi]`: text beginning with `{` is parsed as JSON,
+      anything else as YAML and translated; a parse, JSON, YAML or pointer failure becomes
+      `OpenApi.Error(Reason.Malformed)`, and a document whose `openapi` does not begin with
+      `3.` raises `OpenApi.Error(Reason.UnsupportedVersion(version))`. It needs a
+      `Tactic[OpenApi.Error]`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val document = t"""{"openapi": "3.0.3", "info": {"title": "x", "version": "1"}}""".read[OpenApi]
+      capture[OpenApi.Error](t"""{"openapi": "2.0", "info": {"title": "x", "version": "1"}}""".read[OpenApi]).reason
+      ```
+  entry .Info   the document's title, version and description
+    entry #title   the API's title
+    entry #version   the version of the API the document describes, not of OpenAPI
+    entry #description   a description, or `Unset`
+  entry .ServerVariable   a `{variable}` of a server URL: its default, its allowed values and a description
+    entry .decodable   reads a server variable from JSON
+    entry #default   the value `OpenApi.Server#resolved` substitutes
+    entry #enum   the values the variable may take, or `Unset` when unconstrained
+    entry #description   a description, or `Unset`
+  entry .Server   a server of the API: a URL, possibly templated, with its variables
+    detail
+        A server URL may be absolute (`https://api.example.com/v1`), relative to where the
+        document is served (`/api/v3`) or templated (`/v{version}`) with a
+        `OpenApi.ServerVariable` per `{name}`. `Api` takes its base URL from the first
+        server's `#resolved` form, and needs a caller's base when that is not absolute.
+    entry .decodable   reads a server from JSON
+    entry #url   the URL as written, templates and all
+    entry #description   a description, or `Unset`
+    entry #variables   the variables the URL's templates refer to, by name
+    entry #resolved   the URL with every `{variable}` replaced by its default
+        `/v{version}` with `version` defaulting to `2` is `/v2`. A template with no variable
+        of that name is left as it is.
+  entry .Ref   a `$ref` to a component, by JSON pointer, left unresolved in the model
+    detail
+        `OpenApi.Ref(pointer)` is what a `Referable[value]` position holds where the document
+        wrote `{"$ref": "#/components/parameters/limit"}` rather than the component itself.
+        `apply()` on the referable resolves it against the document in scope; only pointers
+        into the document's own `components` resolve.
+    entry #pointer   the JSON pointer the reference names
+  entry .Referable   a component written in place, or referred to by a `$ref`: `value | OpenApi.Ref`
+      The type of every position where OpenAPI allows a `$ref`: an operation's parameters,
+      its request body, its responses, a path item's parameters and the components maps. A
+      match must handle both: `case OpenApi.Ref(pointer) => …` and `case parameter:
+      OpenApi.Parameter => …`; or `referable()` resolves either to the component, given an
+      `OpenApi`.
+  entry .Componental   which map of `OpenApi.Components` holds a kind of component, and under what name
+    detail
+        The typeclass behind `referable()`: for `Parameter`, `Response` and `RequestBody` it
+        names the components map (`parameters`, `responses`, `requestBodies`) and looks a
+        component up in it. The three givens are in the companion, so resolving a reference
+        needs no import.
+    entry .parameter   parameters live in `components.parameters`
+    entry .response   responses live in `components.responses`
+    entry .requestBody   request bodies live in `components.requestBodies`
+    entry .apply   builds a `Componental` from a map's name and a selector over `OpenApi.Components`
+    entry #kind   the components map's name, as it appears in a pointer: `parameters`, `responses`, …
+    entry #lookup   the component of that name in the components, or `Unset` if absent or itself a `Ref`
+  entry .apply   resolves a `Referable` component, or a `JsonSchema`, against the document in scope
+      Two extensions, each needing a `given OpenApi` and raising `OpenApi.Error`.
+      `referable()` on a `Referable[Parameter | Response | RequestBody]` is the component
+      itself when written in place, else the one its pointer names under
+      `#/components/parameters/`, `responses/` or `requestBodies/`. `schema()` on a
+      `JsonSchema` resolves a `JsonSchema.Ref` one hop against `#/components/schemas/`,
+      and is any other schema unchanged; resolving a hop at a time, never inlining, keeps a
+      cyclic schema graph finite, with the consumer driving the walk. A pointer into
+      anything else raises `Reason.UnsupportedRef(pointer)`, and one naming a component the
+      document lacks `Reason.UnresolvableRef(pointer)`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import charsets.utf8Charset
+      import classloaders.threadContextClassloader
+
+      val document = cp"/openapi/local/refstore.json".read[Text].read[OpenApi]
+      given OpenApi = document
+
+      document.paths(t"/items").let(_.get).let(_.parameters.head).let(_()).let(_.name)   // t"limit"
+      JsonSchema.Ref(t"#/components/schemas/Item".as[JsonPointer])()                     // a JsonSchema.Object
+      ```
+  entry .Parameter   a parameter of an operation or path item: its name, location, necessity and schema
+    detail
+        `in` is one of `OpenApi.Parameter.In`'s `Path`, `Query`, `Header` and `Cookie`,
+        decoded from the document's text; a Swagger 2 `body` location raises
+        `OpenApi.Error(Reason.BadParameterLocation(t"body"))`. A path parameter is always
+        required; `required` is `Unset` where the document omits it. The `Api` macros type a
+        path parameter's argument by `#schema` (`integer` to `Int`, `int64` to `Long`,
+        `number` to `Double`, `boolean` to `Boolean`, else `Text`) and a query or header
+        parameter's the same way, with `Text` where there is no schema.
+    entry .In   where a parameter is sent: the path, the query, a header or a cookie
+      detail
+          An enum of `Path`, `Query`, `Header` and `Cookie`, decoded from the document's
+          lowercase text by `.decodable` in its companion. The `Api` client sends path, query
+          and header parameters; a cookie parameter is read into the model but not sent.
+      entry .decodable   reads `path`, `query`, `header` or `cookie` from text, raising `OpenApi.Error` for anything else
+    entry .decodableJson   reads a parameter from JSON, anchored so path items and operations share it
+    entry .referable   reads a parameter-or-`$ref` position: a `$ref` key marks an `OpenApi.Ref`
+    entry #name   the parameter's name, as the API expects it
+    entry #in   where it is sent, an `OpenApi.Parameter.In`
+    entry #required   whether it must be supplied, or `Unset` where the document is silent
+    entry #description   a description, or `Unset`
+    entry #schema   the `JsonSchema` of its value, or `Unset`
+  entry .MediaTypeObject   the value of a `content` entry: the schema of a body in one media type
+    detail
+        A `content` map is keyed by media type text (`application/json`, `image/png`) and
+        each value is a `MediaTypeObject` holding the body's schema, when one is declared.
+        Its decoder is an anonymous given in the companion.
+    entry #schema   the body's `JsonSchema`, or `Unset`
+  entry .RequestBody   an operation's request body: its content by media type, and whether it is required
+    entry .decodable   reads a request body from JSON
+    entry .referable   reads a request-body-or-`$ref` position: a `$ref` key marks an `OpenApi.Ref`
+    entry #description   a description, or `Unset`
+    entry #required   whether the body must be sent, or `Unset` where the document is silent
+    entry #content   the body's schema in each media type it may be sent as
+  entry .Response   a declared response: a description and its content by media type
+    entry .decodable   reads a response from JSON
+    entry .referable   reads a response-or-`$ref` position: a `$ref` key marks an `OpenApi.Ref`
+    entry #description   the response's description, or `Unset`
+    entry #content   the body's schema in each media type it may come as; empty for a bodiless response
+  entry .Operation   one HTTP method on a path: its parameters, request body, responses and security
+    detail
+        The `responses` map is keyed by status text as the document writes it — `200`,
+        `201`, `4XX`, `default` — and `response(status)` on an operation interprets a
+        concrete `Http.Status` against those keys. The `Api` client prefers `200`, then
+        `201`, then the lowest `2xx` key as the success response, and raises a distinct
+        `Api.Error` for each other key. `security`, when present, overrides the document's
+        own requirements; an empty list means the operation needs no credentials.
+    entry .decodableJson   reads an operation from JSON, anchored once so a path item's eight verbs share it
+    entry #operationId   the operation's identifier, or `Unset`
+    entry #summary   a short summary, or `Unset`
+    entry #description   a description, or `Unset`
+    entry #parameters   the operation's own parameters, each in place or as an `OpenApi.Ref`
+    entry #requestBody   the request body, in place or as an `OpenApi.Ref`, or `Unset`
+    entry #responses   the declared responses by status text, each in place or as an `OpenApi.Ref`
+    entry #security   the operation's own security requirements, or `Unset` to inherit the document's
+  entry .response   the declared response for a concrete status: exact, then range, then `default`
+      An extension on `OpenApi.Operation`: `operation.response(Http.NotFound)` is the entry
+      keyed `404`, else `4XX`, else `default`, else `Unset`, as a `Referable[Response]`.
+  entry .PathItem   a path of the API: its operations by verb, and the parameters they share
+    detail
+        A path item mixes HTTP-method keys with `summary`, `description` and `parameters`, so
+        each verb is its own `Optional[Operation]` field; `#operations` rebuilds the map by
+        `Http.Method`. Parameters declared here apply to every operation on the path, an
+        operation's own parameter of the same name and location overriding. Its decoder is
+        an anonymous given in the companion.
+    entry #summary   a short summary, or `Unset`
+    entry #description   a description, or `Unset`
+    entry #get   the `GET` operation, or `Unset`
+    entry #put   the `PUT` operation, or `Unset`
+    entry #post   the `POST` operation, or `Unset`
+    entry #delete   the `DELETE` operation, or `Unset`
+    entry #options   the `OPTIONS` operation, or `Unset`
+    entry #head   the `HEAD` operation, or `Unset`
+    entry #patch   the `PATCH` operation, or `Unset`
+    entry #trace   the `TRACE` operation, or `Unset`
+    entry #parameters   parameters shared by every operation on the path, each in place or as an `OpenApi.Ref`
+    entry #operations   the operations present, as a `Map[Http.Method, OpenApi.Operation]`
+  entry .Components   the document's reusable parts: schemas, parameters, responses, request bodies and security schemes
+    detail
+        What `#/components/…` pointers resolve into. `schemas` holds `JsonSchema`s, which a
+        `JsonSchema.Ref` resolves against with `schema()`; `parameters`, `responses` and
+        `requestBodies` hold components which may themselves be references, resolved with
+        `referable()`; `securitySchemes` names the schemes an `OpenApi.Requirement` refers
+        to. Its decoder is an anonymous given in the companion.
+    entry #schemas   component schemas by name, the targets of `#/components/schemas/…`
+    entry #parameters   component parameters by name, each in place or as an `OpenApi.Ref`
+    entry #responses   component responses by name, each in place or as an `OpenApi.Ref`
+    entry #requestBodies   component request bodies by name, each in place or as an `OpenApi.Ref`
+    entry #securitySchemes   the security schemes by the names requirements use
+  entry .SecurityScheme   how an API authenticates: an API key, HTTP auth, OAuth 2, OpenID Connect or mutual TLS
+    detail
+        The fields are those OpenAPI 3 §4.8.27 defines, and only the ones belonging to the
+        scheme's `type` are present: `name` and `in` for an `apiKey`, `scheme` and
+        `bearerFormat` for `http`, `flows` for `oauth2`, `openIdConnectUrl` for
+        `openIdConnect`. `#kind` reads `type` as an `OpenApi.SecurityScheme.Kind`.
+
+        The `Api` client satisfies a scheme with an `orthodoxy.Credential` given named for
+        it: `("api_key" is Credential to Text)` for an API key, sent in the header, query
+        parameter or cookie `in` names; `("basicAuth" is Credential to Auth)` for HTTP
+        authentication, sent as the `authorization` header; `("petstore_auth" is Credential
+        to Authorization)` for OAuth 2 or OpenID Connect, sent as a `Bearer` token and checked
+        against the requirement's scopes (an `Auth` serves for a token obtained elsewhere). A
+        credential of the wrong kind for the scheme is a compile error. Mutual TLS is not
+        supported, and no OpenID Connect discovery is performed.
+    entry .decodable   reads a security scheme from JSON
+    entry .Kind   the scheme's type as an enum: `ApiKey`, `Http`, `OAuth2`, `OpenIdConnect`, `MutualTls` or `Unknown`
+        `Unknown` is any `type` text the specification does not define; the `Api` client
+        cannot satisfy such a scheme.
+    entry .Flow   one OAuth 2 flow: its endpoints and the scopes it can grant
+      entry .decodable   reads a flow from JSON
+      entry #authorizationUrl   the authorization endpoint, for the implicit and authorization-code flows
+      entry #tokenUrl   the token endpoint, for every flow but the implicit one
+      entry #refreshUrl   the refresh endpoint, or `Unset`
+      entry #scopes   the scopes the flow grants, each with its description
+    entry .Flows   the OAuth 2 flows a scheme offers: implicit, password, client-credentials and authorization-code
+      entry .decodable   reads the flows from JSON
+      entry #implicit   the implicit flow, or `Unset`
+      entry #password   the resource-owner password flow, or `Unset`
+      entry #clientCredentials   the client-credentials flow, or `Unset`
+      entry #authorizationCode   the authorization-code flow, or `Unset`
+    entry #type   the scheme's type as written: `apiKey`, `http`, `oauth2`, `openIdConnect` or `mutualTLS`
+    entry #description   a description, or `Unset`
+    entry #name   for an `apiKey`, the name of the header, query parameter or cookie
+    entry #in   for an `apiKey`, where it goes: `header`, `query` or `cookie`
+    entry #scheme   for `http`, the authentication scheme: `basic`, `bearer`, …
+    entry #bearerFormat   for an `http` bearer scheme, a hint at the token's format
+    entry #flows   for `oauth2`, the flows the scheme offers
+    entry #openIdConnectUrl   for `openIdConnect`, the discovery URL
+    entry #kind   the `type` text as an `OpenApi.SecurityScheme.Kind`, `Unknown` for anything undefined
+  entry .Requirement   a security requirement: the schemes which must all be satisfied, each with its scopes
+      `Map[Text, List[Text]]`: scheme name to the scopes needed. An operation's (or the
+      document's) `security` is a list of requirements, *alternatives* of which any one
+      suffices, and an empty requirement means no credentials are needed. The `Api` client
+      uses the first alternative every scheme of which has a `Credential` in scope.
+  entry .Error   raised when a document is not valid OpenAPI 3, or a reference cannot be followed
+    detail
+        Error 846: _the OpenAPI document was not valid because `reason`_, with one of five
+        reasons. `Malformed` (846.1), _the OpenAPI document could not be parsed_: the text was
+        not JSON or YAML, or did not fit the model. `UnsupportedVersion(version)` (846.2),
+        _the OpenAPI version `version` is not supported; only 3.x is supported_: a Swagger 2
+        document, say. `UnresolvableRef(pointer)` (846.3), _the reference `pointer` could not
+        be resolved_: a `$ref` to a component the document does not have. `UnsupportedRef(pointer)`
+        (846.4), _the reference `pointer` is not supported; only #/components/schemas
+        references work_: a `$ref` outside the document's components, such as into `#/paths`
+        or another file. `BadParameterLocation(value)` (846.5), _`value` is not a valid
+        parameter location; expected one of path, query, header or cookie_. `read[OpenApi]`
+        raises the first two and the last; `referable()` and `schema()` raise the reference
+        ones. At `Api(…)` any of them is a compile error.
+    entry .Reason   why the document was rejected: `Malformed`, `UnsupportedVersion`, `UnresolvableRef`, `UnsupportedRef` or `BadParameterLocation`
+        An enum, each case numbering its error and rendered by the anonymous `Communicable`
+        given in its companion.
+    entry #reason   the `OpenApi.Error.Reason`
+  entry #openapi   the OpenAPI version the document declares, `3.0.3` or `3.1.0`
+  entry #info   the document's `OpenApi.Info`: title, version and description
+  entry #servers   the servers, in the document's order; `Api` uses the first
+  entry #paths   the path items by path template, `/pets/{petId}`
+  entry #components   the reusable components, or `Unset` when the document declares none
+  entry #security   the document-wide security requirements, which an operation's own override
+
+entry .Conformant   how an `Http.Response` is read as a value, through the carrier its media type construes
+  detail
+      `(T is Conformant) over Carrier` reads an `Http.Response` whose body is a `Carrier` —
+      the type the response's media type construes, `Json` for `application/json`, `Xml`,
+      `Text`, a `Raster in Png` — as a `T`. It reads only: `Api.Response#call` has checked the
+      status, and `T` against the schema, before `#read` runs. The givens are layered by
+      priority so that the result is never ambiguous: the raw `Http.Response` and `Unit` first
+      (`.response`, `.unit`, for any carrier); then the carrier itself, read from bytes
+      (`.carrier`); then the carrier read from text, for carriers such as `Xml` which are
+      `Aggregable by Text` (`Conformant2#carrierText`); then any value `Decodable in` the
+      carrier, by bytes (`Conformant2#decodable`) and by text (`Conformant3#decodableText`).
+      The ordering keeps a carrier which is both `Aggregable by Data` and `by Text` (as `Text`
+      is) from being ambiguous, and keeps a carrier from decoding through its own identity
+      `Decodable`. The companion inherits those lower-priority givens from `Conformant2` and
+      `Conformant3`, which it extends.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import charsets.utf8Charset
+
+      case class Pet(id: Int, name: Text, tag: Optional[Text] = Unset)
+      val response = Http.Response(Http.Ok, contentType = media"application/json")(t"""{"id": 42, "name": "Milo"}""")
+
+      summon[(Pet is Conformant) over Json].read(response)    // Pet(42, t"Milo")
+      summon[(Json is Conformant) over Json].read(response)
+      summon[(Unit is Conformant) over Json].read(response)   // ()
+      ```
+
+      Because `call[T]()` summons the `Conformant` where the call is written, with `T`
+      concrete, a `List[Pet]` resolves its `Decodable in Json` like any other decode, and the
+      only givens demanded are the carrier's own `Aggregable` and `T`'s `Decodable`; the text
+      paths also need a `Charset` for the bytes, and every path a `Tactic[Truncation.Error]`
+      for a body cut short.
+  refer apoplexy.Api.Response
+  refer gesticulate.Construable
+  refer distillate.Decodable
+  entry .response   the raw `Http.Response`, for any carrier: the escape hatch which reads nothing
+  entry .unit   `Unit`, for any carrier: the body is discarded, as for a `204` or a bare `call()` on a `DELETE`
+  entry .carrier   the carrier itself, read from the body's bytes through its `Aggregable by Data`
+      `(Json is Conformant) over Json`, `(Raster in Png is Conformant) over (Raster in Png)`:
+      the body memoized and aggregated by the carrier's own reader. Needs a
+      `Tactic[Truncation.Error]`.
+  entry #read   reads the response as `Self`
+
+entry .Conformant2   the middle priority of `Conformant` givens: a text-read carrier, and a value decoded from a byte-read one
+  hidden
+  detail
+      A parent of the `Conformant` companion, which exists only to rank its givens below
+      `Conformant.response`, `.unit` and `.carrier`; its members are found through the
+      companion and need no import.
+  entry #decodable   any `T` with a `Decodable in Carrier`, from a carrier `Aggregable by Data`
+      How `call[Pet]()` reads a JSON response: the bytes aggregated as `Json`, then decoded as
+      `Pet`. Needs a `Tactic[Truncation.Error]`.
+  entry #carrierText   the carrier itself, read from the body as text through its `Aggregable by Text`
+      For carriers such as `Xml` whose reader takes text: the bytes are decoded with the
+      `Charset` in scope before the parser sees them. Needs a `Charset` and a
+      `Tactic[Truncation.Error]`.
+
+entry .Conformant3   the lowest priority of `Conformant` givens: a value decoded from a text-read carrier
+  hidden
+  detail
+      The root of the `Conformant` companion's priority chain; its one given is found through
+      the companion and needs no import.
+  entry #decodableText   any `T` with a `Decodable in Carrier`, from a carrier `Aggregable by Text`
+      How `call[Note]()` reads an XML response: the bytes decoded with the `Charset` in scope,
+      aggregated as `Xml`, then decoded as `Note`. Needs a `Charset` and a
+      `Tactic[Truncation.Error]`.
+
+entry .Executor   the transport seam: turns an `Api.Request` into a raw `Http.Response`
+  detail
+      A trait with one method, `#execute`, for an implementation which answers an
+      `Api.Request` without the network, such as a test's recording backend. It is not
+      exported to the `soundness` umbrella, where its name would clash with superlunary's
+      `Executor`, and is reached as `apoplexy.Executor`. The client itself sends through
+      `Api.send` and the `Http.Client` in scope, so substituting an `Http.Backend` given is the
+      usual way to intercept a request.
+  entry #execute   the response to a request
+
+entry .yamlEncodableInJson   a YAML document as JSON, as `yaml.in[Json]`
+    The top-level given `Yaml is Encodable in Json`, the translation an OpenAPI document
+    written as YAML passes through on its way to the model's one decoder. Both trees are
+    walked node by node; a mapping key YAML wrote as a number or boolean (`200:`) becomes the
+    string JSON requires. It lives at the package's top level with a library-qualified name
+    because neither `jacinta` nor `ypsiloid` depends on the other, so neither `Yaml` nor
+    `Json` can anchor it; it is not exported to the `soundness` umbrella, so it is imported as
+    `import apoplexy.yamlEncodableInJson`.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+    import apoplexy.yamlEncodableInJson
+
+    val yaml: Yaml = """openapi: "3.0.3"
+                      |info:
+                      |  title: Petstore
+                      |  version: "1.0.0"
+                      |""".stripMargin.tt.as[Yaml]
+    val json: Json = yaml.in[Json]
+    ```
+
+entry .unsafeHttpUrl   parses text the `Api` macro has already validated as a URL, gated by `Unsafe`
+    `unsafeHttpUrl(text)(using Unsafe)` is `text.as[HttpUrl]` with its `Url.Error` discharged:
+    the code `Api(resource)` emits calls it on the server URL the macro has already parsed at
+    expansion, gated by an `Unsafe` the macro supplies rather than a spliced `unsafely`, whose
+    context function a quote cannot match under capture checking. Not for direct use: parse
+    an unchecked URL with `text.as[HttpUrl]` and handle the error.
+
+entry .Apoplexy   the macro implementations behind `Api`, its navigation and `Api.Response`'s calls
+  hidden
+  detail
+      Not for direct use: the object exists so that the macros have a stable home. It caches
+      each specification it loads, keyed by resource and content, for the length of the
+      compilation.
+  entry .root   the macro behind `Api(resource)`: loads the document and types the root
+  entry .rootAt   the macro behind `Api(resource, base)`: as `.root`, with the caller's base URL
+  entry .select   the macro behind `Api#selectDynamic`: a segment, or a verb with no arguments
+  entry .applied   the macro behind `Api#applyDynamic`: a path parameter, a body, or a verb-less invocation
+  entry .appliedNamed   the macro behind `Api#applyDynamicNamed`: query and header parameters, with a body
+  entry .ensure   the inline entry point of `Api.Response#ensure`
+  entry .ensureMacro   raises the declared error for a status outside the success range, or `Api.Violation`
+      Summons a `Tactic` for each member of the response's `Failure`, and one for
+      `Api.Violation`, where the call is written; dispatches on the exact status, then the
+      declared ranges, then `default`; and construes each payload as the specification
+      declares it.
+  entry .record   the inline entry point of `Api.Response#record`, given the body already read as JSON
+  entry .tuple   the inline entry point of `Api.Response#tuple`, given the body already read as JSON
+  entry .recordMacro   builds the schema-typed record over `Api.Records` from the response's JSON
+  entry .tupleMacro   builds the schema-typed named tuple over `Api.Records` from the response's JSON
+  entry .check   the inline entry point which checks `call[T]()`'s `T` against the response schema
+  entry .conform   halts the compilation unless `T` conforms to the response schema
+      `Json` and `Http.Response` pass without a check; a case class is matched field by field
+      against an object schema's properties, a `List[T]` against an array's items, and a
+      primitive against its type, with `Int` accepted for `int64` and integral types for
+      `number`.

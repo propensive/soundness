@@ -1,0 +1,901 @@
+tel 1.0
+
+base punctuation
+import soundness
+
+info   CommonMark Markdown as a typed syntax tree, with HTML, terminal and Markdown-source renderings
+detail
+    _Punctuation_ parses [CommonMark](https://commonmark.org/) Markdown — the plain-text prose
+    format of readmes, comments and documentation — into a typed syntax tree, and renders that
+    tree three ways: to HTML through honeycomb, back to Markdown source, and to styled text for
+    a terminal through escapade. The parser passes every example of the CommonMark
+    specification, both over a whole text and when the same text arrives as a stream one
+    character at a time.
+
+    The tree keeps Markdown's two levels apart in the types. **Block** structure — headings,
+    paragraphs, lists, block quotes, code blocks, thematic breaks and raw HTML blocks — is the
+    `Layout` enumeration, and **inline** structure — text, emphasis, strong emphasis, code
+    spans, links, images, line breaks and inline HTML — is the `Prose` enumeration. A
+    `Markdown` value records which it holds as its `Topic`: a `Markdown of Layout` is a whole
+    document and a `Markdown of Prose` is a run of inline content, and the two cannot be
+    confused. Each renders to the kind of HTML which is valid in its place: flow content for a
+    document, phrasing content for prose.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    val document: Markdown of Layout = Parser.parse(t"# Title\n\nSome **bold** text.")
+
+    document.children.head match
+      case Layout.Heading(_, level, Prose.Textual(text)) => (level, text)   // (1, t"Title")
+      case _                                             => (0, t"")
+
+    document.html.show   // t"<h1>Title</h1>\n<p>Some <strong>bold</strong> text.</p>\n"
+    document.show        // the document as CommonMark source again
+    ```
+
+    `Parser.parse` is the way in, from a `Text`, a `Chain[Text]`, an `Iterator[Text]` of
+    chunks, or a zephyrine `Stream[Text]`, and because `Markdown of Layout` is `Aggregable by
+    Text` a document also reads directly from any source with `read[Markdown of Layout]`.
+    Parsing is total: there is no parse error, since every text is some Markdown document,
+    and a Markdown document has no notion of a syntax error.
+
+    ```scala fuel
+    frame
+      label A document, parsed
+      code
+          import soundness.*
+          import strategies.throwUnsafely
+
+          val source = t"# Title\n\nA *word* and a [link](https://example.org/).\n\n- one\n- two\n"
+          val document = Parser.parse(source)
+    frame
+      label Its syntax tree, as inspected
+      code
+          import soundness.*
+          import strategies.throwUnsafely
+
+          val source = t"# Title\n\nA *word* and a [link](https://example.org/).\n\n- one\n- two\n"
+          val document = Parser.parse(source)
+
+          document.inspect
+          // Markdown(linkRefs:[] ╱ children:[Heading(1ˢᵗ ╱ 1 ╱ [Textual(t"Title")]),
+          //   Paragraph(3ʳᵈ ╱ [Textual(t"A "), Emphasis([Textual(t"word")]), Textual(t" and a "),
+          //   Link(t"https://example.org/" ╱ ○ ╱ [Textual(t"link")]), Textual(t".")]),
+          //   BulletList(5ᵗʰ ╱ true ╱ [[Paragraph(5ᵗʰ ╱ [Textual(t"one")])], [Paragraph(6ᵗʰ ╱ [Textual(t"two")])]])])
+    frame
+      label Rendered to HTML
+      code
+          import soundness.*
+          import strategies.throwUnsafely
+
+          val source = t"# Title\n\nA *word* and a [link](https://example.org/).\n\n- one\n- two\n"
+          val document = Parser.parse(source)
+
+          document.html.show
+          // <h1>Title</h1>
+          // <p>A <em>word</em> and a <a href="https://example.org/">link</a>.</p>
+          // <ul>
+          // <li>one</li>
+          // <li>two</li>
+          // </ul>
+    frame
+      label Rendered for a terminal
+      code
+          import soundness.*
+          import strategies.throwUnsafely
+          import hyphenations.englishHyphenation
+
+          val source = t"# Title\n\nA *word* and a [link](https://example.org/).\n\n- one\n- two\n"
+          val document = Parser.parse(source)
+
+          document.terminal(width = 40)
+          // a bold, coloured "Title" over a ━━━ rule; "word" in italics; "link" underlined,
+          // coloured and wrapped in an OSC 8 hyperlink; "• one" and "• two"
+    ##
+    ```
+
+    The library is split into components by what each depends on:
+
+    - `punctuation.core` — `Markdown`, `Layout`, `Prose`, `Parser`, `Formattable` and
+      `Translator`, the HTML `Renderable` givens, the `Showable` givens which write Markdown
+      source back, the `Aggregable` given which reads a document from a stream, and the
+      `formatting` and `construables` choice packages. It depends on honeycomb and is
+      platform-neutral.
+    - `punctuation.ansi` — the terminal renderer: `Renderer`, `MarkdownPalette`,
+      `TeletypeFormattable`, the `terminal` extension, the `markdownPrintable` given and the
+      `teletypeFormattables` choice package. It depends on escapade, polysyllabic (for
+      hyphenation at wrap points), tessellate (for width-aware wrapping) and harlequin (for
+      syntax-highlighted code blocks), so it is JVM-only.
+    - `harlequin.md`, part of the harlequin library, contributes the `formattables` package
+      to this package: `scalaFormattable` and `javaFormattable` syntax-highlight fenced
+      `scala` and `java` code blocks when a document is rendered to HTML.
+
+    Everything is exported to the `soundness` umbrella. The choice packages — `formatting`,
+    `construables`, `teletypeFormattables` and `formattables` — hold givens which are imported
+    by name, since `import soundness.*` (like any wildcard import) does not import givens; the
+    givens a reader needs without an import, such as `Markdown.Formatting.unbounded` and
+    `MarkdownPalette.default`, live in companions and resolve through implicit scope.
+
+    Rendering a document to HTML (`html`) needs no imports; writing it back as source
+    (`show`) wraps paragraphs at the width of the `Markdown.Formatting` in scope, which is
+    unbounded unless `Markdown.Formatting.bounded(columns)` is given; and rendering it for a
+    terminal (`terminal`) hyphenates words at line ends by the `Hyphenation` in scope, which
+    hyphenates nothing unless one such as `hyphenations.englishHyphenation` is imported.
+
+refer punctuation.Markdown
+refer punctuation.Layout
+refer punctuation.Prose
+refer punctuation.Parser
+refer punctuation.Renderer
+refer punctuation.Formattable
+refer punctuation.TeletypeFormattable
+
+entry .Markdown   a parsed Markdown document or run of inline content: a list of nodes and the link references
+  detail
+      A `Markdown` value is a list of `#children`, each a `Markdown.Node`, and the
+      `#linkRefs` — the `[label]: destination "title"` definitions collected from the whole
+      input — which the parser has already resolved into the links which used them. Its
+      `#Topic` type member says what kind of node it holds, and is how the two kinds of
+      Markdown are told apart: a `Markdown of Layout` is a whole document, whose children are
+      blocks, and a `Markdown of Prose` is a run of inline content.
+
+      Documents come from `Parser.parse`, from `read[Markdown of Layout]` on any streamable
+      source (`.aggregable`), or from `.apply` over nodes built by hand; inline runs come from
+      `Markdown(prose*)`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val document: Markdown of Layout = Parser.parse(t"# Title\n\nHello, *world*.\n")
+      val prose: Markdown of Prose = Markdown(Prose.Textual(t"Hello, "), Prose.Emphasis(Prose.Textual(t"world")))
+
+      document.html.show   // t"<h1>Title</h1>\n<p>Hello, <em>world</em>.</p>\n"
+      prose.html.show      // t"Hello, <em>world</em>"
+      document.show        // t"# Title\n\nHello, *world*.\n"
+      prose.show           // t"Hello, *world*"
+      ```
+
+      Three renderings are available on any `Markdown`. `html` (honeycomb's `Renderable`,
+      through `.layout` and `.prose`) gives `Html of Flow` for a document and `Html of
+      Phrasing` for prose, so each is well-formed in its place; `show` (`.layoutShowable` and
+      `.proseShowable`) writes CommonMark source which re-parses to an equal tree, wrapped at
+      the width of the `Markdown.Formatting` in scope; and `inspect` (`.inspectable`) shows
+      the tree itself, node by node, with the line each block came from. In
+      `punctuation.ansi`, `terminal` renders a document for a terminal.
+
+      Two `Markdown` values are equal when their children are equal: the link references
+      take no part, since they have already been resolved into the tree.
+  refer punctuation.Layout
+  refer punctuation.Prose
+  refer punctuation.Parser
+  refer punctuation.terminal
+  entry .Formatting   how a document is written back as source: the column at which paragraphs wrap
+    detail
+        The contextual value `show` on a `Markdown` consults. Its one setting is `#width`,
+        the column at which paragraph text is word-wrapped, or `Unset` to leave each
+        paragraph on a single line. The companion's `.unbounded` given is the default, in
+        implicit scope, so `show` works with no import; a bounded formatting,
+        `Markdown.Formatting.bounded(columns)`, is bound as a local given where wrapped
+        output is wanted. The same default is `formatting.unboundedMarkdownFormatting`, for
+        importing by name to override a bounded one in an enclosing scope.
+
+        ```scala
+        import soundness.*
+
+        val document = Parser.parse(t"alpha beta gamma delta epsilon zeta eta theta iota kappa\n")
+
+        document.show   // one line
+        locally:
+          given Markdown.Formatting = Markdown.Formatting.bounded(20)
+          document.show   // the same words over several lines, none longer than 20 columns
+        ```
+
+        Wrapping changes only the whitespace between words — a softbreak is a space to the
+        parser either way — so a wrapped document parses to the same tree as its unwrapped
+        source. `Markdown.Formatting` is a zephyrine `Formatting`, so it sits alongside the
+        formatting values of the other serializers.
+    entry .apply   a formatting with the given width, or `Unset` for no wrapping
+    entry .bounded   a formatting which wraps paragraphs at a column: `Markdown.Formatting.bounded(80)`
+    entry .unbounded   the default formatting given: paragraphs stay on one line
+        In implicit scope through the companion, so `markdown.show` needs no import. The
+        same value is `formatting.unboundedMarkdownFormatting`, for importing by name to
+        override a bounded formatting in an enclosing scope.
+    entry #width   the wrap column, or `Unset` for no wrapping
+  entry .Node   the common supertype of `Layout` and `Prose`
+      An open trait which the two enumerations extend, and the upper bound of a `Markdown`'s
+      `Topic`. A `Markdown` is normally a `Markdown of Layout` or a `Markdown of Prose`; a
+      node which is neither is inspected as a quoted `toString`.
+  entry .LinkRef   a link-reference definition: `[label]: destination "title"`
+    detail
+        A reference-style link definition, as the parser collected it from the input. The
+        definitions a document declares are kept in `Markdown#linkRefs` after the links which
+        referred to them have been resolved — a reference may appear before its definition,
+        which is why a streamed document is complete only at the end of its input — and
+        `show` writes them back at the end of the document.
+    entry #label   the label the reference is looked up by, as written
+    entry #title   the link's title, or `Unset` if the definition gave none
+    entry #destination   the URL the label stands for
+  entry .aggregable   reads a `Markdown of Layout` from any stream of text
+      The `Aggregable by Text` given which lets a document be read from a file, a resource or
+      any other streamable source with `read[Markdown of Layout]`, and which `construables.markdownConstruable`
+      builds on. It is unconditional, since parsing is total, and its streaming path parses
+      the chunks as they arrive, retaining only the tree and each open paragraph's text, so a
+      long document is never held whole.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import dysasymptotics.linearSize
+
+      val readme = t"# Readme\n\nThe first paragraph.\n\nThe second."
+      readme.read[Markdown of Layout].children.size   // 3
+      ```
+  entry .layoutShowable   writes a document back as CommonMark source, wrapped per `Markdown.Formatting`
+      The `Showable` given for `Markdown of Layout`. The output is not the text the parser
+      consumed — it is regenerated from the tree, with conservative backslash escapes before
+      any character which could otherwise open an inline or block construct — but it parses
+      back to an equal tree. Paragraph text is wrapped at the `#width` of the
+      `Markdown.Formatting` in scope, unbounded by default, and link references are written
+      after the blocks. It is in implicit scope through the companion.
+  entry .proseShowable   writes a run of inline content back as CommonMark source
+      The `Showable` given for `Markdown of Prose`: as `.layoutShowable`, for inline content
+      alone, so `Markdown(Prose.Strong(Prose.Textual(t"x"))).show` is `t"**x**"`.
+  entry .inspectable   shows a `Markdown` as its tree, node by node, with the line of each block
+      The `Inspectable` given, for any `Markdown`. Where `show` gives source again, which says
+      nothing about how it was parsed, `inspect` gives the tree in product form, which is what
+      a programmer looks at to see what the parser made of an input: each node by its case
+      name, with its fields separated by `╱`, an absent `Optional` as `○`, and each block
+      with the `Ordinal` line it began on.
+
+      ```scala
+      import soundness.*
+
+      Parser.parse(t"# Title\n").inspect
+      // t"Markdown(linkRefs:[] ╱ children:[Heading(1ˢᵗ ╱ 1 ╱ [Textual(t\"Title\")])])"
+      ```
+  entry .prose   renders a `Markdown of Prose` as HTML phrasing content
+      The `Renderable` given which gives `prose.html` as an `Html of Phrasing`. Text becomes
+      a text node, `Emphasis` an `em`, `Strong` a `strong`, `Code` a `code`, `Link` an `a`
+      with its `href` (and `title`, if it has one), `Image` an `img` with its `src`, `alt`
+      (the plain text of its content) and `title`, `Linebreak` a `br`, `Softbreak` a newline,
+      and `HtmlInline` is passed through as it was written. A link's destination is
+      percent-encoded as the CommonMark specification requires.
+  entry .layout   renders a `Markdown of Layout` as HTML flow content, with code blocks formatted by the `Formattable`s in scope
+      The `Renderable` given which gives `document.html` as an `Html of Flow`. Headings become
+      `h1` to `h6`, paragraphs `p`, block quotes `blockquote`, lists `ul` or `ol` (with a
+      `start` attribute when the list does not start at 1), thematic breaks `hr`, and HTML
+      blocks are passed through. A tight list's items hold their paragraphs' phrasing content
+      directly, without `p` elements; a loose list's keep them, as the specification says.
+
+      A code block is offered to every `Formattable` given visible at the call site (summoned
+      together as an `Every[Formattable]`), in turn, until one accepts its info string; with
+      none, or none that accepts, it becomes `pre` and `code`, with a `language-…` class from
+      the info string's first word. `formattables.scalaFormattable` and
+      `formattables.javaFormattable` (from `harlequin.md`) are the standard ones, and are
+      imported by name.
+
+      ```scala
+      import soundness.*
+      import formattables.scalaFormattable
+
+      Parser.parse(t"```scala\nval x = 1\n```\n").html.show   // highlighted, as spans in a `pre`
+      ```
+  entry .apply   a document from link references and blocks, or an inline run from prose
+      `Markdown(linkRefs, layout*)` builds a `Markdown of Layout` from a list of
+      `Markdown.LinkRef`s and any number of `Layout` blocks; `Markdown(prose*)` builds a
+      `Markdown of Prose` from inline nodes, with no link references. These are the way to
+      construct a tree by hand — for generating Markdown with `show`, or for a transformation
+      which rebuilds a parsed document from its `#children`.
+
+      ```scala
+      import soundness.*
+
+      val document = Markdown(Nil, Layout.Heading(Prim, 1, Prose.Textual(t"Title")))
+      document.show   // t"# Title\n"
+      ```
+  entry .sections   splits a document at its thematic breaks into a list of documents
+      An extension on `Markdown of Layout`. The blocks between one `Layout.ThematicBreak` and
+      the next become a document of their own, without the break; the result has one document
+      per section, each with no link references of its own. A document with no breaks is one
+      section.
+
+      ```scala
+      import soundness.*
+
+      Parser.parse(t"one\n\n---\n\ntwo\n").sections.size   // 2
+      ```
+  entry #Topic   the kind of node this holds: `Layout` for a document, `Prose` for inline content
+      The type member which `Markdown of Layout` and `Markdown of Prose` refine. It is bounded
+      by `Markdown.Node`.
+  entry #Domain   a label type member, unrefined by the parser
+  entry #linkRefs   the link-reference definitions declared in the document
+      The `[label]: destination "title"` definitions the parser collected, already resolved
+      into the links which used them. `show` writes them back at the end of the document; a
+      `Markdown of Prose` has none.
+  entry #children   the nodes, in order: `Layout` blocks for a document, `Prose` for inline content
+
+entry .Layout   the block-level nodes of a document: headings, paragraphs, lists, quotes, code, breaks, HTML
+  detail
+      The enumeration of CommonMark's block structure. A `Markdown of Layout`'s children are
+      `Layout`s, and each case carries the `Ordinal` `#line` of the input it began on, so a
+      tool can report the position of a block it objects to. Where a block holds inline
+      content, it holds it as `Prose` nodes; where it holds other blocks, as `Layout`s.
+
+      - `BlockQuote(line, layout*)` — a `>` quote, holding blocks.
+      - `OrderedList(line, start, tight, delimiter, items*)` — a numbered list: `start` is
+        the first item's number, `tight` whether the items are rendered without paragraph
+        wrappers (a list with no blank line between its items), `delimiter` the `.` or `)`
+        after each number, and each item is a `List[Layout]` of blocks.
+      - `BulletList(line, tight, items*)` — a `-`, `*` or `+` list, with items as above.
+      - `CodeBlock(line, info, content)` — a fenced or indented code block: `info` is the
+        fence's info string cut at whitespace (so ` ```scala ` gives `List(t"scala")`, and an
+        indented block gives `Nil`), and `content` the raw code, with a trailing newline.
+      - `Paragraph(line, prose*)` — a paragraph of inline content.
+      - `Heading(line, level, prose*)` — an ATX or setext heading; `level` is typed as
+        `1 | 2 | 3 | 4 | 5 | 6`.
+      - `ThematicBreak(line)` — a `---`, `***` or `___` rule.
+      - `HtmlBlock(line, html)` — a block of raw HTML, kept as written.
+
+      ```scala
+      import soundness.*
+
+      Parser.parse(t"1. one\n2. two\n").children.head match
+        case Layout.OrderedList(_, start, tight, delimiter, items*) => (start, tight, items.size)   // (1, true, 2)
+        case _                                                      => (0, false, 0)
+      ```
+
+      A `Layout` renders to HTML flow content as part of a `Markdown of Layout` (through
+      `Markdown.layout`); one is inspected, within its document, as its case name and fields.
+  refer punctuation.Markdown
+  refer punctuation.Prose
+  entry #line   the line of the input this block began on, as an `Ordinal`
+      `Prim` for the first line. Lines are counted at `\n` alone, and a `\r` before it is
+      kept as part of the line. Two trees which differ only in their lines are equal, since
+      the `Markdown` which holds them compares children by value.
+  entry #children   the inline content of a paragraph, heading or block quote; `Nil` for other blocks
+      A `Paragraph` or `Heading` gives its own `Prose`; a `BlockQuote` gives the inline
+      content of the blocks it holds, flattened; a list, code block, thematic break or HTML
+      block gives `Nil`, since its content is either blocks or not prose at all.
+
+entry .Prose   the inline nodes of Markdown: text, emphasis, code spans, links, images, line breaks, HTML
+  detail
+      The enumeration of CommonMark's inline structure, which a `Layout.Paragraph` or
+      `Layout.Heading` holds and a `Markdown of Prose` lists. Its cases are:
+
+      - `Textual(text)` — plain text, with escapes and entity references already decoded,
+        so `\*` is `*` and `&amp;` is `&`.
+      - `Softbreak` — a line ending inside a paragraph, which renders as a newline in HTML
+        and as a space in a terminal.
+      - `Linebreak` — a hard break (two trailing spaces or a backslash before the line end),
+        which renders as `br`.
+      - `Code(code)` — a backtick code span.
+      - `Emphasis(prose*)` — `*text*` or `_text_`.
+      - `Strong(prose*)` — `**text**` or `__text__`.
+      - `Link(destination, title, prose*)` — an inline, reference or automatic link, with
+        the reference already resolved to its destination and optional title.
+      - `Image(destination, title, prose*)` — `![alt](src "title")`, whose content is the
+        alternative text.
+      - `HtmlInline(html)` — a raw inline HTML tag, kept as written.
+
+      ```scala
+      import soundness.*
+
+      Parser.parse(t"See [docs](https://example.org \"Docs\").\n").children.head match
+        case Layout.Paragraph(_, _, Prose.Link(destination, title, _*), _*) => (destination, title)
+        case _                                                              => (t"", Unset)
+      // (t"https://example.org", t"Docs")
+      ```
+
+      A run of `Prose` renders to HTML phrasing content as a `Markdown of Prose` (through
+      `Markdown.prose`), and to source with `show`.
+  refer punctuation.Markdown
+  refer punctuation.Layout
+  entry #children   the content of a link or image; `Nil` for every other node
+      Only `Link` and `Image` expose their content here: `Emphasis` and `Strong` hold theirs
+      as their varargs field, matched as `Prose.Emphasis(prose*)`.
+
+entry .Parser   the CommonMark parser: `Parser.parse` from text, a chain, an iterator or a stream
+  detail
+      The entry point to parsing. `Parser.parse` takes a whole `Text`, or input in chunks as
+      a `Chain[Text]`, an `Iterator[Text]`, or a zephyrine `Stream[Text] over Credit` (which
+      additionally needs a `Buffering`), and returns a `Markdown of Layout`. Parsing is
+      total — every text is some document — so nothing is raised, and no `Tactic` is needed.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import dysasymptotics.linearSize
+
+      val document = Parser.parse(t"# Title\n\nSome **bold** text.")
+      Parser.parse(t"# Readme\n\nThe first paragraph.\n\nThe second.".stream).children.size   // 3
+      ```
+
+      The chunked forms consume their input incrementally, line by line, retaining only the
+      tree and each open paragraph's text, so a long document is parsed without being held
+      whole. The result is still a whole tree: a link reference may be defined after the
+      link which uses it, so no block is final until the input ends. The whole CommonMark
+      conformance suite passes through the streaming entry one character per chunk, so a
+      document split anywhere parses as the whole text does. Reading a document straight
+      from a source with `read[Markdown of Layout]` (`Markdown.aggregable`) uses the same
+      streaming parser.
+
+      Lines are split at `\n` alone; a `\r` before it stays in the line. Tabs count as
+      advancing to the next four-column boundary for indentation, as the specification says.
+  refer punctuation.Markdown
+  refer punctuation.Layout
+  entry .parse   parses Markdown to a `Markdown of Layout`, from text or from chunks
+      Four overloads: `parse(text: Text)`, `parse(chain: Chain[Text])`,
+      `parse(iterator: Iterator[Text])` and `parse(stream: Stream[Text] over Credit)(using
+      Buffering)`, the last of which consumes its stream. The text form scans with the
+      JVM's vectorised line search and is fastest for text already in memory; the others
+      read incrementally. All four produce the same tree for the same input.
+
+entry .Formattable   renders a fenced code block to HTML, for the languages it knows
+  detail
+      A typeclass for the HTML renderer's code blocks. When a `Markdown of Layout` is
+      rendered (`Markdown.layout`), every `Formattable` given visible at the call site is
+      collected into an `Every[Formattable]`, and each `Layout.CodeBlock` is offered to them
+      in turn: `#format` gets the block's info string (cut at whitespace) and its content,
+      and returns the HTML to use or `Unset` to decline, in which case the next is asked, and
+      finally the block becomes a plain `pre` and `code`. `Self` is the language's label
+      type, so a given reads as `"scala" is Formattable`.
+
+      The standard instances are in the `formattables` package, contributed by
+      `harlequin.md`: `scalaFormattable` and `javaFormattable` highlight Scala and Java
+      through harlequin's tokenizer, and are imported by name. A `Formattable` for another
+      language is a given of this trait in scope where `html` is called.
+
+      ```scala
+      import soundness.*
+
+      given ("mermaid" is Formattable):
+        def format(language: List[Text], content: Text): Optional[Html of Flow] =
+          if language.head != t"mermaid" then Unset else Pre(`class` = t"mermaid")(content)
+      ```
+
+      The terminal renderer's counterpart is `TeletypeFormattable`, in `punctuation.ansi`.
+  refer punctuation.formattables
+  refer punctuation.TeletypeFormattable
+  entry #Self   the label type of the language this formattable handles
+  entry #format   the HTML for a code block with this info string and content, or `Unset` to decline
+      `language` is the info string cut at whitespace, so a block opened with
+      ` ```scala title ` gives `List(t"scala", t"title")` and an indented block `Nil`;
+      `content` is the code, with its trailing newline. An implementation checks the first
+      word and returns `Unset` for a language it does not handle.
+
+entry .Translator   a strategy for translating `Markdown` nodes to HTML, for a custom renderer
+  detail
+      An interface for a renderer which maps a list of `Markdown` values to HTML flow content
+      (`#translate`) and a run of inline content to phrasing content (`#phrasing`). Nothing in
+      the library calls it: the standard HTML rendering is the `Renderable` givens
+      `Markdown.layout` and `Markdown.prose`, and the trait is a contract a program's own
+      translation can implement to be swapped in by its callers.
+  entry #translate   HTML flow content for a list of `Markdown` values
+  entry #phrasing   HTML phrasing content for a `Markdown of Prose`
+
+entry .formatting   the `Markdown.Formatting` to import by name, for writing Markdown back as source
+  detail
+      The choice package for `show` on a `Markdown`. Its one member restates the default —
+      no wrapping — as a named given, for importing over a bounded formatting an enclosing
+      scope has set. A bounded width is not a package member: it takes a parameter, so it is
+      bound locally as `given Markdown.Formatting = Markdown.Formatting.bounded(80)`.
+  entry .unboundedMarkdownFormatting   paragraphs are written on one line each, however long
+      The same value as `Markdown.Formatting.unbounded`, which is in implicit scope already;
+      this name exists to be imported where a bounded formatting would otherwise be found.
+
+entry .construables   the media-type mapping which makes `text/markdown` responses a `Markdown of Layout`
+  detail
+      A choice package for apoplexy's OpenAPI client, whose generated operations decode a
+      response body by its media type through the `Construable` givens in scope. Importing
+      `markdownConstruable` by name maps `text/markdown` to a document, read through
+      `Markdown.aggregable`.
+  entry .markdownConstruable   `text/markdown` is construed as a `Markdown of Layout`
+
+entry .Renderer   renders a document as styled terminal text: `Renderer.render(markdown, width)`
+  detail
+      The terminal renderer in `punctuation.ansi`, which the `terminal` extension and the
+      `markdownPrintable` given drive. It turns a `Markdown of Layout` into an escapade
+      `Teletype` of a given column width: headings are bold and coloured, with a `━` rule
+      under a level-1 heading, a `─` rule under a level-2 heading, and a subdued `###` prefix
+      for the rest; paragraphs are wrapped at the width, measuring wide characters as two
+      cells and hyphenating long words at line ends through the `Hyphenation` in scope;
+      emphasis is italic and strong is bold; a code span is coloured on a background; a link
+      is underlined, coloured and wrapped in an OSC 8 hyperlink to its destination, as is an
+      image, shown as its alternative text in brackets; a block quote is indented behind a
+      `▎` bar; list items hang off a `•` or their number; a thematic break is a `─` rule of
+      the full width; and a code block is indented two columns, syntax-highlighted by the
+      first `TeletypeFormattable` in scope which accepts its language, or subdued if none
+      does. Blocks are separated by a blank line, and a tight list's items are not.
+
+      ```scala
+      import soundness.*
+      import hyphenations.englishHyphenation
+
+      val document = Parser.parse(t"# Hello\n\nsupercalifragilisticexpialidocious is a word.\n")
+      Renderer.render(document, width = 20).plain   // "Hello" over a rule, the long word broken with a ‐
+      ```
+
+      The colours come from the `MarkdownPalette` in scope, whose companion default suits a
+      true-colour terminal on a light or dark background; a `Hyphenation` is required, and
+      the companion's fallback hyphenates nothing, so `hyphenations.englishHyphenation` is
+      imported for English text; and the `TeletypeFormattable`s are whichever are visible at
+      the call site, `teletypeFormattables.scalaTeletypeFormattable` and
+      `teletypeFormattables.javaTeletypeFormattable` being the standard two.
+  refer punctuation.terminal
+  refer punctuation.markdownPrintable
+  refer punctuation.MarkdownPalette
+  refer punctuation.TeletypeFormattable
+  entry .render   a document as a `Teletype` of the given width, with the palette, hyphenation and formattables in scope
+      `Renderer.render(markdown, width)(using Hyphenation, Every[TeletypeFormattable],
+      MarkdownPalette)`. The width is in terminal columns; a block quote's or list item's
+      content is wrapped to what remains after its bar or marker. The result is a `Teletype`
+      whose `plain` is the text without styling and whose `render(termcap)` is the text with
+      the escapes a terminal understands.
+
+entry .terminal   renders a document for a terminal: `markdown.terminal(width = 80)`
+  detail
+      An extension on `Markdown of Layout` in `punctuation.ansi`, and the usual way to show a
+      document in a console: `Renderer.render` with the width defaulting to 80 columns. It
+      needs a `Hyphenation` (the companion's fallback hyphenates nothing;
+      `hyphenations.englishHyphenation` is imported for English), a `MarkdownPalette`
+      (defaulted by its companion) and the `TeletypeFormattable`s in scope for code blocks.
+
+      ```scala
+      import soundness.*
+      import hyphenations.englishHyphenation
+      import termcapDefinitions.xtermTrueColorTermcap
+
+      val document = Parser.parse(t"See [home](https://example.org/) here.\n")
+      document.terminal(width = 60).render(xtermTrueColorTermcap)   // carries an OSC 8 hyperlink
+      document.terminal().plain                                      // t"See home here."
+      ```
+
+      Printing a document to the terminal directly, with the width read from the terminal's
+      `Termcap`, is `markdownPrintable`'s job.
+  refer punctuation.Renderer
+  refer punctuation.markdownPrintable
+
+entry .markdownPrintable   prints a document to a terminal at the width its `Termcap` reports
+  detail
+      The `Printable` given for `Markdown of Layout` in `punctuation.ansi`, which lets a
+      document be written to a terminal `Out` directly, rendered by `Renderer` at the width
+      of the `Termcap` in scope and converted to ANSI escapes by escapade's `Teletype is
+      Printable`. A termcap which does not know its width (the built-in
+      `termcapDefinitions` report `Int.MaxValue`) renders at 80 columns, rather than drawing
+      rules the width of the integers. It needs the same `Hyphenation`, `MarkdownPalette`
+      and `TeletypeFormattable`s as `terminal`.
+
+      It is a top-level given rather than a companion member because its subject,
+      `Printable`, and its topic are both owned elsewhere, so it is imported by name:
+      `import soundness.markdownPrintable`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import soundness.markdownPrintable
+      import hyphenations.englishHyphenation
+      import termcapDefinitions.xtermTrueColorTermcap
+
+      Out.println(Parser.parse(t"# Title\n\nHello, *world*.\n"))
+      ```
+  refer punctuation.Renderer
+  refer punctuation.terminal
+
+entry .MarkdownPalette   the colours the terminal renderer uses, as a case class with a default
+  detail
+      Seven 24-bit `Chroma` colours, each a field with a default chosen to read on both light
+      and dark backgrounds in a true-colour terminal: `#heading` for heading text and the
+      rules under level-1 and level-2 headings, `#link` for link text, `#code` and `#codeBg`
+      for a code span's foreground and background, `#quoteBar` for the `▎` beside a block
+      quote, `#rule` for a thematic break, and `#subdued` for list markers, heading prefixes,
+      image labels, inline and block HTML and unhighlighted code blocks. The companion's
+      `.default` given is in implicit scope, so `terminal` needs no palette import; another
+      is bound as a local given, usually by copying the default with one field changed.
+
+      ```scala
+      import soundness.*
+      import hyphenations.englishHyphenation
+
+      given MarkdownPalette = MarkdownPalette(heading = Chroma(0xff, 0x80, 0x80))
+      Parser.parse(t"# Red\n").terminal(width = 20)
+      ```
+  refer punctuation.Renderer
+  entry .default   the standard palette, in implicit scope
+  entry #heading   heading text and the rules beneath level-1 and level-2 headings
+  entry #link   link text
+  entry #code   a code span's text
+  entry #codeBg   a code span's background
+  entry #quoteBar   the `▎` bar beside a block quote
+  entry #rule   a thematic break
+  entry #subdued   list markers, heading prefixes, image labels, raw HTML and unhighlighted code
+
+entry .TeletypeFormattable   renders a fenced code block as styled terminal text, for the languages it knows
+  detail
+      The terminal counterpart of `Formattable`. When `Renderer` meets a `Layout.CodeBlock`,
+      every `TeletypeFormattable` given visible at the call site is collected into an
+      `Every[TeletypeFormattable]` and each is offered the block's info string and content
+      in turn; `#format` returns the `Teletype` to show, or `Unset` to decline, and a block
+      no formattable accepts is shown in the palette's subdued colour. `Self` is the
+      language's label type, so a given reads as `"scala" is TeletypeFormattable`.
+
+      The standard instances are `teletypeFormattables.scalaTeletypeFormattable` and
+      `teletypeFormattables.javaTeletypeFormattable`, which highlight through harlequin and
+      need a `ScalaSyntaxPalette` in scope; they are imported by name.
+
+      ```scala
+      import soundness.*
+
+      given ("text" is TeletypeFormattable):
+        def format(language: List[Text], content: Text): Optional[Teletype] =
+          if language.head != t"text" then Unset else e"$Italic($content)"
+      ```
+  refer punctuation.teletypeFormattables
+  refer punctuation.Formattable
+  entry #Self   the label type of the language this formattable handles
+  entry #format   the styled text for a code block with this info string and content, or `Unset` to decline
+      `language` is the fence's info string cut at whitespace (`Nil` for an indented block)
+      and `content` the code with its trailing newline. An implementation checks the first
+      word and declines any other language with `Unset`.
+
+entry .teletypeFormattables   syntax highlighting for `scala` and `java` code blocks in terminal output, to import by name
+  detail
+      The choice package of `TeletypeFormattable` givens for `Renderer` and `terminal`. Each
+      claims one language by the first word of a fence's info string, runs the block through
+      harlequin's tokenizer, and colours the tokens by the `ScalaSyntaxPalette` given in
+      scope — an iridescence `Palette` with a colour for each accent (`scalaKeyword`,
+      `scalaString`, `scalaType`, …) — so a palette must be provided alongside the import.
+      Without any import, code blocks are shown unhighlighted in the subdued colour.
+
+      ```scala
+      import soundness.*
+      import teletypeFormattables.{scalaTeletypeFormattable, javaTeletypeFormattable}
+      import hyphenations.englishHyphenation
+
+      given ScalaSyntaxPalette = new Palette:
+        type Form = Srgb
+        def background: Color in Srgb       = WebColors.Black
+        def foreground: Color in Srgb       = WebColors.White
+        def scalaError: Color in Srgb       = WebColors.Red
+        def scalaNumber: Color in Srgb      = WebColors.Gold
+        def scalaString: Color in Srgb      = WebColors.LimeGreen
+        def scalaTerm: Color in Srgb        = WebColors.Silver
+        def scalaType: Color in Srgb        = WebColors.Turquoise
+        def scalaKeyword: Color in Srgb     = WebColors.Orange
+        def scalaSymbol: Color in Srgb      = WebColors.Gray
+        def scalaParenthesis: Color in Srgb = WebColors.Gray
+        def scalaModifier: Color in Srgb    = WebColors.Orchid
+        def scalaComment: Color in Srgb     = WebColors.DimGray
+        def subdued: Color in Srgb          = WebColors.DimGray
+        def accented: Color in Srgb         = WebColors.White
+        def margin: Color in Srgb           = WebColors.DimGray
+
+      Parser.parse(t"```scala\nval x = 1\n```\n").terminal(width = 60)
+      ```
+
+      No standard `ScalaSyntaxPalette` given ships with the library, so a palette is always
+      the caller's.
+  refer punctuation.TeletypeFormattable
+  refer punctuation.Renderer
+  entry .scalaTeletypeFormattable   highlights a `scala` code block with harlequin, coloured by the `ScalaSyntaxPalette` in scope
+      Accepts a block whose info string begins `scala` and declines any other. Needs a
+      `ScalaSyntaxPalette` given.
+  entry .javaTeletypeFormattable   highlights a `java` code block with harlequin, coloured by the `ScalaSyntaxPalette` in scope
+      Accepts a block whose info string begins `java` and declines any other. Needs a
+      `ScalaSyntaxPalette` given.
+
+entry .formattables   syntax highlighting for `scala` and `java` code blocks in HTML output, to import by name
+  detail
+      The choice package of `Formattable` givens for `html` on a `Markdown of Layout`,
+      contributed to this package by the harlequin library's `harlequin.md` component. Each
+      claims one language by the first word of a fence's info string, tokenizes the block
+      with harlequin, and emits a `div` of class `amok` holding a `pre` of one `span.line`
+      per line, each token a `code` element whose classes name its accent (`keyword`,
+      `string`, `type`, …) and, for a term or type, its role (`binding` or `usage`), so a
+      stylesheet decides the colours. Both are `CommonFormattable`s, harlequin's base for
+      such HTML formattables. Without the import, a code block renders as a plain `pre` and
+      `code` with a `language-scala` class.
+
+      ```scala
+      import soundness.*
+      import formattables.{scalaFormattable, javaFormattable}
+
+      Parser.parse(t"```scala\nval x = 1\n```\n").html.show
+      // <div class="amok"><pre><span class="line"><code class="keyword">val</code> …
+      ```
+  refer punctuation.Formattable
+  entry .scalaFormattable   highlights a `scala` code block as classed `code` elements
+      Accepts a block whose info string begins `scala` and declines any other.
+  entry .javaFormattable   highlights a `java` code block as classed `code` elements
+      Accepts a block whose info string begins `java` and declines any other.
+
+entry .LeafBuilder   a parser-internal builder for a block which holds text: paragraph or code block
+  hidden
+  detail
+      Not for direct use: part of the block parser's working state, which accumulates a
+      leaf block's lines and finishes to a `Layout`. Its `finish` resolves the block against
+      the link references seen so far. `ParagraphBuilder`, `FencedCodeBlockBuilder` and
+      `IndentedCodeBlockBuilder` are its cases.
+
+entry .ContainerBuilder   a parser-internal builder for a block which holds other blocks
+  hidden
+  detail
+      Not for direct use: the block parser's working state for the document, a block quote,
+      a list and a list item. It holds a buffer of finished `children`, `tryContinue` decides
+      whether a line continues the container and strips its prefix, `finish` produces the
+      `Layout`, and `closesOnBlank` says whether a blank line ends it.
+
+entry .DocumentBuilder   the parser-internal root container, open until the end of the input
+  hidden
+  detail
+      Not for direct use. Continues on every line and finishes to nothing: its children are
+      the document.
+
+entry .BlockQuoteBuilder   the parser-internal builder of a `Layout.BlockQuote`
+  hidden
+  detail
+      Not for direct use. Continues on a line beginning with up to three spaces and `>`,
+      stripping the marker and one following space, and finishes to a `Layout.BlockQuote`
+      of its children.
+
+entry .ListItemBuilder   the parser-internal builder of one item of a list
+  hidden
+  detail
+      Not for direct use. Continues on a line indented at least to the item's content
+      column (`indent`), or on a blank line; `hadBlank` records a blank line after which an
+      empty item closes. Its `finish` is a placeholder: the enclosing list builder collects
+      an item's children itself.
+
+entry .BulletListBuilder   the parser-internal builder of a `Layout.BulletList`
+  hidden
+  detail
+      Not for direct use. Collects `items`, each a list of blocks, for a list of one
+      `marker` character (`-`, `*` or `+`); `loose` is set when a blank line separates items
+      and `pendingBlank` while one is being decided. Finishes to a `Layout.BulletList`
+      which is tight unless loose.
+
+entry .OrderedListBuilder   the parser-internal builder of a `Layout.OrderedList`
+  hidden
+  detail
+      Not for direct use. As `BulletListBuilder`, for a numbered list with a `start` number
+      and a `.` or `)` `delimiter`. Finishes to a `Layout.OrderedList`.
+
+entry .ParagraphBuilder   the parser-internal builder of a `Layout.Paragraph` or setext heading
+  hidden
+  detail
+      Not for direct use. Accumulates lines with `addLine`, stripping leading whitespace;
+      `isEmpty` is whether it has none. On `finish` it first extracts any link-reference
+      definitions from the start of its text, adding them to the document's references, and
+      produces a `Layout.Paragraph` of the remaining text — or nothing, if the paragraph was
+      definitions alone. `toHeading(level, refs)` does the same for a setext underline,
+      producing a `Layout.Heading`. The paragraph's text is parsed for inline content later,
+      once the references are complete.
+
+entry .FencedCodeBlockBuilder   the parser-internal builder of a fenced `Layout.CodeBlock`
+  hidden
+  detail
+      Not for direct use. Remembers the fence's character, length and indent, and the info
+      string cut at whitespace, collects lines with `addLine`, and finishes to a
+      `Layout.CodeBlock` whose content is the lines joined with a newline after each.
+
+entry .IndentedCodeBlockBuilder   the parser-internal builder of an indented `Layout.CodeBlock`
+  hidden
+  detail
+      Not for direct use. Collects lines with `addLine`, drops trailing blank lines on
+      `finish`, and produces a `Layout.CodeBlock` with an empty info string.
+
+entry .InlineData   the parser-internal payload of a node in the inline parser's working list
+  hidden
+  detail
+      Not for direct use: a sealed trait of the inline parser's intermediate forms. The
+      inline parser tokenizes a paragraph into a doubly-linked list of `InlineNode`s, each
+      holding an `InlineData` — text, a code span, inline HTML, a break, a link or image, a
+      bracket marker or a delimiter run — then resolves emphasis by the CommonMark
+      delimiter algorithm and converts the list to `Prose`. `TextData`, `CodeData`,
+      `HtmlInlineData`, `SoftbreakData`, `LinebreakData`, `LinkData`, `ImageData`,
+      `EmphasisData`, `StrongData`, `BracketData` and `DelimData` are its cases.
+
+entry .TextData   parser-internal: a run of literal text in the inline list
+  hidden
+  detail
+      Not for direct use; becomes `Prose.Textual`.
+
+entry .CodeData   parser-internal: a code span in the inline list
+  hidden
+  detail
+      Not for direct use; becomes `Prose.Code`.
+
+entry .HtmlInlineData   parser-internal: a raw inline HTML tag in the inline list
+  hidden
+  detail
+      Not for direct use; becomes `Prose.HtmlInline`.
+
+entry .SoftbreakData   parser-internal: a soft line break in the inline list
+  hidden
+  detail
+      Not for direct use; becomes `Prose.Softbreak`.
+
+entry .LinebreakData   parser-internal: a hard line break in the inline list
+  hidden
+  detail
+      Not for direct use; becomes `Prose.Linebreak`.
+
+entry .LinkData   parser-internal: a resolved link, with its destination, title and content nodes
+  hidden
+  detail
+      Not for direct use; becomes `Prose.Link`.
+
+entry .ImageData   parser-internal: a resolved image, with its destination, title and content nodes
+  hidden
+  detail
+      Not for direct use; becomes `Prose.Image`.
+
+entry .EmphasisData   parser-internal: emphasis wrapped around a list of inline nodes
+  hidden
+  detail
+      Not for direct use; inserted by the emphasis algorithm in place of a matched pair of
+      delimiter runs, and becomes `Prose.Emphasis`.
+
+entry .StrongData   parser-internal: strong emphasis wrapped around a list of inline nodes
+  hidden
+  detail
+      Not for direct use; becomes `Prose.Strong`.
+
+entry .BracketData   parser-internal: a `[` or `![` marker awaiting its closing bracket
+  hidden
+  detail
+      Not for direct use. `isImage` is whether the bracket opened an image; once the closing
+      bracket is seen, the marker is replaced by a link or image, left as literal text, or
+      skipped if a containing link deactivated it.
+
+entry .DelimData   parser-internal: a run of `*` or `_` delimiters, with its flanking
+  hidden
+  detail
+      Not for direct use. Holds the delimiter `char`, the run's remaining `length` (reduced
+      as the emphasis algorithm consumes it), and whether the run `canOpen` or `canClose`
+      emphasis by the left- and right-flanking rules.
+
+entry .InlineNode   parser-internal: a node of the inline parser's doubly-linked list
+  hidden
+  detail
+      Not for direct use. Holds mutable `data`, `prev` and `next`, which the emphasis
+      algorithm rewrites in place.
+
+entry .InlineList   parser-internal: the inline parser's doubly-linked list of nodes
+  hidden
+  detail
+      Not for direct use. `first` and `last` are its ends; `append` adds a node holding some
+      `InlineData`, `insertAfter` and `remove` splice the list, and `iterator` walks it
+      from the first node.
+
+entry .BulletMarker   parser-internal: a recognised bullet-list marker on a line
+  hidden
+  detail
+      Not for direct use. The marker `char`, the column at which the item's content begins
+      (`contentIndent`) and the `rest` of the line after the marker.
+
+entry .OrderedMarker   parser-internal: a recognised ordered-list marker on a line
+  hidden
+  detail
+      Not for direct use. The `start` number, the `.` or `)` `delimiter`, the column at
+      which the item's content begins (`contentIndent`) and the `rest` of the line.
+
+entry .EntityMatch   parser-internal: a decoded HTML entity or numeric character reference
+  hidden
+  detail
+      Not for direct use. The `decoded` text and the `end` offset after the reference.
+
+entry .CodeSpanMatch   parser-internal: a recognised backtick code span
+  hidden
+  detail
+      Not for direct use. The span's `content`, with the specification's stripping of one
+      surrounding space applied, and the `end` offset after the closing backticks.
+
+entry .AutolinkMatch   parser-internal: a recognised `<…>` autolink
+  hidden
+  detail
+      Not for direct use. The `Prose.Link` for the URL or email address, and the `end`
+      offset after the closing `>`.

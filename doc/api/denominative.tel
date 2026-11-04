@@ -1,0 +1,911 @@
+tel 1.0
+
+base denominative
+import soundness
+
+info   ordinals, intervals and confined indexes: counting and indexing by proof rather than by integer
+detail
+    _Denominative_ is how Soundness counts and indexes. Its central type is `Ordinal`, a
+    position — first, second, third — which is a different type from `Int` altogether, so an
+    off-by-one error is a type error: there is no zeroth ordinal, the first is `Prim`, then
+    `Sec`, `Ter`, `Quat`, `Quin`, `Sen` and `Sept`, and a number crosses into an ordinal only by
+    saying which convention it came from (`0.z` reads a zero-based index, `1.u` a one-based
+    count; both are `Prim`). A range of ordinals is an `Interval` (`Ter thru Sen`, `Ter till
+    Sen`, `Ter span 3`), and a located range of characters in a source is a `Span`.
+
+    The second idea is the *confined* ordinal, `Ordinal in xs.type`: an ordinal whose type
+    records the collection it has been proved to index. Only a combinator which has already
+    established the bound can mint one — `xs.extent` (the whole range, branded), `ordinal
+    .within(xs)`, `xs.spot(p)`, `xs.prefix(p)`, rudiments' `confine` and `pick` — and reading
+    with one goes through a total `apply` which yields a bare element, where an unproven index
+    yields an `Optional`. A counting loop is therefore written without a counter and without a
+    bounds check on either side:
+
+    ```scala
+    import soundness.*
+
+    val array = Array(10, 20, 30)
+    var total = 0
+    array.extent.each { ordinal => total += array(ordinal) }   // total is 60; array(ordinal) is an Int, not an Optional
+    ```
+
+    The typeclasses which make a value countable and indexable live here: `Countable` (its
+    `size`, and the ordinals derived from it: `gamut`, `extent`, `limit`, `ult`, `pen`, `ant`),
+    `Vacuiscible` (emptiness alone, `nil`, O(1) everywhere), `Applicable` (`contains` and
+    `access` by an index or key, behind rudiments' `apply`, `at`, `defines`, `confine` and
+    `pick`), `Definable` and `Omissible` (the copy-on-write `define` and `omit`), and
+    `Terminable` and `Truncable` (`last` and `lead`). Their instances cover the frozen
+    `Array[e]^{}` and `Data`, `Sequence`, `Text`, `Set`, `Map`, `Ledger`, the stdlib
+    `IndexedSeq` and a few mutable buffers — and, behind an acknowledgement, `List` and `Chain`.
+
+    That acknowledgement is the third idea. An operation is *dysasymptotic* when its cost grows
+    with data outside its subject: `size` is free on a `Sequence` but a traversal on a `List`,
+    `last` on a `List` walks to its end, `at` on a `List` walks from its head, and `size` on a
+    `Chain` forces the whole stream and may never return. Such instances take a plain marker
+    type in a `using` position — `Dysasymptotic.LinearSize`, `LinearAccess`, `UnboundedSize`,
+    `LinearScan` — and a file opts in by importing the matching given from the
+    `dysasymptotics` package *by name* (`import dysasymptotics.linearSize`; a wildcard import
+    does not bring givens into scope), ideally in the block that accepts the cost, with a
+    comment saying why it is acceptable. Every acknowledgement is greppable, and `nil` is
+    never gated. A `.stdlib.length` which dodges the gate hides the cost; open the gate instead.
+
+    ```scala fuel
+    frame
+      label A list's size is a traversal, so it is not simply available
+      code
+          locally:
+            val numbers: List[Int] = List(3, 1, 2)
+            numbers.size   // does not compile
+    frame
+      label Acknowledge the linear cost, by name
+      code
+          locally:
+            import dysasymptotics.linearSize   // the lists here are short
+            val numbers: List[Int] = List(3, 1, 2)
+            numbers.size   // 3
+    frame
+      label Positional access is a different acknowledgement
+      code
+          locally:
+            import dysasymptotics.{linearSize, linearAccess}
+            val numbers: List[Int] = List(3, 1, 2)
+            numbers.size        // 3
+            numbers.at(Ter)     // 2
+            numbers.last        // 2
+    ##
+    ```
+
+    The library is one source set, `denominative.core`, compiled for the JVM, Scala.js and
+    Scala Native, sitting just above vacuous and prepositional and below rudiments: the
+    `Optional`-returning reads (`at`, `apply`, `pick`, `confine`, `head`, `last`) are rudiments'
+    and concordance's extensions over these typeclasses. Everything is exported to the
+    `soundness` umbrella, where the `dysasymptotics` and `ordinalTextualizables` choice
+    packages merge with the umbrella's own; `thru`, `till` and `tabulate` are re-declared
+    there (and `each` in rudiments' umbrella file) rather than exported, since an export
+    forwards only one overload of an extension and both the plain and the confined overload
+    must be reachable. A file which
+    imports `denominative.*` directly must not also import `rudiments.*` wholesale for the
+    same names.
+
+refer denominative.Ordinal
+refer denominative.Interval
+refer denominative.Countable
+refer denominative.Applicable
+refer denominative.dysasymptotics
+
+entry .Prim   the first ordinal
+    `Ordinal.zerary(0)`, also `0.z` and `1.u`. From "primary". The seven named ordinals are
+    `Prim`, `Sec`, `Ter`, `Quat`, `Quin`, `Sen` and `Sept`; beyond them an ordinal is written
+    `7.z` (the eighth) or `8.u`. They are stable values, not inline definitions, so they may be
+    used as patterns: `case Prim => …`.
+
+entry .Sec   the second ordinal, `1.z`
+entry .Ter   the third ordinal, `2.z`
+entry .Quat   the fourth ordinal, `3.z`
+entry .Quin   the fifth ordinal, `4.z`
+entry .Sen   the sixth ordinal, `5.z`
+entry .Sept   the seventh ordinal, `6.z`
+    The last of the named ordinals; the eighth is `7.z`. Note that `7.z` is the *eighth*
+    position (index 7), while `Sept` is the seventh (index 6).
+
+entry .z   `n.z`: the ordinal at zero-based index `n`, so `0.z` is `Prim`
+    An inline extension on `Int`, recording that the number came from a zero-based convention
+    — a wire protocol, a JVM array index — at the point it enters. `n.z.n0` is `n` again.
+
+entry .u   `n.u`: the ordinal at one-based count `n`, so `1.u` is `Prim`
+    The counterpart of `z` for a one-based convention — a specification's "the 3rd field", a
+    line number. `n.u.n1` is `n` again.
+
+entry .nil   `xs.nil`: whether a value is empty, in O(1) for every shape
+    Over `Vacuiscible`, which every `Countable` extends: `List`, `Chain`, `Set`, `Map`, `Text`,
+    the frozen array, `Option`, a `StringBuilder`, … Never gated: a `List`'s emptiness is one
+    pointer test, so `list.nil` needs no acknowledgement where `list.size` does, and
+    `!xs.nil` is the idiom the standard library's `nonEmpty` becomes.
+
+entry .size   `xs.size`: the number of elements of any `Countable` value
+    O(1) on `Sequence`, `Set`, `Map`, `Ledger`, `Text`, the frozen array and the stdlib
+    `IndexedSeq`; on a `List` it is a traversal and resolves only under `import
+    dysasymptotics.linearSize`, and on a `Chain` it forces the whole stream and resolves only
+    under `unboundedSize`. An `Int` counts itself (`5.size` is `5`), and an `Option` has size
+    zero or one.
+
+entry .gamut   `xs.gamut`: the whole range of a countable value as an `Interval`, from `Prim`
+    `Interval.initial(xs.size)`: the ordinals `Prim` up to but excluding `xs.limit`. An
+    unbranded interval; `extent` is the same range confined to the value, which is what a loop
+    wants. Gated as `size` is on a `List` or `Chain`.
+
+entry .extent   `xs.extent`: the whole range of a value as an interval confined to it, `Interval in xs.type`
+    The branded `gamut`. Iterating it (`xs.extent.each`, `xs.extent.tabulate`, `xs.extent.all`)
+    hands the lambda ordinals typed `Ordinal in xs.type`, and `xs(ordinal)` on such an ordinal
+    is total: a bare element, no bounds check, no `Optional`. `capped(n)`, `beyond(n)`, and
+    `start thru end` from two confined ordinals narrow it without losing the brand. Sound for
+    an immutable receiver on a stable path (a `val`); a mutable countable which shrinks after
+    the brand is minted invalidates it, and a receiver which is an expression rather than a
+    `val` has no stable path to brand.
+
+    ```scala
+    import soundness.*
+
+    val text = t"hello"
+    var count = 0
+
+    text.extent.each: ordinal =>
+      val char: Char = text(ordinal)   // total: the ordinal is confined to `text`
+      if char == 'l' then count += 1
+    ```
+
+entry .iterate   `xs.iterate { i => … }`: visits every confined ordinal of a value, or of a confined sub-interval
+    The older spelling of `xs.extent.each`, branding through the receiver rather than the
+    interval; equivalent, and `xs.iterate(range)` takes an `Interval in xs.type` (from
+    `extent.capped`, `prefix`, `thru`) to visit part of it. The lambda's ordinal is `Ordinal
+    in xs.type`, so `xs(i)` inside is total. Compiles to a tight integer loop.
+
+entry .tabulate   `xs.tabulate { i => … }` or `range.tabulate { i => … }`: one element per ordinal, as a `Sequence`
+    The collecting counterpart of `iterate` and `each`: builds a `Sequence` with one element
+    per position, in order, with the lambda's ordinal confined to the value (or to the
+    branded interval's value) so reads inside are bare. `array.tabulate { i => array(i) +
+    i.n0 }` on `Array(10, 20, 30)` is `Sequence(10, 21, 32)`; `Interval.initial(3).tabulate
+    (_.n1)` is `Sequence(1, 2, 3)`. Replaces `zipWithIndex` (a raw `Int`) and a mutable
+    builder. Three overloads: over a `Countable`, over a plain `Interval`, and over an
+    `Interval in form`.
+
+entry .spot   `xs.spot(p)`: the first confined ordinal satisfying a predicate, or `Unset`
+    The safe form of a guarded forward scan whose caller consumes the stopping index: the
+    predicate sees `Ordinal in xs.type` and the result is `Optional[Ordinal in xs.type]`, so a
+    read inside `let` is total. `xs.spot(after)(p)` resumes the scan from the limit of an
+    already-scanned branded interval — the second phase of a two-phase scan. An `Ordinal in
+    xs.type` stored from `spot(…).or(…)` keeps its brand, so `xs(index)` remains total.
+
+entry .prefix   `xs.prefix(p)`: the longest leading run of indexes satisfying a predicate, as a confined interval
+    The result's `limit` is the stopping index, so `xs.prefix(p)` replaces `while i < size &&
+    p(i) do i += 1` loops whose callers then slice or resume from `i`. The two-argument form
+    `xs.prefix(after)(p)` *extends* `after` by the next run — cumulative, so that an empty run
+    cannot lose its anchor (every empty `Interval` normalises to position zero) and the limit
+    is always the resume point. A multi-stage scan reads as consecutive stages:
+
+    ```scala
+    import soundness.*
+
+    val text = t"  42;"
+    val spaces = text.prefix(text(_) == ' ')               // Interval in text.type: positions 0 and 1
+    val digits = text.prefix(spaces)(text(_).isDigit)     // positions 0 to 3, cumulatively
+    digits.limit.n0                                        // 4: where the terminator starts
+    ```
+
+    Named `prefix` rather than `lead`, which is the complement of `last`.
+
+entry .pare   `xs.pare(floor)(p)`: the interval left after trimming a trailing run, never below `floor` elements
+    The trailing-trim shape: `while count > 1 && xs(count - 1) == 0 do count -= 1` becomes
+    `xs.pare(1)(xs(_) == 0)`, a confined `Interval in xs.type` from `Prim` to the trimmed
+    length.
+
+entry .retrace   `xs.retrace { i => … }`: `iterate` in reverse, from the last confined ordinal down to the first
+
+entry .each   `interval.each { i => … }`: visits every ordinal of an interval, in order
+    Two overloads: over a plain `Interval`, the lambda receives a plain `Ordinal`; over a
+    confined `Interval in form` (from `extent`, `capped`, `beyond`, `prefix`, or `thru`/`till`
+    on confined endpoints) it receives `Ordinal in form`, so a read inside is total and returns
+    a bare element. This is the combinator which replaces `var i = 0; while i < xs.length do
+    … i += 1`, and it compiles to the same tight loop. A same-named `each` on an unrelated type,
+    reached through a companion the file imports, can outrank the confined overload and
+    silently strip the brand — the read becomes `Optional` again with no error — which is why
+    that name is kept off other receivers.
+
+entry .all   `interval.all(p)`: whether every ordinal satisfies the predicate, stopping at the first that does not
+    With the same two overloads as `each`, so `xs.extent.all { i => xs(i) == ys.readUnchecked
+    (i.n0) }` reads totally. The replacement for `xs.stdlib.indices.forall`.
+
+entry .thru   `start thru end`: the interval from one ordinal to another, end inclusive
+    `Ter thru Sen` is `Ter, Quat, Quin, Sen`. Two ordinals confined to the same value bound an
+    interval confined to it — every ordinal between two valid indexes is itself valid — which
+    is the only way to build a confined interval that does not start at `Prim`. Both overloads
+    are package-level, so that neither outranks the other through the opaque type's implicit
+    scope.
+
+entry .till   `start till end`: the interval from one ordinal to another, end exclusive
+    `Ter till Sen` is `Ter, Quat, Quin`; `Sec till Sec` is empty. Confined endpoints give a
+    confined interval, as with `thru`.
+
+entry .capped   `range.capped(n)`: at most the first `n` ordinals of a confined interval, brand preserved
+    A sub-interval of a valid extent is itself valid, so clamping keeps the proof:
+    `array.extent.capped(2).each { i => … array(i) … }` reads the first two positions totally.
+    A negative `n` is treated as zero.
+
+entry .beyond   `range.beyond(n)`: a confined interval without its first `n` ordinals, brand preserved
+    The complement of `capped`; together they bound a window at both ends without an
+    `Optional` in the way. Named `beyond` because `skip`, `keep` and `after` are rudiments'
+    segment vocabulary and a top-level name in the umbrella may be owned by one module only.
+
+entry .limit   `xs.limit`: the exclusive upper bound of a countable value, the ordinal one past its last element
+    `xs.size.z`. Gated as `size` is on a `List` or `Chain`. Not confined: it is not a valid
+    index, though it is a safe place for a scan to *start*.
+
+entry .ult   `xs.ult`: the ordinal of the last ("ultimate") element, confined to the value, or `Unset`
+    `Optional[Ordinal in xs.type]`, so `xs.ult.let(xs(_))` reads the last element totally. On a
+    receiver typed `& Populated` (a `List(a, b)` literal, an `occupied` result) it adapts and
+    returns the bare `Ordinal in xs.type`, so `xs(xs.ult)` needs no `let`. An ordinal rather
+    than an element: the element is rudiments' `last`. Gated as `size` is on a `List` or
+    `Chain`.
+
+entry .pen   `xs.pen`: the ordinal of the penultimate element, confined, or `Unset` if there are fewer than two
+
+entry .ant   `xs.ant`: the ordinal of the antepenultimate element, confined, or `Unset` if there are fewer than three
+
+entry .coextent   `xs.coextent(ys)`: a `Coextent` token if the two values have the same size, else `Unset`
+    One brand cannot serve two receivers — `Ordinal in xs.type & Ordinal in ys.type` is not a
+    subtype of either — so a parallel read goes through the token instead, which carries the
+    one size check and transfers an ordinal between the brands: `shared(i)` turns an `Ordinal
+    in xs.type` into an `Ordinal in ys.type`, and `shared.each { (i, j) => … }` iterates with
+    an index proven against both.
+
+    ```scala
+    import soundness.*
+
+    val left = Array(1, 2, 3)
+    val right = Array(10, 20, 30)
+    var total = 0
+
+    left.coextent(right).let: shared =>
+      shared.each { (i, j) => total += left(i)*right(j) }   // both reads total; total is 140
+    ```
+
+entry .aka   `value.aka["label"]`: a value tagged with a label type, for named contextual parameters
+    The infix type `subject aka "label"` and the extension which makes one. A lambda written
+    `(state aka "state", next aka "next") ?=> …` receives its arguments as contextual values
+    which the names `state` and `next` select, which is how `Interval#fuse` and rudiments'
+    `fuse` and `each` offer `state`, `next` and `ordinal` without a parameter list. Unwrapped
+    with `()`.
+
+entry .Ordinal   a position — first, second, third — as a type distinct from `Int`, with no zeroth
+    `Ordinal` is the opaque type `denominative.internal.Ordinal`, exported here, represented
+    as the zero-based `Int` it stands for but never interchangeable with one. An `Int` becomes
+    an ordinal only by naming its convention — `n.z` for a zero-based index, `n.u` for a
+    one-based count, or `Ordinal.zerary(n)` and `Ordinal.uniary(n)` — and an ordinal becomes
+    an `Int` again only through `n0` or `n1`, so the convention is written at both crossings
+    and an off-by-one error has nowhere to hide. The first seven are named: `Prim`, `Sec`,
+    `Ter`, `Quat`, `Quin`, `Sen` and `Sept`.
+
+    ```scala
+    import soundness.*
+
+    val third: Ordinal = Ter
+    third.n0               // 2
+    third.n1               // 3
+    third + 2              // Quin
+    Quin - Ter             // 2: the distance between two ordinals is an Int
+    third.next             // Quat
+    (Ter thru Quin).size   // 3
+    ```
+
+    Arithmetic is through symbolism's `+` and `-`: adding or subtracting an `Int` gives an
+    `Ordinal`, subtracting one ordinal from another gives the `Int` distance, and ordinals
+    compare with `<`, `<=` and the rest through `Comparable` (or, with no typeclass in the
+    way, the inline `le`, `lt`, `ge` and `gt`). All of these live in the opaque type's own
+    implicit scope, so they need no import.
+
+    A *confined* ordinal, `Ordinal in xs.type`, is an `Ordinal` whose type records that it
+    has been proved to index `xs`: `extent`, `spot`, `prefix`, `ult`, `within` and rudiments'
+    `confine` mint them, and reading `xs` at one is total. Arithmetic on a confined ordinal
+    is allowed (its branded `+` and `-` are in the companion too), but the result is a plain
+    `Ordinal`, since it may have left the proven range; `within` re-confines it.
+
+    An ordinal renders as text only through a `Textualizable` chosen by name from the
+    `ordinalTextualizables` package, since no one rendering — `3rd`, `ter`, `2♯` — is right
+    everywhere.
+
+entry .Interval   a contiguous range of ordinals, from a start ordinal for a number of positions
+    `Interval` is the opaque type `denominative.internal.Interval`, exported here: a start
+    `Ordinal` and a size packed into one `Long`, so an interval costs no allocation. It is
+    written `Ter thru Sen` (end inclusive), `Ter till Sen` (end exclusive) or `Ter span 3` (a
+    start and a size), or built from integers with `Interval.zerary(start, end)`,
+    `Interval.sized(start, count)` and `Interval.initial(size)`. An empty interval normalises
+    to position zero with size zero, whatever start it was asked for.
+
+    ```scala
+    import soundness.*
+
+    val range: Interval = Ter thru Sen
+    range.start            // Ter
+    range.end              // Sen
+    range.limit            // Sept: one past the end
+    range.size             // 4
+    range.contains(Quin)   // true
+    var total = 0
+    range.each { ordinal => total += ordinal.n1 }   // total is 18
+    ```
+
+    An interval may be *confined*, `Interval in xs.type`, when every ordinal in it is a valid
+    index of `xs`: `xs.extent`, `xs.prefix(…)`, `xs.pare(…)(…)`, `capped`, `beyond`, and
+    `thru` or `till` between two confined ordinals produce one. Iterating a confined interval
+    with `each`, `all` or `tabulate` hands the lambda confined ordinals, so every read inside
+    is total. The plain `xs.gamut` is the same range without the brand.
+
+entry .Span   a located range of characters in a source — an offset, a line, lines or an area — in one `Long`
+    `Span` is the opaque type `denominative.internal.Span`, exported here: a position in a
+    source text, packed into a single `Long` tagged by a `Span.Mode` in its top three bits, so
+    that a parser can record a position on every node it builds at no allocation cost. The
+    five modes are `Empty` (no position: `Span.empty`, all zero, so an absent span needs no
+    `Optional`), `Offset` (a character offset and a length, for sources without lines), `Line`
+    (a line, a column and a length within that line), `Lines` (whole lines) and `Area` (a
+    start line and column to an end line and column).
+
+    ```scala
+    import soundness.*
+
+    val span: Span = Span.line(3.z, 7.z, 4)
+    span.mode          // Span.Mode.Line
+    span.startLine     // 3.z
+    span.endColumn     // 11.z
+    span.length        // 4
+    span.offset        // Unset: a line-mode span carries no offset
+    ```
+
+    Every accessor which a mode does not carry returns `Unset`. Lines, columns and offsets are
+    zero-based ordinals; the field widths limit an `Offset` span to offsets below 2³¹, a `Line`
+    span to 2²³ lines and 2¹⁹ columns, and an `Area` to 2²² lines, 2¹⁴ columns and 2¹¹ lines of
+    extent. The XML, TEL, YAML and source-code parsers record their nodes' positions as spans.
+
+entry .Coextent   evidence that two values have the same size, transferring a confined ordinal between them
+    `Coextent[form1, form2]` is the opaque type `denominative.internal.Coextent`, exported
+    here, and represented by the shared size. It is minted only by `xs.coextent(ys)`, which
+    makes the one size check and returns `Unset` when the sizes differ. A confined ordinal can
+    carry the brand of one value only — `Ordinal in xs.type & Ordinal in ys.type` is not a
+    subtype of either — so a parallel read of two values goes through the token: applying it
+    to an `Ordinal in xs.type` gives an `Ordinal in ys.type`, `invert` gives the token the
+    other way round, and its `each` iterates the shared extent with an ordinal proven against
+    each value.
+
+    ```scala
+    import soundness.*
+
+    val left = Array(1, 2, 3)
+    val right = Array(10, 20, 30)
+    var total = 0
+
+    left.coextent(right).let: shared =>
+      left.extent.each { i => total += left(i)*right(shared(i)) }   // total is 140
+    ```
+
+entry .internal   the opaque representations of `Ordinal`, `Interval`, `Span` and `Coextent`, and their operations
+  detail
+      The object which defines the four opaque types, so that their representations — `Int`,
+      `Long`, `Long` and `Int` — are visible only here. The types are exported to the
+      `denominative` package, and their operations are extension methods in this object,
+      which is part of each opaque type's implicit scope: a user never names `internal`, and
+      `ordinal.n0`, `interval.size` or `span.mode` resolve with no import.
+
+      Branded extensions (taking `Ordinal in form` or `Interval in form`) are deliberately
+      *not* here: inside this object an opaque type is its representation, so a refinement of
+      it would collapse. `thru`, `till`, `capped`, `beyond`, `each`, `all` and `tabulate` are
+      package-level in `denominative` for that reason.
+  refer denominative.Ordinal
+  refer denominative.Interval
+  refer denominative.Span
+  refer denominative.Coextent
+  entry .Ordinal   the opaque ordinal, represented by its zero-based index
+    detail
+        The type which `denominative.Ordinal` exports, with its companion: the integer
+        constructors and the arithmetic and ordering instances, all in implicit scope.
+    entry .zerary   `Ordinal.zerary(n)`: the ordinal at zero-based index `n`, as `n.z` writes it
+    entry .uniary   `Ordinal.uniary(n)`: the ordinal at one-based count `n`, as `n.u` writes it
+    entry .addable   `ordinal + n`: an `Ordinal` moved forward by an `Int` number of positions
+    entry .subtractable   `ordinal - other`: the `Int` distance from one ordinal to another
+    entry .subtractable2   `ordinal - n`: an `Ordinal` moved back by an `Int` number of positions
+        The result is not clamped: `Prim - 1` is an ordinal before the first, which no
+        collection will accept as an index. `previous` clamps at `Prim` instead.
+    entry .comparable   ordinals compare by position, as their zero-based indexes do
+        Makes `<`, `<=`, `>`, `>=`, `max`, `min` and sorting available for ordinals.
+    entry .brandedAddable   `ordinal + n` on a confined `Ordinal in form`, giving a plain `Ordinal`
+        A typeclass's `Self` is exact, so the unbranded `.addable` is not found for a confined
+        receiver; this twin is, and it drops the brand, since arithmetic may leave the proven
+        range. Re-confine the result with `within`.
+    entry .brandedSubtractable   `ordinal - other` between confined ordinals, giving the `Int` distance
+    entry .brandedSubtractable2   `ordinal - n` on a confined `Ordinal in form`, giving a plain `Ordinal`
+  entry .Interval   the opaque interval, a start and a size packed into a `Long`
+    detail
+        The type which `denominative.Interval` exports, with its companion of constructors.
+    entry .sized   `Interval.sized(start, count)`: `count` positions from zero-based `start`; empty if `count` ≤ 0
+    entry .initial   `Interval.initial(size)`: the first `size` positions, `Prim` onwards
+        The range of every valid index of a value of that size, which is how `gamut` is built.
+    entry .apply   `Interval(start, end)` from two ordinals, end inclusive; `Interval()` is empty
+    entry .zerary   `Interval.zerary(start, end)`: from zero-based `start` to zero-based `end`, end exclusive
+  entry .Span   the opaque source span, a mode and its fields packed into a `Long`
+    detail
+        The type which `denominative.Span` exports, with its companion of constructors. Each
+        constructor masks its fields to their widths, so an out-of-range line or column is
+        truncated rather than rejected.
+    entry .Mode   which fields a `Span` carries: `Empty`, `Offset`, `Line`, `Lines` or `Area`
+        An enum, comparable with `==`. `Empty` is absence; `Offset` is a character offset and
+        a length; `Line` a line, a column and a length; `Lines` a start line and a line count;
+        `Area` a start line and column and an end line and column.
+    entry .equality   `CanEqual[Span, Span]`, so two spans compare with `==`
+    entry .empty   the span which records no position, all bits zero
+    entry .offset   `Span.offset(start, length)`: `length` characters from offset `start`, for a source without lines
+    entry .line   `Span.line(line, column, length)`: `length` characters within one line
+    entry .lines   `Span.lines(startLine, lineCount)`: a run of whole lines
+    entry .area   `Span.area(startLine, startColumn, endLine, endColumn)`: a region across lines
+        The end line is stored as a delta from the start, so an end line before the start
+        is treated as the start line.
+  entry .Coextent   the opaque same-size token, represented by the shared size
+    detail
+        The type which `denominative.Coextent` exports. Its operations are extensions in its
+        companion rather than at package level, because `each` and `size` are already
+        package-level names in `denominative`.
+    entry .apply   `shared(ordinal)`: an `Ordinal in form1` transferred to an `Ordinal in form2`
+    entry .invert   the same token with its two brands swapped, to transfer the other way
+    entry .size   the size the two values share
+    entry .each   `shared.each { (i, j) => … }`: every shared position, proven against both values
+        A tight integer loop; the lambda receives the same position typed once for each
+        value, so `left(i)` and `right(j)` are both total.
+  entry .span   `start span size`: the interval of `size` positions beginning at `start`
+      `Ter span 3` is `Ter thru Quin`. Infix.
+  entry .le   whether this ordinal is at or before another, without a typeclass
+  entry .lt   whether this ordinal is strictly before another, without a typeclass
+  entry .ge   whether this ordinal is at or after another, without a typeclass
+  entry .gt   whether this ordinal is strictly after another, without a typeclass
+      The four comparisons are inline extensions which compile to a single integer
+      comparison, and which work on a confined ordinal as well as a plain one.
+  entry .next   the ordinal after this one; on an interval, the ordinal after its end (its `limit`)
+  entry .previous   the ordinal before this one, clamped at `Prim`; on an interval, the one before its start
+  entry .n0   the ordinal as a zero-based `Int` index: `Prim.n0` is `0`
+      The crossing back to integers for an API which counts from zero — a JVM array, a
+      `String` offset, a wire format. `n.z.n0 == n`.
+  entry .n1   the ordinal as a one-based `Int` count: `Prim.n1` is `1`
+      The crossing back to integers for a human-facing number — a line number, "the 3rd
+      field". `n.u.n1 == n`.
+  entry .subsequent   the interval of `size` positions immediately after an ordinal, or after an interval's end
+      `Prim.subsequent(3)` is `Sec thru Quat`.
+  entry .preceding   the interval of up to `size` positions immediately before an ordinal or an interval
+      Clamped at `Prim`: `Sec.preceding(5)` is just `Prim`.
+  entry .within   `ordinal.within(xs)`: the ordinal confined to `xs` if it indexes it, else `Unset`
+      The one bounds check that turns a plain `Ordinal` into an `Ordinal in xs.type`, after
+      which reads of `xs` at it are total. `xs` needs a `Countable` instance and a stable path
+      (a `val`). On a confined ordinal it re-confines to another value.
+
+      ```scala
+      import soundness.*
+
+      val array = Array(10, 20, 30)
+      Sec.within(array).let(array(_))    // 20
+      Sept.within(array).let(array(_))   // Unset
+      ```
+  entry .start   the first ordinal of an interval
+  entry .size   the number of ordinals in an interval
+  entry .end   the last ordinal of an interval, inclusive
+      For an empty interval this is the ordinal before `Prim`; test `nil` first.
+  entry .limit   the ordinal one past an interval's end, exclusive
+  entry .contains   whether an ordinal lies within an interval
+  entry .fuse   `interval.fuse(initial)(…)`: a fold over an interval with `state` and `next` as contextual names
+      The lambda is a context function of `state` (the accumulated value) and `next` (the
+      current ordinal), each tagged with `aka` so that the names select them without a
+      parameter list: `(Sec span 3).fuse(0)(state + next.n0)` is `1 + 2 + 3`, which is `6`.
+  entry .nil   whether an interval is empty
+  entry .bits   a span's raw `Long` encoding, for storing or transmitting it
+  entry .vacant   whether a span is `Span.empty`, recording no position
+  entry .exists   whether a span records a position of any mode
+  entry .mode   which of the five `Span.Mode`s a span is in
+  entry .startLine   the zero-based line a span starts on, or `Unset` for an `Offset` or `Empty` span
+  entry .startColumn   the zero-based column a span starts at, or `Unset` unless it is a `Line` or `Area` span
+  entry .endLine   the zero-based line a span ends on, inclusive, or `Unset` for an `Offset` or `Empty` span
+  entry .endColumn   the column a span ends at, or `Unset` unless it is a `Line` or `Area` span
+      For a `Line` span it is the start column plus the length, so the column just after the
+      last character.
+  entry .length   a span's length in characters, or `Unset` unless it is an `Offset` or `Line` span
+  entry .offset   a span's zero-based character offset, or `Unset` unless it is an `Offset` span
+  entry .lineCount   how many lines a span covers, or `Unset` for an `Offset` or `Empty` span
+  entry .singleLine   whether a span lies on one line: a `Line` span, or an `Area` within one line
+
+entry .protointernal   the opaque `Tagged` type behind `aka`
+  hidden
+  detail
+      Not for direct use: `subject aka label` is an alias of `Tagged[subject, label]`, and a
+      tagged value is made with `value.aka["label"]` and unwrapped with `()`.
+  entry .Tagged   a value tagged at the type level with a label, the representation of `aka`
+    detail
+        An opaque alias of the value's own type, so tagging costs nothing at runtime.
+    entry .apply   wraps a value as a `Tagged` with the given label; what `aka` calls
+  entry .apply   `tagged()`: the value inside a `Tagged`, with its own purity restored
+
+entry .Zerary   a pattern which matches an `Int` and binds it as a zero-based `Ordinal`
+  detail
+      `case Zerary(ordinal) =>` matches any `Int` and binds `ordinal` as `int.z`, which is how
+      a match on an integer result — an index returned by a search, for instance — crosses into
+      ordinals at the pattern rather than in the case body. The match always succeeds, so it
+      is most useful as one case beside `Unset` in a match on an `Optional[Int]`.
+
+      ```scala
+      import soundness.*
+
+      val found: Optional[Int] = 4
+      found.asMatchable match
+        case Zerary(position) => position.n1   // 5
+        case _                => 0
+      ```
+  entry .Match   the always-succeeding, allocation-free result of `Zerary.unapply`
+    detail
+        A value class, so a successful match allocates nothing.
+    entry #int   the matched integer
+    entry #isEmpty   always `false`: the match never fails
+    entry #get   the matched integer as a zero-based `Ordinal`
+  entry .unapply   matches an `Int`, yielding it as a zero-based `Ordinal`
+
+entry .Dysasymptotic   the marker types which gate an operation whose cost grows with data outside its subject
+  detail
+      An operation on a data structure is *dysasymptotic* when its cost grows (more than
+      logarithmically) with data that is not its subject — the size of the containing
+      structure, or the distance of the subject from the point of access — while the subject
+      itself stays bounded. `size` on a `List` (the subject is one number, the cost is the
+      whole list), `at(n)` on a `List` (one element, a walk of `n`), `size` on a `Chain` (one
+      number, a stream forced to its end) are dysasymptotic; `fold` over a `List` is not, since
+      its cost tracks its subject, however large. It is a property of the operation on a
+      *representation*: `size` is free on a `Sequence`.
+
+      So such an operation's typeclass instance takes one of these marker types as a `using`
+      parameter, and a program opts in by importing the matching given from the
+      `dysasymptotics` package by name. They are plain markers, not capabilities: they carry
+      no authority and constrain nothing but resolution, so every acknowledgement of a hidden
+      cost is a greppable import, ideally block-scoped and commented.
+
+      ```scala
+      import soundness.*
+
+      def summary(names: List[Text]): Text =
+        import dysasymptotics.linearSize   // a short list of names
+        t"${names.size} names"
+      ```
+  refer denominative.dysasymptotics
+  entry .LinearSize   the cost of a strict linked structure's length, or a whole rebuild for a bounded change
+      Gates `size` on a `List` and everything derived from it (`gamut`, `limit`, `ult`, `pen`,
+      `ant`, `extent`, `iterate`, `retrace`), `last` and `lead` on a `List`, and the
+      copy-on-write edits of a frozen array (`define`, `omit`, `lead`, and appending or
+      prepending an element), each of which copies the whole array. Enabled by
+      `dysasymptotics.linearSize`.
+  entry .LinearAccess   the cost of reaching a position in a strict linked structure by walking from its head
+      Gates positional reads of a `List` (`at`, `apply` and `confine` with an ordinal) and
+      `define` on a `List`, which rebuilds its prefix. The head is free: reading it is a
+      bounded walk. Enabled by `dysasymptotics.linearAccess`.
+  entry .UnboundedSize   the cost of forcing a lazy structure to its end, which never returns on an infinite one
+      Gates `size`, `last` and `lead` on a `Chain`. Enabled by `dysasymptotics.unboundedSize`.
+      Emptiness (`nil`) forces only the first cell and is never gated.
+  entry .LinearScan   the cost of finding a subject by scanning a structure which keeps no index for it
+      For instance the predecessors of a node in a graph which stores only successors: linear
+      in the whole graph however few predecessors there are. Enabled by
+      `dysasymptotics.linearScan`.
+
+entry .dysasymptotics   the four acknowledgements of a hidden cost, each a given to import by name
+  detail
+      Importing one of these givens opens every operation gated on its `Dysasymptotic` marker
+      within the import's scope. They must be imported by name — `import
+      dysasymptotics.linearSize` — because a wildcard `import dysasymptotics.*` does not bring
+      givens into scope. The package merges with the umbrella's own, so `import soundness.*`
+      followed by the named import is all that is needed. Scope the import to the block that
+      accepts the cost, with a comment saying why it is acceptable; and do not dodge a gate
+      with `.stdlib.length` or the like, which hides the same cost where no one can find it.
+
+      ```scala fuel
+      frame
+        label Ungated: emptiness is O(1) on every shape
+        code
+            locally:
+              val numbers: List[Int] = List(3, 1, 2)
+              numbers.nil   // false
+      frame
+        label Gated: the size of a list is a traversal
+        code
+            locally:
+              val numbers: List[Int] = List(3, 1, 2)
+              numbers.size   // does not compile
+      frame
+        label Acknowledged in the block that pays for it
+        code
+            locally:
+              import dysasymptotics.linearSize   // three elements
+              val numbers: List[Int] = List(3, 1, 2)
+              numbers.size   // 3
+      ##
+      ```
+  refer denominative.Dysasymptotic
+  entry .linearSize   opens `size` and the size-derived operations on a `List`, and copying edits of a frozen array
+  entry .linearAccess   opens positional access into a `List`: `at`, an ordinal `apply`, and `define`
+  entry .unboundedSize   opens `size`, `last` and `lead` on a `Chain`, which never return on an infinite one
+  entry .linearScan   opens operations which find their subject by scanning an unindexed structure
+
+entry .ordinalTextualizables   the renderings of an `Ordinal` as text, each a given to import by name
+  detail
+      An `Ordinal` has no rendering in implicit scope, because none is right everywhere: a
+      user-facing message wants `3rd`, a debugging trace wants both indexes, a protocol wants
+      a bare number. Import exactly one of these givens by name — `import
+      ordinalTextualizables.englishOrdinal` — and `ordinal.textual` uses it; a wildcard import does not
+      bring givens into scope.
+
+      ```scala fuel
+      frame
+        label English
+        code
+            locally:
+              import ordinalTextualizables.englishOrdinal
+              Ter.textual   // t"3rd"
+      frame
+        label By name
+        code
+            locally:
+              import ordinalTextualizables.nominalOrdinal
+              Ter.textual   // t"ter"
+      frame
+        label As a zero-based index
+        code
+            locally:
+              import ordinalTextualizables.zeraryOrdinal
+              Ter.textual   // t"2♯"
+      frame
+        label Both indexes, for debugging
+        code
+            locally:
+              import ordinalTextualizables.intermediateOrdinal
+              Ter.textual   // t"⌞2⌟|⌞3⌟"
+      ##
+      ```
+  entry .nominalOrdinal   the ordinal's name — `prim`, `sec`, … `sept` — and `7.z` beyond the seventh
+  entry .uniaryOrdinal   the one-based count marked with `♭`: `Prim` is `1♭`
+  entry .zeraryOrdinal   the zero-based index marked with `♯`: `Prim` is `0♯`
+  entry .unmarkedUniaryOrdinal   the bare one-based count: `Prim` is `1`
+  entry .unmarkedZeraryOrdinal   the bare zero-based index: `Prim` is `0`
+  entry .intermediateOrdinal   both indexes at once, zero-based then one-based: `Prim` is `⌞0⌟|⌞1⌟`
+  entry .englishOrdinal   the English ordinal suffix: `1st`, `2nd`, `3rd`, `4th`, `11th`, `21st`
+  entry .englishSuperscriptOrdinal   the English suffix in superscript: `1ˢᵗ`, `2ⁿᵈ`, `3ʳᵈ`, `4ᵗʰ`
+  entry .frenchOrdinal   the French form: `1ᵉʳ`, then `2ᵉ`, `3ᵉ`, …
+  entry .italianOrdinal   the Italian form: `1ᵒ`, `2ᵒ`, …
+  entry .spanishOrdinal   the Spanish form: `1.ᵒ`, `2.ᵒ`, …
+  entry .russianOrdinal   the Russian form: `1-й`, `2-й`, …
+
+entry .Countable   a value with a size, and so a range of ordinals: `Self is Countable`
+  detail
+      `Countable` is the typeclass behind `size`, and through it behind every operation which
+      derives ordinals from a size: `gamut`, `extent`, `limit`, `ult`, `pen`, `ant`, `iterate`,
+      `retrace`, `tabulate`, `spot`, `prefix`, `pare`, `coextent` and `within`, and rudiments'
+      segment operations. It extends `Vacuiscible`, so a countable value is also testable for
+      emptiness, by default as `size == 0`.
+
+      ```scala
+      import soundness.*
+
+      t"hello".size              // 5
+      Set(1, 2, 3).size          // 3
+      Sequence(1, 2).limit       // Ter
+      ```
+
+      Instances exist, ungated, for the frozen array (and its `Sized` form), `Sequence`, `Set`,
+      `Map`, `Ledger`, `Text`, the stdlib `IndexedSeq` and `Iterable`, `Option` (zero or one),
+      `Int` (which counts itself), and the mutable `ArrayBuffer`, `HashMap`, `TrieMap` and
+      `StringBuilder`. A `List`'s size is a traversal, so `.list` needs `import
+      dysasymptotics.linearSize`; a `Chain`'s forces the whole stream, so `.chain` needs
+      `import dysasymptotics.unboundedSize`. Neither gate applies to `nil`, which `Vacuiscible`
+      answers in O(1) for both.
+
+      A confined ordinal minted over a mutable countable (`ArrayBuffer`, `StringBuilder`) is
+      valid only while the value does not shrink; the brands are sound for immutable values
+      held in a `val`.
+  refer denominative.Vacuiscible
+  refer denominative.size
+  refer denominative.extent
+  entry #size   the number of elements in the value
+  entry #nil   whether the value is empty; by default, whether its size is zero
+  entry .frozenArray   a frozen `Array[e]^{}` counts its length, in O(1)
+  entry .sizedFrozenArray   a `Sized[length]` frozen array, by its own instance
+      A separate instance rather than a widening of `.frozenArray`: a type variable bounded by
+      a capturing type would be elaborated as `array^{any.rd}` and fail evidence declared for
+      the pure array.
+  entry .int   an `Int` counts itself, so `5.extent` is the first five ordinals
+  entry .arrayBuffer   a mutable `ArrayBuffer` counts its current length
+  entry .option   an `Option` has size zero or one
+  entry .list   a `List`'s size, by traversal; needs `dysasymptotics.linearSize` in scope
+      Takes a `Dysasymptotic.LinearSize` as a `using` parameter, so `list.size`, `list.gamut`,
+      `list.extent` and the rest fail to resolve until `import dysasymptotics.linearSize` is
+      in scope. Subtype-parametric, so a `List[e] & Populated` matches.
+  entry .iterable   any stdlib `Iterable` counts its size, at whatever cost its own `size` has
+  entry .map   a `Map` counts its entries, in O(1)
+  entry .ledger   a `Ledger` counts its entries, in O(1)
+  entry .trieMap   a concurrent `TrieMap` counts its entries
+  entry .hashMap   a mutable `HashMap` counts its entries
+  entry .chain   a `Chain`'s size, by forcing the whole stream; needs `dysasymptotics.unboundedSize` in scope
+      On an infinite chain this never returns, which is why the gate is the stronger
+      `Dysasymptotic.UnboundedSize` rather than `LinearSize`.
+  entry .stringBuilder   a `StringBuilder` counts its current length
+  entry .set   a `Set` counts its elements, in O(1)
+  entry .indexedSeq   a stdlib `IndexedSeq` counts its length, in O(1)
+  entry .sequence   a `Sequence` counts its elements, in O(1)
+  entry .text   a `Text` counts its UTF-16 code units, in O(1)
+      The same count as `String#length`: a character outside the Basic Multilingual Plane
+      counts as two.
+
+entry .Vacuiscible   a value which can be tested for emptiness, in O(1) for every shape: `Self is Vacuiscible`
+  detail
+      Emptiness alone, split from `Countable` so that a shape whose size is expensive — a
+      `List`, a `Chain` — can still answer `nil` cheaply and ungated. An operation which needs
+      only to know whether a value is empty should demand `Vacuiscible`, not `Countable`.
+      Every `Countable` is `Vacuiscible` through `.countable`; `List` and `Chain` have their
+      own instances, which win over the gated ones.
+
+      ```scala
+      import soundness.*
+
+      val names: List[Text] = List(t"Ada")
+      names.nil                 // false, with no dysasymptotics import
+      Chain.from(List(1)).nil   // false: forces only the first cell
+      ```
+  refer denominative.nil
+  refer denominative.Countable
+  entry #nil   whether the value has no elements
+  entry .countable   every `Countable` is `Vacuiscible`, answering `nil` through its own instance
+      Needed because implicit search for `X is Vacuiscible` consults the companions of
+      `Vacuiscible` and its parents, never those of its subtypes, so `Countable`'s instances
+      would otherwise not be found.
+  entry .list   a `List`'s emptiness, one pointer test; ungated, unlike its size
+  entry .chain   a `Chain`'s emptiness, forcing only its first cell; ungated, unlike its size
+
+entry .Applicable   a value which can be read at an index or key: `Self is Applicable by Operand to Result`
+  detail
+      `Applicable` is the read side of indexing: `#contains` says whether an index is valid
+      and `#access` reads at a valid one. It is what rudiments' `xs(index)`, `xs.at(index)`,
+      `xs.defines(key)`, `xs.confine(index)` and `xs.pick(index)` resolve, and the reason
+      those reads can be total for a confined ordinal and `Optional` for any other: `access`
+      itself is only ever called behind `contains` or behind a proof. The `Operand` is an
+      `Ordinal` for positional shapes and the key type for keyed ones.
+
+      ```scala
+      import soundness.*
+
+      val numbers = Sequence(10, 20, 30)
+      val ages = Map(t"Ada" -> 36)
+      numbers.at(Sec)          // 20
+      numbers.at(Sept)         // Unset
+      ages.at(t"Ada")          // 36
+      ages.defines(t"Bob")     // false
+      ```
+
+      Instances: the frozen array and its `Sized` form, `Sequence`, the stdlib `IndexedSeq`
+      and `Text` (by `Char`), by ordinal; `Map`, `Ledger` and the mutable `HashMap`, by key;
+      and `List`, by ordinal, behind `import dysasymptotics.linearAccess`, since reaching a
+      position walks from the head.
+  refer denominative.Definable
+  refer denominative.Countable
+  entry #contains   whether the index is valid for the value: in range, or a present key
+  entry #access   the element at an index already known to be valid
+      Unchecked: called on an invalid index it may throw. Reach it through rudiments'
+      `apply`, `at` or `pick`, which check or prove the index first.
+  entry .frozenArray   a frozen `Array[e]^{}` read at an ordinal, by a bounds check and an unchecked read
+  entry .sizedFrozenArray   a `Sized[length]` frozen array read at a variable ordinal
+      A literal index into a `Sized` array is checked at compile time and never reaches this
+      instance; a variable ordinal is still a bounds-checked, `Optional` read.
+  entry .indexedSeq   a stdlib `IndexedSeq` read at an ordinal
+  entry .sequence   a `Sequence` read at an ordinal, in effectively constant time
+  entry .list   a `List` read at an ordinal by walking from its head; needs `dysasymptotics.linearAccess`
+  entry .text   a `Text` read at an ordinal, giving a `Char` (a UTF-16 code unit)
+  entry .map   a `Map` read at a key, giving its value
+  entry .ledger   a `Ledger` read at a key, giving its value
+  entry .hashMap   a mutable `HashMap` read at a key, giving its value
+
+entry .Definable   copy-on-write update at an index or key: `Self is Definable by Operand to Result`
+  detail
+      The write twin of `Applicable`, behind rudiments' `xs.define(index, value)`: a copy of
+      the value in which reading at `index` gives `value`. It is total: an out-of-range
+      ordinal returns the value unchanged, and an absent key adds an entry.
+
+      ```scala
+      import soundness.*
+
+      Sequence(1, 2, 3).define(Sec, 20)        // Sequence(1, 20, 3)
+      Sequence(1, 2, 3).define(Sept, 20)       // Sequence(1, 2, 3)
+      Map(t"a" -> 1).define(t"b", 2)           // Map(t"a" -> 1, t"b" -> 2)
+      ```
+
+      Instances exist for `Sequence`, the stdlib `IndexedSeq`, `Map` and `Ledger`, ungated;
+      for `List` behind `dysasymptotics.linearAccess`, since it rebuilds the prefix; and for
+      the frozen array behind `dysasymptotics.linearSize`, since every edit copies the whole
+      array.
+  refer denominative.Applicable
+  refer denominative.Omissible
+  entry #define   the value with `result` at `index`
+  entry .sequence   a `Sequence` with one position replaced; unchanged if the ordinal is out of range
+  entry .frozenArray   a fresh frozen array with one position replaced; needs `dysasymptotics.linearSize`
+      Needs a `ClassTag` for the element. The copy is fresh, so freezing it needs no proof.
+  entry .list   a `List` with one position replaced, rebuilding its prefix; needs `dysasymptotics.linearAccess`
+  entry .indexedSeq   a stdlib `IndexedSeq` with one position replaced
+  entry .map   a `Map` with a key set to a value, added if absent
+  entry .ledger   a `Ledger` with a key set to a value; a new key goes at the end of the order
+
+entry .Omissible   copy-on-write removal at an index or key: `Self is Omissible by Operand`
+  detail
+      The inverse of `define`, behind rudiments' `xs.omit(index)`. It is a typeclass of its
+      own because linked and sequential shapes cannot offer it honestly: removing a position
+      shifts every later index, so `List` and `Sequence` have no instance, and `omit` does not
+      compile on them. The frozen array is the exception, since every edit of it copies the
+      whole array anyway, so removing a slot costs what `define` does; it is gated on the same
+      `dysasymptotics.linearSize`. An out-of-range ordinal, or an absent key, returns the value
+      unchanged.
+
+      ```scala
+      import soundness.*
+
+      Map(t"a" -> 1, t"b" -> 2).omit(t"a")   // Map(t"b" -> 2)
+      ```
+  refer denominative.Definable
+  entry #omit   the value without the element at `index`
+  entry .frozenArray   a fresh frozen array one slot shorter; needs `dysasymptotics.linearSize` and a `ClassTag`
+  entry .map   a `Map` without a key
+  entry .ledger   a `Ledger` without a key, the remaining order kept
+
+entry .Terminable   a value whose last element can be read: `Self is Terminable by Operand`
+  detail
+      The back end of a value, behind rudiments' `xs.last` (which returns `Unset` on an empty
+      value, and a bare element on one typed `& Populated`). A separate typeclass from
+      `Truncable` because the two costs differ: an array's last element is one read, while
+      dropping it copies the array. `last` is gated wherever it is not a peek.
+
+      ```scala
+      import soundness.*
+
+      Sequence(1, 2, 3).last   // 3
+      t"hello".last            // 'o'
+      ```
+
+      Instances: `Sequence`, the frozen array and its `Sized` form, `Text` (by `Char`) and the
+      stdlib `IndexedSeq`, in O(1); `List` behind `dysasymptotics.linearSize`, since it walks
+      to the end; and `Chain` behind `dysasymptotics.unboundedSize`, since it forces the whole
+      stream.
+  refer denominative.Truncable
+  entry #last   the last element of a non-empty value
+  entry .sequence   a `Sequence`'s last element, in O(1)
+  entry .frozenArray   a frozen array's last slot, in O(1)
+  entry .sizedFrozenArray   a `Sized[length]` frozen array's last slot, by its own instance
+  entry .text   a `Text`'s last `Char`
+  entry .indexedSeq   a stdlib `IndexedSeq`'s last element
+  entry .list   a `List`'s last element, by walking to its end; needs `dysasymptotics.linearSize`
+  entry .chain   a `Chain`'s last element, by forcing it to its end; needs `dysasymptotics.unboundedSize`
+
+entry .Truncable   a value which can drop its last element: `Self is Truncable to Result`
+  detail
+      `last`'s complement, behind rudiments' `xs.lead`: everything but the last element, so
+      that `lead` followed by `last` is the whole value. The `Result` is a plain type rather
+      than `Self`, because dropping an element may empty the value and a `& Populated` brand
+      must not survive.
+
+      ```scala
+      import soundness.*
+
+      Sequence(1, 2, 3).lead   // Sequence(1, 2)
+      t"hello".lead            // t"hell"
+      ```
+
+      Instances: `Sequence` (amortised O(1)), `Text` and the stdlib `IndexedSeq`, ungated;
+      `List` and the frozen array behind `dysasymptotics.linearSize`, since each copies its
+      whole structure; and `Chain` behind `dysasymptotics.unboundedSize`.
+  refer denominative.Terminable
+  entry #lead   the value without its last element
+  entry .sequence   a `Sequence` without its last element, in amortised O(1)
+  entry .text   a `Text` without its last `Char`
+  entry .indexedSeq   a stdlib `IndexedSeq` without its last element
+  entry .list   a `List` without its last element, copying its spine; needs `dysasymptotics.linearSize`
+  entry .frozenArray   a fresh frozen array one slot shorter; needs `dysasymptotics.linearSize` and a `ClassTag`
+      An empty array truncates to an empty array.
+  entry .chain   a `Chain` without its last element; needs `dysasymptotics.unboundedSize`

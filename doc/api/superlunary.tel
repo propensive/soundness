@@ -1,0 +1,332 @@
+tel 1.0
+
+base superlunary
+import soundness
+
+info   quoted Scala compiled at runtime and run elsewhere: in a fresh JVM, or an isolated classloader
+detail
+    _Superlunary_ generalises Scala's staging so that quoted code — `'{…}` — runs in a
+    different *environment* rather than the next phase of the same program. A `Rig` says how
+    compiled code is deployed and invoked; its `dispatch` method takes a quoted block, splices
+    in values from the enclosing scope, compiles the block at runtime (once per call site and
+    tree), ships it, runs it, and carries its answer back. The values crossing the boundary are
+    encoded by a `Stageable`: as JSON for the `Jvm` rig, as `Pojo` trees for `Isolation`.
+
+    Because both sides are compiled together and delimited by quotes and splices, the contract
+    between them is checked by the compiler: a reference to a local heap object cannot be
+    written inside the quote, and a spliced value with no transportable form is rejected when
+    the block compiles.
+
+    ```scala fuel
+    typecheck
+    ##
+    import scala.quoted.*
+    import soundness.*
+    import embeddings.automaticEmbedding
+    import strategies.throwUnsafely
+    import systems.javaBaseSystem
+    import temporaryDirectories.systemTemporaryDirectory
+
+    case class Job(name: Text, size: Long)
+
+    def runElsewhere(job: Job): Job = Jvm.dispatch:
+      '{
+         val name = ${job.name}
+         Job(t"Processed: $name", ${job.size}*2)
+       }
+    ```
+
+    Moving a computation elsewhere changes where it runs, not how it is called:
+
+    ```scala fuel
+    frame
+      label An ordinary local function
+      code
+          def process(job: Job): Job =
+            val name = job.name
+            Job(t"Processed: $name", job.size*2)
+    frame
+      label The same body, quoted, run under an isolated classloader
+      code
+          def process(job: Job): Job = Isolation.dispatch:
+            '{
+               val name = ${job.name}
+               Job(t"Processed: $name", ${job.size}*2)
+             }
+    frame
+      label The same quote, run in a fresh JVM
+      code
+          def process(job: Job): Job = Jvm.dispatch:
+            '{
+               val name = ${job.name}
+               Job(t"Processed: $name", ${job.size}*2)
+             }
+    ##
+    ```
+
+    A value spliced with `${…}` is converted to an `Expr` by `embeddings.automaticEmbedding`,
+    which is imported by name: `import soundness.*` does not import givens. A dispatch also
+    needs a `System` and a `TemporaryDirectory` in scope, and raises `Compiler.Error` (the
+    staged code did not compile) and `Rig.Error` (it could not be marshalled, staged or
+    invoked).
+
+    The library has two source sets:
+
+    - `superlunary.core` — `Rig`, `Stage`, `Stageable`, `References` and the `embeddings`
+      package: the machinery any rig is built from.
+    - `superlunary.jvm` — the two provided rigs, `Jvm` and `Isolation`, and `Executor`, the
+      entry point a `Jvm` subprocess runs.
+
+    Everything is exported to the `soundness` umbrella, and the `embeddings` choice package
+    merges with the umbrella's own. `apoplexy.Executor` is deliberately not exported, since it
+    would collide with `superlunary.Executor` there; `Executor` in the umbrella is this one.
+
+refer superlunary.Rig
+refer superlunary.Jvm
+refer superlunary.Isolation
+refer superlunary.Stageable
+refer superlunary.embeddings
+
+entry .Rig   an environment quoted code can be compiled for and run in, with `dispatch` to run a block there
+  detail
+      A rig is the *where* of a staged computation, as a value. `dispatch` does the hard parts
+      before the rig sees anything — compiling the quoted block if it is not already compiled,
+      capturing its spliced inputs and encoding them into one transportable `Form` — leaving
+      the rig a narrow job: make compiled output available to its environment (`#stage`), and
+      run it there given the encoded input, bringing back the encoded output (`#invoke`).
+
+      An implementation declares its `#Result` type (the bare output, or an `Optional`, or a
+      `Task`, as suits the environment), its `#Transport` and `Form`, its `Target` (whatever
+      `#stage` produces, such as a `LocalClasspath` or a `Classloader`), the `scalac` to compile
+      with, and the two methods. It is constructed with the `Classloader` whose classpath the
+      staged code is compiled against and linked with — normally the rig's own,
+      `Classloader[MyRig.type]`, since under a test-running host the thread's context loader may
+      be the host's.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+
+      object Subprocess extends Rig(using Classloader[Subprocess.type]):
+        type Result[output] = output
+        type Form = Text
+        type Target = LocalClasspath
+        type Transport = Json
+
+        def stage(out: Path on Linux)(using Tactic[Rig.Error]): LocalClasspath = classpath(out)
+
+        val scalac: Scalac[3.6, Universe.Classfile] =
+          Scalac[3.6](List(scalacOptions.experimental))
+
+        protected def invoke[output](stage: Stage[output, Form, Target])(using Tactic[Rig.Error])
+        :   output =
+          stage.remote: input =>
+            ???   // run `superlunary.Executor` on `stage.target()` with `input`; return its output
+      ```
+
+      `Jvm` and `Isolation` are the two provided rigs.
+  refer superlunary.Stage
+  refer superlunary.Stageable
+  refer superlunary.Jvm
+  refer superlunary.Isolation
+  entry #dispatch   compiles a quoted block, runs it in this rig's environment, and returns its result
+      `rig.dispatch('{ … })` takes a block which, given the `References` the splices allocate
+      into and a `Quotes`, builds an `Expr[output]`. It needs a `Codepoint` (supplied
+      automatically for the call site), a `System`, a `TemporaryDirectory` (where each
+      compilation's classes are written, deleted at shutdown) and a `Stageable` matching the
+      rig's `Transport` and `Form` (found in `Stageable`'s companion), and raises
+      `Compiler.Error` and `Rig.Error`.
+
+      Compilations are cached by the call site *and* a fingerprint of the staged tree's
+      structure: one inline call site may expand to a different tree at each use, and each
+      distinct tree compiles once, while calls that differ only in the data they splice share
+      one compilation. A value spliced with `${…}` is evaluated once per dispatch and
+      deserialized once per slot, however often the staged code reads it — even inside a hot
+      loop — so the extracted instance is shared between evaluations.
+
+      ```scala fuel
+      typecheck
+      ##
+      import scala.quoted.*
+      import soundness.*
+      import embeddings.automaticEmbedding
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+      import temporaryDirectories.systemTemporaryDirectory
+
+      val count = 100
+      Isolation.dispatch('{ "hello message"+(${count} + 1) })   // "hello message101"
+      ```
+
+      Names used inside the quote resolve against the imports outside it, but only static
+      prefixes do: everything else must cross through a splice.
+  entry #stage   makes the compiled classes in a directory available to the environment, as a `Target`
+      Called once per new compilation, with the directory its classes were written to. A local
+      rig may only name the directory (`#classpath`); a genuinely remote one must deploy it.
+      A failure is a `Rig.Error`.
+  entry #classpath   the classpath of the compiled output directory and the rig's own classloader's entries
+      `classpath(out)` puts the directory first, followed by the entries of the classloader
+      which loaded `Rig` itself, so the staged code links against the same libraries as the
+      code which dispatched it.
+  entry #Result   what `dispatch` returns for an output type: the output itself, or a wrapper of it
+  entry #Transport   the type each spliced value and the result are encoded as: `Json`, `Pojo`, …
+  entry #settings2   the staging compiler's settings, from `scalac`'s command-line arguments
+      Used for the probe compilation which fingerprints a staged tree; not normally needed by
+      a caller.
+  entry #compiler2   the staging compiler used to fingerprint staged trees, over the rig's classloader
+      Not normally needed by a caller.
+  entry .Error   raised when a value cannot cross a rig's boundary, or the staged code cannot be run
+    detail
+        Error 306: _failed to perform a remote operation because `reason`_. This is a failure
+        of the marshalling and deployment around the staged code, not of the code itself; a
+        staged block which does not compile raises `Compiler.Error` instead. The reason is one
+        of the cases of `Rig.Error.Reason`.
+    entry #reason   why the remote operation failed
+    entry .Reason   why a remote operation failed: serialization, deserialization, staging or invocation
+        An enum, each with a number which completes the error code. `Serialization` (1): _the
+        output could not be serialized_. `Deserialization` (2): _the input could not be
+        deserialized_. `Unknown` (3): _of an unknown reason_, raised when a result fails to
+        decode. `Staging` (4): _the staged code could not be built or deployed_. `Invocation`
+        (5): _the staged code could not be invoked_, as when the `Jvm` rig's subprocess fails.
+
+entry .Jvm   the rig which runs dispatched code in a fresh JVM subprocess
+    A `Rig` whose `Target` is a `LocalClasspath` and whose values cross as JSON text: the
+    staged classes are compiled into a temporary directory, and each dispatch launches `java
+    -classpath … superlunary.Executor` with the encoded input as its argument and reads the
+    encoded result from its standard output. It gives full isolation at the cost of a JVM's
+    start-up time per call. A subprocess which fails raises `Rig.Error` with the reason
+    `Invocation`.
+
+    ```scala fuel
+    typecheck
+    ##
+    import scala.quoted.*
+    import soundness.*
+    import embeddings.automaticEmbedding
+    import strategies.throwUnsafely
+    import systems.javaBaseSystem
+    import temporaryDirectories.systemTemporaryDirectory
+
+    case class Example(name: Text, count: Long)
+
+    def fn(message: Example): Example = Jvm.dispatch:
+      '{
+         val name = ${message.name}
+         Example(t"Processed: $name", ${message.count}*2)
+       }
+    ```
+
+    Spliced values and the result need `Encodable in Json` and `Decodable in Json` instances
+    (derived for case classes). It stages with Scala 3.6 and `-experimental`, against the
+    classpath of the classloader which loaded it.
+
+entry .Isolation   the rig which runs dispatched code in this process, under an isolated classloader
+    A `Rig` whose `Target` is a `Classloader` and whose values cross as `Pojo` trees: the staged
+    classes are loaded by a child-first (`Classloader.Delegation.Preferential`) classloader over
+    the output directory and the rig's own classpath, and invoked directly. Cheap and contained,
+    with no process start-up, but the staged code shares the JVM, its heap and its threads.
+
+    ```scala fuel
+    typecheck
+    ##
+    import scala.quoted.*
+    import soundness.*
+    import embeddings.automaticEmbedding
+    import strategies.throwUnsafely
+    import systems.javaBaseSystem
+    import temporaryDirectories.systemTemporaryDirectory
+
+    Isolation.dispatch:
+      '{ t"computed in an isolated classloader" }
+    ```
+
+    Spliced values and the result need `Encodable in Pojo` and `Decodable in Pojo` instances.
+
+entry .Stage   a compiled, deployed staged computation, as a rig's `invoke` receives it
+  detail
+      A case class of the `#target` `stage` produced and `#remote`, which the rig calls with a
+      function from the encoded input to the encoded output — the part which actually runs the
+      code in the environment — and which does the encoding and decoding either side of it.
+  entry #target   where the compiled code was staged: a classpath, a classloader, a deployment
+  entry #remote   runs the computation, given the function that carries encoded input to encoded output
+
+entry .Stageable   how values cross a rig's boundary: their `Transport` and the `Form` sent across
+  detail
+      A typeclass of four inline operations: `#embed` encodes a spliced value as a `Transport`
+      value, `#serialize` turns an array of them into the single `Form` sent across,
+      `#deserialize` reads one back, and `#extract` decodes a `Transport` value to its type.
+      `dispatch` needs the instance whose `Transport` and `Form` match its rig's; both
+      provided instances are in the companion, so need no import.
+  refer superlunary.Rig
+  refer superlunary.embeddings
+  entry #Transport   the encoded form of one value: `Json` or `Pojo`
+  entry #embed   encodes a value as a `Transport`, through its `Encodable` instance
+  entry #serialize   joins an array of transported values into the one `Form` sent across
+  entry #deserialize   splits a received `Form` back into an array of transported values
+  entry #extract   decodes a transported value to its type, through its `Decodable` instance
+  entry .json   transports values as JSON, sent as one JSON array in `Text`: the `Jvm` rig's form
+      A malformed array raises `Rig.Error` with the reason `Deserialization`, and a value which
+      does not decode, the reason `Unknown`. Each value needs an `Encodable in Json` and a
+      `Decodable in Json`.
+  entry .pojo   transports values as `Pojo` trees, sent as an array of them: the `Isolation` rig's form
+      Each value needs an `Encodable in Pojo` and a `Decodable in Pojo`; the array is passed
+      as it is, with no text in between.
+
+entry .References   the spliced values of one staged block, allocated into an array as they are embedded
+  detail
+      Inside a `dispatch` body each spliced value is embedded by `embeddings.automaticEmbedding`
+      into the `References` in scope, which assigns it a slot; the staged code reads the slot
+      from the array the rig binds as `#array`. A rig's machinery, not normally used directly.
+  entry .apply   a new, empty set of references over a transport type
+  entry .Boxed   a transported value already extracted, memoized in its array slot
+    detail
+        On first use a slot's raw transported value is replaced by a `Boxed` of its decoded
+        value, so a splice read in a loop is decoded once per JVM rather than per iteration.
+    entry #value   the decoded value
+  entry #Transport   the transport type of the values held
+  entry #update   binds the quoted array the staged code reads its values from
+  entry #array   the quoted array of transported values, bound before any value is spliced
+      Fails with a panic if read before the rig has bound it; the rig always binds it first.
+  entry #current   the number of values allocated so far
+  entry #allocate   adds a transported value, returning its slot number
+  entry #apply   the allocated values, as an array in slot order
+
+entry .embeddings   the conversion which carries a spliced value into staged code, a given to import by name
+  detail
+      A `${value}` splice inside a `dispatch` block needs `value` to become an `Expr`, and
+      that conversion is `automaticEmbedding`. `import soundness.*` does not import givens, so
+      it is imported by name.
+
+      ```scala
+      import soundness.*
+      import embeddings.automaticEmbedding
+      ```
+  entry .automaticEmbedding   converts a spliced value into an `Expr` reading its transported slot
+      An inline `Conversion[value, Expr[value]]`, needing the `References` and the `Stageable`
+      a `dispatch` body supplies and a `Quotes`. It embeds the value through the `Stageable`,
+      allocates it a slot, and returns code which reads the slot and decodes it on first use,
+      memoizing the decoded value as a `References.Boxed`.
+
+entry .deleteOnShutdown   queues a directory to be deleted, with its contents, when the JVM exits
+    Rigs use it for each compilation's output directory. One shutdown hook drains the queue
+    sequentially, rather than one hook per directory, so a run with many dispatches cannot
+    exhaust the file-descriptor limit while it cleans up. Errors while deleting are ignored.
+
+entry .Executor   the entry point a `Jvm` rig's subprocess runs: invokes the staged code on its argument
+  hidden
+  detail
+      In `superlunary.jvm`; not for direct use. `main` loads the compiled class
+      `Generated$Code$From$Quoted`, applies it to its first argument, and prints the result,
+      with any other standard output suppressed so that only the result reaches the parent.
+      This is `Executor` in the `soundness` umbrella; `apoplexy.Executor` is not exported, to
+      avoid the collision.
+  entry .run   applies the staged code to an encoded input, returning the encoded output
+  entry .main   runs the staged code on the first argument, printing only its result
+
+entry .Executor2   an alternative subprocess entry point, reading its input from `INPUT_PARAMETERS`
+  hidden
+  detail
+      Not for direct use. Like `Executor`, but takes the encoded input from the
+      `INPUT_PARAMETERS` environment variable rather than an argument, and prints nothing.
+  entry .main   runs the staged code on the input in `INPUT_PARAMETERS`

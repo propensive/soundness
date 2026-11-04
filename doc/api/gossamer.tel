@@ -1,0 +1,1443 @@
+tel 1.0
+
+base gossamer
+import soundness
+
+info   text as a typed value: `Text`, the `t"…"` interpolator, and a vocabulary of operations over any textual type
+detail
+    _Gossamer_ is the text library: the operations on `Text` — the opaque alias of the JVM's
+    `String` which Soundness uses in place of `String` everywhere — and the typeclasses which
+    make those same operations available on any other textual type, such as an ANSI-styled
+    `Teletype`, an `Ascii` byte string or a `Writing` of grapheme clusters.
+
+    A `Text` is written with the `t"…"` interpolator, which substitutes any value that is
+    `Showable` and processes escapes while the code compiles, or with `txt"…"`, which also
+    folds a paragraph written across several source lines into one. Its operations are plain
+    verbs: `cut` divides at a delimiter and `join` reassembles; `keep`, `skip`, `snip`,
+    `before`, `after`, `upto`, `from` and `segment` slice by count or by ordinal position;
+    `lower`, `upper`, `capitalize`, `trim`, `pad`, `fit` and `sub` transform; `starts`, `ends`,
+    `contains`, `offsetOf`, `tally`, `pinpoint` and `search` ask questions. Absence is an
+    `Optional`, not `-1` or `null`; positions are `Ordinal`s (`Prim`, `Sec`, `Ter`, …), which
+    cannot be confused with lengths; and a `cut` is proved to yield at least one piece.
+
+    ```scala
+    import soundness.*
+    import textMetrics.uniformMetric
+
+    val name = t"Ada Lovelace"
+    name.words.map(_.keep(1)).join            // t"AL"
+    name.cut(t" ").head.upper                 // t"ADA"
+    name.offsetOf(t"Love")                    // an Optional ordinal, present here
+    name.pad(15, Rtl, '.')                    // t"...Ada Lovelace"
+    t"one,two".cut(t",").join(t"(", t", ", t")")   // t"(one, two)"
+    ```
+
+    Most of the vocabulary is written once, over the `Textual` typeclass, so a type with a
+    `Textual` instance — `Text`, `Ascii`, `Writing`, and escapade's `Teletype` — gets every
+    operation without redefining any. `Textual` extends the general collection typeclasses
+    (`Countable`, `Segmentable`), which is how the count-based and predicate-based `keep`,
+    `skip` and `snip`, the ordinal-based `before`/`after`/`upto`/`from`, and `count`, `where`,
+    `all` and `exists` from the collections library serve text too: those live in `rudiments`
+    and `murmuration`, not here. The factories `reversibleTextual` and `traversableTextual`
+    let a new textual type publish `reverse` and traversal in its own companion.
+
+    Three things about text are policies, chosen by importing a given **by name** (because
+    `import soundness.*` does not import givens):
+
+    - **Case sensitivity** (`caseSensitivity.caseSensitive`, `caseInsensitive` or
+      `smartCase`), which every proximity measure consults.
+    - **Collation** (`collations.unicodeCollation` or `codepointCollation`), without which
+      text cannot be sorted or compared with `<`: with `collationComparable`, a `Collation`
+      in scope makes `Text` `Comparable`.
+    - **Proximity** (`proximities.levenshteinProximity`, `jaroProximity`, …), the measure
+      behind `proximity`, `fuzzy` and the `Lexicon`.
+
+    `Decimalizer` renders a `Double` to a chosen number of significant figures or decimal
+    places, and is what `show` on a `Double` consults; `decimalConverters.javaDecimalConverter`
+    is the plain `toString` alternative.
+
+    The library has three components:
+
+    - `gossamer.core` — `Text`'s operations, `t"…"`, `txt"…"` and `a"…"`, `Textual`,
+      `Builder` and `Text.build`, `Cuttable` and `Joinable`, `Writing` and `Grapheme`, `Ascii`,
+      `Decimalizer`, `Numerous`, `CaseSensitivity`, `Collation`, `Proximity` and the choice
+      packages `caseSensitivity`, `collations`, `proximities` and `decimalConverters`.
+    - `gossamer.codec` — the `distillate`-facing half: `textDecodable`, which decodes bytes
+      to `Text` through a `Charset`, and the `enumIdentification` package, which names enum
+      cases in kebab, snake, camel or Pascal case. Split out so that a module which only
+      needs text does not depend on `distillate`.
+    - `gossamer.lexicon` — `Lexicon`, a BK-tree for similarity search over a vocabulary,
+      and `Dictionary`, a dense trie for exact and prefix lookup.
+
+    Everything is exported to the `soundness` umbrella, and the choice packages merge with
+    the umbrella's own, so a user writes `import soundness.*` and then imports one given of
+    each policy by name.
+
+refer anticipation.Text
+refer gossamer.Textual
+refer gossamer.t
+refer gossamer.cut
+refer gossamer.join
+refer gossamer.Collation
+refer gossamer.Proximity
+refer gossamer.Decimalizer
+
+entry .t   the `t"…"` interpolator: a `Text` from a literal, with `Showable` substitutions; and a `t"…"` pattern
+  detail
+      `t"Hello, $name!"` builds a `Text`. Each literal part is escape-processed while the
+      code compiles (`\n`, `\t`, `→`, `\\`, `\$`; a bad escape is a compile error at the
+      offending character), and each substitution is rendered through the `Showable` instance
+      for its type — a value with no `Showable` is a compile error, _a value of `T` is not
+      Showable_, rather than a silent `toString`. The result is `Text`, never `String`.
+
+      ```scala
+      import soundness.*
+
+      val name = t"Ada"
+      val count = 3
+      t"Hello, $name! You have $count messages."   // t"Hello, Ada! You have 3 messages."
+      t"tab\there"                                  // a real tab between the words
+      ```
+
+      The same prefix is a pattern: `case t"quit" =>` matches a `Text` equal to the literal,
+      through `SimpleTExtractor`. The pattern form takes no substitutions. `fuzzy` accepts
+      `t"…"` patterns in its cases, too.
+
+      ```scala
+      import soundness.*
+
+      def respond(command: Text): Text = command match
+        case t"quit" => t"goodbye"
+        case other   => t"unknown command: $other"
+      ```
+
+      `txt"…"` is the variant for multi-line prose, and `a"…"` makes an `Ascii`.
+  refer gossamer.txt
+  refer gossamer.SimpleTExtractor
+  refer gossamer.fuzzy
+
+entry .txt   the `txt"…"` interpolator: a `Text` with wrapped source lines folded into one
+    As `t"…"`, with the whitespace of a literal written across several source lines
+    normalised: every run of whitespace (including a single newline and the indentation after
+    it) becomes one space, and a blank line — two newlines — becomes a single `\n`, so a
+    paragraph wrapped for the source's reader is unwrapped for the output's, and a blank line
+    separates paragraphs.
+
+    ```scala
+    import soundness.*
+
+    txt"""This message is written
+          across several lines."""      // t"This message is written across several lines."
+
+    txt"""Hello
+          world
+
+          Bonjour
+          le monde"""                   // t"Hello world\nBonjour le monde"
+    ```
+
+    Substitutions are rendered through `Showable`, as in `t"…"`, and are normalised with the
+    rest of the text.
+
+entry .a   the `a"…"` interpolator: an `Ascii` byte string, checked to be ASCII as the code compiles
+    `a"hello"` is an `Ascii`, a frozen array of bytes holding the literal's characters, one byte
+    each. A character outside ASCII is a compile error (number 824, _`é` is not a valid ASCII
+    character_) reported at that character's own position in the source, not at the start of
+    the literal. Substitutions are themselves `Ascii` values, concatenated in.
+
+    ```scala
+    import soundness.*
+
+    val name = a"world"
+    a"hello $name".bytes.length   // 11
+    a"hello café"                 // does not compile
+    ```
+
+entry .SimpleTExtractor   the extractor behind a `t"…"` pattern: equality with the literal
+  detail
+      `case t"quit" =>` desugars to a `SimpleTExtractor(t"quit")` whose `#unapply` is equality
+      with the scrutinee. It exists so that `t"…"` can be written in a pattern as well as an
+      expression; there is rarely a reason to construct one directly.
+  entry #text   the literal the pattern matches
+  entry #unapply   whether the scrutinee equals `#text`
+
+entry .Textual   the typeclass which makes a type textual: `Text`, `Ascii`, `Writing`, `Teletype`
+  detail
+      `textual is Textual` says that `textual` is a sequence of characters with a known length,
+      which can be sliced, mapped, searched and concatenated, built up in a `Builder`, and
+      rendered as plain `Text`. Every generic operation in gossamer — `cut`, `join`, `words`,
+      `lower`, `trim`, `pad`, `capitalize`, `uncamel`, `pinpoint`, `chomp`, … — is an
+      extension on a receiver with a `Textual` instance, so a new textual type gains the whole
+      vocabulary by providing one instance in its companion.
+
+      The `#Result` type member is the element type: `Char` for `Text`, `Byte` for `Ascii`,
+      `Grapheme` for `Writing`. Operations which act on characters (`lower`, `upper`, `trim`,
+      `capitalize`, `tr`, `pad`, `pinpoint`, …) require `Textual { type Result = Char }`;
+      those which act on positions and substrings (`cut`, `words`, `starts`, `offsetOf`,
+      `slices`, `chomp`, …) take any `Textual`. `#Show[value]` is the typeclass a value must
+      satisfy to be appended to a builder of this type (`Showable` for `Text`; escapade's
+      `Teletype` uses its own, so a styled value appends with its styling).
+
+      `Textual` extends `Countable` and `Segmentable` (with `Segment = Self` and `Operand =
+      Ordinal`), which is what lets the general collection operations — `keep`, `skip`,
+      `snip`, `before`, `after`, `upto`, `from`, `segment`, `count`, `where`, `all`, `exists` —
+      serve textual values, and `Zeroic` and `Applicable`, so `textual.zero` is the empty
+      value and `Textual[Teletype](text)` converts plain text in.
+
+      ```scala
+      import soundness.*
+
+      def initials[textual: Textual { type Result = Char }](name: textual): textual =
+        name.words.map(_.keep(1).upper).join
+
+      initials(t"ada lovelace")   // t"AL"
+      ```
+
+      The instances for `Text` (`.text`) and, through their companions, for `Ascii` and
+      `Writing`, are in implicit scope. A type whose `reverse` and traversal should go through
+      its `Textual` instance publishes `reversibleTextual` and `traversableTextual` in its own
+      companion, since a blanket given could not be found from `rudiments`.
+  refer gossamer.reversibleTextual
+  refer gossamer.traversableTextual
+  refer gossamer.Builder
+  refer gossamer.Writing
+  refer gossamer.Ascii
+  entry .apply   `Textual[textual](text)`: converts a `Text` into any textual type
+      The explicit form of `#apply`: `Textual[Teletype](t"plain")` wraps plain text as a styled
+      value with no styling, and `Textual[Text](text)` is the identity.
+  entry .text   the `Textual` instance for `Text` itself, with `Char` elements and `Showable` for `Show`
+      Length, access, `indexOf`, `segment` and `map` go straight to the underlying `String`;
+      the builder is a `TextBuilder`.
+  entry .concatenable   `left + right` on any textual type, through `Textual#concat`
+      The `Concatenable` given which gives every textual type `+`. It is a companion given of
+      `Textual`, so it is found for any `textual: Textual`.
+  entry #Result   the element type: `Char` for `Text`, `Byte` for `Ascii`, `Grapheme` for `Writing`
+  entry #Show   the typeclass a value needs to be appended to a builder of this type
+      `Show[value]` is `value is Showable` for `Text`, `Ascii` and `Writing`; a styled type
+      may choose a richer one. `append` in a `Text.build` block requires it of anything which
+      is neither a `Text` nor a `Char`.
+  entry #Segment   the type a slice of this text has: the text's own type
+  entry #Operand   the index type: `Ordinal`
+  entry #show   renders a value as this textual type, through `#Show`
+  entry #apply   converts a plain `Text` into this textual type
+  entry #single   a one-element text from one `#Result`
+  entry #fromChar   the `#Result` element corresponding to a `Char`
+  entry #classTag   the `ClassTag` of the textual type, for allocating arrays of it
+  entry #length   the number of elements: characters, bytes or graphemes
+  entry #text   the plain `Text` of a value, with any styling dropped
+  entry #map   a new text with a function applied to every element
+  entry #empty   the empty value of this type
+  entry #concat   two values joined into one
+  entry #access   the element at an ordinal position; no check is made that it is in range
+  entry #contains   whether an ordinal is a valid position in the text
+  entry #indexOf   the position of a substring's first occurrence at or after `start`, or `Unset`
+      The primitive behind `offsetOf`, `contains` and `tally`. The substring is always plain
+      `Text`, whatever the textual type.
+  entry #lastIndexOf   the position of a substring's last occurrence, or `Unset`
+      By default a scan of repeated `#indexOf` calls; `Text`'s instance overrides it with the
+      `String` primitive. An empty substring is `Unset`.
+  entry #builder   a fresh `Builder` for this type, optionally sized
+  entry #segment   the slice of a text over an `Interval` of ordinals, clamped to the text's bounds
+      An interval reaching past the end is cut short, and one starting past the end is empty,
+      rather than either failing.
+  entry #zero   the empty value, as the `Zeroic` typeclass names it
+
+entry .Builder   a mutable accumulator which builds a textual value from appended pieces
+  detail
+      `Builder[textual]` is the abstract class behind `TextBuilder`, `AsciiBuilder`,
+      `WritingBuilder` and the builders of other textual types, each obtained from its
+      `Textual#builder`. Pieces are added with `#append` (a value of the type, or a single
+      `Char`), the result is read with `#apply`, and `#build` runs a block in which the
+      package-level `append` and `appendln` write to it as a contextual value.
+
+      ```scala
+      import soundness.*
+
+      val builder = TextBuilder()
+      builder.append(t"Hello").append(',').append(t" world")
+      builder.length   // 12
+      builder()        // t"Hello, world"
+      ```
+
+      A builder is mutable state and is not safe to share between threads; for text, prefer
+      `Text.build`, which scopes one to a block.
+  refer gossamer.TextBuilder
+  refer gossamer.append
+  refer gossamer.build
+  entry #append   adds a value of the textual type, or a single `Char`; returns the builder
+  entry #build   runs a block with this builder as the contextual `builder`, then returns the result
+      Inside the block, `append(value)`, `appendln(value)` and `builder` refer to this
+      builder. The block cannot outlive the call, which is why the builder is handed in as a
+      pure contextual value despite being mutable.
+  entry #apply   the accumulated value
+  entry #clear   discards everything appended so far; returns the builder
+  entry #nil   whether nothing has been appended
+  entry #length   the number of elements appended so far
+
+entry .TextBuilder   the `Builder` for `Text`, over a `StringBuilder`
+  detail
+      `TextBuilder(size)` sizes the underlying buffer, as a hint, when the length is known.
+      `Textual.text.builder` returns one, and `Text.build` scopes one to a block.
+  entry #put   appends one character
+  entry #length   the number of characters appended so far
+
+entry .AsciiBuilder   the `Builder` for `Ascii`, accumulating bytes
+  detail
+      Each appended `Char` is truncated to its low byte; an appended `Ascii` contributes its
+      bytes. `Ascii`'s `Textual` instance uses it for every building operation.
+  entry #put   appends one character as a byte
+  entry #length   the number of bytes appended so far
+
+entry .WritingBuilder   the `Builder` for `Writing`
+  detail
+      Accumulates the text of each appended `Writing` and recomputes the grapheme boundaries
+      of the whole when the result is read, so `#length` counts characters while building,
+      not graphemes.
+  entry #length   the number of characters appended so far
+
+entry .append   appends a value to the contextual `Builder`, inside a `build` block
+    A package-level inline method for use inside `Text.build` or `Builder#build`, where a
+    `Builder[textual]` is in scope as the contextual value `builder`. A `Text` is appended as
+    is (converted to the builder's type), a `Char` as one element, and anything else through
+    the builder's `Textual#Show` typeclass — `Showable`, for `Text` — so a value with no
+    rendering is a compile error rather than a `toString`.
+
+    ```scala
+    import soundness.*
+
+    Text.build:
+      append(t"x = ")
+      append(42)
+      append('!')
+    // t"x = 42!"
+    ```
+
+entry .appendln   appends a value and then a newline to the contextual `Builder`
+    As `append`, followed by `'\n'`.
+
+entry .builder   the contextual `Builder` inside a `build` block, as a value
+    `builder[TextBuilder]` (or `builder[Builder[Text]]`) retrieves the builder a `Text.build`
+    or `Builder#build` block is writing to, for the operations `append` does not cover, such
+    as `clear()` or reading `length`.
+
+entry .build   `Text.build` scopes a `TextBuilder` to a block; `Array.build` fills a fresh array
+    Two extensions share the name. `Text.build { … }` runs the block with a new `TextBuilder`
+    as its contextual builder — `append`, `appendln` and `builder` inside it refer to that
+    builder — and returns the text built, so a text assembled from many pieces is written
+    without a visible mutable value:
+
+    ```scala
+    import soundness.*
+
+    val table: Text = Text.build:
+      for row <- 1 to 3 do
+        append(t"row ")
+        appendln(row)
+    ```
+
+    `Array.build[element](size) { array => … }` allocates a mutable JVM array of `size`
+    elements, hands it to the lambda to fill, and returns it frozen as `Array[element]^{}`;
+    `Pue.apply` and `Ascii`'s concatenation use it. The lambda's array must not escape.
+
+entry .fill   `Text.fill(length)(index => char)`: a text of a given length, one character per index
+    The index is zero-based (`Int`), so `Text.fill(3)(_ => '-')` is `t"---"` and
+    `Text.fill(3)(i => ('a' + i).toChar)` is `t"abc"`.
+
+entry .ascii   `Text.ascii(bytes)` and `bytes.ascii`: decodes a `Data` as US-ASCII text
+    Both forms decode each byte as one ASCII character; a byte above 127 becomes the
+    replacement character. For UTF-8, use `utf8`; for an arbitrary charset, decode with
+    `data.as[Text]` under a `Charset` given (`textDecodable`).
+
+entry .utf8   decodes a `Data` as UTF-8 text
+    `bytes.utf8`: the inverse of `text.in[Data]` under `codepages.utf8Codepage`. Malformed
+    sequences become the replacement character rather than failing.
+
+    ```scala
+    import soundness.*
+    import codepages.utf8Codepage
+
+    t"Adélaïde".in[Data].utf8   // t"Adélaïde"
+    ```
+
+entry .utf16   decodes a `Data` as UTF-16 text, honouring a byte-order mark
+    `bytes.utf16`: without a mark, the bytes are read big-endian.
+
+entry .pue   renders a `Data` as text in which every byte is one printable character
+    `bytes.pue`: the _printable Unicode encoding_, a reversible rendering of bytes as text in
+    which each byte is one character, chosen so that none is a control character — a byte
+    which would be a control (its low seven bits at most 0x20, or 0x7f) is shifted up by
+    0x100, and every other byte is the character of its own value. `Pue(text)` reverses it.
+    The result is for display and for carrying bytes through text-only channels; it is not
+    a standard encoding.
+
+entry .Pue   decodes printable-Unicode-encoded text back to its bytes
+  detail
+      `Pue(text)` is the inverse of `bytes.pue`: each character's low byte is one byte of the
+      result, so a byte which `pue` shifted up by 0x100 to avoid a control character comes
+      back down. Text which did not come from `pue` is reduced to its characters' low bytes
+      without complaint.
+  entry .apply   the bytes a printable-Unicode-encoded text encodes
+
+entry .cut   divides a text at every occurrence of a delimiter, into a list proved to be non-empty
+    `text.cut(delimiter)` splits at a `Text`, a `Char` or a `Regex` (an `r"…"` literal), for
+    any textual type with a `Cuttable` instance for that delimiter. The result is
+    `List[textual] { type Occupied = true }`: a cut always yields at least one piece — the
+    text after the last delimiter, or the whole text when the delimiter never occurs — so
+    `head` and `last` on it are total, and `case List(a, b) =>` binds the element type.
+
+    ```scala
+    import soundness.*
+
+    t"one,two,three".cut(t",")        // List(t"one", t"two", t"three")
+    t",one,two".cut(',')              // List(t"", t"one", t"two")
+    t"a1b22c".cut(r"[0-9]+")          // List(t"a", t"b", t"c")
+    t"k=v=w".cut(t"=", 2)             // List(t"k", t"v=w")
+    t"no commas".cut(t",").head       // t"no commas"
+    ```
+
+    A positive `limit` caps the number of pieces, the last taking the remainder; a limit of
+    zero or less means unlimited. Trailing empty pieces are kept, as `String.split` keeps them
+    with a positive limit, so `t"a,".cut(t",")` is `List(t"a", t"")`. `words`, `lines`,
+    `unkebab` and `unsnake` are cuts at a space, a newline, `-` and `_`.
+
+entry .Cuttable   the typeclass behind `cut`: how a textual type is divided at a kind of delimiter
+  detail
+      `textual is Cuttable by delimiter` has one method, `#cut(text, delimiter, limit)`, and
+      must return at least one piece. Instances exist for `Text` cut by `Text` (a scan for the
+      literal delimiter, with no regular expression involved) and by `Regex`, for any
+      `Textual` with a `Countable` instance cut by `Text` or by `Regex` (so styled text is cut
+      through `segment` and keeps its styling), and for any type cuttable by `Text` cut by a
+      `Char`. All are companion givens, in implicit scope.
+  entry .textualText   any textual cut by a literal `Text`; and any `Text`-cuttable type cut by a `Char`
+      Two givens share the name. The first serves any `Textual` with `Countable`, scanning
+      with `Textual#indexOf` and slicing with `segment`; the second derives `Cuttable by Char`
+      from a type's `Cuttable by Text` instance, so `cut(',')` works wherever `cut(t",")` does.
+  entry .textualRegex   any textual cut at the matches of a `Regex`
+      The pieces *between* matches, with the text after the last match as the final piece. A
+      zero-width match at the cursor is not a cut, so the scan always advances. `Text` itself
+      has the more direct `.textRegex`.
+  entry .textText   `Text` cut by a literal `Text`, by a plain substring scan
+      No regular expression is compiled, so a delimiter such as `.` or `|` needs no quoting,
+      and the cut works under runtimes whose regex engine is unavailable.
+  entry .textRegex   `Text` cut at the matches of a `Regex`, through `String.split`
+      The `limit` is passed to `split` as given (after `cut` has replaced a non-positive limit
+      with unlimited), so trailing empty pieces are kept.
+  entry #cut   the pieces of a text divided at a delimiter, at most `limit` of them, never none
+
+entry .words   a text cut at every space
+    `text.words` is `text.cut(t" ")`: consecutive spaces yield empty pieces, and no other
+    whitespace is a boundary. The result is non-empty.
+
+entry .lines   a text cut at every newline
+    `text.lines` is `text.cut(t"\n")`; a `\r` before the newline stays on its line.
+
+entry .unkebab   the words of a kebab-case identifier: cut at every `-`
+    `t"one-two-three".unkebab` is `List(t"one", t"two", t"three")`. The inverse of `kebab`.
+
+entry .unsnake   the words of a snake-case identifier: cut at every `_`
+    `t"one_two_three".unsnake` is `List(t"one", t"two", t"three")`. The inverse of `snake`.
+
+entry .uncamel   the words of a camel-case or Pascal-case identifier, each lowercased
+    Breaks before every uppercase letter after the first character, and lowercases each word:
+    `t"oneTwoThree".uncamel` and `t"OneTwoThree".uncamel` are both `List(t"one", t"two",
+    t"three")`. A run of capitals is one word per letter (`t"parseXML"` gives `parse`, `x`,
+    `m`, `l`). `kebab`, `snake`, `dotted`, `spaced`, `camel` and `pascal` rejoin the words in
+    another convention:
+
+    ```scala
+    import soundness.*
+
+    t"oneTwoThree".uncamel.kebab    // t"one-two-three"
+    t"oneTwoThree".uncamel.snake    // t"one_two_three"
+    t"oneTwoThree".uncamel.dotted   // t"one.two.three"
+    t"one-two-three".unkebab.camel  // t"oneTwoThree"
+    ```
+
+entry .join   concatenates a collection of texts, with optional separators and brackets
+    An extension on any `Traversable` collection — `List`, `Set`, `Chain`, `Sequence`, a
+    frozen array, or a standard-library `Iterable` — whose elements are `Joinable`: texts of
+    any textual type, `Message`s, or collections, which join by concatenation. The result
+    type is the element type, so joining `List[Text]` gives `Text` and joining `List[Teletype]`
+    gives `Teletype`, with the separators of that same type.
+
+    ```scala
+    import soundness.*
+
+    List(t"one", t"two", t"three").join                      // t"onetwothree"
+    List(t"one", t"two", t"three").join(t", ")               // t"one, two, three"
+    List(t"one", t"two", t"three").join(t", ", t" and ")     // t"one, two and three"
+    List(t"one", t"two").join(t"(", t", ", t")")             // t"(one, two)"
+    List(t"a", t"b", t"c").join(t"[", t", ", t" and ", t"]") // t"[a, b and c]"
+    ```
+
+    The five forms are: no separator; a separator; left bracket, separator and right bracket;
+    a separator and a distinct *penultimate* separator placed before the last element, for
+    prose; and all four. Two elements with a penultimate separator give `t"a and b"`.
+
+    When the elements are not themselves joinable — `List(1, 2, 3)` — the separator is an
+    *element*, interleaved into a rebuilt collection of the receiver's shape:
+    `List(1, 2, 3).join(0)` is `List(1, 0, 2, 0, 3)`, and `List(List(1), List(2)).join(List(0))`
+    is `List(1, 0, 2)`. `join` is the counterpart of `mkString`, but never calls `toString`:
+    a collection whose elements have no joining does not compile. A `Set` joins in its
+    iteration order, which the caller accepts by joining it.
+
+entry .Joinable   the typeclass behind `join`: how a collection of values becomes one value
+  detail
+      `textual is Joinable` has one method, `#join(elements)`, which concatenates an
+      `Iterable` of values into one. Instances in the companion cover every `Textual` type
+      (through its builder, sized to the total length), `Message`, and the native collection
+      shapes `List`, `Chain`, `Sequence` (by concatenation) and `Set` (by union). The
+      receiver side of `join` is `Joinable.Source` (anything `Traversable`), and what the
+      result is — a joined element, or a rebuilt collection with separators interleaved — is
+      decided by `Joinable.Assembly`.
+  refer gossamer.join
+  entry .textual   any `Textual` type is `Joinable`, through its `Builder`
+  entry .message   `Message`s join by concatenation
+  entry .list   `List[element]`s join into one `List`, by concatenation
+  entry .chain   `Chain[element]`s join into one `Chain`
+  entry .sequence   `Sequence[element]`s join into one `Sequence`
+  entry .set   `Set[element]`s join into one `Set`, by union
+  entry .Source   the receiver side of `join`: a collection traversed to its elements
+    detail
+        `self is Joinable.Source by element` yields the elements of a receiver as an
+        iterator. The one instance, `.traversable`, serves any `Traversable` receiver, which
+        is every native shape and any standard `Iterable`. One typeclass rather than one
+        `join` extension per receiver, since same-named extensions with different clause
+        shapes would make every receiver ambiguous.
+    entry .traversable   any `Traversable` receiver is a `Source` of its elements
+    entry #traverse   the receiver's elements, in order, as an iterator
+  entry .Assembly   how `join` assembles a receiver's elements, and the type of its separators
+    detail
+        `self is Joinable.Assembly by element to result` decides what `join` returns.
+        `#Part` is the type of the separators and brackets, and `#assemble` turns the stream
+        of parts into the result. Two instances are tried in priority order: `.joinable`,
+        when the elements are themselves `Joinable` (text, messages, collections), in which
+        case the result is one of them and the separators are of the same type; and the
+        fallback `Fallback#interleaving`, when they are not, in which case the separators are
+        elements and the result is a rebuilt collection of the receiver's shape, through
+        `Reshapable`. The choice is made by given priority, since for a `List[Text]` both
+        readings would apply and overloading cannot rank them.
+    entry .joinable   elements which are `Joinable` join into one of them, with separators of that type
+        `List(t"a", t"b").join(t",")` is `t"a,b"`. The element may be widened to a joinable
+        supertype, so a list of a `Text` subtype joins as `Text`.
+    entry .Fallback   the lower-priority assembly: separators interleaved as elements
+      detail
+          The trait which `Joinable.Assembly`'s companion extends, so that `#interleaving` is
+          found only when `.joinable` does not apply.
+      entry #interleaving   elements which are not `Joinable` are rebuilt with the separators interleaved
+          Needs `self is Reshapable by element to result`. `List(1, 2, 3).join(0)` is
+          `List(1, 0, 2, 0, 3)`.
+    entry #Part   the type of a separator or bracket: the joined type, or the element type
+    entry #assemble   builds the result from the stream of elements and separators
+  entry #join   one value from an `Iterable` of them
+
+entry .pascal   words joined in Pascal case: each capitalised, no separator
+    An extension on any `Traversable` of a textual type with `Char` elements:
+    `List(t"one", t"two").pascal` is `t"OneTwo"`. Each word is lowercased and then
+    capitalised, so `List(t"ONE", t"two").pascal` is also `t"OneTwo"`.
+
+entry .camel   words joined in camel case: Pascal case with the first letter lowered
+    `List(t"one", t"two", t"three").camel` is `t"oneTwoThree"`. `uncamel` is its inverse.
+
+entry .snake   words joined with `_`
+    `List(t"one", t"two").snake` is `t"one_two"`; the words are not recased. `unsnake` is its
+    inverse.
+
+entry .kebab   words joined with `-`
+    `List(t"one", t"two").kebab` is `t"one-two"`; the words are not recased. `unkebab` is its
+    inverse.
+
+entry .dotted   words joined with `.`
+    `List(t"one", t"two").dotted` is `t"one.two"`.
+
+entry .spaced   words joined with a space
+    `List(t"one", t"two").spaced` is `t"one two"`, the inverse of `words`.
+
+entry .length   the number of elements in a textual value: characters, bytes or graphemes
+    `t"hello".length` is `5`; `Writing(t"👨‍👩‍👧").length` is `1`, one grapheme. An inline
+    extension on any `Textual` type, through `Textual#length`.
+
+entry .plain   the plain `Text` of any textual value, with styling dropped
+    `Textual#text` as an extension: `teletype.plain` is the styled text's characters alone,
+    and `text.plain` is `text` itself. The width-measuring operations (`pad`, `fit`, `center`)
+    measure the plain text.
+
+entry .init   a textual value without its last element
+    `t"Hello".init` is `t"Hell"`, and the empty text's `init` is empty. The same as
+    `skip(1, Rtl)`; `tail` is the general collection operation for the other end.
+
+entry .chars   the characters of a textual value as a frozen `Array[Char]`
+    `t"Hello".chars.to[List]` is `List('H', 'e', 'l', 'l', 'o')`. The array is of the plain
+    text's characters, whatever the textual type. `text` on a frozen `Array[Char]` is the
+    inverse.
+
+entry .text   a frozen `Array[Char]` as a `Text`; and the contents of a `StringBuilder` as a `Text`
+    `chars.text` is the inverse of `chars`. On a `StringBuilder`, `builder.text` reads the
+    accumulated text, as the companion of `add`.
+
+entry .add   appends a `Text` or a `Char` to a `StringBuilder`
+    For code which works with a raw `StringBuilder`: `builder.add(t"…")` and `builder.add('x')`
+    append without a `String` conversion at the call site, and `builder.text` reads the
+    result. `TextBuilder` and `Text.build` are the typed alternatives.
+
+entry .slices   a textual value divided into pieces of a fixed size
+    `t"abcdefg".slices(3)` is `List(t"abc", t"def", t"g")`: every piece but the last has
+    exactly `size` elements, and the last has whatever remains. Works on any `Textual` type
+    through `segment`, so a styled text's pieces keep their styling. The empty text gives one
+    empty piece.
+
+entry .punch   splits a textual value at an ordinal, dropping the element there
+    `t"key=value".punch(Quart)` is `(t"key", t"value")`: everything before the ordinal, and
+    everything after it, with the element at the ordinal itself removed. Compare `snip`,
+    which splits between elements and keeps them all.
+
+entry .justify   widens a text to a width by distributing extra spaces among its inter-word gaps
+    The intent is full justification: the difference between `width` and the text's length
+    is shared out as additional spaces between the words, so a line fills its column. Only
+    the plain character count is considered, not display width. The implementation is marked
+    as needing attention in the source and should not be relied on yet.
+
+entry .contains   whether a textual value contains a substring, or a character
+    `t"hello world".contains(t"ello")` and `t"hello".contains('e')` are `true`; every text
+    contains the empty text. The substring is plain `Text`, so a styled text is searched by
+    its characters. For a position rather than a yes or no, use `offsetOf`.
+
+entry .starts   whether a textual value begins with a prefix
+    `t"hello".starts(t"he")` is `true`. Compared on the plain text; `chomp` removes the
+    prefix if present.
+
+entry .ends   whether a textual value ends with a suffix
+    `t"hello".ends(t"lo")` is `true`. Compared on the plain text; `chomp(suffix, Rtl)`
+    removes it if present.
+
+entry .chomp   removes a prefix (or, with `Rtl`, a suffix) from a textual value, if it is there
+    `t"Mr Smith".chomp(t"Mr ")` is `t"Smith"`, and `t"file.txt".chomp(t".txt", Rtl)` is
+    `t"file"`; a text without the affix is returned unchanged, so `chomp` is safe to apply
+    without a `starts` or `ends` check first.
+
+entry .offsetOf   the position of a substring's first (or, with `Rtl`, last) occurrence, as an `Optional` ordinal
+    `t"hello world".offsetOf(t"o")` is the ordinal `Quin`, and `offsetOf(t"o", Rtl)` the
+    ordinal of the last `o`; a substring which does not occur is `Unset`, never a sentinel.
+    The result is an `Ordinal`, so it feeds `before`, `after`, `upto`, `from`, `punch` and
+    `segment` directly, which is how a text is taken apart around a delimiter:
+
+    ```scala fuel
+    frame
+      label Find the separator
+      code
+          import soundness.*
+
+          val header = t"Content-Type: text/html; charset=utf-8"
+          val colon = header.offsetOf(t":")              // an Optional[Ordinal], present
+    frame
+      label Take the name before it
+      code
+          import soundness.*
+
+          val header = t"Content-Type: text/html; charset=utf-8"
+          val name = header.offsetOf(t":").let(header.before(_))    // t"Content-Type"
+    frame
+      label And the value after it, trimmed
+      code
+          import soundness.*
+
+          val header = t"Content-Type: text/html; charset=utf-8"
+          val value = header.offsetOf(t":").let(header.after(_).trim)
+          // t"text/html; charset=utf-8"
+    frame
+      label Then split the value at the first parameter
+      code
+          import soundness.*
+
+          val header = t"Content-Type: text/html; charset=utf-8"
+          val value = header.offsetOf(t":").let(header.after(_).trim)
+          val media = value.let { v => v.offsetOf(t";").lay(v)(v.before(_)) }   // t"text/html"
+    ##
+    ```
+
+    `offsetOf` finds a substring; `pinpoint` finds a character by predicate, and `search`
+    finds the matches of a regular expression. `Textual#indexOf` is the primitive beneath
+    it. An empty substring is found at `Prim` from the left and is `Unset` from the right.
+
+entry .tally   the number of non-overlapping occurrences of a substring
+    `t"banana".tally(t"an")` is `2`, and `t"aaaa".tally(t"aa")` is `2`, since each
+    occurrence is counted from the end of the one before. The empty substring tallies `0`.
+    This is the substring form; `count(predicate)` on a text — `t"banana".count(_ == 'a')`
+    — is the collections' operation, which is why the substring form has its own name.
+
+entry .search   the substrings of a textual value which a regular expression matches
+    `t"a1b22c".search(r"[0-9]+")` is a `Chain` of `t"1"` and `t"22"`, each a slice of the
+    receiver (so a styled text's matches keep their styling). With `overlap = true`, a match
+    may begin inside the one before it. It needs a `Regex.Engine` in scope, which the `r"…"`
+    literal's form supplies. For the pieces *between* matches, use `cut`.
+
+entry .extract   scans a textual value with a partial function of regex patterns, collecting every match
+    `text.extract { case r"…" => value }` runs a partial function of `r"…"` patterns along
+    the text, from `start` (`Prim` by default), yielding a `Chain` of the values the matching
+    cases produce; the scan advances to the end of each match. The cases are decomposed while
+    the code compiles so that each pattern is tried at every position, with a `Scanner` which
+    records where its match began and ended; a lambda which cannot be decomposed falls back
+    to re-running the whole partial function at each position. The result type is inferred
+    from the cases.
+
+    ```scala
+    import soundness.*
+
+    t"x=1, y=22".extract:
+      case r"$key([a-z])=$value([0-9]+)" => (key, value)
+    ```
+
+entry .lower   a textual value in lower case
+    `t"Hello World".lower` is `t"hello world"`, mapping each character with `Char#toLower`.
+    Requires `Char` elements, so it is available on `Text`, `Writing` is excluded, and a
+    styled text keeps its styling.
+
+entry .upper   a textual value in upper case
+    `t"Hello World".upper` is `t"HELLO WORLD"`, mapping each character with `Char#toUpper`;
+    a character with no single-character upper case (`ß`) is left alone.
+
+entry .capitalize   a textual value with its first character in upper case
+    `t"hello".capitalize` is `t"Hello"` and `t"fooBar".capitalize` is `t"FooBar"`; the rest
+    is unchanged. The empty text stays empty.
+
+entry .uncapitalize   a textual value with its first character in lower case
+    `t"Hello".uncapitalize` is `t"hello"`; `camel` is `pascal` followed by this.
+
+entry .trim   a textual value without its leading and trailing whitespace, or one side's with a `Bidi`
+    `t"  Hello \n".trim` is `t"Hello"`, and `trim(Ltr)` or `trim(Rtl)` strips one side only.
+    Whitespace is what `Char#isWhitespace` says: spaces, tabs, newlines and the other
+    Unicode space separators. Text which is all whitespace trims to the empty text.
+
+entry .blank   whether a textual value is empty or all whitespace
+    `t"  \t".blank` and `t"".blank` are `true`; for emptiness alone, use the collections'
+    `nil`.
+
+entry .pinpoint   the ordinal of the first character satisfying a predicate, from a start, in either direction
+    `t"oh, Hello World".pinpoint(_.isUpper)` is `Quin`, the position of `H`;
+    `pinpoint(_.isUpper, Sen)` begins the search at the sixth character and finds `W`; and
+    `pinpoint(!_.isWhitespace, bidi = Rtl)` scans from the end. The result is `Unset` when no
+    character satisfies the predicate. It is the positional primitive beneath `trim`, `blank`
+    and `uncamel`, and reaches each character by direct access rather than traversal. For a
+    substring's position, use `offsetOf`; the collections' `where` is the predicate search
+    without a start or direction.
+
+entry .tr   maps every character; or replaces one character with another
+    `t"ABC".tr(_.toLower)` is `t"abc"`, and `t"one,two".tr(',', ';')` is `t"one;two"`. A
+    character-for-character transliteration which never changes the length; for a
+    substring, use `sub`.
+
+entry .erase   a textual value with every occurrence of the given characters removed
+    `t"a-b_c".erase('-', '_')` is `t"abc"`.
+
+entry .broken   inserts a break character wherever two adjacent characters satisfy a predicate
+    `text.broken((left, right) => …)` tests each adjacent pair and inserts `break` — a
+    zero-width space by default — between the two when the predicate holds, so a long
+    identifier can be given soft break points for wrapping: `t"camelCaseName".broken((a, b)
+    => a.isLower && b.isUpper)` marks each word boundary. A text of fewer than two
+    characters is unchanged.
+
+entry .pad   extends a textual value with a character to a width, on the right or, with `Rtl`, the left
+    `t"123".pad(5)` is `t"123  "` and `t"123".pad(5, Rtl, '0')` is `t"00123"`; text already
+    at or past the width is unchanged, never truncated. The width is measured through the
+    `Text is Measurable` given in scope (`textMetrics.uniformMetric` counts one column per
+    character; `wideCharacterWidthMetric` counts two for CJK and emoji), so padding aligns
+    columns of text as a terminal displays them.
+
+    ```scala
+    import soundness.*
+    import textMetrics.uniformMetric
+
+    t"123".pad(5, Rtl)   // t"  123"
+    ```
+
+entry .center   pads a textual value on both sides to a width
+    `t"ab".center(6)` is `t"  ab  "`, with the odd column, when there is one, on the left.
+    Measured through the `Text is Measurable` given in scope, as `pad` is.
+
+entry .fit   forces a textual value to an exact width, padding or truncating as needed
+    `t"123".fit(5)` is `t"123  "`, `t"12345".fit(3)` is `t"123"`, and with `Rtl` the padding
+    goes on the left and the truncation keeps the right: `t"12345".fit(3, Rtl)` is `t"345"`
+    and `t"123".fit(5, Rtl, '.')` is `t"..123"`. Measured through the `Text is Measurable`
+    given in scope.
+
+entry .ossify   replaces every space with a non-breaking space
+    `t"a b".ossify` has U+00A0 between the letters, so a line-wrapping layout keeps the
+    words together.
+
+entry .subscripts   a textual value with every character replaced by its subscript form
+    `t"2".subscripts` is `t"₂"`; a character with no Unicode subscript becomes a space.
+
+entry .superscripts   a textual value with every character replaced by its superscript form
+    `t"23".superscripts` is `t"²³"`; a character with no Unicode superscript becomes a space.
+
+entry .sub   replaces occurrences of a substring, or of a regular expression's matches, in a `Text`
+    `t"naive".sub(t"i", t"ï")` is `t"naïve"`, and every occurrence is replaced unless a
+    `count` is given: `t"aaa".sub(t"a", t"b", 2)` is `t"bba"`. A literal replacement is
+    inserted verbatim — `\` and `$` in it are not escapes — so `t"a.b".sub(t".", t"\\.")`
+    gives `a\.b`. With a `Regex` as the pattern, `$1` in the replacement refers to the
+    first group: `t"ab".sub(r"(a)b", t"$$1c")` is `t"ac"`. Matches do not overlap:
+    `t"fofofoo".sub(t"fofo", t"momo")` is `t"momofoo"`.
+
+entry .urlEncode   a `Text` percent-encoded as a URL query component, in UTF-8
+    `t"hello world".urlEncode` is `t"hello+world"` and `t"é".urlEncode` is `t"%C3%A9"`: the
+    form encoding, in which a space is `+`. `urlDecode` reverses it.
+
+entry .urlDecode   decodes a percent-encoded `Text`, with `+` as a space
+    `t"%2B".urlDecode` is `t"+"` and `t"+".urlDecode` is `t" "`.
+
+entry .punycode   an internationalised domain name in its ASCII (Punycode) form
+    `t"www.äpfel.com".punycode` is `t"www.xn--pfel-koa.com"`, through `java.net.IDN`.
+
+entry .sysData   the bytes of a `Text` in the system codepage, as a frozen array
+    `t"hello".sysData` is the bytes `104, 101, 108, 108, 111`. For a chosen encoding, use
+    `text.in[Data]` with a `codepages` given in scope.
+
+entry .proximity   the distance between two `Text`s under the `Proximity` measure in scope
+    `t"Hello world".proximity(t"Hello orld")` is `1` under `proximities.levenshteinProximity`
+    (and `caseSensitivity.caseSensitive`): the result type is the measure's `Operand` — an
+    `Int` for Levenshtein and prefix measures, a `Double` for Jaro, Jaro–Winkler and
+    normalised Levenshtein. Both a `Proximity` and a `CaseSensitivity` must be imported by
+    name.
+
+    ```scala
+    import soundness.*
+    import proximities.levenshteinProximity
+    import caseSensitivity.caseSensitive
+
+    t"kitten".proximity(t"sitting")   // 3
+    ```
+
+entry .fuzzy   matches a `Text` against literal cases by proximity rather than equality
+    `text.fuzzy() { case t"hello" => … }` evaluates the case whose literal is nearest the
+    text under the `Proximity by Double` measure in scope — `proximities.normalized
+    LevenshteinProximity` or `jaroWinklerProximity` — with ties going to the earlier case. A
+    `threshold` bounds the distance a case may be chosen at; a text further than it from
+    every literal falls to the wildcard case, which must be last and may bind the text, and
+    throws `MatchError` if there is none. Every non-wildcard case must be a `"…"` or `t"…"`
+    literal, checked as the code compiles.
+
+    ```scala
+    import soundness.*
+    import proximities.normalizedLevenshteinProximity
+    import caseSensitivity.caseInsensitive
+
+    t"hlelo".fuzzy(0.5):
+      case t"hello"   => t"english"
+      case t"bonjour" => t"french"
+      case other      => t"unknown: $other"
+    // t"english"
+    ```
+
+entry .Proximity   a measure of the distance between two `Text`s: the typeclass behind `proximity`, `fuzzy` and `Lexicon`
+  detail
+      `Proximity by operand` has one method, `#distance(left, right)`, whose result type is
+      `#Operand`: an `Int` for a count of edits or matching characters, a `Double` for a
+      normalised score. There is no default: a measure is imported by name from the
+      `proximities` package, and every one of them consults the `CaseSensitivity` in scope
+      to decide whether two characters are the same, so that is imported too.
+
+      ```scala
+      import soundness.*
+      import proximities.levenshteinProximity
+      import caseSensitivity.caseInsensitive
+
+      t"Hello".proximity(t"hello")   // 0
+      ```
+
+      `#Triangulable` is `true` for a measure which is a metric obeying the triangle
+      inequality (Levenshtein), which is what a `Lexicon` needs to prune its search; the
+      Jaro measures are similarities, not metrics, and `Lexicon(terms)` will not accept
+      them.
+  refer gossamer.proximities
+  refer gossamer.proximity
+  refer gossamer.fuzzy
+  refer gossamer.Lexicon
+  entry #Operand   the type a distance has: `Int` or `Double`
+  entry #Triangulable   `true` when the measure is a metric obeying the triangle inequality
+  entry #distance   the distance between two texts
+
+entry .proximities   the string-similarity measures, each a `Proximity` given to import by name
+  detail
+      Which notion of closeness `proximity`, `fuzzy` and `Lexicon` use is a choice, so
+      `import soundness.*` brings none of these in; one is imported by name, along with a
+      `CaseSensitivity`, which every measure needs to compare characters.
+
+      ```scala
+      import soundness.*
+      import proximities.jaroWinklerProximity
+      import caseSensitivity.caseSensitive
+
+      t"martha".proximity(t"marhta")   // about 0.96
+      ```
+
+      Levenshtein and prefix distances are `Int`s, and zero means identical; the Jaro,
+      Jaro–Winkler and normalised Levenshtein measures are `Double`s. Jaro and Jaro–Winkler
+      are *similarities* (one means identical), where normalised Levenshtein is a *distance*
+      (zero means identical); `fuzzy`, which picks the case with the smallest value, expects
+      a distance.
+  entry .levenshteinProximity   the Levenshtein edit distance: single-character insertions, deletions and substitutions
+      `t"kitten".proximity(t"sitting")` is `3`. The distance between a text and the empty
+      text is the text's length. A true metric (`Triangulable = true`), so it is what a
+      `Lexicon` is built over. Computed in two rows of integers, so memory is linear in the
+      shorter text.
+  entry .normalizedLevenshteinProximity   the Levenshtein distance divided by the longer text's length, in `0.0` to `1.0`
+      `0.0` for identical texts, `1.0` for texts with nothing in common, and `0.0` for two
+      empty texts. The measure `fuzzy` is usually used with, since a threshold on it does not
+      depend on the texts' lengths.
+  entry .jaroProximity   the Jaro similarity: matching characters within a window, less transpositions
+      `1.0` for identical texts, `0.0` for texts sharing no characters within half the
+      longer length of each other. A similarity, not a distance.
+  entry .jaroWinklerProximity   the Jaro similarity boosted for a common prefix of up to four characters
+      Jaro, plus a tenth of the common-prefix length (capped at four) times what Jaro
+      leaves short of `1.0`; it favours texts which begin alike, as misspellings often do.
+  entry .prefixProximity   the length of the common prefix of two texts
+      `t"interview".proximity(t"internal")` is `5`. A larger number means *more* alike; it
+      is a building block of `jaroWinklerProximity` rather than a distance for `fuzzy`.
+
+entry .CaseSensitivity   whether two characters count as the same: a policy every proximity measure consults
+  detail
+      A `CaseSensitivity` is a function from two `Char`s to whether they match. The three
+      policies in the `caseSensitivity` package — `caseSensitive`, `caseInsensitive` and
+      `smartCase` — are the usual choices, imported by name; a custom one is any lambda of
+      the right shape.
+  refer gossamer.caseSensitivity
+  entry #compare   whether two characters match under this policy
+
+entry .caseSensitivity   the case-matching policies, each a `CaseSensitivity` given to import by name
+  detail
+      `import soundness.*` brings none of these in. One is imported by name wherever a
+      `Proximity` is used, since every measure asks it whether two characters are the same.
+
+      ```scala fuel
+      frame
+        label Case-sensitive: `H` and `h` differ
+        code
+            locally:
+              import proximities.levenshteinProximity
+              import caseSensitivity.caseSensitive
+              t"Hello".proximity(t"hello")   // 1
+      frame
+        label Case-insensitive: they are the same
+        code
+            locally:
+              import proximities.levenshteinProximity
+              import caseSensitivity.caseInsensitive
+              t"Hello".proximity(t"hello")   // 0
+      frame
+        label Smart case: a lowercase letter matches either case, an uppercase one only itself
+        code
+            locally:
+              import proximities.levenshteinProximity
+              import caseSensitivity.smartCase
+              (t"hello".proximity(t"Hello"), t"Hello".proximity(t"hello"))   // (0, 1)
+      ##
+      ```
+  entry .caseSensitive   characters match only when they are equal
+  entry .caseInsensitive   characters match when their upper-case forms are equal
+  entry .smartCase   a lowercase character on the left matches either case; any other character matches only itself
+      The rule of search tools such as Vim's `smartcase`: a query typed in lowercase is
+      case-insensitive, and a capital in the query must be matched exactly. The left operand
+      is the query.
+
+entry .Collation   a total ordering of `Text`: what sorting and comparing text requires
+  detail
+      Text has no natural order — whether `café` sorts before `caff` depends on the language
+      and the purpose — so Soundness has no ambient one: sorting a `List[Text]`, or writing
+      `t"a" < t"b"`, needs a `Collation` in scope, and does not compile without one. A
+      collation is imported by name from the `collations` package (`unicodeCollation` for
+      dictionary order, `codepointCollation` for a fast, table-free order) or built from a
+      hieroglyph `CollationTable` with `.apply`, and `collationComparable` turns it into the
+      `Text is Comparable` the comparison operators and sorts look for.
+
+      ```scala
+      import soundness.*
+      import collations.unicodeCollation
+      import sortingAlgorithms.timsort
+
+      List(t"caff", t"café", t"cafe").sort   // List(t"cafe", t"café", t"caff")
+      t"apple" < t"banana"                    // true
+      ```
+
+      `#compare` gives the `Comparison` of two texts, and `#key` a sort key: an array of
+      integers which, compared element by element, orders as the collation does, for
+      sorting many texts without repeating the comparison work.
+  refer gossamer.collations
+  refer gossamer.collationComparable
+  entry .apply   a `Collation` over a hieroglyph `CollationTable`, such as a language's tailoring
+  entry #compare   the `Comparison` (`Less`, `Same` or `More`) of two texts
+  entry #key   a sort key for a text: integers which compare as the collation does
+
+entry .collationComparable   makes `Text` `Comparable` whenever a `Collation` is in scope
+    The given which `<`, `>`, `least`, `sort` and every other comparison on `Text` resolve
+    through. It needs a `Collation` in scope, so text becomes sortable exactly when a sort
+    order has been chosen, and the error for an unsorted `List[Text]` names the missing
+    `Comparable`. It is a top-level given with a library-qualified name, since neither
+    `Comparable`'s nor `Text`'s companion can refer to gossamer, so it must be imported by
+    name — `import soundness.collationComparable` — alongside the collation.
+
+    ```scala
+    import soundness.*
+    import soundness.collationComparable
+    import collations.codepointCollation
+
+    t"b" < t"a"   // false
+    ```
+
+entry .collations   the sort orders for text, each a `Collation` given to import by name
+  detail
+      `import soundness.*` brings none of these in; a sort order is chosen by importing one.
+      The two orders differ on case, accents and characters outside the basic plane:
+
+      ```scala fuel
+      frame
+        label Dictionary order: lowercase before uppercase, accents as secondary differences
+        code
+            locally:
+              import collations.unicodeCollation
+              import sortingAlgorithms.timsort
+              List(t"B", t"a", t"café", t"cafe").sort   // List(t"a", t"B", t"cafe", t"café")
+      frame
+        label Codepoint order: every capital before every lowercase letter
+        code
+            locally:
+              import collations.codepointCollation
+              import sortingAlgorithms.timsort
+              List(t"B", t"a", t"café", t"cafe").sort   // List(t"B", t"a", t"cafe", t"café")
+      ##
+      ```
+
+      A locale-specific tailoring comes from cosmopolite, which derives a `Collation` from a
+      contextual `Locale`, or from `Collation(table)` over a hieroglyph `CollationTable`.
+  entry .unicodeCollation   dictionary order: the Unicode Collation Algorithm's root table, three levels, non-ignorable
+      The order of the Default Unicode Collation Element Table (UTS #10): letters by their
+      primary weight regardless of case or accent, then accents, then case, so `cafe` <
+      `café` < `caff` and `a` < `B`. The sort key is the table's key for the text.
+  entry .codepointCollation   raw code-point order: deterministic, table-free, for machine-facing sorting
+      Orders by Unicode scalar value, so it is stable across versions of the collation data
+      and costs nothing to load; suited to file listings and other output which must be
+      reproducible rather than readable. Not `String`'s order, which compares UTF-16 code
+      units and so puts supplementary characters (`𝓐`) before U+E000–U+FFFF; here they sort
+      after the whole basic plane. Capitals sort before every lowercase letter.
+
+entry .Decimalizer   renders a `Double` as decimal text to a chosen precision, as the `DecimalConverter` `show` consults
+  detail
+      A `Decimalizer` is a `DecimalConverter`, the typeclass `Double is Showable` (and so
+      `t"$x"` for a `Double`) looks for, which states how many digits are worth showing:
+      `Decimalizer(3)` is three significant figures, and `Decimalizer(decimalPlaces = 2)` two
+      digits after the point. Values whose magnitude reaches `#exponentThreshold` powers of
+      ten (three by default) are written in scientific notation with a superscript exponent.
+
+      ```scala
+      import soundness.*
+
+      Decimalizer(3).decimalize(-3.14159)                  // t"-3.14"
+      Decimalizer(5).decimalize(6.0221408e23)              // t"6.0221×10²³"
+      Decimalizer(decimalPlaces = 1).decimalize(9.96)      // t"10.0"
+      Decimalizer(2).decimalize(9.99)                      // t"10"
+      Decimalizer(4).decimalize(999.96)                    // t"1.000×10³"
+      Decimalizer(7, exponentMultiple = 3).decimalize(6.0221408e23)   // t"602.2141×10²¹"
+      ```
+
+      A `given Decimalizer(3)` in scope then makes every `show` of a floating-point number
+      render the same way, so changing a program's precision is one given rather than a
+      search for format strings. Rounding carries correctly past the leading digit. The
+      special values render as `#infinity` (`∞`, with `#minusSign` when negative) and `#nan`
+      (`∉ℝ`). `decimalConverters.javaDecimalConverter` is the plain `Double#toString`
+      alternative.
+  refer rudiments.DecimalConverter
+  refer gossamer.decimalConverters
+  entry #significantFigures   the number of significant digits to show, or `Unset` to use `#decimalPlaces`
+      The first parameter, so `Decimalizer(3)` sets it. When both it and `#decimalPlaces`
+      are `Unset`, three significant figures are used.
+  entry #decimalPlaces   the number of digits after the decimal point, used when `#significantFigures` is `Unset`
+  entry #decimalPoint   the decimal point character, `.` by default
+      `Decimalizer(7, decimalPoint = '·').decimalize(6.626070e-34)` is `t"6·626070×10¯³⁴"`.
+  entry #minusSign   the character written before a negative number, `-` by default
+  entry #plusSign   the character written before a positive number, or `Unset` (the default) for none
+  entry #exponent   the text between the mantissa and the exponent, `×10` by default
+  entry #exponentThreshold   the magnitude, in powers of ten, at which scientific notation begins; `3` by default
+      `Unset` disables scientific notation altogether.
+  entry #superscript   whether the exponent is written in superscript digits (`10²³`), the default, or plain (`10-34`)
+      With superscript, a negative exponent uses the macron-like `¯` as its sign.
+  entry #exponentMultiple   rounds the exponent down to a multiple, `3` for engineering notation; `1` by default
+      With `exponentMultiple = 3`, `6.0221408e23` renders as `602.2141×10²¹`.
+  entry #infinity   the text for an infinite value, `∞` by default
+  entry #nan   the text for a value which is not a number, `∉ℝ` by default
+  entry #decimalize   the text of a `Double` under this decimalizer's settings
+  entry #exponentScale   the number of decimal digits in an exponent; a helper of `#decimalize`
+
+entry .decimalConverters   the `DecimalConverter` alternatives to a `Decimalizer`, to import by name
+  detail
+      A `Double` is shown through the `DecimalConverter` in scope. A `Decimalizer` states a
+      precision; this package holds the converter which does not.
+  entry .javaDecimalConverter   renders a `Double` with `Double#toString`, exactly as Java would
+      `3.14159` renders as `3.14159`, `1e21` as `1.0E21`, and `0.1 + 0.2` as
+      `0.30000000000000004`: every digit the binary value has, with no rounding to a
+      precision.
+
+entry .Numerous   a word with its singular and plural endings, for counting things in prose
+  detail
+      `Numerous(t"item")(3)` is `t"items"` and `Numerous(t"item")(1)` is `t"item"`. The
+      endings are `s` and nothing by default, and are given for irregular words:
+      `Numerous(t"quer", t"ies", t"y")`. A collection may be passed in place of a count.
+
+      ```scala
+      import soundness.*
+
+      val files = Numerous(t"file")
+      def report(n: Int): Text = t"$n ${files(n)} changed"
+      report(1)   // t"1 file changed"
+      report(2)   // t"2 files changed"
+      ```
+  entry #word   the stem the endings are added to
+  entry #pluralEnd   the ending for any count but one; `s` by default
+  entry #singularEnd   the ending for a count of one; empty by default
+  entry #apply   the word with the ending for a count, or for a collection's size
+
+entry .Range   the home of `Range.Error`, raised when an index is outside a text's bounds
+  detail
+      Only the error lives here. The slicing operations themselves clamp rather than fail —
+      `segment` cuts an oversized interval short — so the error is raised by the few
+      operations which must reject an index, such as a line editor's cursor movement.
+  entry .Error   Error 151: _the index `index` is outside the range `from`-`to`_
+    detail
+        Raised when a position is outside a text's bounds by an operation which cannot
+        clamp. It is a `fulminate.Error`, so it is raised through a `Tactic[Range.Error]`
+        and can be handled with `safely` or `mend`.
+    entry #index   the index which was asked for
+    entry #from   the lowest valid index
+    entry #to   the highest valid index
+
+entry .Bidi   the direction an operation works from: `Ltr` (the start) or `Rtl` (the end)
+    `Bidi` is anticipation's enum, re-exported here with its cases so that `import
+    gossamer.*` has the whole slicing vocabulary. `keep`, `skip`, `pad`, `fit`, `trim`,
+    `chomp`, `offsetOf` and `pinpoint` each take a `Bidi`, `Ltr` by default, and `Rtl` makes
+    them work from the end: `t"Hello".keep(2, Rtl)` is `t"lo"`.
+
+entry .Ltr   left-to-right: from the start of the text, the default direction
+    `Bidi.Ltr`, re-exported so it can be written bare: `t"123".pad(5, Ltr, '.')` is
+    `t"123.."`.
+
+entry .Rtl   right-to-left: from the end of the text
+    `Bidi.Rtl`, re-exported so it can be written bare: `t"123".pad(5, Rtl, '.')` is
+    `t"..123"`, and `t"Hello".skip(1, Rtl)` is `t"Hell"`.
+
+entry .reversibleTextual   a `Reversible` instance for any textual type, for a companion to publish
+    `reverse` is one extension for collections and text alike, driven by rudiments'
+    `Reversible` typeclass; but a blanket given for every `Textual` type cannot be placed
+    where implicit search would find it, since `Reversible`'s companion is in `rudiments`,
+    below gossamer. So each textual type publishes the instance in its own companion:
+
+    ```scala
+    import soundness.*
+
+    case class Styled(text: Text)
+
+    object Styled:
+      given textual: Styled is Textual = ???
+      given reversible: (Styled is Reversible { type Result = Styled }) = reversibleTextual
+    ```
+
+    The refinement must be parenthesised as shown, or the braces parse as the given's body.
+    The reversal builds the result element by element through the type's `Builder`, so a
+    styled text stays styled.
+
+entry .traversableTextual   a `Traversable` instance for any textual type, for a companion to publish
+    The counterpart of `reversibleTextual` for traversal: a textual type whose companion
+    declares `given traversable: (Styled is Traversable { type Operand = Char }) =
+    traversableTextual` gains the predicate forms of `keep`, `skip`, `snip`, `count`,
+    `where`, `all`, `exists` and the other `Traversable` operations from the collections
+    library, with the rebuild going through `segment` so styling survives. The elements
+    traversed are the type's `Textual#Result`.
+
+entry .Writing   a text segmented into grapheme clusters: the characters a reader sees
+  detail
+      A `Char` is not what a person calls a character: `é` may be one code point or two, a
+      flag is a pair of regional indicators, and a family emoji is several code points
+      joined. `Writing(text)` computes the text's grapheme-cluster `#boundaries` (Unicode
+      UAX #29) once, and then presents it as a `Textual` whose elements are `Grapheme`s, so
+      `length`, `keep`, `skip`, `segment`, `slices` and `reverse` count and cut by what is
+      seen rather than by UTF-16 code units.
+
+      ```scala
+      import soundness.*
+
+      Writing(t"abc").graphemeCount           // 3
+      Writing(Text("👨‍👩‍👧")).graphemeCount     // 1
+      Writing(Text("🇬🇧🇫🇷")).length           // 2
+      Writing(t"").boundaries.length          // 1: the single boundary at position 0
+      Writing(t"héllo").keep(2).text          // t"hé", whatever `é` is made of
+      ```
+
+      Under a `Grapheme is Measurable` in scope (from a `textMetrics` given), `.measurable`
+      gives a writing's display width as the sum of its graphemes' widths, which is more
+      accurate than measuring the plain text per code point. A `Writing` shows as its text
+      and inspects with its clusters separated by `·`.
+  refer gossamer.Grapheme
+  refer gossamer.Textual
+  entry .apply   a `Writing` of a text, with its grapheme boundaries computed
+  entry .empty   the empty writing
+  entry .showable   shows a writing as its plain text
+  entry .inspectable   inspects a writing as `w"…"` with `·` between its graphemes
+      `Writing(t"a\r\nb").inspect` is `w"a·\r\n·b"`: the segmentation is what distinguishes
+      one writing from another, so it is what inspection shows.
+  entry .concatenable   `left + right` on writings, with the boundaries recomputed
+  entry .measurable   the display width of a writing: the sum of its graphemes' widths
+      Needs a `Grapheme is Measurable` in scope, which `textMetrics.wideCharacterWidthMetric`
+      provides through `Grapheme.measurable`. A combining accent adds nothing to its base,
+      and a flag or a ZWJ sequence is one wide cell rather than the sum of its parts.
+  entry .textual   the `Textual` instance for `Writing`, with `Grapheme` elements
+      Length is the grapheme count, access and `segment` work in graphemes, and `indexOf`
+      returns a position only when the substring begins on a grapheme boundary.
+  entry .graphemes   the writing's graphemes, as an indexed sequence
+  entry .graphemeCount   the number of grapheme clusters; the same as `length`
+  entry #text   the underlying plain text
+  entry #boundaries   the character offsets of the grapheme boundaries, from `0` to the text's length
+      A frozen array with one more element than there are graphemes; grapheme `i` is the
+      characters between `boundaries(i)` and `boundaries(i + 1)`.
+
+entry .Grapheme   one grapheme cluster: a base character with its combining marks, or a joined sequence
+  detail
+      The element type of `Writing`: an opaque type over `String` holding the code points of
+      a single user-perceived character. `Grapheme("é")` wraps one; `#text` is it as `Text`
+      and `#chars` its length in UTF-16 units. It inspects as `‹é›`, the cluster shown
+      intact inside guillemets rather than escaped, since the structure is the point.
+
+      ```scala
+      import soundness.*
+      import textMetrics.wideCharacterWidthMetric
+
+      Grapheme("a").metrics    // 1
+      Grapheme("é").metrics    // 1: a base plus a combining mark
+      Grapheme("日").metrics   // 2
+      ```
+
+      Its companion's members — `apply`, the `showable`, `inspectable` and `measurable`
+      givens, and the `text` and `chars` extensions — are declared in
+      `internal.opaques.Grapheme`, from which the type is exported, and documented there.
+  refer gossamer.Writing
+
+entry .Ascii   a byte string of ASCII characters, made with `a"…"`
+  detail
+      An opaque type over a frozen `Array[Byte]`, one byte per character, with a `Textual`
+      instance whose elements are `Byte`s, so the positional and substring operations
+      (`cut`, `keep`, `starts`, `offsetOf`, `slices`, `+`, …) work on it directly and `plain`
+      converts it to `Text`. The `a"…"` interpolator checks every character is ASCII as the
+      code compiles; `Ascii(bytes)` wraps bytes already in hand, unchecked.
+
+      ```scala
+      import soundness.*
+
+      val greeting: Ascii = a"hello"
+      greeting.bytes.length          // 5
+      (greeting + a", world").plain  // t"hello, world"
+      greeting.inspect               // t"ascii\"hello\""
+      ```
+
+      Its companion's members — `apply`, the `showable`, `inspectable`, `concatenable` and
+      `textual` givens, and the `bytes` extension — are declared in `internal.opaques.Ascii`,
+      from which the type is exported, and documented there.
+  refer gossamer.a
+
+entry .textDecodable   decodes a `Data` to `Text` through the `Charset` in scope, for `data.as[Text]`
+    The `Decodable in Data` given for `Text`, in `gossamer.codec`: `bytes.as[Text]` reads
+    the bytes in the `Charset` given in scope (`charsets.utf8Charset`, `asciiCharset`, …),
+    and is the counterpart of `text.in[Data]` under a `codepages` given. A charset other
+    than ISO-8859-1 also needs a `TextSanitizer` for malformed input (`strictSanitizer`
+    raises `Charset.Error`). It is a top-level given and so must be imported by name:
+    `import soundness.textDecodable`.
+
+    ```scala
+    import soundness.*
+    import soundness.textDecodable
+    import charsets.utf8Charset
+    import textSanitizers.skipSanitizer
+
+    val bytes: Data = Data(0x41, 0x42)
+    bytes.as[Text]   // t"AB"
+    ```
+
+entry .enumIdentification   how an enum's case names are written as text, each an `Identifiable` given to import by name
+  detail
+      A `Verbosity.Loud` case may appear in a command line, a configuration file or a JSON
+      document as `loud`, `LOUD`, `Loud` or `loud-level`; which, is a choice, so the
+      `Identifiable` givens for enums live here and one is imported by name. Each encodes a
+      case's name into the convention and decodes text in that convention back to the
+      Pascal-case name the enum declares.
+
+      ```scala
+      import soundness.*
+      import enumIdentification.kebabCaseIdentifiable
+
+      enum Verbosity:
+        case Quiet, Normal, VeryLoud
+
+      summon[Verbosity is Identifiable].encode(t"VeryLoud")   // t"very-loud"
+      summon[Verbosity is Identifiable].decode(t"very-loud")  // t"VeryLoud"
+      ```
+
+      A CLI flag typed `Flag[Verbosity]` then reads `--verbosity very-loud`, and a JSON or
+      TEL codec writes the case as `very-loud`.
+
+      `pascalCaseIdentifiable` is the identity, for an enum whose cases are written as
+      declared. The givens are in `gossamer.codec`, since `Identifiable` is distillate's.
+  entry .kebabCaseIdentifiable   `VeryLoud` ↔ `very-loud`
+  entry .snakeCaseIdentifiable   `VeryLoud` ↔ `very_loud`
+  entry .camelCaseIdentifiable   `VeryLoud` ↔ `veryLoud`
+      Decoding treats `_` as a word boundary, as the snake-case given does, before
+      recapitalising.
+  entry .pascalCaseIdentifiable   `VeryLoud` ↔ `VeryLoud`: the case name as declared
+
+entry .Lexicon   a BK-tree over a vocabulary: finds every term within a given distance of a query
+  detail
+      Comparing a query against every word in a vocabulary is quadratic, and a spelling
+      suggestion needs it to be fast. A `Lexicon` indexes terms in a
+      Burkhard–Keller tree under the `Proximity by Int` in scope, and uses the triangle
+      inequality — which the measure must obey, so its `Triangulable` must be `true`, as
+      `levenshteinProximity`'s is — to prune most of the vocabulary without measuring it.
+
+      ```scala
+      import soundness.*
+      import proximities.levenshteinProximity
+      import caseSensitivity.caseSensitive
+
+      val lexicon = Lexicon(List(t"book", t"boot", t"cook", t"look", t"bake"))
+      lexicon.search(t"book", 0)   // Set(t"book"): exact matches only
+      lexicon.search(t"booq", 1)   // Set(t"book", t"boot"): within one edit
+      ```
+
+      A lexicon may map each term to a value (`Lexicon(Map(t"colour" -> Colour.Blue))`),
+      in which case a search returns the values. It is mutable: `#update` adds a term,
+      `lexicon(t"term") = value`, and the structure is not safe to share between threads
+      while being built.
+  refer gossamer.Proximity
+  refer gossamer.proximities
+  entry .apply   a lexicon of a list of terms, of a map from terms to values, or an empty one
+      `Lexicon(terms)` indexes each `Text` as both key and value; `Lexicon(map)` indexes
+      the keys and returns the values from a search; and `Lexicon[element]()` is empty, to
+      be filled with `#update`. The first two need a `Triangulable` measure; the empty form
+      takes any `Proximity by Int`, and relies on the caller to have chosen a metric.
+  entry .Node   one node of the tree: a term, its value, and children keyed by distance
+    detail
+        The implementation of a non-empty lexicon. Each child subtree is keyed by its root's
+        distance from this node's term, which is what lets a search skip every subtree whose
+        key is further than the radius from the query's distance.
+    entry #children   the child subtrees, keyed by their distance from this node's term
+    entry #update   adds a term to the subtree at its distance, creating one if needed
+    entry #search   the values within `radius` of the query, in this subtree
+  entry #update   adds a term with a value: `lexicon(key) = value`
+  entry #search   the values of every term within `radius` of the query
+      Radius zero is an exact lookup; each wider radius admits more distant candidates,
+      which is how a "did you mean" suggestion is produced from a large word list.
+
+entry .Dictionary   a dense trie from `Text` keys to values, for exact and prefix lookup
+  detail
+      A `Dictionary[value]` maps text to values through a trie laid out in flat arrays:
+      each node owns a block of `alphabet.size` slots in `#children`, so a lookup costs one
+      array read per character of the key, and no hashing of the whole key. It suits
+      hyphenation tables, HTML attribute names, keyword sets and any other fixed vocabulary
+      which is looked up constantly.
+
+      ```scala
+      import soundness.*
+
+      val dictionary = Dictionary(t"color" -> 0, t"colour" -> 1)
+      dictionary(t"color")    // 0
+      dictionary(t"colo")     // Unset
+      dictionary.size         // 2
+      ```
+
+      The alphabet — the characters keys may contain, each given a slot — is derived from
+      the keys by `.apply` and `.empty`, or given to `.withAlphabet` and `.aho`; a key with a
+      character outside the alphabet is silently dropped. `.aho` additionally builds the
+      failure links of an Aho–Corasick automaton, so one pass over an input finds every key
+      which ends at each position, through `#step`, `#fail` and `#dictLink`.
+
+      A dictionary is immutable once built, and its arrays are frozen, so it may be shared
+      freely; `#add`, `#+` and `#++` rebuild a new one with a widened value type. The value
+      type should be a reference type, since values are stored boxed in an `AnyRef` array.
+  refer gossamer.Lexicon
+  entry .Alphabet   the characters a dictionary's keys may use, each mapped to a dense slot
+    detail
+        A fixed mapping from `Char` to a slot in `[0, size)`, with `-1` for a character
+        outside it. `Alphabet.of(t"abc…")` numbers the characters of a string in order; the
+        default builders derive one from the keys automatically, so most callers never make
+        one. Only characters below 128 can be in an alphabet. An alphabet is pure and may be
+        shared by every dictionary built over it.
+    entry .of   an alphabet of the characters of a string, in that order; ASCII only
+    entry .empty   the alphabet with no characters, used by the empty dictionary
+    entry #slot   the slot of a character, or `-1` if it is not in the alphabet
+    entry #char   the character at a slot
+    entry #size   the number of characters, and so the width of each node's block of children
+  entry .empty   the dictionary with no entries
+      Its alphabet is empty; `+` and `++` rebuild it with an alphabet derived from the keys.
+  entry .apply   a dictionary of `(key -> value)` pairs, with the alphabet derived from the keys
+      The alphabet's slots follow the order the characters are first seen in, so it is
+      stable for the same input.
+  entry .withAlphabet   a dictionary of pairs over a given alphabet
+      A key with a character outside the alphabet is dropped.
+  entry .aho   a dictionary of pairs over an alphabet, with Aho–Corasick failure and dictionary-suffix links
+      Fills `#depth`, `#fail` and `#dictLink`, which the plain builders leave empty, so that
+      a walk over an input with `#step` can follow a failure link on a mismatch and report
+      every key ending at the current position through `#dictLink`.
+  entry #children   the child-node table: `children(node * alphabet.size + slot)` is the child, or `-1`
+  entry #values   the value at each node, or `null` where no key ends; typed `AnyRef` because arrays are invariant
+      Read a typed value with `#value(node)` instead.
+  entry #depth   each node's depth, for an Aho–Corasick dictionary; empty otherwise
+  entry #fail   each node's failure link, for an Aho–Corasick dictionary; empty otherwise
+  entry #dictLink   each node's nearest ancestor on the failure chain which holds a value; empty unless built with `aho`
+  entry #alphabet   the alphabet the keys are encoded in
+  entry #root   the root node's id, `0`
+  entry #step   the node reached from a node by one character, or `-1` if no key continues that way
+      The primitive of every lookup: start at `#root` and step once per character.
+  entry #value   the value at a node, or `null` where no key ends there
+  entry #apply   the value for a key, or `Unset`; also a lookup of a slice of a character buffer
+      `dictionary(t"key")` is the exact-key form. `dictionary(buffer, offset, length)` looks
+      up the characters of a mutable `Array[Char]` slice without allocating a `Text`, for a
+      parser which already holds a buffer.
+  entry #size   the number of keys stored
+  entry #iterator   the stored values, as an `Iterable`
+  entry #entries   every `(key, value)` pair, in alphabet order
+  entry #add   a new dictionary with one more entry, as `#+` with the key and value separate
+  entry #+   a new dictionary with an entry added, rebuilt with an alphabet covering both
+      `dictionary + (t"key" -> value)`. The value type widens to a common supertype.
+  entry #++   a new dictionary with several entries added
+
+entry .internal   the macro implementations behind `t"…"`, `txt"…"`, `a"…"`, `extract` and `fuzzy`, and the opaque types' home
+  hidden
+  detail
+      Not for direct use: the object exists so that the macros have a stable home and so
+      that `Ascii` and `Grapheme` can be opaque. Both are exported from `.opaques` to the
+      `gossamer` package.
+  entry .t   the macro behind `t"…"`: escape-processes the parts, renders substitutions through `Showable`
+  entry .txt   the macro behind `txt"…"`: as `.t`, then folds whitespace runs and blank lines
+  entry .ascii   the macro behind `a"…"`: checks each literal character is ASCII, reporting at its position
+  entry .extractMacro   the macro behind `extract`: decomposes the cases and scans the text with a `Scanner`
+  entry .fuzzyMacro   the macro behind `fuzzy`: collects the literal patterns and picks the nearest at runtime
+  entry .opaques   the declarations of the opaque types `Ascii` and `Grapheme`
+    detail
+        The types' pages under the `gossamer` package have the full account; their
+        companions' members are documented here, where they are declared.
+    entry .Ascii   a byte string of ASCII characters; see `gossamer.Ascii`
+      detail
+          The companion of the opaque type `Ascii`, exported with it to the `gossamer` package.
+      entry .apply   wraps a `Data` as `Ascii`, without checking its bytes
+      entry .showable   shows an `Ascii` as the text its bytes encode
+      entry .inspectable   inspects an `Ascii` as `ascii"…"`, with the characters escaped as a text literal's
+      entry .concatenable   `left + right` on `Ascii` values
+      entry .bytes   the underlying bytes, as `Data`
+      entry .textual   the `Textual` instance for `Ascii`, with `Byte` elements
+          `apply(text)` encodes text in the system codepage, `segment` and `concat` copy bytes,
+          and the builder is an `AsciiBuilder`.
+    entry .Grapheme   one grapheme cluster; see `gossamer.Grapheme`
+      detail
+          The companion of the opaque type `Grapheme`, exported with it to the `gossamer` package.
+      entry .apply   a grapheme from the string of its code points; no check is made that it is one cluster
+      entry .showable   shows a grapheme as its text
+      entry .inspectable   inspects a grapheme as `‹…›`, the cluster unescaped
+      entry .measurable   the display width of a grapheme: the widest of its code points
+          Needs a `Char is Measurable` in scope (a `textMetrics` given). The maximum rather than
+          the sum, so a base with combining marks is as wide as its base, and a flag pair or a
+          ZWJ family is one wide cell.
+      entry .text   the grapheme's code points as a `Text`
+      entry .chars   the number of UTF-16 code units in the grapheme

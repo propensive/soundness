@@ -1,0 +1,322 @@
+tel 1.0
+
+base caduceus
+import soundness
+
+info   email composed from typed parts and sent through a courier chosen by what is in scope
+detail
+    _Caduceus_ composes an email from typed parts — a body of text, HTML or both, inline
+    content and attachments — and sends it through a `Courier`, the delivery service, which
+    is a contextual value. The MIME structure follows from the content (`multipart/alternative`
+    for text with HTML, `multipart/related` with inlines, `multipart/mixed` with
+    attachments), and the addresses are urticose's `EmailAddress`es, checked as the code
+    compiles when written as `email"…"` literals.
+
+    Anything `Sendable` — `Text`, a document with a media type such as an HTML page, or a
+    composed `Email` — is sent with `send`, which takes the subject and recipients and needs
+    a `Courier` and a `Sender` in scope:
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import couriers.resendCourier
+    import internetAccess.online
+    import httpBackends.javaNetHttp
+    import strategies.throwUnsafely
+
+    given Sender = Sender(email"noreply@example.com")
+    given Resend.ApiKey = Resend.ApiKey(t"re_123456789")
+
+    val receipt: Resend.Receipt =
+      t"Your order has shipped.".send(subject = t"Shipping", to = email"customer@example.com")
+    ```
+
+    The result of `send` is the courier's own `Result` type: the Resend courier returns a
+    `Resend.Receipt`, and another courier may return something else, or `Unit`.
+
+    The library has two source sets:
+
+    - `caduceus.core` — `Email`, `Envelope`, `Sender`, `Courier`, the `Sendable` and
+      `Attachable` typeclasses and the `send` extension. It needs a courier to do anything.
+    - `caduceus.resend` — `Resend` and the `couriers.resendCourier` given, which delivers
+      through the [Resend](https://resend.com/) HTTP API. JVM only, since it needs an HTTP
+      client.
+
+    Everything is exported to the `soundness` umbrella. A courier is selected by importing
+    it by name from the `couriers` choice package, since `import couriers.*` does not import
+    givens; the package merges with the umbrella's own.
+
+refer caduceus.Email
+refer caduceus.Courier
+refer caduceus.send
+refer caduceus.couriers
+refer urticose.EmailAddress
+
+entry .send   sends any `Sendable` value as an email, with a subject and recipients, through the `Courier` in scope
+    `value.send(subject, to, cc, bcc, replyTo)` turns the value into an `Email` with its
+    `Sendable`, builds an `Envelope` from the `Sender` in scope and the arguments, and hands
+    both to the `Courier` in scope. Each of `to`, `cc`, `bcc` and `replyTo` takes either one
+    `EmailAddress` or a `List` of them; all but `to` default to none.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import couriers.resendCourier
+    import internetAccess.online
+    import httpBackends.javaNetHttp
+    import strategies.throwUnsafely
+
+    given Sender = Sender(email"reports@example.com")
+    given Resend.ApiKey = Resend.ApiKey(t"re_123456789")
+
+    t"Sales rose 4% in August.".send
+      ( subject = t"Monthly report",
+        to      = List(email"alice@example.com", email"bob@example.com"),
+        cc      = email"archive@example.com" )
+    ```
+
+    The result type is the courier's `Result`, and failures are the courier's to report: the
+    Resend courier raises `Courier.Error`.
+
+entry .Sender   the address emails are sent from, as a contextual value
+  detail
+      `given Sender = Sender(email"noreply@example.com")`: `send` takes the envelope's `from`
+      address from the `Sender` in scope, so it is chosen once for a program or a scope
+      rather than repeated at every send.
+  entry #email   the sender's address
+
+entry .Envelope   who an email is from and to, and its subject: what a courier needs beside the message
+  detail
+      The metadata of a `Document[Email]`: the sender, the `to`, `cc`, `bcc` and `replyTo`
+      recipients, and the subject. `send` builds it from its arguments and the `Sender` in
+      scope; a `Courier` reads it from the document's `metadata`.
+  entry .many   one value or a list of them, as a list
+      `Envelope.many(address)` is `List(address)`, and `Envelope.many(addresses)` is the list
+      itself. It is how `send` accepts either form for each recipient field.
+  entry #from   the sender's address
+  entry #to   the primary recipients
+  entry #cc   the recipients of a copy
+  entry #bcc   the recipients of a blind copy, not shown to the others
+  entry #replyTo   the addresses a reply should go to, if not the sender
+  entry #subject   the subject line
+
+entry .Email   an email message: headers, a body of text or HTML or both, inline content and attachments
+  detail
+      An `Email` is a map of extra headers and an `Email.Message`, which nests an
+      `Email.Content` (an `Email.Body` and any `Email.Inline`s) inside a list of
+      attachments, each an `Asset`. Each layer reports its own MIME content type, derived
+      from what it holds. An email is `Documentary` with an `Envelope` as its metadata, so a
+      courier receives a `Document[Email]`.
+
+      ```scala fuel
+      frame
+        label Text alone
+        code
+            import soundness.*
+
+            val email = Email(t"Sales rose 4% in August.")
+            email.message.contentType   // media"text/plain"
+      frame
+        label Text with HTML
+        code
+            import soundness.*
+
+            val body = Email.Body(t"Sales rose 4%.", t"<p>Sales rose <b>4%</b>.</p>")
+            val email = Email(Map(), Email.Message(Email.Content(body)))
+            email.message.contentType   // media"multipart/alternative"
+      frame
+        label With an attachment
+        code
+            import soundness.*
+
+            val body = Email.Body(t"Sales rose 4%.", t"<p>Sales rose <b>4%</b>.</p>")
+            val report = Asset(t"report.csv", media"text/csv", Chain(t"month,sales".in[Data]))
+            val email = Email(Map(), Email.Message(Email.Content(body))).attach(report)
+            email.message.contentType   // media"multipart/mixed"
+      ##
+      ```
+
+      An email reports its parts back with `#text`, `#html`, `#inlines` and `#attachments`,
+      so a composed message can be checked before it is sent.
+  refer caduceus.Sendable
+  refer caduceus.Attachable
+  refer caduceus.Envelope
+  entry .apply   an email made from any `Sendable` value: `Email(t"hello")`
+      Uses the value's `Sendable`: text becomes a plain-text body, an HTML document an
+      HTML-only body, and an `Email` is itself. The result has no headers, inlines or
+      attachments.
+  entry .Body   the body of an email: text, HTML, or both as alternatives
+    detail
+        An enumeration of three cases: `TextOnly(content)`, `HtmlOnly(content)` and
+        `Alternatives(textContent, htmlContent)`. The last is sent as
+        `multipart/alternative`, so a client which can display HTML shows it and any other
+        shows the text.
+
+        ```scala
+        import soundness.*
+
+        Email.Body(t"hello").contentType                   // media"text/plain"
+        Email.Body.HtmlOnly(t"<p>hello</p>").contentType   // media"text/html"
+        Email.Body(t"hello", t"<p>hello</p>").html         // t"<p>hello</p>"
+        ```
+    entry .apply   a text body, or text and HTML alternatives: `Email.Body(text, html)`
+    entry #html   the HTML version, or `Unset` for a text-only body
+    entry #text   the text version, or `Unset` for an HTML-only body
+    entry #contentType   `text/plain`, `text/html` or `multipart/alternative`, by which versions the body has
+  entry .Inline   content referred to from an HTML body by its content ID, such as an embedded image
+    detail
+        An inline part has a content ID, `cid`, which the HTML refers to as `cid:…`, a media
+        type, and a body. Its presence makes the content `multipart/related`. The Resend
+        courier does not send inline parts.
+    entry #cid   the content ID the HTML refers to
+    entry #contentType   the media type of the inline content
+    entry #body   the inline content
+  entry .Content   a body with any inline content it refers to
+    detail
+        `Email.Content(body, inlines*)`.
+    entry #body   the text or HTML body
+    entry #inlines   the inline parts the body refers to
+    entry #contentType   `multipart/related` if there are inlines, and otherwise the body's type
+  entry .Message   the content of an email with its attachments
+    entry #content   the body and its inline parts
+    entry #attachments   the attached files, in order
+    entry #contentType   `multipart/mixed` if there are attachments, and otherwise the content's type
+  entry #headers   additional headers, by name
+  entry #message   the body, inline content and attachments
+  entry #Self   the documentary type, `Email` itself
+  entry #Metadata   the metadata of an email document: an `Envelope`
+  entry #html   the HTML version of the body, or `Unset` if there is none
+  entry #text   the text version of the body, or `Unset` if there is none
+  entry #inlines   the inline parts of the content
+  entry #attachments   the attached files, in the order they were attached
+  entry #attach   the email with an attachment added at the end
+      Takes any `Attachable` value: an `Asset`, or anything with a name, a media type and a
+      byte stream. The email is immutable, so `attach` returns a new one.
+
+      ```scala
+      import soundness.*
+
+      val report = Asset(t"report.csv", media"text/csv", Chain(t"month,sales".in[Data]))
+      Email(t"The report is attached.").attach(report).attachments.map(_.name)
+      ```
+
+entry .Sendable   a typeclass for values which can be sent as an email
+  detail
+      `value.send(…)` and `Email(value)` accept any value with a `Sendable`, which turns it
+      into an `Email`. Instances are given for `Text`, for `Email` itself, and for any
+      document with a media type which streams as text, such as an HTML page from
+      honeycomb. A new type is made sendable by mapping it to one that already is:
+
+      ```scala
+      import soundness.*
+
+      case class Report(title: Text, body: Text)
+
+      given Report is Sendable = Sendable.text.contramap(_.body)
+      ```
+  entry .text   text is sent as a plain-text body
+  entry .document   a document with a media type is sent as its text, HTML-only if it is `text/html`
+      For any type with a `Media` and a `Streamable by Text`: a document whose media type is
+      `text/html` becomes an `HtmlOnly` body, and any other a text body. The document is read
+      in full when the email is made.
+  entry .email   an email is sent as itself
+  entry #email   the value as an email
+  entry #contramap   a `Sendable` for another type, which converts it to this one first
+
+entry .Attachable   a typeclass for values which can be attached to an email
+  detail
+      `Email#attach` takes any value with an `Attachable`, which turns it into an `Asset`: a
+      name, a media type and the bytes. An `Asset` is attachable as itself, and any value
+      which has a name (`Nominable`), a media type (`Media`) and a byte stream is attachable
+      without further work.
+  entry .generic   attaches any value which has a name, a media type and a byte stream
+      For types with a `Nominable`, a `Media` and a `Streamable by Data`: the asset takes the
+      value's name as its filename, its media type, and its bytes as a stream.
+  entry .asset   an `Asset` is attached as itself
+  entry #attachment   the value as an asset to attach
+  entry #contramap   an `Attachable` for another type, which converts it to this one first
+
+entry .Courier   a delivery service for email, chosen as a contextual value
+  detail
+      A `Courier` sends a `Document[Email]` — the email and its `Envelope` — and returns a
+      `Result` of its own choosing. The provided one is `couriers.resendCourier`; another
+      service plugs in by implementing the one method:
+
+      ```scala
+      import soundness.*
+
+      class DryRunCourier() extends Courier:
+        type Result = Text
+
+        def send(message: Document[Email]): Text =
+          t"would send ${message.metadata.subject} from ${message.metadata.from}"
+      ```
+
+      A courier is a capability: it is built from other capabilities (an HTTP client, a
+      `Tactic`) and retains them.
+  refer caduceus.couriers
+  entry .Error   raised when a courier cannot deliver an email
+    detail
+        Error 383: _unable to send email from `from` to `to` with subject `subject`_. The
+        Resend courier raises it for any failure to connect, an HTTP error status, or a
+        response it cannot read. The `to` is the first of the envelope's primary recipients.
+    entry #from   the sender's address
+    entry #to   the first primary recipient's address
+    entry #subject   the subject of the email
+  entry #send   delivers an email with its envelope, returning the courier's `Result`
+
+entry .Resend   the settings and results of the Resend courier
+  detail
+      [Resend](https://resend.com/) is an email-delivery service with an HTTP API. Its
+      courier, `couriers.resendCourier`, takes its API key from a `Resend.ApiKey` given and
+      returns a `Resend.Receipt` for each email sent.
+  refer caduceus.couriers.resendCourier
+  entry .ApiKey   the Resend API key, as a contextual value
+    detail
+        `given Resend.ApiKey = Resend.ApiKey(t"re_…")`. It is sent as a bearer token with
+        every request. Read it from the environment or a secret store rather than writing it
+        into the source.
+    entry #key   the key, as text
+  entry .Receipt   Resend's acknowledgement of an email it has accepted
+    detail
+        Decoded from the JSON response to a send. The ID identifies the email in Resend's
+        API and dashboard.
+    entry #id   the email's ID at Resend
+
+entry .couriers   the provided email couriers, each a given to import by name
+  detail
+      A choice package, merged with the umbrella's `couriers`. Which service delivers email
+      is decided by the `Courier` given in scope, and `import soundness.*` brings none in:
+      one is imported by name.
+
+      ```scala
+      import soundness.*
+      import couriers.resendCourier
+      ```
+  entry .resendCourier   delivers email through the Resend HTTP API, returning a `Resend.Receipt`
+      Posts each email, with its text and HTML bodies, its extra headers and its
+      attachments (encoded in Base64), to `https://api.resend.com/emails`, authorised by the
+      `Resend.ApiKey` in scope. It needs a `Tactic[Courier.Error]`, `Online` (from
+      `internetAccess`), an `Http.Client` (such as `httpBackends.javaNetHttp`) and the
+      API key, and logs its HTTP requests as `Http.Event`s.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import couriers.resendCourier
+      import internetAccess.online
+      import httpBackends.javaNetHttp
+      import strategies.throwUnsafely
+
+      given Sender = Sender(email"noreply@example.com")
+      given Resend.ApiKey = Resend.ApiKey(t"re_123456789")
+
+      Email(t"hello").send(subject = t"Greetings", to = email"friend@example.com").id
+      ```
+
+      A failed connection, an error status or an unreadable response raises
+      `Courier.Error`; the underlying reason is printed to standard output first. Inline
+      parts are not sent, and an email with no `to` recipient fails rather than raising.

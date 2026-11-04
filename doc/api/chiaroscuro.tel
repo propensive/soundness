@@ -1,0 +1,379 @@
+tel 1.0
+
+base chiaroscuro
+import soundness
+
+info   structural comparison of two values: decomposition into fields and elements, and a juxtaposition of the differences
+detail
+    _Chiaroscuro_ is the contrast behind a failed assertion. Where a test framework would
+    print "expected X but found Y" as two `toString`s and leave the reader to diff them by
+    eye, it **decomposes** both values — case classes into fields, collections into aligned
+    elements, optionals into presence or absence, text into characters — and **juxtaposes**
+    the two decompositions, so the report is a tree with the differing leaves marked: an age
+    which differs by two, a list with one element substituted, a text with the changed
+    characters banded.
+
+    ```scala
+    import soundness.*
+
+    case class Person(name: Text, age: Int)
+
+    Person(t"Jo", 47).decompose
+    Person(t"Jo", 47).contrast(Person(t"Jo", 49))
+    // Juxtaposition.Collation(t"Person", List(t"name" -> Same(t"Jo"), t"age" -> Different(t"47", t"49", t"+2")), t"Person(Jo,47)", t"Person(Jo,49)")
+    ```
+
+    Three typeclasses do the work. `Decomposable` turns a value into a `Decomposition` — a
+    `Primitive` leaf, a `Product` of named fields, a `Sequence` of elements or a `Sum`
+    wrapping its variant — and is derived for any case class, enum, collection or optional,
+    with every remaining leaf rendered through `Inspectable`, so a failure shows exactly what
+    `.inspect` shows. `Contrastable` turns two values into a `Juxtaposition` — `Same`,
+    `Different` (with an optional difference such as `+2`) or a `Collation` of labelled
+    children — and is derived likewise, with hand-written foundations for numbers (which
+    report the signed difference), sets (which report what each side has alone), exceptions
+    and text. Sequences are aligned through dissonance's diff, so an insertion shows as an
+    insertion rather than as every later element differing, and a changed element as one
+    substitution broken down to the field which changed. `Similarity` is the pluggable notion
+    of "similar enough to pair up" for that refinement.
+
+    The probably test framework calls `contrast` on the two sides of a failed `_ == expected`
+    assertion, records the `Juxtaposition` as a `Verdict.Detail.Compare`, and flattens it to
+    `TestEvent.CompareRow`s for a host; `Harness#capture` records a `decompose`d value.
+
+    The library has two components. `chiaroscuro.core` (JVM, Scala.js and Scala Native) is
+    the typeclasses and the two trees; `chiaroscuro.render` adds `JuxtapositionPalette` and
+    the `teletypeables.juxtapositionTeletype` given, which renders a `Juxtaposition` as a
+    styled table of differences for a terminal. Everything is exported to the `soundness`
+    umbrella; the `teletypeables` choice package merges with the umbrella's own, and its
+    given is imported by name, since `import soundness.*` does not import givens — and
+    escapade renders any `Showable` value unstyled, so a call site which forgets the import
+    prints the enum's text rather than failing to compile.
+
+refer chiaroscuro.Contrastable
+refer chiaroscuro.Decomposable
+refer chiaroscuro.Juxtaposition
+refer chiaroscuro.Decomposition
+refer probably.Test
+
+entry .decompose   `value.decompose`: the value as a `Decomposition`, through its `Decomposable`
+    An extension on any value with a `Decomposable`, which is derived for nearly everything:
+    `24.decompose` is `Decomposition.Primitive(t"Int", t"24", 24)`, and a case class is a
+    `Decomposition.Product` of its fields.
+
+    ```scala
+    import soundness.*
+
+    val x: Optional[Int] = 12
+    x.decompose   // Decomposition.Sum(t"Optional", Decomposition.Primitive(t"Int", t"12", 12), 12)
+    List('a', 'b').decompose
+    ```
+
+entry .contrast   `left.contrast(right)`: the two values juxtaposed, through their `Contrastable`
+    An extension on any value with a `Contrastable`, derived for case classes, enums,
+    collections and anything `Decomposable` or `Showable`. The left value is the expected
+    one, the right the observed one, which is how a failed assertion's rendering labels
+    them. Equal values give `Juxtaposition.Same`.
+
+    ```scala
+    import soundness.*
+
+    24.contrast(24)
+    t"alpha".contrast(t"alphb")
+    List(1, 2, 3).contrast(List(1, 3))
+    ```
+
+entry .Contrastable   how two values of a type are juxtaposed into a `Juxtaposition` of their differences
+  detail
+      The typeclass behind `contrast`. Its `.derived` given resolves in this order: a
+      `Contrastable.Foundation` for the type (the hand-written instances for numbers, sets,
+      exceptions, text and `Decomposition` itself); a case-class derivation, which
+      juxtaposes field by field into a `Collation` labelled by field name; an enum
+      derivation, which juxtaposes the two variants' decompositions; and otherwise the
+      juxtaposition of the two values' `Decomposition`s, which is what collections,
+      optionals and nested structures use. A type with only a `Showable` falls to
+      `Foundation.showable`: `Same` when equal, `Different` of the two shown texts otherwise.
+
+      ```scala
+      import soundness.*
+
+      case class Person(name: Text, age: Int)
+      case class Organization(name: Text, ceo: Person, staff: List[Person])
+
+      val expected = Organization(t"Acme", Person(t"John", 49), List(Person(t"Janet", 19), Person(t"Paweł", 32)))
+      val observed = Organization(t"Acme", Person(t"John", 43), List(Person(t"Paul", 32), Person(t"Janet", 19)))
+      expected.contrast(observed)
+      ```
+
+      A `Contrastable` is a pure typeclass; `#contramap` makes one for another type from a
+      function into this one.
+  refer chiaroscuro.contrast
+  refer chiaroscuro.Juxtaposition
+  refer chiaroscuro.Decomposable
+  entry .derived   the inline given which derives a `Contrastable` for any type, in implicit scope
+      Foundation first, then product, then sum, then by decomposition.
+  entry .Derivation   the wisteria derivation of `Contrastable` for products and sums
+    detail
+        A `Derivable[Contrastable]`: `conjunction` juxtaposes a case class field by field
+        into a `Collation` (or `Same` of the shown value when the two are equal), and
+        `disjunction` an enum by its variants' decompositions. Reached through `.derived`
+        rather than called directly.
+    entry .conjunction   a case class, field by field
+    entry .disjunction   an enum, by its variants
+  entry .Foundation   the hand-written instances, and the trait an instance of the caller's own extends
+    detail
+        `Contrastable.Foundation` as a **trait** is a `Contrastable` with the one abstract
+        method `#juxtaposition`; `.derived` tries a `Foundation` before any derivation, so a
+        type whose contrast should not be structural (a type with an identity, or a number
+        with a meaningful difference) provides one in its companion. As an **object** it
+        holds the standard foundations, each in implicit scope, and inherits the
+        lowest-priority `showable` from `Contrastable.Protofoundation`.
+
+        ```scala
+        import soundness.*
+
+        3.contrast(5)        // Juxtaposition.Different(t"3", t"5", t"+2")
+        1.5.contrast(1.25)
+        Set(1, 2, 3).contrast(Set(2, 3, 4))
+        ```
+    entry .decomposition   two `Decomposition`s, juxtaposed structurally
+    entry .int   two `Int`s: `Same`, or `Different` with the signed difference
+    entry .short   two `Short`s, as `.int`
+    entry .byte   two `Byte`s, as `.int`
+    entry .long   two `Long`s: `Same`, or `Different` with the signed difference, `+2` or `-3`
+    entry .float   two `Float`s, as `.double`
+    entry .double   two `Double`s: `Different` with the signed difference to four significant figures
+        Both sides are shown to enough decimal places to tell them apart; the difference is
+        shown with a plus sign when positive.
+    entry .set   two `Set`s of a `Showable` element: what each side has alone
+        The difference reads `+{4}` for elements only on the right, `-{1}` for those only on
+        the left, or `-{1}╱+{4}` for both, with sets of more than five elements elided.
+    entry .exception   two `Exception`s: the same when their classes and messages are
+    entry .string   two `String`s, as `.text`
+    entry .text   two `Text`s, character by character
+        The characters are aligned with dissonance's diff, so an insertion or deletion is
+        shown as one rather than as every later character differing; the result is a
+        `Collation` named `Text` whose children are single characters, which the terminal
+        renderer shows as two banded lines.
+    entry #juxtaposition   the juxtaposition of two values
+  entry .Protofoundation   the base of `Foundation`'s companion, holding the lowest-priority `showable` given
+    detail
+        `Contrastable.Foundation` inherits `showable` from here, so every foundation outranks it.
+    entry #showable   any `Showable` type: `Same` when equal, `Different` of the two shown texts
+  entry .nothing   a `Contrastable` which reports every pair as `Same`, showing the left value's decomposition
+      Inline; needs a `Decomposable` for the type. For a position which requires a
+      `Contrastable` but has nothing to compare.
+  entry .juxtaposition   juxtaposes two `Decomposition`s of any shape, with a type name for the result
+      Equal references are `Same`; two `Primitive`s are `Different` by their texts; two
+      `Sequence`s are aligned by `.comparison`; two `Product`s are a `Collation` over the
+      union of their field names, a field absent on one side compared against a blank; two
+      `Sum`s compare their variants (naming both types, `Circle/Square`, when they differ);
+      and two decompositions of different shapes are `Different` by kind,
+      `<product>`/`<sequence>`.
+  entry .comparison   aligns two arrays of decompositions with a diff, as a `Collation` of labelled rows
+      Each row is labelled by its indices: `3` for an element at the same index on both
+      sides, `³╱₂` (superscript left, subscript right) when the indices differ, ` ╱₂` for an
+      insertion, `³╱ ` for a deletion. A substituted element is juxtaposed recursively, so a
+      record with one changed field shows as that field's difference. The diff is
+      dissonance's `rdiff` with a window of ten.
+  entry #juxtaposition   the juxtaposition of two values of the type
+  entry #contramap   a `Contrastable` for another type, by mapping it to this one
+
+entry .Decomposable   how a value is taken apart into a `Decomposition` for display
+  detail
+      The typeclass behind `decompose`, and the one `Harness#capture` and the assertion
+      macros use to render both sides of a failure. Its `derived` given resolves in order: a
+      `Decomposable.Base` for the type (`Text`, `Int`, `String`, `Decomposition`); a
+      case-class derivation into a `Product` of named fields; an enum derivation into a
+      `Sum`; `Any`, `AnyRef` and `Matchable` as an `Any` leaf; an `Optional` as a `Sum`
+      named `Optional` of the value or an `Unset` leaf shown as `∅`; and every remaining
+      leaf through `Inspectable`, whose own derivation always succeeds, so a `Char` renders
+      `'a'`, a `Double` is not rounded by a `Decimalizer` in scope, and a type with neither
+      falls to `Inspectable`'s marked `toString`. The companion's `.list`, `.sequence` and
+      `.frozenArray` decompose collections element by element. The companion inherits
+      `derived`, `primitive`, `any` and `Derivation` from `Decomposable2`, and `fallback` from
+      `Decomposable3`.
+
+      ```scala
+      import soundness.*
+
+      case class Person(name: Text, age: Int)
+
+      Person(t"Bill", 29).decompose
+      // Decomposition.Product(t"Person", Map(t"name" -> Primitive(t"Text", t"Bill", t"Bill"), t"age" -> Primitive(t"Int", t"29", 29)), Person(t"Bill", 29))
+
+      val x: Optional[Int] = Unset
+      x.decompose   // Decomposition.Sum(t"Optional", Decomposition.Primitive(t"Unset", t"∅", Unset), Unset)
+      ```
+
+      Decomposition renders leaves through `Inspectable`, not `Showable`: a test failure is
+      read by a programmer, so it should show what `.inspect` shows, and a type whose
+      `Showable` and `Inspectable` disagree decomposes as the latter.
+  refer chiaroscuro.decompose
+  refer chiaroscuro.Decomposition
+  refer spectacular.Inspectable
+  entry .Base   the hand-written leaf instances, and the trait an instance of the caller's own extends
+    detail
+        `Decomposable.Base` as a **trait** is a `Decomposable` which `derived` tries before
+        any derivation; as an **object** it holds the standard leaves.
+    entry .text   `Text` as a `Primitive` named `Text`
+    entry .int   `Int` as a `Primitive` named `Int`
+    entry .string   `String` as a `Primitive` named `String`
+    entry .decomposition   a `Decomposition` as itself
+    entry #decomposition   the decomposition of a value
+  entry .list   any `List` of a decomposable element, as a `Sequence` named `List`
+  entry .sequence   any `Sequence` of a decomposable element, as a `Sequence` named `Sequence`
+  entry .frozenArray   a frozen `Array[element]^{}` of a decomposable element, as a `Sequence` named `Array`
+  entry #decomposition   the decomposition of a value
+
+entry .Decomposable2   the base trait of `Decomposable`'s companion which holds `derived`, `primitive`, `any` and `Derivation`
+  hidden
+  detail
+      A priority layer: its members are reached as `Decomposable.derived`,
+      `Decomposable.primitive`, `Decomposable.any` and `Decomposable.Derivation`, which the
+      companion inherits from here.
+  entry #derived   the inline given which derives a `Decomposable` for any type, in implicit scope
+      Reached as `Decomposable.derived`. Base, then product, then sum, then `Any`, then
+      `Optional`, then `Inspectable`.
+  entry #primitive   a `Decomposable` which renders every value as a `Primitive` of the given type name, by `toString`
+  entry #any   a `Decomposable` which renders every value as a `Primitive` named `Any`, by `toString`
+      What the assertion macros use when no better instance is derivable for a test's result
+      type.
+  entry #Derivation   the wisteria derivation of `Decomposable` for products and sums
+    entry .conjunction   a case class as a `Product` of its fields, by label
+    entry .disjunction   an enum as a `Sum` of its variant's decomposition
+
+entry .Decomposable3   the lowest priority layer of `Decomposable`'s companion, holding `fallback`
+  hidden
+  detail
+      Reached as `Decomposable.fallback`, which the companion inherits from here.
+  entry #fallback   the lowest-priority given: a `Primitive` named `Any` by `toString`, for any type
+
+entry .Decomposition   a value taken apart for display: a leaf, a product of fields, a sequence or a sum
+  detail
+      The four cases: `Primitive(typeName, value, ref)` is a leaf with its rendered text;
+      `Product(name, values, ref)` a case class with its fields by label; `Sequence(name,
+      values, ref)` a collection's elements; and `Sum(name, value, ref)` an enum or
+      `Optional` wrapping its variant. Each keeps the original value as `#ref`, which
+      `Contrastable.juxtaposition` compares first, so equal references are `Same` without a
+      walk. `#text` renders the tree over several lines, indented; `#short` is a one-line
+      summary (`[..3..]` for a sequence, the type name for a product); and `.inspectable`
+      makes `inspect` the same as `#text`.
+  refer chiaroscuro.Decomposable
+  refer chiaroscuro.Juxtaposition
+  entry .apply   a `Decomposition` from an optional one, with an `Unset` leaf for absence
+  entry .inspectable   renders a decomposition as its `#text`
+      Hand-written rather than derived: the derived instance's anonymous class is rejected
+      by the Scala.js pipeline.
+  entry #ref   the original value
+  entry #text   the tree rendered over several lines, each level indented by two spaces
+      A product's fields appear as `name:` with their values beneath; a sequence's elements
+      are numbered from zero; a sum shows as `Name.` before its variant.
+  entry #text2   a one-line rendering: `Name(field: value, …)`, `[a, b]`, `Name:value`
+  entry #short   a one-line summary: a leaf's text, `[..n..]` for a sequence, the name of a product
+  entry #multiline   appends the multi-line rendering to the `TextBuilder` in scope, at an indent
+
+entry .Juxtaposition   the result of comparing two values: the same, different, or a collation of labelled differences
+  detail
+      `Same(value)` is one text for both sides; `Different(left, right, difference)` has the
+      expected text, the observed text and an optional summary of the difference (`+2`,
+      `-{1}╱+{4}`); `Collation(typeName, comparison, left, right)` is a labelled list of
+      child juxtapositions — field names for a product, index labels for a sequence, one
+      per character for text — with the two sides' whole texts. A collation whose children
+      are all single characters is a text comparison, which the terminal renderer shows as
+      two banded lines rather than as a table.
+
+      ```scala
+      import soundness.*
+
+      t"alpha".contrast(t"alphb") match
+        case Juxtaposition.Collation(name, comparison, left, right) => name
+        case Juxtaposition.Different(left, right, _)                 => t"different"
+        case Juxtaposition.Same(_)                                   => t"same"
+      ```
+
+      The probably framework flattens a juxtaposition to `TestEvent.CompareRow`s, pre-order
+      with depth, for a host; `teletypeables.juxtapositionTeletype` renders one for a
+      terminal.
+  refer chiaroscuro.contrast
+  refer chiaroscuro.Contrastable
+  refer chiaroscuro.JuxtapositionPalette
+  entry #singleChar   whether both sides are at most one character: the shape of a text comparison's children
+  entry #leftWidth   the expected side's width in characters, summed over a collation's children
+  entry #rightWidth   the observed side's width in characters, summed over a collation's children
+
+entry .Similarity   whether two values are similar enough to be shown as one substitution rather than a deletion and an insertion
+  detail
+      Comparison alone can only say *same* or *different*, so a raw diff of two sequences
+      reports a changed element as a deletion beside an unrelated insertion. `Similarity`
+      is the typeclass for the refinement which pairs a removed element with an added one —
+      a record with the same identifier and a changed field — so that the two are shown as
+      one substitution broken down to the field which changed. It is contravariant, so an
+      instance for a supertype serves its subtypes; `.generic` is equality.
+  refer chiaroscuro.Contrastable
+  entry .generic   the given for any type: similar when equal
+  entry #similar   whether two values are similar
+
+entry .JuxtapositionPalette   the colours a rendered juxtaposition uses, in sRGB
+  detail
+      A `Palette` (iridescence) with the roles a difference table needs: `#unaccented` for
+      rules and margins, `#informative` for unchanged values, `#subdued` for de-emphasis,
+      `#positive` for the expected side and `#negative` for the observed side, besides the
+      inherited `foreground` and `background`. A real trait rather than a structural
+      refinement, since structural selection needs runtime reflection, which Scala Native
+      lacks. The `teletypeables.juxtapositionTeletype` given takes one as a contextual
+      parameter; the probably framework no longer renders, so a host supplies its own.
+
+      ```scala
+      import soundness.*
+
+      given palette: JuxtapositionPalette = new JuxtapositionPalette:
+        def background: Color in Srgb  = WebColors.Black
+        def foreground: Color in Srgb  = WebColors.White
+        def unaccented: Color in Srgb  = WebColors.DimGray
+        def informative: Color in Srgb = WebColors.Silver
+        def subdued: Color in Srgb     = WebColors.DimGray
+        def positive: Color in Srgb    = WebColors.LimeGreen
+        def negative: Color in Srgb    = WebColors.Red
+      ```
+  refer chiaroscuro.teletypeables
+  entry #Form   the colour form: `Srgb`
+  entry #unaccented   rules, margins and the border of a table
+  entry #informative   values which are the same on both sides
+  entry #subdued   de-emphasised text
+  entry #positive   the expected side
+  entry #negative   the observed side
+
+entry .teletypeables   the terminal rendering of a `Juxtaposition`, a given to import by name
+  detail
+      In `chiaroscuro.render`. The given is not in `Juxtaposition`'s implicit scope, and
+      escapade renders any `Showable` value unstyled, so a call site which fails to import
+      it degrades silently — printing `Collation(Text,List(…))` — rather than failing to
+      compile.
+
+      ```scala
+      import soundness.*
+      import teletypeables.juxtapositionTeletype
+      import textMetrics.uniformMetric
+
+      given charMeasurable: Char is Measurable = _.toString.tt.metrics
+
+      given palette: JuxtapositionPalette = new JuxtapositionPalette:
+        def background: Color in Srgb  = WebColors.Black
+        def foreground: Color in Srgb  = WebColors.White
+        def unaccented: Color in Srgb  = WebColors.DimGray
+        def informative: Color in Srgb = WebColors.Silver
+        def subdued: Color in Srgb     = WebColors.DimGray
+        def positive: Color in Srgb    = WebColors.LimeGreen
+        def negative: Color in Srgb    = WebColors.Red
+
+      24.contrast(24).teletype.plain                // t"The value 24 was expected"
+      t"alpha".contrast(t"alphb").teletype.plain
+      ```
+  entry .juxtapositionTeletype   renders a `Juxtaposition` as styled terminal text
+      Needs a `Text is Measurable` (for column widths) and a `JuxtapositionPalette`. A
+      `Same` renders as _The value `v` was expected_; a `Different` as _The result `right`
+      did not equal `left`_; a `Collation` of single characters as two banded lines, the
+      expected above the observed with differing characters highlighted and character
+      offsets in the margins, wrapped at 110 columns; and any other `Collation` as a table
+      with the tree of labels, an `Expected` column, an `Observed` column and a `Details`
+      column holding each difference (or the Levenshtein distance of two differing texts).

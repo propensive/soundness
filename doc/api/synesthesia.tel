@@ -1,0 +1,1223 @@
+tel 1.0
+
+base synesthesia
+import soundness
+
+info   Model Context Protocol servers whose tools, resources and prompts are annotated Scala methods
+detail
+    _Synesthesia_ implements the [Model Context Protocol](https://modelcontextprotocol.io/),
+    the protocol by which an AI assistant's harness reaches a server for **tools** it can call,
+    **resources** it can read and **prompts** it can use. A server is an object extending
+    `Mcp.Server` whose capabilities are ordinary methods marked with annotations: a `@tool`
+    method is a callable tool, with its input and output schemas derived from its parameter
+    and result types; a `@resource("uri")` method serves content at a URI; a `@prompt` method
+    returns a conversation written with the `human"…"` and `agent"…"` interpolators. The
+    protocol itself — JSON-RPC over the streamable HTTP transport, sessions, the listings the
+    client discovers — is generated from those definitions by the `Mcp.Specification` macro, so
+    the description a model reads can never disagree with the code it calls.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    val colors = Map(t"sky" -> t"blue", t"grass" -> t"green")
+
+    object AssistantTools extends Mcp.Server():
+      class Session() extends Mcp.Session
+      def initialize(): Session = new Session()
+
+      def name: Text = t"assistant-tools"
+      def description: Text = t"Utilities for the assistant"
+      def version: Semver = v"1.0.0"
+      def prompts: List[Mcp.Prompt] = Nil
+
+      @tool
+      @about("Look up the color of a named thing")
+      def color(name: Text): Text = colors.at(name).or(t"unknown")
+    ```
+
+    The server is mounted in an HTTP handler by calling `AssistantTools.serve`, which answers
+    `POST`ed JSON-RPC requests, streams server-sent events to a `GET`, and ends a session on
+    `DELETE`. A tool which takes a `using Mcp.Client` can talk back to the client while it runs:
+    `log` streams progress and `elicit` asks the user for structured input, its form a schema
+    derived from a case class.
+
+    The library has two source sets:
+
+    - `synesthesia.content` — the content-block vocabulary shared with the Agent Client
+      Protocol: `Content` (text, image, audio, resource-link and embedded-resource blocks,
+      resource contents, `Icon`, `Annotations`, `Role`) and the `@about` annotation. It depends
+      only on JSON, so an ACP client can use it without an HTTP server.
+    - `synesthesia.core` — JVM-only: `Mcp` with its protocol records, `Mcp.Server`,
+      `Mcp.Client`, `Mcp.Interface`, `Mcp.Specification`; the `@tool`, `@resource`, `@prompt`,
+      `@title` and `@ui` annotations; `Discourse` and the `human`/`agent` interpolators.
+
+    Everything is exported to the `soundness` umbrella, where `Content` is spelled `McpContent`
+    (`Content` in the umbrella is gesticulate's media-typed payload); its members are also
+    reachable as `Mcp.TextContent` and so on, since `Mcp` re-exports them. `Mcp.Server#serve`
+    needs the contextual values an HTTP handler has — a `Monitor`, a `Probate`, an `Online`
+    and the `Http.Request` — and deriving a specification needs a `Tactic[Json.Error]` and a
+    `Tactic[Mcp.Error]`, which `strategies.throwUnsafely` supplies.
+
+refer synesthesia.Mcp
+refer synesthesia.Content
+refer synesthesia.tool
+refer synesthesia.resource
+refer synesthesia.prompt
+
+entry .Mcp   the Model Context Protocol: its records, its JSON-RPC interface, servers, clients and sessions
+  detail
+      `Mcp` is the home of everything the protocol defines. Its records — `Tool`, `Resource`,
+      `Prompt`, `CallTool`, `Initialize`, `ServerCapabilities` and the rest — are case classes
+      mirroring the protocol's JSON objects field for field, each encodable to and decodable
+      from `Json` by derivation, with `Optional` fields absent from the wire when `Unset`. Its
+      enumerations (`LoggingLevel`, `TaskStatus`, `Role`, …) carry hand-written codecs to the
+      protocol's lowercase spellings, and its sum types (`ContentBlock`, `Reference`) encode
+      with a `type` discriminator.
+
+      The server side is four pieces. A program's own server extends `.Server` and marks its
+      methods `@tool`, `@resource` or `@prompt`; the `.Specification` macro reads those
+      annotations into the listings and the dispatch; `.Interface` is the JSON-RPC
+      implementation of `.Api` for one session, built over that specification; and `.send`
+      maps one HTTP request onto it. A tool which takes a `using Mcp.Client` reaches the
+      client through `.Client`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      object Pyrus extends Mcp.Server():
+        class Session() extends Mcp.Session
+        def initialize(): Session = new Session()
+        def name: Text = t"Pyrus"
+        def description: Text = t"A simple server"
+        def version: Semver = v"1.0.0"
+        def prompts: List[Mcp.Prompt] = Nil
+
+        @tool
+        def color(name: Text): Text = t"purple"
+
+      val spec = summon[Pyrus.type is Mcp.Specification]
+      spec.tools().map(_.name)   // List(t"color")
+      ```
+
+      The content-block vocabulary (`TextContent`, `ImageContent`, `AudioContent`,
+      `ResourceLink`, `EmbeddedResource`, the resource contents, `Icon`, `Annotations` and
+      `Role`) is defined in `Content` and re-exported here, so MCP code writes
+      `Mcp.TextContent`. The protocol version spoken is `.version`, `2025-11-25`.
+  refer synesthesia.Mcp.Server
+  refer synesthesia.Mcp.Specification
+  refer synesthesia.Mcp.Client
+  refer synesthesia.Content
+  entry .version   the protocol version this implementation speaks: `2025-11-25`
+      Sent as the `Mcp-Protocol-Version` header of every response and as the
+      `protocolVersion` of an `Initialize` result.
+  entry .Cursor   a pagination cursor, as `Text`
+      The opaque token a listing (`ListTools`, `ListResources`, `ListPrompts`, `ListTasks`)
+      returns as `nextCursor` and a client passes back to continue. The server's own listings
+      are never paginated, so it is always `Unset`.
+  entry .send   answers one HTTP request of the streamable HTTP transport against an interface
+    detail
+        `Mcp.send(sessionId, server, interface)(dispatch)` maps a request to the protocol's
+        transport: `OPTIONS` answers `204 No Content`; `GET` answers `200 OK` with the
+        interface's event stream as server-sent events, kept alive and uncached; `POST` reads
+        the body as JSON, passes it to `dispatch` (normally `JsonRpc.serve(interface)`), and
+        answers the result as JSON, or `202 Accepted` when the dispatch produced nothing (a
+        notification). Any other method, including `DELETE`, answers `405 Method Not Allowed`;
+        `Mcp.Server#serve` handles `DELETE` itself before reaching here. Every response carries
+        the `Mcp-Protocol-Version` and `Mcp-Session-Id` headers.
+
+        A failure is a JSON-RPC error in a `200 OK` body, under the request's `id` so the
+        client can match it: a body which does not parse is `-32700`, one which is not a valid
+        request `-32600`, an `Mcp.Error` (an unknown tool, a missing parameter) `-32602`, an
+        unknown method `-32601`, and any other exception `-32603`. A tool's own exception is
+        not a failure here: `Mcp.Interface` answers it as a result marked `isError`.
+
+        It needs a `Monitor`, a `Probate`, an `Online` and the `Http.Request` in scope, as an
+        HTTP handler body has. `Mcp.Server#serve` calls it; a program calls it directly only
+        to put its own dispatch in front of the interface.
+  entry .ParseError   the JSON-RPC error code `-32700`: the request body did not parse
+  entry .InvalidRequest   the JSON-RPC error code `-32600`: the body was not a valid request
+  entry .MethodNotFound   the JSON-RPC error code `-32601`: no such method
+  entry .InvalidParams   the JSON-RPC error code `-32602`: an unknown tool or a missing parameter
+      The code `Mcp.send` answers an `Mcp.Error` with.
+  entry .InternalError   the JSON-RPC error code `-32603`: an unexpected exception in the server
+  entry .UrlElicitationRequired   the JSON-RPC error code `-32042`: the request needs a URL elicitation first
+  entry .TextInt   a JSON-RPC identifier which may be a string or an integer
+    detail
+        Request ids and progress tokens in the protocol may be either a string or a number.
+        `TextInt(id: Text | Int)` holds either, encodes as whichever it holds, and decodes a
+        JSON number as an `Int` and anything else as `Text`. It is the one type in `Mcp` with
+        an `Inspectable` of its own (`.inspectable`), since a derivation cannot render a
+        `Text | Int` field; `Mcp.TextInt(42).inspect` is `TextInt(id:42)`.
+    entry .encodable   writes the id as a JSON string or number, by which it holds
+    entry .decodable   reads a JSON number as an `Int` and any other value as `Text`
+    entry .inspectable   renders the id showing which side of the union it came from
+        `TextInt(id:42)` for an integer and `TextInt(id:t"abc")` for text. Needed because the
+        structural derivation has no instance for a `Text | Int` field and would fall back to
+        `toString`.
+    entry #id   the identifier, as `Text` or `Int`
+  entry .TaskAugmented   a request's optional `task` metadata, asking for it to run as a task
+    entry #task   the `TaskMetadata`, if the request is to be a task
+  entry .TaskMetadata   the metadata a request carries to run as a task: a time-to-live
+    entry #ttl   how long, in milliseconds, the task's result is kept, if given
+  entry .RelatedTaskMetadata   the id of the task a message relates to
+    entry #taskId   the related task's id
+  entry .BaseMetadata   a name and an optional human-readable title, the base of every named record
+    detail
+        The two fields every tool, prompt, resource and implementation shares. Its companion
+        holds the derived JSON codecs (an `Encodable`, and a `Decodable` needing a
+        `Tactic[Json.Error]`), anchored once so that every record which embeds it reuses them.
+    entry #name   the programmatic name
+    entry #title   a human-readable title, if given
+  entry .Implementation   the name, version and description of a client or server program
+    detail
+        What each side sends about itself when the session is initialised: a client in
+        `initialize`, and a server in its `Initialize` reply, where `Mcp.Interface` builds it
+        from the server's `name` and `version`. The companion holds anchored derived JSON
+        codecs; decoding needs a `Tactic[Json.Error]`.
+    entry #name   the program's name
+    entry #title   a human-readable title, if given
+    entry #icons   icons representing the program, if given
+    entry #version   the program's version, as text
+    entry #description   a description of the program, if given
+    entry #websiteUrl   the program's website, if given
+  entry .ClientInfo   a client's name, title, version, description and icons
+    entry #name   the client's name
+    entry #title   the client's title
+    entry #version   the client's version
+    entry #description   a description of the client
+    entry #icons   icons representing the client, if given
+  entry .ServerInfo   a server's name, title, version, description, icons and website
+    entry #name   the server's name
+    entry #title   the server's title
+    entry #version   the server's version
+    entry #description   a description of the server
+    entry #icons   icons representing the server, if given
+    entry #websiteUrl   the server's website, as an `HttpUrl`
+  entry .Initialize   the server's reply to `initialize`: version, capabilities, identity and instructions
+    detail
+        `Mcp.Interface#initialize` answers with `Mcp.version`, a default `ServerCapabilities()`
+        (tools, prompts and resources, each with list-change notifications), an
+        `Implementation` of the server's name and version, and the server's `description` as
+        the instructions.
+    entry #protocolVersion   the protocol version the server speaks
+    entry #capabilities   what the server can do, as `ServerCapabilities`
+    entry #serverInfo   the server's identity, as an `Implementation`
+    entry #instructions   text for the model about how to use the server, if given
+  entry .ListChanged   a capability flag: whether a list-changed notification is sent
+    entry #listChanged   whether the server notifies when the list changes, if stated
+  entry .Resources   the resources capability: subscription and list-change support
+    entry #subscribe   whether a client may subscribe to a resource, `true` by default
+    entry #listChanged   whether the server notifies when the resource list changes, `true` by default
+  entry .Sampling   a client's sampling capability: context inclusion and tool use
+    entry #context   the client's support for including context, if stated
+    entry #tools   the client's support for tools during sampling, if stated
+  entry .Elicitation   a client's elicitation capability: form and URL modes
+    entry #form   whether the client can show a form, if stated
+    entry #url   whether the client can open a URL, if stated
+  entry .RequestsElicitation   the elicitation requests a task may make
+    entry #create   whether `elicitation/create` may run as a task, if stated
+  entry .Call   whether `tools/call` may run as a task
+    entry #call   the capability's value, if stated
+  entry .RequestsSampling   the sampling requests a task may make
+    entry #createMessage   whether `sampling/createMessage` may run as a task, if stated
+  entry .Tasks   the tasks capability: listing, cancelling and which requests may be tasks
+    entry #list   whether tasks may be listed, if stated
+    entry #cancel   whether tasks may be cancelled, if stated
+    entry #requests   which requests may run as tasks, as `Requests`, if stated
+  entry .ListTasks   the reply to `tasks/list`: tasks and a continuation cursor
+    entry #nextCursor   the cursor for the next page, if there is one
+    entry #tasks   the tasks, as a list of `Task`
+  entry .Requests   which requests may run as tasks: sampling, elicitation and tool calls
+    entry #sampling   sampling requests, as `RequestsSampling`, if stated
+    entry #elicitation   elicitation requests, as `RequestsElicitation`, if stated
+    entry #tools   tool calls, as `Call`, if stated
+  entry .ServerCapabilities   what a server offers: tools, prompts, resources, logging, completions, tasks
+    detail
+        The defaults describe what `Mcp.Interface` implements: `prompts` and `tools` with
+        list-change notifications and `resources` with subscription, and no experimental,
+        logging, completion or task capabilities.
+    entry #experimental   experimental capabilities, by name, if any
+    entry #logging   the logging capability, if offered
+    entry #completions   the argument-completion capability, if offered
+    entry #prompts   the prompts capability, with list-change notification by default
+    entry #resources   the resources capability, as `Resources`, with its defaults
+    entry #tools   the tools capability, with list-change notification by default
+    entry #tasks   the tasks capability, if offered
+  entry .ClientCapabilities   what a client offers: roots, sampling, elicitation and tasks
+    entry #experimental   experimental capabilities, by name, if any
+    entry #roots   whether the client exposes filesystem roots, if stated
+    entry #sampling   the client's sampling capability, if offered
+    entry #elicitation   the client's elicitation capability, if offered
+    entry #tasks   the client's tasks capability, if offered
+  entry .Context   the arguments already given, for completing another
+    entry #arguments   the arguments by name, if any
+  entry .ListResources   the reply to `resources/list`: resources and a continuation cursor
+    entry #nextCursor   the cursor for the next page, if there is one
+    entry #resources   the resources, as a list of `Resource`
+  entry .ListResourceTemplates   the reply to `resources/templates/list`
+    entry #nextCursor   the cursor for the next page, if there is one
+    entry #resourceTemplates   the templates, as a list of `ResourceTemplate`
+  entry .ReadResource   the reply to `resources/read`: the resource's contents
+    detail
+        `Mcp.Interface#resources/read` answers a single `Contents`, text or binary according
+        to how the `@resource` method's result type streams.
+    entry #contents   the contents, each text or a Base64 blob
+  entry .Resource   a resource as listed: its name, URI, description, MIME type and metadata
+    detail
+        The `Mcp.Specification` macro builds one for each `@resource` method: `name` is the
+        method's name, `uri` the annotation's, `title` and `description` from `@title` and
+        `@about`, and `mimeType` the annotation's, or `text/html;profile=mcp-app` when a tool's
+        `@ui` names the URI, or `text/plain` for a text result and `application/octet-stream`
+        for a binary one.
+    entry #name   the resource's name
+    entry #uri   where the resource is read from
+    entry #title   a human-readable title, if given
+    entry #description   a description, if given
+    entry #icons   icons representing the resource, if given
+    entry #mimeType   the resource's MIME type, if known
+    entry #annotations   audience and priority hints, as `Annotations`
+    entry #size   the resource's size in bytes, if known
+    entry #_meta   protocol metadata, if any
+  entry .ResourceTemplate   a family of resources, described by a URI template
+    detail
+        Listed by `resources/templates/list`, which `Mcp.Interface` does not yet implement.
+    entry #name   the template's name
+    entry #title   a human-readable title, if given
+    entry #icons   icons, if given
+    entry #uriTemplate   the RFC 6570 template its resources' URIs match
+    entry #description   a description, if given
+    entry #mimeType   the MIME type of its resources, if they share one
+    entry #annotations   audience and priority hints, as `Annotations`
+    entry #_meta   protocol metadata, if any
+  entry .ListPrompts   the reply to `prompts/list`: prompts and a continuation cursor
+    entry #nextCursor   the cursor for the next page, if there is one
+    entry #prompts   the prompts, as a list of `Prompt`
+  entry .Complete   the reply to `completion/complete`
+    entry #completion   the completion values, as `Completion`
+  entry .Completion   suggested values for an argument, with a total and whether there are more
+    entry #values   the suggested values
+    entry #total   how many there are in all, if known
+    entry #hasMore   whether more exist than were returned, if known
+  entry .TaskSupport   whether a tool may, must or must not run as a task
+    detail
+        `Forbidden`, `Optional` and `Required`, encoded as `forbidden`, `optional` and
+        `required`; any other text fails to decode with a `Json.Error`.
+    entry .encodable   writes the case as its lowercase name
+    entry .decodable   reads `forbidden`, `optional` or `required`, raising `Json.Error` for anything else
+  entry .LoggingLevel   the syslog severities a log message may carry
+    detail
+        `Debug`, `Info`, `Notice`, `Warning`, `Error`, `Critical`, `Alert` and `Emergency`,
+        encoded as their lowercase names. `Mcp.Client#log` sends at `Info`, and
+        `logging/setLevel` sets the level an `Mcp.Interface` holds.
+    entry .encodable   writes the case as its lowercase name
+    entry .decodable   reads a lowercase level name, raising `Json.Error` for anything else
+  entry .LoggingMessage   a log notification: level, logger name and data
+    entry #level   the severity, as `LoggingLevel`
+    entry #logger   the logger's name, if given
+    entry #data   the message, as JSON
+  entry .TaskStatus   the state of a task: working, awaiting input, completed, failed or cancelled
+    detail
+        `Working`, `InputRequired`, `Completed`, `Failed` and `Cancelled`, encoded as `working`,
+        `input_required`, `completed`, `failed` and `cancelled`.
+    entry .encodable   writes the case as its wire spelling
+    entry .decodable   reads a wire spelling, raising `Json.Error` for anything else
+  entry .PromptArgument   an argument a prompt takes: name, title, description and whether required
+    detail
+        Built by the `Mcp.Specification` macro from each parameter of a `@prompt` method, with
+        its `title` and `description` from the parameter's own `@title` and `@about`.
+    entry #name   the argument's name
+    entry #title   a human-readable title, if given
+    entry #description   a description, if given
+    entry #required   whether the argument must be supplied, if stated
+  entry .Prompt   a prompt as listed: its name, title, description and arguments
+    detail
+        The `Mcp.Specification` macro builds one for each `@prompt` method, named after it,
+        with `title` and `description` from `@title` and `@about` and an argument for each
+        parameter; a method with no parameters has `arguments` `Unset`. The abstract
+        `Mcp.Server#prompts` is a list of these.
+    entry #name   the prompt's name
+    entry #title   a human-readable title, if given
+    entry #icons   icons, if given
+    entry #description   a description, if given
+    entry #arguments   the arguments the prompt takes, if any
+    entry #_meta   protocol metadata, if any
+  entry .Argument   a name and value, as given to `completion/complete`
+    entry #name   the argument's name
+    entry #value   the value typed so far
+  entry .Reference   what a completion is for: a prompt or a resource template
+    detail
+        A sealed sum of `PromptReference` and `ResourceTemplateReference`, encoded with a
+        `type` discriminator of `ref/prompt` or `ref/resource`.
+    entry .encodable   writes the reference with its `type` discriminator
+    entry .decodable   reads a reference by its `type`, raising `Json.Error` for an unknown one
+  entry .PromptReference   a reference to a prompt by name
+    entry #name   the prompt's name
+    entry #title   the prompt's title, if given
+  entry .ResourceTemplateReference   a reference to a resource template by URI
+    entry #uri   the template's URI
+  entry .PromptMessage   one message of a prompt: a role and a content block
+    detail
+        `Mcp.Interface#prompts/get` makes a `Human` message a `User` `TextContent` and an
+        `Agent` message an `Assistant` one.
+    entry #role   who speaks, as `Role`
+    entry #content   what is said, as a `ContentBlock`
+  entry .GetPrompt   the reply to `prompts/get`: a description and the messages
+    entry #description   a description of the prompt, if given
+    entry #messages   the messages, as a list of `PromptMessage`
+  entry .CallTool   the reply to `tools/call`: content, structured content and whether it is an error
+    detail
+        `Mcp.Interface#tools/call` answers a tool's result both as `structuredContent`, a JSON
+        object `{"result": …}` of the result's encoding, and as a `TextContent` of that JSON.
+        A tool which throws answers `CallTool(List(TextContent(message)), isError = true)`, a
+        result the model can read and act on rather than a protocol failure.
+
+        ```scala
+        import soundness.*
+
+        Mcp.CallTool(List(Mcp.TextContent(t"boom")), isError = true)
+        ```
+    entry #content   the result as content blocks, for the model to read
+    entry #structuredContent   the result as JSON matching the tool's output schema, if given
+    entry #isError   whether the tool itself failed, if stated
+  entry .ListTools   the reply to `tools/list`: tools and a continuation cursor
+    entry #nextCursor   the cursor for the next page, if there is one
+    entry #tools   the tools, as a list of `Tool`
+  entry .ListRoots   the reply to `roots/list`: the client's filesystem roots
+    entry #roots   the roots, as a list of `Root`
+  entry .Root   a filesystem root the client exposes: a URI and a name
+    entry #uri   the root's URI
+    entry #name   the root's name, if given
+    entry #_meta   protocol metadata, if any
+  entry .Tool   a tool as listed: name, schemas, title, description, execution and annotations
+    detail
+        The `Mcp.Specification` macro builds one for each `@tool` method. `name` is the
+        method's name; `inputSchema` is a `JsonSchema.Object` with a property per parameter
+        (each schema derived from the parameter's type, its `description` from the parameter's
+        `@about`) whose `required` list omits every parameter typed `Optional` or carrying a
+        default argument; `outputSchema` is an object with the one required property `result`,
+        the schema of the result type; `title` and `description` come from `@title` and
+        `@about`; and `_meta` names the resource a `@ui` annotation points to, as
+        `{"ui": {"visibility": ["model", "app"], "resourceUri": "…"}}`.
+    entry #name   the tool's name
+    entry #inputSchema   the JSON schema of the tool's arguments
+    entry #outputSchema   the JSON schema of the tool's structured result, if given
+    entry #title   a human-readable title, if given
+    entry #icons   icons, if given
+    entry #description   a description, for the model to decide when to call it, if given
+    entry #execution   whether the tool may run as a task, if stated
+    entry #annotations   behavioural hints, as `ToolAnnotations`, if given
+    entry #_meta   protocol metadata, if any; a `@ui` tool's user-interface resource is named here
+  entry .ToolExecution   how a tool executes: its task support
+    entry #taskSupport   whether the tool may run as a task, if stated
+  entry .ToolAnnotations   hints about a tool's behaviour: read-only, destructive, idempotent, open-world
+    entry #title   a human-readable title, if given
+    entry #readOnlyHint   whether the tool changes nothing, if stated
+    entry #destructiveHint   whether the tool may make destructive changes, if stated
+    entry #idempotentHint   whether repeating a call with the same arguments has no further effect, if stated
+    entry #openWorldHint   whether the tool reaches outside its own closed world, if stated
+  entry .ToolChoice   how a sampling request lets the model choose tools
+    entry #mode   the mode, as `Mode`, if stated
+  entry .Mode   whether a sampling model may, must or must not use tools
+    detail
+        `Auto`, `Required` and `None`, encoded as `auto`, `required` and `none`.
+    entry .encodable   writes the case as its lowercase name
+    entry .decodable   reads `auto`, `required` or `none`, raising `Json.Error` for anything else
+  entry .SamplingMessage   a message in a sampling request: a role and content blocks
+    entry #role   who speaks, as `Role`
+    entry #content   the message's blocks, each a `SamplingMessageContentBlock`
+    entry #_meta   protocol metadata, if any
+  entry .SamplingMessageContentBlock   the blocks a sampling message may hold, as a union type
+    detail
+        `TextContent | ImageContent | AudioContent | ToolUseContent | ToolResultContent`. It is
+        a type alias rather than a sealed trait, because three of its members belong to
+        `Content`, in a component this one builds on; its JSON codecs live in the companion of
+        `ToolUseContent`, the first member defined here, which is in the union's implicit
+        scope. They encode with a `type` discriminator of `text`, `image`, `audio`, `tool_use`
+        or `tool_result`.
+  entry .ToolUseContent   a model's request to call a tool, in a sampling message
+    detail
+        The companion also anchors the JSON codecs of `SamplingMessageContentBlock`, the union
+        this is a member of, since a type alias has no companion of its own.
+    entry .encodable   writes any `SamplingMessageContentBlock` with its `type` discriminator
+    entry .decodable   reads a `SamplingMessageContentBlock` by its `type`, raising `Json.Error` for an unknown one
+    entry #id   the id the result will be matched by
+    entry #name   the tool to call
+    entry #input   the arguments, as JSON
+  entry .ToolResultContent   the result of a tool call, in a sampling message
+    entry #toolUseId   the id of the `ToolUseContent` this answers
+    entry #content   the result as content blocks
+    entry #structuredContent   the result as JSON, if given
+    entry #isError   whether the tool failed, if stated
+  entry .ModelPreferences   a server's preferences for which model samples: hints and priorities
+    entry #hints   model names to prefer, in order, if given
+    entry #costPriority   how much to weigh cost, from 0 to 1, if given
+    entry #speedPriority   how much to weigh speed, from 0 to 1, if given
+    entry #intelligencePriority   how much to weigh capability, from 0 to 1, if given
+  entry .ModelHint   a hint naming a model or family to prefer
+    entry #name   the model's name or a substring of it, if given
+  entry .CreateMessage   the reply to `sampling/createMessage`: the model's message
+    entry #role   who speaks, as `Role`
+    entry #content   the message's blocks, each a `SamplingMessageContentBlock`
+    entry #model   the name of the model which answered
+    entry #stopReason   why generation stopped, if given
+  entry .Task   a long-running request: its id, status, timestamps and polling interval
+    entry #taskId   the task's id
+    entry #status   the task's state, as `TaskStatus`
+    entry #statusMessage   a human-readable account of the state, if given
+    entry #createdAt   when the task was created, as an ISO 8601 timestamp
+    entry #lastUpdatedAt   when the task last changed, as an ISO 8601 timestamp
+    entry #ttl   how long the result is kept, in milliseconds, if given
+    entry #pollInterval   how often to poll, in milliseconds, if suggested
+  entry .CreateTaskResult   the reply to a request which became a task
+    entry #task   the task created, as `Task`
+  entry .ElicitAction   what the user did with an elicitation: accepted, declined or cancelled
+    detail
+        `Accept`, `Decline` and `Cancel`, encoded as `accept`, `decline` and `cancel`.
+    entry .encodable   writes the case as its lowercase name
+    entry .decodable   reads `accept`, `decline` or `cancel`, raising `Json.Error` for anything else
+  entry .ElicitResult   the client's reply to `elicitation/create`: the action and any content
+    entry #action   what the user did, as `ElicitAction`
+    entry #content   the submitted values, as JSON, if accepted
+  entry .ElicitRequest   a request for user input: a form or a URL
+      A sealed sum of `ElicitRequestForm` and `ElicitRequestUrl`.
+  entry .ElicitRequestForm   an elicitation asking the user to fill in a form described by a schema
+    entry #message   what to ask the user
+    entry #requestedSchema   the JSON schema of the values wanted
+    entry #mode   the elicitation mode, if given
+  entry .ElicitRequestUrl   an elicitation asking the user to visit a URL
+    entry #mode   the elicitation mode
+    entry #message   what to ask the user
+    entry #elicitationId   the id by which completion is reported
+    entry #url   the URL to open
+  entry .ElicitationComplete   the notification that a URL elicitation finished
+    entry #elicitationId   the id of the elicitation which finished
+  entry .Api   the JSON-RPC interface of an MCP server: every method a client may call, as `@rpc` methods
+    detail
+        The `JsonRpc` trait which declares the protocol's server-side methods, each marked
+        `@rpc` and named as the protocol spells it: `ping`, `initialize`,
+        `completion/complete`, `logging/setLevel`, `prompts/get`, `prompts/list`,
+        `resources/list`, `resources/templates/list`, `resources/read`,
+        `resources/subscribe`, `resources/unsubscribe`, `tools/call`, `tools/list`,
+        `tasks/get`, `tasks/result`, `tasks/list`, `tasks/cancel`, and the notifications
+        `notifications/cancelled`, `notifications/progress`, `notifications/initialized`,
+        `notifications/roots/list_changed`, `notifications/tasks/status`,
+        `notifications/resources/list_changed`, `notifications/resources/updated`,
+        `notifications/prompts/list_changed`, `notifications/tools/list_changed` and
+        `notifications/message`. Each takes the request's parameters by name, with a trailing
+        `_meta: Optional[Json]`, and returns the protocol's result record (`Initialize`,
+        `ListTools`, `CallTool`, `GetPrompt`, …) or `Unit` for a notification. Its `Origin`
+        is `Mcp.Client`.
+
+        `Mcp.Interface` is the implementation; `JsonRpc.serve(interface)` dispatches a JSON
+        request to the method of that name, and an unknown method is a `JsonRpc.Error`, which
+        `Mcp.send` answers as `-32601`.
+    entry #Origin   the other side of the interface: `Mcp.Client`
+    entry #ping   answers a liveness check with nothing
+    entry #initialize   begins a session: takes the client's version, capabilities and identity, answers `Initialize`
+  entry .Interface   the implementation of `Mcp.Api` for one session, over a server's specification
+    detail
+        `Mcp.Interface(sessionId, server)` is the object which answers a session's JSON-RPC
+        calls. It is built once per session id and cached, so a second call with the same id
+        returns the same interface; `Mcp.Server#terminate` evicts it, which also ends its
+        event stream so an open `GET` finishes. It needs a `server.type is Mcp.Specification`,
+        which the `Mcp.Specification.mcpSpecification` macro derives.
+
+        The listings answer from the specification: `tools/list` is `spec.tools()`,
+        `resources/list` is `spec.resources()`, `prompts/list` is `spec.prompts()`, each
+        unpaginated. `tools/call` runs `spec.invokeTool` under its own supervision and
+        answers `CallTool` with the result as `structuredContent` and as text; a tool which
+        throws answers a result marked `isError` carrying the exception's message, while an
+        `Mcp.Error` (an unknown tool, a missing required parameter) is rethrown for `Mcp.send`
+        to answer as a JSON-RPC error. `prompts/get` runs `spec.invokePrompt` and turns each
+        `Human` into a `User` message and each `Agent` into an `Assistant` one.
+        `resources/read` answers `spec.invokeResource`. `initialize` answers the server's
+        name, version and description with the default `ServerCapabilities`, and
+        `logging/setLevel` records the level. `ping`, `notifications/initialized`,
+        `notifications/cancelled` and `notifications/progress` accept and do nothing;
+        `tasks/list` is always empty.
+
+        Completion, resource templates, subscriptions, tasks and the remaining notifications
+        are not implemented, and a call to one throws `NotImplementedError`, which
+        `Mcp.send` answers as `-32603`.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        object Pyrus extends Mcp.Server():
+          class Session() extends Mcp.Session
+          def initialize(): Session = new Session()
+          def name: Text = t"Pyrus"
+          def description: Text = t"A simple server"
+          def version: Semver = v"1.0.0"
+          def prompts: List[Mcp.Prompt] = Nil
+
+          @tool
+          def greet(name: Text, greeting: Optional[Text]): Text = t"${greeting.or(t"Hello")}, $name"
+
+        val interface = Mcp.Interface(t"session-1", Pyrus)
+        interface.`tools/call`(t"greet", t"""{"name": "Jon"}""".read[Json], Unset).structuredContent
+        // {"result": "Hello, Jon"}
+        ```
+
+        The interface is `Streamable` as server-sent events (`.streamable`), which is how
+        `Mcp.send` answers a `GET`.
+    refer synesthesia.Mcp.Api
+    refer synesthesia.Mcp.Specification
+    refer synesthesia.Mcp.send
+    entry .apply   the interface for a session id, built over a server or found in the cache
+        `Mcp.Interface(sessionId, server)` needs a `server.type is Mcp.Specification` in
+        scope, derived by the macro given in `Mcp.Specification`; the interface is
+        remembered by id until `Mcp.Server#terminate` forgets it.
+    entry .streamable   streams the interface's outgoing messages as server-sent events
+        The `Streamable by Array[Sse]` given `Mcp.send` uses to answer a `GET` with the
+        session's event stream, needing a `Credit` for metering.
+    entry #server   the server the interface dispatches to
+    entry #spec   the derived `Mcp.Specification` of that server
+    entry #ping   answers a liveness check with nothing
+    entry #initialize   answers `Initialize` with the protocol version, default capabilities and the server's identity
+  entry .Client   the client as seen from a tool: logging, elicitation and sampling back to it
+    detail
+        A tool or prompt method which declares a second parameter list `(using client:
+        Mcp.Client)` receives the client of the session which called it, and can speak to it
+        while the call runs. `#log` sends a `notifications/message` the client shows as
+        progress; `#elicit[Form](message)` asks the user to fill in a form whose fields are
+        those of a case class, and returns what they submitted as JSON.
+
+        ```scala
+        import soundness.*
+
+        object Deployer extends Mcp.Server():
+          class Session() extends Mcp.Session
+          def initialize(): Session = new Session()
+          def name: Text = t"deployer"
+          def description: Text = t"Deploys the application"
+          def version: Semver = v"1.0.0"
+          def prompts: List[Mcp.Prompt] = Nil
+
+          @tool
+          def deploy(target: Text)(using client: Mcp.Client): Text =
+            client.log(t"Preparing deployment to $target")
+            case class Confirmation(proceed: Boolean)
+            client.elicit[Confirmation](t"Deploy to production?")
+            t"deployed to $target"
+        ```
+
+        The client-side `@rpc` methods it is implemented over (`ping`,
+        `notifications/message`, `elicitation/create`) are protected; a tool uses the three
+        public methods.
+    entry #log   sends a message to the client at `Info` level, as a `notifications/message`
+        The message is sent under the logger name `updates`, as `{"message": …}`, so the
+        client shows it as progress while the tool runs.
+    entry #elicit   asks the user for structured input, as a form described by a type's schema
+        `client.elicit[Form](message)` sends an `elicitation/create` in `form` mode, with the
+        JSON schema derived from `Form` (any type which is `Schematic over JsonSchema`, such
+        as a case class), and returns the client's reply as `Json`.
+    entry #sample   asks the client's model to generate; not yet implemented
+        Calling it throws `NotImplementedError`.
+  entry .Specification   what the macro derives from a server: its listings and its dispatch
+    detail
+        A `server.type is Mcp.Specification` is the compiled form of a server's annotations.
+        `#tools()`, `#resources()` and `#prompts()` are the listings the client discovers,
+        and `#invokeTool`, `#invokeResource` and `#invokePrompt` dispatch a call by name to
+        the annotated method, decoding its arguments from JSON and encoding its result. It is
+        derived by the inline given `.mcpSpecification`, which is in implicit scope for every
+        `Mcp.Server` subtype and needs a `Tactic[Json.Error]` and a `Tactic[Mcp.Error]` at
+        the point it is summoned — `Mcp.Server#serve` takes it as a `using` parameter, so a
+        handler which calls `serve` needs those tactics, which `strategies.throwUnsafely`
+        supplies.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        object Pyrus extends Mcp.Server():
+          class Session() extends Mcp.Session
+          def initialize(): Session = new Session()
+          def name: Text = t"Pyrus"
+          def description: Text = t"A simple server"
+          def version: Semver = v"1.0.0"
+          def prompts: List[Mcp.Prompt] = Nil
+
+          @tool
+          @about("Greets someone")
+          def greet(@about("whom to greet") name: Text, greeting: Optional[Text], punctuation: Text = "!")
+          :   Text =
+            t"${greeting.or(t"Hello")}, $name$punctuation"
+
+        val spec = summon[Pyrus.type is Mcp.Specification]
+        spec.tools().head.inputSchema   // required: List(t"name"); `greeting` and `punctuation` optional
+        ```
+
+        What the macro requires of a method, each a compile error when missing: a `@tool`
+        parameter and result type must each be `Schematic over JsonSchema` (_There was no JSON
+        schema for `name`_) and the parameter decodable from JSON; a `@resource` method takes
+        no parameters (_MCP resource methods cannot have any parameters_) and its result must
+        be `Streamable by Text` or `Streamable by Data`; a `@prompt` method must return
+        `List[Discourse]`. A method may have one parameter list, or two where the second is
+        `(using Mcp.Client)`. Annotations on an overridden method are seen through the
+        override.
+
+        The derivation is capture-clean, so a server object may live in a module compiled with
+        capture checking.
+    refer synesthesia.Mcp.Server
+    refer synesthesia.Mcp.Interface
+    entry .mcpSpecification   the inline given which derives a specification for any `Mcp.Server` subtype
+        In implicit scope through the `Specification` companion, so no import is needed. It
+        is a macro, expanded where it is summoned, and needs a `Tactic[Json.Error]` and a
+        `Tactic[Mcp.Error]` there; it halts with _could not find a contextual
+        `Tactic[Mcp.Error]` instance_ if one is absent.
+    entry #tools   the server's tools, one `Mcp.Tool` per `@tool` method
+    entry #resources   the server's resources, one `Mcp.Resource` per `@resource` method
+    entry #prompts   the server's prompts, one `Mcp.Prompt` per `@prompt` method
+    entry #invokeTool   calls a tool by name with JSON arguments, returning its result as `{"result": …}`
+        Raises `Mcp.Error(UnknownMethod)` for a name no `@tool` method has and
+        `Mcp.Error(MissingParameter)` for a required argument the JSON lacks; an argument
+        typed `Optional` is `Unset` when absent and one with a default takes it. The tool's
+        own exception propagates.
+    entry #invokeResource   reads a resource by URI, as text or a Base64 blob
+        Raises `Mcp.Error(UnknownResource)` for a URI no `@resource` method declares. A
+        result which streams as text is a `TextResourceContents`; one which streams as bytes
+        is a `BlobResourceContents`, Base64-encoded.
+    entry #invokePrompt   runs a prompt by name with text arguments, returning its `Discourse` messages
+        Raises `Mcp.Error(UnknownMethod)` for an unknown name and
+        `Mcp.Error(MissingParameter)` for a required argument not given.
+  entry .Server   the base of an MCP server: identity, sessions, and the annotated methods which are its capabilities
+    detail
+        A server is an object (or class) extending `Mcp.Server()` which gives its `#name`,
+        `#description`, `#version` and `#prompts`, defines its `#Session` type and
+        `#initialize()` to make one, and marks methods with `@tool`, `@resource` and
+        `@prompt`. The `Mcp.Specification` macro turns those into the protocol, and `#serve`
+        answers an HTTP request with it. Watch one grow:
+
+        ```scala fuel
+        frame
+          label A server with nothing to offer
+          code
+              import soundness.*
+              import strategies.throwUnsafely
+
+              object Library extends Mcp.Server():
+                class Session() extends Mcp.Session
+                def initialize(): Session = new Session()
+                def name: Text = t"library"
+                def description: Text = t"The company library"
+                def version: Semver = v"1.0.0"
+                def prompts: List[Mcp.Prompt] = Nil
+        frame
+          label A tool: its name, parameter and result schemas come from the signature
+          code
+              import soundness.*
+              import strategies.throwUnsafely
+
+              object Library extends Mcp.Server():
+                class Session() extends Mcp.Session
+                def initialize(): Session = new Session()
+                def name: Text = t"library"
+                def description: Text = t"The company library"
+                def version: Semver = v"1.0.0"
+                def prompts: List[Mcp.Prompt] = Nil
+
+                @tool
+                @about("Find books by an author")
+                def byAuthor(author: Text): List[Text] = List(t"Dune")
+        frame
+          label An optional and a defaulted parameter are not required
+          code
+              import soundness.*
+              import strategies.throwUnsafely
+
+              object Library extends Mcp.Server():
+                class Session() extends Mcp.Session
+                def initialize(): Session = new Session()
+                def name: Text = t"library"
+                def description: Text = t"The company library"
+                def version: Semver = v"1.0.0"
+                def prompts: List[Mcp.Prompt] = Nil
+
+                @tool
+                @about("Find books by an author")
+                def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+                :   List[Text] =
+                  List(t"Dune")
+        frame
+          label A resource, served at a URI with a MIME type
+          code
+              import soundness.*
+              import strategies.throwUnsafely
+
+              object Library extends Mcp.Server():
+                class Session() extends Mcp.Session
+                def initialize(): Session = new Session()
+                def name: Text = t"library"
+                def description: Text = t"The company library"
+                def version: Semver = v"1.0.0"
+                def prompts: List[Mcp.Prompt] = Nil
+
+                @tool
+                @about("Find books by an author")
+                def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+                :   List[Text] =
+                  List(t"Dune")
+
+                @resource("library://rules", mimeType = t"text/markdown")
+                @about("The lending rules")
+                def rules: Text = t"# Rules\n\nReturn books within three weeks."
+        frame
+          label A prompt, and a tool which talks back to the client
+          code
+              import soundness.*
+              import strategies.throwUnsafely
+
+              object Library extends Mcp.Server():
+                class Session() extends Mcp.Session
+                def initialize(): Session = new Session()
+                def name: Text = t"library"
+                def description: Text = t"The company library"
+                def version: Semver = v"1.0.0"
+                def prompts: List[Mcp.Prompt] = Nil
+
+                @tool
+                @about("Find books by an author")
+                def byAuthor(@about("the author's surname") author: Text, genre: Optional[Text], limit: Int = 10)
+                :   List[Text] =
+                  List(t"Dune")
+
+                @resource("library://rules", mimeType = t"text/markdown")
+                @about("The lending rules")
+                def rules: Text = t"# Rules\n\nReturn books within three weeks."
+
+                @prompt
+                def recommend(topic: Text): List[Discourse] =
+                  List(human"Recommend three books about $topic from the library.")
+
+                @tool
+                def reserve(book: Text)(using client: Mcp.Client): Text =
+                  client.log(t"Checking availability of $book")
+                  case class Confirmation(proceed: Boolean)
+                  client.elicit[Confirmation](t"Reserve $book for a week?")
+                  t"reserved $book"
+        ##
+        ```
+
+        A session is made by `#initialize()` the first time a session id is seen and kept in
+        `#session`; the server keeps per-client state there. `#terminate` forgets a session
+        and its `Mcp.Interface`, which `#serve` does on a `DELETE`. The server mounts in an
+        HTTP handler:
+
+        ```scala fuel
+        typecheck
+        ##
+        def serve(): Unit = supervise:
+          SocketServer(8080).handle:
+            request.path match
+              case % /: t"mcp" => Library.serve
+              case _           => Http.Response(Http.NotFound)(t"Not found")
+        ```
+
+        A subclass's own member named `terminate` taking one `Text` collides with
+        `#terminate` and must be renamed or marked `override`.
+    refer synesthesia.Mcp.Specification
+    refer synesthesia.Mcp.Client
+    refer synesthesia.Mcp.Session
+    refer synesthesia.tool
+    refer synesthesia.resource
+    refer synesthesia.prompt
+    entry #Session   the type of this server's per-client state, a subtype of `Mcp.Session`
+        Each server declares its own, usually `class Session() extends Mcp.Session` with
+        whatever fields the server keeps for one client.
+    entry #Origin   the other side of the protocol: `Mcp.Client`
+    entry #session   the session of an id, created with `initialize()` the first time it is asked for
+        Sessions are kept in a table keyed by the `Mcp-Session-Id` header's value until
+        `#terminate` removes them.
+    entry #terminate   ends a session: forgets its state and its `Mcp.Interface`, answering whether it was known
+        Evicting the interface ends its event stream, so a client's open `GET` finishes.
+        `#serve` calls it for a `DELETE` request.
+    entry #initialize   makes a fresh `Session` for a new client; abstract
+    entry #serve   answers one HTTP request of the streamable HTTP transport
+        Needs `this.type is Mcp.Specification` (derived by the macro, given a
+        `Tactic[Json.Error]` and `Tactic[Mcp.Error]`), a `Monitor`, a `Probate`, an `Online`
+        and the `Http.Request`, as a handler body has. A `DELETE` with an `Mcp-Session-Id`
+        naming a known session terminates it and answers `204 No Content`; an unknown id
+        answers `404 Not Found`, and no id `400 Bad Request`. Every other request takes its
+        session from the header (or a fresh UUID), finds or builds the session's
+        `Mcp.Interface`, and hands over to `Mcp.send` with `JsonRpc.serve(interface)` as the
+        dispatch. A `JsonRpc.Error` escaping the transport answers as an unfulfilled response
+        with the error's message.
+    entry #name   the server's name, sent as its `Implementation` on `initialize`; abstract
+    entry #description   what the server is for, sent as the `instructions` on `initialize`; abstract
+    entry #version   the server's version, as a `Semver`; abstract
+    entry #prompts   the server's prompt listing, as `Mcp.Prompt`s; abstract
+        The derived specification lists `@prompt` methods itself, so a server with none
+        gives `Nil`.
+  entry .Session   the marker trait a server's per-client state extends
+      A server's `Session` type is a subtype of this, made by `Mcp.Server#initialize()` for
+      each new session id and kept by `Mcp.Server#session` until the session is terminated.
+  entry .Error   raised when a call names no tool, prompt or resource, or omits a required parameter
+    detail
+        Error 630: _the MCP operation failed because `reason`_. Raised by a derived
+        `Mcp.Specification`'s dispatch, and answered by `Mcp.send` as the JSON-RPC error
+        `-32602` under the request's id, so a protocol mistake is distinct from a tool's own
+        failure (which is a `CallTool` marked `isError`). Deriving a specification needs a
+        `Tactic[Mcp.Error]` in scope, and `Mcp.Interface` rethrows the error unscoped.
+    entry .Reason   why the operation failed
+        `UnknownMethod` (1): _the method name does not match any registered tool or prompt_;
+        `UnknownResource` (2): _the URI does not match any registered resource_;
+        `MissingParameter` (3): _a required parameter was not present in the input_.
+    entry .communicable   renders each reason as its message
+    entry #reason   which of the three failures this was
+  entry .Icon   an icon's source, MIME type, sizes and theme; re-exported from `Content`
+      `Mcp.Icon` is `synesthesia.Content.Icon`, whose page has the full account.
+  entry .Contents   a resource's contents, text or blob; re-exported from `Content`
+      `Mcp.Contents` is `synesthesia.Content.Contents`, whose page has the full account.
+  entry .ResourceContents   the base of a resource's contents: URI, MIME type and metadata; re-exported from `Content`
+      `Mcp.ResourceContents` is `synesthesia.Content.ResourceContents`.
+  entry .TextResourceContents   a resource's contents as text; re-exported from `Content`
+      `Mcp.TextResourceContents` is `synesthesia.Content.TextResourceContents`.
+  entry .BlobResourceContents   a resource's contents as a Base64 blob; re-exported from `Content`
+      `Mcp.BlobResourceContents` is `synesthesia.Content.BlobResourceContents`.
+  entry .Annotations   audience, priority and modification hints; re-exported from `Content`
+      `Mcp.Annotations` is `synesthesia.Content.Annotations`.
+  entry .Role   who speaks, `User` or `Assistant`; re-exported from `Content`
+      `Mcp.Role` is `synesthesia.Content.Role`, whose page has the full account.
+  entry .ContentBlock   a block of content: text, image, audio, resource link or embedded resource; re-exported from `Content`
+      `Mcp.ContentBlock` is `synesthesia.Content.ContentBlock`, whose page has the full account.
+  entry .TextContent   a block of text; re-exported from `Content`
+      `Mcp.TextContent` is `synesthesia.Content.TextContent`.
+  entry .ImageContent   a Base64 image with its MIME type; re-exported from `Content`
+      `Mcp.ImageContent` is `synesthesia.Content.ImageContent`.
+  entry .AudioContent   Base64 audio with its MIME type; re-exported from `Content`
+      `Mcp.AudioContent` is `synesthesia.Content.AudioContent`.
+  entry .ResourceLink   a link to a resource by URI; re-exported from `Content`
+      `Mcp.ResourceLink` is `synesthesia.Content.ResourceLink`.
+  entry .EmbeddedResource   a resource's contents carried inline; re-exported from `Content`
+      `Mcp.EmbeddedResource` is `synesthesia.Content.EmbeddedResource`.
+
+entry .Content   the content-block vocabulary MCP and the Agent Client Protocol share
+  detail
+      The JSON representations of content which both protocols exchange: a `ContentBlock` is
+      text, an image, audio, a link to a resource or an embedded resource, each a case class
+      encoded with a `type` discriminator; a resource's contents are `TextResourceContents` or
+      `BlobResourceContents`, wrapped as `Contents`; and `Icon`, `Annotations` and `Role` are
+      the records they share. It lives in the `synesthesia.content` source set, which depends
+      only on JSON, so an ACP client — which spawns agents as subprocesses and has no use for
+      an HTTP server — can share these types with an MCP server.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val block: Content.ContentBlock = Content.TextContent(t"Hello")
+      block.in[Json].show                         // {"type": "text", "text": "Hello"}
+      t"""{"type": "image", "data": "iVBORw0…", "mimeType": "image/png"}""".read[Json].as[Content.ContentBlock]
+      ```
+
+      Every member is re-exported from `Mcp`, so MCP code writes `Mcp.TextContent`; in the
+      `soundness` umbrella the object itself is spelled `McpContent`, since `Content` there
+      is gesticulate's media-typed payload. The records' JSON codecs are derived once in their
+      companions and are in implicit scope; decoding needs a `Tactic[Json.Error]`.
+  refer synesthesia.Mcp
+  entry .Icon   an icon: its source, MIME type, sizes and theme
+    detail
+        Carried by implementations, tools, resources and prompts to show alongside them. The
+        companion holds derived JSON codecs.
+    entry #src   the icon's URI or data URI
+    entry #mimeType   the icon's MIME type, if given
+    entry #sizes   the sizes available, as `WxH` texts, if given
+    entry #theme   the theme the icon suits, `light` or `dark`, if given
+  entry .Contents   a resource's contents, as text or as a blob
+    detail
+        Wraps a `TextResourceContents | BlobResourceContents`, so that a `ReadResource` can
+        list either. It encodes as whichever it holds (`.encodable`) and decodes by trying
+        text first (`.decodable`).
+    entry .encodable   writes the text or blob contents it holds
+    entry .decodable   reads text contents, or blob contents if the JSON has no `text`
+    entry #contents   the contents, `TextResourceContents` or `BlobResourceContents`
+  entry .ResourceContents   the base of a resource's contents: URI, MIME type and metadata
+    entry #uri   the resource's URI
+    entry #mimeType   the resource's MIME type, if known
+    entry #_meta   protocol metadata, if any
+  entry .TextResourceContents   a resource's contents as text
+    detail
+        What a derived `Mcp.Specification` answers for a `@resource` method whose result
+        streams as `Text`; its `mimeType` is the annotation's, or `text/plain`. The companion
+        holds derived JSON codecs.
+    entry #uri   the resource's URI
+    entry #mimeType   the resource's MIME type, if known
+    entry #text   the contents
+    entry #_meta   protocol metadata, if any
+  entry .BlobResourceContents   a resource's contents as a Base64 blob
+    detail
+        What a derived `Mcp.Specification` answers for a `@resource` method whose result
+        streams as `Data`; its `mimeType` is the annotation's, or `application/octet-stream`.
+        The companion holds derived JSON codecs.
+    entry #uri   the resource's URI
+    entry #mimeType   the resource's MIME type, if known
+    entry #blob   the contents, Base64-encoded
+    entry #_meta   protocol metadata, if any
+  entry .Annotations   hints about content: its audience, priority and last modification
+    detail
+        The companion holds derived JSON codecs.
+    entry #audience   who the content is for, as `Role`s, if given
+    entry #priority   how important it is, from 0 to 1, if given
+    entry #lastModified   when it last changed, as an ISO 8601 timestamp, if given
+  entry .Role   who a message is from: the user or the assistant
+    detail
+        `User` and `Assistant`, encoded as `user` and `assistant`; `Mcp.Interface` makes a
+        `Human` prompt message a `User` one and an `Agent` message an `Assistant` one.
+    entry .encodable   writes `user` or `assistant`
+    entry .decodable   reads `user` or `assistant`, raising `Json.Error` for anything else
+  entry .ContentBlock   a block of content: text, an image, audio, a resource link or an embedded resource
+    detail
+        The sealed sum of `TextContent`, `ImageContent`, `AudioContent`, `ResourceLink` and
+        `EmbeddedResource`, encoded with a `type` discriminator of `text`, `image`, `audio`,
+        `resource_link` or `resource`. A tool's result and a prompt's messages are lists of
+        these.
+
+        ```scala
+        import soundness.*
+
+        val blocks: List[Content.ContentBlock] =
+          List(Content.TextContent(t"Hello"), Content.ResourceLink(t"readme", t"docs://readme"))
+
+        blocks.map:
+          case Content.TextContent(text, _)      => t"text: $text"
+          case Content.ImageContent(_, mime, _, _) => t"image of $mime"
+          case Content.AudioContent(_, mime, _)  => t"audio of $mime"
+          case Content.ResourceLink(name, uri, _, _, _, _, _, _, _) => t"link to $uri"
+          case Content.EmbeddedResource(_, _, _) => t"an embedded resource"
+        ```
+    entry .encodable   writes a block with its `type` discriminator
+    entry .decodable   reads a block by its `type`, raising `Json.Error` for an unknown one
+  entry .TextContent   a block of text, with optional annotations
+    detail
+        The companion holds derived JSON codecs.
+    entry #text   the text
+    entry #annotations   audience and priority hints, if given
+  entry .ImageContent   an image as Base64 data with its MIME type
+    detail
+        The `uri` field is defined by the Agent Client Protocol, not by MCP; being
+        `Optional`, it is absent from the MCP wire when `Unset`. The companion holds derived
+        JSON codecs.
+    entry #data   the image, Base64-encoded
+    entry #mimeType   the image's MIME type
+    entry #uri   where the image came from, if given (an ACP field)
+    entry #annotations   audience and priority hints, if given
+  entry .AudioContent   audio as Base64 data with its MIME type
+    detail
+        The companion holds derived JSON codecs.
+    entry #data   the audio, Base64-encoded
+    entry #mimeType   the audio's MIME type
+    entry #annotations   audience and priority hints, if given
+  entry .ResourceLink   a link to a resource the client may read, by URI
+    detail
+        The companion holds derived JSON codecs.
+    entry #name   the resource's name
+    entry #uri   the resource's URI
+    entry #title   a human-readable title, if given
+    entry #description   a description, if given
+    entry #icons   icons, if given
+    entry #mimeType   the resource's MIME type, if known
+    entry #annotations   audience and priority hints, if given
+    entry #size   the resource's size in bytes, if known
+    entry #_meta   protocol metadata, if any
+  entry .EmbeddedResource   a resource's contents carried inline in a message
+    detail
+        The companion holds derived JSON codecs.
+    entry #resource   the contents, as `Contents`
+    entry #annotations   audience and priority hints, if given
+    entry #_meta   protocol metadata, if any
+
+entry .about   the `@about("…")` annotation: the description of a tool, resource, prompt or parameter
+    On a `@tool`, `@resource` or `@prompt` method, `@about` supplies the `description` the
+    model reads when deciding whether to use it. On a tool's parameter, it becomes that
+    property's `description` in the input schema; on a prompt's parameter, the
+    `PromptArgument`'s description. It is defined in the `synesthesia.content` source set,
+    so the Agent Client Protocol's types may use it too.
+
+    ```scala
+    import soundness.*
+
+    object Greeter extends Mcp.Server():
+      class Session() extends Mcp.Session
+      def initialize(): Session = new Session()
+      def name: Text = t"greeter"
+      def description: Text = t"Greets people"
+      def version: Semver = v"1.0.0"
+      def prompts: List[Mcp.Prompt] = Nil
+
+      @tool
+      @about("Greets someone")
+      def greet(@about("whom to greet") name: Text): Text = t"Hello, $name"
+    ```
+
+entry .tool   the `@tool` annotation: a method is a tool the client may call
+    A `@tool` method of an `Mcp.Server` is listed by `tools/list` and called by `tools/call`.
+    Its name is the method's; its input schema has a property per parameter, derived from the
+    parameter's type (which must be `Schematic over JsonSchema` and decodable from JSON), and
+    requires every parameter which is neither `Optional` nor defaulted; its output schema is
+    an object with the one property `result`, the schema of the result type. The result is
+    answered as `{"result": …}` in the `CallTool`'s `structuredContent` and as text. A method
+    may take a second parameter list `(using client: Mcp.Client)` to log to, or elicit input
+    from, the client while it runs. A tool which throws answers a `CallTool` marked `isError`
+    with the exception's message.
+
+    ```scala
+    import soundness.*
+
+    object Runs extends Mcp.Server():
+      class Session() extends Mcp.Session
+      def initialize(): Session = new Session()
+      def name: Text = t"runs"
+      def description: Text = t"Lists runs"
+      def version: Semver = v"1.0.0"
+      def prompts: List[Mcp.Prompt] = Nil
+
+      @tool
+      @about(t"Lists recent runs")
+      def runs(@about(t"only runs in this workspace") workspace: Optional[Text], limit: Int = 20)
+      :   List[Text] =
+        Nil
+    ```
+
+    Here `workspace` and `limit` are not required: a client may omit them, and the method
+    sees `Unset` and `20`. `@title` gives the tool a title and `@ui` names the resource
+    which is its user interface.
+
+entry .resource   the `@resource("uri")` annotation: a method's result is served at a URI
+    A `@resource(uri)` method of an `Mcp.Server` takes no parameters and returns anything
+    `Streamable by Text` or `Streamable by Data`: it is listed by `resources/list` as an
+    `Mcp.Resource` named after the method and read by `resources/read` with that URI, as
+    `TextResourceContents` or, Base64-encoded, `BlobResourceContents`. The second parameter,
+    `mimeType`, gives the type reported; without it, a resource whose URI a tool's `@ui`
+    names is `text/html;profile=mcp-app`, a text resource `text/plain` and a binary one
+    `application/octet-stream`.
+
+    ```scala
+    import soundness.*
+
+    object Documentation extends Mcp.Server():
+      class Session() extends Mcp.Session
+      def initialize(): Session = new Session()
+      def name: Text = t"documentation"
+      def description: Text = t"The project's documentation"
+      def version: Semver = v"1.0.0"
+      def prompts: List[Mcp.Prompt] = Nil
+
+      @resource("docs://readme", mimeType = t"text/markdown")
+      @about("The project readme")
+      def readme: Text = t"# Readme\n\nStart with `make build`."
+    ```
+
+    A method with parameters is a compile error, _MCP resource methods cannot have any
+    parameters_, and so is a result type which does not stream.
+
+entry .prompt   the `@prompt` annotation: a method returns a conversation template
+    A `@prompt` method of an `Mcp.Server` returns a `List[Discourse]`, written with the
+    `human"…"` and `agent"…"` interpolators, and is listed by `prompts/list` as an
+    `Mcp.Prompt` named after it, with a `PromptArgument` per parameter, and run by
+    `prompts/get` with the arguments as text. Each `Human` message becomes a `User`
+    `PromptMessage` and each `Agent` an `Assistant` one.
+
+    ```scala
+    import soundness.*
+
+    object Reviews extends Mcp.Server():
+      class Session() extends Mcp.Session
+      def initialize(): Session = new Session()
+      def name: Text = t"reviews"
+      def description: Text = t"Review prompts"
+      def version: Semver = v"1.0.0"
+      def prompts: List[Mcp.Prompt] = Nil
+
+      @prompt
+      def review(topic: Text): List[Discourse] =
+        List(human"Please review the $topic and summarize any problems.")
+    ```
+
+entry .title   the `@title("…")` annotation: a human-readable title for a tool, resource, prompt or argument
+    Becomes the `title` of the listed `Mcp.Tool`, `Mcp.Resource` or `Mcp.Prompt`, or of a
+    prompt parameter's `PromptArgument`, where `@about` gives the description.
+
+entry .ui   the `@ui("uri")` annotation: names the resource which is a tool's user interface
+    On a `@tool` method, `@ui(uri)` adds `{"ui": {"visibility": ["model", "app"],
+    "resourceUri": uri}}` to the tool's `_meta`, telling an MCP-apps client which resource
+    to show for it, and makes the `@resource` with that URI default to the MIME type
+    `text/html;profile=mcp-app`.
+
+    ```scala
+    import soundness.*
+    import htmlDoms.whatwg
+    import htmlDoms.whatwg.*
+
+    object App extends Mcp.Server():
+      class Session() extends Mcp.Session
+      def initialize(): Session = new Session()
+      def name: Text = t"app"
+      def description: Text = t"An MCP app"
+      def version: Semver = v"1.0.0"
+      def prompts: List[Mcp.Prompt] = Nil
+
+      @tool
+      @ui("ui://html/content")
+      def reverse(text: Text): Text = text.reverse
+
+      @resource("ui://html/content")
+      @title("User interface")
+      def content: Text = Html(Head(Title("MCP App")), Body(H1("Hello world"))).show
+    ```
+
+entry .Discourse   one message of a prompt's conversation: from the human or from the agent
+    The sealed sum of `Human` and `Agent`, each carrying a `Text` message. A `@prompt` method
+    returns a `List[Discourse]`, most easily written with the `human"…"` and `agent"…"`
+    interpolators; `Mcp.Interface` turns each into a `PromptMessage` with the `User` or
+    `Assistant` role and a `TextContent`.
+
+    ```scala
+    import soundness.*
+
+    val conversation: List[Discourse] =
+      List(human"What is the capital of France?", agent"Paris.", human"And of Spain?")
+    ```
+
+entry .Human   a prompt message from the user
+    `Human(message)`, as `human"…"` makes it. It inspects structurally, as
+    `Human(message:t"hello")`.
+
+entry .Agent   a prompt message from the assistant
+    `Agent(message)`, as `agent"…"` makes it.
+
+entry .human   the `human"…"` interpolator: a `Human` message, with substitutions shown as text
+    Each `$substitution` must be `Showable`, and is rendered with its `Showable`; a value
+    with no `Showable` is a compile error, _could not find a contextual `T is Showable`
+    instance_. The result is a `Discourse`.
+
+    ```scala
+    import soundness.*
+
+    val topic = t"parser"
+    human"Please review the $topic."   // Human(t"Please review the parser.")
+    ```
+
+entry .agent   the `agent"…"` interpolator: an `Agent` message, with substitutions shown as text
+    As `human"…"`, making an `Agent`: the assistant's side of a prompt's conversation.
+
+    ```scala
+    import soundness.*
+
+    agent"I have reviewed the parser and found no problems."
+    ```
+
+entry .internal   the macro implementations behind `human"…"`, `agent"…"` and `Mcp.Specification`
+  hidden
+  detail
+      Not for direct use: the object exists so that the macros have a stable home.
+  entry .prompt   the macro behind `human"…"` and `agent"…"`
+      Concatenates the literal parts with each substitution's `Showable` rendering and
+      splices a `Human` or an `Agent`.
+  entry .spec   the macro behind `Mcp.Specification.mcpSpecification`
+      Reads the `@tool`, `@resource` and `@prompt` methods of a server type (including
+      annotations on overridden methods), derives their schemas, and splices an
+      `Mcp.Specification` with the listings and the dispatch.

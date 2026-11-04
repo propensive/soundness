@@ -1,0 +1,464 @@
+tel 1.0
+
+base polyvinyl
+import soundness
+
+info   records and named tuples whose fields are typed from a schema read as the code compiles
+detail
+    _Polyvinyl_ is the type-provider machinery beneath Soundness's schema-driven records. A
+    **specification** — an object extending `Specification` — reads a schema (a JSON Schema, an
+    XML Schema, a TEL schema document, a database's table definitions) while the calling code
+    compiles, and its `record` and `tuple` methods turn raw data into a value whose fields have
+    the exact types the schema declares. `record.name` typechecks as `Text` and `record.nope`
+    does not compile, with no Scala class written to mirror the schema.
+
+    The pieces fit together like this:
+
+    - a `Specification` supplies the schema as an ordered list of `Member`s, and a handful of
+      primitives over the underlying data: `access`, `absent` and `repeated`, and for richer
+      formats `entries`, `kind`, `elements` and `pairs`;
+    - each `Member` is a `Member.Value` (a scalar, named by a type label), a `Member.Record` of
+      further members, or a `Member.Union` of alternatives, and carries a `Multiplicity`: `One`,
+      `Optional`, `Many` or `Keyed`;
+    - an `Intensional` instance for each type label says what Scala type a scalar becomes and
+      how one value of it is read; an `Intensional.Fallible` reading can fail;
+    - the `record` and `tuple` macros put these together into a structural refinement of
+      `Record`, read lazily, or a named tuple, read eagerly.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import strategies.throwUnsafely
+
+    object Catalogue extends Json.Provider(t"""{
+      "type": "object",
+      "required": ["name"],
+      "properties": { "name": { "type": "string" }, "age": { "type": "integer" } }
+    }""".read[Json])
+
+    val input = t"""{"name": "Bicycle"}""".read[Json]
+    val record = Catalogue.record(input)
+    record.name   // Text
+    record.age    // Optional[Int]
+    record.nope   // does not compile
+    ```
+
+    The concrete specifications live with their formats: `Json.Provider` in jacinta,
+    `Xml.Provider` in xylophone, `Tel.Provider` in stratiform, and the OpenAPI client's
+    `record()`. Polyvinyl itself knows nothing of any format.
+
+    **Compilation order.** The macros evaluate the specification object while the call site
+    compiles, loading its class through the compiler's classpath, so the object must be
+    compiled before the code which calls its `record` or `tuple`: declare it in a file of its
+    own. The compiler orders separate files of one run for this, suspending the calling unit
+    until the object has been emitted; one file holding both cannot be ordered.
+
+    The library has one published source set, `polyvinyl.core`, which compiles for every
+    platform and is exported in full to the `soundness` umbrella: `Intensional`, `Member`,
+    `Multiplicity`, `Record` and `Specification`. A second component, `polyvinyl.fixtures`, is
+    internal and unpublished: it holds the test specifications (`TreeProvider` over a small
+    `Tree` document type, and objects such as `PersonRecords` and `ShapeRecords`) which the
+    tests need compiled before their call sites, and is a compact worked example of a complete
+    `Specification`.
+
+    A record is a `Selectable`, so code which reads records should not be capture-checked:
+    under capture checking, selecting a `Text` field of a refined `Record` is currently rejected.
+
+refer polyvinyl.Specification
+refer polyvinyl.Record
+refer polyvinyl.Member
+refer polyvinyl.Intensional
+refer polyvinyl.Multiplicity
+
+entry .Specification   a type provider over one document format: a schema as `#fields`, and reading primitives
+  detail
+      A `Specification` is the object a schema-driven record type comes from. A concrete one is
+      an `object` (usually extending a format's provider class, such as `Json.Provider`) which
+      states:
+
+      - `#Origin`, the type of the raw data (`Json`, `Xml`, `Tel`), and `#Form`, a marker type
+        under which its `Intensional` instances are found;
+      - `#Failure`, the error any field may fail with as it is read;
+      - `#fields`, the schema, as an ordered list of named `Member`s;
+      - the primitives `#access`, `#absent` and `#repeated`, and where the format has them
+        `#required`, `#entries`, `#kind`, `#elements`, `#pairs` and `#unoffered`.
+
+      It then has `#record` and `#tuple` with nothing more declared: both are `transparent
+      inline`, expanded where they are called with the specification object as the receiver,
+      so the macro finds that object by its type, loads it, and evaluates its `#fields`. The
+      object must therefore be compiled before the calling code, in a file of its own.
+
+      ```scala
+      import soundness.*
+
+      enum Tree:
+        case Leaf(text: Text)
+        case Node(children: Map[Text, Tree])
+        case Absent
+
+      case class TreeError(reason: Text)(using Diagnostics)
+      extends Error(m"the tree could not be read because $reason")
+
+      abstract class TreeProvider(fields0: List[(Text, Member)]) extends Specification:
+        type Origin = Tree
+        type Form = TreeProvider
+        type Failure = TreeError
+
+        def fields(using Tactic[Specification.Error]): List[(Text, Member)] = fields0
+
+        def access(name: Text, tree: Tree)(using Tactic[TreeError]): Tree = tree match
+          case Tree.Node(children) if Map.defines(children, name) => Map.at(children, name)
+          case _                                                  => Tree.Absent
+
+        def absent(tree: Tree): Boolean = tree == Tree.Absent
+
+        def repeated(name: Text, tree: Tree)(using Tactic[TreeError]): List[Tree] =
+          access(name, tree) match
+            case Tree.Absent => List()
+            case other       => List(other)
+
+      object TreeProvider:
+        private def leaf(tree: Tree): Text = tree match
+          case Tree.Leaf(text) => text
+          case _               => t""
+
+        given text: ("text" is Intensional in TreeProvider from Tree to Text) = Intensional(leaf(_))
+      ```
+
+      With that, `object People extends TreeProvider(List(t"name" -> Member.Value(t"text")))`,
+      in another file, makes `People.record(tree).name` a field of type `Text`. The
+      `Intensional` instances live in the companion of the `#Form` type, so they are found with
+      no import.
+
+      A schema which cannot be read is raised from `#fields` as a `Specification.Error`, which
+      the macros report as a compile error at the call site, as they do a field whose type label
+      has no `Intensional` instance.
+  refer polyvinyl.Member
+  refer polyvinyl.Intensional
+  refer polyvinyl.Record
+  entry .Error   a schema which could not be read: reported as a compile error where `record` or `tuple` is called
+    detail
+        _the specification could not be read because `detail`_. Raised by a specification's
+        `#fields` when its schema cannot be parsed or composed — a malformed document, a
+        reference which does not resolve. The `record` and `tuple` macros read the fields under
+        a tactic which halts compilation, so the error appears as a compile error at the call
+        site rather than at runtime.
+    entry #detail   what was wrong with the schema
+  entry .Raising   a specification reading from `origin` in `form`, whose fields fail with `failure`
+      `Specification.Raising[form, origin, failure]` is `(Specification in form from origin) {
+      type Failure = failure }`: the type of a specification object as a macro refers to it,
+      used by `.recordExpansion` and `.tupleExpansion`.
+  entry .record   the macro implementation behind `Specification#record`
+      Not called directly: `#record` on a specification object splices this, which locates the
+      object from its singleton type, evaluates its `#fields`, and builds the refined `Record`
+      type and the transform its fields are read by. It halts with _record and tuple can only be
+      called on a specification object_ when the receiver is not an object.
+  entry .tuple   the macro implementation behind `Specification#tuple`
+      Not called directly: `#tuple` on a specification object splices this. It builds the
+      named-tuple type and the code which reads every field at once, and halts with _the
+      tuple's fields may raise `Failure`, but no Tactic for it is in scope_ when no
+      `Tactic[Failure]` is found at the call site.
+  entry .recordExpansion   a refined `Record` type and its transform, from an explicit field list
+      For a macro of another library which already has the fields of a part of a document in
+      hand — the response schema within an OpenAPI document, say — and a specification object
+      supplying only the format's primitives and `Intensional` instances. It returns the
+      refined `Record` type and the transform to pass to `#build`. Runs in a macro, under
+      `Quotes`.
+  entry .tupleExpansion   a named-tuple type and the function which builds it, from an explicit field list
+      As `.recordExpansion`, for the named-tuple form: it returns the named-tuple type and the
+      code reading a value of the origin type into it. Runs in a macro, under `Quotes`.
+  entry #Origin   the type of the raw data the specification reads, such as `Json` or `Xml`
+  entry #Form   the marker type under which the specification's `Intensional` instances are found
+      An instance for the type label `"text"` is a `"text" is Intensional in Form from Origin
+      to Text`. Usually `Form` is the provider class itself, so the instances live in its
+      companion and are found through implicit scope.
+  entry #Failure   the error every field may fail with as it is read
+      A required value which is absent, a value of the wrong kind, a value which breaks the
+      schema's constraints. A record's field is typed `Record.Field[result, Failure]`, so each
+      access needs a `Tactic[Failure]`, and a caller can gather every problem in a document
+      under one tactic (with `validate` and `track`, a `venture` per field). Every
+      `Intensional.Fallible` instance a specification uses must raise `Failure` or a subtype.
+  entry #fields   the schema: the record's fields in order, each a name and a `Member`
+      Evaluated by the macros while the call site compiles. A record's members are unordered,
+      but a named tuple's elements follow this order. A schema which cannot be read raises
+      `Specification.Error`, which becomes a compile error.
+  entry #access   the value of a named field within a value, or a sentinel for a missing field
+      The primitive every `Multiplicity.One` and `Multiplicity.Optional` field is fetched with:
+      a JSON object's property, an XML element's child with the field's label. A missing field
+      is not an error here; it is a value for which `#absent` is true.
+  entry #absent   whether a value `#access` returned stands for a missing field
+      An `Optional` field is `Unset` where this is true.
+  entry #repeated   every value of a field which carries any number of them, in document order
+      The primitive behind `Multiplicity.Many`: the elements of a JSON array, or every sibling
+      with the field's keyword in a format which repeats a field. An absent field has none.
+  entry #required   the value of a field which must be present, failing where the format says so
+      Applied to a field read under `Multiplicity.One`. By default it returns the value as it
+      is, and the field's `Intensional` instance meets the absent value; a specification
+      overrides it to raise its `#Failure` for a missing required field.
+  entry #entries   a keyed field's values by name, for `Multiplicity.Keyed`
+      A format with dictionaries overrides this; by default it panics with _this specification
+      has no keyed fields_, so a keyed member is only usable where it is overridden.
+  entry #kind   the kind of a value, by which a `Member.Union` chooses its alternative
+      `t"leaf"`, `t"node"`, `t"string"`, `t"array"`: whatever names the specification gives
+      the shapes its values can take, matching the kinds its unions' alternatives are keyed by.
+      By default it panics with _this specification has no unions_.
+  entry #elements   the elements of a value which is itself a sequence, for a `Many` alternative of a union
+      By default it panics with _this specification has no unions_.
+  entry #pairs   the named values within a value which is itself a dictionary, for a `Keyed` alternative
+      By default it panics with _this specification has no unions_.
+  entry #unoffered   fails for a value of a union whose kind is none its alternatives offer
+      Receives the value's kind and the kinds offered. A specification overrides it to raise
+      its `#Failure`; by default it panics with _the value's kind, `kind`, is none the union
+      offers_.
+  entry #build   wraps a value and a field transform as a `Record`
+      Called by the generated code for each record and nested record; by default
+      `Record(data, transform)`. The transform is a pure function, since a record retains it.
+  entry #record   a lazily-read record over a value, refined with one typed member per field
+    detail
+        `spec.record(value)` is declared to return `Record`, but being `transparent inline` its
+        call has a structural refinement of it: for a schema of three fields,
+        `Record { def age: Record.Field[Int, Failure]; def name: Record.Field[Text, Failure];
+        def employed: Record.Field[Boolean, Failure] }`. A field which is not in the schema does
+        not compile.
+
+        A record holds the raw value and reads a field each time it is selected, so a
+        malformed field is noticed only when it is read, and a field read twice is converted
+        twice. Each field access fails through the `Tactic[Failure]` in scope where the field is
+        selected.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import strategies.throwUnsafely
+
+        // `Catalogue` is a `Json.Provider` object, declared in a file of its own
+        val record = Catalogue.record(t"""{"name": "Bicycle"}""".read[Json])
+        val name: Text = record.name
+        ```
+
+        Nested `Member.Record`s become nested records, `Many` members `List`s, `Optional`
+        members `Optional`s and `Keyed` members `Map[Text, _]`s.
+  entry #tuple   an eagerly-read named tuple over a value, one element per field in schema order
+    detail
+        `spec.tuple(value)` reads every field at once, when the tuple is built: a malformed field
+        fails the construction whether or not it is ever used, so the elements have their plain
+        types (`Int`, not `Record.Field[Int, Failure]`) and a `Tactic[Failure]` must be in scope
+        at the call, which does not compile without one.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import strategies.throwUnsafely
+
+        // `Catalogue` is a `Json.Provider` object, declared in a file of its own
+        val tuple = Catalogue.tuple(t"""{"name": "Bicycle"}""".read[Json])
+        tuple.name                // Text
+        val (name, age) = tuple   // in the schema's order
+        ```
+
+        A nested record member becomes a nested named tuple, and the record alternative of a
+        union a nested tuple too.
+
+entry .Record   a value whose fields are typed by a specification, read lazily from its underlying data
+  detail
+      A `Record` is a `Selectable` over a raw value (its `#recordData`) and a function from a
+      field's name to the field's reading (its `#recordAccess`). It is not built by hand: a
+      specification's `record` method returns a structural refinement of `Record from Origin`
+      with one member per schema field, typed `Record.Field[result, Failure]`, so a selected
+      field has the schema's type and is read through the caller's `Tactic`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+
+      // `Catalogue` is a `Json.Provider` object, declared in a file of its own
+      val record = Catalogue.record(t"""{"name": "Bicycle"}""".read[Json])
+      record.name    // Text
+      record.data    // the Json it was read from
+      ```
+
+      Its own members have deliberately unusual names (`recordData`, `recordAccess`) so that a
+      schema may declare almost any field name; the raw data is reached with the extension
+      `.data`, which a schema field named `data` takes precedence over. A schema field named
+      like a method of `java.lang.Object` (`notify`, `toString`) cannot be reached by selection,
+      only by `#selectDynamic`.
+  refer polyvinyl.Specification
+  entry .Field   the type of a record's field: its value, read under the `Tactic` of the code reading it
+      `Record.Field[result, failure]` is the pure context function `Tactic[failure]^ ?->
+      result`, applied wherever the field is selected, as `result raises failure` would be. Being
+      pure, a type which mentions a record — an error carrying one as its payload — captures
+      nothing.
+  entry .apply   a record over a value and a field transform
+      `Record(data, access)`: the generated code's way of building a record, which
+      `Specification#build` calls. The accessor is a pure function, since the record retains it.
+  entry .data   the record's underlying data, typed as the specification's `Origin`
+      An extension rather than a member, so that a schema may declare a field called `data`,
+      which then takes precedence: a refinement's member is selected before an extension is
+      tried.
+  entry #recordData   the raw value the record reads its fields from
+  entry #recordAccess   the function from a field's name and the record's data to the field's reading
+  entry #selectDynamic   reads a field by name, as the refined record's field selections do
+      The name arrives JVM-encoded (`street$minusaddress` for `street-address`) and is decoded
+      before it is looked up. The result is the field's reading, a context function over the
+      specification's `Tactic[Failure]`, which a refined field type applies at the call site;
+      called by name, the caller casts and applies it. A name which is not a field panics with
+      _the record has no field named `field`_.
+
+entry .Member   one field of a specification's schema: a scalar, a nested record, or a union
+  detail
+      A specification's `#fields` are a list of named `Member`s, in the order a named tuple's
+      elements follow. There are three kinds:
+
+      - `Member.Value(fieldType, params, multiplicity)`: a scalar, read by the `Intensional`
+        instance for the label `fieldType` (`t"text"`, `t"integer"`), which receives `params`
+        (a bound, a pattern) verbatim;
+      - `Member.Record(fields, multiplicity)`: a nested record of further members, read from
+        the field's own value by the same specification;
+      - `Member.Union(alternatives, multiplicity)`: alternatives, each keyed by the kind of value
+        (as `Specification#kind` reports it) which selects it, read as the Scala union of their
+        types.
+
+      Each carries a `Multiplicity`, `One` by default, set with `#optional`, `#many` and
+      `#keyed`.
+
+      ```scala fuel
+      frame
+        label A single text field
+        code
+            t"tags" -> Member.Value(t"text")   // record.tags: Text
+      frame
+        label An optional one
+        code
+            t"tags" -> Member.Value(t"text").optional   // record.tags: Optional[Text]
+      frame
+        label Any number
+        code
+            t"tags" -> Member.Value(t"text").many   // record.tags: List[Text]
+      frame
+        label Any number, each under a name
+        code
+            t"tags" -> Member.Value(t"text").keyed   // record.tags: Map[Text, Text]
+      frame
+        label Either one or many, by the value's kind
+        code
+            t"tags" -> Member.Union(List(
+              t"leaf"  -> Member.Value(t"text"),
+              t"items" -> Member.Value(t"text").many))   // record.tags: Text | List[Text]
+      ##
+      ```
+
+      A union's alternative may carry its own multiplicity, so a union of one alternative nests
+      one multiplicity inside another (`List[List[Text]]`); a `Member` on its own carries only
+      one.
+  refer polyvinyl.Multiplicity
+  refer polyvinyl.Specification
+  entry .Value   a scalar field, read by the `Intensional` instance for its type label
+    entry #fieldType   the type label, such as `t"text"`, by which the field's `Intensional` instance is found
+        Instances are keyed by the exact label: `t"Text"` does not find the instance for
+        `"text"`, and a label with no instance is a compile error, _could not find an
+        Intensional instance for the field `name` with type `label`_.
+    entry #params   the member's parameters, passed verbatim to its instance
+        Such as a bound or a pattern, for an instance made with `Intensional.parametric`.
+    entry #multiplicity   how many values the field carries
+  entry .Record   a nested record of further members
+    entry #fields   the nested record's fields, in order
+    entry #multiplicity   how many nested records the field carries
+  entry .Union   a field whose value may take any of several shapes, chosen by its kind
+    detail
+        Each alternative is keyed by the kind (`Specification#kind`) of value which selects it,
+        and the field reads as the union of the alternatives' types (`Text | List[Text]`). A
+        value whose kind no alternative offers is passed to `Specification#unoffered`. In a
+        tuple, a record alternative becomes a nested named tuple.
+    entry #alternatives   each alternative, keyed by the kind of value which selects it
+    entry #multiplicity   how many values the field carries
+  entry #multiplicity   how many values the field carries
+  entry #of   this member with another multiplicity
+  entry #optional   this member read as `Optional`, `Unset` where the value is absent
+  entry #many   this member read as a `List` of any number of values
+  entry #keyed   this member read as a `Map[Text, _]` of values each under a name
+
+entry .Multiplicity   how many values a field carries: one, at most one, any number, or any number by name
+    `One` reads exactly one value, through `Specification#access` and `Specification#required`;
+    `Optional` reads at most one, as an `Optional` which is `Unset` where `Specification#absent`
+    is true; `Many` reads any number, as a `List`, through `Specification#repeated`; and `Keyed`
+    reads any number each under a name, as a `Map[Text, _]`, through `Specification#entries`.
+
+    The macro applies the multiplicity itself, so an `Intensional` instance describes a single
+    value only, and a specification says nothing more about optionality or repetition. A
+    `Member` takes one with `#of`, or `#optional`, `#many` and `#keyed`.
+
+entry .Intensional   how a scalar type label is read: the Scala type it becomes, and how one value is read
+  detail
+      A specification declares one instance for each scalar type label its schemas can name. A
+      `"text" is Intensional in Form from Origin to Text` reads a `Member.Value(t"text")` as
+      `Text` from a value of the specification's `Origin`; the `Form` is the specification's
+      marker type, so the instances are given in its companion and found with no import.
+
+      ```scala
+      import soundness.*
+
+      trait Form
+
+      object Form:
+        given text: ("text" is Intensional in Form from Text to Text) = Intensional(identity)
+        given length: ("length" is Intensional in Form from Text to Int) = Intensional(_.s.length)
+
+        given params: ("params" is Intensional in Form from Text to List[Text]) =
+          Intensional.parametric: (text, params) => params
+      ```
+
+      An instance reads one value: the member's `Multiplicity` is applied by the macro around
+      it. A reading which can fail is an `Intensional.Fallible` instead, typically made with
+      `Intensional.Reading`. An instance retains its accessor, so it captures whatever the
+      accessor does; one over a pure function is itself pure.
+  refer polyvinyl.Specification
+  refer polyvinyl.Member
+  entry .Fallible   an `Intensional` whose reading can fail, through the `Tactic` for its `Error`
+    detail
+        A reading which can fail — a value of the wrong kind, one outside its bounds, a string
+        which does not match its pattern — is a `Fallible`, whose `#transform` takes a
+        `Tactic[Error]`. In a record, the field is read under the `Tactic` of the code which
+        selects it; in a tuple, under the one where the tuple is built.
+
+        The instance's `Error` must be the specification's `Failure` or a subtype, so that every
+        field fails in one way; an instance raising anything else is a compile error, _the
+        instance for `label` raises `error`, not the specification's `failure`_. Fallibility is
+        declared here, rather than as a `raises` result, because under capture checking a
+        `raises` result cannot implement an abstract method.
+    entry #Self   the type label this instance reads
+    entry #Error   the error the reading may raise
+    entry #transform   reads one value, with the member's parameters, raising through the `Tactic`
+  entry .Reading   a `Fallible` instance over a pure function of the value, its parameters and the `Tactic`
+    detail
+        `Intensional.Reading[label, form, origin, result, error]` is a class, so a format may
+        declare each of its fallible readers as a given of a class type: a given typed with the
+        refined `Fallible` would be a field capturing `any`, making the object holding it a
+        capability.
+
+        ```scala
+        import soundness.*
+
+        case class TreeError(reason: Text)(using Diagnostics)
+        extends Error(m"the tree could not be read because $reason")
+
+        trait Form
+
+        object Form:
+          given number: Intensional.Reading["number", Form, Text, Int, TreeError] =
+            Intensional.Reading: (text, params) =>
+              text.s.toIntOption.getOrElse(abort(TreeError(t"not a number")))
+        ```
+  entry .apply   an instance from a function of the value alone
+      `Intensional(accessor)` makes an instance which ignores the member's parameters. Its
+      label, form, origin and result types come from the expected type of the given it
+      defines.
+  entry .parametric   an instance from a function of the value and the member's parameters
+      For a type label whose reading depends on its parameters, such as a bounded integer or a
+      pattern: the function receives the `Member.Value`'s `params` verbatim.
+  entry #Self   the type label this instance reads, a literal `String` type such as `"text"`
+  entry #transform   reads one value of the origin type, with the member's parameters

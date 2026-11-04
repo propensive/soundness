@@ -1,0 +1,201 @@
+tel 1.0
+
+base metamorphose
+import soundness
+
+info   permutations as reversible rearrangements, stored compactly as factorial-base Lehmer codes
+detail
+    _Metamorphose_ represents a permutation — a reversible rearrangement of a sequence — as a
+    single number. A `Permutation` is built from the reordered indexes, applied to any list at
+    least as long, and inverted; an index sequence which is not a permutation, with a duplicate
+    or a gap, is a typed `Permutation.Error`.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    val shuffle = Permutation(Sequence(3, 1, 4, 2, 0, 5))
+    val items = List(t"zero", t"one", t"two", t"three", t"four", t"five")
+
+    shuffle(items)                             // List(t"three", t"one", t"four", t"two", t"zero", t"five")
+    shuffle.inverse(shuffle(items)) == items   // true
+    ```
+
+    Internally a permutation is its [Lehmer code](https://en.wikipedia.org/wiki/Lehmer_code)
+    written in the factorial number system, a `Factoradic`: one integer which uniquely
+    identifies it, so permutations are compact to store and to enumerate, and
+    `Permutation.bySize(n)` lists all `n!` of them in order. A permutation of *n* elements takes
+    O(*n* log *n*) bits, the information-theoretic minimum. `Factorial` supplies the factorials
+    the encoding is built on.
+
+    The library has one source set, `metamorphose.core`, which compiles for every platform.
+    Everything is exported to the `soundness` umbrella.
+
+refer metamorphose.Permutation
+refer metamorphose.Factoradic
+refer metamorphose.Factorial
+
+entry .Permutation   a reversible rearrangement of a sequence, stored as its factoradic Lehmer code
+  detail
+      A `Permutation` is made from the reordered indexes of a sequence with `.apply`, which
+      checks that they are exactly `0` to `n - 1` once each, or directly from its number with
+      `Permutation(Factoradic(n))`; since the number *is* the permutation, the two agree:
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      Permutation(Factoradic(45)) == Permutation(Sequence(1, 4, 2, 3, 0))   // true
+
+      val shuffle = Permutation(Sequence(3, 1, 4, 2, 0, 5))
+      shuffle.lehmer      // the Lehmer code, as a List[Int]
+      shuffle.expansion   // List(3, 1, 4, 2, 0, 5)
+      ```
+
+      Applied to a list, it rearranges the elements (`#apply`); `#inverse` undoes it. A
+      permutation does not record the length it was built from, only the shortest suffix it
+      moves: the identity of any size is `Permutation(Factoradic(0))`, and a permutation which
+      leaves its leading elements in place has a shorter `#lehmer` than its index sequence.
+      Applied to a longer list, it leaves the excess leading elements where they are and
+      rearranges the rest.
+
+      A permutation encodes as `Data` (`.encodable`), the big-endian two's-complement bytes of
+      its factoradic number: `permutation.in[Data]`.
+  refer metamorphose.Factoradic
+  refer metamorphose.Permutation.Error
+  entry .apply   a permutation from its reordered indexes, checked to be each of `0` to `n - 1` once
+      `Permutation(Sequence(3, 1, 0, 2))` is the rearrangement which puts the element at index 3
+      first, then index 1, and so on. It needs a `Tactic[Permutation.Error]`, raised with
+      `InvalidIndex` for an index below 0 or not below the length, and `DuplicateIndex` for an
+      index which appears twice.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      Permutation(Sequence(5, 4, 3, 2, 1, 0))(List(1, 2, 3, 4, 5, 6))   // List(6, 5, 4, 3, 2, 1)
+      safely(Permutation(Sequence(3, 1, 4, 2, 3, 5)))                     // Unset: 3 appears twice
+      ```
+
+      The case-class constructor `Permutation(factoradic)` makes one from its number, with no
+      check, since every non-negative factoradic is a permutation.
+  entry .bySize   every permutation of `n` elements, in order of their factoradic numbers
+      A `Chain` of all `n!` permutations, from the identity (`Factoradic(0)`) to the reversal
+      (`Factoradic(n! - 1)`). It is computed eagerly, so it is practical only for small `n`.
+
+      ```scala
+      import soundness.*
+
+      val list = List(t"a", t"b", t"c")
+      Permutation.bySize(3).map(_(list))   // all six orderings of a, b, c
+      ```
+  entry .encodable   encodes a permutation as `Data`: the bytes of its factoradic number
+      The big-endian two's-complement bytes of `#factoradic`'s number, as `BigInt#toByteArray`
+      gives them. There is no decoding given; read the bytes as a `BigInt` and wrap it in a
+      `Factoradic` to recover the permutation.
+  entry .Error   raised when indexes or a sequence do not make, or fit, a permutation
+    detail
+        Error 427: _could not construct permutation because `reason`_, where the reason is one
+        of the `Permutation.Error.Reason` cases:
+
+        - `BaseRange(value, base)` — _the value `value` is too large for its positional base
+          `base`_: a digit given to `Factoradic(List(…))` is not below its position's base.
+        - `DuplicateIndex(index, element)` — _the index `index` was duplicated at `element`_:
+          `Permutation(Sequence(…))` met an index for the second time; the second field is the
+          position at which it reappeared.
+        - `InvalidIndex(last, max)` — _the index `last` appears, but every index should be in
+          the range 0-`max`_: an index given to `Permutation(Sequence(…))` is negative or not
+          below the sequence's length.
+        - `TooShort(length, min)` — _the input, of size `length`, is too short for the
+          permutation of size `min`_: `Permutation#apply` was given a list shorter than the
+          permutation's Lehmer code.
+
+        ```scala
+        import soundness.*
+
+        capture[Permutation.Error](Permutation(Sequence(3, 1, 4, 6, 0, 5)))
+        // Permutation.Error(InvalidIndex(6, 5))
+        ```
+    entry .Reason   why a permutation could not be made or applied
+      detail
+          An enumeration of `BaseRange`, `DuplicateIndex`, `InvalidIndex` and `TooShort`, each
+          with the values the message names; see `Permutation.Error` for when each is raised.
+          Each case has a `#number`, 1 to 4, the error's secondary code.
+      entry #number   the reason's secondary error code, 1 to 4
+    entry .communicable   renders each `Permutation.Error.Reason` as a message
+    entry #reason   why the permutation could not be made or applied
+  entry #factoradic   the permutation's number, in the factorial number system
+  entry #lehmer   the permutation's Lehmer code: for each position, how many smaller indexes come after it
+      `#factoradic` expanded into its digits, most significant first, with no leading zeros, so
+      it is as long as the suffix the permutation moves. Each digit counts how many of the
+      remaining indexes are smaller than the one chosen at that position.
+  entry #expansion   the reordered indexes: the permutation applied to `0` to `n - 1`
+      The indexes `.apply` was given, for a permutation whose first element moves: for
+      `Permutation(Sequence(3, 1, 4, 2, 0, 5))`, `List(3, 1, 4, 2, 0, 5)`. It is as long as
+      `#lehmer`, so it omits any leading indexes the permutation leaves in place.
+  entry #apply   rearranges a list, or gives the index one position takes its element from
+      `permutation(list)` rearranges a list at least as long as `#lehmer`, raising
+      `Permutation.Error` with `TooShort` otherwise; a longer list keeps its excess leading
+      elements in place and has the rest rearranged.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val shuffle = Permutation(Sequence(3, 1, 4, 2, 0, 5))
+      shuffle(List(t"zero", t"one", t"two", t"three", t"four", t"five"))
+      // List(t"three", t"one", t"four", t"two", t"zero", t"five")
+      shuffle(3)   // 2
+      ```
+
+      `permutation(n)` with an `Int` is the `n`th element of `#expansion`, and `n` itself
+      beyond it, since a permutation fixes every point outside its domain. It reads a `List`
+      by position, so it is linear in `n`.
+  entry #inverse   the permutation which undoes this one
+      For every list `xs` long enough, `p.inverse(p(xs)) == xs`. The identity is its own
+      inverse.
+
+entry .Factoradic   a non-negative integer in the factorial number system, as a Lehmer code is written
+  detail
+      In the factorial number system, the digit at position *i* from the right has base *i* + 1
+      and place value *i*!, so every non-negative integer has one representation, and the
+      digit sequences of a given length enumerate the permutations of that length. A
+      `Factoradic` holds the number as a `BigInt` (`#number`); `.apply` builds one from its
+      digits, most significant first, and `#expand` gives them back.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      Factoradic(List(3, 2, 1, 0)) == Factoradic(23)   // 3·3! + 2·2! + 1·1! + 0·0!
+      Factoradic(23).expand                            // List(3, 2, 1, 0)
+      ```
+  refer metamorphose.Permutation
+  entry .apply   a factoradic from its digits, most significant first, each checked below its base
+      The last digit has base 1, so must be 0; the one before it base 2, and so on. A digit
+      which is not below its base raises `Permutation.Error` with `BaseRange`, so it needs a
+      `Tactic[Permutation.Error]`. The case-class constructor `Factoradic(number)` takes the
+      `BigInt` directly.
+  entry #number   the integer, as a `BigInt`
+  entry #expand   the number's digits, most significant first, with no leading zeros
+      `Factoradic(0).expand` is `Nil`; otherwise the list ends in the always-zero units digit.
+      This is a permutation's `#lehmer`.
+
+entry .Factorial   factorials as `BigInt`s, and the factorial sequences the factoradic encoding uses
+  detail
+      An object of utilities over factorials, computed exactly with `BigInt` arithmetic.
+
+      ```scala
+      import soundness.*
+
+      Factorial(4)   // 24
+      Factorial(21)  // 51090942171709440000
+      ```
+  entry .apply   `n!`, as a `BigInt`
+      `Factorial(0)` is 1. The argument should be non-negative.
+  entry .magnitude   one more than the number of factoradic digits needed to write `n`
+      The smallest `i` for which `(i - 1)!` exceeds `n`: the size of the place-value table
+      `Factoradic#expand` needs, plus one.
+  entry .sequence   the factorials from `(n - 1)!` down to `0!`, as a list of `n` `BigInt`s
+      The place values of an `n`-digit factoradic number, most significant first:
+      `Factorial.sequence(3)` is `List(2, 1, 1)`.

@@ -1,0 +1,516 @@
+tel 1.0
+
+base digression
+import soundness
+
+info   stack traces as immutable, demangled values; call-site positions; validated class names
+detail
+    _Digression_ turns the JVM's view of a failure into values a program can inspect and
+    render. A `StackTrace` is captured from any `Throwable` with `stackTrace`: its exception
+    class, its message, a list of `StackTrace.Frame`s and its cause as another `StackTrace`.
+    Each frame's class and method names are **demangled** from the compiler's encoding toward
+    the Scala that produced them — `$plus` becomes `+`, `$anonfun$3` becomes `λ₃`, `<init>`
+    becomes `ⲛ` — and a `StackTrace.Resolver`, when one is imported, maps each frame back to
+    the source definition it came from.
+
+    ```scala
+    import soundness.*
+
+    val trace: StackTrace = Exception("boom").stackTrace
+    trace.className                              // t"Exception"
+    trace.frames.head.let(_.displayMethod)       // the topmost method, demangled
+    trace.cause                                  // Unset: no cause
+    trace.show                                   // the whole trace, as aligned text
+    ```
+
+    Alongside it are two small tools which also describe code rather than run it: a
+    `Codepoint`, the source file and line of a call site, captured as a given wherever a
+    method asks for one; and an `Fqcn`, a fully-qualified class name validated against the
+    JVM's rules, written literally with `fqcn"…"`. `Smap` parses the JSR-45 source maps a
+    classfile carries for inlined code, which is how a frame learns where its inlined lines
+    were written.
+
+    The library has two source sets:
+
+    - `digression.core` — `StackTrace`, `Codepoint`, `Fqcn`, `Smap`, `stackTrace`, `fqcn"…"`
+      and `idempotent`, with plain-text renderings (`Showable` and `Communicable`). It reads no
+      files, so it compiles for every platform; the default `StackTrace.Resolver` does
+      nothing, and the resolver which reads TASTy to find each frame's source is
+      `stackResolutions.tastyStackResolution`, in hyperbole.
+    - `digression.ansi` — `StackTracePalette` and the `teletypeables` package: coloured,
+      tabulated terminal renderings of a trace, a frame, a method and an exception.
+
+    Everything is exported to the `soundness` umbrella, and the `teletypeables` choice
+    package merges with the umbrella's own. Its givens are imported by name, since `import
+    teletypeables.*` does not import givens:
+
+    ```scala
+    import soundness.*
+    import textMetrics.uniformMetric
+    import teletypeables.stackTraceTeletype
+
+    Exception("boom").stackTrace.teletype
+    ```
+
+refer digression.StackTrace
+refer digression.stackTrace
+refer digression.Codepoint
+refer digression.Fqcn
+refer digression.teletypeables
+
+entry .stackTrace   the stack trace of a `Throwable`, as a `StackTrace` value, resolved by the resolver in scope
+    An extension on `Throwable`: `error.stackTrace` is `StackTrace(error)`, with each frame
+    passed through the `StackTrace.Resolver` in the *caller's* scope. With none imported, the
+    companion's `StackTrace.Resolver.none` applies and frames carry their demangled names
+    alone; importing `stackResolutions.tastyStackResolution` (from hyperbole) makes them carry
+    their source definitions too. The resolver is taken here, not deeper, because a resolver
+    summoned inside `StackTrace` would only ever find the default.
+
+    ```scala
+    import soundness.*
+
+    val trace = Exception("boom").stackTrace
+    trace.frames.map(_.source).to[Set]   // Set(Unset): no resolver imported
+    ```
+
+entry .fqcn   the `fqcn"…"` interpolator: a fully-qualified class name, validated as the code compiles
+    `fqcn"com.example.Main"` is an `Fqcn`, checked at compile time by the same rules as
+    `Fqcn(text)`: each segment non-empty, made of ASCII letters, digits, `_` and `$`, not
+    beginning with a digit, and not a Java keyword. A name which breaks a rule is a compile
+    error naming the reason. The literal takes no substitutions.
+
+    ```scala
+    import soundness.*
+
+    fqcn"com.example.Main".className   // t"Main"
+    fqcn"com.example.class"            // does not compile
+    ```
+
+entry .idempotent   runs a block at most once per call site for the life of the program
+    `idempotent { … }` takes the `Codepoint` of its call site, captured automatically, and
+    runs the block the first time execution reaches that site; every later visit does
+    nothing. It suits a warning to print once, or a one-time initialization written inline.
+    The record is global and thread-safe, and two calls on different lines are separate
+    sites.
+
+    ```scala
+    import soundness.*
+
+    def check(): Unit = idempotent(println("checked for the first time"))
+    check()
+    check()   // prints nothing
+    ```
+
+entry .Codepoint   the source file and line of a call site, captured automatically as a given
+  detail
+      A method which takes `(using Codepoint)` receives the position of the code which called
+      it, with nothing passed by hand: the companion's inline given `.default` is a macro
+      which expands, at each call site, to that site's source path and line. This is how
+      logs, tests and caches know where they were called from.
+
+      ```scala
+      import soundness.*
+
+      def note(message: Text)(using codepoint: Codepoint): Text =
+        t"${codepoint.text}: $message"
+
+      note(t"checkpoint")   // e.g. t"app.scala:42: checkpoint"
+      ```
+
+      A `Codepoint` is a case class, so two are equal when they name the same file and line,
+      which is how `idempotent` recognises a site. It is `Findable`, so it may be summoned as
+      a contextual value.
+  entry .default   the position of the call site, as the macro finds it where the given is summoned
+  entry #source   the full path of the source file, as the compiler saw it
+  entry #line   the line number, counted from 1
+  entry #text   the file's last path segment and the line, as `app.scala:42`
+
+entry .Fqcn   a fully-qualified JVM class name: dot-separated segments, each valid, at least one
+  detail
+      An `Fqcn` is a class name which could at least name a class: its `#parts` are each
+      non-empty, made of ASCII letters, digits, `_` and `$`, not beginning with a digit, and
+      not a Java keyword, and there is at least one — the type says so, which is what makes
+      `#className` and `#packageName` total. It is made by `Fqcn(text)`, which raises
+      `Fqcn.Error`, by `fqcn"…"` at compile time, or decoded from text with `as[Fqcn]`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val main = Fqcn(t"com.example.Main")
+      main.className       // t"Main"
+      main.packageName     // t"com.example"
+      main.encode          // t"com.example.Main"
+      t"org.Main".as[Fqcn].parts
+      ```
+
+      Anywhere a class name travels — a manifest's `Main-Class`, a reflective lookup, a
+      launcher's arguments — an `Fqcn` carries the guarantee that it is well formed.
+  refer digression.fqcn
+  entry .apply   parses and validates a class name, raising `Fqcn.Error` for the first rule it breaks
+      Splits the text on `.` and checks every segment, raising through the
+      `Tactic[Fqcn.Error]` in scope: `EmptyName` for an empty segment (`com..Main`),
+      `JavaKeyword` for one such as `class`, `InvalidChar` for a character outside the allowed
+      set, and `InvalidStart` for a leading digit.
+  entry .unsafeFrom   a class name from text already known to be valid, gated by `Unsafe`
+      What `fqcn"…"` expands to: the name was validated as the code compiled, so the
+      re-parse cannot fail, and the erased `Unsafe` token marks that the caller vouches for
+      it.
+  entry .valid   whether a character may appear in a segment: an ASCII letter, a digit, `_` or `$`
+  entry .decodable   decodes text as an `Fqcn`, raising `Fqcn.Error` through the tactic it captures
+      Needs a `Tactic[Fqcn.Error]` where it is summoned, and retains it; `t"…".as[Fqcn]` is
+      `Fqcn(text)`.
+  entry .encodable   encodes an `Fqcn` as its dotted text
+  entry .Error   raised when text is not a valid class name: an empty segment, a keyword or a bad character
+    detail
+        Error `SN-017`: _the class name `name` is not valid because `reason`_. Raised by
+        `Fqcn.apply` and by decoding text `as[Fqcn]`; `fqcn"…"` reports the same reasons as a
+        compile error.
+
+        ```scala
+        import soundness.*
+
+        capture[Fqcn.Error](Fqcn(t"com.example.class")).reason
+        // Fqcn.Error.Reason.JavaKeyword(t"class")
+        ```
+    entry .Reason   why a class name is invalid: `InvalidChar`, `InvalidStart`, `EmptyName` or `JavaKeyword`
+      detail
+          An enum of four numbered cases:
+
+          - `InvalidChar(char)` (1) — _a package name may not contain the character `char`_;
+          - `InvalidStart(char)` (2) — _a package name may not start with the character
+            `char`_, a digit;
+          - `EmptyName` (3) — _a package name cannot be empty_;
+          - `JavaKeyword(keyword)` (4) — _a package name cannot be the Java keyword,
+            `keyword`_.
+      entry #number   the reason's number, `1` to `4`
+    entry .communicable   renders each `Fqcn.Error.Reason` as a message
+    entry #name   the text which was not a valid class name
+    entry #reason   why it was not valid
+  entry #parts   the name's segments, in order, typed as non-empty
+  entry #text   the name as dotted text: `com.example.Main`
+  entry #className   the last segment: the simple name of the class
+  entry #packageName   every segment but the last, dotted: the package, or empty for the default package
+
+entry .StackTrace   a captured stack trace as a value: exception class, message, frames and cause
+  detail
+      A `StackTrace` holds what a `Throwable` says about where it was thrown, demangled and
+      immutable: its exception's package (`#component`) and simple class name
+      (`#className`), its `#message`, its `#frames` from the top of the stack down, and its
+      `#cause` as another `StackTrace`. A Soundness `Error`'s message is kept as the
+      structured `Message` it was raised with; any other exception's is its text.
+
+      ```scala
+      import soundness.*
+
+      val trace = Exception("boom", Exception("cause")).stackTrace
+      trace.component                      // t"java.lang"
+      trace.message                        // m"boom"
+      trace.cause.let(_.message)           // m"cause"
+      trace.drop(1).frames                 // all but the topmost frame
+      ```
+
+      Frame names are rewritten by `.rewrite`, whose glyphs `.legend` explains. Each frame
+      passes through the `StackTrace.Resolver` the caller has in scope, which by default does
+      nothing; one which reads the compiler's TASTy gives each frame a `Frame.Source`, the
+      definition it came from.
+
+      A trace renders as aligned plain text with `show` (`.showable`), as a message
+      (`.communicable`), and, with the `digression.ansi` component, in colour with `teletype`
+      through `teletypeables.stackTraceTeletype`. Whether Soundness's own errors capture a
+      trace at all is the `Diagnostics` given in scope.
+
+      ```scala fuel
+      frame
+        label Captured, unresolved
+        code
+            import soundness.*
+
+            val frame = Exception("boom").stackTrace.frames.head
+            frame.let(_.displayMethod)   // the demangled JVM name, such as t"run.λ₃()"
+            frame.let(_.source)          // Unset
+      frame
+        label Resolved through TASTy
+        code
+            import soundness.*
+            import classloaders.threadContextClassloader
+            import workingDirectories.javaBaseWorkingDirectory
+            import stackResolutions.tastyStackResolution
+
+            val frame = Exception("boom").stackTrace.frames.head
+            frame.let(_.displayMethod)   // the definition's source name, such as t"λ"
+            frame.let(_.source)          // a Frame.Source, with its owner, name and Kind.Lambda
+      ##
+      ```
+  refer digression.stackTrace
+  refer digression.StackTrace.Frame
+  refer digression.StackTrace.Resolver
+  refer digression.teletypeables
+  entry .apply   captures the stack trace of a `Throwable`, resolving each frame with the given `Resolver`
+      `StackTrace(exception)` reads the throwable's `StackTraceElement`s, demangles each class
+      and method name with `.rewrite`, keeps the compiled names as `Frame#jvmClass` and
+      `Frame#jvmMethod`, and passes every frame through the resolver. A missing file name is
+      `———` and a missing line `Unset`. The cause is captured in turn. The extension
+      `stackTrace` is the usual way in.
+  entry .rewrite   demangles a JVM class or method name toward its Scala form, with compact glyphs for synthetic parts
+      Operators get their symbols back (`$plus$plus` is `++`), and the compiler's synthetic
+      markers become glyphs, listed in `.legend`: `λ` a lambda, `Λ` an adapted lambda, `α` an
+      anonymous class, `ⲛ` a constructor, `ι` an initializer, `↑` a super reference, `⊢` an
+      extension method, `δ` a default argument, `ℓ` a lazy initializer, `Σ` a specialized
+      method, with any following number in subscript. A module class `pkg.Foo$` becomes
+      `pkg.ΞFoo` and a package object's class is bracketed with `⁅…⁆`. With `method = true`,
+      the result ends `()` and `$` separates as `.`.
+
+      ```scala
+      import soundness.*
+
+      StackTrace.rewrite("$plus$plus", method = true)       // t"++()"
+      StackTrace.rewrite("Foo$$anonfun$3", method = true)   // t"Foo.λ₃()"
+      StackTrace.rewrite("pkg.Foo$")                        // t"pkg.ΞFoo"
+      ```
+  entry .legend   what each glyph in a demangled name means, glyph to description, for rendering alongside a trace
+      A `Map[Text, Text]` from each marker `.rewrite` uses (with `ₙ` standing for its
+      subscript number) to a short description: `λₙ` is _lambda_, `ⲛ` _class initializer_,
+      `δ` _default_, `⁅⁆` _package file_, and so on.
+  entry .showable   renders a trace as plain text: the exception, then one aligned `at` line per frame, then its causes
+      Each frame line has the class and method, padded so that they align, then the file and
+      line; a resolved frame's quoted source line follows it, and each level of inlining a
+      frame's SMAP recorded is a `↳ inlined from` line beneath it, innermost first. A cause
+      follows after `caused by:`.
+  entry .communicable   renders a trace as a message, as `.showable` does, with non-breaking spaces for alignment
+  entry .Method   a demangled class name and method name, as a frame records them
+    detail
+        Both names are already rewritten by `StackTrace.rewrite`: `className` is
+        `pkg.ΞFoo`-style, and `method` ends `()`.
+    entry #className   the demangled class name, with its package
+    entry #method   the demangled method name
+    entry #cls   the class name's last segment
+    entry #prefix   the class name without its last segment: its package and enclosing classes
+  entry .Frame   one frame of a trace: its method, file and line, its compiled names, and its source if resolved
+    detail
+        A frame records its demangled `#method`, the `#file` and `#line` it reports, whether it
+        is `#native`, and the compiled `#jvmClass` and `#jvmMethod` names it was built from,
+        which a resolver needs. A resolver may add the `#source` definition it came from and
+        the `#inlined` origins of its line.
+
+        `#displayClass` and `#displayMethod` are what a renderer shows: the source names where
+        the frame is resolved and the demangled ones where it is not, so no renderer needs a
+        branch of its own.
+
+        ```scala
+        import soundness.*
+
+        val source = StackTrace.Frame.Source(t"/src/Foo.scala", t"pkg.Foo.bar", t"λ", StackTrace.Frame.Kind.Lambda)
+
+        val frame =
+          StackTrace.Frame
+            ( StackTrace.Method(t"pkg.ΞFoo", t"bar.λ₁()"), t"Foo.scala", 12, false,
+              t"pkg.Foo$$", t"bar$$anonfun$$1", source )
+
+        (frame.displayClass, frame.displayMethod)     // (t"pkg.Foo.bar", t"λ")
+        (frame.displayPrefix, frame.displaySegment)   // (t"pkg.Foo", t"bar")
+        ```
+    entry .Kind   what a frame turned out to be once resolved: a method, a lambda, … or compiler plumbing
+      detail
+          An enum of the kinds of definition a frame can be compiled from: `Method`,
+          `Lambda`, `Value`, `Class`, `Constructor`, `Extension` and `Default` (a default
+          argument) are written in source; `Bridge`, `Forwarder`, `Initializer`,
+          `Specialized` and `Synthetic` are synthesized by the compiler, and `#plumbing` says
+          so, so a renderer may dim or drop them.
+      entry #plumbing   whether the kind is one the compiler synthesized: a bridge, forwarder, initializer, …
+    entry .Source   the source definition a frame was compiled from, as a resolver finds it
+      detail
+          A resolved frame's definition: the full `#path` of its source file (where a stack
+          trace records only the last segment), its `#owner`, the chain of enclosing
+          definitions, its own source `#name`, its `#kind`, and optionally the `#code` of the
+          line.
+      entry #path   the full path of the source file
+      entry #owner   the chain of enclosing definitions, dotted: `pkg.Foo.bar`
+      entry #name   the definition's own source name
+      entry #kind   what kind of definition it is, as a `StackTrace.Frame.Kind`
+      entry #code   the source line, if the resolver read it, or `Unset`
+      entry #definition   the owner and the name joined with `.`, or the name alone if there is no owner
+    entry .Inlined   one level of inlining a frame's line stands for: the file and line it was written at
+      detail
+          When a classfile's SMAP records that a frame's line was inlined from elsewhere, the
+          frame has one `Inlined` per level, innermost first: the `#file` name, its full
+          `#path` and the `#line`, and, where a resolver found it, the `#source` definition
+          the position falls within — the inline method itself.
+      entry #file   the source file's name, the last segment of its path
+      entry #path   the source file's full path
+      entry #line   the line the inlined code was written at
+      entry #source   the definition the position falls within, if a resolver found it
+    entry #method   the frame's demangled class and method names
+    entry #file   the source file's name, as the classfile records it, or `———` if none
+    entry #line   the line number, or `Unset` if none is recorded
+    entry #native   whether the frame is a native method
+    entry #jvmClass   the class name as compiled, before demangling
+    entry #jvmMethod   the method name as compiled, before demangling
+    entry #source   the source definition, if a resolver found it
+    entry #inlined   the levels of inlining the frame's line stands for, innermost first
+    entry #displayClass   what to show as the frame's owner: its source owner if resolved, else the demangled class
+    entry #displayMethod   what to show as the frame's method: its source name if resolved, else the demangled method
+    entry #displayPrefix   `#displayClass` without its last segment
+    entry #displaySegment   the last segment of `#displayClass`
+  entry .Resolver   maps a frame to its source-level definition, chosen by the given in the caller's scope
+    detail
+        Resolving a frame needs a capability digression does not have — at least a classpath
+        — so the default, `.none`, returns every frame unchanged, and an implementation is
+        imported from a module which has one: `stackResolutions.tastyStackResolution`, in
+        hyperbole, reads each top-level class's TASTy (one file read per class named in the
+        trace). Keeping the capability out is what lets traces work unchanged in a browser, a
+        native binary or a WebAssembly component.
+
+        ```scala
+        import soundness.*
+
+        given resolver: StackTrace.Resolver = frame => frame.copy(inlined = Nil)   // drops inline detail
+        Exception("boom").stackTrace
+        ```
+    entry .none   the default resolver, which leaves every frame as captured
+    entry #resolve   the frame with whatever its source definition adds: `#source`, `#inlined`
+  entry #component   the exception class's package: `java.lang`
+  entry #className   the exception class's simple name, demangled: `Exception`
+  entry #message   the exception's message, as a `Message`
+  entry #frames   the frames, from the top of the stack down
+  entry #cause   the trace of the exception's cause, or `Unset`
+  entry #crop   this trace without the frames of one method, named by its demangled class and method
+      `trace.crop(className, method)` removes every frame whose `Method` has that class name
+      and method name, as demangled — the frames of a test runner's entry point, say — and
+      keeps the rest in order.
+  entry #drop   this trace without its topmost `n` frames
+  entry #dropRight   this trace without its bottommost `n` frames
+
+entry .Smap   a parsed JSR-45 source map: where a classfile's synthetic line numbers were written
+  detail
+      When the compiler inlines code, the classfile's line table can only name lines of its own
+      file, so it records synthetic line numbers and a `SourceDebugExtension` attribute — an
+      SMAP — mapping them back. `Smap.parse` reads one: its `#generated` file name, its
+      `#default` stratum, and its `#strata` by name. `#expand` turns a synthetic line into the
+      chain of origins it stands for, innermost first, and the real call-site line it leads
+      back to; `#sites` is its inverse, the generated ranges a source line went to.
+
+      ```scala
+      import soundness.*
+
+      val lines: List[Text] =
+        List
+          ( t"SMAP", t"Main.scala", t"Scala",
+            t"*S Scala",
+            t"*F", t"+ 1 Main.scala", t"Main.scala", t"+ 2 Util.scala", t"foo/Util.scala",
+            t"*L", t"1#1,120:1", t"3#2,2:121",
+            t"*S ScalaDebug",
+            t"*F", t"+ 1 Main.scala", t"Main.scala",
+            t"*L", t"3#1:121", t"3#1:122",
+            t"*E" )
+
+      val smap = Smap.parse(lines.join(t"\n"))
+      smap.let(_.expand(121))   // Smap.Expansion(List(Smap.Origin(t"Util.scala", t"foo/Util.scala", 3)), 3)
+      smap.let(_.expand(100))   // Unset: a real line
+      ```
+
+      A `<default>Debug` stratum, as the Scala and Kotlin compilers write, maps a synthetic line
+      to its inline call site, so `#expand` follows it level by level; a `<default>Class`
+      stratum names the top-level class each origin lies in.
+  entry .parse   parses the text of an SMAP, or `Unset` if its header is unreadable
+      Text which does not begin with `SMAP` and two header lines is `Unset`; within a section,
+      anything malformed is skipped, since an SMAP is only ever a source of extra detail.
+  entry .File   one file in a stratum's file table: the name a stack trace records and its full path
+    entry #name   the file's name, as a stack trace records it
+    entry #path   the file's full path, or the name again if the SMAP gave none
+  entry .Entry   one line-mapping entry: a run of input lines in a file, mapped to a run of output lines
+    detail
+        `repeat` input lines from `inputLine` of file `fileId` map to output lines from
+        `outputLine`, each input line covering `increment` output lines.
+    entry #inputLine   the first input line of the run
+    entry #fileId   the file the input lines are in, by its id in the file table
+    entry #repeat   how many input lines the run has
+    entry #outputLine   the first output line the run maps to
+    entry #increment   how many output lines each input line covers
+    entry #apply   the input line an output line falls at, or `Unset` if the entry does not cover it
+  entry .Stratum   one stratum of an SMAP: its file table and its line entries
+    entry #files   the file table, by file id
+    entry #entries   the line-mapping entries, in order
+    entry #apply   the file id and input line an output line maps to, from the first entry covering it
+    entry #origin   the file and input line an output line maps to, when the file table knows the file
+  entry .Origin   where a line of inlined code was written: file, path, line, and the class it lies in
+    entry #file   the source file's name
+    entry #path   the source file's full path
+    entry #line   the line, counted from 1
+    entry #cls   the binary name of the top-level class whose unit the position is in, if the SMAP says
+  entry .Expansion   what a synthetic line stands for: its inline origins, innermost first, and the real line
+    entry #inlined   the origins, innermost first
+    entry #line   the real line of the frame's own file the chain leads back to, or `Unset` if it ran out
+  entry #generated   the name of the generated file the SMAP belongs to
+  entry #default   the name of the default stratum, such as `Scala`
+  entry #strata   the strata, by name
+  entry #path   the generated file's full path, if its file table records one
+  entry #expand   a synthetic line's inline origins and the real call-site line, or `Unset` for a real line
+  entry #sites   the generated `[start, end)` line ranges a source file's line was inlined at
+      One range per site, excluding the line's natural occurrence in the generated file
+      itself; empty for a file foreign to the SMAP. A line inlined at several sites gives
+      several ranges, as a breakpoint on it belongs at every one.
+
+entry .StackTracePalette   the colours a terminal stack trace is drawn in: message, file, method, line and accents
+  detail
+      An `iridescence.Palette` of sRGB colours for the `teletypeables` renderings, in the
+      `digression.ansi` component: the `#message`, `#file`, `#method` and `#line` colours, a
+      `#separator`, and five accents which colour the frames' packages in turn, so frames from
+      one package share a colour. The companion's `.default` is in implicit scope; a given of
+      one's own overrides it.
+
+      ```scala
+      import soundness.*
+      import textMetrics.uniformMetric
+      import teletypeables.stackTraceTeletype
+
+      given palette: StackTracePalette = StackTracePalette.default
+      Exception("boom").stackTrace.teletype
+      ```
+  entry .default   white text on black, with teal files and lines and warm accents
+  entry #Form   the colour space of the palette, `Srgb`
+  entry #message   the colour of the exception line and of `caused by:`
+  entry #file   the colour of file names
+  entry #method   the colour of method names
+  entry #line   the colour of line numbers
+  entry #separator   the colour of separators: `at`, `.`, `:`
+  entry #accent1   the first package accent
+  entry #accent2   the second package accent
+  entry #accent3   the third package accent
+  entry #accent4   the fourth package accent
+  entry #accent5   the fifth package accent; a sixth package takes the first again
+
+entry .teletypeables   the coloured terminal renderings of traces, frames, methods and exceptions, imported by name
+  detail
+      In the `digression.ansi` component. Each given makes its subject `Teletypeable`, so
+      `teletype` renders it as styled text for a terminal; each needs a `Text is Measurable`
+      in scope (such as `textMetrics.uniformMetric`) for the column widths, and the renderings
+      take the `StackTracePalette` in scope. `import teletypeables.*` does not import givens,
+      so each is imported by name.
+
+      ```scala
+      import soundness.*
+      import textMetrics.uniformMetric
+      import teletypeables.exceptionTeletype
+
+      Exception("boom").teletype
+      ```
+  entry .stackTraceTeletype   a trace as a borderless table: one row per frame, aligned, coloured by package
+      The exception line, then a row per frame — `at`, the class and method as one aligned
+      column, the file and line as another, and a resolved frame's quoted source, which is the
+      first column to go when the terminal is narrow — with a `↳` row beneath for each level of
+      inlining. A frame of the same class as the one above is subdued, as is compiler
+      plumbing; causes follow after `caused by:`.
+  entry .exceptionTeletype   an `Exception` rendered as its stack trace, captured with the resolver in scope
+      Needs a `Text is Measurable` and a `StackTrace.Resolver`, and renders through
+      `.stackTraceTeletype`.
+  entry .frameTeletype   one frame on one line: class and method fitted to forty columns, then file and line
+  entry .methodTeletype   a `StackTrace.Method` as its class and method, separated by `⌗`
+
+entry .internal   the macros behind `Codepoint.default` and `fqcn"…"`
+  hidden
+  detail
+      Not for direct use: the object exists so that the macros have a stable home.
+  entry .location   the macro behind `Codepoint.default`: the expansion site's source path and line
+  entry .fqcn   the macro behind `fqcn"…"`: validates the literal and splices `Fqcn.unsafeFrom`
+  entry .javaKeywords   the Java keywords a class-name segment may not be

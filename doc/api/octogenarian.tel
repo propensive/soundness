@@ -1,0 +1,2487 @@
+tel 1.0
+
+base octogenarian
+import soundness
+
+info   Git as typed operations on a repository opened for a scope, with a backend that runs `git` or one that needs no `git` at all
+detail
+    _Octogenarian_ drives [Git](https://git-scm.com/) from Scala as typed operations on a
+    repository handle, rather than as command strings assembled by hand and text output parsed
+    afterwards. A branch (`Git.Branch`), a tag (`Git.Tag`) and a commit hash (`Git.Hash`) are
+    distinct types, so an operation which expects a branch does not accept a tag; results come
+    back as values (`Commit`, `FileDiff`, `Git.Head`, `Git.Merge.Outcome`) rather than as text to
+    re-parse; failures are a `Git.Error` with a numbered `Git.Error.Reason`; and the API is honest
+    about the one thing every Git library must be honest about: the repository is on disk, and
+    other processes write it.
+
+    That honesty has two halves. Every read which resolves a ref, HEAD, the index, the working
+    files, the reflog, the stash, configuration, remotes or linked worktrees returns a `Stale`
+    value: what it holds was true at the moment of the read, and may have changed since. And
+    every write which moves a ref takes the `Stale` reading it is conditional on, and fails with
+    `Git.Error(Moved(ref, expected, actual))` if the ref no longer holds it — Git's own
+    compare-and-swap, `git update-ref ref new old`, made unavoidable, so that a commit cannot
+    overwrite work another process committed between the read and the write.
+
+    A repository is created with `Git.init` and opened, for the duration of a block, in one of
+    two forms. `Git.Repo` is the object database and its refs, which a bare repository has;
+    `Git.Worktree` is a checked-out tree, with an index and working files, over its repository.
+    The mode names the grants the handle carries: a handle opened with `Read` alone cannot be
+    used to write, which is a compile-time error rather than a runtime one.
+
+    ```scala
+    import soundness.*
+
+    import codepages.utf8Codepage
+    import environments.javaBaseEnvironment
+    import filesystemBackends.javaBaseFilesystem
+    import filesystemOptions.createNonexistentParents
+    import gitBackends.commandlineGit
+    import gitCommands.searchpathGitCommand
+    import internetAccess.online
+    import logging.silentLogging
+    import strategies.throwUnsafely
+    import temporaryDirectories.javaBaseTemporaryDirectory
+    import workingDirectories.javaBaseWorkingDirectory
+
+    val directory = temporaryDirectory[Path on Linux] / "git" / Uuid().show
+    directory.create[Directory]()
+    Git.init(directory, initialBranch = Git.Branch(t"main"))
+
+    directory.open[Git.Worktree](Read & Write): worktree ?=>
+      val head: Stale[Git.Head] = worktree.head()
+      (worktree / "notes.txt").overwrite(t"Remember the milk")
+      worktree.add(worktree / "notes.txt")
+      worktree.commit(t"Add notes", head)
+      worktree.log().value.map(_.message)   // List(t"Add notes")
+    ```
+
+    A `Git.Worktree.Handle` is also a `Git.Repo.Handle`, so every repository operation is
+    available on it, and it is a galilei directory handle: paths formed from it, such as
+    `worktree / "notes.txt"`, belong to this handle alone, cannot express `..`, and may be read
+    and written with the filesystem operations under the same grants.
+
+    Underneath, the operations are carried out by a **backend**, a `Git.Backend`, chosen by
+    importing one given by name from the `gitBackends` package:
+
+    - `gitBackends.commandlineGit` runs the `git` command found by
+      `gitCommands.searchpathGitCommand`, in the `WorkingDirectory` and `Environment` in scope,
+      logging each invocation as a `Commandline.Event`. It is the choice when git's own
+      behaviour is wanted in full: hooks, filters, credential helpers, submodules.
+    - `gitBackends.soundnessGit` is `Native()`, the backend which reads and writes the
+      repository's files itself, in git's own formats, so a repository is always one `git`
+      itself understands and an operation one side stops on a conflict the other can continue.
+      It needs no `git` binary, so it runs wherever the JVM or Scala Native does. Objects
+      (loose and packed), refs, the index, configuration, notes, linked worktrees, merging,
+      rebasing and the stash are all its own.
+
+    Which backend is in scope changes nothing about the code which uses it:
+
+    ```scala fuel
+    frame
+      label Under the command-line backend
+      code
+          locally:
+            import gitBackends.commandlineGit
+            import gitCommands.searchpathGitCommand
+
+            val clone = directory / "clone-cli"
+            Git.clone(directory, clone)
+
+            clone.open[Git.Worktree](Read & Write): worktree ?=>
+              worktree.switch(Git.Branch(t"feature"), worktree.head(), create = true)
+              worktree.branches().value.keys   // Set(Branch(main), Branch(feature))
+    frame
+      label Under the native backend, which needs no `git`
+      code
+          locally:
+            import gitBackends.soundnessGit
+
+            val clone = directory / "clone-native"
+            Git.clone(directory, clone)
+
+            clone.open[Git.Worktree](Read & Write): worktree ?=>
+              worktree.switch(Git.Branch(t"feature"), worktree.head(), create = true)
+              worktree.branches().value.keys   // Set(Branch(main), Branch(feature))
+    ##
+    ```
+
+    The native backend reaches a repository on the same filesystem by its path. A remote one
+    needs a **transport**, and the `gitTransports` package has one given for each of the ways
+    git reaches a server: `smartHttp` (git's smart protocol over whichever `Http.Backend` is in
+    scope), `sshCommand` (a spawned `ssh`) and `soundnessSsh` (the native SSH client, with no
+    `ssh` binary). A `Native(List(SmartHttp(), SshCommand()))` speaks the wire protocol, version
+    2, over both. The command-line backend needs none of this: `git` brings its own transports.
+
+    **Signing** is independent of the backend. A commit or tag is assembled by Soundness and
+    stored, rather than made by `git commit`, so the signature never leaves the process: a
+    `Git.Signer` makes it, and a `Git.Verifier` checks one. `SshKeygen.Signer(key)` and
+    `SshKeygen.Verifier(allowedSigners)` drive `ssh-keygen -Y`, as `gpg.format = ssh` has git
+    do; `Gpg.Signer()` and `Gpg.Verifier()` drive `gpg`. A tag signed through either is one
+    `git tag -v` accepts.
+
+    The library is split into components, by what each needs from the platform:
+
+    - `octogenarian.core` — the model (`Git` and everything nested in it, `Commit`, `FileDiff`,
+      `Hunk`, `Patch`, `Remote`, `ReflogEntry`, `Notes` and `NoteRef`), the `Git.Repo` and
+      `Git.Worktree` handles and the `Git.Backend` typeclass they drive. No process is spawned
+      here, so a consumer of the native backend never compiles guillotine. JVM and Scala Native;
+      on Scala Native, whose javalib has no `java.time`, a new commit is stamped in UTC.
+    - `octogenarian.cli` — `Commandline`, the backend which runs `git`, as
+      `gitBackends.commandlineGit`; `gitCommands.searchpathGitCommand`; and `Gpg`.
+    - `octogenarian.native` — `Native`, the backend which reads and writes the repository's
+      files itself, as `gitBackends.soundnessGit`; `Transport` and `Peer`, the wire protocol's
+      two ends; `SshAddress`.
+    - `octogenarian.http` — `SmartHttp`, remote repositories over smart HTTP(S), as
+      `gitTransports.smartHttp`.
+    - `octogenarian.ssh` — `SshCommand`, remote repositories over a spawned `ssh`, as
+      `gitTransports.sshCommand`; and `SshKeygen`, signing through `ssh-keygen`.
+    - `octogenarian.sshNative` — `SshNative`, remote repositories over the native SSH client,
+      as `gitTransports.soundnessSsh`.
+
+    None of it compiles for Scala.js, which has no filesystem. Everything is exported to the
+    `soundness` umbrella, and the `gitBackends`, `gitCommands` and `gitTransports` choice
+    packages merge with the umbrella's own; their givens are imported by name, since
+    `import soundness.*` does not import givens. The `NoteRef` extensions `target`,
+    `namespace` and `content` are exported too, but `content` is best imported by name
+    (`import octogenarian.content`) so that it wins against the generic `read` on paths.
+
+    Whichever backend is chosen, `Exclusive` arbitrates only between handles in this JVM.
+    Another process is never waited for, which is why every ref-moving operation is a
+    compare-and-swap on the `Stale` reading it was given.
+
+refer octogenarian.Git
+refer octogenarian.Git.Repo
+refer octogenarian.Git.Worktree
+refer octogenarian.Git.Backend
+refer octogenarian.gitBackends
+refer octogenarian.Commit
+refer octogenarian.Native
+refer aperture.Stale
+
+entry .Git   the namespace of Git's model and of the repository and worktree handles
+  detail
+      `Git` holds everything Git itself names: references (`Git.Ref`, `Git.Branch`, `Git.Tag`,
+      `Git.Hash`, `Git.Revision`, `Git.Refspec`), objects (`Git.Object` and its kinds), who and
+      when (`Git.Identity`, `Git.Timestamp`, `Git.Signature`), the state of HEAD (`Git.Head`),
+      the working files (`Git.Status`, `Git.PathStatus`), configuration (`Git.Config`), the
+      outcomes of merging and sequencing (`Git.Merge`, `Git.Sequence`, `Git.Operation`), remote
+      operations (`Git.Push`, `Git.Pull`, `Git.Activity`), signing (`Git.Signer`,
+      `Git.Verifier`, `Git.Verification`), its errors (`Git.Error`, `Git.RefError`), and the two
+      forms a path is opened in: `Git.Repo` and `Git.Worktree`, each lending a `Handle` for a
+      block. `Git.Backend` is the typeclass a handle drives, implemented by `Commandline` and
+      `Native`.
+
+      Three operations create repositories: `.init` makes one, `.clone` copies one from a path
+      or a URL, and `.cloneCommit` fetches exactly one commit. Each takes a `Git.Backend^` and a
+      `Tactic[Git.Error]`, and the two which reach a remote take an `Internet` as well.
+
+      ```scala
+      import soundness.*
+      import gitBackends.commandlineGit
+      import gitCommands.searchpathGitCommand
+      import environments.javaBaseEnvironment
+      import workingDirectories.javaBaseWorkingDirectory
+      import logging.silentLogging
+      import strategies.throwUnsafely
+
+      val directory: Path on Linux = t"/tmp/repo".as[Path on Linux]
+      Git.init(directory, initialBranch = Git.Branch(t"main"))
+
+      directory.open[Git.Repo](): repo ?=>
+        repo.head().value   // Git.Head.Attached(Branch(main), Unset): an unborn branch
+      ```
+  refer octogenarian.Git.Repo
+  refer octogenarian.Git.Worktree
+  refer octogenarian.Git.Backend
+  refer octogenarian.Git.Error
+  refer octogenarian.Commit
+  entry .Ref   a fully-qualified reference path, `refs/heads/main`, as a `Path on Git.Refs`
+      `Git.Ref` is the alias `Path on Git.Refs`: a reference such as `refs/heads/main`,
+      `refs/tags/v1` or `refs/notes/commits`, modelled as a path on the `Git.Refs` plane, so it
+      is built with `/` from `Git.Refs`, or with `Git.Refs.heads`, `Git.Refs.tags`,
+      `Git.Refs.notes` and `Git.Refs.remotes`, each of which checks its segments as
+      `git check-ref-format` would, or parsed from text with `Git.Refs.parse`. A `Git.Branch`
+      and a `Git.Tag` each know their own ref (`branch.ref`, `tag.ref`). A `Git.Ref` converts
+      to a `Git.Revision` where one is expected, since a validated ref path is already a
+      revision.
+  entry .Error   raised when a Git operation cannot be completed, with a numbered reason
+    detail
+        Error 685: _the Git operation could not be completed because `reason`_. The one error
+        every repository operation raises, through a `Tactic[Git.Error]` in scope; its
+        `#reason` is a `Git.Error.Reason`, numbered so that the full code is `685.<n>`, and its
+        `#detail` is what git itself said, when a backend has it: the trimmed standard error of
+        the `git` process under `Commandline`, or a filesystem or network failure's own message
+        under `Native`.
+
+        ```scala
+        import soundness.*
+        import gitBackends.commandlineGit
+        import gitCommands.searchpathGitCommand
+        import environments.javaBaseEnvironment
+        import workingDirectories.javaBaseWorkingDirectory
+        import logging.silentLogging
+        import strategies.throwUnsafely
+
+        val directory: Path on Linux = t"/tmp/repo".as[Path on Linux]
+
+        directory.open[Git.Worktree](Read & Write): worktree ?=>
+          val seen = worktree.head()
+          worktree.commit(t"First", seen, allowEmpty = true)
+          capture[Git.Error](worktree.commit(t"Second", seen, allowEmpty = true)).reason
+          // Git.Error.Reason.Moved(t"HEAD", …, …): HEAD moved since `seen` was read
+        ```
+
+        The reason which matters most is `Moved`: a write which was conditional on a `Stale`
+        reading found the ref elsewhere, and did nothing.
+    entry .Reason   why an operation failed: one of thirty-four numbered cases
+        A `Clarification` enum, so every case carries its number (`685.<n>`) and renders through
+        `.communicable`. The cases, in number order:
+
+        - `CannotExecuteGit` (1): the `git` command could not be executed.
+        - `NoRepository(path)` (2): the path is not a Git repository; raised when opening.
+        - `NoWorktree` (3): the repository has no working tree, so it cannot be opened as a
+          `Git.Worktree`.
+        - `Moved(ref, expected, actual)` (4): a compare-and-swap failed — `ref` was `expected`
+          when read but is now `actual` (either may be `Unset` for no object). The ref is named
+          as the caller used it (`HEAD`), as git does.
+        - `NoSuchRef(ref)` (5), `NoSuchObject(hash)` (6), `RefExists(ref)` (7).
+        - `Unmerged(branch, tip)` (8): a branch is not fully merged, so `deleteBranch` refused
+          without `force`.
+        - `Conflict(paths)` (9): there are conflicts in the paths.
+        - `NothingToCommit` (10): the tree is unchanged and `allowEmpty` was not given.
+        - `Detached` (11): HEAD is detached, where a branch was needed (`pull`).
+        - `Dirty(paths)` (12): local changes would be overwritten.
+        - `NotFastForward` (13): the update is not a fast-forward.
+        - `OutsideWorktree(path)` (14), `Untracked(path)` (15).
+        - `NoOperationInProgress` (16), `OperationInProgress(operation)` (17): no merge, rebase,
+          cherry-pick or revert is in progress, or one already is.
+        - `NoSuchRemote(name)` (18), `RemoteExists(name)` (19), `Unauthorized(remote)` (20),
+          `Unreachable(remote)` (21), `RemoteRejected(ref, reason)` (22).
+        - `LeaseFailed(ref, expected, actual)` (23): a `Push.Force.Lease` expectation was wrong.
+        - `NoteNotFound` (24), `NoteExists(target)` (31).
+        - `NoSuchConfig(key)` (25): a configuration key is not set — the committer's
+          `user.name` or `user.email`, when a commit is made.
+        - `InvalidConfig(key, value)` (26).
+        - `BadSignature(detail)` (27), `SigningFailed(detail)` (28).
+        - `Unsupported(operation)` (29): the operation is not supported by this backend, or a
+          concurrent exclusive open was refused.
+        - `Unexpected` (30): git reported a failure the reason table does not know; the message
+          is kept as the error's `detail`.
+        - `NoSuchWorktree(path)` (32), `NoSuchStash` (33).
+        - `Locked(ref)` (34): the lock file for a ref is held by another process.
+    entry .communicable   renders each reason as a message
+    entry #reason   why the operation failed
+    entry #detail   what git itself said, if the backend has it: its standard error, trimmed
+  entry .RefError   raised when text is not a valid Git reference, hash or refspec
+    detail
+        Error 976: _`value` is not a valid Git reference because `reason`_. Raised by the
+        parsers which check names against git's own rules (`git check-ref-format`):
+        `Git.Branch.parse`, `Git.Tag.parse`, `Git.Revision.parse`, `Git.Refs.parse`,
+        `Git.Refs.heads` and its siblings, `Git.Hash.apply` and `Git.Refspec.parse`, and the
+        `Decodable in Text` givens built from them. `NoteRef#namespace` raises it for a bad
+        notes namespace segment.
+
+        ```scala
+        import soundness.*
+
+        safely(Git.Branch.parse(t"feature.lock"))   // Unset: `.lock` is a reserved suffix
+        safely(Git.Hash(t"0123456789abcdef"))        // Unset: not forty hexadecimal digits
+        ```
+    entry .Reason   which rule the text broke
+        `LeadingOrTrailingDot` (1): a path segment starts or ends with `.`; `ReservedSuffix`
+        (2): a segment ends with `.lock`; `ReservedSequence` (3): the name contains `@{`;
+        `DoubleDot` (4): it contains `..`; `EmptySegment` (5): an empty path segment;
+        `InvalidCharacter` (6): a character git forbids (`*`, `[`, `\`, space, `^`, `~`, `:`,
+        `?`); `BadHash` (7): not a 40-character lowercase hexadecimal hash; `BadRefspec` (8):
+        not a valid refspec.
+    entry .communicable   renders each reason as a message
+    entry #value   the text which was rejected
+    entry #reason   the rule it broke
+  entry .Refs   the plane of fully-qualified references, rooted at `refs/`
+    detail
+        `Git.Refs` is the root of the plane a `Git.Ref` is a path on: `Git.Refs / "heads" /
+        "main"` is `refs/heads/main`. The named constructors check each segment as
+        `git check-ref-format` would, raising `Git.RefError`, and `.parse` reads a
+        fully-qualified name back from text. The plane's `Filesystem` is `/`-separated, with
+        `@` as the self segment and `..` as the parent, neither of which a valid ref contains.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        val main: Git.Ref = Git.Refs.heads(t"main")
+        val notes: Git.Ref = Git.Refs.notes(t"attestations")
+        Git.Refs.parse(t"refs/remotes/origin/main") == Git.Refs.remotes(t"origin", t"main")
+        main.encode   // t"refs/heads/main"
+        ```
+
+        A `Git.Ref` is accepted wherever a `Git.Revision` is, through `.pathIsRevision`.
+    entry .Plane   the plane type of reference paths: `Git.Refs` itself
+    entry .notes   `refs/notes/<namespace>`, with the namespace checked
+        Raises `Git.RefError` if the namespace breaks a reference rule.
+    entry .heads   `refs/heads/<branch>`, with the branch name checked
+        Raises `Git.RefError` if the name breaks a reference rule. `Git.Branch#ref` is the same
+        path, unchecked.
+    entry .tags   `refs/tags/<tag>`, with the tag name checked
+    entry .remotes   `refs/remotes/<remote>/<branch>`, with both segments checked
+    entry .defaultNotes   `refs/notes/commits`, the namespace git's own `notes` command uses
+        The default `ref` of every notes operation on a `Git.Repo.Handle`.
+    entry .stash   `refs/stash`, the ref the stash's entries hang from
+    entry .parse   reads a fully-qualified name, `refs/heads/main`, as a `Git.Ref`
+        The text must begin with `refs/`, and every segment after it must satisfy the
+        reference rules; otherwise `Git.RefError` is raised. A name which is not fully
+        qualified (`HEAD`, `main`) is rejected.
+    entry .validateSegment   checks one segment against git's reference rules, raising `Git.RefError`
+        A segment must be non-empty, must not start or end with `.`, must not end with
+        `.lock`, must not contain `@{` or `..`, and must contain none of `*`, `[`, `\`, space,
+        `^`, `~`, `:`, `?` or `/`.
+    entry .admissible   the given which admits any text as a segment of a reference path
+        The check is deferred: `/` builds the path, and the named constructors and `.parse`
+        validate.
+    entry .filesystem   the reference plane as a `Filesystem`: `/`-separated, `@` and `..` for self and parent
+    entry .pathIsRevision   a `Git.Ref` as a `Git.Revision`, wherever one is expected
+        A `Conversion`, in implicit scope: a validated ref path satisfies every rule git
+        enforces, so it is a revision as it stands, and `repo.resolve(Git.Refs.heads(t"main"))`
+        needs no wrapping.
+  entry .Revision   anything git accepts where a revision is expected: a hash, a branch, a tag or an expression
+    detail
+        A `Git.Revision` is what `gitrevisions(7)` calls a revision: a `Git.Hash`, a `Git.Branch`
+        or a `Git.Tag` (each extends it), a `Git.Ref` (through `Git.Refs.pathIsRevision`), or an
+        expression such as `HEAD~2` or `main..feature`. `.head` makes the `HEAD` expressions,
+        and `.unsafe` any other, unchecked. Operations which read history or check out take a
+        `Git.Revision`: `log`, `resolve`, `checkout`, `merge`, `rebase`, `diffAgainst`.
+
+        ```scala
+        import soundness.*
+
+        val revisions: List[Git.Revision] =
+          List(Git.Revision.head(1), Git.Branch(t"main"), Git.Revision.unsafe(t"main..feature"))
+
+        revisions.map(_.text)   // List(t"HEAD~1", t"main", t"main..feature")
+        ```
+    entry .head   `HEAD`, or `HEAD~n` for a positive `n`
+    entry .unsafe   any text as a revision, unchecked
+        For expressions the typed references cannot express, `v1.0^{commit}` or
+        `main..feature`. Nothing is validated; an expression git cannot resolve is reported
+        when it is used, as `NoSuchRef` or as `Unset` from `resolve`.
+    entry .parse   checks a reference *name* against git's rules and returns it
+        Validates a name such as `feature/foo` — not an expression — segment by segment, as
+        `Git.Refs.validateSegment` does but allowing `/`, and raises `Git.RefError` on the first
+        rule broken. `Git.Branch.parse` and `Git.Tag.parse` are built on it.
+    entry .encodable   a revision encodes as its text
+    entry .showable   a revision shows as its text
+    entry .inspectable   a revision inspects as `Revision(HEAD~2)`
+        Branches, tags and hashes have their own: `Branch(main)`, `Tag(v1.0)`, `Hash(…)`.
+    entry #text   the revision as git takes it
+  entry .Refspec   a fetch or push refspec, `+refs/heads/*:refs/remotes/origin/*`
+    detail
+        A refspec names a `#source` on one side and a `#destination` on the other, either of
+        which may be `Unset`, and whether the update is `#force`d (the leading `+`). A refspec
+        with no source and a destination deletes the destination on push. `fetch` and `push`
+        take a list of them, and `addRemote` records one as the remote's fetch refspec,
+        defaulting to `+refs/heads/*:refs/remotes/<name>/*`.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        Git.Refspec.parse(t"+refs/heads/*:refs/remotes/origin/*")
+        // Git.Refspec(t"refs/heads/*", t"refs/remotes/origin/*", true)
+
+        Git.Refspec.parse(t":refs/heads/gone")   // deletes `refs/heads/gone` on push
+        Git.Refspec(Git.Refs.heads(t"main")).text   // t"refs/heads/main:refs/heads/main"
+        ```
+    entry .parse   reads a refspec from text, raising `Git.RefError(BadRefspec)` for one with two colons
+    entry .apply   a refspec from one ref (same on both sides) or from a source and a destination ref
+        `Git.Refspec(ref)` pushes or fetches `ref` to itself; `Git.Refspec(source, destination)`
+        maps one to the other. Neither is forced.
+    entry .encodable   a refspec encodes as its text
+    entry .showable   a refspec shows as its text
+    entry #source   the ref on the local side of a push, or the remote side of a fetch, if any
+    entry #destination   the ref on the other side, if any
+    entry #force   whether the update may be a non-fast-forward: the leading `+`
+    entry #text   the refspec as git takes it: `+source:destination`
+  entry .Tag   a tag by its name, distinct in type from a branch or a hash
+    detail
+        `Git.Tag(t"v1.0")` is a tag name; it is a `Git.Revision`, so it resolves wherever a
+        revision is expected, and `#ref` is its full path, `refs/tags/v1.0`. `.parse` checks the
+        name against git's rules; the case-class constructor does not, and `.unsafe` says so.
+        What a tag points at is a `.Target`, lightweight or annotated, read with
+        `Git.Repo.Handle`'s `tag`; an annotated tag's object is an `.Annotation`.
+
+        ```scala
+        import soundness.*
+        import gitBackends.commandlineGit
+        import gitCommands.searchpathGitCommand
+        import environments.javaBaseEnvironment
+        import workingDirectories.javaBaseWorkingDirectory
+        import logging.silentLogging
+        import strategies.throwUnsafely
+
+        val directory: Path on Linux = t"/tmp/repo".as[Path on Linux]
+
+        directory.open[Git.Worktree](Read & Write): worktree ?=>
+          val hash = worktree.commit(t"Release", worktree.head(), allowEmpty = true)
+          worktree.makeTag(Git.Tag(t"v1"), hash)
+          worktree.annotatedTag(Git.Tag(t"v1-annotated"), hash, t"Release one")
+          worktree.tag(Git.Tag(t"v1")).value   // Git.Tag.Target.Lightweight(hash)
+          worktree.tags().value.keys           // Set(Tag(v1), Tag(v1-annotated))
+        ```
+    entry .unsafe   a tag by its name, unchecked
+    entry .parse   a tag by its name, checked against git's reference rules
+        Raises `Git.RefError` for a name git would reject.
+    entry .decoder   reads a tag from text, through `.parse`
+        A `Git.Tag is Decodable in Text`, so `t"v1".as[Git.Tag]` works where a
+        `Tactic[Git.RefError]` is in scope.
+    entry .showable   a tag shows as its name
+    entry .inspectable   a tag inspects as `Tag(v1.0)`
+    entry .Target   what a tag name points at: a commit directly, or an annotation which points at one
+      detail
+          `Lightweight(commit)` is a tag ref which names a commit; `Annotated(annotation,
+          commit)` names a tag object, whose own target is `commit`. `#peeled` is the commit
+          either way. `Git.Repo.Handle`'s `tag` reads one, and `tags()` lists tags already
+          peeled to their commits.
+      entry #peeled   the commit the tag ultimately names
+    entry .Annotation   the content of an annotated tag object
+      detail
+          What `annotationAt(hash)` reads back: the object tagged, its kind, the tag's name, who
+          tagged it and when (absent in a tag written without a tagger line), the message, and
+          the ASCII-armoured signature block if the tag was signed.
+      entry #target   the hash of the object tagged
+      entry #kind   the kind of the object tagged, usually `Commit`
+      entry #name   the tag's name
+      entry #tagger   who made the tag and when, if recorded
+      entry #message   the tag's message, without git's trailing newline
+      entry #signature   the armoured signature block, if the tag is signed
+    entry #text   the tag's name
+    entry #ref   the tag's full reference, `refs/tags/<name>`
+  entry .Branch   a branch by its name, distinct in type from a tag or a hash
+    detail
+        `Git.Branch(t"main")` is a branch name; it is a `Git.Revision`, so it resolves wherever
+        a revision is expected, and `#ref` is its full path, `refs/heads/main`. `.parse` checks
+        the name against git's rules; the case-class constructor does not, and `.unsafe` says
+        so. Branches are made with `switch(branch, head, create = true)` on a worktree, or
+        `makeBranch(branch, at)` on a repository, listed with `branches()`, and deleted or
+        renamed against a `Stale` reading of their tip.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        val feature: Git.Branch = Git.Branch.parse(t"feature/login")
+        feature.ref.encode   // t"refs/heads/feature/login"
+        t"main".as[Git.Branch] == Git.Branch(t"main")
+        ```
+    entry .unsafe   a branch by its name, unchecked
+    entry .parse   a branch by its name, checked against git's reference rules
+        Raises `Git.RefError` for a name git would reject.
+    entry .decoder   reads a branch from text, through `.parse`
+        A `Git.Branch is Decodable in Text`, so `t"main".as[Git.Branch]` works where a
+        `Tactic[Git.RefError]` is in scope.
+    entry .showable   a branch shows as its name
+    entry .inspectable   a branch inspects as `Branch(main)`
+    entry #text   the branch's name
+    entry #ref   the branch's full reference, `refs/heads/<name>`
+  entry .Hash   a forty-character object hash, and the root of a notes path
+    detail
+        A `Git.Hash` is the name of an object: forty lowercase hexadecimal digits, which
+        `.apply` checks and `.unsafe` does not. It is a `Git.Revision`, and it is also a
+        serpentine `Root`, on the `Notes` plane: `hash / t"attestations"` is a `NoteRef`, the
+        note attached to that commit in the `attestations` namespace. Equality is by text, so
+        two hashes read from different places compare equal.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        val hash: Git.Hash = Git.Hash(t"5c1d2b7e3a4f60918273645566778899aabbccdd")
+        hash.text.length          // 40
+        hash == Git.Hash.unsafe(t"5c1d2b7e3a4f60918273645566778899aabbccdd")
+        (hash / t"attestations").namespace.encode   // t"refs/notes/attestations"
+        ```
+
+        Objects are immutable and content-addressed, so a read keyed by a hash (`commitAt`,
+        `treeAt`, `blobAt`, `show`) is a plain value, never `Stale`.
+    entry .apply   a hash from forty lowercase hexadecimal digits, raising `Git.RefError(BadHash)` otherwise
+    entry .unsafe   a hash from text, unchecked
+    entry .zero   the all-zero hash, which git uses to mean "no object"
+        What `Git.Head#commit.or(Git.Hash.zero)` gives for an unborn branch, and the tip the
+        command-line backend reports in `Unmerged(branch, tip)` when git does not say which.
+    entry .decoder   reads a hash from text, through `.apply`
+        A `Git.Hash is Decodable in Text`, needing a `Tactic[Git.RefError]`.
+    entry .showable   a hash shows as its forty digits
+    entry .inspectable   a hash inspects as `Hash(5c1d…)`, with all forty digits
+    entry #text   the forty hexadecimal digits
+    entry #Plane   the plane a hash is the root of: `Notes`
+    entry #Limit   the root type of a notes path: `Git.Hash` itself
+  entry .Identity   who: a name and an email address
+    detail
+        `Git.Identity(t"Jon Pretty", t"jon@example.com")` is the `user.name` and `user.email`
+        pair a commit's author and committer lines carry. A commit's committer is always read
+        from the effective configuration (raising `NoSuchConfig` if either key is unset); its
+        author is the same unless `commit(…, author = identity)` says otherwise, and a tag's
+        tagger likewise.
+    entry #name   the person's name
+    entry #email   the person's email address
+    entry #text   the identity as git writes it: `name <email>`
+  entry .Timestamp   git's own timestamp: seconds since the epoch and a UTC offset in minutes
+    detail
+        Kept apart from any calendar type so that it round-trips byte-for-byte through the
+        objects it is read from and written to: `Git.Timestamp(1700000000, 90).text` is
+        `1700000000 +0130`. `.now` reads the wall clock, with the local offset on the JVM and
+        `+0000` on Scala Native, whose javalib has no `java.time`.
+    entry .now   the current time, with the local UTC offset (always `+0000` on Scala Native)
+    entry .parse   a timestamp from its two fields as text, `Unset` if either is malformed
+    entry #seconds   seconds since the Unix epoch
+    entry #offsetMinutes   the UTC offset in minutes, negative west of Greenwich
+    entry #offset   the offset as git writes it: `+0130`, `-0500`
+    entry #text   the timestamp as git writes it: `1700000000 +0130`
+  entry .Signature   an `author`, `committer` or `tagger` line: who, and when
+    detail
+        A `Git.Identity` with a `Git.Timestamp`, as `Commit#author`, `Commit#committer` and
+        `Git.Tag.Annotation#tagger` carry it. Not to be confused with a cryptographic
+        signature, which is a `Git.Signer`'s business.
+    entry .parse   a signature from a header line, `Jon <jon@example.com> 1700000000 +0100`, or `Unset`
+    entry #identity   who
+    entry #timestamp   when
+    entry #text   the line as git writes it: `name <email> seconds offset`
+  entry .Object   a git object as read from the database: a blob, a tree, a commit or a tag
+    detail
+        `show(hash)` on a `Git.Repo.Handle` reads any object as a `Git.Object`: `Blob(data)`,
+        `Tree(entries)`, `Commit(commit)` or `Tag(annotation)`, with `#kind` naming which. The
+        typed readers `blobAt`, `treeAt`, `commitAt` and `annotationAt` read one kind and raise
+        `NoSuchObject` for another. The object namespace also holds `.Kind`, the four kinds as
+        git names them, and `.Tree`, the modes and entries of a tree.
+
+        ```scala
+        import soundness.*
+        import gitBackends.commandlineGit
+        import gitCommands.searchpathGitCommand
+        import environments.javaBaseEnvironment
+        import workingDirectories.javaBaseWorkingDirectory
+        import logging.silentLogging
+        import strategies.throwUnsafely
+
+        val directory: Path on Linux = t"/tmp/repo".as[Path on Linux]
+
+        directory.open[Git.Repo](): repo ?=>
+          val tip = repo.head().value.commit.or(Git.Hash.zero)
+
+          repo.show(tip) match
+            case Git.Object.Commit(commit) => commit.message
+            case other                     => other.kind.text
+        ```
+    entry .Kind   the four kinds of object, as git names them: `blob`, `tree`, `commit`, `tag`
+      detail
+          `Blob`, `Tree`, `Commit` and `Tag`; `.parse` reads one from git's lowercase name and
+          `#text` writes it back. `writeObject(kind, data)` takes one to store raw content.
+      entry .parse   a kind from `blob`, `tree`, `commit` or `tag`; `Unset` for anything else
+      entry #text   the kind as git names it
+    entry .Tree   the modes and entries of a tree object
+      detail
+          A tree is a list of `.Entry`s, each a `.Mode`, a name and the hash of what it names.
+          `treeAt(hash)` reads one.
+      entry .Mode   the mode of a tree entry: regular, executable, symlink, gitlink or directory
+        detail
+            `Regular` (`100644`), `Executable` (`100755`), `Symlink` (`120000`), `Gitlink`
+            (`160000`, a submodule's commit) and `Directory` (`40000`, a subtree). `.parse` reads
+            the octal text git writes, accepting `100664` as regular and `040000` as a
+            directory; `#octal` is the canonical spelling.
+        entry .parse   a mode from its octal text, `Unset` for one git does not write
+        entry #octal   the mode as git writes it in a tree
+      entry .Entry   one entry of a tree: its mode, its name and the hash it names
+        detail
+            `#kind` is what the hash names, by the mode: a `Directory` names a `Tree`, a
+            `Gitlink` a `Commit`, and anything else a `Blob`.
+        entry #mode   the entry's mode
+        entry #name   the entry's name within the tree
+        entry #hash   the hash of the object the entry names
+        entry #kind   the kind of object the entry names, inferred from its mode
+    entry #kind   which kind of object this is
+  entry .Head   where HEAD is: attached to a branch, or detached at a commit
+    detail
+        `Attached(branch, tip)` is HEAD on a branch, whose `tip` is `Unset` on an unborn branch
+        (a fresh repository whose first commit has not been made); `Detached(at)` is HEAD at a
+        commit. `head()` reads it as a `Stale[Git.Head]`, which is the reading every
+        HEAD-moving write (`commit`, `switch`, `checkout`, `reset`, `merge`, `rebase`, …) is
+        conditional on.
+
+        ```scala
+        import soundness.*
+        import gitBackends.commandlineGit
+        import gitCommands.searchpathGitCommand
+        import environments.javaBaseEnvironment
+        import workingDirectories.javaBaseWorkingDirectory
+        import logging.silentLogging
+        import strategies.throwUnsafely
+
+        val directory: Path on Linux = t"/tmp/repo".as[Path on Linux]
+
+        directory.open[Git.Repo](): repo ?=>
+          repo.head().value match
+            case Git.Head.Attached(branch, tip) => t"on $branch"
+            case Git.Head.Detached(at)          => t"detached at $at"
+        ```
+    entry #commit   the commit HEAD is at, `Unset` on an unborn branch
+    entry #current   the branch checked out, `Unset` when HEAD is detached
+  entry .Status   the state of one path, as a letter of `git status`
+    detail
+        `Updated` (`M`), `Added` (`A`), `Deleted` (`D`), `Renamed` (`R`), `Copied` (`C`),
+        `Unmerged` (`U`), `Untracked` (`?`), `Ignored` (`!`) and `TypeChanged` (`T`). A
+        `Git.PathStatus` carries one for the index and one for the working file.
+    entry .parse   a status from its `git status --porcelain` letter, `Unset` for a space or anything else
+  entry .PathStatus   one line of `status`: the index's and the working file's state, and the path
+    detail
+        What `status()` on a `Git.Worktree.Handle` lists, one per path: the state of the index
+        relative to HEAD, the state of the working file relative to the index (each `Unset`
+        where unchanged), the path, and, for a rename or copy, where it came from. The paths
+        are on the worktree handle's plane, so they cannot outlive the handle and can be read
+        and written through it.
+    entry #index   the index's state relative to HEAD, if changed
+    entry #worktree   the working file's state relative to the index, if changed
+    entry #path   the path, on the worktree handle's plane
+    entry #origin   where a renamed or copied path came from
+  entry .Activity   the progress of a clone, fetch, push or pull, shared between the worker and a watcher
+    detail
+        A long-running remote operation blocks until it is done and reports its progress
+        through an `Activity`: a handful of atomic cells — the phase, whether the remote is
+        reporting it, how much is done of how much, and the bytes transferred — each updated
+        indivisibly, so no other thread sees a half-done state. Updating is allocation-free: a
+        backend bumps the counters as a sideband line arrives or an object is processed. A user
+        interface polls `#report` at its own cadence, or, for a reactive one, drains `#updates`,
+        a `Relay` which exists only once asked for, so a poll-only caller pays nothing for it.
+
+        The operations take `activity: Optional[Activity^] = Unset` and make a private one when
+        none is given. A caller who wants to watch makes one and passes it:
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import gitBackends.commandlineGit
+        import gitCommands.searchpathGitCommand
+        import environments.javaBaseEnvironment
+        import workingDirectories.javaBaseWorkingDirectory
+        import internetAccess.online
+        import logging.silentLogging
+        import strategies.throwUnsafely
+        import stdios.javaLangSystemStdio
+        import threads.virtualThreads
+        import probates.cancelProbate
+
+        val directory: Path on Linux = t"/tmp/repo".as[Path on Linux]
+        val activity: Git.Activity^ = Git.Activity()
+
+        supervise:
+          val watcher = async:
+            activity.updates.chain.each: report =>
+              Out.println(t"${report.phase}: ${report.complete.or(0.0)*100}%")
+
+          Git.clone(t"https://github.com/propensive/soundness", directory, activity = activity)
+          watcher.await()
+
+        activity.complete   // true
+        ```
+
+        `Activity` is `Durable`: it may outlive the scope which made it, since the watching
+        thread holds it after the operation returns.
+    entry .Phase   which stage of a transfer is under way
+      detail
+          `Idle`, then git's own stages — `Enumerating`, `Counting`, `Compressing`, `Writing`,
+          `Receiving`, `Resolving`, `Unpacking` — then `Checkout` and `Done`. `.parse` reads
+          one from the heading of a git progress line (`Receiving objects`).
+      entry .parse   a phase from git's progress heading, `Receiving objects`; `Unset` for an unknown one
+    entry .Report   one observation of an activity: pure data, stale as soon as it is read
+      detail
+          The phase, whether the remote end is reporting it (`remote:` lines), how many items
+          are done, how many there are in all if known, and the bytes transferred so far.
+          `#complete` is the fraction done, or `Unset` while the total is unknown.
+      entry #phase   the stage under way
+      entry #remote   whether the other end of the transfer is the one reporting
+      entry #done   how many objects or files are done in this phase
+      entry #total   how many there are in all, once known
+      entry #bytes   the bytes transferred so far
+      entry #complete   `done/total` as a fraction, `1.0` for an empty phase, `Unset` while the total is unknown
+    entry #report   the current state as a `Stale[Git.Activity.Report]`
+        Reads every cell once; the result is a consistent snapshot of a moment, already out of
+        date when it returns.
+    entry #complete   whether the operation has finished
+    entry #updates   a `Relay` of reports, one per change, ending when the activity finishes
+        Created on the first request and fed from then on; a caller who never asks pays
+        nothing. Drain its stream from another thread.
+    entry #begin   starts a phase, resetting the counts; a backend calls it
+    entry #measure   sets the phase's total; a backend calls it
+    entry #advance   adds to the phase's done count; a backend calls it
+    entry #progress   sets the done count and the total together; a backend calls it
+    entry #transferred   adds to the bytes transferred; a backend calls it
+    entry #finish   marks the activity done and stops the `#updates` relay; a backend calls it
+  entry .Config   git configuration: keys, scopes, sources, and the handle which reads and writes them
+    detail
+        Configuration is read and written through a lent `Git.Config.Handle`, typed by the
+        value's codec: `repo.config { config ?=> config.get[Text](key) }` reads the repository's
+        own file, `repo.configure { … }` writes it, `repo.effectiveConfig { … }` reads through
+        every scope git would consult, and any file opens on its path as
+        `path.open[Git.Config](Read & Write) { config ?=> … }` — the global `~/.gitconfig`,
+        say. A key is a `.Key`, parsed from `section.name` or `section.subsection.name`.
+
+        ```scala
+        import soundness.*
+        import gitBackends.commandlineGit
+        import gitCommands.searchpathGitCommand
+        import environments.javaBaseEnvironment
+        import workingDirectories.javaBaseWorkingDirectory
+        import logging.silentLogging
+        import strategies.throwUnsafely
+
+        val directory: Path on Linux = t"/tmp/repo".as[Path on Linux]
+        val key = Git.Config.Key.parse(t"octogenarian.answer")
+
+        directory.open[Git.Worktree](Read & Write): worktree ?=>
+          worktree.configure { config ?=> config.set(key, 42) }
+          worktree.config { config ?=> config.get[Int](key).value }   // 42
+        ```
+
+        A read is `Stale`, since the file may be rewritten by another process; `get` of an
+        unset key is `Unset`, not an error.
+    entry .Scope   where a setting lives: `Local`, `Worktree`, `Global` or `System`
+    entry .Key   a configuration key: its section, optional subsection and name
+      detail
+          `Git.Config.Key(t"remote", t"origin", t"url")` is `remote.origin.url`; `.parse` reads
+          the dotted form, lowercasing the section and the name (the subsection is
+          case-sensitive, as git has it) and raising `Git.Error(InvalidConfig)` for text with no
+          section or no name.
+      entry .parse   a key from `section.name` or `section.subsection.name`, raising `Git.Error(InvalidConfig)` otherwise
+      entry .showable   a key shows as its dotted text
+      entry #section   the section, lowercase
+      entry #subsection   the subsection, if there is one
+      entry #name   the name, lowercase
+      entry #text   the key in dotted form
+    entry .Source   the configuration file a handle reads and writes
+      detail
+          `Repository(gitDir, scope)` is a repository's own file in a scope; `File(path)` is a
+          named file, such as `~/.gitconfig`; `Effective(gitDir)` reads through every scope git
+          would consult for the repository, and cannot be written. The handle's `#source` is
+          one of these; a `Git.Backend`'s `configRead`, `configWrite` and `configUnset` take one.
+    entry .Handle   a lent configuration handle: `get`, `all` and `list` to read, `set`, `add` and `unset` to write
+      detail
+          Lent for a block by `config`, `configure` or `effectiveConfig` on a repository handle,
+          or by opening a file as `Git.Config`. It is an exclusive capability, so it cannot be
+          kept beyond the block. The reads need `Grant.Read` and the writes `Grant.Write`, as
+          the mode the handle was opened with grants them; a write through a read-only handle
+          does not compile.
+      entry .get   the value in force for a key, decoded, as `Stale[Optional[value]]`
+          Needs a `value is Decodable in Text`. Git lists scopes from system to local and the
+          last setting wins, which is what this returns; an unset key is `Unset`.
+      entry .all   every value set for a multi-valued key, decoded, as `Stale[List[value]]`
+      entry .list   every key and its raw value, as `Stale[List[(Git.Config.Key, Text)]]`
+      entry .set   sets a key to a value, encoded, replacing any value it had
+          Needs a `value is Encodable in Text` and `Grant.Write`.
+      entry .add   adds a value to a key, keeping the values it had
+      entry .unset   removes a key's value, or with `all = true` every value of a multi-valued key
+      entry #source   the file or scope this handle reads and writes
+    entry .Openable   how a path opens as a `Git.Config`: a lent handle on that file
+      detail
+          The `aperture.Openable` behind `path.open[Git.Config](mode) { config ?=> … }`: the
+          handle's source is `Git.Config.Source.File(path)`. It needs a `Git.Backend^` and a
+          `Tactic[Git.Error]` when built, which `.openable` supplies from scope.
+      entry #open   opens the path, lending a handle with the mode's grants to the block
+      entry #Self   the path type opened
+      entry #Form   the form opened in: `Git.Config`
+      entry #Operand   the flag type: none
+      entry #Result   what is lent: a `Git.Config.Handle`
+    entry .openable   the given which lets any `Path on Linux` open as `Git.Config`
+        In implicit scope; it needs a `Git.Backend^` (from `gitBackends`) and a
+        `Tactic[Git.Error]`.
+  entry .Operation   an operation stopped part-way, waiting for conflicts to be resolved
+    detail
+        What `.git` records about a merge, rebase, cherry-pick or revert which stopped, or a
+        bisection in progress: `Merging(merging, conflicting)`, `Rebasing(onto, originalHead,
+        done, remaining, conflicting)`, `CherryPicking(commit, conflicting)`,
+        `Reverting(commit, conflicting)` and `Bisecting`. A `Stopped` outcome carries one, and
+        `operation()` on a repository handle reads whichever is in progress. `#conflicts` names
+        the paths which must be resolved and added before `continue()`.
+    entry #conflicts   the paths left in conflict, which must be resolved before the operation continues
+  entry .Sequence   the outcome of a cherry-pick, revert, rebase or stash application, and the verbs which drive one
+    detail
+        `.Outcome` is what each of those returns: `Completed(head)` with the new HEAD, or
+        `Stopped(operation)` on a conflict, which is not an error. Once the conflicts are
+        resolved and added, `continue()` finishes the operation, `skip()` passes over the
+        current commit, `abandon()` restores the state it began from, and `quit()` leaves the
+        tree as it is; these are the `.Verb`s a backend's `sequence` takes.
+
+        ```scala
+        import soundness.*
+        import gitBackends.commandlineGit
+        import gitCommands.searchpathGitCommand
+        import environments.javaBaseEnvironment
+        import workingDirectories.javaBaseWorkingDirectory
+        import logging.silentLogging
+        import strategies.throwUnsafely
+
+        val directory: Path on Linux = t"/tmp/repo".as[Path on Linux]
+
+        directory.open[Git.Worktree](Read & Write): worktree ?=>
+          worktree.rebase(Git.Branch(t"main"), worktree.head()) match
+            case Git.Sequence.Outcome.Completed(head)    => t"rebased onto $head"
+            case Git.Sequence.Outcome.Stopped(operation) =>
+              t"conflicts in ${operation.conflicts.join(t", ")}"
+        ```
+    entry .Outcome   `Completed(head)`, or `Stopped(operation)` on a conflict
+    entry .Verb   `Continue`, `Skip`, `Abort` or `Quit`: how an operation in progress is driven
+  entry .Merge   the outcome of a merge or a pull
+    detail
+        `.Outcome` is `FastForwarded(head)` when the branch simply advanced, `Merged(head)`
+        when a merge commit was made, `UpToDate` when there was nothing to do, or
+        `Stopped(operation)` on a conflict, which is not an error: resolve the paths, add them,
+        and `continue()`.
+    entry .Outcome   `FastForwarded(head)`, `Merged(head)`, `UpToDate` or `Stopped(operation)`
+  entry .Rebase   the options a rebase takes
+    entry .Option   `Autosquash`, `KeepEmpty`, `NoRenames`, `Signoff` or `Autostash`
+  entry .Pull   how a pull integrates what it fetched
+    entry .Mode   `Merge`, `Rebase` or `FastForwardOnly`
+        `Merge` merges `FETCH_HEAD` as `FastForward.Auto` would; `FastForwardOnly` refuses
+        anything but a fast-forward; `Rebase` rebases the branch onto it, reporting a
+        completed rebase as `Merged`.
+  entry .Push   the force policy of a push, and what happened to each ref
+    detail
+        `.Force` says whether a non-fast-forward update is allowed: `Never`, `Always`, or
+        `Lease(expectations)`, git's `--force-with-lease` — the remote-side compare-and-swap,
+        carrying the `Stale` readings of the remote's refs the push is conditional on, as
+        `remoteRefs` gave them. `.Outcome` is what happened to each ref pushed.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import gitBackends.commandlineGit
+        import gitCommands.searchpathGitCommand
+        import environments.javaBaseEnvironment
+        import workingDirectories.javaBaseWorkingDirectory
+        import internetAccess.online
+        import logging.silentLogging
+        import strategies.throwUnsafely
+
+        val directory: Path on Linux = t"/tmp/repo".as[Path on Linux]
+        val main = Git.Refs.heads(t"main")
+
+        directory.open[Git.Worktree](Read & Write): worktree ?=>
+          val seen = worktree.remoteRefs(t"origin").let(_.at(main))
+          val lease = Git.Push.Force.Lease(Map(main -> seen))
+          worktree.push(t"origin", List(Git.Refspec(main)), force = lease).value.at(main)
+        ```
+    entry .Force   `Never`, `Always`, or `Lease(expectations)` for `--force-with-lease`
+    entry .Outcome   `Updated(from, to, forced)`, `Created(to)`, `Deleted(from)`, `UpToDate` or `Rejected(reason)`
+        A failed lease is reported as `Rejected`, per ref, rather than raised.
+  entry .Stash   the entries of the stash
+    detail
+        `stashes()` on a worktree handle lists them as `Stale[List[Git.Stash.Entry]]`, newest
+        first; `popStash`, `applyStash` and `dropStash` take a `Stale[Git.Stash.Entry]` and
+        raise `NoSuchStash` if the entry has gone or changed since it was listed.
+    entry .Entry   one stash entry: its index, its commit and its message
+      entry #index   the entry's position, `0` for the newest
+      entry #commit   the commit which holds the stashed state
+      entry #message   the entry's message
+  entry .Signer   makes the signature a commit or a tag carries
+    detail
+        A `Git.Signer` produces an ASCII-armoured signature over a commit's or tag's payload,
+        which the handle inserts as the `gpgsig` header of a commit or the trailing block of a
+        tag. Pass one as `commit(…, signer = …)`, `amend(…, signer = …)` or `annotatedTag(…,
+        signer = …)`. `SshKeygen.Signer(key)` signs through `ssh-keygen -Y sign`, and
+        `Gpg.Signer()` through `gpg`; signing never leaves the process, since the object is
+        assembled here rather than by `git commit`.
+    entry #sign   the armoured signature over a payload, raising `Git.Error(SigningFailed)` if it cannot be made
+  entry .Verifier   checks the signature a commit or a tag carries
+    detail
+        A `Git.Verifier` in scope is what `verifyCommit` and `verifyTag` use.
+        `SshKeygen.Verifier(allowedSigners)` checks against an allowed-signers file, and
+        `Gpg.Verifier()` against the keyring.
+    entry #verify   the `Git.Verification` of a signature over a payload
+  entry .Verification   `Good(signer)`, `Bad(detail)` or `Unknown(detail)`
+      The result of verifying a commit or tag: `Good` names the principal or user id the
+      signature was made by; `Bad` means the signature does not match; `Unknown` means it could
+      not be checked — the object is unsigned, the tag is not annotated, or the signer is not
+      among the allowed ones.
+  entry .Backend   the implementation a repository handle drives: `Commandline` or `Native`
+    detail
+        Every operation on a `Git.Repo.Handle` or a `Git.Worktree.Handle` is written once, over
+        the primitives this trait declares; the two backends implement them differently. The
+        plumbing — refs, objects, the index, configuration, notes — is simple enough that
+        compare-and-swap, object assembly and signing live in the handle; the algorithmic
+        verbs (`merge`, `rebase`, `cherryPick`, `stash`, the transports) are each backend's
+        own. A `Git.Backend^` is a capability: it is chosen by importing one of the
+        `gitBackends` givens by name, and every handle keeps the one it was opened with.
+
+        ```scala
+        import soundness.*
+        import gitBackends.commandlineGit
+        import gitCommands.searchpathGitCommand
+        import environments.javaBaseEnvironment
+        import workingDirectories.javaBaseWorkingDirectory
+        import logging.silentLogging
+
+        val backend: Git.Backend^ = commandlineGit
+        ```
+
+        The members are the plumbing a handle calls; a program drives a repository through the
+        handle's own operations rather than these. `Unsupported(operation)` is what a backend
+        raises for a primitive it does not implement.
+    refer octogenarian.gitBackends
+    refer octogenarian.Commandline
+    refer octogenarian.Native
+    entry .Location   where a repository was found: its git directory, the shared one, and its working tree
+      detail
+          What `#locate` returns. `#commonDir` is the same as `#gitDir` unless the path is a
+          linked worktree, whose own git directory names the shared one; `#worktree` is `Unset`
+          for a bare repository.
+      entry #gitDir   the repository's own git directory
+      entry #commonDir   the git directory shared by every worktree, where the objects and refs are
+      entry #worktree   the root of the working tree, if the repository has one
+    entry .Expectation   what a ref must hold for an update to proceed: anything, nothing, or one hash
+      detail
+          `Unconditional` overwrites whatever the ref holds; `Absent` requires the ref not to
+          exist (how a branch or tag is created); `Exactly(hash)` requires it to hold that
+          hash. `.apply` lifts an `Optional[Git.Hash]` — a `Stale` reading's value — to `Absent`
+          or `Exactly`, which is how every compare-and-swap is spelled. It is an enum rather
+          than an `Optional[Optional[Git.Hash]]`, which would collapse.
+      entry .apply   `Absent` for `Unset`, otherwise `Exactly(hash)`
+      entry #expected   the hash required, or `Unset`
+    entry .Target   a ref's content: `Direct(hash)` or `Symbolic(ref)`
+    entry .StatusLine   one line of status with its paths as text, before they are typed to a handle's plane
+      entry #index   the index's state relative to HEAD, if changed
+      entry #worktree   the working file's state relative to the index, if changed
+      entry #path   the path, relative to the working tree
+      entry #origin   where a renamed or copied path came from
+    entry .NoteEdit   one edit to a notes tree: `Add`, `Append`, `Remove` or `Copy`
+        What `#editNotes` applies: `Add(target, body, force)`, `Append(target, body)`,
+        `Remove(target, ignoreMissing)` or `Copy(source, target, force)`.
+    entry .WorktreeEntry   one linked worktree as a backend lists it; `Git.Worktree.Entry` is the handle's form
+      entry #path   the worktree's root
+      entry #head   the commit checked out, if any
+      entry #branch   the branch checked out, if attached
+      entry #bare   whether the entry is the bare repository itself
+      entry #locked   the lock's reason, if the worktree is locked
+      entry #prunable   why the worktree could be pruned, if it could
+    entry #locate   where the repository containing a path is, or `Unset` if there is none
+    entry #init   creates a repository at a path, with an initial branch, bare or not
+    entry #clone   clones a source (a path or a URL) to a path, reporting through an activity
+    entry #head   where HEAD is in a git directory
+    entry #readRef   a ref's content, direct or symbolic, or `Unset` if it does not exist
+    entry #listRefs   every ref under a prefix with its hash
+    entry #peel   the commit a tag object ultimately names
+    entry #updateRef   moves or deletes a ref, conditional on an `Expectation`, with a reflog message
+        The compare-and-swap every ref-moving operation rests on: raises `Moved` when the ref
+        does not hold what was expected, and `Locked` when another process holds its lock.
+    entry #updateSymbolicRef   points a symbolic ref such as `HEAD` at another ref
+    entry #resolve   the hash a revision expression names, or `Unset`
+    entry #revList   the commits reachable from a revision, newest first, optionally bounded, limited or filtered by path
+    entry #reflog   the reflog of a ref, or of `HEAD`
+    entry #mergeBase   the best common ancestor of two commits, if any
+    entry #isAncestor   whether one commit is reachable from another
+    entry #readObject   an object's kind and raw content, or `Unset`
+    entry #readObjects   several objects' hashes, kinds and content at once
+    entry #writeObject   stores raw content as an object of a kind, returning its hash
+    entry #diffTree   the file differences between two trees
+    entry #status   the state of the index and working files, as status lines
+    entry #add   stages paths, or everything with `all`
+    entry #remove   removes paths from the index, and from the working tree unless `cached`
+    entry #move   renames a path in the index and the working tree
+    entry #restore   restores paths in the index or the working tree from a source
+    entry #clean   deletes untracked files, returning the paths removed
+    entry #writeTree   writes the index as a tree object, returning its hash
+    entry #readTree   brings the index (and, for `Hard`, the working files) into line with HEAD, as a `ResetMode` says
+    entry #diffWorktree   the working files or the index against HEAD or a revision
+    entry #tracked   every path the index tracks
+    entry #conflicts   every path in conflict
+    entry #checkout   checks a revision out, detaching HEAD
+    entry #switch   switches to a branch, creating it first if asked
+    entry #merge   merges a revision into HEAD under a fast-forward policy
+    entry #cherryPick   applies commits onto HEAD
+    entry #revert   applies the inverse of commits onto HEAD
+    entry #rebase   rebases HEAD onto a revision, with options
+    entry #sequence   continues, skips, aborts or quits the operation in progress
+    entry #operation   the operation in progress, if any
+    entry #stash   saves the uncommitted state as a stash entry, returning its commit, or `Unset` if there was nothing
+    entry #stashes   the stash's entries, newest first
+    entry #applyStash   applies a stash entry, restoring the index too if asked, and drops it if asked
+    entry #dropStash   deletes a stash entry
+    entry #readNote   the note on a target in a notes ref, if any
+    entry #listNotes   every note in a notes ref, as pairs of note blob and target
+    entry #editNotes   makes a new notes commit from a base commit and an edit, on no ref
+        The handle then moves the notes ref to it by compare-and-swap, which is what keeps two
+        writers from clobbering each other's notes.
+    entry #configRead   every key and value of a configuration source
+    entry #configWrite   sets a key, or adds a value to it
+    entry #configUnset   removes a key's value, or all of them
+    entry #remoteRefs   every ref a remote advertises, with its hash
+    entry #fetch   fetches refspecs from a remote, returning the refs updated
+    entry #push   pushes refspecs to a remote under a force policy, returning each ref's outcome
+    entry #worktrees   every linked worktree
+    entry #addWorktree   adds a linked worktree at a path, checked out at a revision
+    entry #removeWorktree   removes a linked worktree
+    entry #lockWorktree   locks a linked worktree, with a reason
+    entry #unlockWorktree   unlocks a linked worktree
+    entry #moveWorktree   moves a linked worktree to another path
+    entry #pruneWorktrees   removes the records of worktrees whose directories have gone, returning their paths
+  entry .OpenFlag   flags an open may take: `Await`
+      `Await` waits for a conflicting exclusive handle in this JVM to close, rather than
+      failing at once. Passed as `path.open[Git.Repo](Exclusive & Write, Git.OpenFlag.Await)`.
+      Exclusivity is arbitrated only among handles in this JVM, through the same register as
+      galilei's directory handles; another process is never waited for.
+  entry .Repo   the form a path opens in as a repository: its object database and refs, lending a `Handle`
+    detail
+        `path.open[Git.Repo](mode) { repo ?=> … }` opens a bare repository, a `.git` directory,
+        a working tree containing one, or a linked worktree's `.git` file, and lends a
+        `Git.Repo.Handle` to the block. The mode names the grants: `Read` (the default, with
+        `open[Git.Repo]()`), `Read & Write`, or `Exclusive & Write` to refuse other exclusive
+        handles in this JVM (with `Git.OpenFlag.Await` to wait for them instead). Opening
+        verifies that a repository is there — raising `Git.Error(NoRepository(path))` otherwise
+        — so a handle always denoted one when it was granted; what happens afterwards is
+        another process's business, which is why every read which resolves a ref is `Stale`.
+
+        ```scala
+        import soundness.*
+        import gitBackends.commandlineGit
+        import gitCommands.searchpathGitCommand
+        import environments.javaBaseEnvironment
+        import workingDirectories.javaBaseWorkingDirectory
+        import logging.silentLogging
+        import strategies.throwUnsafely
+
+        val directory: Path on Linux = t"/tmp/repo".as[Path on Linux]
+
+        directory.open[Git.Repo](Read & Write): repo ?=>
+          val tip = repo.head().value.commit.or(Git.Hash.zero)
+          repo.makeBranch(Git.Branch(t"release"), tip)
+          repo.branches().value.keys
+        ```
+
+        The handle is an exclusive capability: it cannot be kept beyond the block, nor can
+        anything derived from it. Every operation is an extension on the handle gated by a
+        grant — the reads on `Git.Repo.Handle & Granting[Grant.Read]`, the writes on `…
+        & Granting[Grant.Write]` — so a write on a handle opened without `Write` is a
+        compile-time error. A `Git.Worktree.Handle` is a `Git.Repo.Handle`, so all of this is
+        available on a worktree too.
+    refer octogenarian.Git.Worktree
+    refer octogenarian.Git.Backend
+    refer aperture.Stale
+    entry .Handle   a lent repository handle: every repository operation is an extension on it, gated by grant
+      detail
+          The reads which resolve a ref, HEAD, a revision expression, the reflog, the stash,
+          configuration, remotes or linked worktrees return a `Stale` value: true at the moment
+          of the read, and perhaps not since. A read keyed by a hash (`.show`, `.commitAt`,
+          `.treeAt`, `.blobAt`, `.annotationAt`, `.mergeBase`, `.isAncestor`, `.exists`) is a
+          plain value, since objects are immutable and content-addressed.
+
+          Every write which moves a ref takes the `Stale` reading it is conditional on and
+          raises `Git.Error(Moved(ref, expected, actual))` if the ref no longer holds it: a
+          compare-and-swap, the only defence against another process writing the same
+          repository. Creating a branch or a tag is conditional on its absence instead, so
+          `.makeBranch` and `.makeTag` take no reading and raise `Moved(ref, Unset, actual)` if
+          the name exists.
+
+          ```scala
+          import soundness.*
+          import gitBackends.commandlineGit
+          import gitCommands.searchpathGitCommand
+          import environments.javaBaseEnvironment
+          import workingDirectories.javaBaseWorkingDirectory
+          import logging.silentLogging
+          import strategies.throwUnsafely
+
+          val directory: Path on Linux = t"/tmp/repo".as[Path on Linux]
+          ```
+
+          ```scala fuel
+          frame
+            label A reading of a ref is proof of what was seen
+            code
+                directory.open[Git.Repo](Read & Write): repo ?=>
+                  val seen: Stale[Optional[Git.Hash]] = repo.ref(Git.Refs.heads(t"main"))
+          frame
+            label A write is conditional on it
+            code
+                directory.open[Git.Repo](Read & Write): repo ?=>
+                  val seen: Stale[Optional[Git.Hash]] = repo.ref(Git.Refs.heads(t"main"))
+                  val tip = repo.resolve(Git.Branch(t"feature")).value
+                  repo.updateRef(Git.Refs.heads(t"main"), tip, seen, t"advance to feature")
+          frame
+            label If the ref moved in between, nothing is overwritten
+            code
+                directory.open[Git.Repo](Read & Write): repo ?=>
+                  val seen: Stale[Optional[Git.Hash]] = repo.ref(Git.Refs.heads(t"main"))
+                  val tip = repo.resolve(Git.Branch(t"feature")).value
+                  repo.updateRef(Git.Refs.heads(t"main"), tip, seen, t"advance to feature")
+
+                  capture[Git.Error](repo.updateRef(Git.Refs.heads(t"main"), tip, seen)).reason
+                  // Moved(t"refs/heads/main", …, …): `seen` is no longer what the ref holds
+          ##
+          ```
+
+          The handle's own fields are where the repository is: `#gitDir`, `#commonDir`,
+          `#worktree` and the `#atoms` of the mode it was opened with.
+      entry .head   where HEAD is, as a `Stale[Git.Head]`
+          The reading every HEAD-moving write on a worktree is conditional on.
+      entry .ref   the hash a ref holds, following symbolic refs, as `Stale[Optional[Git.Hash]]`
+          `Unset` for a ref which does not exist. A reading of `Git.Refs.defaultNotes` is what
+          the notes writes are conditional on.
+      entry .refs   every ref under a prefix (or all of them) with its hash, as a `Stale` map
+          Names which are not fully-qualified refs (`HEAD`) are dropped.
+      entry .symbolicRef   what a symbolic ref such as `HEAD` points to, as text, or `Unset` if it is not symbolic
+      entry .resolve   the hash a revision names, or `Unset` if git cannot resolve it
+          Takes any `Git.Revision`: a branch, a tag, a hash, a `Git.Ref`, or an expression such
+          as `Git.Revision.head(2)`. An unknown revision is `Unset`, not an error.
+      entry .branches   every branch with its tip, as a `Stale` map
+      entry .tags   every tag with the commit it names, peeled, as a `Stale` map
+          An annotated tag is peeled to the commit its tag object points at; `.tag` reads the
+          unpeeled `Git.Tag.Target`.
+      entry .tag   what a tag points at, lightweight or annotated, or `Unset` if there is no such tag
+      entry .log   the commits reachable from a revision, newest first, as a `Stale[List[Commit]]`
+          From `HEAD` unless `from` is given; at most `limit` commits; only those touching
+          `paths` if any are named. An unborn branch has no history and gives `Nil`; any other
+          unresolvable start raises `NoSuchRef`.
+
+          ```scala
+          import soundness.*
+          import gitBackends.commandlineGit
+          import gitCommands.searchpathGitCommand
+          import environments.javaBaseEnvironment
+          import workingDirectories.javaBaseWorkingDirectory
+          import logging.silentLogging
+          import strategies.throwUnsafely
+
+          val directory: Path on Linux = t"/tmp/repo".as[Path on Linux]
+
+          directory.open[Git.Repo](): repo ?=>
+            repo.log(limit = 10).value.map(_.message)
+          ```
+      entry .revList   the hashes reachable from a revision, newest first, optionally stopping at `until`, as a `Stale` list
+      entry .reflog   the local history of where a ref has pointed, newest first, as a `Stale[List[ReflogEntry]]`
+          Of `HEAD` unless `ref` is given: the record which makes a mistaken reset recoverable.
+      entry .mergeBase   the best common ancestor of two commits, or `Unset` if they share none
+      entry .isAncestor   whether one commit is reachable from another
+      entry .exists   whether an object with a hash is in the database
+      entry .show   any object by its hash, as a `Git.Object`; raises `NoSuchObject` if absent
+      entry .commitAt   the commit with a hash, as a `Commit`; raises `NoSuchObject` for any other object
+          Named `commitAt`, not `commit`, since `commit` is the worktree's write verb and a
+          grant-gated handle cannot overload.
+      entry .treeAt   the entries of the tree with a hash; raises `NoSuchObject` for any other object
+      entry .blobAt   the content of the blob with a hash, as `Data`; raises `NoSuchObject` for any other object
+      entry .annotationAt   the annotated tag object with a hash; raises `NoSuchObject` for any other object
+      entry .verifyCommit   checks a commit's signature with the `Git.Verifier` in scope
+          `Unknown("the commit is not signed")` for an unsigned commit; `Good(signer)` or
+          `Bad(detail)` otherwise. Needs a `Git.Verifier` given, such as
+          `SshKeygen.Verifier(allowedSigners)` or `Gpg.Verifier()`.
+      entry .verifyTag   checks a tag's signature with the `Git.Verifier` in scope, as a `Stale[Git.Verification]`
+          `Stale`, since a tag name is a ref. `Unknown` for a lightweight tag or an unsigned
+          annotation.
+      entry .config   lends the repository's own configuration for a block, read-only
+          `repo.config { config ?=> config.get[Text](key).value }`. Global and system
+          configuration are opened on their files instead: with `gitconfig: Path on Linux`
+          the user's own file, `gitconfig.open[Git.Config](Read) { config ?=> … }`.
+      entry .effectiveConfig   lends every scope git would consult for this repository, read-only
+          System, global, local and worktree configuration together, the last setting winning,
+          as git reads them. Cannot be written.
+      entry .note   the note attached to a commit in a notes ref, as `Stale[Optional[Text]]`
+          In `Git.Refs.defaultNotes` (`refs/notes/commits`) unless `ref` is given; `Unset`
+          where there is no note.
+      entry .notes   every note in a notes ref, as a `Stale` map from annotated commit to note blob
+      entry .remotes   every remote, read from the repository's configuration, as a `Stale[List[Remote]]`
+      entry .remote   one remote by its name, as `Stale[Optional[Remote]]`
+      entry .remoteRefs   every ref a remote advertises, with its hash, as a `Stale` map
+          Needs an `Internet`. The readings are what a `Git.Push.Force.Lease` carries.
+      entry .upstream   the remote and branch a branch tracks, if configured, as a `Stale` pair
+      entry .worktrees   every linked worktree, as a `Stale[List[Git.Worktree.Entry]]`
+          Each entry is the reading the worktree writes (`.removeWorktree`, `.lockWorktree`,
+          `.unlockWorktree`, `.moveWorktree`) take.
+      entry .operation   the merge, rebase, cherry-pick, revert or bisection in progress, if any, as a `Stale`
+      entry .updateRef   moves or deletes a ref, conditional on a `Stale` reading of it
+          `updateRef(ref, to, from, message)`: sets `ref` to `to` (or deletes it, for `Unset`)
+          if it still holds `from.value`, raising `Moved` otherwise; `message` is the reflog
+          line. Needs `Grant.Write`.
+      entry .forceRef   moves or deletes a ref unconditionally, overwriting whatever it holds
+      entry .updateSymbolicRef   points a symbolic ref such as `HEAD` at a `Git.Ref`
+      entry .writeObject   stores raw content as an object of a kind, returning its hash
+      entry .makeBranch   creates a branch at a commit, without checking it out; raises `Moved` if it exists
+          Creation is conditional on the branch's absence, so no reading is taken. To create
+          and check out in one step, `switch(branch, head, create = true)` on a worktree.
+      entry .deleteBranch   deletes a branch, conditional on a reading of its tip; refuses an unmerged one unless forced
+          Raises `Unmerged(branch, tip)` if the tip is not an ancestor of HEAD and `force` is
+          false, and `Moved` if the branch no longer holds `at.value`.
+      entry .renameBranch   renames a branch, conditional on a reading of its tip; HEAD follows if it was attached
+      entry .makeTag   creates a lightweight tag at a commit; raises `Moved` if it exists
+      entry .annotatedTag   writes an annotated tag object with a message, optionally signed, and returns its hash
+          `annotatedTag(tag, at, message, tagger, signer)`: the tagger is the configured
+          identity unless given, stamped now; a `Git.Signer` appends an armoured signature,
+          which `git tag -v` accepts. The tag ref is created conditional on its absence.
+      entry .deleteTag   deletes a tag, conditional on a reading of its object (annotated or not, as `tags()` reports it)
+      entry .configure   lends the repository's own configuration for a block, for reading and writing
+          `repo.configure { config ?=> config.set(key, value) }`. Needs `Grant.Write`.
+      entry .addNote   attaches a note to a commit, conditional on a reading of the notes ref; returns the notes commit
+          `addNote(target, body, from, ref, force)`: `from` is `repo.ref(ref)`, the reading of
+          the notes ref (`Git.Refs.defaultNotes` unless `ref` is given). Raises `NoteExists`
+          if a note is already attached and `force` is false, and `Moved` if the notes ref moved
+          since `from` was read — which is how build attestations and other out-of-band
+          metadata travel with a repository without one writer clobbering another.
+
+          ```scala
+          import soundness.*
+          import gitBackends.commandlineGit
+          import gitCommands.searchpathGitCommand
+          import environments.javaBaseEnvironment
+          import workingDirectories.javaBaseWorkingDirectory
+          import logging.silentLogging
+          import strategies.throwUnsafely
+
+          val directory: Path on Linux = t"/tmp/repo".as[Path on Linux]
+
+          directory.open[Git.Worktree](Read & Write): worktree ?=>
+            val hash = worktree.head().value.commit.or(Git.Hash.zero)
+            val notes = worktree.ref(Git.Refs.defaultNotes)
+            worktree.addNote(hash, t"a note body", notes)
+            worktree.note(hash).value   // t"a note body"
+          ```
+      entry .appendNote   appends to the note on a commit, conditional on a reading of the notes ref
+      entry .removeNote   removes the note on a commit, conditional on a reading of the notes ref
+          Raises `NoteNotFound` if there is none, unless `ignoreMissing` is true.
+      entry .copyNote   copies the note on one commit to another, conditional on a reading of the notes ref
+      entry .addRemote   adds a remote by name and URL, with a fetch refspec; raises `RemoteExists`
+          The refspec defaults to `+refs/heads/*:refs/remotes/<name>/*`. The URL may be a
+          local path, which both backends reach without a transport.
+      entry .removeRemote   removes a remote's configuration and its `refs/remotes/<name>/` refs; raises `NoSuchRemote`
+      entry .renameRemote   renames a remote, rewriting its refspec, its tracking refs and the branches which track it
+      entry .setRemoteUrl   sets a remote's fetch URL, or with `push = true` its push URL
+      entry .fetch   fetches from a remote, returning the refs updated as a `Stale` map
+          `fetch(remote, refspecs, depth, prune, tags, activity)`: the remote's configured
+          refspec unless `refspecs` are given; shallow to `depth` commits if given; `prune`
+          deletes tracking refs the remote no longer has; `tags` fetches every tag. Needs an
+          `Internet`; progress goes to the `activity` if one is passed.
+      entry .push   pushes to a remote under a force policy, returning each ref's outcome as a `Stale` map
+          `push(remote, refspecs, force, tags, setUpstream, activity)`: `force` is
+          `Git.Push.Force.Never` unless given, and `Lease(expectations)` makes the push
+          conditional on readings of the remote's refs. A rejected ref is a `Rejected` outcome,
+          not an error. Needs an `Internet`.
+      entry .addWorktree   adds a linked worktree at a path, checked out at a revision, returning the path
+          `addWorktree(target, revision, detach, newBranch)`: open the returned path as a
+          `Git.Worktree` afterwards. The target may be any path type.
+      entry .removeWorktree   removes a linked worktree, conditional on a reading of its entry
+      entry .lockWorktree   locks a linked worktree against pruning, with a reason
+      entry .unlockWorktree   unlocks a linked worktree
+      entry .moveWorktree   moves a linked worktree to another path, returning the new path
+      entry .pruneWorktrees   removes the records of worktrees whose directories have gone, returning their paths
+      entry #gitDir   the repository's own git directory
+      entry #commonDir   the git directory shared by every worktree, where the objects and refs are
+          The same as `#gitDir` unless the handle was opened on a linked worktree.
+      entry #worktree   the root of the working tree, if the repository has one
+      entry #atoms   the atoms of the mode the handle was opened with
+    entry .Openable   how a path opens as a `Git.Repo`: locates the repository and lends a `Handle`
+      detail
+          The `aperture.Openable` behind `path.open[Git.Repo](mode, flags) { repo ?=> … }`. It
+          asks the backend to locate the repository (raising `NoRepository`), registers the
+          open when the mode is `Exclusive`, and lends a `Git.Repo.Handle` with the mode's
+          grants. `.openable` builds one from the `Git.Backend^` and `Tactic[Git.Error]` in
+          scope.
+      entry #open   opens the path, lending a handle with the mode's grants to the block
+      entry #Self   the path type opened
+      entry #Form   the form opened in: `Git.Repo`
+      entry #Operand   the flag type: `Git.OpenFlag`
+      entry #Result   what is lent: a `Git.Repo.Handle`
+    entry .openable   the given which lets any `Path on Linux` open as `Git.Repo`
+        In implicit scope; it needs a `Git.Backend^` (import one from `gitBackends`) and a
+        `Tactic[Git.Error]`. Since every `Path on Linux` has it, and `Git.Worktree.openable`
+        too, the form is always named: `open[Git.Repo]` or `open[Git.Worktree]`.
+  entry .Worktree   the form a path opens in as a checked-out tree: the index and working files over a repository
+    detail
+        `path.open[Git.Worktree](mode) { worktree ?=> … }` opens a working tree, or a linked
+        worktree, and lends a `Git.Worktree.Handle`, which is both a `Git.Repo.Handle` — every
+        repository operation applies without a hop — and a galilei `Directory.Handle`, so paths
+        formed from it (`worktree / "src" / "main.scala"`) are typed to this handle alone,
+        cannot escape it, cannot express `..`, and may be read and written with galilei's
+        operations under the same grants. A bare repository raises `Git.Error(NoWorktree)`.
+
+        ```scala
+        import soundness.*
+        import gitBackends.commandlineGit
+        import gitCommands.searchpathGitCommand
+        import environments.javaBaseEnvironment
+        import workingDirectories.javaBaseWorkingDirectory
+        import filesystemOptions.createNonexistentParents
+        import logging.silentLogging
+        import strategies.throwUnsafely
+
+        val directory: Path on Linux = t"/tmp/repo".as[Path on Linux]
+
+        directory.open[Git.Worktree](Read & Write): worktree ?=>
+          val head = worktree.head()
+          (worktree / "notes.txt").overwrite(t"Remember the milk")
+          worktree.add(worktree / "notes.txt")
+          worktree.commit(t"Add notes", head)
+          worktree.status().value   // Nil: nothing left to commit
+        ```
+
+        `Git.Worktree.Entry` is a linked worktree as `worktrees()` lists it, and the reading
+        the worktree writes on a repository handle take.
+    refer octogenarian.Git.Repo
+    refer galilei.Directory
+    entry .Entry   one linked worktree: its path, what is checked out, and whether it is locked or prunable
+      detail
+          What `worktrees()` on a repository handle lists, wrapped in `Stale`; the reading
+          `removeWorktree`, `lockWorktree`, `unlockWorktree` and `moveWorktree` take.
+      entry #path   the worktree's root
+      entry #head   the commit checked out, if any
+      entry #branch   the branch checked out, if attached
+      entry #bare   whether the entry is the bare repository itself
+      entry #locked   the lock's reason, if the worktree is locked
+      entry #prunable   why the worktree could be pruned, if it could
+    entry .Handle   a lent worktree handle: the index and working-file operations, over every repository operation
+      detail
+          Everything a `Git.Repo.Handle` offers, plus the operations which need an index and
+          working files: staging (`.add`, `.addAll`, `.rm`, `.mv`, `.unstage`, `.restore`,
+          `.clean`), committing (`.commit`, `.amend`), moving HEAD (`.reset`, `.checkout`,
+          `.switch`), integrating (`.merge`, `.cherryPick`, `.revert`, `.rebase`, `.pull`),
+          driving an operation in progress (`.continue`, `.skip`, `.abandon`, `.quit`), the
+          stash (`.stash`, `.popStash`, `.applyStash`, `.dropStash`), and the reads which look
+          at the working files (`.status`, `.diff`, `.diffStaged`, `.diffAgainst`, `.tracked`,
+          `.conflicts`, `.currentBranch`, `.stashes`).
+
+          Every operation which moves HEAD takes a `Stale[Git.Head]`, the reading from
+          `head()`, and raises `Moved(HEAD, expected, actual)` if HEAD is elsewhere. Paths are
+          `Path on worktree.Plane`, formed from the handle itself.
+
+          A conflict is not an error: `merge`, `cherryPick`, `revert`, `rebase` and the stash
+          applications return a `Stopped(operation)` outcome naming the paths in conflict; once
+          they are resolved and added, `continue()` finishes the operation.
+      entry .status   the state of every changed path, as a `Stale[List[Git.PathStatus[worktree.Plane]]]`
+          Untracked files are included unless `untracked = false`; ignored ones only with
+          `ignored = true`.
+      entry .diff   the working files against the index, as a `Stale[List[FileDiff]]`
+      entry .diffStaged   the index against HEAD, as a `Stale[List[FileDiff]]`
+      entry .diffAgainst   the working files against a revision, as a `Stale[List[FileDiff]]`
+      entry .diffBetween   the trees of two commits against each other, as a plain `List[FileDiff]`
+          Keyed by hashes, so not `Stale`.
+      entry .tracked   every path the index tracks, on the handle's plane, as a `Stale` list
+      entry .conflicts   every path in conflict, on the handle's plane, as a `Stale` list
+      entry .currentBranch   the branch checked out, or `Unset` when HEAD is detached, as a `Stale`
+      entry .stashes   the stash's entries, newest first, as a `Stale[List[Git.Stash.Entry]]`
+      entry .add   stages paths
+          Takes any number of `Path on worktree.Plane`, formed as `worktree / "name"`.
+      entry .addAll   stages every change, as `git add --all`
+      entry .rm   removes paths from the index and, unless `cached`, from the working tree
+          `rm(paths*)(cached, force)`: `force` removes a path with local changes.
+      entry .mv   renames a path in the index and the working tree
+      entry .unstage   removes paths from the index, leaving the working files as they are
+      entry .restore   restores paths in the working tree (or, with `staged`, the index) from a revision
+          `restore(paths*)(source, staged)`: from the index unless `source` is given.
+      entry .clean   deletes untracked files, and directories or ignored files if asked, returning the paths removed
+      entry .commit   commits the index, conditional on a reading of HEAD, returning the new commit's hash
+          `commit(message, head, author, signer, allowEmpty)`: the tree is written, the commit
+          object assembled here — the configured identity as committer (raising
+          `NoSuchConfig` if `user.name` or `user.email` is unset), and as author too unless
+          `author` is given — signed by the `Git.Signer` if one is given, stored, and HEAD moved by
+          compare-and-swap. A tree unchanged from the parent's raises `NothingToCommit` unless
+          `allowEmpty`. The object is assembled rather than made by `git commit`, so signing
+          never leaves the process and the same code serves both backends; hooks are not run
+          and `commit.gpgsign` is not consulted.
+      entry .amend   rewrites the tip commit with a new message or signature, keeping its parents and author
+          `amend(message, head, signer)`: the tree is the index as it stands now. Raises
+          `NoSuchRef(HEAD)` on an unborn branch.
+      entry .reset   moves HEAD to a revision under a `ResetMode`, conditional on a reading of HEAD
+          `Soft` moves HEAD alone; `Mixed` resets the index too; `Hard` resets the working
+          files as well; `Merge` and `Keep` are git's safer variants. Returns the commit moved
+          to; raises `NoSuchRef` if the revision does not resolve.
+      entry .checkout   checks a revision out, detaching HEAD, conditional on a reading of HEAD; returns the new reading
+      entry .switch   switches to a branch, creating it at HEAD first if `create`, conditional on a reading of HEAD
+          Returns the new `Stale[Git.Head]`. Raises `Dirty(paths)` if local changes would be
+          overwritten, and `RefExists` if `create` names an existing branch.
+      entry .merge   merges a revision into HEAD, conditional on a reading of HEAD, under a fast-forward policy
+          `merge(revision, head, ff, message, sign)`: `FastForward.Auto` fast-forwards when it
+          can, `Only` refuses anything else (`NotFastForward`), `Never` always makes a merge
+          commit. The outcome is `FastForwarded`, `Merged`, `UpToDate` or `Stopped(operation)`
+          on a conflict.
+      entry .cherryPick   applies commits onto HEAD, conditional on a reading of HEAD; with `noCommit`, only to the index
+      entry .revert   applies the inverse of commits onto HEAD, conditional on a reading of HEAD
+      entry .rebase   rebases HEAD onto a revision, conditional on a reading of HEAD, with options
+          `rebase(onto, head, upstream, options)`: `upstream` bounds the commits replayed, as
+          `git rebase --onto` takes it. `Stopped(operation)` on a conflict carries how many
+          commits are done and remaining.
+      entry .pull   fetches a branch from a remote and merges or rebases it, conditional on a reading of HEAD
+          `pull(remote, head, branch, mode, activity)`: the current branch unless `branch` is
+          given (raising `Detached` if HEAD is on none); `Git.Pull.Mode.Merge` unless `mode`
+          says otherwise. Needs an `Internet`.
+      entry .continue   finishes the operation in progress once its conflicts are resolved and added
+          Raises `NoOperationInProgress` if there is none.
+      entry .skip   passes over the current commit of the operation in progress
+      entry .abandon   abandons the operation in progress, restoring HEAD, the index and the working files to where it began
+          Git's `--abort`. Returns the restored `Stale[Git.Head]`.
+      entry .quit   leaves the operation in progress without restoring anything, as git's `--quit`
+      entry .stash   saves the uncommitted state as a stash entry, returning its commit, or `Unset` if there was nothing
+          `stash(message, includeUntracked, keepIndex)`.
+      entry .popStash   applies a stash entry and drops it, conditional on the entry still being as listed
+          Raises `NoSuchStash` if the entry has gone or changed. With `index = true` the index
+          is restored too. A conflict is a `Stopped` outcome.
+      entry .applyStash   applies a stash entry without dropping it, conditional on the entry still being as listed
+      entry .dropStash   deletes a stash entry, conditional on the entry still being as listed
+      entry #Under   the platform the worktree's paths are under: `Linux`
+    entry .Openable   how a path opens as a `Git.Worktree`: locates the repository and its tree, and lends a `Handle`
+      detail
+          The `aperture.Openable` behind `path.open[Git.Worktree](mode, flags) { worktree ?=>
+          … }`. It locates the repository (raising `NoRepository`), requires a working tree
+          (raising `NoWorktree`), registers both the common directory and the tree when the
+          mode is `Exclusive`, and lends a `Git.Worktree.Handle` with the mode's grants.
+      entry #open   opens the path, lending a handle with the mode's grants to the block
+      entry #Self   the path type opened
+      entry #Form   the form opened in: `Git.Worktree`
+      entry #Operand   the flag type: `Git.OpenFlag`
+      entry #Result   what is lent: a `Git.Worktree.Handle`
+    entry .openable   the given which lets any `Path on Linux` open as `Git.Worktree`
+        In implicit scope; it needs a `Git.Backend^` (import one from `gitBackends`) and a
+        `Tactic[Git.Error]`.
+  entry .init   creates a repository at a path, with an initial branch, bare or not
+      `Git.init(target, initialBranch, bare)` takes any path type. The initial branch is git's
+      default (which depends on its configuration) unless given, so a program which will rely
+      on `main` should say so. Needs a `Git.Backend^` and a `Tactic[Git.Error]`.
+
+      ```scala
+      import soundness.*
+      import gitBackends.commandlineGit
+      import gitCommands.searchpathGitCommand
+      import environments.javaBaseEnvironment
+      import workingDirectories.javaBaseWorkingDirectory
+      import logging.silentLogging
+      import strategies.throwUnsafely
+
+      val directory: Path on Linux = t"/tmp/repo".as[Path on Linux]
+      Git.init(directory, initialBranch = Git.Branch(t"main"))
+      Git.init(directory / "mirror.git", bare = true)
+      ```
+  entry .clone   clones a repository from a path, a URL or an `SshUrl` to a path
+      `Git.clone(source, target, branch, depth, bare, recursive, activity)`: the source is a
+      local path (any path type), a URL (any URL type, or text), or an `SshUrl`; `branch`
+      checks out a branch other than the remote's HEAD; `depth` makes a shallow clone;
+      `recursive` clones submodules (command-line backend only). Needs an `Internet`, a
+      `Git.Backend^` and a `Tactic[Git.Error]`; progress is reported through `activity` if one
+      is passed. Under the native backend a remote URL needs a `Transport` the backend was
+      built with (`Native(List(SmartHttp()))`), else `Unsupported`.
+
+      ```scala
+      import soundness.*
+      import gitBackends.commandlineGit
+      import gitCommands.searchpathGitCommand
+      import environments.javaBaseEnvironment
+      import workingDirectories.javaBaseWorkingDirectory
+      import internetAccess.online
+      import logging.silentLogging
+      import strategies.throwUnsafely
+
+      val directory: Path on Linux = t"/tmp/repo".as[Path on Linux]
+      val target = directory / "clone"
+      Git.clone(directory, target)
+
+      target.open[Git.Worktree](): cloned ?=>
+        cloned.remotes().value.map(_.name)   // List(t"origin")
+      ```
+  entry .cloneCommit   clones exactly one commit: a shallow fetch of it into a fresh repository, checked out
+      `Git.cloneCommit(source, target, commit, activity)` initialises a repository at `target`,
+      fetches the one commit at depth 1 and checks it out, detached. The server must allow
+      fetching by hash (`uploadpack.allowReachableSHA1InWant`, or protocol version 2). Needs an
+      `Internet`, a `Git.Backend^` and a `Tactic[Git.Error]`.
+
+entry .Commit   a commit as stored: its hash, tree, parents, author, committer, signature and message
+  detail
+      What `log()` lists and `commitAt(hash)` reads: the commit's own hash, the tree it
+      snapshots, its parents (none for a root commit, two for a merge), who wrote it and who
+      committed it (each a `Git.Signature`, with a timestamp), the armoured signature block if
+      it carries a `gpgsig` header, and its message without the trailing newline git appends.
+
+      ```scala
+      import soundness.*
+      import gitBackends.commandlineGit
+      import gitCommands.searchpathGitCommand
+      import environments.javaBaseEnvironment
+      import workingDirectories.javaBaseWorkingDirectory
+      import logging.silentLogging
+      import strategies.throwUnsafely
+
+      val directory: Path on Linux = t"/tmp/repo".as[Path on Linux]
+
+      directory.open[Git.Repo](): repo ?=>
+        repo.log(limit = 1).value.map: commit =>
+          t"${commit.commit} by ${commit.author.identity.name}: ${commit.message}"
+      ```
+  refer octogenarian.Git.Signature
+  entry #commit   the commit's own hash
+  entry #tree   the hash of the tree it snapshots
+  entry #parents   its parents, oldest history first: none for a root commit, two for a merge
+  entry #author   who wrote it and when
+  entry #committer   who committed it and when
+  entry #signature   the armoured signature from its `gpgsig` header, if it is signed
+  entry #message   the message, without the trailing newline git stores
+
+entry .ChangeKind   how a file changed: `Added`, `Modified`, `Deleted`, `Renamed`, `Copied` or `TypeChanged`
+    Carried by each `FileDiff`. `Patch.parse` infers it from the patch headers: `/dev/null` on
+    one side, `rename from`, `copy from`, `new file mode`, `deleted file mode`.
+
+entry .FastForward   whether a merge may, must or must not fast-forward: `Auto`, `Only` or `Never`
+    The policy `merge` takes, so that whether a merge commit is created is stated rather than
+    inherited from configuration. `Auto` fast-forwards when it can; `Only` refuses anything
+    else, raising `NotFastForward`; `Never` always makes a merge commit.
+
+entry .FileDiff   the change to one file: its paths on both sides, the kind of change, and its hunks
+  detail
+      What `diff()`, `diffStaged()`, `diffAgainst(revision)` and `diffBetween(left, right)`
+      report, one per file, and what `Patch.parse` reads from patch text. A binary diff or a
+      mode-only change has no hunks. `Patch.asDiff` flattens the hunks into one dissonance
+      `Diff[Text]`.
+
+      ```scala
+      import soundness.*
+      import gitBackends.commandlineGit
+      import gitCommands.searchpathGitCommand
+      import environments.javaBaseEnvironment
+      import workingDirectories.javaBaseWorkingDirectory
+      import logging.silentLogging
+      import strategies.throwUnsafely
+
+      val directory: Path on Linux = t"/tmp/repo".as[Path on Linux]
+
+      directory.open[Git.Worktree](Read & Write): worktree ?=>
+        (worktree / "notes.txt").overwrite(t"Remember the milk and the eggs")
+        worktree.diff().value.map: file =>
+          t"${file.newPath.or(t"?")}: ${file.changeKind}, ${file.hunks.size} hunks"
+      ```
+  refer octogenarian.Hunk
+  refer octogenarian.Patch
+  entry #oldPath   the path before the change, `Unset` for an added file
+  entry #newPath   the path after the change, `Unset` for a deleted file
+  entry #changeKind   how the file changed
+  entry #hunks   the hunks, in order; empty for a binary or mode-only change
+
+entry .Hunk   one hunk of a file's diff: its ranges, its section heading, and its edits
+  detail
+      The `@@ -oldStart,oldLines +newStart,newLines @@ section` header of a unified diff,
+      with its edits as dissonance `Edit[Text]`s — `Ins`, `Del` and `Par` — each carrying its
+      text, so a hunk is `Retained` and supports the value-demanding operations such as
+      `redraft`.
+  entry #oldStart   the first line of the hunk on the old side
+  entry #oldLines   how many old lines the hunk spans
+  entry #newStart   the first line of the hunk on the new side
+  entry #newLines   how many new lines the hunk spans
+  entry #section   the heading after the `@@`: the enclosing function or class, if git found one
+  entry #edits   the insertions, deletions and unchanged lines, in order
+
+entry .Notes   the plane of git notes: a path rooted at a commit hash, descending through a namespace
+  detail
+      A git note is text attached to a commit without altering it, in a namespace under
+      `refs/notes/`. Modelling the note's address as a serpentine path — the commit hash is
+      the root (`Git.Hash` is a `Root`), and the namespace segments are the descent — lets
+      `hash / t"attestations"` build a `NoteRef` with the path operator itself, and the
+      `NoteRef` extensions `target`, `namespace` and `content` read it back.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val hash = Git.Hash(t"5c1d2b7e3a4f60918273645566778899aabbccdd")
+      val ref: NoteRef = hash / t"attestations" / t"build"
+      ref.encode              // t"5c1d…ccdd/attestations/build"
+      ref.target == hash
+      ref.namespace.encode    // t"refs/notes/attestations/build"
+      ```
+  refer octogenarian.NoteRef
+  refer octogenarian.content
+  entry .Plane   the plane type of notes paths: `Notes` itself
+  entry .filesystem   the notes plane as a `Filesystem`: `/`-separated, `@` and `..` for self and parent
+  entry .admissible   the given which admits any text as a namespace segment
+      Validation is deferred to `namespace`, which checks each segment against git's
+      reference rules when the full ref is needed.
+  entry .radical   how a commit hash encodes as the root of a notes path: `<hash>/`
+  entry .eradicable   how a commit hash is read back from the root of a notes path
+      Decodes forty hexadecimal digits followed by `/`, raising `Path.Error(InvalidRoot)` for
+      anything else; needs a `Tactic[Path.Error]`.
+
+entry .NoteRef   the address of a note: `Path on Notes under Git.Hash`, a commit hash with a namespace beneath it
+    A `NoteRef` is built as `hash / t"namespace"` (and may descend further: `hash / t"ci" /
+    t"attest"`). Its root is the commit the note is attached to (`target`), its descent is
+    the namespace under `refs/notes/` (`namespace`), and `content[value]` reads the note
+    through the repository handle in scope.
+
+    ```scala
+    import soundness.*
+    import octogenarian.content
+    import gitBackends.commandlineGit
+    import gitCommands.searchpathGitCommand
+    import environments.javaBaseEnvironment
+    import workingDirectories.javaBaseWorkingDirectory
+    import logging.silentLogging
+    import strategies.throwUnsafely
+
+    val directory: Path on Linux = t"/tmp/repo".as[Path on Linux]
+
+    directory.open[Git.Worktree](Read & Write): worktree ?=>
+      val hash = worktree.head().value.commit.or(Git.Hash.zero)
+      val ref = Git.Refs.notes(t"greeting")
+      worktree.addNote(hash, t"hello", worktree.ref(ref), ref = ref)
+      (hash / t"greeting").content[Text].value   // t"hello"
+    ```
+
+entry .target   the commit a `NoteRef` is attached to: its root hash
+    An extension on `NoteRef`, reading the forty digits of the path's root back as a
+    `Git.Hash`.
+
+entry .namespace   the fully-qualified notes ref a `NoteRef` names: `refs/notes/<segments>`
+    An extension on `NoteRef`. Each segment of the descent is checked against git's
+    reference rules here, raising `Git.RefError` for one git would reject, since `/` admits
+    any text when the path is built.
+
+entry .content   the note a `NoteRef` addresses, decoded, read through the repository handle in scope
+    An extension on `NoteRef`: `(hash / t"ns").content[Text]` is the note's body as a
+    `Stale[Text]`, or decoded as any `value is Decodable in Text`. It needs a `Git.Repo.Handle
+    & Granting[Grant.Read]` in scope — the handle an `open` block lends — and raises
+    `Git.Error(NoteNotFound)` if no note is attached in that namespace. The result is
+    `Stale`, since a note is reached through a ref another process may move. It is named
+    `content` rather than `read`, since a `NoteRef` is a path and paths are readable;
+    import it by name (`import octogenarian.content`) so that it wins on specificity.
+
+entry .Patch   reads patch text as `FileDiff`s, and flattens a file's hunks into one `Diff`
+  detail
+      `Patch.parse` reads the output of `git diff -p --no-color` — from a file, a mail, or
+      anywhere else — as one `FileDiff` per `diff --git` header, handling modified, added,
+      deleted, renamed and copied files; a binary diff or a mode-only change gives a
+      `FileDiff` with no hunks. It is the same parser the command-line backend uses on git's
+      own output. `Patch(files)` is a parsed patch as a value.
+
+      ```scala
+      import soundness.*
+
+      val lines = List
+        ( t"diff --git a/notes.txt b/notes.txt",
+          t"--- a/notes.txt",
+          t"+++ b/notes.txt",
+          t"@@ -1 +1 @@",
+          t"-Remember the milk",
+          t"+Remember the milk and the eggs" )
+
+      val files = Patch.parse(lines)
+      files.head.let(_.changeKind)   // ChangeKind.Modified
+      files.head.let(Patch.asDiff(_).edits.size)   // 2
+      ```
+  refer octogenarian.FileDiff
+  entry .parse   the `FileDiff`s in lines of unified diff text
+  entry .asDiff   a file's hunks flattened into one dissonance `Diff[Text] & Retained`
+      Assembled from the hunks' `Retained` edits, so the diff carries every line's text and
+      supports `redraft` and the other value-demanding operations.
+  entry #files   the patch's files, in order
+
+entry .ReflogEntry   one line of a reflog: where a ref pointed, when, and why it moved
+  detail
+      What `reflog()` lists, newest first: the hash the ref held after the move, the selector
+      (`HEAD@{0}`), the time of the move in seconds since the epoch, and the message the
+      operation recorded (`commit: Add notes`, `branch: Created from …`, `reset: moving to
+      main`).
+  entry #hash   the hash the ref held after the move
+  entry #selector   the entry's selector, `HEAD@{0}`
+  entry #timestamp   when the ref moved, in seconds since the epoch
+  entry #message   why it moved, as the operation recorded it
+
+entry .Remote   a remote by its name, fetch URL and push URL
+  detail
+      What `remotes()` lists and `addRemote` returns, read from the repository's own
+      configuration (`remote.<name>.url` and `remote.<name>.pushurl`). The URL is text: a
+      local path, an HTTP(S) URL or an SSH address, as git accepts them.
+  entry #name   the remote's name, `origin`
+  entry #fetchUrl   the URL fetched from
+  entry #pushUrl   the URL pushed to, if it differs from `#fetchUrl`
+
+entry .ResetMode   what `reset` moves besides HEAD: `Soft`, `Mixed`, `Hard`, `Merge` or `Keep`
+  detail
+      `Soft` moves HEAD alone, leaving the index and working files as they are; `Mixed` resets
+      the index too; `Hard` resets the working files as well, discarding local changes;
+      `Merge` and `Keep` are git's variants which refuse to discard uncommitted changes.
+      `#flag` is the command-line spelling.
+  entry #flag   the flag git knows the mode by: `--soft`, `--mixed`, `--hard`, `--merge`, `--keep`
+
+entry .SshUrl   a repository's address over SSH: an optional user, a checked hostname and a path
+  detail
+      `SshUrl(user, hostname, path)` is the one source type `Git.clone` and `Git.cloneCommit`
+      accept besides paths and URLs; `#text` renders it as the address git is given. The
+      hostname is a urticose `Hostname`, so it has been checked. For the address as text in
+      either of git's SSH forms, `SshAddress.parse` is the reader the transports use.
+  entry #user   the user to connect as, if any
+  entry #hostname   the host
+  entry #path   the repository's path on the host
+  entry #text   the address as git takes it
+
+entry .Commandline   the backend which runs the `git` command, as `gitBackends.commandlineGit`
+  detail
+      A `Git.Backend` whose every operation is one or a few invocations of git's plumbing;
+      porcelain verbs run the porcelain command and read its outcome. Every child runs in the
+      `WorkingDirectory` and `Environment` in scope, under `LC_ALL=C` so that its messages are
+      the English ones the reason table knows, and with `GIT_TERMINAL_PROMPT=0` so that a
+      credential prompt fails rather than hangs. Each invocation is logged as a
+      `Commandline.Event`, so a `Commandline.Event is Loggable` must be in scope
+      (`logging.silentLogging` discards them).
+
+      It is the choice when git's own behaviour is wanted in full — hooks (though not on
+      `commit`, which assembles the object itself), filters, credential helpers, submodules —
+      and it brings git's own transports, so a remote URL needs nothing more.
+
+      ```scala
+      import soundness.*
+      import gitCommands.searchpathGitCommand
+      import environments.javaBaseEnvironment
+      import workingDirectories.javaBaseWorkingDirectory
+      import logging.silentLogging
+
+      val backend: Git.Backend^ = Commandline(Commandline.Command(t"/usr/bin/git"))
+      ```
+
+      `.reason` is the table which reads git's standard error as a `Git.Error.Reason`;
+      anything unrecognised is `Unexpected`, with the message kept as the error's `detail`,
+      so nothing is discarded. A failure to run `git` at all is `CannotExecuteGit`.
+  refer octogenarian.gitBackends
+  refer octogenarian.gitCommands
+  refer octogenarian.Git.Backend
+  entry .Command   the `git` executable to run, by its path
+    detail
+        `gitCommands.searchpathGitCommand` finds it on the search path; a program which bundles
+        its own git names it explicitly, `Commandline.Command(t"/opt/git/bin/git")`.
+    entry #path   the executable's path, as text
+  entry .Event   what the backend logs: each `git` invocation, as a guillotine `Exec.Event`
+    detail
+        `Exec(event)` wraps a `guillotine.Exec.Event`, tagged `Log.Process`; `.execEvent`
+        transcribes guillotine's events into it, so a `Commandline.Event is Loggable` in scope
+        is all the backend needs. `logging.silentLogging` discards them.
+    entry .execEvent   transcribes a guillotine `Exec.Event` into a `Commandline.Event`
+    entry .communicable   renders an event as _the git operation did not execute: `reason`_
+  entry .Outcome   what one `git` invocation produced: its exit status, standard output and standard error
+    entry #exit   the exit status
+    entry #stdout   standard output, as text
+    entry #stderr   standard error, as text
+    entry #ok   whether the exit status was zero
+    entry #lines   standard output as non-empty lines
+  entry .reason   reads git's standard error as a `Git.Error.Reason`
+      Matches git's messages — stable enough to match on — for `NoRepository`, `Moved`,
+      `RefExists`, `Locked`, `NoSuchRef`, `Unmerged`, `NoSuchObject`, `NothingToCommit`,
+      `Detached`, `Dirty`, `NotFastForward`, `LeaseFailed`, `OutsideWorktree`, `Untracked`,
+      `NoOperationInProgress`, `NoSuchRemote`, `RemoteExists`, `Unauthorized`, `Unreachable`,
+      `RemoteRejected`, `InvalidConfig`, `NoteExists`, `BadSignature`, `SigningFailed`,
+      `NoSuchWorktree` and `Conflict`; anything else is `Unexpected`.
+
+entry .Gpg   signing and verifying with OpenPGP keys through `gpg`, as git does
+  detail
+      `Gpg.Signer()` makes a detached, armoured signature over a commit's or tag's payload
+      with the default key, or with `key` (a key id, fingerprint or user id);
+      `Gpg.Verifier()` checks one against the keyring, reading `GOODSIG`, `BADSIG` and the
+      rest from gpg's machine-readable status lines. Both run `gpg` in the `WorkingDirectory`
+      and `Environment` in scope, logging as `Exec.Event`s, and report a failure to run it as
+      `Git.Error(SigningFailed)`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import gitBackends.commandlineGit
+      import gitCommands.searchpathGitCommand
+      import environments.javaBaseEnvironment
+      import workingDirectories.javaBaseWorkingDirectory
+      import logging.silentLogging
+      import strategies.throwUnsafely
+
+      val directory: Path on Linux = t"/tmp/repo".as[Path on Linux]
+      given Git.Verifier = Gpg.Verifier()
+
+      directory.open[Git.Worktree](Read & Write): worktree ?=>
+        val hash = worktree.commit(t"Signed", worktree.head(), signer = Gpg.Signer(), allowEmpty = true)
+        worktree.verifyCommit(hash)   // Git.Verification.Good(userId)
+      ```
+  refer octogenarian.Git.Signer
+  refer octogenarian.SshKeygen
+  entry .Signer   signs with the default OpenPGP key, or with `key`, through `gpg -bsa`
+    entry #sign   the armoured signature over a payload; raises `Git.Error(SigningFailed)` if gpg fails
+  entry .Verifier   verifies against the keyring through `gpg --verify`
+    entry #verify   `Good(userId)` for a `GOODSIG` line, `Bad` for `BADSIG`, otherwise `Unknown`
+
+entry .SmartHttp   remote repositories over HTTP(S) by git's smart protocol, as `gitTransports.smartHttp`
+  detail
+      A `Transport` for the native backend: the capability advertisement is read from
+      `info/refs?service=…`, and each command is a `POST` to the service, with protocol
+      version 2 requested in the `Git-Protocol` header. Credentials in the URL's userinfo
+      (`https://user:token@host/…`) are sent as Basic authentication. It speaks through
+      whichever `Http.Backend` is in scope, so `SmartHttp()` needs one
+      (`httpBackends.javaNetHttp`, say), and `Native(List(SmartHttp()))` is a backend which can
+      clone, fetch and push over HTTP(S).
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import httpBackends.javaNetHttp
+      import internetAccess.online
+      import strategies.throwUnsafely
+
+      given Git.Backend = Native(List(SmartHttp()))
+
+      val directory: Path on Linux = t"/tmp/soundness".as[Path on Linux]
+      Git.clone(t"https://github.com/propensive/soundness", directory, depth = 1)
+      ```
+
+      The server's answers become `Git.Error`s: `401` and `403` are `Unauthorized`, `404` is
+      `NoRepository`, a connection failure is `Unreachable`, and any other failure
+      `Unexpected` with the status code as detail.
+  refer octogenarian.gitTransports
+  refer octogenarian.Native
+  entry .Channel   one repository's HTTP endpoint: the advertisement and each service exchange
+    detail
+        The `Channel` the protocol drives: `#advertise` fetches `info/refs` and skips the
+        `# service=…` line the HTTP form adds in front, and `#exchange` posts a request to the
+        service and returns its packet-line reply. Nothing is kept between exchanges.
+    entry #advertise   the capability advertisement of a service, as a packet-line reader
+    entry #exchange   posts a request to a service and returns its reply, as a packet-line reader
+    entry #close   nothing to close: each exchange is its own request
+  entry #accepts   whether a URL begins with `http://` or `https://`
+  entry #connect   a `Peer` over the URL, raising `Git.Error` for a server which refuses or cannot be reached
+
+entry .SshCommand   remote repositories through a spawned `ssh`, as `gitTransports.sshCommand`
+  detail
+      A `Transport` for the native backend which reaches a server as git itself does: one `ssh`
+      process per service, running `git-upload-pack` or `git-receive-pack` on the server with
+      protocol version 2 requested through the `GIT_PROTOCOL` variable (sent with `SendEnv`,
+      which the server honours where its `AcceptEnv` allows). Both `ssh://[user@]host[:port]/path`
+      and the `scp`-like `[user@]host:path` forms are understood, through `SshAddress.parse`.
+      The user's own `ssh` configuration, keys and agent apply, as they would at a shell.
+
+      `SshCommand()` runs in the `WorkingDirectory` and `Environment` in scope, logging each
+      process as an `Exec.Event`. A fetch costs two connections — one for `ls-refs` and one for
+      `fetch` — since nothing is kept between exchanges.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import workingDirectories.javaBaseWorkingDirectory
+      import internetAccess.online
+      import logging.silentLogging
+      import strategies.throwUnsafely
+
+      given Git.Backend = Native(List(SshCommand()))
+
+      val directory: Path on Linux = t"/tmp/soundness".as[Path on Linux]
+      Git.clone(t"git@github.com:propensive/soundness.git", directory, depth = 1)
+      ```
+  refer octogenarian.gitTransports
+  refer octogenarian.SshAddress
+  refer octogenarian.SshNative
+  entry .Channel   one repository reached over a spawned `ssh`: a process per exchange
+    detail
+        The `Channel` the protocol drives. The server begins every connection by advertising,
+        which `#advertise` returns and `#exchange` reads past before returning the reply to
+        the request it wrote. A failure to start `ssh`, or a reply cut short, is
+        `Git.Error(Unreachable(host))`.
+    entry #advertise   starts a service and returns its advertisement, as a packet-line reader
+    entry #exchange   starts a service, writes a request to it and returns its reply, past the advertisement
+    entry #close   nothing to close: each exchange is its own process
+  entry #accepts   whether a URL is an SSH address, in either form
+  entry #connect   a `Peer` over the address, raising `Git.Error(Unsupported)` for a URL which is not one
+
+entry .SshKeygen   signing and verifying with OpenSSH keys through `ssh-keygen -Y`, as `gpg.format = ssh` has git do
+  detail
+      `SshKeygen.Signer(key)` signs a commit's or tag's payload in the `git` namespace with
+      the private key at a path; `SshKeygen.Verifier(allowedSigners)` finds the principal a
+      signature's key speaks for in an allowed-signers file (the one git's
+      `gpg.ssh.allowedSignersFile` names, each line `principal key-type key`) and verifies
+      against it. Both run `ssh-keygen` in the `WorkingDirectory` and `Environment` in scope,
+      logging as `Exec.Event`s, and report a failure to run it as `Git.Error(SigningFailed)`.
+      A commit or tag signed this way is one `git log --show-signature` and `git tag -v`
+      accept.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import gitBackends.commandlineGit
+      import gitCommands.searchpathGitCommand
+      import environments.javaBaseEnvironment
+      import workingDirectories.javaBaseWorkingDirectory
+      import logging.silentLogging
+      import strategies.throwUnsafely
+
+      val directory: Path on Linux = t"/tmp/repo".as[Path on Linux]
+      val key: Path on Linux = t"/home/jon/.ssh/id_ed25519".as[Path on Linux]
+      val allowed: Path on Linux = t"/home/jon/.ssh/allowed_signers".as[Path on Linux]
+      given Git.Verifier = SshKeygen.Verifier(allowed)
+
+      directory.open[Git.Worktree](Read & Write): worktree ?=>
+        val hash = worktree.commit(t"Signed", worktree.head(), signer = SshKeygen.Signer(key), allowEmpty = true)
+        worktree.verifyCommit(hash)   // Git.Verification.Good(principal)
+      ```
+
+      A `tag.gpgsign` or `commit.gpgsign` setting in git's configuration is not consulted:
+      signing happens only when a `Git.Signer` is passed, and never leaves the process.
+  refer octogenarian.Git.Signer
+  refer octogenarian.Git.Verifier
+  refer octogenarian.Gpg
+  entry .Signer   signs with the private key at a path, through `ssh-keygen -Y sign -n git`
+    entry #sign   the armoured signature over a payload; raises `Git.Error(SigningFailed)` if ssh-keygen fails
+  entry .Verifier   verifies against the principals and keys in an allowed-signers file
+    entry #verify   `Good(principal)` if the key is allowed and the signature holds; `Unknown` if no principal matches; `Bad` otherwise
+
+entry .SshNative   remote repositories over the native SSH client, with no `ssh` binary, as `gitTransports.soundnessSsh`
+  detail
+      A `Transport` for the native backend which connects through susurration, the SSH client
+      written in Scala: one SSH connection per peer, with a channel per exchange, each
+      running `git-upload-pack` or `git-receive-pack` with `GIT_PROTOCOL=version=2`. The host
+      key is checked against the `Ssh.HostKeys` policy in scope, the user's identities come
+      from `Ssh.Credentials` (the address's user, else the credentials' user for the host, else
+      `git`), and the socket from the `Socket.Backend`; so `SshNative()` takes those, with
+      `Ssh.Provider`, `Ssh.Algorithms`, the TCP options, a SHA-256 `Hash` and `Diagnostics`.
+      Both address forms `SshCommand` accepts are accepted here.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import gitTransports.soundnessSsh
+      import internetAccess.online
+      import strategies.throwUnsafely
+
+      given Git.Backend = Native(List(soundnessSsh))
+
+      val directory: Path on Linux = t"/tmp/soundness".as[Path on Linux]
+      Git.clone(t"ssh://git@github.com/propensive/soundness.git", directory, depth = 1)
+      ```
+
+      A connection, authentication or SSH failure is `Git.Error(Unreachable(host))`, with the
+      failure's own message as detail; a port outside `1`–`65535` is `Unsupported`.
+  refer octogenarian.gitTransports
+  refer octogenarian.SshCommand
+  refer susurration.Ssh
+  entry .Channel   one SSH connection to a repository, with a channel per exchange
+    detail
+        The `Channel` the protocol drives. A previous exchange's SSH channel is closed before
+        the next opens, since the transport is driven by one thread; the connection itself
+        stays open until `#close`.
+    entry #advertise   opens a channel for a service and returns its advertisement, as a packet-line reader
+    entry #exchange   opens a channel for a service, writes a request and returns its reply, past the advertisement
+    entry #close   closes the current channel, the session and the socket
+  entry #accepts   whether a URL is an SSH address, in either form
+  entry #connect   connects, authenticates and returns a `Peer`; raises `Git.Error(Unreachable)` on failure
+
+entry .gitCommands   where the `git` executable is, each a given to import by name
+  detail
+      The command-line backend needs a `Commandline.Command` naming the `git` to run. Importing
+      `searchpathGitCommand` finds it on the search path; a program which bundles its own git
+      binds `given Commandline.Command = Commandline.Command(t"/opt/git/bin/git")` instead.
+
+      ```scala
+      import soundness.*
+      import gitCommands.searchpathGitCommand
+      import gitBackends.commandlineGit
+      import environments.javaBaseEnvironment
+      import workingDirectories.javaBaseWorkingDirectory
+      import logging.silentLogging
+      ```
+  entry .searchpathGitCommand   the `git` found on the search path, by `which git`
+      Resolved when the given is first used, in the `WorkingDirectory` and `Environment` in
+      scope, and logged as a `Commandline.Event`. It needs a `Tactic[Exec.Error]`,
+      `Tactic[Path.Error]`, `Tactic[Io.Error]` and `Tactic[Name.Error]` in scope — which
+      `strategies.throwUnsafely` covers — and a `Path on Linux` instantiable from text.
+
+entry .gitBackends   the two implementations of `Git.Backend`, each a given to import by name
+  detail
+      Which backend carries out the operations is decided by the `Git.Backend^` given in
+      scope, and the choice is never implicit: `import soundness.*` brings neither in, and one
+      is imported by name. Both are permanent; the same code runs under either.
+
+      ```scala
+      import soundness.*
+      import gitBackends.commandlineGit
+      import gitCommands.searchpathGitCommand
+      import environments.javaBaseEnvironment
+      import workingDirectories.javaBaseWorkingDirectory
+      import logging.silentLogging
+      ```
+
+      `commandlineGit` runs the `git` command and so has git's every behaviour, transport and
+      credential helper. `soundnessGit` is `Native()`, which reads and writes the repository's
+      files itself and needs no `git`; a remote repository then needs a `Transport`, so a
+      program which clones, fetches or pushes over the network under the native backend binds
+      its own `given Git.Backend = Native(List(SmartHttp(), SshCommand()))` with the
+      `gitTransports` givens in scope, rather than importing `soundnessGit`.
+  refer octogenarian.Git.Backend
+  refer octogenarian.Commandline
+  refer octogenarian.Native
+  entry .commandlineGit   the backend which runs the `git` command
+      A `Git.Backend^{loggable, caps.any}` built as `Commandline(command)` from the
+      `Commandline.Command`, `WorkingDirectory`, `Environment` and `Commandline.Event is
+      Loggable` in scope: so import `gitCommands.searchpathGitCommand` (or bind a command),
+      `workingDirectories.javaBaseWorkingDirectory`, `environments.javaBaseEnvironment` and a
+      logging policy alongside it.
+
+  entry .soundnessGit   the native backend: reads and writes the repository's files itself, with no `git` binary
+      `Native()` with no transports, so it reaches repositories on the same filesystem by path
+      and raises `Git.Error(Unsupported(the transport for <url>))` for any other URL; a
+      program which fetches from or pushes to a remote over HTTP or SSH binds its own
+      `given Git.Backend = Native(List(SmartHttp(), SshCommand()))` instead. Imported by name,
+      since `import soundness.*` does not import givens; `gitBackends.commandlineGit` is the
+      alternative which runs the `git` command.
+
+      ```scala
+      import soundness.*
+      import gitBackends.soundnessGit
+      import strategies.throwUnsafely
+      import temporaryDirectories.javaBaseTemporaryDirectory
+      import filesystemOptions.createNonexistentParents
+      import filesystemBackends.javaBaseFilesystem
+
+      val directory = temporaryDirectory[Path on Linux] / "git" / Uuid().show
+      directory.create[Directory]()
+      Git.init(directory, initialBranch = Git.Branch(t"main"))
+      directory.open[Git.Repo]() { repo ?=> repo.head().value }
+      ```
+
+entry .gitTransports   the ways the native backend reaches a remote repository, each a given to import by name
+  detail
+      A `Transport` is how `Native` reaches a URL: `SmartHttp` over HTTP(S), `SshCommand`
+      through a spawned `ssh`, and `SshNative` through the native SSH client. The givens here
+      make each from the context it needs, so that `Native(List(smartHttp, sshCommand))` can be
+      written with the transports named rather than constructed. The command-line backend
+      needs none of them.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import gitTransports.{smartHttp, sshCommand}
+      import httpBackends.javaNetHttp
+      import environments.javaBaseEnvironment
+      import workingDirectories.javaBaseWorkingDirectory
+      import logging.silentLogging
+
+      given Git.Backend = Native(List(smartHttp, sshCommand))
+      ```
+  refer octogenarian.SmartHttp
+  refer octogenarian.SshCommand
+  refer octogenarian.SshNative
+  entry .smartHttp   `SmartHttp()` over the `Http.Backend` in scope
+      Needs an `Http.Backend`, such as `httpBackends.javaNetHttp`.
+  entry .sshCommand   `SshCommand()` in the `WorkingDirectory` and `Environment` in scope
+      A `Transport^{loggable, caps.any}`: it keeps the `Exec.Event is Loggable` it was built
+      from, so a logging policy must be in scope.
+  entry .soundnessSsh   `SshNative()` from the susurration context in scope
+      Needs a `Socket.Backend`, the TCP `Socket.Option`s, an `Ssh.Provider`, `Ssh.Algorithms`,
+      `Ssh.HostKeys`, `Ssh.Credentials`, a SHA-256 `Hash` and `Diagnostics`, and `Online` as
+      evidence that the network may be used (demanded, as telekinesis's HTTP clients demand
+      it, but not kept: the transport itself is pure).
+
+entry .Native   the `Git.Backend` which reads and writes a repository's files itself, with no `git` binary
+  detail
+      `Native` is the pure-Scala implementation of `Git.Backend`: every operation a `Git.Repo`
+      or `Git.Worktree` handle performs is carried out by reading and writing the repository's
+      own files, in git's own formats, so a repository it touches is always one `git` itself
+      understands, and an operation one side stops on a conflict the other can continue.
+      `gitBackends.soundnessGit` is the given built from `Native()`, chosen by importing it by
+      name; `gitBackends.commandlineGit` is the alternative which runs the `git` command.
+
+      ```scala
+      import soundness.*
+      import gitBackends.soundnessGit
+      import strategies.throwUnsafely
+      import temporaryDirectories.javaBaseTemporaryDirectory
+      import filesystemOptions.createNonexistentParents
+      import filesystemBackends.javaBaseFilesystem
+
+      val directory = temporaryDirectory[Path on Linux] / "git" / Uuid().show
+      directory.create[Directory]()
+      Git.init(directory, initialBranch = Git.Branch(t"main"))
+
+      directory.open[Git.Worktree](): worktree ?=>
+        worktree.head().value   // Git.Head.Attached(Git.Branch(t"main"), Unset)
+      ```
+
+      What it reads and writes:
+
+      - **Objects**: loose objects under `objects/`, packfiles under `objects/pack/` with their
+        `.idx` indexes (offset and reference deltas resolved), and the stores named in
+        `objects/info/alternates`. Objects it writes are always loose, written to a temporary
+        name and moved into place, so a concurrent reader never sees a partial object; a pack
+        received by a fetch or clone is held whole in memory and unpacked to loose objects.
+      - **Refs**: loose refs, `packed-refs`, symbolic refs and reflogs. Every ref-moving write
+        is a compare-and-swap under a `<ref>.lock` file taken with an exclusive create: a lock
+        already held is `Git.Error(Locked)`, and a ref which no longer holds what the caller's
+        `Stale` reading said is `Git.Error(Moved)`, reported under the name the caller used
+        (`HEAD`), as git reports it.
+      - **Configuration**: `/etc/gitconfig`, the XDG and `~/.gitconfig` files, the repository's
+        `config` and, when `extensions.worktreeconfig` is set, `config.worktree`, in git's order,
+        with `include.path` files spliced in. The committer identity comes from `user.name` and
+        `user.email`, and `core.logallrefupdates` decides whether reflogs are written.
+      - **The index and working tree**: the index file (version 2, with unknown extensions
+        preserved), `.gitignore` files and `info/exclude`, status, add, remove, move, restore,
+        clean, checkout and switch.
+      - **Sequencing**: merge (with a diff3 three-way merge and conflict markers), cherry-pick,
+        revert, rebase and the stash, with the same state files git uses (`MERGE_HEAD`,
+        `CHERRY_PICK_HEAD`, `sequencer/`, `rebase-merge/`, `refs/stash`), so `git` can continue
+        or abort an operation `Native` stopped, and the reverse.
+      - **Notes** under any notes ref, **linked worktrees** (`worktrees/` registry), and
+        **transfers**: fetch, push, clone and `remoteRefs`, against a repository on the same
+        filesystem by path, or over the wire protocol through a `Transport`.
+
+      A repository on the same filesystem is reached by its path, or a `file://`, `./` or `../`
+      URL, as a `Peer.Local`, with no transport at all. Any other URL needs a `Transport` which
+      accepts it, from the `transports` list the backend is constructed with: `SmartHttp()`
+      (the `http` component) for `http://` and `https://`, and `SshCommand()` (the `ssh`
+      component) or `SshNative()` (the `sshNative` component) for `ssh://` URLs and `scp`-style
+      `host:path` addresses. `gitBackends.soundnessGit` is `Native()` with no transports, so it
+      reaches local repositories only; a URL no transport accepts is
+      `Git.Error(Unsupported(the transport for <url>))`.
+
+      ```scala fuel
+      frame
+        label Local repositories only
+        code
+            given Git.Backend = Native()
+      frame
+        label Smart HTTP added
+        code
+            import httpBackends.javaNetHttp
+
+            given Git.Backend = Native(List(SmartHttp()))
+      frame
+        label Smart HTTP and a spawned ssh
+        code
+            import httpBackends.javaNetHttp
+            import workingDirectories.javaBaseWorkingDirectory
+            import environments.javaBaseEnvironment
+            import logging.silentLogging
+
+            given Git.Backend = Native(List(SmartHttp(), SshCommand()))
+      ##
+      ```
+
+      The first transport whose `accepts` is true for the URL is used, so order the list by
+      preference. Whatever the transport, protocol version 2 is spoken for listing refs and
+      fetching, and the version 0 `receive-pack` exchange for pushing, as git does.
+
+      What it does not do, each reported as `Git.Error(Unsupported(…))`: cloning submodules
+      recursively, signing a merge commit (signing commits and tags is independent of the
+      backend, through a `Git.Signer`), `rebase --autosquash`, continuing an `am`-style
+      rebase, skipping a merge, and `reset` in any mode but soft, mixed and hard. Hooks,
+      filters and credential helpers are never run. A filesystem failure beneath any operation
+      is reported as `Git.Error(Unexpected)` with the failure's own message as its detail.
+
+      `Native` is available on the JVM (`native-jvm`, over galilei's `java.nio.file` backend)
+      and on Scala Native (`native-native`, over the javalib filesystem). It is exported to the
+      `soundness` umbrella, as are `Transport`, `Peer` and `SshAddress`.
+  refer octogenarian.gitBackends
+  refer octogenarian.Transport
+  refer octogenarian.Peer
+  refer octogenarian.SshAddress
+  entry #locate   finds the repository a path belongs to: its git directory, common directory and worktree
+      A directory with a `.git` directory is a worktree; one whose `.git` is a file naming a
+      `gitdir:` is a linked worktree, whose own git directory names the shared one in
+      `commondir`; a directory with `HEAD`, `objects` and `refs` is a git directory itself (a
+      bare repository, or a `.git` whose parent is the worktree). Anything else, or a path
+      which does not exist, is `Unset`. This is what `path.open[Git.Repo]` and
+      `open[Git.Worktree]` consult.
+  entry #init   creates a repository, with `HEAD` on the initial branch
+      Makes `objects/`, `refs/heads/`, `refs/tags/`, `info/` and the rest, writes `HEAD` as a
+      symbolic ref to the branch (`main` if none is named), a `config` with
+      `core.repositoryformatversion`, `core.filemode`, `core.bare` and, for a non-bare
+      repository, `core.logallrefupdates`, and the `description` file. A bare repository is
+      made at the target itself, otherwise in its `.git`. Files already present are kept, so
+      re-initialising is harmless. `Git.init` is the front door.
+  entry #clone   fetches a repository into a fresh one and checks out its default branch
+      Connects to the source (a local path, or a URL some transport accepts), asks for its
+      symbolic `HEAD` to choose the branch when none is named, initialises the target, writes
+      the `origin` remote with the usual fetch refspec (`+refs/heads/*:refs/remotes/origin/*`,
+      or `+refs/heads/*:refs/heads/*` for a bare clone), fetches, and for a non-bare clone
+      creates the local branch with its upstream configured, checks the tree out and writes
+      the index. A `depth` makes a shallow clone whose `shallow` file git honours. It needs
+      `Internet` evidence, and cloning submodules recursively is
+      `Git.Error(Unsupported(cloning submodules recursively))`. The `Git.Activity` it is given
+      reports the `Receiving` and `Checkout` phases.
+  entry #head   what `HEAD` is: attached to a branch, perhaps unborn, or detached at a hash
+      A symbolic `HEAD` is `Git.Head.Attached` with the branch's tip, or `Unset` for an unborn
+      branch; a direct one is `Git.Head.Detached`. A repository with no readable `HEAD` is
+      `Git.Error(NoSuchRef(HEAD))`.
+  entry #readRef   a ref's content, direct or symbolic, from the loose file or `packed-refs`
+  entry #listRefs   every ref under a prefix, with its hash, in name order
+      Loose refs shadow packed ones of the same name, as they do for git.
+  entry #peel   follows annotated tags to the object they finally name
+  entry #updateRef   compare-and-swap of a ref: moves or deletes it if it holds what was expected
+      Takes `<ref>.lock` with an exclusive create (`Git.Error(Locked)` if another process
+      holds it), compares the ref's current value with the `Git.Backend.Expectation`
+      (`Git.Error(Moved)` if it differs), writes or deletes, and appends a reflog line with
+      the message when `core.logallrefupdates` says so. A packed ref being updated is written
+      loose. This is the primitive every ref-moving verb on a handle rests on.
+  entry #updateSymbolicRef   points a symbolic ref (such as `HEAD`) at another ref
+  entry #resolve   a revision expression to a hash, or `Unset` if nothing matches
+      Understands full and unambiguous abbreviated hashes, `HEAD` and `@`, ref names tried in
+      git's order (`refs/<name>`, `refs/tags/<name>`, `refs/heads/<name>`,
+      `refs/remotes/<name>`, …), reflog entries as `<ref>@{n}`, and the `~n`, `^n`, `^{}`,
+      `^{commit}`, `^{tree}` and `^{tag}` suffixes, which bind from the right.
+  entry #revList   the commits reachable from one revision and not another, newest first
+      Walks parents from `from`, stopping at `until` and at the `shallow` boundary, in
+      descending commit-date order; `limit` caps the count and `paths` keeps only commits
+      which change one of them. An unresolvable revision is `Git.Error(NoSuchRef)`.
+  entry #reflog   the reflog of a ref (`HEAD` by default), newest first
+  entry #mergeBase   the nearest common ancestor of two commits, or `Unset` if there is none
+  entry #isAncestor   whether one commit is reachable from another
+  entry #readObject   an object's kind and bytes, from the loose store, a pack or an alternate
+      `Unset` when no store has it. Packs are re-listed when a hash is not found, since another
+      process may have repacked.
+  entry #readObjects   several objects at once, skipping any which are missing
+  entry #writeObject   stores an object loose and returns its hash
+      Hashed as git hashes it, over the `<kind> <size>\0` header and the bytes; an object
+      already present is not rewritten.
+  entry #diffTree   the file differences between two trees, as `FileDiff`s with hunks
+  entry #status   the index and working-tree state of every path, as `git status --porcelain` reports it
+      Compares `HEAD`'s tree, the index and the working files, honouring `.gitignore` and
+      `info/exclude`; `ignored` and `untracked` say whether those files are listed. Index
+      entries whose stat data still matches the file are trusted without hashing it, as git's
+      racy-git rules allow.
+  entry #add   stages paths, or with `all` every change under the worktree
+      Writes blobs for the files and updates the index, honouring `.gitignore` for files not
+      already staged; a path which matches no file and is not staged is
+      `Git.Error(Untracked(path))`.
+  entry #remove   removes paths from the index and, unless `cached`, from the working tree
+      A path the index does not track is `Git.Error(Untracked(path))`, and a file whose staged
+      or working content differs from `HEAD` is `Git.Error(Dirty)` without `force`.
+  entry #move   renames a tracked path in the index and on disk
+  entry #restore   restores paths from the index or from a source revision, to the index, the working files, or both
+  entry #clean   deletes untracked files, and with `directories` untracked directories, returning what went
+      Ignored files go only when `ignored` is set.
+  entry #writeTree   writes the index as a tree object and returns its hash
+      An index with unmerged entries is `Git.Error(Conflict(paths))`.
+  entry #readTree   resets the index, and for `ResetMode.Hard` the working files, to `HEAD`
+      `Soft` changes nothing; `Mixed` rewrites the index from `HEAD` with stat data left
+      unverified, so the next status hashes each file; `Hard` also rewrites the working files,
+      comparing against what is on disk rather than the index so a modified file is replaced.
+      Any other mode is `Git.Error(Unsupported)`.
+  entry #diffWorktree   the differences between the working files (or the index, with `staged`) and `HEAD` or a revision
+  entry #tracked   every path in the index
+  entry #conflicts   the paths with unmerged index entries
+  entry #checkout   moves `HEAD` to a revision, detaching it, and updates the index and files
+      A branch name is checked out attached, anything else detached. Paths modified in the
+      index or working tree which the checkout would overwrite make it `Git.Error(Dirty)`.
+  entry #switch   moves `HEAD` to a branch, creating it from the current commit with `create`
+      Without `create`, a branch which does not exist is `Git.Error(NoSuchRef)`, and the
+      switch is a checkout of the branch, attached. With it, the branch is created at the
+      current commit by a compare-and-swap expecting it absent, so a branch which already
+      exists is `Git.Error(Moved)`, and `HEAD` is pointed at it without touching the files.
+  entry #merge   merges a revision into `HEAD`: fast-forward, a merge commit, or a stop on conflicts
+      Honours the `FastForward` policy, writes conflict markers from a diff3 merge of the two
+      sides against their merge base, and on conflicts leaves `MERGE_HEAD` and `MERGE_MSG`
+      for `sequence` to continue or abort. Signing a merge commit natively is
+      `Git.Error(Unsupported)`.
+  entry #cherryPick   applies commits one by one onto `HEAD`, stopping on the first conflict
+      Writes `CHERRY_PICK_HEAD` and a `sequencer/` todo list which keeps the current item,
+      exactly as git does, so either side can continue. With `noCommit` the changes are staged
+      and no commit is made; a pick which changes nothing is `Git.Error(NothingToCommit)`
+      otherwise.
+  entry #revert   applies the inverse of commits onto `HEAD`, as `cherryPick` does in reverse
+  entry #rebase   replays the commits since `upstream` onto `onto`, stopping on a conflict
+      Keeps its state in `rebase-merge/`, with a stopped pick already in `done`, as git
+      arranges it. `Git.Rebase.Option`s for sign-off and the like are honoured;
+      `--autosquash` is `Git.Error(Unsupported)`.
+  entry #sequence   continues, skips or aborts the merge, cherry-pick, revert or rebase in progress
+      Reads whichever state files are present to tell which operation it is;
+      `Git.Error(NoOperationInProgress)` if none. Continuing an `am`-style rebase and
+      skipping a merge are `Git.Error(Unsupported)`.
+  entry #operation   the operation in progress, if any, with its conflicting paths
+  entry #stash   saves the index and working changes as a stash entry and resets the tree
+      Writes the three commits git writes (the index, the untracked files if asked, and the
+      stash itself) under `refs/stash` with a reflog entry; `keepIndex` leaves the staged
+      changes in place. A clean tree makes no entry and gives `Unset`; an index with unmerged
+      entries is `Git.Error(Unmerged)`.
+  entry #stashes   the stash entries, newest first, from the `refs/stash` reflog
+  entry #applyStash   applies a stash entry to the tree, restoring the index too with `index`, and drops it with `drop`
+      A missing entry is `Git.Error(NoSuchStash)`; conflicts stop it as a merge stops.
+  entry #dropStash   removes a stash entry from the reflog
+  entry #readNote   the note on an object under a notes ref, if there is one
+  entry #listNotes   every note under a notes ref, each as the annotated object and the note blob
+      Reads flat and fanned-out notes trees alike.
+  entry #editNotes   adds, appends to, removes or copies a note, writing a new notes commit
+      Takes the current tip of the notes ref as `base` (or `Unset` for the first note) and
+      returns the new commit; the caller moves the ref. A note already present is
+      `Git.Error(NoteExists)` unless the edit forces it, and copying from an object with none
+      is `Git.Error(NoteNotFound)`.
+  entry #configRead   the entries of one configuration file, or every entry in force
+      `Git.Config.Source.Effective` gives the system, XDG, global, local and worktree files in
+      git's order, with `include.path` files spliced in (to a depth of ten); any other source
+      is read as one file.
+  entry #configWrite   sets a key in a configuration file, or adds a further value with `add`
+      Written under a `config.lock`, preserving comments and the rest of the file; a key in a
+      new section gets the section header.
+  entry #configUnset   removes a key, or with `all` every value of it, from a configuration file
+  entry #remoteRefs   lists a remote's refs as `ls-remote` does, `HEAD` first and tags with their peeled targets
+      Needs `Internet` evidence. The remote is a configured name, whose URL is
+      `remote.<name>.url` (`remote.<name>.pushurl` for a push, when set), or a URL or path
+      used as it is.
+  entry #fetch   fetches from a remote, moves the local refs the refspecs name, and writes `FETCH_HEAD`
+      Uses the remote's configured refspecs when none are given, negotiates with the peer's
+      `download`, stores what arrives loose, cuts history to `depth` and records the boundary
+      in `shallow`, adds `refs/tags/*:refs/tags/*` to the refspecs with `tags`, and with
+      `prune` deletes the local refs matching a pattern destination whose remote counterpart
+      has gone. Returns the refs it changed. Needs `Internet` evidence.
+  entry #push   sends the objects a remote lacks and asks it to move its refs
+      Each refspec becomes a `RefUpdate` whose expectation is set by the `Git.Push.Force`
+      policy: a plain push expects the remote's current value and refuses a non-fast-forward
+      move locally, `Always` expects nothing, and `Lease` expects the readings it carries. The
+      outcomes name each ref as `Created`, `Updated`, `Deleted`, `UpToDate` or `Rejected` with
+      the peer's reason; `setUpstream` configures the branch's remote and merge keys. Needs
+      `Internet` evidence.
+  entry #worktrees   the main worktree and every linked one, with its head, branch and lock state
+      A linked worktree whose `gitdir` points at a directory which no longer exists is marked
+      prunable.
+  entry #addWorktree   checks a revision out into a new linked worktree, on a new branch if asked
+      Registers it under `worktrees/<name>` with `gitdir`, `commondir` and its own `HEAD`,
+      writes the `.git` file in the new tree, checks the files out and writes the index. A
+      revision which is the name of an existing branch attaches `HEAD` to it unless `detach`
+      is set; `newBranch` creates a branch there first (`Git.Error(Moved)` if it exists). A
+      target which exists and is not empty is `Git.Error(Unexpected)`.
+  entry #removeWorktree   deletes a linked worktree and its registry entry
+      A locked worktree is `Git.Error(Locked)`, and one with changes is `Git.Error(Dirty)`
+      without `force`.
+  entry #lockWorktree   writes a `locked` file, with an optional reason, so the worktree is never pruned
+      Locking a worktree already locked is `Git.Error(Locked)`.
+  entry #unlockWorktree   removes a worktree's `locked` file
+      A worktree which is not locked is `Git.Error(Unexpected)`.
+  entry #moveWorktree   moves a linked worktree's directory and rewrites its registry entry
+      A locked worktree is `Git.Error(Locked)`, and a destination which exists is
+      `Git.Error(Unexpected)`.
+  entry #pruneWorktrees   removes registry entries whose worktrees have gone, returning their paths
+      A locked entry is kept.
+
+entry .Transport   a way of reaching remote repositories at some kind of URL, for the native backend
+  detail
+      `Native` reaches a repository on the same filesystem by its path, with no help; any other
+      URL — `https://…`, `ssh://…`, `host:path` — needs a `Transport` which `#accepts` it, taken
+      from the list the backend was constructed with. The library ships three, each in its own
+      component so that a program pays only for the one it uses: `SmartHttp()` (the `http`
+      component) speaks git's smart HTTP protocol through whichever `Http.Backend` is in scope;
+      `SshCommand()` (the `ssh` component) spawns the `ssh` command for each exchange; and
+      `SshNative()` (the `sshNative` component) uses the pure-Scala SSH client.
+
+      ```scala
+      import soundness.*
+      import httpBackends.javaNetHttp
+
+      val backend: Git.Backend = Native(List(SmartHttp()))
+      ```
+
+      A transport is asked in list order, and the first to accept the URL connects to it: the
+      `Peer` it gives back is the other end of the fetch or push, driven by the wire protocol
+      (version 2 for `ls-refs` and `fetch`, the version 0 `receive-pack` exchange for pushing).
+      A transport of one's own implements the two methods; a transport which connects over
+      the wire protocol builds its `Peer` from a `Channel`, which carries the service
+      advertisement and each request and response. `gitBackends.soundnessGit` has no
+      transports at all.
+  refer octogenarian.Native
+  refer octogenarian.Peer
+  refer octogenarian.Channel
+  refer octogenarian.SshAddress
+  entry #accepts   whether this transport can reach the URL
+      Judged by the URL's shape alone: `SmartHttp` accepts `http://` and `https://`, and the
+      SSH transports accept whatever `SshAddress.parse` understands.
+  entry #connect   opens a connection to the repository at the URL, as a `Peer`
+      Raises `Git.Error` when the connection cannot be made; the URL has already been accepted.
+      The peer is a capability (`Peer^`), since it holds the connection.
+
+entry .Peer   the other end of a fetch or push: lists refs, sends objects, receives objects and ref updates
+  detail
+      A `Peer` is what `Native` fetches from and pushes to. It lists its refs, sends the objects
+      reachable from the ones asked for (stopping at those the asker already has), and receives
+      objects together with ref updates, which it applies one by one and reports on. How that
+      happens is the peer's concern: `Peer.Local` reads and writes a repository on this
+      filesystem directly, and a transport's peer speaks the wire protocol over a `Channel`.
+      A peer is obtained through `Transport#connect`, or by `Native` itself for a local path;
+      a program ordinarily meets one only when writing a `Transport`.
+  refer octogenarian.Transport
+  refer octogenarian.RefUpdate
+  refer octogenarian.Native
+  entry .Local   a repository on this filesystem, reached by reading and writing its files directly
+      `Peer.Local(location, identity)` takes the repository's `Git.Backend.Location` (as
+      `Native#locate` finds it) and the identity to record in its reflogs. It is the peer
+      `Native` uses for a path, or a `file://`, `./` or `../` URL. Its `refs` lists `HEAD`
+      first and then every ref, an annotated tag followed by its peeled target as
+      `<name>^{}`, as `ls-remote` does; its `upload` writes the objects loose and applies each
+      `RefUpdate` by compare-and-swap, reporting `failed to update ref` for one which has
+      moved, `failed to lock` for one locked by another process, and `branch is currently
+      checked out` for the branch a non-bare repository has checked out, which is never
+      updated under it.
+  entry #refs   every ref with its hash, `HEAD` included, as `ls-remote` would list them
+      An annotated tag is followed by its peeled target as `<name>^{}`.
+  entry #symbolicHead   what `HEAD` is a symbolic ref to, if the peer says
+      The ref `clone` checks out when no branch is named; `Unset` for a detached or unknown
+      `HEAD`.
+  entry #download   sends every object reachable from `wants` which `has` does not know to `store`
+      `haves` are the commits the asker holds, for a peer which can only be told what the asker
+      has rather than ask it. With a `depth`, commit history is cut that many commits deep and
+      the commits at the boundary are returned, for the asker's `shallow` file; otherwise the
+      result is empty. The `Git.Activity` is moved through the `Receiving` phase.
+  entry #upload   receives the objects named, read through `read`, then applies the updates
+      Returns each update's ref paired with the reason it was rejected, or `Unset` for one
+      which was applied. The `Git.Activity` is moved through the `Writing` phase, measured by
+      the object count.
+
+entry .RefUpdate   a ref to change on a peer: what it is expected to hold now, and what it should hold
+  detail
+      One line of a push: `Native#push` builds a `RefUpdate` for each refspec and hands them to
+      `Peer#upload`. The `expected` value is the compare-and-swap condition — the remote's
+      current reading for a plain push, `Git.Backend.Expectation.Unconditional` for a forced
+      one, and the lease's reading for `Git.Push.Force.Lease` — and `to` is `Unset` to delete
+      the ref.
+  refer octogenarian.Peer
+  entry #ref   the full name of the ref, such as `refs/heads/main`
+  entry #expected   what the ref must hold for the update to be applied
+  entry #to   the hash to move the ref to, or `Unset` to delete it
+
+entry .Channel   a connection to a remote's `git-upload-pack` or `git-receive-pack`, however it is carried
+  detail
+      The seam between a `Transport` and the wire protocol: a channel supplies the server's
+      opening advertisement for a service and a way to send one request and read what comes
+      back, in pkt-line framing, and the protocol client built over it does the rest. The
+      three shipped transports each define one — `SmartHttp.Channel` over HTTP requests with
+      the `Git-Protocol: version=2` header, `SshCommand.Channel` over one `ssh` process per
+      exchange, and `SshNative.Channel` over one SSH connection with a channel per exchange —
+      and a transport of one's own would too. The readers it returns are the library's own
+      pkt-line readers, which are not part of the public API, so a `Channel` can only be
+      written inside the library at present.
+  refer octogenarian.Transport
+  entry #advertise   the server's opening advertisement for a service, as a pkt-line reader
+      The service is `git-upload-pack` or `git-receive-pack`; the protocol client reads the
+      version line and capabilities from it.
+  entry #exchange   sends one request to a service and returns a reader over the response
+  entry #close   releases whatever the channel holds: a process, a connection
+
+entry .SshAddress   the address of a repository reached over SSH, in either form git accepts
+  detail
+      Git takes an SSH remote as the URL `ssh://[user@]host[:port]/path`, or in the `scp`-like
+      form `[user@]host:path`, which is an SSH address provided the colon comes before any
+      slash (`localhost:/srv/repo.git`), and a local path otherwise (`./dir:x`). `SshAddress`
+      is the parsed form of either, and the SSH transports accept exactly the URLs
+      `.parse` understands.
+
+      ```scala
+      import soundness.*
+
+      SshAddress.parse(t"ssh://git@example.com:2222/srv/repo.git")
+      // SshAddress(t"git", t"example.com", 2222, t"/srv/repo.git")
+
+      SshAddress.parse(t"git@example.com:propensive/soundness.git")
+      // SshAddress(t"git", t"example.com", Unset, t"propensive/soundness.git")
+
+      SshAddress.parse(t"https://example.com/repo.git")   // Unset
+      ```
+
+      In the URL form the path keeps its leading `/`; in the `scp` form it is whatever follows
+      the colon, relative to the user's home on the server unless it begins with `/`.
+  refer octogenarian.Transport
+  entry .parse   reads an SSH address from text, or `Unset` if the text is not one
+      Text beginning `ssh://` must have a `/` after the authority, and a port which is not a
+      number makes the whole address `Unset`. Text with any other `://` is not an SSH address,
+      and nor is text whose first `/` comes before its first `:`, or which has no colon.
+  entry #user   the user to log in as, or `Unset` for the SSH client's default
+  entry #host   the host name or address
+  entry #port   the port, or `Unset` for the SSH client's default (22)
+  entry #path   the repository's path on the server

@@ -1,0 +1,224 @@
+tel 1.0
+
+base cardinality
+import soundness
+
+info   bounded numbers: a `Double` whose permitted range is in its type, written `min ~ max`
+detail
+    _Cardinality_ lets a number carry its permitted range in its type. `0.0 ~ 1.0` is a `Double`
+    known to lie between 0 and 1 inclusive; a literal outside the range is a compile error where
+    it is written, and arithmetic on bounded numbers computes the range of its result from the
+    ranges of its operands, so a bound travels with a value through a calculation and a step
+    which could break it does not compile.
+
+    ```scala
+    import soundness.*
+    import scala.language.experimental.genericNumberLiterals
+
+    val portion: 0.0 ~ 1.0 = 0.2
+    val tooMuch: 0.0 ~ 1.0 = 2.0          // does not compile: greater than the upper bound
+    val doubled: 0.0 ~ 2.0 = portion*2.0
+    ```
+
+    The bounds are `Double` singleton types and the arithmetic on them is done by the compiler's
+    `scala.compiletime.ops.double`, so the inferred range is exact for the operation: addition
+    adds the bounds, multiplication takes the extremes of the four corner products (so ranges
+    straddling zero are handled), and division by a range which includes zero widens to the
+    infinities. An operand which is a plain `Double`, about which nothing is known statically,
+    gives a plain `Double` back.
+
+    A literal is checked by the `FromDigits` given `~.cardinality`, which needs the language
+    feature `scala.language.experimental.genericNumberLiterals`. A `Double` from outside —
+    read from input, or computed — enters a range either by a pattern match, which checks it at
+    runtime (`case x: (0.0 ~ 1.0) => …`), or by `force`, which asserts the bound unchecked.
+
+    `~` is an opaque type over `Double` declared in `NumericRange` and exported to the
+    `cardinality` package. The library has one source set, `cardinality.core`, which compiles for
+    every platform; everything is exported to the `soundness` umbrella.
+
+refer cardinality.~
+refer cardinality.NumericRange
+refer cardinality.force
+
+entry .~   a `Double` bounded to an inclusive range in its type, as `min ~ max`; see `NumericRange.~`
+    The bounded-number type, exported from `NumericRange`: `-1.0 ~ 1.0` is a `Double` known to
+    lie in `[-1, 1]`. Its arithmetic, its literal parser and its runtime type test are members of
+    `NumericRange.~`.
+
+    ```scala
+    import soundness.*
+    import scala.language.experimental.genericNumberLiterals
+
+    val x: -1.0 ~ 1.0 = 0.5
+    val y: -2.0 ~ 2.0 = x*2.0
+    y.double   // 1.0
+    ```
+
+entry .force   asserts that a `Double` lies in a range, without checking
+    `value.force[min, max]` retypes a `Double` as `min ~ max` at no cost and with no test. It is
+    the one way into a range which can be wrong, so it is for a value whose bound the compiler
+    cannot see but the programmer knows — the result of `math.sin` as `-1.0 ~ 1.0`, say. Where
+    the bound is not certain, match on the range type instead, which checks it:
+
+    ```scala
+    import soundness.*
+
+    val sine: -1.0 ~ 1.0 = math.sin(1.2).force[-1.0, 1.0]
+
+    def clamp(value: Double): 0.0 ~ 1.0 = value match
+      case inside: (0.0 ~ 1.0) => inside
+      case _                   => 0.0.force[0.0, 1.0]
+    ```
+
+entry .NumericRange   the home of the bounded-number type `~` and its operations
+  detail
+      An object declaring the opaque type `min ~ max`, a `Double` in an inclusive range, with its
+      companion holding the arithmetic, the literal parser and the type test. The type is
+      exported to the `cardinality` package and the `soundness` umbrella, so it is written
+      `0.0 ~ 1.0` with no prefix.
+  refer cardinality.~
+  entry .apply   wraps a `Double` as a bounded number, without checking the bound
+      `NumericRange[min, max](value)` is the unchecked constructor, as `force` is. It is what a
+      literal whose digits are not known statically falls back to.
+  entry .~   a `Double` bounded to an inclusive range in its type, as `min ~ max`
+    detail
+        `min ~ max` is an opaque type over `Double`, with `Double` singleton types as its
+        bounds: a value of type `0.0 ~ 1.0` is known to be at least 0 and at most 1. At runtime
+        it is an unboxed `Double`; `.double` reads it back.
+
+        A literal of the type is checked as the code compiles (`.cardinality`), arithmetic
+        computes the result's range from the operands' (`.+`, `.-`, `.*`, `./`), and a plain
+        `Double` is narrowed by a pattern match, which checks the bound at runtime
+        (`.comparable`).
+
+        The inferred range composes through a whole expression:
+
+        ```scala fuel
+        frame
+          label Two bounded values and a scale
+          code
+              import soundness.*
+              import scala.language.experimental.genericNumberLiterals
+
+              val x: 0.0 ~ 1.0 = 0.2
+              val y: -1.0 ~ 1.0 = 0.2
+              val z: 1e3 ~ 1e8 = 10000
+        frame
+          label Multiplying by a literal scales the range
+          code
+              y*3.0                // -3.0 ~ 3.0
+        frame
+          label Adding two ranges adds their bounds
+          code
+              x + y*3.0            // -3.0 ~ 4.0
+        frame
+          label Multiplying two ranges takes the extreme corners
+          code
+              (x + y*3.0)*z        // -3.0e8 ~ 4.0e8
+        ##
+        ```
+
+        Operands which are plain `Double`s, rather than bounded values or literals, give a plain
+        `Double` result, since nothing is known of their range.
+    refer cardinality.force
+    entry .comparable   a runtime type test, so a `Double` can be matched against a range type
+        A `TypeTest[Double, min ~ max]` for literal bounds, needing a `ValueOf` of each: it
+        matches when `min <= value <= max`. It is in implicit scope, so a pattern such as
+        `case x: (0.0 ~ 1.0)` narrows a `Double` safely.
+
+        ```scala
+        import soundness.*
+
+        def unit(value: Double): Text = value match
+          case fraction: (0.0 ~ 1.0) => t"in range: ${fraction.double}"
+          case _                     => t"out of range"
+        ```
+    entry .RangeParser   the `FromDigits.Decimal` class behind bounded-number literals
+      detail
+          The class of the `.cardinality` given; its own `fromDigits` converts without
+          checking, and the given overrides it with the compile-time check.
+      entry #fromDigits   parses digits as a bounded number
+    entry .cardinality   checks a numeric literal against its bounded type as the code compiles
+        The `FromDigits` given which makes `val x: 0.0 ~ 1.0 = 0.2` typecheck; it needs
+        `scala.language.experimental.genericNumberLiterals`. A literal below the lower bound
+        is error 838, _the value `v` is less than the lower bound for this value, `min`_, and
+        one above the upper bound error 683, _the value `v` is greater than the upper bound for
+        this value, `max`_; bounds which are not `Double` literal types are errors 51 and 224.
+        Both bounds are inclusive.
+
+        ```scala
+        import soundness.*
+        import scala.language.experimental.genericNumberLiterals
+
+        val edge: -1.0 ~ 1.0 = -1.0
+        val over: -1.0 ~ 1.0 = 1.01   // does not compile
+        ```
+
+        Digits not known as a literal are converted unchecked.
+    entry .double   the bounded number as a plain `Double`
+    entry .+   adds, with the range of the sum: bounds added to bounds, or shifted by a literal
+        `(a ~ b) + (c ~ d)` is `(a + c) ~ (b + d)`, and `(a ~ b) + k` for a literal `k` is
+        `(a + k) ~ (b + k)`. Adding a plain `Double` gives a plain `Double`.
+
+        ```scala
+        import soundness.*
+        import scala.language.experimental.genericNumberLiterals
+
+        val x: 0.0 ~ 1.0 = 0.5
+        val y: 0.0 ~ 2.0 = 1.0
+        val sum: 0.0 ~ 3.0 = x + y
+        val shifted: 1.0 ~ 2.0 = x + 1.0
+        ```
+    entry .-   subtracts, with the range of the difference
+        `(a ~ b) - (c ~ d)` is `(a - d) ~ (b - c)`, and `(a ~ b) - k` for a literal `k` is
+        `(a - k) ~ (b - k)`. Subtracting a plain `Double` gives a plain `Double`.
+
+        ```scala
+        import soundness.*
+        import scala.language.experimental.genericNumberLiterals
+
+        val x: 0.0 ~ 1.0 = 0.5
+        val y: 0.0 ~ 2.0 = 1.0
+        val difference: -2.0 ~ 1.0 = x - y
+        ```
+    entry .*   multiplies, with the range of the product: the extremes of the corner products
+        `(a ~ b) * (c ~ d)` ranges from the least to the greatest of `a*c`, `a*d`, `b*c` and
+        `b*d`, which is right however the operands straddle zero; `(a ~ b) * k` for a literal
+        `k` is scaled, its bounds swapping if `k` is negative. Multiplying by a plain `Double`
+        gives a plain `Double`.
+
+        ```scala
+        import soundness.*
+        import scala.language.experimental.genericNumberLiterals
+
+        val x: -2.0 ~ 1.0 = 0.0
+        val y: -3.0 ~ 4.0 = 0.0
+        val product: -8.0 ~ 6.0 = x*y
+        val z: 1.0 ~ 2.0 = 1.5
+        val negated: -4.0 ~ -2.0 = z*(-2.0)
+        ```
+    entry ./   divides, with the range of the quotient, unbounded if the divisor's range spans zero
+        `(a ~ b) / k` for a literal `k` scales the bounds. `(a ~ b) / (c ~ d)` takes the extremes
+        of the four corner quotients when `c*d` is positive, and is `-∞ ~ ∞` otherwise — a
+        divisor whose range includes zero, or touches it, leaves the quotient unbounded, so no
+        finite range accepts it. Dividing by a plain `Double` gives a plain `Double`.
+
+        ```scala
+        import soundness.*
+        import scala.language.experimental.genericNumberLiterals
+
+        val x: 2.0 ~ 4.0 = 3.0
+        val y: 1.0 ~ 2.0 = 1.5
+        val quotient: 1.0 ~ 4.0 = x/y
+        val halved: 1.0 ~ 2.0 = x/2.0
+        ```
+
+entry .internal   the type-level arithmetic and macro behind bounded numbers
+  hidden
+  detail
+      Not for direct use: the match types which compute the bounds of a product or quotient,
+      and the macro which checks a bounded-number literal.
+  entry .Asym   a match type choosing between two bounds by the sign of a value
+  entry .Min4   the least of four `Double` singleton types
+  entry .Max4   the greatest of four `Double` singleton types
+  entry .apply   the macro behind `NumericRange.~.cardinality`: checks literal digits against the bounds

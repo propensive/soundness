@@ -1,0 +1,497 @@
+tel 1.0
+
+base orthodoxy
+import soundness
+
+info   OAuth 2 for clients and web applications: grants, PKCE, scoped tokens and typed credentials
+detail
+    _Orthodoxy_ implements [OAuth 2](https://www.rfc-editor.org/rfc/rfc6749), the protocol by
+    which a client obtains an access token from an API's authorization server and presents it
+    with each request, on a user's behalf or on its own. A token is more than a string — it
+    grants particular scopes, it expires, and it may come with a refresh token — so it is an
+    `Authorization` carrying all four, against which a `Scope` can be checked.
+
+    An `Issuer` is an authorization server as one client sees it, and each grant is a method
+    on it which posts to the token endpoint through the `Http.Client` in scope and raises
+    `OAuth.Error` on refusal:
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import strategies.throwUnsafely
+    import internetAccess.online
+    import httpBackends.javaNetHttp
+    import logging.silentLogging
+
+    val issuer = Issuer(url"https://issuer.example/token", t"client-1", t"s3cret")
+
+    val token: Authorization = issuer.clientCredentials(t"read", t"write")
+    token.grants(List(t"read"))
+    url"https://api.example/items".fetch(authorization = token).receive[Text]
+    ```
+
+    For the authorization-code flow, `Issuer#authorizationUrl` builds the URL a user is sent
+    to, with a `Pkce` challenge, and `Issuer#exchangeCode` exchanges the code they bring back.
+    A `Credential` names a security scheme as an API's specification names it, and is how an
+    OpenAPI client from apoplexy finds the key or token each operation requires.
+
+    The library has two source sets:
+
+    - `orthodoxy.core` — `Issuer`, `Authorization`, `Pkce`, `Scope`, `Credential` and
+      `OAuth.Error`: everything a client needs.
+    - `orthodoxy.server` — the authorization-code flow as scintillate middleware, the
+      extensions `oauth` and `require` on `Issuer`, with `Authorizations` holding each
+      session's state.
+
+    Everything is exported to the `soundness` umbrella. There are no choice packages of its
+    own, but the grants need the usual contextual values from elsewhere: an `Online` token
+    (`internetAccess.online`), an HTTP backend (`httpBackends.javaNetHttp`), a
+    `Http.Event is Loggable` (`logging.silentLogging`), and a `Tactic[OAuth.Error]`, each
+    imported by name.
+
+refer orthodoxy.Issuer
+refer orthodoxy.Authorization
+refer orthodoxy.OAuth.Error
+refer orthodoxy.oauth
+
+entry .Issuer   an OAuth 2 authorization server as one client sees it: its endpoints and the client's identity
+  detail
+      An `Issuer` holds the token endpoint, `#exchange`; the client's identity, `#client`,
+      and its `#secret` if it has one; and, for the authorization-code flow, the
+      authorization endpoint, `#init`, and the `#redirect` URI registered for the client.
+      Its grant methods are the client side of RFC 6749: each posts to the token endpoint,
+      with the client's identity and secret as form parameters (RFC 6749 §2.3.1's
+      `client_secret_post`), and reads the `Authorization` the server returns.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import internetAccess.online
+      import httpBackends.javaNetHttp
+      import logging.silentLogging
+
+      val issuer = Issuer(url"https://issuer.example/token", t"client-1", t"s3cret")
+
+      val token: Authorization = issuer.clientCredentials(t"read", t"write")
+      val fresh: Authorization = issuer.refresh(token)
+      ```
+
+      Every grant needs an `Online` token, a `Http.Event is Loggable`, an `Http.Client` for
+      `http` or `https` origins (an HTTP backend such as `httpBackends.javaNetHttp`), and a
+      `Tactic[OAuth.Error]`. A `400` or `401` from the token endpoint is
+      `OAuth.Error.Reason.Unauthorized`, a connection failure `Connection`, a response which
+      does not parse `InvalidJsonResponse`, and any other status `UnexpectedHttpStatus`. A
+      method which needs `#init` or `#redirect` when the issuer was built without it raises
+      `Misconfigured`.
+  refer orthodoxy.Authorization
+  refer orthodoxy.Pkce
+  refer orthodoxy.OAuth.Error
+  entry .Context   evidence, in a request handler, that it runs inside one issuer's `oauth` middleware
+    detail
+        `Issuer.Context of issuer.type` is provided by `Issuer#oauth` to the handler it wraps,
+        and required by `Issuer#require`, so that the redirect `require` sends a user on is
+        one the same issuer's `oauth` will handle when the user returns. It carries nothing
+        but its `Topic` type.
+    entry .apply   makes the context for an issuer's singleton type, as `Issuer.Context[issuer.type]()`
+  entry #exchange   the token endpoint, to which every grant posts
+  entry #client   the client's identifier, sent as `client_id`
+  entry #secret   the client's secret, sent as `client_secret`, or `Unset` for a public client
+  entry #init   the authorization endpoint a user is sent to, or `Unset` if the authorization-code flow is not used
+  entry #redirect   the redirect URI registered for the client, or `Unset` if the authorization-code flow is not used
+  entry #grant   posts a token request with arbitrary grant parameters and reads the `Authorization`
+      The common step of every grant: the given `Query` of parameters is posted to
+      `#exchange` with `client_id`, and `client_secret` where there is one. For a grant type
+      this class has no method for, pass its parameters here.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import internetAccess.online
+      import httpBackends.javaNetHttp
+      import logging.silentLogging
+
+      val issuer = Issuer(url"https://issuer.example/token", t"client-1", t"s3cret")
+      issuer.grant(Query(List(t"grant_type" -> t"password", t"username" -> t"ada", t"password" -> t"…")))
+      ```
+  entry #clientCredentials   the client-credentials grant: the client's own authorization, for the given scopes
+      RFC 6749 §4.4. The scopes are sent space-separated as `scope`, and omitted when none are
+      given, in which case the server grants its default.
+  entry #refresh   a new authorization from a refresh token, or from an authorization which carries one
+      RFC 6749 §6. Takes the refresh token as `Text`, or an `Authorization`, whose `#refresh`
+      token is used; an authorization with no refresh token raises
+      `OAuth.Error.Reason.Unauthorized` without contacting the server.
+  entry #exchangeCode   exchanges an authorization code for an authorization, with the PKCE verifier if one was used
+      RFC 6749 §4.1.3. Posts the `code` the user brought back to `#redirect` with the
+      redirect URI and, when a `Pkce` is passed, its verifier (RFC 7636), which must be the
+      same `Pkce` whose challenge went into `#authorizationUrl`. Raises
+      `OAuth.Error.Reason.Misconfigured` if the issuer has no `#redirect`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import internetAccess.online
+      import httpBackends.javaNetHttp
+      import logging.silentLogging
+
+      val flow = Issuer
+        ( url"https://issuer.example/token", t"client-1", Unset,
+          url"https://issuer.example/authorize", url"https://app.example/callback" )
+
+      val pkce = Pkce()
+      val code: Text = t"…"   // from the redirect's `code` parameter
+      flow.exchangeCode(code, pkce)
+      ```
+  entry #authorizationUrl   the URL a user is sent to, to authorize the client for some scopes
+    detail
+        RFC 6749 §4.1.1. The URL is `#init` with `client_id`, `redirect_uri`,
+        `response_type=code`, the `state` (which the redirect back must echo, and which the
+        application should check), the scopes space-separated, and, when a `Pkce` is passed,
+        its `S256` challenge. It makes no request, so it needs only a
+        `Tactic[OAuth.Error]`, raised as `Misconfigured` if the issuer has no `#init` or no
+        `#redirect`.
+
+        ```scala fuel
+        frame
+          label Scopes and state
+          code
+              import soundness.*
+              import strategies.throwUnsafely
+
+              val flow = Issuer
+                ( url"https://issuer.example/token", t"client-1", Unset,
+                  url"https://issuer.example/authorize", url"https://app.example/callback" )
+
+              flow.authorizationUrl(List(t"read"), t"xyz").show
+              // https://issuer.example/authorize?client_id=client-1
+              //   &redirect_uri=https%3A%2F%2Fapp.example%2Fcallback&response_type=code&state=xyz
+              //   &scope=read
+        frame
+          label With a PKCE challenge
+          code
+              import soundness.*
+              import strategies.throwUnsafely
+
+              val flow = Issuer
+                ( url"https://issuer.example/token", t"client-1", Unset,
+                  url"https://issuer.example/authorize", url"https://app.example/callback" )
+
+              val pkce = Pkce(t"dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk")
+              flow.authorizationUrl(List(t"read"), t"xyz", pkce).show
+              // … &scope=read
+              //   &code_challenge=E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM&code_challenge_method=S256
+        ##
+        ```
+
+entry .Authorization   an access token and what it grants: its scopes, its expiry and a refresh token
+  detail
+      What a token response grants (RFC 6749 §5.1): the access token itself, `#key`; the
+      `#scopes` granted; the `#expiry` instant; and the `#refresh` token, if one was issued.
+      Every grant on `Issuer` returns one, and `.parse` reads one from a token response's
+      JSON.
+
+      An `Authorization` is passed directly as an HTTP request's `authorization` header,
+      through the companion's `.authorization` directive, rendered as `Bearer <key>`:
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import internetAccess.online
+      import httpBackends.javaNetHttp
+      import logging.silentLogging
+
+      val issuer = Issuer(url"https://issuer.example/token", t"client-1", t"s3cret")
+      val token = issuer.clientCredentials(t"read")
+
+      val current = if token.expired then issuer.refresh(token) else token
+      url"https://api.example/items".fetch(authorization = current).receive[Text]
+      ```
+
+      A token whose response named no scopes is taken to grant exactly those requested, as
+      RFC 6749 §5.1 has it, so `#grants` is `true` for any scopes when `#scopes` is empty.
+      `Authorization of scope`, a refinement of its `Topic`, is an authorization known to
+      grant a `Scope`: `Scope#apply` and `Issuer#require` produce one.
+  refer orthodoxy.Scope
+  refer orthodoxy.Issuer
+  entry .authorization   sets a request's `authorization` header from an `Authorization`, as `Bearer <key>`
+      The telekinesis `Directive` for the `authorization` named argument of `fetch` and
+      `submit`, in the companion and so in implicit scope.
+  entry .parse   reads an `Authorization` from the JSON of a token response
+      Reads `access_token` (required), `scope` (split on spaces; absent means `Nil`),
+      `expires_in` (seconds, converted to an instant in milliseconds from now) and
+      `refresh_token`. A response with no `access_token` raises
+      `OAuth.Error.Reason.InvalidJsonResponse` through the `Tactic[OAuth.Error]` in scope.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val json = t"""{"access_token": "tok", "expires_in": 3600, "scope": "read write"}""".as[Json]
+      Authorization.parse(json).scopes   // List(t"read", t"write")
+      ```
+  entry #key   the access token itself
+  entry #scopes   the scopes granted, or `Nil` if the response did not name them
+  entry #expiry   when the token expires, in milliseconds since the epoch, or `Unset` if no lifetime was stated
+  entry #refresh   the refresh token, or `Unset` if none was issued
+  entry #bearer   the token as an `Auth.Bearer`, as the `Authorization` header carries it
+  entry #expired   whether the token's expiry has passed; a token with no stated lifetime never expires
+  entry #grants   whether the token grants every one of the given scopes
+      `true` when `#scopes` contains them all, and also whenever `#scopes` is empty, since a
+      response which named no scopes granted those requested.
+
+entry .Scope   a named set of OAuth scopes, which checks that an authorization grants them
+  detail
+      A `Scope(t"read", t"write")` names the scopes an operation needs. Applied with `()`, it
+      checks the `Authorization of …` given in scope and returns it refined as
+      `Authorization of scope.type`, so code which demands that refinement can only be
+      reached once the check has passed. Each missing scope is raised as
+      `OAuth.Error.Reason.InsufficientPrivileges`.
+
+      `Issuer#require(read, write)` provides an `Authorization of (read.type | write.type)`
+      without checking its scopes; within it, `read()` checks and narrows to
+      `Authorization of read.type`:
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import internetAccess.online
+      import logging.silentLogging
+
+      given Authorizations = Authorizations()
+
+      val issuer = Issuer
+        ( url"https://issuer.example/token", t"client-1", t"s3cret",
+          url"https://issuer.example/authorize", url"https://app.example/callback" )
+
+      val read = Scope(t"read")
+      val write = Scope(t"write")
+
+      def handle(using Http.Request, Session): Http.Response =
+        issuer.oauth:
+          issuer.require(read, write):
+            val checked: Authorization of read.type = read()
+            Http.Response(Http.Ok)(t"may read")
+      ```
+
+      A scope should be a stable value (a `val` or an `object`), since its singleton type is
+      what the refinement records; `Issuer#require` takes scopes this way.
+  refer orthodoxy.Authorization
+  refer orthodoxy.require
+  entry #names   the scope names, as the issuer spells them
+  entry #apply   checks the given authorization grants every scope, and returns it refined to this scope
+      Needs an `Authorization of (? >: this.type)` in scope — an authorization refined to
+      this scope or to a union including it, as `Issuer#require` provides; a plain
+      `Authorization` is not one — and raises `OAuth.Error.Reason.InsufficientPrivileges(name)` for each name it does
+      not grant. Unlike `Authorization#grants`, an authorization with no named scopes fails
+      the check.
+  entry #Check   the type of an authorization this scope can check: `Authorization of (? >: this.type)`
+
+entry .Pkce   Proof Key for Code Exchange: a verifier the client keeps and the challenge it sends
+  detail
+      RFC 7636. A `Pkce` holds a random `#verifier`; its `#challenge`, the verifier's SHA-256
+      digest in unpadded URL-safe base 64, goes with `Issuer#authorizationUrl`, and the
+      verifier with `Issuer#exchangeCode`, so an authorization code intercepted on its way
+      back cannot be exchanged by anyone without the verifier. A public client — one with no
+      secret, such as a command-line tool or a mobile app — should always use one.
+
+      ```scala
+      import soundness.*
+
+      val pkce = Pkce()
+      pkce.verifier.length   // 43
+      Pkce(t"dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk").challenge
+      // t"E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+      ```
+
+      The same `Pkce` must be kept between the two steps of the flow.
+  refer orthodoxy.Issuer
+  entry .apply   a fresh verifier: 32 octets from a `SecureRandom`, as 43 URL-safe characters
+  entry #verifier   the secret the client keeps and sends when exchanging the code
+  entry #challenge   the `S256` challenge sent with the authorization request: the verifier's SHA-256, in URL-safe base 64
+
+entry .Credential   a credential for a named security scheme, as `("name" is Credential to Result)`
+  detail
+      A typeclass keyed by the name an API's specification gives a security scheme, whose
+      `Result` is the value the scheme calls for: `Text` for an API key, `Auth` for HTTP
+      authentication, `Authorization` for an OAuth 2 token. A client which reads the
+      specification — apoplexy's `Api` — finds the credential for each scheme an operation
+      requires by name, checks its result fits the scheme's kind, and presents it as the
+      scheme dictates: a header, a query parameter or a cookie.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import internetAccess.online
+      import httpBackends.javaNetHttp
+      import logging.silentLogging
+
+      val issuer = Issuer(url"https://issuer.example/token", t"client-1", t"s3cret")
+
+      given apiKey: ("api_key" is Credential to Text) = Credential(t"k-1")
+      given petstore: ("petstore_auth" is Credential to Authorization) = issuer.clientCredentials()
+      ```
+
+      Name these givens: two anonymous givens of different credential types in one scope
+      are synthesised with the same name and clash. A credential is keyed by the scheme's
+      name alone, so two specifications which use the same name for different schemes must
+      be given their credentials in separate scopes.
+  refer orthodoxy.Authorization
+  entry .Bound   the credential `Credential(value)` makes, for one scheme name and result type
+    detail
+        A `Credential` whose `Self` is the scheme's name and whose `Result` is the value's
+        type; written as `"name" is Credential to Result`, it is what a given's declared type
+        refines.
+    entry #value   the credential's value
+  entry .apply   makes a credential from its value, for the scheme name the expected type gives
+  entry #Self   the scheme's name, as a literal `Label` type
+  entry #value   the value the scheme presents: a key, an `Auth` or an `Authorization`
+
+entry .OAuth   the home of `OAuth.Error`, raised whenever an OAuth exchange fails
+  detail
+      An object which holds `OAuth.Error` and its reasons.
+  entry .Error   raised when an OAuth 2 grant, check or redirect fails
+    detail
+        Error 840: _OAuth failed because `reason`_, where the second number is the reason's.
+        Every grant on `Issuer`, `Authorization.parse`, `Scope#apply` and the server
+        middleware raise it, each through the `Tactic[OAuth.Error]` in scope; network,
+        parsing and HTTP-status failures are all mitigated into it, so a caller handles one
+        error type.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        capture[OAuth.Error](Authorization.parse(t"""{"token_type": "Bearer"}""".as[Json])).reason
+        // OAuth.Error.Reason.InvalidJsonResponse
+        ```
+    entry .Reason   why an OAuth exchange failed, numbered as the second part of error 840
+      detail
+          The cases, with their numbers and messages: `Connection(url, reason)` (1), _could
+          not connect to the OAuth provider at `url` because `reason`_; `InvalidJsonResponse`
+          (2), _the token response was not valid JSON_; `UnexpectedHttpStatus(status)` (3),
+          _the provider returned an unexpected status_; `InsufficientPrivileges(scope)` (4),
+          _the user has not granted access to `scope`_; `Unauthorized` (5), _authorization was
+          not granted_, for a `400` or `401` from the token endpoint; `Other` (6), _an
+          unexpected error occurred_, which the server middleware raises for a malformed or
+          forged redirect; and `Misconfigured(detail)` (7), _the issuer is not configured for
+          this_, when an `Issuer` lacks an endpoint a flow needs. A `Reason is Communicable`
+          given in the companion renders them.
+      entry #number   the reason's number, the second part of the error's code
+    entry #reason   why the exchange failed, as an `OAuth.Error.Reason`
+
+entry .Authorizations   a web application's store of each session's authorization-code flow state
+  detail
+      The store `Issuer#oauth` and `Issuer#require` keep each `Session`'s
+      `Authorizations.State` in, in `orthodoxy.server`. It is a thread-safe map held in
+      memory, so it is lost when the server restarts, and is given once for the application:
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+
+      given Authorizations = Authorizations()
+      ```
+  refer orthodoxy.oauth
+  refer orthodoxy.require
+  entry .State   one session's place in the flow: where the user was going, the `state` to check, the token
+    detail
+        Made by `Issuer#require` when it sends a user to the issuer, and completed by
+        `Issuer#oauth` when the user returns with a code.
+    entry #redirect   the path the user asked for, to which they are sent back once authorized
+    entry #uuid   the random `state` the redirect back from the issuer must echo
+    entry #access   the session's authorization once granted, or `Unset` while the flow is in progress
+    entry #expired   whether the held authorization has expired; `false` while there is none
+  entry #update   records a session's state, as `store(session) = state`
+  entry #apply   the state recorded for a session, or `Unset`
+
+entry .oauth   scintillate middleware which completes the authorization-code flow on the issuer's redirect
+  detail
+      An extension on `Issuer`, in `orthodoxy.server`. `issuer.oauth { … }` wraps a request
+      handler: a request to any path but the issuer's `#redirect` runs the handler, with an
+      `Issuer.Context of issuer.type` in scope for `require`. A request to the redirect path
+      is the user returning from the issuer: its `state` parameter is checked against the
+      session's `Authorizations.State`, its `code` is exchanged for an authorization (or, if
+      the session holds an expired one with a refresh token, that is refreshed instead), the
+      result is stored, and the user is redirected to the path they first asked for.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import internetAccess.online
+      import logging.silentLogging
+
+      given Authorizations = Authorizations()
+
+      val issuer = Issuer
+        ( url"https://issuer.example/token", t"client-1", t"s3cret",
+          url"https://issuer.example/authorize", url"https://app.example/callback" )
+
+      val read = Scope(t"read")
+
+      def handle(using Http.Request, Session): Http.Response =
+        issuer.oauth:
+          issuer.require(read):
+            Http.Response(Http.Ok)(t"authorized")
+      ```
+
+      It needs the `Http.Request`, an `Online` token, a `Http.Event is Loggable`, the
+      `Authorizations` store, the request's `Session` and a `Tactic[OAuth.Error]`. A `state`
+      which does not match is raised as `OAuth.Error.Reason.Other`, as is a malformed redirect;
+      an issuer with no `#redirect` raises `Misconfigured`. The token request is made with
+      the `java.net.http` backend whatever HTTP backend is in scope. A redirect for a session
+      with no recorded state runs the handler.
+  refer orthodoxy.require
+  refer orthodoxy.Authorizations
+
+entry .require   scintillate middleware which sends a user without an authorization to the issuer
+  detail
+      An extension on `Issuer`, in `orthodoxy.server`, used inside the same issuer's `oauth`
+      (it requires an `Issuer.Context of issuer.type`). `issuer.require(scopes*) { … }` runs
+      the handler with an `Authorization of scope` in scope when the session already holds
+      an authorization; otherwise it records an `Authorizations.State` for the request's path
+      and responds with a redirect to `Issuer#authorizationUrl`, asking for the names of all
+      the scopes, with the state's UUID as `state`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import internetAccess.online
+      import logging.silentLogging
+
+      given Authorizations = Authorizations()
+
+      val issuer = Issuer
+        ( url"https://issuer.example/token", t"client-1", t"s3cret",
+          url"https://issuer.example/authorize", url"https://app.example/callback" )
+
+      val read = Scope(t"read")
+
+      def handle(using Http.Request, Session): Http.Response =
+        issuer.oauth:
+          issuer.require(read):
+            Http.Response(Http.Ok)(t"authorized")
+      ```
+
+      The scopes must be stable values, such as `val`s, since their singleton types refine the
+      authorization. The held authorization is refined to the scopes without checking them
+      against its `#scopes`; a handler which must be sure calls `Scope#apply`. No PKCE
+      challenge is sent.
+  refer orthodoxy.oauth
+  refer orthodoxy.Scope

@@ -1,0 +1,124 @@
+tel 1.0
+
+base gigantism
+import soundness
+
+info   metaprogramming helpers: every given instance in scope, macro result types, imports at a call site
+detail
+    _Gigantism_ is a small toolkit for the Soundness libraries' own macros, and for any
+    library which, like them, needs a little more from the compiler than Scala's public
+    reflection API offers.
+
+    Its central feature is `every[T]`, which collects *every* given instance of `T` visible
+    where it is called — including instances which are mutually ambiguous, which an ordinary
+    `summon` rejects — into an `Every[T]`. This is how a library lets a user enable several
+    options at once by importing several givens: the `Boolean` decoder collects
+    `Every[Truth]`, and coaxial's sockets collect `Every` socket option in scope.
+
+    ```scala
+    import soundness.*
+
+    case class Colour(name: Text)
+
+    object Colours:
+      given red: Colour = Colour(t"red")
+      given green: Colour = Colour(t"green")
+      given blue: Colour = Colour(t"blue")
+
+    import Colours.{red, blue}
+    every[Colour].values.map(_.name)   // red and blue, in either order
+    ```
+
+    Alongside it are `Macro[T]`, the type of a macro implementation's result; `Lifts`, which
+    lifts Soundness `List`s of expressions into quoted lists and varargs; and
+    `metaprogramming.imports`, which lists the imports in scope at a macro's call site.
+
+    `every` and `metaprogramming` reach into the compiler's internal API
+    (`dotty.tools.dotc`), so they are tied to the compiler version Soundness is built with.
+    The library has a single source set, `gigantism.core`, and everything is exported to the
+    `soundness` umbrella.
+
+refer gigantism.Every
+refer gigantism.every
+refer gigantism.Macro
+
+entry .Every   every given instance of a type visible at a call site, collected into a list
+  detail
+      An `Every[T]` holds all the given `T`s in scope where it was summoned, in `#values`.
+      It is made by `every[T]`, or summoned as a context parameter through the companion's
+      `.default` given, which needs no import: a method which takes `(using Every[Option])`
+      sees every `Option` given its caller has in scope.
+
+      ```scala
+      import soundness.*
+
+      case class Shape(name: Text)
+
+      def shapes(using all: Every[Shape]): Int = all.values.length
+
+      given triangle: Shape = Shape(t"triangle")
+      given square: Shape = Shape(t"square")
+      shapes   // 2
+      ```
+
+      Instances are found whether they are local, imported by name or in implicit scope, and
+      mutually ambiguous ones are all included; an instance out of scope is not. The order of
+      the values is not specified. With no instance in scope, `#values` is empty.
+  refer gigantism.every
+  entry .default   summons an `Every[T]` of all the `T` instances in scope, as a context parameter
+      A transparent inline given: it expands at each use site, so it sees the instances in
+      scope there.
+  entry .summonAll   the macro which collects every instance of a type in scope at its expansion site
+      The implementation behind `every` and `.default`. It repeatedly searches for an
+      instance while ignoring those already found, and recovers both alternatives from an
+      ambiguous search through the compiler's internal `AmbiguousImplicits`.
+  entry #values   the instances found, as a standard-library `List`
+      The list is the Scala standard library's, not Soundness's, because the instances
+      collected may carry capabilities, which Soundness's `List` does not hold.
+      `List.from(every[T].values)` converts it.
+
+entry .every   collects every given instance of a type visible at the call site, as an `Every`
+    `every[T]` expands to an `Every[T]` holding each given `T` in scope at the call,
+    including instances which are ambiguous with one another. It does not fail when none is
+    in scope: the result is then empty.
+
+    ```scala
+    import soundness.*
+
+    case class Shape(name: Text)
+
+    locally:
+      given local: Shape = Shape(t"triangle")
+      every[Shape].values.length   // 1
+    ```
+
+entry .Macro   the type of a macro implementation's result: `Quotes ?=> Expr[T]`
+    A macro implementation declared to return `Macro[T]` receives the `Quotes` as a context
+    parameter, so `def impl(x: Expr[Int]): Macro[Text] = '{…}` needs no `(using Quotes)`.
+
+entry .Lifts   lifts Soundness `List`s of expressions into quoted lists and varargs
+  detail
+      The counterparts of `Expr.ofList` and `Varargs` for macro code which holds its lifted
+      expressions in a Soundness `List` rather than a standard-library `Seq`.
+  entry .list   lifts a `List` of expressions into an expression of a `List`
+  entry .varargs   lifts a `List` of expressions into a varargs argument, `Expr[Seq[T]]`
+  entry .Varargs   matches a varargs argument, giving its element expressions as a `List`
+    detail
+        The extractor counterpart of `Lifts.varargs`: `case Lifts.Varargs(elements) =>`
+        matches an `Expr[Seq[T]]` written as literal arguments.
+    entry .unapply   the element expressions of a varargs argument, if it was written as literal arguments
+
+entry .metaprogramming   compiler facilities beyond the public reflection API, for the `Quotes` in scope
+    Inside a macro implementation, `metaprogramming` wraps the `Quotes` in scope as a
+    `Metaprogramming`, so that `metaprogramming.imports` lists the imports visible at the
+    macro's call site.
+
+entry .Metaprogramming   compiler facilities beyond the public reflection API, for one `Quotes`
+  detail
+      Made with `metaprogramming` inside a macro implementation. It reaches into the
+      compiler's internal context, so it depends on the version of the compiler.
+  entry #Import   one import visible at a macro's call site
+    entry #wildcard   whether the import is a wildcard, `import p.*`
+    entry #term   the term imported from, as a `TermRef`
+  entry #quotes   the `Quotes` this wraps
+  entry #imports   every import in scope at the macro's call site, outermost first

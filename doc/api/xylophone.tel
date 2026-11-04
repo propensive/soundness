@@ -1,0 +1,2714 @@
+tel 1.0
+
+base xylophone
+import soundness
+
+info   XML as immutable typed values: parsing, literals, derived codecs, namespaces, XPath and schema-driven records
+detail
+    _Xylophone_ reads and writes [XML](https://en.wikipedia.org/wiki/XML). Text or bytes parse
+    into an `Xml` value, a tree whose node kinds are distinct types in the `Xml` companion
+    (`Xml.Element`, `Xml.Text`, `Xml.Cdata`, `Xml.Comment`, `Xml.ProcessingInstruction`,
+    `Xml.Doctype`, and `Xml.Fragment` for a sequence of nodes with no single parent); a case
+    class or enumeration converts to and from XML with the `Encodable in Xml` and `Decodable in
+    Xml` derived from its shape; a document's elements are navigated with dynamic member
+    access, selected with XPath, or updated through a lens; and XML written literally with
+    the `x"…"` interpolator is parsed and checked as the code compiles. A conversion which
+    cannot be made raises a typed `Xml.Error` naming the reason, and a malformed document
+    raises a `Parse.Error` whose position is a range, not just a line.
+
+    Everything comes from the `soundness` umbrella, with an error strategy and a schema in
+    scope. The schema is a choice imported by name — `xmlSchemas.freeformXmlSchema` admits any
+    element and attribute, and an `Xsd` stands in for it when a document should be validated
+    against an XML Schema:
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+    import xmlSchemas.freeformXmlSchema
+
+    case class Worker(name: Text, age: Int)
+
+    val xml: Xml = t"<Worker><name>Alice</name><age>30</age></Worker>".read[Xml]
+    val worker: Worker = xml.as[Worker]                   // Worker(t"Alice", 30)
+    val back: Xml = worker.in[Xml]                        // x"<Worker><name>Alice</name><age>30</age></Worker>"
+    val text: Text = worker.in[Text over Xml]
+    val again: Worker = text.read[Worker in Xml]
+    ```
+
+    The pieces, and where to find them:
+
+    - `Xml` is the node type and the home of nearly everything: its companion holds the node
+      classes, the `Aggregable`/`Readable`/`Loadable` givens which make `read[Xml]`,
+      `read[T in Xml]` and `load[Xml]` work from text or bytes, the primitive and collection
+      codecs, the Wisteria derivations for products and sums, the `Showable` and `Formatting`
+      which render a tree, the streaming serializers `Xml.emit` and `Xml.lend`, the
+      namespace vocabulary (`Xml.Scope`, `Xml.Name`, `Xml.Namespacing`, `Xml.Namespaced` and
+      the `@xmlns` and `@unqualified` annotations), the `@attribute` annotation, the XPath
+      extensions `select`, `selectText` and `evaluate`, position tracking (`Xml.Position`,
+      `Xml.Focus`, `Xml.positionable`, `asTracked`), the direct (tree-free) codec surface
+      (`Xml.Parsable`, `Xml.Printable`, `Xml.Field`, `Xml.Reader`, `Xml.Out`, `Xml.Direct`),
+      and `Xml.Provider`, a polyvinyl type provider over an XML Schema.
+    - `x"…"` and `xp"…"` are the interpolators for XML literals and XPath expressions, each
+      checked at compile time; `x"…"` is also a pattern.
+    - `XPath` and its package-private engine and parser implement XPath 1.0 over an `Xml`
+      tree; `Xsd` is a parsed XML Schema and `XmlSchema` the vocabulary a parse validates
+      against; `Namespace` binds a prefix to a URI as a given; `Tag`, `Attributive` and
+      `Renderable` are the typed-tag machinery which libraries such as honeycomb and savagery
+      build their vocabularies on; `Inlinable` and `inlining` generate direct parsers and
+      printers at compile time; `internal` holds the parser, the macros and the opaque
+      `Attributes` and `Scope` types which are exported from it.
+
+    Dynamic navigation (`xml.child().grandchild()`) is gated by the `dynamicAccess.dynamicXml`
+    given, imported by name, or by a `dynamically[Xml]:` block.
+
+    The library has three source sets:
+
+    - `xylophone.core` — everything above; the parser reads UTF-8 bytes itself, so a byte
+      source (a file, an HTTP body, a classpath resource) is parsed as it arrives with no
+      `Charset` in scope, and a text source is encoded to UTF-8 first.
+    - `xylophone.http` — the `construables`, `postables` and `servables` choice packages, so
+      an `Xml` value is an HTTP request or response body with the `application/xml` media
+      type and a body parses back to `Xml` on arrival.
+    - `xylophone.staged` — `InlinableStager`, the in-macro staging compiler which lets a
+      generated direct parser evaluate a user-written `Inlinable` instance at expansion time.
+      It is loaded by name from `Inlinable.Stager` when it is on the classpath, and nothing
+      refers to it directly.
+
+    The choice packages are givens to import by name, since `import xylophone.*` (and
+    `import soundness.*`) does not import givens: `xmlSchemas.freeformXmlSchema`;
+    `formatting.compactXmlFormatting` and `formatting.indentedXmlFormatting`;
+    `namespaceOptions.strictNamespaces` and `namespaceOptions.lenientNamespaces`;
+    `optionalityOptions.strictXmlAbsence`, `lenientXmlAbsence`, `strictXmlFaults` and
+    `lenientXmlFaults`; `optics.xmlLens`, `xmlOrdinalOptical` and `xmlEachOptical` (which
+    `lens` finds in implicit scope through their type, so these need no import);
+    `dynamicAccess.dynamicXml`; and, from the HTTP component, `construables.xmlConstruable`,
+    `construables.textXmlConstruable`, `postables.xmlPostable` and `servables.xmlServable`.
+    Each package merges with the umbrella's own package of the same name, so
+    `import formatting.indentedXmlFormatting` works after `import soundness.*`. The codec
+    modes `codecs.direct`, `codecs.derived` and `codecs.strict` come from distillate and
+    select, for every record in scope, whether `read[T in Xml]` and `in[Text over Xml]` use a
+    generated tree-free codec, the derived tree codec, or the generated one with a compile
+    error where none can be generated.
+
+    Everything is exported to the `soundness` umbrella except `Attributive`, `Renderable` and
+    `Tag`, which clash with honeycomb's names there and are reached as `xylophone.Tag` and so
+    on; `attribute` is exported as the type alias `soundness.attribute`, since galilei and
+    tarantula already export a term of that name.
+
+refer xylophone.Xml
+refer xylophone.x
+refer xylophone.xp
+refer xylophone.XPath
+refer xylophone.Xsd
+refer xylophone.XmlSchema
+refer xylophone.Namespace
+refer xylophone.Attributes
+refer xylophone.Scope
+
+entry .Xml   an XML node or sequence of nodes, and the companion which holds the whole XML vocabulary
+  detail
+      `Xml` is the sealed type of every XML value: a `Node` — an `Element`, `Text`, `Cdata`,
+      `Comment`, `ProcessingInstruction`, `Doctype` or `Header` — or a `Fragment`, a sequence
+      of nodes with no single parent, which is what a parse returns (the prolog plus the
+      root) and what a selection of several children yields. Every `Xml` is immutable: an
+      update returns a new value. A one-node `Fragment` equals its node, so
+      `t"<a/>".read[Xml] == Xml.Element(t"a", Attributes.empty, Array())`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import xmlSchemas.freeformXmlSchema
+      import dynamicAccess.dynamicXml
+
+      val doc: Xml = t"<library><book id=\"1\"><title>Dune</title></book></library>".read[Xml]
+      doc.book().title().as[Text]            // t"Dune"
+      doc.book(Prim).show                    // t"<book id=\"1\"><title>Dune</title></book>"
+      doc.selectText(xp"//book/@id")         // t"1"
+      x"<book><title>Dune</title></book>" == doc.book()
+      ```
+
+      The type carries three refinements. `Topic` is the label of the node as a literal type
+      where it is known (`Xml of "book"`, and `"#text"` for a `Text`); `Transport` is the set
+      of labels admissible as its children; `Form` is the `XmlSchema` it was parsed under.
+      The typed tags of honeycomb and savagery are built on these; for an `Xml` read from
+      text the three are unrefined.
+
+      **Reading.** `text.read[Xml]` and `data.read[Xml]` parse content and drop a leading
+      `<?xml …?>` declaration (`.aggregable2`, `.aggregableText2`); `source.load[Xml]` keeps
+      the declaration as the `Document[Xml]`'s metadata `Header` (`.loadable`,
+      `.loadableData`); `source.read[T in Xml]` parses and decodes in one step
+      (`Xml2#aggregableIn`, or the tree-free `Xml1#aggregableParsed` where `T` has an
+      `Xml.Parsable`). Each needs an `XmlSchema`, an `Xml.Scope` and an `Xml.Namespacing`
+      (the companions give the defaults for the last two) and a `Tactic[Parse.Error]`. A
+      byte source is parsed as UTF-8 as it arrives, with no `Charset` in scope.
+
+      **Decoding and encoding.** `xml.as[T]` decodes through the `Decodable in Xml` for `T`:
+      the primitives (`.int`, `.boolean`, …), any type with a `Decodable in Text`
+      (`.decodable`), collections (`.listDecodable` and relatives), `Optional`
+      (`.optionalDecodable`), `Map` (`.mapDecodable`), and products and sums derived by
+      `.DecodableDerivation`. `value.in[Xml]` encodes through the mirror givens;
+      `value.in[Text over Xml]` and `value.in[Data over Xml]` render straight to text or
+      bytes. A failed decode raises `Xml.Error`, and under an accruing strategy
+      (`validate[Xml.Focus]`) every bad field is reported at once, each with the `Xml.Focus`
+      naming its path.
+
+      **Writing.** `xml.show` renders a node under the `Xml.Formatting` in scope (compact by
+      default; `formatting.indentedXmlFormatting` indents element-only content). A whole
+      `Document[Xml]` streams out through `.emit` (pull form on a fiber, or push form on the
+      caller's thread as text or UTF-8 bytes) or `.lend`, which lends the serializer's own
+      buffer block by block.
+
+      **Namespaces.** The parser resolves prefixes as it reads: each `Element` carries the
+      bindings in force at it as its `scope`, and `Element#namespace`, `#localName` and
+      `#qualified` read the resolved name. Two names are the same when their URIs and local
+      parts agree, whatever prefixes bind them, and a prefixed selection (`` doc.`a:x`() ``,
+      `elements(Xml.Name(uri, local))`) selects by resolved name. An unbound prefix is a
+      parse error unless `namespaceOptions.lenientNamespaces` is in scope. The serializer
+      writes the declaration an element's scope needs and nothing above it declared, so a
+      subtree built in code or cut from a document writes namespace-well-formed. A derived
+      codec puts a type in a namespace with `@xmlns("uri")`, or with an `Xml.Namespaced`
+      given for a type which cannot be annotated.
+
+      **Direct codecs.** `Xml.Parsable` and `Xml.Printable` read and write a value with no
+      tree built, through an `Xml.Reader` or an `Xml.Out`. A record opts in with
+      `given Foo is Xml.Parsable = Xml.Parsable.derived` (or `.staged`,
+      `Inlinable.parsable[Foo]`, `Inlinable.printable[Foo]`), with `derives Xml.Direct`, or
+      for every record at once with `import codecs.direct`.
+
+      **Schemas.** `object Orders extends Xml.Provider(cp"/xsd/orders.xsd")` reads an XML
+      Schema at compile time and `Orders.record(xml)` is a record with one typed member per
+      child element and attribute of the schema's root.
+
+      `object Xml` also inherits members from the hidden layers `Xml1`, `Xml2`, `Xml3` and
+      `Xml4`, which order their givens by priority: the direct and tree read paths,
+      `in[Text over Xml]`, the `Xml.Field` fallback and `Xml.Provider` are declared, and
+      documented, there.
+  refer xylophone.Xml.Element
+  refer xylophone.Xml.Fragment
+  refer xylophone.Xml.Error
+  refer xylophone.Xml.Scope
+  refer xylophone.Xml.Parsable
+  refer xylophone.Xml.Printable
+  refer xylophone.Xml.Provider
+  refer xylophone.x
+  refer xylophone.XPath
+  refer xylophone.XmlSchema
+  entry #Topic   the node's label as a literal type, where it is known; otherwise any `Label`
+      `Xml of "book"` is an `Xml` whose `Topic` is `"book"`; an `Xml.Text` has `Topic =
+      "#text"`. A node parsed from text is unrefined. The typed tags (`Tag`) refine it so that
+      a tag's children can be checked against its `Transport`.
+  entry #Transport   the labels admissible as this node's children, as a union of literal types
+  entry #Metadata   the metadata of a `Document[Xml]`: its `Xml.Header`
+      A `Document[Xml]` from `load[Xml]` pairs a root with a `Header` holding the version,
+      encoding and standalone declarations, and the position index when the document was
+      loaded with `parsing.trackPositions` in scope.
+  entry #Chunks   the chunk type a document streams as: `Text`
+  entry #Form   the `XmlSchema` this value was parsed or built under
+  entry #as   decodes this value to a type, through its `Decodable in Xml`
+      `xml.as[T]` unwraps a one-node `Fragment` and decodes the node. It needs a
+      `(T is Decodable in Xml)^` — a primitive given, the `Decodable in Text` bridge, a
+      collection or `Optional` given, or the derivation for a case class or enumeration —
+      which in turn needs a `Tactic[Xml.Error]`, and a `Foci[Xml.Focus]` (a no-op outside a
+      `validate[Xml.Focus]` boundary). A value which cannot be read raises `Xml.Error` with
+      the reason: `Malformed` for text which is not the expected type, `Untextual` for an
+      element with no single text run, `Missing` or `Absent` for a field with no element.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import xmlSchemas.freeformXmlSchema
+
+      case class Worker(name: Text, age: Int)
+
+      x"<message>42</message>".as[Int]                                       // 42
+      x"<Worker><name>Alice</name><age>30</age></Worker>".as[Worker]         // Worker(t"Alice", 30)
+      x"<message>many</message>".as[Int]                                     // raises Xml.Error
+      ```
+
+      Positions stay `Unset` on the foci; decode a `Document[Xml]` loaded with
+      `parsing.trackPositions` through `asTracked` to have each focus carry its source
+      line and column.
+  entry #elements   every child element with a resolved name, as a `Fragment`
+      `xml.elements(Xml.Name(t"urn:a", t"x"))` is every child, of every element node here,
+      whose namespace URI and local part are the name's, whatever prefix the document binds
+      it with; `Xml.Name(t"x")` selects children in no namespace. Unlike `selectDynamic`,
+      this needs no `Dynamical` and no `Scope`.
+  entry #element   the child element at an ordinal with a resolved name, as a one-node `Fragment`
+      `xml.element(name)` is the first match and `xml.element(name, Sec)` the second; an
+      ordinal with no match gives an empty `Fragment`, not an error.
+  entry #selectDynamic   `xml.child`: every child element with the name, as a `Fragment`
+      Dynamic navigation, gated by an erased `Xml is Dynamical` — `import
+      dynamicAccess.dynamicXml`, or a `dynamically[Xml]:` block — and the `Xml.Scope` in
+      scope. `xml.foo` selects every child element labelled `foo` of every element node in
+      the fragment, in document order; XML tags are not unique, so the result is a `Fragment`
+      of zero or more. A prefixed name (`` xml.`a:x` ``) whose prefix is bound, by the
+      `Scope` given or by the parent element's own bindings, selects by resolved name,
+      whatever prefix the child uses; an unbound prefix matches the raw label.
+  entry #applyDynamic   `xml.child(ordinal)`: one child element with the name, defaulting to the first
+      `xml.foo()` is the first child element labelled `foo` and `xml.foo(Sec)` the second,
+      each as a one-node `Fragment`, or an empty `Fragment` when there is no such child.
+      Gated as `#selectDynamic` is, so the steps chain: `data.b().c().as[Int]`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import xmlSchemas.freeformXmlSchema
+      import dynamicAccess.dynamicXml
+
+      val list = t"<r><x>1</x><x>2</x></r>".read[Xml]
+      list.x(Sec).as[Int]    // 2
+      list.x.as[List[Int]]   // List(1, 2)
+      ```
+  entry .Node   the sealed root of the single-node kinds: element, text, CDATA, comment, PI, doctype, header
+      A `Node` is one XML node, as opposed to a `Fragment` of several. The kinds are
+      `Element`, `Text`, `Cdata`, `Comment`, `ProcessingInstruction`, `Doctype` and `Header`,
+      and a match over `Xml` with a case for `Fragment` and one for each is exhaustive. An
+      `Element`'s `children` is an `Array[Xml.Node]`. Every node is pure, so one may be held
+      anywhere without capturing anything.
+  entry .Element   an element: a label, attributes, children, and the namespace bindings in force at it
+    detail
+        `Xml.Element(label, attributes, children)` is an element whose `label` is the raw
+        name as written (`p:a` keeps its prefix), whose `attributes` are an `Attributes` in
+        document order, and whose `children` are an `Array[Xml.Node]`. A fourth parameter,
+        `scope`, is the `Xml.Scope` of namespace bindings in force at the element — filled by
+        the parser, by an `x"…"` literal, or by a derived encoder — which the serializer
+        consults to write any declaration the element needs that nothing above it declared.
+
+        `Element` is a plain class, not a case class, because the scope is provenance: it
+        takes no part in `equals`, `hashCode` or the extractor, so a parsed element equals
+        the same element built by hand, and the pattern `Xml.Element(label, attributes,
+        children)` sees the three fields it always did.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import xmlSchemas.freeformXmlSchema
+
+        val built = Xml.Element(t"book", Attributes(t"id" -> t"1"), Array(Xml.Text(t"Dune")))
+        built == t"<book id=\"1\">Dune</book>".read[Xml]          // true
+        built.show                                                 // t"<book id=\"1\">Dune</book>"
+
+        Xml.Element(t"p:a", Attributes.empty, Array(), Xml.Scope(t"p" -> t"urn:p")).show
+        // t"<p:a xmlns:p=\"urn:p\"/>"
+        ```
+
+        A typed tag's element (`Tag.Container#node`) is an `Element` with `Xml.Vacuiscible`
+        mixed in, so it can be applied to children; its attributes are read and written with
+        `#selectDynamic` and `#updateDynamic`, each checked against the tag's
+        `Xml.XmlAttribute` givens.
+    refer xylophone.Xml.Scope
+    refer xylophone.Xml.Name
+    refer xylophone.Attributes
+    entry .apply   makes an element from a label, attributes, children and an optional scope
+        `Xml.Element(label, attributes, children)` has an empty scope; pass an `Xml.Scope` as
+        the fourth argument for an element whose prefixes (or default namespace) should be
+        declared when it is written.
+    entry .unapply   the pattern `Xml.Element(label, attributes, children)`: three fields, never the scope
+    entry #label   the element's name as written, prefix and all
+    entry #attributes   the element's attributes, in document order
+        An `Attributes`, including any `xmlns` declarations, which are kept as attributes so
+        the document writes back as it was read. `attributes(t"id")` is a value (throwing if
+        absent), `attributes.fetch(t"id")` an `Optional`.
+    entry #children   the child nodes, in order
+    entry #scope   the namespace bindings in force at this element, from its ancestors and itself
+        The `Xml.Scope` the parser, literal or encoder filled in; empty for an element built
+        by hand with no scope given. Not part of equality.
+    entry #bindings   the scope extended by any `xmlns` declarations among this element's own attributes
+        For a hand-built element with declarations in its attributes but no scope, this is
+        where the declarations take effect.
+    entry #prefix   the prefix of the label, or `Unset` if the label has no colon
+    entry #localName   the label with its prefix removed
+    entry #resolve   the URI a prefix is bound to at this element, or `Unset` if unbound
+        `element.resolve(Unset)` is the default namespace. A prefix bound by the element's
+        own attributes resolves, as does one bound by an ancestor.
+    entry #namespace   the URI of this element's own name, or `Unset` if it is in no namespace
+    entry #qualified   the resolved name: namespace URI and local part, as an `Xml.Name`
+        The accessor is `qualified`, not `name`, because the typed tags are elements and
+        `Format` already gives them a `name`. Two elements whose `qualified` names are equal
+        are the same element name whatever prefixes they use; shown in Clark notation,
+        `{urn:a}x`.
+    entry #attribute   the value of the attribute with a resolved name, or `Unset`
+        `element.attribute(Xml.Name(t"urn:a", t"id"))` finds an attribute whose prefix
+        resolves to the URI and whose local part matches; `Xml.Name(t"id")` finds the
+        unprefixed attribute `id`. An unprefixed attribute is in no namespace, whatever the
+        default namespace is.
+    entry #selectDynamic   `element.attr`: an attribute's value, checked against the tag's attribute givens
+        For typed tags: `element.href` reads the `href` attribute, provided an
+        `"href" is Xml.XmlAttribute on element.Topic in element.Form` is in scope, so a
+        misspelt or inapplicable attribute is a compile error. The result is an
+        `Optional[Text]`.
+    entry #updateDynamic   `element.attr = value`: a copy of the element with the attribute set
+        For typed tags: returns a new `Element` of the same `Topic`, `Transport` and `Form`
+        with the attribute updated, checked against the tag's `Xml.XmlAttribute` givens.
+  entry .Text   a run of character data
+    detail
+        `Xml.Text(t"hello")` is a text node; its `Topic` is `"#text"`. Entities are resolved
+        on the way in (`&amp;` is the character `&` in `text`) and re-escaped on the way out;
+        a carriage return is written as `&#xD;` so line-ending normalisation cannot rewrite
+        it. Text and `String` values convert to an `Xml.Text` implicitly in a typed tag's
+        children (`.text`, `.string`).
+    entry #text   the characters, with entities resolved
+    entry #Topic   `"#text"`
+  entry .Cdata   a `<![CDATA[…]]>` section, kept as a section
+    detail
+        Text which contains `<not a tag>` survives a round trip without being escaped into
+        something else. A CDATA section is not text for the purposes of decoding: an element
+        whose only child is a `Cdata` has no single text run, so `as[Int]` on it raises
+        `Xml.Error` with `Untextual`; the schema provider's readers concatenate text and
+        CDATA alike.
+    entry #text   the content between the delimiters, verbatim
+  entry .Comment   a `<!-- … -->` comment, wherever it appears
+    detail
+        Kept in the prolog and between elements alike, and written back verbatim. A comment
+        between the children a derived decoder expects is ignored.
+    entry #text   the comment's content
+  entry .ProcessingInstruction   a `<?target data?>` instruction, including the empty-data `<?target?>`
+    detail
+        A stylesheet instruction in a prolog survives a read and a write. The target may not
+        be `xml` in any case, which is reserved for the declaration.
+    entry #target   the instruction's target
+    entry #data   the instruction's data, or empty text for `<?target?>`
+  entry .Doctype   a `<!DOCTYPE …>` declaration, which serialises back verbatim
+    detail
+        The parser keeps the declaration's text; it has no DTD internal subset support, so a
+        declaration with one is not parsed.
+    entry #text   the declaration's content after `DOCTYPE`
+  entry .Header   the `<?xml …?>` declaration: version, encoding, standalone, and the position index
+    detail
+        The metadata of a `Document[Xml]`: `load[Xml]` fills it from the declaration (and
+        `Xml.header` is the plain `1.0` header for a document which had none), and `show`
+        and `emit` write it back. `positionIndex` is present when the document was loaded with
+        `parsing.trackPositions` in scope, and is excluded from `equals` and `hashCode`, so a
+        tracked and an untracked load of the same source compare equal.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import xmlSchemas.freeformXmlSchema
+        import threads.platformThreads
+
+        supervise:
+          t"""<?xml version="1.0" encoding="UTF-8"?><root/>""".load[Xml].metadata
+          // Xml.Header(t"1.0", t"UTF-8", Unset)
+        ```
+    entry #version   the XML version, usually `1.0`
+    entry #encoding   the declared encoding, or `Unset`
+    entry #standalone   the `standalone` declaration, or `Unset`
+    entry #positionIndex   the source-position index recorded by a tracked load, or `Unset`
+  entry .Fragment   a sequence of nodes with no single parent
+    detail
+        What a parse returns (the prolog's nodes plus the root), what a dynamic selection
+        returns (zero or more matching children), and what an `Optional` or collection
+        encoder produces before the product encoder flattens it into repeated children. A
+        `Fragment` of one node equals that node, and an empty `Fragment` is the absent
+        sentinel the decoders hand to a missing field.
+
+        ```scala
+        import soundness.*
+
+        val fragment: Xml = Xml.Fragment(Xml.Comment(t"note"), Xml.Element(t"a", Attributes.empty, Array()))
+        fragment.show   // t"<!--note--><a/>"
+        ```
+    entry .apply   a fragment of nodes, with the label of the whole as a type argument
+        `Xml.Fragment[topic](nodes*)` accepts any `Xml` values whose `Topic` is within
+        `topic`, flattens nested fragments into their nodes, and types the result as
+        `Fragment of topic`; the typed tags use it for a tag's children.
+    entry #nodes   the nodes, in order
+  entry .Vacuiscible   lets a typed tag's element be applied to children
+    detail
+        Mixed into the element a `Tag.Container` produces, so that `div(id = t"x")(p(t"hi"))`
+        reads as a tag applied to attributes, then to children. Each child is an
+        `Optional[Xml of (? <: node.Transport)]`, so an `Unset` child is dropped and a child
+        of an inadmissible label is a compile error.
+    entry #apply   a copy of the element with the given children, `Unset` ones dropped
+  entry .Error   raised when XML cannot be read as the type asked for
+    detail
+        Error 149: _the XML could not be read because `reason`_, with a reason from
+        `Xml.Error.Reason`. Raised by the primitive decoders, the text bridge, the derived
+        product and sum decoders, and the direct parsers. These are raise-and-continue
+        errors: a decoder records the error through its `Tactic[Xml.Error]` and continues
+        with a zero or empty sentinel, so a record with several bad fields accrues one error
+        per field under `validate[Xml.Focus]` rather than stopping at the first, and each
+        error's `Xml.Focus` carries the XPath of the field at fault. Under
+        `strategies.throwUnsafely` the first is thrown.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import xmlSchemas.freeformXmlSchema
+
+        case class Worker(name: Text, age: Int)
+
+        val attempt = validate[Xml.Focus]:
+          x"<Worker><name>Ann</name><age>many</age></Worker>".as[Worker]
+        ```
+    refer xylophone.Xml.Focus
+    entry .Reason   why the XML could not be read, each with its number
+        The cases, each extending `Reason(n)` so the error reads as `SN-149.n`:
+        `Malformed(text, expected)` (1), text which is not a valid value of the expected
+        type; `Untextual(expected)` (2), an element with no single text run to read as the
+        type; `Absent(expected)` (3), no element or attribute supplied a required primitive;
+        `AbsentProduct(product)` (4) and `AbsentVariant(sum)` (5), a required nested record or
+        enumeration with no element and no default; `UnknownVariant(discriminant, sum)` (6),
+        an element label naming no variant of the enumeration; `Empty` (7), an element with
+        no text where the text bridge needed some; and `Missing` (8), a field with no element
+        or attribute, where the type cannot be named at the raise site.
+    entry .communicable   renders each reason as a message
+    entry #reason   the `Xml.Error.Reason`
+  entry .Issue   what the parser or the `x"…"` macro found wrong with XML text
+    detail
+        The issues a `Parse.Error` for XML carries, each with a `describe` message:
+        `BadInsertion` (a value cannot be interpolated at this point of a literal),
+        `ExpectedMore` (the content ended prematurely), `BadDocument` (no single root tag),
+        `UnquotedAttribute`, `InvalidTag(name)`, `InvalidTagStart(prefix)`,
+        `DuplicateAttribute(name)`, `InadmissibleTag(name, parent)` (the schema does not
+        allow the child under the parent), `OnlyWhitespace(char)`, `Unexpected(char)`,
+        `UnknownEntity(name)`, `ForbiddenUnquoted(char)`, `MismatchedTag(open, close)`,
+        `UnopenedTag(close)`, `Incomplete(tag)` (the content ended with the tag open),
+        `UnknownAttribute(name)`, `UnknownAttributeStart(name)`,
+        `InvalidAttributeUse(attribute, element)`, `UnboundPrefix(prefix)` (a prefix with no
+        namespace binding, under `Xml.Namespacing.Strict`) and `BadEncoding` (the input is
+        not valid UTF-8). The `Parse.Error`'s position is a range — the offset and length of
+        the text at fault, in bytes for a byte source and characters for a whole `Text` —
+        so a tool can underline exactly the mismatched closing tag.
+    entry #describe   the issue as a message
+  entry .Position   a source position: line, column, and the byte offset and length of a span
+    detail
+        Where a tracked document's element or a parse error lies. `line` and `column` are
+        ordinals (`Prim` is the first); `offset` and `length` count bytes for a byte source,
+        which is what an editor needs to underline a span in a UTF-8 file, and equal the
+        character counts for ASCII. `Document[Xml]#locate(xpath)` resolves an `XPath` to one
+        for a document loaded with `parsing.trackPositions` in scope.
+    entry #line   the line, as an ordinal
+    entry #column   the column, as an ordinal, counting code points
+    entry #offset   the byte offset into the source, or `Unset`
+    entry #length   the length of the span, or `Unset`
+    entry #describe   `line 3, column 7`
+    entry #span   the position as a `Span` for a diagnostic
+  entry .PositionIndex   the compact record of where every element of a tracked document lies
+      An opaque array of integers built by a tracked load and held in the document's
+      `Header`. It has no public operations of its own: `Document[Xml]#locate(xpath)`
+      (through `.positionable`) and `asTracked` read it.
+  entry .Focus   where in a document a decoding error occurred: the XPath, and the position if tracked
+    detail
+        The focus type of XML decoding: `validate[Xml.Focus]` collects every `Xml.Error`
+        raised while decoding a document together with the `XPath` of the field at fault.
+        `position` is `Unset` unless the document was loaded with `parsing.trackPositions`
+        and decoded through `asTracked`, which looks each path up in the position index.
+    entry #path   the XPath to the node being decoded
+    entry #position   the source position, or `Unset` for an untracked document
+    entry #withPosition   a copy with `position` resolved against a tracked document
+  entry .positionable   resolves an `XPath` to an `Xml.Position` in a tracked `Document[Xml]`
+      The `Positionable` given behind `document.locate(path)`: `Unset` for a document loaded
+      without `parsing.trackPositions`, or for a path which matches nothing. The path's
+      first step names the root element itself; `locateKey` is always `Unset`, since XML has
+      no key positions distinct from its elements.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import xmlSchemas.freeformXmlSchema
+      import parsing.trackPositions
+
+      val tracked: Document[Xml] = t"<root><child/></root>".load[Xml]
+      tracked.locate(XPath().element(t"root", 1).element(t"child", 1)).let(_.column.n1)   // 7
+      ```
+  entry .asTracked   decodes a tracked document, giving every accrued focus its source position
+      An extension on `Document[Xml]`. `document.asTracked[T]` decodes like `Xml#as`, then
+      supplements each `Xml.Focus` accumulated inside the surrounding `validate[Xml.Focus]`
+      with the position its XPath resolves to in the document's index, so a validation
+      report can name line and column. Outside a `validate` block the foci are inert and the
+      call costs nothing; for an untracked document the positions stay `Unset`. Named
+      `asTracked` rather than `as` because `as` is the generic decoder extension.
+  entry .aggregable   `source.read[Xml of content]` from bytes: parses a typed fragment, dropping any declaration
+      The `Aggregable by Data` given for an `Xml of content` whose `content` label is
+      reifiable. Needs an `XmlSchema`, an `Xml.Scope`, an `Xml.Namespacing`, a
+      `Tactic[Parse.Error]` and a `Buffering`. A stream is parsed as it arrives, not
+      gathered first; a leading `<?xml …?>` declaration is accepted and dropped, so a whole
+      document reads as a fragment (use `load[Xml]` to keep it).
+  entry .aggregable2   `source.read[Xml]` from bytes: parses content, dropping any declaration
+      The plain-`Xml` form of `.aggregable`, with the same contextual needs. The parser reads
+      UTF-8 bytes directly, so a file, an HTTP body or a classpath resource is parsed with
+      no `Charset` in scope.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import xmlSchemas.freeformXmlSchema
+
+      t"<message>hello world</message>".read[Xml]
+      ```
+  entry .aggregableText   `text.read[Xml of content]`: the text is encoded to UTF-8 and parsed as bytes
+  entry .aggregableText2   `text.read[Xml]`: the text is encoded to UTF-8 and parsed as bytes
+      A `Text` source costs one copy, to UTF-8; a `Parse.Error`'s offset and length for a
+      whole `Text` are converted back to character counts, so a literal's error span is
+      right for non-ASCII content.
+  entry .loadable   `text.load[Xml]`: a `Document[Xml]` with its `<?xml …?>` header kept as metadata
+      The `Loadable by Text` given. The root is parsed as `.aggregableText2` would parse it,
+      but a leading declaration is lifted into the document's `Xml.Header` rather than
+      dropped, and a document with none gets `Xml.header`. Needs the parse context
+      (`XmlSchema`, `Xml.Scope`, `Xml.Namespacing`, `Tactic[Parse.Error]`) and a
+      `PositionTracking`: with `parsing.trackPositions` in scope the parser records a
+      `PositionIndex` in the header, which `Document[Xml]#locate` and `asTracked` read.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import xmlSchemas.freeformXmlSchema
+      import threads.platformThreads
+
+      supervise:
+        t"""<?xml version="1.0"?><root>content</root>""".load[Xml]
+        // Document(x"<root>content</root>", Xml.Header(t"1.0", Unset, Unset))
+      ```
+  entry .loadableData   `data.load[Xml]` or `path.load[Xml]`: a document from a byte source, parsed as it arrives
+      As `.loadable`, from bytes: a file, a classpath resource or an HTTP body loads with no
+      `Charset`, and positions count bytes.
+  entry .streamable   a `Document[Xml]` streams as `Text`, serialised on a fiber
+      The `Streamable by Text over Credit` given, built on the pull form of `.emit`: needs a
+      `Monitor` and a `Probate`, so it is used under `supervise`. `document.read[Text]`
+      renders the whole document, header and all, under the `Xml.Formatting` in scope.
+  entry .abstractable   an `Xml` value as an HTTP body: `application/xml` with the `Codepage`'s charset
+      The `Abstractable across HttpStreams` given, from which telekinesis derives a
+      `Postable` and a `Servable`; the body is the value's `show`, encoded in the `Codepage`
+      in scope. The `postables.xmlPostable` and `servables.xmlServable` givens of
+      `xylophone.http` are the direct forms.
+  entry .instantiable   an HTTP request or response body, read back as `Xml`
+      The `Instantiable across HttpRequests from Text` given: parses the body's text with
+      the parse context in scope, raising `Parse.Error` for malformed XML.
+  entry .showable   renders any `Xml` as text, under the `Xml.Formatting` in scope
+      `xml.show` renders a node, fragment or header to one `Text`: compact on a single line
+      by default, or indented when `formatting.indentedXmlFormatting` is imported. Character
+      data is escaped (`&`, `<`, `>`, and `\r` as `&#xD;`), attribute values additionally
+      for `"`, tab and newline, and the content of comments, CDATA sections, doctypes and
+      processing instructions is written verbatim. An element whose scope binds a prefix it
+      uses which no ancestor declared gets the `xmlns` declaration written for it.
+
+      ```scala
+      import soundness.*
+
+      val worker = Xml.Element(t"Worker", Attributes.empty, Array(Xml.Element(t"name", Attributes.empty, Array(Xml.Text(t"Alice")))))
+
+      locally:
+        import formatting.compactXmlFormatting
+        worker.show   // t"<Worker><name>Alice</name></Worker>"
+
+      locally:
+        import formatting.indentedXmlFormatting
+        worker.show   // t"<Worker>\n  <name>Alice</name>\n</Worker>\n"
+      ```
+
+      An element with character data among its children is always written inline, so
+      indentation can never alter its content.
+  entry .inspectable   a debug rendering as an `xml"…"` literal, compact and on one line
+      Fixes compact formatting, since a debugger cannot supply a `Formatting`, and renders
+      the node's own source escaped into a literal: `xml"<message>hello</message>"`, which is
+      distinguishable from the `Text` holding the same markup and from honeycomb's
+      `html"…"`.
+  entry .Formatting   how a tree is serialised: the indent unit, if any, and whether a newline ends it
+    detail
+        `indent` is the whitespace emitted per nesting level when indenting element-only
+        content, or `Unset` to keep everything on one line; `trailingNewline` appends a final
+        newline. The companion's `default` is compact, and the `formatting` package bundles
+        `compactXmlFormatting` (the same) and `indentedXmlFormatting` (two spaces, with a
+        trailing newline), to import by name. Every renderer — `show`, `emit`, `lend`, the
+        `Streamable`, and `in[Text over Xml]` — takes the `Xml.Formatting` in scope.
+    entry .apply   a formatting from an optional indent unit and the trailing-newline flag
+    entry .default   compact: no indent, no trailing newline
+    entry #indent   the indent unit, or `Unset` for single-line output
+    entry #trailingNewline   whether a newline ends the output
+  entry .emit   serialises a `Document[Xml]` in blocks: pulled through an iterator, or pushed to a function
+      Two forms. `Xml.emit(document)` serialises on a fiber and hands out the text through
+      an `Iterator[Text]`, so a large document is written to a socket or file before it is
+      fully rendered; it needs an `Xml.Formatting`, a `Monitor` and a `Probate`, so it runs
+      under `supervise`. `Xml.emit[medium](document, deliver)` is the push form: it
+      serialises on the caller's thread and hands each block to `deliver` as it fills, with
+      no fiber and no thread handoff per block — the right shape for writing to a file, a
+      socket or an `OutputStream`. The medium is chosen by the type argument through an
+      `Xml.Emitter`: `emit[Text]` delivers text blocks, and `emit[Data]` delivers UTF-8
+      bytes escaped and encoded straight from the serialiser, with no intermediate `Text`.
+      Both take an `Xml.Formatting`, and the push form a `Buffering` for the block size.
+
+      ```scala fuel
+      typecheck
+      ##
+      Xml.emit[Data](document, chunk => socket.write(chunk))
+
+      supervise:
+        Xml.emit(document).each(chunk => out.write(chunk))
+      ```
+  entry .lend   serialises a document to UTF-8 and lends each filled block, copying nothing
+      The borrowing form of the push `emit`: the consumer sees the writer's own buffer as a
+      `Region[Data]` with a branded interval proving every index in range, valid only for
+      the duration of the call — the discipline of `Stream.lend`. A consumer which must keep
+      the bytes materialises them itself; `emit[Data]` is that consumer for the common
+      case. Needs an `Xml.Formatting` and a `Buffering`.
+
+      ```scala fuel
+      typecheck
+      ##
+      Xml.lend(document): region =>
+        interval => region.visit(interval)(index => sink.put(region(index)))
+      ```
+  entry .Emitter   how the push form of `emit` reaches its consumer: as text blocks or as UTF-8 bytes
+    detail
+        A typeclass over the medium: `Emitter[Text]` writes through a `Producer[Text]`, and
+        `Emitter[Data]` through the byte-level UTF-8 writer behind `lend`, materialising each
+        block. Both givens are in the companion, so `emit[Text]` and `emit[Data]` need no
+        import.
+    entry .text   the text medium: blocks of `Text`
+    entry .data   the byte medium: blocks of UTF-8 `Data`, encoded directly from the serialiser
+    entry #emit   writes a document under a formatting, handing each block to a function
+  entry .Out   the output an `Xml.Printable` writes into: five leaf operations, one per kind of markup
+    detail
+        An exclusive, stateful capability which the serialiser and generated printers write
+        through, so one traversal serves text output (`show`, the pull `emit`) and byte
+        output (`lend`, `emit[Data]`) alike. Its implementations are internal; a hand-written
+        `Xml.Printable` calls these methods, or the helpers on `Xml.Printable` such as
+        `writeLeaf`.
+    entry #ascii   markup known to be ASCII: delimiters and keywords
+    entry #name   an element or attribute name, or a prefix, written verbatim
+        A document repeats its names, so a byte-level output may cache their encodings.
+    entry #raw   text written verbatim, escaped for nothing: comments, CDATA, doctypes and PIs
+    entry #text   character data, escaped for text content
+    entry #attribute   an attribute value, escaped for a double-quoted attribute
+  entry .header   the default header, `<?xml version="1.0"?>`, for a document read without one
+  entry .name   the format's name, `XML`, as a `Format`
+  entry .Topic   the companion's own topic, `"xml"`, as a `Tag.Container`
+      `object Xml` is itself a `Tag.Container` labelled `xml` admitting `head` and `body`,
+      which is how the typed tags' machinery reaches a root; this is not the `Topic` of an
+      `Xml` value, which is the instance member.
+  entry .Transport   the companion's own admissible children as a container: `"head" | "body"`
+  entry .Integral   an unused marker trait
+  entry .Decimal   an unused marker trait
+  entry .Id   an unused marker trait
+  entry .nodes   flattens a `List[Xml]` into one `Array[Xml.Node]`, splicing fragments
+      An extension on `List[Xml]`: each `Fragment` contributes its nodes and each node
+      itself, so a list of children built from mixed values becomes the array an
+      `Xml.Element` takes.
+  entry .text   converts a `Text` to an `Xml.Text`, for a typed tag's children
+      A `Conversion[Text, Xml of label]` for any label admitting `"#text"`, so `p(t"hello")`
+      works on a typed tag. Not for general use: it is found through the companion only
+      where an `Xml of label` is expected.
+  entry .string   converts a `String` to an `Xml.Text`, as `.text` does
+  entry .conversion3   widens an `Xml of label` to an `Xml of content` where the label is within the content
+  entry .comment   admits an `Xml.Comment` as the child of any typed tag
+  entry .xmlConversion   converts any `Encodable in Xml` value to `Xml`, where an `Xml` is expected
+      The coercion behind `document.lens(_.Worker = Worker(t"Alice", 30))`: the right-hand
+      side of a lens assignment, or any `Xml` parameter, accepts a case class, an `Int` or a
+      `Text` and encodes it. Other formats ask for an import such as
+      `conversions.encodableToJson`; XML's lives on the companion.
+  entry .sequences   lifts a conversion over the elements of a `Seq`
+  entry .interpolator   the `x"…"` interpolator's implementation: parses and checks a literal as it compiles
+      The `Interpolable` given which the `x` extension on `StringContext` uses. Its macro
+      parses the literal's parts leniently, checks every prefix the literal uses against
+      the `Namespace` givens in scope (an undeclared, unbound prefix is a compile error),
+      reports a malformed literal at the exact span at fault, and substitutes each hole by
+      its position: a `Text` or any `Encodable in Xml` as content, an `Xml` as a node, a
+      `Text` as an attribute value. See `x`.
+  entry .extrapolator   the `x"…"` pattern's implementation: matches a literal shape and binds its holes
+      The `Extrapolable` given behind `case x"<a id=$value>$child</a>"`. See `x` for the
+      shapes a pattern may take and what each hole binds.
+  entry .Hole   the positions an `x"…"` literal or pattern may have a hole in
+      `Text` (character data), `Tagbody` (inside a start tag, for attributes), `Comment`,
+      `Element(tag)` (the whole element), `Attribute(tag, attribute)` (an attribute's value)
+      and `Node(parent)` (a child node). The interpolator macro classifies each `$` by the
+      context it lands in and rejects one in a position with no meaning, such as inside
+      CDATA, with `Xml.Issue.BadInsertion`.
+  entry .select   evaluates an XPath against this tree and returns the matching nodes as a `Fragment`
+      An extension on `Xml`. `xml.select(xp"//book[@id='1']")` is a `Fragment` of the
+      matching tree nodes in document order. A path selecting attributes (`//a/@href`)
+      yields nothing here, since attributes are not nodes: read their values with
+      `selectText` or `evaluate`. An expression whose value is not a node set raises
+      `XPath.Error` with `NotNodeSet`; an expression the engine does not support, or a
+      variable it was not given, raises `XPath.Error` too. Prefixed name tests resolve
+      through the path's own scope (`XPath#in(scope)`, or the `Namespace` givens an
+      `xp"…"` literal was written under).
+  entry .selectText   the string value of the first matching node, or of a scalar expression
+      `xml.selectText(xp"//a/@href")` is the attribute's value, `Unset` when nothing
+      matches; for a number, boolean or string expression it is the value's text.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import xmlSchemas.freeformXmlSchema
+
+      val page = t"""<app><div id="main"><button data-test="submit">Submit</button><ul><li>one</li><li>two</li></ul></div></app>""".read[Xml]
+      page.selectText(xp"//button[text()='Submit']/@data-test")   // t"submit"
+      page.selectText(xp"/app/div[1]/ul/li[2]")                    // t"two"
+      page.evaluate(xp"count(//li)")                               // XPath.Value.Numeric(2)
+      ```
+  entry .evaluate   full XPath 1.0 evaluation: a number, boolean, string or node set, as an `XPath.Value`
+      `xml.evaluate(xpath, variables)` resolves `$name` references from the map, keyed by
+      qualified name, and raises `XPath.Error` for an unknown variable or an unsupported
+      expression.
+  entry .Scope   the namespace bindings in force at a point: prefix to URI, with the default keyed by the empty prefix
+    detail
+        `Xml.Scope` is the opaque `xylophone.internal.Scope`, reached here because the
+        umbrella already exports a `Scope` of its own (it is also exported as
+        `xylophone.Scope`). A scope is an ordered list of bindings from a prefix (`Unset`,
+        or the empty text, for the default namespace) to a URI, the later binding of a
+        prefix winning. Every `Xml.Element` carries one as its `scope`; the parser pushes
+        each `xmlns` declaration onto the scope of the element and its descendants; and the
+        `Scope` given in scope is the one a document is parsed in and a prefixed selection is
+        resolved against. The companion's `default` binds only the reserved `xml` prefix.
+
+        A scope bound by a given lets code select by a prefix the document never used:
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import xmlSchemas.freeformXmlSchema
+        import dynamicAccess.dynamicXml
+
+        val doc = t"""<r xmlns:a="urn:a"><a:x>1</a:x></r>""".read[Xml]
+
+        locally:
+          given Xml.Scope = Xml.Scope(t"q" -> t"urn:a")
+          doc.`q:x`().as[Int]   // 1: q and a bind the same URI
+        ```
+
+        A scope given also binds a prefix for parsing, so `<q:x/>` parses without a
+        declaration while the given is in scope, and an element built with a scope declares
+        what it needs when written. An `Xml.Scope[("svg", "xlink")]` is the scope binding
+        each prefix of the tuple through its `Namespace` given.
+    refer xylophone.Namespace
+    refer xylophone.Xml.Name
+  entry .Name   a resolved name: the namespace URI, if any, and the local part
+    detail
+        The pair by which elements and attributes are identified once prefixes have been
+        resolved. `Xml.Name(t"urn:a", t"x")` is `x` in the namespace `urn:a` and
+        `Xml.Name(t"x")` is an unqualified `x`; `Element#qualified`, `Xml#elements`,
+        `Xml#element`, `Element#attribute` and `Xml.Reader#name` all speak in these. A name
+        shows in Clark notation, `{urn:a}x`, or as the bare local part.
+    entry .apply   `Xml.Name(local)`: an unqualified name, in no namespace
+    entry .split   the prefix and local part of a raw `prefix:local` label, without resolving the prefix
+        `(Unset, label)` for a label with no colon.
+    entry .showable   Clark notation, `{uri}local`, or the bare local part
+    entry .inspectable   `Name({uri}local)`
+    entry #namespace   the URI, or `Unset` for a name in no namespace
+    entry #local   the local part
+  entry .Namespacing   whether a prefix with no binding is a parse error or resolves to no namespace
+    detail
+        An enumeration with the cases `Strict` and `Lenient`. The Namespaces recommendation
+        requires that every prefix be bound, so the default (the companion's given) is
+        `Strict`: parsing `<p:a/>` with no declaration of `p` raises a `Parse.Error` with
+        `Xml.Issue.UnboundPrefix`, and an `x"…"` literal using a prefix with no `Namespace`
+        given does not compile. Import `namespaceOptions.lenientNamespaces` to have an
+        unbound prefix resolve to no namespace instead; `namespaceOptions.strictNamespaces`
+        restates the default.
+    entry .default   `Strict`
+  entry .Namespaced   the namespace of a derived codec's type, as a given, for a type which cannot be annotated
+    detail
+        `given Rect is Xml.Namespaced = Xml.Namespaced(t"http://www.w3.org/2000/svg")` has
+        `Rect`'s derived encoder write `<Rect xmlns="http://www.w3.org/2000/svg">` with its
+        fields' elements in the same namespace, and its decoder match elements by that
+        resolved name. It takes precedence over an `@xmlns` annotation on the type.
+        `qualified = false` leaves the fields' elements in no namespace.
+    entry .apply   `Xml.Namespaced[value](uri, qualified = true)`: a namespace binding for a type
+    entry .Bound   the class a `Namespaced` given is: a URI and whether fields share it
+      entry #namespace   the URI
+      entry #qualified   whether the fields' elements share the namespace
+    entry #namespace   the URI the type's elements are in
+    entry #qualified   whether the fields' elements are in the same namespace, or in none
+  entry .xmlns   the annotation which puts a derived type's elements in a namespace
+    detail
+        `@xmlns("urn:shop") case class Order(id: Int, item: Item)` encodes as
+        `<Order xmlns="urn:shop">` with its fields' elements in the same namespace, and
+        decodes from any document whose elements resolve to that namespace, whatever
+        prefixes it uses. `@xmlns("urn:shop", qualified = false)` on the class keeps the
+        fields' elements in no namespace, as a schema with
+        `elementFormDefault="unqualified"` has them (they are written with `xmlns=""`).
+        The annotation is URI-keyed, never prefix-keyed. Exported as `xylophone.xmlns` and
+        `soundness.xmlns`, so `@xmlns(…)` needs no qualification.
+
+        ```scala fuel
+        frame
+          label A plain record writes unqualified elements
+          code
+              case class Item(sku: Text, quantity: Int)
+              case class Order(id: Int, item: Item)
+
+              Order(1, Item(t"a", 2)).in[Xml].show
+              // <Order><id>1</id><item><sku>a</sku><quantity>2</quantity></item></Order>
+        frame
+          label Annotated, the record's elements are in the namespace
+          code
+              case class Item(sku: Text, quantity: Int)
+
+              @xmlns("urn:shop")
+              case class Order(id: Int, item: Item)
+
+              Order(1, Item(t"a", 2)).in[Xml].show
+              // <Order xmlns="urn:shop"><id>1</id><item><sku>a</sku><quantity>2</quantity></item></Order>
+        frame
+          label A document in the namespace reads back whatever its prefixes
+          code
+              case class Item(sku: Text, quantity: Int)
+
+              @xmlns("urn:shop")
+              case class Order(id: Int, item: Item)
+
+              t"""<s:Order xmlns:s="urn:shop"><s:id>1</s:id><s:item><s:sku>a</s:sku><s:quantity>2</s:quantity></s:item></s:Order>"""
+              . read[Order in Xml]
+              // Order(1, Item(t"a", 2))
+        frame
+          label One field kept out of the namespace
+          code
+              case class Item(sku: Text, quantity: Int)
+
+              @xmlns("urn:shop")
+              case class Order(id: Int, item: Item, @unqualified reference: Text)
+
+              Order(1, Item(t"a", 2), t"R1").in[Xml].show
+              // <Order xmlns="urn:shop"><id>1</id><item>…</item><reference xmlns="">R1</reference></Order>
+        ##
+        ```
+
+        A type with no namespace of its own matches its fields' elements by local name
+        alone, whatever namespace the document puts them in. The direct and staged parsers
+        (`Xml.Parsable.derived`, `.staged`) match raw labels and do not consult the
+        annotation.
+    entry #uri   the namespace URI
+    entry #qualified   whether the fields' elements share the namespace (the default) or are in none
+  entry .unqualified   the annotation which keeps one field's element out of its type's namespace
+      `@unqualified reference: Text` on a field of an `@xmlns` type writes
+      `<reference xmlns="">` and reads the element in no namespace. Exported as
+      `xylophone.unqualified` and `soundness.unqualified`.
+  entry .attribute   the annotation which makes a field an attribute rather than a child element
+      `case class Book(title: Text, @attribute isbn: Text)` encodes as
+      `<Book isbn="0441013597"><title>Dune</title></Book>` and decodes the attribute back.
+      An `Optional` attribute field is simply absent when `Unset`. The annotation is reached
+      as `@attribute` through the umbrella's type alias `soundness.attribute` (a term named
+      `attribute` would clash with galilei's and tarantula's), as `@Xml.attribute`, or as
+      `@xylophone.attribute`. The direct and staged parsers honour it too.
+
+      ```scala
+      import soundness.*
+
+      case class Book(title: Text, @attribute isbn: Text)
+
+      Book(t"Dune", t"0441013597").in[Xml]
+      // x"""<Book isbn="0441013597"><title>Dune</title></Book>"""
+      ```
+  entry .XmlAttribute   a typed tag's attribute: its label, the elements it applies to, or `global`
+    detail
+        The typeclass the typed tags (`Tag`) declare their attributes with: a
+        `"href" is Xml.XmlAttribute on "a" in Schema` given says that `href` may be used on
+        `<a>`, and `Element#selectDynamic` and `#updateDynamic` resolve it. Not for ordinary
+        XML use; honeycomb and savagery build their vocabularies on it.
+    entry #label   the attribute's name
+    entry #elements   the element labels it applies to
+    entry #global   whether it applies to every element
+    entry #targets   whether a given tag may carry it
+    entry #merge   the union of two declarations of the same attribute
+    entry #Self   the attribute's label as a literal type
+    entry #Topic   the attribute's value type
+    entry #Plane   the element label it is declared on
+  entry .decodable   the entry point for `Decodable in Xml`: a text decoder if one exists, else derivation
+      An inline given which resolves, for any type, to the `Decodable in Text` bridge when
+      the type has one (so `Text`, identifiers and any text-decodable type read from an
+      element's text) and otherwise to the Wisteria derivation for a case class or
+      enumeration. The text branch raises `Xml.Error` with `Missing` for an absent field
+      and `Empty` for an element with no text, continuing with the empty text. The
+      primitives have specific givens (`.int`, `.boolean`, …) which pre-empt this one, so
+      that a bad number raises `Malformed` and continues with zero rather than aborting.
+  entry .encodable   the entry point for `Encodable in Xml`: a text encoder if one exists, else derivation
+      The mirror of `.decodable`: a type with an `Encodable in Text` (`Text`, `Int`, `Long`,
+      …) becomes a leaf `Xml.Text`, and a case class or enumeration encodes through
+      `EncodableDerivation`.
+  entry .int   reads an `Int` from an element's text, raising `Xml.Error` and continuing with `0` on failure
+      One of the primitive decoders (`.int`, `.long`, `.short`, `.byte`, `.double`,
+      `.float`, `.boolean`), each capturing the `Tactic[Xml.Error]` it raises through. Text
+      which is not a number raises `Malformed(text, t"Int")`; an element with no single
+      text run, or a missing field, raises `Untextual(t"Int")`; each continues with a zero
+      sentinel, so a record with several bad fields reports them all under
+      `validate[Xml.Focus]`.
+  entry .long   reads a `Long`, as `.int` reads an `Int`
+  entry .short   reads a `Short`, as `.int` reads an `Int`
+  entry .byte   reads a `Byte`, as `.int` reads an `Int`
+  entry .double   reads a `Double`, as `.int` reads an `Int`
+  entry .float   reads a `Float`, as `.int` reads an `Int`
+  entry .boolean   reads a `Boolean` from the text `true` or `false`, continuing with `false` on failure
+  entry .booleanEncodable   writes a `Boolean` as the text `true` or `false`
+      Needed because no `Boolean is Encodable in Text` exists for the `.encodable` bridge to
+      use; the other primitives encode through their text encoders.
+  entry .Repeatable   marks a codec whose wire form is every same-named child, not just the first
+    detail
+        A mixin on a `Decodable in Xml` or `Encodable in Xml`: a repeatable field — a
+        collection, a `Map`, or an `Optional` on the encoding side — is written as all the
+        child elements sharing the field's name, one per item, and read from all of them in
+        document order (they need not be contiguous). The product derivation recognises the
+        mixin and hands a synthetic `Fragment` of the matching children to the decoder. A
+        codec without the mixin reads the first matching child only.
+    entry #repeatable   `true` unless overridden
+  entry .collectionDecodable   reads any `Iterable` collection from every element with the field's name
+      For a collection type with a stdlib `Factory` and an element type with a
+      `Decodable in Xml`: each matching child decodes as one item, zero children build the
+      empty collection (a missing repeated field is empty, never an error), and a lone
+      element decodes as a one-item collection, which is the shape `as[List[T]]` sees at a
+      document root. Repeatable.
+  entry .listDecodable   reads a `List[T]`, as `.collectionDecodable` does
+      The opaque Soundness collections do not conform to `Iterable`, so `List`, `Set` and
+      `Sequence` each have a given of their own.
+  entry .setDecodable   reads a `Set[T]`, as `.collectionDecodable` does
+  entry .seriesDecodable   reads a `Sequence[T]`, as `.collectionDecodable` does
+  entry .collectionEncodable   writes an `Iterable` as a `Fragment` of one node per item, for the product encoder to relabel
+      Repeatable: the product encoder flattens the fragment into repeated same-named
+      children. A nested collection, which has no per-item element shape, nests under an
+      unnamed element which the enclosing product relabels.
+  entry .listEncodable   writes a `List[T]`, as `.collectionEncodable` does
+  entry .setEncodable   writes a `Set[T]`, as `.collectionEncodable` does
+  entry .seriesEncodable   writes a `Sequence[T]`, as `.collectionEncodable` does
+  entry .optionalDecodable   reads an `Optional[T]` field: `Unset` when the element or attribute is absent
+      A missing child element (or, for an `@attribute` field, a missing attribute) decodes
+      to `Unset`, or raises `Xml.Error` with `Missing` under
+      `optionalityOptions.strictXmlAbsence`; a present element decodes as `T`, or as `Unset`
+      when the inner decoder rejects it under `optionalityOptions.lenientXmlFaults`. XML has
+      no null: an empty element is a present value, so there is no nullity option. Not
+      repeatable — a present optional is the first matching child — so
+      `Optional[List[T]]` is not a supported shape (a `List` field is already empty when
+      absent).
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import xmlSchemas.freeformXmlSchema
+
+      case class Tally(name: Text, count: Optional[Int])
+
+      x"<Tally><name>Ann</name></Tally>".as[Tally]                          // Tally(t"Ann", Unset)
+
+      locally:
+        import optionalityOptions.lenientXmlFaults
+        x"<Tally><name>Ann</name><count>many</count></Tally>".as[Tally]     // Tally(t"Ann", Unset)
+      ```
+  entry .optionalEncodable   writes an `Optional[T]` field: no element at all when `Unset`
+      `Unset` encodes to an empty `Fragment`, which the repeatable-aware product encoder
+      flattens to no child element (or no attribute); a present value encodes as the single
+      relabelled child a mandatory field would produce.
+  entry .mapEncodable   writes a `Map[K, V]` as one child per entry, each holding a `<key>` and a `<value>`
+      Keys and values are any XML-encodable type, so a key need not be a valid element
+      name. Each entry element is relabelled with the field's name by the product encoder.
+
+      ```scala
+      import soundness.*
+
+      case class Profile(name: Text, stock: Map[Text, Int])
+
+      Profile(t"Ann", Map(t"apple" -> 3)).in[Xml]
+      // x"<Profile><name>Ann</name><stock><key>apple</key><value>3</value></stock></Profile>"
+      ```
+  entry .mapDecodable   reads a `Map[K, V]` from every entry element with the field's name
+      Each gathered element's `<key>` and `<value>` children decode as the key and value
+      types; a missing child is handed the absent sentinel, so a primitive registers a
+      focused error and an `Optional` value reads as `Unset`.
+  entry .xmlDiscriminable   the default sum-type discriminator: the element's local name is the variant
+      A sealed trait with cases `Book` and `Magazine` decodes from `<book …/>` and
+      `<magazine …/>` by their labels, with no discriminator field; `<s:Book>` is still the
+      `Book` variant, since a prefix is lexical. A label naming no variant raises
+      `Xml.Error` with `UnknownVariant`. `@name[Xml](t"red")` on a variant renames its
+      element. An `Xml.DiscriminantAttribute` given replaces this with an attribute.
+  entry .DiscriminantAttribute   a sum discriminator which reads and writes the variant as an attribute
+    detail
+        `given Shape is Discriminable in Xml = Xml.DiscriminantAttribute[Shape](t"kind")`
+        makes the derived codec write a `kind="Circle"` attribute on the element and read
+        the variant from it, in place of the default label-as-variant scheme
+        (`.xmlDiscriminable`). The staged parser recognises it too, through the staging
+        compiler in `xylophone.staged`.
+    entry #attribute   the attribute's name
+    entry #discriminate   the attribute's value on an element, or `Unset`
+    entry #rewrite   a copy of the element with the attribute set to a variant name
+    entry #variant   the element itself: the variant's content is the element
+  entry .DecodableDerivation   the Wisteria derivation of `Decodable in Xml` for case classes and sealed types
+    detail
+        A product decodes from an element with a child element per field, matched by the
+        field's wire name (`@name`-aware) in any order; a field marked `@attribute` reads
+        from an attribute; a repeatable field gathers every matching child; a field whose
+        element is missing is handed the absent sentinel, so an `Optional` reads as `Unset`,
+        a primitive raises and continues, and a nested record with a `Default` substitutes it
+        with a single `AbsentProduct` error rather than a cascade of sub-field errors. Text,
+        comments and processing instructions between the children are ignored. A sum
+        selects its variant through the `Discriminable in Xml` in scope. Each field is
+        decoded under a focus naming its path, for `validate[Xml.Focus]`. Recursive types
+        tie through their own derivation. Not called directly: `.decodable` reaches it.
+    entry .conjunction   derives a product decoder
+    entry .disjunction   derives a sum decoder
+  entry .EncodableDerivation   the Wisteria derivation of `Encodable in Xml`: a product is an element with a child per field
+    detail
+        The mirror of `.DecodableDerivation`. A product encodes to an element labelled with
+        the type's short name, each field a child element labelled with the field's wire
+        name (relabelling whatever its own encoder produced), an `@attribute` field an
+        attribute, a repeatable field flattened to repeated children, and an `@xmlns` or
+        `Xml.Namespaced` type's elements placed in its namespace with the declaration on the
+        root. A sum encodes its variant and relabels the element to the variant's name, so
+        it round-trips through `.xmlDiscriminable`. Not called directly: `.encodable`
+        reaches it.
+    entry .conjunction   derives a product encoder
+    entry .disjunction   derives a sum encoder
+  entry .aggregableDerived   under `import codecs.derived`, `read[T in Xml]` uses the tree path even where a direct parser exists
+      One of the codec-mode givens: `codecs.derived` selects the derived tree codecs for
+      every record in scope, overriding a direct instance.
+  entry .aggregableDerivedText   the `Text` form of `.aggregableDerived`
+  entry .readableDerived   the whole-`Data` form of `.aggregableDerived`
+  entry .readableDerivedText   the whole-`Text` form of `.aggregableDerived`
+  entry .encodableOverDerived   under `import codecs.derived`, `in[Text over Xml]` renders through the tree
+  entry .aggregableStrict   under `import codecs.strict`, `read[T in Xml]` parses directly, or fails to compile
+      Paired with `Xml1#aggregableStrictFailure`: a type with a direct codec reads through it,
+      and a type with none is a compile error naming the type, rather than a silent fall
+      back to the tree.
+  entry .aggregableStrictText   the `Text` form of `.aggregableStrict`
+  entry .encodableOverStrict   under `import codecs.strict`, `in[Text over Xml]` prints directly, or fails to compile
+  entry .Parsing   the base of direct parsers: reads a value from an `Xml.Reader` with no tree built
+    detail
+        A distillate `Parsable` over XML: `parse(reader)` is called with the current element
+        just opened on the reader (its name and attributes consumed) and must consume the
+        element's content and close tag in full, through exactly one of the reader's
+        content consumers (`nextChild` until `Unset`, `text`, `skipElement` or `element`).
+        `Xml.Parsable` is the nominal, opt-in face (explicit instances, `Xml.Parsable.derived`,
+        `derives Xml.Direct`, `codecs.direct`) and `Xml.Field` the operational one the
+        product derivation resolves per field. Unlike jacinta's `Json.Parsing` there is no
+        shape: XML codecs carry no morphology.
+    entry #Transport   `Xml`
+    entry #Reader   `Xml.Reader`
+    entry #repeatable   `true` for a collection parser, gathered occurrence by occurrence
+    entry #absent   what a field of this type yields when no child element or attribute carries its name
+        Aborts with `Xml.Error(Missing)` unless overridden: the primitives raise and
+        continue with a zero sentinel, the bridge delegates to its decoder over the absent
+        sentinel, and a derived product expands per sub-field. Takes the read-site `Foci`.
+    entry #attribute   how a field of this type reads from an attribute value, for an `@attribute` field
+        Defaults to `absent()`, since a shape which cannot read from a text leaf treats an
+        attribute as wrong-shape input, exactly as the tree path does.
+  entry .Parsable   the opt-in direct parser for a type: `read[T in Xml]` reads `T` straight off the input
+    detail
+        A nominal `Xml.Parsing`. Once a type has an `Xml.Parsable` in scope,
+        `source.read[T in Xml]` (through `Xml1#aggregableParsed`) drives it over the input
+        through an `Xml.Reader` and never materialises an `Xml` tree, for the values it
+        reads directly; field types with only a `Decodable in Xml` are bridged through
+        `fromDecodable`, which materialises one element. There is no blanket given, so no
+        read changes behaviour until a type opts in:
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import xmlSchemas.freeformXmlSchema
+
+        case class Worker(name: Text, age: Int)
+        case class Firm(name: Text, ceo: Worker)
+
+        given Worker is Xml.Parsable = Xml.Parsable.derived
+        given Firm is Xml.Parsable = Xml.Parsable.derived
+
+        t"<Firm><name>Acme</name><ceo><name>Alice</name><age>30</age></ceo></Firm>".read[Firm in Xml]
+        ```
+
+        Semantics mirror the tree path exactly: wire names, `@attribute` fields,
+        first-match-wins duplicates, gathering of repeated fields, defaults, absent fields
+        and error foci. A case class which has both a `Reflection` and a hand-written
+        `Decodable in Xml` would derive here and diverge from its decoder; the remedy is one
+        line, `given MyType is Xml.Parsable = Xml.Parsable.fromDecodable(summon[MyType is
+        Decodable in Xml])`. `derived` is a method, not a given, so a type parses directly
+        only once it has opted in; `derives Xml.Direct` and `import codecs.direct` are the
+        other routes. The direct parsers match raw labels: `@xmlns` is not consulted.
+    refer xylophone.Xml.Reader
+    refer xylophone.Xml.Field
+    refer xylophone.Xml.Direct
+    refer xylophone.Inlinable
+    entry .apply   a parser from a function over the reader
+        `Xml.Parsable[T](reader => …)`: the function is called with the element opened and
+        must consume it, as `Xml.Parsing#parse` must.
+    entry .fromDecodable   the bridge from the tree world: materialises one element and decodes it
+        The one-line escape hatch when a custom decoder must beat a derived direct parser.
+        A repeatable decoder (a custom collection) keeps its gathering semantics: each
+        occurrence is materialised separately and decoded together as a synthetic
+        `Fragment`. Absence and attribute reads delegate to the decoder over the same
+        sentinel inputs the tree derivation would hand it.
+    entry .derived   a Wisteria-derived direct parser for a case class or sealed type, wrapped as nominal
+        `given Foo is Xml.Parsable = Xml.Parsable.derived`. Each field's parser resolves
+        through `Xml.Field`: an explicit `Parsable`, a text codec, structural derivation, or
+        the bridge over a `Decodable in Xml`, so nested records parse directly too.
+    entry .staged   a macro-generated monomorphic parser for a case class, faster than `derived`
+        The staged counterpart of `derived`: field values live in typed locals, child
+        elements dispatch through packed-`Long` literal comparisons, and the record is built
+        by a direct constructor call — no `Array[Any]` buffer, no `Mirror`, no per-field
+        boxing. Same semantics as `derived`. Requires a top-level or object-nested case class
+        with a single parameter list; sums, method-local classes and other shapes use
+        `derived`.
+    entry .fromField   wraps any `Xml.Parsing` (such as an `Xml.Field`) as a nominal `Parsable`
+    entry .iterable   a direct parser for any `Iterable` collection, gathering each occurrence of the field
+        Backs `.fieldCollection`; items parse through the element parser given, so nested
+        products parse directly.
+    entry .declared   the `Parsable` of a type which `derives Xml.Direct`
+        A given resolving through the type's `Xml.Direct` instance in its companion.
+    entry .Direct   the base of generated parsers, receiving the reader as a neutral carrier
+      entry #parse   reads through `parseCarrier`
+    entry .parseField   calls a nominal parser in a field position of a generated parser
+        The call points for generated code, which is capture-erased: the parser and reader
+        travel as `AnyRef` and the capability is reasserted here. Not for hand-written use.
+    entry .absentField   calls a nominal parser's `absent()` from a generated parser
+    entry .assemble   builds a product from an array of field values, for generated parsers
+    entry .wireNames   applies `@name` renames to an array of field names, for generated parsers
+    entry .missing   raises `Xml.Error(Missing)` and continues with a sentinel, for generated parsers
+    entry .focusing   runs a block under a focus naming a field, for generated parsers
+    entry .childIndex   the index of a child's label among a record's non-attribute field keys, or `-1`
+    entry .repeats   whether a parser gathers repeated occurrences
+    entry .parseElement   parses one occurrence of a repeated field, for the derived product engine
+    entry .gathered   builds a repeated field's value from its gathered occurrences
+    entry .product   the derived product engine: fields, a fallback default and a constructor, as an `Xml.Field`
+        What `ParsableDerivation.conjunction` builds: reads attributes first, then each
+        child by its wire name, gathering repeated fields, skipping unknown children and
+        duplicates, and filling absent fields through their parsers or the record's
+        default. Not for direct use.
+  entry .Field   the per-field face of direct parsing, with a universal fallback
+    detail
+        The typeclass the product derivation resolves for each field. Its fallback given
+        (`field`, inherited from `Xml3`) mirrors `.decodable`'s order so that a field's wire
+        format is identical on the direct and tree paths: an explicit `Xml.Parsable`, a
+        `Decodable in Text` codec, structural derivation, or the bridge over any remaining
+        `Decodable in Xml`. `Xml.Field(parsing)` adapts any `Xml.Parsing` for use as a
+        field parser.
+    entry .apply   adapts an `Xml.Parsing` as a field parser, preserving its capture
+  entry .intParsable   the direct `Int` parser: reads the content straight from the buffered bytes
+      One of the direct primitives (`.intParsable`, `.longParsable`, `.shortParsable`,
+      `.byteParsable`, `.doubleParsable`, `.floatParsable`, `.booleanParsable`), mirroring
+      the tree primitives exactly: a missing or wrong-shaped element and an unparseable
+      value raise `Xml.Error` (not abort) and continue with a zero sentinel, so accrual
+      under `validate[Xml.Focus]` behaves identically on both paths. `Int`, `Long`,
+      `Double` and `Boolean` are parsed from the bytes without materialising a `Text`.
+  entry .longParsable   the direct `Long` parser, as `.intParsable`
+  entry .shortParsable   the direct `Short` parser, as `.intParsable`
+  entry .byteParsable   the direct `Byte` parser, as `.intParsable`
+  entry .doubleParsable   the direct `Double` parser, as `.intParsable`
+  entry .floatParsable   the direct `Float` parser, as `.intParsable`
+  entry .booleanParsable   the direct `Boolean` parser, as `.intParsable`
+  entry .fieldCollection   the `Xml.Field` for any `Iterable` collection: gathers every same-named child
+      Declared above the fallback so a collection never reaches its `Reflection` case (a
+      `List`'s own mirror would derive it as a sum). Items parse through the element's own
+      field parser.
+  entry .fieldList   the `Xml.Field` for a `List[T]`, as `.fieldCollection`
+  entry .fieldSet   the `Xml.Field` for a `Set[T]`, as `.fieldCollection`
+  entry .fieldSeries   the `Xml.Field` for a `Sequence[T]`, as `.fieldCollection`
+  entry .ParsableDerivation   the Wisteria derivation of `Xml.Field` for case classes and sealed types
+    detail
+        A product derives the direct engine (`Xml.Parsable.product`) over its fields' wire
+        names, attribute flags, field parsers and defaults; a sum derives through the tree
+        bridge over its `Decodable in Xml`, since variants are selected by element label.
+        Reached through `Xml.Parsable.derived` and the `field` fallback.
+    entry .conjunction   derives a product's direct parser
+    entry .disjunction   derives a sum's parser, bridged through its decoder
+  entry .Parsable2   the lower-priority layer of `Xml.Parsable`'s companion, holding `generated`
+    hidden
+    detail
+        Not for direct use: holds the `codecs.direct` given below the companion's own
+        `declared`, so a type which derives `Xml.Direct` uses the codec it generated once.
+    entry #generated   under `import codecs.direct`, a parser generated for every record where one is needed
+        Below `Xml.Parsable`'s own `declared`: a type which is not a record fails
+        `Inlinable.Generates` and takes the derived path.
+  entry .Printable2   the lower-priority layer of `Xml.Printable`'s companion, holding `generated`
+    hidden
+    detail
+        Not for direct use; the mirror of `Xml.Parsable2`.
+    entry #generated   under `import codecs.direct`, a printer generated for every record where one is needed
+  entry .Printable   the direct printer for a type: writes its compact XML text with no tree built
+    detail
+        The direct-printing counterpart of `Encodable in Xml`. `write(value, out)` writes the
+        value as its own element and `write(value, label, out)` as a field's element,
+        labelled, into an `Xml.Out`. It is reached through `in[Text over Xml]` and
+        `in[Data over Xml]` (`Xml1#encodableOverPrinted`) wherever the formatting is compact;
+        indented formatting still renders through the tree. Its surface is explicit
+        instances, `Inlinable.printable[T]`, `derives Xml.Direct` and `import codecs.direct`.
+
+        ```scala fuel
+        frame
+          label Through an XML tree
+          code
+              case class Worker(name: Text, age: Int)
+
+              Worker(t"Alice", 30).in[Text over Xml]
+              // t"<Worker><name>Alice</name><age>30</age></Worker>"
+        frame
+          label Written directly, by a derived printer
+          code
+              case class Worker(name: Text, age: Int)
+              given Worker is Xml.Printable = Inlinable.printable[Worker]
+
+              Worker(t"Alice", 30).in[Text over Xml]
+              // the same text, written with no tree built
+        frame
+          label Or in blocks, as it is printed
+          code
+              case class Worker(name: Text, age: Int)
+              given Worker is Xml.Printable = Inlinable.printable[Worker]
+
+              val blocks = scala.collection.mutable.ListBuffer[Text]()
+              Xml.Printable.emit(Worker(t"Alice", 30), blocks += _)
+        ##
+        ```
+
+        The printer is generated at compile time for a record with no `@name` or
+        `@attribute` annotations and no namespace; other records print through the tree.
+    refer xylophone.Xml.Out
+    refer xylophone.Xml.Parsable
+    refer xylophone.Inlinable
+    entry .print   a value's compact XML text, whole, through its `Printable`
+    entry .emit   a value's text in blocks of the `Buffering` capacity, each handed to a function as it fills
+        No text of the whole value is built. Needs the value's `Xml.Printable` and a
+        `Buffering`.
+    entry .fromEncodable   the bridge from the tree world: encodes the value and writes the tree in place
+        Relabels the element where it is nested, as the derivation relabels it.
+    entry .declared   the `Printable` of a type which `derives Xml.Direct`
+    entry .Direct   the base of generated printers, receiving the writer as a neutral carrier
+      entry #write   writes through `writeCarrier`, as the value's own element or as a labelled field
+    entry .writeAscii   writes ASCII markup from a generated printer
+        The helpers generated printers call (`.writeAscii`, `.writeName`, `.writeLeaf`,
+        `.absent`, `.nodes`, `.some`, `.writeNodes`, `.writeField`): the writer travels as an
+        `AnyRef` and is reasserted here. Public because generated printers are spliced into
+        user modules; not for hand-written use.
+    entry .writeName   writes a name from a generated printer
+    entry .writeLeaf   writes a leaf element: the label around the escaped text
+    entry .absent   whether an `Optional` value is absent, and so writes no element
+    entry .nodes   the nodes a field encoded through its `Encodable` contributes, relabelled and flattened
+    entry .some   whether a field contributed any nodes
+    entry .writeNodes   writes a field's nodes compactly
+    entry .writeField   calls a nominal `Printable` in a field position of a generated printer
+    entry #write   writes a value as its own element, or as a field's element with a label
+  entry .Direct   the `derives` carrier for a generated parser and printer: `case class Foo(…) derives Xml.Direct`
+    detail
+        A `Self`-typed typeclass has no type parameters, so it cannot appear in a `derives`
+        clause itself; `Xml.Direct[Foo]` holds `Foo`'s generated `Xml.Parsable` and
+        `Xml.Printable`, generated once into the companion by `derived`, and the `declared`
+        givens of `Xml.Parsable` and `Xml.Printable` resolve through it with no import.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import xmlSchemas.freeformXmlSchema
+
+        case class Declared(id: Int, name: Text) derives Xml.Direct
+
+        Declared(5, t"five").in[Text over Xml].read[Declared in Xml]
+        ```
+    entry .derived   generates the parser and printer with `Inlinable.parsable` and `Inlinable.printable`
+    entry #parsable   the generated `Xml.Parsable`
+    entry #printable   the generated `Xml.Printable`
+  entry .Reader   the restricted rim of the parser an `Xml.Parsable` reads through
+    detail
+        An exclusive, stateful capability handed to `Xml.Parsing#parse` with the current
+        element just opened: its name and attributes consumed. Exactly one of the content
+        consumers — `nextChild` until it is `Unset`, `text` (or `int`, `long`, `double`,
+        `boolean`), `skipElement` or `element` — must then consume the element's content
+        and close tag in full. The reader is owned by one `parse` call at a time and nothing
+        of it may be retained afterwards. It carries its own `Tactic[Parse.Error]`, so
+        malformed input aborts through the read call's tactic, and the read-site
+        `Tactic[Xml.Error]` and `Foci[Xml.Focus]`, so decode errors a parser raises accrue
+        to the same `validate` boundary as the tree path's, with the same field foci.
+
+        ```scala
+        import soundness.*
+
+        case class Point(x: Int, y: Int)
+
+        given Point is Xml.Parsable = Xml.Parsable: reader =>
+          var x = 0
+          var y = 0
+
+          def loop(): Unit = reader.nextChild() match
+            case Unset => ()
+            case name: Text =>
+              name.s match
+                case "x" => x = reader.int().or(0)
+                case "y" => y = reader.int().or(0)
+                case _   => reader.skipElement()
+              loop()
+
+          loop()
+          Point(x, y)
+        ```
+
+        Only xylophone's read path constructs readers.
+    entry .NameEnd   `-1`: the `childWord` sentinel for the close tag
+    entry .NameOpaque   `-2`: the `childWord` sentinel for a name which cannot pack into a `Long`
+    entry #errorTactic   the read-site `Tactic[Xml.Error]`
+    entry #foci   the read-site `Foci[Xml.Focus]`
+    entry #attributes   the attributes of the just-opened element, valid until the next element is opened
+    entry #name   the resolved `Xml.Name` of the just-opened element, through the bindings in scope
+    entry #nextChild   opens the next child element and gives its name, or `Unset` once the close tag is consumed
+        Character data, comments, CDATA sections and processing instructions between child
+        elements are consumed transparently.
+    entry #childWord   the next child's name packed into a `Long`, or `NameEnd` or `NameOpaque`
+        For staged parsers, which compare field names as literal constants; with
+        `childWordHigh` for the high word, and `childLabel` for a name which cannot pack.
+    entry #childWordHigh   the high word of the packed child name
+    entry #childLabel   the label of the child just opened by `childWord`
+    entry #text   the element's text content, consumed with its close tag, or `Unset` unless exactly one text run
+        CDATA is not text here, matching the tree decoders' shape rules.
+    entry #int   the content parsed as an `Int` straight from the bytes, consumed with the close tag, or `Unset`
+    entry #long   the content as a `Long`, as `#int`
+    entry #double   the content as a `Double`, as `#int`
+    entry #boolean   the content as a `Boolean`, as `#int`
+    entry #skipElement   skips the element's whole subtree, validating every close tag, building nothing
+    entry #element   materialises the element as an `Xml` tree, for a type with only a `Decodable in Xml`
+    entry #fault   raises an `Xml.Error` with a reason through the read-site tactic and continues
+
+entry .Xml1   the layer of `Xml`'s companion holding the direct-parsing read path and the strict-mode failures
+  hidden
+  detail
+      Not for direct use: `object Xml` extends it, so `Xml` inherits these givens and they
+      resolve through its implicit scope; they are declared, and documented, here. It sits
+      above `Xml2`, so a type with an `Xml.Parsable` or `Xml.Printable` takes the tree-free
+      path wherever one exists, and below the companion's own `codecs.derived` and
+      `codecs.strict` entries.
+  entry #aggregableParsed   `source.read[T in Xml]` from bytes, parsed directly through `T`'s `Xml.Parsable`
+      Above the tree path, so it wins whenever an `Xml.Parsable` exists:
+      the value is read straight off the input through an `Xml.Reader`, with no `Xml` tree
+      built. Needs the parse context, a `Tactic[Parse.Error]`, a `Tactic[Xml.Error]`, a
+      `Foci[Xml.Focus]` (so direct decode errors accrue with the same field foci as the
+      tree path's) and a `Buffering`.
+  entry #aggregableParsedText   `text.read[T in Xml]` parsed directly, as `#aggregableParsed`
+  entry #readableParsed   `data.read[T in Xml]` for a whole `Data` value in hand, parsed directly
+      Parses in place rather than wrapping the bytes in a stream.
+  entry #readableParsedText   `text.read[T in Xml]` for a whole `Text` in hand, parsed directly
+  entry #encodableOverPrinted   `value.in[Text over Xml]` written directly by the value's `Xml.Printable`
+      Above `Xml2#encodableOver`: where the value has an `Xml.Printable` and
+      the `Xml.Formatting` in scope is compact, the text is written with no tree built;
+      under indented formatting, which generated printers do not write, it renders through
+      the tree as before.
+  entry #aggregableStrictFailure   the compile error half of `codecs.strict` for a type with no direct parser
+      An inline given which, under `Codecs.Strict`, reports _xylophone_
+      and the type at the use site rather than letting the derived path resolve.
+  entry #aggregableStrictFailureText   the `Text` form of `#aggregableStrictFailure`
+  entry #encodableOverStrictFailure   the compile error half of `codecs.strict` for a type with no direct printer
+
+entry .Xml2   the layer of `Xml`'s companion holding the tree-materialising read path and `in[Text over Xml]`
+  hidden
+  detail
+      Not for direct use: `object Xml` extends it through `Xml1`, so `Xml` inherits these
+      givens and they resolve through its implicit scope; they are declared, and documented,
+      here. Below `Xml1`, so a type with no direct codec resolves here exactly as before
+      direct parsing existed.
+  entry #encodableOver   `value.in[Text over Xml]`: the value's XML text, through the tree
+      Encodes through the `Encodable in Xml` and renders under the
+      `Xml.Formatting` in scope, as `show` would. `Xml1#encodableOverPrinted` outranks it where
+      the value has an `Xml.Printable` and the formatting is compact.
+  entry #encodableOverData   `value.in[Data over Xml]`: the same text as bytes, in the `Codepage` in scope
+  entry #aggregableIn   `source.read[T in Xml]` from bytes: parses the tree and decodes it in one step
+      The shorthand for `source.read[Xml].as[T]` for any `T` with a
+      `Decodable in Xml`; a stream is parsed as it arrives; a leading declaration is
+      dropped. Needs the parse context, a `Tactic[Parse.Error]`, a `Tactic[Xml.Error]` and a
+      `Buffering`. Where `T` has an `Xml.Parsable`, `Xml1#aggregableParsed` wins and no tree is
+      built.
+  entry #aggregableInText   `text.read[T in Xml]`: as `#aggregableIn`, from text
+
+entry .Xml3   the layer of `Xml`'s companion holding the universal `Xml.Field` fallback
+  hidden
+  detail
+      Not for direct use: declares `field`, which `Xml` inherits, at the lowest priority
+      so that an explicit `Xml.Parsable`, a text codec and structural derivation all win
+      over the tree bridge.
+  entry #field   the universal `Xml.Field` fallback: a direct parser, a text codec, derivation, or the tree bridge
+      At the lowest priority, and declared as a member of the companion's parent
+      so that Wisteria's probing excludes it while deriving. A case class with both a
+      `Reflection` and a custom `Decodable in Xml` derives here; give it an `Xml.Parsable`
+      with `Xml.Parsable.fromDecodable` to keep its decoder.
+
+entry .Xml4   the lowest layer of `Xml`'s companion, holding `Xml.Provider`
+  detail
+      Not for direct use as a trait: it declares `Provider` and `Provider2`, which
+      `object Xml` inherits through `Xml1`–`Xml3`, so the provider is written
+      `Xml.Provider` but is declared, and documented, here. It contributes no givens for
+      `Xml` itself.
+  entry #Provider2   the lower-priority layer of `Provider`'s companion: the text fallbacks for temporal and URI types
+    detail
+        Not for direct use: declares `Reader` and the `dateTimeText`, `dateText`,
+        `timeText`, `durationText` and `anyUriText` givens, which the companion's
+        interface-driven readers outrank.
+    entry #Reader   the type of a builtin reader: an `Intensional.Reading` from `Xml` to a result, failing with `Xml.Provider.Error`
+        `Reader[label, result]` is `Intensional.Reading[label, Xml.Provider, Xml, result,
+        Xml.Provider.Error]`; each builtin type's reader is a given of it, declared in the
+        provider's companion, or here for the lower-priority text fallbacks.
+    entry #dateTimeText   reads `xs:dateTime` as `Text`, when no instant interface is in scope
+    entry #dateText   reads `xs:date` as `Text`, when no date interface is in scope
+    entry #timeText   reads `xs:time` as `Text`, when no time interface is in scope
+    entry #durationText   reads `xs:duration` as `Text`, when no duration interface is in scope
+    entry #anyUriText   reads `xs:anyURI` as `Text`, when no URL interface is in scope
+  entry #Provider   a type provider over an XML Schema: typed records from matching documents, checked at compile time
+    detail
+        `object PurchaseOrder extends Xml.Provider(cp"/xsd/po.xsd")` reads the schema when
+        the `record` or `tuple` macro first expands, and `PurchaseOrder.record(xml)` is a
+        polyvinyl record with one typed member per child element and attribute of the
+        schema's root element — `order.shipTo.city`, `order.items.item.map(_.quantity)` —
+        each checked by the compiler against the schema and read lazily at the type the
+        schema declares; `tuple` reads every field eagerly.
+
+        ```scala fuel
+        typecheck
+        ##
+        import classloaders.threadContextClassloader
+
+        object PurchaseOrder extends Xml.Provider(cp"/xsd/po.xsd")
+
+        val order = PurchaseOrder.record(document)
+        order.shipTo.city                   // Text
+        order.items.item.map(_.quantity)    // List[Long], a restriction of xs:positiveInteger
+        order.comment                       // Optional[Text], from minOccurs="0"
+        ```
+
+        The schema parameter is an `Xml.Provider.Schema`, with conversions in its companion
+        from an `Xsd`, an `Xml` document, the schema's text, or anything readable as text
+        such as a classpath resource; no `XmlSchema` need be in scope where the provider is
+        declared. Where a schema declares several global elements the root is the one with
+        complex content, or is chosen with `root = t"Envelope"`.
+
+        Child elements and attributes become fields by local name. A field is `Optional`
+        when its element has `minOccurs="0"` or is `nillable`, and a `List` when
+        `maxOccurs` allows more than one; each alternative of a `choice` is `Optional`. An
+        attribute sharing a name with a child element is reached as `` `@name` ``, and the
+        text of an element with simple content and attributes as `text` (`` `#text` `` if
+        an attribute is called `text`). An extension's base type contributes its fields
+        first. Builtin types read as `Text`, `Boolean`, `Int`, `Short`, `Byte`, `Long` (the
+        integer types, with their implied bounds checked), `Double` and `Float`; the
+        temporal and URI types as whatever an `Instantiable` interface in scope makes of
+        them, else `Text`; `xs:list` types as `List[Text]`; and `anyType`, `xs:any`, a
+        recursive type or an unresolved reference as raw `Xml`.
+
+        A restriction's facets — `enumeration`, `pattern`, the bounds, the length facets
+        and the digit facets — are checked as a field is read, raising `Xml.Provider.Error`
+        with the reason, as are a missing required element and a value its type cannot
+        read; every error goes through the `Tactic` of the code reading the field, so a
+        `validate` or `collect` with a `venture` per field gathers every problem in a
+        document. Elements are matched by resolved name: in the schema's target namespace
+        where the schema qualifies the child, and in no namespace otherwise, whatever
+        prefixes the document uses. Substitution groups, `xsi:type`, identity constraints
+        and mixed content are read as the schema declares without them; an `import` or
+        `include` is recorded in the `Xsd` but not fetched. The provider does not validate
+        documents: it checks what a program reads.
+    refer xylophone.Xsd
+    refer xylophone.Xml.Provider.Error
+    entry .string   reads `xs:string` and the token, name, identifier, QName, binary and gYear types as `Text`
+    entry .boolean   reads `xs:boolean`
+    entry .int   reads `xs:int` as `Int`
+    entry .long   reads `xs:long`, `xs:integer` and the unsigned, positive and negative integer types as `Long`
+    entry .short   reads `xs:short`
+    entry .byte   reads `xs:byte`
+    entry .double   reads `xs:double`
+    entry .float   reads `xs:float`
+    entry .decimal   reads `xs:decimal` as a `Double`
+    entry .xml   reads `anyType`, `xs:any` and recursive or unresolved types as raw `Xml`
+    entry .tokens   reads an `xs:list` type (`NMTOKENS`, `IDREFS`) as whitespace-separated `List[Text]`
+    entry .dateTime   reads `xs:dateTime` through an `Instantiable across Instants from Text` in scope
+        The temporal and URI builtins (`.dateTime`, `.date`, `.time`, `.duration`, `.anyUri`)
+        read their text through the domain type's `Instantiable` found where the record is
+        read (`instantInterfaces.…`, `urlInterfaces.soundnessUrl`), so a value it rejects
+        fails through the `Tactic` its interface was given there; with no interface in scope
+        the `…Text` readers give the text.
+    entry .date   reads `xs:date` through an `Instantiable across Dates from Text`
+    entry .time   reads `xs:time` through an `Instantiable across Times from Text`
+    entry .duration   reads `xs:duration` through an `Instantiable across Durations from Text`
+    entry .anyUri   reads `xs:anyURI` through an `Instantiable across Urls from Text`
+    entry .RestrictedText   the reader of a restricted string type, checking its length, pattern and enumeration facets
+      entry #transform   reads the text and checks the facets, raising `Xml.Provider.Error`
+    entry .RestrictedInt   the reader of a restricted `xs:int`, checking its bounds, digits and enumeration
+      entry #transform   reads the value and checks the facets
+    entry .RestrictedLong   the reader of a restricted integer type, checking its bounds, digits and enumeration
+      entry #transform   reads the value and checks the facets
+    entry .RestrictedDouble   the reader of a restricted decimal or floating type, checking its facets
+      entry #transform   reads the value and checks the facets
+    entry .restrictedText   the given `RestrictedText`
+    entry .restrictedInt   the given `RestrictedInt`
+    entry .restrictedLong   the given `RestrictedLong`
+    entry .restrictedDouble   the given `RestrictedDouble`
+    entry .Layout   the fields of a schema's root, with the namespaces its children and attributes are expected in
+      entry #fields   the root's fields as polyvinyl members, by name
+      entry #elements   the namespace expected of each child element, keyed by parent and child local name
+      entry #attributes   the namespace expected of each attribute, keyed by parent and attribute local name
+    entry .layout   walks an `Xsd` to the `Layout` of its root element
+    entry .fieldsOf   the fields of a schema's root, as `layout(xsd, root).fields`
+    entry .Schema   the schema a provider is built from: an `Xsd`, an `Xml` document, text, or any text source
+      detail
+          The `into` parameter type of `Xml.Provider`: the companion's conversions apply at
+          the call, so `Xml.Provider(cp"/xsd/po.xsd")`, `Xml.Provider(xsd)`,
+          `Xml.Provider(document)` and `Xml.Provider(text)` all work. A source is read as text
+          and parsed with the freeform vocabulary when the provider first reads its schema;
+          a schema which cannot be parsed is reported as a `Specification.Error` — a compile
+          error at the `record` use site.
+      entry .xsd   a `Schema` from a parsed `Xsd`
+      entry .xml   a `Schema` from an `Xml` document of a schema
+      entry .text   a `Schema` from the schema's text
+      entry #xsd   the parsed schema, raising `Specification.Error` if it cannot be read
+    entry .Schema2   the lower-priority layer of `Schema`'s companion, holding the `Readable` conversion
+      hidden
+      detail
+          Not for direct use.
+      entry #readable   a `Schema` from anything `Readable to Text`, such as a classpath resource
+          At lower priority than the three direct conversions in `Schema`'s companion.
+    entry .Error   raised when a record's field does not conform to its schema
+      detail
+          Error 993: _the XML did not conform to its schema because `reason`_. Raised through
+          the `Tactic[Xml.Provider.Error]` of the code reading a record field — so
+          `attempt[Xml.Provider.Error](record.shipTo.city)` catches one, and a `collect` with
+          a `venture` per field gathers every violation — with a reason from
+          `Xml.Provider.Error.Reason`.
+      entry .Reason   why a field did not conform, each with its number
+          `OutOfRange(value, minimum, maximum)` (1), a bound facet or an integer type's
+          implied bound; `LengthOutOfRange(value, minimum, maximum)` (2);
+          `PatternMismatch(value, pattern)` (3); `NotPermitted(value, permitted)` (4), an
+          enumeration facet; `TooManyDigits(value, total, fraction)` (5); `Absent(name)` (6),
+          a required element or attribute; and `Malformed(value, expected)` (7), a value its
+          type cannot read, where `value` is `Unset` for an element with no text.
+      entry .communicable   renders each reason as a message
+      entry #reason   the `Xml.Provider.Error.Reason`
+    entry #Origin   `Xml`: what a record is read from
+    entry #Form   `Xml.Provider`
+    entry #Failure   `Xml.Provider.Error`: what a field raises
+    entry #xsd   the parsed schema, raising `Specification.Error` if it cannot be read
+    entry #fields   the root element's fields as polyvinyl members, for the `record` macro
+    entry #access   the `Xml` a field reads: a child by resolved name, an attribute, or own text
+        `access(name, xml)` selects the first child the name resolves to in the namespace
+        the schema expects, an attribute for `` `@name` `` (or for a name with no such
+        child), or the element's own text for `` `#text` `` and `text`; a `nil` child or a
+        missing one gives the absent sentinel.
+    entry #absent   whether a value is the absent sentinel
+    entry #required   the value, or `Xml.Provider.Error` with `Absent(name)` if it is absent
+    entry #repeated   every non-nil child the name resolves to, for a `List` field
+
+entry .x   the `x"…"` interpolator: an XML literal parsed and checked as the code compiles, and a pattern
+  detail
+      `x"<user>$name</user>"` parses the literal while the code compiles, so a malformed
+      fragment is a compile error at the exact span at fault, and substitutes each hole by
+      the context it lands in: a `Text` or any `Encodable in Xml` value as content, an
+      `Xml` as a child node, a `Text` as an attribute value. A value which cannot be
+      inserted where it stands is rejected with `Xml.Issue.BadInsertion`. The result is an
+      `Xml` (a `Fragment` of the literal's nodes). A prefix the literal uses but does not
+      declare takes its binding from the `Namespace` givens in scope, and an unbound prefix
+      does not compile. Needs no schema or scope in scope.
+
+      ```scala
+      import soundness.*
+
+      val name = t"Alice"
+      x"<user>$name</user>"
+      x"<?stylesheet href='a.xsl'?><root/>"
+      ```
+
+      As a pattern, `x"…"` matches an `Xml` value against the literal's shape and binds
+      its holes: `$text` in content binds the node (`Xml.Text(t"hello")` or a child
+      element), `<$element>` binds a whole child element, `id=$value` binds an attribute's
+      value as `Text`, `<!--$text-->` and `<![CDATA[$text]]>` bind their content, and a
+      bare `$attrs` inside a start tag binds the remaining attributes as a
+      `Map[Text, Text]`. A literal with no holes matches as a `Boolean`; a tag, child count
+      or literal attribute value which differs falls through to the next case.
+
+      ```scala
+      import soundness.*
+
+      val scrutinee: Xml = x"""<a id="5"><b>1</b></a>"""
+
+      scrutinee match
+        case x"<a id=$value>$child</a>" => (value, child)   // (t"5", x"<b>1</b>")
+        case _                          => (t"", x"<none/>")
+      ```
+
+      A hole inside CDATA or comment text, in a processing instruction, or a `DOCTYPE`
+      pattern is rejected.
+  refer xylophone.Xml.interpolator
+  refer xylophone.Xml.extrapolator
+  refer xylophone.Namespace
+
+entry .xp   the `xp"…"` interpolator: an XPath expression checked as the code compiles
+    `xp"/root[1]/child[2]"` is an `XPath` parsed while the code compiles, so a malformed
+    expression is a compile error. A step's ordinal defaults to the first match, `@` names
+    an attribute, and the full XPath 1.0 grammar — axes, predicates on attributes and text,
+    the core function library — is accepted. A prefixed name test (`xp"//svg:rect"`) takes
+    its binding from the `Namespace` givens in scope and matches by namespace;
+    `XPath#in(scope)` rebinds a path's prefixes. The result is evaluated against a document
+    with `Xml.select`, `Xml.selectText` and `Xml.evaluate`, and is what positions and
+    accrued errors are reported against.
+
+    ```scala
+    import soundness.*
+
+    xp"/root[1]/child[2]".encode   // t"/root[1]/child[2]"
+    xp"/root/child".encode         // t"/root[1]/child[1]"
+    ```
+
+entry .attribute   the `@attribute` annotation, as `xylophone.attribute`; see `Xml.attribute`
+    Exported from `Xml` so a field is annotated `@attribute` with no qualification; the
+    umbrella exports it as the type alias `soundness.attribute`.
+
+entry .xmlns   the `@xmlns` annotation, as `xylophone.xmlns`; see `Xml.xmlns`
+    Exported from `Xml`, and from the umbrella as `soundness.xmlns`.
+
+entry .unqualified   the `@unqualified` annotation, as `xylophone.unqualified`; see `Xml.unqualified`
+    Exported from `Xml`, and from the umbrella as `soundness.unqualified`.
+
+entry .construables   the `Construable` givens which parse an HTTP body with an XML media type as `Xml`
+  detail
+      In `xylophone.http`. A telekinesis response or request body whose media type is
+      `application/xml` or `text/xml` constructs as an `Xml` value through these, with the
+      parse context in scope. Imported by name: `import construables.xmlConstruable`.
+  entry .xmlConstruable   `application/xml` bodies construct as `Xml`
+  entry .textXmlConstruable   `text/xml` bodies construct as `Xml`
+
+entry .postables   the `Postable` given which sends an `Xml` value as an HTTP request body
+  detail
+      In `xylophone.http`. Imported by name: `import postables.xmlPostable`.
+  entry .xmlPostable   an `Xml` value as a request body: `application/xml; charset=UTF-8`, its `show` encoded in the `Codepage` in scope
+
+entry .servables   the `Servable` given which serves an `Xml` value as an HTTP response body
+  detail
+      In `xylophone.http`. Imported by name: `import servables.xmlServable`.
+  entry .xmlServable   an `Xml` value as a fixed response body: `application/xml; charset=UTF-8`, encoded in the `Codepage` in scope
+
+entry .InlinableStager   the in-macro staging compiler which evaluates an `Inlinable` instance at expansion time
+  hidden
+  detail
+      In `xylophone.staged`; not for direct use. `Inlinable.Stager` loads
+      `InlinableStager.Implementation` by name when the component is on the macro
+      classpath, so that a generated direct parser (`Inlinable.parsable`,
+      `Xml.Parsable.staged`, `codecs.direct`) can call a user-written `Inlinable` given's
+      `parse` while expanding, and read a sum's `Xml.DiscriminantAttribute`. Each summon
+      runs a fresh compiler over the macro classloader with the current output directory
+      excluded, so a type defined in the compilation run in progress is refused and the
+      generator degrades to a runtime seam. A successful summon is reported as a compiler
+      info message with its duration.
+  entry .evaluate   summons the `Inlinable` for a field type in a staged compiler, or `None`
+  entry .discriminantAttribute   the discriminator attribute of a sum whose `Discriminable in Xml` is an `Xml.DiscriminantAttribute`
+  entry .Implementation   the `Inlinable.Stager` loaded by name
+    entry #summon   `InlinableStager.evaluate`
+    entry #discriminantAttribute   `InlinableStager.discriminantAttribute`
+
+entry .XPath   an XPath 1.0 expression as a value: parsed, built with typed constructors, evaluated against an `Xml`
+  detail
+      `XPath` is the whole of the XPath 1.0 expression language as an immutable value: a
+      location path (`/app/div[1]/@id`), a filter path (`(//a)[1]/b`), or any expression over
+      the four value types — node-set, boolean, number and string — such as `count(//li)` or
+      `//li = 'two'`. It is a `Format`, so the text form parses with `as[XPath]` (raising a
+      `Parse.Error` with the character offset of the fault) and renders with `encode`, and the
+      `xp"…"` interpolator checks the expression as the code compiles. An `Xml` answers a path
+      through `select` (the matching nodes, as a `Fragment` in document order), `selectText`
+      (the string-value of the first match) and `evaluate` (an `XPath.Value` of any kind).
+
+      ```scala fuel
+      frame
+        label Every list item in the document
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+            import xmlSchemas.freeformXmlSchema
+
+            val page: Xml =
+              t"""<app><div id="main"><button data-test="submit">Submit</button>
+                 <ul><li n="1">one</li><li n="2">two</li><li n="3">three</li></ul></div></app>"""
+              . read[Xml]
+
+            page.evaluate(xp"count(//li)")   // XPath.Value.Numeric(3)
+      frame
+        label Narrowed by an attribute predicate
+        code
+            page.evaluate(xp"count(//li[@n > 1])")   // XPath.Value.Numeric(2)
+      frame
+        label The last of those, by position
+        code
+            page.selectText(xp"//li[@n > 1][position() = last()]")   // t"three"
+      frame
+        label Stepping up to the enclosing element's attribute
+        code
+            page.selectText(xp"//li[@n > 1][position() = last()]/../../@id")   // t"main"
+      ##
+      ```
+
+      An expression is a tree of `XPath.Expression` nodes; a path is an `Expression.Route` of
+      `XPath.Step`s from an `XPath.Origin`, each step an `XPath.Axis`, an `XPath.NodeTest` and
+      its predicates. The abbreviations `//`, `.`, `..` and `@` are desugared on parsing and
+      restored on rendering, so `xp"//a/@href".encode` is `//a/@href`. Where a path is
+      assembled rather than written, the companion's constructors read close to XPath
+      itself: `XPath / t"html" / t"body"` is `/html/body`, `XPath.deep(t"div")` is `//div`,
+      and `#where` adds a predicate built from `XPath.attribute`, `XPath.textual` and the
+      operators on `Expression`.
+
+      ```scala
+      import soundness.*
+
+      val locator: XPath =
+        XPath.deep(t"div").where(XPath.attribute(t"class").contains(t"button")
+          and XPath.textual === t"Submit")
+
+      locator.encode   // t"//div[contains(@class,'button') and text()='Submit']"
+      ```
+
+      All thirteen axes but `namespace` are evaluated, as are the core function library
+      (`count`, `name`, `local-name`, `namespace-uri`, `string`, `concat`, `starts-with`,
+      `contains`, `substring-before`, `substring-after`, `substring`, `string-length`,
+      `normalize-space`, `translate`, `boolean`, `not`, `true`, `false`, `lang`, `number`,
+      `sum`, `floor`, `ceiling`, `round`, `position` and `last`) and variables, which
+      `evaluate` takes as a `Map` of `XPath.Value`s. The `id()` function and the `namespace`
+      axis raise `XPath.Error` as unsupported, as does a variable with no binding.
+
+      A path carries a `#scope`, the `Xml.Scope` which binds the prefixes its name tests use:
+      a prefixed test whose prefix the scope binds matches by resolved namespace and local
+      name, whatever prefix the document uses, and one whose prefix is unbound matches the raw
+      label. An `xp"…"` literal binds its prefixes through the `Namespace` givens at its call
+      site, and `#in` rebinds them.
+
+      Malformed *text* is a `Parse.Error` over this format, with an `XPath.Issue` saying what
+      was wrong; a failure to *evaluate* an expression which parsed is an `XPath.Error`.
+  refer xylophone.Xml
+  refer xylophone.XPath.Value
+  refer xylophone.XPath.Expression
+  refer xylophone.Namespace
+  refer xylophone.xp
+  entry .name   the format's name, `XPath`, as `Parse.Error` messages name it
+  entry .focusable   lets an `XPath` stand as a `Focusable` locator, with the strategy `xpath`
+      The given by which a browser-automation library takes an `XPath` as a locator: its
+      strategy is `xpath` and its focus text is the rendered expression.
+  entry .Position   a point in an XPath's text, as a `Parse.Error` reports it
+    detail
+        A `Format.Position` whose `Span` is in offset mode — a character index into the
+        expression, since an XPath has no lines — and zero-length, since the parser detects a
+        fault at a point rather than over a range. The `xp"…"` interpolator maps it back onto a
+        caret in the source file.
+    entry .at   the position at a character offset, as a zero-length span
+    entry #span   the span, in offset mode and zero-length
+    entry #describe   the position as text: `character 7`, or `an unknown position`
+  entry .Axis   the thirteen XPath 1.0 axes, each with its keyword
+    detail
+        `Ancestor`, `AncestorOrSelf`, `Attribute`, `Child`, `Descendant`, `DescendantOrSelf`,
+        `Following`, `FollowingSibling`, `Namespace`, `Parent`, `Preceding`,
+        `PrecedingSibling` and `Self`, whose `keyword` is the spelling in the unabbreviated
+        `axis::test` syntax (`following-sibling`). Every axis but `Namespace` is evaluated;
+        a step on the `Namespace` axis raises `XPath.Error` with `Reason.Unsupported`.
+    entry #keyword   the axis's spelling in `axis::test` syntax, such as `descendant-or-self`
+  entry .NodeTest   what a step matches: a name, a wildcard, or a node kind
+      `Name(prefix, local)` matches an element (or, on the attribute axis, an attribute) by
+      name, `Wildcard` is `*`, `PrefixWildcard(prefix)` is `prefix:*`, `Node` is `node()`,
+      `Textual` is `text()` (named so as not to shadow `Text`), `Comment` is `comment()`, and
+      `Instruction(target)` is `processing-instruction('target')`, or
+      `processing-instruction()` when the target is `Unset`. A name test's principal node
+      type follows the axis: attributes on the attribute axis, elements on every other.
+  entry .Step   one location step: an axis, a node test and its predicates
+    detail
+        Steps are held root-first, in source order, with the abbreviations desugared: `//`
+        is a `descendant-or-self::node()` step, `.` is `self::node()`, `..` is
+        `parent::node()` and `@name` is `attribute::name`. A bare `Text` converts to a
+        `child::name` step through `XPath.stepConversion`, so `XPath / t"html"` needs no
+        `Step` written out.
+    entry #axis   the step's axis
+    entry #test   the step's node test
+    entry #predicates   the step's predicates, applied in order; `Nil` for none
+  entry .Origin   where a path starts: the document root, the context node, or a filter expression
+      `Root` is an absolute path's `/`, the virtual node above the document element; `Here`
+      is the context node a relative path starts from; and `Filter(expression, predicates)`
+      is the head of a filter path such as `(//a)[1]/b`, whose predicates apply to the
+      expression's node-set before the steps.
+  entry .Expression   the XPath 1.0 expression tree, with operators for building one in code
+    detail
+        Every production of the expression grammar is a case: the boolean operators `Or`
+        and `And`; the comparisons `Equal`, `Unequal`, `Less`, `LessOrEqual`, `Greater` and
+        `GreaterOrEqual`; the arithmetic `Add`, `Subtract`, `Multiply`, `Divide`, `Modulo`
+        and `Negate`; `Union` (`|`); the primaries `Literal(text)`, `Number(value)`,
+        `Variable(prefix, name)` and `Call(prefix, name, arguments)`; `Route(origin, steps)`,
+        which is any location or filter path; and `Substitution(index)`, which marks an
+        `xp"…"` insertion during macro expansion and never appears in a decoded or evaluated
+        expression.
+
+        The operator methods build the same tree from code, taking anything which converts
+        to an `Expression`: a `Text` becomes a string literal, an `Int` or `Double` a number,
+        and an `XPath` its expression, so a predicate reads much as it would in XPath.
+
+        ```scala
+        import soundness.*
+
+        val predicate: XPath.Expression =
+          XPath.attribute(t"n") > 1 and XPath.position === XPath.last
+
+        XPath.deep(t"li").where(predicate).encode   // t"//li[@n>1 and position()=last()]"
+        ```
+
+        They are members rather than extensions because `import soundness.*` brings in
+        generic extensions of the same names (`contains`, `===`, `<`), which an extension
+        here could not outrank.
+    entry #or   `left or right`
+    entry #and   `left and right`
+    entry #===   `left = right`, XPath equality, with node-set comparison existential
+    entry #!==   `left != right`
+    entry #<   `left < right`, compared as numbers
+    entry #<=   `left <= right`
+    entry #>   `left > right`
+    entry #>=   `left >= right`
+    entry #+   `left + right`
+    entry #-   `left - right`
+    entry #*   `left * right`
+    entry #|   `left | right`, the union of two node-sets
+    entry #contains   the call `contains(left, right)`
+    entry #startsWith   the call `starts-with(left, right)`
+  entry .Location   the simple positional view of a path: named elements by rank, and one attribute
+      `Element(name, rank)` and `Attribute(name)`: the subset of a path — `child::name` steps
+      with integer ordinals, optionally ending in `@name` — which positions recorded by
+      `parsing.trackPositions` can be resolved against, and which the derived decoders
+      report an error's location as.
+  entry .stepConversion   a `Text` as a `child::name` step
+      The `Conversion` which lets `XPath / t"html"` and `path.deep(t"a")` take a name
+      directly: `t"div"` is `Step(Axis.Child, NodeTest.Name(Unset, t"div"))`.
+  entry .literalConversion   a `Text` as a string literal in an expression
+      So that `XPath.textual === t"Submit"` is `text()='Submit'`. Which conversion applies
+      to a `Text` is decided by the expected type: a `Step` where a path takes a step, an
+      `Expression` where a predicate takes one.
+  entry .integerConversion   an `Int` as a number in an expression
+  entry .decimalConversion   a `Double` as a number in an expression
+  entry .pathConversion   an `XPath` as the expression it holds
+      So a path can stand in a predicate: `XPath.deep(t"li").where(XPath.relative(t"b"))`
+      is `//li[b]`.
+  entry ./   `XPath / step`: an absolute path, beginning at the root
+      `XPath / t"html" / t"body"` is `/html/body`: the companion's `/` starts the path at
+      `Origin.Root`, and each further `/` on the result appends a `child::` step.
+  entry .deep   `XPath.deep(step)`: a path beginning `//`
+      `XPath.deep(t"div")` is `//div`: a `descendant-or-self::node()` step from the root,
+      then the step.
+  entry .relative   `XPath.relative(step)`: a path from the context node
+      `XPath.relative(t"div")` is `div`, a relative path, as a predicate or a step from
+      wherever it is evaluated.
+  entry .here   the context node, `.`
+      Usable as a path, or through `pathConversion` in a predicate.
+  entry .attribute   the predicate `@name`: an attribute of the context node
+      `XPath.attribute(t"class")` is `@class`, for predicates such as
+      `XPath.attribute(t"class").contains(t"active")`; the instance method `#attribute`
+      is the path step `/@name` instead.
+  entry .textual   the predicate `text()`: the context node's text children
+      `XPath.textual === t"Submit"` is `text()='Submit'`.
+  entry .position   the call `position()`
+  entry .last   the call `last()`
+  entry .function   a call of any function by name, `XPath.function(t"count")(…)`
+      The arguments take anything which converts to an `Expression`. An unknown function
+      name parses and renders, and raises `XPath.Error` with `Reason.UnknownFunction` when
+      evaluated.
+  entry .variable   a variable reference, `$name`
+      Bound at evaluation by the `variables` map `Xml.evaluate` takes; an unbound variable
+      raises `XPath.Error` with `Reason.UnboundVariable`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import xmlSchemas.freeformXmlSchema
+
+      val doc = t"<r/>".read[Xml]
+      doc.evaluate(XPath(XPath.variable(t"n") + 1), Map(t"n" -> XPath.Value.Numeric(2)))
+      // XPath.Value.Numeric(3)
+      ```
+  entry .Locus   a node found by evaluation, with its place in the document
+    detail
+        The members of a node-set: the evaluation subject (`#subject`, `Unset` for the
+        virtual root above the document element), the `#document` it was found in, and
+        `#path`, the child-index path from the virtual root down to the node. The index path
+        supplies what the node tree itself cannot — parentage, document order and identity
+        — since nodes carry no parent pointers and a node equals a singleton `Fragment` of
+        it. An attribute is a pseudo-node which shares its owner element's path, holds the
+        owner as its subject, and sets `#attributeIndex`.
+    entry #document   the document the node was found in
+    entry #path   the child indices from the virtual root down to the node
+    entry #subject   the node itself, or `Unset` for the virtual root
+    entry #attributeIndex   the index of the attribute within its element, for an attribute locus
+    entry #stringValue   the XPath string-value: an element's descendant text, an attribute's value
+        For an element, every descendant text and CDATA node concatenated; for a text,
+        CDATA, comment or processing-instruction node, its own content; for an attribute,
+        its value; and for the virtual root, the string-value of the whole document.
+  entry .Value   the result of evaluating an expression: a node-set, boolean, number or string
+    detail
+        The four XPath 1.0 value types: `NodeSet(loci)`, always in document order without
+        duplicates; `Truth(value)`; `Numeric(value)`, a `Double`; and `Textual(value)`. The
+        conversions of the specification are members, so a value of any kind can be read as
+        any other, as `boolean()`, `number()` and `string()` would.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import xmlSchemas.freeformXmlSchema
+
+        val doc = t"<r><x>1</x><x>2</x></r>".read[Xml]
+        doc.evaluate(xp"count(//x)") == XPath.Value.Numeric(2)
+        doc.evaluate(xp"//x").text      // t"1", the first node's string-value
+        doc.evaluate(xp"//x").truth     // true: the node-set is not empty
+        ```
+    entry #truth   the value as a boolean: a non-empty node-set, a non-zero number, a non-empty string
+    entry #number   the value as a number: `true` is 1, a string parses as XPath `number()`, else NaN
+    entry #text   the value as a string: a node-set's first string-value, `1` for `1.0`, `true`/`false`
+  entry .Error   raised when an expression which parsed cannot be evaluated
+    detail
+        Error 563: _the XPath could not be evaluated because `reason`_. Raised by `Xml.select`,
+        `Xml.selectText` and `Xml.evaluate`, each of which takes a `Tactic[XPath.Error]`, for
+        an unknown function, a wrong number of arguments, an unbound variable, a
+        non-node-set given to `select`, an unsupported feature (the `id()` function, the
+        `namespace` axis) or an expression still holding an unresolved substitution.
+
+        ```scala
+        import soundness.*
+        import xmlSchemas.freeformXmlSchema
+
+        val doc = unsafely(t"<r/>".read[Xml])
+        safely(doc.evaluate(xp"frobnicate()"))   // Unset: an unknown function
+        ```
+    entry .Reason   why evaluation failed, with the number which distinguishes it
+        `UnknownFunction(name)` (1), `BadArity(name)` (2), `UnboundVariable(name)` (3),
+        `NotNodeSet` (4), raised by `select` when the expression's value is not a node-set,
+        `Unsupported(feature)` (5) and `Unresolved` (6).
+    entry .communicable   renders each reason as a message
+    entry #reason   the `XPath.Error.Reason` which stopped evaluation
+  entry .interpolable   the given behind `xp"…"`: parses and checks the literal as the code compiles
+      Parses the literal at expansion time with the same parser the runtime `Decodable`
+      uses, so the compiletime check cannot diverge from runtime behavior, and maps a
+      failure's offset back to the offending character in the source. Substitutions are
+      permitted wherever the grammar allows a primary expression, and the parsed tree, with
+      the insertions grafted in, is lifted into the code, so nothing is re-parsed at
+      runtime. Prefixes the literal uses are bound through the `Namespace` givens in scope.
+  entry .decodable   parses any XPath 1.0 expression from text, as `as[XPath]`
+      Needs a `Tactic[Parse.Error]`: a malformed expression raises a `Parse.Error` over the
+      `XPath` format, whose `XPath.Issue` says what was wrong and whose `XPath.Position`
+      gives the character offset.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      t"//li[position()=last()]".as[XPath].encode
+      ```
+  entry .Issue   what was wrong with an XPath's text, in a `Parse.Error`
+    detail
+        `UnexpectedCharacter`, `UnterminatedLiteral`, `UnknownAxis` (not one of the thirteen
+        axes), `ExpectedNodeTest`, `ExpectedExpression`, `ExpectedCloseParen`,
+        `ExpectedCloseBracket`, `UnexpectedEnd` and `UnexpectedToken`. Each is a
+        `Format.Issue` with a `describe` message; the position is the `XPath.Position` at
+        which the parser detected it.
+    entry #describe   the issue as a message, such as _the string literal is not terminated_
+  entry #expression   the expression tree; an empty absolute path, `/`, when none is given
+  entry #scope   the `Xml.Scope` binding the prefixes the path's name tests use
+      Defaults to `Xml.Scope.xml`, which binds only the reserved `xml` prefix. A prefixed name
+      test matches by resolved name when its prefix is bound here, and by raw label otherwise.
+  entry #in   the same path with its prefixes rebound to another scope
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import xmlSchemas.freeformXmlSchema
+
+      val doc = t"""<r xmlns:a="urn:a"><a:x>1</a:x><x>3</x></r>""".read[Xml]
+      doc.select(xp"//z:x".in(Xml.Scope(t"z" -> t"urn:a")))   // the one <a:x>
+      ```
+  entry #/   `path / step`: appends a `child::` step
+      `XPath / t"html" / t"body"` is `/html/body`. On an expression which is not a path, the
+      expression becomes the head of a filter path, as `(//a)[1]/b` has it.
+  entry #deep   `path.deep(step)`: appends `//` and a step
+      `XPath.deep(t"div").deep(t"a")` is `//div//a`.
+  entry #on   appends a step on any axis with any node test
+      `path.on(XPath.Axis.FollowingSibling, XPath.NodeTest.Name(Unset, t"li"))` appends
+      `following-sibling::li`, for the axes the abbreviated forms do not reach.
+  entry #where   adds a predicate to the final step
+      `XPath.deep(t"div").where(XPath.attribute(t"id") === t"main")` is `//div[@id='main']`.
+      The predicate is anything which converts to an `Expression`: a `Text` is a string
+      literal, an `Int` a number, and an `XPath` a relative path. A path with no steps takes
+      the predicate on its filter expression instead.
+  entry #apply   `path(n)`: a positional predicate
+      `(XPath / t"li")(2)` is `/li[2]`.
+  entry #element   appends `name[ordinal]`, the ordinal defaulting to 1
+      The step the derived decoders build an error's location from: `path.element(t"child")`
+      is `path/child[1]`.
+  entry #attribute   appends `@name`, selecting an attribute
+      `(XPath / t"root").attribute(t"id")` is `/root/@id`. A path ending in an attribute
+      step is read with `Xml.selectText` or `Xml.evaluate`, since attributes are not tree
+      nodes for `Xml.select` to return.
+
+entry .Xsd   an XML Schema (XSD 1.0) as an immutable model of its declarations
+  detail
+      `Xsd.parse` reads a schema document into a value: its global `#elements`,
+      `#complexTypes`, `#simpleTypes`, `#attributes`, `#groups` and `#attributeGroups`, each a
+      `Map` by name in declaration order, with the `#targetNamespace`, the two form defaults,
+      the `#imports` and `#includes` it names, and its top-level `#documentation`. References
+      — a `type="tns:Order"`, a `ref="tns:item"`, a `base` — are kept as resolved
+      `Xml.Name`s and looked up on demand with `#resolve`, so a recursive schema is
+      representable and the parse is a single pass; imports and includes are recorded, not
+      fetched. Elements are dispatched by resolved name, so `xs:`, `xsd:` and a default XSD
+      namespace all read alike.
+
+      ```scala
+      import soundness.*
+      import classloaders.threadContextClassloader
+      import strategies.throwUnsafely
+      import xmlSchemas.freeformXmlSchema
+
+      val schema: Xsd = Xsd.parse(cp"/xsd/po.xsd".read[Text])
+      Map.keys(schema.elements)                      // Set(t"purchaseOrder", t"comment")
+      schema.element(t"purchaseOrder").let(_.typeRef)
+      schema.resolve(Xml.Name(Xsd.namespace, t"int"))   // Xsd.SimpleType.Builtin(Xsd.Builtin.Int)
+      ```
+
+      The model is what an `Xml.Provider` reads its typed records' fields from; it does not
+      validate documents. A schema document which is not a schema, or which breaks the
+      grammar the reader follows, raises `Xsd.Error`.
+  refer xylophone.Xml
+  refer xylophone.XmlSchema
+  entry .namespace   the XML Schema namespace, `http://www.w3.org/2001/XMLSchema`
+  entry .instance   the instance namespace, `http://www.w3.org/2001/XMLSchema-instance`
+  entry .Form   whether local elements or attributes are namespace-qualified: `Qualified` or `Unqualified`
+  entry .Use   how an attribute may appear: `Optional`, `Required` or `Prohibited`
+  entry .Occurs   how many times a particle may occur: `minOccurs` and `maxOccurs`
+    detail
+        `max` is `Unset` for `unbounded`; both default to 1, as the schema's attributes do.
+    entry #min   the minimum, from `minOccurs`
+    entry #max   the maximum, from `maxOccurs`; `Unset` for `unbounded`
+    entry #optional   whether the minimum is zero
+    entry #many   whether more than one occurrence is allowed
+  entry .Builtin   the builtin datatypes of XML Schema Part 2, by local name
+    detail
+        One case per builtin, from `String`, `Boolean`, `Decimal`, `Float` and `Double`
+        through the date, time and duration types, the binary and URI types, the token, name
+        and identifier types, the integer hierarchy (`Integer`, `Long`, `Int`, `Short`,
+        `Byte`, the non-positive, negative, non-negative, positive and unsigned forms) to
+        `AnyType` and `AnySimpleType`. `Xsd.Builtin(t"positiveInteger")` finds one by its local
+        name, and `Xsd#builtin` by a resolved name in the XSD namespace.
+    entry .apply   the builtin with a local name, or `Unset`
+    entry #local   the type's local name in the XSD namespace, such as `nonNegativeInteger`
+  entry .TypeRef   how a declaration names its type: by name, or by an inline definition
+      `Named(name)` is a `type="…"` attribute, resolved to an `Xml.Name`; `Inline(definition)`
+      is a `complexType` or `simpleType` written inside the declaration.
+  entry .Type   a complex or simple type: the sealed parent of `ComplexType` and `SimpleType`
+  entry .SimpleType   a simple type: a builtin, a restriction, a list, or a union
+      `Builtin(builtin)`; `Restriction(base, facets)`; `Sequence(item)`, an `xs:list` of an
+      item type; and `Union(members)`.
+  entry .SimpleDecl   a named `simpleType` declaration
+    entry #name   the type's name, or `Unset` for an anonymous one
+    entry #definition   the `SimpleType` it declares
+    entry #documentation   the text of its `annotation/documentation` children
+  entry .Facet   a constraining facet of a restriction
+      `Enumeration(values)`, `Pattern(regex)`, `MinInclusive`, `MaxInclusive`,
+      `MinExclusive` and `MaxExclusive` (each holding the value as text), `MinLength`,
+      `MaxLength` and `Length`, `TotalDigits` and `FractionDigits`, and `WhiteSpace(mode)`.
+      An `Xml.Provider` checks each as a field is read.
+  entry .Particle   a content-model term: a compositor, an element, a group reference or a wildcard
+    detail
+        `Sequence(items, occurs)`, `Choice(items, occurs)` and `All(items, occurs)` are the
+        compositors; `Element(declaration, occurs)` a local or referenced element;
+        `Group(ref, occurs)` a reference to a named group; and `Any(occurs)` an `xs:any`
+        wildcard.
+    entry #occurs   how many times the particle may occur
+  entry .ElementDecl   an element declaration, global or local
+    detail
+        A global element has a `#name`; a local one may instead be a `#ref` to a global one.
+        Its type is a `#typeRef`, by name or inline, or `Unset` for `anyType`.
+    entry #name   the element's name, or `Unset` for a reference
+    entry #ref   the global element this one refers to, or `Unset`
+    entry #typeRef   the element's type, by name or inline, or `Unset`
+    entry #nillable   whether `xsi:nil` is permitted
+    entry #default   the `default` value, as text
+    entry #fixed   the `fixed` value, as text
+    entry #form   the element's own `form`, overriding the schema's default, or `Unset`
+    entry #substitutionGroup   the head of the substitution group the element belongs to
+    entry #abstractDecl   whether the element is declared `abstract`
+    entry #documentation   the text of its `annotation/documentation` children
+  entry .AttributeDecl   an attribute declaration, global or local
+    entry #name   the attribute's name, or `Unset` for a reference
+    entry #ref   the global attribute this one refers to, or `Unset`
+    entry #typeRef   the attribute's type, by name or inline, or `Unset`
+    entry #use   `Optional`, `Required` or `Prohibited`
+    entry #default   the `default` value, as text
+    entry #fixed   the `fixed` value, as text
+    entry #form   the attribute's own `form`, or `Unset`
+  entry .AttributeUse   an attribute use in a complex type: a declaration, a group reference, or `anyAttribute`
+      `Attribute(declaration)`, `Group(ref)` and `Any`.
+  entry .Content   a complex type's content model
+      `Empty`; `Particles(particle)` for a content model written directly;
+      `SimpleExtension(base, attributes)` and `SimpleRestriction(base, facets, attributes)`
+      for `simpleContent`; and `ComplexExtension(base, additions, attributes)` and
+      `ComplexRestriction(base, particle, attributes)` for `complexContent`.
+  entry .ComplexType   a `complexType` declaration, named or anonymous
+    entry #name   the type's name, or `Unset` for an anonymous one
+    entry #mixed   whether character data may appear among the child elements
+    entry #content   the content model
+    entry #attributes   the attribute uses declared directly on the type
+    entry #anyAttribute   whether an `anyAttribute` wildcard is declared
+    entry #documentation   the text of its `annotation/documentation` children
+  entry .Import   an `import` of another schema: its namespace and location, each optional
+    entry #namespace   the imported namespace, if given
+    entry #location   the `schemaLocation`, if given
+  entry .Error   raised when a schema document cannot be read
+    detail
+        Error 992: _the XML Schema could not be read because `reason`_. Raised by `Xsd.parse`
+        through its `Tactic[Xsd.Error]`.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import xmlSchemas.freeformXmlSchema
+
+        capture[Xsd.Error](Xsd.parse(t"<root/>".read[Xml])).reason
+        // Xsd.Error.Reason.NotSchema(Xml.Name(t"root"))
+        ```
+    entry .Reason   why the schema could not be read
+        `NotSchema(found)` (1), when the document element is not `xs:schema`;
+        `Unexpected(element, within)` (2), an element the grammar does not allow there;
+        `MissingAttribute(element, attribute)` (3); `BadOccurs(value)` (4), a `minOccurs` or
+        `maxOccurs` which is neither a number nor `unbounded`; `UnknownPrefix(prefix)` (5), a
+        QName-valued attribute whose prefix the document does not bind; `BadFacet(facet,
+        value)` (6), a facet whose value is not a number; and `Duplicate(kind, name)` (7), a
+        global declaration made twice.
+    entry .communicable   renders each reason as a message
+    entry #reason   the `Xsd.Error.Reason`
+  entry .parse   reads a schema from an `Xml` document, or from its text
+      `Xsd.parse(xml)` reads a parsed document, needing a `Tactic[Xsd.Error]`.
+      `Xsd.parse(text)` first parses the text — which may begin with an XML declaration —
+      with the freeform vocabulary and strict namespaces, since a schema document binds
+      every prefix it uses, and so also needs a `Tactic[Parse.Error]`.
+  entry #targetNamespace   the `targetNamespace`, or `Unset` for a schema with none
+  entry #elementFormDefault   whether local elements are qualified by default
+  entry #attributeFormDefault   whether local attributes are qualified by default
+  entry #elements   the global element declarations, by name, in declaration order
+  entry #complexTypes   the named complex types, by name
+  entry #simpleTypes   the named simple types, by name
+  entry #attributes   the global attribute declarations, by name
+  entry #groups   the named model groups, by name, each as its single compositor
+  entry #attributeGroups   the named attribute groups, by name
+  entry #imports   the schema's `import`s, in order; recorded, not fetched
+  entry #includes   the `schemaLocation`s of its `include`s and `redefine`s; recorded, not fetched
+  entry #documentation   the text of the schema's own `annotation/documentation` children
+  entry #local   whether a resolved name refers into this schema: its namespace is the target namespace
+  entry #element   a global element declaration by name, or `Unset`
+  entry #resolve   the type a reference names: declared here, or a builtin, or `Unset`
+      A name in the target namespace finds a complex type, then a simple type; a name in
+      the XSD namespace finds a `Builtin`, wrapped as `SimpleType.Builtin`. Anything else —
+      a type from an imported schema, which is not fetched — is `Unset`, and an
+      `Xml.Provider` reads such a field as raw `Xml`.
+  entry #builtin   the builtin a name in the XSD namespace denotes, or `Unset`
+
+entry .XmlSchema   the vocabulary a parse validates against: which elements, attributes and entities are admitted
+  detail
+      A parse of XML needs an `XmlSchema` in scope, as it needs a `Codepage` or an error
+      strategy; it decides which elements and attributes are admissible where, and which
+      named entities expand. `XmlSchema.Freeform`, imported as
+      `xmlSchemas.freeformXmlSchema`, admits any element and attribute and expands the five
+      predefined entities, and is the usual choice when no vocabulary is in play. Every
+      `Xml` value carries its schema as its `Form` type member, so a document parsed under
+      one vocabulary is typed by it.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import xmlSchemas.freeformXmlSchema
+
+      t"<message>hello &amp; goodbye</message>".read[Xml]
+      ```
+
+      A vocabulary of its own is an object extending `XmlSchema` with its `#elements`, as
+      `Tag`s, its `#attributes` and its `#entities`; a parse under it rejects an element the
+      vocabulary lacks (`Xml.Issue.InvalidTag`) or one which cannot be a child of its parent
+      (`Xml.Issue.InadmissibleTag`).
+  refer xylophone.xmlSchemas
+  refer xylophone.Tag
+  entry .generic   a root tag which admits no children, for a schema with no elements
+  entry .defaultEntities   the five predefined entities: `amp`, `lt`, `gt`, `apos` and `quot`
+  entry .Freeform   the vocabulary which admits anything
+      No elements or attributes of its own, the default entities, and `freeform` true, so
+      the parser accepts every element and attribute it meets. Imported as the given
+      `xmlSchemas.freeformXmlSchema`.
+  entry #freeform   whether any element and attribute is admitted; false unless overridden
+  entry #elements   the vocabulary's elements, as `Tag`s by name
+  entry #attributes   the vocabulary's attributes, as `Xml.XmlAttribute`s by name
+  entry #entities   the named entities and their expansions
+  entry #infer   the tag to insert between a parent and a child which cannot be its direct child, or `Unset`
+  entry #generic   a root tag admitting every element of the vocabulary as a child
+
+entry .Namespace   a prefix bound to a namespace URI, as a contextual value
+  detail
+      A `Namespace` binds a prefix, its `Self`, to a URI, its `Topic`, both as singleton
+      types, so that a given such as
+
+      ```scala
+      import soundness.*
+
+      given svg: ("svg" is Namespace of "http://www.w3.org/2000/svg") = Namespace()
+      ```
+
+      binds `svg` wherever it is in scope. The `x"…"` and `xp"…"` interpolators consult the
+      givens for prefixes their literals use but do not declare — `x"<svg:rect/>"` compiles
+      with the given above and not without it — and `Xml.Scope[prefixes]`, with the prefixes
+      as a tuple type, builds a scope from them, through which a parse or a prefixed
+      selection (`` xml.`svg:rect` `` or `xp"//svg:rect"`) matches by resolved name.
+      Prefixes are lexical conveniences: two
+      names are the same name when their URIs and local parts agree, whatever prefixes
+      bind them, so the prefix the code uses need not be the one the document used.
+
+      The reserved `xml` prefix is bound in every document without a declaration, by the
+      companion's `xml` given.
+  refer xylophone.Xml
+  refer xylophone.XPath
+  entry .Bound   the class a `Namespace()` makes: a prefix and URI as values, typed by their literals
+    entry #prefix   the prefix, as text
+    entry #uri   the namespace URI, as text
+  entry .apply   `Namespace()`: a binding whose prefix and URI are read from the expected type
+      An inline method which takes the prefix and URI from the singleton types of the given
+      it is assigned to: `given k: ("k" is Namespace of "urn:a") = Namespace()`.
+  entry .xml   the reserved `xml` prefix, bound to `http://www.w3.org/XML/1998/namespace`
+      In implicit scope through the companion, so every document and literal has it.
+  entry .inspectable   renders a binding as `Namespace[t"svg" -> t"http://www.w3.org/2000/svg"]`
+  entry #Self   the prefix, as a literal type
+  entry #Topic   the namespace URI, as a literal type
+  entry #prefix   the prefix, as text
+  entry #uri   the namespace URI, as text
+
+entry .Tag   an element of a vocabulary: its name, its preset attributes, and which children it admits
+  detail
+      A `Tag` is an `Xml.Element` with no children which knows what may go inside it: the
+      `#admissible` child names and the `#presets` every instance starts with. Applying it
+      with named arguments, `tag(id = t"main")`, is checked by a macro against the
+      `Xml.XmlAttribute` givens of the vocabulary — an attribute the element does not take
+      is a compile error, _the attribute `foo` cannot be used on the element `<div>`_ — and
+      each value is converted through an `Attributive` instance. `object Xml` is itself a
+      `Tag.Container`, and an `XmlSchema`'s `elements` are tags.
+
+      The object is not exported to the `soundness` umbrella, since honeycomb's `Tag` has the
+      name there: reach it as `xylophone.Tag`.
+  refer xylophone.XmlSchema
+  refer xylophone.Attributive
+  entry .root   a document-root tag, `#root`, admitting the given children
+      The tag above a vocabulary's elements, which `XmlSchema#generic` builds.
+  entry .freeform   a container tag of any name, admitting no particular children
+  entry .container   a container tag typed by its label, its admissible children and its schema
+      `Tag.container[label, children, schema](presets)` builds a `Container of label over
+      children in schema`, the children reified from a type-level list of names.
+  entry .Container   a tag whose instances are elements with children
+    detail
+        Applying a `Container` makes an `Xml.Element` which is also `Xml.Vacuiscible`, so it
+        can take its children in a second application: `div(id = t"x")(child, child)`.
+    entry #node   the element for a set of attributes, the presets merged beneath them
+  entry #presets   the attributes every instance of the tag starts with
+  entry #admissible   the names of the elements the tag admits as children
+  entry #Result   the type of element applying the tag makes
+  entry #applyDynamicNamed   `tag(key = value, …)`: an element with checked attributes
+      A macro: each key must be an attribute the vocabulary declares for this element (an
+      `Xml.XmlAttribute` given), and each value must be `Attributive` to that attribute's
+      type, or the call does not compile.
+  entry #node   the element for a set of attributes
+
+entry .Attributive   how a value becomes an attribute's text, when a tag is applied
+  detail
+      `tag(width = 10)` needs to turn `10` into the text of the `width` attribute, and
+      only if the attribute takes a value of that type: `Attributive` is that conversion,
+      from a `Self` value to a `(key, value)` pair of texts, or `Unset` to omit the attribute,
+      keyed by the attribute's `Result` type. The companion provides `Text` and `String`
+      for textual attributes; a vocabulary adds instances for its own attribute types.
+
+      The trait is not exported to the `soundness` umbrella, since honeycomb's `Attributive`
+      has the name there: reach it as `xylophone.Attributive`.
+  refer xylophone.Tag
+  entry .Textual   the attribute type of a plain text attribute
+  entry .textTextual   a `Text` as a textual attribute's value
+  entry .stringTextual   a `String` as a textual attribute's value
+  entry #attribute   the `(key, value)` pair for a value, or `Unset` to omit the attribute
+
+entry .Renderable   a value which renders as `Xml` of a given form
+  detail
+      `Renderable` is the typeclass of types which have an XML rendering: `render` turns a
+      `Self` value into an `Xml of Form`, where `Form` names the vocabulary the rendering
+      belongs to. It is the XML counterpart of honeycomb's `Renderable` for HTML, and is not
+      exported to the `soundness` umbrella because that one has the name: reach it as
+      `xylophone.Renderable`.
+  entry #render   the value as `Xml of Form`
+
+entry .Inlinable   a compiletime code generator for reading a type from XML, composed into one flat parser
+  detail
+      `Inlinable` is the `Expr`-level counterpart of `Xml.Parsable`: a typeclass whose
+      `#parse` is a macro-time generator, given an `Expr` of an `Xml.Reader` positioned
+      just inside an opened element and returning an `Expr` of the decoded value, which the
+      generating macro splices straight into the parser it builds. Nested records,
+      collection gathering and custom leaf parsers all inline into one monomorphic parser
+      with no runtime dispatch, no instance arrays and no adapter hops between composed
+      parsers. It follows jacinta's `Inlinable` for JSON exactly.
+
+      The entry points are `Inlinable.parsable[T]`, a monomorphic `T is Xml.Parsable`, and
+      `Inlinable.printable[T]`, its writing counterpart, a `T is Xml.Printable` which
+      writes a record's compact XML text straight into a writer with no tree built. Both
+      are what `import codecs.direct` and `derives Xml.Direct` reach for.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import xmlSchemas.freeformXmlSchema
+
+      case class Tree(label: Text, children: List[Tree])
+      given Tree is Xml.Parsable = Inlinable.parsable[Tree]
+      given Tree is Xml.Printable = Inlinable.printable[Tree]
+
+      val tree = Tree(t"root", List(Tree(t"leaf", Nil)))
+      tree.in[Text over Xml].read[Tree in Xml] == tree
+      ```
+
+      Instances are ordinary runtime values, so `derived` needs no macro of its own, and
+      the resolution ladder at a `parsable[T]` expansion is: a builtin leaf (the
+      companion's `int`, `text`, … givens, which mirror the primitive `Xml.Parsable`
+      instances, so direct, staged and inlined reads give equal values and equal errors),
+      then a user-written instance evaluated live inside an in-macro staging compiler,
+      then a structural generator for a case class, a collection or a sealed sum, and
+      finally the runtime seam, a spliced call through the field's `Xml.Parsing` instance.
+      A recursive occurrence (`Tree` above) takes the seam rather than expanding forever.
+
+      The staging step needs the `xylophone.staged` module on the macro classpath, which
+      supplies the `Inlinable.Stager`; without it, a field whose type has only a
+      user-written instance takes the runtime seam. An instance (and its type) must also be
+      compiled in an earlier run than the expansion: a same-run instance degrades to the
+      seam through `Xml.Field`.
+  refer xylophone.Xml
+  refer xylophone.inlining
+  entry .parsable   `Inlinable.parsable[T]`: a monomorphic `T is Xml.Parsable`, generated at compiletime
+      Like `Xml.Parsable.staged`, but composed through `Inlinable` instances, so that nested
+      records, collections and custom leaves inline into one flat parser. The usual way to
+      get one is `import codecs.direct` or `case class T(…) derives Xml.Direct`.
+  entry .printable   `Inlinable.printable[T]`: a monomorphic `T is Xml.Printable`, generated at compiletime
+      Writes a record's compact XML text straight into a writer, reached through
+      `in[Text over Xml]` and `in[Data over Xml]` where the formatting is compact; indented
+      formatting still renders through the tree.
+  entry .Generates   evidence that the generator builds a type's codec structurally, as a record
+    detail
+        The condition on `import codecs.direct`'s generated instances: its `generates` given
+        succeeds only for a type the generator handles as a record, so for any other type
+        the search for a generated instance fails and the derived path resolves instead.
+    entry .generates   the given, a macro which succeeds for a record type and fails otherwise
+  entry .Stager   the in-macro staging compiler which evaluates a user-written instance at expansion
+    detail
+        An `Inlinable` given is an ordinary runtime value, so the generator can only call its
+        `parse` by evaluating the given inside the macro, which takes a staging compiler and
+        with it the compiler jars that `xylophone.core` does not depend on. The
+        `xylophone.staged` module holds the implementation, which the companion loads by
+        name when it is on the macro classpath; without it, `summon` is `None` and such a
+        field takes the runtime seam.
+    entry .summon   the live instance for a field type, if the staging compiler is available and finds one
+    entry .discriminantAttribute   the attribute a sealed sum's `Discriminable in Xml` dispatches on, if any
+    entry #summon   the live instance for a field type, or `None`
+    entry #discriminantAttribute   the sum's discriminant attribute, or `None`
+  entry .derived   the structural instance for a case class
+      Reflects `Self` when `parse` is invoked, so no macro is needed: `Type[Self]` arrives
+      with the call.
+  entry .ForXml   the `derives`-clause carrier: `case class Foo(…) derives Inlinable.ForXml`
+    detail
+        A `Self`-typed typeclass has no type parameters, so it cannot appear in a `derives`
+        clause; `ForXml[value]` is a parameterized subtrait which *is* a `value is
+        Inlinable`, synthesized into the type's companion, where the staging summon finds it.
+        The resolution ladder unwraps the delegate, so structural instances keep their
+        generator identities.
+    entry .derived   the carrier over `Inlinable.derived[value]`
+    entry #parse   delegates to the wrapped instance
+    entry #absent   delegates to the wrapped instance
+  entry .int   the generator for `Int`: the same read as `Xml.intParsable`, with `0` when absent
+  entry .long   the generator for `Long`
+  entry .double   the generator for `Double`
+  entry .float   the generator for `Float`
+  entry .boolean   the generator for `Boolean`
+  entry .text   the generator for `Text`: the element's text, or `Xml.Error.Reason.Untextual`
+  entry .string   the generator for `String`
+  entry .iterable   the generator for any `Iterable` of an inlinable element type
+      In field position the record generator never calls it: it gathers each same-named
+      child through the element's own generator. On its own it reads a single element as a
+      one-element collection, as the runtime `Xml.Parsable.iterable` does.
+  entry #parse   the generator: an `Expr` of the reader to an `Expr` of the value
+      The reader is positioned with the current element just opened. The `Quotes` and the
+      `Type[Self]` arrive with the call.
+  entry #absent   what a field of this type yields when no child carries its name
+      Mirrors the runtime instances: an abort with `Xml.Error.Reason.Missing` unless
+      overridden; the primitive instances raise and continue with a sentinel, a collection
+      is empty, and a record raises once and takes a `Default` or builds its fields absent.
+
+entry .inlining   the machinery behind `Inlinable`: the generators and entry macros
+  hidden
+  detail
+      Not for direct use: the expansion-time instance resolution, the structural generators
+      for products, collections and sums, and the macros `Inlinable.parsable`,
+      `Inlinable.printable` and `Inlinable.Generates` expand to.
+  entry .fieldInstance   the runtime seam: a field type's `Xml.Parsing`, a nominal `Parsable` in scope first
+      An inline method the generated record body binds once per parse, preferring a
+      nominal `Xml.Parsable` (a custom instance, a staged sibling) to the `Xml.Field`
+      fallback chain, so that occurrence reads, repeatability and absence consult one
+      instance.
+  entry .generates   the macro behind `Inlinable.Generates.generates`
+  entry .inlinablePrintable   the macro behind `Inlinable.printable[T]`
+  entry .inlinableParsable   the macro behind `Inlinable.parsable[T]`
+
+entry .dynamicAccess   the permission for the dynamic syntax `xml.foo`, as a given to import by name
+  detail
+      Member-style navigation of an `Xml` value — `xml.book`, `xml.book(Prim)`,
+      `` xml.`svg:rect` `` — is unlocked by an erased `Xml is Dynamical` permission, so that
+      a scope which has not asked for it keeps its mistyped member names as compile
+      errors. The permission is granted to the rest of a scope by importing the given, or to
+      a single block by `dynamically[Xml]:` (or `dynamically:`, for every format).
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import xmlSchemas.freeformXmlSchema
+      import dynamicAccess.dynamicXml
+
+      val data = t"<a><b><c>42</c></b></a>".read[Xml]
+      data.b().c().as[Int]   // 42
+      ```
+  entry .dynamicXml   grants `Xml is Dynamical` to the scope which imports it
+
+entry .internal   the macros behind `x"…"`, `xp"…"`, the XML extractor, tag application and staged parsers
+  hidden
+  detail
+      Not for direct use: the object which houses xylophone's macro implementations. It also
+      declares the opaque types `Attributes` and `Scope`, which the `xylophone` package
+      exports (and `object Xml` re-exports `Scope`, as `Xml.Scope`, since the `soundness`
+      umbrella already has another `Scope`); their pages under the package have the full
+      account.
+  entry .extractor   the macro behind the `x"…"` pattern: matches an `Xml` against a literal with holes
+      A literal in pattern position captures each hole's value: a single captured node is
+      the result, several are a tuple, and a single text value alone cannot be captured on
+      its own (capture it with another value, or the enclosing node).
+  entry .xpath   the macro behind `xp"…"`: parses, checks and lifts the expression
+      Parses the literal at expansion time with the same parser the runtime decoder uses,
+      maps a failure's offset back to a source position, grafts the insertions in place of
+      their holes, lifts the tree wholesale, and binds the prefixes the expression uses
+      through the `Namespace` givens at the call site.
+  entry .interpolator   the macro behind `x"…"`: parses and checks the literal, with holes for insertions
+      Parses leniently, so a literal may use a prefix bound only by a `Namespace` given at
+      its call site, and then checks every prefix against the givens itself; an unbound
+      prefix is a compile error unless `namespaceOptions.lenientNamespaces` is in scope.
+  entry .attributes   the macro behind `tag(key = value, …)`: checks each attribute and converts its value
+      Each key must be an `Xml.XmlAttribute` given for the tag's element, and each value
+      `Attributive` to the attribute's type; otherwise the call does not compile.
+  entry .stagedParsable   the macro behind `Xml.Parsable.staged`: a monomorphic parser for a case class
+      Field values live in typed locals, child elements dispatch through packed-`Long`
+      literal comparisons, builtin primitives read through direct static calls, `@attribute`
+      fields fill from the open tag, and the record is built by a direct constructor call,
+      with the same semantics as the derived engine.
+  entry .Attributes   an element's attributes, in document order; see `xylophone.Attributes`
+    detail
+        The opaque type over a frozen interleaved array, exported to the `xylophone` package,
+        whose page has the full account.
+    entry .empty   no attributes
+    entry .traversable   the pairs in document order, so `attributes.to[List]` needs no conversion
+    entry .inspectable   renders the attributes as `xml{id="x", class="y"}`
+    entry .indexable   the `Applicable` given: `attributes.at(key)` as an `Optional`, and `contains`
+    entry .apply   `Attributes(pairs*)` builds from pairs; `attributes(key)` is a value, throwing if absent
+        The constructor keeps the pairs' order. The lookup throws `NoSuchElementException`
+        for a key which is not present; `fetch` or `at` give `Unset` instead.
+    entry .from   builds from a `Map[Text, Text]`, in the map's iteration order
+    entry .size   the number of attributes
+    entry .isEmpty   whether there are no attributes
+    entry .nonEmpty   whether there is at least one attribute
+    entry .nil   whether there are no attributes
+    entry .fetch   the value for a key, or `Unset`
+        The lookup the staged parsers' `@attribute` steps use: `at` without the `Applicable`
+        detour.
+    entry .declaresNamespace   whether any attribute is an `xmlns` or `xmlns:prefix` declaration
+    entry .contains   whether a key is present
+    entry .keys   the keys, in document order
+    entry .values   the values, in document order
+    entry .iterator   the `(key, value)` pairs, in document order
+    entry .toMap   the attributes as a `Map[Text, Text]` which still iterates in document order
+    entry .eachPair   applies an action to each `(key, value)` pair, in order
+        Named `eachPair` rather than `each`: the generic one-parameter `each` would otherwise
+        win resolution and reject the two-parameter lambda.
+    entry .foreachPair   `eachPair` as a plain, non-inline method
+    entry .map   maps each `(key, value)` pair to a value, in order
+    entry .removed   the attributes without a key; the same value if the key is absent
+    entry .-   `attributes - key`, the same as `removed`
+    entry .--   the attributes without each of several keys
+    entry .updated   the attributes with a key set to a value, in place if present, appended if not
+    entry .++   the attributes merged with another `Attributes` or a `Map`, the right side winning
+        Keys of the left keep their positions, with the right's values where both have a key,
+        and the right's new keys follow in its order.
+    entry .equalsAttributes   whether two attribute sets hold the same pairs, in any order
+    entry .hashAttributes   an order-independent hash, consistent with `equalsAttributes`
+  entry .Scope   the namespace bindings in force at an element; see `xylophone.Scope`
+    detail
+        The opaque type over a frozen interleaved array, exported to the `xylophone` package
+        and re-exported as `Xml.Scope`, whose page has the full account.
+    entry .xmlNamespace   `http://www.w3.org/XML/1998/namespace`, the URI of the reserved `xml` prefix
+    entry .xmlnsNamespace   `http://www.w3.org/2000/xmlns/`, the URI of the `xmlns` prefix
+    entry .empty   no bindings at all, not even `xml`
+    entry .xml   the reserved `xml` prefix alone: the scope a document is parsed in unless another is given
+    entry .default   the given scope, `xml`, in implicit scope through the companion
+    entry .inspectable   renders a scope as `xmlns{"" ="urn:d", p="urn:p"}`
+    entry .apply   `Scope(pairs*)` from prefix–URI pairs; `Scope[prefixes]` from `Namespace` givens
+        `Xml.Scope(t"svg" -> t"http://www.w3.org/2000/svg")` binds the pairs in order, the
+        empty text as the prefix of the default namespace. The type-level form takes a tuple
+        type of prefixes and binds each through the `Namespace` given for it, over the
+        reserved `xml` binding.
+    entry .isEmpty   whether the scope has no bindings
+    entry .size   the number of bindings
+    entry .resolve   the URI bound to a prefix, `Unset` for the default namespace; `Unset` if unbound or undeclared
+    entry .binds   whether a prefix has a binding, counting an undeclaring one
+    entry .prefixOf   the most recently bound prefix for a URI, or `Unset` if none binds it
+        The result is doubly optional: `Optional(Unset)` means the URI is the default
+        namespace, and `Unset` that no prefix is bound to it. The serializer uses it to write
+        a name in a namespace.
+    entry .bind   the scope with one more binding appended, shadowing any earlier one of the prefix
+    entry .++   this scope with another's bindings appended, so the other's shadow this one's
+    entry .bindings   the bindings in order, as `(prefix, uri)` pairs, `Unset` for the default namespace
+
+entry .optics   lenses and optics over an element's children, for `xml.lens(…)`
+  detail
+      The givens which let an `Xml` value be updated through a lens: `xml.lens(_.book.title =
+      value)` navigates to a child element by name and replaces it, and the `Each` and
+      ordinal optics address every, or the n-th, child element. Every update rebuilds the
+      element immutably, preserving text and comment nodes in place, and the value assigned
+      need not be XML already: anything `Encodable in Xml` is encoded as it is assigned.
+      The givens are in a choice package, imported by name, and need `dynamicAccess.dynamicXml`
+      for the member syntax inside the lens.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import xmlSchemas.freeformXmlSchema
+      import dynamicAccess.dynamicXml
+      import optics.{xmlLens, xmlEachOptical, xmlOrdinalOptical}
+
+      val document = t"<doc><x>1</x><x>2</x><x>3</x></doc>".read[Xml]
+      document.lens(_.x = x"<x>9</x>").show        // the first <x> replaced
+      document.lens(_(Each) = x"<x>0</x>").show    // every <x> replaced
+      document.lens(_(Sec) = x"<x>0</x>").show     // the second <x> replaced
+      ```
+  entry .xmlLens   a lens from an element to its first child element of a name, replacing it on update
+      Navigates to the first child element with the given name and replaces it on update,
+      or appends the new value if no such child exists. Needs an `Xml.Scope` in scope (the
+      companion's default binds only `xml`) and the `Xml is Dynamical` permission.
+  entry .xmlOrdinalOptical   an optic to the n-th child element: `_(Sec) = …`
+      Counts element children only, so text and comments between them do not shift the
+      ordinal.
+  entry .xmlEachOptical   an optic to every child element: `_(Each) = …`
+
+entry .optionalityOptions   how an `Optional` field reads a missing or faulty element or attribute
+  detail
+      Two policies for an `Optional` field of a derived decoder, each a given to import by
+      name. *Absence* — no element or attribute of the field's name — is lenient by default,
+      giving `Unset`; `strictXmlAbsence` makes it an `Xml.Error` with `Reason.Missing`.
+      *Faults* — a present element the inner decoder rejects — are strict by default,
+      raising; `lenientXmlFaults` reads such a field as `Unset`. XML has no null: an empty
+      element is a present value, so there is no nullity policy, where JSON and YAML have one.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import xmlSchemas.freeformXmlSchema
+
+      case class Tally(name: Text, count: Optional[Int])
+
+      val tolerant =
+        import optionalityOptions.lenientXmlFaults
+        x"<root><name>Ann</name><count>many</count></root>".as[Tally]   // Tally(t"Ann", Unset)
+      ```
+  entry .strictXmlAbsence   a missing element or attribute for an `Optional` field is an `Xml.Error`
+  entry .lenientXmlAbsence   a missing element or attribute for an `Optional` field is `Unset`; the default
+  entry .strictXmlFaults   a present element the inner decoder rejects raises; the default
+  entry .lenientXmlFaults   a present element the inner decoder rejects reads as `Unset`
+
+entry .namespaceOptions   whether a prefix with no binding is an error, or no namespace
+  detail
+      The Namespaces recommendation makes an unbound prefix an error, and that is the
+      default: parsing `<p:a/>` with no declaration of `p` raises a `Parse.Error` with
+      `Xml.Issue.UnboundPrefix`, and `x"<p:a/>"` with no `Namespace` given for `p` does not
+      compile. `lenientNamespaces` has an unbound prefix resolve to no namespace instead,
+      for documents which use prefixes they never declare.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import xmlSchemas.freeformXmlSchema
+      import namespaceOptions.lenientNamespaces
+
+      t"<p:a/>".read[Xml]
+      ```
+  entry .strictNamespaces   an unbound prefix is an error; the default
+  entry .lenientNamespaces   an unbound prefix resolves to no namespace
+
+entry .xmlSchemas   the vocabulary a parse validates against, as a given to import by name
+  detail
+      Every parse of XML needs an `XmlSchema` in scope. `freeformXmlSchema` is
+      `XmlSchema.Freeform`, which admits any element and attribute and the five predefined
+      entities, and is the usual choice when no vocabulary is in play.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import xmlSchemas.freeformXmlSchema
+
+      t"<message>hello</message>".read[Xml]
+      ```
+  entry .freeformXmlSchema   `XmlSchema.Freeform`: any element, any attribute, the predefined entities
+
+entry .formatting   how XML is laid out when it is rendered, as a given to import by name
+  detail
+      An `Xml.Formatting` decides whether `show`, `in[Text over Xml]` and `Xml.emit` write
+      whitespace between elements. Compact formatting writes none; indented formatting
+      breaks each element onto its own line, indented two spaces per level, and ends with
+      a newline. A record with an `Xml.Printable` is written directly, with no tree built,
+      only where the formatting is compact.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import xmlSchemas.freeformXmlSchema
+
+      case class Worker(name: Text, age: Int)
+
+      locally:
+        import formatting.indentedXmlFormatting
+        Worker(t"Alice", 30).in[Xml].show   // across several lines
+      ```
+  entry .compactXmlFormatting   no whitespace between elements, and no trailing newline
+  entry .indentedXmlFormatting   each element on its own line, indented two spaces per level, with a trailing newline
+
+entry .Attributes   an element's attributes: an ordered, immutable map from name to value
+  detail
+      The attributes of an `Xml.Element`, in document order, as an opaque type over a
+      frozen array of interleaved keys and values rather than a `Map`: a parse builds one
+      as it tokenizes the start tag, an element's `attributes` is one, and every update
+      (`updated`, `removed`, `++`) returns a new value. It is declared in
+      `xylophone.internal` and exported to the `xylophone` package.
+
+      ```scala
+      import soundness.*
+
+      val attributes: Attributes = Attributes(t"id" -> t"x", t"class" -> t"y")
+      attributes(t"id")                  // t"x"; throws if absent
+      attributes.fetch(t"missing")       // Unset
+      attributes.at(t"class")            // Optional, through `Applicable`
+      attributes.updated(t"id", t"z").toMap
+      Xml.Element(t"a", attributes, Array())
+      ```
+
+      Equality of two `Attributes` is order-insensitive (`equalsAttributes`), which is what
+      `Xml.Element`'s own equality uses; iteration (`keys`, `values`, `iterator`,
+      `eachPair`, `to[List]`) is in document order. It inspects as
+      `xml{id="x", class="y"}`, as the attributes would appear in a start tag.
+  refer xylophone.Xml
+  refer xylophone.Scope
+
+entry .Scope   the namespace bindings in force at an element: prefixes paired with URIs
+  detail
+      A `Scope` is the list of `xmlns` and `xmlns:prefix` declarations which apply at a
+      point in a document, as prefix–URI pairs in order, a later binding of a prefix
+      shadowing an earlier one; the default namespace is the binding of the empty prefix,
+      and an undeclaring `xmlns=""` binds it to the empty URI. Every `Xml.Element` carries
+      its scope, the parser extending a parent's with each child's declarations, and a
+      path's `XPath#scope` binds the prefixes its name tests use. It is declared in
+      `xylophone.internal`, exported to the `xylophone` package, and reached as `Xml.Scope`
+      from the `soundness` umbrella, which already has another `Scope`.
+
+      A `Scope` given in scope decides how a prefixed selection resolves, whatever prefix
+      the document itself used:
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import xmlSchemas.freeformXmlSchema
+      import dynamicAccess.dynamicXml
+
+      val doc = t"""<r xmlns:a="urn:a"><a:x>1</a:x><b:x xmlns:b="urn:b">2</b:x></r>""".read[Xml]
+
+      locally:
+        given Xml.Scope = Xml.Scope(t"q" -> t"urn:b")
+        doc.`q:x`().as[Int]   // 2: the <b:x>, matched by namespace
+      ```
+
+      The companion's `default` given, in implicit scope, is `xml`: only the reserved `xml`
+      prefix, which every document has without a declaration. A scope takes no part in an
+      element's equality: a parsed element equals the same element built by hand, and when a
+      tree is written, an element whose scope binds a prefix it uses which nothing above it
+      has declared gets the declaration written for it.
+  refer xylophone.Namespace
+  refer xylophone.XPath

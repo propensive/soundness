@@ -1,0 +1,140 @@
+tel 1.0
+
+base virility
+import soundness
+
+info   Unix manual pages as a typed document tree, serialized to roff with correct escaping
+detail
+    _Virility_ builds a Unix manual page as a value — a `Roff` document of titled sections,
+    paragraphs, tagged paragraphs, examples and indented blocks, with bold and italic runs —
+    and serializes it to the roff source that `man` renders, using the man macro package
+    (`.TH`, `.SH`, `.SS`, `.P`, `.TP`, `.EX`/`.EE`, `.RS`/`.RE`).
+
+    Escaping is the library's reason to exist: text written into a roff document by hand is
+    easily misread as markup. Every `-` in prose becomes `\-`, so that an option such as
+    `--verbose` stays searchable and copyable in the rendered page; every `\` becomes
+    `\[rs]`; a line beginning with `.` or `'`, which roff would take for a control line, is
+    protected with `\&`; and a newline inside a line becomes a space.
+
+    ```scala
+    import soundness.*
+
+    val page = Roff
+      ( t"greet", 1, t"2026-08-17", t"greet 1.0", t"User Commands",
+        List
+          ( Roff.Block.Section
+              ( t"Name", List(Roff.Block.Paragraph(Roff.Inline.plain(t"greet - say hello"))) ),
+            Roff.Block.Section
+              ( t"Options",
+                List
+                  ( Roff.Block.Tagged
+                      ( List(Roff.Inline.bold(t"--loud")),
+                        Roff.Inline.plain(t"Greet in capital letters.") ) ) ) ) )
+
+    page.serialize
+    // .TH "GREET" "1" "2026-08-17" "greet 1.0" "User Commands"
+    // .SH "Name"
+    // greet \- say hello
+    // .SH "Options"
+    // .TP
+    // \fB\-\-loud\fP
+    // Greet in capital letters.
+    ```
+
+    Exoskeleton's manpage support generates its pages through this library, from the
+    program's own command-line definitions. Virility has a single source set,
+    `virility.core`, and everything is exported to the `soundness` umbrella.
+
+refer virility.Roff
+refer virility.Roff.Block
+refer virility.Roff.Inline
+
+entry .Roff   a Unix manual page: its `.TH` title line and a list of blocks, serialized as roff
+  detail
+      A `Roff` is one manual page. Its fields become the arguments of the `.TH` line which
+      begins the page: the `#title` (rendered in capitals), the `#section` number, and the
+      optional `#date`, `#source` (the program and its version) and `#manual` (the title of
+      the manual it belongs to, such as `User Commands`). Its `#blocks` are the body.
+
+      ```scala
+      import soundness.*
+
+      Roff(t"grep", 1).serialize                                  // .TH "GREP" "1"
+      Roff(t"grep", 1, Unset, Unset, t"User Commands").serialize
+      // .TH "GREP" "1" "" "" "User Commands"
+      ```
+
+      Trailing unset arguments are dropped from the `.TH` line, and unset ones before a set
+      one are written as empty quoted arguments. A `Roff` shows, and encodes as `Text`, as its
+      `#serialize`d source, so it can be written to a file with `write`.
+  refer virility.Roff.Block
+  refer virility.Roff.Inline
+  entry .showable   shows a page as its roff source
+  entry .encodable   encodes a page as its roff source text
+  entry .escape   escapes text for a roff text line
+      Every `-` becomes `\-`, `\` becomes `\[rs]`, and a newline becomes a space. It does not
+      protect a leading `.` or `'`: the blocks do that for each line they emit, so text
+      passed through `.escape` alone and written at the start of a line still needs `\&`.
+
+      ```scala
+      import soundness.*
+
+      Roff.escape(t"list-files")   // t"list\\-files"
+      ```
+  entry .quote   escapes and double-quotes text as a macro argument
+      For the arguments of `.TH`, `.SH` and `.SS`. Inside the quotes, `"` becomes `\[dq]` and
+      `\` becomes `\[rs]`, but `-` is left alone: a hyphen in a title or a date is prose, and
+      an escaped hyphen in the `.TH` date defeats `mandoc`'s date parsing.
+
+      ```scala
+      import soundness.*
+
+      Roff.quote(t"2026-08-17")   // t"\"2026-08-17\""
+      ```
+  entry .Inline   a run of text within a line: plain, bold or italic
+    detail
+        An enum of three cases. `Plain(text)` is escaped text; `Bold(inlines)` and
+        `Italic(inlines)` wrap a list of further runs in the `\fB…\fP` and `\fI…\fP` font
+        changes, so styles may nest. The companion's `plain`, `bold` and `italic` make the
+        common single-run forms.
+
+        ```scala
+        import soundness.*
+
+        val runs = List(Roff.Inline.bold(t"ls"), Roff.Inline.Plain(t" "), Roff.Inline.italic(t"file"))
+        runs.map(_.serialize).join   // t"\\fBls\\fP \\fIfile\\fP"
+        ```
+    entry .plain   a list of one plain run of text, the form a paragraph's prose takes
+    entry .bold   one bold run of plain text
+    entry .italic   one italic run of plain text
+    entry #serialize   the run as roff text, escaped and with its font changes
+  entry .Block   a block of a manual page: a section, a paragraph, a tagged paragraph, an example or an indent
+    detail
+        An enum of the block structures of the man macros:
+
+        - `Section(title, blocks)` — a `.SH` section, such as `Name`, `Synopsis` or `Options`.
+        - `Subsection(title, blocks)` — a `.SS` subsection.
+        - `Paragraph(prose)` — a `.P` paragraph of inline runs. As the first block of a
+          section or subsection, the redundant `.P` is omitted.
+        - `Tagged(tag, body)` — a `.TP` paragraph, the shape of an option's entry: the tag on
+          one line and its description indented beneath. An empty body emits only the tag.
+        - `Example(lines)` — a `.EX`/`.EE` block of literal lines, each escaped and
+          protected.
+        - `Indented(blocks)` — blocks indented between `.RS` and `.RE`.
+
+        ```scala
+        import soundness.*
+
+        Roff.Block.Example(List(t"grep -r pattern .", t".hidden")).serialize
+        // List(t".EX", t"grep \\-r pattern .", t"\\&.hidden", t".EE")
+        ```
+    entry #serialize   the block as lines of roff source
+        Each text line which begins with `.` or `'` is protected with `\&`, so prose can
+        never be taken for a control line.
+  entry #title   the page's name, usually the command's, rendered in capitals on the `.TH` line
+  entry #section   the manual section number: 1 for user commands, 5 for file formats, 8 for administration
+  entry #date   the date of the page's last change, as text
+  entry #source   the source of the program, usually its name and version
+  entry #manual   the title of the manual the page belongs to, such as `User Commands`
+  entry #blocks   the body of the page
+  entry #serialize   the whole page as roff source, ending with a newline

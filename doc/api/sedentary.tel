@@ -1,0 +1,725 @@
+tel 1.0
+
+base sedentary
+import soundness
+
+info   benchmarks, stress tests and profiles: quoted code staged into its own JVM, measured, and reported beside a suite's tests
+detail
+    _Sedentary_ measures code rather than checking it. It offers three kinds of measurement,
+    each written inside a probably `Suite` alongside its tests and reported in the same report,
+    with the same names, axes and selection:
+
+    - a `Bench` measures **speed**: how long one operation takes when it is repeated serially,
+      with its spread, its confidence interval, its allocation per operation and, given an
+      `OperationSize`, its throughput in bytes or characters per second;
+    - a `Stress` measures **behaviour under load**: the operation run concurrently on many
+      workers for a wall-clock window, reporting allocation, peak heap, the live set retained,
+      garbage collection and latency percentiles as a `Strain`, and optionally sweeping or
+      searching the worker count for the best sustained throughput (`StressSearch`);
+    - a `Profile` measures **where the time goes**: the operation run under an in-process JFR
+      recording, its hottest methods reported as `Hotspots`.
+
+    The body of every measurement is a **quoted expression**, `'{ … }`. It is staged through
+    superlunary: compiled into a JAR with the code under test, deployed to a `BenchmarkDevice`,
+    and run in a JVM of its own, with a fixed heap, a chosen collector and, optionally, a
+    limited number of processors, so that nothing else in the suite — its other tests, the
+    runner's own allocation, a JIT already warmed by something else — distorts the figure.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import classloaders.threadContextClassloader
+    import environments.javaBaseEnvironment
+    import strategies.throwUnsafely
+    import superlunary.embeddings.automaticEmbedding
+    import systems.javaBaseSystem
+    import temporaryDirectories.systemTemporaryDirectory
+    import threads.platformThreads
+
+    given BenchmarkDevice = LocalhostDevice
+
+    object Benchmarks extends Suite(m"Arithmetic benchmarks"):
+      def run(): Unit =
+        val bench = Bench()
+        val stress = Stress(heap = t"256m")
+        val profile = Profile()
+
+        bench(m"sum by formula")(target = 1*Second):
+          '{1000L*1001L/2L}
+
+        stress(m"sum under load")(target = 2*Second, concurrency = 8):
+          '{1000L*1001L/2L}
+
+        profile(m"where a sum spends its time")(target = 5*Second):
+          '{(1L to 1000L).foldLeft(0L)(_ + _)}
+    ```
+
+    Each measurement takes its contextual values from the `Suite` it is written in (a
+    `Runner`, an `Inclusion` for its kind of result, the `Testable` and the `Codepoint`), and
+    the rest from imports: a `Classloader` and an `Environment` to build the measurement, a
+    `System`, a `TemporaryDirectory` and a `Stageable` (superlunary's
+    `embeddings.automaticEmbedding`) to stage it, a `BenchmarkDevice` to run it on, and
+    tactics for `Compiler.Error` and `Rig.Error`. A `Stress` also needs a parasite `Threading`,
+    which selects the kind of thread its workers run on.
+
+    A measurement which the runner has not selected is skipped **before** it is staged, so it
+    costs no compilation and no JVM, and every measurement declares an expected duration from
+    its metadata, so a host can budget a run before it starts. A host's duration multiplier
+    (fume's `--scale`) lengthens or shortens every declared target alike.
+
+    Code in a quoted body is compiled when the measurement is staged, not where it is written,
+    which has consequences. An inline method which resolves an instance with `summonFrom` or
+    `summonInline` — a derived decoder, say — sees only the imports written **inside** the
+    quote, not those at the top of the file: write the import in the body, or bind the
+    instance to a `val` outside and refer to it. A transparent macro given cannot expand inside
+    a quote at all, so keep such a call in an ordinary method and call that. Values from
+    outside the quote are spliced in with `$value` and travel to the measurement JVM through
+    superlunary's `References`, so cells which differ only in data share one compilation.
+
+    The library is one source set, `sedentary.core`, for the JVM only: it needs a JDK 21 or
+    later (for whole-process allocation accounting), a `java` launcher on the device, and JFR
+    for `Profile`. Everything is exported to the `soundness` umbrella.
+
+refer sedentary.Bench
+refer sedentary.Stress
+refer sedentary.Profile
+refer sedentary.BenchmarkDevice
+refer sedentary.OperationSize
+refer probably.Benchmark
+refer probably.Strain
+refer probably.Hotspots
+refer superlunary.Rig
+
+entry .Bench   a benchmark harness: times a quoted operation in its own JVM, singly or across one or two axes
+  detail
+      A `Bench` is a superlunary `Rig` which stages quoted code into a JAR, deploys it to the
+      `BenchmarkDevice` in scope, and times it there. It is constructed once, usually at the
+      top of a suite's `run()`, and applied to a name and settings to give a `Bench.Plan`, which
+      is applied in turn to a quoted body, or spread `over` one or two axes:
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import classloaders.threadContextClassloader
+      import environments.javaBaseEnvironment
+      import strategies.throwUnsafely
+      import superlunary.embeddings.automaticEmbedding
+      import systems.javaBaseSystem
+      import temporaryDirectories.systemTemporaryDirectory
+
+      given BenchmarkDevice = LocalhostDevice
+
+      enum Summation:
+        case Loop, Formula
+
+      object Benchmarks extends Suite(m"Summation benchmarks"):
+        def run(): Unit =
+          val bench = Bench()
+
+          bench(m"sum of the first thousand integers")
+            ( target = 50*Milli(Second), baseline = Summation.Formula )
+          . over(Summation):
+              case Summation.Loop =>
+                ' {
+                    var i = 1L
+                    var sum = 0L
+                    while i <= 1000L do
+                      sum += i
+                      i += 1L
+                    sum
+                  }
+
+              case Summation.Formula =>
+                '{1000L*1001L/2L}
+      ```
+
+      Each cell is measured in the same way. The body is bound once as a method of its own,
+      run ten times untimed, and then run in batches of doubling size until one batch takes at
+      least `target/iterations`; `warmups` full batches follow, adjusting the batch size towards
+      that duration, and the median of their rates fixes it. Then `iterations` timed batches
+      run, with a garbage collection requested between each, and the allocation over them is
+      read from the JVM's thread-allocation counter. Each operation's result is written to a
+      sink the JIT cannot see through, so a body whose value is unused is not eliminated; a body
+      which still measures nothing after 2³⁴ repetitions fails, as suspected dead code. The
+      result of each cell is a probably `Benchmark`: total and mean time, minimum, maximum,
+      standard deviation, the confidence interval, bytes allocated per operation and, given an
+      `OperationSize`, the size and rate of an operation.
+
+      The constructor's parameters pin the measurement JVM. `heap` sets both `-Xms` and `-Xmx`
+      (in `-Xmx` syntax, `t"256m"`; the default is a fixed `1g`); `cpus` limits it to that many
+      processors (see `BenchmarkDevice#invoke` for what that does on each platform); and `gc`
+      names the collector in `-XX:+Use<gc>GC` syntax (`t"G1"`, `t"Z"`; the default is
+      `Serial`, whose single-threaded, deterministic pauses suit microbenchmarks). A body which
+      runs a fiber runtime or many virtual threads should ask for `gc = t"G1"` and a heap sized
+      to what a rival's own harness used.
+
+      A `Bench` needs a `Classloader`, an `Environment` and a `BenchmarkDevice` where it is
+      constructed. Benchmark rows are the ones fume's `--bench` switch selects.
+  refer sedentary.Bench.Plan
+  refer sedentary.BenchmarkDevice
+  refer sedentary.OperationSize
+  refer probably.Benchmark
+  entry .Plan   a named, configured benchmark, awaiting its quoted body or the axes to spread it over
+    detail
+        A `Plan` is what `Bench#apply` returns: the benchmark's name, tags and settings, with
+        the `Bench` which will run it. It is used in one of three ways:
+
+        - applied directly to a quoted body, `plan('{ … })`, for a single measurement;
+        - spread `over` one or two axes, with a body which maps each axis value (or pair of
+          values) to a quoted body, for one measurement per value — rendered as a row of
+          cells, or a crosstab for two axes;
+        - given a per-cell `OperationSize` with `sized` first, and then spread `over`.
+
+        Watched as a plan grows: a single measurement, then one per implementation, then one
+        per implementation and input, each cell sized by its input.
+
+        ```scala fuel
+        typecheck
+        frame
+          label A single measurement
+          code
+              bench(m"parse a document")(target = 1*Second):
+                '{ Parser.parse(Corpus.small) }
+        frame
+          label One measurement per implementation, against a baseline
+          code
+              bench(m"parse a document")(target = 1*Second, baseline = Implementation.Ours)
+              . over(Implementation):
+                  case Implementation.Ours  => '{ Parser.parse(Corpus.small) }
+                  case Implementation.Rival => '{ RivalParser.parse(Corpus.small) }
+        frame
+          label One per implementation and document, each sized by its document
+          code
+              bench(m"parse a document")(target = 1*Second, baseline = Implementation.Ours)
+              . sized: (_: Implementation, document: Document) =>
+                  val size: OperationSize = Corpus.text(document).length*Byte
+                  size
+              . over(Axis(Implementation), Axis(Document)):
+                  case (Implementation.Ours, document) =>
+                    val text: Text = Corpus.text(document)
+                    '{ Parser.parse($text) }
+                  case (Implementation.Rival, document) =>
+                    val text: Text = Corpus.text(document)
+                    '{ RivalParser.parse($text) }
+        ##
+        ```
+
+        Every cell of a plan is staged and dispatched on its own, but cells whose staged trees
+        coincide — those differing only in a value spliced in with `$` — share one
+        compilation, and each distinct implementation compiles once. A value spliced into the
+        body travels through superlunary's `References`, and is extracted once per run.
+    entry .Uniaxial   a plan whose cells over one axis are each given their own `OperationSize`
+      detail
+          What `Plan#sized` returns for a function of one value. Its `#over` measures every
+          defined value of an axis, sizing each cell by `#size`; a cell for which the function
+          answers `Unset` falls back to the plan's own `operationSize`.
+      entry #plan   the plan whose settings each cell takes
+      entry #size   the size of the cell for an axis value, or `Unset` for the plan's own
+      entry #over   one measurement per defined value of an axis, each sized by `#size`
+          As `Bench.Plan#over` for one axis. The body is a partial function from the axis value
+          to a quoted body: a value for which it is not defined is a gap in the row, probed
+          without staging anything. If the plan has a `baseline` among the axis's values, that
+          cell is reported as the anchor the others are compared against.
+    entry .Biaxial   a plan whose crosstab cells are each given their own `OperationSize`
+      detail
+          What `Plan#sized` returns for a function of two values. Its `#over` measures every
+          defined combination of two axes, sizing each cell by `#size`, with the plan's own
+          `operationSize` wherever the function answers `Unset`.
+      entry #plan   the plan whose settings each cell takes
+      entry #size   the size of the cell for a pair of axis values, or `Unset` for the plan's own
+      entry #over   one measurement per defined combination of two axes, each sized by `#size`
+          As `Bench.Plan#over` for two axes. The body is a partial function from a pair of axis
+          values to a quoted body, so a combination which makes no sense is left as a gap. A
+          `baseline` is looked for among the first axis's values, and then the second's.
+    entry #bench   the `Bench` which stages and runs the plan's measurements
+    entry #name   the benchmark's name, as a `Message`
+    entry #tags   the tags which label the benchmark for selection and exclusion, such as `slow`
+    entry #target   the target measuring time, as a `Long` count of nanoseconds
+        The `target` given to `Bench#apply`, as the generic duration. It is divided among the
+        timed batches, and scaled by the runner's duration multiplier before it is used.
+    entry #operationSize   the size of one operation, for a throughput rate, or `Unset`
+    entry #iterations   how many timed batches each cell runs: five unless set
+    entry #warmups   how many full calibration batches precede the timed ones: as many as `#iterations` unless set
+    entry #confidence   the percentile of the reported confidence interval: 95 unless set
+    entry #anchor   the axis value whose cell the others are compared against, or `Unset`
+    entry #comparison   how the other cells are compared with the anchor: a probably `Baseline`
+        Which statistic is compared (`Min`, `Mean` or `Max`), as a rate or a time, and whether
+        the comparison is geometric or arithmetic; `Baseline()` compares geometric mean rates.
+    entry #apply   a single measurement of a quoted body
+        `plan('{ … })` stages the body, runs it on the plan's device and includes one
+        `Benchmark` in the report, unless the runner has not selected it, in which case
+        nothing is staged. The body is a quoted expression of any type, built with superlunary's
+        `References` and the staging `Quotes` in context.
+
+        ```scala fuel
+        typecheck
+        ##
+        bench(m"decode directly")(target = 1*Second, operationSize = 1000*Byte):
+          '{ Benchmarks.decodeUsersDirect() }
+        ```
+    entry #sized   gives each cell its own `OperationSize`, by its axis value or values
+        `plan.sized((value: A) => …)` returns a `Bench.Plan.Uniaxial`, and `plan.sized((left:
+        A, right: B) => …)` a `Bench.Plan.Biaxial`, whose `over` then measures the axes. A
+        parser measured over documents of different lengths reports each document's size, so
+        that the cells' rates are comparable where their times are not. A cell for which the
+        function answers `Unset` uses the plan's `operationSize`. The lambda's parameter types
+        must be written, so that the overload is chosen.
+    entry #over   one measurement per defined value of an axis, or per combination of two
+        `plan.over(axis)(body)` takes an `Axis` (`Axis(t"limit")(1000, 4000)`) and a partial
+        function from each of its values to a quoted body; `plan.over(first, second)(body)`
+        takes two axes and a partial function of pairs, and renders a crosstab. An enumeration's
+        companion may stand for an axis of all its cases — `plan.over(Summation)` — in either
+        position. A value or pair for which the body is not defined leaves a gap, found without
+        staging anything, and a cell the runner has not selected is skipped before it is staged.
+
+        ```scala fuel
+        typecheck
+        ##
+        bench(m"count up to a limit")(target = 50*Milli(Second))
+        . over(Axis(t"limit")(1000, 4000)): limit =>
+            ' {
+                var i = 0
+                while i < $limit do i += 1
+                i
+              }
+        ```
+
+        Here both cells share one compilation, since they differ only in the spliced `limit`.
+        Every cell shares the plan's `operationSize`; `#sized` gives each its own.
+  entry .Error   raised when a benchmark device cannot deploy, run or remove a measurement
+    detail
+        Error 794: _unable to run benchmarks_. Raised by a `BenchmarkDevice` when copying the
+        staged JAR to the device, launching the measurement JVM, or removing the JAR fails, or
+        when the measurement JVM exits with a nonzero status. `Bench`, `Stress` and `Profile`
+        convert it to superlunary's `Rig.Error`, with the reason `Staging` or `Invocation`, so a
+        suite sees a `Rig.Error`.
+
+        `LocalhostDevice` passes the staged input to the measurement JVM as a command-line
+        argument, so a body which splices in a very large value (a corpus of a megabyte or
+        more) can exceed the operating system's argument-length limit and fail with this error.
+  entry #heap   the measurement JVM's fixed heap size, as `-Xmx` text, or `Unset` for `1g`
+  entry #cpus   how many processors the measurement JVM may use, or `Unset` for all of them
+  entry #gc   the measurement JVM's collector, as in `-XX:+Use<gc>GC`, or `Unset` for `Serial`
+  entry #Result   the result type of a staged invocation: the output itself
+  entry #Form   the form staged inputs and outputs travel in: `Text`
+  entry #Target   what staging produces: the `Path on Linux` of the deployed JAR
+  entry #Transport   how spliced values are encoded for the measurement JVM: `Json`
+  entry #apply   names and configures a benchmark, returning a `Bench.Plan` to apply to a body
+      `bench(name, tags*)(target, operationSize, iterations, warmups, confidence, baseline,
+      comparison)`:
+
+      - `name` is a `Message`, `m"…"`, and `tags` label the benchmark for selection
+        (`n"slow"`, which needs the tag plane's `Nominative` imported by name:
+        `import soundness.{nominative, taggingNominative}`);
+      - `target` is the measuring time, any duration (`1*Second`, `50*Milli(Second)`);
+      - `operationSize` the size of one operation, usually a quantity such as `4096*Byte`,
+        converted by `OperationSize.conversion`, for a throughput figure;
+      - `iterations` the number of timed batches (five by default), and `warmups` the number
+        of calibration batches (as many as `iterations` by default);
+      - `confidence` the percentile of the confidence interval: 80, 85, 90, 95 (the default),
+        96, 97, 98 or 99;
+      - `baseline` an axis value whose cell anchors a comparison, for a plan spread `over` an
+        axis, and `comparison` how the comparison is made, a probably `Baseline`.
+  entry #stage   builds the code under measurement into a JAR and deploys it to the device
+      Bundles the staged code with superlunary's executor as its entry point, names the JAR by
+      a fresh UUID, and calls the device's `deploy`. A failure to build or deploy is raised as
+      a `Rig.Error` with the reason `Staging`. `Bench`, `Stress` and `Profile` all stage the same
+      way; a suite never calls this itself.
+
+entry .Stress   a stress test: a quoted operation run concurrently for a window, reporting memory, GC and latency
+  detail
+      Where a `Bench` times one operation repeated on a single thread, a `Stress` runs the
+      operation on `concurrency` workers at once, each repeating it until a wall-clock window
+      closes, and reports what a throughput figure hides, as a probably `Strain`: the worker
+      count, the operations completed and the time taken, total allocation (and so allocation
+      per operation), peak heap, the live set retained after a garbage collection, the number
+      and duration of collections, and the 50th, 90th, 99th and 99.9th percentile latencies
+      of an operation, from a log-linear histogram accurate to about 3%.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import classloaders.threadContextClassloader
+      import environments.javaBaseEnvironment
+      import strategies.throwUnsafely
+      import superlunary.embeddings.automaticEmbedding
+      import systems.javaBaseSystem
+      import temporaryDirectories.systemTemporaryDirectory
+      import threads.virtualThreads
+
+      given BenchmarkDevice = LocalhostDevice
+
+      object Benchmarks extends Suite(m"Hand-off benchmarks"):
+        def run(): Unit =
+          val stress = Stress()
+          val constrained = Stress(heap = t"128m")
+
+          stress(m"cross-thread hand-off")(target = 2*Second, concurrency = 16):
+            '{ Pipeline.handOff() }
+
+          constrained(m"hand-off in a small heap")(target = 1*Second, sweep = 1024):
+            '{ Pipeline.handOff() }
+      ```
+
+      A single window is one measurement. Three settings of `#apply` turn it into a search
+      over the worker count, each window's count chosen by a `StressSearch` from the outcome of
+      the windows before it, and every window reported as a cell on the test's `N` axis, so a
+      search reads as a curve against `N` in one test rather than as many tests:
+
+      - `sweep` doubles the worker count from `concurrency` (one, by default) up to `sweep`,
+        stopping early at a window which ran out of memory or spent more than half its time
+        collecting garbage — so in a constrained heap the last row is the most concurrency
+        that heap sustains;
+      - `threshold` and `compliance`, given together, search for **capacity**: the largest
+        worker count at which at least `compliance` percent of operations complete within
+        `threshold`, binary-searched to about 12% and then confirmed over a window three times
+        longer, the confirmed row flagged `sustained`;
+      - `refine` looks for the **optimum** count rather than a power of two or the largest
+        compliant count: the smallest whose throughput is within 5% of the best — the peak of
+        a peaked curve, or the knee of one which flattens out — re-measured over extended
+        windows and flagged `sustained`.
+
+      The workers' threads are the kind the `Threading` in scope forks: under
+      `threads.virtualThreads`, a high-concurrency measurement multiplexes its workers over the
+      carrier pool, as a massively concurrent application would. Allocation is still fully
+      accounted either way. A worker whose operation throws fails its window, reported once
+      on the standard error, rather than printing a trace per worker.
+
+      The constructor's `heap`, `cpus` and `gc` pin the measurement JVM as for `Bench`; a
+      saturated multi-threaded workload measuring tail latency should select `gc = t"G1"`, so
+      that the Serial collector's stop-the-world pauses do not dominate the 99th percentile.
+      Stress rows are selected with fume's `--stress` switch, not `--bench`.
+  refer sedentary.StressSearch
+  refer probably.Strain
+  refer sedentary.Bench
+  entry #heap   the measurement JVM's fixed heap size, as `-Xmx` text, or `Unset` for `1g`
+  entry #cpus   how many processors the measurement JVM may use, or `Unset` for all of them
+  entry #gc   the measurement JVM's collector, as in `-XX:+Use<gc>GC`, or `Unset` for `Serial`
+  entry #Result   the result type of a staged invocation: the output itself
+  entry #Form   the form staged inputs and outputs travel in: `Text`
+  entry #Target   what staging produces: the `Path on Linux` of the deployed JAR
+  entry #Transport   how spliced values are encoded for the measurement JVM: `Json`
+  entry #apply   runs a stress test of a quoted body: one window, a sweep, a capacity search or a refinement
+      `stress(name, tags*)(target, concurrency, sweep, threshold, compliance, refine)(body)`:
+
+      - `target` is the length of each window, any duration, scaled by the runner's duration
+        multiplier; `threshold`, a latency criterion rather than a length of time, is not;
+      - `concurrency` is the worker count, or the first count of a search (one by default);
+      - `sweep` is the largest worker count a search may reach (1024 for a capacity search
+        without one);
+      - `threshold` and `compliance` (a percentage) together set a latency objective; giving
+        only one of them is a programming error, and panics;
+      - `refine` searches for the optimum worker count.
+
+      The body is a quoted expression, as for `Bench.Plan#apply`. The test declares its `N`
+      axis, bounded by `concurrency` and `sweep`, before anything runs, so a host can offer
+      `N` constraints in a listing, and its expected duration is one window for a single
+      measurement and roughly logarithmic in `sweep` for a search. A window which ran out of
+      memory is not reported; every other window is, including a failed confirmation.
+
+      ```scala fuel
+      typecheck
+      ##
+      stress(m"requests within 5 ms")
+        ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99, refine = true ):
+        '{ Server.roundtrip() }
+      ```
+  entry #stage   builds the code under measurement into a JAR and deploys it to the device
+      As `Bench#stage`: a failure is a `Rig.Error` with the reason `Staging`.
+
+entry .StressSearch   chooses the worker count of each window of a `Stress` search, from the windows before it
+  detail
+      The search a `Stress` with `sweep`, `threshold` and `compliance`, or `refine` performs. It
+      runs inside the measurement JVM, called from the staged loop, but is an ordinary class,
+      so a search can be tested against a simulated workload without staging anything:
+
+      ```scala
+      import soundness.*
+
+      val search = StressSearch(1, 64, false, false)
+      var counts: List[Int] = Nil
+
+      while !search.done do
+        counts = counts :+ search.current
+        search.record(search.current.toDouble, true, false)
+
+      counts   // List(1, 2, 4, 8, 16, 32, 64)
+      ```
+
+      The constructor takes the first worker count, the largest, whether there is a latency
+      objective (an SLO), and whether to refine. Every search begins with an **ascent**,
+      doubling the count, landing exactly on the cap even when it is not a power of two:
+
+      - Without an SLO, the ascent is the whole of a plain sweep, stopping at the cap or at a
+        window which exhausted memory or thrashed. A plain sweep has no winner.
+      - With an SLO, the ascent stops at the first window which misses the objective, and the
+        boundary between the largest compliant and the smallest non-compliant count is
+        binary-searched to about 12%. The largest compliant count is confirmed over an extended
+        window, stepping down about 12% at a time, up to three times, if the confirmation fails.
+        If even the first window misses, the search stops there, with no winner.
+      - With `refine`, after the ascent (and any boundary search) it probes halfway across
+        the gaps around the fastest feasible count until they are within about 6% — first
+        the **peak**, then the **knee**, the smallest count within `.Plateau` of the fastest —
+        and re-measures the knee, the count below it and the peak over extended windows. The
+        smallest of them within 5% of the fastest re-measurement wins. If the peak's
+        re-measurement falls more than 5% short, the peak was a lucky window: the
+        re-measurements replace the first ones and the search starts again, up to `.Restarts`
+        times. A window which failed or missed the SLO bounds the probing but is never a
+        candidate.
+  refer sedentary.Stress
+  entry .MaxProbes   the most windows spent probing around the peak, and again around the knee: 12
+  entry .Plateau   the fraction of the best throughput within which a count is as good as the best: 0.05
+  entry .Restarts   how many times a refined search starts again after finding a lucky peak: 2
+  entry .Phase   the stage a search is in, from its ascent to done
+      `Ascent` doubles the count; `Boundary` binary-searches the SLO boundary; `Peak` and
+      `Knee` probe for the optimum in a refined search; `Confirmation` re-measures candidates
+      over extended windows; `StepDown` retreats about 12% at a time from a failed
+      confirmation; and `Done` ends the search.
+  entry #done   whether the search has finished, so no further window should run
+  entry #current   the worker count the next window should run at
+  entry #extended   whether the next window is a confirmation, run three times longer than the target
+  entry #winner   the ordinal of the winning window, counting every recorded window from zero, or -1
+      A plain sweep, and a search in which no confirmation held, have no winner. A `Stress`
+      flags the winning window's row `sustained`.
+  entry #record   records the outcome of the window just run at `#current` workers
+      `record(throughput, ok, exhausted)`: the window's throughput in operations per
+      nanosecond; whether it was feasible — no failure, no memory exhaustion, no thrashing,
+      and within the SLO if there is one; and whether it ran out of memory or thrashed, which
+      ends a plain sweep's ascent. The search then chooses the next `#current`, or finishes.
+
+entry .Profile   a profile: a quoted operation run under JFR, reporting its hottest methods as a histogram
+  detail
+      Where a `Bench` measures how fast an operation runs and a `Stress` how it scales, a
+      `Profile` measures where its time goes. The body runs repeatedly on one thread for the
+      target duration while an in-process JFR recording samples execution every millisecond,
+      recording native-method samples alongside, so a pipeline bound by native code (zlib, say)
+      is not invisible. Each sample's top frame — the method actually executing, its **self
+      time** — is counted, and the hottest methods are reported as a probably `Hotspots`,
+      rendered as a histogram with methods coloured by package.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import classloaders.threadContextClassloader
+      import environments.javaBaseEnvironment
+      import strategies.throwUnsafely
+      import superlunary.embeddings.automaticEmbedding
+      import systems.javaBaseSystem
+      import temporaryDirectories.systemTemporaryDirectory
+
+      given BenchmarkDevice = LocalhostDevice
+
+      object Benchmarks extends Suite(m"Pipeline profiles"):
+        def run(): Unit =
+          val profile = Profile()
+
+          profile(m"pipeline hotspots")(target = 5*Second):
+            '{ Pipeline.run() }
+
+          profile(m"pipeline costs, inclusive")(target = 5*Second, frames = 60, inclusive = true):
+            '{ Pipeline.run() }
+      ```
+
+      JFR's execution sampler observes only runnable threads, so this is a CPU profile: time
+      spent parked or waiting does not appear. It samples every thread, though, so the threads
+      a body spawns are profiled with it. The constructor's `heap` and `cpus` pin the
+      measurement JVM as for `Bench`; a profile always uses the device's default collector.
+      Profile rows are selected with fume's `--profile` switch: `--bench` alone does not run
+      them.
+  refer probably.Hotspots
+  refer sedentary.Bench
+  entry #heap   the measurement JVM's fixed heap size, as `-Xmx` text, or `Unset` for `1g`
+  entry #cpus   how many processors the measurement JVM may use, or `Unset` for all of them
+  entry #Result   the result type of a staged invocation: the output itself
+  entry #Form   the form staged inputs and outputs travel in: `Text`
+  entry #Target   what staging produces: the `Path on Linux` of the deployed JAR
+  entry #Transport   how spliced values are encoded for the measurement JVM: `Json`
+  entry #apply   profiles a quoted body for a target duration, reporting its hottest methods
+      `profile(name, tags*)(target, frames, inclusive)(body)`: `target` is how long to record
+      for, any duration, scaled by the runner's duration multiplier; `frames` caps how many
+      methods are reported (25 by default); and `inclusive` counts a sample for every distinct
+      method on its stack rather than its top frame alone.
+
+      An inclusive profile gives each method's share of the time spent in it **or anything it
+      called**, which finds a cost hidden inside a callee or spread across several — a string
+      constructor inlined into a generated loop, say — that the self-time histogram attributes
+      elsewhere. The shares then sum to more than the whole, and the outermost frames show
+      near 100%. Method and class names are reported in their source form, with compiler
+      mangling undone.
+  entry #stage   builds the code under measurement into a JAR and deploys it to the device
+      As `Bench#stage`: a failure is a `Rig.Error` with the reason `Staging`.
+
+entry .BenchmarkDevice   where a measurement JVM runs: the local machine, or a host reached over SSH
+  detail
+      A `BenchmarkDevice` deploys a staged JAR, launches a JVM to run it with a given input,
+      returns its output, and removes the JAR. `Bench`, `Stress` and `Profile` each take one as
+      a contextual value when they are constructed, so a suite chooses its device once, as a
+      given:
+
+      ```scala
+      import soundness.*
+
+      given BenchmarkDevice = LocalhostDevice
+      ```
+
+      `LocalhostDevice` runs the JVM on the local machine; a `NetworkDevice` copies the JAR to
+      a remote host with `scp` and runs it with `ssh`, and its `session` multiplexes every
+      operation over one SSH connection. A device on a quiet, dedicated Linux machine gives
+      the steadiest figures, and is the only kind on which `cpus` pins the process to cores.
+      Every operation raises `Bench.Error` when it fails.
+
+      The measurement JVM is launched with a fixed heap (`-Xms` and `-Xmx` both `1g` unless a
+      `heap` is given), its heap pre-touched, two JIT compiler threads, and the Serial
+      collector unless a `gc` is given.
+  refer sedentary.LocalhostDevice
+  refer sedentary.NetworkDevice
+  refer sedentary.Bench.Error
+  entry #deploy   makes a staged JAR available on the device, under a name from its UUID
+      Raises `Bench.Error` if the JAR cannot be copied there.
+  entry #invoke   runs a staged JAR in a fresh JVM on the device with one input, and returns its output
+      `invoke(path, input, heap, cpus, gc)` raises `Bench.Error` if the JVM cannot be launched
+      or exits with a nonzero status.
+
+      - `heap` overrides the fixed heap size, in `-Xmx` syntax (`t"256m"`), for both `-Xms`
+        and `-Xmx`; unset, it is `1g`. A constrained heap shows what a workload sustains in a
+        small, pinned amount of memory.
+      - `cpus` limits the JVM to that many processors with `-XX:ActiveProcessorCount`, which
+        sizes the GC and JIT threads and every pool derived from the available-processor
+        count. On a Linux `NetworkDevice` the process is additionally pinned to that many
+        cores with `taskset`; elsewhere, including on a macOS `LocalhostDevice`, platform
+        threads still schedule across every core, so the limit is advisory.
+      - `gc` names the collector in `-XX:+Use<gc>GC` syntax (`t"G1"`, `t"Parallel"`, `t"Z"`);
+        unset, it is `Serial`.
+  entry #undeploy   removes a staged JAR from the device
+      Raises `Bench.Error` if the JAR cannot be removed.
+
+entry .LocalhostDevice   the benchmark device which runs each measurement JVM on the local machine
+  detail
+      Deploying and removing a JAR are no-ops, since the staged JAR is already on the local
+      filesystem, and `invoke` launches the `java` on the path directly. The measurement JVM's
+      standard error is inherited, so its diagnostics — a failed worker's stack trace — appear
+      as they happen, and cannot fill an undrained pipe and stall the harness.
+
+      ```scala
+      import soundness.*
+
+      given BenchmarkDevice = LocalhostDevice
+      ```
+
+      The staged input reaches the JVM as a command-line argument, so a body which splices in
+      a value of a megabyte or more may exceed the operating system's argument-length limit,
+      and fail with `Bench.Error`. A `cpus` limit is advisory on macOS, which has no
+      equivalent of `taskset`.
+  refer sedentary.BenchmarkDevice
+  entry .deploy   does nothing: the staged JAR is already local
+  entry .invoke   runs the staged JAR with `java` on the local machine and returns its standard output
+      Raises `Bench.Error` if the JVM cannot be started or exits with a nonzero status. See
+      `BenchmarkDevice#invoke` for `heap`, `cpus` and `gc`.
+  entry .undeploy   does nothing: the staged JAR is left where staging wrote it
+
+entry .NetworkDevice   a benchmark device on a remote host, reached as a user over SSH
+  detail
+      `NetworkDevice(user, host)` copies each staged JAR to the user's home directory on
+      `host` with `scp`, runs it there with `ssh` and `java`, and removes it afterwards. It
+      relies on the local `ssh` and `scp` commands and the user's SSH configuration and keys:
+      the connection must authenticate without a prompt.
+
+      A remote Linux machine is the device to use for figures which must not be disturbed by
+      the developer's own machine, and the only one on which a `cpus` limit pins the
+      measurement JVM to cores, with `taskset`. Each operation pays an SSH handshake; a
+      `session` pays it once:
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val device = NetworkDevice(t"bench", host"bench.example.com")
+
+      device.session: session ?=>
+        given BenchmarkDevice = session
+        Bench()
+      ```
+
+      The `NetworkDevice.sessional` given, in the companion, makes this possible, and needs a
+      `Tactic[Bench.Error]` in scope for the opening of the connection.
+  refer sedentary.NetworkDevice.Session
+  refer sedentary.NetworkDeviceSessional
+  refer sedentary.BenchmarkDevice
+  entry .sessional   lets `device.session` open one multiplexed SSH connection to a `NetworkDevice`
+      The `Sessional` instance for `NetworkDevice`, in implicit scope: a
+      `NetworkDeviceSessional`, built with the `Tactic[Bench.Error]` in scope, which raises if
+      the master connection cannot be opened.
+  entry .Session   a benchmark device multiplexing every operation over one OpenSSH ControlMaster connection
+    detail
+        The device a `NetworkDevice`'s `session` lends to its block. It deploys, runs and
+        removes JARs on the same host as its `NetworkDevice`, but through the control socket
+        of a master connection opened once, so no operation pays an SSH handshake of its own.
+        It is not constructed directly: the session opens the connection, lends the device,
+        and closes the connection when the block ends, whether it returns or throws.
+    entry #deploy   copies a staged JAR to the host over the shared connection
+        Raises `Bench.Error` if the copy fails.
+    entry #invoke   runs a staged JAR on the host over the shared connection, and returns its output
+        As `NetworkDevice#invoke`, with no handshake of its own. Raises `Bench.Error`.
+    entry #undeploy   removes a staged JAR from the host over the shared connection
+        Raises `Bench.Error` if the removal fails.
+  entry #user   the user name to log in to the host as
+  entry #host   the remote host, as a `Hostname`
+  entry #deploy   copies a staged JAR to the user's home directory on the host, with `scp`
+      Raises `Bench.Error` if the copy fails.
+  entry #invoke   runs a staged JAR on the host with `ssh` and `java`, and returns its output
+      Raises `Bench.Error` if the connection fails or the JVM exits with a nonzero status. On
+      the host, a `cpus` limit both sets the JVM's processor count and pins the process to
+      that many cores with `taskset`, so the host must have it. See `BenchmarkDevice#invoke`.
+  entry #undeploy   removes a staged JAR from the host, with `ssh`
+      Raises `Bench.Error` if the removal fails.
+
+entry .NetworkDeviceSessional   the `Sessional` instance which opens a scoped SSH session on a `NetworkDevice`
+  detail
+      A named instance class, not usually written by hand: `NetworkDevice.sessional` provides
+      it, and `device.session` uses it. Its `#session` opens an OpenSSH ControlMaster
+      connection to the host (authenticated once, with a control socket under `/tmp`), lends a
+      `NetworkDevice.Session` to the block, and closes the master connection when the block
+      ends, whether it returns or throws. It takes a `Tactic[Bench.Error]`, which is raised if
+      the connection cannot be opened; a failure to close it is ignored.
+  refer sedentary.NetworkDevice
+  entry #Self   the target of a session: `NetworkDevice`
+  entry #Result   what a session lends its block: a `NetworkDevice.Session`
+  entry #session   opens a master connection, lends a `NetworkDevice.Session` to the block, and closes it
+      Called through the `session` extension, `device.session: session ?=> …`, rather than
+      directly. The block's result may leave the session; the session device itself should
+      not, since its connection is closed when the block ends.
+
+entry .OperationSize   the size of one benchmarked operation, which turns a time into a throughput rate
+  detail
+      A benchmark which processes data reports its rate — megabytes or characters per second
+      — as well as its time per operation, when it is told how much each operation processes.
+      The size is usually given as a quantity, which `.conversion` turns into an
+      `OperationSize`:
+
+      ```scala fuel
+      typecheck
+      ##
+      bench(m"gzip 4 MB")(target = 1*Second, operationSize = 4194304*Byte):
+        '{ Compression.gzip(Corpus.large) }
+      ```
+
+      The size renders with a metric prefix (`4.2 MB`), and the rate likewise (`MB/s`). Per-cell
+      sizes are given with `Bench.Plan#sized`, for a benchmark whose cells process different
+      amounts of data, so that their rates are comparable where their times are not.
+  refer sedentary.Bench.Plan
+  refer probably.Benchmark
+  entry .conversion   converts a `Quantity` into an `OperationSize`, for `Bench#apply`'s `operationSize`
+      Any `Quantity` of a measure converts, with the `Decimalizer` in scope rendering both the
+      size and, once the mean time is known, the rate, in the quantity's units per second. The
+      given is `inline`, so the rendering is elaborated where the quantity is passed, with the
+      caller's unit and prefix givens visible: a non-inline conversion would render `4194304*Byte`
+      without its unit or prefix.
+  entry #sizeText   the size of an operation, rendered for reading: `4.2 MB`
+  entry #rateText   renders the rate, given the mean time of an operation in seconds: `120 MB/s`
+  entry #value   the size as a number in its base unit (bytes or characters), for charting

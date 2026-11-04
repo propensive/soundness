@@ -1,0 +1,2638 @@
+tel 1.0
+
+base telekinesis
+import soundness
+
+info   HTTP as typed values: requests, responses, headers, bodies, cookies, and a client whose transport is chosen by import
+detail
+    _Telekinesis_ is Soundness's model of HTTP and its client. A request is sent to a URL
+    checked as the code compiles; headers are named arguments whose values are checked
+    against the header they set (`accept` takes a `MediaType`, `authorization` an `Auth`);
+    a request body is a typed value which knows its own media type (`Postable`); and the
+    response body is read as whatever type is asked for (`Receivable`). A failing status is
+    an `Http.Error` and a connection which cannot be made is a `Connect.Error`, each a typed
+    error raised through a `Tactic` rather than an exception to guess at. That a piece of
+    code reaches the network is itself visible: every request demands an `Online`
+    capability, imported as `internetAccess.online`.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import httpBackends.javaNetHttp
+    import internetAccess.online
+    import logging.silentLogging
+    import strategies.throwUnsafely
+    import charsets.utf8Charset
+    import codepages.utf8Codepage
+
+    val page: Text = url"https://example.com/".fetch(accept = media"text/html").receive[Text]
+    val status: Http.Status = url"https://example.com/".fetch().status
+    val reply = url"https://example.com/submit".submit(Http.Post)(t"Hello world")
+    ```
+
+    The same vocabulary serves the other direction. `Http.Request` is what a server parses
+    off a connection (`Http.Request.parse`), `Http.Response` is what a handler returns
+    (`Http.Response(Http.Ok)(t"hello")`, or any `Servable` value), `Cookie`, `Parameter` and
+    `Submission` read a request's cookies and form fields, and `Http.Connection` is one live
+    exchange as a handler sees it. The `scintillate` library's servers are built on these
+    types, and the `Servable`/`Postable` pairs the data-format libraries provide
+    (`postables.jsonPostable`, `servables.xmlServable`, …) plug into both sides.
+
+    The central types are all nested in `Http`: `Http.Request`, `Http.Response`,
+    `Http.Header`, `Http.Method` (with `Http.Get`, `Http.Post`, …), `Http.Status` (with
+    `Http.Ok`, `Http.NotFound`, …, exported so that `Http.Ok` is the status), `Http.Body`,
+    `Http.Backend`, `Http.Client`, `Http.Session` and `Http.Connection`. A URL is urticose's
+    `HttpUrl` (`url"…"`), a query string is legerdemain's `Query`, and a media type is
+    gesticulate's `MediaType` (`media"…"`).
+
+    The library is split into components by what each platform can do:
+
+    - `telekinesis.core` — the model (`Http` and everything in it), the typeclasses
+      `Postable`, `Receivable`, `Servable`, `Fetchable` and `Directive`, the `fetch` and
+      `submit` extensions, `Auth`, `Cookie`, `Session`, `Context`, `Parameter`, `Submission`,
+      `Connect.Error`, and the choice packages `httpRedirections`, `queryParameters` and
+      `construables`. Platform-neutral; the client logic (redirects, logging) lives here and
+      delegates the wire to an `Http.Backend`.
+    - `telekinesis.forms` — `Orchestrate`/`orchestrate` and `Submission#form`: a form
+      round-trip rendered with honeycomb's HTML and legerdemain's widgets.
+    - `telekinesis.sockets` — `httpBackends.soundnessHttp`, the backend which speaks the
+      HTTP/1.1 wire codec directly over coaxial's sockets (JVM and Scala Native), with
+      pooled keep-alive connections; on the JVM its `https` path negotiates HTTP/2 by ALPN.
+    - `telekinesis.jvm` — `httpBackends.javaNetHttp` over `java.net.http`, and the Unix
+      domain-socket client (`domainSocketFetchable`, `domainSocketHttpClient`,
+      `requestTransmissible`).
+    - `telekinesis.http2` — the HTTP/2 layer (JVM only): `Http2` with its `Connection`,
+      `Stream`, `Frame`, `Event` and `Error`, the `Hpack` and `Huffman` codecs, `FrameReader`
+      and `PseudoHeaders`, the `Http.Session` implementations and the `httpUrlSessional`
+      given which opens a session on a URL (`url.session: session ?=> …`). Each has its own
+      page.
+    - `telekinesis.wasi` — `httpBackends.wasiHttp`, a backend over `wasi:http` for a Wasm
+      component, `WasiHttpServer` for serving from one, and `wasiApis.wasiHttpApi`.
+
+    Three choices are made by importing a given by name, since `import soundness.*` does not
+    import givens: the **transport** from `httpBackends` (`javaNetHttp`, `soundnessHttp`,
+    `wasiHttp`), the **redirect policy** from `httpRedirections` (`doNotFollowRedirects`;
+    without it, redirects are followed up to `Http.Redirection`'s limit of ten), and, for a
+    generically-derived `Query`, `queryParameters.arbitraryQueryParameter`. A request also
+    needs an `Http.Event is Loggable` in scope (`logging.silentLogging` discards the
+    events), and a `Tactic[Connect.Error]` and `Tactic[Http.Error]` or a strategy such as
+    `strategies.throwUnsafely`.
+
+    Everything is exported to the `soundness` umbrella, where the choice packages merge with
+    the umbrella's own.
+
+refer telekinesis.Http
+refer telekinesis.fetch
+refer telekinesis.submit
+refer telekinesis.httpBackends
+refer telekinesis.Postable
+refer telekinesis.Receivable
+refer telekinesis.Servable
+refer telekinesis.Connect
+
+entry .Http   the HTTP model: methods, statuses, headers, bodies, requests, responses, clients
+  detail
+      `Http` is the namespace for the whole model, and a sealed trait with no instances of
+      its own. The methods are `Http.Get`, `Http.Post`, `Http.Head`, `Http.Put`,
+      `Http.Delete`, `Http.Connect`, `Http.Options`, `Http.Trace` and `Http.Patch`, each a
+      case object of `Http.Method`; the statuses are the cases of `Http.Status`, exported
+      into `Http` so that `Http.Ok`, `Http.NotFound` and the rest are reached directly. A
+      message is an `Http.Request` or an `Http.Response`, each with a `List[Http.Header]`
+      and an `Http.Body`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val response = Http.Response(Http.Ok, contentType = media"text/plain")(t"hello")
+      response.status            // Http.Ok
+      response.status.code       // 200
+      response.headers.contentType
+      response.body.stream.memoize.utf8
+      ```
+
+      The client side is `Http.Fetch` and `Http.Submit`, the values `url.fetch` and
+      `url.submit` return and whose `apply` builds and sends the request; `Http.Client`
+      runs the redirect loop and logging over an `Http.Backend`, the transport chosen from
+      `httpBackends`. The server side parses with `Http.Request.parse`, answers through an
+      `Http.Connection`, and serialises with `Http.Response.serialize`. `Http.Session` is
+      one connection to one origin over which several requests are exchanged.
+
+      The errors are `Http.Error` (a response outside the success range), `Http.Request.Error`
+      and `Http.Response.Error` (a message which could not be parsed), and `Connect.Error` (no
+      response at all).
+  refer telekinesis.Http.Request
+  refer telekinesis.Http.Response
+  refer telekinesis.Http.Client
+  refer telekinesis.Http.Backend
+  refer telekinesis.Http.Status
+  refer telekinesis.Connect
+  entry .Version   the protocol version of a message: one of `0.9`, `1.0`, `1.1`, `2.0`, `3.0`
+    detail
+        `Http.Version` is the union of the literal types `0.9 | 1.0 | 1.1 | 2.0 | 3.0`, so a
+        version is written as the number itself: `Http.Request(Http.Get, 1.1, …)`. The
+        companion renders and parses it: `1.1` shows as `HTTP/1.1`, `2.0` as `HTTP/2`.
+    entry .showable   renders a version as `HTTP/1.1`, `HTTP/2`, `HTTP/3`
+    entry .parse   reads `HTTP/1.1`, `HTTP/2` or `HTTP/2.0`, `HTTP/3`; anything else is `1.0`
+        Lenient by design: a version the parser does not recognise is taken as `1.0`, the
+        version a server must assume for a client which sends nothing better.
+  entry .Header   one header field: a key and a value, both text
+    detail
+        `Http.Header(key, value)`, as read off the wire or built from a `Directive`. Keys
+        are case-insensitive, and the client sends them lower-case in kebab form
+        (`content-type`) when they come from a named argument. A `Header` is `Encodable in
+        Http.Header` (itself), so it can be added to a response with `response + header`.
+    entry .encodable   the identity: a `Header` encodes as itself, so `response + header` works
+    entry .repeatable   whether a field may appear more than once in a message
+        `Http.Header.repeatable(t"set-cookie")` is `true`; `repeatable(t"content-type")` is
+        `false`. The list-based fields (`accept`, `cache-control`, `vary`, …) and `Set-Cookie`
+        (which must be repeated, since a cookie value may contain a comma) are repeatable;
+        every other field, including any the library does not know, is a singleton, since
+        duplicating a singleton is a protocol error. The lookup is case-insensitive. The
+        rule decides how `Http.Response(…)(body)` merges a header named at the call site with
+        one its `Servable` derives: a singleton is overridden, a repeatable field keeps both.
+    entry #key   the field name, as written
+    entry #value   the field value
+  entry .Method   the request method, as a sealed trait with a case object per method
+    detail
+        `Http.Get`, `Http.Head`, `Http.Post`, `Http.Put`, `Http.Delete`, `Http.Connect`,
+        `Http.Options`, `Http.Trace` and `Http.Patch`. Each carries, at the type level,
+        whether it has a request body: `Http.Post.Payload` is `true`, `Http.Get.Payload` is
+        `false`, and `#payload` is the runtime counterpart readable through the erased
+        `Method` type. A method shows as its upper-case name and decodes from text
+        case-insensitively, with anything unrecognised read as `GET`.
+
+        ```scala
+        import soundness.*
+
+        val method: Http.Method = t"post".decode[Http.Method]
+        method.show        // t"POST"
+        method.payload     // true
+        valueOf[Http.Post.Payload]
+        ```
+
+        A method is also an extractor over a request: `case Http.Post() =>` matches a
+        request whose method is `Post`.
+    entry .showable   renders a method as `GET`, `POST`, …
+    entry .decodable   reads a method from text, case-insensitively; an unknown name is `Get`
+    entry #Payload   whether the method carries a request body, as a literal `Boolean` type
+    entry #payload   whether the method carries a request body, as a runtime value
+        Safe to call through a value typed as the erased `Http.Method`, unlike a type-level
+        `valueOf`.
+    entry #unapply   `case Http.Post() =>`: matches a request whose method is this one
+  entry .Get   the `GET` method; no body
+  entry .Head   the `HEAD` method; no body, and a response to it has none either
+  entry .Post   the `POST` method; the default of `submit`, and the one with a body
+  entry .Put   the `PUT` method; has a body
+  entry .Delete   the `DELETE` method; no body
+  entry .Connect   the `CONNECT` method; not to be confused with `Connect.Error` or `Http.Connection`
+  entry .Options   the `OPTIONS` method; no body
+  entry .Trace   the `TRACE` method; no body
+  entry .Patch   the `PATCH` method
+  entry .Status   a response status: its code, its reason phrase, and its category
+    detail
+        An enum of the standard statuses, each with its `#code` and `#description`:
+        `Continue` (100), `SwitchingProtocols` (101), `EarlyHints` (103), `Ok` (200),
+        `Created`, `Accepted`, `NonAuthoritativeInformation`, `NoContent` (204),
+        `ResetContent`, `PartialContent`, `MultipleChoices` (300), `MovedPermanently`,
+        `Found` (302), `SeeOther`, `NotModified` (304), `TemporaryRedirect` (307),
+        `PermanentRedirect` (308), `BadRequest` (400), `Unauthorized`, `PaymentRequired`,
+        `Forbidden`, `NotFound` (404), `MethodNotAllowed`, `NotAcceptable`,
+        `ProxyAuthenticationRequired`, `RequestTimeout`, `Conflict`, `Gone`,
+        `LengthRequired`, `PreconditionFailed`, `PayloadTooLarge`, `UriTooLong`,
+        `UnsupportedMediaType`, `RangeNotSatisfiable`, `ExpectationFailed`,
+        `UnprocessableEntity` (422), `TooEarly`, `UpgradeRequired`, `PreconditionRequired`,
+        `TooManyRequests` (429), `RequestHeaderFieldsTooLarge`, `UnavailableForLegalReasons`,
+        `InternalServerError` (500), `NotImplemented`, `BadGateway`, `ServiceUnavailable`,
+        `GatewayTimeout`, `HttpVersionNotSupported`, `VariantAlsoNegotiates`,
+        `InsufficientStorage`, `LoopDetected`, `NotExtended` and
+        `NetworkAuthenticationRequired` (511).
+
+        The cases are exported into `Http`, so `Http.Ok` and `Http.Status.Ok` are the same
+        value. A status is also a response constructor: `Http.Ok(headers, body)` is a
+        response with that status, which is how the `Servable` givens build theirs.
+
+        ```scala
+        import soundness.*
+
+        Http.NotFound.code                    // 404
+        Http.NotFound.description             // t"Not Found"
+        Http.NotFound.category                // Http.Status.Category.ClientError
+        Http.Status.unapply(503)              // Some(Http.ServiceUnavailable)
+        val response = Http.Ok(Nil, Http.Body.Empty)
+        ```
+
+        A code the enum does not name has no `Status`: `Http.Status.unapply` is `None` for
+        it, and a response carrying one fails to parse with `Http.Response.Error`.
+    entry .unapply   the status for a code: `case Http.Status(status) =>` over an `Int`
+        `Http.Status.unapply(200)` is `Some(Http.Ok)`; a code the enum does not name is
+        `None`.
+    entry .communicable   renders a status as a message: `404 (Not Found)`
+    entry .Category   the five classes of status: informational, successful, redirection, client error, server error
+        `Informational` (1xx), `Successful` (2xx), `Redirection` (3xx), `ClientError` (4xx)
+        and `ServerError` (5xx). `Http.Status#category` gives a status's class, which is
+        what `Receivable` checks before reading a body, and what decides the level at which
+        `Http.Client` logs a response.
+    entry #code   the numeric code, `200`
+    entry #description   the reason phrase, `OK`
+    entry #category   the status's `Http.Status.Category`, from its first digit
+    entry #apply   `Http.Ok(headers, body)`: a response with this status
+        A response of version `1.1` with the given headers and `Http.Body`; the result
+        retains whatever the body captures.
+  entry .Category   `Http.Status.Category`, exported into `Http`
+      The same enum as `Http.Status.Category`, reached as `Http.Category` through the
+      export of `Http.Status`'s members.
+  entry .emptyBody   a fresh, already-empty request body stream
+      `Http.emptyBody()` is the `Stream[Data] over Credit` with nothing in it, built anew on
+      each call so that a request body `Spring` which returns it can be re-materialised
+      (for a redirect, or for logging) as the `Spring` contract requires.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val empty = new Spring[Data]:
+        def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ = Http.emptyBody()
+
+      val request = Http.Request(Http.Get, 1.1, t"example.com".as[Host], t"/", Nil, empty)
+      ```
+  entry .Body   a message body: streamed from a spring, a fixed block of bytes, or nothing
+    detail
+        An enum of three cases. `Flowing(source: Spring[Data]^)` is a body produced on demand
+        by a `Spring`, which can mint a fresh stream each time it is asked (a request body
+        may be sent more than once, after a redirect) or, for a response read off a live
+        connection, re-lend a single stream which resumes where the last reader stopped.
+        `Fixed(data)` is a body whose bytes are already in hand, and `Empty` has none. A
+        `Fixed` or `Empty` body is pure; a `Flowing` one retains what its spring captures.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import codepages.utf8Codepage
+
+        val fixed = Http.Body.Fixed(t"hello".in[Data])
+        fixed.stream.memoize.utf8          // t"hello"
+        Http.Body.Empty.stream.memoize     // no bytes
+        ```
+
+        On the wire, `Http.Response.serialize` frames a `Fixed` or `Empty` body with
+        `Content-Length` and a `Flowing` one with chunked transfer encoding.
+    entry #stream   a fresh pull endpoint over the body's bytes
+        Needs a `Tactic[Truncation.Error]`, raised when a `Flowing` body is cut short. For
+        `Fixed` and `Empty` the stream can be minted any number of times; for `Flowing` it
+        is whatever the spring returns, which for a client response is one single-owner
+        stream over the connection, so read it once, or `memoize` it.
+  entry .Request   an HTTP request: method, version, host, target, headers and body
+    detail
+        A request as the client sends it and as the server receives it. It is built directly
+        (`Http.Request(method, version, host, target, headers, body)`, the body a
+        `Spring[Data]` which mints a fresh stream on each call) or parsed off a connection
+        with `.parse`. The `fetch` and `submit` macros build one from a URL and its named
+        header arguments.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import codepages.utf8Codepage
+
+        val wire = t"GET /path?q=1 HTTP/1.1\r\nHost: example.com\r\nUser-Agent: test\r\n\r\n"
+        val request = Http.Request.parse(Chain(wire.in[Data]))
+        request.method          // Http.Get
+        request.target          // t"/path?q=1"
+        request.location        // t"/path"
+        request.query           // Query(List(t"q" -> t"1"))
+        request.host.show       // t"example.com"
+        request.headers.userAgent   // List(t"test")
+        ```
+
+        The parser is lenient about the version, strict about the `Host` header (a request
+        without one, or with an invalid one, raises `Http.Request.Error`), and bounded: the
+        request line may not exceed 8 KiB nor the header block 64 KiB, so a hostile client
+        cannot make a server read without end. A request is `Showable` as a one-line summary
+        (method, host, path, headers, a sample of the body) for logging.
+    refer telekinesis.Http.Response
+    refer telekinesis.Http.Connection
+    refer telekinesis.Parameter
+    refer telekinesis.Cookie
+    entry .showable   a one-line summary of the request for logs: content type, method, query, host, path, body sample, headers
+    entry .serialize   the request as HTTP/1.1 wire bytes: request line, `Host`, framing, headers, body
+        A fresh `Stream[Data] over Credit` of the whole message, for a transport which writes
+        straight to a socket (the domain-socket client wraps this as `requestTransmissible`).
+        The body is probed one block at a time: a body which ends within the first block is
+        framed with `Content-Length`; anything longer streams with
+        `Transfer-Encoding: chunked`. Needs a `Buffering` (for the block size) and a
+        `Tactic[Truncation.Error]`.
+    entry .Head   the parsed request line and header block, before the body
+      detail
+          `Http.Request.Head(method, version, host, target, headers)`: what `.parseHead`
+          returns, for a server which frames the body itself.
+      entry #method   the request method
+      entry #version   the protocol version
+      entry #host   the `Host` header, parsed
+      entry #target   the request target, path and query as written
+      entry #headers   the header fields, in order
+    entry .parseHead   parses the request line and headers off a cursor, leaving it at the body
+        `Http.Request.parseHead(cursor, maxRequestLine = 8192, maxHeaders = 65536)` reads
+        `METHOD SP target SP HTTP-version CRLF` and the header block, and stops at the first
+        byte of the body without reading past it, so a `GET` with no body does not block
+        waiting for bytes which will not come until the server has answered. A server driving
+        one cursor across a kept-alive connection uses it with `.fixedBody` or `.chunkedBody`
+        to frame the body. Raises `Http.Request.Error` with `UriTooLong` or `HeadersTooLarge`
+        once the limits are crossed, `Host` for a missing or invalid `Host` header, and
+        `Expectation` for a malformed line end.
+    entry .parse   a request parsed off a stream of bytes
+        Two forms. `parse(stream: Chain[Data])` reads from a lazy chain of blocks;
+        `parse(input: Stream[Data] over Credit)` consumes a pull endpoint directly. Each
+        returns the request with its body as a `Flowing` body whose spring lends the
+        remainder of the input, so `request.body().memoize` reads the body. Needs a
+        `Tactic[Http.Request.Error]`.
+    entry .fixedBody   exactly `length` bytes of body, lent off a cursor which stays open after them
+        For a request framed by `Content-Length`: the stream ends after `length` bytes and
+        never reads further, leaving the cursor at the start of the next pipelined request
+        on a kept-alive connection.
+    entry .chunkedBody   a `Transfer-Encoding: chunked` body decoded off a cursor
+        Yields each chunk's data, skipping chunk extensions and trailers, and leaves the
+        cursor after the terminating `0` chunk and its blank line. Lenient: a malformed
+        length or a truncated stream ends the body.
+    entry .Error   raised when a request cannot be parsed
+      detail
+          Error 367: _could not parse HTTP request because `reason`_, raised by `.parse` and
+          `.parseHead`. The reasons are `Expectation(expected, found)` (367.1, _`found` was
+          found when `expected` was expected_, a malformed line end), `Version(value)`
+          (367.2), `Host(value)` (367.3, _the host `value` was missing or invalid_),
+          `UriTooLong` (367.4, the request line exceeded `maxRequestLine`, the condition a
+          server answers with `414`) and `HeadersTooLarge` (367.5, the header block exceeded
+          `maxHeaders`, answered with `431`).
+      entry .Reason   why the request could not be parsed
+          An enum: `Expectation(expected: Char, found: Char)`, `Version(value: Text)`,
+          `Host(value: Text)`, `UriTooLong`, `HeadersTooLarge`, numbered 1 to 5.
+      entry .communicable   renders each reason as a message
+      entry #reason   the `Http.Request.Error.Reason`
+    entry #method   the method
+    entry #version   the protocol version
+    entry #host   the host the request is addressed to, from its `Host` header
+    entry #target   the request target as written: path, and query if any
+    entry #textHeaders   every header field, in order, as `Http.Header`s
+    entry #body   the body as a `Spring[Data]`: call it for a fresh stream
+        `request.body()` mints a stream (needing a `Tactic[Truncation.Error]`); for a parsed
+        request it lends the remainder of the input, so read it once or `memoize` it.
+    entry #request   the request itself, for a handler's context-function receiver
+    entry #path   the target's path as a `Path on Www`, rooted at `%`
+        `location` decoded as a `Path on Www under %.type`, the URL path type, so segments
+        can be matched with `/` patterns.
+    entry #on   the request's full URL, given an origin: `request.on(origin)`
+        `Url[scheme](origin, target)` for an `Origin["http"]` or `Origin["https"]`; what the
+        client logs in `Http.Event.Send`.
+    entry #query   the query parameters, from the URL and a form-encoded body together
+        A `Query` of the target's `?…` part, plus the body decoded as
+        `application/x-www-form-urlencoded` when the `Content-Type` says it is one. Reading
+        the body needs a `Tactic[Truncation.Error]`; a `Parameter` reads one field of it.
+    entry #location   the target without its query: `/path` from `/path?q=1`
+    entry #headers   typed access to headers by name: `request.headers.contentType`
+        A dynamic selector: `request.headers.accept`, `request.headers.cookie`,
+        `request.headers.contentLength` are each the `List` of that field's values, decoded
+        to the type the `Directive` of that name declares (a `MediaType`, a
+        `List[Cookie.Value]`, a `Bytes`), through its `Decodable in Text`. The camelCase name
+        is turned into the kebab-case field name.
+    entry #contentType   the `Content-Type` header as a `MediaType`, or `Unset`
+    entry #textCookies   the request's cookies as a name-to-value `Map`
+        Parsed from the `Cookie` header; `Cookie#apply()` reads one of them decoded to its
+        type.
+  entry .Backend   the transport which sends one request and returns its response
+    detail
+        The swappable wire. An `Http.Backend` takes the fully-resolved URL as text (so a
+        non-JVM backend can parse it itself), the method, the headers and the body spring,
+        and returns the response; it handles neither redirects nor logging, which
+        `Http.Client` does above it. Backends are platform-specific, so one is always chosen
+        by importing a given from `httpBackends` by name: `javaNetHttp` (`java.net.http`, in
+        `telekinesis.jvm`), `soundnessHttp` (Soundness's own wire codec over coaxial sockets,
+        in `telekinesis.sockets`, JVM and Native) or `wasiHttp` (`wasi:http`, in
+        `telekinesis.wasi`).
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import httpBackends.javaNetHttp
+        import strategies.throwUnsafely
+
+        val backend: Http.Backend = summon[Http.Backend]
+        val empty = new Spring[Data]:
+          def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ = Http.emptyBody()
+
+        val response = backend.request(t"http://127.0.0.1:8080/", Http.Get, Nil, empty)
+        ```
+    refer telekinesis.httpBackends
+    refer telekinesis.Http.Client
+    entry #request   sends one request and returns its response, raising `Connect.Error` if none comes
+  entry .Response   an HTTP response: version, status, headers and body
+    detail
+        A response is read from a client fetch, built by a server handler, or parsed off a
+        connection. Its constructor is private: a response is made with the dynamic
+        `Http.Response(…)` apply, by a status (`Http.Ok(headers, body)`), or by a `Servable`
+        (`Http.Response(json)` for any value with a `Servable` in scope, through
+        `.conversion`).
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import codepages.utf8Codepage
+
+        val a = Http.Response(Http.Ok)(t"hello")
+        val b = Http.Response(Http.Found, location = t"/elsewhere")()
+        val image: Data = t"...".in[Data]
+        val c = Http.Response(contentType = media"image/jpeg")(image)
+        val d = Http.Response(Http.Ok, contentType = media"text/plain")(t"hello") + Cookie.Value(t"id", t"42")
+        ```
+
+        The first argument list takes, in any order, at most one `Http.Status` and named
+        headers (`contentType = media"…"`, `location = t"…"`, each checked by its
+        `Directive`); the second takes the body, as a `Servable` value or an `Http.Body`. A
+        header named at the call site overrides the one the `Servable` would derive for the
+        same singleton field (so `contentType = …` with a `Text` body puts `content-type` on
+        the wire once), while a repeatable field such as `Set-Cookie` keeps both.
+
+        On the client, `#receive[Text]` reads the body as the type asked for, `#status`
+        inspects the status, and `#headers.contentType` reads a header by name. The body is
+        a `Flowing` body over the connection, read once: `#successBody` or `#body.stream`
+        lends the single-owner stream. A server-side response may retain the live connection
+        it answers (`Response^{connection}`); a client-facing one is always pure.
+    refer telekinesis.Http.Request
+    refer telekinesis.Servable
+    refer telekinesis.Receivable
+    entry .applyDynamicNamed   `Http.Response(Http.Ok, contentType = …)(body)`: a status and named headers, then a body
+        The macro behind `Http.Response(…)`. With a single argument which has a `Servable`,
+        it is that value served (`Http.Response(t"hello")`). Otherwise it collects an
+        optional `Http.Status` and any number of headers — named (`contentType = …`, encoded
+        by the `Directive` of that name) or unnamed (a value whose type identifies one
+        header, such as a `MediaType` for `accept`) — into a `Protoresponse`, whose own
+        `apply` takes the body. A status given twice is a compile error, as is a header
+        value of the wrong type: _the header `Content-Type` cannot take a value of type
+        `Int`_.
+    entry .applyDynamic   `Http.Response(Http.Ok)(body)`: positional arguments only
+        As `.applyDynamicNamed`, for a call with no named arguments.
+    entry .conversion   any `Servable` value converts to a `Response`
+        The `Conversion` which lets a handler return a `Json`, a `Text` or any value with a
+        `Servable` in scope where an `Http.Response` is expected.
+    entry .Protoresponse   a status and headers awaiting a body
+      detail
+          What `Http.Response(Http.Ok, contentType = …)` is before its second argument list:
+          `Protoresponse(status0, headers)`, with two `apply`s to finish it.
+      entry #status0   the status, or `Unset` for `Ok`
+      entry #headers   the headers named at the call site
+      entry #apply   finishes the response with an `Http.Body` (default `Empty`), or with a `Servable` value
+          `proto()` is the response with an empty body; `proto(body: Http.Body)` attaches
+          one, the result retaining what the body captures; `proto(value)` serves a value
+          through its `Servable`, with the call-site headers overriding the served ones for
+          singleton fields. The status, if unset, is the served response's.
+    entry .streamable   a successful response streams its body; any other status raises `Http.Error`
+        The `Streamable by Data over Credit` given, so a response can be `read[Data]` or
+        piped on. Needs a `Tactic[Http.Error]`, raised when the status is not 2xx, and a
+        `Tactic[Truncation.Error]`.
+    entry .serialize   the response as HTTP/1.1 wire bytes
+        `Http.Response.serialize(response, includeBody = true, version = 1.1)`: the status
+        line, the headers with a `Content-Length` added for a `Fixed` or `Empty` body and
+        `Transfer-Encoding: chunked` framing for a `Flowing` one (unless the headers already
+        frame it), the blank line and the body. `includeBody = false` is for a response to a
+        `HEAD` request: the framing headers are written, the body is not. After
+        `101 Switching Protocols` the body is the upgraded protocol's raw stream and no
+        framing is added; to an HTTP/1.0 client a streaming body is written raw, to be
+        delimited by closing the connection. Needs a `Buffering` and a
+        `Tactic[Truncation.Error]`.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        Http.Response.serialize(Http.Response(Http.NotFound)()).memoize.utf8
+        // t"HTTP/1.1 404 Not Found\r\ncontent-length: 0\r\n\r\n"
+        ```
+    entry .serializeHead   the status line and headers alone, as one block of bytes
+        The head exactly as `.serialize` would write it, framing headers included, for a
+        server which sends a fixed body as a second buffer straight from the handler's bytes
+        with no copy.
+    entry .parse   a response parsed off a stream of bytes
+        `parse(stream: Chain[Data], bodiless = false)` reads from a lazy chain;
+        `parse(input: Stream[Data] over Credit)` and `parse(input, bodiless)` consume a pull
+        endpoint. `bodiless` marks a response to a `HEAD` request, which repeats the `GET`
+        framing headers but carries no body. The body is framed by the headers: chunked
+        decoding for `Transfer-Encoding: chunked`, a fixed run for `Content-Length`, nothing
+        for `204`, `304`, `1xx` or a bodiless response, the whole remainder for `101`, and
+        otherwise everything until the connection closes. The cursor is left at the first
+        byte after the body, so a kept-alive connection can parse the next response. Needs a
+        `Tactic[Http.Response.Error]`.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import codepages.utf8Codepage
+
+        val wire = t"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nbody"
+        val response = Http.Response.parse(Chain(wire.in[Data]))
+        response.status                    // Http.Ok
+        response.body.stream.memoize.utf8  // t"body"
+        ```
+    entry .Head   the parsed status line and header block, before the body
+      detail
+          `Http.Response.Head(version, status, headers)`: what `.parseHead` returns, for a
+          client which frames the body itself, as an `Http.Session` does.
+      entry #version   the protocol version
+      entry #status   the status
+      entry #headers   the header fields, in order
+    entry .parseHead   parses the status line and headers off a cursor, leaving it at the body
+        Reads `HTTP-version SP code SP reason CRLF` and the header block, and stops at the
+        first byte of the body without reading further, so a bodiless response on a
+        kept-alive connection does not block on a refill the server will never send. Raises
+        `Http.Response.Error` with `Status` for a code which is not three digits beginning
+        1–5, or which the `Http.Status` enum does not name, and `Expectation` for a
+        malformed line.
+    entry .Error   raised when a response cannot be parsed
+      detail
+          Error 366: _could not parse HTTP response because `reason`_, raised by `.parse` and
+          `.parseHead`. The reasons are `Expectation(expected, found)` (366.1, _`found` was
+          found when `expected` was expected_: the bytes did not begin `HTTP/`, or a line
+          did not end in CRLF) and `Status(value)` (366.2, _the HTTP status code `value` was
+          invalid_). The socket-backed clients translate it into
+          `Connect.Error(Connect.Error.Reason.Unknown)`.
+      entry .Reason   why the response could not be parsed: `Expectation(expected, found)` or `Status(value)`
+      entry .communicable   renders each reason as a message
+      entry #reason   the `Http.Response.Error.Reason`
+    entry #version   the protocol version, `1.1` for every response a client builds
+    entry #status   the `Http.Status`
+    entry #textHeaders   every header field, in order, as `Http.Header`s
+    entry #body   the `Http.Body`
+    entry #updateDynamic   `response.contentType = media"…"`: sets a header, replacing any of that name
+        A dynamic setter: `response.location = t"/next"` returns a new response (the
+        receiver is immutable) with the header named by the `Directive` of that name,
+        encoded by it, replacing any existing field of the same name.
+    entry #successBody   the body stream if the status is successful, `Unset` otherwise
+        The single-owner pull endpoint over the body for a 2xx status; needs a
+        `Tactic[Truncation.Error]`.
+    entry #receive   reads the body as a type: `response.receive[Text]`
+        Summons the `Receivable` for the type and applies it. The standard ones read `Text`,
+        `Http.Status`, any type `Aggregable by Data` (`Data`, a stream, a `Json`, …), and any
+        type `Instantiable across HttpRequests from Text`; a non-success status raises
+        `Http.Error` before anything is read.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import httpBackends.javaNetHttp
+        import internetAccess.online
+        import logging.silentLogging
+        import strategies.throwUnsafely
+        import charsets.utf8Charset
+
+        val text: Text = url"https://example.com/".fetch().receive[Text]
+        val data: Data = url"https://example.com/".fetch().receive[Data]
+        ```
+    entry #headers   typed access to headers by name: `response.headers.contentType`
+        A dynamic selector, as on `Http.Request`: `response.headers.setCookie` is the `List`
+        of that field's values decoded to the type its `Directive` declares.
+    entry #+   `response + cookie`: adds a header encoded from any value `Encodable in Http.Header`
+        A `Cookie.Value` adds a `Set-Cookie` field; an `Http.Header` adds itself. The
+        header is prepended; nothing is replaced (use `#updateDynamic` for that).
+  entry .Submit   a request with a body, ready to be given its headers and payload
+    detail
+        What `url.submit` returns: the request target, host and the `Fetchable` target
+        (an `Origin` for an `HttpUrl`, a `DomainSocket` for a socket endpoint). Its `apply`
+        is a macro which takes the method and headers in a first argument list and the
+        payload in a second, builds the `Http.Request` with a `Content-Type` from the
+        payload's `Postable`, and sends it through the `Http.Client onto target` in scope.
+        See `submit`.
+    entry #originForm   the request target: the path and query of the URL
+    entry #target   where the request goes: the URL's `Origin`, or a `DomainSocket`
+    entry #host   the `Host` header's value
+    entry #applyDynamicNamed   `url.submit(Http.Put, accept = media"…")(payload)`: method, named headers, then the body
+        The method, if given, appears once in the first argument list and defaults to
+        `Http.Post`; the rest are headers, named or unnamed (see `fetch`). The payload is
+        any value with a `Postable`; the `Content-Type` is the `Postable`'s media type.
+        Needs an `Online`, an `Http.Event is Loggable`, and an `Http.Client onto` the target.
+    entry #applyDynamic   `url.submit(Http.Put)(payload)` or `url.submit()(payload)`: positional arguments only
+  entry .Fetch   a request without a body, ready to be given its headers
+    detail
+        What `url.fetch` returns; its `apply` is a macro which takes the method (default
+        `Http.Get`) and headers, and sends the request through the `Http.Client onto target`
+        in scope. See `fetch`.
+    entry #originForm   the request target: the path and query of the URL
+    entry #target   where the request goes: the URL's `Origin`, or a `DomainSocket`
+    entry #host   the `Host` header's value
+    entry #applyDynamicNamed   `url.fetch(accept = media"…", authorization = Auth.Bearer(token))`: named headers
+        Needs an `Online`, an `Http.Event is Loggable`, and an `Http.Client onto` the
+        target; the body is empty.
+    entry #applyDynamic   `url.fetch()` or `url.fetch(Http.Head, media"…")`: positional arguments only
+  entry .Client   sends a request to a target: redirects, logging, and the `Http.Backend` beneath
+    detail
+        An `Http.Client onto Target` turns an `Http.Request` and a target into a response.
+        For `Origin["http" | "https"]` targets, two givens in the companion compete, selected
+        by whether a `Redirects.Disabled` is in scope: `.http` follows redirects and `.httpStrict`
+        does not. Both need a `Tactic[Connect.Error]`, an `Online` and an `Http.Backend`; the
+        request itself needs an `Http.Event is Loggable`. For a `DomainSocket` target the
+        client is `domainSocketHttpClient`, in `telekinesis.jvm`.
+
+        A client is a capability: it is built from a tactic, an `Online` token and a backend,
+        all of which it retains. One is rarely summoned by hand; `fetch` and `submit` summon
+        it for the target their URL gives.
+    refer telekinesis.Http.Backend
+    refer telekinesis.Http.Redirection
+    refer telekinesis.httpRedirections
+    entry .http   the redirect-following client for `http` and `https` origins
+        Chosen when no `Redirects.Disabled` is in scope. Logs `Http.Event.Send` at `info`,
+        sends through the `Http.Backend`, and follows `301`, `302`, `303`, `307` and `308`
+        responses by their `Location` (resolved against the current URL), up to the
+        `Http.Redirection` limit in scope (ten by default). A `301`/`302`/`303` downgrades
+        the method to `GET` and drops the body; `307`/`308` keep both, re-minting the body
+        from its spring. The discarded intermediate body is drained to free its connection,
+        and each hop logs `Http.Event.Redirect` at `fine`. The final response is logged at a
+        level by its category: `fail` for a 5xx, `warn` for a 4xx, `fine` otherwise. A
+        redirect with no `Location`, or one past the limit, is returned as it is.
+    entry .httpStrict   the client which returns a 3xx response unchanged
+        Chosen when `httpRedirections.doNotFollowRedirects` (a `Redirects.Disabled`) is in
+        scope. The redirect is then an ordinary response: `receive` raises `Http.Error`
+        with the 3xx status, and `status` inspects it.
+    entry #request   sends a request to a target and returns the response
+  entry .Error   raised when a response arrives with a status outside the success range
+    detail
+        Error 438: _the HTTP request failed with status `status`_. Raised by `Receivable`
+        (`response.receive[T]`) and by `Http.Response.streamable` when the status's category
+        is not `Successful`; the error carries the status and the headers, so the caller can
+        react to what went wrong. Inspecting `response.status` directly never raises it.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import httpBackends.javaNetHttp
+        import internetAccess.online
+        import logging.silentLogging
+        import strategies.throwUnsafely
+        import charsets.utf8Charset
+
+        capture[Http.Error](url"https://example.com/missing".fetch().receive[Text]).status  // Http.NotFound
+        ```
+    entry #status   the response's status
+    entry #headers   the response's headers
+  entry .Event   what the client logs as it sends requests and receives responses
+    detail
+        Every `Event` is tagged `Log.Network`, and `Send` and `Redirect` also `Log.Protocol`.
+        `Http.Client` logs `Send(method, url, headers)` at `info` when a request goes out,
+        `Redirect(from, to)` at `fine` for each hop it follows, and `Response(status)` at
+        `fine`, `warn` (4xx) or `fail` (5xx) when the reply arrives. `Request(preview)` is a
+        sample of a request body for a transport which logs it. An `Http.Event is Loggable`
+        must be in scope for every `fetch` and `submit`; `logging.silentLogging` discards
+        them.
+    entry .communicable   renders each event as a message: _sending a GET request to …_
+  entry .Redirection   the most redirects the client will follow: ten unless overridden
+    detail
+        `Http.Client.http` follows at most `Http.Redirection#value` hops; the companion's
+        `.default` is ten (curl's limit), and a local `given Http.Redirection = Http.Redirection(1)`
+        lowers it. Once the limit is reached the 3xx response is returned as it is, so a
+        subsequent `receive` raises `Http.Error` with the redirect status. To follow none,
+        import `httpRedirections.doNotFollowRedirects` instead.
+    entry .default   the limit of ten redirects, in implicit scope
+    entry #value   the number of redirects allowed
+  entry .Session   one client connection to one origin, over which several requests are exchanged
+    detail
+        A session is opened on a URL with `url.session: session ?=> …` (the `httpUrlSessional`
+        given, in `telekinesis.http2`), which connects once, lends the session to the block,
+        and closes it after. The protocol is fixed for the session's lifetime: for `https`,
+        ALPN during the TLS handshake chooses a multiplexed HTTP/2 session, on which fetches
+        interleave over one connection, or a sequential HTTP/1.1 one; plaintext `http` is
+        always sequential, with keep-alive pinning one connection across the fetches.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import soundness.httpUrlSessional
+        import internetAccess.online
+        import socketBackends.javaBaseSockets
+        import strategies.throwUnsafely
+
+        val empty = new Spring[Data]:
+          def apply()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ = Http.emptyBody()
+
+        val request = Http.Request(Http.Get, 1.1, t"example.com".as[Host], t"/", Nil, empty)
+
+        url"https://example.com".session: session ?=>
+          session.fetch(request).status
+          session.fetch(request).status
+        ```
+
+        A session is an exclusive, stateful capability: `#fetch` is an `update` method and
+        its response borrows the session, so a response body still streaming from the live
+        connection cannot escape the block; a memoized one can. Leaving a response unconsumed
+        does not derail the session: the next fetch drains what remains of the previous body
+        to reach the response boundary. (The static rejection of an escaping handle awaits
+        further separation-checker support; the types express it already.)
+    refer telekinesis.Http.Client
+    entry #fetch   sends a request over the session's connection and returns its response
+        Needs a `Tactic[Connect.Error]`. The result retains the session.
+  entry .Connection   one live request/response exchange, as a server handler sees it
+    detail
+        An `Http.Connection` is the `Http.Request` it carries — it extends `Request`, so a
+        handler reads `connection.method`, `connection.query` and `connection.headers`
+        directly — plus the means of answering it: `#respond`, a sink which writes a response
+        to the client and closes the exchange, and the facts of the transport, `#tls` and
+        `#port`. It is an exclusive capability, since an exchange has one owner and is
+        answered once; a handler's response may retain it
+        (`(connection: Http.Connection) ?=> Http.Response^{connection}`) when its body
+        streams from the request. A server (scintillate's) constructs it from its transport;
+        the type itself needs only the request and the sink.
+    refer telekinesis.Http.Request
+    entry .Respond   the sink which writes a response to the client and closes the connection
+      detail
+          A named single-method trait, `apply(response: Response^)(using
+          Tactic[Truncation.Error]): Unit`, rather than a function type, so that the response
+          may capture the live connection.
+    entry #tls   whether the request arrived over TLS
+    entry #port   the port the server accepted the connection on
+    entry #respond   the `Http.Connection.Respond` sink for this exchange
+
+entry .Acceptance   the outcome of validating a submitted value: accepted, or rejected with errors
+    An enum with two cases: `Accept(value)` carries the value a form submission decoded to,
+    and `Reject(errors)` the `Errors` which explain why it did not. It is the shape a form
+    handler returns when a submission is checked before it is acted on.
+
+entry .Auth   the credentials of an `Authorization` header, by scheme
+  detail
+      An enum of the authentication schemes: `Basic(username, password)`, `Bearer(token)`,
+      `Digest(digest)`, `Hoba(text)`, `Mutual(text)`, `Negotiate(text)`, `OAuth(text)`,
+      `ScramSha1(text)`, `ScramSha256(text)` and `Vapid(text)`. An `Auth` shows as the
+      header's value (`Basic` base64-encodes `username:password`) and decodes from one, so
+      it is the type the `authorization` header takes in a `fetch` and what
+      `request.headers.authorization` yields.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      Auth.Basic(t"user", t"pass").show         // t"Basic dXNlcjpwYXNz"
+      t"Bearer abc.def".as[Auth]                // Auth.Bearer(t"abc.def")
+      Auth.Basic(t"user", t"p:a:ss").show.as[Auth]
+      ```
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import httpBackends.javaNetHttp
+      import internetAccess.online
+      import logging.silentLogging
+      import strategies.throwUnsafely
+
+      url"https://example.com/api".fetch(authorization = Auth.Bearer(t"token")).status
+      ```
+  entry .showable   renders any `Auth` case as its header value, `Bearer …`, `Basic …`
+      Declared over every subtype, so a value typed as `Auth.Bearer` renders as the header
+      value too, rather than falling to the generic enum rendering.
+  entry .decodable   reads an `Auth` from a header value, raising `Auth.Error` for an unknown scheme
+      `Basic` credentials are decoded from their one base64 text and split at the first
+      colon, so a password may contain colons; a text with no colon after decoding is an
+      `Auth.Error`. Needs a `Tactic[Auth.Error]`, which the instance retains.
+  entry .Error   raised when a header value is not a recognised authentication scheme
+    detail
+        Error 570: _the authentication value `value` is not valid_, raised by `.decodable`
+        for a scheme it does not know or malformed `Basic` credentials.
+    entry #value   the text which could not be decoded
+
+entry .Connect   the namespace of `Connect.Error`: a server which could not be reached
+  detail
+      `Connect` holds the error for failing to reach a server at all — DNS, the TCP
+      connection, the TLS handshake — as distinct from `Http.Error`, which reports a response
+      the server did send, and coaxial's `Socket.Error`, which reports a connection that was
+      made and then failed. The neighbours are differently named on purpose: `Http.Connect`
+      is the `CONNECT` method and `Http.Connection` an established exchange; neither is this.
+  refer telekinesis.Http.Error
+  entry .Error   raised when a request cannot reach the server: DNS, refusal, TLS, timeout
+    detail
+        Error 999: _the TCP connection failed because `reason`_, raised by every
+        `Http.Backend` and `Http.Client`, so a `fetch` or `submit` needs a
+        `Tactic[Connect.Error]` in scope. The reasons are `Dns` (999.1, _the server address
+        could not be resolved by DNS_), `Refused` (999.2), `Ssl(reason)` (999.3, _the SSL/TLS
+        layer could not be established because `reason`_), `Timeout` (999.4) and `Unknown`
+        (999.5). A TLS failure is distinguished from a network one, and its own
+        `Connect.Error.Reason.Ssl.Reason` says at which stage it failed; an expired
+        certificate, one for the wrong host, a revoked one or a broken cipher suite are each
+        refused at the handshake rather than accepted with a warning. Where a connection must
+        be made to a host whose certificate cannot be validated, a relaxed `TlsAcceptance`
+        in scope permits it, explicitly.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import httpBackends.javaNetHttp
+        import internetAccess.online
+        import logging.silentLogging
+        import strategies.throwUnsafely
+
+        capture[Connect.Error](url"http://no-such-host.invalid/".fetch()).reason   // Connect.Error.Reason.Dns
+        capture[Connect.Error](url"https://expired.badssl.com/".fetch()).reason    // Ssl(Handshake)
+        ```
+
+        The socket-backed clients (`soundnessHttp`, the domain-socket client and sessions)
+        map a `Socket.Error` onto a `Connect.Error` by reason, and report a malformed response
+        (`Http.Response.Error`) as `Unknown`; `javaNetHttp` classifies the JDK's exceptions.
+    entry .Reason   why the connection failed: `Dns`, `Refused`, `Ssl(reason)`, `Timeout` or `Unknown`
+      detail
+          An enum numbered 1 to 5. `Ssl` carries a `Connect.Error.Reason.Ssl.Reason` saying
+          where the TLS layer failed.
+      entry .Ssl   the namespace of the TLS failure reasons
+        detail
+            `Connect.Error.Reason.Ssl.Reason` is the enum of TLS failures: `Handshake` (_the
+            local and remote peer could not negotiate the desired level of security_, which
+            is what every certificate problem and cipher-suite mismatch reports), `Key` (_the
+            SSL key was bad_), `Peer` (_the remote peer's identity could not be verified_)
+            and `Protocol` (_the local or remote implementation of the SSL protocol did not
+            behave as expected_). The socket-backed clients report every TLS failure as
+            `Handshake`; `javaNetHttp` distinguishes the four from the JDK's exceptions.
+        entry .Reason   `Handshake`, `Key`, `Peer` or `Protocol`
+          entry .communicable   renders each TLS reason as a message
+      entry .communicable   renders each reason as a message
+    entry #reason   the `Connect.Error.Reason`
+
+entry .Context   a per-session value store: one slot of a type for each `Session`
+  detail
+      `Context[value]()` is a store with a slot per session, read and written under a
+      `Session` given: `context()` is the `Optional[value]` for the current session, and
+      `context() = value` sets it. It is how server-side state (a login, a shopping basket)
+      is kept across requests, keyed by the session cookie's `Session`. Backed by a
+      concurrent map; a `Context` is `Findable`, so it can be summoned as a contextual
+      value.
+
+      ```scala
+      import soundness.*
+
+      case class Basket(items: List[Text])
+      val baskets: Context[Basket] = Context[Basket]()
+
+      given Session = Session(t"a3f1")
+      baskets() = Basket(List(t"apple"))
+      baskets()                              // Basket(List(t"apple"))
+      ```
+  refer telekinesis.Session
+  refer telekinesis.Cookie
+  entry .apply   `Context[value]()`: a new, empty store
+  entry #apply   the current session's value, or `Unset`
+  entry #update   `context() = value`: sets the current session's value
+
+entry .Cookie   a cookie template: a name, its attributes, and the type its value is encoded as
+  detail
+      A `Cookie[value]` is not a cookie which has been sent but the template one is written
+      into: `Cookie[Text](t"theme")` names a cookie and its domain, expiry, `Secure`,
+      `HttpOnly` and path attributes, and the type its value encodes to and decodes from
+      text. `cookie(value)` makes the `Cookie.Value` to send in a `Set-Cookie` header
+      (`response + cookie(value)`), and `cookie()` reads the value back from the `Cookie`
+      header of the `Http.Request` in scope, decoded to its type.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val theme = new Cookie[Text](t"theme", Unset, Unset, true, true, Unset)
+      val response = Http.Response(Http.Ok)(t"hello") + theme(t"dark")
+      response.headers.setCookie      // List(t"theme=dark; Secure; HttpOnly")
+      ```
+
+      A `Cookie[Session]` has `Cookie.session`, which runs a block under the request's
+      `Session`, minting one and setting the cookie when the request has none. Pattern
+      matching on a request with `cookie.Session` extracts the decoded value. A cookie
+      template inspects as `Cookie(t"theme" ╱ secure ╱ httpOnly)`, showing only the
+      attributes it carries.
+  refer telekinesis.Session
+  refer telekinesis.Context
+  entry .apply   `Cookie[value](name, domain, expiry, secure, httpOnly, path)`: a template
+      The value type is given explicitly and must be `Encodable in Text` and `Decodable in
+      Text`. `domain` is an `Optional[Hostname]`, `expiry` any duration type `Abstractable
+      across Durations to Long` (stored in seconds), `secure` and `httpOnly` default to
+      `false`, and `path` is optional text.
+  entry .inspectable   renders a template as `Cookie(name ╱ domain:… ╱ expiry:… ╱ secure ╱ httpOnly)`, attributes present only
+  entry .Value   a cookie as sent or received: name, value, and its attributes
+    detail
+        `Cookie.Value(name, value, domain, path, expiry, secure, httpOnly)` is the concrete
+        cookie: what a template's `apply(value)` makes, what `request.headers.cookie`
+        decodes, and what `response + cookieValue` adds as a `Set-Cookie` header. Its
+        `expiry` is a `Max-Age` in seconds.
+
+        ```scala
+        import soundness.*
+
+        Cookie.Value(t"id", t"42", path = t"/", secure = true).show
+        // t"id=42; Path=/; Secure"
+        ```
+    entry .showable   renders the `Set-Cookie` form: `name=value; Max-Age=…; Domain=…; Path=…; Secure; HttpOnly`
+    entry .inspectable   renders as `Cookie.Value(…)` around the `Set-Cookie` form, so it is not mistaken for header text
+    entry .encodable   encodes a cookie as a `Set-Cookie` header, for `response + cookie`
+    entry .addable   `response + cookie`: a response with a `set-cookie` header added
+    entry .decodable   reads the `Cookie` request header, `a=1; b=2`, as a `List[Cookie.Value]`
+        Each `name=value` pair is URL-decoded; a fragment with no `=` is skipped.
+    entry #name   the cookie's name
+    entry #value   the cookie's value, as text
+    entry #domain   the `Domain` attribute, if set
+    entry #path   the `Path` attribute, if set
+    entry #expiry   the `Max-Age` attribute in seconds, if set
+    entry #secure   whether the `Secure` attribute is set
+    entry #httpOnly   whether the `HttpOnly` attribute is set
+  entry .session   runs a handler under the request's session, setting the session cookie if it is new
+      An extension on `Cookie[Session]`: `cookie.session { … }` reads the session from the
+      request in scope, or mints a new one from a UUID, runs the block with it as a given,
+      and adds the cookie to the response the block returns.
+  entry #name   the cookie's name
+  entry #domain   the `Domain` attribute the template imposes, if any
+  entry #expiry   the `Max-Age` the template imposes, in seconds, if any
+  entry #secure   whether the cookie is marked `Secure`
+  entry #httpOnly   whether the cookie is marked `HttpOnly`
+  entry #path   the `Path` attribute the template imposes, if any
+  entry #apply   `cookie(value)` makes a `Cookie.Value`; `cookie()` reads the value from the request in scope
+      `cookie(value)` encodes the value to text and attaches the template's attributes.
+      `cookie()` needs an `Http.Request` given, and is the `Optional[value]` decoded from
+      that request's cookie of this name, `Unset` if it is absent.
+  entry #Session   an extractor over the request in scope: `case cookie.Session(value) =>`
+      Matches when the request has this cookie, and runs the given block with the decoded
+      value as a contextual value.
+
+entry .Directive   how a header's value type is checked and encoded, by the header's name
+  detail
+      A `Directive` is the typeclass behind a named header argument. `("accept" is Directive
+      of MediaType)` says that the header written as `accept = …` takes a `MediaType` and
+      how to render it; the macro behind `fetch`, `submit` and `Http.Response(…)` summons
+      the directive for each argument's name and checks the value's type against it, so
+      `accept = 3` is a compile error: _the header `Accept` cannot take a value of type
+      `Int`_. The name on the wire is the camelCase label turned into kebab case:
+      `contentType` becomes `content-type`. The same directives type the dynamic readers
+      `request.headers.contentType` and `response.headers.setCookie`, decoding the field's
+      text to the directive's type.
+
+      An unnamed argument is matched by its type alone, so a `MediaType` on its own is an
+      `accept`, and an `Auth` an `authorization`; a type which is a `Directive` for more
+      than one header (`Text`) cannot be passed unnamed: _the type `Text` does not uniquely
+      identify a particular HTTP header_.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import httpBackends.javaNetHttp
+      import internetAccess.online
+      import logging.silentLogging
+      import strategies.throwUnsafely
+
+      url"https://example.com/".fetch(accept = media"application/json", userAgent = t"soundness").status
+      url"https://example.com/".fetch(accept = 3)   // does not compile
+      ```
+
+      The companion declares a directive for each standard header: the typed ones are
+      `accept` (a `MediaType`, or a `List[MediaType]`), `authorization` (`Auth`),
+      `contentType` (`MediaType`), `contentLength` (`Bytes`), `contentEncoding` (an
+      `Encoding`), `cookie` (`List[Cookie.Value]`), `host` (`Host`), `maxForwards` (`Int`),
+      `origin` (any URL type), `range` (an `Interval`, rendered as `bytes=start-end`) and
+      `transferEncoding` (`TransferEncoding`); every other standard header takes `Text`. A
+      header the companion does not name needs a local given, `given ("xRequestId" is
+      Directive of Text) = identity(_)`, to be passed by name.
+  refer telekinesis.fetch
+  refer telekinesis.Http.Response
+  entry #Self   the header's name, as a literal type: `"contentType"`
+  entry #encode   renders a value of the header's type as the field's text
+  entry #key   the header's name as text, from `Self`
+  entry .contentEncoding   `contentEncoding`: an `Encoding`, rendered by its name
+  entry .accept   `accept`: a `MediaType`
+  entry .accept2   `accept`: a `List[MediaType]`, joined with commas
+  entry .authorization   `authorization`: an `Auth`
+  entry .cacheControl   `cacheControl`: text
+  entry .connection   `connection`: text
+  entry .contentMd5   `contentMd5`: text
+  entry .contentType   `contentType`: a `MediaType`, rendered without its parameters
+  entry .contentLength   `contentLength`: a `Bytes` quantity, rendered as a number
+  entry .cookie   `cookie`: a `List[Cookie.Value]`, joined with `; `
+  entry .date   `date`: text
+  entry .expect   `expect`: text
+  entry .forwarded   `forwarded`: text
+  entry .from   `from`: text
+  entry .host   `host`: a `Host`
+  entry .http2Settings   `http2Settings`: text
+  entry .ifMatch   `ifMatch`: text
+  entry .ifModifiedSince   `ifModifiedSince`: text
+  entry .ifNoneMatch   `ifNoneMatch`: text
+  entry .ifRange   `ifRange`: text
+  entry .ifUnmodifiedSince   `ifUnmodifiedSince`: text
+  entry .maxForwards   `maxForwards`: an `Int`
+  entry .origin   `origin`: any URL type `Abstractable across Urls to Text`
+  entry .pragma   `pragma`: text
+  entry .prefer   `prefer`: text
+  entry .proxyAuthorization   `proxyAuthorization`: text
+  entry .range   `range`: an `Interval` of ordinals, rendered as `bytes=start-end`
+  entry .referer   `referer`: text
+  entry .te   `te`: text
+  entry .trailer   `trailer`: text
+  entry .transferEncoding   `transferEncoding`: a `TransferEncoding`
+  entry .userAgent   `userAgent`: text
+  entry .upgrade   `upgrade`: text
+  entry .via   `via`: text
+  entry .warning   `warning`: text
+  entry .acceptCharset   `acceptCharset`: text
+  entry .accessControlAllowOrigin   `accessControlAllowOrigin`: text
+  entry .accessControlAllowCredentials   `accessControlAllowCredentials`: text
+  entry .accessControlExposeHeaders   `accessControlExposeHeaders`: text
+  entry .accessControlMaxAge   `accessControlMaxAge`: text
+  entry .accessControlAllowMethods   `accessControlAllowMethods`: text
+  entry .accessControlAllowHeaders   `accessControlAllowHeaders`: text
+  entry .acceptPatch   `acceptPatch`: text
+  entry .acceptRanges   `acceptRanges`: text
+  entry .age   `age`: text
+  entry .allow   `allow`: text
+  entry .altSvc   `altSvc`: text
+  entry .contentDisposition   `contentDisposition`: text
+  entry .contentLanguage   `contentLanguage`: text
+  entry .contentLocation   `contentLocation`: text
+  entry .contentRange   `contentRange`: text
+  entry .deltaBase   `deltaBase`: text
+  entry .eTag   `eTag`: text
+  entry .expires   `expires`: text
+  entry .im   `im`: text
+  entry .lastModified   `lastModified`: text
+  entry .link   `link`: text
+  entry .location   `location`: text
+  entry .p3p   `p3p`: text
+  entry .preferenceApplied   `preferenceApplied`: text
+  entry .proxyAuthenticate   `proxyAuthenticate`: text
+  entry .publicKeyPins   `publicKeyPins`: text
+  entry .retryAfter   `retryAfter`: text
+  entry .server   `server`: text
+  entry .setCookie   `setCookie`: text
+  entry .strictTransportSecurity   `strictTransportSecurity`: text
+  entry .tk   `tk`: text
+  entry .vary   `vary`: text
+  entry .wwwAuthenticate   `wwwAuthenticate`: text
+  entry .xFrameOptions   `xFrameOptions`: text
+
+entry .Fetchable   what `fetch` and `submit` accept as an endpoint, and the target it sends to
+  detail
+      A `Fetchable` value yields a request target (its path and query, as text), a `Host`,
+      and a `Target` the `Http.Client` is summoned for: an `HttpUrl` targets its
+      `Origin["http" | "https"]`, and a `DomainSocket.Endpoint` (with
+      `domainSocketFetchable`, in `telekinesis.jvm`) targets its socket. The companion's
+      `.httpUrl` covers every `HttpUrl`, including the scheme-refined types `url"…"` literals
+      have.
+  refer telekinesis.fetch
+  refer telekinesis.Http.Client
+  entry .httpUrl   any `HttpUrl` is fetchable, targeting its origin
+      The request target is the URL's path and query, the host its hostname; a URL with no
+      hostname is a defect.
+  entry #target   the `Target` of an endpoint
+  entry #text   the request target text of an endpoint
+  entry #hostname   the `Host` of an endpoint
+
+entry .Parameter   one named field of a request's query or form body, read as a type
+  detail
+      `Parameter[Int](t"page")` names a field and the type it decodes to and encodes from.
+      With an `Http.Request` in scope, `page()` is its value, decoded from the request's
+      `query` (URL parameters and a form-encoded body alike), raising `Query.Error` if it is
+      absent or malformed; `page(3)` is the `Query` fragment `page=3`; and `case page(n) =>`
+      matches a request which has it.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import codepages.utf8Codepage
+
+      val page = Parameter[Int](t"page")
+      page(3).show                       // t"page=3"
+
+      given Http.Request = Http.Request.parse(Chain(t"GET /?page=7 HTTP/1.1\r\nHost: x\r\n\r\n".in[Data]))
+      page()                             // 7
+      ```
+
+      The value type must be `Decodable in Query` and `Encodable in Query`, which every
+      primitive and every product of them is.
+  refer telekinesis.Submission
+  refer telekinesis.Http.Request
+  entry .apply   `Parameter[value](name)`: a parameter of a name and a type
+  entry #name   the field's name
+  entry #decode   the value from a `Query`
+  entry #encode   a `Query` from a value
+  entry #apply   `parameter(value)` encodes a value; `parameter()` reads it from the request in scope
+      Reading needs an `Http.Request` given, a `Tactic[Query.Error]` for an absent or
+      malformed field, and a `Tactic[Truncation.Error]` for a form body cut short (reported
+      as the field's absence).
+  entry #unapply   `case parameter(value) =>` over an `Http.Request`: matches when the field decodes
+
+entry .Postable   how a value becomes a request body: its media type and its bytes
+  detail
+      A `Postable` value can be the payload of `submit`: the typeclass gives its `MediaType`,
+      which becomes the `Content-Type` header, and a fresh `Stream[Data] over Credit` of its
+      bytes each time it is asked (a body may be sent again after a redirect, and sampled
+      for logging). The companion covers `Text` (`text/plain`, encoded by the `Codepage` in
+      scope), `Data` and a `Data & Sized[n]` (`application/octet-stream`), `Chain[Text]` and
+      `Chain[Data]` (streamed, `application/octet-stream`), `Query`
+      (`application/x-www-form-urlencoded`, a form submission), `Unit` (an empty
+      `text/plain` body) and any type `Abstractable across HttpStreams` to a media type and
+      stream; the data-format libraries add `postables.jsonPostable`, `xmlPostable`,
+      `yamlPostable`, `cborPostable`, `protobufPostable` and gesticulate's multipart.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import httpBackends.javaNetHttp
+      import internetAccess.online
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import codepages.utf8Codepage
+
+      url"https://example.com/submit".submit(Http.Post)(t"Hello world")
+      url"https://example.com/form".submit()(Query(List(t"name" -> t"Jack")))
+      ```
+
+      A custom instance is `Postable(mediaType, streamer)`, the streamer a function from the
+      value to a stream; the instance retains what the streamer captures.
+  refer telekinesis.submit
+  refer telekinesis.Servable
+  entry .Streamer   the function from a value to a fresh body stream, as a single-method trait
+    detail
+        Named rather than a function type so that its `stream` method may mint a fresh
+        scoped stream; a lambda converts to it at the call site.
+    entry #stream   a fresh stream of a value's bytes
+  entry .apply   `Postable(mediaType, streamer)`: an instance from a media type and a streamer
+  entry .text   `Text` posts as `text/plain`, encoded by the `Codepage` in scope
+  entry .textStream   a `Chain[Text]` posts as `application/octet-stream`, each block encoded
+  entry .unit   `Unit` posts as an empty `text/plain` body
+  entry .data   `Data` posts as `application/octet-stream`
+  entry .sizedData   a `Data & Sized[length]` posts as `Data` does
+  entry .byteStream   a `Chain[Data]` posts as `application/octet-stream`, streamed
+  entry .query   a `Query` posts as `application/x-www-form-urlencoded`, a form submission
+  entry .dataStream   any value `Abstractable across HttpStreams` posts with the media type and stream it abstracts to
+      Needs a `Tactic[MediaType.Error]`, raised when the abstracted media type text does
+      not parse; the instance retains it.
+  entry #mediaType   the media type of a value's body
+  entry #stream   a fresh stream of a value's body
+  entry #preview   a hex sample of the first block of the body, for logging
+      At most one bounded refill, so a large body is never drained to log it; a sample
+      longer than 128 bytes ends in `...`.
+
+entry .Receivable   how a response is read as a type: `response.receive[T]`
+  detail
+      A `Receivable` reads an `Http.Response` to a value. Every instance built with
+      `Receivable(reader)` first checks the status: a response outside the `Successful`
+      category raises `Http.Error` with its status and headers, and only then is the body
+      stream handed to the reader. The companion reads `Text` (the whole body, UTF-8), any
+      type `Aggregable by Data` (`Data`, a `Json`, a `Chain[Data]`, …), any type
+      `Instantiable across HttpRequests from Text`, and `Http.Status` — which, alone, never
+      raises, since it reads no body. The `Instantiable` instance, `instantiable`, is inherited
+      from the trait `Receivable2`, at lower priority than the companion's own.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import httpBackends.javaNetHttp
+      import internetAccess.online
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import charsets.utf8Charset
+
+      val response = url"https://example.com/".fetch()
+      response.receive[Http.Status]
+      response.receive[Text]
+      ```
+
+      A body is read once: the stream is a single-owner endpoint over the connection, so a
+      second `receive[Text]` on the same response finds it drained. `#map` derives a reader
+      for another type from one already in hand.
+  refer telekinesis.Http.Response
+  refer telekinesis.Http.Error
+  entry .Reader   the function from a body stream to a result, as a single-method trait
+    detail
+        Named rather than a function type so that it may take the capability-typed stream;
+        a lambda converts to it at the call site.
+    entry #read   the result from a body stream
+  entry .apply   `Receivable(reader)`: an instance which checks the status, then reads the body
+      Needs a `Tactic[Http.Error]` and a `Tactic[Truncation.Error]`, which the instance
+      retains along with the reader.
+  entry .text   reads the body as `Text`, decoded as UTF-8
+  entry .streamable   reads the body through any `Aggregable by Data`: `Data`, a `Json`, a stream
+  entry .httpStatus   `receive[Http.Status]`: the status, reading no body and never raising
+  entry #read   reads a response, which may be one whose body retains the live connection
+  entry #map   a `Receivable` for another type, by a function on this one's result
+
+entry .Receivable2   the lower-priority `Receivable` instance, mixed into the companion
+  hidden
+  detail
+      Not for direct use: holds `instantiable`, the fallback which reads any type
+      `Instantiable across HttpRequests from Text` from the body's UTF-8 text, at lower
+      priority than `Receivable.text` and `Receivable.streamable`.
+  entry #instantiable   reads the body as text and instantiates any `Instantiable across HttpRequests from Text`
+
+entry .Redirects   the namespace of `Redirects.Disabled`, the marker which turns off redirect following
+  detail
+      Bringing a `Redirects.Disabled` into scope selects `Http.Client.httpStrict`, which
+      returns a 3xx response unchanged rather than following it. The given which does so
+      is `httpRedirections.doNotFollowRedirects`, imported by name.
+  refer telekinesis.httpRedirections
+  entry .Disabled   the marker class; an instance in scope disables redirect following
+
+entry .Servable   how a value becomes a response: `Http.Response(value)`, or returning it from a handler
+  detail
+      A `Servable` value is served as an `Http.Response` with its media type in a
+      `content-type` header and its bytes as the body. The companion covers `Text`
+      (`text/plain`, encoded by the `Codepage` in scope), `Data` and a `Data & Sized[n]`
+      (`application/octet-stream`), gesticulate's `Content` (a media type and a stream), any
+      type `Abstractable across HttpStreams`, and — through `.media` — any type with a
+      `Media` instance and an `Encodable in Data` or a `Streamable by Data` or `by Text`;
+      the data-format libraries add `servables.jsonServable`, `xmlServable`,
+      `yamlServable`, `cborServable` and `protobufServable`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val response: Http.Response = Http.Response(t"hello")
+      response.headers.contentType     // List(media"text/plain")
+      ```
+
+      A custom instance is `Servable(mediaType)(value => body)` or, when the media type
+      depends on the value, `Servable(value => mediaType)(value => body)`. A streaming `Text`
+      body served through `.media` runs the `Codepage` as a stage of the stream, which a
+      server must consume block by block (`sweep`), never `memoize`, on the serving path; a
+      `Data` body (`Http.Body.Fixed`) avoids the question.
+  refer telekinesis.Postable
+  refer telekinesis.Http.Response
+  entry .apply   `Servable(mediaType)(value => body)`: an instance from a media type and a body function
+      The media type may be a constant (its header is rendered once) or a function of the
+      value. The instance retains what the functions capture.
+  entry .content   gesticulate's `Content` serves with its own media type and stream
+  entry .bytes   any value `Abstractable across HttpStreams` serves with the media type and stream it abstracts to
+      A media type text which does not parse is the `Abstractable` instance's defect, and
+      panics.
+  entry .data   `Data` serves as `application/octet-stream`, fixed
+  entry .sizedData   a `Data & Sized[length]` serves as `Data` does
+  entry .text   `Text` serves as `text/plain`, fixed, encoded by the `Codepage` in scope
+  entry .media   any `Media` type serves with its media type, from its `Encodable in Data` or a `Streamable`
+      An inline given which picks, at the summoning site, an `Encodable in Data` (a fixed
+      body), a `Streamable by Data over Credit` (a streamed body) or a `Streamable by Text
+      over Credit` (streamed through the `Codepage` and `Buffering` in scope), in that
+      order.
+  entry #serve   the response for a value
+  entry #contramap   a `Servable` for another type, by a function to this one
+
+entry .Session   a session key: the identity a session cookie carries across requests
+  detail
+      `Session(key)` is the value a `Cookie[Session]` stores in the browser and reads back,
+      and the key a `Context` keeps per-session state under. It encodes as its bare key and
+      inspects as `Session(t"a3f1")`, so the two are told apart. `Findable`, so it can be
+      summoned as a contextual value inside `Cookie.session`.
+  refer telekinesis.Context
+  refer telekinesis.Cookie
+  entry .encodable   a session encodes as its key
+  entry .decodable   a session decodes from its key
+  entry .inspectable   renders as `Session(t"key")`
+  entry #key   the session's key
+
+entry .Submission   a form's state: not yet submitted, or submitted with a query to decode
+  detail
+      `Submission[content](query)` holds the `Query` a form was submitted with, or `Unset`
+      when the form is being shown for the first time. `#value` decodes it to the form's
+      type, `#valid` says whether it decodes, and `#fresh`/`#submitted` say which state it is
+      in. With `telekinesis.forms`, `submission.form(…)` renders it as HTML.
+  refer telekinesis.form
+  refer telekinesis.Orchestrate
+  entry #query   the submitted `Query`, or `Unset`
+  entry #fresh   whether the form has not been submitted
+  entry #submitted   whether the form has been submitted
+  entry #optional   the decoded value, or `Unset` if absent or invalid
+  entry #valid   whether the submitted query decodes to the form's type
+  entry #value   the decoded value, or `Unset` if not submitted; a malformed query raises
+
+entry .TransferEncoding   the `Transfer-Encoding` header's values
+  detail
+      An enum: `Chunked`, `Compress`, `Deflate` and `Gzip`, each encoding as its lower-case
+      name. The type the `transferEncoding` header argument takes.
+  entry .encodable   encodes a transfer encoding as its lower-case name
+
+entry .internal   the macro implementations behind `fetch`, `submit` and `Http.Response(…)`
+  hidden
+  detail
+      Not for direct use: the object exists so that the macros have a stable home.
+  entry .expand   sorts a call's arguments into the method, the status and the encoded headers
+      Each named argument is checked against the `Directive` of its name and each unnamed
+      one against the unique `Directive` of its type; a method or status given twice, or a
+      value which fits no header, is a compile error.
+  entry .submit   the macro behind `Http.Submit#apply`: builds the request with its `Content-Type` and sends it
+  entry .fetch   the macro behind `Http.Fetch#apply`: builds the bodiless request and sends it
+  entry .response   the macro behind `Http.Response(…)`: a served value, or a `Protoresponse`
+
+entry .fetch   `url.fetch(…)`: a `GET` (or other bodiless) request to a URL, with typed headers
+  detail
+      An extension on any `Fetchable` endpoint — an `HttpUrl`, or a `DomainSocket.Endpoint`
+      on the JVM — which returns an `Http.Fetch`; its `apply` is a macro which takes an
+      optional `Http.Method` (default `Http.Get`) and any headers, builds the request, and
+      sends it through the `Http.Client` for the endpoint's target. Headers are named
+      arguments checked by the `Directive` of their name, or unnamed values whose type
+      identifies the header. The call needs an `Online` (`internetAccess.online`), an
+      `Http.Event is Loggable` (`logging.silentLogging`), an `Http.Backend` from
+      `httpBackends`, and tactics for `Connect.Error` and, on `receive`, `Http.Error`.
+
+      ```scala fuel
+      typecheck
+      frame
+        label A bare fetch: the status alone
+        code
+            import soundness.*
+            import httpBackends.javaNetHttp
+            import internetAccess.online
+            import logging.silentLogging
+            import strategies.throwUnsafely
+
+            url"https://example.com/".fetch().status
+      frame
+        label A header, named and checked: `accept` takes a `MediaType`
+        code
+            import soundness.*
+            import httpBackends.javaNetHttp
+            import internetAccess.online
+            import logging.silentLogging
+            import strategies.throwUnsafely
+
+            url"https://example.com/".fetch(accept = media"application/json").status
+      frame
+        label A second header: `authorization` takes an `Auth`
+        code
+            import soundness.*
+            import httpBackends.javaNetHttp
+            import internetAccess.online
+            import logging.silentLogging
+            import strategies.throwUnsafely
+
+            url"https://example.com/".fetch(accept = media"application/json", authorization = Auth.Bearer(t"token")).status
+      frame
+        label A method other than `GET`, given positionally
+        code
+            import soundness.*
+            import httpBackends.javaNetHttp
+            import internetAccess.online
+            import logging.silentLogging
+            import strategies.throwUnsafely
+
+            url"https://example.com/".fetch(Http.Head, accept = media"application/json", authorization = Auth.Bearer(t"token")).status
+      frame
+        label The body read as a type
+        code
+            import soundness.*
+            import httpBackends.javaNetHttp
+            import internetAccess.online
+            import logging.silentLogging
+            import strategies.throwUnsafely
+            import charsets.utf8Charset
+
+            url"https://example.com/".fetch(accept = media"application/json", authorization = Auth.Bearer(t"token")).receive[Text]
+      ##
+      ```
+
+      Redirects are followed, up to ten, unless `httpRedirections.doNotFollowRedirects` is
+      imported; a response outside the success range is returned as it is, and raises
+      `Http.Error` only when its body is read with `receive`. A request which cannot reach
+      the server raises `Connect.Error`.
+  refer telekinesis.submit
+  refer telekinesis.Http.Fetch
+  refer telekinesis.Http.Client
+  refer telekinesis.Directive
+
+entry .submit   `url.submit(…)(payload)`: a request with a body, the body a typed `Postable` value
+  detail
+      An extension on any `Fetchable` endpoint which returns an `Http.Submit`; its `apply`
+      takes the method (default `Http.Post`) and headers in a first argument list and the
+      payload in a second. The payload is any value with a `Postable` — `Text`, `Data`, a
+      `Query` (a form submission), a `Json` with `postables.jsonPostable` — and its media
+      type becomes the `Content-Type` header, so nothing is set by hand to match.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import httpBackends.javaNetHttp
+      import internetAccess.online
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import codepages.utf8Codepage
+
+      url"https://example.com/submit".submit(Http.Post, accept = media"application/json")(t"Hello world")
+      url"https://example.com/items".submit(Http.Put)(t"Hello world")
+      url"https://example.com/submit".submit()(t"Hello world")
+      ```
+
+      Needs the same contextual values as `fetch`: an `Online`, an `Http.Event is
+      Loggable`, an `Http.Backend` and a `Tactic[Connect.Error]`, plus the `Postable`'s own
+      (a `Codepage` for `Text`).
+  refer telekinesis.fetch
+  refer telekinesis.Postable
+  refer telekinesis.Http.Submit
+
+entry .query   `value.query`: a value as a `Query`; `url.query(query)`: a URL with parameters added
+    Two extensions share the name. `value.query` encodes any value `Encodable in Query` —
+    a case class, by generic derivation, nested fields joined with dots — as a `Query`:
+
+    ```scala
+    import soundness.*
+
+    case class Person(name: Text, age: Int)
+    case class Couple(first: Person, second: Person)
+
+    Person(t"Jack", 12).query.show
+    // t"name=Jack&age=12"
+    Couple(Person(t"Jack", 12), Person(t"Jill", 11)).query.show
+    // t"first.name=Jack&first.age=12&second.name=Jill&second.age=11"
+    ```
+
+    `url.query(query)` is an `HttpUrl` with the query's parameters appended to any it
+    already has, for building a request URL from typed parameters:
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    url"https://example.com/search".query(Query(List(t"q" -> t"soundness"))).show
+    ```
+
+entry .queryParameters   the given which lets a `Query` be built with arbitrary field names
+  detail
+      `Query.make(key = value, …)` checks each named argument against a `key is Parametric
+      to value` given, which pins the name and type of each field a query may have. The
+      `arbitraryQueryParameter` given, imported by name, accepts any name and any type, so a
+      query can be built ad hoc, with nested products flattened by generic derivation.
+
+      ```scala
+      import soundness.*
+      import queryParameters.arbitraryQueryParameter
+
+      case class Person(name: Text, age: Int)
+      Query.make(person = Person(t"Ken", 39)).show
+      // t"person.name=Ken&person.age=39"
+      ```
+  entry .arbitraryQueryParameter   any label is a query parameter of any type
+
+entry .httpRedirections   the redirect policy, as a given to import by name
+  detail
+      Without any import the `Http.Client` follows `301`, `302`, `303`, `307` and `308`
+      responses up to the `Http.Redirection` limit, ten by default. Importing
+      `doNotFollowRedirects` brings a `Redirects.Disabled` into scope, which selects
+      `Http.Client.httpStrict` instead: a redirect response is then returned as it is, and
+      reading its body raises `Http.Error` with the 3xx status.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import httpBackends.javaNetHttp
+      import httpRedirections.doNotFollowRedirects
+      import internetAccess.online
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import charsets.utf8Charset
+
+      capture[Http.Error](url"https://example.com/old".fetch().receive[Text]).status  // Http.Found
+      ```
+  refer telekinesis.Http.Redirection
+  refer telekinesis.Http.Client
+  entry .doNotFollowRedirects   a `Redirects.Disabled`: 3xx responses are returned, not followed
+
+entry .construables   the given which construes `application/x-www-form-urlencoded` as a `Query`
+  detail
+      A `Construable` maps a media type to the Scala type a response of that type is read
+      as, which apoplexy's generated API clients use to decode a response body. Importing
+      `formConstruable` by name reads a form-encoded body as a `Query`.
+  entry .formConstruable   `application/x-www-form-urlencoded` construes to `Query`
+
+entry .httpBackends   the HTTP transports, each an `Http.Backend` given to import by name
+  detail
+      Which wire carries a request is decided by the `Http.Backend` in scope, and the choice
+      is never implicit: `import soundness.*` brings none of these in, and one is imported
+      by name. `javaNetHttp` uses the JVM's own `java.net.http`; `soundnessHttp` speaks
+      Soundness's wire codecs directly over coaxial's sockets, with no `java.net.http`
+      involved, on the JVM and Scala Native; `wasiHttp` calls `wasi:http` from a Wasm
+      component. Everything above the backend — redirects, logging, the typed headers and
+      bodies — is the same whichever is chosen.
+
+      ```scala fuel
+      typecheck
+      frame
+        label The JDK's client
+        code
+            import soundness.*
+            import internetAccess.online
+            import logging.silentLogging
+            import strategies.throwUnsafely
+
+            locally:
+              import httpBackends.javaNetHttp
+              url"https://example.com/".fetch().status   // Http.Ok
+      frame
+        label Soundness's own wire codec over a socket
+        code
+            import soundness.*
+            import internetAccess.online
+            import logging.silentLogging
+            import strategies.throwUnsafely
+            import socketBackends.javaBaseSockets
+
+            locally:
+              import httpBackends.soundnessHttp
+              url"https://example.com/".fetch().status   // Http.Ok
+      frame
+        label The same fetch, with redirects left unfollowed
+        code
+            import soundness.*
+            import internetAccess.online
+            import logging.silentLogging
+            import strategies.throwUnsafely
+            import socketBackends.javaBaseSockets
+
+            locally:
+              import httpBackends.soundnessHttp
+              import httpRedirections.doNotFollowRedirects
+              url"https://example.com/".fetch().status   // Http.Ok, or the 3xx itself
+      ##
+      ```
+  refer telekinesis.Http.Backend
+  refer telekinesis.Http.Client
+  entry .javaNetHttp   the JVM transport over `java.net.http`
+      In `telekinesis.jvm`. Needs a `TlsAcceptance` in scope (coaxial's: the strict default
+      verifies hostnames and chains; `TlsAcceptance().permitSelfSigned` and its siblings
+      relax it under a `cryptoPermits` import), and builds one JDK client per distinct
+      acceptance, cached. Redirect following is left to `Http.Client`, so the
+      `Http.Redirection` limit is honoured exactly. A request to a cleartext `http://`
+      origin is sent as HTTP/1.1, never offering the `h2c` upgrade; over `https`, ALPN may
+      negotiate HTTP/2 inside the JDK. The body is published lazily from a fresh stream on
+      each subscription, so a large body is never held whole in memory. The JDK's
+      exceptions are classified into `Connect.Error` reasons: `UnknownHostException` is
+      `Dns`, a refused or timed-out connection `Refused` or `Timeout`, and the SSL
+      exceptions `Ssl(Handshake)`, `Ssl(Protocol)`, `Ssl(Peer)` or `Ssl(Key)`.
+  entry .soundnessHttp   the transport speaking telekinesis's wire codecs over coaxial's sockets
+      In `telekinesis.sockets`, on every platform with a `Socket.Backend`. Needs an
+      `Online`, a `Socket.Backend` (`socketBackends.javaBaseSockets` on the JVM), an
+      `Every[Socket.Option.Tcp]`, a `Buffering` and a `Tls`. Plaintext `http` is HTTP/1.1
+      over a raw TCP socket with keep-alive: when a response's extent was explicit (a framed
+      body, or none) and neither side asked to close, its connection returns to a
+      per-origin pool (at most eight idle per origin) for the next request; a pooled socket
+      the server has since closed is discovered on use and replaced by a single retry on a
+      fresh connection. For `https` on the JVM, ALPN offers `h2` then `http/1.1` during the
+      handshake, and the exchange is driven by the HTTP/2 or HTTP/1.1 driver the peer
+      selected, over the same socket, one connection per request; on Scala Native it is one
+      HTTP/1.1 exchange over coaxial's OpenSSL connection, with no ALPN and no HTTP/2.
+      Framed bodies are drained eagerly before a connection is surrendered or closed, so
+      responses do not stream yet, and `101` upgrades are refused (the upgraded stream
+      would never end) as `Connect.Error(Unknown)`. A `Socket.Error` maps onto
+      `Connect.Error` by reason, and a malformed response is `Unknown`.
+  entry .wasiHttp   the transport over `wasi:http/outgoing-handler`, for a Wasm component
+      In `telekinesis.wasi`. An `inline` given: the `wasi:http/types` calls expand at the
+      site which summons it, which must have `wasiApis.wasiHttpApi` in scope, and only
+      materialise in code compiled for a Wasm target. The request is assembled from a
+      `fields` resource and an `outgoing-request`, with an `outgoing-body` when the method
+      carries one; the response is awaited through its pollable and its body read whole
+      from the `input-stream`, so the result is a `Fixed` body. Any failure of the host
+      call is `Connect.Error(Unknown)`.
+
+entry .Orchestrate   a form round-trip: render it, or on `POST` decode, validate and act
+  detail
+      An `Orchestrate[value, result]` (built with `orchestrate`) handles both halves of a
+      form: on any request but a `POST` it renders the form, pre-filled with `initial` if
+      given; on a `POST` it decodes the request's query to `value`, and if that fails runs
+      the caller's validation to annotate the fields. In both cases the caller's `process`
+      function receives a `form` renderer (`Text => Html of Flow`, taking the submit
+      button's label) and the `Optional[value]` — `Unset` when the form is to be shown
+      again, the value when it decoded — and decides what to respond. It is a capability,
+      since it retains the caller's function. In `telekinesis.forms`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+
+      case class Signup(name: Text, email: Text)
+
+      def handle(using Http.Request, Formulation): Http.Response =
+        orchestrate[Signup](): value =>
+          value.lay(Http.Response(form(t"Sign up"))): signup =>
+            Http.Response(t"Welcome, ${signup.name}")
+        . otherwise(Validation())
+      ```
+  refer telekinesis.orchestrate
+  refer telekinesis.Submission
+  entry #otherwise   runs the round-trip with a validation to apply when a `POST` does not decode
+      `otherwise(validate)` needs a `Formulation` (legerdemain's form styling), the
+      value's `Formulaic` (how its fields render) and `Decodable in Query`, the
+      `Http.Request` in scope, and tactics for `Query.Error` and `Truncation.Error`. The
+      validation is a context function over the submitted `Query`.
+
+entry .orchestrate   `orchestrate[value](initial)(render)`: builds an `Orchestrate` for a form type
+    The `render` function receives the form renderer as a contextual value and the
+    `Optional[value]` — the decoded submission, or `Unset` when the form is to be shown —
+    and produces the result; `.otherwise(validation)` on the result then runs it. The
+    result retains what `render` captures. In `telekinesis.forms`.
+
+entry .form   `submission.form(…)`: a `Submission` rendered as an HTML form
+    An extension on `Submission[value]`, in `telekinesis.forms` (so that the core model does
+    not depend on honeycomb and legerdemain's widgets): renders the form's fields through
+    the value's `Formulaic` and the `Formulation` in scope, pre-filled from the submitted
+    query, with the given `submit` button label and any `Validation` messages against the
+    fields. Returns an `Html of Flow`.
+
+entry .requestTransmissible   an `Http.Request` is transmitted over a raw socket as its HTTP/1.1 wire form
+    The coaxial `Transmissible` given, in `telekinesis.jvm`, built on
+    `Http.Request.serialize`; what the domain-socket client sends with `socket.transmit(request)`.
+    It is a top-level given, so it must be imported by name
+    (`import soundness.requestTransmissible`), and needs a `Tactic[Truncation.Error]`.
+
+entry .domainSocketFetchable   a `DomainSocket.Endpoint` is fetchable: HTTP/1.1 straight over a Unix domain socket
+    In `telekinesis.jvm`, for an API served on a local socket such as the Docker daemon's.
+    The request target is the endpoint's path, the `Host` is `localhost`, and the target the
+    client is summoned for is the `DomainSocket`. A top-level given, imported by name.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import soundness.{domainSocketFetchable, domainSocketHttpClient, requestTransmissible}
+    import internetAccess.online
+    import logging.silentLogging
+    import strategies.throwUnsafely
+    import charsets.utf8Charset
+
+    val docker = DomainSocket(t"/var/run/docker.sock")
+    docker.at(t"/version").fetch().receive[Text]
+    ```
+
+entry .domainSocketHttpClient   the `Http.Client onto DomainSocket`: one request, one response, over the socket
+    In `telekinesis.jvm`. Serialises the request with `requestTransmissible`, parses the
+    reply with `Http.Response.parse`, and does not follow redirects. Needs a
+    `Tactic[Truncation.Error]` and a `Tactic[Connect.Error]`: a `Socket.Error` is mapped
+    onto `Connect.Error` by reason, and a malformed response is
+    `Connect.Error(Connect.Error.Reason.Unknown)`. A top-level given, imported by name.
+
+entry .WasiHttpApi   the WIT interface type of `wasi:http`, as xenophile sees it
+    `Interface in Wit at "/telekinesis/http.wit"`: the WIT definitions bundled with
+    `telekinesis.wasi`, against which `httpBackends.wasiHttp` and `WasiHttpServer` are
+    typechecked, and which their `call`s consult at the expansion site for module ids,
+    resource methods and parameter types.
+
+entry .wasiApis   the `wasi:http` interface, as a given to import by name
+  detail
+      `wasiHttpApi` must be in scope wherever `httpBackends.wasiHttp` is summoned or
+      `WasiHttpServer.handle` is called, since both are `inline` and resolve their WIT calls
+      at that site. It merges with the umbrella's `wasiApis` package, beside the other
+      libraries' WASI interfaces.
+  entry .wasiHttpApi   the `WasiHttpApi` interface, read from the bundled `http.wit` resource
+
+entry .WasiHttpServer   serves HTTP from a Wasm component: `wasi:http/incoming-handler` to a Soundness handler
+  detail
+      The bridge from the component's exported `handle` function to a
+      `Http.Request => Http.Response`. The application supplies a small `@WitExport` shim,
+      the one piece which must exist, annotated, in the Wasm-compiled application, and
+      passes the two facade instances through untyped; `WasiHttpServer.handle` does the
+      rest: unmarshals the request (its method, path, headers and whole body; the host is
+      `Localhost`, since a component is not addressed by hostname), calls the handler,
+      marshals the response's status, headers and body, and sets the outparam before the
+      body is written so the host can stream it. `inline`, so the WIT calls expand at the
+      call site, which needs `wasiApis.wasiHttpApi` in scope.
+  refer telekinesis.wasiApis
+  entry .handle   `WasiHttpServer.handle(request, responseOut)(handler)`: answers one incoming request
+      The two untyped facades are the `incoming-request` and `response-outparam` the host
+      passed to the export. A response body the handler cuts short traps the component, as
+      any other failure of the export does.
+
+entry .Http2   the HTTP/2 engine: frames, HPACK-coded headers, and the client and server roles of a multiplexed connection
+  detail
+      `Http2` groups the HTTP/2 (RFC 7540) vocabulary under one name, as `Http` groups the
+      transport-agnostic model: a `Frame` and its `FrameType`, `Flags`, `ErrorCode`, `SettingId`
+      and `Setting`; the two roles of a connection, `Connection` (the client, which opens
+      streams) and `ServerConnection` (the server, which accepts them); the `Stream` both roles
+      share; the `Endpoint` a cleartext h2c client connects to, with its `Client` given and
+      `sessional` session; and the `Error` and `Event` the engine raises and logs.
+
+      A connection multiplexes many request streams over one persistent `Duplex`. A writer
+      daemon drains an outbound queue of frames to the socket, so every write is serialised
+      without a lock, and a reader daemon decodes inbound frames and dispatches them by stream
+      id; both run under the `Monitor` of an enclosing `supervise`, which is why a connection
+      can only be made inside one. The handshake is `start()`: each side's `SETTINGS` and a
+      `WINDOW_UPDATE` raising the connection window to its receive budget. Flow control is
+      honoured in both directions — a body larger than the peer's window parks the sending
+      fiber until a `WINDOW_UPDATE` grants more, and an inbound body the application has not
+      drained holds the peer at the advertised window — and the frame types the stack does not
+      act on (`PRIORITY`, `PUSH_PROMISE`, extensions) are decoded only to be ignored, as the RFC
+      requires, rather than failing the connection.
+
+      The engine is the HTTP/2 driver of both sides of Soundness's HTTP: the `https` client
+      backend uses `Connection` on any TLS connection whose ALPN negotiation selects `h2`, and
+      a TLS `SocketServer` hands a connection which negotiated `h2` to `ServerConnection`. The
+      cleartext form, h2c with prior knowledge (no upgrade, no TLS), is reached through an
+      `Http2.Endpoint`, which is the transport gRPC runs over.
+
+      The pipeline from a request to the bytes on the wire is a chain of these values, each a
+      step a program may take by hand:
+
+      ```scala fuel
+      frame
+        label The header list of a request, pseudo-headers first
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            val request =
+              Http.Request(Http.Get, 2.0, t"example.com".as[Host], t"/", Nil, () => Http.emptyBody())
+
+            val entries: List[Hpack.Entry] = PseudoHeaders.request(request, t"https", t"example.com")
+      frame
+        label Encoded as an HPACK header block
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            val request =
+              Http.Request(Http.Get, 2.0, t"example.com".as[Host], t"/", Nil, () => Http.emptyBody())
+
+            val entries: List[Hpack.Entry] = PseudoHeaders.request(request, t"https", t"example.com")
+            val block: Data = Hpack().encode(entries)
+      frame
+        label Carried by a HEADERS frame on stream 1, which also ends the stream
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            val request =
+              Http.Request(Http.Get, 2.0, t"example.com".as[Host], t"/", Nil, () => Http.emptyBody())
+
+            val entries: List[Hpack.Entry] = PseudoHeaders.request(request, t"https", t"example.com")
+            val block: Data = Hpack().encode(entries)
+            val frame = Http2.Frame.Headers(1, block, endStream = true, endHeaders = true)
+      frame
+        label Serialised: a nine-byte frame header, then the block
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            val request =
+              Http.Request(Http.Get, 2.0, t"example.com".as[Host], t"/", Nil, () => Http.emptyBody())
+
+            val entries: List[Hpack.Entry] = PseudoHeaders.request(request, t"https", t"example.com")
+            val block: Data = Hpack().encode(entries)
+            val frame = Http2.Frame.Headers(1, block, endStream = true, endHeaders = true)
+            val wire: Data = frame.serialize
+      ##
+      ```
+
+      `Connection#fetch` does all of this for an `Http.Request`, and `FrameReader` and
+      `Hpack#decode` are the inverse on the receiving side. Server push is not supported (the
+      client's `SETTINGS` disable it), and a `PUSH_PROMISE` from a peer is ignored.
+  refer telekinesis.Http2.Connection
+  refer telekinesis.Http2.ServerConnection
+  refer telekinesis.Http2.Endpoint
+  refer telekinesis.Hpack
+  refer telekinesis.FrameReader
+  refer telekinesis.PseudoHeaders
+  entry .Connection   the client role: a multiplexed HTTP/2 connection over a `Duplex`, opening a stream per request
+    detail
+        `Http2.Connection(duplex)` wraps a persistent `Duplex` — a socket, or one side of an
+        in-memory `Duplex.pair()` — as the client end of an HTTP/2 connection, speaking
+        cleartext h2c with prior knowledge: it sends the client connection preface and then
+        frames, with no upgrade and no TLS of its own (the `https` backend hands it a `Duplex`
+        whose TLS handshake has already negotiated `h2`). It needs a `Monitor` and a `Probate`
+        in scope, since its reader and writer daemons run under them, so it is made inside a
+        `supervise` block, and `#start` must be called before the first request.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import strategies.throwUnsafely
+        import threads.virtualThreads
+        import probates.cancelProbate
+        import logging.silentLogging
+
+        def exchange(duplex: Duplex, request: Http.Request): Http.Status = supervise:
+          val connection = Http2.Connection(duplex)
+          connection.start()
+
+          try
+            val (stream, response) = connection.fetch(request, t"http", t"example.com")
+            response.status
+          finally connection.close()
+        ```
+
+        The second constructor parameter, `window`, is the receive budget the connection
+        advertises per stream and for the connection as a whole (1 MiB by default): the peer may
+        have at most that many bytes in flight beyond what the application has consumed, which
+        is what bounds the memory an unread response body can occupy. Replenishment is driven
+        by consumption and batched: a `WINDOW_UPDATE` goes out once half the budget has been
+        drained, so a stalled consumer stalls the peer's sender rather than accumulating its
+        output. A budget below the RFC default of 65535 leaves the connection window at the
+        default, and the stream window is what gates.
+
+        Streams are numbered 1, 3, 5, …, as a client's must be. Concurrent `#fetch` calls
+        multiplex on the one connection. A write, parse or HPACK failure in either daemon
+        tears the connection down — a pending handshake is unblocked, every open stream is
+        ended so nothing awaiting its headers, body or trailers hangs, and the writer exits —
+        rather than escaping the daemon or being swallowed; a `GOAWAY` from the peer ends the
+        reader and logs `Http2.Event.GoAway`.
+    refer telekinesis.Http2.Stream
+    refer telekinesis.Http2.Endpoint
+    refer telekinesis.Http2.ServerConnection
+    entry #start   performs the handshake: sends this side's `SETTINGS` and awaits the peer's
+        Sends `SETTINGS` disabling server push and advertising the receive window, raises the
+        connection window above the RFC default with a `WINDOW_UPDATE` if the budget is larger,
+        and blocks until the peer's own `SETTINGS` frame has arrived (which the reader
+        acknowledges). It needs a `Tactic[Async.Error]`, raised if the connection is torn down
+        before the handshake completes. Nothing may be sent before it returns.
+    entry #request   opens a stream, sends a header block and an optional body, and returns the stream handle
+        The frame-level form of a request: allocates the next odd stream id, encodes `headerBlock`
+        (whose pseudo-headers must already come first, as `PseudoHeaders.request` arranges) with a
+        fresh HPACK encoder, and sends it as a `HEADERS` frame, with `END_STREAM` set when `body`
+        is `Unset`. A body is sent as `DATA` frames under the peer's connection and stream
+        windows and its maximum frame size, so a large upload parks the calling fiber at window
+        exhaustion until the peer's `WINDOW_UPDATE`s grant more. The returned `Http2.Stream` is
+        populated by the reader daemon as the response arrives: await `#headers`, consume
+        `#body`, then `#trailers`.
+    entry #fetch   issues an `Http.Request` and returns its stream and `Http.Response`, blocking only for the response headers
+        Builds the header block with `PseudoHeaders.request(request, scheme, authority)` — an
+        `Http.Request` carries neither the scheme nor the `:authority`, so both are given here —
+        memoizes the request body, opens the stream with `#request`, and awaits the response
+        `HEADERS`. The `Http.Response` it returns streams its body lazily from the stream's
+        inbound `DATA` frames, so a large response is read as it arrives, and the stream is
+        returned beside it so that trailers (gRPC's `grpc-status`, for instance) can be awaited
+        after the body: `stream.trailers.await()`.
+
+        It logs `Http2.Event.RequestSent` at `fine`, so an `Http2.Event is Loggable` such as
+        `logging.silentLogging` is needed, and it takes a `Tactic[Http2.Error]` (a protocol error
+        on this stream, or a response with no valid `:status`), a `Tactic[Async.Error]` (the
+        connection torn down while awaiting) and a `Tactic[Truncation.Error]` (a request body
+        cut short while being memoized).
+    entry #close   sends `GOAWAY`, stops the daemons and closes the `Duplex`
+        A clean shutdown: `GOAWAY` with `NoError`, then the outbound queue is stopped, the reader
+        and writer are cancelled, and the duplex is closed. A connection made inside a
+        `supervise` block should be closed before the block ends, or the block waits on the
+        daemons. Closing the client does not stop a `ServerConnection` on the other side of an
+        in-memory pair, which must be closed on its own.
+  entry .ServerConnection   the server role: accepts the streams a client opens and sends responses back on them
+    detail
+        `Http2.ServerConnection(duplex)` is the server end of an HTTP/2 connection whose client
+        has already been negotiated or is speaking h2c with prior knowledge. Its reader daemon
+        first consumes and validates the 24-byte client connection preface (a mismatch is an
+        `Http2.Error` with a `Protocol` reason), then decodes frames; every `HEADERS` frame on a
+        stream id it has not seen creates a `Stream`, whose `headers` promise is the request's
+        header block, and hands it to `#eachStream`; a second `HEADERS` block on a live stream
+        is the request's trailers. The writer daemon drains the outbound queue, so
+        `#sendHeaders`, `#sendData` and `#sendTrailers` may be called concurrently for
+        different streams — frames interleave by design, and each header block is encoded with
+        a fresh HPACK encoder, so no encoder state is shared between handlers. It needs a
+        `Monitor` and a `Probate`, so it is made inside a `supervise` block, and the `Duplex`
+        it takes may capture its I/O capabilities (`Duplex^`), as a socket's does.
+
+        A response is grown on a stream from its header block:
+
+        ```scala fuel
+        frame
+          label A bodiless response: the header block alone ends the stream
+          code
+              import soundness.*
+              import codepages.utf8Codepage
+
+              def respond(server: Http2.ServerConnection, stream: Http2.Stream): Unit =
+                val head = List(Hpack.Entry(t":status", t"204"))
+                server.sendHeaders(stream.id, head, endStream = true)
+        frame
+          label A body: the headers stay open, and the last DATA frame ends the stream
+          code
+              import soundness.*
+              import codepages.utf8Codepage
+
+              def respond(server: Http2.ServerConnection, stream: Http2.Stream): Unit =
+                val head = List(Hpack.Entry(t":status", t"200"))
+                server.sendHeaders(stream.id, head, endStream = false)
+                server.sendData(stream.id, t"Hello over h2!".in[Data], endStream = true)
+        frame
+          label Trailers: headers and body stay open, and the trailing block ends the stream
+          code
+              import soundness.*
+              import codepages.utf8Codepage
+
+              def respond(server: Http2.ServerConnection, stream: Http2.Stream): Unit =
+                val head = List(Hpack.Entry(t":status", t"200"))
+                server.sendHeaders(stream.id, head, endStream = false)
+                server.sendData(stream.id, t"Hello over h2!".in[Data], endStream = false)
+                server.sendTrailers(stream.id, List(Hpack.Entry(t"grpc-status", t"0")))
+        ##
+        ```
+
+        `PseudoHeaders.requestOf` turns an accepted stream's header block and body into an
+        `Http.Request`, and `PseudoHeaders.entries` turns an `Http.Response` into the header
+        block to send, which is how a TLS `SocketServer` serves an ordinary handler over h2
+        with no change to the handler. Two rules for anyone driving the engine directly: a
+        flowing response body must be drained to the stream block by block, never memoized,
+        since a transforming body (a text encoder's) does not terminate under `memoize`; and
+        the connection must be `#close`d before the enclosing `supervise` block returns, or the
+        block waits forever on its daemons — closing the client on the other side does not stop
+        the server's writer.
+
+        The receive budget (`window`, 1 MiB by default) and its batched replenishment are as
+        `Http2.Connection`'s: a request body the handler has not drained holds the client at the
+        advertised window. The peer's `SETTINGS_INITIAL_WINDOW_SIZE` applies to streams opened
+        after it arrives; existing streams are not adjusted. Server push is not implemented.
+    refer telekinesis.Http2.Stream
+    refer telekinesis.PseudoHeaders
+    refer telekinesis.Http2.Connection
+    entry #start   performs the server side of the handshake: sends `SETTINGS` and awaits the client's
+        Sends `SETTINGS` advertising the receive window (a server does not send `ENABLE_PUSH`),
+        raises the connection window above the RFC default if the budget is larger, and blocks
+        until the client's `SETTINGS` frame has arrived and been acknowledged. It needs a
+        `Tactic[Async.Error]`, raised if the connection is torn down first — a bad preface,
+        for instance. The client's preface and `SETTINGS` and the server's `SETTINGS` may be
+        sent in either order, so `start()` on both sides of an in-memory pair may run
+        concurrently.
+    entry #eachStream   runs a handler for every stream the client opens, in arrival order, until the connection ends
+        Takes each accepted `Http2.Stream` from the queue the reader fills and calls `handler`
+        on the reader-driven serve loop, returning when the connection ends (a `GOAWAY`, the
+        socket closing, or `#close`). The handler is given the stream as soon as its request
+        header block has arrived — the body may still be streaming in — and should spawn a
+        fiber of its own for the stream, so that requests multiplexed on the one connection are
+        served concurrently rather than one after another on the loop.
+    entry #sendHeaders   sends a response header block on a stream, ending the stream if the response has no body
+        Encodes `entries` with a fresh HPACK encoder and sends them as one `HEADERS` frame with
+        `END_HEADERS` set. `:status` must come first, as `PseudoHeaders.entries` arranges.
+        `endStream` is `true` for a bodiless response and `false` when `#sendData` or
+        `#sendTrailers` will follow.
+    entry #sendData   sends a body as `DATA` frames on a stream, under the peer's flow-control windows
+        Splits `payload` into chunks bounded by the connection window, the stream window and the
+        peer's `SETTINGS_MAX_FRAME_SIZE`, and blocks the calling fiber at window exhaustion
+        until an inbound `WINDOW_UPDATE` grants more, so a response larger than the window
+        streams intact without ever exceeding the peer's credit. `endStream` rides the final
+        chunk; an empty payload carries no data and is sent at once, its only role being to end
+        the stream.
+    entry #sendTrailers   sends a trailing header block, which always ends the stream
+        A second `HEADERS` block after the body, with `END_STREAM` set — the response's
+        trailers, such as gRPC's `grpc-status`. A response with trailers leaves `endStream`
+        unset on its `#sendHeaders` and `#sendData`, so that this block is what closes the
+        stream. Encoded with a fresh HPACK encoder.
+    entry #close   sends `GOAWAY`, stops the serve loop and the daemons, and closes the `Duplex`
+        `GOAWAY` with `NoError`, then the outbound queue and the accepted-stream queue are
+        stopped (so `#eachStream` returns), the reader and writer are cancelled, and the duplex
+        is closed. Call it before the enclosing `supervise` block ends.
+  entry .Stream   one HTTP/2 stream's receive side: promises for its header blocks and a flow-controlled body
+    detail
+        A `Stream` is what a request looks like on the receiving side of a connection, in either
+        role: for `Http2.Connection` it is the response to a request the client opened, and for
+        `Http2.ServerConnection` it is a request the client sent. It has an `#id`, a promise for
+        its first `HEADERS` block (`#headers`: the response headers, or the request's), a
+        promise for a second, end-stream block (`#trailers`), and a `#body` fed by `DATA`
+        frames. The connection's reader daemon populates them as frames arrive, and resolves
+        whatever is still pending — with `Nil`, and by ending the body — when the stream ends,
+        is reset by the peer, or the connection is torn down, so nothing awaiting a stream
+        hangs.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import strategies.throwUnsafely
+
+        def status(stream: Http2.Stream): Optional[Text] =
+          val head: List[Hpack.Entry] = stream.headers.await()
+          val body: Data = stream.body.stream.memoize
+          stream.trailers.await().seek(_.name == t"grpc-status").let(_.value)
+        ```
+
+        The body is a relay bounded by protocol credit rather than by a buffer size: the peer
+        may have at most the connection's advertised window in flight beyond what the consumer
+        has drained, and draining the body is what replenishes the window. A stream is made by
+        the connection, never by hand; `#acceptHeaders`, `#acceptData` and `#end` are the
+        reader daemon's entry points.
+    refer telekinesis.Http2.Connection
+    refer telekinesis.Http2.ServerConnection
+    refer telekinesis.Hpack.Entry
+    entry .Body   the inbound body of a stream: a relay of `DATA` payloads, metered by flow control
+      detail
+          A `Body` collects the payload of each `DATA` frame on its stream and serves them as a
+          stream of byte blocks. Its buffering is unbounded in structure but bounded by protocol
+          credit — the peer cannot send more than the advertised window without a
+          `WINDOW_UPDATE` — and the update is sent only as the consumer skips past records, so
+          an unread body holds the peer at the window rather than accumulating in memory. It is
+          made by `Http2.Stream`, with the connection's consumption callback.
+      entry #stream   the body as a stream of byte blocks, whose consumption replenishes the peer's window
+          A `zephyrine.Stream` of `Data` records over `Credit`, needing a `Buffering` in scope.
+          Each record the consumer skips past is counted and reported to the connection, which
+          batches the counts into `WINDOW_UPDATE`s at the half-window threshold. Each call
+          re-lends the same underlying relay, so a second read resumes where the first stopped;
+          `memoize` on it gathers the whole body as one `Data`.
+    entry #id   the stream's identifier: odd for a client-opened stream, and `0` is never a stream
+    entry #headers   a promise for the first header block: the response's headers, or the request's
+        Resolved by the reader daemon on the stream's first `HEADERS` frame, as the decoded
+        `Hpack.Entry` list with its pseudo-headers (`:status`, or `:method`, `:scheme`,
+        `:authority` and `:path`) ahead of the regular fields. If the stream ends without one, it
+        is resolved with `Nil`. `await()` needs a `Tactic[Async.Error]`.
+    entry #trailers   a promise for a second, end-stream header block: the trailers, or `Nil` if there are none
+        Resolved on a second `HEADERS` block on the stream, which the protocol requires to end
+        the stream — gRPC's `grpc-status` arrives this way — and with `Nil` when the stream ends
+        with no second block, so awaiting it after the body is always safe. `await()` needs a
+        `Tactic[Async.Error]`.
+    entry #body   the stream's inbound body, an `Http2.Stream.Body`
+    entry #acceptHeaders   records an inbound header block: the first as the headers, any later one as the trailers
+        Called by the connection's reader daemon with a decoded block. Not for application use.
+    entry #acceptData   appends an inbound `DATA` payload to the body
+        Called by the connection's reader daemon. Not for application use.
+    entry #end   closes the receive side, resolving anything still pending so no awaiter hangs
+        An unresolved `#headers` or `#trailers` is resolved with `Nil`, and the body is stopped.
+        Called by the connection on `END_STREAM`, `RST_STREAM`, `GOAWAY` and tear-down.
+  entry .Endpoint   a cleartext h2c endpoint: a connectable address and the `:authority` to send, for `Http.Client` and sessions
+    detail
+        `Http2.Endpoint(endpoint, authority)` names a server to speak HTTP/2 to in the clear,
+        with prior knowledge: `endpoint` is any value which is `Connectable` (and `Showable`) —
+        a coaxial `Endpoint(host, port)` over TCP, a `DomainSocket`, or a test's loopback — and
+        `authority` is the `:authority` pseudo-header every request carries, which the address
+        alone does not say. It is the `Target` of the HTTP/2 `Http.Client` given (`Client.http2`),
+        where telekinesis's HTTP/1.1 client targets a URL, and the subject of `.sessional`, which
+        lends one live connection to a scope.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import strategies.throwUnsafely
+        import threads.virtualThreads
+        import probates.cancelProbate
+        import logging.silentLogging
+        import socketBackends.javaBaseSockets
+
+        supervise:
+          val endpoint = Http2.Endpoint(Endpoint(t"localhost", Port[Tcp](50051)), t"localhost")
+
+          endpoint.session: connection ?=>
+            val request =
+              Http.Request(Http.Get, 2.0, t"localhost".as[Host], t"/", Nil, () => Http.emptyBody())
+
+            val (stream, response) = connection.fetch(request, t"http", t"localhost")
+            response.body.stream.memoize.utf8
+        ```
+
+        This is the transport gRPC runs over: a `Grpc.Channel` is opened on an `Http2.Endpoint`.
+    refer telekinesis.Http2.Connection
+    refer telekinesis.Http2.Client
+    refer telekinesis.Http2.EndpointSessional
+    entry #endpoint   the connectable address
+    entry #authority   the `:authority` pseudo-header sent on every request, such as `localhost:50051`
+    entry #connect   opens a multiplexed connection which lives until the enclosing `supervise` scope ends
+        Connects the address, makes an `Http2.Connection` over the `Duplex`, completes its
+        handshake and returns it. The connection runs on a daemon which holds the duplex open,
+        parked until the scope is torn down, so the response bodies it streams lazily stay
+        readable for the scope's lifetime rather than being closed per request; nothing closes
+        it before then. It needs a `Monitor` and a `Probate` (so it is called inside
+        `supervise`), a `Tactic[Socket.Error]` for an address which cannot be connected, and a
+        `Tactic[Async.Error]` for a connection which is cancelled before it is ready. The
+        result retains the monitor. `.sessional` is the scoped alternative, which closes the
+        connection when its block ends.
+  entry .EndpointSessional   the `Sessional` instance which lends an `Http2.Connection` to a scope on an `Http2.Endpoint`
+    detail
+        The class behind the `.sessional` given, named rather than anonymous so that its `Result`
+        type — a capturing `Http2.Connection` — is stated exactly. `endpoint.session: connection
+        ?=> …` connects the endpoint, completes the handshake, lends the live connection to the
+        block, and tears it down (reader, writer and transport) when the block ends; the loan and
+        the scope coincide, so no daemon holds the connection open afterwards. The block's result
+        type is quantified outside it, so a value still borrowing the connection — a lazily
+        streaming response body, an open `Http2.Stream` — cannot escape, while a memoized body
+        can. Fetches within the block multiplex on the one connection and may run concurrently.
+        It needs a `Monitor`, a `Probate`, a `Tactic[Async.Error]`, a `Tactic[Socket.Error]` and
+        a `Socket.Event is Loggable`.
+    entry #Self   `Http2.Endpoint[endpoint]`
+    entry #Result   `Http2.Connection^`: the live connection the block receives
+    entry #session   connects, lends the connection to the block, and closes it after
+  entry .sessional   the given which makes `endpoint.session: connection ?=> …` work on an `Http2.Endpoint`
+      An `EndpointSessional` for any `Http2.Endpoint` whose address is `Connectable` and
+      `Showable`. It is in `Http2`'s companion scope, so no import is needed, but it is summoned
+      only where a `Monitor`, a `Probate`, a `Tactic[Async.Error]`, a `Tactic[Socket.Error]` and
+      a `Socket.Event is Loggable` are in scope: inside a `supervise` block with, for instance,
+      `strategies.throwUnsafely` and `logging.silentLogging`.
+  entry .Client   the HTTP/2 `Http.Client` given, which fetches from an `Http2.Endpoint` over h2c
+    detail
+        Holds `.http2`, the `Http.Client onto Http2.Endpoint[endpoint]` instance: an
+        `Http.Request` sent to an `Http2.Endpoint` is carried over a prior-knowledge h2c
+        connection, with the endpoint's `authority` as its `:authority` and `http` as its
+        scheme.
+    entry .http2   an `Http.Client` speaking HTTP/2 to an `Http2.Endpoint`; one connection per request, closed with the scope
+        The given captures the `Monitor` and `Probate` of the context it is summoned in — the
+        connection's daemons and its scope-tied teardown need them — so it resolves only inside
+        a `supervise` block. Each request opens a fresh connection with `Endpoint#connect`,
+        which lives until the scope ends; there is no pooling, so a program making many
+        requests to one endpoint should use `endpoint.session` instead. It also needs a
+        `Tactic[Http2.Error]`, a `Tactic[Async.Error]`, a `Tactic[Socket.Error]` and a
+        `Tactic[Truncation.Error]`, and the request logs through the `Http.Event is Loggable` in
+        scope.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import strategies.throwUnsafely
+        import threads.virtualThreads
+        import probates.cancelProbate
+        import logging.silentLogging
+        import socketBackends.javaBaseSockets
+
+        supervise:
+          import Http2.Client.http2
+
+          val request =
+            Http.Request(Http.Get, 2.0, t"localhost".as[Host], t"/", Nil, () => Http.emptyBody())
+
+          val client = summon[Http.Client onto Http2.Endpoint[Endpoint[Tcp.Port]]]
+          client.request(request, Http2.Endpoint(Endpoint(t"localhost", Port[Tcp](8080)), t"localhost"))
+        ```
+  entry .Frame   an HTTP/2 frame: a nine-byte header and a type-specific payload, decoded from and serialised to bytes
+    detail
+        The wire unit of HTTP/2 (RFC 7540 §4): a 24-bit length, an 8-bit type, 8 flag bits, a
+        31-bit stream id, and a payload whose shape the type decides. `Frame` is an enum of the
+        types the engine models, each case holding its decoded fields rather than raw flags:
+
+        - `Headers(streamId, headerBlock, endStream, endHeaders)` — an HPACK block, with
+          padding and any `PRIORITY` prefix already stripped;
+        - `Continuation(streamId, headerBlock, endHeaders)` — the rest of a block too large for
+          one `HEADERS` frame;
+        - `Data(streamId, payload, endStream)` — body bytes, padding stripped;
+        - `RstStream(streamId, errorCode)` — the peer abandoning a stream;
+        - `Settings(settings, ack)` — a list of `Setting`s, or an empty acknowledgement;
+        - `Ping(opaque, ack)` — eight opaque bytes, echoed back with `ack`;
+        - `GoAway(lastStreamId, errorCode, debug)` — the peer closing the connection;
+        - `WindowUpdate(streamId, increment)` — flow-control credit, for the connection on
+          stream `0`;
+        - `Ignored(typeId, streamId)` — an inbound frame of a type the engine does not model
+          (`PRIORITY`, `PUSH_PROMISE`, an extension), decoded only to be discarded, as the
+          protocol requires; it can never be serialised.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        val ack: Data = Http2.Frame.Settings(Nil, ack = true).serialize   // 00 00 00 04 01 00 00 00 00
+        val (frame, end) = Http2.Frame.decode(ack, 0)
+        frame == Http2.Frame.Settings(Nil, ack = true)
+        ```
+
+        A program speaking the protocol by hand sends `frame.serialize` on a `Duplex` and reads
+        with a `FrameReader`, which reassembles frames from a socket's arbitrary chunks.
+    refer telekinesis.FrameReader
+    refer telekinesis.Http2.FrameType
+    refer telekinesis.Http2.Flags
+    entry .decode   decodes one frame from bytes at an offset, returning it and the offset just past it
+        `Frame.decode(data, offset)` reads the nine-byte header at `offset` and the payload it
+        declares, which must already be wholly present: a header or payload running past the
+        end of `data` raises `Http2.Error` with reason `Truncated`, and bad padding or a
+        `SETTINGS` payload which is not a multiple of six bytes raises one with a `Protocol`
+        reason. A type id the engine does not know becomes `Frame.Ignored`. The result is the
+        frame and the offset of the next one, so a buffer of several frames is decoded by
+        iterating.
+    entry #stream   the stream the frame belongs to; `0` for the connection-level `SETTINGS`, `PING` and `GOAWAY`
+    entry #serialize   the frame as bytes, header included
+        The nine-byte header — the payload length, the type's id, the flags the fields imply
+        (`END_STREAM`, `END_HEADERS`, `ACK`) and the stream id — followed by the payload.
+        Serialising an `Ignored` frame is a panic: it exists only to be discarded.
+  entry .FrameType   the frame types the engine models, each with its wire id
+    detail
+        An enum of the eight types the engine decodes and sends: `Data` (`0x0`), `Headers`
+        (`0x1`), `RstStream` (`0x3`), `Settings` (`0x4`), `Ping` (`0x6`), `GoAway` (`0x7`),
+        `WindowUpdate` (`0x8`) and `Continuation` (`0x9`). `PRIORITY` (`0x2`) and `PUSH_PROMISE`
+        (`0x5`) have no case: the client disables server push, and priority is skipped where it
+        appears, so an inbound frame of either kind decodes as `Frame.Ignored`.
+    entry .fromId   the frame type with a wire id, or `Unset` for one the engine does not model
+    entry #id   the type's wire id, the byte after the length in a frame header
+  entry .Flags   the flag bits of a frame header, and a test for one
+    detail
+        The bits of the flags byte, as the supported frame types use them: `EndStream` (`0x1`,
+        on `DATA` and `HEADERS`), `Ack` (also `0x1`, on `SETTINGS` and `PING`: the same bit
+        with a different meaning), `EndHeaders` (`0x4`, on `HEADERS` and `CONTINUATION`),
+        `Padded` (`0x8`, on `DATA` and `HEADERS`) and `Priority` (`0x20`, on `HEADERS`).
+        `Frame.decode` reads them into the frames' Boolean fields; they are exposed for a
+        program examining raw headers.
+    entry .EndStream   `0x1`: the frame ends its stream's sending half (`DATA`, `HEADERS`)
+    entry .Ack   `0x1`: the frame acknowledges one of the same type (`SETTINGS`, `PING`)
+    entry .EndHeaders   `0x4`: the header block is complete (`HEADERS`, `CONTINUATION`)
+    entry .Padded   `0x8`: a pad length byte and trailing padding are present (`DATA`, `HEADERS`)
+    entry .Priority   `0x20`: a five-byte priority prefix precedes the header block (`HEADERS`)
+    entry .set   whether a flag bit is set in a flags byte: `Flags.set(flags, Flags.EndStream)`
+  entry .ErrorCode   the HTTP/2 error codes carried by `RST_STREAM` and `GOAWAY`, with their numeric codes
+    detail
+        An enum of the fourteen codes of RFC 7540 §7, each with its `#code`: `NoError` (`0x0`),
+        `ProtocolError` (`0x1`), `InternalError` (`0x2`), `FlowControlError` (`0x3`),
+        `SettingsTimeout` (`0x4`), `StreamClosed` (`0x5`), `FrameSizeError` (`0x6`),
+        `RefusedStream` (`0x7`), `Cancel` (`0x8`), `CompressionError` (`0x9`), `ConnectError`
+        (`0xa`), `EnhanceYourCalm` (`0xb`), `InadequateSecurity` (`0xc`) and `Http11Required`
+        (`0xd`). A `Frame.RstStream` or `Frame.GoAway` carries the raw `Long`, since a peer may
+        send a code outside the list; `ErrorCode.NoError.code` is what a clean `#close` sends.
+    entry #code   the code's numeric value, as a `Long`
+  entry .SettingId   the identifiers of the `SETTINGS` parameters, with their numeric ids
+    detail
+        An enum of the six parameters of RFC 7540 §6.5.2, each with its `#id`:
+        `HeaderTableSize` (`0x1`), `EnablePush` (`0x2`), `MaxConcurrentStreams` (`0x3`),
+        `InitialWindowSize` (`0x4`), `MaxFrameSize` (`0x5`) and `MaxHeaderListSize` (`0x6`). A
+        `Setting` holds the raw id rather than a `SettingId`, since an unknown identifier must be
+        ignored rather than rejected. The engine acts on `InitialWindowSize` and `MaxFrameSize`
+        from a peer, and sends `EnablePush` (as `0`, from the client) and `InitialWindowSize`.
+    entry #id   the parameter's 16-bit identifier
+  entry .Setting   one `SETTINGS` parameter: a 16-bit identifier and a 32-bit value
+    detail
+        `Setting(SettingId.InitialWindowSize.id, 65535)`. The id is raw so that a parameter the
+        engine does not know is carried and ignored, as the protocol requires.
+
+        ```scala
+        import soundness.*
+
+        val settings = List(Http2.Setting(Http2.SettingId.InitialWindowSize.id, 65535))
+        Http2.Frame.Settings(settings, ack = false).serialize
+        ```
+    entry #id   the parameter's identifier; `SettingId#id` for a known one
+    entry #value   the parameter's value, as an unsigned 32-bit number in a `Long`
+  entry .Error   raised for a malformed or protocol-violating HTTP/2 exchange, with a `Reason`
+    detail
+        _the HTTP/2 operation failed because `reason`_. Raised by `Frame.decode`, `FrameReader`,
+        `Hpack#decode`, `Huffman.decode` and `PseudoHeaders` through a `Tactic[Http2.Error]`,
+        and by `Connection#fetch` for the exchange it drives. Inside a connection's reader
+        daemon the error tears that one connection down rather than escaping; an `https`
+        session reports it as a `Connect.Error`.
+    entry .Reason   why an HTTP/2 operation failed
+      detail
+          - `Truncated` — _the HTTP/2 data ended unexpectedly_: a frame, header block or
+            integer cut short;
+          - `BadPreface` — _the connection preface was not valid_;
+          - `BadHuffman` — _the Huffman-coded string was not valid_: a code longer than 30
+            bits, or padding which is not all ones;
+          - `BadInteger` — _an HPACK integer was malformed or too large_;
+          - `BadIndex(index)` — _the HPACK table index `index` was out of range_;
+          - `BadFrameType(id)` — _the frame type `id` was not recognized_;
+          - `FrameTooLarge` — _a frame exceeded the maximum permitted size_;
+          - `FlowControl` — _a flow-control window was exceeded_;
+          - `Protocol(message)` — _a protocol error occurred: `message`_: a bad connection
+            preface, bad padding, a bad `SETTINGS` length, or a header block missing
+            `:status`, `:method`, `:path` or `:authority`;
+          - `GoAway(code)` — _the peer closed the connection with error code `code`_.
+      entry .communicable   renders each reason as its message
+    entry #reason   the reason, an `Http2.Error.Reason`
+  entry .Event   what a connection logs: a request sent, and a `GOAWAY` received
+    detail
+        Every `Event` is tagged `Log.Network` and `Log.Protocol`. `Connection#fetch` logs
+        `RequestSent(authority)` at `fine` — _sending an HTTP/2 request to `authority`_ — and a
+        connection's reader logs `GoAway(lastStream)` as a warning — _received GOAWAY; the last
+        processed stream was `lastStream`_ — before it stops. An `Http2.Event is Loggable` must
+        be in scope for a fetch; `logging.silentLogging` discards them.
+    entry .communicable   renders each event as a message
+
+entry .Hpack   an HPACK codec: compresses and decompresses HTTP/2 header blocks with a dynamic table of its own
+  detail
+      HPACK (RFC 7541) is how HTTP/2 carries headers: each field is an index into a table of
+      recently-seen fields, or a literal name and value, each Huffman-coded where that is
+      shorter. An `Hpack` instance owns one direction's dynamic table, which changes with every
+      block it encodes or decodes, so a connection keeps one codec for decoding inbound blocks
+      and one for encoding outbound ones, and the two never mix.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val codec: Hpack^ = Hpack()
+
+      val block: Data =
+        codec.encode(List(Hpack.Entry(t":method", t"GET"), Hpack.Entry(t":path", t"/")))
+
+      Hpack().decode(block).map(_.name)   // List(t":method", t":path")
+      ```
+
+      The codec is a stateful, exclusive capability: `Hpack()` returns `Hpack^`, and `#encode`
+      and `#decode` are update methods. Hold it in a local or pass it as a parameter typed
+      `Hpack^`, and do not call it from a closure or a local `def` which captures it — a
+      captured reference is read-only, and the call is rejected — which is also why a codec
+      belongs to exactly one reader or writer daemon.
+
+      Fed successive blocks, a decoder's dynamic table grows, and each block can refer back to
+      what the last one added (the example of RFC 7541 Appendix C.3):
+
+      ```scala fuel
+      frame
+        label The first request: four fields, the authority sent as a literal
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            def hex(text: Text): Data = Array.from(text.s.grouped(2).map(Integer.parseInt(_, 16).toByte))
+
+            val decoder: Hpack^ = Hpack()
+            val first = decoder.decode(hex(t"828684410f7777772e6578616d706c652e636f6d"))
+            first.map(_.value)   // GET, http, /, www.example.com
+      frame
+        label The second: the authority is now index 62, one byte, and a new field is added
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            def hex(text: Text): Data = Array.from(text.s.grouped(2).map(Integer.parseInt(_, 16).toByte))
+
+            val decoder: Hpack^ = Hpack()
+            val first = decoder.decode(hex(t"828684410f7777772e6578616d706c652e636f6d"))
+            val second = decoder.decode(hex(t"828684be58086e6f2d6361636865"))
+            second.map(_.value)   // GET, http, /, www.example.com, no-cache
+      frame
+        label The third: a custom field, with the two earlier additions still indexed
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            def hex(text: Text): Data = Array.from(text.s.grouped(2).map(Integer.parseInt(_, 16).toByte))
+
+            val decoder: Hpack^ = Hpack()
+            val first = decoder.decode(hex(t"828684410f7777772e6578616d706c652e636f6d"))
+            val second = decoder.decode(hex(t"828684be58086e6f2d6361636865"))
+            val third = decoder.decode(hex(t"828785bf400a637573746f6d2d6b65790c637573746f6d2d76616c7565"))
+            third.map(_.value)   // GET, https, /index.html, www.example.com, custom-value
+      ##
+      ```
+
+      The encoder is deliberately simple: every field goes out as a literal with incremental
+      indexing, with its name and value each Huffman-coded or raw, whichever is shorter. That
+      is correct and interoperable with any decoder, and keeps the two tables in step, but does
+      not yet use the static table's name matches, so a block is larger than a tuned encoder
+      would make it. Pseudo-headers must be ordered ahead of regular fields by the caller, as
+      `PseudoHeaders` arranges.
+  refer telekinesis.Hpack.Entry
+  refer telekinesis.Hpack.Table
+  refer telekinesis.Huffman
+  refer telekinesis.Http2
+  entry .apply   a fresh codec with an empty dynamic table, as `Hpack()` or `Hpack(maxTableSize)`
+      The table's byte limit is 4096 by default, the protocol's initial `SETTINGS_HEADER_TABLE_SIZE`.
+      A peer's dynamic table size update inside a block resizes it. The result is `Hpack^`: a
+      fresh, exclusive capability.
+  entry .Entry   one header field: a name and a value
+    detail
+        `Hpack.Entry(t":status", t"200")`. Names are lowercase on the wire, and pseudo-headers
+        begin with `:`; `#size` is the field's cost in the dynamic table.
+
+        ```scala
+        import soundness.*
+
+        Hpack.Entry(t"content-type", t"application/grpc").size   // 12 + 16 + 32
+        ```
+    entry #name   the field's name, lowercase, such as `:path` or `content-type`
+    entry #value   the field's value
+    entry #size   the field's size for dynamic-table accounting: name length + value length + 32
+  entry .Table   the HPACK address space: the 61-entry static table and a bounded, most-recent-first dynamic table
+    detail
+        An index from 1 to 61 names a field of the static table of RFC 7541 Appendix A, held in
+        `.static`; 62 upwards names the dynamic table, most recently inserted first. The dynamic
+        table is a FIFO bounded by a byte size (`#capacity`), evicting its oldest entries to fit.
+        A `Table` is owned by its `Hpack` codec, which is itself confined to one daemon; a
+        program needs it only to resolve or inspect indices by hand.
+
+        ```scala
+        import soundness.*
+
+        val table: Hpack.Table^ = new Hpack.Table()
+        table.lookup(2)    // Hpack.Entry(t":method", t"GET")
+        table.add(Hpack.Entry(t"x-trace", t"abc"))
+        table.lookup(62)   // the entry just added
+        ```
+    entry .static   the 61 fields of the static table, index 1 at element 0
+        `:authority`, `:method` `GET` and `POST`, `:path` `/` and `/index.html`, `:scheme`
+        `http` and `https`, the seven common `:status` values, and the standard header names
+        with empty values, in the RFC's order.
+    entry #size   the dynamic table's current byte size, the sum of its entries' sizes
+    entry #capacity   the dynamic table's byte limit
+    entry #resize   sets the byte limit, evicting the oldest entries to fit: a dynamic table size update
+    entry #add   inserts a field at the front of the dynamic table, evicting the oldest to stay within the limit
+        A field larger than the whole table empties it and is not itself stored, as the RFC
+        specifies.
+    entry #lookup   the field at a 1-based index: static for 1 to 61, then dynamic; `Unset` if out of range
+  entry #decode   decodes a header block into its fields, updating the dynamic table as the block directs
+      Reads a complete block — the payload of a `HEADERS` frame, or of one and its
+      `CONTINUATION`s joined — as a `List[Hpack.Entry]` in order. Indexed fields are resolved
+      through the table, literals with incremental indexing are added to it, literals without
+      indexing and never-indexed literals are not, and a dynamic table size update resizes it.
+      Needs a `Tactic[Http2.Error]`: `BadIndex` for an index the table does not have,
+      `BadInteger` for an integer of more than 28 bits, `BadHuffman` for an invalid Huffman
+      string and `Truncated` for a block cut short. An update method: the codec must be held
+      exclusively.
+  entry #encode   encodes fields as a header block, each a literal with incremental indexing
+      The inverse of `#decode`: every field is written as a literal with incremental indexing,
+      its name and value each Huffman-coded where that is shorter and raw otherwise, and added to
+      the dynamic table so that the decoder's table stays in step. Fields are written in the
+      order given, so pseudo-headers must come first. An update method: the codec must be held
+      exclusively.
+
+entry .Huffman   the HPACK Huffman code: compresses and decompresses the strings of a header block
+  detail
+      The canonical code of RFC 7541 Appendix B, over the 256 byte values and an end-of-string
+      symbol. `Hpack` uses it for every name and value where it is shorter than the raw bytes;
+      a program needs it directly only to speak HPACK by hand.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import codepages.asciiCodepage
+
+      val coded: Data = Huffman.encode(t"www.example.com".in[Data])   // 12 bytes, from 15
+      Huffman.decode(coded).utf8                                        // t"www.example.com"
+      ```
+  refer telekinesis.Hpack
+  entry .encode   Huffman-codes bytes, padding the final byte with one-bits
+      Most-significant bit first, with the last partial byte padded with the leading bits of the
+      end-of-string symbol, as the RFC requires. Never fails.
+  entry .decode   decodes a Huffman-coded string back to its bytes
+      Walks the bits against the code table, accepting and discarding the trailing padding.
+      Needs a `Tactic[Http2.Error]`, raised with reason `BadHuffman` for a run of more than 30
+      bits matching no symbol, or for padding which is eight bits or more or not all ones. The
+      decoder is a linear scan of the table per bit, so it is correct rather than fast.
+
+entry .FrameReader   reassembles whole HTTP/2 frames from a byte stream which arrives in arbitrary chunks
+  detail
+      A socket delivers bytes in whatever chunks the network makes, and a frame may span several
+      or share one. `FrameReader(source)` takes ownership of a `Stream[Data] over Credit` — a
+      `Duplex`'s `source` — buffers what it has read, and refills until a frame's nine-byte
+      header and its declared payload are both present, so `#next` returns one decoded `Frame`
+      at a time and `Unset` at a clean end of stream. It is the connection's single reader: an
+      exclusive, stateful capability which consumes the endpoint it is given, like a parser.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+
+      def frames(duplex: Duplex): List[Http2.Frame] =
+        val reader: FrameReader^ = FrameReader(duplex.source)
+        var frames: List[Http2.Frame] = Nil
+        var continue = true
+
+        while continue do reader.next() match
+          case frame: Http2.Frame => frames = frame :: frames
+          case _                  => continue = false
+
+        frames.reverse
+      ```
+
+      A server reads the client's 24-byte connection preface with `#expectPreface` before its
+      first `#next`. A `Buffering` must be in scope, which sizes the reads.
+  refer telekinesis.Http2.Frame
+  refer telekinesis.Http2.ServerConnection
+  entry .apply   a reader over a pull endpoint, which it consumes: `FrameReader(duplex.source)`
+      Takes the endpoint by `consume`, so the caller gives up its own use of it: the reader is
+      now its only reader. Needs a `Buffering` in scope. The result is `FrameReader^`, a fresh
+      exclusive capability.
+  entry #expectPreface   consumes and checks a connection preface ahead of the first frame
+      `reader.expectPreface(preface)` reads exactly `preface.length` bytes and compares them: a
+      mismatch, or the stream ending within them, raises `Http2.Error` with the `Protocol`
+      reason _bad connection preface_. The server role's first read on a new connection, with
+      the client preface `PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n`. An update method.
+  entry #next   the next whole frame, or `Unset` at a clean end of stream
+      Blocks, refilling the endpoint, until a frame header and its declared payload are
+      buffered, then decodes them with `Http2.Frame.decode`. A stream ending after a header but
+      before its payload is complete raises `Http2.Error` with reason `Truncated`; a stream
+      ending between frames is `Unset`. Needs a `Tactic[Http2.Error]`. An update method.
+
+entry .PseudoHeaders   translates between `Http.Request`/`Http.Response` and HTTP/2 header blocks, in both directions
+  detail
+      HTTP/2 carries the request line and status line as pseudo-headers — `:method`, `:scheme`,
+      `:authority` and `:path` on a request, `:status` on a response — ahead of the regular
+      fields, which are lowercase. `PseudoHeaders` is the bridge between that and telekinesis's
+      transport-agnostic `Http.Request` and `Http.Response`: `.request` and `.response` are the
+      client's two directions, and `.requestOf` and `.entries` are the server's, each the
+      inverse of the other.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val request =
+        Http.Request(Http.Get, 2.0, t"example.com".as[Host], t"/index.html", Nil, () => Http.emptyBody())
+
+      PseudoHeaders.request(request, t"https", t"example.com").map(_.name)
+      // List(t":method", t":scheme", t":authority", t":path")
+      ```
+  refer telekinesis.Hpack.Entry
+  refer telekinesis.Http2.Connection
+  refer telekinesis.Http2.ServerConnection
+  entry .request   the header block of a request: its four pseudo-headers, then its headers lowercased
+      `PseudoHeaders.request(request, scheme, authority)`. An `Http.Request` carries neither its
+      scheme nor the authority it is sent to, so both are given: `:method` from the request's
+      method, `:scheme` as given, `:authority` as given (a browser omits a default port, as
+      `localhost` rather than `localhost:443`), `:path` from the request's target, then each
+      header with its name lowercased. `Http2.Connection#fetch` calls it.
+  entry .response   an `Http.Response` from a decoded response block and a body stream
+      `PseudoHeaders.response(headerBlock, body)`: `:status` selects the `Http.Status`, other
+      pseudo-headers are dropped, and the remaining fields become the response's headers; the
+      body is a flowing `Http.Body` over the given chain of byte blocks. Raises `Http2.Error`
+      with a `Protocol` reason, _missing :status_, when the block has no `:status` or one which
+      is not a known status code.
+  entry .requestOf   an `Http.Request` from a decoded request block and a body spring
+      `PseudoHeaders.requestOf(headerBlock, body)`: `:method` and `:path` become the method and
+      target, `:authority` becomes the host (any port stripped, as for an HTTP/1.1 `Host`
+      header), other pseudo-headers are dropped, and the remaining fields become the request's
+      headers; the version is 2.0. The body is a `Spring[Data]` the request takes ownership of,
+      typically one over the stream's inbound `DATA` frames. Needs a `Tactic[Http2.Error]`,
+      raised with a `Protocol` reason for a block missing `:authority`, `:path` or `:method`, or
+      whose `:authority` is not a host. The server role's inverse of `.request`.
+  entry .entries   the header block of a response: `:status` first, then its headers lowercased, minus connection-specific ones
+      `PseudoHeaders.entries(response)`: `:status` as the status code's digits, then each header
+      lowercased, with `connection`, `keep-alive`, `transfer-encoding`, `upgrade` and
+      `proxy-connection` removed, as HTTP/2 forbids them. The server role's inverse of
+      `.response`; the block `ServerConnection#sendHeaders` sends.
+
+entry .FlowWindow   one HTTP/2 flow-control send window: a byte budget the peer grants, acquired in chunks and refilled by `WINDOW_UPDATE`
+  detail
+      The send-side credit of a connection or a stream (RFC 7540 §6.9), as a counter a sending
+      fiber draws from and an inbound `WINDOW_UPDATE` tops up. `#acquire` blocks until at least
+      one byte is available and takes up to the amount asked, so a large body drains as the
+      window opens; `#release` adds credit and wakes every waiter. The waiting is on a lock
+      condition rather than a monitor, so a blocked virtual thread releases its carrier.
+      `Http2.Connection` and `Http2.ServerConnection` keep one per connection and one per
+      stream; a program needs the class only to model flow control itself.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import threads.virtualThreads
+      import probates.cancelProbate
+
+      supervise:
+        val window = FlowWindow(10)
+        val first = window.acquire(4)     // 4
+        val second = window.acquire(100)  // 6: all that remains
+        val third: Promise[Int] = Promise()
+        async(third.offer(window.acquire(5)))   // parks: the window is empty
+        window.release(3)
+        third.await()                     // 3
+      ```
+
+      The class is declared in the `telekinesis` package but is not exported to the `soundness`
+      umbrella, so it is reached as `telekinesis.FlowWindow`.
+  refer telekinesis.Http2.Connection
+  entry #acquire   takes up to `n` bytes of credit, blocking while the window is empty
+      Returns at most `n`, and at least one byte when `n` is positive: whatever the window holds
+      up to `n`, so a caller sending a body loops until it has sent everything. Blocks the calling fiber while the
+      window is at or below zero, until `#release` wakes it.
+  entry #release   adds credit to the window and wakes every fiber waiting on it
+      The effect of an inbound `WINDOW_UPDATE`. All waiters are woken, each then taking what it
+      can, so two senders parked on an empty window both proceed after one release.
+
+entry .UrlSessional   the `Sessional` instance which opens one connection to an HTTP or HTTPS URL's origin and lends it to a scope
+  detail
+      The class behind the `httpUrlSessional` given, named rather than anonymous so that its
+      `Result` type — an `Http.Session` which captures the connection — is stated exactly.
+      `url.session: session ?=> …` connects to the URL's host and port once, lends the
+      connection to the block as an `Http.Session` on which `session.fetch(request)` makes an
+      exchange, and closes it when the block ends. The scheme decides the session's form, and
+      the form is fixed for its lifetime:
+
+      - `http` is a sequential HTTP/1.1 session over one kept-alive connection: one exchange
+        at a time, each response's body ending exactly where the next response begins. Leaving
+        a response unconsumed does not derail it — the next fetch drains what remains of the
+        previous body to reach the boundary — but a `101 Switching Protocols` response is
+        refused, since its body would be the upgraded protocol's unending stream.
+      - `https` connects with TLS offering `h2` then `http/1.1` by ALPN. If the server
+        selects `h2`, the session is multiplexed over an `Http2.Connection` behind the same
+        sequential contract, each fetch's body drained within the fetch so the response is a
+        plain value; otherwise it is the sequential form. HTTP/2 and asynchronous failures are
+        reported as `Connect.Error`.
+
+      The block's result is quantified outside it, so a value still borrowing the connection —
+      a response body streaming from it — cannot escape; a memoized one can. The instance needs
+      an `Online`, a `Socket.Backend`, the TCP `Socket.Option`s, a `Buffering`, a `Tls` and a
+      `Tactic[Connect.Error]`, raised with reason `Unknown` for a scheme other than `http` or
+      `https`, `Dns` for a URL with no host, and the socket's reason — `Dns`, `Refused`,
+      `Timeout`, `Ssl(Handshake)` — when the connection cannot be made.
+  refer telekinesis.httpUrlSessional
+  refer telekinesis.Http2.Connection
+  entry #Self   the URL type, a subtype of `HttpUrl`
+  entry #Result   `Http.Session^`: the session the block receives
+  entry #session   connects to the URL's origin, lends the session to the block, and closes the connection after
+
+entry .httpUrlSessional   the given which makes `url.session: session ?=> …` work on an HTTP or HTTPS URL
+    A `UrlSessional` for any `url <: HttpUrl`, bounded so that a `url"https://…"` literal, whose
+    type is a scheme-refined subtype, resolves it. It is a top-level given, so it is imported by
+    name — `import soundness.httpUrlSessional` — and it needs an `Online`, a `Socket.Backend`
+    (such as `socketBackends.javaBaseSockets`), the TCP `Socket.Option`s, a `Buffering`, a `Tls`
+    and a `Tactic[Connect.Error]` in scope.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import soundness.httpUrlSessional
+    import socketBackends.javaBaseSockets
+    import internetAccess.online
+    import strategies.throwUnsafely
+    import logging.silentLogging
+
+    val request =
+      Http.Request(Http.Get, 1.1, t"example.com".as[Host], t"/", Nil, () => Http.emptyBody())
+
+    url"https://example.com".session: session ?=>
+      session.fetch(request).status
+      session.fetch(request).status
+    ```
+
+    Over `https`, the session speaks HTTP/2 if the server's ALPN selects it and HTTP/1.1
+    otherwise; over `http` it is always HTTP/1.1 with keep-alive. `UrlSessional` describes the
+    two forms and the errors.

@@ -1,0 +1,516 @@
+tel 1.0
+
+base fulminate
+import soundness
+
+info   errors as values with structured messages: `Error`, `Message` and `m"…"`, `Panic`, `Diagnostics`
+detail
+    _Fulminate_ is the vocabulary of failure every Soundness library shares. An **error** is a
+    value — a case class extending `Error` — carrying the typed fields which explain what went
+    wrong and a **message** built from them; a `Message` is not a string but a structured
+    value, written with the `m"…"` interpolator, which keeps each interpolated part distinct
+    from the words around it so that the same message renders as plain text, styled terminal
+    text, Markdown or HTML. Anything with a `Communicable` instance can be interpolated, which
+    is how a type decides, once, how it reads in prose.
+
+    ```scala
+    import soundness.*
+    import errorDiagnostics.stackTracesDiagnostics
+
+    case class PortError(port: Int)(using Diagnostics)
+    extends Error(m"the port $port is not available")
+
+    PortError(80).message.text   // t"the port 80 is not available"
+    ```
+
+    An error type has a number — `Error(405, 0)` is `SN-405` — which is stable across releases,
+    never reused, and documented at `doc/errors/405.md`; its distinct causes are the cases of
+    a `Reason` enum extending `Clarification`, each numbered within the error (`SN-405.1`), and
+    each rendered through its own `Communicable`. A full error, grown step by step:
+
+    ```scala fuel
+    frame
+      label An error with a message
+      code
+          import errorDiagnostics.stackTracesDiagnostics
+
+          case class PortError(port: Int)(using Diagnostics)
+          extends Error(m"the port $port is not available")
+
+          PortError(80).getMessage   // the top-level package, then ": the port 80 is not available"
+    frame
+      label With a number, for the catalogue
+      code
+          import errorDiagnostics.stackTracesDiagnostics
+
+          case class PortError(port: Int)(using Diagnostics)
+          extends Error(917, 0)(m"the port $port is not available")
+
+          PortError(80).errorCode    // t"SN-917"
+          PortError(80).getMessage   // "[↯SN-917] the port 80 is not available"
+    frame
+      label With a reason, numbered within it
+      code
+          import errorDiagnostics.stackTracesDiagnostics
+
+          object PortError:
+            enum Reason(val number: Int) extends Clarification:
+              case Taken      extends Reason(1)
+              case Privileged extends Reason(2)
+
+            object Reason:
+              given communicable: Reason is Communicable =
+                case Taken      => m"it is already in use"
+                case Privileged => m"it is below 1024 and needs privilege"
+
+          case class PortError(port: Int, reason: PortError.Reason)(using Diagnostics)
+          extends Error(917, reason.number)(m"the port $port is not available because $reason")
+
+          PortError(80, PortError.Reason.Privileged).errorCode   // t"SN-917.2"
+          PortError(80, PortError.Reason.Privileged).message.text
+          // t"the port 80 is not available because it is below 1024 and needs privilege"
+    ##
+    ```
+
+    Every error is a `Hazard` — an `Exception` which is `caps.Pure` — so it can never carry a
+    live capability out of the scope which confined it: an error holds the path which could
+    not be opened, not the open handle. Whether an error captures a stack trace is a
+    contextual choice, the `Diagnostics` given: `errorDiagnostics.stackTracesDiagnostics`
+    records one, and `errorDiagnostics.emptyDiagnostics` omits it, which is why every error's
+    constructor takes `(using Diagnostics)`, and why an error which is expected and handled
+    costs no more to build than any other value. A `Panic` is the one failure not meant to be
+    handled: a `java.lang.Error` which says why a situation was believed impossible.
+
+    For macros, `halt` and `warn` report a `Message` as a compile-time diagnostic, with the
+    same `SN-` prefix, and a foreign `Throwable` is wrapped as an `UncheckedError` to make it
+    a `Hazard`. How to *raise* and *handle* an error — `raises`, `Tactic`, `safely`,
+    `recover`… — is `contingency`, which builds on this library.
+
+    The library is two source sets. `fulminate.core` holds everything above and compiles for
+    the JVM, Scala.js and Scala Native; `fulminate.print` adds `printables.messagePrintable`,
+    the `Printable` instance which lets a `Message` be printed, kept separate so that the
+    error vocabulary does not depend on printing. Everything is exported to the `soundness`
+    umbrella, and the `errorDiagnostics` and `printables` choice packages merge with the
+    umbrella's own, so their givens are imported by name (`import
+    errorDiagnostics.stackTracesDiagnostics`): a wildcard import never imports givens.
+
+refer fulminate.Error
+refer fulminate.Message
+refer fulminate.m
+refer fulminate.Communicable
+refer fulminate.Diagnostics
+refer fulminate.errorDiagnostics
+refer contingency.Tactic
+
+entry .Error   the base of every Soundness error: a number, a structured message and optional diagnostics
+  detail
+      An error is a case class extending `Error`, carrying as fields the values which explain
+      it, with its message written with `m"…"` from those same fields, so that the message
+      can never describe a state the value is not in. The primary constructor is
+      `Error(d, e)(message, cause)(using Diagnostics)`, with two shorter forms: `Error(d,
+      e)(message)` and `Error(message, cause = null)`, the last for an error with no number.
+
+      ```scala
+      import soundness.*
+      import errorDiagnostics.stackTracesDiagnostics
+
+      case class PortError(port: Int)(using Diagnostics)
+      extends Error(m"the port $port is not available")
+
+      val error = PortError(80)
+      error.message.text      // t"the port 80 is not available"
+      error.component         // the package the error class is in
+      error.getStackTrace.nn.length > 0   // true, under stackTracesDiagnostics
+      ```
+
+      `d` is the error's number, a three-digit code unique across every Soundness library:
+      it is allocated when the error type is written, never reused (a retired number's page
+      stays, saying what became of it), and documented at `doc/errors/<d>.md` with its cause
+      and the usual remedies, so that `SN-405` in a user's report can be looked up rather
+      than guessed at. `e` is the number of the error's reason — the `number` of its `Reason`
+      case, an enum extending `Clarification` — or 0 when the error has no reasons. An error
+      written `Error(message)` has `d = 0`: no code, and `getMessage` prefixes its component
+      instead. The code renders in the `[↯SN-ddd.e]` prefix of `#labelled`, of `getMessage`
+      and of a compile-time `halt`.
+
+      An `Error` is `caps.Pure`: it may never hold a live capability, because `throw` is the
+      one channel capture checking cannot see, and an exception caught outside a scope
+      arrives with its captures erased. The `Diagnostics` given decides whether the
+      constructor captures a stack trace (`Exception`'s `writableStackTrace` is set from it),
+      which is the one piece of ceremony defining an error imposes. The message text is also
+      the exception's `getMessage`, so an error which does escape as a thrown exception still
+      reads properly.
+
+      The house style for the message is `doc/standards/messages.md`: lowercase, no trailing
+      period, present tense, the specific resource at fault interpolated as a typed value,
+      and never *invalid* or *bad* as the whole predicate. Errors are meant to be matched on:
+      a handler deconstructs the case class and its `Reason`, never its text.
+  refer fulminate.Message
+  refer fulminate.Clarification
+  refer fulminate.Diagnostics
+  refer fulminate.Hazard
+  refer fulminate.UncheckedError
+  entry .apply   any `Throwable` as an `Error`: itself if it is one, else wrapped as `UncheckedError`
+      `Error(throwable)` passes an `Error` through unchanged and wraps any other `Throwable`
+      in an `UncheckedError`, which keeps its message and stack trace. This is how a JDK
+      exception becomes a `Hazard` which can be raised.
+  entry #d   the error's number: the `ddd` of `SN-ddd`, or 0 for an unnumbered error
+  entry #e   the reason's number within the error: the `e` of `SN-ddd.e`, or 0
+  entry #message   the error's message, as a structured `Message`
+  entry #diagnostics   the `Diagnostics` the error was built with
+      Available so that a translated error can be built with the original's choice:
+      `InputError(text)(using error.diagnostics)`.
+  entry #fullClass   the error class's fully-qualified name, as its segments
+  entry #className   the error class's simple name
+  entry #component   the first segment of the class's name: the library which defines it
+      The first segment of the class's fully-qualified name, which is the top-level package
+      for a Soundness error. It is the prefix of `getMessage` for an error with no number, so
+      a message such as `galilei: the path is not a directory` says where the error came from.
+  entry #errorCode   the code as text, `SN-ddd` or `SN-ddd.e`; empty for an unnumbered error
+  entry #colourCode   the code as `[↯SN-ddd.e]`, with ANSI colours; empty for an unnumbered error
+  entry #labelled   the message with its code prefixed: `[↯SN-ddd.e] message`
+      The message alone when the error has no number. This is what `HaltTactic` reports when
+      an error becomes a compile error.
+
+entry .Hazard   the domain of raisable values: any pure `Exception`
+    `type Hazard = Exception & caps.Pure`. `Error` is pure by inheritance, so every Soundness
+    error is a `Hazard`; a JDK exception must be wrapped (by `Error(throwable)`, as an
+    `UncheckedError`) to be raised, since purity cannot be established for an arbitrary
+    `Throwable` subclass. Every `Tactic[error]`, `raises error` and `Attempt[_, error]` bounds
+    its error by `Hazard`.
+
+entry .Message   a structured message: fixed text with typed, distinguishable parts embedded
+  detail
+      A `Message` is `texts` — the literal pieces — interleaved with `messages`, the embedded
+      parts, one fewer than the texts, so that the boundary between the fixed and the
+      variable parts of a message survives to the point of rendering. `m"…"` builds one;
+      `#text` flattens it to plain text; `#colorText` renders the embedded parts in italics on
+      a terminal; a renderer for Markdown, HTML or styled text walks `#segments` or `#fold`.
+
+      ```scala
+      import soundness.*
+
+      val name = t"world"
+      val message = m"hello $name"
+
+      message.texts      // List(t"hello ", t"")
+      message.messages   // List(Message(t"world"))
+      message.text       // t"hello world"
+      (message + m"!").text   // t"hello world!"
+      ```
+
+      A message's parts may be nested to any depth: an embedded `Message` keeps its own
+      structure, and `m"…"` also embeds the text between backticks as a part, so `m"the
+      field `name` is absent"` renders `name` as a distinguishable part. `Message` is
+      `Communicable` (as itself), so a message interpolates into another, and a `List[Message]`
+      interpolates as bullets. Printing a `Message` needs `printables.messagePrintable`, from
+      `fulminate.print`.
+  refer fulminate.m
+  refer fulminate.Communicable
+  refer fulminate.printables
+  entry .apply   a message of one literal text
+      `Message(text)` is a message with no embedded parts. The overload `Message[tuple]
+      (messages, done)` is the inline helper the `m"…"` macro uses to convert a tuple of
+      substitutions through their `Communicable` instances; it is not for direct use.
+  entry .communicable   a `Message` interpolates into another as itself
+      In `Message`'s own companion so that it is in implicit scope for `Message is
+      Transcribable to Message`, which is how a logger can log a bare message.
+  entry #texts   the literal pieces, one more than the embedded parts; empty text where parts abut
+  entry #messages   the embedded parts, in order
+  entry #+   `left + right`: concatenation, with the texts at the join merged into one piece
+  entry #segments   the message as one flat list of its texts and parts, interleaved
+  entry #fold   renders the message depth-first, the function receiving each text with its nesting level
+      `message.fold(initial)((accumulator, text, level) => …)`: every literal piece of the
+      message and of its parts, in reading order, with the depth it is embedded at (0 for the
+      top level). `#text` and `#colorText` are folds.
+  entry #text   the message flattened to plain text, with multi-line literals unwrapped
+      Lines of a triple-quoted `m"""…"""` are trimmed and joined with single spaces, and a
+      blank line becomes a newline, so a message may be laid out across lines in source
+      without the layout reaching the reader.
+  entry #colorText   the message as terminal text, embedded parts in italics and deeper parts in bold italics
+      ANSI styling only — no colour, despite the name — with depth 1 in italics and depth 2 or
+      more in bold italics. A macro's `halt` uses it when the compiler's colour setting is on.
+  entry #unwrap   collapses a multi-line string: lines trimmed and joined with spaces, blank lines as newlines
+      The normalisation `#text` applies; public so that a renderer can apply the same rule
+      to a literal.
+
+entry .m   the `m"…"` interpolator: a `Message` from literal text and `Communicable` substitutions
+    `m"the port $port is not available"` builds a `Message` whose literal pieces are the
+    text between substitutions and whose parts are the substitutions, each converted through
+    its `Communicable` instance — so only a value which knows how to read in prose can be
+    interpolated, and a value with no instance is a compile error. A `Message` interpolates
+    as itself, `Text` as itself (quoted with `“ ”` if empty or padded), the primitives as
+    their decimal or character text, any `Textualizable` through its text, and a
+    `List[Message]` as bullets.
+
+    ```scala
+    import soundness.*
+
+    val port = 80
+    val reason = m"it needs privilege"
+
+    m"the port $port is not available: $reason".text
+    // t"the port 80 is not available: it needs privilege"
+
+    m"the field `name` is absent".messages   // List(Message(t"name"))
+    ```
+
+    Text between a pair of backticks becomes an embedded part — a message of its own,
+    which may itself contain substitutions — so an identifier or a literal fragment in the
+    prose is distinguishable from the words around it, and renders in italics on a
+    terminal or as code in Markdown. An unmatched backtick is a compile error, _the m""
+    interpolator has an unmatched backtick_. The escapes `\n`, `\r`, `\t`, `\f`, `\b`,
+    `\e`, `\\`, `\"`, `\'` and `\uXXXX` are decoded at compile time, and any other escape is
+    a compile error. A triple-quoted `m"""…"""` may span lines; `Message#text` unwraps them.
+
+    The house style for what a message says is `doc/standards/messages.md`.
+
+entry .Communicable   the typeclass of values which can read in prose: a value to a `Message`
+  detail
+      `value is Communicable` converts a value to a `Message`, and is what `m"…"` asks of
+      each substitution. A type which appears in messages gives an instance in its companion,
+      usually derived from its text rendering, so that every message about such values agrees
+      on how one reads; a `Reason` enum gives one which phrases each case. The instances in
+      the companion cover `Text` (quoted with `“ ”` when empty or padded, so an absent or
+      whitespace value is visible), `String`, `Char`, `Int`, `Long`, `Message`, any
+      `Textualizable`, a `List[Message]` (as bullets, one per line), a `Specializable` (`Int`
+      as `int`, for messages naming a primitive type), and — inside a macro, with `Quotes` in
+      scope — a `Term` or an `Expr`.
+
+      ```scala
+      import soundness.*
+
+      enum Weekday:
+        case Monday, Tuesday
+
+      object Weekday:
+        given communicable: Weekday is Communicable =
+          case Monday  => m"the first day of the week"
+          case Tuesday => m"the second day of the week"
+
+      m"today is ${Weekday.Monday}".text   // t"today is the first day of the week"
+      ```
+
+      A `Communicable` is a `Transcribable to Message`: converting a value to a message is
+      exactly how a loggable event is transcribed onto a log's carrier, which is what lets a
+      logger log any `Communicable` event with no further bridge. `value.communicate` is the
+      conversion as an extension method.
+  refer fulminate.m
+  refer fulminate.Message
+  refer fulminate.communicate
+  entry .text   `Text` as itself, quoted with `“ ”` if it is empty or begins or ends with a space
+  entry .string   `String` as its text
+  entry .char   a `Char` as the character
+  entry .int   an `Int` in decimal
+  entry .long   a `Long` in decimal
+  entry .textualizable   any `Textualizable` value, as its text
+  entry .term   a `quotes.reflect.Term`, as the compiler shows it; for macros, with `Quotes` in scope
+  entry .expr   an `Expr[T]`, as the compiler shows it; for macros, with `Quotes` in scope
+  entry .specializable   a primitive's companion (`Int`, `Boolean`…) as its lowercase name
+      For a message naming a primitive type, as `Number.Error`'s _is not a valid int_ does.
+  entry .listMessage   a `List[Message]` as bullets, one message per line
+      Each message on its own line prefixed with ` - `, so an error which aggregates others
+      says how many and lists them beneath. Do not join messages with commas by hand.
+  entry #Result   `Message`
+  entry #message   the message for a value
+  entry #record   the message for a value: the `Transcribable` name for the same conversion
+  entry #contramap   a `Communicable` for another type, by mapping it to this one
+      `Communicable.text.contramap(_.tt)` is how the `String` instance is made.
+
+entry .communicate   `value.communicate`: the value as a `Message`, through its `Communicable`
+
+entry .Clarification   the trait a `Reason` enum extends: a number for each distinct cause of an error
+    `trait Clarification { def number: Int }`. An error's distinct causes are the cases of a
+    `Reason` enum extending `Clarification`, each with a number unique within the error, so
+    that `Error(405, reason.number)` renders as `SN-405.1`, `SN-405.2`… and each has a
+    sub-section of the error's page in `doc/errors`. A `Reason` carries data of its own where
+    the diagnosis needs it (`Ipv4ByteOutOfRange(byte: Int)`), and gives its own
+    `Communicable` instance phrasing each case, which the error's message interpolates. A
+    `halt` or `warn` given a `Clarification` puts its number in the diagnostic's prefix.
+
+    ```scala
+    import soundness.*
+
+    object Port:
+      enum Reason(val number: Int) extends Clarification:
+        case Taken      extends Reason(1)
+        case Privileged extends Reason(2)
+
+    Port.Reason.Privileged.number   // 2
+    ```
+
+entry .Diagnostics   whether an error captures a stack trace: `Diagnostics.capture` or `Diagnostics.omit`
+  detail
+      An opaque type (exported from `fulminate.internal`) with two values. Every error's
+      constructor takes one as a contextual parameter and passes `captureStack` to
+      `Exception`'s `writableStackTrace`, so an error built under `omit` has no stack trace
+      and costs no more than any other value, which is what makes typed errors affordable in
+      hot paths where they are expected and handled. The tactics which discard their errors
+      (`safely`, `recover`) supply `omit` themselves; those which keep them take the
+      `Diagnostics` in scope; a throwing tactic uses `capture`.
+
+      ```scala
+      import soundness.*
+
+      case class PortError(port: Int)(using Diagnostics)
+      extends Error(m"the port $port is not available")
+
+      locally:
+        given Diagnostics = Diagnostics.omit
+        PortError(80).getStackTrace.nn.length   // 0
+
+      locally:
+        given Diagnostics = Diagnostics.capture
+        PortError(80).getStackTrace.nn.length > 0   // true
+      ```
+
+      The usual way to choose is importing one of the `errorDiagnostics` givens by name.
+  refer fulminate.errorDiagnostics
+  refer fulminate.Error
+
+entry .errorDiagnostics   the two `Diagnostics` choices, as givens to import by name
+  detail
+      `import soundness.*` brings neither in, since a wildcard import never imports givens;
+      one is imported by name wherever errors are constructed outside a tactic's thunk — a
+      test, a `mitigate` case, a direct `PortError(80)`. Inside `abort(…)` and `raise(…)` the
+      tactic supplies its own, so a `raises` method needs no import.
+
+      ```scala
+      import soundness.*
+      import errorDiagnostics.stackTracesDiagnostics
+      ```
+  refer fulminate.Diagnostics
+  entry .emptyDiagnostics   `Diagnostics.omit`: no stack traces; cheaper where an error is expected and handled
+  entry .stackTracesDiagnostics   `Diagnostics.capture`: stack traces, for debugging
+
+entry .Panic   an error not meant to be caught: a programmer's understanding was wrong
+  detail
+      A `java.lang.Error` (not an `Exception`, and so not a `Hazard`) carrying a `Message`
+      which says why the situation was believed impossible. Reaching one is not a failure to
+      handle: it appears in no `raises` clause, and no tactic catches it. `panic(message)`
+      throws one; `Panic(exception)` wraps an exception which was unexpectedly thrown, with a
+      message naming its class and text.
+
+      ```scala
+      import soundness.*
+
+      def denominator(n: Int): Int =
+        if n == 0 then panic(m"a zero denominator was checked for earlier") else n
+      ```
+  refer fulminate.panic
+  entry .apply   a panic for an exception which was unexpectedly thrown
+      `Panic(exception)` has the message _an `ClassName` exception was unexpectedly thrown;
+      the error was: `text`_, with `[null]` for an exception without a message.
+  entry #message   why the situation was believed impossible
+
+entry .panic   throws a `Panic` with a message: the situation was believed impossible
+    `panic(m"…")` has type `Nothing`, so it stands anywhere a value is needed — the
+    unreachable branch of a match, the `else` of a check which an earlier step guaranteed.
+    It is not an error to handle, and is not declared in a signature.
+
+entry .halt   reports a compile error from a macro and aborts the expansion
+    For macro implementations, with `Quotes` in scope. `halt(message)` reports the
+    `Message`'s text (coloured, through `Message#colorText`, when the compiler's `-color`
+    setting is on) with `report.errorAndAbort`; `halt(message, position)` attaches a
+    position. The numbered overloads prefix the diagnostic with the error's code as
+    `[↯SN-ddd] ` — `halt(d, message)`, `halt(d, message, position)` — or with its reason's
+    number as `[↯SN-ddd.e] `: `halt(d, reason, message)` and `halt(d, reason, message,
+    position)`, where `reason` is a `Clarification`. The position parameter of the numbered
+    forms is `Matchable`, and a value which is not a `quotes.reflect.Position` (or `null`)
+    reports without one. Every macro-raised code has a page in `doc/errors`, like a runtime
+    error's.
+
+    ```scala
+    import soundness.*
+    import scala.quoted.*
+
+    def check(expr: Expr[Int])(using Quotes): Expr[Int] = expr.value match
+      case Some(n) if n > 0 => expr
+      case _                => halt(m"the argument $expr must be a positive literal")
+    ```
+
+    `HaltTactic`, from `contingency`, turns a raised `Error` into a `halt` of its `labelled`
+    message, so a parser which raises at run time reports the same error at compile time.
+
+entry .warn   reports a compile warning from a macro
+    For macro implementations, with `Quotes` in scope. The same overloads as `halt` —
+    `warn(message)`, `warn(message, position)`, `warn(d, message)`, `warn(d, message,
+    position)`, `warn(d, reason, message)` and `warn(d, reason, message, position)` — with
+    `report.warning` in place of `report.errorAndAbort`, so the expansion continues.
+
+entry .UncheckedError   a foreign `Throwable` wrapped as an `Error`, so that it can be raised
+  detail
+      Error 117: _unchecked error with message, `text`_, or _unchecked error with no
+      message_. `UncheckedError(throwable)` keeps the original's message as `#text` and
+      adopts its stack trace, and is built with `emptyDiagnostics`, since the trace it carries
+      is the original's. `Error(throwable)` is the usual way to make one: it passes a real
+      `Error` through and wraps anything else. The original itself is not kept — `getCause`
+      is `null` — only its message and stack trace, so a handler which meets one should
+      surface it as a typed error, or fix the source of the throw, rather than match on the
+      original's class.
+  refer fulminate.Error
+  entry .describe   the message for an original message text; _with no message_ when it is empty
+  entry .apply   wraps a `Throwable`, keeping its message and stack trace
+  entry #text   the original's message, or empty text
+  entry #stackTrace   the original's stack trace, as the JVM array
+
+entry .TextEscapes   decodes the standard escape sequences in text: `\n`, `\t`, `\uXXXX`…
+  detail
+      The escape rules `m"…"` and the other interpolators share, as runtime functions for a
+      parser which meets escapes in its input. `escape(text)` decodes every escape in a text;
+      `standardEscape` is one step of that loop. The recognised escapes are `\\`, `\n`, `\r`,
+      `\f`, `\b`, `\t`, `\e`, `\"`, `\'` and `\uXXXX`. These functions throw
+      `TextEscapes.Error` as a checked exception (`throws`, not `raises`), so a caller needs a
+      `CanThrow[TextEscapes.Error]` or `unsafeExceptions.canThrowAny` in scope.
+
+      ```scala
+      import soundness.*
+      import unsafeExceptions.canThrowAny
+
+      TextEscapes.escape(t"a\\tb")   // t"a\tb", with a real tab
+      ```
+  entry .standardEscape   decodes one character at a position: the character (or -1), the next position, and whether an escape is open
+      `standardEscape(text, cursor, escaping)` reads the character at `cursor` in the state
+      `escaping` says, and returns the decoded character (`-1` when the character opened an
+      escape and produced nothing), the position to continue from, and the new state.
+  entry .escape   decodes every escape in a text
+      Throws `TextEscapes.Error` for an unrecognised escape, an incomplete `\u` sequence, or
+      a text ending in a lone backslash.
+  entry .Error   raised when an escape sequence is not valid
+    detail
+        Error 421: _the character `c` should not be escaped_, _the unicode escape is
+        incomplete_ or _the final character cannot be an escape_. Thrown by `escape` and
+        `standardEscape`.
+    entry #initMessage   the message describing the invalid escape
+
+entry .printables   the `Printable` instance for `Message`, as a given to import by name
+  detail
+      In `fulminate.print`, a separate source set, so that the error vocabulary every module
+      depends on does not also depend on printing. The given is not in `Message`'s implicit
+      scope from there, so it must be imported; `Printable` has no generic fallback, so a
+      call site which forgets fails to compile rather than printing something degraded.
+
+      ```scala
+      import soundness.*
+      import printables.messagePrintable
+
+      val message: Message = m"the port `80` is not available"
+      message.print   // t"the port 80 is not available"
+      ```
+  entry .messagePrintable   prints a `Message` as its plain `text`, whatever the terminal
+
+entry .internal   the home of `Diagnostics` and of the `m"…"` macro
+  hidden
+  detail
+      Not for direct use. `Diagnostics` is declared here, as an opaque type over `Boolean`,
+      and exported to the `fulminate` package; the macro behind `m"…"` and its helper live
+      alongside it.
+  entry .Diagnostics   the opaque type `Diagnostics`; see `fulminate.Diagnostics`
+    detail
+        Declared here and exported; its page under the `fulminate` package has the account.
+    entry .capture   errors record their stack trace
+    entry .omit   errors record no stack trace
+  entry .captureStack   an extension on `Diagnostics`: whether a stack trace is to be captured
+      The `Boolean` passed to `Exception`'s `writableStackTrace` by `Error`'s constructor.
+  entry .mSubMessages   converts a substitution, or a tuple of them, to messages through `Communicable`
+  entry .mMacro   the macro behind `m"…"`: decodes escapes, splits on backticks, and splices a `Message`

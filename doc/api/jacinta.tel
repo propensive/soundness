@@ -1,0 +1,2462 @@
+tel 1.0
+
+base jacinta
+import soundness
+
+info   JSON as a typed, immutable value: parsed, built, navigated, converted to Scala types and back, and streamed out
+detail
+    _Jacinta_ reads and writes [JSON](https://www.json.org/). Its central type is `Json`, an
+    immutable document (or any value within one) which is parsed from text or bytes with
+    `read[Json]`, built with `Json.make` or the `j"…"` interpolator, navigated by key and index,
+    and converted to a Scala type with `as[T]` or from one with `in[Json]`. The conversions are
+    typeclasses — `Json.Encodable` and `Json.Decodable` — which the compiler derives for case
+    classes, enumerations and sealed hierarchies from their shape, so a record converts to an
+    object and back with nothing written by hand, and a mismatch between the data and the type
+    raises a `Json.Error` naming the reason and, where it can, the field.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+    import formatting.compactJsonFormatting
+
+    case class Person(name: Text, age: Int)
+
+    val document: Json = t"""{"name": "Alice", "age": 30}""".read[Json]
+    document(t"name").as[Text]                  // t"Alice"
+    document.as[Person]                         // Person(t"Alice", 30)
+    Person(t"Bob", 40).in[Json].show            // t"""{"name":"Bob","age":40}"""
+    t"""{"name": "Carol", "age": 25}""".read[Person in Json]
+    ```
+
+    A document need never be built at all: a type with a `Json.Parsable` is read *directly* from
+    the token stream (`Json.Parsable.derived`, `Json.Parsable.staged`, `Inlinable.parsable`, or
+    `derives Json.Direct` for a generated parser and printer), and a type with a `Json.Printable`
+    is written straight to text or bytes through `in[Text over Json]` and `in[Data over Json]`.
+    The `codecs.direct`, `codecs.derived` and `codecs.strict` imports choose between the generated
+    and the tree-based paths for every record in scope. Direct parsing and printing bring the
+    library within a small margin of the fastest JVM JSON libraries while keeping every value
+    typed.
+
+    Large documents stream: `Json.emit` serializes on a fiber and hands out text as it is
+    produced, the push form `Json.emit[Text]`/`Json.emit[Data]` delivers blocks on the caller's
+    thread, and `Json.lend` lends the writer's own buffers without a copy. Parsing is streaming
+    too: a `Json` is `Aggregable by Data`, so it reads from any source turbulence can stream.
+
+    Beyond conversion, the library offers `JsonPointer` (RFC 6901 paths, written with `jp"…"`),
+    source positions for every value when `parsing.trackPositions` is in scope (`locate` and
+    `locateKey`), dynamic field access (`json.name`) licensed by `dynamicAccess.dynamicJson` or a
+    `dynamically[Json]` block, lenses and optics over documents (`json.lens(_.a.b = …)`, with
+    `Each` and `Filter` from the `optics` package), a `NumberMode` deciding what becomes of a
+    number too long for a `Long` or `Double`, and `Json.Provider`, which reads a JSON Schema
+    document as the code compiles and yields typed records from matching JSON.
+
+    The library is split into six source sets:
+
+    - `jacinta.core` — `Json` and everything above; `JsonPointer`, `NumberMode`, `Inlinable`,
+      the `j"…"` and `jp"…"` interpolators, and the choice packages `formatting`,
+      `numberModes`, `optionalityOptions`, `discriminables`, `dynamicAccess` and `conversions`.
+      Compiles for the JVM, Scala.js and Scala Native.
+    - `jacinta.schema` — `JsonSchema`, a JSON Schema document derived from a Scala type or read
+      from JSON, `verify`, which checks a `Json` against the schema of a type and returns it
+      typed so that its fields navigate with compile-time checking, and the `@memo` annotation.
+    - `jacinta.optics` — the `optics` package: `jsonLens`, which makes `json.lens(…)` work, and
+      the `Each`, `Filter` and ordinal optics over arrays.
+    - `jacinta.http` — JVM only: the `postables`, `servables` and `construables` packages, which
+      send a `Json` as an `application/json` request body, serve one as a response, and read an
+      API's JSON body as a `Json`.
+    - `jacinta.time` — the `encodables`, `decodables` and `parsables` packages, which carry
+      aviation's `Instant` and `Duration` as whole numbers of milliseconds.
+    - `jacinta.staged` — `InlinableStager`, the compile-time machinery which lets a user-written
+      `Inlinable` be evaluated as a generated parser is spliced; nothing in it is called by hand.
+
+    Everything is exported to the `soundness` umbrella, and every choice package here merges
+    with the umbrella's package of the same name. The choice packages hold *givens*, and
+    `import soundness.*` does not import givens, so each is imported by name:
+    `import formatting.indentedJsonFormatting`, `import numberModes.doubleNumberMode`,
+    `import discriminables.jsonByKindDiscriminable`, `import dynamicAccess.dynamicJson`, and so
+    on. The `Json.Formatting` is the one given most code must choose, since `show`, `emit` and
+    the HTTP givens all need one.
+
+refer jacinta.Json
+refer jacinta.JsonPointer
+refer jacinta.JsonSchema
+refer jacinta.Inlinable
+refer jacinta.NumberMode
+
+entry .Json   an immutable JSON value, and the companion which parses, builds, converts and streams it
+  detail
+      A `Json` is any JSON value — an object, array, string, number, boolean or `null` — or an
+      *absent* value, which is what reaching for a key an object lacks yields. It is immutable:
+      every update returns a new `Json`. Two documents are equal when their values are, whatever
+      the order of their keys, and a whole number equals the same value written with a decimal
+      point.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import formatting.compactJsonFormatting
+
+      val data: Json = t"""{"a": {"b": [10, 20, 30]}, "c": true}""".read[Json]
+      data(t"a")(t"b")(1).as[Int]               // 20
+      data(t"c").as[Boolean]                    // true
+      data(t"missing").as[Optional[Int]]        // Unset
+      data.show                                 // t"""{"a":{"b":[10,20,30]},"c":true}"""
+      t"""{"x": 1, "y": 2}""".read[Json] == t"""{"y": 2, "x": 1}""".read[Json]   // true
+      ```
+
+      **Reading.** A `Json` is `Aggregable by Data` (`.aggregable`), so any source turbulence can
+      stream — `Text`, `Data`, a file, an HTTP body — is `read[Json]`, raising `Parse.Error` on
+      malformed input through a `Tactic[Parse.Error]`. With `parsing.trackPositions` in scope the
+      parser also records every value's line and column, read back with `locate` and `locateKey`
+      (`.positionable`). `read[T in Json]` reads a value of type `T` from JSON text in one step,
+      directly from the tokens when `T` has a `Json.Parsable`, and through a tree otherwise.
+
+      **Converting.** `as[T]` decodes through a `Json.Decodable` (`#as`), and `value.in[Json]`
+      encodes through a `Json.Encodable`. The companion holds the instances for the primitives,
+      `Text`, `Unit` (a JSON `null`), `Optional`, `Option`, `List`, `Set`, `Sequence`, `Map` and
+      `Json` itself, and derives one for any case class, enumeration or sealed hierarchy
+      (`.decodable`, `.encodable`). A conversion that cannot be made raises `Json.Error`, and
+      under an accruing strategy every failed field is reported, each with a `Json.Focus` naming
+      its JSON pointer.
+
+      **Building.** `Json.make(a = …, b = …)` builds an object from named `Json` arguments
+      (`.applyDynamicNamed`), `Json(value)` wraps a primitive (`.apply`), and the `j"…"`
+      interpolator writes JSON literally, checked as the code compiles, with holes for encoded
+      values, `*`-spread collections and merged maps (`.interpolator`); the same interpolator is
+      a pattern (`.extrapolator`).
+
+      **Navigating and updating.** `json(t"key")` and `json(index)` select a field or an element
+      (`#apply`). With `dynamicAccess.dynamicJson` imported, a field reads as a member,
+      `json.name`, and is set with `json.name = value` or removed with `json.name = Unset`
+      (`#selectDynamic`, `#updateDynamic`); a document `verify`'d against a type navigates its
+      fields with compile-time checking and needs no such import. Deeper updates are written
+      with `json.lens(_.a.b = …)` from the `optics` package.
+
+      **Writing.** `show` renders the whole document as `Text` in the `Json.Formatting` in scope
+      (`.showable`; `formatting.compactJsonFormatting` or `formatting.indentedJsonFormatting`),
+      `.emit` streams it, and `.lend` lends the writer's buffers. A `Json` is also `Streamable by
+      Text`, `Encodable in Text`, an HTTP body (`.abstractable`) and `Inspectable`.
+
+      ```scala fuel
+      frame
+        label A document, as parsed
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            val person: Json = t"""{"name": "Bob", "age": 40, "roles": ["lead", "cox"]}""".read[Json]
+      frame
+        label A field reached by key
+        code
+            person(t"roles")(0).as[Text]   // t"lead"
+      frame
+        label The same field, with dynamic access enabled
+        code
+            import dynamicAccess.dynamicJson
+
+            person.roles(0).as[Text]   // t"lead"
+      frame
+        label The whole document, decoded to a case class
+        code
+            case class Person(name: Text, age: Int, roles: List[Text])
+
+            person.as[Person]   // Person(t"Bob", 40, List(t"lead", t"cox"))
+      frame
+        label An update, as a new document
+        code
+            (person.age = 41).as[Person].age   // 41
+      ##
+      ```
+
+      The companion is assembled from a chain of mixins (`Json1` to `Json4`) which order its
+      givens by priority: direct parsers and printers above derived codecs, element-wise
+      instances above the universal fallback. Their members are documented under those mixins'
+      entries; `object Json` inherits them. The tokenizer behind every read is the top-level `Parser`, which has its own page.
+  refer jacinta.Json.Encodable
+  refer jacinta.Json.Decodable
+  refer jacinta.Json.Parsable
+  refer jacinta.Json.Printable
+  refer jacinta.Json.Provider
+  refer jacinta.Json.Error
+  refer jacinta.JsonPointer
+  refer jacinta.j
+  entry .apply   wraps a primitive value as a `Json`: `Json(42)`, `Json(t"text")`, `Json(true)`
+      `Json(value)` makes a `Json` from a raw value. The overloads for `Int`, `Short`, `Byte`,
+      `Long`, `Float` and `Double` store the number in the tree's own forms (an integer as a
+      `Long`, a `Float` as a `Double`), since a raw `Int` in the tree would be read as a packed
+      small decimal, not an integer. `apply(value: Any)` takes anything else as it is, so it is
+      for values already in the tree's representation (a `String`, a `Boolean`, `Json.JsonNull`)
+      rather than arbitrary Scala values, which should go through `in[Json]` instead. The
+      two-argument form, `Json(value, positions)`, attaches a `Json.PositionIndex` to a
+      value, as the tracking parser does.
+
+      ```scala
+      import soundness.*
+
+      Json(42)        // a JSON number
+      Json(t"hello")  // a JSON string
+      Json(true)      // a JSON boolean
+      ```
+  entry .ast   wraps a `Json.Ast` node as a `Json`
+      The inverse of `.unseal`: `Json.ast(node)` is the document whose root is the given tree
+      node. `Json.ast(Json.Ast(Unset))` is the absent value a missing key yields.
+  entry .applyDynamicNamed   `Json.make(key = json, …)`: an object built from named `Json` arguments
+      `Json` is `Dynamic`, and its only dynamic method is `make`: `Json.make(a = 1.in[Json],
+      b = t"two".in[Json])` builds the object `{"a":1,"b":"two"}`, keeping the arguments' order.
+      Each argument must already be a `Json`; with `conversions.encodableToJson` imported, any
+      value `Encodable in Json` may be passed directly.
+
+      ```scala
+      import soundness.*
+      import formatting.compactJsonFormatting
+
+      Json.make(a = 1.in[Json], b = t"two".in[Json], c = true.in[Json]).show
+      // t"""{"a":1,"b":"two","c":true}"""
+      Json.make(outer = Json.make(inner = 1.in[Json])).show   // t"""{"outer":{"inner":1}}"""
+      ```
+  entry .unseal   the `Json.Ast` tree beneath a `Json`, for inspecting its kind directly
+      Breaking through the `Json` abstraction is a deliberate, named action: `Json.unseal(json)`
+      is the root `Json.Ast` node, on which the `Json.Ast` predicates (`isLong`, `isDouble`,
+      `isNumber`, `isString`, `isBoolean`, `isNull`, `isObject`, `isArray`, `isAbsent`) and
+      `primitive` answer what the value is.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      Json.unseal(t"42".read[Json]).isLong           // true
+      Json.unseal(t"3.14".read[Json]).isNumber       // true
+      Json.unseal(t""""x"""".read[Json]).primitive   // Json.Primitive.String
+      ```
+  entry .emit   streams a document's text: pulled from a fiber, or pushed to a function block by block
+      Two forms. `Json.emit(json)` serializes on a fiber and returns an `Iterator[Text]` which
+      hands out the text as it is produced, so a large document can be written to a socket or a
+      file before it is fully rendered; it needs a `Json.Formatting`, a `Monitor` and a
+      `Probate`, so it runs under `supervise`. The push form, `Json.emit[medium](json, deliver)`,
+      serializes on the caller's thread with no fiber and hands each block to `deliver` as it
+      fills: `emit[Text]` delivers text through a `Producer[Text]`, and `emit[Data]` delivers
+      UTF-8 bytes written directly by the byte-level serializer, which escapes and encodes each
+      string in one pass and renders a BCD number from its nibbles with no `String` round trip.
+      The medium is a `Json.Emitter`, and the type argument is needed when `deliver` is an
+      untyped lambda. The push form needs a `Json.Formatting` and a `Buffering`, whose capacity
+      sizes the blocks.
+
+      ```scala fuel
+      typecheck
+      ##
+      Json.emit[Data](json, chunk => socket.write(chunk))
+
+      supervise:
+        Json.emit(json).each(chunk => out.write(chunk))
+      ```
+
+      Every form renders the same text as `show`.
+  entry .lend   the borrowing form of the push `emit`: each UTF-8 block is lent, not copied
+      `Json.lend(json)(lending)` serializes to UTF-8 on the caller's thread and lends each filled
+      block to `lending` as a `Region[Data]` with a branded `Interval` proving every index in
+      range, valid only for the duration of the call — the discipline of `Stream.lend` — so
+      nothing is copied. A consumer which must keep the bytes materializes them itself;
+      `Json.emit[Data]` is that consumer for the common case. Needs a `Json.Formatting` and a
+      `Buffering`.
+
+      ```scala fuel
+      typecheck
+      ##
+      Json.lend(json): region =>
+        interval => region.visit(interval)(index => sink.put(region(index)))
+      ```
+  entry .Emitter   how the push form of `Json.emit` reaches its consumer: as text or as UTF-8 bytes
+    detail
+        A `Json.Emitter[medium]` is the typeclass `Json.emit[medium](json, deliver)` dispatches
+        on. The two instances are in the companion: `.text` for `Text` blocks and `.data` for
+        `Data` blocks. A medium is chosen by the type argument, `Json.emit[Data](…)`.
+    entry .text   delivers text blocks, through a `Producer[Text]`
+    entry .data   delivers UTF-8 blocks, materialized from the byte-level writer's lent regions
+    entry #emit   serializes a document and hands each block to `deliver`, in the `Buffering`'s capacity
+  entry .Formatting   how a document renders: the indentation unit, if any, and whether a newline ends it
+    detail
+        A `Json.Formatting` is needed by `show`, `emit`, `lend`, the `Streamable` and `Encodable
+        in Text` givens, `in[Text over Json]` and the HTTP givens. `#indent` is the whitespace
+        unit per nesting level, or `Unset` for minimal single-line JSON, and `#trailingNewline`
+        appends a final newline. The two standard choices are givens in the `formatting`
+        package, imported by name: `formatting.compactJsonFormatting` (no whitespace at all)
+        and `formatting.indentedJsonFormatting` (two spaces per level). It is a
+        `zephyrine.Formatting`, so a generic serializer can take one.
+
+        ```scala
+        import soundness.*
+
+        given Json.Formatting = Json.Formatting(t"    ", trailingNewline = true)
+        ```
+    entry .apply   a formatting with the given indentation unit and trailing-newline choice
+    entry #indent   the whitespace unit per nesting level, or `Unset` for single-line output
+    entry #trailingNewline   whether a newline follows the closing character
+  entry .JsonString   the tree's representation of a JSON string: a `String`
+  entry .JsonNumber   the tree's representations of a JSON number: `Long`, `Double`, `Bcd` or a packed `Int`
+      A number up to about fifteen digits parses to a `Long` or a `Double`; a longer one becomes
+      a `Bcd` (every digit kept) under the default `NumberMode`. The `Int` form is a *packed*
+      small binary-coded decimal of up to seven nibbles, not an integer, which is why
+      `Json(int)` widens an `Int` to a `Long` rather than storing it raw.
+  entry .JsonBoolean   the tree's representation of a JSON boolean: a `Boolean`
+  entry .JsonNull   the sentinel which represents a JSON `null` in the tree, and its type
+      A distinct object rather than the JVM `null`, so that an explicit `null` in a document
+      stays disjoint from an *absent* value (`Unset`), which is what a missing key yields;
+      `Json.Ast.isNull` tests for it.
+  entry .JsonObject   the tree's representation of an object: a frozen `Array[Any]` of alternating keys and values
+  entry .JsonArray   the tree's representations of an array: a frozen `Array[Any]`, `Array[Long]` or `Array[Int]`
+      A heterogeneous array is an `Array[Any]`, padded to odd length so that it is
+      distinguishable from an object (always even); an array of numbers alone is stored unboxed
+      as packed BCD `Long`s or `Int`s.
+  entry .aggregable   reads a `Json` from a stream of `Data`: the given behind `source.read[Json]`
+      The `Aggregable by Data` instance which parses any streamed source — `Text`, `Data`, a
+      file, a response body — into a `Json`. It needs a `Tactic[Parse.Error]`, raised on
+      malformed input with the line and column of the fault, and a `PositionTracking`: with
+      `parsing.trackPositions` in scope the positions of every value are recorded for `locate`;
+      the default records nothing and pays nothing. A single in-memory block is parsed in
+      place; a stream is parsed as it arrives.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      t"""[1, 2, 3]""".read[Json]
+      ```
+  entry .showable   renders a document as `Text` in the `Json.Formatting` in scope
+      `json.show` is the single route to a document's text: compact under
+      `formatting.compactJsonFormatting`, indented under `formatting.indentedJsonFormatting`.
+      Numbers are written from the digits the parser saw, so a document round-trips without
+      losing precision; strings are escaped per RFC 8259.
+  entry .streamable   a document as a `Stream[Text]`, serialized on a fiber as it is consumed
+      The `Streamable by Text over Credit` instance built on `.emit`'s pull form, so it needs a
+      `Json.Formatting`, a `Monitor` and a `Probate` (a `supervise` block).
+  entry .inspectable   a debug rendering: the compact text, whatever formatting is in scope
+      An inspection is single-line by convention, so this fixes the compact formatting rather
+      than taking one from the call site, and needs no given at all.
+  entry .abstractable   a document as an HTTP body, `application/json` in the `Codepage` in scope
+      The `Abstractable across HttpStreams` instance: the content type is `application/json;
+      charset=…` from the `Codepage` given, and the body is `show` encoded in it, so it needs
+      a `Json.Formatting` too. The `postables` and `servables` packages of `jacinta.http` are
+      the explicit request and response givens.
+  entry .decodable   `Json` from text: reads a document from `Text`, raising `Parse.Error`
+      `Json is Decodable in Text` reads a document from `Text` (`t"…".as[Json]`, or a `Json`
+      field inside a record decoded from another format), raising `Parse.Error`; it is also
+      what superlunary's staged `Json` values are pickled through.
+  entry .instantiable   a `Json` from HTTP request text, raising `Parse.Error`
+      The `Instantiable across HttpRequests from Text` instance, by which a request body typed
+      as JSON is parsed; it captures the `Tactic[Parse.Error]` in scope.
+  entry .positionable   `json.locate(pointer)` and `json.locateKey(pointer)`: where a value sat in the source
+      The `Positionable by JsonPointer to Json.Ast.Position` instance. `locate` is the line and
+      column (and offset and length) of the value a pointer names, spanning the whole value —
+      a negative number includes its sign, an object runs from its opening brace to its closing
+      one — and `locateKey` is the position of the *key* matching the pointer's final segment,
+      for underlining a misspelled field name. Both are `Unset` when the pointer does not
+      resolve (a missing key, an index past the end), and always `Unset` for a document parsed
+      without `parsing.trackPositions` in scope.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import parsing.trackPositions
+
+      val tracked = t"{\n  \"a\": 42\n}".read[Json]
+      tracked.locate(JsonPointer()(t"a")).let(_.line)      // 2
+      tracked.locateKey(JsonPointer()(t"a")).let(_.column) // 3
+      ```
+  entry .interpolator   the macro behind `j"…"`: a JSON literal checked as it compiles, with typed holes
+      The `Interpolable` instance for `Json`. The literal is parsed at compile time, and a
+      syntax error is reported at the offending character. A hole `$x` substitutes any value
+      `Encodable in Json`; `$xs*` inside an array splices every element of a collection
+      (an `Iterable`, or a branded `List(…)` literal); a `$map` hole among an object's fields
+      merges a `Map[Text, Json]` into the object. See `jacinta.j`.
+  entry .extrapolator   the macro behind `case j"…" =>`: a JSON pattern binding its holes
+      The `Extrapolable` instance for `Json`. In a `match`, `case j"""{"a": $a}"""` matches an
+      object with the literal keys and binds each hole to the `Json` found there; an array
+      pattern matches by length, and a trailing `$rest*` binds the remaining elements as a
+      `Json` array. A document of another shape declines the case.
+  entry .jsonEncodableInText   a document as compact `Text`, whatever formatting is in scope
+      The `Encodable in Text` instance, `json.encode`: always compact, so a `Json` field
+      written inside another format is single-line.
+  entry .discriminatedUnion   a `Discriminable` which tags a variant with a field of the given name
+      `Json.discriminatedUnion[Shape](t"type")` is a `Json.DiscriminantField` under the key
+      `type`: the shape `{"radius":1.0,"type":"Circle"}`. The `discriminables` package's
+      `jsonByTypeDiscriminable` and `jsonByKindDiscriminable` are this for `type` and `kind`.
+  entry .Encodable   the typeclass which turns a value into a `Json`, carrying the shape it produces
+    detail
+        `T is Json.Encodable` is an `Encodable in Json` which also knows its `Morphology` — the
+        format-neutral shape of what it writes — so that a JSON Schema derived from a type
+        (`JsonSchema.derived`, `verify`) is coherent with the codec by construction. It is what
+        `value.in[Json]` resolves. The companion holds instances for the primitives, `Text`,
+        `Unit`, `Ordinal`, `Optional`, `Option`, `List`, `Set`, `Sequence`, `Map` and `Json`,
+        and derives one for any case class, enumeration or sealed hierarchy (`.encodable`); a
+        type with an `Encodable in Text` encodes as a JSON string.
+
+        A custom instance is built with `.apply`, giving the shape as a thunk and the encoding
+        as a lambda, and belongs in the type's companion:
+
+        ```scala
+        import soundness.*
+        import formatting.compactJsonFormatting
+
+        case class Celsius(degrees: Double)
+
+        object Celsius:
+          given Celsius is Json.Encodable =
+            Json.Encodable(() => Morphology.Str): celsius => Json(t"${celsius.degrees}°C")
+
+        Celsius(21.5).in[Json].show   // t""""21.5°C""""
+        ```
+
+        A derived encoder uses, for each field, the instance in scope for the field's type; to
+        override one field alone, a `Specific over Json.Encodable` names the path.
+    refer jacinta.Json.Decodable
+    refer jacinta.Json.Printable
+    entry .apply   an encoder from a shape thunk and an encoding lambda
+        `Json.Encodable(() => shape)(value => json)`. The shape is an explicit thunk, so a
+        recursive derivation can defer it; `Morphology.Any` is the honest shape for anything
+        the schema machinery should not constrain.
+    entry #shape   the `Morphology` of what this encoder writes
+    entry #Form   the format this encoder targets: `Json`
+  entry .Decodable   the typeclass which reads a value from a `Json`, carrying the shape it expects
+    detail
+        `T is Json.Decodable` is a `Decodable in Json` which also knows its `Morphology`, so
+        `verify` and the schema machinery check exactly what the decoder reads. It is what
+        `json.as[T]` and `read[T in Json]` resolve (the latter through the tree, unless `T` also
+        has a `Json.Parsable`). The companion holds instances for the primitives, `Text`,
+        `Unit` (which accepts only `null`), `Ordinal`, `Bytes`, `Optional`, `Option`, `List`,
+        `Set`, `Sequence`, `Map` and `Json`, and derives one for any case class, enumeration or
+        sealed hierarchy (`.decodable`); a type with a `Decodable in Text` is decoded from a
+        JSON string through it.
+
+        Every instance raises `Json.Error` through the `Tactic[Json.Error]` in scope: a value
+        of the wrong kind is `NotType`, a required field the object lacks is `Absent`, and an
+        array index past the end is `OutOfRange`. Under an accruing strategy every failing
+        field is reported with its `Json.Focus`.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        case class Celsius(degrees: Double)
+
+        object Celsius:
+          given (Celsius is Json.Decodable) =
+            Json.Decodable(Morphology.Real): json => Celsius(json.as[Double])
+
+        t"21.5".read[Json].as[Celsius]   // Celsius(21.5)
+        ```
+
+        A case class with both a `Reflection` and a hand-written `Json.Decodable` is read
+        *directly* through derivation when `read[T in Json]` is used, diverging from the custom
+        decoder; the one-line remedy is `given T is Json.Parsable =
+        Json.Parsable.fromDecodable(…)` beside it.
+    refer jacinta.Json.Encodable
+    refer jacinta.Json.Parsable
+    refer jacinta.Json.Error
+    entry .apply   a decoder from a shape and a decoding function
+        `Json.Decodable(shape)(json => value)`, where the decoding function may be any
+        `Decodable in Json` or a lambda over the `Json`. The lambda raises `Json.Error` through
+        the tactic it was resolved with.
+    entry #shape   the `Morphology` of what this decoder reads
+  entry .boolean   decodes a JSON boolean to `Boolean`
+      Raises `Json.Error(NotType(…, Boolean))` for any other value. Each primitive decoder
+      captures the `Tactic[Json.Error]` it was resolved with.
+  entry .double   decodes a JSON number to `Double`, from any numeric form
+  entry .float   decodes a JSON number to `Float`
+  entry .long   decodes a JSON number to `Long`; a decimal is truncated
+  entry .int   decodes a JSON number to `Int`, through `Long`
+  entry .ordinalDecodable   decodes a JSON number to an `Ordinal`, counting from zero
+  entry .text   decodes a JSON string to `Text`
+      Raises `Json.Error(NotType(…, String))` for any other value: a number is not quietly
+      rendered as text.
+  entry .string   decodes a JSON string to `String`
+  entry .unit   decodes a JSON `null` to `()`, and nothing else
+      A value which is not `null` raises `NotType(found, Null)`, and an absent value `Absent`.
+  entry .jsonDecodable   a `Json` decodes to itself: `json.as[Json]`
+      Typed as the plain `Decodable in Json` so that it beats distillate's generic identity
+      instance; `Json` nested in a collection or `Optional` goes through `.decodable` instead.
+  entry .option   decodes an `Option[T]` field, as `.optional` does, yielding `None`
+      The same three `optionalityOptions` policies, with `None` for an absent key or a `null`
+      and `Some` otherwise.
+  entry .optionEncodable   encodes an `Option[T]`: `None` encodes as absent, so an object omits the field
+  entry .integralEncodable   encodes any `Integral` type as a JSON integer
+  entry .textEncodableInJson   encodes `Text` as a JSON string
+  entry .stringEncodable   encodes `String` as a JSON string
+  entry .doubleEncodable   encodes `Double` as a JSON number
+  entry .intEncodable   encodes `Int` as a JSON integer
+  entry .longEncodable   encodes `Long` as a JSON integer
+  entry .booleanEncodable   encodes `Boolean` as a JSON boolean
+  entry .unitEncodable   encodes `Unit` as a JSON `null`
+  entry .ordinalEncodable   encodes an `Ordinal` as its zero-based JSON integer
+  entry .jsonEncodable   a `Json` encodes as itself
+  entry .listEncodable   encodes a `List[T]` as a JSON array of its elements
+      Needs a `T is Json.Encodable`, taken by name so that a recursive type derives.
+  entry .setEncodable   encodes a `Set[T]` as a JSON array of its elements, in the set's order
+  entry .seriesEncodable   encodes a `Sequence[T]` as a JSON array of its elements
+  entry .mapEncodable   encodes a `Map[K, V]` as a JSON object, each key encoded as text
+      The key type needs an `Encodable in Text`, and the value a `Json.Encodable`.
+  entry .array   decodes a JSON array into any `Iterable` collection, with a `Factory` in scope
+      Each element is decoded at its own `Json.Focus` (`#/items/3`), so under an accruing
+      strategy every bad element is reported. Needs a `Tactic[Json.Error]` and a `Foci[Json.Focus]`.
+  entry .listDecodable   decodes a JSON array into a `List[T]`
+  entry .setDecodable   decodes a JSON array into a `Set[T]`
+  entry .seriesDecodable   decodes a JSON array into a `Sequence[T]`
+  entry .map   decodes a JSON object into a `Map[K, V]`, each key decoded from text
+      The key type needs a `Decodable in Text`; `Map[Text, Int]` reads `{"a": 1, "b": 2}`.
+  entry .Parsable   the typeclass which reads a value straight from JSON tokens, with no tree built
+    detail
+        `T is Json.Parsable` consumes tokens from a `Json.Reader` instead of walking a `Json`,
+        so `read[T in Json]` (and `read[T in Json]` over any stream) instantiates `T` without
+        materializing a tree, saving the allocation, boxing and second traversal. It is the
+        opt-in surface of direct parsing: a type parses directly once it has an instance,
+        through `.derived`, `.staged`, `Inlinable.parsable`, `derives Json.Direct` or
+        `import codecs.direct`, and nothing changes for a type without one. The companion holds
+        instances for the primitives (`Json.booleanParsable` and its kin) and, for a collection
+        whose element has opted in, `Optional`, `Option`, `List`, `Set`, `Sequence`, `Map` and
+        any `Iterable`.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        case class Person(name: Text, age: Int)
+
+        object Person:
+          given Person is Json.Parsable = Json.Parsable.derived
+
+        t"""{"name": "Bob", "age": 40}""".read[Person in Json]   // read with no tree built
+        ```
+
+        A hand-written instance is built with `.apply` from a shape and a function of the
+        reader; `.fromDecodable` bridges an existing `Json.Decodable`, which is also how a
+        custom decoder is made to win over derivation. The `optionalityOptions` policies apply
+        to direct parsers as to decoders, with one limit: a lenient fault is tolerated only
+        when the value on the wire is of the wrong *kind*, which the parser can skip whole; a
+        value of the right kind which fails within it has already been partly consumed and
+        still raises.
+
+        The companion inherits `generated`, the `codecs.direct` given, from `Json.Parsable2`.
+    refer jacinta.Json.Reader
+    refer jacinta.Json.Field
+    refer jacinta.Json.Decodable
+    refer jacinta.Inlinable
+    entry .apply   a parser from a shape and a function of the `Json.Reader`
+        `Json.Parsable(Morphology.Str)(reader => Celsius(reader.string()))`. The reader
+        carries its own `Tactic[Parse.Error]`, so the body needs no error vocabulary: a
+        malformed or mistyped token aborts through the read call's ambient tactic.
+    entry .derived   a wisteria-derived direct parser for a case class or sum, as a one-line opt-in
+        `given T is Json.Parsable = Json.Parsable.derived`. Fields are read through the
+        `Json.Field` fallback chain, so nested records parse directly too; a sum's
+        `Discriminable in Json` chooses the token-level dispatch.
+    entry .staged   a monomorphic parser generated at compile time, with no interpretive machinery at runtime
+        The staged counterpart of `.derived`, with identical semantics: a case class parses
+        through typed local slots and packed-literal key dispatch, and a sealed sum dispatches
+        its tag through a comparison chain into per-variant parsers. A staged sum needs a
+        field-discriminated `Discriminable` (`jsonByKindDiscriminable` or another
+        `DiscriminantField`); other shapes fail at instance construction. Method-local
+        classes, curried case classes, singleton variants and generic sums stay on `.derived`.
+    entry .fromDecodable   a parser which materializes one value and hands it to a `Json.Decodable`
+        The universal bridge from the tree: a field type with only a `Json.Decodable` parses
+        through this, and it is the one-line escape hatch when a custom decoder must beat a
+        derived direct parser: `given T is Json.Parsable = Json.Parsable.fromDecodable(…)`.
+    entry .fromField   a nominal `Json.Parsable` over any `Json.Parsing`
+    entry .declared   the parser a type generated with `derives Json.Direct`
+        The given which reads a `Json.Direct[T]` in scope — the companion member `derives
+        Json.Direct` generates — as `T`'s `Json.Parsable`.
+    entry .Direct   the base class of generated parsers
+        Generated code receives the reader as a neutral carrier and the capability is asserted
+        at this rim; a generated parser implements `parseCarrier`. Not for hand-written code.
+    entry .parseField   calls a field's parser from generated code
+        A support point for generated parsers, which are spliced into user modules and may
+        only reference public members; not for hand-written code.
+    entry .absentField   a field's absent value, from generated code
+    entry .optionality   an `Optional[T]` parser over a `T` parser, applying the `optionalityOptions` policies
+        A wire `null` and an absent key both read as `Unset` unless the `Nullity` or `Absence`
+        policy in scope is strict; under lenient `Fault` a value of the wrong kind is skipped
+        whole and reads as `Unset`.
+    entry .boxed   an `Option[T]` parser over a `T` parser, as `.optionality` yields `None`
+    entry .iterable   a parser for any `Iterable` collection over an element parser
+        Each element is parsed at its own `Json.Focus` when a `Foci` is active, so every bad
+        element accrues; the inert default pays nothing.
+    entry .dictionary   a `Map[K, V]` parser over a value parser, decoding each key from text
+    entry .discriminantField   the tag field of a field-discriminated sum, for staged parsers
+        Panics for a `Discriminable` which is not a `Json.DiscriminantField`, since a staged
+        sum has no single scan-ahead step for the other shapes.
+    entry .wireKeys   a product's wire keys, with `@name` renames applied
+        A support point for staged parsers.
+    entry .missing   raises `Json.Error(Absent)` for a required field whose key was not on the wire
+    entry .focusing   runs a field read at its `Json.Focus`, compiled away when no `Foci` is active
+    entry .assemble   constructs a product positionally from a filled value buffer, through its `Mirror`
+    entry .product   the derived product parser's engine: a key-dispatching parse loop over field parsers
+        Takes a thunk of `(wire key, parser, declared default)` triples and a constructor over
+        the filled buffer, and reads an object by `Json.KeyTable` dispatch, skipping unknown
+        keys, filling absent keys from defaults, and accruing every missing required field at
+        its focus once the object is fully consumed.
+  entry .Parsing   what `Json.Parsable` and `Json.Field` share: a token parser with a shape
+    detail
+        A `distillate.Parsable` over `Json` with a `Json.Reader`. The two subtraits add nothing
+        of their own: they exist so that neither is a subtype of the other, keeping nominal
+        instances and the field fallback from competing. `#absent` is what a field of this
+        type yields when its key is absent: an error unless overridden (`Unset` for
+        `Optional`, `None` for `Option`); a wire `null` never reaches it.
+    entry #Transport   the format read: `Json`
+    entry #Reader   the reader consumed: `Json.Reader`
+    entry #shape   the `Morphology` of what this parser reads
+    entry #absent   the value for an absent key: raises `Json.Error(Absent)` unless overridden
+  entry .Field   the operational face of direct parsing: how a *field* of a type is read
+    detail
+        The typeclass the product derivation resolves per field: `Json.Field(parsing)` adapts
+        any `Json.Parsing` (`.apply`). Its instances are `.fieldOptional`, `.fieldOption`,
+        `.fieldArray`, `.fieldList`, `.fieldSet`, `.fieldSeries` and `.fieldMap` for the
+        element-wise cases, and `.field`, the universal fallback, so nested products parse
+        directly even where only the outer type opted in. Deliberately not a subtype of
+        `Json.Parsable`, and not for use beyond writing a field parser.
+    entry .apply   adapts a `Json.Parsing` as a field parser
+  entry .booleanParsable   reads a JSON boolean directly
+  entry .doubleParsable   reads a JSON number directly as `Double`
+  entry .floatParsable   reads a JSON number directly as `Float`
+  entry .longParsable   reads a JSON number directly as `Long`
+  entry .intParsable   reads a JSON number directly as `Int`
+  entry .textParsable   reads a JSON string directly as `Text`
+  entry .stringParsable   reads a JSON string directly as `String`
+  entry .jsonParsable   reads one whole value as a `Json`, materializing just that value
+  entry .optionParsable   an `Option[T]` parses directly when `T` has opted in
+  entry .arrayParsable   any `Iterable` collection parses directly when its element has opted in
+  entry .listParsable   a `List[T]` parses directly when `T` has opted in
+  entry .setParsable   a `Set[T]` parses directly when `T` has opted in
+  entry .seriesParsable   a `Sequence[T]` parses directly when `T` has opted in
+  entry .mapParsable   a `Map[K, V]` parses directly when `V` has opted in
+  entry .aggregableDerived   `import codecs.derived`: read through the tree even where a direct parser exists
+  entry .readableDerived   `import codecs.derived`: the whole-`Data` read through the tree
+  entry .encodableOverDerived   `import codecs.derived`: write through the tree even where a printer exists
+  entry .aggregableStrict   `import codecs.strict`: read directly, or fail to compile
+      With `.aggregableStrictFailure`, a pair: a type with a `Json.Parsable` reads directly,
+      and a type without one is a compile error naming the type, where `codecs.direct` would
+      fall back to the tree.
+  entry .encodableOverStrict   `import codecs.strict`: write directly, or fail to compile
+  entry .Printable   the typeclass which writes a value's compact JSON text straight to a writer, with no tree
+    detail
+        The direct-printing counterpart of `Json.Encodable`: `T is Json.Printable` writes `T`
+        into a `Json.Ast.Out` — the text writer behind `show` or the byte-level writer behind
+        `emit[Data]` — token by token. It is reached through `in[Text over Json]` and `in[Data
+        over Json]` whenever the formatting is compact, and its surface is explicit instances,
+        `Inlinable.printable[T]`, `derives Json.Direct` and `import codecs.direct`.
+
+        ```scala
+        import soundness.*
+        import formatting.compactJsonFormatting
+
+        case class Person(name: Text, age: Int)
+        given Person is Json.Printable = Inlinable.printable[Person]
+
+        Person(t"Bob", 40).in[Text over Json]   // t"""{"name":"Bob","age":40}""", written directly
+        Json.Printable.print(Person(t"Bob", 40))
+        ```
+
+        `.print` renders a value whole and `.emit` hands out its text in blocks.
+
+        The companion inherits `generated`, the `codecs.direct` given, from `Json.Printable2`.
+    refer jacinta.Json.Encodable
+    refer jacinta.Inlinable
+    entry .print   a value's compact JSON text, whole, through its `Json.Printable`
+    entry .emit   a value's text in blocks of the `Buffering`'s capacity, each handed to a function
+        `Json.Printable.emit(value, deliver)`: no text of the whole value is ever built.
+    entry .fromEncodable   the bridge from the tree: a printer which encodes the value and writes its tree compactly
+    entry .declared   the printer a type generated with `derives Json.Direct`
+    entry .Direct   the base class of generated printers; implements `write` over a neutral carrier
+    entry .writeAscii   writes an ASCII literal, from generated code
+        A support point for generated printers, which are spliced into user modules; not for
+        hand-written code. The same holds for `.writeString`, `.writeLong`, `.writeDouble`,
+        `.writeBoolean`, `.writeAst`, `.present` and `.writeField`.
+    entry .writeString   writes a quoted, escaped JSON string, from generated code
+    entry .writeLong   writes an integer, from generated code
+    entry .writeDouble   writes a `Double`, from generated code
+    entry .writeBoolean   writes `true` or `false`, from generated code
+    entry .writeAst   writes a `Json.Ast` tree compactly, from generated code
+    entry .present   whether a field's encoded tree is written at all: an absent encoding is omitted
+    entry .writeField   writes a field through a nominal `Json.Printable`, from generated code
+    entry #write   writes a value into a `Json.Ast.Out`
+  entry .Parsable2   the mixin holding `Json.Parsable.generated`, the `codecs.direct` parser given
+    hidden
+    detail
+        Not for direct use; see `Json.Parsable`.
+    entry #generated   `import codecs.direct`: a generated parser where a record needs one
+        Under `Codecs.Direct` a type which `Inlinable.Generates` gets a parser generated at the
+        use site, and a type which is not a record falls back to the derived path. Below
+        `Json.Parsable.declared`, so a type which derives `Json.Direct` uses the codec it
+        generated once.
+  entry .Printable2   the mixin holding `Json.Printable.generated`, the `codecs.direct` printer given
+    hidden
+    detail
+        Not for direct use; see `Json.Printable`.
+    entry #generated   `import codecs.direct`: a generated printer where a record needs one
+        Under `Codecs.Direct` a record gets a printer generated at the use site; a type which is
+        not a record takes the derived path.
+  entry .Direct   the carrier of `derives Json.Direct`: a type's generated parser and printer, made once
+    detail
+        `case class Foo(…) derives Json.Direct` generates `Foo`'s `Json.Parsable` and
+        `Json.Printable` once, into its companion, where `Json.Parsable.declared` and
+        `Json.Printable.declared` find them with no import. A `Self`-typed typeclass cannot
+        appear in a `derives` clause, which is why this parameterised carrier exists.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import formatting.compactJsonFormatting
+
+        case class Point(x: Int, y: Int) derives Json.Direct
+
+        t"""{"x": 1, "y": 2}""".read[Point in Json]   // Point(1, 2), read directly
+        Point(1, 2).in[Text over Json]                // t"""{"x":1,"y":2}""", written directly
+        ```
+    entry .derived   generates the parser and printer, through `Inlinable.parsable` and `Inlinable.printable`
+    entry #parsable   the generated `Json.Parsable`
+    entry #printable   the generated `Json.Printable`
+  entry .KeyTable   a precomputed table of an object's expected keys, for dispatching on them without materializing
+    detail
+        Built once per record from its wire keys; `Json.Reader#keyIndex(table)` resolves the
+        next key against it as the table index, `.Unknown` or `.End`. Keys of up to sixteen
+        printable ASCII bytes are compared packed in two `Long`s; others by name. The fastest
+        way for a hand-written parser to dispatch on keys.
+    entry .apply   a table over the given keys, in index order
+    entry .Unknown   the index of a key the table does not hold: `-1`
+    entry .End   the index returned once the closing brace is consumed: `-2`
+    entry #indexOf   the index of a packed key, by its two words
+    entry #indexOfName   the index of a key by its name, or `.Unknown`
+  entry .Reader   the restricted rim of the tokenizer which a `Json.Parsable` consumes tokens through
+    detail
+        Handed to `Json.Parsable#parse`, a `Json.Reader` reads JSON straight off the input, one
+        token or structural step per call, skipping leading whitespace. It carries its own
+        `Tactic[Parse.Error]`, so a parser body needs no error vocabulary: malformed input and
+        mistyped values abort through the read call's ambient tactic, with a `Json.Ast.Issue`
+        such as `ExpectedNumber` naming what was expected. It is an exclusive, stateful
+        capability, owned by one `parse` call for its duration; nothing of it may be retained.
+
+        ```scala
+        import soundness.*
+
+        case class Point(x: Int, y: Int)
+
+        object Point:
+          given Point is Json.Parsable = Json.Parsable(Morphology.Any): reader =>
+            var x = 0
+            var y = 0
+            reader.openObject()
+            var key = reader.key()
+
+            while key.present do
+              key match
+                case t"x" => x = reader.int()
+                case t"y" => y = reader.int()
+                case _    => reader.skipValue()
+
+              key = reader.key()
+
+            Point(x, y)
+        ```
+
+        After `#openObject`, `#key` yields each key in turn and `Unset` once the closing brace
+        is consumed; after `#openArray`, `#element` is true while another element follows.
+        `#value` materializes one whole value as a `Json` and `#skipValue` skips one, which is
+        how unknown keys are passed over. Numbers coerce exactly as the `Json.Ast` accessors
+        do, so direct and tree reads yield equal values.
+    refer jacinta.Json.Parsable
+    refer jacinta.Json.KeyTable
+    entry .KeyEnd   the `#keyWord` sentinel once the closing brace is consumed
+    entry .KeyOpaque   the `#keyWord` sentinel for a key which cannot be scanned in place
+    entry .keyNameOf   the interned name of an opaque key, for generated parsers
+    entry #string   consumes a JSON string as `Text`
+    entry #boolean   consumes a JSON boolean
+    entry #long   consumes a JSON number as `Long`
+    entry #int   consumes a JSON number as `Int`
+    entry #double   consumes a JSON number as `Double`
+    entry #bcd   consumes a JSON number as a `Bcd`, every digit kept
+    entry #hasNull   whether the next value is `null`, without consuming it
+    entry #primitive   the kind of the next value from its first byte, without consuming it
+        `Unset` at the end of input or on a byte that begins no value; the optional wrappers
+        compare it against the field's shape before parsing.
+    entry #nullValue   consumes a `null`
+    entry #openObject   consumes the opening brace of an object
+    entry #key   the next key of an open object, or `Unset` once the closing brace is consumed
+        Consumes the separator and the colon, leaving the reader at the value.
+    entry #keyIndex   the next key resolved against a `Json.KeyTable`, without materializing it
+        The table index, `Json.KeyTable.Unknown`, or `Json.KeyTable.End` once the closing brace
+        is consumed.
+    entry #keyWord   the next key in packed form, for parsers which compare keys against literal constants
+        The packed low word (its high word from `#keyWordHigh`), `.KeyEnd`, or `.KeyOpaque`
+        when the key cannot be scanned in place, in which case the caller takes the
+        `#keyIndex` step instead.
+    entry #keyWordFirst   the first key step of the split protocol for generated parsers
+    entry #keyWordNext   a subsequent key step of the split protocol for generated parsers
+    entry #keyWordHigh   the high word of the key `#keyWord` last scanned
+    entry #openArray   consumes the opening bracket of an array
+    entry #element   whether another array element follows: true positioned at it, false once the bracket is consumed
+    entry #value   consumes one whole value, materialized as a `Json`
+    entry #skipValue   consumes one whole value without materializing it
+    entry #discriminant   the string value of a key anywhere in the upcoming object, leaving the reader where it was
+        The dispatch primitive for a discriminator field which may appear anywhere in the
+        object; `Unset` when the object has no such key or its value is not a string.
+    entry #fail   aborts through the reader's tactic with a `Json.Ast.Issue`, positioned at the current offset
+  entry .Focus   where a decoder is in the document: a JSON pointer, and the source position once known
+    detail
+        The focus type Jacinta's decoders and parsers track as they descend, so that an error
+        raised while reading `person.age` is reported at `#/person/age`. Under an accruing
+        strategy the focus of each error is read through `prior`, and `#withPosition` fills in
+        the source `Json.Ast.Position` (for a document parsed with `parsing.trackPositions`)
+        only when an error is actually rendered, so the success path pays nothing.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        case class Person(name: Text, age: Int)
+        case class Contact(person: Person)
+
+        case class Issues(items: List[(Text, Json.Error)] = Nil)(using Diagnostics)
+        extends Error(m"${items.size} problems"):
+          def +(pointer: Text, error: Json.Error): Issues = Issues(items :+ (pointer, error))
+
+        val damaged = t"""{"person": {"name": 1}}""".read[Json]
+
+        Validate[Issues, [r] =>> r raises Json.Error, Json.Focus]
+          ( Issues(),
+            { case error: Json.Error => accrual + (prior.let(_.pointer.encode).or(t"#"), error) } )
+        . protect(damaged.as[Contact])
+        . items.map(_(0))   // List(t"#/person/name", t"#/person/age")
+        ```
+    entry #pointer   the JSON pointer to the value being read
+    entry #position   the value's source position, once `#withPosition` has found it, or `Unset`
+    entry #withPosition   the focus with its position looked up in a tracked document
+  entry .PositionIndex   the compact record of every value's source position in a tracked document
+      An opaque frozen `Array[Int]`, produced by the parser under `parsing.trackPositions` and
+      carried by `Json#positionIndex`; `json.locate(pointer)` reads it. Nothing in it is
+      addressed by hand.
+  entry .Ast   the tree beneath a `Json`: an opaque union of the JSON kinds, with predicates, accessors and parsers
+    detail
+        `Json.Ast` is the representation a `Json` wraps: a `String`, a number (`Long`,
+        `Double`, `Bcd`, or a packed `Int`), a `Boolean`, the `Json.JsonNull` sentinel, an
+        object (a frozen `Array[Any]` of alternating keys and values), an array, or `Unset`
+        for an absent value. `Json.unseal(json)` exposes a document's root node and
+        `Json.ast(node)` wraps one. The extension methods in this companion — the `isX`
+        predicates, `.primitive`, and the accessors `.string`, `.long`, `.double`, `.bcd`,
+        `.number`, `.boolean`, `.array`, `.obj`, `.arrayLength`, `.arrayElement`,
+        `.objectSize`, `.objectKey`, `.objectValue` and `.objectIndexOf` — are in implicit
+        scope wherever a `Json.Ast` is used, without entering the umbrella's namespace.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        val node: Json.Ast = Json.unseal(t"""{"a": [1, 2.5, "x"]}""".read[Json])
+        node.isObject                                    // true
+        node.objectKey(0)                                // "a"
+        node.objectValue(0).arrayLength                  // 3
+        node.objectValue(0).arrayElement(1).primitive    // Json.Primitive.Number
+        node.objectValue(0).arrayElement(1).double       // 2.5
+        ```
+
+        The predicates are finer than the primitives: `.isLong` and `.isDouble` distinguish
+        the two numeric representations, `.isBcd` and `.isSmallBcd` the two packed ones, and
+        `.isNumber` covers all four. The accessors raise `Json.Error(NotType(found, expected))`
+        for a node of the wrong kind, and `Absent` for an absent one. `Json.Ast` is also a
+        zephyrine `Format`, which gives it the `Position` and `Issue` types every parse error
+        carries. The low-level parsers in `.parse` build a tree from bytes; ordinary reading
+        goes through `read[Json]`.
+    refer jacinta.Json
+    refer jacinta.Parser
+    entry .name   the format's name, `JSON`
+    entry .apply   wraps a raw value already in the tree's representation as an `Ast`
+    entry .obj   an object node from parallel arrays of keys and values, or an object node's keys and values
+        Two overloads. `Json.Ast.obj(keys, values)` builds an object node from parallel arrays;
+        the extension `node.obj` returns an object's keys and values as two parallel arrays,
+        raising `Json.Error` for any other kind. The extension materializes two new arrays;
+        prefer `.objectKey` and `.objectValue` for a few entries.
+    entry .arr   an array node from its elements
+    entry .bcdArr   an array of numbers in the packed-`Long` BCD form
+    entry .smallBcdArr   an array of numbers in the packed-`Int` BCD form
+    entry .arrayPad   the sentinel which pads an even-length array so it is distinguishable from an object
+        Never part of an array's visible contents; `.arrayLength` excludes it.
+    entry .parse   parses a tree from `Data` or from an iterator of `Data` blocks
+        Four overloads, each taking the `NumberMode` in scope and raising `Parse.Error`: over a
+        single `Data` or a consumed `Iterator[Data]`, each with or without `holes`, which
+        admits the `j"…"` interpolator's hole markers. The underlying engine of `read[Json]`;
+        public reading goes through the `Aggregable` instances.
+    entry .parserAggregable   reads a bare `Json.Ast` from a stream of `Data`, raising `Parse.Error`
+    entry .showable   renders a node as JSON text in the `Json.Formatting` in scope
+        The single serializer: `Json.showable` and `Json.emit` both go through it. Numbers are
+        written from their BCD nibbles directly, so every digit the parser saw is preserved.
+    entry .inspectable   a debug rendering of a node: its compact text, marked `ᵃˢᵗ`
+        Distinguishes a bare node from the `Json` document wrapping it.
+    entry .Out   the writer a `Json.Printable` or the serializer writes into: text, or UTF-8 bytes
+      detail
+          An exclusive, stateful capability with one method per token kind. Its two
+          implementations are internal: the text writer behind `show` and the pull `emit`, and
+          the byte-level writer behind `emit[Data]` and `lend`. A `Json.Printable#write` body
+          receives one and calls these.
+      entry #ascii   writes a literal known to be ASCII: punctuation, keywords, digits
+      entry #raw   writes text verbatim, escaped for nothing: the indentation unit
+      entry #string   writes a JSON string literal, quoted and escaped per RFC 8259
+      entry #long   writes an integer
+      entry #bcdInt   writes a packed-`Int` BCD number as canonical JSON-number text
+      entry #bcdLong   writes a packed-`Long` BCD number as canonical JSON-number text
+      entry #bcd   writes a `Bcd` as canonical JSON-number text
+    entry .Position   a value's place in the source: line and column, with its offset and length
+      detail
+          The `Format.Position` of JSON: `#line` and `#column` are 1-based; `#span` is the
+          0-based range. A `Parse.Error` carries one for the fault, and `json.locate(pointer)`
+          returns one for a value of a tracked document, spanning the whole value.
+      entry #line   the 1-based line
+      entry #column   the 1-based column
+      entry #offset   the character offset from the start of the input, if known
+      entry #length   the length of the value's text, if known
+      entry #describe   the position as text: `line 2, column 3`
+      entry #span   the 0-based span of the value
+    entry .Issue   what can be wrong with JSON text: the reasons a `Parse.Error` carries
+        Each case has a message, through `#describe`: `EmptyInput` (_the input was empty_),
+        `UnexpectedChar`, `ExpectedTrue`, `ExpectedFalse`, `ExpectedNull`, `ExpectedSomeValue`,
+        `ExpectedColon`, `InvalidWhitespace`, `ExpectedString`, `ExpectedHexDigit`,
+        `PrematureEnd` (_the content ended prematurely_), `NumberHasLeadingZero`,
+        `SpuriousContent` (something after the full value), `LeadingDecimalPoint`,
+        `NotEscaped`, `IncorrectEscape`, `MultipleDecimalPoints` and `ExpectedDigit`. Four
+        arise only on the direct-parsing path, where a typed reader knows what it expects:
+        `ExpectedNumber`, `ExpectedBoolean`, `ExpectedObject` and `ExpectedArray`.
+    entry .AsciiByte   the byte constants the tokenizer matches on
+      hidden
+      detail
+          Not for direct use: named ASCII code points (`Comma`, `Quote`, `OpenBrace`, …) for
+          the parser's byte-level matching.
+    entry .isNumber   whether the node is a number, in any of its four representations
+    entry .isAbsent   whether the node is the absent value, as a missing key yields
+    entry .isLong   whether the node is a number held as a `Long`
+    entry .isDouble   whether the node is a number held as a `Double`
+    entry .isSmallBcd   whether the node is a number held as a packed `Int` of up to seven nibbles
+    entry .isBcd   whether the node is a high-precision number held as a `Bcd`
+    entry .isString   whether the node is a string
+    entry .isBoolean   whether the node is a boolean
+    entry .isNull   whether the node is an explicit JSON `null`
+    entry .isObject   whether the node is an object
+    entry .isArray   whether the node is an array, in any of its representations
+    entry .isNumberArray   whether the node is an array stored unboxed as packed numbers
+    entry .isBcdIntArray   whether the node is an array in the packed-`Int` form
+    entry .isBcdLongArray   whether the node is an array in the packed-`Long` form
+    entry .primitive   the node's `Json.Primitive`: `Number`, `Boolean`, `String`, `Object`, `Array` or `Null`
+        An absent node reports `Null`.
+    entry .arrayLength   the number of elements in an array node, excluding any padding
+    entry .arrayElement   the element at an index, materialized as a node
+        A packed number is decoded to a `Long` if it is an exact integer which fits, and to a
+        `Double` otherwise.
+    entry .objectSize   the number of key/value pairs in an object node
+    entry .objectKey   the key at a pair index
+    entry .objectValue   the value at a pair index
+    entry .objectIndexOf   the pair index of a key, by linear scan, or `-1`
+    entry .array   the elements of an array node, raising `Json.Error` for any other kind
+    entry .double   the node as a `Double`, raising `Json.Error` for a non-number
+    entry .bcd   the node as a `Bcd`, raising `Json.Error` for a non-number
+    entry .long   the node as a `Long`, raising `Json.Error` for a non-number; a decimal is truncated
+    entry .number   the node as `Long | Double | Bcd`, in whichever form holds it exactly
+    entry .string   the node as `Text`, raising `Json.Error` for a non-string
+    entry .boolean   the node as a `Boolean`, raising `Json.Error` for a non-boolean
+  entry .Error   raised when a value cannot be read as what was asked for
+    detail
+        Error 337: _could not access the value because `reason`_, where the `#reason` is a
+        `Json.Error.Reason`: `NotType(found, expected)` (_the JSON value had type `found`
+        instead of `expected`_, each a `Json.Primitive`), `Absent` (_the JSON value was not
+        present_: a required field the object lacks, or a value past the end of an array under
+        `as`), and `OutOfRange` (_the array index is out of range_, from `json(index)`). It is
+        raised by every `Json.Decodable`, `Json.Parsable` and `Json.Ast` accessor through the
+        `Tactic[Json.Error]` in scope, and under an accruing strategy each is tagged with the
+        `Json.Focus` of the field that failed.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        case class Person(name: Text, age: Int)
+
+        capture[Json.Error](t""""abc"""".read[Json].as[Int]).reason
+        // Json.Error.Reason.NotType(Json.Primitive.String, Json.Primitive.Number)
+
+        capture[Json.Error](t"{}".read[Json].as[Person]).reason   // Json.Error.Reason.Absent
+        ```
+
+        Malformed JSON *text* is a different error: `Parse.Error`, from zephyrine, with a
+        `Json.Ast.Position` and a `Json.Ast.Issue`. A `Json.Provider` record field raises
+        `Json.Provider.Error` instead.
+    refer jacinta.Json.Primitive
+    refer jacinta.Json.Focus
+    entry .Reason   why a value could not be read: `OutOfRange`, `NotType(found, expected)` or `Absent`
+      detail
+          An enumeration with a number per case (1, 2 and 3), rendered by `.communicable`.
+      entry .communicable   renders each reason as a message
+      entry #number   the reason's number within error 337
+    entry #reason   the `Json.Error.Reason`
+  entry .Primitive   the six kinds of JSON value: `Array`, `Object`, `Number`, `Null`, `Boolean` and `String`
+    detail
+        What `Json.Ast.primitive` reports, and what `Json.Error.Reason.NotType` names on each
+        side. `.communicable` renders one as a message.
+    entry .communicable   renders a primitive's name as a message
+  entry .DiscriminantField   the tagged-union shape where the tag is a field beside the variant's own
+    detail
+        `{"radius": 1.0, "type": "Circle"}`: a `Discriminable in Json` whose tag is a field of
+        the variant's own object, under the label given. `Json.discriminatedUnion(label)`
+        builds one, and `discriminables.jsonByTypeDiscriminable` and
+        `discriminables.jsonByKindDiscriminable` are the `type` and `kind` instances. Direct
+        parsing finds the tag with a bounded scan-ahead, so it need not come first; this is
+        the one shape `Json.Parsable.staged` supports for sums.
+    entry #rewrite   attaches the tag field to a variant's encoding
+    entry #discriminate   reads the tag field, or `Unset` when there is none
+    entry #variant   the variant's own fields, with the tag removed
+  entry .DiscriminantWrapper   the tagged-union shape where the variant sits inside a single-key object named for it
+    detail
+        `{"Circle": {"radius": 1.0}}`: the streaming-friendliest shape, since the tag is always
+        the first token. `discriminables.jsonWrapperDiscriminable` is the instance for every
+        type; an object with more than one key is not a valid variant and raises
+        `Json.Error(Absent)` rather than guessing which key was meant.
+
+        ```scala
+        import soundness.*
+        import formatting.compactJsonFormatting
+
+        enum Shape:
+          case Circle(radius: Double)
+          case Square(side: Double)
+
+        given Shape is Discriminable in Json = Json.DiscriminantWrapper()
+        (Shape.Circle(1.0): Shape).in[Json].show   // t"""{"Circle":{"radius":1.0}}"""
+        ```
+    entry #rewrite   wraps a variant's encoding in an object keyed by its tag
+    entry #discriminate   the single key, or `Unset` for anything but a one-key object
+    entry #variant   the value under the single key
+  entry .DiscriminantEnvelope   the tagged-union shape with a tag field and a payload field side by side
+    detail
+        `{"type": "Circle", "value": {"radius": 1.0}}`, with the two field names given.
+        `discriminables.jsonEnvelopeDiscriminable` is the `type`/`value` instance. Direct
+        parsing does not require the tag to come first.
+    entry #rewrite   encloses a variant's encoding in an envelope with its tag
+    entry #discriminate   the tag field's string value, or `Unset`
+    entry #variant   the payload field
+  entry #positionIndex   the `Json.PositionIndex` of a tracked document, or `Unset`
+      Present only for a document parsed with `parsing.trackPositions` in scope; `locate` and
+      `locateKey` read it.
+  entry #apply   `json(t"key")` selects a field, and `json(index)` an array element
+      `json(t"key")` yields the field's value, or an absent `Json` (which decodes to `Unset`
+      and raises `Absent` for anything else) when the object lacks it. `json(index)` yields
+      the element at a zero-based index, raising `Json.Error(OutOfRange)` past the end and
+      `NotType(…, Array)` for a non-array. Both take a `Tactic[Json.Error]`. For a document
+      `verify`'d against a type, `json(index)` is a macro which types the element by the
+      schema.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val data = t"""{"a": {"b": {"c": 42}}}""".read[Json]
+      data(t"a")(t"b")(t"c").as[Int]   // 42
+      t"[10, 20, 30]".read[Json](1).as[Int]   // 20
+      ```
+  entry #selectDynamic   `json.field`: a field read as a member, with dynamic access enabled
+      A macro. For a plain `Json` it needs a `Json is Dynamical` in scope —
+      `dynamicAccess.dynamicJson` imported, or a `dynamically[Json]` block — and reads the
+      field at runtime, yielding an absent `Json` for a missing key; for a document
+      `verify`'d against a type it checks that the type has the field, needs no enabler, and
+      types the result by the schema. A field of an unverified document without the enabler
+      is a compile error which says so.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import dynamicAccess.dynamicJson
+
+      val person = t"""{"name": "Bob"}""".read[Json]
+      person.name.as[Text]              // t"Bob"
+      person.missing.as[Optional[Int]]  // Unset
+      ```
+  entry #applyDynamic   `json.field(index)`: an element of an array field, with dynamic access enabled
+      The macro behind `json.items(2)`: selects the field and then the element, with the same
+      enabler rule and verified-document typing as `#selectDynamic`.
+  entry #update   `json(index) = value`: a new document with one array element replaced
+      Needs dynamic access enabled, a `Json.Error` tactic (raised for a non-array), and a value
+      `Encodable in Json`.
+  entry #updateDynamic   `json.field = value` sets or replaces a field, and `json.field = Unset` removes one
+      Two overloads, each needing dynamic access enabled (`dynamicAccess.dynamicJson` or a
+      `dynamically[Json]` block) and returning a new document: the original is unchanged. The
+      value may be anything `Encodable in Json`. Neither raises: applying either to a
+      non-object `Json` is a programming error, which throws rather than raising `Json.Error`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import formatting.compactJsonFormatting
+      import dynamicAccess.dynamicJson
+
+      val base = t"""{"x": 1}""".read[Json]
+      (base.y = 2).show        // t"""{"x":1,"y":2}"""
+      (base.x = Unset).show    // t"""{}"""
+      ```
+  entry #as   decodes the value to a Scala type: `json.as[Person]`
+      Resolves a `Decodable in Json` for the type — any `Json.Decodable`, so the primitives,
+      collections, `Optional`, and every case class and sum by derivation — and needs a
+      `Tactic[Json.Error]` and a `Foci[Json.Focus]`. After decoding, the focus of any error
+      registered under an accruing strategy is enriched with the value's source position, for
+      a tracked document. `read[T in Json]` on the source is the one-step form.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      t"42".read[Json].as[Int]                              // 42
+      t"[1, 2, 3]".read[Json].as[List[Int]]                 // List(1, 2, 3)
+      t"""{"a": 1, "b": 2}""".read[Json].as[Map[Text, Int]] // Map(t"a" -> 1, t"b" -> 2)
+      t"null".read[Json].as[Unit]                           // ()
+      ```
+
+entry .Json1   the mixin holding the direct-path givens of `Json`'s companion
+  hidden
+  detail
+      Not for direct use: a layer of `object Json`'s given-priority chain, above `Json2`.
+      Holds `aggregableParsed`, `readableParsed`, `encodableOverPrinted`,
+      `aggregableStrictFailure` and `encodableOverStrictFailure`, documented below;
+      `object Json` inherits them.
+  entry #aggregableParsed   `read[T in Json]` directly from a stream, whenever `T` has a `Json.Parsable`
+      The direct read path, above `.aggregableDirect`: the input, a single block or a stream,
+      is parsed in place through a `Json.Reader`, and no tree is built for what the instance
+      reads directly. Under `parsing.trackPositions` parse errors carry real source
+      coordinates. Needs a `Tactic[Parse.Error]` and a `PositionTracking`.
+  entry #readableParsed   `data.read[T in Json]` directly from a whole `Data`, without wrapping it in a stream
+  entry #encodableOverPrinted   `value.in[Text over Json]` written directly by a `Json.Printable`, when compact
+      Above `.encodableOver`: a type with a `Json.Printable` is written straight to text,
+      with no tree, whenever the `Json.Formatting` in scope is compact; indented formatting
+      still renders through the tree, which generated printers do not write.
+  entry #aggregableStrictFailure   the compile error of `codecs.strict` for a type with no direct parser
+  entry #encodableOverStrictFailure   the compile error of `codecs.strict` for a type with no direct printer
+
+entry .Json2   the mixin holding the derived-path and element-wise givens of `Json`'s companion
+  hidden
+  detail
+      Not for direct use: a layer of `object Json`'s given-priority chain, above `Json3`.
+      Holds `decodable`, `encodable`, `optional`, `optionalEncodable`, `bytes`, the
+      `field…` instances, `optionalParsable`, `encodableOver`, `encodableOverData`,
+      `aggregableDirect` and the three derivation objects, documented below;
+      `object Json` inherits them.
+  entry #optionalEncodable   encodes an `Optional[T]`: `Unset` encodes as absent, so an object omits the field
+  entry #optional   decodes an `Optional[T]` field: absent or `null` reads as `Unset`, by the policies in scope
+      An absent key reads as `Unset`, an explicit `null` reads as `Unset`, and a value the
+      inner decoder rejects raises. Each is a policy, read from a given at resolution:
+      `Decodable.Absence in Json`, `Decodable.Nullity in Json` and `Decodable.Fault in Json`,
+      whose defaults are those three, and whose alternatives are the `optionalityOptions`
+      package's `strictJsonAbsence` (absent raises `Absent`), `strictJsonNulls` (a `null` is
+      handed to the inner decoder) and `lenientJsonFaults` (a rejected value reads as `Unset`,
+      under the ambient tactic's `tolerate`, so nothing accrues).
+  entry #bytes   decodes a JSON number to `Bytes`, a count of bytes
+  entry #fieldOptional   reads an `Optional[T]` field directly, by the `optionalityOptions` policies in scope
+  entry #fieldOption   reads an `Option[T]` field directly
+  entry #fieldArray   reads any `Iterable` collection field directly, with a `Factory` in scope
+  entry #fieldList   reads a `List[T]` field directly
+  entry #fieldSet   reads a `Set[T]` field directly
+  entry #fieldSeries   reads a `Sequence[T]` field directly
+  entry #fieldMap   reads a `Map[K, V]` field directly, decoding each key from text
+  entry #optionalParsable   an `Optional[T]` parses directly when `T` has opted in
+  entry #encodableOver   `value.in[Text over Json]`: a value's JSON text, through the tree
+      The write-side mirror of `read[T in Json]`: encodes to a `Json` and renders it in the
+      `Json.Formatting` in scope, as `show` would. Outranked by `.encodableOverPrinted`
+      wherever a `Json.Printable` exists and the formatting is compact.
+  entry #encodableOverData   `value.in[Data over Json]`: the same text as bytes, in the `Codepage` in scope
+  entry #aggregableDirect   `read[T in Json]` through the tree: parse the whole input, then decode
+      The read path for a type with a `Json.Decodable` but no `Json.Parsable`: the input is
+      parsed into a `Json` and decoded with `as[T]`. Needs a `Tactic[Parse.Error]`, a
+      `Tactic[Json.Error]` and a `PositionTracking`. `.aggregableParsed` wins whenever the
+      type has a `Json.Parsable`.
+  entry #decodable   the universal `Json.Decodable`: `Json` itself, a text codec, or derivation from the type's shape
+      `[value] => value is Json.Decodable`: a value is `Json` itself; or has a `Decodable in
+      Text`, in which case a JSON string is decoded through it; or is a case class, enumeration
+      or sealed hierarchy, derived by `.DecodableDerivation`. A hand-written `Json.Decodable`
+      in the type's companion outranks it.
+  entry #encodable   the universal `Json.Encodable`: a text codec, or derivation from the type's shape
+      `[value] => value is Json.Encodable`. A type with an `Encodable in Text` encodes as a JSON
+      string; a case class encodes as an object of its fields (renamed by `@name` or
+      `@name[Json]`, `Optional`/`Option` fields omitted when absent); an enumeration or sealed
+      hierarchy encodes as its variant, tagged by the `Discriminable in Json` in scope. A
+      hand-written instance in the type's companion outranks it.
+  entry #DecodableDerivation   derives a `Json.Decodable` for a case class or a sum, through wisteria
+    detail
+        Not for direct use: `.decodable` reaches it. A product decodes from an object, reading
+        each field at its own `Json.Focus` so that every missing or mistyped field accrues, with
+        `@name` renames applied and declared defaults filling absent keys; a sum reads the
+        discriminator through the `Discriminable in Json` in scope (the `discriminables`
+        package, or a `Json.DiscriminantField`/`DiscriminantWrapper`/`DiscriminantEnvelope` in
+        the type's companion) and decodes the variant it names.
+    entry .conjunction   the product derivation: an object with one field per constructor parameter
+    entry .disjunction   the sum derivation: a tagged variant, by the `Discriminable in Json` in scope
+  entry #ParsableDerivation   derives a direct parser (`Json.Field`) for a case class or a sum
+    detail
+        Not for direct use: `Json.Parsable.derived` and the `.field` fallback reach it. A
+        product parses through `Json.Parsable.product`, dispatching on keys through a
+        `Json.KeyTable`; a sum chooses its token-level strategy by the shape of the
+        `Discriminable in Json`: a `DiscriminantWrapper`'s tag is its first token, an
+        envelope's and a field's are found with a bounded scan-ahead, and any other
+        `Discriminable` materializes one value and decodes it.
+    entry .conjunction   the product derivation
+    entry .disjunction   the sum derivation
+  entry #EncodableDerivation   derives a `Json.Encodable` for a case class or a sum, through wisteria
+    detail
+        Not for direct use: `.encodable` reaches it. A product encodes as an object, omitting a
+        field whose encoding is absent (an `Unset` or `None`); a sum encodes its variant and
+        tags it with the `Discriminable in Json` in scope, renaming the variant by `@name`.
+    entry .conjunction   the product derivation
+    entry .disjunction   the sum derivation
+
+entry .Json3   the mixin holding the lowest-priority fallbacks of `Json`'s companion
+  hidden
+  detail
+      Not for direct use: holds `field`, the universal `Json.Field` fallback, and
+      `decodableAtFocus`, the adapter `Json#as` resolves, documented below;
+      `object Json` inherits them.
+  entry #field   the universal field parser: a direct parser, a text codec, derivation, or the tree bridge
+      Mirrors `.decodable`'s order so that a field's wire format is identical on both paths:
+      an explicit or derived `Json.Parsable`; a `Decodable in Text`, reading a JSON string; a
+      case class or sum, derived by `.ParsableDerivation`; and last, any remaining
+      `Json.Decodable` through `Json.Parsable.fromDecodable`. A type with both a `Reflection`
+      and a custom `Json.Decodable` derives here, diverging from its decoder; the remedy is a
+      `Json.Parsable.fromDecodable` instance in its companion.
+  entry #decodableAtFocus   lifts any `Decodable in Json` to one carrying a `Json.Focus`, for `as[T]`
+      The lowest-priority given, and the only one which produces the `at Json.Focus` form
+      `Json#as` summons, so a generic caller bounded on `Decodable in Json` still resolves.
+
+entry .Json4   the mixin holding `Json.Provider`
+  detail
+      Not for direct use: the layer of `object Json`'s companion chain which holds the type
+      provider over a JSON Schema document, documented below; `object Json` inherits
+      it, so it is used as `Json.Provider`.
+  entry #Provider   a type provider over a JSON Schema document: typed records from matching JSON
+    detail
+        `object Catalogue extends Json.Provider(schema)` binds a JSON Schema, read as the code
+        compiles, to a structurally-typed record with one field per property of the schema's
+        root object, each read at the type its schema declares. `Catalogue.record(json)` turns
+        a `Json` into such a record, and `Catalogue.tuple(json)` into a named tuple whose
+        elements are all read at once. The schema is `into[Json.Provider.Schema]`: a `Json`,
+        or anything readable as JSON, such as a classpath resource (`cp"/schemas/x.json"`, with
+        a `Classloader` in scope) or JSON text.
+
+        ```scala fuel
+        typecheck
+        ##
+        object Catalogue extends Json.Provider(t"""{
+          "type": "object",
+          "required": ["name", "children"],
+          "properties": {
+            "name": { "type": "string" },
+            "email": { "type": "string", "format": "email" },
+            "children": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["weight"],
+                "properties": { "weight": { "type": "number", "minimum": 0 } }
+              }
+            }
+          }
+        }""".read[Json])
+
+        val input = t"""{"name": "Bicycle", "children": [{"weight": 9.5}]}""".read[Json]
+        val record = Catalogue.record(input)
+        record.name                          // t"Bicycle"
+        record.children.head.let(_.weight)   // 9.5
+        record.nope                          // does not compile: the schema has no such property
+        ```
+
+        A property in the schema's `required` list reads at its type and raises
+        `Json.Provider.Error(MissingValue(name))` when the document omits it; any other, or
+        one whose type admits `null`, reads as an `Optional`. An `array` reads as a `List` of
+        its `items` type, an `object` with `properties` as a nested record, an object whose
+        values one schema describes (`additionalProperties`, or `patternProperties` of one
+        type) as a `Map[Text, T]`, and a property whose name is not an identifier through a
+        backticked name. A local `$ref` is followed, an `allOf` of objects merges their
+        properties, and `anyOf`/`oneOf` alternatives (or a `type` naming several) read as a
+        Scala union chosen by the kind of the value found. A string's `enum`/`const`,
+        `pattern`, `minLength`/`maxLength` and a number's bounds are checked as the field is
+        read, through the readers `.boundedInteger`, `.boundedNumber`, `.boundedString`,
+        `.pattern` and `.enumeration`, and a value of the wrong JSON type raises
+        `JsonType(expected, found)`; every error goes through the `Tactic` of the code reading
+        the field, so `validate` with a `venture` per field collects every problem.
+
+        What stays raw `Json`: alternatives a value's kind cannot tell apart (two object
+        shapes in a `oneOf`), `not` and `if`, an object with neither `properties` nor a value
+        schema, an array with no `items` or a tuple-form `items`, a reference to another
+        document, and a recursive reference at its point of recursion. A root which is not an
+        object with properties is a compile error. A property named as a method of every JVM
+        object (`notify`, `toString`, …) is read through `record.selectDynamic("notify")`.
+
+        A format naming a domain type — `date-time`, `email`, `hostname`, `ipv4`, `uri`,
+        `uuid`, … — reads as whichever type represents that domain at the call site, chosen by
+        importing its interface: `emailAddressInterfaces.soundnessEmailAddress` makes an
+        `email` field an `EmailAddress`, `uuidInterfaces.soundnessUuid` a `uuid` field a `Uuid`,
+        and so on. The readers are givens of `.Reader` in this companion.
+    refer jacinta.Json.Provider.Error
+    refer jacinta.JsonSchema
+    entry .Reader   the type of a provider's fallible readers: an `Intensional.Reading` raising `Json.Provider.Error`
+        `Json.Provider.Reader[label, result]` is a reading of a `Json` labelled by the
+        schema's type or format name, through the `Tactic[Json.Provider.Error]` of the code
+        reading the field. Every reader below is one.
+    entry .boolean   reads a `boolean` property as `Boolean`
+    entry .string   reads a `string` property as `Text`
+    entry .integer   reads an `integer` property as `Int`
+    entry .long   reads an `integer` of format `int64` as `Long`
+    entry .number   reads a `number` property as `Double`
+    entry .json   reads a property the schema does not constrain to one type, as the raw `Json`
+    entry .dateTime   reads a `date-time` string through the `Instantiable across Instants` in scope
+    entry .date   reads a `date` string through the `Instantiable across Dates` in scope
+    entry .time   reads a `time` string through the `Instantiable across Times` in scope
+    entry .duration   reads a `duration` string through the `Instantiable across Durations` in scope
+    entry .uriReference   reads a `uri-reference` string as `Text`
+    entry .email   reads an `email` string through the `Instantiable across EmailAddresses` in scope
+    entry .idnEmail   reads an `idn-email` string through the `Instantiable across EmailAddresses` in scope
+    entry .hostname   reads a `hostname` string through the `Instantiable across Hostnames` in scope
+    entry .ipv4   reads an `ipv4` string through the `Instantiable across IpAddresses` in scope
+    entry .ipv6   reads an `ipv6` string through the `Instantiable across IpAddresses` in scope
+    entry .uri   reads a `uri` string through the `Instantiable across Urls` in scope
+    entry .iri   reads an `iri` string through the `Instantiable across Urls` in scope
+    entry .iriReference   reads an `iri-reference` string as `Text`
+    entry .uuid   reads a `uuid` string through the `Instantiable across Uuids` in scope
+    entry .uriTemplate   reads a `uri-template` string as `Text`
+    entry .jsonPointer   reads a `json-pointer` string as a `JsonPointer`, raising `Unparsable` if it does not parse
+    entry .regex   reads a `regex` string as a `Regex`, raising `Unparsable` if it does not compile
+    entry .BoundedInteger   the reader of an `integer` with `minimum`/`maximum` bounds, raising `IntOutOfRange`
+    entry .boundedInteger   the `BoundedInteger` given
+    entry .BoundedNumber   the reader of a `number` with bounds, exclusive or inclusive, raising `NumberOutOfRange`
+    entry .boundedNumber   the `BoundedNumber` given
+    entry .BoundedString   the reader of a `string` with `minLength`/`maxLength`, raising `LengthOutOfRange`
+    entry .boundedString   the `BoundedString` given
+    entry .Pattern   the reader of a `string` with a `pattern`, raising `PatternMismatch`
+    entry .pattern   the `Pattern` given
+    entry .Enumeration   the reader of a `string` with `enum` or `const`, raising `NotPermitted`
+    entry .enumeration   the `Enumeration` given
+    entry .Primitives   the format's reading primitives without a schema: what a provider adds its fields to
+      detail
+          A polyvinyl `Specification` over `Json` whose failure type is `Json.Provider.Error`.
+          `Json.Provider` extends it, and a macro with fields of its own (an OpenAPI
+          `record()`) builds records over it. Its methods are the hooks the record macro calls
+          to access, test and enumerate JSON values.
+      entry #access   the value under a name, absent rather than failing for a key the object lacks
+      entry #absent   whether a value is absent or `null`; a `null` type marks a field optional
+      entry #required   the value under a name, raising `MissingValue(name)` when absent
+      entry #kind   the kind of a value, by which a union chooses its alternative
+      entry #elements   the elements of an array value
+      entry #pairs   the key/value pairs of an object value
+      entry #entries   the pairs of the object under a name
+      entry #repeated   the elements of the array under a name, empty where absent
+      entry #unoffered   raises `UnexpectedKind` for a union value of a kind no alternative offers
+    entry .fieldsOf   the fields of a schema's root object, as a provider's specification
+        Raises `Json.Error` through its tactic for a schema which cannot be read; a caller at
+        macro time wraps it in `safely(…).or(halt(…))`.
+    entry .memberOf   the member reading the values a node within a larger document describes
+        Its `$ref`s resolve against the document, so a schema embedded in one — a response
+        schema in an OpenAPI document referring to `#/components/schemas/…` — reads as it
+        would alone. An object reads as a record, an array of objects as a repeated one.
+        `limit` bounds how many references deep the walk follows before reading a reference
+        as raw `Json`.
+    entry .Schema   the schema a provider is built from: a `Json`, or anything readable as one
+      detail
+          The `into[Json.Provider.Schema]` parameter of `Json.Provider` converts its argument
+          through the givens here: `.json` for a `Json` already parsed, and `.readable` for
+          any source `Readable to Json`, such as a classpath resource or JSON text, read as the
+          code compiles.
+          The companion inherits `readable` from `.Schema2`.
+      entry .json   a `Json` as a schema
+      entry #json   the schema document
+    entry .Schema2   the mixin holding the lower-priority `readable` conversion
+      hidden
+      detail
+          Not for direct use; see `Json.Provider.Schema`.
+      entry #readable   any source readable as `Json` as a schema
+    entry .Error   raised when a document does not conform to a provider's schema
+      detail
+          Error 624: _the JSON was not valid according to the schema because `reason`_, raised
+          through the `Tactic` of the code reading a record field, so `attempt`, `recover`,
+          `validate` and `track` all see it. The `#reason` is a `Json.Provider.Error.Reason`:
+          `JsonType(expected, found)`, `MissingValue(name)` (a required property absent),
+          `IntOutOfRange(value, minimum, maximum)`, `PatternMismatch(value, pattern)`,
+          `NumberOutOfRange(value, minimum, maximum)`, `LengthOutOfRange(value, minimum,
+          maximum)`, `NotPermitted(value, permitted)` (not in the `enum`), `UnexpectedKind(found,
+          offered)` (a union value of a kind no alternative offers) and `Unparsable(value,
+          format)` (a `json-pointer` or `regex` which does not parse).
+      entry .Reason   why a document did not conform, numbered 1 to 9 within error 624
+        detail
+            An enumeration of the nine reasons, rendered as messages by its companion's
+            anonymous `Communicable`.
+        entry #number   the reason's number
+      entry #reason   the `Json.Provider.Error.Reason`
+    entry #schema   the schema document the provider was built from
+    entry #fields   the schema's root properties as polyvinyl members, raising `Specification.Error`
+        A schema which cannot be read is raised, and the `record`/`tuple` macros halt with its
+        message at the use site.
+
+entry .JsonPointer   an RFC 6901 JSON Pointer: a path into a document, written `jp"#/a/0/b"`
+  detail
+      A `JsonPointer` names a location within a document as a path of keys and array indices
+      on the `JsonPointer` plane: the object is the plane's root, and a pointer is built
+      segment by segment with `#apply`, or written with the `jp"…"` interpolator, which checks
+      it as the code compiles. It encodes as `#/a/b` (the empty pointer as `#`), with `~` and
+      `/` within a segment escaped as `~0` and `~1`, and decodes from the same text, raising
+      `JsonPointer.Error` with the offset of the fault.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      jp"#/foo/bar".encode               // t"#/foo/bar"
+      JsonPointer()(t"a")(t"b").encode   // t"#/a/b"
+      (JsonPointer() / t"a" / Prim).encode   // t"#/a/0"
+      t"#/x/y".as[JsonPointer]
+      ```
+
+      Pointers are how `Json.Focus` names the field an error was raised at, how `locate` and
+      `locateKey` address a tracked document's positions, and how a `Json.Provider` follows a
+      `$ref`.
+  refer jacinta.jp
+  refer jacinta.Json.Focus
+  entry .Plane   the plane type of pointer paths: `JsonPointer` itself
+  entry .navigable   an `Ordinal` as a pointer segment, rendered as its zero-based index
+  entry .admissible   any `Ordinal` is a permitted segment
+  entry .admissible2   any `Text` is a permitted segment
+  entry .filesystem   the pointer plane as a `Filesystem`: `/`-separated, rooted at `#`, with `~0`/`~1` escapes
+  entry .interpolable   the macro behind `jp"…"`: a pointer literal parsed as the code compiles
+      Reuses `.decodable` at expansion, so a malformed literal is a compile error at the
+      offending character: `jp"#/foo~2bar"` does not compile.
+  entry .decodable   reads a pointer from text, raising `JsonPointer.Error` with the offset of the fault
+      The text must begin with `#` (`ExpectedHash`), a non-empty pointer must continue with
+      `/` (`ExpectedSlash`), and every `~` must be followed by `0` or `1` (`BadEscape`). A
+      URL-bearing reference is rejected: same-document references are all the library follows.
+  entry .unsafeParse   decodes a pointer whose text is already known to be valid, for the interpolator
+      Takes the `Unsafe` token: the `jp"…"` macro has parsed the literal at expansion, so the
+      runtime re-parse cannot fail.
+  entry .divisible   `pointer / t"key"`: a pointer extended by a key segment
+  entry .divisible2   `pointer / ordinal`: a pointer extended by an array index
+  entry .Error   raised when text is not a valid JSON reference
+    detail
+        Error 415: _the JSON reference was not valid because `reason`_, with the `#offset` of
+        the character at fault, which the `jp"…"` interpolator uses to position its compile
+        error. The reasons are `ExpectedHash` (_a JSON reference must begin with '#'_),
+        `ExpectedSlash` (_a JSON reference fragment must begin with '/'_) and `BadEscape` (_a
+        '~' in a JSON reference must be followed by '0' or '1'_).
+    entry .Reason   why the reference was invalid: `ExpectedHash`, `ExpectedSlash` or `BadEscape`
+      detail
+          Numbered 2, 3 and 4 within error 415, rendered by `.communicable`.
+      entry #number   the reason's number
+    entry .communicable   renders each reason as a message
+    entry #reason   the `JsonPointer.Error.Reason`
+    entry #offset   the character index within the reference text where the error was detected
+  entry #path   the pointer as a `Path on JsonPointer`
+  entry #apply   the pointer extended by a key (`Text`) or an index (`Ordinal`)
+
+entry .NumberMode   what becomes of a JSON number too long for the parser's fast path
+  detail
+      A number of up to about fifteen digits is decoded identically whatever the mode, as a
+      `Long` or a `Double`. The mode decides the rest, and is a given chosen by importing one
+      of the `numberModes` package by name; `.default` is `Full`.
+
+      `Full` keeps every digit, accumulating them as a binary-coded decimal (`Bcd`) at the cost
+      of one allocation for that number: the default, because losing digits silently is the
+      wrong thing to do by default. `Double` drops the overflow and computes an IEEE-754
+      `Double` from the leading digits — what Jawn, Circe, Jsoniter and Jackson do — for a
+      like-for-like throughput comparison, or data known to be within a double's range. `Bcd`
+      also drops the overflow but emits the raw packed accumulator as a `Long` with no
+      allocation at all: the `Long` carries BCD nibbles rather than the number's value, so
+      those numbers must be treated as opaque.
+
+      ```scala fuel
+      frame
+        label Every digit kept, as a `Bcd`
+        code
+            locally:
+              import soundness.*
+              import strategies.throwUnsafely
+              import numberModes.fullNumberMode
+
+              Json.unseal(t"12345678901234567890".read[Json]).isBcd   // true
+      frame
+        label The leading digits, as a `Double`
+        code
+            locally:
+              import soundness.*
+              import strategies.throwUnsafely
+              import numberModes.doubleNumberMode
+
+              Json.unseal(t"12345678901234567890".read[Json]).isDouble   // true
+      ##
+      ```
+  refer jacinta.numberModes
+  entry .default   the mode in scope when none is imported: `Full`
+
+entry .Bcd   hypotenuse's binary-coded decimal, exported here: the exact form of a long JSON number
+    `export hypotenuse.Bcd`. A number with more digits than a `Long` or `Double` can hold
+    parses to a `Bcd` under the default `NumberMode`, and `Json.Ast.bcd` reads any number as
+    one. Its own page is in the `hypotenuse` package.
+
+entry .j   the `j"…"` interpolator: a JSON literal checked as it compiles, with holes, spreads and merges
+    `j"""{"a": $x}"""` is a `Json` whose syntax was checked while the code compiled — a
+    trailing comma, say, is reported at the character — and whose holes are filled at runtime.
+    A hole substitutes any value `Encodable in Json`; inside an array, `$xs*` splices every
+    element of a collection; among an object's fields, a `$map` hole merges a `Map[Text, Json]`.
+    In a `match`, the same interpolator is a pattern which binds its holes.
+
+    ```scala
+    import soundness.*
+
+    val x = 42
+    val xs = List(2, 3, 4)
+    val rest: Map[Text, Json] = Map(t"b" -> 2.in[Json], t"c" -> 3.in[Json])
+
+    j"""{"a": $x}"""         // {"a": 42}
+    j"""[1, $xs*]"""         // [1, 2, 3, 4]
+    j"""{"a": 1, $rest}"""   // {"a": 1, "b": 2, "c": 3}
+
+    j"""[1, 2, 3, 4]""" match
+      case j"""[$head, $tail*]""" => (head, tail)
+      case _                      => (j"0", j"[]")
+
+    j""" {"a": 1, } """   // does not compile: a trailing comma
+    ```
+
+entry .jp   the `jp"…"` interpolator: a JSON Pointer literal checked as it compiles
+    `jp"#/foo/bar"` is a `JsonPointer`, parsed while the code compiles so that a malformed
+    pointer — one not beginning with `#`, or with a bad `~` escape — is a compile error at the
+    offending character. The interpolator takes no substitutions.
+
+    ```scala
+    import soundness.*
+
+    jp"#/foo/bar".encode   // t"#/foo/bar"
+    jp"#".encode           // t"#"
+    jp"#/foo~2bar"         // does not compile: ~2 is not a valid escape
+    ```
+
+entry .formatting   the two standard `Json.Formatting`s, each a given to import by name
+  detail
+      `show`, `emit`, `in[Text over Json]` and the HTTP givens all need a `Json.Formatting`,
+      and `import soundness.*` brings none in; one is imported by name. A custom one is
+      `Json.Formatting(indent, trailingNewline)`.
+
+      ```scala fuel
+      frame
+        label Compact: no whitespace at all
+        code
+            locally:
+              import soundness.*
+              import formatting.compactJsonFormatting
+
+              Json.make(a = 1.in[Json], b = List(2, 3).in[Json]).show   // t"""{"a":1,"b":[2,3]}"""
+      frame
+        label Indented: two spaces per level
+        code
+            locally:
+              import soundness.*
+              import formatting.indentedJsonFormatting
+
+              Json.make(a = 1.in[Json], b = List(2, 3).in[Json]).show   // across six lines
+      ##
+      ```
+  entry .compactJsonFormatting   no whitespace, no trailing newline: `{"a":1}`
+  entry .indentedJsonFormatting   two spaces per nesting level, newlines between members, no trailing newline
+
+entry .numberModes   the three `NumberMode`s, each a given to import by name
+  detail
+      How a number too long for a `Long` or `Double` is parsed: see `NumberMode`. Without an
+      import the default is `fullNumberMode`.
+  entry .fullNumberMode   every digit kept as a `Bcd`; the default
+  entry .doubleNumberMode   the leading digits as a `Double`, as Jackson and Circe do
+  entry .bcdNumberMode   the raw packed accumulator as an opaque `Long`, with no allocation
+
+entry .optionalityOptions   how an `Optional` or `Option` field reads an absent key, a `null`, or a rejected value
+  detail
+      An `Optional` (or `Option`) field answers three questions, each a separate given with a
+      default: an absent key reads as `Unset` (`lenientJsonAbsence`, the default; `strictJsonAbsence`
+      raises `Json.Error(Absent)`); an explicit `null` reads as `Unset` (`lenientJsonNulls`, the
+      default; `strictJsonNulls` hands it to the inner decoder, which rejects it as it would for
+      any other field); and a value the inner decoder rejects is an error (`strictJsonFaults`,
+      the default; `lenientJsonFaults` reads it as `Unset`, under the ambient tactic's
+      `tolerate`, so nothing accrues). Each can be varied alone. The direct and staged parsers
+      honour the same policies, with one limit: a lenient fault is tolerated only when the
+      value on the wire is of the wrong kind, which the parser can skip whole; a value of the
+      right kind that fails within it still raises. A declared default of `Unset` is
+      indistinguishable from no default, so it does not satisfy a strict absence.
+
+      ```scala fuel
+      frame
+        label The defaults: an absent key and a null are `Unset`, a wrong value raises
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            case class Profile(name: Text, age: Optional[Int])
+
+            t"""{"name": "Eve"}""".read[Json].as[Profile].age                   // Unset
+            t"""{"name": "Eve", "age": null}""".read[Json].as[Profile].age      // Unset
+            capture[Json.Error](t"""{"name": "Eve", "age": "old"}""".read[Json].as[Profile])
+      frame
+        label Strict absence: the key must be present
+        code
+            locally:
+              import optionalityOptions.strictJsonAbsence
+
+              capture[Json.Error](t"""{"name": "Eve"}""".read[Json].as[Profile]).reason
+              // Json.Error.Reason.Absent
+      frame
+        label Strict nulls: a null is rejected like any other wrong value
+        code
+            locally:
+              import optionalityOptions.strictJsonNulls
+
+              capture[Json.Error](t"""{"name": "Eve", "age": null}""".read[Json].as[Profile]).reason
+              // Json.Error.Reason.NotType(Json.Primitive.Null, Json.Primitive.Number)
+      frame
+        label Lenient faults: a wrong value is `Unset`
+        code
+            locally:
+              import optionalityOptions.lenientJsonFaults
+
+              t"""{"name": "Eve", "age": "old"}""".read[Json].as[Profile].age   // Unset
+      ##
+      ```
+  entry .strictJsonAbsence   an absent key raises `Json.Error(Absent)` rather than reading as `Unset`
+  entry .lenientJsonAbsence   an absent key reads as `Unset`; the default
+  entry .strictJsonNulls   a `null` is handed to the inner decoder, which rejects it
+  entry .lenientJsonNulls   a `null` reads as `Unset`; the default
+  entry .strictJsonFaults   a value the inner decoder rejects raises; the default
+  entry .lenientJsonFaults   a value the inner decoder rejects reads as `Unset`, and nothing accrues
+
+entry .discriminables   the standard wire shapes of a tagged union, each a given to import by name
+  detail
+      An enumeration or sealed hierarchy encodes as its variant plus a tag, and the
+      `Discriminable in Json` in scope says where the tag goes. None is in scope by default;
+      one is imported by name, or a `Json.DiscriminantField`, `Json.DiscriminantWrapper` or
+      `Json.DiscriminantEnvelope` is given in the type's companion. Each works through the
+      tree and through direct parsing; `Json.Parsable.staged` supports only the field shapes.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import formatting.compactJsonFormatting
+      import discriminables.jsonByKindDiscriminable
+
+      enum Shape:
+        case Circle(radius: Double)
+        case Square(side: Double)
+
+      (Shape.Circle(1.0): Shape).in[Json].show                       // t"""{"radius":1.0,"kind":"Circle"}"""
+      t"""{"radius":1.0,"kind":"Circle"}""".read[Json].as[Shape]   // Shape.Circle(1.0)
+      ```
+
+      `@name` renames a case's tag value just as it renames a field.
+  entry .jsonByTypeDiscriminable   the tag in a `type` field beside the variant's own: `{"radius":1.0,"type":"Circle"}`
+  entry .jsonByKindDiscriminable   the tag in a `kind` field beside the variant's own: `{"radius":1.0,"kind":"Circle"}`
+  entry .jsonWrapperDiscriminable   the variant inside an object keyed by its tag: `{"Circle":{"radius":1.0}}`
+      The streaming-friendliest shape, since the tag is always the first token.
+  entry .jsonEnvelopeDiscriminable   a `type` field and a `value` field: `{"type":"Circle","value":{"radius":1.0}}`
+
+entry .dynamicAccess   the given which licenses `json.field` on an unverified document
+  detail
+      A `Json` is dynamically typed, and the compiler knows nothing of its fields, so reading
+      one as a member is a real loss of checking and is not on by default. `import
+      dynamicAccess.dynamicJson` grants the permission, `Json is Dynamical`, to the rest of its
+      scope; the same permission is confined to a block with `dynamically[Json]:`, or
+      `dynamically:` for every format with dynamic access. A document `verify`'d against a type
+      navigates its fields without either, since the schema licenses it.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val config = t"""{"server": {"port": 8080}}""".read[Json]
+
+      dynamically[Json]:
+        config.server.port.as[Int]   // 8080
+      ```
+  entry .dynamicJson   `Json is Dynamical`: enables `json.field`, `json.field = value` and `json.lens(…)` in its scope
+
+entry .conversions   a `Conversion` from any `Encodable in Json` value to `Json`, to import by name
+  detail
+      With `conversions.encodableToJson` imported, a value with an encoder may be supplied
+      wherever a `Json` is expected — `Json.make(a = 1)`, or a lens assignment
+      `json.lens(_.name = t"x")` — without writing `.in[Json]`.
+  entry .encodableToJson   `Conversion[T, Json]` for any `T` that is `Encodable in Json`
+
+entry .postables   sends a `Json` as an `application/json` request body; JVM only
+  detail
+      `jacinta.http`. The given needs a `Codepage` and a `Json.Formatting`, and renders the
+      document with `show`, encoded in the codepage, under the media type `application/json;
+      charset=UTF-8`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import postables.jsonPostable
+      url"https://example.com/api".post(Json.make(name = t"Bob".in[Json]))
+      ```
+  entry .jsonPostable   `Json is Postable`: a request body of the document's text, as `application/json`
+
+entry .servables   serves a `Json` as an `application/json` response body; JVM only
+  detail
+      `jacinta.http`. The given needs a `Codepage` and a `Json.Formatting`, and renders the
+      document with `show` into a fixed-length response body.
+  entry .jsonServable   `Json is Servable`: a response of the document's text, as `application/json`
+
+entry .construables   reads an API body of media type `application/json` as a `Json`; JVM only
+  detail
+      `jacinta.http`. The given which lets an API description (apoplexy's `Api`) construct a
+      `Json` from a request or response whose media type is `application/json`.
+  entry .jsonConstruable   `"application/json" is Construable to Json`
+
+entry .optics   lenses and optics over `Json` documents, each a given to import by name
+  detail
+      `jacinta.optics`. These are what make `json.lens(…)` work: the panopticon lens for a
+      named field, and the optics which reach into arrays. They live in a package rather than
+      `Json`'s companion so that a missing import is a compile error rather than a silent
+      change of behaviour; `import optics.*` brings them all (or `import soundness.optics.*`,
+      where every library's optics merge). A lens assignment also needs dynamic access enabled
+      and, to assign a plain value, `conversions.encodableToJson`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import dynamicAccess.dynamicJson, conversions.encodableToJson
+      import optics.*
+
+      case class Role(name: Text)
+      case class Entity(name: Text, age: Int, roles: List[Role])
+      case class Org(name: Text, leader: Entity)
+
+      val org = Org(t"The Beatles", Entity(t"John", 40, List(Role(t"Leader")))).in[Json]
+      org.lens(_.leader.age = 41.in[Json]).as[Org].leader.age                      // 41
+      org.lens(_.leader.roles(Prim).name = t"Singer").as[Org]                        // the first role renamed
+      org.lens(_.leader.roles(Each).name = t"x").as[Org]                             // every role renamed
+      org.lens(_.leader.roles(Filter[Json](_.name.as[Text] == t"Leader")).name = t"x").as[Org]
+      ```
+  entry .jsonLens   a lens from a `Json` onto a named field, for `json.lens(_.name = …)`
+      Needs dynamic access enabled (`dynamicAccess.dynamicJson`) and a `Tactic[Json.Error]`;
+      reading a missing field yields an absent `Json`, and writing adds it.
+  entry .jsonOrdinalOptical   an optic onto one array element by its `Ordinal`: `roles(Prim)`
+      Rebuilds the array immutably; an index past the end, or a non-array, leaves the
+      document unchanged.
+  entry .jsonEachOptical   the `Each` optic: applies a transform to every element of an array
+  entry .jsonFilterOptical   the `Filter[Json](predicate)` optic: applies a transform to the elements matching it
+
+entry .encodables   aviation's `Instant` and `Duration` encoded as milliseconds, each a given to import by name
+  detail
+      `jacinta.time`. An `Instant over Unix` encodes as its whole number of milliseconds since
+      the epoch, and a `Duration` as its whole number of milliseconds.
+
+      ```scala
+      import soundness.*
+      import chronometries.unixChronometry
+      import formatting.compactJsonFormatting
+      import encodables.instantJsonEncodable
+
+      Instant(1700000000000L).in[Json].show   // t"1700000000000"
+      ```
+  entry .instantJsonEncodable   `Instant over Unix` as a JSON integer of milliseconds
+  entry .durationJsonEncodable   `Duration` as a JSON integer of milliseconds
+
+entry .decodables   aviation's `Instant` and `Duration` decoded from milliseconds, through the tree
+  detail
+      `jacinta.time`. The tree-walking decoders; `parsables` are their direct-parsing twins.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import decodables.durationJsonDecodable
+
+      t"5000".read[Json].as[Duration].value   // 5.0
+      ```
+  entry .instantJsonDecodable   `Instant over Unix` from a JSON integer of milliseconds
+  entry .durationJsonDecodable   `Duration` from a JSON integer of milliseconds
+
+entry .parsables   aviation's `Instant` and `Duration` read directly from the token stream
+  detail
+      `jacinta.time`. The direct-parsing counterparts of `decodables`: the number is read
+      straight off the tokens, with no intermediate node, so a record with an `Instant` field
+      parses directly when it has opted in.
+  entry .instantJsonParsable   `Instant over Unix` read directly from a JSON integer of milliseconds
+  entry .durationJsonParsable   `Duration` read directly from a JSON integer of milliseconds
+
+entry .InlinableStager   the compile-time staging compiler behind `Inlinable.parsable`
+  hidden
+  detail
+      Not for direct use. `jacinta.staged`. When a parser is generated for a record, a
+      user-written `Inlinable` given for a field type is evaluated at expansion time in a
+      fresh staging compiler over the macro classloader (with the current output directory
+      excluded, since a class of the run in progress has no trustworthy classfile), so that
+      the generator can call its `parse`. A type which cannot cross into the inner compiler —
+      opaque, structural, or defined in the current run — degrades to a runtime seam.
+      `Inlinable.Stager` loads `.Implementation` by name.
+  entry .evaluate   evaluates the `Inlinable` instance for a type in a staging compiler, if it can
+  entry .Implementation   the `Inlinable.Stager` which `Inlinable.parsable` loads by name
+    detail
+        Delegates `summon` to `.evaluate`.
+    entry .summon   the `Inlinable` for a type, evaluated at expansion time, or `None`
+
+entry .Inlinable   a compile-time code generator for one type's JSON parser and printer, composed into one flat parser
+  detail
+      `Inlinable` is the macro-time counterpart of `Json.Parsable` and `Json.Printable`: where
+      a `Json.Parsable` instance *runs* against a `Json.Reader`, an `Inlinable` instance
+      *generates* the code which would, as an `Expr`. `Inlinable.parsable[T]` composes the
+      instances for `T` and every field type beneath it into a single monomorphic parser —
+      typed locals for the fields, keys dispatched by comparing packed words against
+      literals, nested records and collection loops inlined in place — with no runtime
+      dispatch, no instance arrays and no adapter between composed parsers, and
+      `Inlinable.printable[T]` does the same for writing. The result is spliced into the
+      module which asked for it, so every field is read straight off the token stream and no
+      `Json` tree is ever built.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import codepages.utf8Codepage
+      import formatting.compactJsonFormatting
+
+      case class Person(name: Text, age: Int)
+
+      object Person:
+        given Person is Json.Parsable = Inlinable.parsable[Person]
+        given Person is Json.Printable = Inlinable.printable[Person]
+
+      t"""{"name":"Bob","age":40}""".read[Person in Json]   // Person(t"Bob", 40)
+      Person(t"Bob", 40).in[Text over Json]                  // t"""{"name":"Bob","age":40}"""
+      ```
+
+      The same two instances are generated once into a record's companion by `derives
+      Json.Direct`, and `import codecs.direct` selects a generated parser and printer for
+      every record in scope with nothing declared, so most code never calls `Inlinable`
+      directly. What is generated for a type is decided by a resolution ladder, in order: a
+      builtin leaf (`Int`, `Long`, `Double`, `Float`, `Boolean`, `Text`, `String`); a
+      user-written `Inlinable` given, evaluated at expansion time; a structural generator for
+      a case class (`.derived`) or an applied collection type — `List`, `Set`, `Sequence`,
+      `Vector` and the stdlib's immutable collections, gathered element by element into the
+      collection's builder; and otherwise the **runtime seam**, a spliced call to the field
+      type's `Json.Parsable` or `Json.Field` (and, when printing, its `Encodable in Json`),
+      which is how an `Optional[…]`, a `Map`, an enumeration or a sealed sum takes part. A
+      recursive type — `Tree(children: List[Tree])` — ties the recursive occurrence back to
+      the instance being generated, through its own nominal `Json.Parsable`, so the
+      expansion terminates.
+
+      Three facts govern a hand-written instance. First, an `Inlinable` given is an ordinary
+      runtime value, so the generator can only call its `parse` by evaluating the given inside
+      the macro, which needs an in-macro staging compiler: `jacinta.staged` supplies one
+      (`Inlinable.Stager`), and without it on the compile classpath a field whose type has
+      only a user-written instance takes the runtime seam. Second, the instance and its type
+      must have been compiled in an *earlier* run than the expansion — a same-run instance has
+      no trustworthy classfile and also degrades to the seam. Third, `Inlinable.parsable[T]`
+      itself refuses a `T` with no generator of its own (a type whose only instance is a
+      nominal `Json.Parsable`), with the error _jacinta: `T` has no generator of its own; use
+      `Json.Parsable.staged` or `derived` rather than `Inlinable.parsable`_, since the result
+      would either add nothing or call itself.
+
+      An instance's `#prints` says whether it generates a printer; the default, `false`, keeps
+      a parse-only instance honest, and a field whose instance does not print is written
+      through its `Encodable in Json`. `#absent` is the code for a key which is missing from
+      the object: by default it raises `Json.Error` through the tactic it is given, as the
+      runtime instances do.
+  refer jacinta.Json
+  refer jacinta.Parser
+  refer jacinta.inlining
+  entry .parsable   `Inlinable.parsable[T]`: a monomorphic `Json.Parsable` for `T`, generated as the code compiles
+      A macro. Resolves the `Inlinable` for `T` through the ladder described under
+      `Inlinable` and splices one flat parser as a `Json.Parsable.Direct[T]`, which reads a
+      value from the `Json.Reader`'s underlying `Parser` without building a `Json`. A type with
+      no instance and no structural generator is a compile error, _jacinta: no Inlinable
+      instance for `T`, and it is not an inlinable product; use `Json.Parsable.staged` or
+      `derived`_. The usual home for the result is the type's companion:
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import codepages.utf8Codepage
+
+      case class Tree(label: Text, children: List[Tree])
+
+      object Tree:
+        given Tree is Json.Parsable = Inlinable.parsable[Tree]
+
+      t"""{"label":"root","children":[{"label":"a","children":[]}]}""".read[Tree in Json]
+      ```
+
+      The semantics match `Json.Parsable.derived`: a declared default is used for a missing
+      key, `@name` renames apply, unknown keys are skipped with `Parser#directSkipValue`,
+      and an error focus names the field. Collections are gathered occurrence by occurrence
+      into the collection's builder, with an index focus per element.
+  entry .printable   `Inlinable.printable[T]`: a monomorphic `Json.Printable` for `T`, generated as the code compiles
+      A macro: the writing counterpart of `.parsable`, a `Json.Printable.Direct[T]` which
+      writes `T`'s compact JSON text straight into the writer, field by field, composed
+      through the same instances. A type whose root instance does not print — a type which
+      encodes as text, or whose only instance is a runtime `Encodable` — is a compile error,
+      _jacinta: `T` has no generated printer; use its `Encodable in Json`_. A generated
+      printer is used by `in[Text over Json]` and `in[Data over Json]` wherever the
+      `Json.Formatting` in scope is compact; indented output still renders through the tree.
+  entry .derived   the structural `Inlinable` for a case class: every field through its own instance
+      `Inlinable.derived[T]` is the product generator as a value, for a case class `T`: it
+      reflects `T` when its `parse` is invoked, so it needs no macro of its own and can be
+      written as a given, `given Tree is Inlinable = Inlinable.derived`. It prints as well as
+      parses.
+  entry .ForJson   the carrier which lets a case class say `derives Inlinable.ForJson`
+    detail
+        A `Self`-typed typeclass has no type parameters, so `Inlinable` cannot appear in a
+        `derives` clause. `case class Foo(…) derives Inlinable.ForJson` synthesises a
+        `ForJson[Foo]` — which *is* a `Foo is Inlinable`, delegating every method to
+        `Inlinable.derived[Foo]` — into `Foo`'s companion, where the expansion-time summon
+        finds it. The resolution ladder unwraps the delegate, so a structural instance keeps
+        its generator identity.
+    entry .derived   `ForJson.derived[T]`: wraps `Inlinable.derived[T]`, for the `derives` clause
+    entry #parse   the delegate's generated parse
+    entry #absent   the delegate's code for a missing key
+    entry #prints   whether the delegate prints
+    entry #write   the delegate's generated write
+  entry .Generates   evidence that a type's codec is generated structurally, as a record
+    detail
+        `Inlinable.Generates[T]` is the condition on `import codecs.direct`'s generated
+        instances: its given, `.generates`, is a macro which succeeds only for a case class the
+        product generator supports and which does not encode as text, and fails — _jacinta:
+        `T` has no generated codec_ — for everything else, so that the search for a generated
+        instance fails and the derived path resolves instead. Not for direct use.
+    entry .generates   the transparent inline given behind `Generates[T]`: a cheap shape test
+  entry .Stager   the hook through which `jacinta.staged` evaluates a user-written instance at expansion time
+    detail
+        An `Inlinable` given is a runtime value, so the generator can only reach the code a
+        user-written instance generates by running that given inside the macro, in a staging
+        compiler. `jacinta.core` does not depend on the compiler jars, so the trait `Stager`
+        declares the capability and `jacinta.staged` implements it (`InlinableStager`); the
+        companion loads the implementation by its class name when `jacinta.staged` is on the
+        macro classpath, and otherwise answers `None` for every type, which sends such fields
+        to the runtime seam. A summon's result is cached for the expansion, so a type's
+        staging summon runs at most once however often it recurs.
+    entry .summon   the loaded stager's `summon[field]`, or `None` with no `jacinta.staged` on the classpath
+    entry #summon   evaluates the `Inlinable` given for `field` live, inside the macro, if one resolves
+  entry .int   the generator for an `Int` field: `reader.int()`, written as a bare number
+  entry .long   the generator for a `Long` field: `reader.long()`, written as a bare number
+  entry .double   the generator for a `Double` field: `reader.double()`, written as a bare number
+  entry .float   the generator for a `Float` field: `reader.double().toFloat`; parse only
+  entry .boolean   the generator for a `Boolean` field: `reader.boolean()`, written as `true` or `false`
+  entry .text   the generator for a `Text` field: `reader.string()`, written as an escaped JSON string
+  entry .string   the generator for a `String` field: `reader.string()`, written as an escaped JSON string
+  entry .iterable   the generator for an applied collection whose element is `Inlinable`
+      `collection[element] is Inlinable` for any `collection <: Iterable`, given an `element
+      is Inlinable`: the generated loop opens the array with `Parser#directOpenArray`, steps
+      with `Parser#directElementFirst` and `Parser#directElementNext`, parses each element
+      inline and adds it to the collection's `Factory` builder. It prints if its element
+      prints. Composed through ordinary given resolution when the instance graph is resolved
+      inside the staging compiler.
+  entry #parse   generates the code which reads a `Self` from a `Json.Reader`
+      Takes the `Expr` of the reader and the `Quotes` and `Type[Self]` of the expansion, and
+      returns the `Expr` of the decoded value, which the deriving macro splices in place. A
+      local `def` or lambda in the generated code captures the exclusive parser read-only, so
+      generated bodies bind the parser once and read through it directly.
+  entry #prints   whether this instance also generates a printer; `false` unless overridden
+  entry #write   generates the code which writes a `Self` into the JSON writer
+      Takes the value and the writer — which travels as a neutral `AnyRef` carrier, since
+      generated code is capture-erased, and is reasserted per use — and returns an
+      `Expr[Unit]`. The default aborts the expansion with _jacinta: the Inlinable for `T`
+      generates no printer_; an instance which overrides `#prints` to `true` overrides this
+      too.
+  entry #absent   generates the value for a key missing from the object
+      The default is `Json.Parsable.missing[Self]()` through the tactic it is given, which
+      raises `Json.Error`; an optional wrapper overrides it to produce its absent value.
+
+entry .inlining   the machinery behind `Inlinable`: expansion-time resolution, structural generators and entry macros
+  hidden
+  detail
+      Not for direct use: the object holds the macro implementations `Inlinable.parsable`,
+      `Inlinable.printable` and `Inlinable.Generates` expand to, the resolution ladder
+      (builtin, staged summon, structural product or collection, runtime seam), the
+      per-expansion cache which memoises staging summons and detects recursion, and the
+      product and collection generators.
+  entry .fieldSeam   the runtime seam: parses a field through its nominal `Json.Parsable` or `Json.Field`
+      An inline method (a `summonFrom` may live only in one) which a generated parser
+      splices for a field type with no `Inlinable`: a nominal `Json.Parsable` is called
+      directly, and otherwise the field's `Json.Field`.
+  entry .generates   the macro behind `Inlinable.Generates.generates`
+  entry .inlinablePrintable   the macro behind `Inlinable.printable[T]`
+  entry .inlinableParsable   the macro behind `Inlinable.parsable[T]`
+
+entry .internal   the macro implementations behind `j"…"`, `jp"…"`, schema-typed navigation and `Json.Parsable.staged`
+  hidden
+  detail
+      Not for direct use: the object exists so that the macros have a stable home.
+  entry .jsonPointer   the macro behind the `jp"…"` interpolator
+      Decodes the literal as a `JsonPointer` while the code compiles, through the pointer's
+      own `Decodable`, and maps a `JsonPointer.Error`'s offset back to the source so the
+      compile error points at the offending character.
+  entry .select   the macro behind `json.field` on a `Json`: checked against the schema type when there is one
+      For a `Json of P from R` — a document `verify` has typed — the field is looked up in
+      `P`'s structure and the result is `Json of <field type> from R`; a field `P` lacks is a
+      compile error. For a plain `Json`, access is gated on the `dynamicAccess.dynamicJson`
+      enabler and reads the field totally.
+  entry .index   the macro behind `json(i)` on a `Json`: checked against the schema type when there is one
+  entry .applied   the macro behind `json.field(i)` on a `Json`
+  entry .interpolator   the macro behind the `j"…"` literal
+      Parses the literal's parts, with a marker in place of each substitution, as the code
+      compiles — so malformed JSON is a compile error at its position — and splices a
+      `Json.Ast` with the substituted values filled in.
+  entry .extractor   the macro behind `j"…"` as a pattern
+      Compiles a JSON literal with `$name` holes into an extractor which matches a `Json`
+      against it and binds the holes, as a `Boolean`, a single value or a tuple of them.
+  entry .stagedParsable   the macro behind `Json.Parsable.staged` for a case class
+      Generates a monomorphic parser: field values in typed locals, keys dispatched through a
+      precomputed `Json.KeyTable` into an integer switch, builtin primitives read inline from
+      the token stream, and the record built by a direct constructor call. Field types beyond
+      the builtins go through `Json.Field` instances, so defaults, `@name`, absence and
+      nullity, unknown keys, duplicates and error foci behave exactly as `Json.Parsable.derived`.
+  entry .stagedSum   the macro behind `Json.Parsable.staged` for a sealed sum
+      Locates the discriminator with a bounded scan-ahead which rewinds, dispatches by
+      string comparison against the wire variant names, and parses the chosen variant
+      through its `Json.Field`. A missing tag raises `Json.Error(Absent)` and an unknown tag
+      wisteria's `Variant.Error`, as the derived engine does.
+
+entry .jsonSchematics   constructors for a codec fused with the schema it reads or writes: `Decodable & Schematic`
+  detail
+      A `Json.Encodable` and a `Json.Decodable` each carry the `Morphology` of what they write
+      or read, and `jsonSchematics.encodable[T]` and `jsonSchematics.decodable[T]` reify that
+      shape into a `JsonSchema` and pair it with the codec in one instance, `T is Encodable &
+      Schematic in Json over JsonSchema` (or `Decodable & Schematic`). The schema comes from
+      the codec itself and is never derived separately, so the pair is coherent by
+      construction: a type whose JSON codec routes through its `Encodable in Text` — an
+      enumeration written as a string — gets a `JsonSchema.String`, where the standalone
+      `Schematic` derivation would describe its structure as an object.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import codepages.utf8Codepage
+
+      case class Employee(name: Text, age: Int, email: Text)
+
+      val fused = jsonSchematics.decodable[Employee]
+      fused.decoded(t"""{"name": "Alice", "age": 30, "email": "a@b.c"}""".read[Json])
+      fused.schema()   // a JsonSchema.Object with the three properties
+      ```
+
+      These are methods, not givens, on purpose: a `Decodable & Schematic` given is a subtype
+      of both its codec typeclass and `Schematic`, so as a given it would be ambiguous for
+      any bare `Schematic` summon. Call one where a fused instance is wanted, or bind it as a
+      local given: `given (Employee is Decodable & Schematic in Json over JsonSchema) =
+      jsonSchematics.decodable[Employee]`.
+  refer jacinta.JsonSchema
+  entry .encodable   the `Json.Encodable` for `T` fused with the `JsonSchema` of what it writes
+      Needs a `T is Json.Encodable` in scope; `encoded` delegates to it, and `schema()` is
+      `JsonSchema.reify` of its `shape()`.
+  entry .decodable   the `Json.Decodable` for `T` fused with the `JsonSchema` of what it reads
+      Needs a `T is Json.Decodable` in scope; `decoded` delegates to it, and `schema()` is
+      `JsonSchema.reify` of its `shape()`.
+
+entry .JsonSchema   a JSON Schema as a value: derived from a Scala type, read from a document, written as one
+  detail
+      `JsonSchema` is an enum whose cases are the schema node kinds — `Object`, `Array`,
+      `String`, `Number`, `Integer`, `Boolean`, `Null` and `Ref` — each carrying the keywords
+      JSON Schema allows for it, an optional `description`, and an `optional` flag which
+      records that the node admits `null` or absence (a `"null"` among the `type`s, OpenAPI's
+      `nullable`, or an `Optional` field in a derived schema). It is the `Schematic`
+      transport for JSON: `T is Schematic over JsonSchema` gives a schema for `T`, the
+      companion derives one for any case class or sealed hierarchy (`JsonSchema.derived[T]`,
+      from wisteria's `Derivable`, and the inline given `.schematic` which resolves it for any
+      reflectable type), and a `JsonSchema` encodes to and decodes from a standard JSON Schema
+      document.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import codepages.utf8Codepage
+
+      case class Employee(name: Text, age: Int, email: Optional[Text])
+
+      JsonSchema.derived[Employee].schema() match
+        case schema: JsonSchema.Object => schema.required   // List(t"name", t"age")
+        case _                         => Unset
+
+      infer[List[Int] is Schematic over JsonSchema].schema()   // Array(items = Integer())
+      (JsonSchema.Integer(): JsonSchema).in[Json].show          // contains "type":"integer"
+      t"""{"type": ["string", "null"]}""".read[Json].as[JsonSchema]   // String(optional = true)
+      ```
+
+      The cases, each a case class with defaults for every parameter:
+
+      - `Object(description, properties: Map[Text, JsonSchema], optional, required:
+        Optional[List[Text]], enum: Optional[List[Json]], additionalProperties: Boolean,
+        oneOf, additionalSchema: Optional[JsonSchema], allOf, anyOf, not, const)`. A derived
+        schema's `required` lists the fields which are not `Optional`; a sealed hierarchy
+        derives as an `Object` whose `oneOf` holds one schema per variant, with `kind`
+        required. `additionalProperties` is `true` when the schema admits further properties,
+        whether by a bare `true` or by a schema for them, which `additionalSchema` then
+        carries; a boolean schema `true` reads as `Object(additionalProperties = true)`.
+      - `Array(description, items: Optional[JsonSchema], minItems, maxItems, optional,
+        maxContains, minContains)`: a `List` or `Set` derives as an `Array` of its element's
+        schema.
+      - `String(description, minLength, maxLength, pattern: Optional[Text], format:
+        Optional[JsonSchema.Format], optional)`: `Text` and `EmailAddress` derive as a
+        `String`.
+      - `Number(description, multipleOf, maximum, minimum, exclusiveMinimum, exclusiveMaximum,
+        optional)`, all bounds `Optional[Double]`: `Float` and `Double` derive as a `Number`.
+      - `Integer(description, maximum, minimum, exclusiveMinimum, exclusiveMaximum, optional,
+        format)`, all bounds `Optional[Long]`: `Byte`, `Short`, `Int` and `Long` derive as an
+        `Integer`.
+      - `Boolean(description, optional)` and `Null(description, optional)`.
+      - `Ref(pointer: JsonPointer, description, optional)`: a `{"$ref": "#/…"}` reference,
+        kept unresolved so a cyclic schema graph stays finite; `verify` leaves a `Ref` node
+        unchecked.
+
+      The schema cases `Array`, `String`, `Number`, `Boolean` shadow the prelude's names
+      inside `object JsonSchema` only; from outside, `JsonSchema.Array(…)` and the prelude's
+      `Array` coexist. A field's description in a derived schema comes from the `@memo`
+      annotation on the field, and a variant's from `@memo` on the variant.
+  refer jacinta.memo
+  refer jacinta.verify
+  refer jacinta.jsonSchematics
+  refer jacinta.Json
+  entry .byteSchematic   `Byte` derives as `Integer()`
+  entry .shortSchematic   `Short` derives as `Integer()`
+  entry .intSchematic   `Int` derives as `Integer()`
+  entry .longSchematic   `Long` derives as `Integer()`
+  entry .floatSchematic   `Float` derives as `Number()`
+  entry .doubleSchematic   `Double` derives as `Number()`
+  entry .textSchematic   `Text` derives as `String()`
+  entry .emailSchematic   `EmailAddress` derives as `String()`
+      The schema records no `format`: the fused `jsonSchematics` instances and `Json.Provider`
+      are where `format: "email"` is interpreted.
+  entry .booleanSchematic   `Boolean` derives as `Boolean()`
+  entry .optionalSchematic   an `Optional[T]` (or any `Mandatable` wrapper) derives as `T`'s schema marked optional
+      Takes the schema of the inner type and sets its `optional` flag through `.optional`, so
+      a derived `Object` omits the field from `required`.
+  entry .listSchematic   a `List[T]` derives as `Array(items = T's schema)`
+  entry .setSchematic   a `Set[T]` derives as `Array(items = T's schema)`
+  entry .mapSchematic   a `Map[K, V]` with a text-encodable key derives as `Object(additionalProperties = true)`
+      The value schema is not recorded: JSON Schema's `additionalProperties` keyword could
+      carry it, and does when a schema is read from a document (`additionalSchema`), but the
+      derivation does not yet write it.
+  entry .schematic   the inline given which derives a schema for any reflectable type
+      `[value: Reflection] => value is Schematic over JsonSchema`, expanding to `derived`: a
+      case class becomes an `Object` with a property per field and the non-optional fields
+      `required`; a sealed hierarchy becomes an `Object` with a `oneOf` per variant. Each
+      field's and variant's `@memo` annotations become its `description`, joined with
+      newlines when there are several.
+  entry .jsonSchemaSchematic   `JsonSchema` itself derives as a permissive `Object()`
+      A manual instance, found in preference to `.schematic`, so that deriving a schema for a
+      type which has a `JsonSchema` field terminates instead of recursing through the schema
+      of schemas forever.
+  entry .pointerEncodable   `JsonPointer` encodes as its text, so a `Ref` serialises as a string
+      Provided explicitly as a `Json.Encodable` so generic derivation treats a pointer as a
+      leaf rather than deriving its path structure.
+  entry .encodable   writes a `JsonSchema` as a JSON Schema document
+      The `Json.Encodable` for `JsonSchema`: each case becomes an object with its `type`
+      (`"object"`, `"array"`, `"string"`, …) and its keywords, through the `type`-discriminated
+      derivation; a `Ref` becomes a bare `{"$ref": "…"}`. Being a `Json.Encodable` rather
+      than a plain codec is what lets the collection and map codecs resolve a nested
+      `JsonSchema` to this instance instead of deriving a diverging schema of schemas.
+
+      ```scala
+      import soundness.*
+
+      val schema: JsonSchema = JsonSchema.Object(properties = Map(t"a" -> JsonSchema.String()))
+      schema.in[Json].show   // {"type":"object","properties":{"a":{"type":"string"}},…}
+      ```
+  entry .decodable   reads a `JsonSchema` from a JSON Schema document
+      The `Json.Decodable` for `JsonSchema`, hand-written because a schema node is
+      discriminated by the *value* of its `type` field, which may be a name, a list of names
+      (draft 2019-09 and OpenAPI 3.1), or absent for a `$ref` or an untyped object. It needs a
+      `Tactic[Json.Error]` and a `Tactic[JsonPointer.Error]` (for a malformed `$ref`), and the
+      instance captures both, so a summon which names its type must allow the capture,
+      `summon[(JsonSchema is Json.Decodable)^]`; `as[JsonSchema]` needs nothing special.
+
+      What it accepts: a boolean schema (`true` is `Object(additionalProperties = true)`,
+      `false` admits nothing); a `"null"` among the `type`s or OpenAPI 3.0's `nullable: true`,
+      recorded as `optional`; draft 4's `exclusiveMinimum: true` qualifying `minimum` as well
+      as the later numeric form, both reading to the same model; `additionalProperties` as a
+      boolean or as a schema; a `format` of any name, unknown ones kept as
+      `JsonSchema.Format.Other`; and a node with no recognised `type` read as an `Object`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import codepages.utf8Codepage
+
+      t"""{"type": "number", "minimum": 3, "exclusiveMinimum": true}""".read[Json].as[JsonSchema]
+      // JsonSchema.Number(exclusiveMinimum = 3.0)
+      ```
+  entry .discriminatedUnion   how a `JsonSchema` document says which case it is: by its `type` field
+      The `Discriminable` instance the derived encoder uses: the discriminator is the
+      lowercased `type` keyword (`"object"`, `"integer"`, …), read back capitalised to the
+      case name. It is what makes `{"type": "integer"}` encode without a `kind` wrapper.
+  entry .reify   a format-neutral `Morphology` as a `JsonSchema`
+      The bridge from a codec's declared shape to a schema: `Str` to `String()`, `Whole` to
+      `Integer()`, `Real` to `Number()`, `Bool` to `Boolean()`, `Empty` to `Null()`, `Any`
+      and `Dict` to `Object(additionalProperties = true)`, `Opt(inner)` to the inner schema
+      marked optional, `Arr(items)` to an `Array`, `Obj(fields, required)` to an `Object`
+      with those properties and `OneOf(variants)` to an `Object` whose `oneOf` lists them
+      with `kind` required. `verify` and `jsonSchematics` are built on it, which is how
+      `jacinta.core` stays free of any schema dependency.
+  entry .optional   the same schema with its `optional` flag set
+      Copies any case with `optional = true`; `.optionalSchematic` and the codecs for
+      `Optional` and `Option` fields use it.
+  entry .conjunction   the derivation of a case class's schema: an `Object` of its fields
+      The `Derivable` hook: a property per field through the field type's `Schematic`, the
+      fields whose schema is not optional listed as `required`, and each field's `@memo`
+      descriptions joined as its `description`. Not called directly; `.schematic` and
+      `derived` reach it.
+  entry .disjunction   the derivation of a sealed hierarchy's schema: an `Object` with a `oneOf` per variant
+      The `Derivable` hook: one schema per variant, with the variant's `@memo` as its
+      description, under `oneOf`, with `kind` required — the discriminator field the
+      `jsonByKindDiscriminable` encoding writes. Not called directly.
+  entry .Format   the `format` keyword of a string or integer schema: an open vocabulary with the known names as cases
+    detail
+        The cases are JSON Schema's own formats — `DateTime`, `Date`, `Time`, `Duration`,
+        `Email`, `Hostname`, `Ipv4`, `Ipv6`, `Uri`, `UriReference`, `UriTemplate`, `Uuid`,
+        `JsonPointer`, `RelativeJsonPointer`, `Regex` — and OpenAPI's additions `Int32`,
+        `Int64`, `Float`, `Double`, `Byte`, `Binary` and `Password`; anything else a document
+        invents (`snowflake`, `unix-time`) is `Other(name)`, so decoding is total. A
+        `Json.Provider` reads a `format` as the type it names, `email` as an email address,
+        `uuid` as a `Uuid`, and so on.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        JsonSchema.Format.DateTime.encode             // t"date-time"
+        t"date-time".as[JsonSchema.Format]            // JsonSchema.Format.DateTime
+        t"snowflake".as[JsonSchema.Format]            // JsonSchema.Format.Other(t"snowflake")
+        ```
+    entry .encodable   writes a format as its kebab-case name: `DateTime` as `date-time`, `Other(name)` as `name`
+    entry .decodable   reads a format from its name; an unknown name is `Other(name)`, never a failure
+  entry #optional   whether the node admits `null` or absence
+      Set for an `Optional` field in a derived schema, a `"null"` among a document's `type`s
+      or its `nullable: true`; a derived `Object` omits an optional property from `required`,
+      and `verify` accepts an absent value only where the schema is optional.
+  entry #description   the node's `description`, or `Unset`
+  entry #description_=   the same node with a description: `schema.description = t"…"`
+      Copies any case with the description replaced; `@memo` sets it during derivation.
+
+entry .memo   an annotation which gives a field or a variant a `description` in the derived schema
+  detail
+      `@memo(t"…")` on a case class field, or on a variant of a sealed hierarchy, becomes the
+      `description` of that property or alternative in the `JsonSchema` the companion
+      derives. Several `@memo`s on one field are joined with newlines.
+
+      ```scala
+      import soundness.*
+
+      case class Marked(@memo(t"the count") n: Int)
+
+      JsonSchema.derived[Marked].schema() match
+        case schema: JsonSchema.Object => schema.properties(t"n").let(_.description)
+        case _                         => Unset
+      // t"the count"
+      ```
+  refer jacinta.JsonSchema
+  entry #description   the text of the annotation
+
+entry .verify   checks a document against a type's schema and re-types it, so its fields can be navigated with compile-time checking
+    An extension on `Json`. `json.verify[T]` reifies the schema `T`'s `Json.Decodable`
+    declares (through `JsonSchema.reify` of its `shape()`), walks the document against it,
+    and on success returns the same document typed `Json of T from T`: a `Json` whose phantom
+    `Topic` is the position within the schema and whose `Origin` is the root. On the first
+    mismatch it raises `Json.Error` — `Reason.NotType` for a value of the wrong kind,
+    `Reason.Absent` for a required field the document lacks — so it needs a
+    `Tactic[Json.Error]`, and `safely(json.verify[T])` is `Unset` for a nonconformant
+    document.
+
+    ```scala fuel
+    frame
+      label A required field is missing: verification fails
+      code
+          import soundness.*
+          import strategies.throwUnsafely
+          import codepages.utf8Codepage
+
+          case class Employee(name: Text, age: Int, email: Text)
+
+          val bob = t"""{"name": "Bob"}""".read[Json]
+          safely(bob.verify[Employee]).absent   // true: `age` and `email` are absent
+    frame
+      label A field of the wrong kind still fails
+      code
+          import soundness.*
+          import strategies.throwUnsafely
+          import codepages.utf8Codepage
+
+          case class Employee(name: Text, age: Int, email: Text)
+
+          val bob = t"""{"name": "Bob", "age": "old", "email": "b@c.d"}""".read[Json]
+          safely(bob.verify[Employee]).absent   // true: `age` is a string, not a number
+    frame
+      label A conformant document verifies, decodes and navigates with checked field names
+      code
+          import soundness.*
+          import strategies.throwUnsafely
+          import codepages.utf8Codepage
+
+          case class Employee(name: Text, age: Int, email: Text)
+
+          val bob = t"""{"name": "Bob", "age": 41, "email": "b@c.d"}""".read[Json]
+          bob.verify[Employee].as[Employee]      // Employee(t"Bob", 41, t"b@c.d")
+          bob.verify[Employee].name.as[Text]     // t"Bob"
+          bob.verify[Employee].nope              // does not compile
+    ##
+    ```
+
+    The verified document's type is what licenses the navigation: `verified.name`,
+    `verified.workplace.city` and `verified.members(1).name` are each checked against the
+    schema's structure as the code compiles — a field the type lacks, an index into a field
+    which is not an array, or a field of a scalar is a compile error naming the problem — and
+    no `dynamicAccess.dynamicJson` import is needed. A plain, unverified `Json` still
+    requires the enabler, and the error says so, so the two kinds of access cannot be
+    confused.
+
+    What the check covers: each property the schema names is checked recursively, and may be
+    absent only where its schema is optional; properties the schema does not name are
+    allowed; an array's every element is checked against `items`; a `oneOf` passes if any
+    variant does; and a `Ref` node is left unchecked, since a reference cannot be resolved
+    without the root document. A derived `Optional[T]` field may be absent, but a JSON `null` in
+    its place is not an absence and fails the check against the inner schema.
+
+entry .Parser   the streaming JSON tokenizer behind every `read[Json]`: one exclusive, pooled instance per thread
+  detail
+      `Parser` is the single-pass JSON parser which every `read[Json]`, `Json.Ast.parse`,
+      `j"…"` literal and direct `read[T in Json]` goes through. It is a stateful, exclusive
+      capability (`caps.ExclusiveCapability, caps.Stateful`) over a `zephyrine.Cursor` of
+      `Data`, so every method which moves through the input is an `update def`, callable only
+      through an exclusive `Parser^` reference; one instance lives in a per-thread pool and is
+      reset for each parse, so parsing allocates no parser and keeps its scratch buffers and
+      its key cache warm from one document to the next.
+
+      Ordinary code never names it. The user-facing entry points are `read[Json]` (and
+      `read[Json]` over a `Stream[Data]` or an `Iterator[Data]`, which parses block by block
+      without first joining the input), `Json.Ast.parse`, and the `Json.Parsable` instances
+      which read a value straight off the token stream through a `Json.Reader`:
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import codepages.utf8Codepage
+
+      case class Person(name: Text, age: Int)
+      given Person is Json.Parsable = Json.Parsable.derived
+
+      t"""{"name": "Bob", "age": 40}""".read[Json]
+      t"""{"name": "Bob", "age": 40}""".read[Person in Json]
+      ```
+
+      The class is public as a *type* because the parsers `Inlinable.parsable[T]` and
+      `Json.Parsable.staged` generate are spliced into the user's own module and read through
+      its direct rim (`#directString`, `#directLong`, `#directElementFirst`, …), which is a few
+      percent faster than going through `Json.Reader`'s per-token forwarders. A hand-written
+      `Json.Parsable` should use `Json.Reader` instead: the reader carries its own
+      `Tactic[Parse.Error]`, and the only way to reach the parser behind a live read is sealed
+      inside jacinta. A `new Parser` is possible but not the intended route — it has no pool,
+      and `#resetData` must be called before `#parse`.
+
+      What it produces is `Json.Ast`: a `String`, a `Long`, a `Double`, a `Bcd` (for numbers
+      beyond fifteen digits, as the `NumberMode` in scope says), `true`/`false`,
+      `Json.JsonNull`, an `Array[Any]` for an object or a mixed array, and a packed
+      `Array[Int]` or `Array[Long]` for an array of nothing but small numbers, which decodes
+      to the same values as the boxed form but costs one allocation. Object keys of up to
+      sixteen ASCII bytes are interned through a per-thread cache, so a record shape repeated
+      across documents reuses its key strings.
+
+      Numbers which fit a `Long` or a `Double` exactly are decoded on a fast path; longer or
+      more precise ones are kept as `Bcd` digits so nothing is lost, unless
+      `numberModes.doubleNumberMode` or `numberModes.bcdNumberMode` is imported to trade that
+      precision for throughput. A leading UTF-8 byte order mark is skipped. Strings are decoded
+      from UTF-8, with every escape honoured, and an input which is not valid JSON aborts with
+      a `Parse.Error` whose `Json.Ast.Issue` names the fault — `EmptyInput`,
+      `SpuriousContent` after the value, `ExpectedColon`, `NumberHasLeadingZero`,
+      `IncorrectEscape`, `PrematureEnd`, and so on — at its byte position. Under
+      `parsing.trackPositions` the same parse also builds a `Json.PositionIndex`, so
+      `locate` can map a node back to its line and column.
+
+      Performance: on the documents of the benchmark corpus the streaming parse runs within
+      about fifteen percent of Jackson, and direct reads through a generated `Json.Parsable`
+      skip the tree altogether.
+  refer jacinta.Json
+  refer jacinta.Inlinable
+  refer jacinta.NumberMode
+  entry #Region   a marked position in the input, `Cursor.Mark`, as the parser's own alias
+      A `Region` is an absolute position in the input, taken when a token begins and used to
+      slice the token's bytes once it ends or to report an error's range. It is `Cursor.Mark`
+      from zephyrine, and is only meaningful inside the hold which produced it.
+  entry #resetData   points the parser at a whole document held in memory
+      Rebuilds the cursor over `input: Data` and clears every piece of per-parse state: the
+      string buffer, the scratch arrays and the position index. The pool's entry points call
+      this before each `#parse`; a hand-held parser must do the same.
+  entry #resetIterator   points the parser at a document arriving as blocks of bytes
+      As `#resetData`, over an `Iterator[Data]` which the parser consumes (the parameter is
+      `consume`d, so the caller gives the iterator up). Blocks are refilled as the parse
+      advances, and a token which straddles two blocks — a number, a string, a keyword — is
+      made contiguous by the cursor, so the result is identical to parsing the joined bytes.
+  entry #resetStream   points the parser at a `Stream[Data] over Credit`
+      As `#resetIterator`, over a credit-metered `Stream[Data]`: how `read[Json]` from a
+      socket or a file parses as the bytes arrive, in bounded memory, rather than after
+      joining the whole input.
+  entry #parse   parses one complete JSON document and returns its `Json.Ast`
+      Skips a byte order mark and leading whitespace, parses exactly one value, and then
+      requires only whitespace to the end of the input: anything else aborts with
+      `Json.Ast.Issue.SpuriousContent`, and an empty input with `Json.Ast.Issue.EmptyInput`.
+      It needs a `Tactic[Parse.Error]`, through which every malformed-input fault is raised
+      with its byte position. When the parser is tracking positions, the root
+      `Json.PositionIndex` is built alongside the tree.
+  entry #directSkipValue   consumes one whole value without building anything
+      The direct rim's skip: a validated scan over one value — scalar, array or object, to any
+      depth — which enforces the same grammar and raises the same `Json.Ast.Issue`s as
+      `#parse`, but allocates no node, no buffer and no key string. A generated parser uses
+      it for every key it does not recognise, so an unknown field costs only the bytes it
+      occupies.
+  entry #directString   consumes one JSON string token and returns it as a `String`
+      Skips whitespace, then requires a `"`; anything else aborts with
+      `Json.Ast.Issue.ExpectedString`. A plain-ASCII string which closes inside the current
+      buffer is copied straight out; one with escapes or non-ASCII bytes, or one which
+      crosses a block boundary, is decoded by the general path, with the same result.
+  entry #directBoolean   consumes `true` or `false`
+      Skips whitespace, then reads the keyword, aborting with `Json.Ast.Issue.ExpectedTrue`
+      or `ExpectedFalse` if the bytes are not exactly the keyword.
+  entry #directLong   consumes one integer token as a `Long`
+      Skips whitespace, then reads up to eighteen digits with an optional minus sign on a
+      fast path which never refills the buffer. A fraction, an exponent, a nineteenth digit,
+      a leading zero (which must be rejected, as `NumberHasLeadingZero`) or a number touching
+      the window's end falls back to the general number parser, so the value is the same
+      whichever path ran. `Json.Reader#long` and `Json.Reader#int` are this call.
+  entry #directDouble   consumes one number token as a `Double`
+      Skips whitespace, then reads a number with up to fifteen significant digits and an
+      exponent within the range where mantissa and power of ten are both exact, so the fast
+      path is bit-identical to the general path; anything else — a sixteenth digit, a leading
+      zero before a digit, a large exponent, the window's end — takes the general path.
+      `Json.Reader#double` is this call.
+  entry #directOpenObject   consumes `{` and enters an object
+      Skips whitespace, then requires `{` (else `Json.Ast.Issue.ExpectedObject`) and pushes
+      a nesting level, whose separator state the key-stepping methods maintain so that a
+      missing or doubled comma is rejected exactly as `#parse` would reject it.
+  entry #directKeyWordFirst   the first key of an object, packed into a `Long`, or a sentinel
+      For generated parsers which know statically that they are reading the first key of an
+      object: expects no separating comma. A key of one to sixteen printable ASCII bytes with
+      no escapes is returned packed, its first eight bytes in the result and the rest in
+      `#directKeyWordHigh`, so a generated parser can dispatch by comparing against literal
+      constants without materialising the key. Two values are impossible as packed keys and
+      serve as sentinels: `-1` after consuming the closing `}` (`Json.Reader.KeyEnd`), and
+      `-2` (`Json.Reader.KeyOpaque`) when the fast path cannot decide here — the key is
+      escaped, longer than sixteen bytes, empty, at the window's edge or malformed — in which
+      case the caller resolves it through the general, interned-name step
+      (`Json.Reader.keyNameOf`).
+  entry #directKeyWordNext   a subsequent key of an object, packed into a `Long`, or a sentinel
+      As `#directKeyWordFirst`, for every key after the first: expects a `,` before the key
+      (or the closing `}`), and consults no per-key state. The same sentinels apply.
+  entry #directKeyWordHigh   bytes nine to sixteen of the key most recently packed
+      The high word of the key `#directKeyWordFirst` or `#directKeyWordNext` just scanned,
+      zero for a key of eight bytes or fewer. Read it immediately after the low word, before
+      the next key is scanned.
+  entry #directOpenArray   consumes `[` and enters an array
+      Skips whitespace, then requires `[` (else `Json.Ast.Issue.ExpectedArray`) and pushes a
+      nesting level for the element-stepping methods.
+  entry #directElement   steps to the next element of the open array, or closes it
+      Returns `true` positioned at the next element, with any separating comma consumed, and
+      `false` after consuming the closing `]`. It tracks whether the current level has yielded
+      an element yet, so a missing comma between elements, or a comma before the first, is
+      rejected as `#parse` would reject it.
+  entry #directElementFirst   the first step of an array loop: an element or the closing `]`
+      As `#directElement`, for a loop which knows statically that this is its first step:
+      expects a value or `]`, never a comma, and marks the level as begun. A generated
+      collection parser pairs it with `#directElementNext`.
+  entry #directElementNext   a later step of an array loop: `,` then an element, or the closing `]`
+      As `#directElement`, after the first element: expects `,` or `]`, and consults no
+      per-element state. A `,` followed by `]` aborts with
+      `Json.Ast.Issue.ExpectedSomeValue`.

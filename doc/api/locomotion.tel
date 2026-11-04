@@ -1,0 +1,1258 @@
+tel 1.0
+
+base locomotion
+import soundness
+
+info   Protocol Buffers from Scala types: numbered case-class fields as proto3 messages, with derived, direct and streaming codecs
+detail
+    _Locomotion_ encodes and decodes the Protocol Buffers wire format straight from Scala
+    types. A case class whose fields carry proto3 field numbers *is* the message definition:
+    there is no proto schema file to write and no code generator to run, and the bytes it
+    produces are those `protoc` would produce for the equivalent schema. Field numbers come
+    from the `field` annotation (or, unannotated, from declaration order); everything else —
+    varints, zig-zag encoding, little-endian fixed values, length-delimited strings and
+    nested messages, packed repeated fields, map entries and `oneof` variants — follows from
+    the field types.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    case class Person(@field(1) name: Text, @field(2) age: Int)
+
+    val bytes: Data = Person(t"Alice", 30).in[Protobuf].encode   // the wire bytes
+    Chain(bytes).read[Person in Protobuf]                        // Person(t"Alice", 30)
+    bytes.read[Protobuf].as[Person]                              // the same, in two steps
+    ```
+
+    The central type is `Protobuf`, a single wire value: `Wire(wireType, bytes)`, `Absent`,
+    or `Repeated` of every occurrence of a field number. A whole message is one
+    length-delimited `Wire`, and `Encodable in Protobuf` and `Decodable in Protobuf`
+    instances — the scalar ones in `Protobuf`'s companion, the message ones derived through
+    wisteria from the case class's shape — turn values into wire values and back. The sized
+    numeric types of hypotenuse select the proto3 integer flavours by type alone: `U32` and
+    `U64` are `uint` varints, `S32` and `S64` zig-zag `sint`s, `B32` and `B64` `fixed32` and
+    `fixed64`. `Optional` is explicit presence, a `List`, `Set` or `Sequence` is a repeated
+    field (packed when its element is `Packable`), a frozen `Array[Long]^{}` is the same
+    field unboxed, and a `Map` is the standard repeated entry message.
+
+    There are three paths through the library, which produce identical bytes:
+
+    - **Derived**: `value.in[Protobuf]` builds the `Protobuf` tree through the derived
+      `Encodable`, and `read[Protobuf].as[T]` walks the tree through the derived `Decodable`.
+      Always available, and the reference the other two are tested against.
+    - **Direct**: a `Protobuf.Parsable` reads a value's fields straight off the input through
+      a `ProtobufReader` with no tree built, and a `Protobuf.Printable` measures and writes
+      them straight into the output array. Both are generated at compile time by
+      `Inlinable.parsable[T]` and `Inlinable.printable[T]`, by `derives Protobuf.Direct` on
+      the message, or for every message and oneof in scope by `import codecs.direct`.
+    - **Streaming**: `ProtobufParser` reads over a zephyrine `Cursor`, so a direct read over
+      a `Chain[Data]` or a `Stream[Data]` reads each chunk as it arrives, holding only the
+      field being read; a value split across chunks reads exactly as one that arrives whole.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+    import codecs.direct
+
+    case class Point(@field(1) x: Int, @field(2) y: Int)
+
+    val wire: Data = Point(3, 4).in[Data over Protobuf]   // printed directly
+    wire.read[Point in Protobuf]                           // parsed directly
+    ```
+
+    `import codecs.derived` forces the derived path even where a direct codec is in scope,
+    and `import codecs.strict` makes a `read[T in Protobuf]` or `in[Data over Protobuf]` on
+    a type with no direct codec a compile error. The three modes are givens of distillate's
+    `codecs` package, imported by name and one at a time.
+
+    A malformed message raises `Protobuf.Error` (number 700), whose `Reason` names the fault
+    and the byte offset — truncated input, a malformed or overflowing varint, an unexpected
+    wire type, a missing `oneof` field. Field selection is by number, so the only optic is
+    `fieldOptical`: `message.lens(_(Prim) = value)` replaces field 1 and passes every other
+    field through, including ones the program does not know.
+
+    The library has three components:
+
+    - `locomotion.core` — `Protobuf` and its codecs, `field`, `WireType`, `Packable`, the
+      streaming `ProtobufParser`, the `ProtobufReader` rim, `ProtobufPrinter` and
+      `ProtobufSizes`, and `Inlinable` with its generators (the `inlining` object). Compiles
+      for the JVM, Scala.js and Scala Native.
+    - `locomotion.staged` — `InlinableStager`, the in-macro staging compiler which evaluates
+      a *hand-written* `Inlinable` given at expansion time. It is found by name on the macro
+      classpath; without it a field whose type has only a hand-written instance is decoded
+      through its `Decodable in Protobuf` and encoded through its `Encodable`. Generated
+      parsers and printers over case classes and sealed sums need only `core`.
+    - `locomotion.http` — the `application/protobuf` media bindings: `postables`,
+      `servables` and `construables` givens for telekinesis. JVM only.
+
+    The umbrella exports `Protobuf`, `Protobuf2`, `Packable`, `WireType` and `field`, and
+    mirrors the `conversions`, `postables`, `servables` and `construables` choice packages.
+    `Inlinable`, `ProtobufParser`, `ProtobufReader`, `ProtobufPrinter` and `ProtobufSizes`
+    are reached as `locomotion.Inlinable` and so on, since a generated codec names them for
+    the user. Choice-package givens are imported by name —
+    `import conversions.encodableToProtobuf`, `import postables.protobufPostable` — because
+    `import pkg.*` does not import givens.
+
+refer locomotion.Protobuf
+refer locomotion.field
+refer locomotion.Inlinable
+refer locomotion.ProtobufParser
+refer locomotion.ProtobufReader
+refer locomotion.ProtobufPrinter
+
+entry .Protobuf   a Protocol Buffers wire value, and the home of every codec into and out of the format
+  detail
+      `Protobuf` is an enum of the three shapes a field's recorded value can take, and the
+      `Form` of `Encodable in Protobuf` and `Decodable in Protobuf`:
+
+      - `Wire(wireType, bytes)` — one wire value: the payload bytes of a varint, a fixed
+        32- or 64-bit value, or a length-delimited string, byte array, packed run or nested
+        message, tagged with its `WireType`. A whole message is a `Wire(Len, bytes)`.
+      - `Repeated(values)` — every occurrence of one field number in a message, in wire
+        order, for repeated fields and for proto3's last-one-wins rule on scalars.
+      - `Absent` — a field that was not present on decode, or should be omitted on encode.
+
+      `#single`, `#occurrences`, `#payload`, `#wireKind` and `#isAbsent` read the three
+      shapes uniformly, and `#as` decodes a value through any `Decodable in Protobuf`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      case class Sample(@field(1) value: Int)
+
+      val message: Protobuf = Sample(150).in[Protobuf]
+      message.encode                     // Data: 08 96 01
+      message.as[Sample]                 // Sample(150)
+      ```
+
+      The companion holds the codecs. The scalar instances are givens of the object itself
+      (`intEncodable`, `textDecodable`, `u32Encodable`, …), as are the packed collection
+      and frozen-array instances, `optionalEncodable`, `mapEncodable` and the mode
+      selectors. The lower-priority layers `Protobuf2` (the derived codecs, the unpacked
+      collection instances and the tree-materialising `read` path) and `Protobuf1` (the
+      direct path, chosen whenever a `Protobuf.Parsable` or `Protobuf.Printable` is in scope)
+      are traits the object extends, so their givens are members of `Protobuf` too and
+      resolve from implicit scope with no import.
+
+      A read is `bytes.read[Protobuf]` (`aggregable`, over any byte source) followed by
+      `as[T]`, or the shorthand `read[T in Protobuf]`, which the layers route: through a
+      `Parsable` when one is in scope (`Protobuf1#aggregableParsed`), and through the tree
+      otherwise (`Protobuf2#aggregableIn`). A write is `value.in[Protobuf]`, whose `encode`
+      is the message's bytes (`encodableInData`), or `value.in[Data over Protobuf]` for the
+      bytes alone (`Protobuf2#encodableOver`). With a `Printable` in scope `in[Protobuf]`
+      becomes `Protobuf1#encodablePrinted`: the printed array is the message's one `Wire`,
+      so `encode` returns it without a copy.
+
+      ```scala fuel
+      frame
+        label A message of one varint field: tag 0x08, then the varint 150
+        code
+            case class Sample(@field(1) value: Int)
+            Sample(150).in[Protobuf].encode.to[List]   // List(0x08, 0x96, 0x01)
+      frame
+        label A string field is its tag, a length and the UTF-8 bytes
+        code
+            case class Person(@field(1) name: Text, @field(2) age: Int)
+            Person(t"AB", 0).in[Protobuf].encode.to[List]   // List(0x0a, 0x02, 0x41, 0x42, 0x10, 0x00)
+      frame
+        label A nested message is length-delimited, and its field numbers are its own
+        code
+            case class Point(@field(1) x: Int, @field(2) y: Int)
+            case class Wrapper(@field(1) point: Point, @field(2) label: Text)
+            Wrapper(Point(3, 4), t"o").in[Protobuf].encode.to[List]   // List(0x0a, 0x04, 0x08, 0x03, 0x10, 0x04, 0x12, 0x01, 0x6f)
+      frame
+        label And back: the same bytes read as the type, through whichever path is in scope
+        code
+            Chain(Wrapper(Point(3, 4), t"o").in[Protobuf].encode).read[Wrapper in Protobuf]   // Wrapper(Point(3, 4), t"o")
+      ##
+      ```
+
+      Every decoding given takes a `Tactic[Protobuf.Error]`; the derived ones close over the
+      tactic in scope at the derivation site, which is why a `summon` naming such an instance
+      must allow its capture (`summon[(T is Decodable in Protobuf)^]`), while `read`, `as`
+      and derivation need nothing special.
+  refer locomotion.field
+  refer locomotion.WireType
+  refer locomotion.Inlinable
+  refer locomotion.ProtobufReader
+  refer locomotion.ProtobufPrinter
+  entry #single   the most recent single wire value: proto3's last-one-wins rule for scalars
+      A `Repeated` gives its last value (or `Absent` if it holds none); a `Wire` or `Absent`
+      is itself.
+  entry #occurrences   every wire value recorded for the field, for decoding `repeated` fields
+      A `Repeated` gives its list, a lone `Wire` a one-element list, and `Absent` `Nil`. The
+      unpacked collection decoders iterate this; a packed run arrives as a single `Len`
+      occurrence which `ProtobufParser.packed` splits.
+  entry #payload   the bytes of `#single`, or an empty array for an absent value
+  entry #wireKind   the `WireType` of `#single`, or `Len` for an absent value
+      Used to tell a packed scalar run (`Len`) from inline scalar occurrences when a
+      repeated field of `Packable` elements is decoded, since a reader must accept both.
+  entry #isAbsent   whether the value is `Absent` or a `Repeated` of nothing
+  entry #as   decodes the wire value as a type, through its `Decodable in Protobuf`
+      `message.as[Person]` is the second half of the two-step read
+      `bytes.read[Protobuf].as[Person]`; it raises `Protobuf.Error` for a malformed payload.
+      A derived decoder passes a field that occurs once as the `Wire` itself, one that
+      occurs more than once as `Repeated` of every occurrence, and a missing one as
+      `Absent`, so a hand-written `Decodable in Protobuf` should match through `single` or
+      `occurrences` rather than on the `Repeated` constructor alone.
+  entry .emit   a message's bytes as an iterator of blocks, produced on a fiber
+      `Protobuf.emit(message)` hands the already-assembled payload out through a
+      `Producer`, so that the bytes can be consumed as a stream; it needs a `Monitor` and a
+      `Probate`. Protocol Buffers length-prefixes every nested message, so the bytes must be
+      whole before any can be sent — this chunks them, it does not stream their production.
+      For a value with a `Printable`, `Protobuf.Printable.emit` writes block by block instead.
+  entry .aggregable   `bytes.read[Protobuf]`: any byte source aggregated as one message
+      Reads the whole source into memory and wraps it as `Wire(Len, bytes)`; a `Protobuf`
+      value is its bytes, so this holds the entire message, where a direct read through a
+      `Parsable` holds only the field being read.
+  entry .protobuf   `Protobuf is Decodable in Protobuf`: the identity, for a field typed `Protobuf`
+      A field declared as `Protobuf` keeps its raw wire value, which is how unknown or
+      pass-through content is carried through a message the program otherwise decodes.
+  entry .encodableInData   `message.encode`: the wire bytes of a `Protobuf` message
+      The `Encodable in Data` given, so the message's bytes are reached with the same verb
+      jacinta uses for `Json`; `serialize` is reserved for the byte-to-text encodings.
+  entry .abstractable   a `Protobuf` message as an HTTP body, with `application/protobuf`
+      `Abstractable across HttpStreams to HttpStreams.Content`: the media type and the
+      encoded bytes, from which telekinesis derives request and response bodies. The
+      `locomotion.http` component's `postables`, `servables` and `construables` givens are the
+      named bindings for a client post, a served response and a parsed request body.
+  entry .chainReadable   `Chain(bytes).read[T in Protobuf]` reads a single-block chain in place
+      The `Chain[Data] is Readable to (value in Protobuf)` given: a chain already in hand goes
+      straight to the `Aggregable`'s own `aggregate`, which reads a one-block chain without a
+      copy, rather than through a stream over the chain.
+  entry .fieldOptical   `message.lens(_(Prim) = value)`: an `Ordinal` selects a field by number
+      Protocol Buffers fields are numbered, not named, so an `Ordinal` is the optic: `Prim`
+      is field 1, `Sec` field 2, and so on. Updating parses the message's fields, replaces
+      the selected number's wire value with the transform's result (every occurrence, as a
+      `Repeated`), and re-encodes the rest unchanged — including fields the program does not
+      know. A number the message does not define, or a message that does not parse, leaves
+      it as it was. The assigned value is a `Protobuf`; with
+      `import conversions.encodableToProtobuf` any `Encodable in Protobuf` value may be
+      assigned directly.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import conversions.encodableToProtobuf
+
+      case class Point(@field(1) x: Int, @field(2) y: Int)
+      case class Wrapper(@field(1) point: Point, @field(2) label: Text)
+
+      val wrapper: Protobuf = Wrapper(Point(3, 4), t"origin").in[Protobuf]
+      wrapper.lens(_(Prim) = Point(7, 8)).as[Wrapper]   // Wrapper(Point(7, 8), t"origin")
+      wrapper.lens(_(Sen) = Point(7, 8)).as[Wrapper]    // unchanged: there is no field 6
+      ```
+  entry .intEncodable   an `Int` as an `int32` varint
+      Negative values take the full ten bytes, as proto3 specifies; a value expected to be
+      negative is better typed `S32`, whose zig-zag encoding keeps it short.
+  entry .longEncodable   a `Long` as an `int64` varint
+  entry .booleanEncodable   a `Boolean` as the varint 1 or 0
+  entry .doubleEncodable   a `Double` as a little-endian 64-bit value (`I64`)
+  entry .floatEncodable   a `Float` as a little-endian 32-bit value (`I32`)
+  entry .textEncodable   `Text` as its UTF-8 bytes, length-delimited
+  entry .dataEncodable   `Data` as a length-delimited `bytes` field
+  entry .sizedDataEncodable   a `Data & Sized[n]` block encodes exactly as the plain `Data`
+      So a block whose size is proven at the type level encodes without losing the proof.
+  entry .intDecodable   an `int32` varint as an `Int`; zero when absent
+      Takes a `Tactic[Protobuf.Error]`, raised for a truncated or malformed varint. Every
+      scalar decoder reads an absent field as proto3's zero value.
+  entry .longDecodable   an `int64` varint as a `Long`; zero when absent
+  entry .booleanDecodable   a varint as a `Boolean`: any non-zero value is `true`
+  entry .doubleDecodable   a 64-bit fixed value as a `Double`; `0.0` when absent
+  entry .floatDecodable   a 32-bit fixed value as a `Float`; `0.0f` when absent
+  entry .textDecodable   a length-delimited payload as `Text`, decoded as UTF-8
+  entry .dataDecodable   a length-delimited payload as `Data`, the bytes as they are
+  entry .u32Encodable   a hypotenuse `U32` as a `uint32` varint
+      The sized integer types choose the proto3 integer flavour by type, with no annotation:
+      `U32`/`U64` are plain `uint` varints, `S32`/`S64` zig-zag `sint` varints, and
+      `B32`/`B64` little-endian `fixed32`/`fixed64`.
+  entry .u64Encodable   a `U64` as a `uint64` varint
+  entry .s32Encodable   an `S32` as a zig-zag `sint32` varint
+      Zig-zag maps 0, -1, 1, -2, … to 0, 1, 2, 3, …, so a small negative stays a short varint
+      where an `Int` would take ten bytes.
+  entry .s64Encodable   an `S64` as a zig-zag `sint64` varint
+  entry .b32Encodable   a `B32` as a `fixed32`, four bytes little-endian
+  entry .b64Encodable   a `B64` as a `fixed64`, eight bytes little-endian
+  entry .u32Decodable   a `uint32` varint as a `U32`; needs a `Tactic[Protobuf.Error]`
+  entry .u64Decodable   a `uint64` varint as a `U64`
+  entry .s32Decodable   a zig-zag `sint32` varint as an `S32`
+  entry .s64Decodable   a zig-zag `sint64` varint as an `S64`
+  entry .b32Decodable   a `fixed32` as a `B32`
+  entry .b64Decodable   a `fixed64` as a `B64`
+  entry .optionalEncodable   an `Optional[T]` field: encoded when set, `Absent` when `Unset`
+      Explicit presence: an unset field writes nothing, where a present-and-zero scalar
+      writes its tag and value. Applies to any type `Mandatable` to its inner type, so
+      `Optional[Text]`, `Optional[Point]` and `Optional[List[Int]]` all work.
+  entry .optionalDecodable   an absent field reads as `Unset`; a present one through the inner decoder
+  entry .packedEncodable   a collection of `Packable` scalars as one packed `Len` field
+      proto3's default for repeated numbers: every element's encoding is concatenated into a
+      single length-delimited field. Outranks the unpacked `Protobuf2#listEncodable`
+      because `Packable` constrains the element; an empty collection is `Absent`.
+  entry .packedDecodable   a repeated `Packable` field, from packed or unpacked occurrences
+      Accepts both wire forms, as the proto3 specification requires of a reader: a `Len`
+      occurrence is split with `ProtobufParser.packed` by the element's wire type, and any
+      other occurrence is one element. Needs a `Factory` for the collection and a
+      `Tactic[Protobuf.Error]`.
+  entry .packedListEncodable   the packed encoder for the prelude `List` of `Packable` elements
+      The opaque prelude collections are not `Iterable`, so `List`, `Set` and `Sequence` each
+      have their own packed pair, delegating to `packedEncodable` at the underlying type.
+  entry .packedListDecodable   the packed decoder for the prelude `List`
+  entry .packedSetEncodable   the packed encoder for the prelude `Set` of `Packable` elements
+  entry .packedSetDecodable   the packed decoder for the prelude `Set`
+  entry .packedSeriesEncodable   the packed encoder for the prelude `Sequence` of `Packable` elements
+  entry .packedSeriesDecodable   the packed decoder for the prelude `Sequence`
+  entry .intArrayEncodable   a frozen `Array[Int]^{}` as a packed field, with the `List` form's bytes
+      A frozen array of packable scalars is the unboxed representation of a repeated
+      numeric field: a generated parser fills it through an unboxed builder and a generated
+      printer walks it by index, so no element is boxed on either path. The bytes are
+      exactly those of the `List` form, so the two are interchangeable on the wire. One pair
+      of instances per scalar, each pure like the scalar's own; `Array[Byte]^{}` is `Data`,
+      a scalar.
+  entry .longArrayEncodable   a frozen `Array[Long]^{}` as a packed field
+  entry .booleanArrayEncodable   a frozen `Array[Boolean]^{}` as a packed field
+  entry .doubleArrayEncodable   a frozen `Array[Double]^{}` as a packed field
+  entry .floatArrayEncodable   a frozen `Array[Float]^{}` as a packed field
+  entry .intArrayDecodable   a packed or unpacked repeated field as a frozen `Array[Int]^{}`
+  entry .longArrayDecodable   a packed or unpacked repeated field as a frozen `Array[Long]^{}`
+  entry .booleanArrayDecodable   a packed or unpacked repeated field as a frozen `Array[Boolean]^{}`
+  entry .doubleArrayDecodable   a packed or unpacked repeated field as a frozen `Array[Double]^{}`
+  entry .floatArrayDecodable   a packed or unpacked repeated field as a frozen `Array[Float]^{}`
+  entry .mapEncodable   a `Map[K, V]` as repeated entry messages, `{ key = 1; value = 2 }`
+      The proto3 map wire format: each entry is a length-delimited message whose field 1 is
+      the key and field 2 the value, so a `Map[Text, Int]` is on the wire exactly what
+      `map<string, int32>` would be. An empty map is `Absent`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      case class Labels(@field(1) labels: Map[Text, Text])
+      Labels(Map(t"a" -> t"b")).in[Protobuf].encode.to[List]   // List(0x0a, 0x06, 0x0a, 0x01, 0x61, 0x12, 0x01, 0x62)
+      ```
+  entry .mapDecodable   repeated entry messages as a `Map[K, V]`
+      Each occurrence is scanned for its fields 1 and 2; an entry missing either decodes it
+      as `Absent` — a scalar's zero, or the empty message. Needs a `Tactic[Protobuf.Error]`.
+  entry .aggregableDerived   under `import codecs.derived`, `read[T in Protobuf]` takes the tree path
+      Outranks `Protobuf1#aggregableParsed` and applies exactly where it would — a type with a
+      `Parsable` in scope — so the derived `Decodable` decodes even where a direct parser is
+      in scope. Elsewhere the derived path resolves anyway.
+  entry .readableDerived   under `import codecs.derived`, `data.read[T in Protobuf]` takes the tree path
+  entry .encodableDerived   under `import codecs.derived`, `in[Protobuf]` derives even with a `Printable` in scope
+  entry .aggregableStrict   under `import codecs.strict`, `read[T in Protobuf]` must find a `Parsable`
+      The strict mode is the direct mode for code that must not fall back: this takes a
+      direct parser wherever one resolves, and `Protobuf1#aggregableStrictFailure` reports a
+      compile error naming the type wherever none does.
+  entry .encodableOverStrict   under `import codecs.strict`, `in[Data over Protobuf]` must find a `Printable`
+      `in[Protobuf]` itself is not gated: it names the wire value, as `in[Json]` names the
+      tree.
+  entry .Direct   `derives Protobuf.Direct`: a message's parser and printer generated once, into its companion
+    detail
+        A `Self`-typed typeclass has no type parameter, so neither `Protobuf.Parsable` nor
+        `Protobuf.Printable` can appear in a `derives` clause. `Protobuf.Direct[T]` is the
+        carrier that can: `case class Foo(…) derives Protobuf.Direct` calls `.derived`, which
+        generates `Foo`'s parser and printer with `Inlinable.parsable` and
+        `Inlinable.printable` and stores them in the companion, where
+        `Protobuf.Parsable.declared` and `Protobuf.Printable.declared` find them.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        case class Declared(@field(1) id: Int, @field(2) name: Text) derives Protobuf.Direct
+
+        Declared(5, t"five").in[Data over Protobuf].read[Declared in Protobuf]
+        ```
+
+        The instances serve every read and write of the type with no import, and under
+        `import codecs.direct` a type that derives `Protobuf.Direct` uses them rather than
+        generating again at each use site, so the staging compile is paid once. Under
+        `import codecs.derived` they are bypassed like any other direct codec.
+    entry .derived   generates the type's `Parsable` and `Printable` and wraps them
+    entry #parsable   the generated `Protobuf.Parsable`
+    entry #printable   the generated `Protobuf.Printable`
+  entry .Parsable   the direct-parsing typeclass: reads a value's fields straight off the input
+    detail
+        The counterpart of `Decodable in Protobuf` which never builds the tree: a `Parsable`
+        receives a `ProtobufReader` whose window is set to the value's payload — the whole
+        input at the top level, one field's wire value in a field position — and must
+        consume to the window's end. It extends distillate's `Parsable` with `Transport =
+        Protobuf` and `Reader = ProtobufReader`, so its one method is
+        `#parse(reader: ProtobufReader^): Self`. The reader carries its own
+        `Tactic[Protobuf.Error]`, so a `parse` body needs no error vocabulary.
+
+        A `Parsable` is the opt-in: with one in scope, `read[T in Protobuf]` resolves to
+        `Protobuf1#aggregableParsed` or `Protobuf1#readableParsed` and reads directly; without
+        one nothing changes. The ways to get one, in order of generality:
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import locomotion.Inlinable
+
+        case class Person(@field(1) name: Text, @field(2) age: Int)
+
+        given (Person is Protobuf.Parsable) = Inlinable.parsable[Person]   // generated, by hand
+        val bytes = Person(t"Ada", 36).in[Protobuf].encode
+        Chain(bytes).read[Person in Protobuf]                                // parsed without a tree
+        ```
+
+        or `derives Protobuf.Direct` on the message, or `import codecs.direct` for every
+        message and oneof in scope (`Parsable2#generated`). A hand-written instance is
+        `Protobuf.Parsable(reader => …)` (`.apply`), and `.fromDecodable` bridges any
+        `Decodable in Protobuf` — the one-line escape hatch when a custom decoder must beat a
+        generated parser.
+
+        A generated parser reads a message's scalars in place, gathers a `List`, `Set`,
+        `Sequence` or frozen array field occurrence by occurrence (packed or unpacked), reads
+        a `Map` field entry by entry into the map's builder, dispatches a `oneof` by scanning
+        the message for the lowest variant number present (its last occurrence), fills an
+        absent scalar with its zero and an absent field with a declared default, skips an
+        unknown field whole, and takes the last occurrence of a repeated scalar. A field
+        whose type has no `Inlinable` — a sized integer, an `Optional` collection, a user
+        type — is gathered as wire values and decoded once through its `Decodable in
+        Protobuf`: the *seam*, which yields the same value more slowly.
+
+        Over a `Chain[Data]` or a `Stream[Data]` the read never assembles the input first:
+        the parser pulls each chunk as it needs it and holds at most the one field being
+        read — except across a `oneof`, whose message is buffered while its variant is
+        chosen. A read over a whole `Data` is read in place.
+    refer locomotion.Inlinable
+    refer locomotion.ProtobufReader
+    refer locomotion.ProtobufParser
+    entry #Transport   the transport type, `Protobuf`
+    entry #Reader   the reader type, `ProtobufReader`
+    entry .apply   a `Parsable` from a function over the reader
+        `Protobuf.Parsable[Point](reader => …)`: the instance captures the function. Inside,
+        the reader's `tag`, `enterField`, `varint`, `text` and `leaveField` walk the window;
+        see `ProtobufReader`.
+    entry .fromDecodable   a `Parsable` which materialises the window as a message and decodes it
+        The bridge from the tree world: `reader.message()` copies the remaining window out as
+        a `Wire(Len, bytes)` and the `Decodable` decodes it. This is what a type with only a
+        `Decodable in Protobuf` reads through when a generated parser meets it as a whole
+        value, and the way to make a custom decoder win over a generated parser.
+    entry .declared   the parser a type generated into its companion with `derives Protobuf.Direct`
+        Outranks `Parsable2#generated` (`import codecs.direct`), so a type that derives `Direct` uses
+        the codec it generated once.
+    entry .parseField   calls a nominal `Parsable` in a field position of a generated parser
+        `Protobuf.Parsable.parseField[T](parsable, reader)` takes both as neutral `AnyRef`
+        carriers — generated code is capture-erased — and reasserts them here, the audited
+        point. Generated code calls it; hand-written code has no reason to.
+    entry .Direct   the base class of generated parsers, taking the reader as a neutral carrier
+      detail
+          `Protobuf.Parsable.Direct[T]` implements `parse(reader: ProtobufReader^)` by
+          passing the reader as an `AnyRef` to the protected `parseCarrier`, which generated
+          code implements, reasserting the capability with `ProtobufReader.of` at each use. A
+          generated override of `parse` itself would narrow the trait's `Reader^` parameter to
+          a pure type, which capture checking rejects, so the carrier hop is the rim. Not
+          needed by hand-written instances, which use `Protobuf.Parsable.apply`.
+      entry #parse   `parseCarrier(reader)`, the reader passed as an `AnyRef`
+  entry .Parsable2   the lower-priority layer holding `Parsable.generated`
+    hidden
+    detail
+        The trait the object `Protobuf.Parsable` extends, so that the `import codecs.direct`
+        given sits below `Parsable.declared`; `Protobuf.Parsable` inherits `generated` from it.
+    entry #generated   under `import codecs.direct`, a generated parser for every message and oneof
+        An inline given conditional on the `Codecs.Direct` mode and on
+        `Inlinable.Generates[T]`, which holds only for a case-class message or a sealed sum of
+        them; any other type — a generic case class, a collection — fails the search and keeps
+        the derived path. The parser is expanded at each use site, which costs compile time;
+        `derives Protobuf.Direct` pays it once.
+  entry .Printable   the direct-printing typeclass: measures and writes a value's fields straight into the output
+    detail
+        The counterpart of `Encodable in Protobuf` which never builds the tree, in two
+        passes: `#measure` walks the value once, recording every length-delimited size it
+        meets in a `ProtobufSizes` table and returning the value's encoded length; `#write`
+        walks it again, writing through a `ProtobufPrinter` and reading the sizes back in the
+        same order. No field is encoded into an intermediate `Protobuf`, and no nested message
+        is encoded and then copied into its parent. (protobuf-java memoizes a size on each
+        message object; a case class has nowhere to keep one, hence the table.)
+
+        With a `Printable` in scope, `value.in[Protobuf]` resolves to
+        `Protobuf1#encodablePrinted`, whose message is the one `Wire(Len, bytes)` the printer
+        filled, so `encode` returns the array uncopied; `in[Data over Protobuf]` gives the
+        bytes alone, and `.print`, `.emit` run the passes explicitly.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import locomotion.Inlinable
+
+        case class Person(@field(1) name: Text, @field(2) age: Int)
+        given (Person is Protobuf.Printable) = Inlinable.printable[Person]
+
+        Person(t"Ada", 36).in[Protobuf].encode              // written once, directly
+        Protobuf.Printable.print(Person(t"Ada", 36))        // the same bytes
+        ```
+
+        The bytes are exactly those the derived `Encodable` writes — every scalar kind, text
+        beyond ASCII, packed runs, maps, nested and repeated messages, a `oneof` in a field
+        position, an optional message — so a message may be printed directly on one side of
+        a connection and decoded through the tree on the other. The opt-in surface mirrors
+        `Protobuf.Parsable`: an explicit instance, `Inlinable.printable[T]`, `derives
+        Protobuf.Direct`, or `import codecs.direct` (`Printable2#generated`). A field whose type has no
+        printing `Inlinable` is encoded once in the measuring pass through its `Encodable in
+        Protobuf`, stashed in the table and copied out in the writing pass (`.fromEncodable`).
+    refer locomotion.ProtobufPrinter
+    refer locomotion.ProtobufSizes
+    refer locomotion.Inlinable
+    entry #measure   the value's encoded length, recording nested sizes in the table
+    entry #write   writes the value through the printer, reading the sizes back
+    entry .print   a value's wire bytes through its `Printable`: measured, then written once
+        `Protobuf.Printable.print(value)` runs `measure` with a size table acquired from the
+        thread (one per thread, reused, so a print allocates only its output), rewinds it,
+        and writes into a `ProtobufPrinter.exact` array of the measured size, which is
+        returned without a copy.
+    entry .emit   a value's bytes in blocks: pushed to a consumer, or pulled as an iterator
+        `emit(value, deliver)` measures as `.print` does and then writes through a
+        `ProtobufPrinter.blocks` printer sized by the `Buffering` in scope, handing each
+        block to `deliver` as it fills and the last by a `flush`; no array of the whole
+        message is built, and a string longer than a block is delivered whole. `emit(value)`
+        is the pull form: the blocks as an `Iterator[Data]^`, written on a fiber as they are
+        consumed, needing a `Monitor`, a `Probate` and a `Buffering`; the `Printable` must be
+        pure there, as a generated one is.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import locomotion.Inlinable
+
+        case class Person(@field(1) name: Text, @field(2) age: Int)
+        given (Person is Protobuf.Printable) = Inlinable.printable[Person]
+
+        val blocks = scala.collection.mutable.ListBuffer[Data]()
+        Protobuf.Printable.emit(Person(t"Ada", 36), blocks += _)
+        ```
+    entry .apply   a `Printable` from a measuring function and a writing function
+        `Protobuf.Printable[T]((value, sizes) => …, (value, printer, sizes) => …)`; the
+        instance captures both. The functions receive the `ProtobufSizes^` table and the
+        `ProtobufPrinter^` as exclusive capabilities.
+    entry .fromEncodable   a `Printable` which encodes the value once and writes its payload
+        The bridge from the tree world: the measuring pass encodes the value through its
+        `Encodable in Protobuf`, stashes the wire value in the table and returns the payload
+        length; the writing pass unstashes it and writes the bytes raw. This is how a
+        generated printer handles a field whose type does not print.
+    entry .declared   the printer a type generated into its companion with `derives Protobuf.Direct`
+    entry .measureField   calls a nominal `Printable`'s `measure` from a generated printer
+        The carriers travel as `AnyRef` and are reasserted here, the audited point, as
+        `Protobuf.Parsable.parseField` does for parsers. For generated code.
+    entry .writeField   calls a nominal `Printable`'s `write` from a generated printer
+    entry .Direct   the base class of generated printers, taking the printer and table as carriers
+      detail
+          `Protobuf.Printable.Direct[T]` implements `measure` and `write` by passing the
+          `ProtobufSizes` and `ProtobufPrinter` as `AnyRef`s to the protected
+          `measureCarrier` and `writeCarrier`, which generated code implements and which
+          reassert the capabilities with `ProtobufSizes.of` and `ProtobufPrinter.of` at each
+          use. Hand-written instances use `Protobuf.Printable.apply` instead.
+      entry #measure   `measureCarrier(value, sizes)`, the table passed as an `AnyRef`
+      entry #write   `writeCarrier(value, printer, sizes)`, both passed as `AnyRef`s
+  entry .Printable2   the lower-priority layer holding `Printable.generated`
+    hidden
+    detail
+        The trait the object `Protobuf.Printable` extends, so that the `import codecs.direct`
+        given sits below `Printable.declared`; `Protobuf.Printable` inherits `generated` from it.
+    entry #generated   under `import codecs.direct`, a generated printer for every message and oneof
+        Conditional on `Codecs.Direct` and `Inlinable.Generates[T]`, exactly as
+        `Protobuf.Parsable2#generated`.
+  entry .EncodableDerivation   derives `Encodable in Protobuf` for a case class or a sealed sum
+    detail
+        The wisteria `Derivable` behind `Protobuf2#encodable`. A product encodes as a
+        length-delimited message of its fields in declaration order, each numbered by its
+        `field` annotation or, unannotated, by its 1-based position; an `Absent` field writes
+        nothing and a `Repeated` one writes every occurrence. A sum encodes as a `oneof`: a
+        message holding one field, numbered by the variant's 1-based position in the sum,
+        whose payload is the variant's own encoding.
+
+        ```scala
+        import soundness.*
+
+        enum Shape:
+          case Circle(radius: Int)
+          case Rectangle(width: Int, height: Int)
+
+        (Shape.Rectangle(3, 4): Shape).in[Protobuf].encode.to[List]   // field 2: List(0x12, 0x04, 0x08, 0x03, 0x10, 0x04)
+        ```
+    entry .conjunction   the product encoder: numbered fields into one length-delimited message
+    entry .disjunction   the sum encoder: the variant's message under its 1-based variant number
+  entry .DecodableDerivation   derives `Decodable in Protobuf` for a case class or a sealed sum
+    detail
+        The wisteria `Derivable` behind `Protobuf2#decodable`. A product's payload is scanned
+        once into a number-keyed table; each field's decoder receives its number's wire value
+        — the `Wire` itself when it occurs once, `Repeated` of every occurrence otherwise, and
+        `Absent` when missing, in which case a declared default is used first. A sum is
+        decoded by the lowest variant number present in the message (its last occurrence);
+        a message with no variant field raises `Protobuf.Error` with `MissingField`.
+        Both close over the `Tactic[Protobuf.Error]` in scope at the derivation site.
+    entry .conjunction   the product decoder: each field from its number, defaults for the missing
+    entry .disjunction   the sum decoder: the lowest-numbered variant present, or `MissingField`
+  entry .Error   raised when wire bytes are not a valid message
+    detail
+        Error 700: _the protobuf data was not valid: `reason`_. Raised through a
+        `Tactic[Protobuf.Error]` by every decoding path — the derived decoders, the scalar
+        decoders, `ProtobufParser`'s reads and a generated parser — and a `.Reason` says
+        what was wrong and where. The offset on a byte-level reason is the position within
+        the message or sub-message payload being parsed: on the streaming path it is the
+        absolute offset in the input, on the tree path only the top-level message's offsets
+        are absolute, since each nested payload is decoded from its own slice.
+
+        ```scala
+        import soundness.*
+
+        case class Sample(@field(1) value: Int)
+
+        // field 1, wire type Len, length 5, but only one payload byte present
+        capture[Protobuf.Error]:
+          Array[Byte](0x0a, 0x05, 0x41).read[Sample in Protobuf]
+        // Protobuf.Error(Protobuf.Error.Reason.Truncated(2))
+        ```
+    entry #reason   why the data was rejected, and at what offset
+    entry .Reason   the five faults a message can have
+      detail
+          - `Truncated(offset)` — _the protobuf data ended unexpectedly at offset `offset`_:
+            a length prefix, fixed value or varint ran past the end of its window.
+          - `MalformedVarint(offset)` — _a varint was malformed at offset `offset`_: more
+            than ten continuation bytes.
+          - `UnexpectedWireType(found, offset)` — _an unexpected wire type, `found`, was
+            encountered at offset `offset`_: a tag's wire code was 3, 4 (the deprecated
+            groups), 6 or 7.
+          - `Overflow(offset)` — _a numeric value was too large for its type at offset
+            `offset`_: a tenth varint byte contributing more than bit 63.
+          - `MissingField(number)` — _the required field number `number` was missing_: a
+            `oneof` with no variant present. A decode-level fault, with no offset.
+      entry .communicable   renders each reason as the message above
+
+entry .Protobuf2   the lowest codec layer: derived codecs, unpacked collections and the tree-reading path
+  detail
+      A trait the `Protobuf` object extends, so each of its givens is a member of `Protobuf`
+      and resolves from implicit scope. It is the lowest of three layers — below `Protobuf1`
+      (the direct path) and the object itself (scalars, packed collections and the mode
+      selectors) — so that its blanket instances are chosen only when nothing more specific
+      applies: the derived message codecs yield to a hand-written one, the unpacked
+      collection instances to the packed ones for `Packable` elements, and the
+      tree-materialising read to a direct parser. Exported to the umbrella because a
+      derivation names it.
+  entry #encodable   derives `Encodable in Protobuf` for any type with a wisteria `Reflection`
+      An inline given which expands `Protobuf.EncodableDerivation` for a case class or a
+      sealed sum; a type with neither a reflection nor another instance fails the search.
+  entry #decodable   derives `Decodable in Protobuf` for any type with a wisteria `Reflection`
+  entry #listEncodable   any `Iterable` as an unpacked repeated field, one tag per element
+      The fallback for elements with no `Packable` instance — strings, byte arrays and
+      nested messages — each written as a separate occurrence of the field. An element's
+      own `Repeated` occurrences are flattened in, an `Absent` one is dropped, and an empty
+      collection is `Absent`. Captures the by-name element codec.
+  entry #listDecodable   any `Iterable` from its occurrences, through a `Factory`
+      Decodes each occurrence with the element's decoder. A packed field still round-trips
+      here when no `Packable` is in scope, since the element decoder reads one value.
+  entry #aliasListEncodable   the unpacked encoder for the prelude `List`
+      The opaque prelude collections do not conform to `Iterable`, so `List`, `Set` and
+      `Sequence` each have an alias pair built at the underlying stdlib type.
+  entry #aliasListDecodable   the unpacked decoder for the prelude `List`
+  entry #aliasSetEncodable   the unpacked encoder for the prelude `Set`
+  entry #aliasSetDecodable   the unpacked decoder for the prelude `Set`
+  entry #aliasSeriesEncodable   the unpacked encoder for the prelude `Sequence`
+  entry #aliasSeriesDecodable   the unpacked decoder for the prelude `Sequence`
+  entry #arrayEncodable   a frozen `Array[T]^{}` of messages, text or bytes as an unpacked repeated field
+      The bytes of the `List` form, so a repeated message field may be declared
+      `Array[Message]^{}` and gathered by a generated parser with no cell per element. Needs
+      a `ClassTag`. A frozen array of a `Packable` scalar packs instead, through
+      `Protobuf.longArrayEncodable` and its siblings.
+  entry #arrayDecodable   a repeated field as a frozen `Array[T]^{}`, for non-scalar elements
+  entry #aggregableIn   `read[T in Protobuf]` through the tree: aggregate the bytes, then `as[T]`
+      The `(value in Protobuf) is Aggregable by Data` given for any `Decodable in Protobuf`,
+      capturing its `Tactic[Protobuf.Error]`. A single in-memory block is decoded in place,
+      a chain of several is gathered into one block first, and a stream is gathered as it
+      arrives — in every case the whole message is held, since a `Protobuf` value is its
+      bytes. `Protobuf1#aggregableParsed` outranks it whenever a `Parsable` is in scope.
+  entry #encodableOver   `value.in[Data over Protobuf]`: the message's wire bytes
+      The write-side mirror of `read[T in Protobuf]`: the payload of whatever `Encodable in
+      Protobuf` resolves, so it prints directly where a `Printable` is in scope and encodes
+      through the tree otherwise.
+
+entry .Protobuf1   the middle codec layer: the direct path, taken whenever a `Parsable` or `Printable` is in scope
+  detail
+      A trait between `Protobuf2` and the `Protobuf` object. Its givens apply only to a
+      type with a `Protobuf.Parsable` or `Protobuf.Printable` in scope, and then outrank
+      `Protobuf2`'s tree-based ones, so a direct codec changes a read or write only where
+      one exists. `import codecs.derived` overrides them from the object above, and
+      `import codecs.strict` pairs the object's strict givens with the failures here.
+  entry #encodablePrinted   `in[Protobuf]` through a `Printable`: the printed array as the message's one `Wire`
+      The `Encodable in Protobuf` for any type with a `Protobuf.Printable` in scope,
+      capturing it. The message is `Wire(Len, Printable.print(value))`, so `encode` returns
+      the array without a copy. A lexically-scoped `Printable` — a local given, or one
+      imported by name — makes the encoding direct.
+  entry #aggregableParsed   `read[T in Protobuf]` over a chain or stream through a `Parsable`
+      The `(value in Protobuf) is Aggregable by Data` given for any type with a
+      `Protobuf.Parsable`, capturing the parsable and its `Tactic[Protobuf.Error]`. A
+      single-block chain is read in place; a longer chain or a stream is read through a
+      `ProtobufParser` which pulls cells as it needs them, so the input is never assembled
+      and at most one field is held — except across a `oneof`, whose message is buffered
+      while its variant is chosen. Error offsets are absolute in the input.
+  entry #readableParsed   `data.read[T in Protobuf]` over a whole `Data`, parsed in place
+      Concrete in `Data`, so it beats the composed pipeline when the entire content is
+      already in hand, and parses it without wrapping it in a one-element stream.
+  entry #aggregableStrictFailure   under `import codecs.strict`, a read of a type with no `Parsable` fails to compile
+      An inline given raising _`T` has no direct codec_ at the use site. It sits above the
+      derived read so that the derived path cannot be taken silently, and below
+      `Protobuf.aggregableStrict`, which takes every type with a parser first.
+  entry #encodableOverStrictFailure   under `import codecs.strict`, `in[Data over Protobuf]` with no `Printable` fails to compile
+
+entry .WireType   the four proto3 wire types: `Varint`, `I64`, `Len` and `I32`
+  detail
+      The low three bits of a field's tag say how its value is laid out: `Varint` (code 0)
+      for `int32`, `int64`, `uint`, `sint`, `bool` and enums; `I64` (code 1) for `fixed64`,
+      `sfixed64` and `double`; `Len` (code 2) for strings, bytes, nested messages, packed
+      runs and map entries; and `I32` (code 5) for `fixed32`, `sfixed32` and `float`. The
+      deprecated group types, codes 3 and 4, are not supported: a tag carrying either is
+      rejected with `Protobuf.Error.Reason.UnexpectedWireType`.
+
+      ```scala
+      import soundness.*
+
+      WireType.Len.id            // 2
+      WireType.fromId(5)         // WireType.I32
+      WireType.fromId(3)         // Unset
+      ```
+  entry .fromId   the wire type with a 3-bit code, or `Unset` for 3, 4, 6 and 7
+  entry #id   the 3-bit code packed into a field tag: 0, 1, 2 or 5
+
+entry .Packable   marks a scalar whose repeated fields pack into one length-delimited run
+  detail
+      proto3 packs a repeated numeric field: every element's bytes are concatenated into a
+      single `Len` field, rather than written one tag per element. `Packable` is the evidence
+      that an element type packs, recording the `#wireType` its values use so a reader can
+      split a packed run back into elements. Only numeric scalars have an instance — `Int`,
+      `Long`, `Boolean`, `Float`, `Double` and the six sized integers — since strings, byte
+      arrays and messages are length-delimited and always repeat as separate fields.
+
+      The instances are givens of the companion, so a `List[Int]` field packs with no
+      import, while a `List[Text]` field takes the unpacked `Protobuf2#listEncodable`. A
+      reader accepts both forms whatever the writer chose.
+  refer locomotion.Protobuf
+  entry #wireType   how one element is laid out: `Varint`, `I32` or `I64`
+  entry .int   `Int` packs as varints
+  entry .long   `Long` packs as varints
+  entry .boolean   `Boolean` packs as varints
+  entry .u32   `U32` packs as varints
+  entry .u64   `U64` packs as varints
+  entry .s32   `S32` packs as zig-zag varints
+  entry .s64   `S64` packs as zig-zag varints
+  entry .float   `Float` packs as 32-bit fixed values
+  entry .double   `Double` packs as 64-bit fixed values
+  entry .b32   `B32` packs as 32-bit fixed values
+  entry .b64   `B64` packs as 64-bit fixed values
+
+entry .field   the `@field(n)` annotation: a case-class field's Protocol Buffers field number
+  detail
+      `case class Point(@field(1) x: Int, @field(2) y: Int)` declares `x` as field 1 and `y`
+      as field 2, which is everything proto3 needs that the Scala type does not say. The
+      numbers are read during derivation and by the generators, so the annotation is a
+      `StaticAnnotation` with one `#number`. A field without one numbers itself by its
+      1-based declaration position — what `protoc` would assign to the same declarations —
+      and the numbers may be sparse, as protocol evolution requires:
+
+      ```scala
+      import soundness.*
+
+      case class Sparse(@field(3) a: Int, @field(7) b: Text)
+      case class Unnumbered(first: Int, second: Int)   // fields 1 and 2
+
+      Sparse(1, t"").in[Protobuf].encode.keep(2)   // the tag 0x18: field 3, varint
+      ```
+
+      Field numbers on a `oneof`'s variants are positional: the first case of the enum or
+      sealed trait is field 1 of the `oneof` message, the second field 2, and the annotation
+      is not consulted for them.
+  entry #number   the field number, 1 or more
+
+entry .conversions   givens that let an encodable value stand where a `Protobuf` is wanted
+  detail
+      A choice package, imported by name: `import conversions.encodableToProtobuf`.
+  entry .encodableToProtobuf   a scoped `Conversion` from any `Encodable in Protobuf` value to its `Protobuf`
+      Brings the implicit conversion `value => value.in[Protobuf]` into lexical scope, so an
+      encodable value may be supplied directly at a lens assignment —
+      `message.lens(_(Prim) = Point(7, 8))` — without writing `in[Protobuf]`. A conversion
+      is never in scope by default; importing this is the explicit choice.
+
+entry .Inlinable   the compile-time code generator behind direct parsers and printers, per field type
+  detail
+      `Inlinable` is the `Expr`-level counterpart of `Protobuf.Parsable` and
+      `Protobuf.Printable`: a typeclass whose methods generate code at macro-expansion time.
+      `#parse` receives an `Expr` of the reader, its window set to the value's payload, and
+      returns an `Expr` of the decoded value; `#measure` and `#write` likewise return the two
+      printing passes. The generator splices each result straight into the parser or printer
+      it is building, so nested messages, repeated-field gathering, `oneof` dispatch and
+      custom leaf codecs all inline into one flat method, with no runtime dispatch, no field
+      maps and no adapter hops between composed parsers.
+
+      Users meet it through two entry points:
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import locomotion.Inlinable
+
+      case class Person(@field(1) name: Text, @field(2) age: Int)
+
+      given (Person is Protobuf.Parsable) = Inlinable.parsable[Person]
+      given (Person is Protobuf.Printable) = Inlinable.printable[Person]
+
+      Person(t"Ada", 36).in[Data over Protobuf].read[Person in Protobuf]
+      ```
+
+      Each generates a monomorphic instance for a case-class message or a sealed-sum
+      `oneof`, composed from the `Inlinable` instances of its field types: the structural
+      instances `derived` builds for nested messages and sums, the leaf givens of the
+      companion (`int`, `long`, `boolean`, `double`, `float`, `text`, `data`) and `iterable`
+      for repeated fields. A field type with no instance — a sized integer, an `Optional`
+      collection, a user type — takes the *seam*: its occurrences are gathered as wire values
+      and decoded through its `Decodable in Protobuf` (encoded through its `Encodable`), so
+      every message still parses, only more slowly at that field.
+
+      A hand-written instance (`given (MyLeaf is Inlinable) = new Inlinable { … }`) is an
+      ordinary runtime value, and the generator can only call its `parse` by evaluating it
+      inside the macro — which takes an in-macro staging compiler, contributed by
+      `locomotion.staged` as a `.Stager`. Two constraints follow: the instance and its type
+      must be compiled in an *earlier* run than the expansion (a same-run instance, with no
+      trustworthy classfile yet, degrades to the seam), and without `locomotion.staged` on
+      the macro classpath every hand-written instance degrades to the seam. Generated
+      structural instances need neither. A message whose instance is a `derives` clause
+      (`derives Inlinable.ForProtobuf`) is found in its companion by the staging summon.
+
+      `Inlinable` is not exported to the umbrella: write `import locomotion.Inlinable`.
+  refer locomotion.Protobuf
+  refer locomotion.InlinableStager
+  refer locomotion.inlining
+  entry .parsable   `Inlinable.parsable[T]`: a generated `Protobuf.Parsable` for a message or oneof
+      A macro. The type must be a case-class message, a sealed sum of them, or a type with
+      an `Inlinable` instance; a collection is rejected (_a Protobuf message is the unit of
+      direct parsing_), and a type with no instance and no message shape is a compile error
+      suggesting a `Decodable in Protobuf`. The generated parser is bound to a lazy `self`,
+      so a recursive occurrence of its own type — `Tree` with `children: List[Tree]` — reads
+      through it in place.
+  entry .printable   `Inlinable.printable[T]`: a generated `Protobuf.Printable` for a message or oneof
+      A macro, as `.parsable`. A type whose instance does not print (`prints` is `false`) is
+      a compile error: _`T` has no generated printer; a Protobuf message is the unit of
+      direct printing_.
+  entry .derived   the structural instance for a case-class message: `product is Inlinable`
+      Reflects the product when its `parse`, `measure` or `write` is called — no macro of its
+      own, since the `Type` arrives with the call. Fields are read by number, gathered,
+      dispatched or seamed by their types.
+  entry .ForProtobuf   the `derives Inlinable.ForProtobuf` carrier: a message's structural instance in its companion
+    detail
+        A `Self`-typed typeclass cannot appear in a `derives` clause, so `case class Foo(…)
+        derives Inlinable.ForProtobuf` synthesises this parameterised subclass — which *is*
+        a `Foo is Inlinable` — into `Foo`'s companion, where the expansion-time summon of
+        another message's generator finds it. It delegates every method to the structural
+        instance `Inlinable.derived` builds, and the resolution ladder unwraps it so the
+        instance keeps its generator identity.
+    entry .derived   wraps `Inlinable.derived[T]` for the `derives` clause
+    entry #parse   delegates to the structural instance
+    entry #absent   delegates to the structural instance
+    entry #prints   delegates to the structural instance
+    entry #measure   delegates to the structural instance
+    entry #write   delegates to the structural instance
+  entry .Generates   evidence that a type's codec can be generated structurally: a message or a oneof
+    detail
+        The condition on `import codecs.direct`'s generated instances. Its transparent given
+        `.generates` is a macro which succeeds for a case-class message or a sealed sum of
+        them, and fails — _`T` has no generated codec_ — for anything else, so the search for
+        a generated instance fails and the derived path resolves instead. A cheap shape
+        test, so a search under the mode stays cheap.
+    entry .generates   the macro given: `Generates[T]` for a message or oneof, a failed search otherwise
+  entry .Stager   the hook through which `locomotion.staged` evaluates a hand-written instance at expansion time
+    detail
+        `Inlinable.Stager` is the trait, with one method `#summon`, which `locomotion.staged`
+        implements as `InlinableStager.Implementation`; the companion object loads that
+        implementation by class name from the macro's own classloader when first asked, and
+        `.summon` returns `None` when it is absent, so that core carries no dependency on
+        the compiler jars. Looked up by name rather than through `ServiceLoader` so that the
+        core compiles for Scala Native.
+    entry .summon   the staged `Inlinable` for a field type, or `None` when `locomotion.staged` is absent
+    entry #summon   evaluates the `Inlinable` given for a type inside a staging compiler
+  entry .int   `Int` reads as a varint and prints as one; `0` when absent
+      The leaf generators read the reader's window exactly as the tree accessors interpret a
+      field's recorded payload, for hand-written instances that compose over one value.
+  entry .long   `Long` reads and prints as a varint; `0L` when absent
+  entry .boolean   `Boolean` reads and prints as a varint; `false` when absent
+  entry .double   `Double` reads and prints as a 64-bit fixed value; `0.0` when absent
+  entry .float   `Float` reads and prints as a 32-bit fixed value; `0.0f` when absent
+  entry .text   `Text` reads the window as UTF-8 and prints through the size table's scratch
+      The measuring pass encodes the string once into the `ProtobufSizes` scratch
+      (`stashText`), recording its offset and length, and the writing pass copies it out
+      (`ProtobufPrinter#stashedText`), so a string is encoded exactly once.
+  entry .data   `Data` reads the window as bytes and prints them raw
+  entry .iterable   carries the element's instance for a repeated field; never parses alone
+      A collection's occurrences may be scattered through the whole message, and packed, so
+      a collection cannot be parsed from a single field window: gathering lives in the
+      message generator. This instance only carries the element's `Inlinable` to it, and
+      its `parse` is a compile error if reached directly.
+  entry #parse   generates the code which reads `Self` from the reader's window
+  entry #prints   whether the instance generates a printer; `false` by default
+      An instance that does not print — the default, so a parse-only instance stays honest
+      — puts its field on the `Encodable in Protobuf` seam in a generated printer.
+  entry #measure   generates the measuring pass: records nested sizes, returns the encoded length
+      The default is a compile error, _the Inlinable for `T` generates no printer_; an
+      instance overriding `prints` must override this and `#write`. The table travels as an
+      `Expr[AnyRef]`, reasserted with `ProtobufSizes.of`.
+  entry #write   generates the writing pass through the printer, reading sizes back
+      The printer and table travel as `Expr[AnyRef]`s, reasserted with `ProtobufPrinter.of`
+      and `ProtobufSizes.of`, since generated code is capture-erased.
+  entry #absent   generates what a field of this type yields when its number is missing
+      proto3 has no required fields: the leaf instances yield their zero, a message instance
+      an all-fields-absent record, and the default aborts with
+      `Protobuf.Error.Reason.MissingField(0)` through the given tactic, so a custom instance
+      which does not override it is loud rather than silently wrong.
+
+entry .ProtobufParser   the streaming wire parser: reads fields straight off a `Cursor`, one window at a time
+  detail
+      `ProtobufParser` reads Protocol Buffers wire bytes off a zephyrine `Cursor`, one field
+      at a time, so a message arriving in chunks is read as it arrives and the buffer holds
+      only the field being read. It is a stateful, exclusive capability (`ProtobufParser^`),
+      constructed only through the companion's `.apply` over a whole `Data` (read in place,
+      with no cursor), a `Chain[Data]` (cells pulled as needed) or a `Stream[Data]`
+      (chunks read as they are delivered), and owned by one read for its duration.
+
+      Reads are bounded by a *window*: the extent of the value being parsed, as an absolute
+      offset in the input, so nested messages parse in place rather than over a copied
+      payload. `#directEnterField` narrows the window to one field's wire value by its tag's
+      wire code and `#directLeaveField` restores the enclosing one, skipping whatever of the
+      field remains; every scalar read checks the window and reports a `Protobuf.Error`
+      with the absolute offset. A `oneof` is read by buffering the window whole
+      (`#directBufferWindow`), scanning it for the variant, and re-entering the variant's
+      extent (`#directWindow`, `#directRestore`).
+
+      Generated parsers, spliced into user modules, bind the parser once per record and read
+      through this *direct rim* — the `direct…` methods, each taking a
+      `Tactic[Protobuf.Error]` — which is why they are public. Hand-written `Parsable`
+      instances use `ProtobufReader`, the restricted rim which carries the tactic for them.
+      The companion also holds the whole-payload reads the tree path uses: `.fields`,
+      `.packed`, `.varintOf`, `.fixed32Of` and `.fixed64Of`, each over an in-memory `Data`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      // Field 1 (tag 0x0a), length 3, "ABC"
+      val parser = ProtobufParser(Array[Byte](0x0a, 0x03, 0x41, 0x42, 0x43))
+      val tag = parser.directTag()                       // 0x0a: field 1, wire code 2
+      val saved = parser.directEnterField(tag & 7)
+      val text = parser.directStringWindow()             // "ABC"
+      parser.directLeaveField(saved)
+      parser.directAtLimit                               // true
+      ```
+
+      Performance notes a user may rely on: a one-byte varint (a tag, a bool, a short length)
+      is read in place; two- to four-byte varints take a straight-line path; a string field
+      whose bytes are all ASCII, read over a whole `Data`, is decoded through a Latin-1 copy
+      rather than the UTF-8 constructor, with an identical `Text`; and a read over a whole
+      `Data` has no cursor at all. Window positions cross the rim as `Int`s: a message is at
+      most 2 GiB, as its `int32` length prefixes require.
+  refer locomotion.ProtobufReader
+  refer locomotion.Protobuf
+  entry .apply   a parser over a whole `Data`, a `Chain[Data]`, or a consumed `Stream[Data] over Credit`
+      Over a `Data` the array is the buffer, borrowed and never written, and the window is
+      its length. Over a chain or a stream the window is unbounded — the message ends where
+      the input ends, which a stream reveals only by ending — and cells are pulled as the
+      parser needs them. The stream overload takes its argument as `consume`: the stream is
+      used exactly once, by the parser.
+  entry .of   reasserts a parser that travelled as a neutral `AnyRef` carrier, as `ProtobufParser^`
+      For generated parsers, which receive the reader's parser as a carrier and need the
+      exclusive capability for every `update` call; inline, so the cast expression itself
+      lands in the user module. Hand-written code has no carrier to reassert.
+  entry .varintOf   a varint from the start of an in-memory payload; needs a `Tactic[Protobuf.Error]`
+      The allocation-free scalar read of the tree path: `Protobuf.intDecodable` and its
+      siblings call it on a field's recorded payload. A one-byte varint is read in place;
+      more than ten bytes is `MalformedVarint`, running out is `Truncated`, and a tenth byte
+      contributing more than bit 63 is `Overflow`.
+  entry .fixed32Of   a little-endian 32-bit value from a payload; `Truncated` if shorter than four bytes
+  entry .fixed64Of   a little-endian 64-bit value from a payload; `Truncated` if shorter than eight bytes
+  entry .fields   a message payload as a map from field number to every occurrence, in first-occurrence order
+      Walks the payload once and copies each field's payload into its own `Protobuf.Wire`,
+      preserving repeats and unknown fields. `fieldOptical` uses it to rewrite one field and
+      pass the rest through. A field's occurrences are listed in wire order.
+  entry .packed   splits a packed run into one wire value per element, by the element's wire type
+      `ProtobufParser.packed(payload, WireType.Varint)` splits a `Len` payload of
+      concatenated varints; `I32` and `I64` split at fixed widths. The wire type comes from
+      the element's `Packable` instance. A truncated final element is `Truncated`.
+  entry #directAtLimit   whether the window has no more content; at the top level, whether the input has ended
+      The record loop's test: `while !parser.directAtLimit` reads tags until the window is
+      consumed. On an unbounded window it asks the cursor for more before answering, so a
+      live stream's complete field reads without waiting for the next.
+  entry #directMark   the current absolute offset, as an `Int`
+  entry #directBoundary   the window's end offset, as an `Int`; `Int.MaxValue` when unbounded
+  entry #directTag   the next field's tag, `(number << 3) | wireCode`; call only below the limit
+  entry #directVarint   a window-bounded varint
+      `Truncated` at the window's end or the input's, `MalformedVarint` past ten bytes,
+      `Overflow` for a tenth byte above bit 63; the offset in each is where the varint began.
+  entry #directFixed32   four little-endian bytes as an `Int`, within the window
+  entry #directFixed64   eight little-endian bytes as a `Long`, within the window
+  entry #directEnterField   narrows the window to one field's value by its wire code; returns the enclosing boundary
+      Code 0 covers the varint's own bytes, 1 the next eight, 5 the next four, and 2
+      consumes the length prefix and covers that many bytes; code 3, 4, 6 or 7 is
+      `UnexpectedWireType` at the tag's offset. A field which would run past the enclosing
+      window is `Truncated`; an unbounded enclosing window cannot prove the bytes exist on
+      entry, so its reads report the truncation instead, at the same offset. The returned
+      token is for `#directLeaveField`.
+  entry #directLeaveField   restores the enclosing window, skipping whatever of the field remains
+      A parse may legitimately read less than the field's payload — the tree accessors
+      ignore a payload's trailing bytes too — so the remainder is skipped, not buffered.
+  entry #directSkipField   skips one field whole by its wire code: enter, then leave
+      How a generated parser passes over a field number it does not know.
+  entry #directLong   a field's value as a `Long`, by its wire code
+      With code 0 the varint is read in place; with any other code the field's window is
+      entered and its payload interpreted as the tree accessor would interpret the recorded
+      payload — a `Len` payload of one varint reads as that varint.
+  entry #directDouble   a field's value as a `Double`: in place for code 1, through the window otherwise
+  entry #directFloat   a field's value as a `Float`: in place for code 5, through the window otherwise
+  entry #directString   a length-delimited field's content as a `String`, fused for code 2
+      For code 2 the length prefix, bounds check and UTF-8 decode are one step; any other
+      code takes the window path.
+  entry #directData   a length-delimited field's content copied out as `Data`
+  entry #directWire   one field's value materialised as a `Protobuf.Wire`
+      The runtime seam for a field type without an `Inlinable`: each occurrence is gathered
+      this way and the field decoded once through its `Decodable in Protobuf`, exactly as
+      the tree path decodes `Repeated(values)`.
+  entry #directStringWindow   the whole current window as a `String`
+      The window-level read behind `ProtobufReader#text`, for a `parse` body that owns the
+      field's window already.
+  entry #directDataWindow   the whole current window copied out as `Data`
+  entry #directMessage   the remaining window as a length-delimited `Protobuf.Wire` message
+      The whole-value seam behind `Protobuf.Parsable.fromDecodable`.
+  entry #directBufferWindow   buffers the window's remaining content whole, before a oneof scan
+      An unbounded window becomes bounded by the input's end, which the fill has found;
+      afterwards neither a scan nor a re-entry can refill — and so compact — the buffer, so
+      offsets returned by `#directMark` stay valid for `#directWindow` until the window is
+      left. Must precede `#directWindow` and `#directRestore`.
+  entry #directWindow   moves to an absolute extent within the buffered window; returns a token for `#directRestore`
+      `directWindow(start, end)` seeks to `start` and bounds the window at `end` — a
+      variant's recorded extent — packing the previous position and boundary into the
+      returned `Long`. Only after `#directBufferWindow`.
+  entry #directEmptyWindow   an empty window at the read position, from which an absent nested value parses
+      An absent message field parses as the empty message, so a generated parser enters an
+      empty window and runs the nested parser over it. Restored by `#directRestore`.
+  entry #directRestore   restores the position and boundary a `#directWindow` or `#directEmptyWindow` token holds
+
+entry .ProtobufReader   the restricted rim a `Protobuf.Parsable` reads through: a window, its fields and their scalars
+  detail
+      `ProtobufReader` is what a `Protobuf.Parsable.parse` receives: the parser with its
+      window set to the value's payload, and a `Tactic[Protobuf.Error]` carried inside, so a
+      `parse` body needs no error vocabulary — malformed input aborts through the read's
+      ambient tactic. Only locomotion's read paths construct one; it is an exclusive,
+      stateful capability owned by one `parse` call for its duration, and nothing of it may
+      be retained afterwards.
+
+      A hand-written instance walks its window with `#more`, `#tag`, `#enterField` and
+      `#leaveField`, reading each field's scalar in between:
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      case class Point(@field(1) x: Int, @field(2) y: Int)
+
+      given (Point is Protobuf.Parsable) = Protobuf.Parsable: reader =>
+        var x = 0
+        var y = 0
+
+        while reader.more do
+          val tag = reader.tag()
+          val saved = reader.enterField(tag & 7)
+          (tag >>> 3) match
+            case 1 => x = reader.varint().toInt
+            case 2 => y = reader.varint().toInt
+            case _ => ()
+          reader.leaveField(saved)
+
+        Point(x, y)
+
+      Point(3, 4).in[Protobuf].encode.read[Point in Protobuf]   // Point(3, 4)
+      ```
+
+      The scalar readers (`#varint`, `#fixed32`, `#fixed64`, `#text`, `#data`) read the
+      window's content exactly as the tree accessors interpret a field's recorded payload,
+      so an instance composed over one wire value agrees with the derived decoder. `#wire`
+      and `#message` are the seams back to the tree world. Generated parsers do not use these
+      forwarders: they take the parser itself through `ProtobufReader.of` and read through
+      `ProtobufParser`'s direct rim.
+  refer locomotion.ProtobufParser
+  refer locomotion.Protobuf
+  entry .of   reasserts a reader that travelled as a neutral `AnyRef` carrier, as `ProtobufReader^`
+      The entry of a generated parser's `parseCarrier(reader: AnyRef)`, spliced into the
+      user's module; inline so the cast lands there, where a method's `^` result would be
+      read-only in a module that is capture-checked but not separation-checked.
+  entry #more   whether the window has more content: the record loop's test
+  entry #tag   the next field's tag, `(number << 3) | wireCode`
+  entry #enterField   narrows the window to the next field's value by its wire code; returns the token to leave with
+  entry #leaveField   restores the enclosing window, skipping the rest of the field
+  entry #skipField   skips the next field whole, by its wire code
+  entry #varint   a varint from the window
+  entry #fixed32   four little-endian bytes as an `Int`
+  entry #fixed64   eight little-endian bytes as a `Long`
+  entry #text   the whole window as UTF-8 `Text`
+  entry #data   the whole window copied out as `Data`
+  entry #wire   one field's value materialised as a `Protobuf`, for decoding through a `Decodable in Protobuf`
+  entry #message   the remaining window as a `Protobuf` message, for `Protobuf.Parsable.fromDecodable`
+
+entry .ProtobufPrinter   writes wire bytes into a buffer it owns: exact-size, growable or block by block
+  detail
+      `ProtobufPrinter` writes Protocol Buffers wire bytes: varints as LEB128, fixed values
+      little-endian, a field as its tag followed by its value (length-prefixed for `Len`).
+      It owns its buffer in one of three modes, chosen by the companion's constructor:
+      `.exact(size)` is an array of exactly the measured size, which `#data` returns without
+      a copy; `.growing(hint)` doubles as needed, for bytes of unknown length; and
+      `.blocks(size, deliver)` hands each filled block to `deliver` as the next write would
+      overflow it, with `#flush` handing on the last partial one, so a message is written
+      as a stream of blocks and never as one array. A write longer than a whole block goes
+      to `deliver` directly. The printer is a stateful, exclusive capability
+      (`ProtobufPrinter^`) with update-classified writes.
+
+      ```scala
+      import soundness.*
+
+      val printer = ProtobufPrinter.exact(3)
+      printer.tag(1, WireType.Varint)
+      printer.varint(150L)
+      printer.data().to[List]   // List(0x08, 0x96, 0x01)
+      ```
+
+      The companion's size functions — `.varintSize`, `.tagSize`, `.utf8Length` and
+      `.fieldSize` — are what a `Printable`'s measuring pass sums, and `#field` mirrors
+      `.fieldSize` byte for byte: writing past an exact-size printer's end throws
+      `ArrayIndexOutOfBoundsException`, so a measure that disagrees with its write is loud.
+      `.varintData` and `.fixedData` are the scalar encoders of the tree path.
+  refer locomotion.ProtobufSizes
+  refer locomotion.Protobuf
+  entry .exact   a printer of exactly `size` bytes, whose `#data` is that array, uncopied
+  entry .growing   a printer over a growable buffer, starting at `hint` bytes (at least 16)
+  entry .blocks   a printer that hands each filled block of `size` bytes to a consumer
+      `deliver` is taken as `consume`: it is owned by the printer. Blocks are at least 16
+      bytes. `#flush` delivers the final partial block; `Protobuf.Printable.emit` is the
+      usual caller.
+  entry .of   reasserts a printer that travelled as a neutral `AnyRef` carrier, as `ProtobufPrinter^`
+      For generated printers, whose `writeCarrier` receives the printer as an `AnyRef`;
+      inline, as `ProtobufParser.of` is.
+  entry .varintSize   the LEB128 length of a value read as unsigned 64-bit: 1 to 10 bytes
+  entry .utf8Length   the length of a string's UTF-8 encoding, without encoding it
+  entry .tagSize   the length of a field's tag: one byte up to field 15, a varint thereafter
+  entry .fieldSize   the number of bytes `#field` writes for a number and a wire value
+      `Absent` is 0, `Repeated` the sum of its values, and a `Wire` its tag plus — for `Len` —
+      a length prefix, plus the payload.
+  entry .varintData   a value's LEB128 bytes as a `Data` of exactly their length
+  entry .fixedData   the low `width` bytes of a value, little-endian, as a `Data`
+  entry #data   the bytes written, in exact-size or growable mode
+      An exact-size printer whose size has been reached returns its array without a copy;
+      otherwise the bytes written so far are copied out.
+  entry #flush   in block mode, hands the bytes written so far to the consumer as a block
+  entry #byte   writes one byte
+  entry #raw   writes bytes as they are
+      The common case — the bytes fit — is one comparison and a copy; in block mode a
+      payload longer than a block is flushed around and delivered whole.
+  entry #chunk   writes a length-delimited payload: its length as a varint, then its bytes
+  entry #varint   writes a value as a LEB128 varint, 1 to 10 bytes
+  entry #utf8   writes a string's UTF-8 encoding straight into the output
+      Its length, which a printer measures first, is `ProtobufPrinter.utf8Length`.
+  entry #stashedText   writes a string the measuring pass stashed: its length prefix, then its bytes from the table
+      Reads the next offset and length from the `ProtobufSizes` and copies the bytes out of
+      the table's scratch; the counterpart of `ProtobufSizes#stashText`.
+  entry #fixed32   writes an `Int` as four little-endian bytes
+  entry #fixed64   writes a `Long` as eight little-endian bytes
+  entry #tag   writes a field tag, `(number << 3) | wireType.id`, as a varint
+  entry #field   writes a numbered field from a `Protobuf` value: tag, length prefix for `Len`, payload
+      `Absent` writes nothing, `Repeated` writes every value under the same number, and a
+      `Wire` writes its tag and bytes. Exactly `ProtobufPrinter.fieldSize` bytes.
+
+entry .ProtobufSizes   the size table between a direct printer's measuring and writing passes
+  detail
+      Every length-delimited value — a nested message, a string, a packed run — needs its
+      size as a prefix before its bytes, so a `Protobuf.Printable` measures a value in one
+      pass, recording each such size here in the order it is visited, and writes it in a
+      second, reading the sizes back in the same order (`#rewind`, then `#next`). A nested
+      message's slot is reserved before its children are measured (`#reserve`) and filled
+      after (`#set`), so the table is in pre-order on both passes. What the measuring pass
+      produces and the writing pass needs is kept alongside: a string is encoded once into
+      the table's byte scratch (`#stashText`) and copied out by `ProtobufPrinter#stashedText`,
+      and a wire value a seam encoded is stashed as a reference (`#stash`, `#unstash`).
+
+      A stateful, exclusive capability (`ProtobufSizes^`), owned by one print for its
+      duration: `Protobuf.Printable.print` takes the thread's table, reused by every print on
+      that thread so a print allocates nothing but its output, and takes a fresh one if the
+      thread's is busy — a seam's `Encodable` printing a nested message through its own
+      `Printable`. Hand-written `Printable` instances receive it as a parameter and need only
+      pass it on to the field codecs they compose.
+  refer locomotion.ProtobufPrinter
+  refer locomotion.Protobuf
+  entry .of   reasserts a table that travelled as a neutral `AnyRef` carrier, as `ProtobufSizes^`
+      For generated printers; inline, as `ProtobufParser.of` is.
+  entry #reserve   a slot for a size known only after its children are measured; returns its index
+  entry #set   fills a reserved slot
+  entry #record   records a size in the next slot: `set(reserve(), size)`
+  entry #rewind   moves the read position to the start, for the writing pass
+  entry #next   the next recorded size, in the order it was recorded
+  entry #stashText   encodes a string into the scratch, recording its offset and length; returns the encoded length
+      The measuring half of writing a string once; `ProtobufPrinter#stashedText` is the
+      writing half, reading the two recorded values back through `#next`.
+  entry #stash   keeps a reference for the writing pass, in order
+      `Protobuf.Printable.fromEncodable` stashes the `Protobuf` it encoded while measuring.
+  entry #unstash   the next stashed reference, in the order stashed
+
+entry .inlining   the macro implementations behind `Inlinable.parsable`, `Inlinable.printable` and `codecs.direct`
+  hidden
+  detail
+      Not for direct use: the object holds the expansion-time instance resolution, the
+      structural generators for messages, repeated and map fields and `oneof` sums, and the
+      three entry macros. The generated parser or printer is bound to a lazy `self` so a
+      recursive type reads through it in place, and a type refined with a `Form` member — a
+      `Foo in Protobuf` read infers `Foo { type Form = Protobuf }` — generates `Foo`'s codec.
+  entry .inlinableParsable   the macro behind `Inlinable.parsable[T]`
+  entry .inlinablePrintable   the macro behind `Inlinable.printable[T]`
+  entry .generates   the macro behind `Inlinable.Generates.generates`: succeeds for a message or oneof
+
+entry .InlinableStager   the in-macro staging compiler which evaluates a hand-written `Inlinable` at expansion time
+  hidden
+  detail
+      Not for direct use. The `locomotion.staged` component's one object: `Inlinable.Stager`
+      loads `.Implementation` by name when `locomotion.staged` is on the macro classpath, and
+      `.evaluate` runs a fresh staging compiler — over the macro classloader's classpath with
+      the current output directory excluded — to summon the `Inlinable` given for a field
+      type and hand the live instance back to the generator. Only a class-shaped type (a
+      class or an application of one) whose classfile already exists can cross into the
+      inner compiler: an opaque or structural type, or one defined in the compilation run
+      in progress, yields `None`, and the field takes the runtime seam through its
+      `Decodable`/`Encodable in Protobuf`. Each summon reports its duration as a compiler
+      info message, _locomotion: staged summon for `T` took `n`ms_.
+  entry .evaluate   the staged summon: `Some(instance)` for an evaluable type, `None` otherwise
+  entry .Implementation   the `Inlinable.Stager` that `Inlinable.Stager.summon` delegates to
+    entry #summon   calls `InlinableStager.evaluate` for the type
+
+entry .postables   the given which posts a `Protobuf` message as an HTTP request body
+  detail
+      A choice package of `locomotion.http` (JVM only), merged with the umbrella's own, so
+      the given is imported by name: `import postables.protobufPostable`.
+  entry .protobufPostable   `Protobuf is Postable`: the wire bytes with the media type `application/protobuf`
+      Protocol Buffers is binary, so the body is the message's bytes and no charset is
+      named. With it in scope a `Protobuf` value may be the body of a telekinesis `post`
+      or `put`:
+
+      ```scala
+      import soundness.*
+      import postables.protobufPostable
+
+      case class Person(@field(1) name: Text, @field(2) age: Int)
+      val body: Protobuf = Person(t"Alice", 30).in[Protobuf]
+      ```
+
+entry .servables   the given which serves a `Protobuf` message as an HTTP response body
+  detail
+      A choice package of `locomotion.http` (JVM only), imported by name:
+      `import servables.protobufServable`.
+  entry .protobufServable   `Protobuf is Servable`: a fixed body of the wire bytes, typed `application/protobuf`
+
+entry .construables   the given which reads an `application/protobuf` request body as a `Protobuf`
+  detail
+      A choice package of `locomotion.http` (JVM only), imported by name:
+      `import construables.protobufConstruable`.
+  entry .protobufConstruable   `"application/protobuf" is Construable to Protobuf`: the body's bytes as a message
+      Once constructed, the message is decoded with `as[T]`, or the request body read with
+      `read[T in Protobuf]` directly, so a binary API is consumed with the same code as a
+      JSON one; only the format's type differs.

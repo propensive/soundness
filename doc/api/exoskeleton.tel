@@ -1,0 +1,2054 @@
+tel 1.0
+
+base exoskeleton
+import soundness
+
+info   command-line applications: arguments, flags, subcommands, tab completions, help and manpages from one body of code
+detail
+    _Exoskeleton_ is the frame around a command-line program. An entry point — `application`,
+    or an object extending `Application` — hands the body a `Cli`: the arguments as a list of
+    `Argument`s, the environment, the working directory, the standard streams and the login.
+    The body recovers the structure of those arguments with typed declarations: a
+    `Subcommand` is an extractor matched against an argument, a `Flag[Int](t"jobs")` reads an
+    operand decoded to its type, a `Switch` reads only presence, and a `Setting` reads a value
+    from the command line, an environment variable or a `Configurator` cascade, in that order.
+
+    The unusual part is that everything else a command-line tool offers — tab completions
+    for bash, zsh, fish and PowerShell, `--help` output, a manpage, and the table of exit
+    statuses — is read off the same code rather than written beside it. Under
+    `executives.completionsExecutive` the body is split into a pure prelude, which declares
+    the flags and matches the subcommands, and an `execute` block, which does the work. A
+    completion request runs the prelude alone, in a mode that records what the code asked for
+    instead of acting on it, so a flag the program checks for is a flag it offers, under
+    exactly the condition the code checks it. The `Help` tree is built the same way, by
+    re-running the prelude at every subcommand prefix, and `roff` renders that tree as a
+    manpage for `Manpages.install`.
+
+    ```scala
+    import soundness.*
+    import backstops.genericErrorMessageBackstop
+    import executives.directExecutive
+    import interpreters.posixInterpreter
+    import systems.javaBaseSystem
+
+    val Build = Subcommand(t"build", e"compile the project")
+
+    def mytool(args: List[Text]): Unit = application(args):
+      arguments match
+        case Build() :: _ =>
+          val jobs: Optional[Int] = Flag[Int](t"jobs", aliases = List('j'))()
+          Out.println(t"building with ${jobs.or(1)} jobs")
+          Exit.Ok
+
+        case _ =>
+          Exit.Fail(1)
+    ```
+
+    Three contextual choices shape an entry point, each a given imported by name, since
+    `import soundness.*` imports no givens:
+
+    - an **executive** from `executives`: `directExecutive` runs the body once and expects an
+      `Exit`; `completionsExecutive` expects an `Execution` and also answers completion,
+      help and `{admin}` requests;
+    - an **interpreter** from `interpreters`: `posixInterpreter` reads `--long` and `-s`
+      flags, `posixClusteringInterpreter` additionally reads `-abc` as `-a -b -c`, and
+      `simpleInterpreter` treats every argument as an operand;
+    - a **backstop** from `backstops`, which turns an exception escaping the body into an
+      exit status: `genericErrorMessageBackstop`, `exceptionMessageBackstop`,
+      `stackTraceBackstop` or `silentBackstop`.
+
+    The library is five source sets:
+
+    - `exoskeleton.args` — the argument model and its typeclasses: `Cli`, `Argument`,
+      `Commandline`, `Flag`, `Switch`, `Setting`, `Subcommand`, `CommandGroup`, `Status`,
+      `Interpretable`, `Discoverable`, `Suggestible`, `Suggestion`, the `interpreters`
+      package, and the `Effectful`/`Speculative` markers. Platform-neutral.
+    - `exoskeleton.core` — the entry points and the executive model: `application`,
+      `Application`, `Executive`, `Invocation`, `Entrypoint`, `Backstop` and the
+      `backstops` and `executives` (`directExecutive`) packages, `Help` and `Install`.
+    - `exoskeleton.completions` — JVM and Native only: `Completion`, `Completions` (the
+      shell scripts and their installation), `execute`, `Execution`, `explain`, `helpTree`,
+      `Pathname`, `pathnameDiscoverable`, `CliEvent` and `executives.completionsExecutive`.
+    - `exoskeleton.manpage` — `Manual`, the `roff` extension on `Help`, and `Manpages`.
+    - `exoskeleton.rig` — a test rig, not part of the umbrella's ordinary surface: `Enclave`
+      packages an application as a daemon-backed executable and `Pane` drives a real shell
+      in a pseudo-terminal or tmux session to assert on what tab completion shows.
+
+    Everything is exported to the `soundness` umbrella, and the `backstops`, `executives`
+    and `interpreters` choice packages merge with the umbrella's own. A `Cli` in scope also
+    provides an `Environment`, a `WorkingDirectory` and a `Stdio`, so the body of an
+    application needs no further imports to read a variable, resolve a path or print.
+
+refer exoskeleton.application
+refer exoskeleton.Application
+refer exoskeleton.Cli
+refer exoskeleton.Flag
+refer exoskeleton.Subcommand
+refer exoskeleton.execute
+refer exoskeleton.Help
+refer exoskeleton.executives
+refer exoskeleton.interpreters
+
+entry .application   wraps a program's entry point, giving its body a `Cli` and exiting with the status it returns
+  detail
+      `application(arguments)(block)` is the entry point of a command-line program. It
+      builds an `Entrypoint` from the running process (its executable, found through
+      `ProcessHandle`, and its script name), asks the `Executive` in scope for a `Cli` over
+      the arguments, the JVM's environment and working directory, the file-descriptor
+      `Stdio` and the process's `Login`, installs a handler for each of `signals` which
+      dispatches to `Cli#trap` handlers, runs the block through the executive and then calls
+      `System.exit` with the resulting `Exit`'s code. It never returns.
+
+      It needs an `Executive`, an `Interpreter` and a `System` in scope, each imported by
+      name. The block's type is `(erased permit: executive.Permit) ?=> Cli ?=> executive.Return`:
+      under `executives.directExecutive` the permit is `Effectful` and the return an `Exit`,
+      so a flag read anywhere in the block is its `Optional` value; under
+      `executives.completionsExecutive` the permit is the inert `Speculative` and the return
+      an `Execution`, so a flag read in the prelude is a `Prospective` handle, and the
+      effects wait for `execute`.
+
+      ```scala fuel
+      frame
+        label As a function which spells out the call
+        code
+            def mytool(args: List[Text]): Unit = application(args):
+              Out.println(t"Hello, world!")
+              Exit.Ok
+      frame
+        label As an object extending `Application`
+        code
+            object MyTool extends Application:
+              def invoke(using Cli): Exit =
+                Out.println(t"Hello, world!")
+                Exit.Ok
+      ##
+      ```
+
+      Packaged as an executable JAR whose `Main-Class` is `mytool` or `MyTool`, either runs
+      from the shell. The status must be returned, not left implicit: `Exit.Ok` reports
+      success and `Exit.Fail(1)` failure. An exception escaping the block reaches the
+      `Backstop` the executive was built with.
+  refer exoskeleton.Application
+  refer exoskeleton.Executive
+  refer exoskeleton.Cli
+  refer exoskeleton.trap
+
+entry .Application   an abstract class whose `main` converts the JVM's arguments and calls `invoke` under the direct executive
+  detail
+      The shortest complete program: an object extending `Application` supplies `main`,
+      which converts the JVM's `Array[Text]` to a list and calls `application` with
+      `executives.directExecutive`, `backstops.genericErrorMessageBackstop`,
+      `interpreters.posixInterpreter` and `systems.javaBaseSystem` already chosen, so only
+      `invoke` need be written. A program which wants a different executive, interpreter or
+      backstop — in particular, tab completions — calls `application` itself with its own
+      imports.
+
+      ```scala
+      import soundness.*
+
+      object MyTool extends Application:
+        def invoke(using Cli): Exit =
+          Out.println(t"Hello, world!")
+          Exit.Ok
+      ```
+  refer exoskeleton.application
+  entry #invoke   the body of the program: runs with a `Cli` in scope and returns the exit status
+      Abstract. Under the direct executive an `Effectful` is in scope throughout, so
+      `Flag[T](…)()` is the flag's `Optional` value and `Switch(…)()` its presence, and
+      `Out.println` prints at once.
+  entry #main   the JVM entry point: converts the argument array and calls `application`
+
+entry .Cli   the context of one command-line invocation: its arguments, environment, streams, login and completion state
+  detail
+      A `Cli` is a *capability* — exclusive, with the lifetime of the `Executive#process`
+      scope that introduces it — carrying everything the body of an application may ask
+      about the invocation it is handling. It is a `Console`, so `Out`, `Err` and `In` work
+      through it; it provides a `WorkingDirectory`, an `Environment` and a `Stdio`, so
+      `Environment[Text](t"HOME")`, path resolution and printing need no further givens; and
+      it records what the code asks for — flags registered, requirements demanded, statuses
+      admissible, suggestions offered — which is how an `Invocation` reports missing flags
+      together and how a `Completion` turns the same code into suggestions.
+
+      The two implementations are `Invocation`, for a real run, and `Completion`, for a
+      tab-completion request; `helpTree` drives a `Completion` at every prefix. Most of the
+      recording methods (`#register`, `#record`, `#present`, `#demand`, `#fault`,
+      `#explain`, `#matched`, `#suggest`) are no-ops on the trait and overridden by one or
+      both implementations; application code reaches them through `Flag`, `Subcommand`,
+      `Argument#suggest` and `explain` rather than directly.
+
+      ```scala
+      import soundness.*
+      import interpreters.posixInterpreter
+
+      def count(using cli: Cli): Int =
+        cli.arguments.size
+
+      def home(using cli: Cli): Optional[Text] =
+        cli.environment.variable(t"HOME")
+      ```
+
+      The companion holds `Cli.arguments`, which turns text into positioned `Argument`s, and
+      the `{admin} await` mailbox (`prepare`, `log`, `done`, `await`) used by the completions
+      executive's administration subcommand.
+  refer exoskeleton.Invocation
+  refer exoskeleton.Completion
+  refer exoskeleton.Argument
+  refer exoskeleton.arguments
+  entry .arguments   turns a list of text into `Argument`s, marking the focused one with a cursor
+      `Cli.arguments(textArguments, focus, position, tab)` numbers the texts from `0` and
+      wraps each as an `Argument` in `Format.Full`. When `focus` names an index, the list is
+      padded with empty texts to reach it, and that argument carries a cursor at `position`,
+      or at the end of its text when the shell gave no position (bash passes none), which is
+      where whole-word prefix matching assumes it anyway; `tab` is the tab-press count the
+      arguments record. With no focus — the ordinary invocation — no argument has a cursor.
+
+      ```scala
+      import soundness.*
+
+      Cli.arguments(List(t"build", t"--jobs", t"4")).map(_())
+      Cli.arguments(List(t"build", t"--j"), focus = 1).map(_.cursor)
+      ```
+  entry .prepare   resets the `{admin} await` mailbox: clears the logged messages and arms a fresh trigger
+      Called by the completions executive before it waits; the mailbox is global to the
+      process, so one `await` is served at a time.
+  entry .log   appends a message to the `{admin} await` mailbox
+      An application running as a daemon may log diagnostic lines here; the next
+      `{admin} await` invocation prints them when `done` fires.
+  entry .done   releases a pending `{admin} await`
+  entry .await   waits up to ten seconds for `done`, then returns the logged messages in order
+      Needs a `Monitor` in scope. A timeout is not an error: whatever was logged is returned.
+  entry #arguments   the arguments of this invocation, each an `Argument` with its position
+      For a `Completion` these are the arguments after the command name, as the shell
+      tokenized them; `Completion#fullArguments` keeps the raw `{completions}` request.
+  entry #environment   the environment variables of the invocation
+      Under a daemon this is the *client's* environment, not the resident JVM's, which is
+      why `Completions.install` and `Manpages.install` take their `Environment` from the
+      `Cli` rather than from `environments.javaBaseEnvironment`.
+  entry #workingDirectory   the directory the command was run from
+  entry #proceed   whether the application's own body should run at all
+      `false` when the executive has already handled the invocation itself — the
+      `{admin}` subcommands of the completions executive — and `true` for an ordinary run.
+  entry #login   the user who ran the command: a `Login` with the username and, if known, the `UserId`
+  entry #register   records that the code consulted a flag, with its operand's `Discoverable` and placeholder
+      Every read of a `Flag` or `Setting` calls this, so a flag the program checks is a flag
+      a `Completion` offers. A flag declared `secret = true` is consulted but never recorded.
+      No-op on an `Invocation`.
+  entry #record   records the exit statuses an `execute` block can return
+      Called by `execute` with the `Status.Admissible` list reified from the block's result
+      type, so a `Completion` and a `Help` probe learn the statuses without running the
+      block.
+  entry #present   records that a flag was specified on the command line
+      A `Completion` uses this to stop offering a non-repeatable flag which is already there.
+  entry #demand   records that a flag is required, and whether it was given
+      Requirements are accrued, never failed fast: an `Invocation` collects the missing flags
+      for `execute` to report together, and a `Completion` notes the requiredness for help
+      while continuing to offer suggestions, since completing a command whose required
+      flags are not yet all present is the common case.
+  entry #fault   records that a flag was given but its operand could not be decoded, with the reason
+      Like `#demand`, faults are accrued for `execute` to report together, and never
+      preclude completions. `Flag#validate` is what calls it.
+  entry #locate   the raw operand arguments of a flag, or `Unset` if the flag was not given at all
+      Distinguishes a flag present with a malformed operand from one that is missing, which
+      `Flag#validate` needs; defaults to `Unset` on the trait, and both implementations
+      delegate to the `Interpreter`.
+  entry #explain   attaches a paragraph of help to the current subcommand section
+      The `update` function receives the prior explanation as a named context value
+      (`prior`) and returns the new one; the top-level `explain` is the usual way to call it.
+      Recorded only by a `Completion`, for zsh's completion header and for help.
+  entry #matched   records that a `Subcommand` matched an argument during dispatch
+  entry #matches   the subcommand names matched so far, as a contiguous run from the first argument
+      On an `Invocation`, the recorded matches are deduplicated and cut at the first gap, so
+      a match against a later argument alone cannot fabricate a false prefix; the result is
+      the path `Help#local` takes to find the current subcommand's section.
+  entry #trap   installs a signal handler for the rest of the invocation
+      Takes a `PartialFunction[Signal, SignalResponse]`; handlers are consulted most recent
+      first by `#dispatchSignal`, and one answering `SignalResponse.Defer` passes the signal
+      on to the next. A handler matches a `Signal`, so a case reads
+      `case Signal(Interrupt.Int, _, _, _) => …`. The top-level `trap` is the same call on the
+      `Cli` in scope.
+  entry #dispatchSignal   routes a signal through the installed handlers, most recent first
+      Returns the first decided `SignalResponse`, or `SignalResponse.Reject` when no handler
+      claims the signal. `application` wires each requested `UnixSignal` to this.
+  entry #parameter   reads a flag's operand through the `Interpreter`, as an `Optional` of the operand type
+      Abstract: `Invocation` and `Completion` both resolve it through the interpreter's
+      `read`, which registers the flag as it goes. `Flag#apply` and friends are the typed
+      front to this.
+  entry #suggest   offers suggestions for an argument at the cursor
+      No-op except on a `Completion`, where it records the candidates if the argument is the
+      one being completed. `Argument#suggest` computes the prefix and suffix for the
+      argument's format and calls this.
+
+entry .Invocation   the `Cli` of a real run: a case class over the arguments, environment, streams and login
+  detail
+      `Invocation` is what the executives build for an ordinary run (as opposed to a
+      `Completion` for a tab-completion request). It is itself a `Stdio`, exporting its
+      `#stdio`'s `out`, `err`, `in` and `termcap`, and it accrues what the prelude asks for
+      so that `execute` can check it before running the block: the flags demanded but
+      missing (`#missingRequisites`) and the flags whose operands failed to decode
+      (`#faults`).
+
+      Tests build one directly to run an application body without a process:
+
+      ```scala
+      import soundness.*
+      import interpreters.posixInterpreter
+      import workingDirectories.javaBaseWorkingDirectory
+      import environments.javaBaseEnvironment
+
+      val invocation: Invocation =
+        Invocation
+          ( Cli.arguments(List(t"--port", t"3")),
+            summon[Environment],
+            summon[WorkingDirectory],
+            stdios.muteStdio,
+            true,
+            Login(t"tester", Unset) )
+
+      given cli: Cli = invocation
+      effectful(Flag[Int](t"port").value)
+      ```
+
+      It needs an `Interpreter` in scope when constructed, which it keeps.
+  refer exoskeleton.Cli
+  refer exoskeleton.Completion
+  refer exoskeleton.execute
+  entry #arguments   the arguments, each an `Argument`
+  entry #environment   the environment of the invocation
+  entry #workingDirectory   the working directory of the invocation
+  entry #stdio   the standard streams
+  entry #proceed   whether the application's body should run; `false` for an `{admin}` invocation
+  entry #login   the user who ran the command
+  entry #missingRequisites   the required flags which were not specified, in the order they were demanded
+      Filled by `Flag#require` and `Flag#validate` in the prelude; `execute` prints them
+      together and exits with status 2 instead of running its block.
+  entry #faults   the validated flags whose operands failed to decode, with the reasons, in order
+      Filled by `Flag#validate` in the prelude; `execute` reports them beside the missing
+      flags.
+  entry #parameter   reads a flag's operand through the interpreter
+
+entry .Executive   the policy which decides what an entry point's body returns and how it is run
+  detail
+      An `Executive` is chosen by importing one of the `executives` givens by name. It
+      builds the `Cli` for an invocation (`#invocation`), runs the body and converts its
+      result to an `Exit` (`#process`), and may be able to build a `Help` tree from the body
+      (`#help`). Its three type members fix the body's contract: `#Return` is what the body
+      yields (`Exit` or `Execution`), `#Interface` the `Cli` it is given, and `#Permit` the
+      erased capability the body receives — `Effectful` from an executive which runs the
+      body only for real, `Speculative` from one which may also run it to discover
+      completions.
+
+      The two provided are `executives.directExecutive` and
+      `executives.completionsExecutive`. A user-defined executive must declare all three
+      type members; its `process` sees the body as `Cli ?=> Return`, not `Interface ?=>
+      Return`, since adapting a `Cli ?=>` context function to an abstract interface type
+      trips capture-root unification.
+  refer exoskeleton.executives
+  refer exoskeleton.application
+  entry #Return   the type the entry point's body returns: `Exit` or `Execution`
+  entry #Interface   the kind of `Cli` this executive hands the body
+  entry #Permit   the erased capability the body receives: `Effectful` or `Speculative`
+      With `Effectful`, `Flag#apply` resolves to the value and `Effectful`-demanding methods
+      may be called anywhere in the body; with `Speculative`, they are available only inside
+      `execute`.
+  entry #invocation   builds the `Cli` for a run from the arguments, environment, directory, streams, entry point and login
+      Needs an `Interpreter`. The completions executive inspects the arguments here to
+      recognise a `{completions}` or `{admin}` request.
+  entry #process   runs the body against a `Cli` and turns its result into an `Exit`
+      Where exceptions escaping the body meet the `Backstop`.
+  entry #help   builds a `Help` tree from the body by re-running its prelude, or `Unset` if this executive cannot
+      Only the completions executive can, since its `Interface` is `Cli` and a `Completion`
+      is a valid interface; the default returns `Unset`.
+
+entry .Entrypoint   the executable behind an invocation: its path, its script name, and how to retire it
+  detail
+      `application` builds one from `ProcessHandle.current`; a daemon supplies its own.
+      `Completions.install` uses `#script` as the command name the completion scripts
+      complete and `#executable` to check the command on the `PATH` is this program. It is
+      `Findable`, and is passed as a tracked capability (`Entrypoint^`).
+  entry #script   the name the command is invoked by, which the completion scripts complete
+  entry #executable   the path of the running executable
+  entry #retire   asks the process serving this invocation to end once its work is done
+      A daemon stops accepting invocations, lets those in flight finish, and exits; the
+      default does nothing, for a process which ends with its invocation anyway. The
+      completions executive's `{admin} shutdown` calls it.
+
+entry .Backstop   what to do with an exception that escapes the body of an application
+  detail
+      A `Backstop` turns a `Throwable` into an `Exit`, with a `Stdio` to report on. The
+      executives take one as a contextual parameter, so it is chosen by importing one of the
+      `backstops` givens by name. `Backstop(report)` builds one which calls `report` with
+      the error and then exits with status 1 for an `Exception` or 2 for anything more
+      serious.
+
+      ```scala
+      import soundness.*
+
+      given myBackstop: Backstop = Backstop: error =>
+        Err.println(t"mytool: ${error.getMessage.nn.tt}")
+      ```
+  refer exoskeleton.backstops
+  entry .apply   a backstop which reports with the given function, then exits 1 for an exception or 2 otherwise
+  entry #handle   converts an escaped error into an exit status, reporting on the `Stdio` in scope
+
+entry .backstops   the standard backstops, each a given to import by name
+  detail
+      An executive needs a `Backstop` to handle an exception escaping the application's body;
+      `import soundness.*` brings none in, so one is imported by name. `Application` chooses
+      `genericErrorMessageBackstop` itself.
+
+      ```scala
+      import soundness.*
+      import backstops.stackTraceBackstop
+      ```
+
+      All four exit with status 1 for an `Exception` and 2 for any other `Throwable`; they
+      differ only in what they print to standard output first.
+  entry .silentBackstop   prints nothing
+  entry .exceptionMessageBackstop   prints the exception's own `toString`
+  entry .stackTraceBackstop   prints the full stack trace, rendered through digression's `StackTrace`
+  entry .genericErrorMessageBackstop   prints `An unexpected error occurred.`
+
+entry .executives   the executives: how an entry point's body is run, each a given to import by name
+  detail
+      The executive is what determines the return type of an entry point's body and the
+      capabilities available inside it, so it is chosen deliberately, by name, where the
+      entry point is defined. `directExecutive` lives in `exoskeleton.core`;
+      `completionsExecutive` in `exoskeleton.completions`, and both need a `Backstop` given.
+
+      ```scala
+      import soundness.*
+      import backstops.genericErrorMessageBackstop
+      import executives.completionsExecutive
+      import interpreters.posixInterpreter
+      import systems.javaBaseSystem
+
+      def mytool(args: List[Text]): Unit = application(args):
+        val verbose = Switch(t"verbose", aliases = List('v'))()
+        execute:
+          if verbose.present then Out.println(t"verbose")
+          Exit.Ok
+      ```
+  entry .directExecutive   runs the body once, for real, expecting an `Exit`
+      `Return = Exit`, `Interface = Invocation`, `Permit = Effectful`: the body never runs
+      speculatively, so a flag read anywhere in it is its `Optional` value, a `Switch` its
+      presence, and `Effectful`-demanding methods may be called throughout. The `Cli` it
+      builds is an `Invocation` with `proceed` false when the first argument is `{admin}`.
+      Exceptions escaping the body go to the `Backstop`.
+  entry .completionsExecutive   runs the prelude for completions, help and administration, and the whole body for a real run
+      `Return = Execution`, `Interface = Cli`, `Permit = Speculative`. The arguments are
+      inspected first: a `{completions} <shell> <focus> <position> <tty> -- <words…>`
+      request (as the scripts `Completions.script` writes send it) builds a `Completion`
+      and prints its suggestions in the shell's format; `{admin} pid`, `kill`, `shutdown`,
+      `await` and `install` are answered without running the body; anything else is an
+      `Invocation`, whose `Execution`'s exit status becomes the process's. Under it, output
+      and effects belong inside `execute`: the prelude runs on every tab press.
+
+      The given is an instance of `CompletionsExecutive`, typed
+      `CompletionsExecutive^{parasite.threads}` because `{admin} await` supervises under the
+      global threads; importing it is the same as for any other given.
+  entry .CompletionsExecutive   the class behind `completionsExecutive`, for an executive built by hand
+    detail
+        `CompletionsExecutive()(using Backstop)` is the executive `completionsExecutive`
+        returns, as a named class so it can declare `uses parasite.threads`. Its `help`
+        delegates to `helpTree`.
+    entry #Interface   `Cli`
+    entry #Return   `Execution`
+    entry #Permit   `Speculative`
+    entry #invocation   recognises `{completions}` and `{admin}` requests, and builds an `Invocation` otherwise
+    entry #process   prints a `Completion`'s suggestions, or runs an `Invocation` and takes its exit status
+    entry #help   the `Help` tree of a body, built with `helpTree`
+
+entry .trap   installs a signal handler on the `Cli` in scope
+    `trap { case Signal(Interrupt.Int, _, _, _) => SignalResponse.Reject }` is
+    `summon[Cli].trap(handler)`: see `Cli#trap`. Only the signals named in `application`'s
+    `signals` list are delivered.
+
+entry .Install   the error raised when writing something onto the host fails: completion scripts, manpages, a daemon
+  detail
+      Installing a completion script (`Completions.install`), a manpage
+      (`Manpages.install`) or a daemon fails the same two ways, so the error belongs to the
+      act rather than to any one installer. `Install.Error` is error 822, _the installation
+      failed because `reason`_, with the reason's number as its subcode.
+  entry .Error   error 822: the installation failed, because of the environment or an I/O failure
+    detail
+        Raised through a `Tactic[Install.Error]` by `Completions.install` and
+        `Manpages.install`. `Reason.Environment` (1) means _it was not possible to get enough
+        information about the install environment_ — a path, name or shell query failed;
+        `Reason.Io` (2) means _an I/O error occurred when trying to write an installation
+        file_.
+    entry .Reason   why an installation failed: `Environment` or `Io`
+      detail
+          An enum with a `number` (1 for `Environment`, 2 for `Io`) and a `Communicable`
+          given rendering each as its message.
+      entry .communicable   renders a reason as its message
+      entry #number   the subcode: 1 for `Environment`, 2 for `Io`
+    entry #reason   the reason
+
+entry .arguments   the arguments of the `Cli` in scope, as a list of `Argument`s
+    `arguments` is `summon[Cli].arguments`: the words the shell passed after the command
+    name, each an `Argument` which applies to its text and remembers its position. It is
+    the usual scrutinee of a subcommand match:
+
+    ```scala
+    import soundness.*
+    import backstops.genericErrorMessageBackstop
+    import executives.directExecutive
+    import interpreters.posixInterpreter
+    import systems.javaBaseSystem
+
+    def echo(args: List[Text]): Unit = application(args):
+      arguments.each: argument =>
+        Out.println(argument())
+      Exit.Ok
+    ```
+
+entry .Argument   one word of the command line, with its position, its cursor and the piece of it being read
+  detail
+      An `Argument` is more than its text. It knows its `#position` (from `0` for the first
+      word after the command), whether the cursor is in it and where (`#cursor`, set only
+      for the word a completion request is completing), how many times tab has been pressed
+      there (`#tab`), and its `#format`: which piece of the word the interpreter is reading,
+      since `--jobs=4` is two pieces and `-abc` is three under the clustering interpreter.
+      Applying an argument, `argument()`, gives the piece its format selects; `#value` is
+      the whole word.
+
+      `Argument.unapply` extracts the applied text, so `case Argument(t"--") => …` matches
+      on it; `Subcommand` and `Pathname` are the extractors applications usually match
+      arguments with.
+
+      ```scala
+      import soundness.*
+
+      val args: List[Argument] = Cli.arguments(List(t"build", t"--jobs=4"))
+      args.map(_())
+      args.map(_.position)
+      ```
+  refer exoskeleton.Cli
+  refer exoskeleton.Subcommand
+  refer exoskeleton.Suggestion
+  entry .Format   which piece of a word the argument stands for
+      `Full` is the whole word; `EqualityPrefix` and `EqualitySuffix` are the two sides of
+      a `--flag=value` word; `CharFlag(index)` is one letter of a clustered short flag such as
+      `-abc`; and `FlagSuffix` is the operand attached to a short flag, the `bc` of `-abc`
+      under the non-clustering interpreter. Enum cases are not entries: `CharFlag` carries
+      the letter's `Ordinal` within the cluster.
+  entry .unapply   extracts the argument's applied text, so an `Argument` may be matched as `Argument(text)`
+  entry .inspectable   renders an argument as `position: value / format => applied text`
+  entry #position   the word's index on the command line, from `0` for the first word after the command
+  entry #value   the whole word, regardless of format
+  entry #cursor   the cursor's offset within the word, or `Unset` if the word is not being completed
+  entry #tab   the number of times tab has been pressed at this position, if this is a completion
+  entry #format   the piece of the word this argument reads: see `Argument.Format`
+  entry #apply   the text of the piece the format selects
+      `--jobs` for the `EqualityPrefix` of `--jobs=4`, `4` for its `EqualitySuffix`, `-b`
+      for the second `CharFlag` of `-abc`, the whole word for `Full`.
+  entry #prefix   the text before the cursor, or `Unset` if the word has no cursor
+  entry #suffix   the text after the cursor, or `Unset` if the word has no cursor
+  entry #contains   whether an offset within the word falls inside the piece this format selects
+  entry #wrap   reshapes a suggestion so that it extends this word's piece rather than replacing the word
+      For an `EqualitySuffix`, the suggestion gains the `--flag=` prefix; for a `CharFlag`,
+      a flag suggestion keeps the letters already typed as a hidden prefix and inserts only
+      the new letter, so choosing `-c` at `-ab` yields `-abc`, with `display` still naming
+      the flag as `-c` and `incomplete` set so the shell does not end the word. A suggestion
+      which is not a flag is left alone. `Completion#serialize` applies this to the focused
+      word's candidates.
+  entry #suggest   offers suggestions for this argument, if it is the one being completed
+      `argument.suggest(update)` passes the prior suggestions to `update` as the named
+      context value `prior` and records the result on the `Cli`, with the prefix and suffix
+      this argument's format requires. `Subcommand#unapply` and `Pathname.unapply` call it;
+      an application offering its own candidates for a positional argument does the same:
+
+      ```scala
+      import soundness.*
+      import interpreters.posixInterpreter
+
+      def offer(argument: Argument)(using Cli): Unit =
+        argument.suggest(Suggestion(t"debug") :: Suggestion(t"release") :: prior)
+      ```
+  entry #select   offers a list of options as this argument's candidates, and reads the one it names
+      `argument.select(options)` needs the option type to be `Suggestible`; it offers every
+      option's suggestion, marked as an operand value so the help tree does not descend into
+      them, and returns the option whose text equals this argument's, or `Unset`.
+
+entry .Commandline   the interpreted structure of the arguments: positionals, flags with their operands, and the focus
+  detail
+      The `Topic` of the two POSIX interpreters. `#positional` holds the words before the
+      first flag, `#parameters` maps each flag word to the operand words which followed it,
+      `#postpositional` holds everything after a bare `--`, and `#focus` is the flag the
+      cursor belongs to in a completion request — the cursor's own word when that is a
+      flag, otherwise the flag preceding it, so a flag's operand completes wherever the flag
+      stands and not only when it is last.
+
+      ```scala
+      import soundness.*
+
+      val commandline: Commandline =
+        interpreters.posixInterpreter.interpret(Cli.arguments(List(t"--tag", t"a", t"--tag", t"b")))
+
+      commandline.locate(Flag(t"tag", repeatable = true)).let(_.map(_()))
+      commandline.at(Flag(t"tag"))
+      ```
+  refer exoskeleton.Interpreter
+  refer exoskeleton.interpreters
+  entry #positional   the words before the first flag
+  entry #parameters   each flag word, in its format, mapped to the operand words which followed it
+  entry #postpositional   the words after a bare `--`, never read as flags
+  entry #focus   the flag the cursor belongs to, if this is a completion request
+  entry #at   a flag's operand arguments, or `Nil` if it is absent or has none
+  entry #locate   a flag's operand arguments, or `Unset` if the flag was not given
+      The operands of the flag's first occurrence, or, for a flag declared `repeatable`, of
+      every occurrence in command-line order. Unlike `#at`, an absent flag (`Unset`) is
+      distinguished from one present with no operands (`Nil`), which `Flag#validate` needs
+      to tell a missing flag from a malformed one.
+  entry #read   reads a flag's operands as a type, registering the flag on the `Cli` as it does
+      Needs an `Interpretable` for the operand type and a `Discoverable` for its completions;
+      the interpretation runs under `safely`, so a malformed operand reads as `Unset`.
+
+entry .CommandGroup   a heading under which related subcommands are listed together in help
+  detail
+      `CommandGroup(name, description)` names a group; a `Subcommand` declared with `group =
+      admin` is listed under the heading `Admin commands:` in `Help#teletype` and in its own
+      subsection of the manpage's COMMANDS, with the description (a `Text` or styled
+      `Teletype`) as a paragraph beneath. A flag borne identically by every member of a group
+      is factored out and listed once as a common option.
+
+      ```scala
+      import soundness.*
+
+      val admin = CommandGroup(t"Admin commands", t"Commands for user administration.")
+      val UserAdd = Subcommand(t"useradd", e"add a user account", group = admin)
+      ```
+  entry #name   the heading
+  entry #description   an optional paragraph shown under the heading
+
+entry .Discoverable   how a flag's operand type suggests its own values for completion
+  detail
+      A typeclass with one method, `#discover`, from the partially-typed operand and the
+      tab-press count to a list of `Suggestion`s. A `Flag[Mode]` whose `Mode is
+      Discoverable` offers those values after `--mode `; the given is taken from the flag's
+      read site, and `Discoverable.noSuggestions` is the default when none is in scope. The
+      companion derives one for any enum which is `Enumerable` and `Identifiable`, naming
+      the cases in the style the imported `enumIdentification` given chooses.
+
+      ```scala
+      import soundness.*
+
+      case class Mode(name: Text)
+
+      given modeDiscoverable: Mode is Discoverable =
+        (_, _) => List(Suggestion(t"debug"), Suggestion(t"release"))
+      ```
+
+      `pathnameDiscoverable`, in `exoskeleton.completions`, is the instance for `Path on
+      Local`, completing filesystem paths a segment at a time; it is a top-level given and
+      must be imported by name.
+  refer exoskeleton.Interpretable
+  refer exoskeleton.Suggestion
+  refer exoskeleton.pathnameDiscoverable
+  entry .noSuggestions   the instance which suggests nothing, the default for a flag read with none in scope
+  entry .enumerable   suggests every case of an enum, by the name its `Identifiable` gives it
+      In implicit scope for any `value: {Enumerable, Identifiable}`; which `Identifiable`
+      applies is chosen by importing an `enumIdentification` given such as
+      `kebabCaseIdentifiable`.
+  entry #discover   the suggestions for an operand at the cursor
+      `operand` is the text typed so far (empty when the word has not been started), so an
+      instance may resolve it — descending into a directory being typed, as `Pathname` does
+      — and `tab` is the number of times tab has been pressed at this position, so a repeated
+      press may reveal more.
+
+entry .Effectful   the erased capability which marks code running for real, as opposed to speculatively for completions
+    `Effectful` is never instantiated: an `execute` block conjures it for its body, and
+    `executives.directExecutive` grants it to the whole body as its `Permit`. `Flag#apply`,
+    `Flag#require` and `Flag#validate` dispatch on its presence with `summonFrom`, resolving
+    to a deferred handle (`Prospective`, `Requisite`) without it and to the value with it,
+    and `Prospective#apply`, `Requisite#apply` and `Flag#value` demand it outright. A
+    user-defined method may demand it too, to make an irreversible operation uncallable from
+    the prelude that tab completion runs:
+
+    ```scala
+    import soundness.*
+
+    def deleteEverything()(using Effectful): Unit = ()
+    ```
+
+    `Completions.install` and `Manpages.install` demand it for exactly this reason; the
+    `effectful` escape hatch conjures it outside `execute`.
+
+entry .Speculative   the inert counterpart of `Effectful`: the permit of a body which may run only to discover completions
+    `executives.completionsExecutive` grants `Speculative` as its `Permit`. It lets no
+    effectful operation through: a flag read under it is a `Prospective`, and nothing that
+    demands `Effectful` compiles outside `execute`.
+
+entry .effectful   an escape hatch: runs a block with a conjured `Effectful`, outside any `execute`
+    `effectful(block)` evaluates the block as though inside `execute`. Code which uses it
+    forgoes the guarantees `execute` provides: in particular, a `Requisite` applied under a
+    conjured `Effectful` may panic, since the missing-flag guard has not run. Its honest use
+    is a test or an administrative path which installs something without an `execute`
+    block, as `Completions.ensure` does.
+
+entry .Flag   a named option, `--name` or `-n`, whose operand is read as a type
+  detail
+      `Flag[Int](t"jobs", aliases = List('j'))` declares a flag; applying it reads the flag
+      from the `Cli` in scope. The declaration carries everything help and completions need:
+      the `#name` (a `Text` for `--long`, a `Char` for `-s`), `#aliases` in either form,
+      whether it is `#repeatable`, a `#description`, and whether it is `#secret` (read but
+      never listed). The type parameter is the operand's type, which may be anything
+      `Interpretable` — any type `Decodable in Text` is, through `Interpretable.decoder` —
+      and defaults to `Text`.
+
+      How a read resolves depends on the `Effectful` capability. With it in scope (anywhere
+      under `executives.directExecutive`; inside `execute` under the completions executive)
+      `flag()` is the `Optional` value, `flag.require()` the value or a thrown
+      `MissingFlagError`, and `flag.validate()` the value or a thrown `MissingFlagError` or
+      `InvalidFlagError`. Without it — the prelude under the completions executive — the same
+      calls return handles, a `Prospective` or a `Requisite`, resolved eagerly from the
+      arguments, whose `present` and `absent` may be consulted at once but whose value is
+      available only inside `execute`. Either way the read registers the flag, so a flag the
+      program checks is a flag completion offers, under precisely the condition the code
+      checks it.
+
+      ```scala fuel
+      frame
+        label One flag
+        code
+            def tool(args: List[Text]): Unit =
+              import executives.completionsExecutive
+              application(args):
+                val verbose = Switch(t"verbose", aliases = List('v'))()
+                execute:
+                  Out.println(t"verbose: ${verbose.present}")
+                  Exit.Ok
+      frame
+        label A second flag, read only when the first is present
+        code
+            def tool(args: List[Text]): Unit =
+              import executives.completionsExecutive
+              application(args):
+                val verbose = Switch(t"verbose", aliases = List('v'))()
+                val level = if verbose.present then Flag[Int](t"level")() else Unset
+                execute:
+                  Out.println(t"level: ${level.let(_()).or(1)}")
+                  Exit.Ok
+      frame
+        label A required flag, checked before the block runs
+        code
+            def tool(args: List[Text]): Unit =
+              import executives.completionsExecutive
+              application(args):
+                val verbose = Switch(t"verbose", aliases = List('v'))()
+                val level = if verbose.present then Flag[Int](t"level")() else Unset
+                val home = Flag[Text](t"home", description = t"the home directory").require()
+                execute:
+                  Out.println(t"building ${home()} at level ${level.let(_()).or(1)}")
+                  Exit.Ok
+      ##
+      ```
+
+      After the first frame, `tool -<TAB>` offers `--verbose`; after the second, `--level`
+      is offered only once `-v` is on the line, and `-v` no longer is; after the third,
+      `--home` is offered always, is marked required in help, and a run without it prints
+      _The following required options were not specified_ and exits with status 2 before
+      the block runs.
+
+      Two traps. `Flag#apply`, `require`, `validate` and `select` are `transparent inline`,
+      so inside another `inline def` they are not expanded when that body is typed and their
+      result keeps the declared union type: `present` on it then resolves against vacuous's
+      `Optional` extension and answers `true` for every flag. Inline code should read a flag
+      with `#present` (anywhere) or `#value` (with `Effectful`) instead. And a flag read for
+      the first time inside `execute` is never seen by a completion, since the block does
+      not run there: declare flags in the prelude.
+  refer exoskeleton.Switch
+  refer exoskeleton.Setting
+  refer exoskeleton.Interpretable
+  refer exoskeleton.Discoverable
+  refer exoskeleton.Prospective
+  refer exoskeleton.Requisite
+  refer exoskeleton.execute
+  entry .apply   declares a flag: `Flag[Int](t"jobs", repeatable, aliases, description, secret)`
+      The type parameter is the operand type, `Text` by default (the `Defaulting` evidence
+      is erased). `name` is a `Text` for a long flag or a `Char` for a short one; `aliases`
+      may mix both; `repeatable = true` lets the flag appear more than once, and its
+      operands then read together through a `List` topic; `secret = true` reads the flag
+      without ever listing or completing it.
+
+      ```scala
+      import soundness.*
+
+      val jobs: Flag of Int = Flag[Int](t"jobs", aliases = List('j'), description = t"parallel jobs")
+      val tags: Flag of List[Text] = Flag[List[Text]](t"tag", repeatable = true)
+      val port: Flag of Optional[Int] = Flag[Optional[Int]](t"port")
+      ```
+
+      The `List[Text]` topic reads `--tag a --tag b` as `List(t"a", t"b")`; the
+      `Optional[Int]` topic reads a malformed operand as `Unset` rather than raising, which
+      is what a read in the pure prelude must do (`Interpretable.optionalInt`); a plain
+      `Flag[Int]` reads through `validate()`.
+  entry .serialize   a flag name as it is written: `--name` for a `Text`, `-n` for a `Char`
+  entry .showable   shows a flag in its canonical form, `--name` or `-n`, as a usage message needs
+  entry .inspectable   a debug rendering with the aliases, repeatability, secrecy and description
+  entry #name   the canonical name: a `Text` for `--long`, a `Char` for `-s`
+  entry #repeatable   whether the flag may appear more than once, its operands read together
+  entry #aliases   the other names the flag answers to, long or short
+  entry #description   the help text, shown by help, manpages and the shells which show descriptions
+  entry #secret   whether the flag is read but never listed, completed or documented
+  entry #apply   reads the flag: its `Optional` value with `Effectful` in scope, a `Prospective` handle without
+      Registers the flag on the `Cli`, with the `Discoverable` in scope for its operand type
+      (`Discoverable.noSuggestions` by default) and the operand name its `Interpretable`
+      gives. Needs a `Cli`, an `Interpreter` and the topic's `Interpretable`; the
+      interpretation runs under `safely`, so a malformed operand is `Unset` here (use
+      `#validate` to report it). A `transparent inline` method: see the trap in `Flag`'s
+      description.
+  entry #require   reads the flag as required: the value with `Effectful`, a `Requisite` handle without
+      In the prelude, a missing flag never fails fast: it is recorded with `Cli#demand`, and
+      `execute` reports every missing requisite together, exits with status 2, and never
+      runs its block, which is why `Requisite#apply` inside the block is unconditional. With
+      `Effectful` in scope, a missing flag throws `MissingFlagError` at once, for the
+      backstop to report.
+  entry #validate   reads the flag as required and checks its operand decodes, accruing or raising the failures
+      As `#require`, and additionally interprets the operand with the topic's
+      `Interpretable`, summoned at the call site over whatever `Tactic` its decoding may
+      raise through, so no tactic is needed where it is called. In the prelude a flag which
+      is present but malformed is recorded with `Cli#fault`, with the decoder's own message,
+      or _a value is required but none was given_ / _the value is not valid_ when it gives
+      none; `execute` prints them under _The following options were given invalid values_.
+      With `Effectful`, a missing flag throws `MissingFlagError` and a malformed one
+      `InvalidFlagError`. Unlike `#apply`, this is how a `Flag[Int]` whose decoder raises
+      is read.
+  entry #select   restricts the flag to a list of options, offering them as completions and reading the chosen one
+      `flag.select(options)` needs the topic to be `Suggestible`; every option's suggestion
+      is offered as an operand value, and the operand is read by matching its text against
+      them. Resolves as `#apply` does.
+  entry #present   whether the flag was given, read directly without the inline dispatch
+      Registers the flag as `#apply` does. The reader to use inside an `inline def`, where
+      `flag().present` is unreliable.
+  entry #value   the flag's `Optional` value, read directly; needs `Effectful`
+      Registers the flag as `#apply` does. The reader to use inside an `inline def` running
+      under `Effectful`.
+  entry #suggest   registers the flag on the `Cli` with the `Discoverable` in scope, without reading it
+  entry #matches   whether an argument's applied text names this flag, by its name or an alias
+      `--name` matches a `Text` name, `-n` a `Char` name; the argument's format decides which
+      piece of the word is compared.
+
+entry .Switch   a flag which takes no operand: declared like a `Flag`, read as its presence
+  detail
+      `Switch(name, repeatable, aliases, description, secret)` is `Flag[Unit](…)`, whose
+      `Interpretable.unit` reads only presence, so help and completions show it without an
+      operand. Applying it, `Switch(…)()`, yields `Optional[Unit]` under `Effectful` or a
+      `Prospective[Unit]` without, either of which answers `present`.
+
+      ```scala
+      import soundness.*
+
+      val verbose: Flag of Unit = Switch(t"verbose", aliases = List('v'), description = t"print detail")
+      ```
+  entry .apply   declares a switch, as `Flag.apply` does but with the `Unit` topic fixed
+
+entry .Setting   a configurable option read from the command line, an environment variable or a `Configurator` cascade
+  detail
+      Many options should be settable not only on the command line but by an environment
+      variable, a system property or a configuration file, with a fixed order of
+      precedence. A `Setting` declares such an option once, by a canonical camelCase
+      `#name`, and reading it consults, in order: its command-line `#flag`, derived as
+      `--kebab-case` (so `logLevel` is `--log-level`); the environment `#variable` named
+      explicitly, if any; then the `Configurator` in scope, whose standard cascade — system
+      property `myapp.log.level`, then environment variable `MYAPP_LOG_LEVEL` — is activated
+      by declaring a `Configurator.Prefix` given.
+
+      ```scala
+      import soundness.*
+      import interpreters.posixInterpreter
+      import systems.javaBaseSystem
+
+      given prefix: Configurator.Prefix = Configurator.Prefix(t"myapp")
+
+      val LogLevel = Setting[Text](t"logLevel", description = t"logging verbosity")
+      val Home = Setting[Text](t"home", variable = t"MYAPP_HOME")
+
+      def level(using Cli): Text = LogLevel().or(t"info")
+      ```
+
+      A setting is single-valued, so its operand is read as `Text` and decoded by the same
+      `Decodable in Text` as every other source. Reading one registers its flag for
+      completion exactly as reading the flag directly would, so a setting must be read in
+      the prelude to be discoverable. A user-defined `Configurator` given replaces the
+      standard cascade; the command-line flag always comes first.
+  refer exoskeleton.Flag
+  entry .apply   declares a setting: `Setting[Int](t"port", description, aliases, variable, secret)`
+      The type parameter is the value type, `Text` by default. `aliases` are the flag's
+      extra names; `variable` names an environment variable consulted verbatim between the
+      flag and the configurator cascade; `secret` hides the flag from help and completions.
+  entry #name   the canonical camelCase name every source derives its own from
+  entry #flag   the derived command-line flag, `--kebab-case`
+  entry #variable   an environment variable consulted between the flag and the cascade, if named
+  entry #apply   reads the setting through the cascade, as an `Optional` of its type
+      Needs a `Cli`, an `Interpreter`, a `Configurator` and the type's `Decodable in Text`,
+      plus an optional `Discoverable` for the flag's completions. Decoding runs under the
+      configurator's tactic; an absent value in every source is `Unset`.
+
+entry .Subcommand   a named mode of the program: an extractor matched against an argument, and a completion candidate
+  detail
+      `Subcommand(name, description, hidden, group)` declares a subcommand. It is an
+      extractor, so the first argument is matched against it in an ordinary pattern, and
+      matching has two effects beyond the test: it offers the subcommand as a suggestion
+      for that argument (adding to whatever other extractors offered at the same position),
+      and on a match it records the name with `Cli#matched`. A description written with
+      `e"…"` carries styling for the shells which show it; `hidden = true` keeps the
+      subcommand out of help and of every shell's listing (zsh still completes it when
+      typed); `group` places it under a `CommandGroup` heading.
+
+      ```scala
+      import soundness.*
+      import backstops.genericErrorMessageBackstop
+      import executives.directExecutive
+      import interpreters.posixInterpreter
+      import systems.javaBaseSystem
+
+      val Build = Subcommand(t"build", e"compile the project")
+      val Test = Subcommand(t"test", e"run the tests")
+
+      def tool(args: List[Text]): Unit = application(args):
+        arguments match
+          case Build() :: _ => Out.println(t"building");  Exit.Ok
+          case Test() :: _  => Out.println(t"testing");   Exit.Ok
+          case _            => Out.println(t"unknown command"); Exit.Fail(1)
+      ```
+
+      Subcommands nest by matching again on the remaining arguments, and the help tree
+      follows the same nesting. A name may contain a space (`red hat`), which the shells
+      quote.
+  refer exoskeleton.CommandGroup
+  refer exoskeleton.Argument
+  refer exoskeleton.Help
+  entry #name   the word which selects the subcommand
+  entry #description   the help text, a `Text` or a styled `Teletype`
+  entry #hidden   whether the subcommand is kept out of help and listings
+  entry #group   the `CommandGroup` it is listed under, if any
+  entry #unapply   matches an argument by name, offering the subcommand as a suggestion and recording the match
+      Needs a `Cli`. The suggestion is offered whether or not the argument matches, which
+      is what makes every arm of a `match` a candidate for completion.
+
+entry .Status   a meaningful exit status: a code with a description, declared as an object and returned from `execute`
+  detail
+      An exit code on its own says little, so a failure the program anticipates is declared
+      as a `Status`, which is a `Termination` and may be returned wherever an `Exit` is:
+
+      ```scala
+      import soundness.*
+
+      object CannotConnect extends Status(1, t"the server could not be reached")
+      object BadConfig extends Status(2, t"the configuration file was invalid")
+      ```
+
+      Returning one from an `execute` block both sets the process's exit code and makes the
+      status discoverable: the block's result type — kept precise by `execute`'s `Precise`
+      bound — is the union of the singleton types of every status it can return, which
+      `Status.Admissible` reifies as the list of their values, so help and the manpage list
+      them under _Exit statuses_ without the application naming them twice.
+
+      A status must be a top-level `object`, not a `val` or a local object: capture checking
+      rejects the singleton type of a `val` in the union, and the `Admissible` macro reports
+      a non-singleton member as an error rather than letting statuses silently vanish from
+      the documentation.
+  refer exoskeleton.execute
+  refer exoskeleton.Help
+  entry .Admissible   the typeclass which reifies the statuses in an `execute` block's result type
+    detail
+        `result is Status.Admissible` is derived by a macro for any `result`: the type is
+        dealiased, its union decomposed, and each member which is a singleton `Status` is
+        referred to again as a value; `Nothing` and any other `Termination` (`Exit` and its
+        cases) contribute nothing. A `Status` member which is not a singleton is a compile
+        error naming it, and a member which is not a `Termination` at all is another.
+    entry .derived   the `transparent inline given` which derives the instance for any result type
+    entry #Self   the result type
+    entry #statuses   the statuses the type admits, as values
+  entry #code   the exit code
+  entry #description   what the status means, shown in help and manpages
+  entry #exit   the status as an `Exit`: `Exit(code)`
+
+entry .Prospective   the handle for a flag read in the prelude: its presence may be consulted now, its value only inside `execute`
+  detail
+      `Flag#apply` returns a `Prospective[Topic]` when no `Effectful` is in scope.
+      Resolution is eager — the `#value` was read from the arguments when the handle was
+      made, so it captures no `Cli` — and `#present` and `#absent` may be consulted freely
+      in the prelude, to decide what else to offer. Applying the handle, `handle()`, demands
+      the `Effectful` which only an `execute` block provides.
+
+      ```scala
+      import soundness.*
+      import backstops.genericErrorMessageBackstop
+      import executives.completionsExecutive
+      import interpreters.posixInterpreter
+      import systems.javaBaseSystem
+
+      def tool(args: List[Text]): Unit = application(args):
+        val jobs: Prospective[Int] = Flag[Int](t"jobs")()
+        execute:
+          Out.println(t"jobs: ${jobs().or(1)}")
+          Exit.Ok
+      ```
+  refer exoskeleton.Flag
+  refer exoskeleton.Requisite
+  entry #flag   the flag this handle was read from
+  entry #value   the value as read, an `Optional`; consultable in the prelude
+  entry #present   whether the flag was given
+  entry #absent   whether the flag was not given
+  entry #apply   the `Optional` value; needs `Effectful`
+
+entry .Requisite   the handle for a required flag read in the prelude: unconditionally a value inside `execute`
+  detail
+      `Flag#require` and `Flag#validate` return a `Requisite[Topic]` when no `Effectful` is
+      in scope. Creating it records the requirement on the `Cli`; if the flag is missing or
+      malformed, `execute` reports every such flag in one message and never runs its block,
+      so applying the handle inside the block yields the value itself. As with
+      `Prospective`, `#value`, `#present` and `#absent` may be consulted in the prelude.
+
+      ```scala
+      import soundness.*
+      import backstops.genericErrorMessageBackstop
+      import executives.completionsExecutive
+      import interpreters.posixInterpreter
+      import systems.javaBaseSystem
+
+      def tool(args: List[Text]): Unit = application(args):
+        val home: Requisite[Text] = Flag[Text](t"home").require()
+        val jobs: Requisite[Int] = Flag[Int](t"jobs").validate()
+        execute:
+          Out.println(t"building ${home()} with ${jobs()} jobs")
+          Exit.Ok
+      ```
+  refer exoskeleton.Flag
+  refer exoskeleton.Prospective
+  entry #flag   the flag this handle was read from
+  entry #value   the value as read, an `Optional`; consultable in the prelude
+  entry #present   whether the flag was given
+  entry #absent   whether the flag was not given
+  entry #apply   the value itself; needs `Effectful`
+      Infallible only because `execute`'s guard has already aborted when the flag is
+      missing; under a conjured `Effectful` (the `effectful` escape hatch) that guarantee
+      is void and a missing flag panics.
+
+entry .MissingFlagError   raised when a required flag is absent and the failure cannot be accrued
+  detail
+      Error: _the required flag `--name` was not specified_. Thrown by `Flag#require` and
+      `Flag#validate` only when `Effectful` is in scope — inside an `execute` block, or
+      anywhere under `executives.directExecutive` — where the missing-requisite guard has
+      already run; it propagates to the executive's `Backstop`. In the prelude, `require()`
+      never fails: it records the flag on the `Cli`, and `execute` reports every missing
+      requisite together with exit status 2.
+  entry #flag   the flag which was missing
+
+entry .InvalidFlagError   raised when a validated flag is present but its operand cannot be decoded, and the failure cannot be accrued
+  detail
+      Error: _the value of `--name` is not valid: `reason`_, where the reason is the decoder's
+      own message. Thrown by `Flag#validate` only when `Effectful` is in scope; in the
+      prelude the fault is recorded on the `Cli` and reported by `execute` with the other
+      invalid or missing flags.
+  entry #flag   the flag whose operand was invalid
+  entry #reason   why the operand could not be decoded
+
+entry .Interpretable   how a flag's operand arguments are read as a type
+  detail
+      A typeclass over the operand type: `#interpret` takes the flag's operand arguments
+      (every occurrence's, for a repeatable flag) and yields the value, or `Unset`. It also
+      says whether the type takes an operand at all (`#operand`, false only for `Unit`) and
+      what to call it in help (`#placeholder`, the `file` of `--log <file>`). Any type
+      `Decodable in Text` is interpretable through `.decoder`, which decodes the first
+      operand; a type with its own notion of an operand writes an instance by hand, a
+      lambda from the arguments sufficing:
+
+      ```scala
+      import soundness.*
+
+      case class Mode(name: Text)
+
+      given modeInterpretable: Mode is Interpretable =
+        case argument :: _ => Mode(argument())
+        case _             => Unset
+      ```
+
+      Purity matters in the prelude: `Flag#apply` runs the instance under `safely`, so an
+      instance which may raise (a `Decodable` whose decoding raises `Number.Error`, say)
+      reads a malformed operand as `Unset` there and is reported properly only through
+      `Flag#validate`, which summons the instance over its tactic. The `Optional[…]`
+      instances (`.optionalInt` and `.optional`) are the pure reading for such a type.
+  refer exoskeleton.Flag
+  refer exoskeleton.Discoverable
+  entry .unit   the instance for `Unit`: no operand, presence alone
+      What a `Switch` reads through; `operand` is false, so help shows no placeholder.
+  entry .decoder   the instance for any type `Decodable in Text`: the first operand, decoded
+      In implicit scope. A repeatable `Flag[Text]` still reads its first operand through
+      this; a `List` topic reads them all.
+  entry .optionalInt   the pure instance for `Optional[Int]`: a malformed operand is `Unset`, nothing raises
+      An `inline given`; the decoder is summoned at the expansion site over the tactic it
+      may raise through and run under `safely`. `Optional[…]` is a union, which no type
+      parameter can be inferred through, so each such instance is made separately.
+  entry .optionalLong   the pure instance for `Optional[Long]`
+  entry .optionalDouble   the pure instance for `Optional[Double]`
+  entry .optional   makes the pure `Optional[operand]` instance for any `operand: Decodable in Text`
+      `given Optional[Port] is Interpretable = Interpretable.optional[Port]` declares one for
+      another type.
+  entry .list   the instance for `List[element]`: every operand interpreted as an element
+      `Flag[List[Text]](t"tag", repeatable = true)()` reads `--tag a --tag b` as `List(t"a",
+      t"b")`; one malformed operand makes the whole `Unset`. As pure as its element's
+      instance, and with the element's placeholder.
+  entry #operand   whether the type takes an operand; `true` by default
+  entry #placeholder   the name to show for the operand in help, or `Unset` for the generic `value`
+  entry #operandName   the placeholder, or `value`, or `Unset` when the type takes no operand
+  entry #interpret   the value read from the operand arguments, or `Unset`
+  entry #map   an instance for another type, by mapping the interpreted value
+      `Interpretable[Text].map(Mode(_))` keeps the operand flag and placeholder of the
+      original.
+
+entry .Interpreter   the policy which turns the flat argument list into flags, operands and positionals
+  detail
+      The interpreter in scope is what turns *arguments* (the texts the shell hands over)
+      into *parameters* (what they mean). It is chosen by importing one of the
+      `interpreters` givens by name, since `-rA4` is three flags and an operand under one
+      convention and one flag with the operand `rA4` under another. An `Interpreter`
+      interprets the arguments once into its `#Topic` (a `Commandline` for the POSIX
+      interpreters), and then answers queries about flags against that.
+  refer exoskeleton.interpreters
+  refer exoskeleton.Commandline
+  entry #Topic   the interpreted form of the arguments
+  entry #interpret   interprets the arguments into the topic
+  entry #focus   the flag the cursor belongs to in a completion request, if any
+  entry #find   a flag's operand arguments, or `Nil`
+  entry #locate   a flag's operand arguments, or `Unset` if the flag was not given
+      Defaulted to `Unset` for interpreters which cannot make the distinction; the POSIX
+      interpreters override it, which is what lets `Flag#validate` tell a missing flag from
+      a malformed one.
+  entry #read   reads a flag's operands as a type, registering the flag on the `Cli`
+
+entry .interpreters   the standard interpreters, each a given to import by name
+  detail
+      ```scala
+      import soundness.*
+      import interpreters.posixInterpreter
+      ```
+
+      Both POSIX interpreters read `--long`, `-s`, `--long=value` and `--long value`,
+      treat everything after a bare `--` as postpositional, and take the operands of a
+      flag to be the words up to the next flag; they differ only in how a short flag longer
+      than one letter is read.
+
+      ```scala
+      import soundness.*
+
+      val args: List[Argument] = Cli.arguments(List(t"-abc", t"x"))
+
+      interpreters.posixClusteringInterpreter.interpret(args).at(Flag('c')).map(_())
+      interpreters.posixInterpreter.interpret(args).at(Flag('a')).map(_())
+      ```
+  entry .posixInterpreter   `--long` and `-s` flags; `-abc` is the flag `-a` with the operand `bc`
+      The interpreter `Application` chooses. A short flag with text attached, as in `-j4`,
+      reads the text as its operand.
+  entry .posixClusteringInterpreter   as `posixInterpreter`, but `-abc` is `-a -b -c`, with the last letter taking the operand
+      A two-character short flag is unchanged; a long flag is never treated as a cluster.
+      Completing inside a cluster extends it, so choosing `-c` at `-ab` gives `-abc`.
+  entry .simpleInterpreter   every argument is an operand: no flags are read, and every flag reads as `Unset`
+      For a program which handles its words itself; `focus` and `locate` give nothing, so
+      no flag completes.
+
+entry .Login   the user who ran the command: the username and, if known, the platform's user id
+  detail
+      `application` fills it from `ProcessHandle.current().info().user()`, with no id; a
+      daemon's launcher may supply the id. Tests construct one directly, `Login(t"tester",
+      Unset)`.
+  entry #username   the user's name
+  entry #id   the `UserId`, or `Unset` when the launcher did not report one
+
+entry .UserId   the platform's identifier for a user: a numeric uid on Unix, a SID on Windows, carried as text
+  detail
+      The two forms share no numeric representation, so a `UserId` is an opaque `Text`,
+      and `#unix` and `#sid` read whichever applies.
+
+      ```scala
+      import soundness.*
+
+      UserId(t"501").unix
+      UserId(t"S-1-5-21-1").sid
+      ```
+  entry .apply   wraps a user id's text
+  entry .showable   shows the id as its text
+  entry .encodable   encodes the id as its text
+  entry .decodable   decodes any text as an id
+  entry .text   the id as text
+  entry .unix   the numeric uid, or `Unset` if the text is not a number
+  entry .sid   the Windows security identifier, or `Unset` if the text does not begin with `S-`
+
+entry .Shell   the shells completions are generated for: `Zsh`, `Bash`, `Fish` and `Powershell`
+  detail
+      An enum, with the cases as completion targets: `Completions.script(shell, command)`
+      writes the script for each, `Completion#serialize` formats suggestions as each expects,
+      and in the rig `shell.pane()` runs one. It decodes from and encodes to its lowercase
+      name.
+  entry .decoder   reads a shell from its name, case-insensitively
+  entry .encodable   encodes a shell as its lowercase name
+  entry .showable   shows a shell as its lowercase name
+
+entry .Suggestible   how a value offers itself as a completion candidate
+  detail
+      A typeclass with one method, `#suggest`, from a value to a `Suggestion`.
+      `Argument#select` and `Flag#select` take a list of `Suggestible` options, offer each
+      one's suggestion and read the chosen one back by its text.
+  entry #suggest   the suggestion for a value
+
+entry .Suggestion   one completion candidate: the text to insert, with a description and how the shell should treat it
+  detail
+      A `Suggestion` is what every completion source — a `Subcommand`, a `Discoverable`, a
+      `Pathname`, a `Flag` listing — produces, and what `Completion#serialize` renders for
+      the shell. `#core` is the text inserted, between `#prefix` and `#suffix` (so `#text`
+      is the whole word); `#description` is shown by zsh, fish and PowerShell; `#hidden`
+      candidates are matched but not listed (and only zsh matches them); `#incomplete`
+      tells the shell not to end the word, for a path completed a segment at a time;
+      `#aliases` list the other names shown beside it; `#operand` marks a value offered for
+      an operand rather than a subcommand, so the help tree does not descend into it; and
+      `#display` is what the menu shows when it differs from what is inserted.
+
+      ```scala
+      import soundness.*
+
+      Suggestion(t"release", t"an optimised build")
+      Suggestion(t"src/", incomplete = true)
+      ```
+  refer exoskeleton.Discoverable
+  refer exoskeleton.Completion
+  entry .apply   makes a suggestion, with every field but `core` defaulted
+  entry #core   the text inserted
+  entry #description   the description shown beside it, a `Text` or a styled `Teletype`, if any
+  entry #hidden   whether the candidate is matched but not listed
+  entry #incomplete   whether the shell should leave the word open after inserting it
+  entry #aliases   other names listed beside the candidate, as flag aliases are
+  entry #prefix   text before the core, inserted but not shown as part of the candidate
+  entry #suffix   text after the core
+  entry #expanded   whether the prefix and suffix have already been folded into the core
+  entry #group   the `CommandGroup` a subcommand candidate belongs to
+  entry #operand   whether this is a value for an operand, as opposed to a subcommand
+      Both are offered identically at the cursor, but only a subcommand is part of the
+      command's interface: without the distinction, `--help` would enumerate the working
+      directory as though it were syntax.
+  entry #display   what the menu shows when that differs from what is inserted
+      Completing inside a clustered short flag needs it: choosing `-c` at `-ab` inserts
+      only `c`, but the menu still names `-c`. Only zsh can show one thing and insert
+      another.
+  entry #text   the whole word: prefix, core and suffix
+
+entry .internal   the macro implementation behind `Status.Admissible`
+  hidden
+  detail
+      Not for direct use: the object exists so that the macro has a stable home.
+  entry .admissible   the macro behind `Status.Admissible.derived`: a union of status singletons to their values
+
+entry .Help   the interface of a command as a tree: its flags, subcommands, statuses and variables, rendered as help text
+  detail
+      A `Help` node is one command: its `#command` name, `#description`, `#parameters`
+      (each a `Help.Param`), `#subcommands` (each a `Help`), its `#group`, the exit
+      `#statuses` its `execute` block can return and the environment `#variables` its
+      prelude reads. `helpTree` builds the whole tree from an application by re-running its
+      prelude in completion mode at every subcommand prefix, so nothing in it is written by
+      hand; `Executive#help` is the executive's door to the same. `#teletype` renders a node
+      in an aligned, man-page-style layout, and `.printable` lets a `Help` be passed
+      straight to `Out.println`; the `roff` extension in `exoskeleton.manpage` renders the
+      same tree as a manpage.
+
+      ```scala
+      import soundness.*
+
+      val help: Help =
+        Help
+          ( t"mytool",
+            t"a build tool",
+            List(Help.Param(t"--verbose", List(t"-v"), t"print detail", false, global = true)),
+            List(Help(t"build", t"compile the project", Nil, Nil)) )
+
+      help.teletype(80)
+      help.local(List(t"build")).let(_.teletype(80))
+      ```
+
+      The rendering has a usage line (global options before `<command>`, local after, a
+      single possible flag named outright), the description wrapped to the width, then
+      _Global options_, _Options_ and _Commands_ sections — a leaf command shows plain
+      _Options_ unless it is a local view carrying ancestors' flags — a section per
+      `CommandGroup` with the group's common flags factored out, and _Exit statuses_
+      gathered from the whole tree and deduplicated by code. A required flag is marked
+      `(required)`; a repeatable one `...`; an operand `<name>`.
+  refer exoskeleton.helpTree
+  refer exoskeleton.roff
+  refer exoskeleton.Manual
+  refer exoskeleton.Status
+  entry .Param   one flag of a command, as help shows it
+    detail
+        `Help.Param(name, aliases, description, repeatable, global, operand, required)`:
+        the name as written (`--jobs`), its aliases likewise, the description, whether it
+        repeats, whether it is global (checked before subcommand dispatch, so it precedes
+        the subcommand on the command line), the operand's placeholder (`Unset` for a
+        switch), and whether it is required.
+    entry #name   the flag as written, `--name` or `-n`
+    entry #aliases   the other names, as written
+    entry #description   the help text
+    entry #repeatable   whether the flag may be given more than once
+    entry #global   whether the flag belongs before the subcommand
+    entry #operand   the operand's placeholder, or `Unset` for a switch
+    entry #required   whether the flag must be given
+  entry .printable   lets a `Help` be printed with `Out.println`, wrapped to the terminal's width
+      Renders with `#teletype` at the termcap's width and borrows escapade's `Teletype is
+      Printable`. Needs a `Hyphenation`, which `Hyphenation.fallback` satisfies without an
+      import, wrapping only at spaces; import a language's patterns (`hyphenations.english`)
+      for hyphenated wrapping.
+  entry #command   the command's name; for a `#local` view, the full path joined with spaces
+  entry #description   the command's description, if any
+  entry #parameters   the command's flags
+  entry #subcommands   the nested commands
+  entry #group   the `CommandGroup` this command is listed under, if any
+  entry #statuses   the exit statuses the command's `execute` block can return; empty for a hand-built node
+  entry #variables   the environment variables the command's prelude reads; empty for a hand-built node
+  entry #local   the view of the tree from inside a subcommand path, or `Unset` if the path does not exist
+      `help.local(List(t"distribution", t"ubuntu"))` selects that node, names it by the full
+      path so the usage line reads `mytool distribution ubuntu`, and carries every
+      ancestor's flags in as global options, with the node's own as local; the nearest root
+      wins a name collision. `Cli#matches` is the path to pass for the subcommand matched
+      so far.
+  entry #teletype   renders the node as styled text, wrapped to a width
+      Needs a `Hyphenation` for the wrapping. Below twenty columns the text overruns rather
+      than wrapping.
+
+entry .Completion   the `Cli` of a tab-completion request: records what the prelude asks for and renders it for the shell
+  detail
+      `executives.completionsExecutive` builds a `Completion` for a `{completions}`
+      request, and `helpTree` builds one per probe. It extends `Cli` with the request's
+      particulars — the `#shell`, which argument is being completed (`#currentArgument`),
+      where the cursor is in it (`#focusPosition`), the `#tty` and the `#tab` count — and
+      overrides the recording methods so that running the application's prelude fills its
+      tables: `#flags` consulted, their `#operandNames`, the `#globalFlags` consulted
+      before any subcommand was offered, the `#seenFlags` already on the line, the
+      `#requiredFlags`, the `#statuses` an `execute` block admits, the `#explanation`, and
+      the `#cursorSuggestions` offered for the focused argument. `#serialize` then renders
+      the result as the lines the shell's script reads.
+
+      `proceed` is always true: the prelude runs, and `execute` returns without running its
+      block.
+  refer exoskeleton.Cli
+  refer exoskeleton.Completions
+  refer exoskeleton.helpTree
+  entry #fullArguments   the raw `{completions}` request, including the shell, cursor and tty words
+  entry #arguments   the words of the command line being completed, after the command name
+  entry #environment   the environment of the shell asking
+  entry #workingDirectory   the directory of the shell asking
+  entry #shell   which shell is asking, and so how `#serialize` formats its answer
+  entry #currentArgument   the position of the argument being completed
+  entry #focusPosition   the cursor's offset within that argument, or `Unset` when the shell gave none
+  entry #stdio   the standard streams of the request
+  entry #tty   the terminal the shell runs on, keying the tab-press count
+  entry #tab   how many times tab has been pressed at this position
+  entry #login   the user who ran the shell
+  entry #flags   every flag the prelude consulted, with the `Discoverable` for its operand
+  entry #operandNames   the operand placeholder of each flag which takes one
+  entry #globalFlags   the flags consulted before any subcommand was offered, which apply regardless of the subcommand
+  entry #seenFlags   the non-repeatable flags already on the command line, which are not offered again
+  entry #requiredFlags   the flags demanded by `require()` or `validate()`
+  entry #statuses   the exit statuses recorded by `execute` blocks, in order
+  entry #explanation   the paragraph set by `explain`, shown as zsh's completion header
+  entry #cursorSuggestions   the candidates offered for the focused argument
+  entry #proceed   always `true`
+  entry #parameter   reads a flag's operand through the interpreter
+  entry #focused   whether an argument is the one being completed, taking its format into account
+  entry #flagSuggestions   the flags not yet on the line, as suggestions; only long names when the word begins `--`
+  entry #focusText   the whole text of the argument being completed, or empty
+  entry #serialize   the suggestions as the lines the shell's completion script reads
+      A word typed as a flag can only be extended by a flag, so other candidates are dropped
+      there; when every candidate is hidden, the flags are offered too, or no shell would
+      list anything. Candidates are wrapped by the focused word's format when the focus is
+      that word. zsh receives `compadd` argument lists separated by NUL, with descriptions
+      aligned and hidden candidates marked; bash receives bare words filtered by the typed
+      prefix; fish and PowerShell receive tab-separated word and description lines, with a
+      sole incomplete candidate given a space-terminated twin for fish.
+
+entry .Completions   the shell completion scripts, their installation and the tab-press counter
+  detail
+      The script for each shell does nothing but forward the current command line, the
+      cursor and the shell's name to the application as a `{completions}` request, so a
+      new subcommand or flag never needs a script changed. `.script` is the text of one;
+      `.install` finds where each shell loads completions from and writes it there, which
+      the built-in `{admin} install` subcommand runs:
+
+      ```sh
+      mytool '{admin}' install
+      ```
+
+      `.ensure` is the fire-and-forget form for a daemon-backed tool to call at startup.
+      Both need an `Entrypoint^`, an `Environment` and a `System` — the *invocation's*, since
+      under a daemon the resident JVM's environment is whichever client's launcher started
+      it — a `WorkingDirectory`, `Diagnostics` and a `CliEvent is Loggable`; a `Cli` in scope
+      supplies the environment and directory, `systems.javaBaseSystem` the system.
+  refer exoskeleton.Shell
+  refer exoskeleton.Install
+  refer exoskeleton.CliEvent
+  entry .script   the completion script for a shell, forwarding the command line to `command '{completions}' …`
+      ```scala
+      import soundness.*
+
+      Completions.script(Shell.Zsh, t"mytool")
+      ```
+
+      zsh's is a compdef function reading `compadd` arguments; bash's uses
+      `_init_completion` and `COMPREPLY`; fish's registers `complete -f -c`; PowerShell's
+      registers a native argument completer and is appended to the profile.
+  entry .install   writes the scripts into place for every shell found, or one script into the first writable directory
+    detail
+        `install(force)` needs `Effectful`, so it cannot run from the prelude that
+        completion runs. It checks that the command named by the entry point's script is
+        the running executable (`Installation.CommandNotOnPath` otherwise, unless `force`),
+        then asks each installed shell, all at once and with five seconds in all, where it
+        loads completions from — with standard input closed and standard error discarded,
+        so a startup file which prompts or complains neither holds it up nor corrupts the
+        answer, and with the invocation's `HOME`, `ZDOTDIR`, `XDG_CONFIG_HOME`,
+        `XDG_DATA_HOME`, `XDG_DATA_DIRS` and `BASH_COMPLETION_USER_DIR` passed on. zsh:
+        the first existing writable `$fpath` directory under the home, else the first
+        writable one, else `$XDG_DATA_HOME/zsh/site-functions`, created, with result
+        `Unconfirmed`. bash: `${BASH_COMPLETION_USER_DIR:-$XDG_DATA_HOME/bash-completion}/completions`,
+        `Unconfirmed` unless an interactive bash defines bash-completion's loader. fish: the
+        `completions` directory of its configuration directory. PowerShell: appended to the
+        profile, once. Raises `Install.Error` for a failure to query the environment or to
+        write.
+
+        `install(shell, command, scriptName, dirs)` writes one shell's script into the first
+        of `dirs` which exists and is writable, as `Installed`, `AlreadyInstalled` or
+        `NoWritableLocation`.
+  entry .ensure   installs the scripts once per JVM, quietly, or with `force` reinstalls and reports the paths
+      Without `force`, the install runs at most once per JVM lifetime (the shell queries
+      cost several hundred milliseconds, which would dominate a daemon-backed tool's launch
+      if repeated) and nothing is returned; with `force`, the scripts are reinstalled and
+      the paths written are returned, which is what `{admin} install` prints. Errors are
+      swallowed.
+  entry .tab   the number of times tab has been pressed at one position, counted per terminal
+      `Completions.tab(tty, Tab(arguments, focus, cursor))` returns `Prim` for a first
+      press and increments while the same line is completed at the same place on the same
+      tty; a different request resets it. The count reaches `Discoverable#discover` as
+      `tab`, so a second press can reveal hidden files.
+  entry .Tab   the key of a tab-press count: the arguments, the focused word, the cursor and the count so far
+    detail
+        Two presses are the same request when their `Tab`s agree with the count zeroed.
+    entry #arguments   the request's arguments
+    entry #focus   the focused argument's position
+    entry #cursor   the cursor's offset
+    entry #count   how many presses so far
+    entry #next   the same key with the count incremented
+    entry #zero   the same key with the count zeroed, for comparison
+  entry .Installation   the result of installing the scripts: not on the path, or one result per shell
+    detail
+        An enum: `CommandNotOnPath(script)` when the command the scripts would complete is
+        not the running executable, and `Shells(zsh, bash, fish, powershell)` with an
+        `InstallResult` for each. Its `Communicable` renders either as a message; `#paths`
+        lists the files written.
+    entry .communicable   renders the result as a message, one paragraph per shell
+    entry .InstallResult   what happened for one shell
+      detail
+          `Installed(shell, path)`, `AlreadyInstalled(shell, path)`,
+          `NoWritableLocation(shell)`, `ShellNotInstalled(shell)`, or `Unconfirmed(shell,
+          path)`: the script was written, but the shell could not be shown to load it from
+          there — the directory is not one it searches, it lacks bash-completion, or it did
+          not answer in time. An exhaustive match must handle all five.
+      entry .communicable   renders the result as a sentence naming the shell and path
+      entry #pathname   the path written, for `Installed`, `AlreadyInstalled` and `Unconfirmed`; else `Unset`
+    entry #paths   every path written, across the shells
+
+entry .CliEvent   what completions installation logs: subprocess events and the locations written
+  detail
+      An enum: `Exec(event)` wraps a guillotine `Exec.Event` from the shells queried, and
+      `Installing(location)` names a file written. `Completions.install` and `ensure` need a
+      `CliEvent is Loggable` in scope; `logging.silentLogging` discards them.
+  entry .execEvent   transcribes a guillotine `Exec.Event` as a `CliEvent.Exec`
+  entry .communicable   renders each event as a message
+
+entry .execute   the block of an application which does the work, run only on a real invocation
+  detail
+      Under `executives.completionsExecutive` the body must return an `Execution`, and the
+      only way to make one is an `execute` block. The code before it — the prelude — runs
+      both when the command is invoked and when completions or help are requested; the
+      block runs only on a real invocation, with an `Effectful` and the `Invocation` in
+      scope, so it is where `Prospective` and `Requisite` handles are applied and where
+      output is written.
+
+      ```scala
+      import soundness.*
+      import backstops.genericErrorMessageBackstop
+      import executives.completionsExecutive
+      import interpreters.posixInterpreter
+      import systems.javaBaseSystem
+
+      val Build = Subcommand(t"build", e"compile the project")
+
+      def mytool(args: List[Text]): Unit = application(args):
+        arguments match
+          case Build() :: _ =>
+            val jobs = Flag[Int](t"jobs", aliases = List('j'))()
+            execute:
+              Out.println(t"building with ${jobs().or(1)} jobs")
+              Exit.Ok
+
+          case _ =>
+            execute(Exit.Fail(1))
+      ```
+
+      Before running the block, `execute` checks what the prelude accrued on the
+      `Invocation`: if any `require()`d flag is missing or any `validate()`d operand is
+      malformed, it prints them all to standard error — _The following required options
+      were not specified_, _The following options were given invalid values_ — and returns
+      `Exit.Fail(2)` without running the block, which is why a `Requisite` unwraps
+      unconditionally inside it.
+
+      The block returns any `Termination` — an `Exit`, a `Status` object, or a union of
+      them — and its result type is kept precise, so `Status.Admissible` can reify the
+      statuses it may return; they are recorded on the `Cli` even in completion mode, where
+      the block is not run, which is how help documents them. The result is `Execution to
+      result`.
+  refer exoskeleton.Execution
+  refer exoskeleton.Status
+  refer exoskeleton.Effectful
+  refer exoskeleton.Invocation
+
+entry .Execution   the result of an application body under the completions executive: an exit status and the admissible statuses
+  detail
+      Only `execute` makes one. `#exitStatus` is what the process exits with and
+      `#statuses` are the `Status` values the block could have returned; `#Result` refines
+      the type to the union of terminations the block returns, so `Execution to Nothing` is
+      a block which never returns normally.
+  entry .of   makes an `Execution to result` from an exit status and the statuses
+  entry #exitStatus   the exit status
+  entry #statuses   the statuses the block could return
+  entry #Result   the union of terminations the block returns
+
+entry .explain   attaches a paragraph of help to the current subcommand section
+    `explain(t"…")` records an explanation on the `Cli` in scope, shown as the header of
+    zsh's completion list; the function receives the prior explanation as the context value
+    `prior`, so it may extend rather than replace. Written in the prelude of a deep
+    subcommand, it documents that subcommand where it is defined. No-op outside a
+    `Completion`.
+
+entry .helpTree   builds a `Help` tree for an application by re-running its prelude at every subcommand prefix
+  detail
+      `helpTree(command, environment, workingDirectory, stdio, login)(block)` runs the
+      application's body as a zsh `Completion` with the cursor at the end of an empty final
+      word, first at the empty prefix and then at each subcommand suggested, descending
+      into every candidate which is not hidden, incomplete or an operand value. Each run
+      yields a `Probe` — the suggestions, flags, globals, required flags, operand names,
+      statuses and variables seen — and the tree is assembled from them: a flag already
+      attributed to an ancestor is dropped from deeper nodes, suggestions are deduplicated
+      by core, and children are ordered by name. The environment is wrapped in a recording
+      view, so every variable the prelude reads is listed in the node's `variables`.
+
+      ```scala
+      import soundness.*
+      import interpreters.posixInterpreter
+      import environments.javaBaseEnvironment
+      import workingDirectories.javaBaseWorkingDirectory
+      import stdios.muteStdio
+
+      val Build = Subcommand(t"build", e"compile the project")
+
+      def app(using Cli): Execution =
+        Flag(t"verbose", description = t"verbose output")()
+        arguments match
+          case Build() :: _ =>
+            Flag[Int](t"jobs", description = t"parallel jobs")()
+            execute(Exit.Ok)
+
+          case _ =>
+            execute(Exit.Fail(1))
+
+      val tree: Help =
+        helpTree(t"mytool", summon[Environment], summon[WorkingDirectory], summon[Stdio], Login(t"me", Unset))(app)
+
+      tree.subcommands.map(_.command)
+      tree.parameters.map(_.name)
+      ```
+
+      Needs an `Interpreter`. `execute` does nothing in completion mode, so the block runs
+      harmlessly; but a prelude with effects of its own runs them once per probe.
+  refer exoskeleton.Help
+  refer exoskeleton.Probe
+  refer exoskeleton.Completion
+
+entry .Probe   what one run of an application's prelude at one argument prefix reveals about its interface
+  detail
+      The record `helpTree` takes from each `Completion` it drives: the `#suggestions` at
+      the cursor (the subcommands to descend into), the `#flags` consulted, which of them
+      are `#globals` and `#required`, their `#operands`' placeholders, the `#statuses`
+      recorded and the environment `#variables` read.
+  entry #suggestions   the candidates offered for the final, empty word
+  entry #flags   every flag consulted
+  entry #globals   the flags consulted before any subcommand was offered
+  entry #required   the flags demanded
+  entry #operands   each flag's operand placeholder
+  entry #statuses   the statuses recorded by `execute` blocks reached
+  entry #variables   the environment variables read
+
+entry .Pathname   a positional argument completed as a filesystem path, and the extractor which resolves it
+  detail
+      `case Pathname(path) :: _ =>` matches any argument, offering the paths its text could
+      begin as suggestions, and binds the argument resolved against the working directory
+      as a `Path on Local`. Completion descends a directory at a time (a directory candidate
+      is `incomplete`, so the shell leaves the word open), hides dotfiles until tab is
+      pressed a second time or the typed name begins with `.`, expands a leading `~` as the
+      shell would — a quoted argument and every partial word reach the program with the
+      tilde intact — and abbreviates the results back under it. Every candidate is an
+      operand value, so the help tree never enumerates the working directory.
+
+      ```scala
+      import soundness.*
+      import interpreters.posixInterpreter
+      import systems.javaBaseSystem
+      import workingDirectories.javaBaseWorkingDirectory
+
+      def verify(args: List[Argument])(using Cli): Optional[Path on Local] = args match
+        case Pathname(file) :: _ => file
+        case _                   => Unset
+      ```
+
+      Needs a `WorkingDirectory`, a `Cli` and a `System` (for the home directory). For a
+      flag's operand, `pathnameDiscoverable` does the same.
+  refer exoskeleton.pathnameDiscoverable
+  refer exoskeleton.Discoverable
+  entry .complete   the path candidates for a partially-typed operand
+      `Pathname.complete(operand, tab)` is the completion the extractor and
+      `pathnameDiscoverable` share: `~`-expanded, resolved against the working directory,
+      descending into a directory as it is typed, with hidden entries shown on a repeated
+      tab. Empty when the operand cannot be resolved.
+  entry .unapply   offers path completions for an argument and resolves it, as a Scala `Option`
+      Adds its candidates to whatever another extractor evaluated against the same
+      argument — typically a `Subcommand` — already offered.
+
+entry .pathnameDiscoverable   completes a `Flag[Path on Local]`'s operand as a filesystem path
+    The `Discoverable` for `Path on Local`, so that `--file <TAB>` completes a path exactly
+    as a positional `Pathname` argument does. The subject belongs to serpentine and
+    `Discoverable`'s companion cannot see galilei, so the given is structurally
+    un-anchorable: it lives at the top level and must be imported by name. Needs a
+    `WorkingDirectory` and a `System`.
+
+    ```scala
+    import soundness.*
+    import soundness.pathnameDiscoverable
+    import interpreters.posixInterpreter
+    import systems.javaBaseSystem
+    import workingDirectories.javaBaseWorkingDirectory
+
+    def file(using Cli): Boolean = Flag[Path on Local](t"file").present
+    ```
+
+entry .Manual   the static metadata a manpage needs beyond what the `Help` tree discovers
+  detail
+      Declared once, as a `given Manual` or passed to `roff`; every field is optional, so
+      an application without one still renders a complete, if spartan, page. Per-command
+      and per-flag descriptions do not belong here — they stay on the `Subcommand`, `Flag`
+      and `CommandGroup` declarations the tree already carries. A `Manual` adds what
+      discovery cannot supply: what an environment variable means, an example invocation,
+      the authors, the files, the bugs, and the page's section, version and date.
+
+      ```scala
+      import soundness.*
+
+      val manual = Manual
+        ( prose       = t"mytool builds the project.",
+          examples    = List(Manual.Example(t"build with four jobs", t"mytool build --jobs 4")),
+          environment = List(Manual.EnvironmentVariable(t"MYTOOL_HOME", t"the home directory")),
+          seeAlso     = List(Manual.Reference(t"make")) )
+      ```
+
+      A status declared in `exitStatuses` and one discovered from an `execute` block may
+      share a code; the hand-written description wins. A variable described here and one
+      discovered are merged by name.
+  refer exoskeleton.roff
+  refer exoskeleton.Help
+  entry .Section   the manual section the page belongs to: user commands, system calls, …
+    detail
+        An enum of the eight standard sections, `UserCommands` through
+        `SystemAdministration`, each knowing its `#number` (1 to 8) and `#title`.
+    entry #number   the section's number, from 1 for `UserCommands`
+    entry #title   the section's heading, such as `User Commands`
+  entry .Reference   a `SEE ALSO` entry: a page name and its section, 1 by default
+    entry #name   the page referred to
+    entry #section   its section number
+  entry .ExitStatus   a hand-written exit status: a code and its description
+    entry #code   the exit code
+    entry #description   what it means
+  entry .EnvironmentVariable   a described environment variable, for the `ENVIRONMENT` section
+    entry #name   the variable's name
+    entry #description   what it controls
+  entry .ManFile   a file the program uses, for the `FILES` section
+    entry #path   the file's path, shown in italics
+    entry #description   what it holds
+  entry .Example   an example invocation, with an optional caption
+    entry #caption   a sentence introducing the example, if any
+    entry #command   the command line shown
+  entry #synopsisName   the one-line summary after the name; the tree's description by default
+  entry #section   the manual section; `UserCommands` by default
+  entry #version   the program's version, shown in the page footer as `command version`
+  entry #date   the page's date, shown ISO-8601
+  entry #prose   a paragraph for the `DESCRIPTION` section, after the tree's description
+  entry #authors   one paragraph each in `AUTHORS`
+  entry #examples   the `EXAMPLES` section
+  entry #exitStatuses   hand-written statuses, merged with the discovered ones by code
+  entry #environment   described variables, merged with the discovered ones by name
+  entry #files   the `FILES` section
+  entry #seeAlso   the `SEE ALSO` references
+  entry #bugs   the `BUGS` section
+  entry #homepage   a URL, shown as `Homepage: …` after the references
+
+entry .roff   renders a `Help` tree as a manpage, with a `Manual`'s metadata
+  detail
+      An extension on `Help`: `help.roff` (or `help.roff(using manual)`, defaulting to an
+      empty `Manual`) is a virility `Roff` page, whose `serialize` is the troff text. The
+      structure — NAME, SYNOPSIS, DESCRIPTION, OPTIONS (GLOBAL OPTIONS and OPTIONS for a
+      tool with subcommands), COMMANDS with a subsection per `CommandGroup`, EXAMPLES, EXIT
+      STATUS, ENVIRONMENT, FILES, AUTHORS, BUGS, SEE ALSO — comes from the tree and the
+      manual, each section present only when it has content, so `--help` and `man` cannot
+      disagree. Statuses and variables are gathered from every command in the tree. Styling
+      in descriptions is stripped.
+
+      ```scala
+      import soundness.*
+
+      val help: Help = Help(t"mytool", t"a build tool", Nil, List(Help(t"build", t"compile", Nil, Nil)))
+      help.roff(using Manual(authors = List(t"Jane Doe"))).serialize
+      ```
+
+      `Manpages.install` writes the page into the XDG man hierarchy.
+  refer exoskeleton.Manual
+  refer exoskeleton.Manpages
+
+entry .Manpages   installs a rendered manpage into the XDG man hierarchy
+  detail
+      `Manpages.install(page)` writes a `Roff` page to
+      `$XDG_DATA_HOME/man/man<section>/<title>.<section>`, creating the directories; that
+      directory is on the default manpath of modern man-db, so no `MANPATH` change is
+      needed. The environment and system are the *invocation's* (a `Cli` in scope supplies
+      the `Environment`; `systems.javaBaseSystem` the `System`), since under a daemon the
+      JVM's own environment is whichever client's launcher started it.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import systems.javaBaseSystem
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import environments.javaBaseEnvironment
+      import errorDiagnostics.stackTracesDiagnostics
+
+      val help: Help = Help(t"mytool", t"a build tool", Nil, Nil)
+      effectful(Manpages.install(help.roff)).pathname
+      ```
+  refer exoskeleton.roff
+  refer exoskeleton.Install
+  entry .install   writes the page, or reports that one is already there; `force` overwrites it
+      Needs `Effectful`, an `Environment`, a `System`, `Diagnostics` and an `Io.Event is
+      Loggable`; raises `Install.Error` with `Reason.Io` for a failure to write, and reports
+      `NoWritableLocation` when the XDG directory cannot be resolved.
+  entry .InstallResult   `Installed(path)`, `AlreadyInstalled(path)` or `NoWritableLocation`
+    detail
+        An enum with a `Communicable` rendering each as a sentence.
+    entry .communicable   renders the result as a sentence
+    entry #pathname   the path of the page, for `Installed` and `AlreadyInstalled`; else `Unset`
+
+entry .Enclave   the test rig: packages an application as a daemon-backed executable and runs it in a sandbox
+  detail
+      An `Enclave` is a superlunary `Rig` for command-line applications. `Enclave(name)
+      .dispatch { '{ … } }` compiles the quoted application body against the classloader in
+      scope, stages it as a JAR, packages the JAR with the `xek` builder — found in `$XEK`,
+      else `dist/xek` under the working directory — into a launcher executable named
+      `name`, and yields an `Enclave.Launcher`. `Launcher#sandbox` then starts the tool's
+      daemon under a scratch home and hands a `Tool` to a block, in which `shell.pane()`
+      opens a real shell with the tool's completion script loaded, so a test can press tab
+      and read what appears. The quoted body is an ethereal daemon body, so it
+      wraps the application in `cli:`, and the tool it builds answers each invocation and
+      completion request from one resident process. The daemon is killed and the scratch home deleted on every exit
+      from the block.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+      import workingDirectories.javaBaseWorkingDirectory
+      import environments.javaBaseEnvironment
+      import logging.silentLogging
+      import threads.platformThreads
+
+      given classloader: Classloader = Classloader[Option[Int]]
+
+      val Build = Subcommand(t"build", e"compile the project")
+
+      supervise:
+        Enclave(t"mytool").dispatch:
+          ' {
+              import executives.completionsExecutive
+              import interpreters.posixInterpreter
+
+              cli:
+                arguments match
+                  case Build() :: _ => execute(Exit.Ok)
+                  case _            => execute(Exit.Fail(1))
+
+              t"finished"
+            }
+
+        . sandbox:
+            Shell.Zsh.pane()(Pane.completions(t""))
+      ```
+
+      The optional `buildId`, `releaseKey`, `recoveryKey` and `appId` are baked into the
+      executable's record so that its launcher accepts a signed upgrade; without a release
+      key and an application id it refuses every one. `Enclave.keygen` makes a key pair and
+      `Launcher#sign` signs a build with it (Java 24 or later). It needs a `Classloader` and
+      an `Environment` when constructed, and an `Enclave` is typed `Enclave^{parasite.threads}`.
+
+      This is `exoskeleton.rig`, a test dependency: it needs the `xek` builder, the shells
+      under test, and optionally tmux, on the host.
+  refer exoskeleton.Pane
+  refer exoskeleton.pane
+  entry .Error   error 347: the sandboxed tool's daemon did not report a process ID
+    detail
+        Raised by `Launcher#sandbox` when `tool '{admin}' pid` prints nothing. Overwhelmingly
+        the cause is a protocol mismatch: the launcher the tool was packaged with and the
+        daemon it starts carry different launcher schema signatures, so the daemon refuses
+        the first document and closes the connection — a stale `xek` builder, in practice.
+    entry #tool   the path of the tool which did not answer
+  entry .Tool   a built, running tool: its path, its daemon's pid and the scratch home it runs under
+    detail
+        A shared capability, since every pane of a suite drives the one tool; its lifetime
+        is the `sandbox` block.
+    entry #path   the executable's path
+    entry #pid   the daemon's process id
+    entry #home   the scratch home its daemon and its panes' shells run under
+    entry #command   the tool's name, as typed at a prompt
+    entry #completions   runs a block while `{admin} await` listens, and returns what the tool logged
+        Needs a `Monitor` and an `Environment`. `Cli.log` messages made during the block are
+        returned joined, or `failed`.
+  entry .Launcher   the packaged executable, to sign or to run in a sandbox
+    detail
+        What `Enclave#dispatch` yields.
+    entry #path   the executable's path
+    entry #sign   signs the executable with a key seed, writing the signed copy to `out`
+        Runs `xek sign`; `foreign = true` allows a key the executable's record does not
+        carry, which a launcher will then reject. Raises `Exec.Error`.
+    entry #sandbox   starts the tool's daemon under a scratch home, runs a block with the `Tool`, then kills it
+        Needs an `Environment` and tactics for `Enclave.Error`, `Exec.Error`,
+        `Number.Error` and `Path.Error`. The scratch home replaces `HOME` and the XDG
+        directories (`Enclave.scratch`), so nothing of the real user's configuration is
+        read or written; the tool is not installed — each pane writes the completion script
+        it needs into the scratch home itself. The daemon is killed and the home deleted in
+        a `finally`, since an abandoned daemon holds a JVM for the rest of the session.
+  entry .scratch   the variables which direct a user's configuration into a scratch home
+      `HOME`, `XDG_CONFIG_HOME`, `XDG_DATA_HOME` and `BASH_COMPLETION_USER_DIR`, all under
+      the given home.
+  entry .environment   an environment with the scratch variables over a base, or the JVM's with `XEK` naming a builder
+      `Enclave.environment(base, home)` overlays `scratch(home)` on `base`.
+      `Enclave.environment(builder)` is the JVM's environment with `XEK` set, for a suite
+      which knows where its builder is but runs inside a daemon whose environment is
+      sanitized and whose working directory is `/`.
+  entry .keygen   generates an ML-DSA-44 key pair with `xek keygen`, as `<prefix>.seed` and `<prefix>.pub`
+      Returns the seed path, to sign with, and the public key path, to build an `Enclave`
+      with as its `releaseKey`. Raises `Exec.Error` and `Path.Error`; needs Java 24 or later.
+  entry #name   the executable's name
+  entry #buildId   a build identifier for the record, if any
+  entry #releaseKey   the public key a signed upgrade must carry, if any
+  entry #recoveryKey   the recovery key, if any
+  entry #appId   the application id for the record, if any
+  entry #Result   `Enclave.Launcher`
+  entry #Form   `Text`
+  entry #Target   `Path on Linux`
+  entry #Transport   `Json`
+  entry #stage   stages the JAR under `out/name` and packages it with `xek build`
+      Raises `Rig.Error` with `Reason.Staging` for a naming, linking, async or execution
+      failure; a packaging failure panics with xek's exit status.
+
+entry .Pane   a terminal pane running a shell for a test: keys are typed at it and its screen is read
+  detail
+      A `Pane` is a capability — exclusive, since one test drives it at a time — whose
+      lifetime is the block that creates it: `shell.pane()` runs the shell on a
+      pseudo-terminal rendered by yossarian, and `shell.tmux()` runs it in a tmux session,
+      an independent emulator against which yossarian's rendering is compared. The
+      companion holds the test vocabulary: `Pane.enter` types keys, `Pane.attend` types
+      them and waits for the screen to settle, `Pane.screenshot` reads the screen, and
+      `Pane.completions` and `Pane.progress` ask the shell to complete a line for the
+      tool under test.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+      import workingDirectories.javaBaseWorkingDirectory
+      import environments.javaBaseEnvironment
+      import logging.silentLogging
+      import threads.platformThreads
+
+      def check(using Enclave.Tool, Monitor): Text =
+        Shell.Bash.pane()(Pane.completions(t"build "))
+      ```
+  refer exoskeleton.pane
+  refer exoskeleton.tmux
+  refer exoskeleton.Enclave
+  refer exoskeleton.Screenshot
+  entry .keys   the key names a test may type, as tmux names them, and the bytes each sends
+      `Left`, `Right`, `Up`, `Down`, `BSpace`, `Enter`, `Tab`, `Escape`, `C-m`, `C-l` and
+      `C-c`; any other text is typed literally.
+  entry .enter   types keypresses at the pane in scope: a key name from `.keys`, a character, or literal text
+  entry .resize   resizes the pane in scope
+  entry .screenshot   the screen of the pane in scope
+  entry .waitFor   whether some line of the screen satisfies a predicate within a timeout, twenty seconds by default
+      Polls every ten milliseconds. Needs a `Monitor`.
+  entry .attend   types keypresses, then waits for the screen to change and then to settle
+      A shell completing a line asks the tool through its daemon and may draw what it hears
+      in several steps, so the screen is read once it has looked the same three times
+      running, twenty milliseconds apart; if it does not change at all within five seconds
+      the keys are taken to have changed nothing.
+  entry .settle   waits until the screen has looked the same three times running, or five seconds have passed
+  entry .completions   types the tool's name and a line, presses tab, and returns what the shell listed
+      `Pane.completions(t"distribution ")` with a bash pane and the test's tool returns the
+      candidates bash printed, for instance `gentoo   red hat  ubuntu`; zsh and fish
+      include descriptions as they show them. Under PowerShell the rig's `_completions`
+      function is called instead, since PowerShell's menu cannot be read from the screen.
+      The prompt line is excluded.
+  entry .progress   types the tool's name and a line, presses tab, and returns the command line as the shell left it
+      The cursor's position is decorated, `^` by default, so `distribution ubuntu --^` shows
+      that tab inserted the common prefix `--` of the flags and left the cursor after it.
+  entry .boundary   the length of the longest prefix of some bytes which ends on a UTF-8 character boundary
+      Used by `Display#render` to hold a character split between output chunks until the
+      rest arrives.
+  entry .Display   what a pseudo-terminal shows, rendered by yossarian as its output arrives
+    detail
+        A durable, thread-safe display: the tasks which read the shell's output and write
+        yossarian's answers to its queries (cursor position, attributes) retain it. A
+        sequence yossarian cannot render is kept and reported by the next `#screenshot`
+        rather than lost.
+    entry #width   the columns
+    entry #height   the rows
+    entry #send   writes bytes to the terminal, one writer at a time
+    entry #resize   resets the display to a new size
+    entry #screenshot   the screen, with trailing spaces trimmed, and the cursor; raises `Pane.Error` for an unrendered sequence
+    entry #render   renders a chunk of the terminal's output, holding an incomplete trailing character
+    entry #answer   writes yossarian's replies to the shell's queries back to it, until `#finish`
+    entry #finish   stops the replies
+  entry .Emulated   a pane on a pseudo-terminal, showing what a `Display` renders of it
+    detail
+        What `shell.pane()` hands its block: keys go to the pseudo-terminal's job, and the
+        screen comes from the display.
+    entry #shell   the shell running in the pane
+    entry #width   the columns
+    entry #height   the rows
+    entry #screenshot   the display's screen
+    entry #press   types a key name or literal text
+    entry #resize   resizes the display and the pseudo-terminal
+  entry .Error   error 271: the terminal could not be driven
+    detail
+        _can't drive the terminal: `reason`_. The reasons: `ShellNotInstalled(shell)` (1),
+        `SessionDied` (2) when the session ended unexpectedly, `ExecFailed` (3) when it
+        could not start, `Unrendered(problem)` (4) when yossarian could not render a
+        sequence, `NotReady(shell)` (5) when the shell did not show a prompt and echo the
+        rig's marker in time, and `Unconfigured(problem)` (6) when a configuration file
+        could not be written into the scratch home.
+    entry .Reason   why the terminal could not be driven
+      detail
+          An enum with a `number` (1 to 6) and a `Communicable` given.
+      entry #number   the subcode
+    entry .communicable   renders a reason as its message
+    entry #reason   the reason
+  entry #shell   the shell running in the pane
+  entry #width   the columns
+  entry #height   the rows
+  entry #press   types a key name from `Pane.keys`, or literal text
+  entry #screenshot   the screen now
+  entry #resize   resizes the pane, delivering `SIGWINCH` to the shell
+
+entry .Screenshot   the screen of a pane: its lines, its size and the cursor
+  detail
+      `#screen` is one `Text` per row with trailing spaces trimmed, `#size` is `(columns,
+      rows)` and `#cursor` is `(column, row)` as ordinals. `apply()` joins the rows with
+      newlines.
+  entry #screen   the rows
+  entry #size   the columns and rows
+  entry #cursor   the cursor's column and row
+  entry #apply   the screen as one text, rows joined by newlines
+  entry #currentLine   the row the cursor is on, trimmed, with the character under the cursor decorated
+      `screenshot.currentLine(_ => t"^")` is what `Pane.progress` reads.
+
+entry .Tmux   a pane in a tmux session, an independent terminal emulator
+  detail
+      What `shell.tmux()` hands its block. Keys are sent with `tmux send-keys`, which
+      interprets tmux's own key names, and the screen is read with `tmux capture-pane`;
+      each is a subprocess, so this backend is slow, and it exists to check yossarian's
+      rendering against another emulator's. Also `Findable`.
+  refer exoskeleton.tmux
+  entry #id   the session's name, a UUID
+  entry #workingDirectory   the directory tmux is run from
+  entry #environment   the environment tmux's commands run with
+  entry #width   the columns
+  entry #height   the rows
+  entry #shell   the shell running in the session
+  entry #press   sends keys with `tmux send-keys`
+  entry #resize   resizes the window with `tmux resize-window`, delivering `SIGWINCH`
+  entry #screenshot   captures the pane and reads the cursor with `tmux display-message`
+
+entry .pane   runs a shell on a pseudo-terminal with the tool under test configured, and hands the pane to a block
+  detail
+      An extension on `Shell`: `Shell.Zsh.pane(width = 80, height = 24)(action)` starts
+      the shell as `rig.launch` configures it — under the tool's scratch home, with the
+      tool's directory first on the `PATH`, a prompt of `> `, and the tool's completion
+      script loaded in place of any configuration the user has — on a pseudo-terminal
+      whose output yossarian renders into a `Pane.Display`, waits for the prompt, clears
+      the screen, and runs the block with a `Pane.Emulated`. Needs a `WorkingDirectory`, an
+      `Environment`, an `Enclave.Tool`, a `Monitor`, a `Tactic[Pane.Error]` and a guillotine
+      `Exec.Event is Loggable`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+      import workingDirectories.javaBaseWorkingDirectory
+      import environments.javaBaseEnvironment
+      import logging.silentLogging
+      import threads.platformThreads
+
+      def flags(using Enclave.Tool, Monitor): Text =
+        Shell.Fish.pane(width = 120)(Pane.completions(t"build "))
+      ```
+  refer exoskeleton.Pane
+  refer exoskeleton.tmux
+  refer exoskeleton.rig
+
+entry .tmux   runs a shell in a tmux session, configured exactly as `pane` does, and hands the pane to a block
+    An extension on `Shell`, with the same parameters and contextual needs as `pane`. The
+    session is created detached at the given size, named by a UUID, and killed when the
+    block ends. Requires tmux on the host; a missing binary surfaces as `Pane.Error` with
+    `ExecFailed`.
+  refer exoskeleton.pane
+  refer exoskeleton.Tmux
+
+entry .rig   how the rig starts and readies a shell for a test
+  detail
+      The pieces `pane` and `tmux` share: `#launch` builds the command which starts a
+      shell under the tool's scratch home with the rig's own configuration, `#ready` waits
+      for it, and `#powershell` is the PowerShell profile. Exposed for a suite which drives
+      a shell some other way.
+  entry .launch   the command which starts a shell for a test, configured for the tool under test
+      Writes a configuration of the rig's own into the scratch home — a bash rcfile, a
+      zsh startup file with the completion function on `fpath`, a fish `config.fish`, or a
+      PowerShell profile — each giving a prompt of `> ` and loading the tool's completion
+      script as `Completions.script` writes it; sets `PATH` to put the tool first,
+      `POWERSHELL_UPDATECHECK` off, and `TERM` to `xterm-256color` when `terminal` is
+      true (tmux sets its own). Raises `Pane.Error` with `Unconfigured` if a file cannot
+      be written.
+  entry .directory   the directory part of a path's text
+  entry .ready   waits until the shell has started and loaded its configuration, then clears the screen
+      Waits for a `>` prompt, then (except under PowerShell) asks the shell to echo a short
+      random marker and waits for it, so every line of the configuration is known to have
+      run, and presses `C-l`. Raises `Pane.Error` with `NotReady` after twenty seconds.
+  entry .powershell   the PowerShell profile the rig uses: a `> ` prompt, tab completion through the tool, and `_completions`
+      `_completions "line"` prints each completion of a line as `name@@description`, which
+      is how `Pane.completions` reads PowerShell's candidates, since its menu is not
+      written to the screen.

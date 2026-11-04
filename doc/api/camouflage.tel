@@ -1,0 +1,111 @@
+tel 1.0
+
+base camouflage
+import soundness
+
+info   caches: a bounded least-recently-used map, and a single value memoized with a lifetime
+detail
+    _Camouflage_ provides the two shapes a cache usually takes, so that the decisions every
+    hand-rolled cache makes implicitly — when to evict, what to do when two threads want the
+    same missing value, and when a cached value is too old to trust — are made by the type.
+
+    An `LruCache` keeps up to a fixed number of keyed entries, evicting the least recently
+    used. A `Cache` memoizes one value, optionally for a limited lifetime, and computes it
+    under a lock, so concurrent callers share one result rather than stampeding. In both,
+    the computation is passed by name and runs only on a miss.
+
+    ```scala
+    import soundness.*
+    import durationInterfaces.aviationDuration
+
+    val names = LruCache[Int, Text](100)
+    names(1)(t"one")          // computes and stores
+    names(1)(t"not needed")   // t"one", from the cache
+
+    case class Configuration(port: Int)
+    val config: Cache[Configuration] = Cache(300.0*Second)
+    config.establish(Configuration(8080))   // computed now, then reused for five minutes
+    ```
+
+    The library has a single source set, `camouflage.core`, and everything is exported to
+    the `soundness` umbrella.
+
+refer camouflage.LruCache
+refer camouflage.Cache
+
+entry .LruCache   a bounded keyed cache which evicts its least recently used entry when full
+  detail
+      `LruCache[Key, Value](maxSize)` holds up to `maxSize` entries. Applying it with a key
+      and a computation, `cache(key)(computation)`, returns the cached value if the key is
+      present, and otherwise evaluates the computation, stores its result, and evicts the
+      least recently used entries until the cache is within its size again.
+
+      Reading or writing an entry marks it as recent, so the entries that survive are the
+      ones the program keeps returning to:
+
+      ```scala
+      import soundness.*
+
+      val cache = LruCache[Int, Text](4)
+      cache(1)(t"one")
+      cache(2)(t"two")
+      cache(3)(t"three")
+      cache(4)(t"four")
+      cache(1)(t"ein")    // t"one": a hit, which makes 1 the most recent
+      cache(5)(t"five")   // evicts 2, now the least recent
+      cache(2)(t"zwei")   // t"zwei": computed again
+      ```
+
+      An `LruCache` holds no lock: it is for use by one thread at a time, or behind a lock of
+      the caller's.
+  refer camouflage.Cache
+  entry #apply   the value for a key: the cached one, or the computation's result, stored
+      The computation is passed by name and evaluated only on a miss. A hit marks the entry
+      as the most recently used; a miss adds it as the most recent and evicts the least
+      recent entries beyond the cache's size.
+  entry #contains   whether the cache holds a value for a key
+      Asks without computing anything and without marking the entry as recent.
+  entry #remove   drops a key's entry, if it is present
+      For invalidation, when the underlying data has changed and the cached value is known
+      to be stale. Removing an absent key does nothing.
+
+      ```scala
+      import soundness.*
+
+      val cache = LruCache[Int, Text](4)
+      cache(1)(t"one")
+      cache.remove(1)
+      cache.contains(1)   // false
+      ```
+
+entry .Cache   a single memoized value, computed once under a lock and optionally expiring
+  detail
+      A `Cache[Value]` holds at most one value. `#establish` returns it, computing it only
+      when none is held or the held one has expired. The computation runs under a lock, so
+      when several threads ask for a missing or expired value at once, one computes it and
+      the rest receive its result: the cache stampede a bare `lazy val` with a timestamp
+      cannot prevent.
+
+      ```scala
+      import soundness.*
+      import durationInterfaces.aviationDuration
+
+      case class Configuration(port: Int)
+
+      val config: Cache[Configuration] = Cache(300.0*Second)
+
+      config.establish(Configuration(8080))   // computed now
+      config.establish(Configuration(9090))   // Configuration(8080), until five minutes pass
+      ```
+
+      The value's type is given as the expected type, or as a type argument,
+      `Cache[Configuration]()`.
+  refer camouflage.LruCache
+  entry .apply   a cache with a lifetime, or with none, `Cache[Value]()`, which keeps its value forever
+      The lifetime is any duration which is `Abstractable across Durations to Long` — an
+      aviation `Quantity` of seconds, with `durationInterfaces.aviationDuration` imported,
+      for instance — read at millisecond precision. The lifetime is measured from the
+      moment the value was last computed, not from when it was last read.
+  entry #establish   the cached value, computed by the given block if there is none or it has expired
+      The block is passed by name and evaluated only when needed, while the cache's lock is
+      held; other callers wait for it and receive the same value.

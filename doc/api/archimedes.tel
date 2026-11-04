@@ -1,0 +1,909 @@
+tel 1.0
+
+base archimedes
+import soundness
+
+info   mathematical markup as typed values: MathML trees, the Ergo shorthand, and rendering to XML, HTML and text
+detail
+    _Archimedes_ models mathematical notation as an immutable tree of typed values: the
+    elements of [MathML](https://www.w3.org/TR/MathML-Core/) — rows, fractions, scripts,
+    roots, tables — each a case class under the `Mathml` object, with a `Math` root which
+    renders to XML (`in[Xml]`), embeds in honeycomb HTML (`html`) and draws to monospaced
+    text for a terminal (`draw`). MathML text reads back with `read[Math]`, and a round trip
+    is lossless: attributes the model does not interpret are preserved.
+
+    Because MathML is unbearable to write by hand, the library provides **Ergo**, a one-line
+    shorthand with one glyph per structural role (`↗` superscript, `↘` subscript, `/`
+    fraction, `√` root, `⋱` matrix, …) which parses to the same tree with `Ergo.parse` and
+    serializes back with `Ergo.serialize`. The `ergo"…"` interpolator checks a literal while
+    the code compiles and splices in any value which is `Encodable in Math`: numbers, text,
+    rationals, complex numbers, vectors, matrices and dimensioned quantities all have
+    encoders, reached as `value.math` (a `<math>` root) or `value.mathml` (a single node).
+
+    ```scala
+    import soundness.*
+    import Mathml.*
+    import strategies.throwUnsafely
+    import xmlSchemas.freeformXmlSchema
+
+    val quadratic: Math = ergo"(x = (-b ± √(b↗2 - 4 a c))/(2 a))"
+    quadratic.in[Xml].show      // <math xmlns="http://www.w3.org/1998/Math/MathML"><mi>x</mi>…
+    quadratic.draw              // the formula as box-drawing text, the root with a vinculum
+    Math(Msup(Mi(t"x"), Mn(t"2"))).in[Xml].show
+    t"""<math xmlns="http://www.w3.org/1998/Math/MathML"><mn>7</mn></math>""".read[Math]
+    ```
+
+    The element types live inside the `Mathml` object (`Mathml.Mi`, `Mathml.Mrow`, …) rather
+    than flat in the package, so that generic names such as `Token`, `Layout` and `Ms` do
+    not collide with other modules in the `soundness` namespace; `import Mathml.*` brings the
+    bare names in where MathML is authored by hand. Reading MathML needs an `XmlSchema`
+    (`xmlSchemas.freeformXmlSchema` admits any element), and the `Mathml.Error` and `Ergo.Error`
+    raised by parsing need a tactic, such as `strategies.throwUnsafely`.
+
+    The library has one source set, `archimedes.core`, which compiles for the JVM, Scala.js
+    and Scala Native. Everything is exported to the `soundness` umbrella: `Math`, `Mathml`,
+    `Display`, `Ergo`, `Cell`, `mathmlNamespace` and the extensions `ergo`, `math`, `mathml`,
+    `cell` and `draw`. The `html` extension which embeds a `Math` or a `Mathml` node in an
+    HTML tree is honeycomb's, resolved through `Math.renderable` and `Mathml.renderable`.
+
+refer archimedes.Math
+refer archimedes.Mathml
+refer archimedes.Ergo
+refer archimedes.Cell
+
+entry .Math   the `<math>` root element: a list of MathML nodes with a display mode and attributes
+  detail
+      A `Math` is the root of a MathML document: its `#contents` are the top-level nodes, its
+      `#display` whether the browser sets it as a displayed block or in running text, and its
+      `#attributes` any further attributes to write on the `<math>` element. It is built from
+      nodes with `Math(nodes*)`, from an Ergo literal with `ergo"…"` or `Ergo.parse`, or from
+      any value which is `Encodable in Math` with `value.math`.
+
+      ```scala
+      import soundness.*
+      import Mathml.*
+      import strategies.throwUnsafely
+      import xmlSchemas.freeformXmlSchema
+
+      val math: Math = Math(List(Msup(Mi(t"x"), Mn(t"2"))), Display.Block)
+      math.in[Xml].show         // <math xmlns="…" display="block"><msup>…</msup></math>
+      math.html                 // an Html of "math", for a honeycomb page
+      math.draw                 // t"x²"
+      math.in[Xml].show.read[Math] == math
+      ```
+
+      A `Math` renders four ways: `in[Xml]` (`.encodableInXml`) builds the xylophone tree, with
+      the `xmlns` attribute always written; `html` (`.renderable`, through honeycomb's
+      extension) embeds it as an `Html of "math"` wherever `<math>` is admissible; `draw`
+      and `cell` lay it out as monospaced text; and a `Document[Math]` is `Showable` as
+      MathML text with an XML header (`.showable`). Write `in[Xml]`, not `encode`, for the
+      XML: a `Math` is also `Encodable in Math` (the identity, `.self`), so `encode` would be
+      ambiguous.
+
+      Reading is the reverse: `text.read[Math]` and `data.load[Math]` parse the XML with
+      xylophone and then map the tree with `Mathml.Parser`, raising `Mathml.Error` when the
+      root is not `<math>` or an element is unknown. Both need an `XmlSchema` in scope.
+
+      `Math` is `Documentary`, with `Encoding` as its `#Metadata`, so a `Document[Math]`
+      carries the encoding the file declared.
+  refer archimedes.Mathml
+  refer archimedes.Ergo
+  refer archimedes.Display
+  entry .apply   a `<math>` root over the given nodes, as `Math(nodes*)`
+      The varargs constructor from `Mathml.Container`: `Math(Mi(t"x"), Mo(t"+"), Mn(t"1"))`.
+      The case-class constructor, `Math(contents, display, attributes)`, takes the list
+      directly with an optional `Display` and extra attributes.
+  entry .aggregable   reads `Math` from MathML text, as `text.read[Math]`
+      Parses the text as XML through xylophone's own `Aggregable`, then decodes the `<math>`
+      root with `Mathml.Parser.decodeMath`. It needs an `XmlSchema` in scope, and tactics for
+      `Parse.Error`, `Xml.Error` and `Mathml.Error`: the first two for malformed XML, the
+      last when the root element is not `<math>` or an element is not MathML.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import xmlSchemas.freeformXmlSchema
+
+      t"""<math xmlns="http://www.w3.org/1998/Math/MathML"><mi>x</mi></math>""".read[Math]
+      ```
+  entry .loadable   loads a `Document[Math]` from MathML text, with its declared encoding
+      As `.aggregable`, but through xylophone's `Loadable`, keeping the XML header: the
+      result is a `Document[Math]` whose metadata is the declared `Encoding` (UTF-8 when none
+      is declared). It needs an `XmlSchema` and the same three tactics.
+  entry .loadableData   loads a `Document[Math]` from bytes, as `data.load[Math]`
+      The byte form of `.loadable`: the XML is parsed from the `Data` directly, so the
+      declared encoding is honoured. It needs a `Buffering` in scope as well as an `XmlSchema`
+      and the tactics for `Parse.Error`, `Xml.Error` and `Mathml.Error`. This is the instance
+      a file read goes through: `path.load[Math]` gives the `Document[Math]`, whose `root` is
+      the `Math`.
+  entry .showable   serializes a `Document[Math]` as MathML text with an XML header
+      Only a `Document[Math]` is `Showable`, not a bare `Math`: the rendering is a complete
+      document, an `<?xml version="1.0" …?>` header naming the document's encoding followed
+      by the `<math>` element. For the element alone, write `math.in[Xml].show`.
+  entry .encodableInXml   the `<math>` element as a xylophone `Xml`, as `math.in[Xml]`
+      Builds the `Xml.Element` named `math` with the `xmlns` attribute, the `display`
+      attribute when `#display` is set, then `#attributes`, over each content node's own
+      `in[Xml]`. Named `encodableInXml` rather than `encodable` because a `Math` is also
+      `Encodable in Math` through `.self`; `in[Xml]` selects this one unambiguously.
+  entry .renderable   a `Math` as honeycomb HTML, as `math.html`, where `<math>` is admissible
+      The `Renderable` given with `Form = "math"`: honeycomb's `html` extension renders the
+      `Math` as the WHATWG `<math>` element with the same attributes as `.encodableInXml`
+      writes, and each node as foreign content through `Mathml.renderable`. The result is an
+      `Html of "math"`, accepted wherever honeycomb admits embedded, phrasing or flow content.
+      `Mathml.Reader.read` extracts it again from the page.
+
+      ```scala
+      import soundness.*
+      import Mathml.*
+
+      Math(Msup(Mi(t"x"), Mn(t"2"))).html.show   // <math xmlns="…"><msup>…</msup></math>
+      ```
+  entry .inspectable   a debug rendering of the node tree in bracketed prefix form
+      `Math(○ ⟨mn t"2"⟩)`: the display (`○` for unset, `｢block｣` when set), then each node
+      as its element name, attributes and either its text or its children, on one line.
+      This is the form to read a parse or layout bug from; `show` is only for a
+      `Document[Math]`.
+  entry .int   an `Int` as a `<mn>` number
+      `42.math` is `<math><mn>42</mn></math>`, and `42.mathml` the bare `<mn>`. `Long`,
+      `Short` and `Byte` encode the same way through `.long`, `.short` and `.byte`.
+  entry .long   a `Long` as a `<mn>` number
+  entry .short   a `Short` as a `<mn>` number
+  entry .byte   a `Byte` as a `<mn>` number
+  entry .double   a `Double` as a `<mn>` number, in its `toString` form
+      `3.14.mathml` is `<mn>3.14</mn>`; the text is the `Double`'s own rendering, so `5.0`
+      stays `5.0`.
+  entry .float   a `Float` as a `<mn>` number, in its `toString` form
+  entry .bigInt   a `BigInt` as a `<mn>` number
+  entry .bigDecimal   a `BigDecimal` as a `<mn>` number
+  entry .text   a `Text` as `<mtext>`
+      `t"speed".mathml` is `<mtext>speed</mtext>`: literal text set in the formula, not an
+      identifier. For an identifier, build `Mathml.Mi` directly.
+  entry .identical   any `Mathml` node as a `<math>` root over that one node
+      Lets a node already in hand be used wherever an `Encodable in Math` is wanted, in
+      particular as an `ergo"…"` substitution: `ergo"(x↗$node)"`.
+  entry .self   a `Math` as itself: the identity encoder
+      Lets a `Math` be substituted into another `ergo"…"` literal, where `Mathml.atom`
+      collapses it to one node (its single content node, or an `<mrow>` of several). Because
+      of this instance, `encode` on a `Math` is ambiguous; use `in[Xml]` for the XML.
+  entry .q64   a `Q64` rational as `<mfrac>`, or `<mn>` when whole, with the sign hoisted
+      `Q64(-3, 4).math` is `<mrow><mo>−</mo><mfrac><mn>3</mn><mn>4</mn></mfrac></mrow>`: the
+      sign is written as a minus operator before an unsigned fraction, a whole value collapses
+      to a plain `<mn>`, and a zero denominator renders as the text `NaR`. `.q32` is the
+      same for `Q32`.
+  entry .q32   a `Q32` rational as `<mfrac>`, or `<mn>` when whole, with the sign hoisted
+  entry .QuantityEncodable   the class behind `.quantity`: an encoder for one `Quantity[units]`
+      A public class only because the inline given `.quantity` inlines a reference to it; it
+      wraps a pure function from a `Quantity[units]` to a `Math` as an `Encodable in Math`.
+      Not meant to be constructed directly.
+  entry .quantity   a dimensioned `Quantity` as its magnitude followed by its units
+      `(5*Metre/Second).mathml` is the number `<mn>5.0</mn>` followed by `<mi>m</mi>` and
+      `<msup><mi>s</mi><mn>-1</mn></msup>`, joined by invisible-times operators: each unit
+      is an identifier, raised to its power when that is not 1, in alphabetical order of
+      symbol. An inline given, so it is resolved for each concrete `units` type.
+  entry .complex   a `Complex` number as `re + im i`
+      `Complex(3, 4).mathml` is `<mrow><mn>3</mn><mo>+</mo><mn>4</mn><mi>i</mi></mrow>`; the
+      component type needs its own `Encodable in Math`.
+  entry .vector   a mosquito `Vector` as a bracketed column
+      Each element is a row of an `<mtable>` inside stretchy parentheses:
+      `Vector(1, 2, 3).mathml` is `(` over a column of `<mtr><mtd><mn>…</mn></mtd></mtr>`.
+      The element type needs its own `Encodable in Math`.
+  entry .matrix   a mosquito `Matrix` as a bracketed table
+      Each row of the matrix is an `<mtr>` of `<mtd>` cells inside stretchy square
+      brackets: `Matrix[2, 2]((1, 2), (3, 4)).mathml`. The element type needs its own
+      `Encodable in Math`.
+  entry .interpolable   the `ergo"…"` interpolator, checked while the code compiles
+      The `Interpolable` given which makes `ergo"…"` a `Math`. It is in the `Math` companion,
+      so no import is needed beyond `import soundness.*`; the `ergo` extension on
+      `StringContext` is what names it. A malformed literal fails compilation at the character
+      where parsing stopped, and a `$`-substitution must be `Encodable in Math`.
+  entry #contents   the top-level nodes of the formula, in order
+  entry #display   `Display.Block`, `Display.Inline`, or `Unset` to leave the attribute off
+      Decides whether the browser sets the formula as a displayed equation or within running
+      text. Read back from the `display` attribute by `Mathml.Parser.decodeMath`, where an
+      unrecognised value becomes `Inline`.
+  entry #attributes   further attributes written on the `<math>` element, as name–value pairs
+      Any attribute other than `xmlns` and `display`, which are held structurally. The
+      parser puts every other attribute of the root here, so a round trip keeps them.
+  entry #attributePairs   every attribute the `<math>` element is written with
+      `xmlns` first, then `display` if set, then `#attributes`: the list both `in[Xml]` and
+      `html` write.
+  entry #Self   `Math`
+  entry #Metadata   `Encoding`: what a `Document[Math]` carries, the declared character encoding
+
+entry .Mathml   the base type of every MathML node, and the home of all the element types
+  detail
+      Every element of Presentation MathML is an immutable case class nested in the `Mathml`
+      object — `Mathml.Mi`, `Mathml.Mn`, `Mathml.Mrow`, `Mathml.Mfrac`, `Mathml.Msup` and the
+      rest — and `Mathml` is the trait they all extend. A node knows its tag (`#label`), its
+      ordered `#attributes` bag, and either its character data (`#text`, for a token element
+      such as `<mi>`) or its child `#contents` (for a layout element such as `<mrow>`). The
+      attributes are preserved verbatim, so a parse–serialize round trip is lossless even for
+      an attribute the model gives no typed accessor to.
+
+      The elements are grouped by their MathML class as the sealed traits `Token`, `Layout`,
+      `Script`, `Tabular`, `Elementary` and `Semantic`; nothing dispatches on these, and code
+      matches on the concrete elements. The types are nested rather than exported flat so
+      that names such as `Token`, `Layout` and `Ms` do not collide with other modules in the
+      `soundness` namespace: `import Mathml.*` brings the bare names in.
+
+      ```scala
+      import soundness.*
+      import Mathml.*
+
+      val square: Mathml = Msup(Mi(t"x"), Mn(t"2"))
+      square.in[Xml].show            // <msup><mi>x</mi><mn>2</mn></msup>
+      square.draw                    // t"x²"
+      Mi(t"x", List(t"mathvariant" -> t"italic")).in[Xml].show
+      Mrow(Mi(t"a"), Mo(t"+"), Mfrac(Mn(t"1"), Mi(t"b")))
+      ```
+
+      A node renders to two document models: `in[Xml]` (`.encodable`) builds a xylophone
+      tree, and honeycomb's `html` extension (`.renderable`) builds a foreign-element tree for
+      embedding in a page. Both are generic over every subtype, so `Msup(…).in[Xml]` works
+      without a widening. `draw` and `cell` lay a node out as monospaced text. The uniform
+      containers (`Mrow`, `Msqrt`, `Mtable`, …) each have a varargs `apply` from `Container`;
+      the positional schemata (`Mfrac`, `Msub`, `Mroot`, …) name their children instead.
+
+      `Mathml.Parser` decodes xylophone XML into nodes, `Mathml.Reader` finds and decodes a
+      `<math>` subtree in honeycomb HTML, and both raise `Mathml.Error` for an element which
+      is not MathML.
+  refer archimedes.Math
+  refer archimedes.Ergo
+  refer archimedes.Cell
+  entry .encodable   any node as a xylophone `Xml` element, as `node.in[Xml]`
+      Generic over every `node <: Mathml`: an `Xml.Element` with the node's `label`, its
+      attributes, and either a single text child or the children's own `in[Xml]`. The
+      `<math>` root is `Math.encodableInXml`.
+  entry .renderable   any node as honeycomb foreign content, as `node.html`
+      The `Renderable` given with `Form = "#foreign"`, generic over every `node <: Mathml`:
+      honeycomb's `html` extension renders the node as a foreign element with its label and
+      attributes, which is how `Math.renderable` renders a formula's contents inside `<math>`.
+  entry .atom   collapses a `<math>` root to one node: its single content, or an `<mrow>`
+      `Mathml.atom(math)` is `math.contents` when that is exactly one node, and otherwise an
+      `Mrow` of the contents. This is what the `mathml` extension and the `ergo"…"`
+      interpolator use to embed an encoded value where a single operand is wanted.
+  entry .Container   the varargs constructor shared by every element whose children are a list
+      A trait a companion extends as `object Mrow extends Container(new Mrow(_))`, giving it
+      `apply(children: Mathml*)`. `Math` extends it too, so `Math(nodes*)` builds a root.
+    entry #apply   builds the element over the given children, in order
+  entry .Token   the leaf elements, whose content is character data: `Mi`, `Mn`, `Mo`, `Mtext`, `Ms`, `Mspace`, `Mglyph`
+      A sealed trait with no `#contents`. `Mspace` and `Mglyph` carry no text either, being
+      controlled entirely by their attributes.
+  entry .Mi   `<mi>`: an identifier, such as a variable or a function name
+      `Mi(t"x")`. In Ergo a run of letters is one identifier, so `sin` is `<mi>sin</mi>` and
+      `x y` is two. A single-letter identifier is italicised by MathML's own rules; the
+      `mathvariant="normal"` attribute (Ergo's `⦱` directive) makes it upright.
+    entry #value   the identifier's text
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Mn   `<mn>`: a numeric literal
+      `Mn(t"2")`. The text is whatever the number should read as; the `Encodable in Math`
+      instances for numbers write their `show` or `toString` form here.
+    entry #value   the number's text
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Mo   `<mo>`: an operator, fence or separator
+      `Mo(t"+")`. Brackets, integrals and the big operators `∑` and `∏` are operators which
+      `Cell` stretches to the height of their operand when drawn; a stretchy fence in MathML
+      is an `Mo` with `stretchy="true"`.
+    entry #value   the operator's text
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Mtext   `<mtext>`: literal text set within the formula
+      `Mtext(t"speed")`: words rather than mathematics. `Text` encodes to this through
+      `Math.text`. It has no Ergo form, so `Ergo.serialize` rejects it.
+    entry #value   the text
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Ms   `<ms>`: a string literal, shown in quotation marks
+    entry #value   the string's text
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Mspace   `<mspace>`: blank space of a given width, height or depth
+      `Mspace(List(t"width" -> t"1em"))` renders as `<mspace width="1em"/>`. It has no text
+      and no children; `Cell` draws it as one blank column.
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Mglyph   `<mglyph>`: a glyph from an image, by its attributes
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Layout   the general layout schemata: `Mrow`, `Mfrac`, `Msqrt`, `Mroot`, `Mstyle`, `Merror`, `Mpadded`, `Mphantom`, `Menclose`, `Mfenced`
+      A sealed trait of elements with children and no text.
+  entry .Mrow   `<mrow>`: a horizontal row of nodes, grouped as one unit
+      `Mrow(Mi(t"x"), Mo(t"+"), Mn(t"1"))`. The grouping element: an Ergo bracket group is an
+      `Mrow`, and `Mathml.atom` wraps several nodes in one. `Cell` draws a row by aligning the
+      baselines of its children and spacing binary operators.
+    entry .apply   an `<mrow>` over the given children, as `Mrow(children*)`
+    entry #contents   the row's children, in order
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Mfrac   `<mfrac>`: a fraction, numerator over denominator
+      `Mfrac(Mn(t"1"), Mn(t"2"))`; Ergo's `a/b`. `linethickness="0"` (Ergo's `═(0)`) removes
+      the bar, for a binomial coefficient.
+    entry #numerator   the node above the bar
+    entry #denominator   the node below the bar
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Msqrt   `<msqrt>`: a square root over its children
+      `Msqrt(Mi(t"x"))`; Ergo's `√x`. `Cell` draws a vinculum over the radicand.
+    entry .apply   an `<msqrt>` over the given children, as `Msqrt(children*)`
+    entry #contents   the radicand, as a list of nodes
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Mroot   `<mroot>`: an nth root, with the index drawn above the sign
+      `Mroot(Mi(t"x"), Mn(t"3"))` is the cube root of `x`: the base first, then the index,
+      as MathML orders them. In Ergo an index atom written immediately before `√` gives one:
+      `3√x`.
+    entry #base   the radicand
+    entry #index   the degree of the root
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Mstyle   `<mstyle>`: a style change applied to its children
+    entry .apply   an `<mstyle>` over the given children
+    entry #contents   the children
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Merror   `<merror>`: content marked as erroneous
+    entry .apply   an `<merror>` over the given children
+    entry #contents   the children
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Mpadded   `<mpadded>`: children with adjusted size or position
+    entry .apply   an `<mpadded>` over the given children
+    entry #contents   the children
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Mphantom   `<mphantom>`: children which take space but are not drawn
+      `Cell` draws it as a blank block of the children's size.
+    entry .apply   an `<mphantom>` over the given children
+    entry #contents   the children
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Menclose   `<menclose>`: children enclosed by a notation such as a box or strike
+      MathML 3 only: MathML Core dropped it, so it has no Ergo directive.
+    entry .apply   a `<menclose>` over the given children
+    entry #contents   the children
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Mfenced   `<mfenced>`: children between a pair of fences
+      `Cell` draws it with parentheses stretched to the height of the content, which is how
+      a tall expression is bracketed in text output; in MathML Core the equivalent is an
+      `Mrow` of stretchy `Mo` brackets, which is what the `Math.vector` and `Math.matrix`
+      encoders write.
+    entry .apply   an `<mfenced>` over the given children
+    entry #contents   the children
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Script   the script and limit schemata: `Msub`, `Msup`, `Msubsup`, `Munder`, `Mover`, `Munderover`, `Mmultiscripts`, `Mprescripts`, `Mnone`
+      A sealed trait. The corner scripts and the centred limits are positional; `Mmultiscripts`
+      is a container whose children interleave the base, its postscripts, an `Mprescripts`
+      marker and its prescripts, with `Mnone` as an empty placeholder.
+  entry .Msub   `<msub>`: a base with a subscript
+      `Msub(Mi(t"x"), Mi(t"i"))`; Ergo's `x↘i`. `Cell` sets a subscript on the base's own
+      line in Unicode subscript glyphs (`xᵢ`) when every character has one, and stacks it
+      below otherwise.
+    entry #base   the node the script attaches to
+    entry #subscript   the script, set below right
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Msup   `<msup>`: a base with a superscript
+      `Msup(Mi(t"x"), Mn(t"2"))`; Ergo's `x↗2`. `Cell` draws it as `x²` when the script is
+      spellable in Unicode superscript glyphs, and stacks it diagonally above otherwise.
+    entry #base   the node the script attaches to
+    entry #superscript   the script, set above right
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Msubsup   `<msubsup>`: a base with both a subscript and a superscript
+      Ergo's `x↘i↗2`: a base which takes one `↘` and one `↗` merges into this element.
+    entry #base   the node the scripts attach to
+    entry #subscript   the lower script
+    entry #superscript   the upper script
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Munder   `<munder>`: a base with an underscript or lower limit
+      Ergo's `x↓n`. When the underscript is a single `Mo`, the Ergo parser marks it
+      `accentunder="true"`, treating a bar or arrow as a tight accent rather than a limit.
+    entry #base   the node the script attaches to
+    entry #underscript   the script, centred below
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Mover   `<mover>`: a base with an overscript or upper limit
+      Ergo's `x↑n`, or `x↑^` for a hat, which the parser marks `accent="true"` because the
+      overscript is a lone operator.
+    entry #base   the node the script attaches to
+    entry #overscript   the script, centred above
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Munderover   `<munderover>`: a base with limits both below and above
+      Ergo's `∑↓(i = 1)↑n`: the natural form for a large operator's limits. `Cell` draws
+      the limits centred above and below the base.
+    entry #base   the node the scripts attach to
+    entry #underscript   the lower limit
+    entry #overscript   the upper limit
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Mmultiscripts   `<mmultiscripts>`: a base with any number of pre- and postscripts
+      The children are the base, then subscript–superscript pairs after it, then an
+      `Mprescripts` marker and pairs before it; `Mnone` fills an empty position.
+    entry .apply   an `<mmultiscripts>` over the given children
+    entry #contents   the base, scripts and markers, in MathML's order
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Mprescripts   `<mprescripts/>`: the marker in `Mmultiscripts` after which the prescripts follow
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Mnone   `<mnone/>`: an empty script position in `Mmultiscripts`
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Tabular   the table schemata: `Mtable`, `Mtr`, `Mlabeledtr`, `Mtd`, `Maligngroup`, `Malignmark`
+      A sealed trait. MathML Core keeps the table elements but none of their MathML 3
+      attributes (`columnalign`, `rowspan`, `frame`, …), so those have no Ergo directives.
+  entry .Mtable   `<mtable>`: a table or matrix of rows
+      `Mtable(Mtr(Mtd(Mn(t"1")), Mtd(Mn(t"2"))))`. Ergo's `⋱`, `⋯` and `⋮` introducers build
+      a matrix, a one-row table and a one-column table; the `Math.vector` and `Math.matrix`
+      encoders write one inside stretchy brackets.
+    entry .apply   an `<mtable>` over the given rows
+    entry #contents   the rows, each an `Mtr` or `Mlabeledtr`
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Mtr   `<mtr>`: a table row of cells
+    entry .apply   an `<mtr>` over the given cells
+    entry #contents   the cells, each an `Mtd`
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Mlabeledtr   `<mlabeledtr>`: a table row whose first child is its label
+    entry .apply   an `<mlabeledtr>` over the given label and cells
+    entry #contents   the label, then the cells
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Mtd   `<mtd>`: one cell of a table row
+    entry .apply   an `<mtd>` over the given children
+    entry #contents   the cell's content
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Maligngroup   `<maligngroup/>`: an alignment group marker within a cell
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Malignmark   `<malignmark/>`: an alignment point marker within a cell
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Elementary   the elementary-maths schemata: `Mstack`, `Mlongdiv`, `Msgroup`, `Msrow`, `Mscarries`, `Mscarry`, `Msline`
+      A sealed trait of the MathML 3 elements for column arithmetic and long division, which
+      MathML Core dropped; they parse and serialize, but have no Ergo form.
+  entry .Mstack   `<mstack>`: a column-aligned stack of rows for elementary arithmetic
+    entry .apply   an `<mstack>` over the given rows
+    entry #contents   the rows
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Mlongdiv   `<mlongdiv>`: a long division layout
+    entry .apply   an `<mlongdiv>` over the given children
+    entry #contents   the divisor, result, dividend and the rows beneath
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Msgroup   `<msgroup>`: a group of rows within a stack, shifted together
+    entry .apply   an `<msgroup>` over the given rows
+    entry #contents   the rows
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Msrow   `<msrow>`: one row of a stack
+    entry .apply   an `<msrow>` over the given children
+    entry #contents   the row's digits and operators
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Mscarries   `<mscarries>`: a row of carries above the row that follows
+    entry .apply   an `<mscarries>` over the given carries
+    entry #contents   the carries, each an `Mscarry` or a plain node
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Mscarry   `<mscarry>`: one carry within `Mscarries`
+    entry .apply   an `<mscarry>` over the given children
+    entry #contents   the carry's content
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Msline   `<msline/>`: a horizontal rule within a stack
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Semantic   `<maction>` and the semantics bridge: `Maction`, `Semantics`, `Annotation`, `AnnotationXml`
+      A sealed trait. `Semantics` pairs a presentation subtree with annotations: an
+      `Annotation` carries character data such as a TeX string, and an `AnnotationXml` a
+      nested markup subtree.
+  entry .Maction   `<maction>`: children bound to an action such as toggle or highlight
+      The `actiontype` attribute (Ergo's `⚙(type)`) names the action; it is legacy, and
+      undefined in MathML Core.
+    entry .apply   an `<maction>` over the given children
+    entry #contents   the children
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Semantics   `<semantics>`: a presentation subtree with one or more annotations
+    entry .apply   a `<semantics>` over the given children
+    entry #contents   the presentation node, then its annotations
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Annotation   `<annotation>`: character data annotating a formula, such as its TeX source
+    entry #value   the annotation's text
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .AnnotationXml   `<annotation-xml>`: a markup subtree annotating a formula
+    entry .apply   an `<annotation-xml>` over the given children
+    entry #contents   the annotation's nodes
+    entry #attributes   the element's attributes, as name–value pairs
+  entry .Error   raised when XML or HTML does not hold a MathML tree
+    detail
+        Error 430: _the MathML could not be parsed because reason_. Raised by `Math.aggregable`,
+        `Math.loadable`, `Math.loadableData`, `Mathml.Parser` and `Mathml.Reader` when the
+        root element is not `<math>` or an element has a label which is not a MathML
+        element. Well-formedness of the XML itself is xylophone's `Xml.Error` and
+        `Parse.Error`, raised before this one.
+
+        ```scala
+        import soundness.*
+        import xmlSchemas.freeformXmlSchema
+
+        safely(t"<svg><rect/></svg>".read[Math])   // Unset: the root was <svg>
+        ```
+
+        Under `strategies.throwUnsafely` the same read throws, and the error's `#reason` is
+        `Mathml.Error.Reason.NotMathml(t"svg")`.
+    entry .Reason   why the tree is not MathML: `NotMathml(label)` or `UnknownElement(label)`
+        `NotMathml(label)` (reason 1, _the root element was `<label>` instead of `<math>`_):
+        the document's root, or the HTML page, had no `<math>` element; the label is
+        `<missing>` when a fragment or a page held none at all. `UnknownElement(label)`
+        (reason 2, _the element `<label>` is not a known MathML element_): an element inside
+        `<math>` whose tag `Mathml.Parser.decodeNode` does not recognise.
+    entry .communicable   renders each reason as its message
+    entry #reason   which fault was found
+  entry .Parser   decodes a xylophone `Xml` tree into `Math` and `Mathml` nodes
+    detail
+        The decoder behind `read[Math]`: it dispatches on each element's label to the
+        matching case class, keeping every attribute verbatim in the node's `attributes` bag,
+        except `xmlns` and `display` on the root, which `Math` holds structurally. A
+        positional element (`<mfrac>`, `<msup>`, …) missing a child gets an empty `Mrow` in
+        its place.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import xmlSchemas.freeformXmlSchema
+
+        val xml: Xml = t"""<math xmlns="http://www.w3.org/1998/Math/MathML"><mi>x</mi></math>""".read[Xml]
+        val math: Math = Mathml.Parser.decodeMath(Mathml.Parser.rootElement(xml))
+        ```
+
+        Every method which decodes needs a `Tactic[Mathml.Error]`.
+    entry .labelOf   the label of an `Xml` value, or `<unknown>` for a non-element
+    entry .findMath   the first `<math>` element among a list of XML nodes
+        Raises `Mathml.Error` with `NotMathml(<missing>)` when there is none.
+    entry .rootElement   the `<math>` element of an XML value: the value itself, or the first in a fragment
+        Raises `Mathml.Error` with `NotMathml(label)` when the value is an element of another
+        name, or a fragment without a `<math>` element.
+    entry .decodeMath   decodes a `<math>` element into a `Math`, reading `display` and the other attributes
+        The `display` attribute becomes `#display` (`Display.Block`, `Display.Inline`, or
+        `Inline` for any other value; `Unset` when absent); `xmlns` is dropped, since it is
+        always written back; every other attribute is kept. The children are decoded with
+        `.decodeNode`.
+    entry .decodeNode   decodes one element into the `Mathml` case class for its label
+        Raises `Mathml.Error` with `UnknownElement(label)` for a label which is not one of
+        the MathML elements.
+  entry .Reader   extracts MathML embedded in a honeycomb HTML tree
+    detail
+        Honeycomb parses `<math>` as a foreign element with its own node types, so the reader
+        walks the HTML tree depth-first for the first `<math>` subtree, transcribes it into a
+        xylophone `Xml.Element`, and decodes that with `Mathml.Parser`. This is the inverse
+        of `math.html`.
+
+        ```scala
+        import soundness.*
+        import Mathml.*
+        import strategies.throwUnsafely
+
+        val expression = Math(Mrow(Mi(t"a"), Mo(t"+"), Mn(t"1")))
+        Mathml.Reader.read(expression.html) == expression
+        ```
+    entry .read   the first `<math>` in an HTML tree, decoded as a `Math`
+        Raises `Mathml.Error` with `NotMathml(<missing>)` when the tree has no `<math>`
+        element, and `UnknownElement` for a non-MathML element inside it; needs a
+        `Tactic[Mathml.Error]`.
+    entry .findMath   the first `<math>` element in an HTML tree, as honeycomb's own element type, or `Unset`
+  entry #label   the element's tag name, such as `mi` or `annotation-xml`
+  entry #attributes   the element's attributes, as name–value pairs, in order
+      Preserved verbatim: an attribute the model has no accessor for still round-trips.
+  entry #contents   the child nodes, in order; empty for a token element
+  entry #text   the character data of a token element, or `Unset` for a layout element
+      `Mspace` and `Mglyph` are tokens with no text, so theirs is `Unset` too.
+
+entry .Display   whether a `<math>` root is a displayed block or set inline in running text
+  detail
+      The value of the `display` attribute on the root `<math>` element: `Display.Block` for
+      a displayed equation on its own line, `Display.Inline` for one set within a paragraph.
+      A `Math` holds one as its `display`, or `Unset` to leave the attribute off, and the
+      Ergo directives `◻` and `▭` set it.
+
+      ```scala
+      import soundness.*
+      import Mathml.*
+
+      Math(List(Mn(t"1")), Display.Block).in[Xml].show   // …display="block"…
+      Display.Block.encode                               // t"block"
+      ```
+  entry .encodable   renders a display mode as the attribute's text: `block` or `inline`
+  entry .unapply   matches the text `block` or `inline` as a `Display`, for a pattern
+      `case Display(display) =>` on a `Text`; any other text does not match, which is how
+      `Mathml.Parser.decodeMath` falls back to `Inline` for an unknown value.
+
+entry .Ergo   the Ergo shorthand: a one-line notation which parses to MathML and serializes back
+  detail
+      Ergo is a compact linear notation for Presentation MathML, one glyph per structural
+      role, which `.parse` turns into a `Math` and `.serialize` writes back out, exactly
+      inverse over the elements Ergo has syntax for. An expression is delimited by a bracket
+      pair, and its **first character** chooses which of `(`, `[`, `{` or `⟨` acts as
+      grouping throughout; every other bracket is then a literal operator. A grouped run is
+      one `<mrow>`.
+
+      Tokens: a run of letters is one identifier (`sin` is `<mi>sin</mi>`; `x y` is two), a
+      run of digits with an interior `.` is one number, a space separates and renders as
+      nothing, and any other character is an operator. The structural glyphs, tightest first:
+
+      - `√` prefix is a square root, `<msqrt>`; an index atom immediately before it, with no
+        space, makes an nth root, `<mroot>`: `3√x`.
+      - `↗` and `↘` are superscript and subscript, `<msup>` and `<msub>`; a base taking one
+        of each merges into `<msubsup>`.
+      - `↑` and `↓` are overscript and underscript, `<mover>` and `<munder>`, merging into
+        `<munderover>`; a script which is a lone operator is marked as an accent.
+      - `/` is a fraction, `<mfrac>`, binding looser than the scripts.
+      - Juxtaposition is a row.
+      - `⋱`, `⋯` and `⋮` introduce a matrix, a row vector and a column vector from the group
+        which follows: `⋱(((1)(2))((3)(4)))` is a 2×2 `<mtable>`.
+
+      An operator glyph with a missing operand degrades to a literal operator, so `(↗)` is
+      `<mo>↗</mo>` rather than an error. Each MathML Core presentation attribute has a
+      **postfix directive** glyph which binds to the atom or group to its left: a boolean or
+      enumerated attribute is a bare glyph (`⇿` for `stretchy="true"`, `↮` for false, `⊰`
+      for `form="prefix"`, `⦱` for `mathvariant="normal"`, `◆` for `largeop`), and an
+      open-valued one takes its value in the grouping bracket (`●(red)` for `mathcolor`,
+      `⟑(2em)` for `mathsize`, `═(0)` for `linethickness`, `⌄(1)` for `scriptlevel`).
+      Grouping decides the scope: `(x↗2)●(red)` colours the whole power, `x↗2●(red)` only
+      the `2`.
+
+      ```scala fuel
+      frame
+        label An identifier
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            Ergo.parse(t"(x)").draw            // x
+      frame
+        label A superscript
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            Ergo.parse(t"(x↗2)").draw          // x²
+      frame
+        label A fraction, binding looser than the script
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            Ergo.parse(t"(x↗2/2)").draw        // x² over a bar over 2
+      frame
+        label A square root over the fraction
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            Ergo.parse(t"(√(x↗2/2))").draw     // the root's stem and vinculum grow to the fraction's height
+      frame
+        label A sum with limits
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            Ergo.parse(t"(∑↓(i = 1)↑n √(x↘i↗2/2))").draw   // ∑ with n above and i = 1 below
+      ##
+      ```
+
+      Parsing needs a `Tactic[Ergo.Error]`; the `ergo"…"` interpolator parses the literal
+      while the code compiles instead, and reports a malformed one at the character where
+      parsing stopped. Serialization rejects an element outside the Ergo subset (`<mtext>`,
+      `<mspace>`, `<mstyle>`, the table attributes, the elementary-maths elements) with an
+      `Ergo.Error` rather than approximating it, and drops the root's own attributes.
+  refer archimedes.ergo
+  refer archimedes.Math
+  entry .parse   parses Ergo text into a `Math`
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      Ergo.parse(t"(x = (-b ± √(b↗2 - 4 a c))/(2 a))").in[Xml].show
+      Ergo.parse(t"(x↘i↗2)")   // Math(List(Msubsup(Mi(t"x"), Mi(t"i"), Mn(t"2"))))
+      ```
+
+      Raises `Ergo.Error` for an empty input, an input which does not begin with one of the
+      four grouping brackets, a group which is not closed, an input which ends mid-way, or
+      an introducer (`⋱`, `⋯`, `⋮`) not followed by a group. The error's `offset` is the
+      character where parsing stopped.
+  entry .interpolate   parses the parts of an interpolated literal, with a node spliced at each hole
+      The runtime half of the `ergo"…"` interpolator: the text parts are joined with a
+      placeholder at each substitution, and each placeholder parses as the corresponding
+      already-encoded `Mathml` atom, in order. Needs a `Tactic[Ergo.Error]`; the interpolator
+      itself calls `.unsafeInterpolate`, having checked the literal at compile time.
+  entry .unsafeInterpolate   `.interpolate` without a tactic, for a literal already checked at compile time
+      Takes `(using Unsafe)`: the `ergo"…"` macro's generated code calls it, since the
+      literal's well-formedness was established as it compiled. Code which parses text it
+      has not checked should call `.parse` or `.interpolate` and handle `Ergo.Error`.
+  entry .serialize   writes a `Math` back out as Ergo text, with `(` as the grouping bracket
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      Ergo.serialize(Ergo.parse(t"(x↗(y + 1))"))   // t"(x↗(y+1))"
+      Ergo.serialize(Ergo.parse(t"(x●(red))"))     // t"(x●(red))"
+      ```
+
+      Insignificant spaces are dropped, and a space is kept only where two tokens would
+      otherwise merge (two letters into one identifier, two digits into one number).
+      Attributes are written as directives, preferring a bare glyph where the value has one;
+      an accent attribute implied by a lone-operator script is omitted, since parsing
+      restores it. A parsed expression serializes and re-parses to an equal tree. Raises
+      `Ergo.Error` with `Unsupported(label)` for an element with no Ergo form, such as
+      `<mtext>`; needs a `Tactic[Ergo.Error]`.
+  entry .Error   raised when Ergo text cannot be parsed, or a tree cannot be written as Ergo
+    detail
+        Error 431: _the ergo expression could not be parsed because reason_. Raised by
+        `Ergo.parse` and `Ergo.interpolate` for malformed text, and by `Ergo.serialize` for an
+        element outside the Ergo subset. In the `ergo"…"` interpolator the same faults are
+        compile errors, positioned at the character where parsing stopped (the last character
+        for an unclosed group, the first for a missing opening bracket).
+
+        ```scala
+        import soundness.*
+
+        safely(Ergo.parse(t"x + y"))   // Unset: no opening bracket
+        ```
+    entry .Reason   which fault was found
+        `Empty` (1, _the expression was empty_); `BadOpener(char)` (2, _the expression must
+        start with a bracket, not `char`_): the first character is not `(`, `[`, `{` or `⟨`;
+        `Unclosed(expected)` (3, _a group was not closed with `expected`_); `UnexpectedEnd`
+        (4, _the expression ended unexpectedly_); `MissingBody(char)` (5, _the `char`
+        introducer must be followed by a group_): a `⋱`, `⋯` or `⋮` with no group after it;
+        `Unsupported(label)` (6, _the `<label>` element has no ergo representation_): from
+        `Ergo.serialize`. The `char` fields are `Char`s.
+    entry .communicable   renders each reason as its message
+    entry #reason   which fault was found
+    entry #offset   the character position at which parsing stopped, or `-1` from serialization
+
+entry .Cell   a block of monospaced text with a baseline: the terminal rendering of a formula
+  detail
+      A `Cell` is a rectangle of character cells, `#width` columns by `#height` rows, with a
+      `#baseline` — the row, from the top, of the mathematical axis which composition aligns
+      on. Its `#lines` are `Writing`s, so a combining accent or a multi-codepoint cluster
+      counts as one column, and every line has exactly `width` columns. `Cell.of` lays out
+      any `Mathml` node, and `#render` flattens the block to newline-separated `Text`; the
+      extensions `cell` and `draw` on a `Mathml` or a `Math` are the usual entry.
+
+      ```scala
+      import soundness.*
+      import Mathml.*
+
+      Mfrac(Mn(t"1"), Mn(t"2")).draw          // t" 1 \n───\n 2 "
+      Msup(Mi(t"x"), Mn(t"2")).draw           // t"x²"
+      Msqrt(Mrow(Mi(t"x"), Mo(t"+"), Mn(t"1"))).draw   // t"┌─────\n√x + 1"
+      Mfenced(Mfrac(Mn(t"1"), Mn(t"2"))).draw // t"⎛ 1 ⎞\n⎜───⎟\n⎝ 2 ⎠"
+      ```
+
+      The layout rules: a superscript or subscript which can be spelled in Unicode's
+      superscript and subscript glyphs (digits, signs, brackets and much of the Latin
+      alphabet, though no superscript `q`) is set on the base's own line, as `x²` or `xᵢ`;
+      anything else — a Greek letter, a fraction, a nested script — stacks diagonally. A
+      fraction centres its parts over a `─` rule; a square root draws a `┌─` vinculum, with
+      a `│` stem and `╲` foot when the radicand is taller than a line; an nth root puts the
+      index a line above the sign. In a row, binary operators are spaced, and brackets,
+      integrals and the big operators `∑` and `∏` stretch to the height of the content: a
+      bracket becomes box-drawing pieces, an integral a `╭`–`│`–`╯` stroke (doubled or
+      tripled, with a `○` for a contour integral), and `∑` and `∏` line-art sized to the
+      summand. The companion's builders (`beside`, `fraction`, `radical`, `bracket`, …) are
+      the primitives `of` composes, usable directly for a layout of one's own.
+
+      In the `soundness` umbrella the name `Cell` is this type; probably's table cell is
+      `Tally`.
+  refer archimedes.draw
+  refer archimedes.Mathml
+  entry .inspectable   a debug rendering: the dimensions, the baseline and each line as a text literal
+      `Cell(2×1@0 t"xy")`: width by height, `@` the baseline row, then every line quoted, so
+      that trailing padding is visible. `#render` shows the block as it will appear, which an
+      inspection cannot.
+  entry .empty   the cell of one empty line, zero columns wide
+  entry .line   a one-line cell of the given text, with baseline 0
+      The width is the text's grapheme width under the wide-character metric, so a CJK
+      character counts two columns.
+  entry .blank   a cell of spaces, of the given width, height and baseline
+  entry .beside   joins cells left to right with their baselines aligned
+      The workhorse of `<mrow>`: each cell is framed with blank rows above and below so that
+      every baseline falls on the same row, then the rows are concatenated. The result's
+      baseline is the greatest of the inputs'.
+  entry .fraction   stacks a numerator over a `─` rule over a denominator
+      Both parts are centred within the wider plus a column of margin each side; the
+      baseline is the rule.
+  entry .superscript   sets a script cell diagonally above and to the right of a base cell
+      The stacked form, used when `Cell.of` cannot spell the script in Unicode glyphs. The
+      baseline moves down by the script's height.
+  entry .subscript   sets a script cell diagonally below and to the right of a base cell
+  entry .subsup   sets a subscript and a superscript cell to the right of a base, one above the other
+      Both scripts are padded to the wider; the base's baseline is kept, shifted by the
+      superscript's height.
+  entry .overscript   centres a cell above a base cell
+  entry .underscript   centres a cell below a base cell
+  entry .underover   centres one cell above and another below a base cell
+      How `Munderover` draws: a summation's limits above and below the `∑`.
+  entry .radical   draws a square-root sign and vinculum around a cell
+      A one-line radicand gets the `√` glyph with a `┌─…` overline; a taller one gets a
+      `╲` foot and a `│` stem rising to the corner.
+  entry .root   draws an nth root: the index one line above the sign, to its left
+      Always the tall form of the sign, so that the index has a line to sit on.
+  entry .fence   brackets a cell with an opening and a closing character, stretched to its height
+      `fence('(', ')', inner)`: how `Mfenced` draws.
+  entry .bracket   a bracket character stretched to a height, as a one-column cell
+      A single-line height gives the literal character; taller, `(`, `[` and `{` become
+      their box-drawing top, middle and bottom pieces (a brace puts its `⎨` at the baseline
+      row), and any other character a `│` rule. `opening` chooses the left- or right-hand
+      pieces.
+  entry .integral   an integral sign stretched to a height, with a column of padding after it
+      `∫`, `∬` and `∭` are one, two and three `╭`–`│`–`╯` strokes; `∮`, `∯` and `∰` overlay
+      a `○` on the axis row of the first stroke. A single-line height gives the plain glyph.
+  entry .bigOperator   `∑` or `∏` as line-art of a given height
+      A sum is `▁` and `▔` bars joined by `╲` and `╱` diagonals stepping in to a vertex, which
+      needs an even height of at least four; a product is a `┬──┬` lintel over two `│` legs,
+      at any height. The baseline is the vertical middle.
+  entry .row   lays out a list of nodes side by side, stretching brackets, integrals and big operators
+      Measures the non-stretchy content first, then draws each stretchy operator to that
+      height, and joins everything with `beside`. A one-line row keeps every operator's plain
+      glyph.
+  entry .of   lays out any `Mathml` node as a cell
+      The recursive layout: each element kind maps to the corresponding builder, a token to
+      `line` (with a binary operator spaced and an invisible operator dropped), and an
+      element with no special layout to a row of its children.
+  entry #lines   the rows of the block, top to bottom, each exactly `width` columns
+  entry #width   the number of columns
+  entry #baseline   the row, from the top, of the axis composition aligns on
+  entry #height   the number of rows
+  entry #render   the block as text, its lines joined with newlines
+      The form to print: trailing spaces are kept, so every line is the same width.
+  entry #hpad   pads each line with spaces on the left and right, widening the block
+  entry #hcenter   centres the block within a wider number of columns; never narrows
+  entry #framed   adds blank rows above and below to reach a given ascent and descent
+      Used by `Cell.beside` to bring cells to a common height before joining them row-wise.
+
+entry .mathmlNamespace   the MathML namespace URI, written as `xmlns` on every `<math>` root
+    `http://www.w3.org/1998/Math/MathML`: `Math.attributePairs` always puts it first.
+
+entry .math   any `Encodable in Math` value as a `<math>` root, as `value.math`
+    An extension on every type with an `Encodable in Math` instance — the numbers, `Text`,
+    `Q64`/`Q32`, `Complex`, mosquito `Vector` and `Matrix`, dimensioned `Quantity`s, and any
+    `Mathml` node or `Math` — giving the encoded `Math`. The instances live in the `Math`
+    companion, so no import is needed.
+
+    ```scala
+    import soundness.*
+
+    42.math.in[Xml].show   // <math xmlns="http://www.w3.org/1998/Math/MathML"><mn>42</mn></math>
+    Q64(-3, 4).math
+    ```
+
+entry .mathml   any `Encodable in Math` value as a single MathML node, as `value.mathml`
+    As `math`, then collapsed with `Mathml.atom` to one node: the single content node, or an
+    `<mrow>` of several. For building a larger tree by hand from encoded pieces.
+
+    ```scala
+    import soundness.*
+    import Mathml.*
+
+    3.14.mathml                   // Mn(t"3.14")
+    Complex(3, 4).mathml          // Mrow(Mn(t"3"), Mo(t"+"), Mn(t"4"), Mi(t"i"))
+    Msup(Mi(t"x"), 2.mathml)
+    ```
+
+entry .ergo   the `ergo"…"` interpolator: an Ergo expression parsed as the code compiles
+    `ergo"(x↗2)"` is a `Math`, parsed at compile time, so a malformed literal is a compile
+    error positioned at the character where parsing stopped: _the ergo expression could not
+    be parsed because a group was not closed with )_. A `$`-substitution may be any value
+    which is `Encodable in Math` — a number, text, a `Mathml` node, another `Math`, a vector
+    — and is spliced as a single atom, so a directive or a script binds to the whole of it; a
+    value which is not encodable is a compile error naming its type.
+
+    ```scala
+    import soundness.*
+
+    val exponent = 2
+    val vector = Vector(1, 2, 3)
+    ergo"(x↗$exponent)".in[Xml].show     // …<msup><mi>x</mi><mn>2</mn></msup>…
+    ergo"($exponent●(red))"              // <mn mathcolor="red">2</mn>
+    ergo"(A $vector)"                    // the vector as a bracketed column
+    ```
+
+    The notation is described under `Ergo`; the `Interpolable` given is `Math.interpolable`,
+    in the companion, so `import soundness.*` suffices.
+
+entry .cell   a `Mathml` node or a `Math` laid out as a `Cell`, for composing with other blocks
+    `Cell.of(node)`, or for a `Math` the layout of its contents as a row. `draw` is the same
+    block as text.
+
+entry .draw   a `Mathml` node or a `Math` as monospaced, box-drawing text for a terminal
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    Ergo.parse(t"(y = (1/2)↗2)").draw
+    Math(List(Mathml.Mroot(Mathml.Mn(t"8"), Mathml.Mn(t"3")))).draw   // t"3 ┌─\n ╲│8"
+    ```
+
+    Several lines joined with newlines, every line the same width; `Cell` describes the
+    layout rules.
+
+entry .internal   the macro implementation behind the `ergo"…"` interpolator
+  hidden
+  detail
+      Not for direct use: the object exists so that the macro has a stable home.
+  entry .ergoInterpolator   the macro behind `ergo"…"`: checks the literal at compile time and splices `Ergo.unsafeInterpolate`
+      Recovers the literal parts, turns each substitution into a `Mathml` atom through its
+      `Encodable in Math` (a compile error if there is none), parses the whole with
+      placeholder atoms so that a fault is reported at its position, then emits code which
+      re-parses at runtime with the real atoms woven in.

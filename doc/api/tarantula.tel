@@ -1,0 +1,1024 @@
+tel 1.0
+
+base tarantula
+import soundness
+
+info   browser automation over the W3C WebDriver protocol: sessions, elements, actions and screenshots
+detail
+    _Tarantula_ drives a web browser from Scala through the
+    [WebDriver](https://www.w3.org/TR/webdriver2/) protocol. A browser is a value — `WebDriver.Chrome`,
+    `WebDriver.Firefox`, `WebDriver.Safari` or `WebDriver.Edge`, each the standard driver program for
+    its browser — and opening a session on it launches the driver, waits for it to listen, creates a
+    session and, when the block ends, deletes the session and stops the driver, whether the block
+    returned or threw. A driver that is already running, or a remote Selenium grid, is driven through
+    the same `WebDriver.Session` interface with `WebDriver(url, capabilities)`.
+
+    Within the session, `browser` is the handle in scope: it navigates, reads the title and source,
+    finds elements by typed criteria — an HTML tag, a validated DOM id, a class list, a CSS selector
+    list, an XPath or link text, anything with a `Focusable` instance — switches windows and frames,
+    handles alerts, manages cookies and timeouts, performs keyboard and pointer actions, runs
+    JavaScript, prints the page and takes screenshots.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import environments.javaBaseEnvironment
+    import errorDiagnostics.stackTracesDiagnostics
+    import httpBackends.javaNetHttp
+    import internetAccess.online
+    import logging.silentLogging
+    import probates.awaitProbate
+    import strategies.throwUnsafely
+    import threads.virtualThreads
+    import workingDirectories.javaBaseWorkingDirectory
+
+    supervise:
+      WebDriver.Chrome.headless.session:
+        browser.navigateTo(url"https://example.com/")
+        browser.title()
+    ```
+
+    A session needs internet access (`internetAccess.online`), an HTTP client to speak to the driver
+    (`httpBackends.javaNetHttp`), a `Tactic[WebDriver.Error]` and `Diagnostics`, and a logger for
+    `Http.Event`s; launching a local driver additionally needs a `Monitor` (a `supervise` block), a
+    `WorkingDirectory`, an `Environment` for the driver process and a logger for `Exec.Event`s.
+
+    The `WebDriver.Session` handle is a capability, confined by capture checking to the block that
+    owns it: returning it, or anything that captures it, is a compile error. `WebDriver.Element`
+    handles are pure values, but every operation on one takes the session as a contextual parameter,
+    so a handle is inert outside its session, and one used after its page has changed raises
+    `WebDriver.Error` with reason `StaleElement`. Every failure — a driver that cannot be reached, a
+    reply of the wrong shape, or any error the driver reports — arrives as one `WebDriver.Error`,
+    carrying the W3C error code as its `WebDriver.Error.Reason`.
+
+    Element selection is spelled `\`, not `/`: `browser \ Li`, `element \ cls"item"` and
+    `shadowRoot \ Button` each return every match, and `element(…)` exactly one, raising
+    `NoSuchElement` otherwise. The backslash leaves symbolism's arithmetic `/` free to divide
+    quantities in the same scope.
+
+    The library has two source sets:
+
+    - `tarantula.core` — `WebDriver` and its nested `Session`, `Element`, `ShadowRoot`, `Error` and
+      `Local`, the `browser` accessor and the element extensions (`click`, `value`, `innerText`,
+      `attribute`, …). It needs a driver binary (`chromedriver`, `geckodriver`, `safaridriver` or
+      `msedgedriver`) on the path to launch a browser; the protocol layer itself is plain HTTP and
+      can be exercised against any WebDriver endpoint.
+    - `tarantula.image` — the `screenshot()` extensions, which decode a screenshot into a
+      `Raster in Png` through hallucination, kept apart so that browser automation does not depend
+      on an image codec.
+
+    Everything is exported to the `soundness` umbrella, so a user writes `import soundness.*` and
+    imports the ambient givens above by name.
+
+refer tarantula.WebDriver
+refer tarantula.browser
+refer anticipation.Focusable
+
+entry .WebDriver   a browser to drive: a local driver program, or a driver already listening at a URL
+  detail
+      `WebDriver` is two things which share a name. As a **type**, it is a driver that is already
+      listening — one started by hand, or a Selenium grid — addressed by its `#base` URL and the
+      `#capabilities` it will be asked for, and made with `WebDriver(url"http://localhost:4444",
+      capabilities)`. As an **object**, it is the home of the four local browsers (`.Chrome`,
+      `.Firefox`, `.Safari`, `.Edge`), each a `WebDriver.Local` which launches its driver program for
+      the duration of a session, and of the types every session uses: `Session`, `Element`,
+      `ShadowRoot` and `Error`.
+
+      Both are `Sessional`, so `driver.session: session ?=> …` opens a session on either, and the
+      session is closed — and a launched driver stopped — in a `finally` when the block ends.
+
+      ```scala fuel
+      typecheck
+      ##
+      supervise:
+        WebDriver.Firefox.headless.on(4445).session:
+          browser.navigateTo(url"https://example.com/")
+          browser.element(H1).innerText()
+
+      WebDriver(url"http://localhost:4444", WebDriver.Chrome.capabilities).session:
+        browser.title()
+      ```
+
+      A `WebDriver` built with `apply` sends its `capabilities` JSON as the `POST /session` payload
+      verbatim, so a Selenium grid's own extensions, proxies, timeouts and mobile emulation can all
+      be requested through it.
+  refer tarantula.WebDriver.Session
+  refer tarantula.WebDriver.Local
+  refer tarantula.WebDriver.Error
+  refer tarantula.browser
+  entry .Driver   the four W3C driver programs: chromedriver, geckodriver, safaridriver and msedgedriver
+    detail
+        An enumeration of the driver programs a `WebDriver.Local` can launch, as data rather than
+        subclasses: `Chromedriver`, `Geckodriver`, `Safaridriver` and `Edgedriver`. Each knows the
+        command which starts it on a port, the `browserName` capability its browser answers to, and
+        the arguments which put that browser in headless mode. Adding a browser is a new case, since
+        the process lifecycle is the same for all of them.
+    entry #command   the shell command which starts the driver listening on a port
+        `chromedriver --port=N` and `msedgedriver --port=N` take the port with an equals sign;
+        `geckodriver --port N` and `safaridriver --port N` take it as a separate argument. The
+        driver binary must be on the path.
+    entry #browserName   the `browserName` capability the driver's browser answers to
+        `chrome`, `firefox`, `safari` or `MicrosoftEdge`, as the W3C capabilities object spells
+        them.
+    entry #headless   the browser arguments which select headless mode, if the browser has one
+        `--headless=new` for Chrome and Edge (the supported spelling since the old `--headless`
+        became its alias), the single-dashed `-headless` for Firefox, and nothing for Safari, which
+        has no headless mode: asking for one is a no-op rather than an error.
+  entry .Local   a browser and the driver program which drives it, as a pure value
+    detail
+        A `WebDriver.Local` names a browser to drive by its `WebDriver.Driver`, the port the driver
+        should listen on (`4444` unless `#on` says otherwise), the arguments the browser is launched
+        with and, optionally, a capabilities object to send in place of the generated one. It holds
+        no process, connection or session id, so it may be a `val` shared between tests and used for
+        several sessions in turn; `.Chrome`, `.Firefox`, `.Safari` and `.Edge` are the four standard
+        values.
+
+        ```scala fuel
+        typecheck
+        ##
+        val chrome: WebDriver.Local = WebDriver.Chrome.headless.on(4450).arguing(t"--window-size=1280,800")
+
+        supervise:
+          chrome.session:
+            browser.navigateTo(url"https://example.com/")
+            browser.title()
+        ```
+
+        Opening a session forks the driver's command, polls its `GET /status` endpoint every 50
+        milliseconds for up to five seconds until it answers, opens the session with
+        `#capabilities`, and stops the driver when the block ends. A driver that cannot be forked
+        raises `WebDriver.Error` with reason `SessionNotCreated`, and one that never starts listening
+        raises one with reason `Timeout`. Two sessions on the same port at once will collide, so a
+        test suite running sessions in parallel gives each its own with `#on`.
+    refer tarantula.WebDriver.Driver
+    refer tarantula.WebDriver.Session
+    entry .Sessional   opens a session on a `WebDriver.Local`: forks the driver, waits, drives, stops
+      detail
+          The `aperture.Sessional` instance for `WebDriver.Local`, with `Self = Local` and `Result =
+          Session^`. It needs an `Online`, an `Http.Backend`, a `WorkingDirectory`, an `Environment`
+          (which the driver process inherits), a `Monitor`, loggers for `Http.Event` and `Exec.Event`,
+          a `Tactic[WebDriver.Error]` and `Diagnostics`. The `.sessional` given constructs it, so a
+          caller never names the class.
+      entry #session   forks the driver, waits for it to listen, runs the block, and stops it
+          Runs `lambda` with a fresh `WebDriver.Session` in scope, then aborts the driver's job in a
+          `finally`. A failure to fork is reported as `WebDriver.Error` with reason
+          `SessionNotCreated`; a driver that does not answer `GET /status` within five seconds as one
+          with reason `Timeout`.
+    entry .sessional   the given which lets `local.session: session ?=> …` resolve
+        In the companion of `WebDriver.Local`, so it is found with no import whenever the contextual
+        values it needs are in scope: `Online`, `Http.Backend`, `WorkingDirectory`, `Environment`,
+        `Monitor`, `Http.Event is Loggable`, `Exec.Event is Loggable`, `Tactic[WebDriver.Error]` and
+        `Diagnostics`.
+    entry #driver   the driver program which drives this browser
+    entry #port   the port the driver listens on; `4444` by default
+    entry #arguments   the arguments the browser is launched with, such as `--headless=new`
+    entry #requested   a capabilities object to send instead of the generated one, or `Unset`
+    entry #on   the same browser with its driver on another port
+        Each session on a port needs that port free, so sessions run concurrently each take their
+        own: `WebDriver.Chrome.on(4451)`.
+    entry #headless   the same browser launched without a window
+        Appends the driver's headless arguments (`WebDriver.Driver#headless`) to `#arguments`; on
+        Safari, which has no headless mode, it changes nothing.
+    entry #arguing   the same browser with more launch arguments
+        `WebDriver.Chrome.arguing(t"--window-size=1280,800", t"--lang=en")` appends the arguments
+        the browser is started with, as `goog:chromeOptions`, `moz:firefoxOptions` or
+        `ms:edgeOptions` says.
+    entry #requesting   the same browser, with the capabilities object replaced wholesale
+        For what `WebDriver.Local` does not model — proxies, timeouts, mobile emulation, a
+        grid's extensions — the whole `POST /session` payload can be supplied as `Json`, replacing
+        the generated `alwaysMatch` object.
+    entry #capabilities   the `POST /session` payload: an `alwaysMatch` object naming the browser and its arguments
+        The W3C shape, `{"capabilities": {"alwaysMatch": {…}}}`, with the browser's name and its
+        vendor options object (`goog:chromeOptions`, `moz:firefoxOptions` or `ms:edgeOptions`,
+        carrying `#arguments`; Safari takes only its name). Only `alwaysMatch` is generated, since
+        `firstMatch` exists to let one request suit several drivers and a `Local` names exactly one.
+        When `#requested` is set, it is returned instead.
+  entry .Chrome   Chrome, through `chromedriver` on port 4444
+      `WebDriver.Local(WebDriver.Driver.Chromedriver)`: `WebDriver.Chrome.headless.session: …` opens
+      a headless Chrome session.
+  entry .Firefox   Firefox, through `geckodriver` on port 4444
+  entry .Safari   Safari, through `safaridriver` on port 4444
+      Safari has no headless mode, so `WebDriver.Safari.headless` is the same as `WebDriver.Safari`.
+  entry .Edge   Microsoft Edge, through `msedgedriver` on port 4444
+  entry .Sessional   opens a session on a driver that is already listening
+    detail
+        The `aperture.Sessional` instance for `WebDriver`, with `Self = WebDriver` and `Result =
+        Session^`. It creates the session with `POST /session` and the driver's `#capabilities`,
+        runs the block with the handle in scope, and deletes the session — which is what closes the
+        browser — in a `finally`, swallowing a failure to delete, since a driver that has already
+        died cannot tidy up and saying so would hide the block's own error. Launching a local driver
+        (`WebDriver.Local.Sessional`) is composition over this. It needs an `Online`, an
+        `Http.Backend`, a logger for `Http.Event`, a `Tactic[WebDriver.Error]` and `Diagnostics`.
+    entry #session   creates the session, runs the block with it in scope, and deletes it
+        The session's `Result` type is a fresh `Session^`: each call's handle is its own capability,
+        so the block cannot return it or anything capturing it.
+  entry .sessional   the given which lets `webDriver.session: session ?=> …` resolve
+      In the companion of `WebDriver`, so it is found with no import when an `Online`, an
+      `Http.Backend`, an `Http.Event is Loggable`, a `Tactic[WebDriver.Error]` and `Diagnostics` are
+      in scope.
+  entry .apply   a driver already listening at a base URL, with the capabilities to request
+      `WebDriver(url"http://localhost:4444", capabilities)` drives a driver started by hand, or a
+      Selenium grid, through the same `Session` interface as a local browser. The capabilities are
+      sent verbatim as the `POST /session` payload; `WebDriver.Chrome.capabilities` is a ready-made
+      one, and `t"{}".read[Json]` is enough for a driver that needs none.
+
+      ```scala fuel
+      typecheck
+      ##
+      WebDriver(url"http://localhost:4444", WebDriver.Firefox.headless.capabilities).session:
+        browser.navigateTo(url"https://example.com/")
+        browser.title()
+      ```
+  entry #base   the URL the driver listens at; commands are addressed beneath `base/session/id`
+  entry #capabilities   the JSON sent as the `POST /session` payload
+  entry .Error   a failed WebDriver action: the W3C error code, the driver's message and its stack trace
+    detail
+        Error 589: _the WebDriver action failed because `reason`: `detail`_, with the
+        `WebDriver.Error.Reason`'s number as its subcode. Every failure of a session arrives as
+        this one type: an error object the driver returned in a 4xx or 5xx reply, a driver that
+        could not be reached, a reply which was not the JSON the specification describes (reason
+        `UnknownError`), a reply cut short, a driver that could not be started (`SessionNotCreated`)
+        or one which never began listening (`Timeout`). It is raised through the
+        `Tactic[WebDriver.Error]` in scope when the session was opened.
+
+        ```scala fuel
+        typecheck
+        ##
+        supervise:
+          WebDriver.Chrome.headless.session:
+            browser.navigateTo(url"https://example.com/")
+
+            safely(browser.element(H2)).or:
+              browser.element(H1)
+        ```
+
+        The driver's own message is `#detail`, and its stack trace, one line per element, is
+        `#browserStacktrace`. `#data` keeps the specification's optional extra object, which is
+        what carries the prompt's text on an `UnexpectedAlertOpen`: exactly what a caller needs to
+        decide whether to accept or dismiss it.
+    refer tarantula.WebDriver.Error.Reason
+    entry .Reason   the W3C error code a driver reported, as an enumeration with stable numbers
+      detail
+          One case for every error code the WebDriver specification defines, as the driver spells
+          it in the `error` field of its error object: `NoSuchElement` (1), `StaleElement` (2),
+          `NoSuchWindow` (3), `JavascriptError` (4), `ScriptTimeout` (5), `Timeout` (6),
+          `UnknownCommand` (7), `Other` (8), `ElementClickIntercepted` (9),
+          `ElementNotInteractable` (10), `InsecureCertificate` (11), `InvalidArgument` (12),
+          `InvalidCookieDomain` (13), `InvalidElementState` (14), `InvalidSelector` (15),
+          `InvalidSessionId` (16), `MoveTargetOutOfBounds` (17), `NoSuchAlert` (18),
+          `NoSuchCookie` (19), `NoSuchFrame` (20), `NoSuchShadowRoot` (21),
+          `DetachedShadowRoot` (22), `SessionNotCreated` (23), `UnableToSetCookie` (24),
+          `UnableToCaptureScreen` (25), `UnexpectedAlertOpen` (26), `UnknownError` (27),
+          `UnknownMethod` (28) and `UnsupportedOperation` (29).
+
+          The numbers are the error's subcode and are frozen: 1 to 8 keep the meanings they were
+          first published with, which is why `Other` sits at 8 out of alphabetical order, and
+          every code added since appends from 9. A code the enumeration does not know becomes
+          `Other`, so decoding is total and the code a driver sent is never lost.
+
+          ```scala fuel
+          typecheck
+          ##
+          supervise:
+            WebDriver.Chrome.headless.session:
+              capture[WebDriver.Error](browser.element(Name[DomId](t"absent"))).reason
+                == WebDriver.Error.Reason.NoSuchElement
+          ```
+      entry .apply   decodes a W3C error code, such as `no such element`, to its `Reason`
+          Total: an unrecognised code is `Other(code)`.
+
+          ```scala
+          import soundness.*
+
+          WebDriver.Error.Reason(t"stale element reference") == WebDriver.Error.Reason.StaleElement
+          ```
+      entry .Other   an error code the enumeration does not name, kept as the driver sent it
+        entry #code0   the code exactly as the driver spelled it
+      entry #number   the reason's frozen subcode, from 1 to 29
+      entry #code   the code as the specification spells it, such as `no such element`
+    entry .communicable   renders each `Reason` as a sentence, such as _the requested element was not found_
+        The `Communicable` given for `WebDriver.Error.Reason`, in its companion's scope, which is
+        what fills the `reason` in the error's message.
+    entry #reason   the W3C error code the driver reported, as a `WebDriver.Error.Reason`
+    entry #detail   the driver's message, or the raw reply when it was not a W3C error object
+    entry #browserStacktrace   the driver's stack trace, one line per element; empty when it sent none
+    entry #data   the error object's optional `data` member, which carries an open prompt's text
+        On an `UnexpectedAlertOpen`, `data.text` is the prompt's text, so a caller can read it and
+        decide between `WebDriver.Session#acceptAlert` and `WebDriver.Session#dismissAlert`.
+
+        ```scala fuel
+        typecheck
+        ##
+        supervise:
+          WebDriver.Chrome.headless.session:
+            capture[WebDriver.Error](browser.title()).data.let(_.text.as[Text])
+        ```
+  entry .Element   a handle on a node of the page: a pure value, usable only with its session in scope
+    detail
+        The opaque reference a driver returned for a DOM node, meaningful only to the session which
+        produced it. It is a pure value holding neither a capability nor its session, so a `List`
+        of them can be built and passed around freely; every operation on one — `click`,
+        `innerText`, `value`, `attribute`, `element` and the other extensions in the `tarantula`
+        package — takes the `WebDriver.Session` as a contextual parameter, so an element is inert
+        outside its session's block.
+
+        ```scala fuel
+        typecheck
+        ##
+        supervise:
+          WebDriver.Chrome.headless.session:
+            browser.navigateTo(url"https://example.com/")
+            val menu: WebDriver.Element = browser.element(Name[DomId](t"menu"))
+            val items: List[WebDriver.Element] = menu \ Li \ cls"item"
+            items.map(_.innerText())
+        ```
+
+        A leaked element is a dangling id rather than a live handle. One used after its page has
+        changed raises `WebDriver.Error` with reason `StaleElement`.
+    refer tarantula.WebDriver.Session
+    refer tarantula.element
+    entry .encodable   encodes an element in the wire form a script argument or pointer origin takes
+        The W3C _web element identifier_ form, `{"element-6066-11e4-a52e-4f735466cecf": id}`, so
+        an element can be passed in `WebDriver.Session#execute`'s arguments as `element.in[Json]`,
+        where the script sees the live DOM node.
+    entry .\   every match for a locator beneath an element, or beneath each of a list of elements
+        `element \ Li` asks the driver for every descendant matching any `Focusable` locator — an
+        HTML tag, a `cls"…"` class list, a `Name[DomId]`, a `SelectorList`, an `XPath` or link
+        text — and returns them in document order, an empty list for none. The second form, on a
+        `List[WebDriver.Element]`, selects from every element found so far, so selections chain:
+        `element \ Name[DomId](t"menu") \ Li \ cls"item"`. The protocol has no batch find, so the
+        chained form makes one request per element, and nothing is deduplicated. It needs the
+        `WebDriver.Session` in scope.
+
+        It is spelled `\` rather than `/` because symbolism's generic `/`, which `soundness`
+        exports, would claim that name for every receiver. Both forms are in the companion of
+        `WebDriver.Element`, so they need no import.
+    entry #elementId   the driver's opaque id for the node
+  entry .ShadowRoot   the open shadow root an element hosts, as a handle for finding elements within it
+    detail
+        Reached with `element.shadowRoot()`. The protocol addresses a shadow root separately from
+        an element, and only finding is valid against one, so it is a separate pure handle: search
+        it with `\` for every match or `element` for exactly one, with the `WebDriver.Session` in
+        scope. Only *open* shadow roots are reachable; asking for a closed one raises
+        `WebDriver.Error` with reason `NoSuchShadowRoot`, and using one whose host has left the
+        page raises `DetachedShadowRoot`.
+
+        ```scala fuel
+        typecheck
+        ##
+        supervise:
+          WebDriver.Chrome.headless.session:
+            val root: WebDriver.ShadowRoot = browser.element(Name[DomId](t"widget")).shadowRoot()
+            root.element(Button).click()
+            (root \ Li).length
+        ```
+    entry .\   every match for a locator within a shadow root, in document order
+        `root \ Button` returns every element in the shadow tree matching any `Focusable`
+        locator, or an empty list. It needs the `WebDriver.Session` in scope, and lives in the
+        companion of `WebDriver.ShadowRoot`, so it needs no import.
+    entry #shadowId   the driver's opaque id for the shadow root
+  entry .Session   a live WebDriver session: one browser, its windows and cookies, confined to its block
+    detail
+        The near end of a conversation with a driver, addressed beneath `base/session/id`. A
+        session is never constructed directly: `session` on a `WebDriver` or a `WebDriver.Local`
+        opens one, lends it to the block as a contextual value, and deletes it — closing the
+        browser — when the block ends. Inside the block, `browser` names it.
+
+        It is a capability, so capture checking confines it, and every closure over it, to the
+        block which owns it: returning the session, or a lambda which uses it, is a compile error.
+        What its commands return — `Text`, `Data`, `Json`, `WebDriver.Element`s, rectangles — is
+        pure data, since every command is a complete round trip.
+
+        A script is grown one stage at a time: open a session, navigate, find, act, and read the
+        result back.
+
+        ```scala fuel
+        typecheck
+        frame
+          label Open a session
+          code
+              supervise:
+                WebDriver.Chrome.headless.session:
+                  browser.title()
+        frame
+          label Navigate to a page
+          code
+              supervise:
+                WebDriver.Chrome.headless.session:
+                  browser.navigateTo(url"https://example.com/search")
+                  browser.title()
+        frame
+          label Find a field and type into it
+          code
+              supervise:
+                WebDriver.Chrome.headless.session:
+                  browser.navigateTo(url"https://example.com/search")
+                  val field = browser.element(Name[DomId](t"query"))
+                  field.value(t"spiders")
+                  field.property(t"value")
+        frame
+          label Submit, and wait for the results
+          code
+              import retryTenacities.exponentialTenTimesTenacity
+
+              supervise:
+                WebDriver.Chrome.headless.session:
+                  browser.navigateTo(url"https://example.com/search")
+                  browser.element(Name[DomId](t"query")).value(t"spiders")
+                  browser.press(Keypress.Enter)
+                  browser.awaitElements(cls"result").map(_.innerText())
+        ##
+        ```
+
+        Every command raises `WebDriver.Error` through the `Tactic` in scope when the session was
+        opened, and needs nothing further. The waits (`#awaitElement`, `#awaitElements`,
+        `#awaitUntil`) additionally take a `Tenacity`, a `Monitor` and a `Tactic[Tenacity.Error]`
+        at the call.
+    refer tarantula.browser
+    refer tarantula.WebDriver.Element
+    refer tarantula.WebDriver.Error
+    entry .Rect   the bounding box of an element or a window, in CSS pixels
+      detail
+          Returned by the `windowRect`, `maximize`, `minimize` and `fullscreen` commands of a
+          `WebDriver.Session` and by the `rect` extension on an element, and taken by
+          `windowRect(rect)` to move and resize the window.
+
+          ```scala fuel
+          typecheck
+          ##
+          supervise:
+            WebDriver.Chrome.session:
+              browser.windowRect(WebDriver.Session.Rect(0.0, 0.0, 1280.0, 800.0))
+              browser.windowRect().width
+          ```
+      entry #x   the left edge, from the viewport's or the screen's origin
+      entry #y   the top edge, from the viewport's or the screen's origin
+      entry #width   the width, in CSS pixels
+      entry #height   the height, in CSS pixels
+    entry .cm   a length in centimetres, as the `Quantity[Metres[1]]` a print's page and margins take
+        `WebDriver.Session.cm(1.5)` is fifteen millimetres. Any length quantity will do in a
+        `Page` or `Margin` — `21.0*Centi(Metre)`, `8.5*Inch` — so this is only a convenience.
+    entry .Page   the paper size a print is laid out on; US Letter by default
+      detail
+          Lengths are `Quantity[Metres[1]]`, so they can be written in any unit, and are sent to
+          the driver in the centimetres the protocol requires. The defaults are the
+          specification's own: 21.59cm by 27.94cm.
+
+          ```scala
+          import soundness.*
+
+          val a4 = WebDriver.Session.Page(WebDriver.Session.cm(21.0), WebDriver.Session.cm(29.7))
+          ```
+      entry #width   the page's width, as a length
+      entry #height   the page's height, as a length
+    entry .Margin   the four margins of a printed page; one centimetre each by default
+      detail
+          Lengths are `Quantity[Metres[1]]`, sent to the driver in centimetres. `.uniform` makes
+          four equal margins.
+      entry .uniform   four equal margins of the given length
+          ```scala
+          import soundness.*
+
+          WebDriver.Session.Margin.uniform(WebDriver.Session.cm(0.5))
+          ```
+      entry #top   the top margin
+      entry #bottom   the bottom margin
+      entry #left   the left margin
+      entry #right   the right margin
+    entry .Orientation   whether a page is printed `Portrait` or `Landscape`
+      entry #name   the orientation as the protocol spells it: `portrait` or `landscape`
+    entry .Print   the options `WebDriver.Session#printPage` takes: orientation, scale, paper, margins, pages
+      detail
+          Every field has the specification's default: `Portrait`, a scale of `1.0`, no
+          background graphics, a US Letter `Page`, one-centimetre `Margin`s, shrinking to fit, and
+          every page. `pageRanges` is the protocol's own textual form, such as `List(t"1-3",
+          t"5")`, since a range there may be open-ended.
+
+          ```scala fuel
+          typecheck
+          ##
+          import WebDriver.Session.{Print, Orientation, Margin, cm}
+
+          supervise:
+            WebDriver.Chrome.headless.session:
+              browser.navigateTo(url"https://example.com/")
+
+              browser.printPage:
+                Print(orientation = Orientation.Landscape, margin = Margin.uniform(cm(0.5)))
+          ```
+      entry #orientation   `Portrait` or `Landscape`
+      entry #scale   the scale factor, from 0.1 to 2.0; `1.0` by default
+      entry #background   whether background colours and images are printed; `false` by default
+      entry #page   the paper size, as a `WebDriver.Session.Page`
+      entry #margin   the margins, as a `WebDriver.Session.Margin`
+      entry #shrinkToFit   whether content is shrunk to fit the page width; `true` by default
+      entry #pageRanges   the pages to print, as text such as `1-3` or `5`; every page when empty
+    entry .Timeouts   the three timeouts a session keeps, in milliseconds
+      detail
+          `implicit` is how long a find command retries before reporting `NoSuchElement`, and is
+          how a script waits for a page to settle without sleeping; `pageLoad` bounds navigation
+          and `script` bounds `WebDriver.Session#execute` and `WebDriver.Session#executeAsync`. An `Unset` field is left as the
+          driver has it.
+
+          ```scala fuel
+          typecheck
+          ##
+          supervise:
+            WebDriver.Chrome.headless.session:
+              browser.timeouts(WebDriver.Session.Timeouts(`implicit` = 5000L))
+              browser.timeouts().pageLoad
+          ```
+
+          The implicit timeout covers find commands and nothing else: a button becoming enabled
+          or a heading's text changing is waited for with `WebDriver.Session#awaitUntil`.
+      entry #implicit   how long a find retries before giving up, or `Unset` to leave it as it is
+      entry #pageLoad   how long a navigation may take, or `Unset` to leave it as it is
+      entry #script   how long a script may run, or `Unset` to leave it as it is
+    entry .Action   one step of a keyboard or pointer input sequence, for `WebDriver.Session#perform`
+      detail
+          The W3C `/actions` endpoint is the only way to send a modifier, a chord, a hover or a
+          drag, and an `Action` is one step of it: a key going down or up, a pause, a pointer
+          button pressed or released, or a pointer movement. A list of steps is performed against
+          one input source, a `WebDriver.Session.Action.Source`.
+
+          ```scala fuel
+          typecheck
+          ##
+          import WebDriver.Session.Action
+
+          supervise:
+            WebDriver.Chrome.headless.session:
+              val target = browser.element(Name[DomId](t"menu"))
+
+              browser.perform
+                ( Action.Source.Pointer,
+                  List(Action.PointerMove(0, 0, origin = target), Action.Pause(500)) )
+          ```
+
+          Plain text entry into a field is simpler and faster with the `value` extension on an
+          element, and keypresses are simplest with `WebDriver.Session#press`, which builds the
+          steps with `.steps`.
+      entry .Source   which input source a sequence of actions drives: `Key` or `Pointer`
+        detail
+            One `perform` call drives one source. A "none" source also exists in the
+            specification, but it can only pause, which either of these can do; two sources in
+            lockstep need the assembled JSON passed to `WebDriver.Session#actions`.
+        entry #id   the source's id in the sequence: `keyboard` or `pointer`
+        entry #kind   the source's type: `key` or `pointer`
+      entry .LeftButton   the left mouse button, `0`, as the specification numbers buttons
+      entry .MiddleButton   the middle mouse button, `1` in the DOM's numbering
+      entry .RightButton   the right mouse button, `2` in the DOM's numbering, not `1` as one might guess
+      entry .codepoint   the character a `Keypress` types, or the private-use codepoint for a named key
+          A character key is itself; `Enter`, `Tab`, `Backspace`, `Escape`, the arrows, `Home`,
+          `End`, `PageUp`, `PageDown`, `Insert`, `Delete` and `F1` to `F12` are the codepoints the
+          specification assigns them in Unicode's private use area, from U+E000. A modifier on its
+          own, a function key outside 1 to 12, or a terminal escape sequence is `Unset`.
+      entry .steps   a `Keypress` as the key actions which produce it, modifiers held around it
+        detail
+            A modified keypress becomes its modifier pressed, the inner keypress struck, and the
+            modifier released, nested to any depth, since the protocol has no command for "type
+            this with control held". A keypress with no browser counterpart is no steps at all.
+
+            ```scala fuel
+            frame
+              label A named key
+              code
+                  WebDriver.Session.Action.steps(Keypress.Enter)
+                  // KeyDown(""), KeyUp("")
+            frame
+              label With Control held
+              code
+                  WebDriver.Session.Action.steps(Keypress.Ctrl('A'))
+                  // KeyDown(""), KeyDown("A"), KeyUp("A"), KeyUp("")
+            frame
+              label With Control and Shift held
+              code
+                  WebDriver.Session.Action.steps(Keypress.Ctrl(Keypress.Shift(Keypress.Enter)))
+                  // KeyDown(""), KeyDown(""), KeyDown(""),
+                  // KeyUp(""), KeyUp(""), KeyUp("")
+            ##
+            ```
+      entry .encodable   encodes an action as the specification's JSON, such as `{"type":"keyDown","value":"a"}`
+          Written by hand, since the discriminator is a `type` field with camel-cased values and
+          each variant carries its own keys; a `PointerMove` with no origin is relative to the
+          `viewport`.
+      entry .KeyDown   presses a key, by the character or codepoint it types
+        entry #value   the key, as a character or a private-use codepoint from `WebDriver.Session.Action.codepoint`
+      entry .KeyUp   releases a key, by the character or codepoint it types
+        entry #value   the key, as a character or a private-use codepoint from `WebDriver.Session.Action.codepoint`
+      entry .Pause   waits for a number of milliseconds before the next step
+        entry #duration   the pause, in milliseconds
+      entry .PointerDown   presses a pointer button; the left one by default
+        entry #button   the button, numbered as the DOM does: `0` left, `1` middle, `2` right
+      entry .PointerUp   releases a pointer button; the left one by default
+        entry #button   the button, numbered as the DOM does: `0` left, `1` middle, `2` right
+      entry .PointerMove   moves the pointer, relative to the viewport or to the centre of an element
+        entry #x   the horizontal offset, in CSS pixels
+        entry #y   the vertical offset, in CSS pixels
+        entry #duration   how long the movement takes, in milliseconds; `100` by default
+        entry #origin   the element whose centre the offsets are from, or `Unset` for the viewport
+    entry #sessionId   the id the driver gave this session when it was created
+    entry #capabilities   what the driver agreed to, which may differ from what was asked for
+        The negotiated capabilities object from the driver's reply to `POST /session`: it names
+        the browser and version which answered and says whether optional behaviour, such as
+        `setWindowRect` or `acceptInsecureCerts`, is available. Vendor keys (`moz:*`, `goog:*`)
+        are left as `Json`; `#browserName`, `#browserVersion` and `#platformName` read the common
+        ones.
+    entry #browserName   the name of the browser which answered, from the negotiated capabilities
+    entry #browserVersion   the version of the browser which answered, or `Unset` if the driver did not say
+    entry #platformName   the operating system the browser runs on, or `Unset` if the driver did not say
+    entry #navigateTo   loads a URL in the current window, and waits for it to load
+        Takes an `HttpUrl`, such as the result of `url"https://…"`, or any URL type which is
+        `Abstractable across Urls to Text`. The overload for `HttpUrl` exists because the
+        interpolator's result has the singleton type `Url["https"]`, which the generic form,
+        declared for `Url["http" | "https"]`, would reject.
+
+        ```scala fuel
+        typecheck
+        ##
+        supervise:
+          WebDriver.Chrome.headless.session:
+            browser.navigateTo(url"https://example.com/")
+            browser.url[HttpUrl]()
+        ```
+    entry #url   the current window's URL, as a URL type of the caller's choosing
+        `browser.url[HttpUrl]()`, or any type `Instantiable across Urls from Text`.
+    entry #back   goes back one page in the current window's history
+    entry #forward   goes forward one page in the current window's history
+    entry #refresh   reloads the current page
+    entry #title   the current page's title
+    entry #source   the current page's markup, as the browser serialises its DOM
+        The DOM as it now stands, serialised, not the bytes the server sent: whatever the page's
+        scripts have changed is included.
+    entry #screenshotData   a PNG of the current viewport, or of one element, as raw bytes
+        `screenshotData()` captures the viewport and `screenshotData(element)` one element. The
+        bytes are those the driver sent, decoded from Base64. The `screenshot` extension in the
+        `tarantula.image` component decodes them further, into a `Raster in Png`.
+    entry #window   the handle of the current window or tab
+    entry #windows   the handles of every open window and tab, in no particular order
+    entry #closeWindow   closes the current window, returning the handles of those which remain
+        Commands go to no window until `#switchTo` selects another; closing the last one ends the
+        browser's session as far as the driver is concerned.
+    entry #switchTo   makes another window or tab, by its handle, the target of every command
+        Only the current window responds to commands, so a handle from `#newWindow` or `#windows`
+        is passed here before the window can be used.
+
+        ```scala fuel
+        typecheck
+        ##
+        supervise:
+          WebDriver.Chrome.headless.session:
+            val original = browser.window()
+            val tab = browser.newWindow()
+            browser.switchTo(tab)
+            browser.navigateTo(url"https://example.com/")
+            browser.closeWindow()
+            browser.switchTo(original)
+        ```
+    entry #newWindow   opens a new tab, or a window, and returns its handle without switching to it
+        `newWindow()` opens a tab and `newWindow(tab = false)` a window. As the specification
+        says, the current window is left where it was: pass the handle to `#switchTo` to use it.
+    entry #windowRect   the current window's position and size, or moves and resizes it
+        `windowRect()` reads the window's `WebDriver.Session.Rect`; `windowRect(rect)` asks for a
+        new one, which a window manager may not grant in full, and which a headless browser may
+        ignore.
+    entry #maximize   maximises the current window, returning the geometry it actually took
+    entry #minimize   minimises the current window, returning the geometry it actually took
+    entry #fullscreen   makes the current window full-screen, returning the geometry it actually took
+    entry #frame   enters a frame, by its element or its index, as the target of every command
+        Commands address the current browsing context, so entering a frame is a change of mode
+        rather than an argument to each command. `#parentFrame` steps back out one level, and
+        `#topFrame` returns to the top-level document from any depth. An absent frame raises
+        `WebDriver.Error` with reason `NoSuchFrame`.
+
+        ```scala fuel
+        typecheck
+        ##
+        supervise:
+          WebDriver.Chrome.headless.session:
+            browser.frame(browser.element(Iframe))
+            browser.element(H1).innerText()
+            browser.topFrame()
+        ```
+    entry #parentFrame   leaves the current frame for the one which contains it
+    entry #topFrame   returns to the top-level document from a frame at any depth
+        Sends an explicit `null` frame id, which the protocol distinguishes from an absent one.
+    entry #acceptAlert   accepts the open alert, confirm or prompt, as clicking its OK button would
+        While a prompt is open every other command fails with `WebDriver.Error` reason
+        `UnexpectedAlertOpen`, whose `WebDriver.Error#data` carries the prompt's text; with no prompt open this
+        raises `NoSuchAlert`.
+    entry #dismissAlert   dismisses the open alert, confirm or prompt, as its Cancel button would
+    entry #alertText   the open prompt's message, or types an answer into it
+        `alertText()` reads the message of the open alert, confirm or prompt; `alertText(text)`
+        types into a `prompt` before `#acceptAlert` submits it.
+    entry #timeouts   the session's timeouts, or sets them
+        `timeouts()` reads the `WebDriver.Session.Timeouts` in force; `timeouts(timeouts)` sets
+        those which are not `Unset`, leaving the rest as they were.
+    entry #cookies   every cookie visible to the current page
+        Each a telekinesis `Cookie.Value`, whose fields are the names the protocol uses. It has
+        no `sameSite`, so that attribute is neither read nor set.
+    entry #cookie   the cookie of the given name visible to the current page
+        Raises `WebDriver.Error` with reason `NoSuchCookie` if there is none.
+    entry #addCookie   sets a cookie on the current page's domain
+        Takes a `Cookie.Value`. A cookie for another domain raises `WebDriver.Error` with reason
+        `InvalidCookieDomain`, so navigate to the domain first. A cookie which needs a `sameSite`
+        attribute can be set with `#execute` instead.
+    entry #deleteCookie   deletes the cookie of the given name
+    entry #deleteCookies   deletes every cookie visible to the current page
+    entry #perform   performs a sequence of `WebDriver.Session.Action`s on one input source
+        Sends the steps as a single sequence to the `/actions` endpoint, on the keyboard or the
+        pointer source. Keys and buttons left held stay held until `#releaseActions`.
+
+        ```scala fuel
+        typecheck
+        ##
+        import WebDriver.Session.Action
+
+        supervise:
+          WebDriver.Chrome.headless.session:
+            browser.perform
+              ( Action.Source.Pointer,
+                List(Action.PointerMove(10, 10), Action.PointerDown(), Action.PointerUp()) )
+        ```
+    entry #actions   sends an assembled `/actions` payload, for sources moving in lockstep
+        The escape hatch beneath `#perform`, for the rare chord across keyboard and pointer: the
+        `Json` is sent as the request body, `{"actions": […]}`, unchanged.
+    entry #press   types a sequence of keypresses, with their modifiers held around them
+        Each `Keypress` — a character, a named key such as `Keypress.Enter` or
+        `Keypress.FunctionKey(3)`, or one wrapped in `Ctrl`, `Shift`, `Alt` or `Meta` — becomes
+        the key actions of `WebDriver.Session.Action.steps`, all performed on the keyboard source
+        in one request. Filling a field with plain text is better done with the `value`
+        extension on an element: one request rather than several actions per character.
+
+        ```scala fuel
+        typecheck
+        ##
+        supervise:
+          WebDriver.Chrome.headless.session:
+            browser.element(Name[DomId](t"query")).click()
+            browser.press(Keypress.Ctrl('A'), Keypress.Backspace, Keypress.Enter)
+        ```
+    entry #releaseActions   releases every key and button left held, and clears the input state
+    entry #printPage   the current page printed as a PDF, in raw bytes
+        Takes `WebDriver.Session.Print` options, the specification's defaults when none are given.
+        This is what the page would print as, not what is rendered: `#screenshotData` captures
+        that. Not every driver implements it — Safari does not — and one which does not raises
+        `WebDriver.Error` with reason `UnknownCommand` or `UnsupportedOperation`.
+    entry #execute   runs a JavaScript function body in the page and returns its result as `Json`
+        The escape hatch for anything the protocol does not model. The script is a function body,
+        so it uses `return`, and its arguments are `arguments[0]`, `arguments[1]` and so on: a
+        `WebDriver.Element` passed as `element.in[Json]` arrives as its live DOM node, and an
+        element returned comes back in the wire form. A script which throws raises
+        `WebDriver.Error` with reason `JavascriptError`.
+
+        ```scala fuel
+        typecheck
+        ##
+        supervise:
+          WebDriver.Chrome.headless.session:
+            val heading = browser.element(H1)
+            browser.execute(t"return arguments[0].offsetHeight", List(heading.in[Json])).as[Int]
+        ```
+    entry #executeAsync   runs asynchronous JavaScript, returning the value it passes to its callback
+        As `#execute`, but the script is given a callback as its last argument and the command
+        completes when the script calls it; one which does not within the `script` timeout raises
+        `WebDriver.Error` with reason `ScriptTimeout`.
+    entry #element   the one element a locator matches, at page scope or beneath an element or shadow root
+        `browser.element(H1)` asks the driver for the first match for any `Focusable` locator: an
+        HTML tag, a `cls"…"` class list, a `Name[DomId]`, a `SelectorList`, an `XPath`, or `Text`
+        as link text. Nothing matching raises `WebDriver.Error` with reason `NoSuchElement`, after
+        the session's implicit timeout. The forms taking a `WebDriver.Element` or a
+        `WebDriver.ShadowRoot` search beneath it, and are usually written through the `element`
+        extension: `menu.element(Li)`.
+
+        ```scala fuel
+        typecheck
+        ##
+        supervise:
+          WebDriver.Chrome.headless.session:
+            browser.element(Name[DomId](t"greeting")).innerText()
+            browser.element(unsafely(SelectorList.parse(t"nav li.active")))
+        ```
+    entry #elements   every element a locator matches, at page scope or beneath an element or shadow root
+        As `#element`, but returns every match in document order, and an empty list rather than
+        an error for none. `browser \ Li` is the same at page scope.
+    entry #\   every element a locator matches at page scope, as `browser \ Li`
+        `#elements` by another name. Selection is `\` rather than `/`, since symbolism's generic
+        `/`, which `soundness` exports, claims the name for every receiver. On the result, `\`
+        again selects beneath each element found: `browser \ Ul \ Li`.
+    entry #activeElement   the element which has the focus
+    entry #awaitElements   every match for a locator, polled until there is at least one
+        The protocol has no wait command beyond the implicit timeout for finds, so this polls
+        `POST /elements` under the `Tenacity` in scope, which is the caller's choice of schedule,
+        and raises `Tenacity.Error` when the policy gives up. It also needs a `Monitor`. It
+        polls the plural endpoint deliberately: that reports absence as an empty list, where the
+        singular one raises an error that, being routed to the session's own tactic, could not be
+        caught here to drive a retry.
+
+        ```scala fuel
+        typecheck
+        ##
+        import retryTenacities.exponentialTenTimesTenacity
+
+        supervise:
+          WebDriver.Chrome.headless.session:
+            browser.awaitElements(cls"result").length
+        ```
+    entry #awaitElement   the first match for a locator, polled until there is one
+        As `#awaitElements`, returning the first element found; needs a `Tenacity`, a `Monitor`
+        and a `Tactic[Tenacity.Error]`.
+    entry #awaitUntil   polls a condition under the `Tenacity` in scope until it holds
+        The general wait, for anything the caller can evaluate without raising: a title, a count
+        of elements, an attribute, a cookie. The condition is re-evaluated at each attempt, and
+        `Tenacity.Error` is raised when the policy gives up.
+
+        ```scala fuel
+        typecheck
+        ##
+        import retryTenacities.exponentialTenTimesTenacity
+
+        supervise:
+          WebDriver.Chrome.headless.session:
+            browser.element(Button).click()
+            browser.awaitUntil(browser.title() == t"Done")
+        ```
+    entry #shadowRoot   the open shadow root an element hosts
+        Usually written through the `shadowRoot` extension on the element. A closed or absent
+        shadow root raises `WebDriver.Error` with reason `NoSuchShadowRoot`.
+    entry #click   clicks an element at its centre, scrolling it into view first
+        Usually written through the `click` extension: `button.click()`. An element covered by
+        another raises `WebDriver.Error` with reason `ElementClickIntercepted`, and one which
+        cannot be clicked `ElementNotInteractable`.
+    entry #clear   empties an editable element, such as an input or a text area
+    entry #value   types text into an element, as the keyboard would
+        Usually written through the `value` extension: `field.value(t"search terms")`. Text is
+        appended to what is already there; `#clear` it first to replace it.
+    entry #innerText   an element's rendered text, by the `innerText` algorithm
+        What a reader sees, with hidden text omitted and line breaks where the layout puts them,
+        rather than the DOM's `textContent`. Named `innerText` rather than `text`, which is
+        already an extension in the `soundness` umbrella.
+    entry #tagName   an element's tag name, such as `h1`
+    entry #role   an element's computed ARIA role, such as `button` or `heading`
+    entry #label   an element's computed accessible name, as a screen reader would announce it
+    entry #enabled   whether a form control is enabled
+    entry #selected   whether a checkbox, radio button or option is selected
+    entry #attribute   an attribute as the markup has it, or `Unset` if the element has none
+        Differs from `#property` as soon as a script touches the node: the `value` attribute of
+        an input is what the page was served with, its property what the field holds now.
+    entry #property   a live DOM property of an element, or `Unset` if it has none
+    entry #css   the computed value of a CSS property on an element, such as `color`
+    entry #rect   an element's bounding box, as a `WebDriver.Session.Rect` in CSS pixels
+    entry #displayed   whether an element is displayed, by the specification's displayedness check
+        The W3C specification dropped the JSON Wire Protocol's `displayed` command, so this runs
+        the element's `getClientRects().length > 0` as a script, as every conforming client does.
+
+entry .browser   the `WebDriver.Session` in scope, so that commands read as `browser.title()`
+    Inside a `session` block the handle is a contextual value; `browser` names it, with its
+    capture set kept as the session's own, so whatever it returns is confined to the same
+    block. It is a method taking the session as a named contextual parameter, not a `summon`,
+    which would mint a fresh capability rather than refer to the one the block owns.
+
+    ```scala fuel
+    typecheck
+    ##
+    supervise:
+      WebDriver.Chrome.headless.session:
+        browser.navigateTo(url"https://example.com/")
+        browser.source().length
+    ```
+
+entry .click   clicks an element at its centre, through the `WebDriver.Session` in scope
+    An extension on `WebDriver.Element`, delegating to `WebDriver.Session#click`. An element
+    covered by another raises `WebDriver.Error` with reason `ElementClickIntercepted`.
+
+    ```scala fuel
+    typecheck
+    ##
+    supervise:
+      WebDriver.Chrome.headless.session:
+        browser.element(Button).click()
+    ```
+
+entry .clear   empties an editable element, through the `WebDriver.Session` in scope
+    An extension on `WebDriver.Element`, delegating to `WebDriver.Session#clear`.
+
+entry .innerText   an element's rendered text, through the `WebDriver.Session` in scope
+    An extension on `WebDriver.Element`: what a reader sees, by the `innerText` algorithm,
+    rather than the DOM's `textContent`. It is not called `text`, since `text` is already an
+    extension in the `soundness` umbrella.
+
+entry .tagName   an element's tag name, such as `h1`, through the `WebDriver.Session` in scope
+    An extension on `WebDriver.Element`, delegating to `WebDriver.Session#tagName`.
+
+entry .enabled   whether a form control is enabled, through the `WebDriver.Session` in scope
+    An extension on `WebDriver.Element`, delegating to `WebDriver.Session#enabled`.
+
+entry .selected   whether a checkbox, radio button or option is selected
+    An extension on `WebDriver.Element`, delegating to `WebDriver.Session#selected`; it needs
+    the session in scope.
+
+entry .displayed   whether an element is displayed, through the `WebDriver.Session` in scope
+    An extension on `WebDriver.Element`. The W3C protocol has no displayedness command, so
+    `WebDriver.Session#displayed` evaluates one as a script.
+
+entry .role   an element's computed ARIA role, through the `WebDriver.Session` in scope
+    An extension on `WebDriver.Element`, delegating to `WebDriver.Session#role`.
+
+entry .label   an element's computed accessible name, through the `WebDriver.Session` in scope
+    An extension on `WebDriver.Element`, delegating to `WebDriver.Session#label`: the name a
+    screen reader would announce, from its text, its `aria-label` or its associated `<label>`.
+
+    The `soundness` umbrella also exports wisteria's `label`, the name of a field or case
+    within a derivation, so under `import soundness.*` the two names collide and
+    `element.label()` may not resolve; `browser.label(element)` reaches the same command
+    without the extension.
+
+entry .cssValue   the computed value of a CSS property on an element, such as `color`
+    An extension on `WebDriver.Element`, delegating to `WebDriver.Session#css`; it needs the
+    session in scope.
+
+    ```scala fuel
+    typecheck
+    ##
+    supervise:
+      WebDriver.Chrome.headless.session:
+        browser.element(H1).cssValue(t"font-size")
+    ```
+
+entry .shadowRoot   the open shadow root an element hosts, through the `WebDriver.Session` in scope
+    An extension on `WebDriver.Element`, returning a `WebDriver.ShadowRoot` to search with `\`
+    or `element`. A closed or absent root raises `WebDriver.Error` with reason
+    `NoSuchShadowRoot`.
+
+entry .rect   an element's bounding box in CSS pixels, through the `WebDriver.Session` in scope
+    An extension on `WebDriver.Element`, returning a `WebDriver.Session.Rect`.
+
+entry .value   types text into an element, through the `WebDriver.Session` in scope
+    An extension on `WebDriver.Element`, delegating to `WebDriver.Session#value`. The text is
+    appended to what the field already holds, and is one request however long it is; named
+    keys and chords need `WebDriver.Session#press`.
+
+    ```scala fuel
+    typecheck
+    ##
+    supervise:
+      WebDriver.Chrome.headless.session:
+        val field = browser.element(Name[DomId](t"query"))
+        field.clear()
+        field.value(t"search terms")
+        field.property(t"value")
+    ```
+
+entry .screenshotData   a PNG of one element, as raw bytes, through the `WebDriver.Session` in scope
+    An extension on `WebDriver.Element`. The `screenshot` extension, in `tarantula.image`,
+    decodes the same bytes into a `Raster in Png`.
+
+entry .attribute   an element's attribute as the markup has it, or `Unset` if it has none
+    An extension on `WebDriver.Element`, needing the session in scope. It differs from
+    `property` once a script touches the node: an input's `value` attribute is what the page
+    was served with, its `value` property what the field holds now.
+
+entry .property   a live DOM property of an element, or `Unset` if it has none
+    An extension on `WebDriver.Element`, needing the session in scope.
+
+    ```scala fuel
+    typecheck
+    ##
+    supervise:
+      WebDriver.Chrome.headless.session:
+        val box = browser.element(Name[DomId](t"agree"))
+        box.click()
+        (box.attribute(t"checked"), box.property(t"checked"))
+    ```
+
+entry .element   the one element a locator matches beneath an element or a shadow root
+    An extension on `WebDriver.Element` and on `WebDriver.ShadowRoot`, taking any `Focusable`
+    locator and needing the session in scope: `menu.element(Li)`. Nothing matching raises
+    `WebDriver.Error` with reason `NoSuchElement`; `\` returns every match instead, and an
+    empty list for none.
+
+    ```scala fuel
+    typecheck
+    ##
+    supervise:
+      WebDriver.Chrome.headless.session:
+        val form = browser.element(Form)
+        form.element(Name[DomId](t"submit")).click()
+    ```
+
+entry .screenshot   a screenshot of the viewport or of one element, decoded as a `Raster in Png`
+    An extension on `WebDriver.Session` and on `WebDriver.Element`, in the `tarantula.image`
+    component, which keeps the image codec out of browser automation: `screenshotData`,
+    decoded by hallucination's PNG codec. A screenshot the codec cannot read is thrown, as it
+    would mean the driver sent something which was not a PNG.
+
+    ```scala fuel
+    typecheck
+    ##
+    supervise:
+      WebDriver.Chrome.headless.session:
+        browser.navigateTo(url"https://example.com/")
+        val page: Raster in Png = browser.screenshot()
+        val heading: Raster in Png = browser.element(H1).screenshot()
+    ```

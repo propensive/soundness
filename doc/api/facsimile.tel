@@ -1,0 +1,1524 @@
+tel 1.0
+
+base facsimile
+import soundness
+
+info   PDF documents read as typed values and edited in place, implemented directly against the format
+detail
+    _Facsimile_ reads and writes [PDF](https://en.wikipedia.org/wiki/PDF) documents without
+    delegating to an external PDF library. A document's object syntax (COS), its
+    cross-reference tables, its stream filters and its encryption are all implemented here,
+    and what a program sees is typed: pages and their geometry as `Page` values with boxes
+    in points, the text laid out on them as `Text` or positioned `TextRun`s, fonts as
+    `Pdf.Font`, the information dictionary as `Pdf.Info`, bookmarks as a tree of `Bookmark`s,
+    links and notes as `Annotation`s, and embedded files as `Pdf.Attachment`s.
+
+    PDF has two layers. The outer layer is COS, a small object language of numbers, names,
+    strings, arrays, dictionaries and streams, addressed by indirect references and indexed
+    by a cross-reference table at the end of the file; it is the `Cos` enum. The inner layer
+    is a content stream: a stack machine whose operators place glyphs and paths on a page; it
+    is the `Pdf.Operator` enum. Both are unforgiving in the wild, so a document is never
+    assumed well-formed: a cross-reference table which lies is rebuilt by scanning the file
+    for objects, a stream whose declared length is wrong is measured to its `endstream`, and a
+    malformed date is simply absent.
+
+    A document is **opened** within a scope. Opening maps the file and reads its header and
+    cross-reference chain (and, for an encrypted file, checks the password), and the block
+    runs with a contextual `Pdf`, reached through the package-level `pdf` accessor. The `Pdf`
+    is a capability confined to the block by capture checking, as is anything which still
+    resolves through it (a `Page`, an `Attachment`, a `Spring` over a stream's payload), while
+    everything decoded — `Data`, `Cos` values, `Text`, `Pdf.Info`, `Pdf.Font`, `Bookmark`s —
+    is pure and escapes freely:
+
+    ```scala
+    import soundness.*
+    import soundness.pdfCreatable
+    import strategies.throwUnsafely
+    import pathInterfaces.pathOnLinux
+    import temporaryDirectories.javaBaseTemporaryDirectory
+
+    val a4 = Pdf.Rect
+      ( Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
+        Quantity[Points[1]](595.0), Quantity[Points[1]](842.0) )
+
+    val path = temporaryDirectory[Path on Linux] / "example.pdf"
+
+    path.create[Pdf](CreateFlag.Replace): doc ?=>
+      doc.appendPage(a4)
+
+    PdfFile(path).open():
+      pdf.version.major   // 1
+      pdf.pageCount       // 1
+      pdf.page(Prim).text
+    ```
+
+    Opening with `Read & Write` yields a handle on which the **editing** extensions —
+    `setContents`, `appendPage`, `removePage`, `setInfo`, `setBookmarks`, `addLink`,
+    `embedFont`, `useFont`, and the low-level `set`, `allocate`, `newStream` and `free` —
+    are available, and the edits are committed as an *incremental update* when the scope
+    closes: the original bytes stay where they were, and the changed objects are appended
+    with a fresh cross-reference section, so a reader which only understands the original
+    file still sees a valid document. `create[Pdf]` authors a fresh document with the same
+    surface and writes it whole, to a temporary sibling moved atomically onto the target.
+
+    Stream payloads decode through whatever filter chain the stream declares —
+    `FlateDecode`, `LZWDecode`, `ASCII85Decode`, `ASCIIHexDecode`, `RunLengthDecode`, and the
+    PNG and TIFF predictors — eagerly with `Pdf#payload` or lazily, as a stream of chunks,
+    with `Pdf#spring`. The image codecs (`DCTDecode`, `JPXDecode`, `CCITTFaxDecode`,
+    `JBIG2Decode`) are not decoded: a chain stops at the first of them and the payload is
+    returned as the still-encoded image. The standard security handler is supported, with
+    RC4, AES-128 and AES-256; a password is a `Password`, so a `Cloak` (such as
+    `cloaks.heapCloak`) must be in scope to open an encrypted file.
+
+    The library has two source sets:
+
+    - `facsimile.core` — everything about a document in memory: `Pdf`, `Page`, `Cos`,
+      `Pdf.Operator`, `Pdf.Font`, `Print` and the standard fourteen fonts, the editing
+      extensions and `winAnsi`. It compiles for the JVM and Scala Native (not Scala.js, since
+      the encryption layer uses the JCE).
+    - `facsimile.file` — the bridge to the filesystem and to bytes: `PdfFile`, the locator a
+      document is opened from, and the givens `pdfPathOpenable`, `pdfDataOpenable` and
+      `pdfCreatable` which let a path or `Data` be opened as `Pdf` and a path be created as
+      `Pdf`. JVM only, since on-disk documents are read through a memory-mapped `Ram`.
+
+    Everything is exported to the `soundness` umbrella. `PdfFile(…).open(…)` needs no import
+    (its `Openable` is in `PdfFile`'s companion), but `path.open[Pdf]()`, `data.open[Pdf]()`
+    and `path.create[Pdf]()` resolve through top-level givens which are imported by name
+    (`import soundness.pdfCreatable`), because `import soundness.*` does not import givens.
+    Within a scope, `pdf` is the contextual document; a block opened with `doc ?=>` names it
+    instead, which the editing extensions need since they are typed on the write-granted
+    handle.
+
+refer facsimile.Pdf
+refer facsimile.Page
+refer facsimile.Cos
+refer facsimile.PdfFile
+refer facsimile.Print
+
+entry .Pdf   an open PDF document: the scoped capability every read and edit resolves through
+  detail
+      A `Pdf` is an open document: it owns the byte source and a cache of resolved objects,
+      and no stream's payload is ever dereferenced except through it. It exists only inside a
+      scope opened by `PdfFile#open`, `path.open[Pdf]()`, `data.open[Pdf]()` or
+      `path.create[Pdf]()`, where it is the contextual value the package-level `pdf` accessor
+      returns, and it is a capability: the compiler confines it, and every value which still
+      resolves through it, to the scope.
+
+      Reading is available in every mode. The page tree flattens into an ordinal-indexed
+      sequence (`#page`, `#pageCount`), with the inheritable attributes — resources, media
+      box, crop box, rotation — accumulated down each path. The information dictionary is
+      `#info`, named destinations `#destinations`, the outline `#bookmarks`, embedded files
+      `#attachments`, page labels `#pageLabel`, and XMP metadata `#xmp`. Below the typed
+      surface, `#apply` resolves any object by number, `#resolved` follows a reference, and
+      `#payload` and `#spring` decode a stream.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      def summary(data: Data): (Int, Optional[Text], List[Text]) =
+        PdfFile(data).open():
+          (pdf.pageCount, pdf.info.title, pdf.bookmarks.map(_.title))
+      ```
+
+      Editing is an extension surface on `(Pdf & Granting[Grant.Write])^`, the handle a scope
+      opened with `Read & Write` (or `create[Pdf]`) provides: `set`, `allocate`, `newStream`,
+      `free`, `setContents`, `setRotation`, `setBox`, `setPageEntry`, `setInfo`, `embedFont`,
+      `useFont`, `addResource`, `setAnnotations`, `addLink`, `setBookmarks`, `appendPage` and
+      `removePage`. Edits accumulate in an overlay which every read consults first, so a
+      change is visible to `#apply` and `#page` immediately, and are written as an
+      incremental update when the scope closes.
+
+      Robustness is built in rather than opted into. The `%PDF-` header is accepted anywhere
+      in the first kibibyte. The cross-reference chain — classic tables and cross-reference
+      streams, through `/Prev`, newest first — is walked strictly, and if any part of it is
+      missing or corrupt the whole file is scanned for `N G obj` markers instead, the latest
+      copy of each object winning and the trailer recovered from a surviving `trailer`
+      dictionary or from the catalog. An individual offset which does not hold the object it
+      claims to falls back to the scanned position. A document rebuilt this way reads like
+      any other but cannot be edited in place, since an incremental update has no section to
+      chain to: opening it writably raises `Pdf.Error` with `WriteUnsupported`.
+
+      Every method which may fail takes a `Tactic[Pdf.Error]`.
+  refer facsimile.Page
+  refer facsimile.Cos
+  refer facsimile.PdfFile
+  refer facsimile.pdf
+  entry .Version   the version from the `%PDF-M.m` header, as `major` and `minor`
+    detail
+        A case class of two `Int`s. The header is read before anything else is trusted, and a
+        file without one raises `Pdf.Error` with `NotPdf`. A document authored with
+        `create[Pdf]` is version 1.7.
+    entry #major   the major version, `1` for every document ISO 32000-1 covers
+    entry #minor   the minor version
+  entry .Attachment   an embedded file from the document's `/EmbeddedFiles` name tree
+    detail
+        An attachment's metadata — `#name`, `#filename`, `#description`, `#mediaType` — is
+        materialized when `Pdf#attachments` lists it, but its `#data` still reads through the
+        document, so an `Attachment` is confined to the scope it was listed in: call `data`
+        inside the scope and keep the result.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        def firstAttachment(data: Data): Optional[(Text, Data)] =
+          PdfFile(data).open():
+            pdf.attachments.head.let: attachment =>
+              (attachment.filename.or(attachment.name), attachment.data)
+        ```
+    entry #name   the key the attachment has in the name tree
+    entry #filename   the file specification's name, from `/UF` or `/F`, if given
+    entry #description   the `/Desc` text, if given
+    entry #mediaType   the embedded stream's `/Subtype`, the media type the file was declared as
+    entry #data   the embedded file's bytes, decoded through its filters
+        Reads the embedded stream through the document, so it works only inside the scope
+        the attachment was listed in. An attachment whose file specification has no embedded
+        stream raises `Pdf.Error` with `MissingEntry(EF)`.
+  entry .Error   raised when a document cannot be read, decoded, decrypted or written
+    detail
+        Error 280: _the PDF could not be read because `reason`_, where the reason is a
+        `Pdf.Error.Reason` carrying its own number and message. It is raised through a
+        `Tactic[Pdf.Error]`, which every reading and editing method takes, and it is the one
+        error the library raises: filesystem failures when opening or committing a document
+        are folded into it as `Io`.
+
+        ```scala
+        import soundness.*
+
+        val outcome: Optional[Int] =
+          safely:
+            PdfFile(t"not a pdf".in[Data]).open():
+              pdf.pageCount
+        ```
+
+        The reasons, by number:
+
+        1. `NotPdf` — _the file does not begin with a PDF header_: no `%PDF-` in the first
+           kibibyte.
+        2. `Truncated` — _the PDF file ended unexpectedly_: the parser ran off the end of the
+           file inside an object.
+        3. `MissingStartxref` — _no startxref keyword could be found at the end of the file_.
+        4. `MalformedXref(offset)` — _the cross-reference section at offset `offset` could
+           not be interpreted_.
+        5. `Unparseable(offset, expected)` — _`expected` was expected at offset `offset`_:
+           a syntax error in an object, naming what the parser wanted (an object, a name
+           key, the keyword `endobj`, a stream dictionary).
+        6. `MissingObject(objectNumber, generation)` — _the object `N` `G` was missing or
+           invalid_: an object the cross-reference stream says is compressed could not be
+           found in its container.
+        7. `CircularReference(objectNumber)` — _resolving the object `N` returned to
+           itself_.
+        8. `MissingEntry(key)` — _the required dictionary entry `key` was absent_: no
+           `/Root`, no `/Pages`, a page with no `/MediaBox`, an attachment with no `/EF`.
+        9. `TypeMismatch(key, expected)` — _the dictionary entry `key` was not `expected`_:
+           a `/Filter` which is neither a name nor an array of names, `/DecodeParms` which is
+           not a dictionary, a `/Pages` entry which is not a reference.
+        10. `UnknownFilter(name)` — _the stream filter `name` is not recognized_.
+        11. `CorruptStream(filter)` — _a stream could not be decoded with the `filter`
+            filter_: the named codec (`FlateDecode`, `LZWDecode`, `ASCII85Decode`,
+            `ASCIIHexDecode`) rejected its input.
+        12. `MalformedOperator(operator)` — _the content operator `operator` had malformed
+            operands_: a known operator with the wrong number or kind of operands (an
+            unknown operator is `Pdf.Operator.Unrecognized`, not an error).
+        13. `UnsupportedEncryption(version)` — _the encryption scheme (version `V`) is not
+            supported_: a security handler other than `Standard`, or an `/Encrypt` which is
+            not a dictionary.
+        14. `BadPassword` — _the password was incorrect_: raised as the document is opened,
+            not at the first decrypted string.
+        15. `CircularPageTree` — _the page tree contains a cycle_.
+        16. `Io(detail)` — _an I/O operation failed: `detail`_: the path is invalid, the
+            file could not be opened or written, or the file already exists and
+            `CreateFlag.Replace` was not given.
+        17. `WriteUnsupported` — _this document cannot be written (only an unencrypted,
+            on-disk file with a valid cross-reference table can be edited in place)_: raised
+            when in-memory `Data` is opened with `Write`, or when a write scope over a file
+            whose cross-reference table had to be rebuilt by scanning closes with edits.
+        18. `MissingPage(page)` — _the document has no page `N`_: `Pdf#page` past the last
+            page, with the one-based number.
+    entry .Reason   why a document could not be read, as a numbered, communicable case
+      detail
+          An enum whose cases are listed on the `Pdf.Error` page, each with a `number` and a
+          message; `communicable` renders the message.
+      entry #number   the reason's number, 1 to 18, the sub-number of error 280
+    entry .communicable   renders each reason as the message in its `Pdf.Error` listing
+    entry #reason   which `Pdf.Error.Reason` this error carries
+  entry .Font   a font as a page's resources declare it, with its widths and its decoding of codes
+    detail
+        A `Pdf.Font` is a pure, fully-materialized value — it outlives the scope — read from a
+        page's `/Font` resources by `Page#fonts`, keyed by the resource name a `SetFont`
+        operator (`Tf`) refers to. It is an enum of the font subtypes of ISO 32000-2 §9:
+        `Type1`, `MmType1`, `TrueType`, `Type3` (which also carries its `matrix`, the glyph
+        space to text space transform) and `Type0` (a composite font, whose codes are two
+        bytes). All five share `#baseFont`, `#standard`, `#embedded`, `#descriptor`,
+        `#width`, `#codes` and `#decode`.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        def fontNames(data: Data): List[Text] =
+          PdfFile(data).open():
+            pdf.page(Prim).fonts.to[List].map(_(1).baseFont)
+        ```
+
+        Decoding a show-text operand to Unicode uses the best information the file offers:
+        the font's own `/ToUnicode` map first, then its `/Differences`, then its declared
+        base encoding (`WinAnsiEncoding`, `MacRomanEncoding` or `StandardEncoding`), and
+        finally, for a single-byte code in the printable ASCII range, the code itself. A code
+        no rule covers decodes as U+FFFD. Widths come from the `/Widths` array (or `/W` for
+        a composite font), scaled through `/FontMatrix` for a Type 3 font, and fall back to
+        the built-in metrics of the standard fourteen fonts when the font is one of them and
+        declares none.
+    refer facsimile.Page
+    refer facsimile.TextRun
+    entry .Standard   the standard fourteen fonts every PDF reader has, each with its PostScript name
+      detail
+          `Helvetica`, `HelveticaBold`, `HelveticaOblique`, `HelveticaBoldOblique`,
+          `TimesRoman`, `TimesBold`, `TimesItalic`, `TimesBoldItalic`, `Courier`,
+          `CourierBold`, `CourierOblique`, `CourierBoldOblique`, `Symbol` and `ZapfDingbats`
+          (ISO 32000-2 §9.6.2.2). A font whose `/BaseFont` is one of these names, or one of
+          the metric-compatible aliases (`ArialMT` for Helvetica, `TimesNewRomanPSMT` for
+          Times, `CourierNewPSMT` for Courier, with their bold and italic variants), with or
+          without a subset tag such as `ABCDEF+`, is recognized as `#standard` and its built-in widths
+          are used when the dictionary declares none. `Print.standard` maps a `Font in
+          Print` to one of them.
+      entry #baseFont   the PostScript name a `/BaseFont` entry gives this font, such as `Helvetica-Bold`
+    entry #baseFont   the font's `/BaseFont` name
+    entry #standard   which of the standard fourteen this is, or `Unset` for any other font
+    entry #embedded   the embedded font program as an `Sfnt`, if there is one
+        The `/FontFile2` (or a `/FontFile3` of subtype `OpenType`) of the font's descriptor,
+        parsed as a phoenicia `Sfnt`: a `Truetype` for quadratic outlines, an `Opentype` for
+        CFF. For a composite font, the descendant's program.
+    entry #descriptor   the raw `/FontDescriptor` dictionary, or an empty map
+    entry #width   the advance of a code, in thousandths of an em
+        From the `/Widths` array for a simple font, offset by `/FirstChar`; from `/W` (or
+        `/DW`, default 1000) for a composite font; from the built-in metrics of a standard
+        font when the dictionary has no width for the code; and otherwise `/MissingWidth`,
+        or 500 when that is absent too.
+    entry #codes   the character codes of a show-text operand: bytes, or big-endian pairs for a composite font
+    entry #decode   a show-text operand as Unicode text, as well as the font allows
+        Maps each code through `/ToUnicode`, `/Differences`, the base encoding and finally
+        printable ASCII, in that order, and writes U+FFFD for a code none covers. This is
+        the decoding `Page#text` and `Page#runs` use.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        def decodeFirst(data: Data): Optional[Text] =
+          PdfFile(data).open():
+            pdf.page(Prim).fonts(t"F1").let(_.decode(t"Hello".in[Data]))
+        ```
+  entry .Info   the document information dictionary, fully materialized
+    detail
+        The eight standard entries of the `/Info` dictionary (ISO 32000-2 §14.3.3), each
+        `Optional`: `#title`, `#author`, `#subject`, `#keywords`, `#creator`, `#producer`,
+        `#created` and `#modified`. `Pdf#info` reads it, and `setInfo` writes one back,
+        omitting absent fields. An `Info` is a pure value and escapes the scope.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        val info = Pdf.Info(t"A Title", t"An Author", Unset, Unset, Unset, Unset, Unset, Unset)
+
+        def title(data: Data): Optional[Text] =
+          PdfFile(data).open():
+            pdf.info.title
+        ```
+
+        Dates are read from PDF's `D:YYYYMMDDHHmmSS±HH'mm'` form, in which everything after
+        the year is optional, into an `Info.Timing`; a malformed date reads as `Unset`,
+        never as an error, since real files abound with slightly-wrong dates.
+    entry .Timing   a date from the information dictionary: a timestamp and, if given, its UTC offset
+      detail
+          PDF dates carry an optional zone, so a `Timing` pairs a `Timestamp` with an
+          `Optional[Duration]` offset from UTC rather than claiming an instant. Writing one
+          back with `setInfo` produces the `D:` form, with the offset as `±HH'mm'` when it
+          is present and nothing when it is not.
+
+          ```scala
+          import soundness.*
+          import calendars.gregorianCalendar
+
+          val moment = Timestamp(Date(Year(2026), Month(7), Day(17)),
+              Clockface(Base24(9), Base60(30), Base60(0)))
+
+          val timing = Pdf.Info.Timing(moment, Unset)
+          ```
+      entry #timestamp   the date and time as written
+      entry #offset   the offset from UTC, or `Unset` when the date gives none
+    entry #title   the `/Title`
+    entry #author   the `/Author`
+    entry #subject   the `/Subject`
+    entry #keywords   the `/Keywords`
+    entry #creator   the `/Creator`, the application which made the original document
+    entry #producer   the `/Producer`, the application which converted it to PDF
+    entry #created   the `/CreationDate`, if present and well-formed
+    entry #modified   the `/ModDate`, if present and well-formed
+  entry .Matrix   a PDF transformation matrix: the six live entries, as mosquito's `Affine[Double]`
+    detail
+        `Pdf.Matrix` is the type alias `Affine[Double]`, shared with SVG. PDF documents the
+        transposed, row-vector layout — `a b 0 / c d 0 / e f 1` — in which `this * that`
+        transforms by `this` first; that composition is `Affine`'s `andThen`, and the six
+        numbers appear in the same order under both conventions, so a matrix read from a
+        `Concat` or `SetTextMatrix` operator, or written into one, is the wire format
+        unchanged.
+
+        ```scala
+        import soundness.*
+
+        val scaled: Pdf.Matrix = Pdf.Matrix(2, 0, 0, 2, 100, 100)
+        val same: Pdf.Matrix = Pdf.Matrix.Identity
+        ```
+    entry .Identity   the identity matrix, `1 0 0 1 0 0`
+    entry .apply   a matrix from its six entries, `a b c d e f`, in the order a content stream writes them
+  entry .Operator   a content-stream operator with typed operands
+    detail
+        A page's content stream is a sequence of operators (ISO 32000-2 §8–9, §14.6), which
+        `Page#operators` reads as a `List[Pdf.Operator]` and `setContents` and `appendPage`
+        write back from. Coordinates stay `Double`: they are user-space values, meaningful
+        only under the current transformation matrix. Show-text operands stay encoded `Data`,
+        since mapping them to text needs the font (`winAnsi` encodes text for a simple
+        WinAnsi font). The enum is symmetric enough to serialize back exactly.
+
+        ```scala fuel
+        frame
+          label Begin a text object and choose a font
+          code
+              import soundness.*
+
+              val operators = List
+                ( Pdf.Operator.BeginText,
+                  Pdf.Operator.SetFont(t"F1", 12) )
+        frame
+          label Position the text and show it
+          code
+              import soundness.*
+
+              val operators = List
+                ( Pdf.Operator.BeginText,
+                  Pdf.Operator.SetFont(t"F1", 12),
+                  Pdf.Operator.Offset(72, 720),
+                  Pdf.Operator.ShowText(winAnsi(t"Hello, world")),
+                  Pdf.Operator.EndText )
+        frame
+          label Fill a rectangle beneath it, in a saved graphics state
+          code
+              import soundness.*
+
+              val operators = List
+                ( Pdf.Operator.Save,
+                  Pdf.Operator.FillRgb(Srgb(0.9, 0.9, 0.5)),
+                  Pdf.Operator.Rectangle(60, 700, 200, 40),
+                  Pdf.Operator.Fill(Pdf.Operator.FillRule.NonZero),
+                  Pdf.Operator.Restore,
+                  Pdf.Operator.BeginText,
+                  Pdf.Operator.SetFont(t"F1", 12),
+                  Pdf.Operator.Offset(72, 720),
+                  Pdf.Operator.ShowText(winAnsi(t"Hello, world")),
+                  Pdf.Operator.EndText )
+        frame
+          label Draw an image XObject named in the page's resources
+          code
+              import soundness.*
+
+              val operators = List
+                ( Pdf.Operator.Save,
+                  Pdf.Operator.FillRgb(Srgb(0.9, 0.9, 0.5)),
+                  Pdf.Operator.Rectangle(60, 700, 200, 40),
+                  Pdf.Operator.Fill(Pdf.Operator.FillRule.NonZero),
+                  Pdf.Operator.Restore,
+                  Pdf.Operator.BeginText,
+                  Pdf.Operator.SetFont(t"F1", 12),
+                  Pdf.Operator.Offset(72, 720),
+                  Pdf.Operator.ShowText(winAnsi(t"Hello, world")),
+                  Pdf.Operator.EndText,
+                  Pdf.Operator.Save,
+                  Pdf.Operator.Concat(Pdf.Matrix(200, 0, 0, 100, 72, 500)),
+                  Pdf.Operator.Draw(t"Im1"),
+                  Pdf.Operator.Restore )
+        ##
+        ```
+
+        The cases, by the operator each reads and writes:
+
+        - **Graphics state** (§8.4.4): `Save` (`q`), `Restore` (`Q`), `Concat(matrix)`
+          (`cm`), `SetLineWidth(width)` (`w`), `SetLineCap(cap)` (`J`), `SetLineJoin(join)`
+          (`j`), `SetMiterLimit(limit)` (`M`), `SetDashPattern(pattern, phase)` (`d`),
+          `SetIntent(intent)` (`ri`), `SetFlatness(tolerance)` (`i`), `SetParameters(name)`
+          (`gs`).
+        - **Path construction and painting** (§8.5): `Move(x, y)` (`m`), `Line(x, y)` (`l`),
+          `Cubic(x1, y1, x2, y2, x3, y3)` (`c`), `CubicStart(x2, y2, x3, y3)` (`v`),
+          `CubicEnd(x1, y1, x3, y3)` (`y`), `Close` (`h`), `Rectangle(x, y, width, height)`
+          (`re`), `Stroke` (`S`), `CloseStroke` (`s`), `Fill(rule)` (`f`, `F`, `f*`),
+          `FillStroke(rule)` (`B`, `B*`), `CloseFillStroke(rule)` (`b`, `b*`), `EndPath`
+          (`n`), `Clip(rule)` (`W`, `W*`).
+        - **Text** (§9.4): `BeginText` (`BT`), `EndText` (`ET`), `Offset(dx, dy)` (`Td`),
+          `OffsetLeading(dx, dy)` (`TD`), `SetTextMatrix(matrix)` (`Tm`), `NextLine` (`T*`),
+          `SetCharSpacing(space)` (`Tc`), `SetWordSpacing(space)` (`Tw`),
+          `SetScaling(percent)` (`Tz`), `SetLeading(leading)` (`TL`), `SetFont(font, size)`
+          (`Tf`), `SetRenderMode(mode)` (`Tr`), `SetRise(rise)` (`Ts`), `ShowText(string)`
+          (`Tj`), `ShowTexts(elements)` (`TJ`, whose elements are `Data` strings and `Double`
+          adjustments), `NextLineShow(string)` (`'`), `NextLineShowSpaced(word, char,
+          string)` (`"`).
+        - **Colour** (§8.6.8): `StrokeSpace(name)` (`CS`), `FillSpace(name)` (`cs`),
+          `StrokeColor(components, pattern)` (`SC`, `SCN`), `FillColor(components, pattern)`
+          (`sc`, `scn`), `StrokeGray(gray)` (`G`), `FillGray(gray)` (`g`), `StrokeRgb(color)`
+          (`RG`, an `Srgb`), `FillRgb(color)` (`rg`), `StrokeCmyk(color)` (`K`, a `Cmyk`),
+          `FillCmyk(color)` (`k`).
+        - **XObjects, inline images and shading** (§8.8–8.10): `Draw(name)` (`Do`),
+          `InlineImage(parameters, data)` (`BI`…`ID`…`EI`), `Shade(name)` (`sh`).
+        - **Marked content and compatibility** (§14.6, §7.8.2): `MarkPoint(tag,
+          properties)` (`MP`, `DP`), `BeginMarked(tag, properties)` (`BMC`, `BDC`),
+          `EndMarked` (`EMC`), `BeginCompatibility` (`BX`), `EndCompatibility` (`EX`).
+        - **Type 3 glyph metrics** (§9.6.4): `GlyphWidth(wx, wy)` (`d0`), `GlyphMetrics(wx,
+          wy, llx, lly, urx, ury)` (`d1`).
+        - `Unrecognized(operator, operands)`: any operator not listed, kept with its
+          operands rather than failing, as a `BX`/`EX` compatibility section requires. A
+          *known* operator with malformed operands raises `Pdf.Error` with
+          `MalformedOperator`.
+    refer facsimile.Page
+    refer facsimile.winAnsi
+    entry .LineCap   the shape of a stroked line's ends: `Butt`, `Round` or `Square`
+        The operand of `SetLineCap` (`J`), by ordinal: 0, 1 and 2 as the format numbers them.
+    entry .LineJoin   the shape of a stroked path's corners: `Miter`, `Round` or `Bevel`
+        The operand of `SetLineJoin` (`j`), by ordinal.
+    entry .FillRule   which regions a path encloses: `NonZero` winding or `EvenOdd`
+        Carried by `Fill`, `FillStroke`, `CloseFillStroke` and `Clip`, where the format has
+        two operators (`f` and `f*`, `W` and `W*`) for the two rules.
+    entry .TextRenderMode   how glyphs are painted: fill, stroke, both, invisible, each with or without clipping
+        `Fill`, `Stroke`, `FillStroke`, `Invisible`, `FillClip`, `StrokeClip`,
+        `FillStrokeClip` and `Clip`, the operand of `SetRenderMode` (`Tr`) by ordinal, 0 to
+        7. Text in `Invisible` mode — the usual way an OCR layer is placed over a scanned
+        page — is still extracted by `Page#text`.
+  entry .Rect   a rectangle in default user space, as four typesafe lengths in points
+    detail
+        A PDF point is exactly 1/72 inch, which is quantitative's `Points` unit, so a page
+        box, a link's rectangle or a destination's view is a `Pdf.Rect` of four
+        `Quantity[Points[1]]`s: `#left`, `#bottom`, `#right`, `#top`. A rectangle read from a
+        file is normalized to lower-left and upper-right whatever order the file gave its
+        corners in, and scaled by the page's `/UserUnit`; one written to a file is written
+        as `[left bottom right top]`.
+
+        ```scala
+        import soundness.*
+
+        val a4 = Pdf.Rect
+          ( Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
+            Quantity[Points[1]](595.0), Quantity[Points[1]](842.0) )
+
+        a4.width    // 595 points
+        a4.height   // 842 points
+        ```
+    entry #left   the lower-left corner's x coordinate
+    entry #bottom   the lower-left corner's y coordinate
+    entry #right   the upper-right corner's x coordinate
+    entry #top   the upper-right corner's y coordinate
+    entry #width   `right - left`
+    entry #height   `top - bottom`
+  entry #version   the version from the `%PDF-` header
+  entry #trailer   the trailer dictionary, as the newest cross-reference section left it
+      The entries of the newest trailer, with older sections' entries beneath them: `/Root`,
+      `/Info`, `/ID`, `/Encrypt`, `/Size`. A document whose table was rebuilt by scanning
+      has the trailer recovered from a surviving `trailer` dictionary or built from the
+      catalog found by scanning.
+  entry #encrypted   whether the trailer has an `/Encrypt` entry
+      An encrypted document is already unlocked by the time the scope's block runs — the
+      empty password is tried when none is given, which covers a file encrypted only to
+      restrict permissions — so this says what the file is, not whether anything is still
+      locked.
+  entry #catalog   the document catalog, the `/Root` dictionary
+      Raises `Pdf.Error` with `MissingEntry(Root)` if the trailer has no `/Root` or it is
+      not a dictionary.
+  entry #page   the page at an ordinal position in the flattened page tree
+      `pdf.page(Prim)` is the first page. The page tree is walked depth-first into reading
+      order, accumulating the inheritable attributes — `/Resources`, `/MediaBox`, `/CropBox`
+      and `/Rotate` — so a `Page` answers for them whether they were set on the leaf or on an
+      ancestor. A tree which cycles raises `Pdf.Error` with `CircularPageTree`, and an
+      ordinal past the last page raises `MissingPage` with its one-based number.
+
+      The `Page` captures the document and cannot leave the scope; its boxes, text, fonts
+      and annotations can.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      def firstPageText(data: Data): Text =
+        PdfFile(data).open():
+          pdf.page(Prim).text
+      ```
+  entry #pageCount   how many pages the flattened page tree has
+  entry #destinations   the document's named destinations, by name
+      Reads both the modern `/Names` → `/Dests` name tree and the older `/Dests` dictionary
+      in the catalog, resolving each to a `Destination` with the page given as its ordinal
+      in the flattened page sequence. A name whose target cannot be interpreted is omitted.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      def intro(data: Data): Optional[Destination] =
+        PdfFile(data).open():
+          pdf.destinations(t"intro")
+      ```
+  entry #bookmarks   the document outline as a tree of `Bookmark`s
+      Walks the `/Outlines` tree through `/First` and `/Next`, materializing each item's
+      title, its destination (from `/Dest`, or the `/D` of a `/GoTo` action, with a named
+      destination looked up) and its children. A cycle in the sibling or child chain stops
+      the walk rather than looping. The result is pure and escapes the scope; `setBookmarks`
+      writes a tree back.
+  entry #attachments   the files embedded in the document, from the `/EmbeddedFiles` name tree
+      Each is a `Pdf.Attachment` whose metadata is read now and whose `data` still reads
+      through the document, so the list is confined to the scope.
+  entry #pageLabel   the label a viewer displays for a page, from `/PageLabels`
+      The page's label under the catalog's `/PageLabels` number tree (ISO 32000-2 §12.4.2):
+      the prefix `/P`, then the number styled by `/S` — `D` decimal, `R` and `r` upper- and
+      lower-case roman, `A` and `a` upper- and lower-case alphabetic — counting from `/St`
+      (default 1) at the start of the range. Without a `/PageLabels` tree, or for a page
+      before the first range, the plain one-based page number.
+  entry #xmp   the XMP metadata stream's bytes, if the catalog has one
+      The decoded payload of the catalog's `/Metadata` stream, which is XML, or `Unset` if
+      there is none.
+  entry #info   the information dictionary as a `Pdf.Info`
+      Reads the trailer's `/Info`, with each text entry decoded from PDFDocEncoding or
+      UTF-16 and each date parsed from the `D:` form. A document with no `/Info` gives an
+      `Info` with every field `Unset`.
+  entry #apply   an object by reference, or by number and generation
+      `pdf(ref)` and `pdf(number, generation = 0)` resolve an indirect object: from the
+      write overlay first (so an edit in progress is visible), then the cache, then its
+      recorded offset in the file, or the object stream it is compressed into. A freed,
+      missing or invalid entry, or a generation which does not match, is `Cos.Nil`, as ISO
+      32000-2 §7.3.10 has it, not an error. An object whose recorded offset holds something
+      else is found by scanning the file instead. An object which refers to itself while
+      loading raises `Pdf.Error` with `CircularReference`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      def catalogType(data: Data): Optional[Text] =
+        PdfFile(data).open():
+          pdf(1, 0)(t"Type").let(_.name)
+      ```
+
+      Strings in an encrypted document are decrypted as the object loads; a stream's payload
+      is decrypted when `#payload` or `#spring` reads it.
+  entry #resolved   a value with one level of indirection removed
+      A `Cos.Ref` is looked up with `#apply`; any other `Cos` is returned as it is. The
+      usual way to read a dictionary entry which may be direct or indirect:
+      `pdf.resolved(dictionary(t"Pages").or(Cos.Nil))`.
+  entry #payload   a stream's decoded bytes, whole
+      Reads the raw bytes between `stream` and `endstream` — trusting `/Length` when the
+      bytes it points at are followed by `endstream`, and otherwise searching for the
+      marker — decrypts them if the document is encrypted, and runs them through the
+      stream's filter chain: `FlateDecode`, `LZWDecode`, `ASCII85Decode`, `ASCIIHexDecode`
+      and `RunLengthDecode`, each with its PNG or TIFF predictor if `/DecodeParms` asks for
+      one. The chain stops at the first image codec (`DCTDecode`, `JPXDecode`,
+      `CCITTFaxDecode`, `JBIG2Decode`), whose output is the encoded image. An unknown filter
+      raises `Pdf.Error` with `UnknownFilter`, and a codec which rejects its input raises
+      `CorruptStream`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      def streamLength(data: Data): Int =
+        PdfFile(data).open():
+          pdf(2, 0) match
+            case body: Cos.Body => pdf.payload(body).length
+            case _              => 0
+      ```
+  entry #spring   a stream's decoded bytes as a re-materializable `Spring` of chunks
+      Where `#payload` materializes a stream whole, `spring` returns a `Spring[Data]` whose
+      every `apply()` mints a fresh pull endpoint reading the raw range in 64 KiB chunks and
+      decoding through the same filter chain as a streaming pipeline (pneumatic's inflater
+      and LZW decompressor, with the predictors and ASCII decoders gathered behind them),
+      so a large embedded file or image is never held whole. The endpoint reads through the
+      document and so cannot outlive the scope. An encrypted stream is decrypted whole
+      before filtering, since the cipher spans the payload.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      def streamLength(data: Data): Int =
+        PdfFile(data).open():
+          pdf(2, 0) match
+            case body: Cos.Body => pdf.spring(body)().read[Data].length
+            case _              => 0
+      ```
+
+entry .Page   one page of the document, with its inherited attributes applied
+  detail
+      A `Page` is a leaf of the page tree, reached by `Pdf#page` at an ordinal position, with
+      the attributes the format lets a page inherit from its ancestors — `/Resources`,
+      `/MediaBox`, `/CropBox`, `/Rotate` — already resolved, a child's own entry winning over
+      an ancestor's. It resolves lazily through the document, so it captures the `Pdf` and
+      cannot outlive the scope; everything extracted from it — boxes, rotation, fonts, text,
+      annotations — is pure and portable.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      def geometry(data: Data): (Quantity[Points[1]], Quantity[Points[1]], Page.Rotation) =
+        PdfFile(data).open():
+          val page = pdf.page(Prim)
+          (page.width, page.height, page.rotation)
+      ```
+
+      The boxes follow the format's defaults: a `/MediaBox` is required (on the page or an
+      ancestor); the crop box defaults to the media box; and the bleed, trim and art boxes,
+      which are not inheritable, default to the crop box. Every box is scaled by the page's
+      `/UserUnit`, so what is read is in points. `#width` and `#height` are the displayed
+      size: the crop box, with its axes exchanged when the page is turned a quarter either
+      way.
+
+      The editing extensions take a `Page` to say which page to change: `setContents`,
+      `setRotation`, `setBox`, `setPageEntry`, `addResource`, `useFont`, `setAnnotations`,
+      `addLink` and `removePage`.
+  refer facsimile.Pdf
+  refer facsimile.TextRun
+  refer facsimile.Annotation
+  entry .Rotation   how a page is turned for display: `None`, `Quarter`, `Half` or `ThreeQuarters`
+      The page's `/Rotate`, which the format gives in degrees clockwise as a multiple of 90,
+      normalized: `Quarter` is 90, `Half` 180, `ThreeQuarters` 270, and any value which is
+      not one of these (or no entry) is `None`. `setRotation` writes one back.
+  entry #index   the page's ordinal position in the flattened page sequence
+  entry #dictionary   the page's own dictionary, without inherited entries
+  entry #userUnit   the size of a user-space unit in multiples of 1/72 inch: `/UserUnit`, default 1
+      Not inheritable. Every box on the page is multiplied by it, so a page declaring
+      `/UserUnit 2` over a 300-point media box reads as 600 points wide.
+  entry #mediaBox   the media box, in points: the page's own or an inherited one
+      Raises `Pdf.Error` with `MissingEntry(MediaBox)` when neither the page nor any
+      ancestor declares one.
+  entry #cropBox   the crop box, defaulting to the media box
+  entry #bleedBox   the bleed box, defaulting to the crop box
+  entry #trimBox   the trim box, defaulting to the crop box
+  entry #artBox   the art box, defaulting to the crop box
+  entry #rotation   the page's rotation, its own or inherited
+  entry #width   the displayed width: the crop box's width, or its height when the page is quarter-turned
+  entry #height   the displayed height: the crop box's height, or its width when the page is quarter-turned
+  entry #fonts   the page's fonts, keyed by the resource name a `Tf` operator refers to
+      Reads the `/Font` dictionary of the page's resources (own or inherited) into
+      `Pdf.Font`s. A font dictionary which cannot be interpreted is left out rather than
+      failing, since fonts are consulted opportunistically during text extraction.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      def baseFont(data: Data): Optional[Text] =
+        PdfFile(data).open():
+          pdf.page(Prim).fonts(t"F1").let(_.baseFont)
+      ```
+  entry #content   the page's content stream, decoded
+      The page's `/Contents` — one stream, or an array of streams which the format requires
+      to be treated as one — decoded through each stream's filters and concatenated with a
+      newline between, as bytes.
+  entry #operators   the content stream as typed `Pdf.Operator`s
+      Lexes `#content` and interprets each instruction, giving `Unrecognized` for an
+      operator the library does not know and raising `Pdf.Error` with `MalformedOperator`
+      for one it knows whose operands are wrong.
+  entry #runs   every show-text operation, decoded and positioned, as `TextRun`s
+      Runs the content stream's text state — fonts, sizes, matrices, spacing, rise, leading
+      — through `#operators` and gives each `ShowText`, `ShowTexts`, `NextLineShow` and
+      `NextLineShowSpaced` as a `TextRun` with its Unicode text, font, effective size,
+      baseline origin and advance, in points. For a reader which needs coordinates rather
+      than a paragraph.
+  entry #text   the page's plain text, in content order
+      Reconstructs the reading order from the positions of the glyphs: adjacent shows run
+      together, a gap along a baseline becomes a space, and a change of baseline becomes a
+      newline — the fidelity of `pdftotext -raw`. Text in an invisible render mode (an OCR
+      layer) is included.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      def firstPage(data: Data): Text =
+        PdfFile(data).open():
+          pdf.page(Prim).text
+      ```
+  entry #annotations   the page's annotations as typed `Annotation`s
+      Reads the page's `/Annots` array: a `/Link` with its destination (explicit, or through
+      a `/GoTo` action, or named) and URI, a `/Text` note with its contents, a `/Widget`
+      with its field name, and anything else as `Annotation.Other` with its subtype. Each
+      carries its rectangle in points and its raw dictionary.
+
+entry .Cos   the COS object model: the values a PDF file is made of
+  detail
+      COS (the "Carousel Object System") is the object language beneath PDF (ISO 32000-2
+      §7.3): `Cos` is an enum of its eight basic types plus streams and indirect references.
+      Every dictionary the library reads — a page, the catalog, the trailer, a font — is a
+      `Map[Text, Cos]`, and the extension methods on `Cos` read a value as the type it is
+      hoped to be, giving `Unset` otherwise, so no read ever throws for a shape it did not
+      expect.
+
+      - `Nil` — the `null` object. A dictionary entry whose value is `Nil` is equivalent to
+        an absent key, which `apply` honours.
+      - `Truth(value)` — a boolean.
+      - `Integral(value)` — an integer, as `Long`.
+      - `Real(value)` — a real number, as `Double`. `double` reads either numeric type; the
+        distinction is kept for writing.
+      - `Name(text)` — a name, such as `/Type`, without its slash.
+      - `Chars(bytes)` — a string, as its raw bytes: interpreting them (PDFDocEncoding,
+        UTF-16, dates) is deferred to `text` and to the typed layer.
+      - `Sequence(elements)` — an array.
+      - `Dictionary(entries)` — a dictionary.
+      - `Body(entries, start)` — a stream *locator*: its dictionary plus the file offset of
+        its raw payload, not the payload itself, which is read only through `Pdf#payload` or
+        `Pdf#spring`. A stream made by `newStream` has a negative `start` keying its bytes
+        in the write overlay.
+      - `Ref(number, generation)` — an indirect reference, resolved by `Pdf#apply` or
+        `Pdf#resolved`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      def kids(data: Data): List[Cos] =
+        PdfFile(data).open():
+          val pages = pdf.resolved(pdf.catalog(t"Pages").or(Cos.Nil))
+          pages(t"Kids").let(pdf.resolved(_).elements).or(Nil)
+      ```
+
+      Writing uses the same values: `set`, `allocate` and `newStream` take a `Cos`, and
+      `appendPage`'s resources and `setAnnotations`' dictionaries are built as `Cos`
+      values. A number which is whole is best written as `Integral`.
+  refer facsimile.Pdf
+  entry .dictionary   a dictionary's entries, or a stream's dictionary; `Unset` for anything else
+      An extension on `Cos`. A `Body` answers with its dictionary, since a stream is its
+      dictionary for lookup purposes.
+  entry .apply   a dictionary entry by key, with a `Nil` value read as absent
+      An extension on `Cos`: `cos(t"Type")` is `Unset` when the value is not a dictionary
+      or stream, has no such key, or has the key with the `null` object as its value (ISO
+      32000-2 §7.3.9). The result may be a `Ref`, which `Pdf#resolved` follows.
+  entry .long   an `Integral` value, or `Unset`
+  entry .double   an `Integral` or `Real` value as a `Double`, or `Unset`
+  entry .name   a `Name`'s text, or `Unset`
+  entry .truth   a `Truth` value, or `Unset`
+  entry .chars   a `Chars` string's raw bytes, or `Unset`
+  entry .text   a `Chars` string as text, by its byte-order mark or PDFDocEncoding
+      A string beginning with the UTF-16BE mark `FE FF` decodes as UTF-16BE, one beginning
+      with the UTF-8 mark `EF BB BF` as UTF-8, and any other as PDFDocEncoding (Latin-1
+      with the typographic characters of ISO 32000-2 Annex D.7 at 0x18–0x1F and 0x80–0xA0).
+      A malformed sequence decodes as U+FFFD. The text written by `setInfo`, `addLink` and
+      `setBookmarks` takes the reverse path: Latin-1 when every character fits, otherwise
+      UTF-16BE with the mark.
+  entry .elements   a `Sequence`'s elements, or `Unset`
+
+entry .Annotation   a page annotation: a link, a note, a form widget, or any other subtype with its dictionary
+  detail
+      An enum of what a page's `/Annots` array holds (ISO 32000-2 §12.5), read by
+      `Page#annotations`. Three subtypes are typed, and the remaining twenty-odd are kept as
+      `Other`; every case carries its rectangle in points and its raw dictionary as an
+      escape hatch.
+
+      - `Link(rect, destination, uri, dictionary)` — a `/Link`: its target is a
+        `Destination` (from `/Dest`, or the `/D` of a `/GoTo` action, named destinations
+        resolved), a `uri` (from a `/URI` action), or neither.
+      - `Note(rect, contents, open, dictionary)` — a `/Text` annotation, a sticky note, with
+        its `/Contents` and whether it is shown `/Open`.
+      - `Widget(rect, fieldName, dictionary)` — a `/Widget`, a form field's appearance, with
+        the field's `/T` name.
+      - `Other(subtype, rect, dictionary)` — any other `/Subtype`, by name.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      def links(data: Data): List[Text] =
+        PdfFile(data).open():
+          pdf.page(Prim).annotations.bind:
+            case Annotation.Link(_, _, uri, _) => uri.lay(Nil)(List(_))
+            case _                             => Nil
+      ```
+
+      `addLink` writes a link annotation; `setAnnotations` replaces a page's annotations with
+      raw dictionaries.
+  refer facsimile.Page
+  refer facsimile.Destination
+  refer facsimile.addLink
+  entry .rect   the annotation's rectangle in points, whichever case it is
+      An extension on `Annotation`, since every case has a `rect` field of its own.
+  entry .dictionary   the annotation's raw dictionary, whichever case it is
+      An extension on `Annotation`.
+
+entry .Bookmark   one entry of the document outline, with its destination and children
+  detail
+      PDF's "outlines" are what every viewer presents as bookmarks. `Pdf#bookmarks` reads
+      the tree as a `List[Bookmark]`, fully materialized, so it is a pure value which
+      escapes the scope; `setBookmarks` writes one back, rebuilding the whole
+      `/First`/`/Last`/`/Next`/`/Prev`/`/Parent`/`/Count` linkage.
+
+      ```scala
+      import soundness.*
+
+      val outline = List
+        ( Bookmark(t"Introduction", Destination.Fit(Prim), Nil),
+          Bookmark
+            ( t"Chapters", Unset,
+              List(Bookmark(t"One", Destination.Fit(Sec), Nil)) ) )
+      ```
+  refer facsimile.Destination
+  refer facsimile.setBookmarks
+  entry #title   the bookmark's text
+  entry #destination   where it leads, or `Unset` for a heading which only groups its children
+  entry #children   the bookmarks nested beneath it
+
+entry .Destination   where a link or bookmark lands: a page, and how the viewer should fit it
+  detail
+      An enum of the explicit destinations of ISO 32000-2 §12.3.2.3, with the page given as
+      its ordinal in the flattened page sequence (`Prim` is the first page) and the view
+      parameters, which the format allows to be omitted, as `Optional[Double]`s in user-space
+      units:
+
+      - `Xyz(page, left, top, zoom)` — the position at the top-left corner, at a zoom.
+      - `Fit(page)` — the whole page.
+      - `FitWidth(page, top)` — the page's width, with `top` at the top of the window.
+      - `FitHeight(page, left)` — the page's height, with `left` at the left.
+      - `FitRect(page, rect)` — a rectangle of the page, as a `Pdf.Rect`.
+      - `FitBox(page)` — the page's bounding box.
+      - `FitBoxWidth(page, top)` — the bounding box's width.
+      - `FitBoxHeight(page, left)` — the bounding box's height.
+
+      A destination is read from an explicit array, a dictionary wrapping one at `/D`, or a
+      name or string looked up among the document's named destinations (consulted once, so a
+      self-referential name cannot loop). `Pdf#destinations` gives the named ones;
+      `Annotation.Link` and `Bookmark` carry theirs; `addLink` and `setBookmarks` write them.
+  refer facsimile.Bookmark
+  refer facsimile.Annotation
+  entry .page   the destination's page, as an ordinal, whichever case it is
+      An extension on `Destination`, since every case declares a `page` field of its own.
+
+entry .TextRun   one show-text operation, decoded and positioned in points
+  detail
+      `Page#runs` gives one `TextRun` per `ShowText`, `ShowTexts`, `NextLineShow` or
+      `NextLineShowSpaced` operator: its Unicode `#text`, the `#font` it renders in, the
+      effective `#size` (the font size scaled by the text and transformation matrices), its
+      baseline origin `#x` and `#y` in unrotated page space, and its advance `#width` — all
+      as `Quantity[Points[1]]`. A `TextRun` is a pure value and escapes the scope.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      def headings(data: Data): List[Text] =
+        PdfFile(data).open():
+          pdf.page(Prim).runs.filter(_.size > Quantity[Points[1]](18.0)).map(_.text)
+      ```
+  refer facsimile.Page
+  entry #text   the run's text, decoded through its font
+  entry #font   the `Pdf.Font` the run is set in
+  entry #size   the effective font size, in points
+  entry #x   the baseline origin's x coordinate, in points
+  entry #y   the baseline origin's y coordinate, in points
+  entry #width   the run's advance along its baseline, in points
+
+entry .Print   the print medium: fonts a PDF reader can show, including the standard fourteen
+  detail
+      `Print` is a phoenicia `Medium`, the counterpart of cataclysm's `Web`: a typeface is
+      *typesettable in print* when a PDF reader can show it, which is when its program is
+      embedded in the document or it is one of the standard fourteen fonts every reader has
+      (ISO 32000-2 §9.6.2.2). The companion holds the five standard typefaces as values —
+      `.Helvetica`, `.Times`, `.Courier`, `.Symbol`, `.ZapfDingbats` — and a `Typesettable
+      in Print` given for each, in the implicit scope of `(Typeface of "Helvetica") is
+      Typesettable in Print`, so no import is needed.
+
+      `.font` makes a `Font in Print` from a face, checking at compile time (when the
+      provision's coverage is known) that the typeface has a provision for print and that
+      the face it asks for — a weight, a slant — is covered; `useFont` then names the font
+      on a page, embedding its program if the provision is an embedded one and declaring it
+      by name if it is standard, so a document never names a font its reader cannot show.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val bold: Font in Print = Print.font(Print.Helvetica.bold)
+      val slanted: Font in Print = Print.font(Print.Times.italic)
+      Print.font(Typeface["Georgia"].face)   // does not compile
+      ```
+
+      A typeface of one's own becomes available in print by declaring a provision for it,
+      embedded from an `Sfnt`:
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      def provided(program: Truetype): Font in Print =
+        given (Typeface of "Pretend") is Typesettable in Medium = Typesettable.embedded(program)
+        Print.font(Typeface["Pretend"].face)
+      ```
+
+      A `Font in Print` for a standard typeface maps to a `Pdf.Font.Standard` by `.standard`
+      — bold from weight 600, the oblique or italic face for any slant — and a font from an
+      embedded provision gives up its program through `.embedded`.
+  refer facsimile.useFont
+  refer facsimile.embedFont
+  entry .Provision   the `Typesettable` instance the standard typefaces share
+    detail
+        A named class, so the five standard provisions have a stable type: each is a local
+        source (the reader's own font) with a `coverage` describing the faces it has. The
+        text typefaces cover regular and bold, each upright and slanted; `Symbol` and
+        `ZapfDingbats` cover one upright regular face. Not normally constructed by a user,
+        whose own provisions come from `Typesettable.embedded`, `Typesettable.local` and
+        their siblings in phoenicia.
+    entry #coverage   which faces the typeface has in print
+    entry #sources   the provision's sources: one `Typesettable.Source.Local` named for the typeface
+  entry .Helvetica   the `Helvetica` typeface, `Typeface of "Helvetica"`
+      Regular and bold, upright and oblique: `Print.Helvetica.bold`,
+      `Print.Helvetica.italic` and `Print.Helvetica.face` select among
+      `Pdf.Font.Standard.Helvetica`, `HelveticaBold`, `HelveticaOblique` and
+      `HelveticaBoldOblique`.
+  entry .Times   the `Times` typeface, `Typeface of "Times"`
+      Regular and bold, upright and italic: `TimesRoman`, `TimesBold`, `TimesItalic` and
+      `TimesBoldItalic`.
+  entry .Courier   the `Courier` typeface, `Typeface of "Courier"`
+      Regular and bold, upright and oblique: `Courier`, `CourierBold`, `CourierOblique`
+      and `CourierBoldOblique`.
+  entry .Symbol   the `Symbol` typeface, `Typeface of "Symbol"`
+      One face, with its own built-in encoding: `useFont` declares it without
+      `WinAnsiEncoding`.
+  entry .ZapfDingbats   the `ZapfDingbats` typeface, `Typeface of "ZapfDingbats"`
+      One face, with its own built-in encoding.
+  entry .helvetica   `Typeface of "Helvetica" is Typesettable in Print`, in implicit scope
+      The given which makes Helvetica available in print without anything being embedded.
+      It is found through the companion of `Print`, which is in the implicit scope of the
+      refinement, so no import is needed.
+  entry .times   `Typeface of "Times" is Typesettable in Print`, in implicit scope
+  entry .courier   `Typeface of "Courier" is Typesettable in Print`, in implicit scope
+  entry .symbol   `Typeface of "Symbol" is Typesettable in Print`, in implicit scope
+  entry .zapfDingbats   `Typeface of "ZapfDingbats" is Typesettable in Print`, in implicit scope
+  entry .standard   the standard font a `Font in Print` selects, or `Unset` for any other typeface
+      Bold from weight 600, and the oblique or italic face for any slant: `Print.Helvetica`
+      at weight 700 and a slant is `Pdf.Font.Standard.HelveticaBoldOblique`. A typeface not
+      among the five is `Unset`, which is how `useFont` decides to declare a font by its
+      typeface's own name instead.
+  entry .embedded   the `Sfnt` to embed for a font, from its provision's embedded sources
+      The first embedded source whose coverage admits the face, else the first embedded
+      source, else `Unset` for a provision with no files (a standard or local one).
+  entry .font   a `Font in Print` from a face, checked against the typeface's provision for print
+      `Print.font(face)` needs a `Typeface of family is Typesettable in (? >: Print)` for the
+      face's family — one of the five standard givens, or a provision declared for `Medium`
+      or `Print` — and a `Tactic[Font.Error]`, raised when the provision's coverage does not
+      admit the face. It is inline so that, when the provision names an embedded file the
+      compiler can read, the check happens as the code compiles; the runtime check always
+      runs. Use it where the expected type does not already name the medium; `Font.of[Print]`
+      is the same with the medium written.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val font: Font in Print = Print.font(Print.Courier.bold)
+      ```
+
+entry .pdf   the contextual document within an open scope: `pdf.pageCount`, not `summon[Pdf]`
+    A transparent inline accessor for the `Pdf^` in scope, following parasite's `monitor`.
+    Every scope opened with `PdfFile#open`, `path.open[Pdf]()` or `data.open[Pdf]()` makes
+    the document contextual, so a block which does not name it writes `pdf.page(Prim)`;
+    one which does — `open(Read & Write): doc ?=>` — may use either.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    def pages(data: Data): Int =
+      PdfFile(data).open():
+        pdf.pageCount
+    ```
+
+    Outside a scope there is no `Pdf` in context and the accessor does not compile.
+
+entry .set   replaces, or defines, an object by reference
+    An extension on the write-granted handle `(Pdf & Granting[Grant.Write])^`, available
+    inside a scope opened with `Read & Write` or `create[Pdf]`. `doc.set(ref, value)` records
+    `value` as the object `ref` names, in the overlay every read consults first, so the
+    change is visible to `Pdf#apply` at once; it is written as part of the incremental
+    update when the scope closes. An object previously freed is un-freed. (It is `set`
+    rather than `update`, whose assignment sugar collides with other `update`s.)
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    def retitle(path: Path on Linux): Unit =
+      PdfFile(path).open(Read & Write): doc ?=>
+        doc.set(Cos.Ref(2, 0), Cos.Dictionary(Map(t"Value" -> Cos.Chars(t"edited".in[Data]))))
+    ```
+
+entry .allocate   adds a new object, returning a reference to it
+    An extension on the write-granted handle. The object takes the next free number — one
+    past the largest the original file used — at generation 0, and the reference may be
+    used at once in other objects. The low-level way to add a dictionary or a stream
+    (`newStream`) the typed editing operations do not cover.
+
+entry .newStream   a new stream object carrying the given bytes, uncompressed
+    An extension on the write-granted handle. `doc.newStream(data, entries)` makes a
+    `Cos.Body` whose dictionary is `entries` with `/Length` set to the data's length, and
+    whose bytes live in the write overlay until the update is written. It is a value, not
+    yet an object: `allocate` it, or place it where a direct stream is wanted. The bytes are
+    written as given, with no filter applied.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    def addXmp(path: Path on Linux, xml: Data): Unit =
+      PdfFile(path).open(Read & Write): doc ?=>
+        val entries = Map(t"Type" -> Cos.Name(t"Metadata"), t"Subtype" -> Cos.Name(t"XML"))
+        val metadata = doc.allocate(doc.newStream(xml, entries))
+
+        doc.trailer(t"Root") match
+          case root: Cos.Ref => doc.set(root, Cos.Dictionary(doc.catalog.define(t"Metadata", metadata)))
+          case _             => ()
+    ```
+
+entry .free   deletes an object: its number becomes a free cross-reference entry
+    An extension on the write-granted handle. An object added in this scope is simply
+    dropped; one from the original file is recorded as freed, so the incremental update
+    writes a free entry for it and `Pdf#apply` gives `Cos.Nil` for it from then on. (Named
+    `free`, since `delete` is galilei's.)
+
+entry .setContents   replaces a page's content with the given operators
+    An extension on the write-granted handle. The operators are serialized to a fresh,
+    uncompressed content stream and the page's `/Contents` is pointed at it; the previous
+    content streams are left in place but no longer referenced. Any font or XObject the
+    operators name must be in the page's resources (`useFont`, `addResource`).
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    def rewrite(path: Path on Linux): Unit =
+      PdfFile(path).open(Read & Write): doc ?=>
+        val font = Print.font(Print.Helvetica.face)
+        val page = doc.page(Prim)
+        doc.useFont(page, t"F1", font)
+
+        doc.setContents
+          ( page,
+            List
+              ( Pdf.Operator.BeginText, Pdf.Operator.SetFont(t"F1", 12),
+                Pdf.Operator.Offset(72, 720), Pdf.Operator.ShowText(winAnsi(t"Written")),
+                Pdf.Operator.EndText ) )
+    ```
+
+entry .setRotation   sets a page's rotation
+    An extension on the write-granted handle. Writes the page's `/Rotate` as 0, 90, 180 or
+    270 for `Page.Rotation.None`, `Quarter`, `Half` and `ThreeQuarters`.
+
+entry .setBox   sets a page box, by name, to a rectangle in points
+    An extension on the write-granted handle. `doc.setBox(page, t"CropBox", rect)` writes
+    the named box — `MediaBox`, `CropBox`, `BleedBox`, `TrimBox` or `ArtBox` — as
+    `[left bottom right top]` on the page's own dictionary. The rectangle is written in
+    points as given; a page with a `/UserUnit` other than 1 will read it back scaled.
+
+entry .setPageEntry   sets any entry in a page's dictionary
+    An extension on the write-granted handle: `doc.setPageEntry(page, t"UserUnit",
+    Cos.Real(2.0))`. The escape hatch for a page attribute the typed operations do not
+    cover.
+
+entry .setInfo   replaces the document information dictionary
+    An extension on the write-granted handle. Each present field of the `Pdf.Info` is
+    written as a text string, and each `Timing` in the `D:YYYYMMDDHHmmSS` form with its
+    offset as `±HH'mm'` when it has one; absent fields are omitted. The existing `/Info`
+    object is replaced if the trailer has one, and otherwise a fresh object is created and
+    linked from the trailer of the incremental update.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    def describe(path: Path on Linux): Unit =
+      PdfFile(path).open(Read & Write): doc ?=>
+        doc.setInfo(Pdf.Info(t"A Title", t"An Author", Unset, Unset, Unset, Unset, Unset, Unset))
+    ```
+
+entry .embedFont   embeds a font program as a simple WinAnsi TrueType font, returning its `/Font` reference
+    An extension on the write-granted handle. `doc.embedFont(sfnt)` writes the program as a
+    `/FontFile2` stream, builds a `/FontDescriptor` from its tables (ascent, descent, cap
+    height, italic angle, bounding box, with sensible defaults where a table is missing or
+    unreadable) and a `/Widths` array for codes 32 to 255 under `WinAnsiEncoding`, and
+    allocates the `/Font` dictionary around them. The `name` defaults to the program's own
+    PostScript name (or `Embedded`). With `subset`, only the glyphs the given text needs are
+    embedded, under the conventional six-letter tag (`ABCDEF+Name`, derived from the name
+    and text, so identical subsets embed identically); only a `Truetype` can be subset,
+    since a CFF `Opentype` has no `glyf` and `loca` to rewrite, and embeds whole.
+
+    The reference is a font *object*; `addResource` names it on a page under the resource
+    name the content's `SetFont` operator uses.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    def embed(path: Path on Linux, program: Truetype): Unit =
+      PdfFile(path).open(Read & Write): doc ?=>
+        val font = doc.embedFont(program, t"MyFont", subset = t"Hello")
+        doc.addResource(doc.page(Prim), t"Font", t"F1", font)
+    ```
+
+entry .useFont   makes a `Font in Print` available to a page's content under a resource name
+    An extension on the write-granted handle. A `Font in Print` exists only for a typeface
+    with a provision for print, so `doc.useFont(page, t"F1", font)` always has something a
+    reader can show: a font from an embedded provision is embedded with `embedFont` (subset
+    to `subset` if given), and a standard typeface is declared by its `Pdf.Font.Standard`
+    name as a `Type1` font — with `WinAnsiEncoding` for the text fonts, and the built-in
+    encoding for `Symbol` and `ZapfDingbats` — without embedding anything. A local
+    provision of another typeface is declared by the typeface's name. The font is then
+    registered in the page's `/Font` resources as `name`, the name `SetFont` refers to.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    def heading(path: Path on Linux): Unit =
+      PdfFile(path).open(Read & Write): doc ?=>
+        val page = doc.page(Prim)
+        doc.useFont(page, t"F1", Print.font(Print.Helvetica.bold))
+
+        doc.setContents
+          ( page,
+            List
+              ( Pdf.Operator.BeginText, Pdf.Operator.SetFont(t"F1", 24),
+                Pdf.Operator.Offset(72, 720), Pdf.Operator.ShowText(winAnsi(t"Heading")),
+                Pdf.Operator.EndText ) )
+    ```
+
+entry .addResource   registers a resource on a page under a category and name
+    An extension on the write-granted handle. `doc.addResource(page, t"Font", t"F1", ref)`
+    puts `ref` into the page's `/Resources` under the category dictionary (`Font`, `XObject`,
+    `ExtGState`, …) as `name`, creating the resources and category dictionaries as needed
+    and keeping the other entries. The name is what a content operator refers to: `/F1` for
+    `SetFont`, `/Im1` for `Draw`.
+
+entry .setAnnotations   replaces a page's annotations with raw annotation dictionaries
+    An extension on the write-granted handle. Each `Cos` becomes an indirect object and the
+    page's `/Annots` is set to the array of their references, discarding what was there.
+    `addLink` adds one typed link without disturbing the rest.
+
+entry .addLink   adds a link annotation over a rectangle, to a URI or an in-document destination
+    An extension on the write-granted handle. `doc.addLink(page, rect, uri = t"https://…")`
+    writes a `/Link` annotation with a `/URI` action, and `doc.addLink(page, rect,
+    destination = Destination.Fit(Sec))` one with an explicit `/Dest` array; both may be
+    given. The annotation is appended to the page's existing `/Annots`.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    def link(path: Path on Linux, box: Pdf.Rect): Unit =
+      PdfFile(path).open(Read & Write): doc ?=>
+        doc.addLink(doc.page(Prim), box, uri = t"https://soundness.dev/")
+    ```
+
+entry .setBookmarks   replaces the document outline with a tree of `Bookmark`s
+    An extension on the write-granted handle. The tree is rebuilt as fresh objects with the
+    full `/First`/`/Last`/`/Next`/`/Prev`/`/Parent`/`/Count` linkage and each destination as
+    an explicit array, and the catalog's `/Outlines` is pointed at the new root. The
+    previous outline objects are left unreferenced.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    def outline(path: Path on Linux): Unit =
+      PdfFile(path).open(Read & Write): doc ?=>
+        doc.setBookmarks(List(Bookmark(t"Start", Destination.Fit(Prim), Nil)))
+    ```
+
+entry .appendPage   appends a page of the given size, with optional content and resources, returning its reference
+    An extension on the write-granted handle. `doc.appendPage(mediaBox, operators,
+    resources)` allocates a page with the media box, a content stream serialized from the
+    operators if any are given, and `resources` (a `Cos.Dictionary`, or a reference to one)
+    as its `/Resources`, then adds it to the end of the root page tree's `/Kids` and
+    increments `/Count`. A document with a deeper tree gains the page at the root, which
+    is valid and places it last. Raises `Pdf.Error` with `MissingEntry(Pages)` or
+    `TypeMismatch(Pages, a reference)` if the catalog's page tree is absent or inline.
+
+    ```scala fuel
+    frame
+      label A blank A4 page
+      code
+          import soundness.*
+          import strategies.throwUnsafely
+
+          val a4 = Pdf.Rect
+            ( Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
+              Quantity[Points[1]](595.0), Quantity[Points[1]](842.0) )
+
+          def extend(path: Path on Linux): Unit =
+            PdfFile(path).open(Read & Write): doc ?=>
+              doc.appendPage(a4)
+    frame
+      label With a font declared in its resources
+      code
+          import soundness.*
+          import strategies.throwUnsafely
+
+          val a4 = Pdf.Rect
+            ( Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
+              Quantity[Points[1]](595.0), Quantity[Points[1]](842.0) )
+
+          val helvetica = Cos.Dictionary
+            ( Map
+                ( t"Type"     -> Cos.Name(t"Font"),
+                  t"Subtype"  -> Cos.Name(t"Type1"),
+                  t"BaseFont" -> Cos.Name(t"Helvetica") ) )
+
+          val resources = Cos.Dictionary(Map(t"Font" -> Cos.Dictionary(Map(t"F1" -> helvetica))))
+
+          def extend(path: Path on Linux): Unit =
+            PdfFile(path).open(Read & Write): doc ?=>
+              doc.appendPage(a4, Nil, resources)
+    frame
+      label With content which uses the font
+      code
+          import soundness.*
+          import strategies.throwUnsafely
+
+          val a4 = Pdf.Rect
+            ( Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
+              Quantity[Points[1]](595.0), Quantity[Points[1]](842.0) )
+
+          val helvetica = Cos.Dictionary
+            ( Map
+                ( t"Type"     -> Cos.Name(t"Font"),
+                  t"Subtype"  -> Cos.Name(t"Type1"),
+                  t"BaseFont" -> Cos.Name(t"Helvetica") ) )
+
+          val resources = Cos.Dictionary(Map(t"Font" -> Cos.Dictionary(Map(t"F1" -> helvetica))))
+
+          val operators = List
+            ( Pdf.Operator.BeginText, Pdf.Operator.SetFont(t"F1", 12),
+              Pdf.Operator.Offset(72, 720), Pdf.Operator.ShowText(winAnsi(t"Second page")),
+              Pdf.Operator.EndText )
+
+          def extend(path: Path on Linux): Unit =
+            PdfFile(path).open(Read & Write): doc ?=>
+              doc.appendPage(a4, operators, resources)
+    frame
+      label Read back after the scope has written the update
+      code
+          import soundness.*
+          import strategies.throwUnsafely
+
+          val a4 = Pdf.Rect
+            ( Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
+              Quantity[Points[1]](595.0), Quantity[Points[1]](842.0) )
+
+          val helvetica = Cos.Dictionary
+            ( Map
+                ( t"Type"     -> Cos.Name(t"Font"),
+                  t"Subtype"  -> Cos.Name(t"Type1"),
+                  t"BaseFont" -> Cos.Name(t"Helvetica") ) )
+
+          val resources = Cos.Dictionary(Map(t"Font" -> Cos.Dictionary(Map(t"F1" -> helvetica))))
+
+          val operators = List
+            ( Pdf.Operator.BeginText, Pdf.Operator.SetFont(t"F1", 12),
+              Pdf.Operator.Offset(72, 720), Pdf.Operator.ShowText(winAnsi(t"Second page")),
+              Pdf.Operator.EndText )
+
+          def extend(path: Path on Linux): Text =
+            PdfFile(path).open(Read & Write): doc ?=>
+              doc.appendPage(a4, operators, resources)
+
+            PdfFile(path).open():
+              pdf.page(Sec).text   // t"Second page"
+    ##
+    ```
+
+entry .removePage   removes a page from its parent's `/Kids` and frees its object
+    An extension on the write-granted handle. The page is unlinked from its parent node,
+    whose `/Count` is set to the remaining kids, and its object is freed. Only a page whose
+    parent is a direct `/Kids` holder is handled — the single-level tree most documents
+    have; a page nested deeper, or a page the tree holds inline rather than by reference, is
+    left in place. The page's content streams and resources are not freed.
+
+entry .winAnsi   encodes text for a simple WinAnsi font, as a `ShowText` operand
+    `winAnsi(t"Hello")` is the `Data` a `Pdf.Operator.ShowText` takes for a font declared
+    with `WinAnsiEncoding` — the fonts `useFont` and `embedFont` produce. Each character is
+    its WinAnsi (Windows-1252) code; a character outside the encoding has no code and is
+    written as `?`.
+
+    ```scala
+    import soundness.*
+
+    val show = Pdf.Operator.ShowText(winAnsi(t"Hello, world"))
+    ```
+
+entry .PdfFile   an unopened PDF: a locator for a path or for bytes in memory, opened in a scope
+  detail
+      A `PdfFile` names a document without reading it — `PdfFile(path)` for a file on disk,
+      `PdfFile(data)` for bytes already in memory — and `open` (from aperture, through the
+      `Openable` given in this companion) reads it for exactly the block's duration. The
+      header, cross-reference chain and, for an encrypted document, the encryption keys are
+      read as the scope opens, so a malformed file or a wrong password fails there and not
+      at first access. The block runs with a contextual `Pdf`, reached as `pdf` or bound
+      with `doc ?=>`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      def firstPage(path: Path on Linux): Text =
+        PdfFile(path).open():
+          pdf.page(Prim).text
+
+      def inMemory(data: Data): Int =
+        PdfFile(data).open():
+          pdf.pageCount
+      ```
+
+      Opening with `Read & Write` yields the write-granted handle the editing extensions
+      are typed on. The file is mapped as a galilei `Ram` and the document's view pinned at
+      its size; when the scope closes with edits, the overlay is serialized as an
+      incremental update — a classic cross-reference table after a classic one, a
+      cross-reference stream after a stream, so the `/Prev` chain stays followable — and
+      appended. A scope which made no edits appends nothing. In-memory data has nowhere to
+      be written back, so opening it with `Write` raises `Pdf.Error` with
+      `WriteUnsupported`, as does closing a write scope over a file whose table had to be
+      rebuilt by scanning.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      def rotate(path: Path on Linux): Unit =
+        PdfFile(path).open(Read & Write): doc ?=>
+          doc.setRotation(doc.page(Prim), Page.Rotation.Quarter)
+      ```
+
+      An encrypted document is opened by passing its `Password` as a flag, which needs a
+      `Cloak` in scope to say where the secret is held; the empty password is tried when
+      none is given, which opens a file encrypted only to restrict permissions.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import cloaks.heapCloak
+
+      def title(path: Path on Linux): Optional[Text] =
+        PdfFile(path).open(Password(t"open sesame")):
+          pdf.info.title
+      ```
+
+      A wrong password raises `Pdf.Error` with `BadPassword`; a security handler other than
+      the standard one raises `UnsupportedEncryption`. Opening a path which does not exist
+      or cannot be read raises `Io`.
+
+      The same scopes are reachable without naming `PdfFile`, through the top-level givens
+      `pdfPathOpenable` (`path.open[Pdf]()`), `pdfDataOpenable` (`data.open[Pdf]()`) and
+      `pdfCreatable` (`path.create[Pdf]()`), each imported by name.
+  refer facsimile.Pdf
+  refer facsimile.pdf
+  refer facsimile.pdfPathOpenable
+  refer facsimile.pdfCreatable
+  entry .apply   a locator for a document at a path, or for bytes in memory
+      `PdfFile(path)` takes any value which is `Abstractable across Paths to Text` — a
+      galilei `Path`, or text — resolved against the working directory when opened.
+      `PdfFile(data)` holds the bytes, which are read in place; such a document can be
+      opened for reading only.
+  entry .openable   the `Openable` given which lets `PdfFile#open` run a block with a `Pdf`
+      In `PdfFile`'s companion, so it is in implicit scope and `open` needs no import; and
+      `PdfFile` having one `Openable`, the `Pdf` form is inferred rather than written. It
+      needs a `Tactic[Pdf.Error]` in scope, which it captures.
+  entry .PdfOpenable   the `Openable` class behind `PdfFile#open`
+    detail
+        `Self = PdfFile`, `Form = Pdf`, `Operand = Password`, `Result = Pdf`: opens a
+        `PdfFile` in a mode, with an optional `Password` flag, and runs the block with a
+        `Pdf` granted what the mode grants. `.openable` is its instance; the class is public
+        so that the given can be named by type.
+    entry #open   opens the file in the mode, with the password flags, for the block
+  entry .PdfPathOpenable   the `Openable` class behind `path.open[Pdf]()`
+    detail
+        `Self` is any path type `Abstractable across Paths to Text`, `Form = Pdf`,
+        `Operand = Password`: `path.open[Pdf]()` is `PdfFile(path).open()`. The form must
+        be written, since a path is openable in several forms. The top-level given
+        `pdfPathOpenable` is its instance.
+    entry #open   opens the path as a PDF in the mode, with the password flags, for the block
+  entry .PdfDataOpenable   the `Openable` class behind `data.open[Pdf]()`
+    detail
+        `Self = Data`, `Form = Pdf`, `Operand = Password`: `data.open[Pdf]()` is
+        `PdfFile(data).open()`, reading only. The top-level given `pdfDataOpenable` is its
+        instance.
+    entry #open   opens the bytes as a PDF in the mode, with the password flags, for the block
+  entry .PdfCreatable   the `Creatable` class behind `path.create[Pdf]()`
+    detail
+        `Self` is any path type `Abstractable across Paths to Text`, `Form = Pdf`,
+        `Operand = CreateFlag`, `Grants = Grant.Read & Grant.Write`: the block edits a
+        fresh, empty document — a catalog and an empty page tree, version 1.7 — through the
+        same write surface as editing an existing one, and when it returns the document is
+        written in full to a hidden temporary sibling and moved atomically onto the target,
+        so a failure part way through leaves nothing behind. `CreateFlag.Replace` allows an
+        existing target (otherwise `Pdf.Error` with `Io`, _the file already exists_), and
+        `CreateFlag.Parents` creates missing parent directories. The top-level given
+        `pdfCreatable` is its instance.
+    entry #create   authors a new document in the block and writes it to the path
+
+entry .pdfPathOpenable   lets a path be opened as `Pdf`: `path.open[Pdf]()`
+    A top-level given in `facsimile.file`, imported by name — `import
+    soundness.pdfPathOpenable` — since `import soundness.*` does not import givens, and
+    `Openable` has no generic fallback, so a call site which forgets it fails to compile. It
+    is an instance of `PdfFile.PdfPathOpenable` for any path type `Abstractable across
+    Paths to Text`, and needs a `Tactic[Pdf.Error]`. `PdfFile(path).open()` is the same
+    scope with no import.
+
+    ```scala
+    import soundness.*
+    import soundness.pdfPathOpenable
+    import strategies.throwUnsafely
+
+    def pages(path: Path on Linux): Int =
+      path.open[Pdf]():
+        pdf.pageCount
+    ```
+
+entry .pdfDataOpenable   lets bytes in memory be opened as `Pdf`: `data.open[Pdf]()`
+    A top-level given in `facsimile.file`, imported by name as `import
+    soundness.pdfDataOpenable`. An instance of `PdfFile.PdfDataOpenable`, needing a
+    `Tactic[Pdf.Error]`; reading only, since in-memory bytes have nowhere to be written
+    back. `PdfFile(data).open()` is the same scope with no import.
+
+    ```scala
+    import soundness.*
+    import soundness.pdfDataOpenable
+    import strategies.throwUnsafely
+
+    def pages(data: Data): Int =
+      data.open[Pdf]():
+        pdf.pageCount
+    ```
+
+entry .pdfCreatable   lets a path be created as `Pdf`: `path.create[Pdf](): doc ?=> …`
+    A top-level given in `facsimile.file`, imported by name as `import
+    soundness.pdfCreatable`. An instance of `PdfFile.PdfCreatable` for any path type
+    `Abstractable across Paths to Text`, needing a `Tactic[Pdf.Error]`. The block receives
+    a fresh document with the read-and-write grant, and the result is written whole,
+    atomically, when the block returns; `CreateFlag.Replace` and `CreateFlag.Parents`
+    govern a pre-existing target and its directories.
+
+    ```scala
+    import soundness.*
+    import soundness.pdfCreatable
+    import strategies.throwUnsafely
+
+    val a4 = Pdf.Rect
+      ( Quantity[Points[1]](0.0), Quantity[Points[1]](0.0),
+        Quantity[Points[1]](595.0), Quantity[Points[1]](842.0) )
+
+    def blank(path: Path on Linux): Unit =
+      path.create[Pdf](CreateFlag.Replace): doc ?=>
+        doc.appendPage(a4)
+        doc.setInfo(Pdf.Info(t"Blank", Unset, Unset, Unset, Unset, Unset, Unset, Unset))
+    ```

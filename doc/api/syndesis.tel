@@ -1,0 +1,740 @@
+tel 1.0
+
+base syndesis
+import soundness
+
+info   DNS-based service discovery over multicast DNS: advertise a service, browse for others, resolve an instance
+detail
+    _Syndesis_ lets a program which serves something on the local network — a build daemon, a
+    printer, a game — be found without anyone being told its address. It implements
+    **DNS-based service discovery** (RFC 6763), which names a service *type* (`_fury._tcp`)
+    and its *instances* (`Gondor._fury._tcp.local`), carried over **multicast DNS** (RFC
+    6762), where every host answers for its own names and no nameserver is involved.
+
+    The vocabulary is in `Discovery`: a `Discovery.Service` and a `Discovery.Instance`, which
+    compute their DNS-SD names when constructed, under validation; a `Discovery.Txt` record of
+    `key=value` pairs; a `Discovery.Description` of what an instance advertises; and a
+    `Discovery.Resolution` of where an instance is. The three operations are extensions —
+    `advertise` and `browse` on a service, `resolve` on an instance — each delegating to the
+    `Discovery.Backend` in scope. The one backend provided is `Mdns.Responder`, the
+    socket-based mDNS responder, selected by importing `discoveryBackends.mdnsSockets`.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import strategies.throwUnsafely
+    import threads.platformThreads
+    import probates.awaitProbate
+    import abstractables.millisecondsAbstractable
+    import socketBackends.javaBaseSockets
+    import discoveryBackends.mdnsSockets
+
+    val fury = Discovery.Service(t"fury", Tcp)
+    val txt = Discovery.Txt(t"fingerprint" -> t"ab12")
+
+    supervise:
+      fury.advertise(Discovery.Description(t"Gondor", tcp"8443", txt)):
+        fury.browse:
+          summon[Discovery.Browser].events.each:
+            case Discovery.Event.Found(instance) => instance.resolve(5000L).endpoints
+            case Discovery.Event.Lost(instance)  => ()
+    ```
+
+    An advertisement and a browse are **loans**: each lasts for its block and ends with it —
+    or with the `Monitor` it runs under, whose cancellation unwinds the block. Both need a
+    `Monitor^`, a `SharedProbate`, a `Tactic[Discovery.Error]` and a `Discovery.Activity is
+    Loggable` in scope, besides the backend. The backend is an explicit `using` clause of its
+    own, so a responder other than the given one can be named: `fury.browse(using other)`.
+
+    The library has one source set, `syndesis.core`, for the JVM. `Mdns` is both the
+    responder and its parts — the `Mdns.Transport` seam it speaks through, the `Mdns.Cache`
+    of what it has heard, and `Mdns.Tiebreak` — of which `Mdns.Transport.Bus`, an in-memory
+    link, is the one a program under test needs: responders joined to one bus hear one
+    another and nothing else, so the protocol runs deterministically without a network.
+
+    Everything is exported to the `soundness` umbrella, and the `discoveryBackends` choice
+    package merges with the umbrella's own; `import soundness.*` brings in no backend, so
+    `mdnsSockets` is imported by name.
+
+refer syndesis.Discovery
+refer syndesis.Mdns
+refer syndesis.advertise
+refer syndesis.browse
+refer syndesis.resolve
+
+entry .Discovery   the vocabulary of DNS-SD: services, instances, TXT records, and the backend seam
+  detail
+      `Discovery` holds everything a program says and hears about services, independently of
+      how the names travel. A `Service` is a type such as `_fury._tcp`; an `Instance` is one
+      named provider of it; a `Txt` record is what an instance says about itself; a
+      `Description` is what an instance advertises; a `Resolution` is where a found instance
+      turned out to be. The `Backend` trait is the seam a transport implements, and
+      `Advertisement` and `Browser` are the handles the `advertise` and `browse` loans lend.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val fury = Discovery.Service(t"fury", Tcp)
+      val gondor = Discovery.Instance(t"Gondor", fury)
+      fury.dnsName                         // dns"_fury._tcp.local"
+      gondor.show                          // t"Gondor._fury._tcp.local"
+      Discovery.Txt(t"fp" -> t"abc").strings   // List(t"fp=abc")
+      ```
+
+      Every name is computed when its value is constructed, under validation, so a name over
+      the DNS limits is a `Discovery.Error` at construction rather than a failure on the wire,
+      and every later use of the name is total.
+  refer syndesis.Discovery.Service
+  refer syndesis.Discovery.Instance
+  refer syndesis.Discovery.Backend
+  refer syndesis.Discovery.Error
+  entry .local   the `local` domain, `dns"local"`, under which every mDNS name sits
+  entry .Service   a service type, such as `_fury._tcp`: a registered name and a transport
+    detail
+        A service type is a registered name of up to fifteen characters (RFC 6763 §7),
+        without its leading underscore, and a protocol which is either `Tcp` or `Udp`. Its
+        `#dnsName` is `_name._tcp.local` (or `_udp`), computed and validated at construction.
+        An optional list of `#subtypes` names narrower kinds of the service, each browsed under
+        `_subtype._sub._name._tcp.local` (`#subtypeName`), and each advertised instance is
+        listed under every subtype of its service.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        val fury = Discovery.Service(t"fury", Tcp)
+        fury.dnsName                         // dns"_fury._tcp.local"
+        fury.show                            // t"_fury._tcp"
+        fury.subtypeName(t"printer")         // dns"_printer._sub._fury._tcp.local"
+        Discovery.Service(t"sip", Udp).dnsName   // dns"_sip._udp.local"
+        ```
+
+        A name which is empty, longer than fifteen characters or begins with `_` is rejected
+        with `Discovery.Error` reason `InvalidService`. The constructor is private: a service
+        is made with `Service.apply` or read back from a DNS name with `Service.parse`.
+    entry .enumeration   the meta-query name every service type on the link is listed under
+        `dns"_services._dns-sd._udp.local"` (RFC 6763 §9): the responder advertises a PTR from
+        this name to each service type it has an instance of, so a browser can enumerate the
+        types on the link before choosing one.
+    entry .apply   a validated service type from its name, protocol and optional subtypes
+        `Discovery.Service(name, Tcp | Udp, subtypes = Nil)`. Needs a
+        `Tactic[Discovery.Error]`; raises reason `InvalidService` for an empty name, one over
+        fifteen characters, or one beginning with `_`, and `InvalidName` if the resulting DNS
+        name breaks a DNS limit.
+    entry .parse   the service type a DNS name such as `_fury._tcp.local` denotes, or `Unset`
+        The inverse of `#dnsName`. The name must have exactly three labels, the last `local`,
+        the second `_tcp` or `_udp`, and the first beginning with `_`; anything else is `Unset`.
+        A parsed service has no subtypes.
+    entry .showable   renders a service type in its registered form, `_fury._tcp`
+    entry #name   the registered service name, without its leading underscore
+    entry #protocol   the transport, `Tcp` or `Udp`
+    entry #subtypes   the subtypes an instance of this service is also listed under
+    entry #dnsName   the DNS-SD name of the service type: `_fury._tcp.local`
+    entry #subtypeName   the name a subtype's instances are browsed under
+        `_printer._sub._fury._tcp.local` for the subtype `printer`. Needs a
+        `Tactic[Discovery.Error]`, raising `InvalidName` if the label breaks a DNS limit.
+  entry .Instance   one named provider of a service: a UTF-8 label under the service type
+    detail
+        An instance is a single DNS label of UTF-8 (RFC 6763 §4.1.1) — spaces and dots
+        included, no escaping, up to 63 bytes — prefixed to its service's name, so
+        `Instance(t"Jon's Printer. Upstairs", fury)` has the labels `Jon's Printer. Upstairs`,
+        `_fury`, `_tcp`, `local`. It shows in the presentation form of §4.3, with the label's
+        dots escaped: `Jon\.Printer._fury._tcp.local`.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        val fury = Discovery.Service(t"fury", Tcp)
+        val gondor = Discovery.Instance(t"Gondor", fury)
+        gondor.renamed.label                   // t"Gondor (2)"
+        Discovery.Instance.parse(dns"Gondor._fury._tcp.local") == gondor
+        ```
+
+        An instance is the value a browser reports as found or lost, and the one `resolve` is
+        called on. The constructor is private: an instance is made with `Instance.apply` or
+        read back from a PTR record's target with `Instance.parse`.
+    entry .apply   a validated instance from its label and service
+        Needs a `Tactic[Discovery.Error]`; an empty label, or one over 63 bytes, raises reason
+        `InvalidName` naming the label.
+    entry .parse   the instance a name such as `Gondor._fury._tcp.local` denotes, or `Unset`
+        The first label is the instance's label, kept exactly as written, and the rest must
+        parse as a `Service`; a name with no labels, or whose parent is not a service type
+        (such as the service type's own name), is `Unset`.
+    entry .showable   renders an instance as its DNS name, with the label's dots escaped
+    entry #label   the instance's own name, one label of UTF-8
+    entry #service   the service type the instance provides
+    entry #dnsName   the full DNS-SD name: the label, then the service's name
+    entry #renamed   the next name to try after a conflict: `Gondor` → `Gondor (2)` → `Gondor (3)`
+        RFC 6762 §9's renaming: a counter in parentheses is appended, or incremented if the
+        label already ends with one. Needs a `Tactic[Discovery.Error]`, since the new label is
+        validated like any other. The responder renames an advertised instance this way when
+        another host holds, or wins, its name.
+  entry .Txt   an instance's TXT record: `key=value` pairs, read case-insensitively, first occurrence winning
+    detail
+        A TXT record is a list of entries, each a key with an optional value (RFC 6763 §6).
+        Keys are printable ASCII without `=`, and each `key=value` string must fit the
+        255-octet character-string. Duplicate keys are kept as written, but `#apply` and
+        `#has` read the first occurrence of a key, comparing keys without regard to ASCII case,
+        as §6.4 says a receiver should.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        val txt = Discovery.Txt(t"fp" -> t"abc", t"flag" -> Unset)
+        txt(t"FP")           // t"abc"
+        txt(t"flag")         // Unset, though present
+        txt.has(t"flag")     // true
+        txt.strings          // List(t"fp=abc", t"flag")
+        ```
+
+        A `Txt` travels in a `Description` when advertising and comes back in a `Resolution`.
+    entry .empty   the TXT record with no entries, which the wire carries as one empty string
+    entry .apply   a validated TXT record from `key -> value` pairs, a value being `Optional[Text]`
+        Needs a `Tactic[Discovery.Error]`; a key which is empty, contains `=` or a
+        non-printable character, or whose `key=value` string exceeds 255 bytes of UTF-8,
+        raises reason `InvalidTxt` naming the key.
+    entry .parse   a TXT record from the strings of a received record
+        Each string is `key=value`, or `key` alone for a key with no value (`Unset`); the
+        first `=` splits, so `eq=a=b` is the key `eq` with the value `a=b`. The empty string
+        which stands for an empty record is skipped. Nothing is validated.
+    entry .showable   renders the record as its strings, each in double quotes, space-separated
+    entry #entries   the entries in order, each a key and an optional value, duplicates kept
+    entry #apply   the value of a key, or `Unset` if the key is absent or has no value
+        `txt(key)` finds the first entry whose key matches without regard to ASCII case. A
+        key present without a value and a key absent both give `Unset`; `#has` tells them
+        apart.
+    entry #has   whether a key is present at all, with or without a value
+    entry #strings   the record's wire strings: one per entry, or a single empty string for none
+  entry .Description   what an instance advertises: its name, port, TXT record, host, priority and weight
+    detail
+        The input to `advertise`: the label the instance asks for (which a conflict may
+        rename), the port it serves on (a `Port`, so `tcp"8443"` or `udp"5004"`), its `Txt`
+        record, and optionally the host name its address records are published under — by
+        default this host's own name — and the SRV record's `priority` and `weight`, for a
+        service with several instances.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        val txt = Discovery.Txt(t"fp" -> t"abc")
+        Discovery.Description(t"Gondor", tcp"8443", txt)
+        ```
+    entry #instance   the label asked for; the name claimed may differ after a conflict
+    entry #port   the port the instance serves on
+    entry #txt   the TXT record to publish; `Txt.empty` by default
+    entry #host   the host name to publish address records under, or `Unset` for this host's
+    entry #priority   the SRV record's priority, `0` by default
+    entry #weight   the SRV record's weight, `0` by default
+  entry .Resolution   where a found instance is and what it says: host, port, TXT and addresses
+    detail
+        The result of `resolve`: the instance, the DNS name of the host serving it, the port
+        (typed to the service's transport), its `Txt` record, and the host's IPv4 and IPv6
+        addresses. `#endpoints` pairs each address with the port, ready to connect to in turn.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        val fury = Discovery.Service(t"fury", Tcp)
+        val gondor = Discovery.Instance(t"Gondor", fury)
+
+        val resolution =
+          Discovery.Resolution
+            (gondor, dns"gondor.local", tcp"8443", Discovery.Txt.empty, List(ip"192.168.1.2", ip"fe80::1"))
+
+        resolution.endpoints.map(_.remote)   // List(t"192.168.1.2", t"fe80::1")
+        ```
+    entry #instance   the instance which was resolved
+    entry #host   the DNS name of the host serving the instance, from its SRV record
+    entry #port   the port, from the SRV record
+    entry #txt   the instance's TXT record
+    entry #addresses   the host's addresses, IPv4 then IPv6, as `Ipv4 | Ipv6` values
+    entry #endpoints   each address paired with the port, as an `Endpoint[Port]`
+  entry .Event   what a browser sees: an instance found on the link, or lost from it
+    detail
+        `Found(instance)` is an instance appearing — its PTR record arriving in the cache —
+        and `Lost(instance)` is one leaving, by a goodbye or by its records expiring. A change
+        to an instance's details (its port or TXT record) is not an event: resolve it again.
+        A `Browser` delivers these through `#events`.
+    entry .showable   renders an event as `found Gondor._fury._tcp.local` or `lost …`
+  entry .Activity   what a backend reports as it works, logged through the `Loggable` at each loan
+    detail
+        Each loan — an advertisement, a browse, a resolution — takes a `Discovery.Activity is
+        Loggable`, to which the backend reports what it does for that loan: `Probing(name)`
+        and `Yielded(name)` at `fine` level and `Conflicted(name)` while a name is being
+        claimed; `Claimed(instance)` and `Withdrawn(instance)` as an advertisement starts and
+        ends; `Browsing(service)` and `Resolved(instance)`. All are tagged `Log.Network`, and
+        the probing ones `Log.Protocol` as well. A backend holds no logger of its own, so its
+        background work between loans — defending a name, re-probing after a conflict — goes
+        unreported; `logging.silentLogging` satisfies the requirement when nothing is wanted.
+
+        ```scala
+        import soundness.*
+
+        given loggable: Discovery.Activity is Loggable = (_, _, event) => ()
+        ```
+    entry .silent   a `Loggable` which discards every activity, for a backend's background work
+    entry .communicable   renders each activity as a message: _probing for the name `…`_, _claimed and announced `…`_, …
+  entry .Backend   what a transport does for discovery: advertise, withdraw, browse, dismiss, resolve
+    detail
+        The seam behind `advertise`, `browse` and `resolve`: each loan calls a start and, in a
+        `finally`, the matching stop. Each start takes the `Monitor^` under which the backend
+        runs its background tasks (so cancelling the monitor ends them), a `SharedProbate`, a
+        `Tactic[Discovery.Error]` and the `Loggable` the loan's `Activity` goes to. A backend
+        holds no capabilities of its own, which is what lets loans nest — a browse inside an
+        advertisement. `Mdns.Responder` is the implementation provided; the given
+        `discoveryBackends.mdnsSockets` builds one over the `Socket.Backend` in scope.
+
+        The intent is one backend per program: bind it once as a `given` rather than summoning
+        it afresh at each use, which would open a socket per summons.
+    entry #advertise   claims a name for the instance and announces it, yielding the running `Advertising`
+        Probes for the name, renames on conflict, and announces; the `Advertising` returned
+        reads the instance currently claimed, which a later conflict may rename again. Raises
+        `Discovery.Error` reason `Conflict` if no name can be claimed, `InvalidTxt` if the TXT
+        record cannot be encoded, and `Unavailable` if the transport cannot be opened.
+    entry #withdraw   ends an advertisement: sends its goodbye and releases the backend's loan
+    entry #browse   starts a browse of a service type, yielding the `Browsing` whose relay carries events
+    entry #dismiss   ends a browse: stops its re-query loop and its relay
+    entry #resolve   resolves an instance within a timeout, raising `Discovery.Error` reason `Timeout` otherwise
+        The timeout is any duration `Abstractable across Durations to Long`, in milliseconds
+        (a plain `5000L` with `abstractables.millisecondsAbstractable` imported).
+  entry .Browsing   a browse as a backend hands it over: its event relay and a snapshot of its instances
+    detail
+        A plain value, built by a backend's `browse`, which the `browse` loan wraps in the
+        `Browser` it lends. A program uses `Browser`; a backend author constructs this.
+    entry #relay   the `Relay[Event]` the backend puts found and lost events on
+    entry #instances   the instances the backend currently knows, as a `Set`
+  entry .Advertising   an advertisement as a backend hands it over: the instance currently claimed
+    detail
+        The trait a backend's `advertise` returns and its `withdraw` takes back, wrapped by
+        the loan in the `Advertisement` it lends. `#instance` is read live: a conflict after
+        establishment may rename it.
+    entry #instance   the instance currently claimed, after any renaming
+  entry .Advertisement   the handle an `advertise` loan lends: the instance as currently claimed
+    detail
+        Available inside an `advertise` block as `summon[Discovery.Advertisement]`. Its
+        `#instance` is read live rather than copied, because a host which turns up later
+        asserting the same name makes the responder probe afresh and, if the probe is
+        answered, rename: `Gondor` may become `Gondor (2)` during the block. The handle is a
+        plain value, not a capability — the socket and the background tasks belong to the
+        `Monitor` — which is what lets it pass through a nested loan.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import strategies.throwUnsafely
+        import threads.platformThreads
+        import probates.awaitProbate
+        import socketBackends.javaBaseSockets
+        import discoveryBackends.mdnsSockets
+
+        val fury = Discovery.Service(t"fury", Tcp)
+
+        supervise:
+          fury.advertise(Discovery.Description(t"Gondor", tcp"8443")):
+            summon[Discovery.Advertisement].instance.label   // t"Gondor", or t"Gondor (2)"
+        ```
+    entry #instance   the instance currently claimed, which a conflict may have renamed
+  entry .Browser   the handle a `browse` loan lends: events as they happen, and the instances known
+    detail
+        Available inside a `browse` block as `summon[Discovery.Browser]`. `#events` is a
+        `Chain` of `Event`s, delivered as instances appear and leave — instances already known
+        when the browse began are reported first, as `Found` — and `#instances` is the set
+        currently known. The chain ends when the loan does.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import strategies.throwUnsafely
+        import threads.platformThreads
+        import probates.awaitProbate
+        import socketBackends.javaBaseSockets
+        import discoveryBackends.mdnsSockets
+
+        val fury = Discovery.Service(t"fury", Tcp)
+
+        supervise:
+          fury.browse:
+            summon[Discovery.Browser].events.head   // the first Found or Lost event
+        ```
+    entry #events   the `Chain[Event]` of instances found and lost, as they happen
+    entry #instances   the instances currently known, as a `Set[Instance]`
+  entry .Error   raised when a name is invalid, cannot be claimed, does not resolve, or no backend starts
+    detail
+        Error `SN-054`: _service discovery failed because `reason`_. The `#reason` is one of
+        `Discovery.Error.Reason`'s cases, numbered 1 to 6:
+
+        - `Conflict(name)` — the name could not be claimed after repeated conflicts (a hundred
+          renamings);
+        - `Timeout(instance)` — the instance did not resolve before the timeout;
+        - `InvalidName(text)` — a label or name is not a valid DNS-SD name (empty, over 63
+          bytes, or over a DNS limit);
+        - `InvalidTxt(key)` — a TXT entry's key is empty, contains `=` or a non-printable
+          character, or its entry exceeds 255 bytes;
+        - `InvalidService(name)` — a service name is empty, over fifteen characters, or begins
+          with `_`;
+        - `Unavailable` — the transport could not be opened (the responder's own `Mdns.Error`
+          is the cause).
+
+        ```scala
+        import soundness.*
+
+        capture[Discovery.Error](Discovery.Service(t"_fury", Tcp)).reason
+        // Discovery.Error.Reason.InvalidService(t"_fury")
+        ```
+    entry .Reason   why discovery failed: `Conflict`, `Timeout`, `InvalidName`, `InvalidTxt`, `InvalidService` or `Unavailable`
+      detail
+          An enum, each case numbered, with a `Communicable` rendering such as _the name
+          `Gondor._fury._tcp.local` could not be claimed after repeated conflicts_ or _the
+          instance `…` did not resolve before the timeout_.
+      entry .communicable   renders each reason as a message
+      entry #number   the reason's number, `1` to `6`, the second part of the error's code
+    entry #reason   why discovery failed
+
+entry .advertise   `service.advertise(description) { … }`: advertises an instance for the block
+  detail
+      An extension on `Discovery.Service`. The instance is probed for, claimed — renamed
+      `Gondor (2)` if another host holds the name, or this responder already advertises it —
+      and announced; it stays advertised for the block, and a goodbye is sent when the block
+      ends, normally or by an exception, or when the `Monitor` is cancelled. The block
+      receives a `Discovery.Advertisement`, from which the name actually claimed is read.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import threads.platformThreads
+      import probates.awaitProbate
+      import socketBackends.javaBaseSockets
+      import discoveryBackends.mdnsSockets
+
+      val fury = Discovery.Service(t"fury", Tcp)
+      val description = Discovery.Description(t"Gondor", tcp"8443", Discovery.Txt(t"fp" -> t"abc"))
+
+      supervise:
+        fury.advertise(description):
+          summon[Discovery.Advertisement].instance
+      ```
+
+      The backend is a `using` clause of its own, before the block, so one other than the
+      given can be named: `fury.advertise(description)(using responder) { … }`. The block
+      also needs a `Monitor^` (from `supervise`), a `SharedProbate`, a
+      `Tactic[Discovery.Error]` and a `Discovery.Activity is Loggable`. Raises
+      `Discovery.Error` for an invalid label or TXT record, a name which cannot be claimed
+      after repeated conflicts, or a transport which cannot be opened. Loans nest: a browse
+      may run inside an advertisement.
+  refer syndesis.Discovery.Advertisement
+  refer syndesis.Discovery.Description
+  refer syndesis.browse
+
+entry .browse   `service.browse { … }`: watches for instances of a service type for the block
+  detail
+      An extension on `Discovery.Service`. The block receives a `Discovery.Browser`, whose
+      `events` are the instances appearing on and leaving the link, as they happen, and whose
+      `instances` are those currently known. Instances already in the cache are reported at
+      once as `Found`; then the service type is queried, and queried again at intervals
+      doubling from a second to an hour, each query telling other responders what is already
+      known. The browse ends with the block, or with the `Monitor`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import threads.platformThreads
+      import probates.awaitProbate
+      import abstractables.millisecondsAbstractable
+      import socketBackends.javaBaseSockets
+      import discoveryBackends.mdnsSockets
+
+      val fury = Discovery.Service(t"fury", Tcp)
+
+      supervise:
+        fury.browse:
+          summon[Discovery.Browser].events.each:
+            case Discovery.Event.Found(instance) => instance.resolve(5000L).txt(t"fp")
+            case Discovery.Event.Lost(instance)  => ()
+      ```
+
+      The backend is a `using` clause of its own (`fury.browse(using responder) { … }`), and
+      the block needs a `Monitor^`, a `SharedProbate`, a `Tactic[Discovery.Error]` and a
+      `Discovery.Activity is Loggable`. The browse logs `Discovery.Activity.Browsing`.
+  refer syndesis.Discovery.Browser
+  refer syndesis.Discovery.Event
+  refer syndesis.resolve
+
+entry .resolve   `instance.resolve(timeout)`: the instance's host, port, TXT record and addresses
+  detail
+      An extension on `Discovery.Instance`, giving a `Discovery.Resolution`. If the cache
+      already holds the instance's SRV and TXT records and its host's address records, the
+      resolution is immediate; otherwise those records are queried for and the call waits up
+      to the timeout for them to arrive. The timeout is any value `Abstractable across
+      Durations to Long`, in milliseconds — a `5000L` with
+      `abstractables.millisecondsAbstractable` imported, or an aviation duration.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import threads.platformThreads
+      import probates.awaitProbate
+      import abstractables.millisecondsAbstractable
+      import socketBackends.javaBaseSockets
+      import discoveryBackends.mdnsSockets
+
+      val fury = Discovery.Service(t"fury", Tcp)
+      val gondor = Discovery.Instance(t"Gondor", fury)
+
+      supervise:
+        val resolution = gondor.resolve(5000L)
+        (resolution.port.number, resolution.txt(t"fp"), resolution.endpoints)
+      ```
+
+      Raises `Discovery.Error` reason `Timeout` if the records do not arrive in time, naming
+      the instance. The call is a loan on the backend like the others — it takes the backend
+      as its own `using` clause, and needs a `Monitor^`, a `SharedProbate`, a
+      `Tactic[Discovery.Error]` and a `Discovery.Activity is Loggable` — and logs
+      `Discovery.Activity.Resolved` on success.
+  refer syndesis.Discovery.Resolution
+  refer syndesis.Discovery.Instance
+
+entry .discoveryBackends   the discovery backends, each a given to import by name
+  detail
+      Which backend advertises, browses and resolves is the `Discovery.Backend` given in
+      scope. `import soundness.*` brings none in: one is imported by name, and the intent is
+      one backend per program, bound once.
+
+      ```scala
+      import soundness.*
+      import socketBackends.javaBaseSockets
+      import discoveryBackends.mdnsSockets
+      ```
+
+      For a program under test, an `Mdns.Responder` over an `Mdns.Transport.Bus` can be
+      bound as a local given, or passed explicitly as `(using responder)`, in place of the
+      socket-based one.
+  entry .mdnsSockets   the mDNS responder over the multicast sockets of the `Socket.Backend` in scope
+      An `Mdns.Responder` whose transport is `Mdns.Transport.sockets` over the
+      `Socket.Backend` given (such as `socketBackends.javaBaseSockets`), with multicast
+      loopback, a multicast hop limit of 255, a datagram size of 9000 bytes, and whatever
+      `Socket.Option.Udp`s are in scope as an `Every`. It joins `224.0.0.251:5353` and
+      `[ff02::fb]:5353` on every interface which is up, multicast-capable and has an address
+      of the group's family, with address and port reuse, so it runs beside the system's own
+      responder. The sockets are opened at the first loan and closed after the last; a host
+      with no multicast-capable interface fails the first loan with `Discovery.Error` reason
+      `Unavailable`.
+
+      The given is computed each time it is summoned, so bind it once — `given backend:
+      Discovery.Backend = discoveryBackends.mdnsSockets` — rather than summoning it at each
+      use, which would open a socket per summons.
+
+entry .Mdns   the multicast DNS responder (RFC 6762) and its parts: transport, cache, tiebreaking
+  detail
+      `Mdns` is the one `Discovery.Backend` provided: `Mdns.Responder`, a responder which
+      speaks through an `Mdns.Transport` — the sockets, or an in-memory `Mdns.Transport.Bus`
+      — keeps what it hears in an `Mdns.Cache`, and settles simultaneous probes with
+      `Mdns.Tiebreak`. The transport is a seam of its own, below `Discovery`'s, so the protocol
+      runs identically over the network and over a bus, which is how it is tested without
+      touching the host's network.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import threads.platformThreads
+      import probates.awaitProbate
+      import abstractables.millisecondsAbstractable
+
+      val fury = Discovery.Service(t"fury", Tcp)
+      val description = Discovery.Description(t"Gondor", tcp"8443")
+
+      supervise:
+        val bus = Mdns.Transport.Bus()
+        val a = Mdns.Responder(() => bus.join(dns"a.local", List(ip"10.0.0.1")))
+        val b = Mdns.Responder(() => bus.join(dns"b.local", List(ip"10.0.0.2")))
+
+        fury.advertise(description)(using a):
+          fury.browse(using b):
+            summon[Discovery.Browser].events.head   // Discovery.Event.Found(Gondor._fury._tcp.local)
+      ```
+
+      The responder's own failure to start — no multicast-capable interface, or a group it
+      cannot join — is an `Mdns.Error`, which the loan reports as `Discovery.Error` reason
+      `Unavailable`.
+  refer syndesis.Mdns.Responder
+  refer syndesis.Mdns.Transport
+  refer syndesis.Discovery.Backend
+  entry .group4   the IPv4 mDNS group, `224.0.0.251` on port 5353
+  entry .group6   the IPv6 mDNS group, `ff02::fb` on port 5353
+  entry .port   the mDNS port, `udp"mdns"` (5353), the source and destination of every message
+  entry .Transport   what the responder needs of the network: this host's name and addresses, send, reply, receive, close
+    detail
+        The seam between the protocol and the link. A transport publishes this host's
+        `#host` name and `#addresses` (what its own address records say), sends a message to
+        the group, sends a unicast reply, offers `#inlets` to receive from, and closes. Two
+        implementations: `Transport.sockets`, over a `Socket.Backend`, and `Transport.Bus`, an
+        in-memory link for tests. `Mdns.Responder` takes a function which opens one, so the
+        transport is opened at the first loan and closed after the last.
+    entry .Inlet   one source of packets, received one at a time by a blocking call
+      detail
+          A joined socket, in practice: a transport over both groups has two, and the
+          responder reads each in a loop of its own. A `Bus` member is its own single inlet,
+          which a test may receive from directly.
+      entry #receive   the next packet, blocking until one arrives; raises `Socket.Error` once closed
+    entry .sockets   a transport over the multicast sockets of a `Socket.Backend`
+        `Mdns.Transport.sockets(backend, options)` joins the IPv4 group on every suitable
+        interface with an IPv4 address and the IPv6 group on every one with an IPv6 address —
+        the IPv6 group is left out on an IPv4-only host — and fails with `Mdns.Error` reason
+        `NoInterface` if no interface is up and multicast-capable, or reason `Join` if neither
+        group can be joined. This host's name is the first label of its hostname under
+        `.local` (or `soundness.local` if it has none), and its addresses are those of the
+        joined interfaces. A unicast reply leaves through the socket of the destination's
+        family. `discoveryBackends.mdnsSockets` builds a responder over this.
+    entry .Bus   an in-memory link: every member receives what any sends, itself included
+      detail
+          A `Bus` stands in for the network under test. Each `#join` adds a member with a host
+          name and addresses; a member's `send` is delivered to every member's queue, the
+          sender included (as multicast loopback does), and a `reply` reaches the member whose
+          addresses include the destination. A member is both a `Transport` and its own
+          `Inlet`, so a test can `receive()` from it directly to watch the packets a responder
+          emits, and `close()` makes a pending receive fail with `Socket.Error`.
+
+          ```scala
+          import soundness.*
+          import strategies.throwUnsafely
+
+          val bus = Mdns.Transport.Bus()
+          val first = bus.join(dns"first.local", List(ip"10.0.0.1"))
+          val second = bus.join(dns"second.local", List(ip"10.0.0.2"))
+          first.send(Data(1, 2, 3))
+          second.receive().sender   // ip"10.0.0.1"
+          ```
+      entry #join   adds a member with a host name and addresses, as a `Transport & Transport.Inlet`
+    entry #host   this host's name, as its address records publish it
+    entry #addresses   this host's addresses, which its A and AAAA records carry
+    entry #send   multicasts a message to the group; raises `Socket.Error`
+    entry #reply   sends a unicast reply to an address and port; raises `Socket.Error`
+    entry #inlets   the inlets to receive from, one per joined socket
+    entry #close   closes the transport, making any pending receive fail
+  entry .Cache   the records heard on the link, by name, type and data, honouring their TTLs
+    detail
+        The responder's memory of what other hosts have said, keyed by a record's identity
+        (name, type and data) and kept in the monotonic nanoseconds of `System.nanoTime`. It
+        applies RFC 6762 §10: a record heard again is refreshed; a goodbye (TTL 0) lapses a
+        second later; a record with the cache-flush bit retires the other records of its
+        name and type which are more than a second old. What absorbing or sweeping changed
+        comes back as `Cache.Transition`s, which the responder turns into browse events.
+
+        ```scala
+        import soundness.*
+
+        val second = 1_000_000_000L
+        val record = Dns.Record(dns"gondor.local", 120, Dns.Rdata.A(ip"10.0.0.1"))
+        val cache = Mdns.Cache()
+        cache.absorb(List(record), 0L)        // List(Mdns.Cache.Transition.Added(record))
+        cache.sweep(121*second)               // List(Mdns.Cache.Transition.Removed(record))
+        ```
+    entry .Entry   what the cache holds for one record: when it arrived and when it lapses
+      entry #record   the record
+      entry #received   when it was last heard, in `System.nanoTime` nanoseconds
+      entry #expiry   when it lapses, in the same clock
+    entry .Transition   what absorbing or sweeping changed: `Added`, `Refreshed` or `Removed`, each with its record
+      detail
+          `Added(record)` is a record not previously held, `Refreshed(record)` one heard
+          again, and `Removed(record)` one which `#sweep` found lapsed. A PTR record of a
+          browsed service type added or removed is an instance found or lost.
+      entry #record   the record the transition concerns
+    entry #absorb   takes in received records at a time, reporting what was added or refreshed
+    entry #sweep   drops every record lapsed by the given time, reporting each as `Removed`
+    entry #lookup   the unexpired records of a name and type at the given time
+    entry #knownAnswers   the records of a name and type with over half their TTL left, with the TTL remaining
+        What a query tells other responders it already knows (RFC 6762 §7.1), so they need
+        not answer again.
+    entry #earliestExpiry   when the first record of a name and type lapses, or `Unset` if none is held
+    entry #size   how many records the cache holds
+  entry .Tiebreak   the order in which two hosts' simultaneous probes for one name are compared
+    detail
+        RFC 6762 §8.2.1: when two hosts probe for the same name at once, each compares the
+        records it proposes with the other's, and the one whose records are lexicographically
+        lower yields. A record ranks by class, then type, then its uncompressed data as
+        unsigned bytes, a prefix ranking below what extends it. Two sets of records are
+        sorted and compared pairwise: the first difference decides, a set which runs out first
+        loses, and identical sets are `Comparison.Same` — no conflict at all.
+
+        ```scala
+        import soundness.*
+
+        val a = Dns.Record(dns"host.local", 120, Dns.Rdata.A(ip"10.0.0.1"), flush = true)
+        val srv = Dns.Record(dns"Gondor._fury._tcp.local", 120, Dns.Rdata.Srv(0, 0, 8443, dns"host.local"), flush = true)
+        Mdns.Tiebreak.compare(a, srv)                   // Comparison.Less: A before SRV
+        Mdns.Tiebreak.compare(List(srv, a), List(a, srv))   // Comparison.Same
+        ```
+    entry .compare   compares two records, or two lists of proposed records, as `Comparison`
+  entry .Responder   the mDNS responder: one per program, serving every loan through one transport
+    detail
+        `Mdns.Responder(open)` takes a function which opens an `Mdns.Transport`; the transport
+        is opened at the first loan and closed when the last ends, and its receive loops and
+        cache sweeper run as tasks under the `Monitor` the loan supplies, so cancelling that
+        monitor ends them too. It is a `Discovery.Backend`, so it is what `advertise`,
+        `browse` and `resolve` call; `discoveryBackends.mdnsSockets` is one over the sockets,
+        and one over an `Mdns.Transport.Bus` is how a program is tested.
+
+        Of RFC 6762 it does: probing three times at 250 ms, with renaming on conflict and
+        tiebreaking between simultaneous probes; announcing twice, a second apart; defending
+        an established name, and re-probing it (renaming if the probe is answered) when a
+        later response conflicts with it; answering queries, with known-answer suppression, a
+        random 20–120 ms delay for shared records, answers falling due together aggregated
+        into one message, and legacy unicast replies for a querier not on port 5353; goodbyes;
+        TTL-honouring browsing with exponential re-query; and resolving. Its own echoes are
+        recognised by message ID.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import threads.platformThreads
+        import probates.awaitProbate
+
+        val fury = Discovery.Service(t"fury", Tcp)
+        val description = Discovery.Description(t"Gondor", tcp"8443")
+
+        supervise:
+          val bus = Mdns.Transport.Bus()
+          val a = Mdns.Responder(() => bus.join(dns"a.local", List(ip"10.0.0.1")))
+
+          fury.advertise(description)(using a):
+            fury.advertise(description.copy(port = tcp"8444"))(using a):
+              summon[Discovery.Advertisement].instance.label   // t"Gondor (2)"
+        ```
+    refer syndesis.Discovery.Backend
+    refer syndesis.Mdns.Transport
+    entry #advertise   probes for, claims and announces an instance, as `Discovery.Backend#advertise`
+        Publishes the PTR from the service type (and from the enumeration meta-type, and from
+        each subtype), the SRV and TXT records, and the host's address records; the last three
+        are unique to the instance, so they carry the cache-flush bit. PTRs live 75 minutes,
+        the rest two minutes. A name this responder already holds is renamed without probing.
+    entry #withdraw   sends the goodbye for an advertisement and releases the loan
+    entry #browse   starts a browse, reporting known instances at once and re-querying at doubling intervals
+    entry #dismiss   stops a browse's re-query loop and its relay, and releases the loan
+    entry #resolve   resolves an instance from the cache, or queries for its records and waits up to the timeout
+  entry .Error   raised when the responder cannot start: no interface, or a group it cannot join
+    detail
+        Error `SN-055`: _the mDNS responder could not start because `reason`_. Reason
+        `NoInterface` (2) is _no interface is up and capable of multicast_; reason
+        `Join(group)` (1) is _the multicast group `224.0.0.251:5353` could not be joined_,
+        raised when neither group could be joined. Raised by `Mdns.Transport.sockets`; a loan
+        which hits it reports `Discovery.Error` reason `Unavailable` instead, with this error
+        as its diagnostics.
+    entry .Reason   why the responder could not start: `Join(group)` or `NoInterface`
+      detail
+          An enum of two numbered cases, with a `Communicable` rendering each.
+      entry .communicable   renders each reason as a message
+      entry #number   the reason's number, `1` or `2`, the second part of the error's code
+    entry #reason   why the responder could not start

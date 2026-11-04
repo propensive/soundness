@@ -1,0 +1,927 @@
+tel 1.0
+
+base murmuration
+import soundness
+
+info   the collection typeclasses, the operations built on them, and the one-shot `Iterator`
+detail
+    _Murmuration_ is the vocabulary of Soundness's collections: the typeclasses which say what
+    a collection *can do* — be traversed, be rebuilt in its own shape, be mapped, be reversed,
+    be converted to another shape, be tested for membership — and the operations written once
+    over those typeclasses, so that `map`, `filter`, `bind`, `fold`, `group`, `sweep` and the
+    rest read the same whether the receiver is a `List`, a `Set`, a `Map`, a `Chain`, a frozen
+    `Array`, a `Text` (which traverses as its characters) or a Java collection. The collection
+    *types* themselves — `List`, `Sequence`, `Set`, `Map`, `Ledger`, the lazy `Chain` and the
+    frozen `Array[element]^{}` (with `Data` as `Array[Byte]^{}`) — are proscenium's opaque
+    wrappers over the standard library's structures; murmuration supplies the instances which
+    give each of them the vocabulary, and the vocabulary itself.
+
+    The design has three layers. `Traversable` produces a fresh, one-shot `Iterator` over a
+    value's elements, and is the only thing an operation needs in order to *read* a collection.
+    `Reshapable` is the rebuild relation: from a source shape and a new element type it selects
+    the natural result shape and builds it, so `filter` on a `Set` gives a `Set`, `remap` on a
+    `Map` gives a `Map` when the results are pairs and a `List` when they are not, and `filter`
+    on `Text` gives `Text`. Its sub-trait `Reshapable.Stable` marks the shapes which preserve
+    order, and the order-sensitive operations (`sort`, `order`, `distinct`, `zip`, `excerpt`,
+    `span`, `batched`, `trace`) demand it, so they are honestly *absent* from `Set` and `Map`
+    rather than defined to do something arbitrary. `Mappable` is the third: `map` is driven by
+    it rather than by `Traversable` so that a `Map` maps its *values* and keeps its keys, while
+    `remap` is the pairwise form.
+
+    ```scala
+    import soundness.*
+    import sortingAlgorithms.timsort
+
+    val numbers: List[Int] = List(3, 1, 2)
+    val ages = Map(t"Ada" -> 36, t"Bob" -> 41)
+
+    numbers.map(_*2)                      // List(6, 2, 4)
+    numbers.filter(_ > 1)                 // List(3, 2)
+    numbers.bind { n => List(n, n) }      // List(3, 3, 1, 1, 2, 2)
+    numbers.fold(0)(_ + _)                // 6
+    numbers.sort                          // List(1, 2, 3)
+    numbers.group(_%2)                    // Map(1 -> List(3, 1), 0 -> List(2))
+    ages.map(_ + 1)                       // Map(t"Ada" -> 37, t"Bob" -> 42): values mapped, keys kept
+    ages.remap { (name, age) => name }    // List(t"Ada", t"Bob")
+    t"hello".filter(_ != 'l')             // t"heo"
+    ```
+
+    A few rules of the vocabulary are worth knowing before the first surprise:
+
+    - **Names.** `bind` is the monadic bind; `flatMap` is the same operation and exists only
+      because `for`-comprehensions desugar to it. `each` (in rudiments) is the loop, `foreach`
+      exists for the same desugaring reason. `fold` is the stdlib's `foldLeft`, `trace` its
+      `scanLeft`, `sweep` its `collect`, `group` its `groupBy`, `batched` its `grouped`,
+      `excerpt` its `slice`, `deduplicate` its `distinctBy`, `has` its `contains`, `flat` its
+      `flatten`, `keep`/`skip` (rudiments) its `take`/`drop`, `order` its `sortBy`, and
+      `except` its `diff`. There is no `filterNot`: it is written `filter(!predicate(_))`.
+    - **Overloads by value and by predicate.** Where a method could take either a value to
+      compare or a predicate to apply, both are offered under one name wherever the element
+      type allows it. `count` and `where` are the exception: with a path-dependent element
+      type a value overload is ambiguous with every lambda, so `count(_ == value)` is the
+      idiom for counting one element.
+    - **Cost is acknowledged, not hidden.** Operations whose cost is worse than their name
+      suggests — `size` and `last` on a `List`, `size` on a `Chain`, positional `at` on a
+      `List` — are gated behind a named given from denominative's `dysasymptotics` package
+      (`import dysasymptotics.linearSize`, `linearAccess`, `unboundedSize`), imported *by
+      name* in the file or block that accepts the cost. `nil` (emptiness) is O(1) everywhere
+      and never gated. Do not dodge a gate with `.stdlib`: open it where the cost is right.
+    - **Conversion** is `xs.to[List]`, `xs.to[Set]`, `pairs.to[Map]`, `chars.to[Text]`,
+      `xs.to[Array]` (rudiments' `to`, over `Convertible`): the *bracket* form, naming the
+      shape as a type. The parenthesised `xs.to(List)` of the standard library survives only
+      on stdlib receivers, which have a member `to` of their own. (An earlier `transmute[T]`
+      was this operation under a temporary name; it is `to[T]` now.)
+    - **Sorting names its algorithm.** `sort` and `order` (rudiments) need a `SortAlgorithm`
+      given in scope, chosen by importing one of `sortingAlgorithms` by name — there is no
+      default, and two imports are an ambiguity — and a `Comparable` for the element or key.
+    - **The standard library is a boundary.** `xs.stdlib` on any opaque collection exposes the
+      underlying structure without copying, and `List.from(…)`, `Set.from(…)`, … come back.
+      Every such crossing is greppable, which is what lets the rest of a program stay inside
+      the total vocabulary. A `Traversable` instance also exists for `java.lang.Iterable`,
+      `java.util.Iterator`, `java.util.Map` and `java.util.Enumeration`, so
+      `javaList.to[List]` needs no conversion at all.
+    - **Arrays are not collections.** The frozen `Array[e]^{}` is `Traversable`, `Reshapable`
+      and `Convertible`, so it can be read, mapped and converted, but it is edited by copy
+      (`define`, `omit`, `Array.concat`, `Array.thaw`/`Array.freeze`, in proscenium and
+      denominative), not through a `List`-like surface; the mutable `Array[e]^` sorts in place
+      with `sort()`.
+
+    The library's one concrete type is `Iterator[element]`: a separation-checked, one-shot,
+    non-allocating pull over a source, which replaces `scala.Iterator` throughout Soundness.
+    `Traversable.traverse` produces one and every operation consumes one, so it is mostly
+    internal currency, but it is also the honest type for anything read from the outside world
+    exactly once — a socket's frames, a process's lines, a terminal's keypresses — and the
+    Soundness name `Iterator` now means this type.
+
+    `murmuration.core` is a single source set, compiled for the JVM, Scala.js and Scala
+    Native. It sits *below* denominative and vacuous, so nothing here knows about `Ordinal` or
+    `Optional`: the operations which return an `Optional` (`head`, `last`, `find`, `where`,
+    `reap`) or take an `Ordinal` (`each`, `at`, `indexed`) are defined in rudiments over these
+    same typeclasses. Everything is exported to the `soundness` umbrella, and rudiments
+    re-exports it too, so `import soundness.*` (or `import rudiments.*`, never both — the
+    re-exports would make every operation ambiguous) is all a user writes; the
+    `sortingAlgorithms` choice package merges with the umbrella's own.
+
+refer murmuration.Traversable
+refer murmuration.Reshapable
+refer murmuration.Mappable
+refer murmuration.Iterator
+refer murmuration.sortingAlgorithms
+refer denominative.dysasymptotics
+
+entry .Traversable   a type whose elements can be visited in order, as `Self is Traversable by Operand`
+  detail
+      `Traversable` is the one thing an operation needs in order to *read* a collection. An
+      instance says what the elements are (its `Operand`, bound with `by`: `List[Int] is
+      Traversable by Int`, `Map[k, v] is Traversable by (k, v)`, `Text is Traversable by
+      Char`) and how to produce a fresh, one-shot `Iterator` over them (`#traverse`). Every
+      operation in murmuration and rudiments which only reads — `exists`, `fold`, `count`,
+      `has` via `Inclusive`, `head`, `find`, `each`, and the input side of `map`, `filter`,
+      `bind`, `group` and `sort` — takes it as evidence, and a new shape gains the whole
+      vocabulary by supplying one instance.
+
+      ```scala
+      import soundness.*
+
+      case class Bag(items: List[Text])
+
+      object Bag:
+        given traversable: Bag is Traversable by Text = bag => Iterator.from(List.iterator(bag.items))
+
+      Bag(List(t"a", t"b")).count(_ == t"a")   // 1
+      Bag(List(t"a", t"b")).to[Set]            // Set(t"a", t"b")
+      ```
+
+      Instances exist for the opaque `List`, `Chain`, `Sequence`, `Set`, `Map` (as pairs) and
+      `Ledger` (as pairs), for the frozen array `Array[e]^{refs}` and its `Sized` form, for
+      any `scala.Iterable` (`.iterable`, at lower priority), and for the Java `Iterable`,
+      `Iterator`, `Map` and `Enumeration`. All live in this companion, so they resolve with no
+      import. The collection instances are *subtype-parametric* (`list <: List[element]`), so
+      a receiver typed `List[e] & Populated` — a `List(a, b)` literal, an `occupied` result —
+      matches them as well as a plain one.
+
+      Because `Text` is `Traversable`, every generic operation applies to text, and a
+      text-only extension of the same name would be ambiguous at the umbrella: this is why
+      gossamer contributes *instances* (through `traversableTextual`, `reversibleTextual`)
+      rather than competing extensions.
+
+      The iterator `traverse` returns is exclusive (`Iterator[Operand]^`): a traversal
+      borrows, and it is consumed by exactly one operation. An `Iterator` is therefore
+      deliberately *not* itself `Traversable` — it cannot be traversed twice — and drains with
+      its own member `to[List]`.
+  refer murmuration.Reshapable
+  refer murmuration.Iterator
+  refer murmuration.Convertible
+  entry #traverse   a fresh one-shot `Iterator` over the value's elements, in order
+      The iterator is exclusive (`Iterator[Operand]^`) and consumed by the operation that asked
+      for it; it is internal currency, which rudiments' `xs.iterator` exposes when a caller
+      wants to pull by hand.
+  entry .list   the opaque `List`, element by element; matches `List[e] & Populated` too
+  entry .chain   the lazy `Chain`, pulling elements on demand as the iterator advances
+  entry .sequence   the indexed `Sequence`, element by element
+  entry .set   the opaque `Set`, in its own (unordered) iteration order
+  entry .map   the opaque `Map`, traversed as its `(key, value)` pairs
+      The pair is the `Operand`, so `map.fold`, `map.filter`, `map.remap` and `map.count` see
+      entries; `map.map` sees values, through `Mappable`.
+  entry .ledger   the insertion-ordered `Ledger`, as `(key, value)` pairs in insertion order
+  entry .frozenArray   the frozen array, read through any read-only reference
+      `(Array[element]^{refs}) is Traversable by element`, capture-polymorphic in `refs` so a
+      statically frozen `Array[e]^{}`, a boxed capture variable and an `any.rd` reference all
+      match. Reading through a shared reference is sound under separation checking, which
+      excludes a live writer wherever a reader aliases it.
+  entry .sizedFrozenArray   a `Sized[length]` frozen array, by its own instance
+      `(Array[element]^{refs} & Sized[length]) is Traversable by element`. A separate instance
+      rather than a widening of `.frozenArray`, because a type variable bounded by a capturing
+      type is elaborated as `array^{any.rd}` and would then fail evidence declared for the
+      pure array; spelling the brand in the `Self` keeps the shape exact.
+  entry .javaIterable   any `java.lang.Iterable` — `java.util.List`, `Set`, `Collection`, …
+      Subtype-parametric, so a `java.util.ArrayList[Int]` or a `jar.Attributes` resolves.
+      `javaList.to[List]` and `javaList.each(…)` need no `asScala`.
+  entry .javaIterator   a `java.util.Iterator`, taken over for its remaining elements
+  entry .javaMap   a `java.util.Map`, traversed as `(key, value)` pairs
+      Invariant in both parameters (unlike `.javaIterable`): a two-parameter subtype-parametric
+      instance let the compiler speculatively treat unrelated opaque types as Java maps. A
+      subtype such as `jar.Attributes` is ascribed to `java.util.Map[Object, Object]` first.
+  entry .javaEnumeration   a `java.util.Enumeration`, taken over for its remaining elements
+
+entry .Traversable2   the parent trait holding the lower-priority `Iterable` instance
+  hidden
+  detail
+      Not for direct use: `object Traversable` extends it so that the blanket `scala.Iterable`
+      instance ranks below the per-alias instances in the companion, which the compiler would
+      otherwise report as ambiguous for an alias receiver.
+  entry #iterable   any `scala.Iterable[element]` is `Traversable by element`
+      The fallback for raw standard-library collections (`Vector`, `Range`, `IndexedSeq`, …),
+      through their own `iterator`. Lower priority than every instance in `Traversable`'s
+      companion.
+
+entry .Reshapable   how a source shape rebuilds itself from new elements, as `Self is Reshapable by Operand to Result`
+  detail
+      `Reshapable` is the rebuild relation behind every transforming operation: `remap`,
+      `bind`, `filter`, `sweep`, `group`, `partition`, `flat` and the rest read their source
+      through `Traversable` and hand the resulting iterator to `#reshape`, which builds the
+      result. The instance is selected per *(source shape, new element type)*, which lets
+      results be more precise than a class hierarchy allows: a `List` of anything is a `List`;
+      a `Set` of anything a `Set`; a `Map` rebuilt from pairs is a `Map` (`.map`), from
+      anything else a `List` (`.mapToList`), and — when an order-sensitive operation asks for a
+      `Stable` result — a `Ledger` (`.mapToLedger`); `Text` rebuilds from its own characters,
+      and from nothing else.
+
+      ```scala
+      import soundness.*
+
+      Map(1 -> t"a").remap { (key, value) => (key + 1, value) }   // Map(2 -> t"a")
+      Map(1 -> t"a").remap { (key, value) => key }                // List(1)
+      Set(1, 2, 3, 4).sweep { case n if n%2 == 0 => n*10 }       // Set(20, 40)
+      t"hello".filter(_ != 'l')                                   // t"heo"
+      ```
+
+      `.Stable` marks the instances whose shape preserves order. Operations whose meaning
+      depends on order — `sort` and `order`, `distinct`, `deduplicate`, `zip`, `excerpt`,
+      `span`, `trace`, `batched`, rudiments' `indexed` — demand `Reshapable.Stable`, so they do
+      not exist on `Set` or `Map`: a sorted set would drop its order again on the way out, and
+      the compiler says so instead. `partition` and `sweep` are deliberately *not* `Stable`,
+      since gathering from an unordered shape is meaningful.
+
+      `reshape` takes a *capturing* iterator (`Iterator[Operand]^`), because the iterators the
+      operations produce capture the caller's lambda. Every instance but `.chain` drains it
+      eagerly, so nothing escapes; the chain is the deliberate exception and keeps the source's
+      laziness. A strict instance of your own is a one-liner through `.build`:
+
+      ```scala
+      import soundness.*
+
+      case class Bag(items: List[Text])
+
+      object Bag:
+        given reshapable: Bag is Reshapable by Text to Bag =
+          elements => Bag(List.from(Reshapable.build(elements, scala.collection.immutable.List.newBuilder[Text])))
+      ```
+  refer murmuration.Traversable
+  refer murmuration.Mappable
+  entry #reshape   builds the `Result` from an iterator of new elements
+      The iterator is exclusive and may capture the lambda that produced its elements; a strict
+      instance consumes it completely inside the call.
+  entry .Stable   the sub-trait of instances whose shape preserves element order
+      Extended by the `List`, `Sequence`, `IndexedSeq`, `Chain`, frozen-array, `Ledger` and
+      (to a `Ledger` or a `List`) `Map` instances, and not by `.set` or `.map`. An operation
+      which demands `self is Reshapable.Stable by e to r` is thereby unavailable on an
+      unordered receiver, which is how `Set(3, 1, 2).sort` fails to compile rather than
+      returning a set in no particular order. The name is about a *shape* keeping order, not
+      about a sorting algorithm being stable; see `SortAlgorithm` for the latter.
+  entry .list   a `List` rebuilds as a `List` of the new element type (stable)
+      Subtype-parametric in the source (`list <: List[element]`), so a `List[e] & Populated`
+      receiver reshapes too; the result is a plain `List[element2]`, since a transformation may
+      empty it.
+  entry .set   a `Set` rebuilds as a `Set` (unordered, not stable)
+  entry .sequence   a `Sequence` rebuilds as a `Sequence` (stable)
+  entry .indexedSeq   a stdlib `IndexedSeq` rebuilds as an `IndexedSeq` (stable)
+  entry .chain   a `Chain` rebuilds lazily as a `Chain`, pulling from the iterator as it is forced
+      The one non-strict instance: the iterator escapes into the chain, which memoizes what it
+      has pulled. `naturals.filter(_%2 == 0)` on an infinite chain is therefore fine.
+  entry .frozenArray   a frozen `Array[e]^{}` rebuilds as a fresh frozen `Array[e2]^{}`
+      Needs a `ClassTag` for the new element type. The rebuilt array is fresh, so freezing it is
+      discharged by construction.
+  entry .map   a `Map` rebuilt from `(key2, value2)` pairs is a `Map[key2, value2]`
+      The highest-priority `Map` instance: `remap` and pairwise `bind` with pair results stay a
+      `Map`. Not `Stable`; a stable pair-rebuild falls through to `.Fallback`'s `mapToLedger`.
+  entry .ledger   a `Ledger` rebuilt from pairs is a `Ledger`, and legitimately stable
+      Insertion order is a `Ledger`'s identity, so it carries the whole order-sensitive surface:
+      `ledger.order(…)`, `distinct`, `trace`, `zip`.
+  entry .Fallback   the middle rung of the `Map`/`Ledger` priority ladder
+    detail
+        A parent trait of `Reshapable`'s companion, so its instances rank below those declared
+        in the companion itself and above `.Fallback2`'s. The ladder decides what a `Map` or
+        `Ledger` reshapes into when the lambda's result is not a pair, or when a stable result
+        is demanded, without ambiguity.
+    entry #mapToLedger   a stable pair-rebuild of a `Map` yields a `Ledger`
+        `Map[k, v] is Reshapable.Stable by (k2, v2) to Ledger[k2, v2]`: an unordered `Map`
+        cannot honestly receive an order-sensitive result, but the insertion-ordered `Ledger`
+        can, so `ages.order(_(1))` is a `Ledger` iterating in sorted order. Lower priority than
+        `.map`, so a plain `filter` or `remap` still rebuilds the cheaper `Map`.
+    entry #ledgerToList   a `Ledger` rebuilt from non-pair elements is a `List`, order preserved
+  entry .Fallback2   the lowest rung: a `Map` rebuilt from non-pairs is a `List`
+    detail
+        The parent of `.Fallback`, holding the instance that must lose to every other `Map`
+        instance.
+    entry #mapToList   a `Map` rebuilt from non-pair elements is a `List` (stable)
+        `ages.remap { (name, age) => name }` is a `List[Text]` — a more precise result than the
+        standard library's `Iterable`.
+  entry .build   drains an iterator into a stdlib `Builder` and returns what it built
+      The strict rebuild, for writing an instance of your own over a standard-library
+      builder: `Reshapable.build(elements, sci.Vector.newBuilder[e])`. Public only because the
+      instances in the companion are lambdas; it is the one place the layer meets a builder.
+
+entry .Mappable   the shape-preserving `map`: a container, what its lambda sees, and the mapped container
+  detail
+      `map` is driven by `Mappable` rather than by `Traversable` plus `Reshapable`, for one
+      reason: a `Map` should map its *values* and keep its keys, where a traversal would hand
+      the lambda `(key, value)` pairs. An instance fixes, from the container alone, what the
+      lambda receives (`Operand`: the element, or the value for a `Map`) and the mapped
+      container's constructor (`Result[_]`, of kind `* -> *`, which is why this is not a
+      `Resultant` typeclass). Both are decided before the lambda is elaborated, so
+      `xs.map(_.field)` infers the element type.
+
+      ```scala
+      import soundness.*
+
+      List(1, 2, 3).map(_*2)                   // List(2, 4, 6)
+      Set(1, 2, 3).map(_*2)                    // Set(2, 4, 6)
+      Map(t"a" -> 1, t"b" -> 2).map(_*10)      // Map(t"a" -> 10, t"b" -> 20)
+      Map(t"a" -> 1).remap { (k, v) => (k, v + 1) }   // Map(t"a" -> 2): the pairwise form
+      ```
+
+      The instances are subtype-parametric (`container <: List[element]`), which is what
+      matches a `List[e] & Populated` receiver and the umbrella's re-export aliases; a raw
+      stdlib collection falls back to `.Fallback`'s `iterable` and maps to a `List`. One trap
+      follows from that: a stdlib `scala.collection.immutable.Map` reached through the
+      fallback maps its *entries*, not its values, so a file which means Soundness's `Map`
+      should make sure the name resolves to `proscenium.Map` (it does under `import
+      soundness.*` unless a stdlib `Map` import shadows it).
+
+      The extension `map` is a plain `def` rather than `inline`: an inline extension re-infers
+      the result per call site under capture checking and leaks fresh capabilities.
+  refer murmuration.map
+  refer murmuration.remap
+  refer murmuration.Reshapable
+  entry #Result   the mapped container's constructor, applied to the new element type
+  entry #map   maps every `Operand` through the lambda into `Result[element2]`
+  entry .list   a `List` maps to a `List` of the lambda's results
+  entry .set   a `Set` maps to a `Set` (through the `Set.map` primitive, whose result is pure)
+  entry .sequence   a `Sequence` maps to a `Sequence`
+  entry .chain   a `Chain` maps lazily to a `Chain`
+  entry .map   a `Map` maps its values, keeping its keys: `Operand` is the value, `Result[v2] = Map[key, v2]`
+  entry .ledger   a `Ledger` maps its values in insertion order, keeping its keys
+  entry .Fallback   the lower-priority instance for raw standard-library collections
+    detail
+        A parent trait of `Mappable`'s companion, so its one instance loses to every alias
+        instance declared in the companion.
+    entry #iterable   any `scala.Iterable[element]` maps to a `List[element2]`
+        Keeps `.map` working on ranges, vectors and other raw collections, as the old generic
+        `map` did. A stdlib `Map` reached this way has `(key, value)` as its operand.
+
+entry .Convertible   conversion to a requested shape, `Self is Convertible in Form to Result`
+  detail
+      `Convertible` is what rudiments' `xs.to[Form]` resolves: `Form` names the target — an
+      unapplied constructor such as `List`, `Set`, `Map`, `Sequence`, `Chain`, `Array`,
+      `java.util.List`, or a proper type such as `Text` — and `Result` is the fully-applied
+      result implicit search derives for it. `Form` is declared `<: AnyKind`, so one `to`
+      serves both kinds, unlike the standard library's `Factory`-taking `to(List)`.
+
+      ```scala
+      import soundness.*
+
+      val pairs = List(t"a" -> 1, t"b" -> 2)
+      pairs.to[Map]                  // Map(t"a" -> 1, t"b" -> 2)
+      Set(3, 1, 2).to[List]          // a List, in the set's iteration order
+      t"abc".to[List]                // List('a', 'b', 'c')
+      List(1, 2, 3).to[Array]        // Array(1, 2, 3): frozen, Array[Int]^{}
+      List(1, 2).to[java.util.List]  // a fresh java.util.ArrayList
+      ```
+
+      Every instance here derives from `Traversable`, so anything traversable — a Soundness
+      collection, a `Text`, a Java collection, a value with its own `Traversable` instance —
+      converts to any of these shapes with no further instance. Conversion *to* a type such
+      as `Text` is supplied by that type (gossamer), in its own companion.
+
+      Spelling: `xs.to[List]` (bracket) is the normal form. A parenthesised `xs.to(List)`
+      survives only where a stdlib receiver's own member `to` wins; on a `Set`, `Array` or
+      `Data` receiver the parenthesised form can even be ambiguous, and the bracket form is the
+      fix. An `Iterator` is not `Traversable` and so not `Convertible`: it drains with its own
+      member `iterator.to[List]`. The `to` extension is `transparent inline`, so where nothing
+      pins the expected type (`xs.to[List] == List(1, 2)` in an assertion) the comparison may
+      need the receiver bound to a typed `val` first.
+  refer murmuration.Traversable
+  entry #Form   the requested shape: a type constructor (`List`, `Map`) or a proper type (`Text`)
+  entry #convert   builds the `Result` from the value
+  entry .list   any `Traversable` to a `List` of its elements
+  entry .set   any `Traversable` to a `Set` of its elements
+  entry .sequence   any `Traversable` to a `Sequence`
+  entry .indexedSeq   any `Traversable` to a stdlib `IndexedSeq`
+  entry .chain   any `Traversable` to a `Chain`, pulled lazily from the traversal
+  entry .map   any `Traversable` of `(key, value)` pairs to a `Map`
+  entry .ledger   any `Traversable` of `(key, value)` pairs to an insertion-ordered `Ledger`
+  entry .javaList   any `Traversable` to a fresh, mutable `java.util.ArrayList`
+      The Java boundary: `xs.to[java.util.List]` builds the platform collection directly from
+      the traversal, with no stdlib bridge at the call site, and the receiving API owns the
+      result outright.
+  entry .frozenArray   any `Traversable` to a frozen `Array[element]^{}`
+      Needs a `ClassTag` for the element. The built array is fresh, so no writer survives its
+      construction and the result is pure.
+
+entry .Inclusive   a type whose values can be tested for membership of a value, as `Self is Inclusive by Operand`
+  detail
+      Backs `collection.has(value)`. The queried type is the instance's `Operand`, fixed to the
+      collection's *exact* element type, so `list.has(wrongType)` is a compile error, and so is
+      `map.has(key)`: a `Map`'s element is a `(key, value)` pair, and whether a *key* is present
+      is `Applicable`'s `defines` (rudiments), not membership. Instances exist for `List` (a
+      single linear pass, so ungated), `Set`, `Sequence`, the frozen array, the bare JVM array,
+      any `scala.Iterable` (`.Fallback`), and — in gossamer — `Text` by `Char`; substring
+      containment is `subsumes` instead.
+
+      ```scala
+      import soundness.*
+
+      List(1, 2, 3).has(2)       // true
+      Set(t"a", t"b").has(t"c")  // false
+      t"hello".has('e')          // true
+      ```
+  refer murmuration.has
+  entry #has   whether `value` occurs among the elements
+  entry .Element   the exact element type of a `scala.Iterable`, as a match type
+      `Element[collection]` reduces `Iterable[element]` to `element`, which is how `.Fallback`'s
+      instance fixes the queried type exactly rather than widening it to `Matchable` through
+      covariance.
+  entry .Fallback   the lower-priority parent holding the `scala.Iterable` instance
+    detail
+        A parent of `Inclusive`'s companion, so an unrefined `X is Inclusive` query on an
+        opaque collection is not reported ambiguous against the per-alias instances.
+    entry #iterable   any `scala.Iterable` is `Inclusive by` its exact element, through `exists`
+  entry .frozenArray   a frozen `Array[element]^{}` is `Inclusive by element`, by a linear scan
+  entry .sequence   a `Sequence` is `Inclusive by` its element
+  entry .set   a `Set` is `Inclusive by` its element, by hashing
+  entry .list   a `List` is `Inclusive by` its element, by one linear pass (ungated)
+  entry .array   a bare `scala.Array[element]` is `Inclusive by element`
+
+entry .Intersectable   set algebra over an abstract receiver: `intersect` and `except`
+  detail
+      `left.intersect(right)` keeps the elements present in both and `left.except(right)`
+      removes `right`'s elements (the standard library's `diff`). Union is not here: for an
+      unordered unique shape it is plain concatenation, which symbolism's `Concatenable`
+      already provides as `left + right`, and a single element is added with `:+`.
+
+      ```scala
+      import soundness.*
+
+      val primes = Set(2, 3, 5, 7)
+      primes.intersect(Set(2, 4))   // Set(2)
+      primes.except(Set(2, 3))      // Set(5, 7)
+      primes :+ 11                  // Set(2, 3, 5, 7, 11)
+      ```
+
+      The one instance, `.set`, is deliberately not subtype-parametric: an intersection can
+      empty a non-empty receiver, so a `& Populated` brand must not survive it.
+  refer murmuration.intersect
+  refer murmuration.except
+  entry #intersect   the elements present in both `left` and `right`
+  entry #except   `left` without the elements of `right`
+  entry .set   `Set[element] is Intersectable` with another `Set[element]` as its `Operand`
+
+entry .intersect   `left.intersect(right)`: the elements present in both, for any `Intersectable`
+    An extension over `self is Intersectable by operand`; on a `Set`, `right` is another `Set`
+    of the same element type and the result is a `Set`.
+
+entry .except   `left.except(right)`: `left` without `right`'s elements, for any `Intersectable`
+    The standard library's `diff`, under a name which reads as a sentence. On a `Set`, `right`
+    is another `Set` of the same element type.
+
+entry .Keyed   the keyed-container surface: `keys` and `values`, typed by the container
+  detail
+      Better typed than the standard library's `Iterable` results: a `Map`'s keys are a `Set`
+      (unique and unordered), a `Ledger`'s are a `List` (insertion order is its identity), and
+      both containers' values are a `List`. The result types are declared as refinements on the
+      instances (`type Keys = Set[key]`), so the extensions can bind them as type parameters
+      and the umbrella's export forwarder reproduces them.
+
+      ```scala
+      import soundness.*
+
+      val ages = Map(t"Ada" -> 36, t"Bob" -> 41)
+      ages.keys     // Set(t"Ada", t"Bob")
+      ages.values   // List(36, 41)
+      ```
+  refer murmuration.keys
+  refer murmuration.values
+  entry #Keys   the type `keys` returns: `Set[key]` for a `Map`, `List[key]` for a `Ledger`
+  entry #Values   the type `values` returns: `List[value]` for both
+  entry #keys   the container's keys, as `Keys`
+  entry #values   the container's values, as `Values`
+  entry .map   `Map[key, value] is Keyed` with `Keys = Set[key]` and `Values = List[value]`
+  entry .ledger   `Ledger[key, value] is Keyed` with `Keys = List[key]` and `Values = List[value]`, both in insertion order
+
+entry .keys   `container.keys`: the keys of any `Keyed` container, as its `Keys` type
+    A `Set[key]` for a `Map`, a `List[key]` in insertion order for a `Ledger`.
+
+entry .values   `container.values`: the values of any `Keyed` container, as a `List`
+
+entry .Reversible   order reversal, `Self is Reversible to Result`, unified over collections and text
+  detail
+      One `reverse` extension serves `List`, `Sequence` and every textual type, because
+      gossamer contributes a `Reversible` *instance* (`reversibleTextual`, published in each
+      textual type's companion) rather than a competing text-only extension, which would have
+      clashed with this one at the umbrella. `Set` and `Map` have no instance: reversing an
+      unordered shape means nothing, so `set.reverse` does not compile.
+
+      ```scala
+      import soundness.*
+
+      List(3, 1, 2).reverse   // List(2, 1, 3)
+      t"stressed".reverse     // t"desserts"
+      ```
+
+      The instances are subtype-parametric, so a `List[e] & Populated` reverses too, and the
+      `Result` is bound as an ordinary type parameter at the extension so that the umbrella
+      forwarder can reproduce it.
+  refer murmuration.reverse
+  entry #reverse   the value with its elements in the opposite order
+  entry .list   a `List` reverses to a `List`
+  entry .sequence   a `Sequence` reverses to a `Sequence`
+
+entry .reverse   `value.reverse`: the elements in reverse order, for any `Reversible` value
+    Lists and sequences reverse to their own shape; a `Text` (or any textual type, through
+    gossamer's instance) reverses as its characters. Absent on `Set` and `Map`.
+
+entry .SortAlgorithm   a sorting algorithm: puts a scratch array in order against a comparator
+  detail
+      An algorithm is nothing but a way of ordering an array of elements against a
+      `java.util.Comparator`, and that is all the trait is. Every operation which sorts —
+      rudiments' `sort` and `order` over a collection, and `sort()` over a mutable array —
+      is that plus the arrangements for getting elements into an array and back out, so the
+      algorithm is not parameterised by the collection it serves. (It once was; every
+      implementation drained its receiver into an array anyway, and the one that did not was
+      five to seven times slower.)
+
+      Which algorithm sorts is the `SortAlgorithm` given in scope, chosen by importing one of
+      `sortingAlgorithms` by name. There is deliberately no default: with none in scope a
+      `sort` does not compile, and with two it is ambiguous. The six are:
+
+      - `timsort` — the JDK's own `Arrays.sort` for objects: adaptive, stable, the algorithm
+        behind the standard library's `sorted`;
+      - `powersort` — Timsort's merge policy replaced by one which merges runs in the order of
+        a nearly-optimal binary merge tree (Munro and Wild, 2018), with galloping merges;
+        stable and adaptive, and the one to reach for on partly-ordered data;
+      - `quicksort` — median-of-three pivots with Hoare partitioning, insertion sort below
+        twelve elements, recursion bounded at log₂(n) frames; not stable, in place;
+      - `heapsort` — in place, not stable, with no quadratic worst case;
+      - `insertionSort` and `bubbleSort` — stable, and only worth it for tiny input.
+
+      Stability — whether equal elements keep their source order — is a property of the
+      algorithm, not of the types: `pairs.order(_(0))` under `timsort` leaves tied pairs in
+      their original order, under `quicksort` it may not. It is not to be confused with
+      `Reshapable.Stable`, which is about a *shape* preserving order.
+
+      The algorithms are ordinary methods, deliberately not `inline`: one shared, compact loop
+      is inlined by the JIT better than a copy per call site, which was measured to be slower
+      (6.68 ms against 5.59 ms for a hundred thousand elements). A custom algorithm is any
+      value of this type, bound as a local given.
+  refer murmuration.sortingAlgorithms
+  entry #sort   orders `array` in place, as `comparator` says
+
+entry .sortingAlgorithms   the six sorting algorithms, each a given to import by name
+  detail
+      Every sort in Soundness — `sort`, `order` and the in-place `sort()` — takes a
+      `SortAlgorithm`, and the choice is never implicit: `import soundness.*` brings none of
+      these in, and exactly one is imported by name in the file or block that sorts. Two in
+      scope make every sort ambiguous, which is the intended way of saying that a program sorts
+      with one algorithm unless it says otherwise at the call site.
+
+      ```scala fuel
+      frame
+        label No algorithm chosen
+        code
+            locally:
+              List(3, 1, 2).sort   // does not compile
+      frame
+        label Timsort, the JDK's own
+        code
+            locally:
+              import sortingAlgorithms.timsort
+              List(3, 1, 2).sort   // List(1, 2, 3)
+      frame
+        label Powersort, for a stable sort of partly-ordered data
+        code
+            locally:
+              import sortingAlgorithms.powersort
+              List((1, t"a"), (0, t"b"), (1, t"c")).order(_(0))   // List((0, t"b"), (1, t"a"), (1, t"c")): ties keep their order
+      frame
+        label Two imports are an ambiguity
+        code
+            locally:
+              import sortingAlgorithms.{timsort, quicksort}
+              List(3, 1, 2).sort   // does not compile
+      ##
+      ```
+
+      The block-scoped import is the idiom when one part of a program needs a different
+      algorithm from the rest. The sort itself also needs a `Comparable` for the element (or
+      for the key, under `order`): numbers and characters have one, a `Text` needs a collation
+      chosen, and a type whose order is still a stdlib `Ordering` sorts through the bridge in
+      `Comparable`'s companion.
+  refer murmuration.SortAlgorithm
+  entry .timsort   the JDK's `Arrays.sort` for objects: adaptive, stable, the stdlib's `sorted`
+  entry .powersort   Powersort: Timsort's runs merged in near-optimal order, with galloping; stable
+      Munro and Wild's 2018 algorithm. Input already in order is one run and is sorted by the
+      scan which discovered that, with no merge buffer allocated at all.
+  entry .quicksort   median-of-three quicksort, in place; not stable
+      Hoare partitioning, insertion sort below twelve elements, recursion into the smaller
+      side so the depth is bounded at log₂(n).
+  entry .heapsort   heapsort, in place, with no quadratic worst case; not stable
+  entry .bubbleSort   bubble sort, stable; a single pass on already-sorted input
+  entry .insertionSort   insertion sort, stable; the right choice only for tiny input
+
+entry .has   `collection.has(value)`: whether a value is among the elements
+    An extension over any `Inclusive` receiver. The queried type is the exact element type,
+    so a `Map` cannot be asked `has(key)` — a key is not an element; that is `defines`
+    (rudiments). `List(1, 2, 3).has(2)`, `Set(t"a").has(t"b")`, `t"hello".has('e')`.
+
+entry .map   `xs.map(lambda)`: the shape-preserving map, which on a `Map` maps the values
+    Driven by `Mappable`, summoned at the extension so the lambda's parameter is the concrete
+    element type before the lambda elaborates (`xs.map(_.field)` infers). A `List` maps to a
+    `List`, a `Set` to a `Set`, a `Chain` lazily to a `Chain`, a `Map` to a `Map` with the
+    same keys and mapped values, a `Ledger` likewise in order, and any raw `scala.Iterable` to
+    a `List`. For the entries of a `Map` as pairs, use `remap`.
+
+    ```scala
+    import soundness.*
+
+    List(1, 2, 3).map(_*2)                 // List(2, 4, 6)
+    Map(t"a" -> 1, t"b" -> 2).map(_*10)    // Map(t"a" -> 10, t"b" -> 20)
+    ```
+
+entry .remap   `xs.remap(lambda)`: the pairwise map, rebuilt through `Reshapable`
+    The lambda receives each traversed element — a `Map`'s `(key, value)` pair — and the result
+    takes whatever shape `Reshapable` derives for the source and the new element: a `Map`
+    whose results are pairs stays a `Map`, one whose results are not becomes a `List`, and on
+    a `List` `remap` is simply `map`.
+
+    ```scala
+    import soundness.*
+
+    Map(t"a" -> 1).remap { (key, value) => (key, value + 1) }   // Map(t"a" -> 2)
+    Map(t"a" -> 1).remap { (key, value) => key }                // List(t"a")
+    ```
+
+entry .subsumes   `xs.subsumes(ys)`: whether `ys` occurs as a contiguous run within `xs`
+    A substring test for `Text` (where gossamer's overload short-cuts through `indexOf`), and
+    the same question for any `Traversable`: `List(1, 2, 3, 4).subsumes(List(2, 3))` is true,
+    `List(1, 2, 3, 4).subsumes(List(2, 4))` false, and the empty subsequence is always
+    present. Both sides must have the same type; a literal receiver typed `& Populated` cannot
+    be asked about `List.empty` without first being bound to a plain `List`.
+
+entry .bind   `xs.bind(lambda)`: the monadic bind, flattening a collection-valued lambda
+    The preferred name for what the standard library calls `flatMap`. The lambda may return any
+    `Traversable` — a different shape is fine, `List(1, 2).bind(n => Set(n))` is a `List` — and
+    the result is rebuilt in the receiver's shape. `flatMap` is the same operation under the
+    name `for`-comprehensions desugar to.
+
+    ```scala
+    import soundness.*
+
+    List(1, 2).bind { n => List(n, n*10) }   // List(1, 10, 2, 20)
+    ```
+
+entry .flatMap   the same operation as `bind`, under the name `for`-comprehensions require
+    Retained solely so that `for a <- xs; b <- f(a) yield …` desugars; at an explicit call site
+    write `bind`.
+
+entry .filter   `xs.filter(predicate)`: the elements satisfying the predicate, in the source's shape
+    There is no `filterNot`: write `filter(!predicate(_))`. A `Set` filters to a `Set`, a
+    `Chain` lazily to a `Chain`, a `Map` (by its pairs) to a `Map`, and `Text` to `Text`.
+
+entry .withFilter   the `filter` that `for`-comprehension guards desugar to; strict
+    Deliberately strict, unlike the standard library's lazy `WithFilter` carrier: a captured
+    predicate would otherwise have to thread through every desugared stage under capture
+    checking. `for n <- xs if n > 1 yield n` works as expected; nothing else should call it.
+
+entry .foreach   `xs.foreach(lambda)`: visits every element; exists for `for` loops
+    The name a `for (x <- xs) do …` loop desugars to. At an explicit call site the loop is
+    rudiments' `each`, which also offers the element's ordinal as a contextual value.
+
+entry .exists   `xs.exists(predicate)`: whether some element satisfies the predicate, stopping at the first
+
+entry .fold   `xs.fold(initial)(lambda)`: accumulates a state over the elements, left to right
+    The standard library's `foldLeft`, with the state's type fixed by `initial` (the stdlib
+    `fold`'s widening to a supertype is not offered). `List(1, 2, 3).fold(0)(_ + _)` is `6`;
+    on an empty receiver it is `initial`. A `Map` folds over its `(key, value)` pairs, so the
+    lambda is written `{ case (acc, (k, v)) => … }` or with a two-parameter pattern.
+
+entry .count   `xs.count(predicate)`: how many elements satisfy the predicate
+    Only the predicate form: a value-taking overload would be ambiguous with it for every
+    lambda argument, because the element type is path-dependent, so counting one element is
+    `xs.count(_ == value)`.
+
+entry .flat   `xss.flat`: one level of nesting removed, in the outer source's shape
+    The inner values may be any `Traversable`, so a `List[Set[e]]` flattens to a `List[e]`
+    and `List(List(1, 2), List(3)).flat` is `List(1, 2, 3)`. The standard library's
+    `flatten`.
+
+entry .trace   `xs.trace(initial)(lambda)`: every intermediate state of a fold, initial state first
+    The standard library's `scanLeft`, in the source's own shape: `List(1, 2, 3).trace(0)(_ +
+    _)` is `List(0, 1, 3, 6)`. Order-sensitive, so it demands `Reshapable.Stable` and is absent
+    on `Set` and `Map`.
+
+entry .excerpt   `xs.excerpt(from, until)`: the run of elements by position, end-exclusive and total
+    The standard library's `slice`, by `Int` positions: `List(1, 2, 3, 4, 5).excerpt(1, 3)` is
+    `List(2, 3)`. Bounds outside the source clamp rather than fail — `List(1, 2).excerpt(5,
+    9)` is empty, `List(1, 2, 3).excerpt(2, 99)` is `List(3)`. Demands `Reshapable.Stable`.
+    Positional segments by ordinal (`before`, `upto`, `from`, `after`, `keep`, `skip`) are
+    rudiments' `Segmentable` vocabulary.
+
+entry .zip   `xs.zip(ys)`: the elements paired positionally, stopping at the shorter side
+    `ys` may be any `Traversable`; the pairs are rebuilt in `xs`'s shape, which must be
+    `Reshapable.Stable`. `List(1, 2, 3).zip(List(t"a"))` is `List((1, t"a"))`. Pairing with
+    positions is rudiments' `indexed`.
+
+entry .group   `xs.group(lambda)`: the elements keyed by a function, into a `Map` of groups in the source's shape
+    The standard library's `groupBy`: `List(1, 2, 3, 4).group(_%2)` is `Map(1 -> List(1, 3),
+    0 -> List(2, 4))`. Each group is rebuilt in the receiver's own shape, so grouping a `Set`
+    gives a `Map` of `Set`s.
+
+entry .distinct   `xs.distinct`: repeated elements dropped, keeping the first occurrence of each
+    Which occurrence survives is positional, so this demands `Reshapable.Stable` and is
+    honestly unavailable on a `Set` (which has no repeats) or a `Map`.
+
+entry .deduplicate   `xs.deduplicate(key)`: the first element for each value of `key`, in first-occurrence order
+    The standard library's `distinctBy`: `List(10, 43, 22, 71, 52).deduplicate(_%10)` is
+    `List(10, 43, 22, 71)`. Like `distinct`, positional and so `Stable`-gated.
+
+entry .span   `xs.span(predicate)`: the longest leading run satisfying the predicate, and the remainder
+    `List(1, 2, 3, 1).span(_ < 3)` is `(List(1, 2), List(3, 1))`. The two sides are traversed
+    independently, since one iterator cannot be consumed twice. Order-sensitive, so
+    `Stable`-gated. For a split which ignores position, see `partition`.
+
+entry .partition   `xs.partition(predicate)`: the elements satisfying the predicate, and those not
+    Unlike `span`, membership ignores position, so a `Set` or `Map` partitions meaningfully:
+    `Set(1, 2, 3, 4).partition(_%2 == 0)` is `(Set(2, 4), Set(1, 3))`; on a `List` both sides
+    keep their order.
+
+entry .sweep   `xs.sweep { case … }`: filter and map in one pass, through a partial function
+    The standard library's `collect`: `List(1, 2, 3, 4).sweep { case n if n%2 == 0 => n*10 }`
+    is `List(20, 40)`. Not `Stable`-gated — gathering from a `Set` is meaningful. The partial
+    function is capability-annotated, so a case body which raises through a `Tactic` is
+    accepted; it is applied eagerly and retains nothing. Its single-result sibling is
+    rudiments' `reap`.
+
+entry .batched   `xs.batched(size)`: consecutive batches of at most `size` elements, as a `List` of the source's shape
+    The standard library's `grouped`: `List(1, 2, 3, 4, 5).batched(2)` is `List(List(1, 2),
+    List(3, 4), List(5))`, and the last batch may be shorter. Batch boundaries depend on
+    order, so it is `Stable`-gated. Named `batched` rather than `chunked`, which is turbulence's
+    byte-stream operation.
+
+entry .Iterator   a one-shot, separation-checked pull over a source of elements; Soundness's `Iterator`
+  detail
+      `Iterator[element]` is the collection layer's internal currency — `Traversable.traverse`
+      produces one and every operation consumes one — and the honest type of anything read from
+      the outside world exactly once: a socket's frames, a process's output lines, a terminal's
+      keypresses, an archive's entries as each payload opens. It replaces `scala.Iterator`
+      throughout Soundness: under `import soundness.*` (or `import rudiments.*`) the bare name
+      `Iterator` is this type, and a stdlib iterator is spelt `scala.collection.Iterator`.
+
+      Unlike the standard library's, it is capture- and separation-checked, and it has no way
+      to ask for an element that is not there. It extends `caps.Stateful`, so a value typed
+      `Iterator[e]^` is exclusive: a method which advances it is an `update def`, a combinator
+      which takes it over is a `consume def`, and a second use of a consumed iterator does not
+      compile. There is no `hasNext`/`next()` pair. The three honest ways to read one are:
+
+      - a **terminal operation** — `#each`, `#fold`, `#exists`, `#all`, `#count`, `#size`,
+        `#seek`, `#chain`, `#to` — which drains the iterator where it is; `each` is the loop;
+      - **`#next`**, for a stateful consumer which holds the iterator in a field (a `Stream`
+        source, an event pump): one call advances and yields `element | Iterator.Exhausted`,
+        and the caller matches on `.Exhausted` before it has an element;
+      - the **moving style**, `#pull`, for a hand-written loop which needs the element and the
+        right to stop between elements: it consumes the iterator and yields `.Exhausted` or a
+        `.Cursor` which owns it; `cursor.value` reads the element and `cursor.pull` consumes
+        the cursor to advance. Nothing allocates: the cursor is the iterator reference and the
+        sentinel is a `null`.
+
+      ```scala
+      import soundness.*
+
+      def total(consume pull: Iterator.Pull[Int], sum: Int): Int = pull match
+        case Iterator.Exhausted           => sum
+        case cursor: Iterator.Cursor[Int] =>
+          val value = cursor.value
+          total(cursor.pull, sum + value)
+
+      total(Iterator(1, 2, 3, 4).pull, 0)   // 10
+      ```
+
+      Read `value` before `pull` in the same expression, branch with a typed pattern, and
+      rebind the handle each step; reusing a pulled cursor, or reading `value` with no cursor,
+      is rejected by the compiler.
+
+      The lazy combinators — `#map`, `#filter`, `#sweep`, `#keep`, `#skip`, `#zip`,
+      `#indexed`, `#trace`, `#excerpt`, `#batched`, `#deduplicate`, `#distinct`, `#concat` and
+      `#flatMap` — consume the iterator they transform and *share* the lambda they are given,
+      so the result's capture set names the lambda (`Iterator[e2]^{lambda, caps.any}`): a
+      lambda stays usable afterwards, and a lambda which captures an exclusive value makes the
+      result exclusive too. A pipeline is grown one consuming stage at a time:
+
+      ```scala fuel
+      frame
+        label A source
+        code
+            Iterator(1, 2, 3, 4, 5)
+      frame
+        label Transformed lazily
+        code
+            Iterator(1, 2, 3, 4, 5).map(_*10)
+      frame
+        label Filtered, still lazily
+        code
+            Iterator(1, 2, 3, 4, 5).map(_*10).filter(_ > 10)
+      frame
+        label Swept by a partial function
+        code
+            Iterator(1, 2, 3, 4, 5).map(_*10).filter(_ > 10).sweep { case n if n != 40 => n/10 }
+      frame
+        label Drained into a shape
+        code
+            Iterator(1, 2, 3, 4, 5).map(_*10).filter(_ > 10).sweep { case n if n != 40 => n/10 }.to[List]   // List(2, 3, 5)
+      ##
+      ```
+
+      An implementation writes `new Iterator[e]:` with two members and inherits the rest:
+      `update def advance(): Boolean`, which moves to the next element and materialises it
+      into a `var`, and `def current: e`, a plain unboxed read. Both are gated to this package
+      and to implementors, so a caller cannot read `current` without having advanced. A class
+      cannot hold a fresh iterator in a `val` ("hides enclosing instance"): mint it in a
+      factory and capture the local, re-create it per access over shared state, or take it as
+      a constructor parameter.
+
+      An `Iterator` is deliberately *not* `Traversable`: a traversal borrows, and borrowing an
+      exclusive iterator into a result which outlives the call is what separation checking
+      forbids. So it drains with its own `#to` member rather than the generic `to`, and
+      `#flatMap`'s lambda returns a *collection* (anything `Traversable`), never an iterator —
+      a lambda cannot hand back a freshly minted capability through a function type.
+
+      The standard library and Java are reached only at a boundary: `.from` wraps a
+      `scala.collection.Iterator`, a `java.util.Iterator` or a `java.util.Enumeration` on the
+      way in, and `#stdlib` hands one out to an API which insists on it.
+  refer murmuration.Traversable
+  refer murmuration.Reshapable
+  entry .Exhausted   the sentinel for "no more elements", as both a type and the value
+      An opaque type `<: Matchable & caps.Pure`, backed by `null` so it costs nothing, and
+      the value of that type. Spelt as vacuous spells `Unset` (which this module, below
+      vacuous, cannot name): a union `element | Iterator.Exhausted` is pure whenever
+      `element` is, and `.nn` does not strip it. Matched first — `case Iterator.Exhausted =>` —
+      in a `#next` loop or a `#pull` match; `CanEqual` instances let it be compared with `==`
+      against any value.
+  entry .exhaustedEquality   `CanEqual[value, Exhausted]`, so `next() == Iterator.Exhausted` typechecks
+  entry .equalityExhausted   `CanEqual[Exhausted, value]`, the same comparison the other way round
+  entry .Cursor   the linear token over a present element, owning the iterator it came from
+    detail
+        `Cursor[element]^` is the iterator reference itself, opaque so it cannot be forged and
+        bounded by `Stateful` so a `match` can test for it against `.Exhausted` (`case cursor:
+        Iterator.Cursor[Int]`; backtick a class type parameter in the pattern). `.value` reads
+        the element and `.pull` consumes the cursor to advance, yielding the next `.Pull`.
+        Separation checking rejects a cursor used after it was pulled.
+    entry .apply   wraps a consumed iterator as a cursor; what `Iterator#pull` returns on success
+    entry .value   the element under the cursor, read without advancing
+    entry .pull   consumes the cursor and advances: the next cursor, or `Exhausted`
+  entry .Pull   `Exhausted | Cursor[element]^`: what `pull` yields
+  entry .array   an iterator over a JVM array that no writer reaches while it runs
+      `Iterator.array(array)` over a `scala.Array[e]^{caps.any.rd}`, which the frozen array's
+      `Traversable` instances use. A primitive element is boxed as the standard library's
+      array iterator boxes it.
+  entry .empty   an iterator with no elements
+  entry .apply   `Iterator(a, b, c)`: an iterator over the given elements
+  entry .range   `Iterator.range(start, end)` or `(start, end, step)`: the integers from `start` up to `end`, exclusive
+      With a negative `step` the range counts down: `Iterator.range(10, 0, -3)` yields `10, 7,
+      4, 1`.
+  entry .fill   `Iterator.fill(n)(element)`: `element` evaluated afresh `n` times
+  entry .tabulate   `Iterator.tabulate(n)(lambda)`: `lambda(0)` to `lambda(n - 1)`
+  entry .continually   `Iterator.continually(element)`: `element` evaluated afresh without end
+  entry .iterate   `Iterator.iterate(initial)(lambda)`: `initial`, then `lambda` applied again and again
+  entry .from   wraps a stdlib `Iterator`, a `java.util.Iterator` or a `java.util.Enumeration`
+      The boundary in from the standard library and Java: the one-shot source's remaining
+      elements are taken over by this iterator. The stdlib overload consumes its argument.
+  entry #pull   consumes the iterator: a `Cursor` over its first element, or `Exhausted`
+      The moving style. A `consume def`, so the iterator is gone after the call and only the
+      cursor (if any) remains; `cursor.value` reads, `cursor.pull` advances.
+  entry #next   advances and yields the next element, or `Exhausted` once the source is spent
+      For a stateful consumer which holds the iterator in a field, where a linear token
+      cannot live. There is no `next` without a `hasNext` because they are the same call: match
+      `case Iterator.Exhausted => … case value: Int => …`. After exhaustion every call yields
+      `Exhausted` again. An opaque element type such as `Text` cannot be type-tested in the
+      match; use `#option` or `#seek` there.
+  entry #each   visits every remaining element, draining the iterator
+  entry #fold   accumulates a state over the remaining elements, draining the iterator
+  entry #exists   whether some remaining element satisfies the predicate, stopping there
+      Stops at the first match, so the elements after it remain.
+  entry #all   whether every remaining element satisfies the predicate, stopping at the first that does not
+  entry #count   how many remaining elements satisfy the predicate, draining the iterator
+  entry #seek   the first element satisfying a predicate, handed to a continuation; the rest left unconsumed
+      `iterator.seek(predicate)(absent)(present)`: two continuations rather than an `Optional`
+      result, so the element reaches the caller at its own type with no test and no cast
+      (this module cannot name `Optional`; rudiments' `find` is `seek(p)(Unset)(identity(_))`).
+      The elements after the match remain: `Iterator(1, 2, 3, 4).seek(_ > 1)(-1)(identity(_))`
+      is `2`, leaving `3, 4`.
+  entry #option   the next element as a stdlib `Option`, for lazy stdlib shapes that pull through a closure
+  entry #chain   the remaining elements as a lazy `Chain`, pulled one cell at a time as it is forced
+      The one shape which lets an iterator outlive its owner: the chain memoizes what it has
+      pulled, and nothing records the iterator it pulls from, since a `Chain` is pure.
+  entry #to   `iterator.to[List]`, `to[Set]`, …: drains into a collection of the given shape
+      Through `Reshapable`, with the shape named as a type constructor. A member rather than the
+      generic `to` because an iterator is not `Traversable` (a traversal borrows, which an
+      exclusive one cannot allow), and a member rather than a companion extension because
+      rudiments' lexically-scoped generic `to` would outrank an extension.
+  entry #size   how many elements remain, by draining them
+  entry #map   each remaining element through the lambda, lazily; consumes the receiver
+  entry #filter   the remaining elements satisfying the predicate, lazily; consumes the receiver
+  entry #sweep   filter and map in one pass through a partial function, lazily
+  entry #flatMap   each element to a *collection*, whose elements are yielded in turn
+      The lambda returns anything `Traversable` — a `List`, a `Set`, a `Text` — never an
+      iterator, since a lambda cannot hand back a freshly minted capability through a function
+      type; the inner traversal is opened here as the result advances.
+      `Iterator(1, 2, 3).flatMap(n => List.fill(n)(n)).to[List]` is `List(1, 2, 2, 3, 3, 3)`.
+  entry #zip   this iterator's elements paired with another's, stopping at the shorter; consumes both
+  entry #indexed   each element paired with its position from zero, as an `Int`
+      An `Int`, not an `Ordinal`, because denominative sits above this module; rudiments'
+      `indexed` on a collection converts to ordinals.
+  entry #keep   the first `n` elements, or the longest leading run satisfying a predicate; lazily
+      `keep(3)` is the standard library's `take`, `keep(_ < 7)` its `takeWhile`.
+  entry #skip   everything after the first `n` elements, or after the leading run satisfying a predicate
+      `skip(2)` is the standard library's `drop`, `skip(_ < 2)` its `dropWhile`.
+  entry #trace   every intermediate state of a fold, initial first; the stdlib's `scanLeft`
+  entry #excerpt   the elements from position `from` (inclusive) to `until` (exclusive)
+  entry #deduplicate   the first occurrence of each key, in first-occurrence order
+  entry #distinct   the first occurrence of each element, in first-occurrence order
+  entry #batched   consecutive batches of at most `n` elements, each a `List`; the last may be shorter
+  entry #concat   this iterator's elements, then another's; consumes both
+      The standard library's `++`.
+  entry #stdlib   a `scala.collection.Iterator` which drains this one; the boundary to the stdlib and Java
+      Consumes this iterator: the stdlib view owns it from here on. The view is typed pure, as
+      every stdlib iterator is, so it can be handed to `IterableOnce` factories and JDK APIs.
+      A tagged bridge, like every `.stdlib`; prefer a native form (`#to`, `#each`, `#chain`)
+      wherever one exists.

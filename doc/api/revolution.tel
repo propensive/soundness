@@ -1,0 +1,349 @@
+tel 1.0
+
+base revolution
+import soundness
+
+info   semantic versions checked as the code compiles, and JAR manifests as typed attributes
+detail
+    _Revolution_ gives two kinds of release metadata proper types. A **semantic version** is a
+    `Semver`, written with the `v"…"` interpolator, which checks it against the SemVer 2.0
+    grammar while the code compiles, or parsed from text with a typed `Semver.Error`; versions
+    compare by the specification's precedence rules, not lexically, and a pair of versions
+    can say what kind of `Compatibility` separates them. A **JAR manifest** is a `Manifest`
+    whose standard attributes are named values in the `manifestAttributes` package, each
+    reading and writing its own type: a `Main-Class` is an `Fqcn`, not a string.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+    import manifestAttributes.*
+
+    val version: Semver = v"1.4.2"
+    t"2.0.0-rc.1".as[Semver] < v"2.0.0"
+
+    val manifest = Manifest(ManifestVersion(()), MainClass(fqcn"com.example.Main"))
+    manifest(MainClass)
+    ```
+
+    The library is split into two source sets:
+
+    - `revolution.core` — `Manifest`, its `EncodableManifest` and `DecodableManifest`
+      typeclasses, and the `manifestAttributes` package;
+    - `revolution.semver` — `Semver`, `Compatibility` and the `v"…"` interpolator.
+
+    Both are exported to the `soundness` umbrella, and `manifestAttributes` is mirrored as a
+    package there. Its members are objects, not givens, so `import manifestAttributes.*`
+    brings them all in.
+
+refer revolution.Semver
+refer revolution.Compatibility
+refer revolution.v
+refer revolution.Manifest
+refer revolution.manifestAttributes
+
+entry .Semver   a semantic version: major, minor and patch numbers, with prerelease and build identifiers
+  detail
+      A `Semver` is a version in the [SemVer 2.0](https://semver.org/) sense: three numbers,
+      an optional prerelease (`-rc.1`) and optional build metadata (`+build.5`), each a list of
+      identifiers which are numbers where they parse as numbers and text otherwise. It is
+      written as a checked literal with `v"…"`, decoded from text with `as[Semver]`, and
+      encoded back exactly as written.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val version = v"1.4.2"
+      val candidate = t"2.0.0-rc.1+build.7".as[Semver]
+      candidate.prerelease   // List(t"rc", 1L)
+      candidate.encode       // t"2.0.0-rc.1+build.7"
+      ```
+
+      Versions are ordered by the specification's precedence (`.comparable`): numerically by
+      major, minor and patch; a release after all of its prereleases; prerelease identifiers
+      compared one by one, numbers numerically and before text. Build metadata plays no part
+      in ordering, nor in equality: `v"1.0.0+a" == v"1.0.0+b"`.
+
+      `#compatibility` classifies the change between two versions, and `#next` gives the
+      version which follows for a given kind of change.
+  refer revolution.v
+  refer revolution.Compatibility
+  refer revolution.Semver.Error
+  entry .encodable   writes a version as SemVer text: `1.2.3-rc.1+build.5`
+      In the companion, so in implicit scope: `version.encode`. A version decoded from text
+      encodes to the same text.
+  entry .showable   shows a version as its SemVer text, as `.encodable` writes it
+  entry .decodable   reads a version from SemVer text, raising `Semver.Error` if it is malformed
+      Needs a `Tactic[Semver.Error]`. Text is checked against the full SemVer 2.0 grammar:
+      three numbers with no leading zeros, and prerelease and build identifiers which are
+      non-empty, drawn from `[0-9A-Za-z-]`, and (for numeric prerelease identifiers) free of
+      leading zeros. Each failure raises with its own `Semver.Error.Reason`.
+
+      ```scala
+      import soundness.*
+
+      safely(t"1.2".as[Semver])          // Unset
+      safely(t"1.2.3-0123".as[Semver])   // Unset: a leading zero
+      ```
+  entry .comparable   orders versions by SemVer precedence, so `<` and sorting work as the specification says
+      ```scala
+      import soundness.*
+
+      v"1.0.0-alpha" < v"1.0.0-alpha.1"    // true
+      v"1.0.0-beta.2" < v"1.0.0-beta.11"   // true: numeric identifiers compare numerically
+      v"1.0.0-rc.1" < v"1.0.0"             // true: a release outranks its prereleases
+      v"1.0.0" < v"1.0.0-alpha"            // false
+      ```
+  entry .Error   raised when text is not a valid semantic version
+    detail
+        Error 250: _`version` is not a valid semantic version because …_, with one of four
+        reasons: `BadFormat` (_the string did not match the SemVer 2.0 grammar_, such as
+        `1.2` or `1.2.3.4`), `EmptyIdentifier` (_a prerelease or build identifier was
+        empty_, as in `1.2.3-`), `LeadingZero` (_a numeric identifier had a leading zero_,
+        as in `01.1.1` or `1.2.3-0123`) and `InvalidCharacter` (_an identifier contained a
+        character outside `[0-9A-Za-z-]`_). Raised by `Semver.decodable`; a `v"…"` literal
+        reports the same problems as a compile error instead.
+    entry .Reason   why text is not a semantic version: bad format, an empty identifier, a leading zero or a bad character
+      detail
+          One of `BadFormat`, `EmptyIdentifier`, `LeadingZero` and `InvalidCharacter`, each
+          with its sub-number of error 250 as `#number`.
+      entry #number   the reason's sub-number of error 250
+    entry .communicable   renders each reason as the phrase completing _… is not a valid semantic version because …_
+    entry #version   the text which failed to parse
+    entry #reason   why it is not a valid semantic version
+  entry #major   the major version number, whose change signals a breaking change
+  entry #minor   the minor version number, whose increase signals additions
+  entry #patch   the patch version number, whose change signals internal fixes
+  entry #prerelease   the prerelease identifiers, numbers as `Long` and the rest as `Text`; empty for a release
+  entry #build   the build metadata identifiers, numbers as `Long` and the rest as `Text`; ignored in ordering
+  entry #development   whether the version is in initial development, with major version zero
+      Under SemVer, a `0.x.y` version promises nothing: any change may break. `#compatibility`
+      treats every pair involving one as `Breaking`, and `#next` bumps the minor rather than
+      the major number for a breaking change.
+  entry #release   the release this version is a prerelease or build of: the same numbers with no identifiers
+      `v"2.0.0-rc.1+build.7".release == v"2.0.0"`.
+  entry #compatibility   the kind of change from this version to another, as a `Compatibility`
+      `current.compatibility(other)` is `Breaking` if either is a prerelease, either is in
+      initial development, the major numbers differ, or the other's minor is lower;
+      `Additions` if the other's minor is higher; `Internal` if only the patch numbers differ;
+      and `Unchanged` otherwise.
+
+      ```scala
+      import soundness.*
+
+      v"1.4.2".compatibility(v"1.5.0")   // Compatibility.Additions
+      v"1.4.2".compatibility(v"2.0.0")   // Compatibility.Breaking
+      v"1.4.2".compatibility(v"1.4.7")   // Compatibility.Internal
+      ```
+
+      A patch number which goes *down* is still `Internal`: the method compares, it does not
+      check that the other version is later.
+  entry #next   the version which follows this one for a change of the kind given
+      The result has no prerelease or build identifiers. A `Breaking` change bumps the major
+      number, or the minor number during initial development (major zero); `Additions` bumps
+      the minor; `Internal` and `Unchanged` both bump the patch.
+
+      ```scala fuel
+      frame
+        label An internal fix bumps the patch number
+        code
+            v"1.4.2".next(Compatibility.Internal)    // v"1.4.3"
+      frame
+        label Additions bump the minor number and reset the patch
+        code
+            v"1.4.2".next(Compatibility.Additions)   // v"1.5.0"
+      frame
+        label A breaking change bumps the major number and resets the rest
+        code
+            v"1.4.2".next(Compatibility.Breaking)    // v"2.0.0"
+      frame
+        label During initial development, a breaking change bumps only the minor
+        code
+            v"0.4.2".next(Compatibility.Breaking)    // v"0.5.0"
+      ##
+      ```
+
+entry .Compatibility   what kind of change separates two versions: breaking, additions, internal or none
+    The classification `Semver#compatibility` returns and `Semver#next` takes. `Breaking`
+    means code written against one version may not work with the other; `Additions`, that
+    the later version only adds to the earlier; `Internal`, that only the implementation
+    changed; and `Unchanged`, that the versions are the same release.
+
+    ```scala
+    import soundness.*
+
+    val version = v"1.4.2"
+    version.next(version.compatibility(v"1.5.0"))   // v"1.5.0"
+    ```
+
+entry .v   the `v"…"` interpolator: a semantic version, checked as the code compiles
+    `v"1.4.2"` is a `Semver`. The literal is parsed by the same grammar as `Semver.decodable`
+    while the code compiles, and a malformed one is a compile error, _invalid semantic
+    version_. The interpolator takes no `$`-substitutions; for a version computed at runtime,
+    decode text with `as[Semver]`.
+
+    ```scala
+    import soundness.*
+
+    v"2.0.0-rc.1+build.7".prerelease
+    v"1.2"   // does not compile
+    ```
+
+entry .internal   the macro implementation behind `v"…"`
+  hidden
+  detail
+      Not for direct use: the object houses the macro which validates a version literal at
+      compile time.
+  entry .semver   the macro behind `v"…"`: validates the literal, then decodes it at runtime
+
+entry .Manifest   a JAR manifest's main attributes, read and written as typed values
+  detail
+      A `Manifest` is the main section of a JAR's `META-INF/MANIFEST.MF`, held as a map from
+      attribute names to their text. Attributes are named by the objects of the
+      `manifestAttributes` package, and reading or writing one goes through the attribute's
+      own type: `manifest(MainClass)` is an `Optional[Fqcn]`, and `MainClass(fqcn"…")` makes
+      the entry from an `Fqcn`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import manifestAttributes.*
+
+      val manifest = Manifest(ManifestVersion(()), MainClass(fqcn"com.example.Main"))
+      val signed = manifest + CreatedBy(t"Soundness")
+      signed(CreatedBy)                 // t"Soundness"
+      (signed - MainClass)(MainClass)   // Unset
+      ```
+
+      A manifest is `Streamable` and `Aggregable` by `Data`, so it is serialized with
+      `#serialize` or streamed wherever bytes are expected, and read back from any byte
+      source with `read[Manifest]`. Serialization goes through `java.util.jar.Manifest`, so
+      the format's 72-byte line wrapping and continuation lines are handled for the caller.
+  refer revolution.manifestAttributes
+  refer revolution.EncodableManifest
+  refer revolution.DecodableManifest
+  entry .apply   a manifest of the entries given
+      `Manifest(entries*)` takes `Manifest.Entry` values, usually made by applying an
+      attribute to its value: `Manifest(ManifestVersion(()), MainClass(fqcn"com.example.Main"))`.
+      A later entry for the same attribute replaces an earlier one.
+  entry .streamable   streams a manifest as the bytes of `MANIFEST.MF`
+  entry .aggregable   reads a manifest from a byte stream, `source.read[Manifest]`
+      Parses the main section through `java.util.jar.Manifest`, keeping every attribute's
+      name and text; per-entry sections are not kept.
+  entry .addable   `manifest + entry`: adds or replaces one attribute
+      ```scala
+      import soundness.*
+      import manifestAttributes.*
+
+      Manifest(ManifestVersion(())) + MainClass(fqcn"com.example.Main")
+      ```
+  entry .subtractable   `manifest - attribute`: removes an attribute, by its object
+      `manifest - MainClass` is the manifest without its `Main-Class` attribute; removing one
+      which is absent leaves the manifest as it was.
+  entry .Attribute   a manifest attribute, named by the literal type of its key
+    detail
+        The objects of `manifestAttributes` extend `Manifest.Attribute["Main-Class"]` and
+        the like. An attribute's key is its literal type parameter, and the
+        `EncodableManifest` and `DecodableManifest` instances for that literal type decide
+        what its value is: `Fqcn` for `"Main-Class"`, `Unit` for `"Manifest-Version"`,
+        `Text` for `"Created-By"`.
+
+        A new attribute is an object of the same shape, with instances for its key:
+
+        ```scala
+        import soundness.*
+
+        object BuildNumber extends Manifest.Attribute["Build-Number"]()
+
+        given ("Build-Number" is EncodableManifest of Int) = _.show
+        given ("Build-Number" is DecodableManifest of Text) = identity(_)
+
+        Manifest(BuildNumber(42))(BuildNumber)
+        ```
+    entry #key   the attribute's name, as it appears in the manifest
+    entry #parse   decodes text as this attribute's value, through its `DecodableManifest`
+        `MainClass.parse(t"com.example.Main")` is an `Fqcn`. Needs the key's
+        `DecodableManifest` instance, and whatever that needs (a `Tactic[Fqcn.Error]` for
+        `Main-Class`).
+    entry #apply   makes the manifest entry for a value of this attribute's type
+        `MainClass(fqcn"com.example.Main")` is a `Manifest.Entry`; the value's type is the
+        `Topic` of the key's `EncodableManifest`, so an attribute with no instance cannot
+        be applied at all.
+  entry .Entry   one attribute of a manifest, as its key and its encoded text
+    detail
+        Made by `Manifest.Attribute#apply`, as `MainClass(fqcn"com.example.Main")`, and
+        collected by `Manifest(entries*)` or added with `+`.
+    entry #key     the attribute's name
+    entry #value   the attribute's value, encoded as text
+  entry #entries   every attribute's name and text, as a map
+  entry #apply   the value of an attribute, decoded to its type, or `Unset` if the manifest lacks it
+      `manifest(MainClass)` is an `Optional[Fqcn]`. Needs the key's `DecodableManifest`
+      instance.
+  entry #serialize   the manifest as the bytes of a `MANIFEST.MF` file, wrapped as the format requires
+
+entry .EncodableManifest   a typeclass for writing a manifest attribute's value as text, keyed by the attribute's name
+  detail
+      An instance is written `"Main-Class" is EncodableManifest of Fqcn`: `Self` is the
+      attribute's name as a literal type, and `Topic` is the type its value has. It is what
+      lets `MainClass(fqcn"…")` take an `Fqcn` and nothing else.
+
+      Only three keys have instances in the companion: `Main-Class` (an `Fqcn`),
+      `Manifest-Version` (`Unit`, always written as `1.0`) and `Created-By` (`Text`). An
+      attribute of `manifestAttributes` without one, such as `ClassPath`, cannot be applied
+      until an instance is given.
+  refer revolution.Manifest.Attribute
+  refer revolution.DecodableManifest
+  entry .mainClass   writes `Main-Class` from an `Fqcn`
+  entry .manifestVersion   writes `Manifest-Version` from `()`, always as `1.0`
+  entry .createdBy   writes `Created-By` from text
+  entry #encode   writes a value as the attribute's text
+
+entry .DecodableManifest   a typeclass for reading a manifest attribute's text as a typed value, keyed by the attribute's name
+  detail
+      An instance is written `"Main-Class" is DecodableManifest of Fqcn`: `Self` is the
+      attribute's name as a literal type, and `Topic` is the type its text decodes to. It is
+      what makes `manifest(MainClass)` an `Optional[Fqcn]`.
+
+      The companion has instances for `Main-Class` (an `Fqcn`, needing a
+      `Tactic[Fqcn.Error]`) and `Created-By` (`Text`). Other attributes, including
+      `Manifest-Version`, have none, so reading them through `Manifest#apply` does not
+      compile until one is given; `Manifest#entries` holds their text regardless.
+  refer revolution.Manifest.Attribute
+  refer revolution.EncodableManifest
+  entry .mainClass   reads `Main-Class` as an `Fqcn`, raising `Fqcn.Error` if it is not a valid class name
+  entry .createdBy   reads `Created-By` as text
+  entry #decoded   decodes the attribute's text to its value
+
+entry .manifestAttributes   the standard JAR manifest attributes, as objects to read and write a `Manifest` with
+  detail
+      Each object is a `Manifest.Attribute` keyed by one of the attribute names the JAR
+      specification defines. They are plain objects, so `import manifestAttributes.*` brings
+      them all into scope.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import manifestAttributes.*
+
+      val manifest = Manifest(ManifestVersion(()), MainClass(fqcn"com.example.Main"))
+      manifest(MainClass)
+      ```
+
+      Typed values exist only for `MainClass`, `ManifestVersion` and `CreatedBy`, through the
+      `EncodableManifest` and `DecodableManifest` instances; the others name their
+      attributes, for `-` and for instances a program supplies.
+  entry .ManifestVersion   `Manifest-Version`: the manifest format's version, written as `1.0` from `()`
+  entry .MainClass   `Main-Class`: the class whose `main` method `java -jar` runs, as an `Fqcn`
+  entry .CreatedBy   `Created-By`: the tool which made the archive, as text
+  entry .ClassPath   `Class-Path`: further JARs to put on the classpath, relative to this one
+  entry .ContentType   `Content-Type`: the MIME type of a bundled resource
+  entry .ExtensionList   `Extension-List`: the optional packages the archive needs
+  entry .ExtensionName   `Extension-Name`: the name of the optional package the archive provides
+  entry .ImplementationTitle   `Implementation-Title`: the title of the implementation
+  entry .ImplementationVendor   `Implementation-Vendor`: the organization which made the implementation
+  entry .ImplementationVersion   `Implementation-Version`: the version of the implementation
+  entry .Sealed   `Sealed`: whether the archive's packages are sealed against classes from elsewhere
+  entry .SignatureVersion   `Signature-Version`: the version of a signature file's format
+  entry .SpecificationTitle   `Specification-Title`: the title of the specification implemented
+  entry .SpecificationVendor   `Specification-Vendor`: the organization which owns the specification
+  entry .SpecificationVersion   `Specification-Version`: the version of the specification implemented

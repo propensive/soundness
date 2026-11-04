@@ -1,0 +1,839 @@
+tel 1.0
+
+base harlequin
+import soundness
+
+info   Scala and Java source highlighted by the Scala compiler itself, with types, diagnostics and completions
+detail
+    _Harlequin_ highlights Scala (and Java) source by running the real compiler over it,
+    rather than approximating the language with regular expressions. The tokenizer and
+    parser classify every token exactly as the compiler reads it — soft keywords are
+    keywords only in position, interpolated strings are strings, a `val`'s name is a
+    binding and a later use of it a usage — and, when a compiler and classpath are in
+    scope, the whole frontend runs too, so each identifier carries the *type* the compiler
+    gave it, the compiler's diagnostics come back located in the source, and a caret
+    position turns highlighting into completion.
+
+    The result of `Scala.highlight` is a `SourceCode`: a grid of lines, each a `List` of
+    `Token`s, where a token has its text, an `Accent` (the colour category a palette maps
+    to a colour), an optional `Role` (binding or usage), its position as a `Span`, and,
+    at the deeper levels, a `Token.Meta` holding its type.
+
+    ```scala
+    import soundness.*
+
+    val code: SourceCode = Scala.highlight(t"val xs = List(1, 2, 3)")
+    code.lines.to[List].flat.map(_.accent)
+    // Keyword, Unparsed, Term, Unparsed, Symbol, Unparsed, Term, Parens, Number, …
+    ```
+
+    How deep the highlighting goes is decided by the `Highlight` given in scope, one of
+    three in the `highlighting` package: `tokenizedScala`, the default (it is also
+    `Highlight.default`, so `Scala.highlight` works with no import at all), needs nothing but
+    the text; `typecheckedScala` and `compiledScala` need an anthology `Scalac` and a
+    hellenism `LocalClasspath` as givens, and `sessionScala` a warm compiler session's
+    `Scalac.Session.Frontend`. These are imported by name, since `import highlighting.*`
+    would not import the givens.
+
+    ```scala fuel
+    typecheck
+    ##
+    given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+    given LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
+    import highlighting.typecheckedScala
+
+    val typed = Scala.highlight(t"val xs = List(1, 2, 3)")
+    typed.lines.to[List].flat.seek(_.text == t"xs").let(_.meta).let(_.tpe.qualified)
+    // scala.collection.immutable.List[scala.Int]
+    ```
+
+    The library is split into source sets by what each needs:
+
+    - `harlequin.core` — `SourceCode`, `Token`, `Accent`, `Role`, `ProgrammingLanguage`
+      with `Scala` and `Java`, `Highlight` and `Depth`, `Diagnostic`, `Fragment`, `Lexis`,
+      `Completion`/`Completions` (re-exported from prophesy) and `highlighting.tokenizedScala`.
+      It embeds the Scala compiler, so it is JVM-only.
+    - `harlequin.typed` — `highlighting.typecheckedScala`, `highlighting.compiledScala` and
+      `highlighting.sessionScala`, which run an anthology `Scalac` against a hellenism
+      `LocalClasspath`.
+    - `harlequin.ansi` — `ScalaSyntaxPalette` and the `syntaxHighlighting` givens which
+      render a `SourceCode` as escapade `Teletype`, with or without line numbers.
+    - `harlequin.md` — `CommonFormattable`, the HTML rendering of fenced code blocks,
+      behind punctuation's `formattables.scalaFormattable` and `formattables.javaFormattable`.
+    - `harlequin.compiler` — the `Shim` over the compiler-internal API which differs between
+      the Scala 3.9 and 3.10 streams; not for direct use.
+
+    Everything is exported to the `soundness` umbrella except the names which clash there:
+    `Fragment` belongs to honeycomb and `Completion`/`Completions` to exoskeleton in the
+    umbrella, so harlequin's are reached as `harlequin.Fragment`, `harlequin.Completion` and
+    `harlequin.Completions`; likewise `syntaxHighlighting.tokenTeletypeable` is only
+    `harlequin.syntaxHighlighting.tokenTeletypeable`. The `highlighting`,
+    `syntaxHighlighting` and `formattables` choice packages merge with the umbrella's own.
+
+refer harlequin.SourceCode
+refer harlequin.Token
+refer harlequin.Scala
+refer harlequin.Highlight
+refer harlequin.highlighting
+refer harlequin.syntaxHighlighting
+
+entry .SourceCode   highlighted source: a grid of accented tokens with diagnostics and completions
+  detail
+      A `SourceCode` is what `Scala.highlight` and `Java.highlight` (and `SourceCode.apply`
+      directly) produce: `#lines`, an array of lines each a `List[Token]`, numbered from
+      `#offset` (which is `1` for a freshly highlighted text, and the first line's number for
+      a `#fragment`); the `#diagnostics` a typechecked or compiled run collected; and, when a
+      caret was given, the `#completions` at it. A `#focus` span, set by `#extract`, is what
+      the numbered terminal renderer underlines.
+
+      Each line's tokens cover the line's text exactly, in order, with whitespace and comments
+      as `Accent.Unparsed` tokens, so joining a line's token texts gives the line back. The
+      line-ending newlines are not tokens. Tabs are rendered as two spaces.
+
+      ```scala
+      import soundness.*
+
+      val code = Scala.highlight(t"def twice(n: Int): Int =\n  n * 2")
+      code.offset              // 1
+      code.lastLine            // 2
+      code(2).map(_.text).join // t"  n * 2"
+      code.lines.to[List].flat.filter(_.role == Role.Binding).map(_.text)   // twice, n
+      ```
+
+      Which depth of highlighting produced it is decided by the `Highlight` given at the
+      call: at `Depth.Tokenized` no token has a `Token.Meta` and `#diagnostics` is empty; at
+      `Depth.Typechecked` and `Depth.Compiled` each identifier the typer resolved carries its
+      type, and the diagnostics are the compiler's. A compile error never makes highlighting
+      fail: the source highlights *with* its errors.
+  refer harlequin.Token
+  refer harlequin.Scala
+  refer harlequin.Highlight
+  refer harlequin.Diagnostic
+  entry .apply   highlights text in a language, at the depth of the `Highlight` in scope
+      `SourceCode(language, text, caret)(using Highlight)` is the engine behind
+      `ProgrammingLanguage#highlight`, which is the usual way to call it. It tokenizes the
+      text with the compiler's scanner (the Java scanner for `Java`), overlays the parse
+      tree to decide which identifiers are terms and which types, and which of each are
+      bindings; at `Depth.Typechecked` or `Depth.Compiled` it also runs the frontend of the
+      `Highlight.Compilation` to collect types, elaborations and diagnostics, and, when a
+      `caret` is given, completions.
+
+      Soft modifiers (`inline`, `opaque`, `open`, `transparent`, `infix`, `erased`,
+      `tracked`, `using`, …) are accented `Modifier` only where they are modifiers — before
+      a hard keyword — and `Term` elsewhere, as the parser treats them. An unterminated
+      string or character literal at the end of the input, which the scanner splits into an
+      error token and a spilled last character, is folded back into one `Error` token, so
+      an in-progress literal highlights as a unit.
+
+      The tokenized pipeline runs with the compiler's `-source future` and no classpath, so
+      it needs nothing but the text; a `Highlight` is a contextual parameter, and
+      `Highlight.default` (tokenized) is used when none is imported.
+  entry #language   the language the source was highlighted as: `Scala` or `Java`
+  entry #offset   the number of the first line: `1` for a whole text, or a fragment's first line
+      Line numbers are what the numbered terminal renderer prints and what `#apply`,
+      `#extract` and `#fragment` take.
+  entry #lines   the lines, each a `List[Token]` covering the line's text exactly
+      An `Array[List[Token]]`, indexed from zero; `#apply` indexes it by line number
+      instead. Newlines are not tokens, so a line's token texts joined are the line.
+  entry #focus   a span of interest, if any, which the numbered renderer marks
+      `Unset` unless set by `#extract` or `#fragment`. `syntaxHighlighting.numberedTeletypeable`
+      draws a caret (`╱╲`) or underline (`‾‾‾`) beneath a single-line focus and a `║` in the
+      margin of the lines a multi-line one covers.
+  entry #diagnostics   the compiler's diagnostics, empty at `Depth.Tokenized`
+      Each `Diagnostic` has an offset-mode `Span` into the text, its message and its
+      `Diagnostic.Importance`. At `Depth.Typechecked` they are the frontend's; at
+      `Depth.Compiled` the later phases' too.
+  entry #completions   the completions at the caret, or `Unset` if no caret was given
+      A `Completions` is the span of text a chosen completion replaces and its `Completion`
+      items. With a caret, keyword completions are always offered, at any depth, from
+      prophesy's pattern tree over the tokens before the caret; with a compiler in scope,
+      the compiler's own completions — members, in-scope names, types in a type position,
+      and a `Dynamic` receiver's members from its `Completable` companion — are merged in.
+      See `Scala` for examples.
+  entry #lastLine   the number of the last line: `offset + lines.length - 1`
+  entry #apply   the tokens of a line, by its number
+      `code(n)` is the line numbered `n` counting from `#offset`, so `code(code.offset)` is
+      the first line and `code(code.lastLine)` the last. A number outside that range is an
+      error.
+  entry #extract   the lines around a span, as a fragment focused on it
+      Takes a `Span` in line mode (such as a `Token#span`) and gives the `#fragment` from its
+      first line to one past its last (two past, for a multi-line span), with the span as
+      the `#focus`, so a diagnostic or a token can be shown in context.
+  entry #fragment   the lines from one number to another, as a `SourceCode` of its own
+      `code.fragment(startLine, endLine, focus)` keeps the lines numbered `startLine` to
+      `endLine` inclusive, with `#offset` set to `startLine` so their numbers are preserved,
+      and `focus` as the new `#focus`. Diagnostics and completions are not carried over.
+
+entry .Token   one token of highlighted source: its text, accent, position, role and type
+  detail
+      A token is the unit a `SourceCode` is made of: a piece of `#text` which never
+      contains a newline, the `#accent` which classifies it, a `#span` locating it, and,
+      for a term or type identifier, its `#role` as a binding or a usage. At typechecked or
+      compiled depth an identifier the typer resolved also has a `#meta` holding its type as
+      a stenography `Syntax` and, on a callee, what the typer elaborated at the call.
+
+      ```scala
+      import soundness.*
+
+      val token = Token(t"xs", Accent.Term, role = Role.Binding)
+      token.show      // t"xs"
+      token.inspect   // Token(text:t"xs" ╱ accent:Term ╱ meta:○ ╱ span:⟪∅⟫ ╱ role:｢Binding｣)
+      ```
+
+      Two tokens are equal when all five fields are, which is how `Token.Newline` is found in
+      a stream. A token is `Showable` as its text alone, which is what a rendered listing
+      needs, and `Inspectable` with every field.
+  refer harlequin.Accent
+  refer harlequin.Role
+  refer harlequin.SourceCode
+  entry .Newline   the token which separates lines while a source is being assembled
+      `Token("\n", Accent.Unparsed)`. It never appears in a finished `SourceCode`'s lines,
+      which are split on it.
+  entry .showable   a token shows as its text
+  entry .inspectable   a token inspects with every field, in product form
+      `Token(text:t"val" ╱ accent:Keyword ╱ meta:○ ╱ span:⟪∅⟫ ╱ role:○)`. A present `#meta` is
+      shown as `｢Meta｣` without its type, since rendering a `Syntax` needs an `Imports`
+      context which inspection cannot supply; a present role as `｢Binding｣` or `｢Usage｣`.
+  entry .Meta   what the typer knows about a token: its type, and any elaboration of its call
+    detail
+        Attached to a token only at `Depth.Typechecked` or `Depth.Compiled`, and only to
+        the identifiers the typer gave a type: a `val`/`def` name carries its declared or
+        inferred type, a selection or identifier its type, a type tree its type. Tokens the
+        compiler could not type (because of an error nearby, or a type stenography cannot
+        render) simply have no `Meta`; highlighting never fails on one.
+
+        ```scala fuel
+        typecheck
+        ##
+        given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+        given LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
+        import highlighting.typecheckedScala
+
+        val tokens = Scala.highlight(t"val xs = List(1, 2, 3)").lines.to[List].flat
+        tokens.seek(_.text == t"xs").let(_.meta).let(_.tpe.qualified)
+        // scala.collection.immutable.List[scala.Int]
+        tokens.seek(_.text == t"List").let(_.meta).let(_.elaboration).let(_.typeArguments)
+        // the inferred type argument, Int
+        ```
+    entry #tpe   the token's type, as a stenography `Syntax`
+        Rendered with `Syntax#text` (abbreviated against an `Imports` in scope) or
+        `Syntax#qualified`.
+    entry #elaboration   what the typer added at this call site, if anything
+        Present on a callee token whose call the typer elaborated beyond its source text: a
+        `prophesy.Elaboration` listing the inferred type arguments and the synthesized `using`
+        arguments, each naming the given resolved. Arguments written explicitly are never
+        recorded.
+  entry #text   the token's text, never containing a newline
+  entry #accent   the colour category: keyword, term, type, number, string, symbol, …
+  entry #meta   the typer's knowledge of the token, or `Unset` at tokenized depth
+  entry #span   where the token is: a line-mode `Span` of 0-based line, column and length
+      `Span.empty` for a token made by hand; a token in a `SourceCode` has its line and
+      column, read as `span.startLine`, `span.startColumn` and `span.endColumn`, each an
+      `Ordinal`.
+  entry #role   `Role.Binding` or `Role.Usage` for a term or type identifier, else `Unset`
+      Decided from the parse tree, so it is present at every depth: a `val`, `def`,
+      parameter, pattern or type definition's name is a binding, and an identifier referring
+      to one is a usage. Keywords, literals and punctuation have no role.
+  entry #length   the length of the token's text
+  entry #snip   the token split in two at a character offset
+      `token.snip(point)` is the pair of tokens with the text before and from `point`, each
+      keeping the accent, meta, span and role of the original.
+
+entry .Accent   the colour category of a token, which a palette maps to one colour
+  detail
+      An accent is a colour category and nothing more. `Error` is a token the scanner could
+      not read (an unterminated literal, say); `Number` a numeric literal; `String` a string,
+      character or interpolated-string literal; `Term` a term identifier, including symbolic
+      operators such as `+` and `::`, which Scala treats as identifiers; `Typal` a type
+      identifier; `Keyword` a hard keyword; `Modifier` a modifier keyword (`private`,
+      `lazy`, `override`, and a soft modifier such as `inline` where it is one); `Symbol` a
+      punctuation token such as `=`, `=>`, `:` or `,`; `Parens` a bracket; and `Unparsed`
+      whitespace, comments and anything else the scanner skipped.
+
+      Whether a `Term` or `Typal` token defines a name or uses one is a separate annotation,
+      `Role`, so a `val`'s name and a use of it share one accent and a styling policy may add
+      italic or bold to bindings on top of the colour. In the terminal, `ScalaSyntaxPalette`
+      gives each accent its colour; in HTML, `CommonFormattable` makes each accent a CSS class
+      of the same name in lower case.
+
+      An accent shows as its name in lower case: `Accent.Keyword.show == t"keyword"`.
+  entry .showable   an accent shows as its lower-case name
+
+entry .Role   whether a term or type token binds a name or refers to one
+  detail
+      `Binding` is the name being defined — a `val`, `var`, `def` or parameter name, a
+      pattern variable (including each name in a tuple pattern, a `case` binder or a
+      `for`-comprehension generator), or a class, trait, object, type or type-parameter
+      name — and `Usage` is an identifier referring to a name bound elsewhere. It is decided
+      from the parse tree alone, so it is present at tokenized depth, and it is `Unset` on a
+      token which is neither a term nor a type.
+
+      ```scala
+      import soundness.*
+
+      val tokens = Scala.highlight(t"def gg[TT](vv: TT) = vv").lines.to[List].flat
+      tokens.filter(_.role == Role.Binding).map(_.text)   // gg, TT, vv
+      tokens.filter(_.role == Role.Usage).map(_.text)     // TT, vv
+      ```
+
+      A role shows as its name in lower case.
+  entry .showable   a role shows as its lower-case name
+
+entry .ProgrammingLanguage   a language harlequin can highlight: `Scala` or `Java`
+  detail
+      A sealed trait with two instances, the objects `Scala` and `Java`. Its `#highlight`
+      method is the entry point to the library, and its `#Context` type lets a language say
+      what surrounds a fragment — a Scala term or type, rather than a whole file — so that a
+      fragment which is not a complete compilation unit still parses.
+  refer harlequin.Scala
+  refer harlequin.Java
+  refer harlequin.SourceCode
+  entry #Context   what a fragment of this language may be embedded in
+      `Scala.Context` is `Top`, `Term` or `Type`; `Java.Context` is `Top` only.
+  entry #highlight   highlights text in this language, at the depth of the `Highlight` in scope
+      `language.highlight(text, context, caret)(using Highlight)`: wraps the text as its
+      `context` requires (`#preprocess`), highlights it with `SourceCode.apply`, and strips
+      the wrapping from the result (`#postprocess`). `context` defaults to `Unset`, a
+      complete compilation unit, and `caret`, an `Ordinal` offset into the text, to `Unset`,
+      meaning no completions are computed. The `Highlight` given decides the depth;
+      `Highlight.default` is tokenized, so no import is needed for plain highlighting.
+
+      ```scala
+      import soundness.*
+
+      Scala.highlight(t"val xs = List(1, 2, 3)")
+      Scala.highlight(t"List[Int]", Scala.Context.Type)
+      Java.highlight(t"int n = 1;")
+      ```
+  entry #preprocess   the text a language wraps around a fragment before highlighting it
+      Identity for a whole compilation unit (`Unset` or `Top`); `Scala` wraps a `Term` in a
+      `val` and a `Type` in a `type` alias.
+  entry #postprocess   the removal of the wrapping from the highlighted result
+      Drops the lines `#preprocess` added, so the result's lines are the fragment's own.
+
+entry .Scala   the Scala language: `Scala.highlight`, and the contexts a Scala fragment may be in
+  detail
+      The `ProgrammingLanguage` for Scala 3. `Scala.highlight(text)` tokenizes the text with
+      the compiler's own scanner and parser; with a compiler in scope (`highlighting.
+      typecheckedScala` or `compiledScala`, needing a `Scalac` and a `LocalClasspath`, or
+      `sessionScala`, needing a `Scalac.Session.Frontend`) it runs the frontend too.
+
+      ```scala fuel
+      frame
+        label Tokenized: accents and roles from the scanner and parser alone
+        code
+            locally:
+              import highlighting.tokenizedScala
+              val code = Scala.highlight(t"val xs = List(1, 2, 3)")
+              code.lines.to[List].flat.seek(_.text == t"xs").let(_.meta)   // Unset
+              code.diagnostics                                            // Nil
+      frame
+        label Typechecked: the frontend runs, so each identifier knows its type
+        code
+            locally:
+              given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+              given LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
+              import highlighting.typecheckedScala
+              val code = Scala.highlight(t"val xs = List(1, 2, 3)")
+              code.lines.to[List].flat.seek(_.text == t"xs").let(_.meta).let(_.tpe.qualified)
+              // scala.collection.immutable.List[scala.Int]
+      frame
+        label Compiled: the later phases run too, for the diagnostics only they produce
+        code
+            locally:
+              given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+              given LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
+              import highlighting.compiledScala
+              Scala.highlight(t"val n: Int = \"oops\"").diagnostics.size   // 1
+      ##
+      ```
+
+      A fragment which is not a complete compilation unit — a bare expression, or a type —
+      is highlighted in a `Scala.Context`, which wraps it so that it parses and unwraps the
+      result:
+
+      ```scala
+      import soundness.*
+
+      Scala.highlight(t"xs.map(_ + 1)", Scala.Context.Term)
+      Scala.highlight(t"Map[Text, List[Int]]", Scala.Context.Type)
+      ```
+
+      A `caret` offset turns highlighting into completion. Keyword completions come from the
+      tokens before the caret and need no compiler: `va` at the start of a statement offers
+      `val` and `var`, `xs match ` offers `case`, and a position which must be a fresh name
+      (after `val `) or a type offers no keywords at all. With a compiler in scope the
+      compiler's interactive engine adds members after a `.`, in-scope names for a bare
+      identifier, and only types, modules and packages in a type position.
+
+      ```scala
+      import soundness.*
+
+      val typed = t"val x = 1\nva"
+      Scala.highlight(typed, caret = typed.length.z).completions.let(_.items.map(_.name))
+      // val, var
+      ```
+
+      ```scala fuel
+      typecheck
+      ##
+      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
+      import highlighting.typecheckedScala
+
+      val source = t"val xs = List(1, 2, 3)\nval y = xs.m"
+      Scala.highlight(source, caret = source.length.z).completions.let(_.items.map(_.name))
+      // map, max, mkString, … — the members of List[Int]
+      ```
+
+      A member of a `scala.Dynamic` receiver has no symbol to complete, so when the caret
+      sits on a selection from a `Dynamic` type, the type's companion is loaded in this JVM
+      and, if it implements `prophesy.Completable`, asked which members the receiver's
+      refined type admits.
+  refer harlequin.ProgrammingLanguage
+  refer harlequin.SourceCode
+  refer harlequin.highlighting
+  entry .Context   what a Scala fragment is: a whole unit, a term, or a type
+      `Top` is a complete compilation unit, the same as giving no context. `Term` wraps the
+      fragment as the body of a `val` so that a bare expression parses, and `Type` as the
+      right-hand side of a `type` alias, so that `Map[Text, Int]` highlights as a type;
+      the wrapping lines are removed from the result in both cases.
+
+entry .Java   the Java language: `Java.highlight`, tokenized with the compiler's Java scanner
+  detail
+      The `ProgrammingLanguage` for Java. `Java.highlight(text)` tokenizes with the Scala
+      compiler's Java scanner, so Java keywords, literals and identifiers get their accents;
+      only tokenized depth applies, since the Scala frontend does not type Java. Its one
+      `Java.Context`, `Top`, is a whole compilation unit.
+
+      ```scala
+      import soundness.*
+
+      Java.highlight(t"public static void main(String[] args) {}")
+      ```
+  refer harlequin.ProgrammingLanguage
+  entry .Context   the one context a Java fragment can be in: `Top`, a whole unit
+
+entry .Highlight   how deep highlighting goes, and the compiler it runs: the given at every `highlight` call
+  detail
+      A `Highlight` is the contextual value `Scala.highlight` and `SourceCode.apply` take:
+      its `#depth` says whether to tokenize only, to run the typer, or to run the later
+      phases too, and its `#compilation` describes the compiler to run when the depth needs
+      one. The instances are the givens of the `highlighting` package, imported by name:
+
+      ```scala
+      import soundness.*
+      import highlighting.tokenizedScala
+      ```
+
+      `Highlight.default` is the tokenized one and lives in the companion, so it is found
+      with no import; a by-name import of `typecheckedScala`, `compiledScala` or
+      `sessionScala` outranks it. A custom `Highlight` is a value with a `Depth` and a
+      `Highlight.Compilation`, bound as a local given.
+  refer harlequin.highlighting
+  refer harlequin.Depth
+  entry .default   the default highlighting, `highlighting.tokenizedScala`, in implicit scope
+      Found through the companion whenever no other `Highlight` is in lexical scope, so
+      `Scala.highlight(text)` needs no import for tokenized highlighting.
+  entry .Compilation   what typechecked or compiled highlighting needs of a compiler
+    detail
+        The arguments, classpath and compiler instance a frontend run needs, abstracted so
+        that `harlequin.core` knows nothing of anthology or hellenism: `harlequin.typed`
+        builds one from a `Scalac` and a `LocalClasspath`, or from a warm session's
+        `Scalac.Session.Frontend`. A tool with a compiler of its own can implement it
+        directly.
+    entry #arguments   the compiler's command-line arguments
+    entry #classpath   the classpath, as one text in the platform's `-classpath` form
+    entry #compiler   a fresh `dotty.tools.dotc.Compiler` to run
+    entry #context   a context to type in, for a compilation which keeps a compiler warm
+        Defaults to `Unset`, in which case a context is made afresh from `#classpath` and
+        `#arguments` for every run, loading the classpath's symbol table each time. A warm
+        session gives its base context instead: each run is given a fresh child of it, so
+        what the session has already loaded and compiled is in scope.
+  entry #depth   `Tokenized`, `Typechecked` or `Compiled`
+  entry #compilation   the compiler to run, or `Unset` at `Tokenized` depth
+
+entry .Depth   the three depths of highlighting: tokenized, typechecked, compiled
+    `Tokenized` classifies tokens with the scanner and parser alone and needs no classpath.
+    `Typechecked` runs the compiler frontend as far as the typer, so identifiers carry their
+    types (`Token.Meta`), diagnostics are collected, and a caret yields the compiler's
+    completions. `Compiled` additionally runs the phases after the typer (stopping before
+    bytecode generation, so nothing is written) purely to surface the diagnostics only they
+    can produce; the types are still read from the typer-stopped run, so they stay
+    source-level. The `Highlight` given in scope carries the depth.
+
+entry .highlighting   the `Highlight` givens, one per depth, each to import by name
+  detail
+      Which depth `Scala.highlight` works at is decided by the `Highlight` given in scope,
+      and `import highlighting.*` would not import a given, so one is imported by name.
+      `tokenizedScala` is also `Highlight.default`, so it applies with no import at all;
+      the other three live in `harlequin.typed` and need a compiler.
+
+      ```scala fuel
+      typecheck
+      ##
+      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
+      import highlighting.typecheckedScala
+
+      Scala.highlight(t"val n: Int = \"oops\"").diagnostics.map(_.message)
+      ```
+
+      The `LocalClasspath` should be the one the code to highlight is written against:
+      `LocalClasspath.of(Classloader[SomeClass])` for the classpath a running program's own
+      classes came from.
+  refer harlequin.Highlight
+  refer harlequin.Depth
+  entry .tokenizedScala   tokenized highlighting: accents and roles, no classpath, no compiler run
+      `Depth.Tokenized` with no `Highlight.Compilation`. In `harlequin.core`, and also the
+      companion's `Highlight.default`.
+  entry .typecheckedScala   typechecked highlighting through a `Scalac` and a `LocalClasspath`
+      `Depth.Typechecked`: runs the frontend of the given anthology `Scalac` with its
+      command-line arguments over the given `LocalClasspath` (its directory and JAR entries,
+      joined with the platform separator). Needs both as givens in scope. Each call makes a
+      fresh compiler context and loads the classpath's symbol table, so highlighting many
+      snippets against one classpath is faster through a session and `sessionScala`. In
+      `harlequin.typed`.
+  entry .compiledScala   compiled highlighting through a `Scalac` and a `LocalClasspath`
+      As `typecheckedScala`, at `Depth.Compiled`: the post-typer phases also run, for the
+      diagnostics only they produce. In `harlequin.typed`.
+  entry .sessionScala   typechecked highlighting inside a warm compiler session
+      `Depth.Typechecked`, run on the session's own compiler and in a child of its base
+      context, from the `Scalac.Session.Frontend` given in scope — the value
+      `compilation.frontend` gives inside `scalac.on(classpath).session:`. A snippet is typed
+      against everything the session has compiled, without the classpath's symbol table
+      being loaded again, so a REPL can highlight each line against its earlier definitions.
+
+      ```scala fuel
+      typecheck
+      ##
+      given (CompileEvent is Loggable) = Loggable.silent[CompileEvent]
+      import strategies.throwUnsafely
+
+      Scalac[3.8](Nil).on(LocalClasspath.of(Classloader[Option[Int]])).session:
+        compilation.compile(Map(t"earlier.scala" -> t"object Earlier:\n  val number: Int = 1\n"))
+        given Scalac.Session.Frontend = compilation.frontend
+        import highlighting.sessionScala
+
+        Scala.highlight(t"val later = Earlier.number").diagnostics   // Nil: Earlier is in scope
+      ```
+
+      Two cautions: it must run on the session's thread, as the session's own compiles do
+      (the compiler pins its context base to the thread of its first run); and since the
+      snippet is typed as a source of the session, the top-level names it defines stay in
+      scope there until the next snippet replaces them. The frontend is taken afresh for
+      each use, since a session replaces its compiler when it crashes. In `harlequin.typed`.
+
+entry .Diagnostic   a compiler diagnostic captured while highlighting: its span, message and importance
+  detail
+      What `SourceCode#diagnostics` holds, at `Depth.Typechecked` or `Depth.Compiled`. The
+      `#span` is an offset-mode `Span` (a character offset into the text and a length),
+      kept separate from the token stream because a diagnostic may cover part of a token or
+      several tokens; a renderer reapplies it to the tokens it overlaps. Diagnostics without
+      a position are dropped, and the compiler's own de-duplication of repeated messages at
+      one position applies.
+
+      ```scala fuel
+      typecheck
+      ##
+      given Scalac[3.8, Universe.Classfile] = Scalac[3.8](Nil)
+      given LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
+      import highlighting.typecheckedScala
+
+      Scala.highlight(t"val n: Int = \"oops\"").diagnostics.map: diagnostic =>
+        (diagnostic.importance, diagnostic.span.offset, diagnostic.message)
+      ```
+  refer harlequin.SourceCode
+  entry .Importance   the severity of a diagnostic: `Info`, `Warning` or `Error`
+      Harlequin's own enum, named as anthology's `Importance` and larceny's are, so that
+      `harlequin.core` does not depend on anthology.
+  entry #span   where the diagnostic is: an offset-mode `Span` into the highlighted text
+  entry #message   the compiler's message, as text
+  entry #importance   `Info`, `Warning` or `Error`
+
+entry .Completion   a completion candidate: a name, its kind and its signature
+    Re-exported from prophesy (`prophesy.Completion`), since harlequin's completions are
+    expressed in prophesy's types. A `Completion` has the `name` to insert, its `kind`
+    (`Term`, `Method`, `Given`, `Extension`, `Type`, `Module`, `Package` or `Keyword`),
+    its `signature` as a stenography `Syntax` (a method's full parameter and result
+    signature, a value's type, or the keyword itself) and an optional `documentation`. In
+    the `soundness` umbrella the name `Completion` belongs to exoskeleton, so this is
+    reached as `harlequin.Completion`.
+
+entry .Completions   the result of a completion request: the span to replace and the candidates
+    Re-exported from prophesy (`prophesy.Completions`): `replace` is the offset-mode `Span`
+    of the partial name a chosen completion replaces (empty at the caret when nothing has
+    been typed yet), and `items` the `Completion`s, keywords first and sorted. It is what
+    `SourceCode#completions` holds when a caret was given. In the `soundness` umbrella the
+    name belongs to exoskeleton, so this is reached as `harlequin.Completions`.
+
+entry .Fragment   analysis of a code fragment around a cursor, before any compiler runs
+  detail
+      The pure-text and tokenized splitting a completion host — a REPL, a debugger console —
+      performs before deciding whether to invoke the compiler at all: where the partial
+      identifier at the cursor begins, whether it selects a member, whether the token before
+      it is a value awaiting an infix method, which brackets are left open, and where a
+      line's depth-zero `:` or `=` is. None of it needs a classpath; `infixBase` tokenizes
+      with the scanner, and the rest is text alone. Offsets are character offsets into the
+      text, with the cursor just after the character at `offset - 1`.
+
+      ```scala
+      import soundness.*
+      import harlequin.Fragment
+
+      Fragment.memberBase(t"text.le", 7)            // (t"text.", t"le")
+      Fragment.infixBase(t"foo(bar, baz) ma", 16)   // (t"foo(bar, baz).", t"ma")
+      Fragment.unclosed(t"foo(bar, List[Int")       // List(']', ')')
+      Fragment.groups(t"def f[T](a: T)(using c: C): T")   // List(t"a: T", t"using c: C")
+      ```
+
+      In the `soundness` umbrella the name `Fragment` belongs to honeycomb, so this is
+      imported by name as `harlequin.Fragment`.
+  refer harlequin.Lexis
+  refer harlequin.Scala
+  entry .identifierChar   whether a character may form part of an alphanumeric identifier
+      A letter, a digit or `_`.
+  entry .identifierStart   the offset at which the partial identifier ending at an offset begins
+      Scans back over `identifierChar`s from `offset`; equal to `offset` when the cursor
+      does not follow an identifier character.
+  entry .memberBase   the member-selection base and partial name at the cursor
+      `memberBase(code, offset)` splits the text at the cursor into the base — everything up
+      to and including the `.` immediately before the partial member name — and the
+      partial. The base is `Unset` when the cursor is not selecting a member (a first-token
+      identifier, the first segment of an import), so there is no fixed type to enumerate
+      against. `memberBase(t"text.length", 7)` is `(t"text.", t"le")`: the partial ends at
+      the cursor, not the end of the input.
+  entry .introducers   the keywords after which an identifier is a name, not a value
+      `val`, `var`, `def`, `type`, `class`, `object`, `trait`, `enum`, `given`, `package`,
+      `import`, `export`, `case`, `extension` and `new`: a name following one of these is
+      being defined, imported or constructed, so it is not an infix receiver.
+  entry .infixBase   the value receiver before a space and partial name, with a synthetic `.`
+      When the cursor sits at `<value> <space> <partial>` — a value followed by whitespace,
+      which is an infix method being typed — `infixBase(code, offset)` is the value
+      expression with a trailing `.` added, so that the member-completion path serves it,
+      and the partial name: `infixBase(t"xs ma", 5)` is `(t"xs.", t"ma")`. The base is
+      `Unset` when there is no value receiver: the token before the space is a keyword
+      (hard or soft: every Scala 3 keyword is rejected, so `erased ab` and `inline de` give
+      no receiver), an operator, a comma or an open bracket, or a name in a definition or
+      import position (`val xs ma`). A bracketed receiver is scanned as a balanced group,
+      so `foo(bar, baz) ma` yields `foo(bar, baz).`.
+  entry .expressionStart   where the value expression ending at the end of a text begins
+      Scans back over identifier characters, `.` and balanced bracket groups, stopping at
+      an operator, a space or an open bracket at depth zero: `expressionStart(t"a + foo.bar")`
+      is `4`, and for `foo(bar).baz` it is `0`.
+  entry .unclosed   the closing brackets for those left open, innermost first
+      `unclosed(t"foo(bar, List[Int")` is `List(']', ')')`, so appending them in order
+      completes the fragment. Brackets inside string and character literals (plain, escaped
+      and triple-quoted) and inside line and block comments do not count; a closer with
+      nothing open is ignored, so a fragment cut from inside a group still scans. The
+      scanner does not see into an interpolation's `${…}`, which passes as string.
+  entry .outermost   the offset of the first depth-zero character which satisfies a test
+      `outermost(code, ':')` is the offset of the first `:` outside every bracket group,
+      string and comment — the return type's colon in `def f(a: Int): String`, not a
+      parameter's — or `Unset` if there is none; `outermost(code)(predicate)` tests each
+      depth-zero character's offset instead, for a test such as "an `=` not followed by `>`".
+  entry .split   the parts of a text between its depth-zero occurrences of a separator
+      `split(t"a.*, b.{c, d}, e.given", ',')` is `a.*`, ` b.{c, d}` and ` e.given`: a
+      separator inside brackets does not split. Parts are neither trimmed nor dropped when
+      empty, so the separators' positions can be recovered; a text with no top-level
+      separator is its own single part.
+  entry .groups   the contents of each bracket group opened at depth zero, in order
+      `groups(code)` gives the parameter clauses of a definition header without their
+      brackets — `def f[T](a: T, b: (Int, Int))(using c: C): T` gives `a: T, b: (Int, Int)`
+      and `using c: C` — and `groups(code, '[')` its type-parameter clauses. A group opened
+      and never closed is omitted, being unfinished.
+
+entry .Lexis   harlequin's tokens mapped onto prophesy's `Lexeme` alphabet, for keyword completion
+  detail
+      Keyword completion is grammatical: what may follow a caret depends on the tokens
+      before it, not on any symbol table. `Lexis` maps a token stream onto prophesy's
+      `Lexeme`s — the abstraction in which identifier text is irrelevant (a term identifier
+      is just `Term`) but each keyword and symbol is significant, with `Break` at each
+      statement boundary — and extracts the reversed context at a caret, which prophesy's
+      `ScalaKeywords.pattern` looks up. The same mapping serves completion at runtime and
+      the corpus analysis which derives the pattern tree, so the two always agree on what a
+      context looks like. `Scala.highlight` with a caret uses it; a host which wants the
+      context itself calls `context`.
+
+      ```scala
+      import soundness.*
+      import harlequin.Lexis
+
+      Lexis.context(t"val x = 1\nva", 12.z)
+      // (t"va", List(Break, Literal, Symbol(=), Term, Keyword(val), Start))
+      ```
+  refer harlequin.Fragment
+  entry .lexeme   the lexeme of one token, or `Unset` for whitespace
+      Punctuation is classified by its text alone, never by its accent (a `(` is
+      `Open(Round)`, a `=` a `Symbol`); a keyword or modifier by its text; a term identifier
+      is `Term`, unless it is a soft modifier such as `inline` or `using`, which is a
+      `Keyword` wherever it appears, since before a caret it cannot be told from an
+      identifier; a type is `Typal`; numbers and strings are `Literal`; an `Unparsed` token
+      contributes nothing.
+  entry .lexemes   the whole lexeme sequence of a `SourceCode`, `Start` first
+      With `Break` inserted at each line boundary which begins a new statement: a non-blank
+      line indented at or below the previous non-blank line. A more deeply indented line
+      continues its enclosing expression, so it contributes no boundary.
+  entry .context   the partial identifier at a caret and the reversed lexeme context before it
+      `context(text, caret, limit)` is the identifier fragment touching the caret (`Unset`
+      when the caret does not follow an identifier character) and the lexemes preceding it,
+      nearest first, at most `limit` (default 8) of them. The text before the fragment is
+      tokenized afresh at tokenized depth, so no compiler runs. A caret on a blank line
+      indented at or below the last significant line emits the `Break` the statement will
+      have once it is typed.
+
+entry .ScalaSyntaxPalette   a palette with one colour per accent, for rendering source in the terminal
+    The type the `syntaxHighlighting` renderers take as a given: an iridescence `Palette`
+    with `Form = Srgb`, refined with a colour for each `Accent` — `scalaError`,
+    `scalaNumber`, `scalaString`, `scalaTerm`, `scalaType`, `scalaKeyword`, `scalaSymbol`,
+    `scalaParenthesis`, `scalaModifier` and `scalaComment` (for `Unparsed` tokens, rendered
+    in italic) — and three for the numbered renderer's margin: `margin` as its background,
+    `accented` for the line numbers and `subdued` for the divider and the error marker.
+    `Palette` itself requires `background` and `foreground`.
+
+    No library ships a default, since a palette is a choice of colours; a program defines
+    one as a given, filling the fields with iridescence colours:
+
+    ```scala fuel
+    frame
+      label An iridescence palette, with the two colours every palette has
+      code
+          given palette: ScalaSyntaxPalette = new Palette:
+            type Form = Srgb
+            def background: Color in Srgb = WebColors.Black
+            def foreground: Color in Srgb = WebColors.White
+    frame
+      label One colour per accent
+      code
+          given palette: ScalaSyntaxPalette = new Palette:
+            type Form = Srgb
+            def background: Color in Srgb       = WebColors.Black
+            def foreground: Color in Srgb       = WebColors.White
+            def scalaError: Color in Srgb       = WebColors.Red
+            def scalaNumber: Color in Srgb      = WebColors.Gold
+            def scalaString: Color in Srgb      = WebColors.LimeGreen
+            def scalaTerm: Color in Srgb        = WebColors.Silver
+            def scalaType: Color in Srgb        = WebColors.Turquoise
+            def scalaKeyword: Color in Srgb     = WebColors.Orange
+            def scalaSymbol: Color in Srgb      = WebColors.Gray
+            def scalaParenthesis: Color in Srgb = WebColors.Gray
+            def scalaModifier: Color in Srgb    = WebColors.Orchid
+            def scalaComment: Color in Srgb     = WebColors.DimGray
+    frame
+      label And the three the numbered renderer's margin uses
+      code
+          given palette: ScalaSyntaxPalette = new Palette:
+            type Form = Srgb
+            def background: Color in Srgb       = WebColors.Black
+            def foreground: Color in Srgb       = WebColors.White
+            def scalaError: Color in Srgb       = WebColors.Red
+            def scalaNumber: Color in Srgb      = WebColors.Gold
+            def scalaString: Color in Srgb      = WebColors.LimeGreen
+            def scalaTerm: Color in Srgb        = WebColors.Silver
+            def scalaType: Color in Srgb        = WebColors.Turquoise
+            def scalaKeyword: Color in Srgb     = WebColors.Orange
+            def scalaSymbol: Color in Srgb      = WebColors.Gray
+            def scalaParenthesis: Color in Srgb = WebColors.Gray
+            def scalaModifier: Color in Srgb    = WebColors.Orchid
+            def scalaComment: Color in Srgb     = WebColors.DimGray
+            def subdued: Color in Srgb          = WebColors.DimGray
+            def accented: Color in Srgb         = WebColors.White
+            def margin: Color in Srgb           = WebColors.DimGray
+    ##
+    ```
+
+    A palette maps each accent to a colour and nothing more: whether a token is a binding
+    or a usage is its `Role`, and any further styling of bindings is a policy applied on
+    top. The same palette serves punctuation's `scalaTeletypeFormattable` and delicious's
+    `teletype` rendering of compiler messages. In `harlequin.ansi`.
+
+entry .syntaxHighlighting   the terminal renderers of highlighted source, each a given to import by name
+  detail
+      Three escapade `Teletypeable` givens, in `harlequin.ansi`, each needing a
+      `ScalaSyntaxPalette` given in scope. `numberedTeletypeable` and `unnumberedTeletypeable`
+      both render a `SourceCode`, so exactly one is imported by name; `tokenTeletypeable`
+      renders a single `Token`, and is what the other two use for each token.
+
+      ```scala fuel
+      frame
+        label Without line numbers: each line's tokens, coloured by accent
+        code
+            locally:
+              import syntaxHighlighting.unnumberedTeletypeable
+              val code = Scala.highlight(t"def twice(n: Int): Int =\n  n * 2")
+              code.teletype
+              // def twice(n: Int): Int =
+              //   n * 2
+      frame
+        label With line numbers: a margin of numbers and a divider before each line
+        code
+            locally:
+              import syntaxHighlighting.numberedTeletypeable
+              val code = Scala.highlight(t"def twice(n: Int): Int =\n  n * 2")
+              code.teletype
+              // 1┋ def twice(n: Int): Int =
+              // 2┋   n * 2
+      ##
+      ```
+
+      Only `numberedTeletypeable` and `unnumberedTeletypeable` are mirrored in the
+      `soundness` umbrella's `syntaxHighlighting` package; `tokenTeletypeable` is imported as
+      `harlequin.syntaxHighlighting.tokenTeletypeable`.
+  refer harlequin.ScalaSyntaxPalette
+  refer harlequin.SourceCode
+  entry .tokenTeletypeable   renders one `Token` in its accent's palette colour
+      Each accent is rendered in the palette colour of the same name (`Error` in
+      `scalaError`, `Parens` in `scalaParenthesis`, and so on), and an `Unparsed` token —
+      whitespace and comments — in `scalaComment` and italic. The token's role is not
+      styled. Needs a `ScalaSyntaxPalette`.
+  entry .numberedTeletypeable   renders a `SourceCode` with a line-number margin, marking its focus
+      Each line is prefixed by its number (from `SourceCode#offset`), right-aligned to the
+      width of the last line's number, in the palette's `accented` colour on its `margin`
+      background, followed by a `┋` divider in `subdued`. A `SourceCode#focus` is marked:
+      a single-line focus of zero width gets a `╱╲` caret beneath its column, one of some
+      width an underline of `‾`, both in `scalaError`; a focus spanning several lines marks
+      the lines it covers with `║` in the margin. Needs a `ScalaSyntaxPalette`.
+  entry .unnumberedTeletypeable   renders a `SourceCode` as its lines alone, coloured by accent
+      The lines joined with newlines, each token in its accent's colour, with no margin and
+      no focus marking. Needs a `ScalaSyntaxPalette`.
+
+entry .CommonFormattable   renders a fenced code block as HTML, one `<code>` element per token
+  detail
+      The punctuation `Formattable` behind `formattables.scalaFormattable` and
+      `formattables.javaFormattable`, in `harlequin.md`: a fenced block tagged `scala` or
+      `java` in a Markdown document is highlighted with `Scala.highlight` or
+      `Java.highlight` and rendered as `<div class="amok"><pre>…</pre></div>`, with each
+      line a `<span class="line">` and each token a `<code>` whose classes are its accent and
+      role. A stylesheet is the styling policy for this front-end: `.keyword` colours the
+      keywords, and `.binding` can italicise bindings on top of their accent's colour.
+
+      ```scala
+      import soundness.*
+      import formattables.scalaFormattable
+
+      Parser.parse(t"```scala\nval xs = List(1, 2, 3)\n```").html
+      ```
+
+      A custom front-end for another language extends the trait with a `Self` type (the
+      fence tag) and a `format` which highlights the content and passes the `SourceCode` to
+      the trait's `postprocess`.
+  refer harlequin.Accent
+  refer harlequin.Role
+  entry #lineClass   the given which allows `class="line"` and `class="amok"` on the elements
+  entry #classes   the CSS classes of a token: its accent, and its role if it has one
+      `classes(accent, role)` is a `ClassList` of the accent's lower-case name (`keyword`,
+      `term`, `typal`, …) and, for a term or type identifier, `binding` or `usage`.
+  entry #element   a token as `<code class="…">text</code>`
+      `element(accent, role, text)` is the `code` element with `#classes` for its class
+      attribute and the token's text as its content.
+
+entry .Shim   the spelling of the compiler-internal API harlequin wraps, per compiler stream
+  hidden
+  detail
+      Not for direct use. `harlequin.compiler` holds one `Shim` for the Scala 3.9 stream and
+      one for 3.10, defining the same names against each stream's shapes, so that nothing
+      else in harlequin knows which is in play.
+  entry .interactiveDriver   an `InteractiveDriver` over compiler settings, for completions
+      3.10 replaced the driver's `Option[LogicalPackage]` parameter with a
+      `CachedLogicalPackage` with no default; the 3.9 shim omits it and the 3.10 shim passes
+      `CachedLogicalPackage.none`, which is the same empty case.

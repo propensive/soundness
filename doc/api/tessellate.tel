@@ -1,0 +1,362 @@
+tel 1.0
+
+base tessellate
+import soundness
+
+info   text layout in fixed-width cells: wrapping, fitting, alignment, track sizing and box-drawing characters
+detail
+    _Tessellate_ is the layout layer shared by Soundness's terminal and table libraries. It
+    arranges textual content — `Text`, `Teletype`, or any `Textual` whose elements are `Char`s —
+    into a grid of fixed-width cells, measuring every line by its display width rather than its
+    length, so East Asian wide characters, combining marks and joiner-glued emoji occupy the
+    cells they really do.
+
+    Its pieces are small and independent:
+
+    - `Flow` flows a paragraph into lines (`Flow.wrap`, breaking at hyphenation points, then at
+      spaces), confines one line to a width (`Flow.fit`, truncating with an ellipsis or padding),
+      and measures content's intrinsic widths (`Flow.metrics`);
+    - `Alignment` pads a line to a width: `Left`, `Right`, `Center` or `Justify`;
+    - `Metrics` and `Flex` describe tracks — columns, rows, panes — competing for space along
+      an axis, and `Flex.solve` shares the space out among them;
+    - `Reflowable` is the typeclass of content which negotiates with a rectangular layout;
+    - `BoxLine`, `LineCharset` and `BoxDrawing` choose the box-drawing character for a junction
+      of lines.
+
+    ```scala
+    import soundness.*
+    import hyphenations.englishHyphenation
+    import textMetrics.wideCharacterWidthMetric
+
+    Flow.wrap(t"the quick brown fox", 10)          // the quick, brown fox
+    Flow.fit(t"hello world", 8)                    // t"hello w…"
+    Flow.fit(t"abc", 6, Alignment.Right)           // t"   abc"
+    Flow.metrics(t"the quick brown\nfox")          // Metrics(5, 15)
+    ```
+
+    Every measuring method needs a `Text is Measurable` in scope, which comes from a
+    `Char is Measurable` chosen by name from the `textMetrics` package (`uniformMetric`,
+    `eastAsianScriptsMetric` or `wideCharacterWidthMetric`). Wrapping needs a `Hyphenation` as
+    well: with none imported, the companion's fallback hyphenates nothing, and importing
+    `hyphenations.englishHyphenation` enables American-English hyphenation. Both are imported by
+    name, since `import soundness.*` does not import givens.
+
+    Positions within content are char offsets into its plain text, so the content's own
+    indexing must agree with its plain text's chars, which is true of `Text`, `Ascii` and
+    `Teletype`.
+
+    The library has one source set, `tessellate.core`, which compiles for every platform and
+    is exported in full to the `soundness` umbrella. It is the layout engine beneath
+    escritoire's tables and ultimatum's frames and borders.
+
+refer tessellate.Flow
+refer tessellate.Alignment
+refer tessellate.Flex
+refer tessellate.Reflowable
+
+entry .Flow   wraps, fits, truncates, chops and measures textual content within a width of cells
+  detail
+      `Flow`'s methods work on any `textual` whose `Textual` instance has `Char` elements —
+      `Text`, `Teletype` — and return the same type, so styled text keeps its styles across the
+      lines it is broken into. Every width is measured by grapheme cluster under the
+      `Text is Measurable` in scope: a cluster is as wide as its widest codepoint, so a
+      combining mark rides on its base character, and a flag or a ZWJ emoji family counts
+      once.
+
+      ```scala
+      import soundness.*
+      import hyphenations.englishHyphenation
+      import textMetrics.wideCharacterWidthMetric
+
+      Flow.wrap(t"hyphenation", 7)         // t"hyphen-", t"ation"
+      Flow.wrap(t"日本語 テスト", 6)        // t"日本語", t"テスト"
+      Flow.fit(t"日本語abc", 5)            // t"日本…"
+      Flow.chop(t"abcdefgh", 3)            // t"abc", t"def", t"gh"
+      ```
+  refer tessellate.Alignment
+  refer tessellate.Metrics
+  entry .wrap   flows content into lines no wider than a width, hyphenating and breaking at spaces
+    detail
+        `Flow.wrap(content, width)` returns a `Sequence` of lines. A hard break (`\n` or `\r\n`)
+        always starts a new line, and consecutive hard breaks keep the empty line between them.
+        Where a soft break is needed, the latest hyphenation point of the overflowing word which
+        still fits with `hyphen` (by default `t"-"`) appended is preferred; failing that, the line
+        breaks at its last space; failing that, the over-long word runs on beyond the width. A
+        width below 1 returns the content as a single line.
+
+        ```scala fuel
+        frame
+          label No hyphenation in scope: the companion's fallback
+          code
+              import soundness.*
+              import textMetrics.uniformMetric
+
+              Flow.wrap(t"a hyphenation", 9)   // t"a", t"hyphenation"
+        frame
+          label English hyphenation imported by name
+          code
+              import soundness.*
+              import hyphenations.englishHyphenation
+              import textMetrics.uniformMetric
+
+              Flow.wrap(t"a hyphenation", 9)   // t"a hyphen-", t"ation"
+        ##
+        ```
+
+        The spaces a soft break consumes are dropped, but trailing spaces at a hard break or at
+        the end of the content are content — a styled badge such as `e"$Bg(green)( ✓ )"` needs
+        all three cells — and are clipped only as far as the width, since padding never
+        truncates.
+
+        `unbreakable` names spans of the content (as `Interval`s of char offsets into its plain
+        text) which must survive intact, such as a verbatim code sample amid prose. A span's
+        spaces are not break opportunities and its hyphenation points are ignored, so it wraps
+        as one word, moving whole to the next line or running on beyond the width; a space at a
+        span's edge is still a break opportunity, and a hard break inside one still ends the
+        line.
+
+        ```scala
+        import soundness.*
+        import hyphenations.englishHyphenation
+        import textMetrics.uniformMetric
+
+        Flow.wrap(t"see foo bar baz here", 12, unbreakable = List(4.z thru 14.u))
+        // t"see", t"foo bar baz", t"here"
+        ```
+
+        It needs a `Text is Measurable` and a `Hyphenation` in scope.
+  entry .fit   confines one line to exactly a width: truncated with an ellipsis, or padded by alignment
+      `Flow.fit(content, width, alignment, ellipsis, last)` shortens content wider than the
+      width with `.shorten`, and pads anything narrower with `alignment` (`Alignment.Left` by
+      default). `last` is passed to the alignment, and tells `Alignment.Justify` whether the line
+      ends its paragraph.
+
+      ```scala
+      import soundness.*
+      import textMetrics.uniformMetric
+
+      Flow.fit(t"abc", 6)                       // t"abc   "
+      Flow.fit(t"ab", 6, Alignment.Center)      // t"  ab  "
+      Flow.fit(t"hello world", 8)               // t"hello w…"
+      ```
+  entry .shorten   truncates content wider than a width, marking the cut with an ellipsis
+      Content which already fits is returned unchanged. Otherwise as many whole grapheme
+      clusters are kept as fit with `ellipsis` (by default `t"…"`) appended, so a wide
+      character never straddles the cut. The result may be narrower than the width; `.fit`
+      pads it.
+  entry .chop   cuts content into lines of at most a width, ignoring word boundaries
+      Character flow, by grapheme cluster, as a terminal itself wraps a long line. A width
+      below 1, or empty content, gives the content as one line.
+  entry .minContent   the narrowest width content can wrap into without overflow: its widest word
+      The display width of its widest word, where words are delimited by spaces and hard
+      breaks.
+  entry .natural   the width content occupies unwrapped: its widest hard line
+  entry .metrics   both intrinsic widths of content, `.minContent` and `.natural`, as `Metrics`
+      ```scala
+      import soundness.*
+      import textMetrics.wideCharacterWidthMetric
+
+      Flow.metrics(t"the quick brown\nfox")   // Metrics(5, 15)
+      Flow.metrics(t"👨‍👩‍👧 ab")              // Metrics(2, 5)
+      ```
+
+entry .Alignment   horizontal placement of a line within a wider extent: left, right, centre or justified
+  detail
+      An `Alignment` pads content to exactly a width with `#pad`; it never truncates, so content
+      wider than the width is returned as it is (`Flow.fit` truncates first).
+
+      ```scala fuel
+      frame
+        label Left: padded on the right
+        code
+            import soundness.*
+            import textMetrics.uniformMetric
+
+            Alignment.Left.pad(t"a b c", 9)   // t"a b c    "
+      frame
+        label Right: padded on the left
+        code
+            import soundness.*
+            import textMetrics.uniformMetric
+
+            Alignment.Right.pad(t"a b c", 9)   // t"    a b c"
+      frame
+        label Center: odd space on the right
+        code
+            import soundness.*
+            import textMetrics.uniformMetric
+
+            Alignment.Center.pad(t"a b c", 9)   // t"  a b c  "
+      frame
+        label Justify: word gaps stretched, except on a paragraph's last line
+        code
+            import soundness.*
+            import textMetrics.uniformMetric
+
+            Alignment.Justify.pad(t"a b c", 9, last = false)   // t"a   b   c"
+      ##
+      ```
+  refer tessellate.Flow
+  entry .Left   pads content on the right
+  entry .Right   pads content on the left
+  entry .Center   centres content, putting an odd cell of spare space on the right
+      Unlike gossamer's `center`, which puts the odd cell on the left.
+  entry .Justify   stretches the gaps between words to fill the width, except on a paragraph's last line
+      When `last` is true, the line is padded on the right, as `Left` pads it: a paragraph's
+      final line is not stretched. Otherwise the spare space is shared among the word gaps,
+      with any remainder going to the later gaps.
+  entry .Vertical   vertical placement of content within a taller extent: `Top`, `Middle` or `Bottom`
+      An enumeration of three cases, used where a cell is shorter than the row it sits in —
+      when another cell of the row wraps onto more lines.
+  entry #pad   pads content to exactly a width, given whether it is a paragraph's last line
+      `pad(content, width, last)`, with `last` true by default; only `Justify` heeds it. It
+      needs a `Text is Measurable` in scope.
+
+entry .Metrics   the intrinsic widths of content along one axis: min-content and natural
+  detail
+      `Metrics(min, natural)`: `min` is the narrowest extent the content can be arranged into
+      without overflowing (its widest word, for text), and `natural` the extent it takes given
+      unlimited space (its widest line). `Flow.metrics` measures text, and `Reflowable#metrics`
+      any reflowable content.
+
+      ```scala
+      import soundness.*
+
+      Metrics(5, 15).max(Metrics(8, 10))   // Metrics(8, 15)
+      Metrics(4)                           // Metrics(4, 4)
+      ```
+  refer tessellate.Flex
+  entry .apply   metrics of a fixed width, whose minimum and natural widths are equal
+  entry #min   the narrowest extent the content fits without overflow
+  entry #natural   the extent the content occupies given unlimited space
+  entry #max   the larger of two metrics, minimum by minimum and natural by natural
+      The metrics of a column holding both contents.
+
+entry .Flex   a track competing for space along an axis: its metrics, weight, bound and collapse behaviour
+  detail
+      A `Flex` describes one track — a column, a row, a pane — to `Flex.solve`: its content's
+      `#metrics`, the `#weight` with which it claims spare space (`1.0` by default), an optional
+      upper bound `#max`, and whether it is `#collapsible`: dropped entirely, lowest `#rank`
+      first, when the axis cannot hold every track's minimum.
+
+      ```scala
+      import soundness.*
+
+      val tracks = Sequence(Flex(Metrics(5)), Flex(Metrics(5), collapsible = true))
+      Flex.solve(tracks, 6)   // 6, Unset
+      ```
+  refer tessellate.Metrics
+  entry .content   a track whose bounds derive from its content alone
+      It shrinks to its minimum, never grows beyond its natural width, and claims spare space
+      in proportion to how much it can usefully absorb, the difference between the two.
+
+      ```scala
+      import soundness.*
+
+      Flex.solve(Sequence(Flex.content(Metrics(3, 9)), Flex.content(Metrics(2, 4))), 20)   // 9, 4
+      ```
+  entry .solve   shares an axis's cells among tracks, giving each track's size or `Unset` if it collapsed
+    detail
+        `Flex.solve(tracks, available, gap)` works in two stages.
+
+        **Collapse.** While the tracks' minima, plus a `gap` between each pair, do not fit in
+        `available`, the collapsible track of lowest rank (the leftmost, on a tie) is dropped,
+        and its size is `Unset`. If nothing more can collapse, the minima are kept and overflow
+        the space, and the caller decides what to do.
+
+        **Distribute.** Each remaining track's fair share of the space left after the gaps is
+        in proportion to its weight. A track whose share would fall below its minimum is pinned
+        at the minimum, and one whose share would exceed its `max` is pinned at the maximum,
+        with the rest redistributed among the others until nothing changes. The free tracks
+        then take their shares with largest-remainder rounding, so the sizes sum to exactly the
+        space available.
+
+        ```scala
+        import soundness.*
+
+        Flex.solve(Sequence(Flex(Metrics(0)), Flex(Metrics(0)), Flex(Metrics(0))), 10)
+        // three sizes summing to 10
+
+        Flex.solve(Sequence(Flex(Metrics(6, 10)), Flex(Metrics(0, 10))), 8)   // 6, 2
+        Flex.solve(Sequence(Flex(Metrics(0), max = 2), Flex(Metrics(0))), 10)  // 2, 8
+        Flex.solve(Sequence(Flex(Metrics(0)), Flex(Metrics(0))), 10, gap = 2)  // 4, 4
+        ```
+  entry #metrics   the track content's intrinsic widths; its minimum is a lower bound
+  entry #weight   the proportion of spare space the track claims, relative to the others
+  entry #max   a hard upper bound on the track's size, or `Unset` for none
+  entry #rank   the track's collapse order: among collapsible tracks, the lowest rank is dropped first
+  entry #collapsible   whether the track may be dropped entirely when the minima cannot all fit
+
+entry .Reflowable   content which negotiates with a rectangular layout: its widths, its height, its lines
+  detail
+      A `Reflowable` reports the intrinsic widths its content wants (`#metrics`), how many lines
+      it takes at a candidate width (`#height`), and finally arranges itself into lines of
+      exactly the settled width (`#flow`). Its `#Line` is the type of a rendered line: for
+      self-rendering content such as `Text` or `Teletype`, the content type itself.
+
+      Every `Textual` with `Char` elements is reflowable through `.textual`, in implicit scope,
+      by wrapping with `Flow.wrap` and padding each line with the alignment.
+
+      ```scala
+      import soundness.*
+      import hyphenations.englishHyphenation
+      import textMetrics.uniformMetric
+
+      summon[Text is Reflowable].metrics(t"one two")   // Metrics(3, 7)
+      summon[Text is Reflowable].flow(t"the quick brown fox", 10, Alignment.Left)
+      // t"the quick ", t"brown fox "
+      ```
+
+      escritoire's table cells and ultimatum's panes take their content through this
+      typeclass.
+  refer tessellate.Flow
+  refer tessellate.Metrics
+  entry .textual   makes any `Char`-element `Textual` reflowable, its lines of its own type
+      Metrics come from `Flow.metrics`; lines come from `Flow.wrap`, each padded to the width
+      with the alignment, the final line being treated as its paragraph's last.
+  entry #Line   the type of one rendered line of the content
+  entry #metrics   the content's intrinsic widths, under the `Text is Measurable` in scope
+  entry #height   how many lines the content takes at a width
+      By default, the number of lines `#flow` produces at that width, aligned left.
+  entry #flow   the content arranged into lines of exactly a width, aligned as given
+      Needs a `Text is Measurable` and a `Hyphenation` in scope.
+
+entry .BoxLine   the weight of one arm of a box-drawing junction: `Blank`, `Thin`, `Thick` or `Double`
+    An enumeration of four cases. A box-drawing character is chosen by the weights of its four
+    arms — up, right, down and left — through `LineCharset#apply`, so `Blank` on every arm is
+    a space, and `Thin` above and below with `Blank` either side is a vertical line.
+
+entry .LineCharset   a family of box-drawing characters: `Default`, `Rounded` or `Ascii`
+  detail
+      `Default` is the Unicode box-drawing set, with thin, thick and double lines and the
+      junctions between them; `Rounded` is the same with rounded corners for the four thin
+      corners; and `Ascii` approximates every character with `-`, `|` and `+`, for a terminal
+      with no Unicode.
+
+      ```scala
+      import soundness.*
+
+      LineCharset.Default(top = BoxLine.Thin, bottom = BoxLine.Thin)            // a vertical line
+      LineCharset.Rounded(right = BoxLine.Thin, bottom = BoxLine.Thin)          // a rounded corner
+      LineCharset.Ascii(BoxLine.Thin, BoxLine.Thin, BoxLine.Thin, BoxLine.Thin) // '+'
+      ```
+  refer tessellate.BoxLine
+  refer tessellate.BoxDrawing
+  entry #apply   the junction character for four arms, or the whole table of characters
+      `charset(top, right, bottom, left)` gives the character whose arms have those
+      `BoxLine` weights, each `Blank` by default. `charset()` gives the charset's whole table,
+      as a frozen array of 256 characters indexed by the four weights.
+
+entry .BoxDrawing   the tables of box-drawing characters behind `LineCharset`
+  detail
+      Each table is a frozen array of 256 characters, indexed by the weights of a junction's
+      four arms: `left + 4*bottom + 16*right + 64*top`, each the `ordinal` of a `BoxLine`. A
+      combination with no character of its own has the nearest one available.
+  refer tessellate.LineCharset
+  entry .asciiChars   the table for `LineCharset.Ascii`: every junction as `-`, `|`, `+` or a space
+  entry .defaultChars   the table for `LineCharset.Default`: the Unicode box-drawing characters
+  entry .roundedChars   the table for `LineCharset.Rounded`: as the default, with rounded thin corners
+  entry .simple   the character for a straight line or a crossing, from one vertical and one horizontal weight
+      `BoxDrawing.simple(vertical, horizontal, charset)` is
+      `charset(vertical, horizontal, vertical, horizontal)`: the vertical weight above and
+      below, and the horizontal weight on either side.

@@ -1,0 +1,239 @@
+tel 1.0
+
+base baroque
+import soundness
+
+info   complex numbers over any numeric component type, including quantities, with unboxed doubles
+detail
+    _Baroque_ provides `Complex`, a complex number whose real and imaginary parts may be any
+    type with the arithmetic an operation needs: `Int`, `Double`, a rational `Q64`, or a
+    quantity, so that a complex impedance or velocity keeps its units through every sum and
+    product. `i` is the imaginary unit, as a `Complex[Double]`.
+
+    ```scala
+    import soundness.*
+
+    Complex(1, 3).show                     // t"1 + 3ℐ"
+    Complex(1, 3)*Complex(2, 4)            // Complex(-10, 10)
+    Complex(0.8, 0.0) + i*1.8              // Complex(0.8, 1.8)
+    Complex(1.0*Metre, 3.0*Metre)*2.0      // Complex(2.0*Metre, 6.0*Metre)
+    ```
+
+    The arithmetic is not defined on `Complex` itself but through symbolism's typeclasses:
+    `Complex`'s companion holds `Addable`, `Subtractable`, `Multiplicable`, `Divisible` and
+    `Negatable` givens which exist exactly when the components have the corresponding
+    operations, and whose results are complex numbers of the components' result types. A
+    product of two complex lengths is a complex area; a sum of inches and feet is a complex
+    length in metres. Every given is in implicit scope, so nothing needs importing beyond
+    `soundness.*`.
+
+    The constructor, the accessors and the arithmetic are all `inline`, and resolve the
+    components' operations at the call site: a `Complex` whose component is a `Double`
+    underneath — `Double` itself, a quantity, an `F64` — is stored as two primitive doubles
+    (`Complex.Doubles`), and any other as two references (`Complex.Boxed`). So `c*d` on two
+    `Complex[Double]`s compiles to four multiplications, an addition, a subtraction and one
+    allocation, with no boxing.
+
+    The library has a single source set, `baroque.core`, which compiles for every platform,
+    and both of its names are exported to the `soundness` umbrella.
+
+refer baroque.Complex
+refer baroque.i
+refer hypotenuse.Angle
+
+entry .Complex   a complex number of two components of any type, with arithmetic as the components allow
+  detail
+      `Complex[component]` holds a real and an imaginary part of the same type. It is a sealed
+      abstract class with two representations, chosen by the component's runtime class:
+      `Complex.Doubles`, two primitive `Double` fields, for any component which is a `Double`
+      underneath, and `Complex.Boxed`, two references, for anything else. The choice is made
+      by `.apply` and read back by `.real` and `.imaginary`, so generic and double-specific code
+      always agree on it; a user never needs to name either subclass.
+
+      ```scala
+      import soundness.*
+
+      val z: Complex[Int] = Complex(3, 4)
+      z.real                         // 3
+      z.imaginary                    // 4
+      z + Complex(1, -1)             // Complex(4, 3)
+      z*Complex(2, 0)                // Complex(6, 8)
+      -z                             // Complex(-3, -4)
+      ~z                             // Complex(3, -4), the conjugate
+
+      val Complex(re, im) = z
+      ```
+
+      Arithmetic is through symbolism's operators, whose givens live in this companion:
+      `.addable`, `.subtractable`, `.multiplicable`, `.divisible` and `.negatable`, plus
+      `.multiplicableByDouble` and `.doubleMultiplicable` for scaling by a real number on
+      either side. Each requires only what its formula needs of the components, and the
+      component types may differ, as long as their operations are defined:
+
+      ```scala
+      import soundness.*
+
+      Complex(1.0*Inch, 3.0*Inch) + Complex(2.0*Foot, 8.0*Foot)
+      Complex(1*Metre, 3*Metre)*Complex(2*Second, 4*Second)   // a complex of metre-seconds
+      ```
+
+      A complex number shows as `1 + 3ℐ` (`.showable`) and inspects as `1+3i`
+      (`.inspectable`); the polar form is `.modulus` and `.argument`, and a number is built
+      from it with the two-argument `.apply` taking an `Angle`.
+  refer baroque.i
+  refer symbolism.Addable
+  refer symbolism.Multiplicable
+  refer hypotenuse.Angle
+  entry .Doubles   the representation of a complex number whose component is a `Double` underneath
+    detail
+        Two primitive `Double` fields, used for `Complex[Double]`, for a complex quantity, and
+        for any other component type with `Underlying[component, Double]` evidence or whose
+        runtime values are doubles. The component type is a phantom here: `.real` and
+        `.imaginary` cast the fields back to it. Equality and hashing compare the two doubles.
+        Built by `Complex.apply`, never directly.
+    entry #real        the real part, as a primitive `Double`
+    entry #imaginary   the imaginary part, as a primitive `Double`
+  entry .Boxed   the representation of a complex number whose component is not a `Double` underneath
+    detail
+        Two references to component values, used for `Int`, `Q64`, and any other component
+        type. Equality and hashing compare the two components. Built by `Complex.apply`,
+        never directly.
+    entry #real        the real part
+    entry #imaginary   the imaginary part
+  entry .apply   a complex number from its real and imaginary parts, or from a modulus and an `Angle`
+      `Complex(real, imaginary)` takes two components of the same type and chooses the
+      representation: `Complex.Doubles` when the component is known to be a `Double`
+      underneath (by `Underlying` evidence, or by being `Double`), else by a type test on the
+      value, falling back to `Complex.Boxed`.
+
+      `Complex(modulus, argument)` is the polar form: the modulus is any component which can
+      be multiplied by a `Double`, and the argument a `hypotenuse` `Angle`. The result is a
+      complex of the product type, `modulus*cos(argument)` plus `modulus*sin(argument)ℐ`.
+
+      ```scala
+      import soundness.*
+
+      Complex(1.5, -0.5)
+      Complex(12*Kilo(Gram), 0.3845.rad)
+      ```
+  entry .unapply   destructures a complex number into its real and imaginary parts
+      Always matches, so `val Complex(re, im) = z` and `case Complex(re, im) =>` work for
+      either representation.
+  entry .real   the real part of a complex number, as its component type
+      An inline extension on `Complex[component]`. Where the component is statically a
+      `Double` underneath it is a single field read with no type test; otherwise it matches
+      on the representation.
+  entry .imaginary   the imaginary part of a complex number, as its component type
+      An inline extension on `Complex[component]`, read as `.real` is: a field read where the
+      component is statically a `Double` underneath, otherwise a match on the representation.
+  entry .modulus   the absolute value of a complex number, √(re² + im²), in the components' units
+      An inline extension. It needs the component to be `Multiplicable` by itself, the
+      product `Addable` to itself and the sum `Rootable[2]`, and its type is the square root's
+      result: the modulus of a complex length is a length.
+
+      ```scala
+      import soundness.*
+
+      Complex(3.0, 4.0).modulus                 // 5.0
+      Complex(3.0*Metre, 4.0*Metre).modulus     // 5.0 m
+      ```
+  entry .argument   the angle of a complex number from the positive real axis, as an `Angle`
+      An inline extension, computed as `atan2` of the parts each divided by `.modulus`, so it
+      needs everything `.modulus` does, and that a component divided by the modulus be a
+      plain `Double` — which holds for numbers and for quantities alike, since the units
+      cancel.
+
+      ```scala
+      import soundness.*
+
+      Complex(0.0, 1.0).argument   // a right angle
+      ```
+  entry .sqrt   the principal square root of a complex number, from its polar form
+      An inline extension: the square root of `.modulus` at half of `.argument`, built with
+      the polar `Complex.apply`. It needs everything `.argument` needs, plus that the modulus
+      itself has a square root which can be multiplied by a `Double`; the root of a complex
+      area is a complex length.
+  entry .unary_~   the complex conjugate, `~z`: the same real part with the imaginary part negated
+      A prefix operator, compiled under the name `conjugate`. It needs the component to be
+      `Negatable`, and the result's component type is the union of the component and the
+      negation's result, which for numbers and quantities is the component itself.
+
+      ```scala
+      import soundness.*
+
+      ~Complex(1, 3)   // Complex(1, -3)
+      ```
+  entry .showable   shows a complex number as `1 + 3ℐ`, omitting a zero part
+      An inline given for any component which is `Showable`, `Zeroic`, `Commensurable` with
+      itself and `Negatable`. A zero imaginary part shows the real part alone, a zero real
+      part shows `3ℐ`, and a negative imaginary part is written with a minus: `1 - 3ℐ`.
+
+      A component which is `Distributive` — a quantity, whose units follow the number, or a
+      mixed-unit `Quanta` such as feet and inches — has its parts shown together inside the
+      units: `(1.00 + 9.00ℐ) m·s¯¹`, or `(1 + 2ℐ) yd, 2 ft, (6ℐ) in`. Showing a `Double`
+      component needs a `Decimalizer` in scope.
+
+      ```scala
+      import soundness.*
+
+      Complex(1, -3).show                          // t"1 - 3ℐ"
+      Complex(Q64(1, 2), Q64(1, 3)).show           // t"1/2 + 1/3ℐ"
+      Complex(1.0*Metre/Second, 9.0*Metre/Second).show
+      ```
+  entry .inspectable   inspects a complex number as `1+3i`, each part as it inspects
+      For any component which is `Inspectable`. The parts are joined with `+`, or with `-`
+      when the imaginary part's inspection begins with one, and followed by `i`: `1.0-3.0i`.
+  entry .addable   adds two complex numbers part by part, when their components can be added
+      An inline given: `Complex[a] + Complex[b]` is a `Complex[r]` whenever `a is Addable by b
+      to r`, so complex lengths in different units add to a complex length. A component's
+      macro-generated `AddOp` (as quantities have) is preferred over its `Addable`.
+  entry .subtractable   subtracts two complex numbers part by part, when their components can be subtracted
+      An inline given: `Complex[a] - Complex[b]` is a `Complex[r]` whenever `a is Subtractable
+      by b to r`.
+  entry .multiplicable   multiplies two complex numbers, (a + bℐ)(c + dℐ) = (ac − bd) + (ad + bc)ℐ
+      An inline given. It needs the components to be `Multiplicable` to a product type, and
+      that product to be `Addable` and `Subtractable` to itself; the result is a complex of
+      the product's sum and difference types, so complex metres times complex seconds is a
+      complex of metre-seconds.
+
+      ```scala
+      import soundness.*
+
+      Complex(1, 3)*Complex(2, 4)   // Complex(-10, 10)
+      ```
+  entry .multiplicableByDouble   scales a complex number by a real `Double` on the right, as in `i*1.8`
+      An inline given for any component `Multiplicable` by `Double`; each part is multiplied
+      by the scalar.
+  entry .doubleMultiplicable   scales a complex number by a real `Double` on the left, as in `2.0*z`
+      An inline given for any component such that `Double` is `Multiplicable` by it; each part
+      is multiplied by the scalar.
+
+      ```scala
+      import soundness.*
+
+      2.0*Complex(1.5, -0.5)   // Complex(3.0, -1.0)
+      ```
+  entry .divisible   divides two complex numbers, multiplying through by the divisor's conjugate
+      An inline given. The quotient is `(ac + bd)/(c² + d²) + (bc − ad)/(c² + d²)ℐ`, so it
+      needs both component types to multiply, the dividend's component to be `Negatable`, the
+      products to add, and the dividend's sum to divide by the divisor's. Dividing complex
+      metres by complex feet gives a dimensionless complex.
+
+      ```scala
+      import soundness.*
+
+      Complex(3.0, 2.0)/Complex(1.0, -4.0)
+      ```
+  entry .negatable   negates both parts of a complex number, `-z`
+      An inline given for any `Negatable` component; the result is a complex of the
+      negation's result type.
+
+entry .i   the imaginary unit, `Complex(0.0, 1.0)`, for writing complex numbers as `a + b*i`
+    A `Complex[Double]`, so `i*1.8` is `Complex(0.0, 1.8)` through
+    `Complex.multiplicableByDouble`, and a number may be written as a sum:
+
+    ```scala
+    import soundness.*
+
+    Complex(0.8, 0.0) + i*1.8   // Complex(0.8, 1.8)
+    ```

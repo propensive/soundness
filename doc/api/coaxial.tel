@@ -1,0 +1,1687 @@
+tel 1.0
+
+base coaxial
+import soundness
+
+info   TCP, UDP, Unix-domain and TLS sockets, and a DNS resolver, behind one transport-generic API
+detail
+    _Coaxial_ is socket programming with the transport decided by the **type of the socket
+    value** rather than by a different API: a `Tcp.Port` is served and a `DomainSocket` is
+    served with the same `listen`; an `Endpoint[Tcp.Port]`, a `DomainSocket` and a
+    `SecureEndpoint` are connected to with the same `transmit`, `react` and `duplex`. The
+    operations are typeclass-driven — `Bindable` for anything that can serve, `Serviceable`
+    for a request/response client, `Connectable` for a persistent bidirectional `Duplex`,
+    `Routable` for a fire-and-forget datagram, `Subscribable` for a multicast group — and
+    the transports differ only in which instances exist.
+
+    A server is a **loan**: `listen` binds, runs a handler for each arrival on its own
+    supervised task, lends the running server to a block as a `Socket.Service`, and stops it
+    when the block ends. A client is a message out and a reply stream in (`transmit`), a
+    state machine over a conversation (`react`, `exchange`), or a `Duplex` lent to a block
+    (`duplex`, or the `session` loan). What crosses the wire is a value, not bytes:
+    `Transmissible` says how a message becomes bytes and `Ingressive` how bytes become a
+    message.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import strategies.throwUnsafely
+    import threads.platformThreads
+    import probates.awaitProbate
+    import logging.silentLogging
+    import charsets.utf8Charset
+    import codepages.utf8Codepage
+    import textSanitizers.skipSanitizer
+    import socketBackends.javaBaseSockets
+
+    supervise:
+      val port = Port[Tcp]()   // an unused ephemeral port
+
+      port.listen[Data](connection => connection.source.memoize):
+        // the echo server runs for the duration of this block
+        val reply: Stream[Data] over Credit = port.transmit(t"hello")
+        reply.memoize.utf8   // t"hello"
+    ```
+
+    Nothing in the API names a platform. The primitive operations each role needs — bind and
+    accept, connect and converse, receive and reply, dispatch a datagram, join a group — are
+    gathered into `Socket.Backend`, chosen by importing one given from the `socketBackends`
+    package by name (`import socketBackends.javaBaseSockets`; `import coaxial.*` and
+    `import soundness.*` bring no backend in). Socket options are likewise givens, imported
+    by name from `socketOptions` and collected per connection kind (`Every[Socket.Option.Tcp]`,
+    `.Udp`, `.Domain`), so a program's socket policy is stated once rather than at each call.
+
+    The library is split by what each platform can do:
+
+    - `coaxial.core` — the whole platform-neutral API: `Socket` (its `Backend`, `Option`s,
+      `Event`s, `Service` and `Error`), `Bind`, the typeclasses `Bindable`, `Connectable`,
+      `Routable`, `Serviceable`, `Duplexable` and `Subscribable`, `Duplex`, `DomainSocket`,
+      `Multicast`, `Packet`, `UdpResponse`, `Control`, `Transmitter`, `Transmissible`,
+      `Ingressive`, the loans `listen`, `listenOn`, `subscribe`, `transmit`, `react`,
+      `exchange` and `duplex`, the `connectableSessional` given and the `socketOptions`
+      package. It compiles wherever a backend exists.
+    - `coaxial.jvm` — `socketBackends.javaBaseSockets` over `java.net` and
+      `java.nio.channels` (TCP, UDP, multicast and Unix-domain sockets), the TLS layer
+      (`Tls`, `TlsAcceptance`, `Trust`, `SecureEndpoint` for clients and `SecurePort` for
+      servers, with ALPN and mutual authentication), the raw-stream `Connection` with its
+      `listenConnections` loan, and `streamsDuplex`.
+    - `coaxial.native` (Scala Native) — `socketBackends.scalaNativeSockets` (TCP, UDP and
+      multicast; Unix-domain sockets raise `Unsupported`), and `Tls` and `SecureEndpoint` over
+      OpenSSL through its C API: a TLS client with verification but no ALPN, no server-side
+      TLS, and no `TlsAcceptance`/`Trust`.
+    - `coaxial.wasi` (a Wasm component) — `socketBackends.wasiSockets` over `wasi:sockets`:
+      TCP only, to IPv4 literals, with no UDP, multicast, Unix-domain or TLS; plus the
+      `wasiApis.wasiSocketsApi` WIT interface and the `WasiSocketsApi` type.
+    - `coaxial.dns` — `query` on an `Endpoint[Udp.Port]`: one DNS message to a nameserver and
+      its answer, over the backend's one-shot datagram exchange.
+
+    Errors are two: binding fails with `Bind.Error` (port in use, permission denied, address
+    unavailable, unsupported) and everything after with `Socket.Error`, whose reason says
+    whether it was accepting, transmitting, closing, the TLS handshake, a timeout, connecting,
+    a refusal, name resolution or an unsupported kind of socket. Every operation that connects
+    needs a `Tactic[Socket.Error]`; `listen` needs a `Tactic[Bind.Error]`; connections to a
+    remote host need `Online` (`import internetAccess.online`); and the loans need a `Monitor`
+    and a `Probate` (a `supervise` block with `threads.platformThreads` and
+    `probates.awaitProbate`) and a `Socket.Event is Loggable` (`logging.silentLogging`
+    discards the events).
+
+    Everything is exported to the `soundness` umbrella, and the `socketBackends`,
+    `socketOptions` and `wasiApis` choice packages merge with the umbrella's own, so a user
+    writes `import soundness.*` and then imports one backend and any options by name.
+
+refer coaxial.Duplex
+refer coaxial.DomainSocket
+refer coaxial.DomainSocket.Endpoint
+refer coaxial.Socket
+refer coaxial.Socket.Backend
+refer coaxial.Bindable
+refer coaxial.Connectable
+refer coaxial.Tls
+refer coaxial.TlsAcceptance
+refer coaxial.SecureEndpoint
+refer coaxial.SecurePort
+refer coaxial.Connection
+refer coaxial.listen
+refer coaxial.duplex
+refer coaxial.socketBackends
+refer coaxial.query
+
+entry .listen   serves a socket for the duration of a block: a handler per arrival, each on its own task
+  detail
+      `socket.listen[input](handler)(block)` binds any `Bindable` socket — a `Tcp.Port`, a
+      `Udp.Port`, a `DomainSocket`, a `Multicast` group or, on the JVM, a `SecurePort` — runs
+      `handler` for each arrival, and lends the running server to `block` as a
+      `Socket.Service` capability. The server is stopped when the block ends, whether it
+      returns or throws, so the accept loop can never outlive the code which needed it (this
+      is why `listen` is a loan rather than a method which returns a server).
+
+      The socket type decides the handler's shape, through `Bindable#Input` and
+      `Bindable#Output`: a TCP or Unix-domain handler is `Duplex => Data` (read the request
+      from `Duplex#source`, return the whole response), a UDP handler is
+      `Packet => UdpResponse` (the datagram with its sender; reply or ignore), and a multicast
+      handler is `Packet => Multicast.Reply`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import threads.platformThreads
+      import probates.awaitProbate
+      import logging.silentLogging
+      import socketBackends.javaBaseSockets
+
+      supervise:
+        Port[Tcp]().listen[Data](connection => connection.source.memoize):
+          ()   // the echo server runs for the duration of this block
+
+        Port[Udp]().listen[Data](packet => UdpResponse.Reply(packet.data)):
+          ()
+      ```
+
+      Each accepted connection is served by its own supervised `async` task, so connections
+      are handled concurrently; a handler failure, a dropped client or a failed reply ends only
+      that connection's task (the connection is always closed) while the accept loop keeps
+      running, and a failure to accept skips one iteration. The loan needs a `Monitor` and a
+      `Probate` (a `supervise` block), raises `Bind.Error` when the socket cannot be bound,
+      and logs `Socket.Event.Listening` when it starts and `Socket.Event.Closed` when it stops.
+      `listenOn` is the same loan with a local network interface to bind to. The type
+      argument is the handler's response type (`listen[Data]`): the `input` type parameter is
+      inferred from the socket's `Bindable`.
+  refer coaxial.Bindable
+  refer coaxial.listenOn
+  refer coaxial.Socket.Service
+  refer coaxial.subscribe
+
+entry .listenOn   `listen` bound to one local network interface, by its MAC address
+    `socket.listenOn(interface)(handler)(block)` is `listen` with an `Optional[MacAddress]`
+    naming the interface to bind to (`Unset` binds every interface, as `listen` does). A TCP
+    port is bound to the interface's address (its IPv4 address when it has one); a UDP port
+    uses the interface for outgoing multicast; a Unix-domain socket has no interface and
+    ignores the argument. An address which belongs to no local interface is ignored, and the
+    socket is bound to all interfaces. The interface form has its own name because a default
+    argument cannot be combined with the handler's path-dependent `Input`/`Output` types.
+
+entry .subscribe   joins a multicast group for the duration of a block, with a handler per datagram
+  detail
+      `group.subscribe(handler)(block)` joins a `Multicast` group on every interface which is
+      up and multicast-capable (other than loopback), runs `handler` for each datagram the
+      group delivers — each on its own task — and lends a `Multicast.Subscription` to `block`,
+      which can also send to the group *unprompted*: an announcement, a goodbye. `listen` on a
+      group (through `Multicast.bindable`) can only reply; this loan is for a member which
+      also speaks first, which is the shape of mDNS and other service-discovery protocols.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import threads.platformThreads
+      import probates.awaitProbate
+      import logging.silentLogging
+      import socketBackends.javaBaseSockets
+      import socketOptions.multicastLoopSocketOption   // see our own announcements too
+
+      supervise:
+        val group = Multicast(ip"224.0.0.251", udp"mdns")
+
+        group.subscribe(packet => Multicast.Reply.Group(packet.data)):
+          summon[Multicast.Subscription].send(t"hello, group".in[Data])
+      ```
+
+      The handler's verdict is a `Multicast.Reply`: `Group(data)` answers to the whole group
+      (the multicast norm, so every member learns the answer), `Unicast(data)` to the sender
+      alone, and `Ignore` nothing. The group's port is bound with address and port reuse, so
+      several programs on one host subscribe side by side. The subscription leaves the group
+      when the block ends; a `Monitor`, a `Probate` and a `Socket.Event is Loggable` are
+      needed, and `Bind.Error` is raised if the port cannot be bound. On Scala Native a send to
+      the group goes once by the kernel's default multicast route, not once per interface, and
+      the `MulticastLoop`/`MulticastHops` options are not applied; on WASI there is no
+      multicast.
+  refer coaxial.Multicast
+  refer coaxial.Subscribable
+  refer coaxial.Multicast.Subscription
+
+entry .transmit   sends one message to an endpoint: a reply stream back for a `Serviceable`, nothing for a `Routable`
+  detail
+      Two overloads, chosen by the endpoint's typeclass:
+
+      - For a `Serviceable` endpoint — an `Endpoint[Tcp.Port]`, a `Tcp.Port` (on the local
+        host) or a `DomainSocket` — `endpoint.transmit(message)` connects, streams the
+        serialized message and half-closes its output, then returns the response as a lazy
+        `Stream[Data] over Credit` which ends when the peer half-closes. The stream borrows the
+        connection, so it is read (or `memoize`d) inside the scope which made it, and the
+        `Serviceable` given needs a `Tactic[Truncation.Error]` for a read which fails midway.
+      - For a `Routable` endpoint — an `Endpoint[Udp.Port]` or a `Udp.Port` — it dispatches the
+        message as a single datagram and returns `Unit`; nothing is awaited.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import logging.silentLogging
+      import codepages.utf8Codepage
+      import socketBackends.javaBaseSockets
+
+      val reply: Stream[Data] over Credit = DomainSocket(t"/run/service.sock").transmit(t"request")
+      reply.memoize
+      ```
+
+      Any `Transmissible` value is a message: `Data`, `Text` (through the `Codepage` in scope),
+      a `Chain[Data]`, or anything `Encodable in Text`. Both overloads need a
+      `Tactic[Socket.Error]`, raised when the connection cannot be made (`Dns`, `Refused`,
+      `Timeout`, `Connect`) or the transmission fails; a remote TCP endpoint also needs
+      `Online`. Each logs `Socket.Event.Connected`. Since value-discarding makes any result
+      conform to `Unit`, the `Routable` overload cannot be selected by ascription alone when
+      both typeclasses apply; a UDP endpoint has only the `Routable` one.
+  refer coaxial.Serviceable
+  refer coaxial.Routable
+  refer coaxial.Transmissible
+  refer coaxial.react
+
+entry .react   drives a client-side conversation as a state machine, one `Control` per inbound message
+  detail
+      `endpoint.react(initialState)[message](handle)` connects to a `Serviceable` endpoint and
+      runs a loop: each inbound message — one refill window of the response stream, decoded
+      through the `Ingressive` for `message` — is passed to `handle`, which sees the current
+      state as a context value and answers with a `Control`: `Continue(state)` waits for more,
+      `Reply(message, state)` sends a response and waits, `Conclude(message, state)` sends a
+      response and stops, and `Terminate` stops. The final state is returned, and the
+      connection is closed however the loop ends.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import logging.silentLogging
+      import charsets.utf8Charset
+      import codepages.utf8Codepage
+      import socketBackends.javaBaseSockets
+      import Control.*
+
+      val endpoint = Endpoint(ip"127.0.0.1", tcp"8080")
+
+      val lines: Int = endpoint.react(0)[Text]: count ?=> line =>
+        if line == t"END" then Conclude(t"BYE", count) else Continue(count + 1)
+      ```
+
+      Writing a protocol this way keeps its states explicit rather than implied by where
+      control happens to be in a sequence of interleaved reads and writes. A `Serviceable`
+      can only respond, never send first: for a transport which can, `exchange` adds a
+      `Transmitter`. The method needs a `Buffering` (the window size), a
+      `Tactic[Socket.Error]` and a `Socket.Event is Loggable`, and a `Charset` or `Codepage`
+      for text messages.
+  refer coaxial.Control
+  refer coaxial.Ingressive
+  refer coaxial.exchange
+
+entry .exchange   a full-duplex conversation: `react`'s state machine plus a `Transmitter` for sending first
+  detail
+      `endpoint.exchange(initialState)[message](handle)(interact)` is `react` over a
+      `Duplexable` transport — one whose `transmit` may be called repeatedly and concurrently
+      with `receive`, never half-closing. As soon as the connection opens, and before the
+      `handle` loop begins, `interact` is handed a `Transmitter[message]`, so the client can
+      send proactively — a greeting, or a push from a task it spawns — while `handle` still
+      replies through `Control`. The message type is fixed by the annotated `handle`, which is
+      why it precedes `interact`.
+
+      ```scala
+      import soundness.*
+      import Control.*
+
+      def converse[endpoint: Showable](endpoint: endpoint)
+         (using (endpoint is Duplexable)^, Tactic[Socket.Error], Socket.Event is Loggable, Buffering)
+         (using Charset, Codepage)
+      :   Int =
+
+        endpoint.exchange(0)[Text] { count ?=> line =>
+          if line == t"END" then Terminate else Continue(count + 1)
+        } { transmitter => transmitter.send(t"HELLO") }
+      ```
+
+      Coaxial's own socket givens are `Serviceable`, not `Duplexable` (a plain request/response
+      socket shuts its output down after transmitting); a WebSocket client is the kind of
+      transport which provides a `Duplexable`. The method's contextual needs are `react`'s.
+  refer coaxial.Duplexable
+  refer coaxial.Transmitter
+  refer coaxial.react
+
+entry .duplex   lends a persistent bidirectional `Duplex` connection to a block, and closes it afterwards
+  detail
+      `endpoint.duplex(lambda)` connects to any `Connectable` endpoint — an `Endpoint[Tcp.Port]`,
+      a `DomainSocket`, a `SecureEndpoint` — and passes the open `Duplex` to `lambda`, closing
+      it when the lambda returns or throws. Unlike the request/response `transmit`, the
+      connection is never half-closed: reads and writes are independent, which is the shape a
+      multiplexing protocol such as HTTP/2 needs. `duplex(lambda)(interface)` binds the local
+      side to the interface with that MAC address first.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import logging.silentLogging
+      import socketBackends.javaBaseSockets
+
+      DomainSocket(t"/run/service.sock").duplex: duplex =>
+        duplex.send(Stream(t"request".in[Data]))
+        duplex.source.memoize   // the read side, until the peer closes
+      ```
+
+      A long-lived connection which must outlive any single block keeps the lambda running —
+      parked on its supervisor, say — until the enclosing scope ends, at which point the loan
+      closes it. The `session` loan (through `connectableSessional`) is the same thing as a
+      context value. Needs a `Tactic[Socket.Error]` and a `Socket.Event is Loggable`, and
+      `Online` for a remote endpoint; logs `Connected` on open and `Closed` on close.
+  refer coaxial.Duplex
+  refer coaxial.Connectable
+  refer coaxial.connectableSessional
+
+entry .connectableSessional   the `Sessional` given: `endpoint.session` lends a `Duplex` to a block
+    Any `Connectable` endpoint hosts a transport-level session: `endpoint.session { duplex ?=>
+    … }` opens the connection, lends it as a context value and closes it when the block ends,
+    delegating to `duplex`. The result type is quantified outside the block, so a value still
+    borrowing the live connection cannot escape it while a memoized one can. The `Sessional`
+    trait itself lives in `aperture`, which knows no transports, so this given is top-level
+    in `coaxial` rather than in a companion — `import coaxial.*` (or `soundness.*`) brings it
+    in. It captures the `Socket.Event is Loggable` and `Tactic[Socket.Error]` it needs.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import strategies.throwUnsafely
+    import logging.silentLogging
+    import internetAccess.online
+    import socketBackends.javaBaseSockets
+
+    val endpoint = Endpoint(ip"127.0.0.1", tcp"8080")
+
+    endpoint.session: connection ?=>
+      connection.send(Stream(t"ping".in[Data]))
+    ```
+
+entry .Sessional   the session typeclass, re-exported from `aperture` so `import coaxial.*` compiles unchanged
+    `Sessional` (and its `session` loan) moved from coaxial to `aperture`, since sessions are
+    not socket-specific; both are re-exported here. `connectableSessional` is coaxial's
+    instance, for every `Connectable` endpoint.
+
+entry .session   the `session` loan, re-exported from `aperture`
+    `target.session { handle ?=> … }` for any `Sessional` target; for a socket endpoint, the
+    handle is a `Duplex` (see `connectableSessional`).
+
+entry .Socket   the socket vocabulary: the platform backend, the options, the events, the running service and the error
+  detail
+      There is no `Socket` type — coaxial speaks in `Bindable`, `Connectable` and `Duplex` —
+      so `Socket` is a namespace for the vocabulary every transport shares: `.Backend`, the
+      per-platform implementation every typeclass instance is defined in terms of; `.Option`,
+      the socket options a connection is opened with, each typed by the transports it is
+      valid for; `.Event`, what a server or client logs; `.Service`, the handle on a running
+      server which `listen` lends; and `.Error`, with its `Reason`, for everything which goes
+      wrong after a successful bind.
+
+      ```scala
+      import soundness.*
+
+      Socket.Error(Socket.Error.Reason.Refused).message
+      Socket.Option.ReceiveBuffer(65536)
+      ```
+  refer coaxial.Socket.Backend
+  refer coaxial.Socket.Option
+  refer coaxial.Socket.Error
+  refer coaxial.Bind
+  entry .Backend   the platform's socket operations, grouped by role; one given per platform in `socketBackends`
+    detail
+        The pluggable seam between coaxial's platform-neutral API and the operating system: the
+        complete set of socket operations the `Bindable`, `Connectable`, `Serviceable`,
+        `Routable` and `Subscribable` instances are written against, with no reference to any
+        platform API. A backend is a given imported by name from the `socketBackends` package:
+        `javaBaseSockets` (the JVM's `java.net`/`java.nio.channels`), `scalaNativeSockets`
+        (Scala Native) and `wasiSockets` (`wasi:sockets`). A third-party backend implements
+        every member; the higher-level loops (`listen`, `react`, `exchange`, `duplex`,
+        `subscribe`) then run over it unchanged.
+
+        The operations are structured by the six roles the typeclasses play, because each has
+        its own byte-transfer discipline: a stream *server* (`#listenTcp`/`#listenDomain`,
+        `#accept`, `#shutdown`) binds, accepts and writes a whole response to each connection;
+        a datagram *server* (`#listenUdp`, `#receive`, `#reply`, `#unbind`) receives a `Packet`
+        and replies to its sender; a one-shot *exchange* (`#exchangeUdp`) sends one datagram
+        and waits for one reply; a *multicast* membership (`#joinMulticast`,
+        `#receiveMulticast`, `#sendGroup`, `#sendTo`, `#leaveMulticast`); a request/response
+        *exchange* (`#dialTcp`, `#dialTcpPort`, `#dialDomain`, `#request`, `#response`,
+        `#hangUp`) streams a request while half-closing, then reads to the peer's half-close;
+        a persistent *duplex* (`#duplexTcp`, `#duplexDomain`) hands back a `Duplex` which never
+        half-closes; and a datagram *courier* (`#routeUdp`, `#routeUdpPort`, `#dispatch`)
+        sends one datagram. Each role has an opaque handle type (`#ServerSocket`,
+        `#DatagramSocket`, `#MulticastSocket`, `#Exchange`, `#Courier`) which is threaded back
+        to the backend and never inspected.
+
+        An operation a backend cannot support raises rather than approximates: Unix-domain
+        sockets on Scala Native and WASI raise `Bind.Error(Unsupported)` or
+        `Socket.Error(Unsupported)`; UDP and multicast on WASI raise `Socket.Error`. Options
+        are coaxial's abstract `Socket.Option`s, applied in whatever terms the platform
+        understands, and an option a platform does not support is silently skipped.
+
+        ```scala
+        import soundness.*
+        import socketBackends.javaBaseSockets
+
+        val backend: Socket.Backend = summon[Socket.Backend]
+        ```
+    refer coaxial.socketBackends
+    refer coaxial.Socket.Option
+    entry #ServerSocket   the handle of a bound, listening stream socket (TCP or Unix-domain)
+    entry #DatagramSocket   the handle of a bound datagram socket
+    entry #MulticastSocket   the handle of a socket joined to a multicast group on each of its interfaces
+    entry #Exchange   the handle of a request/response client connection
+    entry #Courier   the handle of a fire-and-forget datagram destination
+    entry #listenTcp   binds a TCP port, on one interface or all, with the given options
+        `listenTcp(port, interface, options)` raises `Bind.Error` — `PortInUse`,
+        `PermissionDenied` or `AddressUnavailable`, classified from the platform's failure —
+        and returns the `#ServerSocket` which `#accept` takes. The JVM and Native backends bind
+        a `java.net.ServerSocket` (which honours a `Timeout` option); WASI binds a
+        `wasi:sockets` TCP socket on the IPv4 wildcard address.
+    entry #listenDomain   binds a Unix-domain socket at a path, with the given options
+        Raises `Bind.Error(Unsupported)` on Scala Native and WASI, which have no Unix-domain
+        sockets. On the JVM the socket file is created at the `DomainSocket`'s path and must
+        not already exist.
+    entry #accept   blocks for the next incoming connection, as a `Duplex`
+        The handler reads the request from the duplex's `source`, and the accept loop writes
+        the response with `send`. Raises `Socket.Error(Accept)` when the accept fails, which
+        is what an interrupted accept reports when the server is stopped.
+    entry #shutdown   closes a listening stream socket, unblocking a pending `#accept`
+    entry #listenUdp   binds a UDP port, with the given options, for receiving datagrams
+        Options are applied before the bind, so `ReuseAddress` and `ReusePort` take effect.
+        The interface, when given, becomes the socket's outgoing multicast interface. The
+        `DatagramSize` option fixes the buffer each datagram is received into (1472 bytes
+        unless set). Returns a unit handle on WASI, where every datagram operation raises.
+    entry #receive   blocks for the next datagram on a bound UDP socket, as a `Packet`
+        Raises `Socket.Error(Timeout)` when a `Timeout` option elapses and `Accept` for any
+        other failure. A datagram longer than the `DatagramSize` is truncated to it.
+    entry #reply   sends a datagram back to a received packet's sender and port
+        Raises `Socket.Error(Transmit)` if the send fails.
+    entry #unbind   closes a bound UDP socket, unblocking a pending `#receive`
+    entry #exchangeUdp   sends one datagram from an ephemeral port and blocks for one reply
+        `exchangeUdp(endpoint, interface, options, data)` is the shape of a DNS, NTP or STUN
+        query: a fresh socket, one datagram out, one `Packet` in, the socket closed. A
+        `Socket.Option.Timeout` in `options` bounds the wait, surfacing as
+        `Socket.Error(Timeout)`; the reply carries its sender, so a caller can check it came
+        from the right place. `query` in `coaxial.dns` is built on it. Raises `Transmit` on
+        WASI, which has no UDP.
+    entry #joinMulticast   binds a group's port with address and port reuse, and joins the group on each interface
+        `joinMulticast(multicast, interfaces, options)` binds the port with `SO_REUSEADDR` and
+        `SO_REUSEPORT` (the design, not an option: several subscribers on one host share the
+        port), then joins the group on each of the interfaces which has an address of the
+        group's family — one the operating system refuses is left out — and holds the
+        memberships until `#leaveMulticast`. The wildcard join is avoided because it picks one
+        interface arbitrarily, and unreliably on macOS.
+    entry #receiveMulticast   blocks for the next datagram the group delivers, as a `Packet`
+    entry #sendGroup   sends a datagram to the group itself
+        On the JVM, once through each joined interface (an IPv6 link-local group needs the
+        interface as its scope); on Scala Native, once by the kernel's default multicast
+        route. Raises `Socket.Error(Transmit)` on failure.
+    entry #sendTo   sends a datagram from the group's socket to one unicast destination and port
+        The response to a sender which asked for one. Raises `Socket.Error(Transmit)` on
+        failure.
+    entry #leaveMulticast   closes the group's socket, dropping its memberships and unblocking a pending receive
+    entry #dialTcp   connects to a remote TCP endpoint for one request/response exchange
+        Raises `Socket.Error` with `Dns` for an unresolvable host, `Refused`, `Timeout` or
+        `Connect`. On WASI the host must be an IPv4 literal (there is no resolver), else `Dns`.
+    entry #dialTcpPort   connects to a TCP port on the local host for one request/response exchange
+    entry #dialDomain   connects to a Unix-domain socket for one request/response exchange
+        Raises `Socket.Error(Unsupported)` on Scala Native and WASI.
+    entry #request   streams the request out and half-closes the output side
+        Takes the request stream as a `consume` parameter: it is drained and closed here, and
+        may not be used afterwards.
+    entry #response   the response, as a fresh single-use pull stream which ends at the peer's half-close
+        `response(exchange)` needs a `Buffering` (the refill window) and a
+        `Tactic[Truncation.Error]`, raised with the count of bytes read so far when the read
+        fails midway. The stream captures the tactic, so it is read where it was made.
+    entry #hangUp   closes a request/response connection
+    entry #duplexTcp   connects to a remote TCP endpoint as a persistent `Duplex`
+        The channel is blocking, so a read loop parks in `read` rather than busy-polling, and
+        options (and, when an interface is given, a local bind) are applied before connecting.
+        Raises `Socket.Error` as `#dialTcp` does.
+    entry #duplexDomain   connects to a Unix-domain socket as a persistent `Duplex`
+        Raises `Socket.Error(Unsupported)` on Scala Native and WASI.
+    entry #routeUdp   a courier to a remote UDP endpoint, from an ephemeral port
+        Resolves the endpoint's host when the courier is made; the interface, when given,
+        becomes the socket's outgoing multicast interface.
+    entry #routeUdpPort   a courier to a UDP port on the local host
+    entry #dispatch   sends a whole stream as a single datagram to the courier's destination
+        The stream is memoized into one datagram, so it must fit in one.
+  entry .Event   what a socket logs: listening, connected and closed, each tagged `Log.Network`
+    detail
+        Every `Event` extends `Log.Network`, so a logging configuration can select or silence
+        them by tag. `listen` and `subscribe` log `Listening` at `info` when the server starts
+        and `Closed` at `fine` when it stops; `transmit`, `react` and `exchange` log
+        `Connected` at `fine`; `duplex` logs `Connected` at `info` and `Closed` at `fine`.
+        Every loan takes a `Socket.Event is Loggable`; `logging.silentLogging` discards them.
+        Each event carries the endpoint's rendering as `Text`.
+    entry .communicable   renders each event as a message
+        `Listening` as _listening on `endpoint`_, `Connected` as _connected to `endpoint`_ and
+        `Closed` as _closed the connection to `endpoint`_.
+    entry .Listening   a server started listening on a socket
+      entry #endpoint   the socket, shown
+    entry .Connected   a client connected to an endpoint
+      entry #endpoint   the endpoint, shown
+    entry .Closed   a connection or server was closed
+      entry #endpoint   the endpoint, shown
+  entry .Option   a socket option, typed by the transports it is valid for, collected from scope per connection
+    detail
+        A socket option is applied to a freshly-constructed socket before it is bound or
+        connected. Each concrete option extends the marker traits of the transports it applies
+        to — `.Tcp`, `.Udp` and `.Domain` (Unix-domain) — and a bind or connect site collects
+        `Every[Socket.Option.Tcp]` (or `.Udp`, `.Domain`) from the givens in scope, so only
+        options valid for that transport are ever gathered, and a TCP-only option such as
+        `NoDelay` cannot reach a UDP socket.
+
+        Flag options which merely enable a feature are parameterless objects (`ReuseAddress`,
+        `ReusePort`, `NoDelay`, `KeepAlive`, `Broadcast`, `MulticastLoop`): their presence is
+        a deviation from the default-off baseline. Options carrying a value take a parameter
+        (`ReceiveBuffer`, `SendBuffer`, `Timeout`, `Linger`, `TrafficClass`, `MulticastHops`,
+        `DatagramSize`). The `socketOptions` package has a named given for each flag and a
+        factory for each valued option, so a policy is stated once:
+
+        ```scala
+        import soundness.*
+        import socketOptions.reuseAddressSocketOption
+        import socketOptions.noDelaySocketOption
+
+        given Socket.Option.Timeout = socketOptions.timeout(5000)
+
+        summon[Every[Socket.Option.Tcp]].values
+        ```
+
+        A backend applies each option in its platform's terms and silently skips one the
+        particular socket does not support (a server socket has no `TCP_NODELAY`; Scala
+        Native has no portable `ReusePort`). `DatagramSize` is consumed by the backend's
+        receive rather than set on the socket.
+    refer coaxial.socketOptions
+    entry .Tcp   the marker of an option valid for a TCP socket; `Every[Socket.Option.Tcp]` collects them
+    entry .Udp   the marker of an option valid for a UDP (and multicast) socket
+    entry .Domain   the marker of an option valid for a Unix-domain socket
+    entry .ReuseAddress   `SO_REUSEADDR`: rebind a port still in `TIME_WAIT`; TCP, UDP and domain
+        For a server which must restart without waiting out `TIME_WAIT`, and for several UDP
+        sockets sharing a port. `socketOptions.reuseAddressSocketOption` is its given.
+    entry .ReusePort   `SO_REUSEPORT`: several sockets bound to one port; TCP and UDP, OS-dependent
+        Skipped where the platform lacks it (and everywhere on Scala Native).
+        `socketOptions.reusePortSocketOption` is its given.
+    entry .ReceiveBuffer   `SO_RCVBUF`: the receive buffer size in bytes; TCP, UDP and domain
+      detail
+          Made with `socketOptions.receiveBuffer(bytes)`.
+      entry #bytes   the buffer size
+    entry .SendBuffer   `SO_SNDBUF`: the send buffer size in bytes; TCP, UDP and domain
+      detail
+          Made with `socketOptions.sendBuffer(bytes)`.
+      entry #bytes   the buffer size
+    entry .Timeout   `SO_TIMEOUT`: how long a blocking read or receive waits, in milliseconds; every transport
+      detail
+          A receive on a datagram socket which elapses raises `Socket.Error(Timeout)`; `query`
+          in `coaxial.dns` adds a five-second one when none is in scope. Not meaningful for a
+          selectable channel, where it is skipped. Made with `socketOptions.timeout(ms)`.
+      entry #milliseconds   the wait
+    entry .NoDelay   `TCP_NODELAY`: send small writes at once rather than waiting on Nagle's algorithm; TCP
+        `socketOptions.noDelaySocketOption` is its given.
+    entry .KeepAlive   `SO_KEEPALIVE`: probe an idle connection so a dead peer is noticed; TCP
+        `socketOptions.keepAliveSocketOption` is its given.
+    entry .Linger   `SO_LINGER`: how long `close` blocks to flush unsent data, in seconds, or `Unset` to disable; TCP and domain
+      detail
+          Made with `socketOptions.linger(seconds)`.
+      entry #seconds   the linger interval, or `Unset` for the default behaviour
+    entry .TrafficClass   `IP_TOS`: the traffic class or DSCP value of outgoing packets; TCP and UDP
+      detail
+          Made with `socketOptions.trafficClass(value)`.
+      entry #value   the type-of-service byte
+    entry .Broadcast   `SO_BROADCAST`: allow sending to a broadcast address; UDP
+        `socketOptions.broadcastSocketOption` is its given.
+    entry .MulticastLoop   `IP_MULTICAST_LOOP`: deliver a program's own multicast sends back to it; UDP
+        Loopback cannot carry multicast on Linux, so a subscriber which wants to see its own
+        announcements sets this instead. Not applied on Scala Native (whose kernel default is
+        on). `socketOptions.multicastLoopSocketOption` is its given.
+    entry .MulticastHops   `IP_MULTICAST_TTL`: how many routers a multicast datagram may cross; UDP
+      detail
+          Not applied on Scala Native (the kernel default is one hop). Made with
+          `socketOptions.multicastHops(count)`.
+      entry #count   the hop limit
+    entry .DatagramSize   the buffer a datagram is received into, and so the largest datagram which arrives whole; UDP
+      detail
+          1472 bytes — one Ethernet frame — unless set; mDNS allows 9000. Consumed by the
+          backend's receive rather than set on the socket. Made with
+          `socketOptions.datagramSize(bytes)`.
+      entry #bytes   the buffer size
+  entry .Service   the handle on a running server, lent by `listen`; `stop()` ends it
+    detail
+        A running socket server is an exclusive capability: it owns the accept loop and the
+        supervised connection tasks until it is stopped, and capture checking confines it to
+        the block `listen` lends it to, so an accept loop can never escape the code which
+        started it. `Multicast.Subscription` extends it with sends to the group.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import strategies.throwUnsafely
+        import threads.platformThreads
+        import probates.awaitProbate
+        import logging.silentLogging
+        import socketBackends.javaBaseSockets
+
+        supervise:
+          Port[Tcp]().listen[Data](connection => connection.source.memoize):
+            summon[Socket.Service].stop()   // ends the server early; the loan's own stop is then a no-op
+        ```
+    entry #stop   stops the accept loop, closes the listening socket and awaits the loop's task
+        Logs `Socket.Event.Closed`. The loan calls it when its block ends, so calling it
+        yourself is only needed to stop the server before the block is over.
+  entry .Error   raised when a connection fails after a successful bind, with a `Reason`
+    detail
+        Error 266: _the connection failed because `reason`_. Raised by every backend
+        operation after the bind — accepting, transmitting, closing, the TLS handshake, a
+        timed-out receive, connecting, a refusal, name resolution — and by the `Unsupported`
+        operations of a backend which lacks them. The extensions `transmit`, `react`,
+        `exchange` and `duplex` and the `connectableSessional` given take a
+        `Tactic[Socket.Error]`; inside a `listen` loan a per-connection failure is absorbed
+        by the connection's own task, so it ends only that connection.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import logging.silentLogging
+        import socketBackends.javaBaseSockets
+
+        val reason = capture[Socket.Error](DomainSocket(t"/nowhere.sock").duplex(_ => ())).reason
+        reason == Socket.Error.Reason.Connect
+        ```
+    entry .Reason   why a connection failed, numbered 1 to 9
+        `Accept` (1), _a new connection could not be accepted_; `Transmit` (2), _data could
+        not be transmitted to the connection_; `Close` (3), _the connection could not be
+        closed cleanly_; `Handshake` (4), _the TLS handshake with the peer failed_ — a
+        certificate the trust policy rejects, a hostname mismatch, or a listener's refusal of
+        a client certificate; `Timeout` (5), _no response arrived before the timeout_ — a
+        datagram receive under a `Socket.Option.Timeout`, or a connect which timed out;
+        `Connect` (6), _the connection could not be established_; `Refused` (7), _the peer
+        refused the connection_; `Dns` (8), _the host could not be resolved_; and
+        `Unsupported` (9), _the kind of socket is not supported on this platform_ — a
+        Unix-domain socket on Scala Native or WASI. Each is a `Clarification` with a `number`.
+    entry .communicable   renders each reason as its message
+    entry #reason   the reason
+
+entry .Bind   the error raised when a socket cannot be bound
+  detail
+      `Bind` is the namespace of `Bind.Error`, the one failure a `listen` or `subscribe` loan
+      raises before its server is running: the port is in use, the user may not bind it, the
+      address is not on this host, or the kind of socket does not exist on this platform.
+      Everything which fails after the bind is a `Socket.Error`.
+  refer coaxial.Socket.Error
+  refer coaxial.listen
+  entry .Error   raised by `listen` and `subscribe` when the socket cannot be bound
+    detail
+        Error 265: _the socket could not be bound because `reason`_. Raised by
+        `Socket.Backend#listenTcp` and `#listenDomain` (and so by `Bindable#bind`, `listen`,
+        `listenOn` and `subscribe`), classified from the platform's failure: a message naming
+        a permission problem is `PermissionDenied`, one naming an address in use is
+        `PortInUse`, and any other `AddressUnavailable`. The native and WASI backends raise
+        `Unsupported` for a Unix-domain socket.
+
+        ```scala
+        import soundness.*
+
+        Bind.Error(Bind.Error.Reason.PortInUse).message.text
+        // t"the socket could not be bound because another process is already bound to the port"
+        ```
+    entry .Reason   why a bind failed, numbered 1 to 4
+        `PortInUse` (1), _another process is already bound to the port_; `PermissionDenied`
+        (2), _the user does not have permission to bind the port_ — a port below 1024 without
+        privilege; `AddressUnavailable` (3), _the requested address is not available on this
+        host_; and `Unsupported` (4), _the kind of socket is not supported on this platform_.
+    entry .communicable   renders each reason as its message
+    entry #reason   the reason
+
+entry .Bindable   what `listen` needs of a socket: bind, accept arrivals, answer each, close, stop
+  detail
+      A socket value is `Bindable` when it can serve: `Tcp.Port`, `Udp.Port`, `DomainSocket`
+      and `Multicast` are, through givens in this companion and in `Multicast`, and on the JVM
+      `SecurePort` is. Each instance fixes three types which shape `listen`'s handler: a
+      `#Binding` (the backend's handle, opaque to the caller), the `#Input` a handler
+      receives for each arrival — a `Duplex` for a stream socket, a `Packet` for a datagram —
+      and the `#Output` it answers with — `Data` for a stream, `UdpResponse` for a datagram,
+      `Multicast.Reply` for a group.
+
+      The instances take the `Socket.Backend` in scope and the socket options collected for
+      their transport (`Every[Socket.Option.Tcp]`, `.Udp` or `.Domain`), so they resolve with
+      no import once a backend is chosen. A user rarely calls the methods: `listen` composes
+      them into the accept loop. A protocol over a new kind of socket provides an instance of
+      its own and gains `listen` for free.
+  refer coaxial.listen
+  refer coaxial.Socket.Backend
+  entry .domainSocket   serves a Unix-domain socket: `DomainSocket is Bindable`, handler `Duplex => Data`
+      Binds through `Socket.Backend#listenDomain`, so the socket file is created at the path
+      and must not already exist. A domain socket has no network interface, so `listenOn`'s
+      interface is ignored. Not available on Scala Native or WASI (`Bind.Error(Unsupported)`).
+  entry .tcpPort   serves a TCP port: `Tcp.Port is Bindable`, handler `Duplex => Data`
+      Each accepted connection is a `Duplex`; the handler reads the request from its `source`
+      and the response it returns is written back whole, then the connection is closed. A
+      handler which needs a conversation rather than a reply reads and writes the `Duplex`
+      itself and returns an empty `Data`.
+  entry .udpPort   serves a UDP port: `Udp.Port is Bindable`, handler `Packet => UdpResponse`
+      Each datagram is a `Packet` with its sender's address and port; `UdpResponse.Reply(data)`
+      sends a datagram back to that sender and `UdpResponse.Ignore` sends nothing.
+      `Socket.Backend#listenUdp` declares no `Bind.Error`, so a UDP bind failure is thrown.
+  entry #Binding   the backend's handle on the bound socket
+  entry #Input   what the handler receives for each arrival: a `Duplex` or a `Packet`
+  entry #Output   what the handler answers with: `Data`, a `UdpResponse` or a `Multicast.Reply`
+  entry #bind   binds the socket, on one interface or all, raising `Bind.Error`
+  entry #connect   blocks for the next arrival on a binding, raising `Socket.Error`
+  entry #transmit   carries out the handler's answer to an arrival
+  entry #close   closes one arrival's connection, after its answer is sent
+  entry #stop   closes the binding, unblocking a pending `#connect`
+
+entry .Connectable   what `duplex` needs of an endpoint: open a persistent bidirectional `Duplex`
+  detail
+      The counterpart to `Serviceable` for protocols which keep a connection open and read and
+      write concurrently — HTTP/2, WebSockets, SSH — rather than one request and one response.
+      `Endpoint[Tcp.Port]` and `DomainSocket` are `Connectable` through this companion, and on
+      the JVM and Scala Native `SecureEndpoint` is, over TLS. `duplex`, `connectableSessional`
+      and the `session` loan are built on it.
+
+      ```scala
+      import soundness.*
+
+      val (client, server) = Duplex.pair()
+      val connectable: DomainSocket is Connectable = Connectable((socket, interface) => client)
+      ```
+
+      The trait's `connect` raises `Socket.Error`, so a lambda does not convert to it; `.apply`
+      makes an instance from a plain function for a connection which cannot fail to open.
+  refer coaxial.duplex
+  refer coaxial.Duplex
+  refer coaxial.connectableSessional
+  entry .apply   an instance from a function `(endpoint, interface) -> Duplex` which cannot fail
+      For an endpoint whose duplex is already in hand — an in-process `Duplex.pair()` in a
+      test, say. The trait's `connect` declares `raises Socket.Error`, which is why a lambda
+      cannot be an instance directly.
+  entry .domainSocket   connects to a Unix-domain socket as a `Duplex`: `DomainSocket is Connectable`
+      Through `Socket.Backend#duplexDomain`, with the `Every[Socket.Option.Domain]` in scope;
+      a domain socket has no interface, so the interface argument is ignored. Raises
+      `Socket.Error(Unsupported)` on Scala Native and WASI.
+  entry .tcpEndpoint   connects to a remote TCP endpoint as a `Duplex`: `Endpoint[Tcp.Port] is Connectable`
+      Through `Socket.Backend#duplexTcp`, with the `Every[Socket.Option.Tcp]` in scope. The
+      instance resolves only with `Online` permission (`import internetAccess.online`) and is
+      a capability carrying that evidence, so the choice to reach the network is visible at
+      the use site. A failure to connect raises `Socket.Error` with `Dns`, `Refused`,
+      `Timeout` or `Connect`.
+  entry #connect   opens the connection, binding the local side to an interface when one is given
+
+entry .Routable   what the datagram `transmit` needs of an endpoint: connect and dispatch one message
+  detail
+      The fire-and-forget role: a `Routable` endpoint can be connected to and have one
+      serialized message dispatched to it, with nothing awaited. `Endpoint[Udp.Port]` and
+      `Udp.Port` (on the local host) are `Routable`; `Serviceable` extends it with a response
+      and a close, which is what makes a TCP endpoint's `transmit` return a reply stream
+      where a UDP endpoint's returns `Unit`.
+  refer coaxial.transmit
+  refer coaxial.Serviceable
+  entry .udpEndpoint   dispatches a datagram to a remote UDP endpoint: `Endpoint[Udp.Port] is Routable`
+      Through `Socket.Backend#routeUdp` and `#dispatch`, with the `Every[Socket.Option.Udp]` in
+      scope. The host is resolved when the courier is made.
+  entry .udpPort   dispatches a datagram to a UDP port on the local host: `Udp.Port is Routable`
+  entry #Connection   the backend's handle on the connection (a `Courier` for a datagram endpoint)
+  entry #connect   opens the connection, raising `Socket.Error`
+  entry #transmit   writes a whole stream to the connection, consuming it
+
+entry .Serviceable   what `transmit` and `react` need of an endpoint: a request out, a response stream back
+  detail
+      The request/response role: a `Serviceable` endpoint is connected to, has a request
+      streamed to it while its output is half-closed, and gives back a response stream which
+      ends when the peer half-closes. `Endpoint[Tcp.Port]`, `Tcp.Port` (on the local host) and
+      `DomainSocket` are `Serviceable`. Instances are capabilities — they retain the
+      `Tactic[Truncation.Error]` their response streams raise through — so `transmit`, `react`
+      and `exchange` take the evidence as a capturing using-parameter rather than a context
+      bound, and the instance is resolved where the tactic is in scope.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import logging.silentLogging
+      import internetAccess.online
+      import codepages.utf8Codepage
+      import socketBackends.javaBaseSockets
+
+      val endpoint = Endpoint(ip"127.0.0.1", tcp"8080")
+      val response: Stream[Data] over Credit = endpoint.transmit(t"request")
+      ```
+
+      A `Serviceable` can only respond, never send first; a `Duplexable` is a `Serviceable`
+      whose transmit never half-closes, and so can.
+  refer coaxial.transmit
+  refer coaxial.react
+  refer coaxial.Duplexable
+  entry .domainSocket   a request/response exchange over a Unix-domain socket: `DomainSocket is Serviceable`
+      Through `Socket.Backend#dialDomain`, `#request`, `#response` and `#hangUp`, with the
+      `Every[Socket.Option.Domain]` and a `Tactic[Truncation.Error]` in scope. Not available
+      on Scala Native or WASI (`Socket.Error(Unsupported)`).
+  entry .tcpEndpoint   a request/response exchange with a remote TCP endpoint: `Endpoint[Tcp.Port] is Serviceable`
+      Needs `Online` (`import internetAccess.online`), the `Every[Socket.Option.Tcp]` and a
+      `Tactic[Truncation.Error]`. A failure to connect raises `Socket.Error` with `Dns`,
+      `Refused`, `Timeout` or `Connect`.
+  entry .tcpPort   a request/response exchange with a TCP port on the local host: `Tcp.Port is Serviceable`
+      As `.tcpEndpoint`, without `Online`: the local host is not the network.
+  entry #receive   a fresh single-use pull stream over the connection's read side, ending at the peer's half-close
+      Needs a `Buffering`. The stream may retain the instance's `Tactic[Truncation.Error]`,
+      so its type is instance-relative, and it is read where it was made.
+  entry #close   hangs up the connection
+
+entry .Duplexable   a `Serviceable` whose transmit is repeatable and concurrent-safe, so `exchange` can send first
+    A `Duplexable` transport's `transmit` may be called repeatedly, and concurrently with
+    `receive` and with itself, without ever half-closing the connection. Only such a
+    transport can send *proactively* — before the first inbound message, or from another
+    task — so `exchange`, which hands the caller a `Transmitter`, is offered only for a
+    `Duplexable`; a plain request/response `Serviceable` has only the reactive `react`. The
+    trait adds no members: it is a promise about `Serviceable`'s. Coaxial's own socket
+    givens are not `Duplexable`; a WebSocket client is the kind of transport which is.
+
+entry .Subscribable   what `subscribe` needs of a multicast group: join, receive, send to the group or one member, leave
+  detail
+      The `Bindable` shape — one reply per arrival — cannot express an unprompted send, which
+      is why a multicast group has a typeclass of its own. `Multicast` is `Subscribable`
+      through `Multicast.subscribable`, over the `Socket.Backend` in scope, and the `subscribe`
+      loan composes the methods into a receive loop with a `Multicast.Subscription` which can
+      also send. `Multicast.bindable` derives a `Bindable` from any `Subscribable`, so
+      `listen` works on a group too, for a member which only responds.
+  refer coaxial.subscribe
+  refer coaxial.Multicast
+  entry #Binding   the backend's handle on the joined group
+  entry #join   binds the group's port and joins the group on each suitable interface, or the one with the given MAC address
+  entry #receive   blocks for the next datagram the group delivers, raising `Socket.Error`
+  entry #sendGroup   sends a datagram to the whole group
+  entry #sendTo   sends a datagram to one unicast destination and port
+  entry #leave   drops the memberships and closes the socket, unblocking a pending `#receive`
+  entry #transmit   carries out a handler's `Multicast.Reply` to a received packet
+      `Group(data)` goes to the group, `Unicast(data)` to the packet's sender and port, and
+      `Ignore` nowhere.
+
+entry .Duplex   a persistent bidirectional connection: independent reads and writes, never half-closed
+  detail
+      A `Duplex` is what `duplex`, `session` and `Connectable#connect` hand back, and what a
+      TCP or Unix-domain `listen` handler receives: an open connection whose read side is a
+      pull stream (`#source`) and whose write side takes any number of sends (`#send`, or the
+      push endpoint `#intake`), neither of which half-closes. This is the shape a multiplexing
+      protocol such as HTTP/2 needs, where one side both streams requests and receives
+      server-initiated frames concurrently; the request/response `transmit` is the other
+      shape, which shuts its output down after sending.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import logging.silentLogging
+      import socketBackends.javaBaseSockets
+
+      DomainSocket(t"/run/service.sock").duplex: duplex =>
+        duplex.send(Stream(t"ping".in[Data]))
+        val source = duplex.source                  // open once: a single reader
+        val count = source.refill(Credit(64)).or(0) // one refill window is one message
+        source.lend { region => range => region.materialize(range.capped(count)) }
+      ```
+
+      Reads block until data arrives or the peer closes. The contract is a single reader, so
+      `#source` is opened once. A socket-backed duplex captures the operating-system resources
+      behind it, so code which stores one declares the type as `Duplex^`; the in-process
+      `.pair()` is pure and still matches. Over TLS, `#alpnProtocol` reports the application
+      protocol the handshake selected.
+  refer coaxial.duplex
+  refer coaxial.Connectable
+  refer coaxial.streamsDuplex
+  entry .pair   an in-process connected pair: whatever one side sends, the other receives
+      `Duplex.pair()` makes two duplexes joined back to back, for testing a protocol with no
+      socket. Chunk boundaries are preserved — each send is memoized to one element, exposed
+      as one refill window on the other side, which in-memory protocol tests rely on — and a
+      side's `close()` ends the other side's stream.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val (left, right) = Duplex.pair()
+      left.send(Stream(t"hello".in[Data]))
+      left.close()
+      right.source.memoize.utf8
+      ```
+  entry #send   writes a whole stream to the connection, consuming it; repeatable
+      Takes the stream as a `consume` parameter: it is drained, written and closed here, and
+      may not be used afterwards. May be called many times; never half-closes.
+  entry #close   closes the connection
+  entry #source   a fresh single-use pull stream over the read side, blocking until data arrives or the peer closes
+      Needs a `Buffering` for its window size. The result's `^` is load-bearing: the stream
+      is stateful and retains the connection. Open it once per connection.
+  entry #alpnProtocol   the ALPN-negotiated application protocol (`h2`, `http/1.1`), or `Unset`
+      `Unset` for a plaintext connection, or when the peer selected none of the protocols a
+      `Tls` configuration offered. A unified HTTP client reads this once, straight after
+      connecting, to pick an HTTP/2 or HTTP/1.1 driver over this very socket. Set by
+      `SecureEndpoint` and `SecurePort` on the JVM; the Scala Native TLS client offers no ALPN.
+  entry #intake   a push endpoint over the write side, buffering to the `Buffering` block size
+      Writes are gathered into a block and sent when it fills; `flush()` and `finish()` send
+      what is gathered without half-closing, so `finish()` may be followed by further sends.
+      `stream.pump(duplex.intake)` is the push-side way to copy a stream to the connection.
+
+entry .Transmitter   a handle for sending messages over an open full-duplex connection at any moment
+  detail
+      Handed to the `interact` block of `exchange`: a `Transmitter[message]` serializes each
+      message with its `Transmissible` and posts it to the connection, before the first
+      inbound message arrives or concurrently from another task, where `Control` can only
+      reply. It is available only over a `Duplexable` transport, whose transmit is safe to
+      call concurrently.
+  refer coaxial.exchange
+  refer coaxial.Duplexable
+  entry .Post   the consuming target a transmitter posts to: a stream in, nothing out
+    detail
+        A single-method trait rather than a function type, because only a method parameter
+        can be marked `consume`. `exchange` makes one over the connection's transmit.
+    entry #apply   writes a whole stream, consuming it
+  entry #send   serializes a message and posts it to the connection
+
+entry .Control   a conversation's next step, returned by a `react` or `exchange` handler for each message
+  detail
+      A `Control[state]` is the handler's verdict on an inbound message: whether to send
+      anything back, what the new state is, and whether the conversation goes on. The four
+      are `.Continue` (wait for the next message), `.Reply` (send a message, then wait),
+      `.Conclude` (send a message, then stop) and `.Terminate` (stop). A carried state of
+      `Unset` leaves the state unchanged, so `Continue()` is "nothing changes". `Continue`
+      and `Reply`, the two which keep the conversation open, are also `.Interactive`.
+
+      ```scala
+      import soundness.*
+      import codepages.utf8Codepage
+      import Control.*
+
+      val step: Control[Int] = Reply(t"ack", 2)
+      val quiet: Control[Int] = Continue()
+      val last: Control[Int] = Conclude(t"bye")
+      Terminate: Control[Int]
+      ```
+
+      The messages are serialized through `Transmissible` as the control is built, so a
+      `Reply` or `Conclude` holds its wire bytes as `Data`.
+  refer coaxial.react
+  refer coaxial.exchange
+  entry .Interactive   the marker of a control which keeps the conversation open: `Continue` and `Reply`
+  entry .Continue   wait for the next message, with a new state or `Unset` for no change
+    entry #state   the new state, or `Unset` to keep the current one
+  entry .Reply   send a message and wait for the next, with a new state or `Unset`
+    detail
+        `Reply(message, state)` takes any `Transmissible` message and serializes it at once;
+        the case class holds the resulting `Data`. The state defaults to `Unset`.
+    entry .apply   `Reply(message, state = Unset)` from any `Transmissible` message
+    entry #message   the reply's bytes
+    entry #state   the new state, or `Unset`
+  entry .Conclude   send a message and stop, with a final state or `Unset`
+    detail
+        `Conclude(message, state)` takes any `Transmissible` message and serializes it at
+        once. The loop sends it, updates the state, and ends; the final state is `react`'s
+        result.
+    entry .apply   `Conclude(message, state = Unset)` from any `Transmissible` message
+    entry #message   the final message's bytes
+    entry #state   the final state, or `Unset`
+  entry .Terminate   stop the conversation without sending anything
+      A `Control[Nothing]`, so it fits any state type.
+
+entry .Transmissible   how a message becomes bytes on the way out: `serialize` to a stream
+  detail
+      One call to `#serialize` yields the wire form of one message, as a fresh pull stream.
+      Transports with message framing (a UDP datagram, a WebSocket frame) may memoize the
+      stream into a single framed unit; byte-stream transports write it through the window,
+      zero-copy. Anything `transmit`, `Reply`, `Conclude` or `Transmitter#send` accepts is
+      `Transmissible`: `Data`, `Text` (through the `Codepage` in scope), a `Chain[Data]`, and
+      any value `Encodable in Text`.
+
+      ```scala
+      import soundness.*
+      import codepages.utf8Codepage
+
+      val ints: Int is Transmissible = summon[Text is Transmissible].contramap[Int](_.show)
+      ints.serialize(42).memoize   // the bytes of t"42"
+      ```
+
+      The typeclass is pure (it extends `Typeclass.Pure`), so an instance may be summoned
+      anywhere and captured freely.
+  refer coaxial.Ingressive
+  refer coaxial.transmit
+  entry .bytes   `Data is Transmissible`: the bytes themselves, as a single chunk
+      Bound exactly at `Data`: a subtype parameter would instantiate the frozen array at a
+      wildcard capture which cannot flow back, so a branded `Data` needs `.sizedBytes`.
+  entry .sizedBytes   `(Data & Sized[length]) is Transmissible`: a size-branded block transmits as the plain one
+  entry .stream   `Chain[Data] is Transmissible`: a chain of chunks transmits unchanged
+  entry .text   `Text is Transmissible`, through the `Codepage` in scope
+      `import codepages.utf8Codepage` (or another) is needed.
+  entry .encoder   any `Encodable in Text` value, encoded to text then through the `Codepage`
+      A `Port`, say, transmits as its decimal text.
+  entry #serialize   the wire form of one message, as a fresh pull stream
+  entry #contramap   an instance for another type, by mapping it to this one first
+      `textTransmissible.contramap[Int](_.show)` is an `Int is Transmissible`. The function
+      must be pure (`->`).
+
+entry .Ingressive   how bytes become a message on the way in: `deserialize` one framed message
+  detail
+      The inbound counterpart of `Transmissible`: `react` and `exchange` decode each inbound
+      message — one refill window of the connection's stream — through the `Ingressive` for
+      the handler's message type. A `Port` received over the wire is therefore a `Port`,
+      validated on arrival, rather than text to be checked later.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import charsets.utf8Charset
+
+      Ingressive.text.deserialize(t"hello".in[Data])              // t"hello"
+      Ingressive.decoder[Port].deserialize(t"443".in[Data]).number // 443
+      ```
+
+      An instance may capture (a `Charset`, a tactic), so `#map` returns one capturing this
+      instance and the function.
+  refer coaxial.Transmissible
+  refer coaxial.react
+  entry .bytes   `Data is Ingressive`: the bytes as received
+  entry .text   `Text is Ingressive`, decoded through the `Charset` in scope
+      `import charsets.utf8Charset` (or another) is needed.
+  entry .decoder   any `Decodable in Text` type, decoded from text through the `Charset`
+      A decoding failure is raised through the `Decodable`'s own tactic.
+  entry #deserialize   a message from its bytes
+  entry #map   an instance for another type, by mapping this one's result
+      `Ingressive.text.map[Int](_.length)` is an `Int is Ingressive`.
+
+entry .Packet   a received datagram: its bytes, and the sender's address and port
+  detail
+      What a UDP `listen` handler and a `subscribe` handler receive, and what
+      `Socket.Backend#exchangeUdp` returns. The sender is where a reply goes, which is why
+      `UdpResponse.Reply` and `Multicast.Reply.Unicast` need no address of their own; and for
+      a one-shot exchange it is how a caller checks the reply came from the right place.
+
+      ```scala
+      import soundness.*
+
+      val packet = Packet(t"ping".in[Data], ip"10.0.0.1", udp"domain")
+      packet.sender
+      ```
+  entry #data   the datagram's bytes, at most the `Socket.Option.DatagramSize` in effect
+  entry #sender   the sender's IPv4 or IPv6 address
+  entry #port   the sender's UDP port
+
+entry .UdpResponse   a UDP handler's answer to a datagram: reply to the sender, or ignore it
+    `Reply(data)` sends `data` as one datagram back to the packet's sender and port;
+    `Ignore` sends nothing. A UDP `listen` handler is `Packet => UdpResponse`.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import strategies.throwUnsafely
+    import threads.platformThreads
+    import probates.awaitProbate
+    import logging.silentLogging
+    import socketBackends.javaBaseSockets
+
+    supervise:
+      Port[Udp]().listen[Data](packet => UdpResponse.Reply(packet.data)):
+        ()
+    ```
+
+entry .DomainSocket   a Unix-domain socket, by the path of its socket file; servable and connectable
+  detail
+      A `DomainSocket(path)` is a socket on the local filesystem — `/var/run/docker.sock`,
+      a daemon's control socket — which can be served with `listen` (the file is created at
+      the path, which must not already exist), connected to for one request/response with
+      `transmit` and `react`, or held open as a `Duplex` with `duplex` and `session`. It takes
+      any path type (`Abstractable across Paths to Text`) or text, and gives the path back as
+      any path type with `#path`.
+
+      ```scala
+      import soundness.*
+
+      val docker = DomainSocket(t"/var/run/docker.sock")
+      docker.show                 // t"/var/run/docker.sock"
+      docker.inspect              // t"⇄/var/run/docker.sock"
+      docker.at(t"/info")         // a DomainSocket.Endpoint
+      ```
+
+      Unix-domain sockets exist on the JVM backend only: on Scala Native and WASI the
+      operations raise `Unsupported`. On the JVM, `listenConnections` serves one with raw
+      blocking streams and the peer's user, for a daemon which needs them. A domain socket
+      has no network interface, so `listenOn` and `duplex(…)(interface)` ignore theirs.
+  refer coaxial.DomainSocket.Endpoint
+  refer coaxial.listenConnections
+  refer coaxial.Bindable
+  entry .showable   renders the socket as its path
+  entry .inspectable   a debug rendering prefixed with `⇄`, marking a bidirectional endpoint
+      The path alone would be indistinguishable from any other path-like text, so the
+      rendering is `⇄/var/run/docker.sock`, in the spirit of `⌗8080` for a port.
+  entry .apply   `DomainSocket(path)` from any path type or text
+  entry .Endpoint   a socket paired with a request path: the address of a resource behind a domain socket
+    detail
+        `DomainSocket.Endpoint(socket, path)` — made with `socket.at(path)` — names a path
+        *within* the service a domain socket fronts, as an HTTP client over Docker's socket
+        addresses `/info`. It is the domain-socket analogue of a URL, for libraries which
+        route requests over domain sockets.
+    entry #socket   the socket
+    entry #path   the path within the service
+  entry #path   the socket file's path, as any path type (`Instantiable across Paths from Text`)
+      `socket.path[Path on Linux]`, say.
+  entry #at   `socket.at(path)`: a `DomainSocket.Endpoint` for a path within the service
+
+entry .Multicast   a multicast group and port, subscribed to with `subscribe` or served with `listen`
+  detail
+      `Multicast(group, port)` names a group by its IPv4 or IPv6 address and a UDP port. A
+      program subscribes to it: it joins the group on each suitable interface, receives the
+      group's datagrams, and may send to the group (an announcement) or back to one sender (a
+      response it asked for by unicast). The group is one address, hence one address family:
+      a protocol spoken over both IPv4 and IPv6 multicast, such as mDNS, subscribes to two
+      groups.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import threads.platformThreads
+      import probates.awaitProbate
+      import logging.silentLogging
+      import socketBackends.javaBaseSockets
+
+      val mdns = Multicast(ip"224.0.0.251", udp"mdns")
+      mdns.show   // t"224.0.0.251:5353"
+
+      supervise:
+        mdns.subscribe(packet => Multicast.Reply.Ignore):
+          summon[Multicast.Subscription].send(t"announcement".in[Data])
+      ```
+
+      The group's port is bound with address and port reuse, so several programs on one host
+      subscribe side by side. Supported by the JVM and Scala Native backends (with the
+      Native differences noted on `subscribe`); WASI has no multicast.
+  refer coaxial.subscribe
+  refer coaxial.Subscribable
+  entry .showable   renders the group as `address:port`, an IPv6 address in brackets
+  entry .Reply   a handler's verdict on a datagram: to the group, to the sender, or nothing
+      `Group(data)` answers to the whole group, the multicast norm, so every member learns
+      the answer; `Unicast(data)` answers the sender alone, for a response it asked for by
+      unicast; `Ignore` sends nothing.
+  entry .Subscription   the loaned handle on a joined group: `Socket.Service`'s `stop`, plus unprompted sends
+    detail
+        What `subscribe` lends to its block as a context value, and what a handler can reach
+        to send outside the request/response shape: an announcement on joining, a goodbye on
+        leaving, a response to something seen rather than received.
+    entry #send   `send(data)` to the whole group; `send(data, destination, port)` to one member
+        Both raise `Socket.Error(Transmit)` on failure.
+  entry .subscribable   `Multicast is Subscribable`, over the `Socket.Backend` and `Every[Socket.Option.Udp]` in scope
+      Joins through `Socket.Backend#joinMulticast` on the interfaces `.interfaces` chooses.
+  entry .bindable   `Multicast is Bindable`, derived from the `Subscribable`: `listen` on a group
+      For a member which only responds: the handler is `Packet => Multicast.Reply`, and
+      `listen`'s loan is a `Socket.Service` with no sends. `subscribe` is the loan with them.
+  entry .interfaces   the interfaces a subscription joins on: the one with a MAC address, or every suitable one
+      With `Unset`, every interface which is up and multicast-capable other than loopback,
+      which cannot carry multicast on Linux (a program's own datagrams come back through
+      `Socket.Option.MulticastLoop` instead); with a `MacAddress`, the interface which has it.
+  entry #group   the group's IPv4 or IPv6 address
+  entry #port   the group's UDP port
+
+entry .socketOptions   the socket options as givens to import by name, and factories for the valued ones
+  detail
+      Each flag option is a named given declared at its concrete type — `Socket.Option.NoDelay`
+      rather than `Socket.Option` — so the per-connection `Every[Socket.Option.Tcp]`, `.Udp`
+      and `.Domain` searches collect it for exactly the transports it applies to. Options
+      which carry a value are factories whose result is the concrete option, so a
+      `given Socket.Option.ReceiveBuffer = socketOptions.receiveBuffer(65536)` is collected
+      likewise. `import soundness.*` brings none in: each is imported by name, which is how a
+      program's socket policy is stated once and read from its imports.
+
+      ```scala
+      import soundness.*
+      import socketOptions.reuseAddressSocketOption
+      import socketOptions.keepAliveSocketOption
+      import socketOptions.broadcastSocketOption
+
+      given Socket.Option.Timeout = socketOptions.timeout(5000)
+
+      summon[Every[Socket.Option.Tcp]].values   // ReuseAddress, KeepAlive, Timeout(5000)
+      summon[Every[Socket.Option.Udp]].values   // ReuseAddress, Broadcast, Timeout(5000)
+      ```
+  refer coaxial.Socket.Option
+  entry .reuseAddressSocketOption   `SO_REUSEADDR`, for TCP, UDP and domain sockets
+  entry .reusePortSocketOption   `SO_REUSEPORT`, for TCP and UDP sockets, where the platform has it
+  entry .noDelaySocketOption   `TCP_NODELAY`, for TCP sockets
+  entry .keepAliveSocketOption   `SO_KEEPALIVE`, for TCP sockets
+  entry .broadcastSocketOption   `SO_BROADCAST`, for UDP sockets
+  entry .multicastLoopSocketOption   `IP_MULTICAST_LOOP`, for UDP and multicast sockets
+  entry .receiveBuffer   `receiveBuffer(bytes)`: a `Socket.Option.ReceiveBuffer`, to bind as a given
+  entry .sendBuffer   `sendBuffer(bytes)`: a `Socket.Option.SendBuffer`, to bind as a given
+  entry .linger   `linger(seconds)`: a `Socket.Option.Linger`; `linger()` disables lingering
+  entry .trafficClass   `trafficClass(value)`: a `Socket.Option.TrafficClass`, to bind as a given
+  entry .timeout   `timeout(milliseconds)`: a `Socket.Option.Timeout`, to bind as a given
+  entry .multicastHops   `multicastHops(count)`: a `Socket.Option.MulticastHops`, to bind as a given
+  entry .datagramSize   `datagramSize(bytes)`: a `Socket.Option.DatagramSize`, to bind as a given
+
+entry .socketBackends   the `Socket.Backend` of each platform, each a given to import by name
+  detail
+      Every socket operation goes through the one `Socket.Backend` in scope, and the choice is
+      never implicit: `import soundness.*` brings no backend in, and one is imported by name
+      from the component built for the platform. The names follow the house's provenance
+      words: `javaBase…` for a Java module, `scalaNative…` for Scala Native, `wasi…` for a
+      WASI interface.
+
+      ```scala
+      import soundness.*
+      import socketBackends.javaBaseSockets
+      ```
+
+      The three backends implement the same operations and differ in what the platform
+      offers: the JVM has everything; Scala Native has no Unix-domain sockets; WASI has TCP to
+      IPv4 literals only. A fourth-party backend is any `Socket.Backend` given.
+  refer coaxial.Socket.Backend
+  entry .javaBaseSockets   the JVM backend, over `java.net` and `java.nio.channels`; in `coaxial.jvm`
+      TCP, UDP, multicast and Unix-domain sockets. Each handle preserves the Java
+      representation its role needs — a TCP server is a `ServerSocket` (which honours a
+      `Timeout`), a Unix-domain server a `ServerSocketChannel`, a request/response exchange a
+      blocking `Socket` for TCP and a `SocketChannel` for a domain socket — so no per-role
+      behaviour is lost. Multicast sends go once through each joined interface. Bind and
+      connect failures are classified into `Bind.Error` and `Socket.Error` reasons from the
+      JDK's exceptions and messages.
+  entry .scalaNativeSockets   the Scala Native backend, over its javalib's `java.net` sockets; in `coaxial.native`
+      TCP, UDP and multicast. Scala Native's javalib has no `SocketChannel` or
+      `UnixDomainSocketAddress`, so `listenDomain`, `dialDomain` and `duplexDomain` raise
+      `Unsupported`; it declares but does not implement `DatagramSocket.setOption`, so
+      `ReusePort`, `MulticastLoop` and `MulticastHops` are not applied and a send to a group
+      goes once by the kernel's default multicast route. UDP binds use an explicit wildcard
+      address. TLS is a separate matter: `SecureEndpoint` on Native speaks to OpenSSL directly.
+  entry .wasiSockets   the WASI backend, over `wasi:sockets`; in `coaxial.wasi`
+      TCP only, and only to IPv4 literals (WASI offers no resolver here, so a hostname raises
+      `Socket.Error(Dns)`). A listener binds the IPv4 wildcard; `start-connect`/`accept` are
+      driven to completion by blocking on the socket's pollable; the network must be granted
+      by the host (`wasmtime run -S inherit-network`). Unix-domain sockets raise
+      `Unsupported`; UDP, multicast and TLS raise `Socket.Error`. The given is `inline`, so
+      the WIT calls expand where it is summoned, which needs the `wasiApis.wasiSocketsApi`
+      interface and the WASI facades on the classpath.
+
+entry .wasiApis   the WIT interface the WASI backend is typechecked against, as a given to import by name
+  detail
+      `wasiSockets` navigates the `wasi:sockets` world through xenophile's `Foreign` and
+      `call`, which consult a WIT interface for module ids, resource methods and parameter
+      types. That interface is the classpath resource `/coaxial/sockets.wit`, loaded by the
+      given here; it merges with the umbrella's `wasiApis` package alongside the other WASI
+      components' interfaces.
+  entry .wasiSocketsApi   the `WasiSocketsApi` given, loaded from the `/coaxial/sockets.wit` classpath resource
+
+entry .WasiSocketsApi   the type of the `wasi:sockets` WIT interface: `Interface in Wit at "/coaxial/sockets.wit"`
+    The type alias `wasiApis.wasiSocketsApi` provides, which the WASI backend's `Foreign`
+    navigation is typechecked against. In `coaxial.wasi` only.
+
+entry .query   a DNS query to a nameserver over UDP: one message out, its answer back; in `coaxial.dns`
+  detail
+      Two overloads, both extensions on an `Endpoint[Udp.Port]` naming the nameserver.
+      `endpoint.query(message: Dns.Message)` sends the message as one datagram from an
+      ephemeral port (`Socket.Backend#exchangeUdp`) and returns the reply, which must carry
+      the query's ID and its first question or it is some other exchange's and a
+      `Dns.Error(Mismatch(id))` is raised. `endpoint.query(name, rtype = Dns.Type.A)` asks
+      the common question — the records of `rtype` for `name`, with recursion requested,
+      under a fresh random ID — and returns the answering `Dns.Record`s.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import socketBackends.javaBaseSockets
+
+      val resolver = ip"9.9.9.9" on udp"domain"
+      val addresses = resolver.query(dns"example.com").map(_.rdata)
+      val mail = resolver.query(dns"example.com", Dns.Type.MX)
+      ```
+
+      The wait is bounded by a `Socket.Option.Timeout` in scope, or five seconds; a lost
+      datagram is a `Dns.Error(Timeout)`, and the caller decides whether to ask again — there
+      is no retransmission. Any other socket failure passes through as a `Socket.Error`. The
+      method needs a `Socket.Backend` and the `Every[Socket.Option.Udp]` in scope, and raises
+      `Dns.Error` and `Socket.Error`. The message and record types are urticose's `Dns`.
+      It is `query` rather than `lookup`, a name `soundness` reserves for anamnesis.
+  refer coaxial.Socket.Backend
+
+entry .Tls   the configuration of a TLS connection: trust and keys, verification, ALPN, versions, mutual auth
+  detail
+      A `Tls` value is the contextual configuration every `SecureEndpoint` connection and
+      every `SecurePort` listener is made with. The anonymous default given, `Tls()`, is
+      fully secure: the platform's trust store, hostname verification on, no ALPN offered
+      (preserving the plain-TLS handshake a `wss` peer expects), the platform's protocol
+      versions, and no client authentication. A richer policy is built with the fields, or
+      presented from a `TlsAcceptance` with its `tls(…)` and `keyed(…)` extensions.
+
+      ```scala
+      import soundness.*
+
+      val http: Tls = Tls(protocols = List(t"h2", t"http/1.1"))
+      val modern: Tls = Tls(versions = List(t"TLSv1.3"))
+      ```
+
+      The JVM `Tls` has five fields: `#context` (an `SSLContext`, or `Unset` for the JVM
+      default), `#verify`, `#protocols`, `#versions` and `#mutual`. The Scala Native `Tls` has
+      one, `#verify`: OpenSSL's context is built per connection from the system certificate
+      store, so there is nothing else to configure, and no ALPN, version restriction or
+      server-side TLS. `.keyed`, `.certificate` and `.fingerprint` — the key-material helpers
+      a server and a pinning client need — exist on the JVM only.
+  refer coaxial.TlsAcceptance
+  refer coaxial.SecureEndpoint
+  refer coaxial.SecurePort
+  entry .keyed   a `Tls` whose context presents a PKCS#12 keystore's key material; JVM only
+      `Tls.keyed(keystore, password)` is the configuration a `SecurePort` listens with (the
+      JVM's default context has no private key, and a server bound with it would fail every
+      handshake), or a client authenticating itself to a peer. Trust is the platform's
+      default — `TlsAcceptance().keyed(…)` presents the same material under any other
+      acceptance. The store's bytes are passed rather than a path, so the caller decides
+      where secrets live.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+
+      def keystore: Data = ???   // PKCS#12 bytes, from wherever secrets live
+      val server: Tls = Tls.keyed(keystore, t"secret")
+      ```
+  entry .certificate   the DER encoding of the keystore's first certificate under a private key; JVM only
+      The certificate a `SecurePort` bound with `.keyed(keystore, password)` presents, and so
+      what a client fingerprints and pins. `Unset` if the store holds no key entry.
+  entry .fingerprint   the SHA-256 digest of a certificate's DER encoding; JVM only
+      The identity `TlsAcceptance#pinning` compares, and what
+      `openssl x509 -fingerprint -sha256` prints. Thirty-two bytes.
+  entry #context   the `SSLContext` supplying trust and keys, or `Unset` for the JVM's default; JVM only
+  entry #verify   whether the peer's certificate is checked against the hostname (and, on Native, trusted at all)
+      On by default (RFC 2818 endpoint identification). Off only for a self-signed peer whose
+      certificate is already trusted out of band; a pinning `TlsAcceptance` turns it off
+      itself, since the pin names the peer. On Scala Native, off also disables certificate
+      verification altogether.
+  entry #protocols   the ALPN application protocols to offer, in preference order; JVM only
+      `List(t"h2", t"http/1.1")`, say. Empty offers no ALPN. The peer's selection is read
+      from `Duplex#alpnProtocol`.
+  entry #versions   the TLS protocol versions to allow (`TLSv1.3`, …); empty for the context's defaults; JVM only
+  entry #mutual   whether a `SecurePort` listening with this configuration demands a certificate of every client; JVM only
+      The client's context must then present one (`TlsAcceptance#keyed`); whether the one
+      presented is accepted is the listener's trust manager's decision.
+
+entry .TlsAcceptance   which peer configurations a TLS connection accepts: strict by default, relaxed only under permits
+  detail
+      A `TlsAcceptance` is the trust policy a TLS connection is judged by, resolved
+      contextually wherever one is made, mirroring gastronomy's cryptographic permits: the
+      strict default (`.strict`) needs no permission, while each relaxation is constructed
+      only under an erased `Permit` for the corresponding `Concession`, so a codebase's
+      tolerated weaknesses are auditable from its permit imports alone, at no runtime cost.
+      It is presented to coaxial's sockets as a `Tls` by the `.tls` and `.keyed` extensions,
+      so one policy can govern both the JDK's HTTP client and coaxial's own.
+
+      ```scala
+      import soundness.*
+      import cryptoPermits.permitUntrustedCertificates
+
+      val lenient: TlsAcceptance = TlsAcceptance().permitSelfSigned.permitHostnameMismatch
+      val tls: Tls = lenient.tls(protocols = List(t"h2"))
+      ```
+
+      Certificate-level criteria — trust anchors, expiry, self-signature, hostname
+      verification, revocation — are enforced per connection through a wrapping trust
+      manager and `SSLParameters`; only a relaxed acceptance pays for a custom trust manager,
+      and the strict default with no keys is exactly the platform's own context.
+      Protocol-level re-enablement (TLS 1.0/1.1, small key sizes) is different: JSSE treats
+      per-connection constraints as purely additional to the process-wide
+      `jdk.tls.disabledAlgorithms` property, so those are unlocked once, process-wide, with
+      `Trust.unlock`. Pinning (`#pinning`) needs no permit: a pin is a stronger identity check
+      than a chain to a public anchor. JVM only.
+  refer coaxial.Trust
+  refer coaxial.Tls
+  entry .strict   the default given: `TlsAcceptance()` — platform versions, strict trust, soft-fail revocation
+  entry .materialize   the JSSE `SSLContext` and `SSLParameters` an acceptance amounts to
+      An extension `acceptance.materialize()`: the context (the platform's for a strict
+      acceptance with no keys, otherwise one with the wrapping trust manager) and parameters
+      with the versions and the endpoint-identification algorithm set. For the JDK APIs which
+      take them.
+  entry .tls   presents an acceptance as a `Tls` for `SecureEndpoint`, optionally offering ALPN protocols
+      An extension `acceptance.tls(protocols = Nil)`: the materialized context, `verify` from
+      the acceptance's hostname setting, the versions, and the given ALPN protocols. No key
+      material: the peer is not authenticated to.
+  entry .keyed   presents a keystore's key material under an acceptance's trust, for a server or an authenticating client
+      An extension `acceptance.keyed(keystore, password, protocols = Nil, mutual = false)`.
+      What each end of a mutually-authenticated connection needs, since `Tls.keyed` alone
+      trusts the platform's anchors and `.tls` alone presents no certificate. With `mutual`,
+      a `SecurePort` bound with the result demands a certificate of every client, which this
+      acceptance then judges — a pinned one admitting exactly the pinned client.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+
+      def serverStore: Data = ???
+      def clientFingerprint: Data = ???
+
+      val listener: Tls =
+        TlsAcceptance().pinning(clientFingerprint).keyed(serverStore, t"secret", mutual = true)
+      ```
+  entry #versions   the TLS versions to allow, or `Nil` for the platform's default set
+  entry #trust   the certificate criteria, a `Trust`
+  entry #revocation   how revocation is checked: `Required`, `SoftFail` (the default) or `Unchecked`
+  entry #permitExpired   accepts an expired certificate chain; needs `Permit[Concession.ExpiredCertificate]`
+      `import cryptoPermits.permitUntrustedCertificates` grants it.
+  entry #permitSelfSigned   accepts a chain with no path to an anchor; needs `Permit[Concession.SelfSignedCertificate]`
+      `import cryptoPermits.permitUntrustedCertificates` grants it.
+  entry #permitHostnameMismatch   skips hostname verification; needs `Permit[Concession.UnverifiedHostname]`
+      `import cryptoPermits.permitUntrustedCertificates` grants it.
+  entry #requireRevocationChecks   fails a connection whose revocation status cannot be determined
+      Sets `revocation` to `Required`, where the default `SoftFail` tolerates an undetermined
+      status but not a revoked certificate.
+  entry #permitRevoked   accepts a revoked certificate; needs `Permit[Concession.UncheckedRevocation]`
+      `import cryptoPermits.permitUncheckedRevocation` grants it.
+  entry #trusting   trusts the given X.509 certificates as anchors, in place of the platform's
+  entry #pinning   accepts exactly the peer whose certificate has this `Tls.fingerprint`, and no other
+      The SSH known-hosts model, for a peer whose self-signed certificate was exchanged out
+      of band. A pinned chain is accepted on its leaf's digest alone — no anchor, validity or
+      hostname check, since the pin identifies the peer more precisely than any of them
+      could — and every other chain is rejected. Hostname verification is turned off. On a
+      listener (`keyed(…, mutual = true)`), the pin names the one client admitted, and no
+      issuers are named in the certificate request so a self-signed client offers its
+      certificate.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+
+      def certificate: Data = ???   // the peer's DER certificate, from `Tls.certificate`
+      val client: Tls = TlsAcceptance().pinning(Tls.fingerprint(certificate)).tls()
+      ```
+
+entry .Trust   the certificate criteria of a `TlsAcceptance`, and process-wide unlocking of deprecated TLS
+  detail
+      A `Trust` says which certificate chains are accepted beyond an intact, current chain to
+      a platform anchor: whether an `#expired` chain is, whether a `#selfSigned` one is,
+      whether the `#hostname` is checked, which `#anchors` replace the platform's, and which
+      one certificate is `#pinned`. `TlsAcceptance`'s `permit…`, `trusting` and `pinning`
+      methods build it; `.Strict` is the default. The companion also holds the `Version` and
+      `Revocation` vocabularies and `.unlock`. JVM only.
+  refer coaxial.TlsAcceptance
+  entry .Version   a TLS protocol version: `Tls12`, `Tls13`, and the deprecated `Tls10` and `Tls11`
+    detail
+        `TlsAcceptance#versions` lists the versions to allow. Allowing `Tls10` or `Tls11` is not
+        enough on its own: JSSE disables them process-wide, so `.unlock` must run first.
+    entry #id   the JSSE name: `TLSv1`, `TLSv1.1`, `TLSv1.2` or `TLSv1.3`
+  entry .Revocation   how revocation is checked: `Required`, `SoftFail` or `Unchecked`
+      `Required` fails a connection whose status cannot be determined; `SoftFail`, the
+      default, tolerates an undetermined status but rejects a revoked certificate; `Unchecked`
+      accepts even a revoked one, and needs `Permit[Concession.UncheckedRevocation]`.
+  entry .Strict   the default criteria: not expired, not self-signed, hostname checked, platform anchors, nothing pinned
+  entry .unlock   re-enables deprecated TLS versions process-wide; needs the `Tls10` and `Tls11` permits
+      `Trust.unlock(versions)` removes the versions from the `jdk.tls.disabledAlgorithms`
+      security property. It must run before any JSSE machinery is initialised — later calls
+      have no effect on contexts already created — and affects the whole process, which is
+      why it is an explicit call under `import cryptoPermits.permitLegacyTls` rather than a
+      per-connection setting.
+  entry #expired   whether an expired chain is accepted
+  entry #selfSigned   whether a chain with no path to an anchor is accepted
+  entry #hostname   whether the certificate is checked against the hostname
+  entry #anchors   the X.509 certificates trusted as anchors, or `Nil` for the platform's
+  entry #pinned   the SHA-256 fingerprint of the one certificate accepted, or `Unset`
+
+entry .SecureEndpoint   a `host:port` reached over TLS: the connectable counterpart of a plaintext `Endpoint[Tcp.Port]`
+  detail
+      `SecureEndpoint(host, port)` is connected to with `duplex` and `session`, under the `Tls`
+      in scope: its `Connectable` opens a TLS connection with SNI set to `host`, verifies the
+      peer's hostname unless `Tls#verify` is off, offers the `Tls#protocols` for ALPN and
+      restricts to the `Tls#versions`, completes the handshake, and presents the connection
+      as a `Duplex` whose `alpnProtocol` is what the peer selected. A handshake failure — a
+      certificate the trust policy rejects, a hostname mismatch — is
+      `Socket.Error(Handshake)`.
+
+      ```scala fuel
+      frame
+        label A plaintext TCP connection
+        code
+            locally:
+              import strategies.throwUnsafely
+              import logging.silentLogging
+              import internetAccess.online
+              import socketBackends.javaBaseSockets
+
+              Endpoint(ip"93.184.215.14", tcp"https").duplex: duplex =>
+                duplex.alpnProtocol   // Unset: no TLS, so no ALPN
+      frame
+        label The same host over TLS, under the default `Tls`
+        code
+            locally:
+              import strategies.throwUnsafely
+              import logging.silentLogging
+              import internetAccess.online
+              import socketBackends.javaBaseSockets
+
+              SecureEndpoint(t"example.com", 443).duplex: duplex =>
+                duplex.alpnProtocol   // Unset: the default configuration offers no ALPN
+      frame
+        label Offering ALPN protocols, and reading the peer's choice
+        code
+            locally:
+              import strategies.throwUnsafely
+              import logging.silentLogging
+              import internetAccess.online
+              import socketBackends.javaBaseSockets
+
+              given Tls = Tls(protocols = List(t"h2", t"http/1.1"))
+
+              SecureEndpoint(t"example.com", 443).duplex: duplex =>
+                duplex.alpnProtocol   // t"h2", if the peer speaks HTTP/2; else t"http/1.1"
+      ##
+      ```
+
+      On the JVM the connection is an `SSLSocket` from `Tls#context` (or the JVM default),
+      and the socket options and a local-interface bind are applied before connecting. On
+      Scala Native, which has no `javax.net.ssl`, the connection is an OpenSSL *connect BIO*
+      trusting the system default certificate store, with SNI and `SSL_set1_host` hostname
+      verification; a connect BIO opens its socket internally, so socket options and the
+      interface are ignored, no ALPN is offered, and every failure to resolve, connect or
+      handshake is `Socket.Error(Handshake)`. Not available on WASI. A host and a port are
+      taken as `Text` and `Int` rather than a typed endpoint because the host is a name for
+      SNI and certificate matching, not an address.
+  refer coaxial.Tls
+  refer coaxial.TlsAcceptance
+  refer coaxial.SecurePort
+  refer coaxial.duplex
+  entry .showable   renders the endpoint as `host:port`; JVM only
+  entry .connectable   `SecureEndpoint is Connectable`, under the `Tls` and `Every[Socket.Option.Tcp]` in scope
+      Resolves only with `Online` permission (`import internetAccess.online`), and is a
+      capability carrying that evidence, as `Connectable.tcpEndpoint` is.
+  entry #host   the hostname, used for SNI and certificate verification
+  entry #port   the port number
+
+entry .SecurePort   a TLS-secured listening TCP port: the server-side counterpart of `SecureEndpoint`; JVM only
+  detail
+      `SecurePort(port)` is served with `listen`, as a `Tcp.Port` is, under the `Tls` in scope —
+      whose context **must** carry the server's key material (`Tls.keyed` or
+      `TlsAcceptance#keyed`): the JVM's default context has no private key, and a server bound
+      with it would fail every handshake. Each accepted connection completes its handshake
+      before it is lent to the handler, so a client which fails authentication or negotiation
+      is reported as `Socket.Error(Handshake)` — ending only that connection's task, as any
+      other per-connection failure does — rather than surfacing as a truncated read. The
+      handler receives a `Duplex` whose `alpnProtocol` is the protocol negotiated from
+      `Tls#protocols`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import threads.platformThreads
+      import probates.awaitProbate
+      import logging.silentLogging
+      import socketBackends.javaBaseSockets
+
+      def keystore: Data = ???   // PKCS#12 bytes
+
+      given Tls = Tls.keyed(keystore, t"secret")
+
+      supervise:
+        SecurePort(tcp"8443").listen[Data](connection => connection.source.memoize):
+          ()
+      ```
+
+      With `Tls#mutual`, the listener demands a certificate of every client, and the context's
+      trust manager judges it: a `Tls` from a pinning `TlsAcceptance#keyed` admits exactly the
+      pinned client. Under TLS 1.3 a client finishes its handshake before the listener has
+      judged its certificate, so a refusal may reach the client as the listener closing the
+      connection without replying rather than as a handshake error.
+  refer coaxial.Tls
+  refer coaxial.SecureEndpoint
+  refer coaxial.listen
+  entry .bindable   `SecurePort is Bindable`, under the `Tls` and `Every[Socket.Option.Tcp]` in scope; handler `Duplex => Data`
+      Opens an `SSLServerSocket` from `Tls#context`, with the ALPN protocols, versions and
+      client-authentication demand applied; a bind failure is `Bind.Error`.
+  entry .showable   renders the port as `tls:8443`
+  entry #port   the TCP port
+
+entry .Connection   a raw Unix-domain connection: blocking Java streams and the peer's user; JVM only
+  detail
+      What `listenConnections` hands its handler: the blocking `InputStream` and
+      `OutputStream` of an accepted Unix-domain connection, for a consumer which must build a
+      subprocess `Stdio` (a `PrintStream` over the socket, streams handed to a child process)
+      rather than the platform-neutral `Duplex` that `listen` exposes — a daemon which runs
+      commands on behalf of a client, say. `#peer` is the user the operating system reports on
+      the other end (`SO_PEERCRED`), which is the kernel's answer rather than the client's
+      claim, and so usable as an authentication check.
+
+      ```scala
+      import soundness.*
+
+      def check(connection: Connection): Boolean =
+        connection.peer == t"root"
+      ```
+  refer coaxial.listenConnections
+  refer coaxial.DomainSocket
+  entry #peer   the connecting user's principal name, as the kernel reports it, or `Unset` where the platform offers none
+  entry #source   a fresh single-use pull stream over the read side
+      `connection.source()` needs a `Buffering` and a `Tactic[Truncation.Error]`, which the
+      stream retains.
+  entry #reader   the raw `java.io.InputStream`
+  entry #writer   the raw `java.io.OutputStream`
+  entry #close   closes both streams, ignoring failures
+
+entry .listenConnections   serves a Unix-domain socket with raw `Connection`s, for a daemon which needs Java streams; JVM only
+  detail
+      `domainSocket.listenConnections(handler, ownerOnly = false)(block)` is `listen` for a
+      `DomainSocket` whose handler takes a `Connection` — the blocking stream pair and the
+      peer's user — rather than a `Duplex`. The accept loop and per-connection supervision
+      are `listen`'s: each connection is served on its own `async` task (so a handler failure
+      or a dropped client ends only that task, and the connection is always closed), a failure
+      to accept skips one iteration, and the running server is lent to `block` as a
+      `Socket.Service` and stopped when the block ends.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import threads.platformThreads
+      import probates.awaitProbate
+      import logging.silentLogging
+
+      supervise:
+        DomainSocket(t"/tmp/daemon.sock").listenConnections(_.close(), ownerOnly = true):
+          ()
+      ```
+
+      With `ownerOnly`, the socket file is made mode 0600 as soon as it is bound — a bound
+      socket otherwise takes the process umask, typically 0755 — so that only this user can
+      connect; a filesystem without POSIX permissions is left as it is. The handler runs on a
+      task, so it may capture only durable capabilities. Needs a `Monitor`, a `Probate` and a
+      `Socket.Event is Loggable`; a bind failure is thrown rather than raised.
+  refer coaxial.Connection
+  refer coaxial.listen
+
+entry .streamsDuplex   a `Duplex` over a blocking `InputStream`/`OutputStream` pair; JVM only
+    `streamsDuplex(in, out, negotiated = Unset)(shutdown)` presents the shape a socket with
+    no `SocketChannel` exposes — an `SSLSocket`, or a child process's pipes — as a `Duplex`:
+    the read side blocks in `read` and ends at EOF, each send writes through and flushes,
+    `close()` runs `shutdown`, and `alpnProtocol` is `negotiated`. `shutdown` is a pure
+    function (`() -> Unit`), so the duplex is capture-free. The TLS endpoints and the JVM
+    backend's TCP accept are built on it; a library bridging another Java stream pair into
+    coaxial's API uses it directly.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+
+    def process: java.lang.Process = ???   // a child process, say
+    val duplex: Duplex =
+      streamsDuplex(process.getInputStream.nn, process.getOutputStream.nn)(() => process.destroy())
+    ```

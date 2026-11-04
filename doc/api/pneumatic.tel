@@ -1,0 +1,640 @@
+tel 1.0
+
+base pneumatic
+import soundness
+
+info   compression formats as types: DEFLATE, gzip, zlib, Brotli, XZ, LZMA2 and LZW, over values and streams
+detail
+    _Pneumatic_ compresses and decompresses bytes through one pair of verbs, `compress` and
+    `decompress`, for every format it knows. A format is a **type** — `Gzip`, `Zlib`,
+    `Deflate`, `Brotli`, `Xz`, `Lzma2` or `Lzw` — and the verb takes it as a type argument,
+    so the format is checked where the code compiles rather than parsed from a string or a
+    flag at runtime. Each format's companion holds a `Compression` given, which is the
+    typeclass behind the verbs, and nothing else about a codec need be constructed, fed or
+    finished by hand.
+
+    The same verbs work on a whole `Data` value, on a lazy `Chain[Data]` of chunks, and on a
+    streaming `Stream[Data] over Credit`, where they become pipeline stages: the bytes are
+    transformed as they flow, and nothing larger than the pipeline's buffers is held (except
+    by the formats whose algorithm needs the whole value, which `Brotli` does). All three forms
+    are driven through one `Duct` per format, so they agree byte for byte and interoperate
+    freely: a value compressed as a whole decompresses as a stream, and a stream's output
+    decompresses as a value.
+
+    ```scala
+    import soundness.*
+    import charsets.utf8Charset
+    import textSanitizers.skipSanitizer
+    import strategies.throwUnsafely
+
+    val payload: Data = t"the quick brown fox jumps over the lazy dog".in[Data]
+    val compressed: Data = payload.compress[Gzip]
+    compressed.decompress[Gzip].utf8   // t"the quick brown fox jumps over the lazy dog"
+
+    payload.compress[Xz].decompress[Xz] == payload   // true
+    ```
+
+    The pipeline form puts the compressor and decompressor on either side of a file, a socket
+    or an HTTP body. Here a stream grows one stage at a time, from reading the bytes to
+    writing them compressed:
+
+    ```scala fuel
+    frame
+      label The bytes, as a stream of chunks
+      code
+          val source: Stream[Data] over Credit = payload.stream
+    frame
+      label Compressed as they flow
+      code
+          val source: Stream[Data] over Credit = payload.stream.compress[Gzip]
+    frame
+      label Decompressed again, downstream of the compressor
+      code
+          val source: Stream[Data] over Credit = payload.stream.compress[Gzip].decompress[Gzip]
+    frame
+      label Read back as text at the end of the pipeline
+      code
+          val text: Text = payload.stream.compress[Gzip].decompress[Gzip].read[Text]
+    ##
+    ```
+
+    Every pipeline stage takes a `Buffering` contextual value, which sizes the duct's buffers;
+    `Buffering.standard` is in implicit scope, so no import is needed unless another policy is
+    wanted.
+
+    The formats, and what each is for:
+
+    - `Deflate` is the raw DEFLATE bit stream, `Zlib` the same stream in its two-byte header and
+      Adler-32 trailer, and `Gzip` the same stream in the header and CRC-32 trailer of a `.gz`
+      file. They are the formats of HTTP content encoding, ZIP entries and PNG chunks, and the
+      fastest of the set. `gzip` and `gunzip` are one-shot extensions on `Data` for the
+      commonest of them.
+    - `Brotli` compresses smaller than DEFLATE at comparable speed, and is the modern web's
+      content encoding. `Brotli.prefix` and `Brotli.continuation` encode a value relative to a
+      base the receiver already holds.
+    - `Xz` is the high-ratio codec, LZMA2 in the `.xz` container with a CRC-64 check, matching
+      the `xz` command-line tool; `Lzma2` is the same codec without the container, as `Deflate`
+      is to `Gzip`. Both take a preset from 0 (fastest) to 9 (smallest), defaulting to 6.
+    - `Lzw` is the compression of TIFF and PDF streams, which the JDK does not implement.
+
+    Corrupt or truncated input is reported by the decoders as a thrown `IllegalStateException`
+    whose message begins _the compressed data is corrupt_, _the XZ data is corrupt_, _the
+    LZMA2 data is corrupt_ or _the Brotli data is corrupt_; there is no `Error` type to handle
+    through a `Tactic`, so a decoder reading untrusted input is wrapped in a `safely` or a
+    `try` at the call site.
+
+    The library is one package in several components, so a consumer of one format need not
+    compile the others:
+
+    - `pneumatic.core` — `Compression`, `Compressor`, the `compress`/`decompress` extensions,
+      and the pure-Scala DEFLATE engines ported from JZlib. Every platform.
+    - `pneumatic.flate` — `Deflate`, `Gzip`, `Zlib`, `gzip` and `gunzip`. It is compiled twice:
+      on the JVM over `java.util.zip` (native zlib and its CRC-32 intrinsics), and for Scala.js,
+      Scala Native and WASI over the pure-Scala engines in `core`. The output of the two is
+      byte-identical, and the pure engines are exercised by the JVM test suite as well.
+    - `pneumatic.brotli` — `Brotli`, with its 122 KB static dictionary.
+    - `pneumatic.lzma` — `Xz` and `Lzma2`.
+    - `pneumatic.lzw` — `Lzw`.
+
+    Everything is exported to the `soundness` umbrella, so `import soundness.*` brings in the
+    formats and the verbs, and every `Compression` given resolves through its format's
+    companion without an import.
+
+refer pneumatic.Compression
+refer pneumatic.compress
+refer pneumatic.decompress
+refer pneumatic.Gzip
+refer pneumatic.Brotli
+refer pneumatic.Xz
+
+entry .Compression   the typeclass a compression format implements: a compressor and a decompressor duct
+  detail
+      `format is Compression` is what `compress[format]` and `decompress[format]` summon. A
+      format is a type extending `Compressor`, and its companion holds the given: `Gzip.compression`,
+      `Zlib.compression`, `Deflate.compression`, `Brotli.compression`, `Xz.compression`,
+      `Lzma2.compression` and `Lzw.compression`, each in implicit scope through the companion.
+
+      The typeclass has two abstract members, `#compressor` and `#decompressor`, each a factory
+      for a fresh `Duct[Data, Data]` stage; the `Chain` forms `#compress` and `#decompress` are
+      derived from them by driving the chunks through the same duct, which is how the
+      whole-value, chain and stream forms are kept byte-for-byte identical. A format with a
+      cheaper chunk-by-chunk driver (`Xz`, `Lzma2`, `Lzw`, `Brotli`) overrides the two derived
+      members, but the contract is the same.
+
+      A new format is a sealed trait and a companion given:
+
+      ```scala
+      import soundness.*
+
+      sealed trait Identity extends Compressor
+
+      object Identity:
+        given compression: Identity is Compression:
+          def compressor()(using Buffering): (Duct[Data, Data] {
+            type Transport = Credit
+            type Upstream = Credit })^ =
+            Deflate.compression.compressor()
+
+          def decompressor()(using Buffering): (Duct[Data, Data] {
+            type Transport = Credit
+            type Upstream = Credit })^ =
+            Deflate.compression.decompressor()
+      ```
+
+      The same bytes, under each format in turn:
+
+      ```scala
+      import soundness.*
+      import charsets.utf8Charset
+
+      val payload: Data = (t"the quick brown fox " * 40).in[Data]
+      ```
+
+      ```scala fuel
+      frame
+        label The fastest: raw DEFLATE
+        code
+            payload.compress[Deflate].length
+      frame
+        label In the gzip framing a `.gz` file carries
+        code
+            payload.compress[Gzip].length   // ten bytes of header and eight of trailer more
+      frame
+        label Brotli: smaller, at a similar speed
+        code
+            payload.compress[Brotli].length
+      frame
+        label XZ: the smallest, at the highest cost
+        code
+            payload.compress[Xz].length
+      ##
+      ```
+  refer pneumatic.Compressor
+  refer pneumatic.compress
+  refer pneumatic.decompress
+  entry #Self   the format this instance serves, a subtype of `Compressor`
+  entry #compress   a lazy chain of chunks, compressed chunk by chunk
+      `compression.compress(chain)` is what `chain.compress[format]` calls. The default
+      implementation adapts the chain to a stream, runs it through `#compressor`, and yields one
+      output chunk per refill of the duct; the result is a lazy `Chain[Data]`, so nothing is
+      compressed until it is consumed. The chunk boundaries of the output bear no relation to
+      those of the input.
+  entry #decompress   a lazy chain of compressed chunks, decompressed chunk by chunk
+      `compression.decompress(chain)` is what `chain.decompress[format]` calls, through
+      `#decompressor`. Input may be split at any byte boundary: a gzip header or an LZMA2 chunk
+      header fed one byte at a time is reassembled by the stage. Corrupt input throws
+      `IllegalStateException` when the chain is forced, not when it is built.
+  entry #compressor   a fresh compressing `Duct[Data, Data]` stage, for a streaming pipeline
+      The factory `stream.compress[format]` and `data.compress[format]` use. It takes a
+      `Buffering` and returns a duct whose `Transport` and `Upstream` are both `Credit`: demand
+      passes through unchanged, since a compression ratio cannot be known ahead, and the duct's
+      own bounded buffer absorbs expansion. Each call makes a new duct with its own state, so
+      a duct is never shared between two streams.
+  entry #decompressor   a fresh decompressing `Duct[Data, Data]` stage, for a streaming pipeline
+      The factory `stream.decompress[format]` and `data.decompress[format]` use, taking a
+      `Buffering`. The DEFLATE family stops at the end of its stream and consumes a gzip
+      trailer without verifying it; `Xz` verifies the CRC-32, CRC-64 or SHA-256 check of every
+      block, and a truncated stream is an error.
+
+entry .Compressor   the marker type every compression format extends
+    `Deflate`, `Gzip`, `Zlib`, `Brotli`, `Xz`, `Lzma2` and `Lzw` are each a `sealed trait
+    extends Compressor`, with no instances: a format is named only as a type argument, as in
+    `compress[Gzip]`, and the bound `format <: Compressor` on the verbs keeps an unrelated type
+    out of that position. The format's behaviour lives entirely in its `Compression` given.
+
+entry .compress   `value.compress[Format]`: compresses a value, a chain of chunks or a stream
+  detail
+      Three extension methods share the name, chosen by the receiver:
+
+      - on a `Data`, the whole value is compressed through the format's duct and returned as a
+        `Data`;
+      - on a `Chain[Data]`, a lazy chain of chunks is returned, compressed as it is forced;
+      - on a `Stream[Data] over Credit`, the format's compressor becomes a stage of the
+        pipeline, and the result is another `Stream[Data] over Credit`. The receiver is
+        consumed: it may not be read again after the stage is attached.
+
+      Each needs a `format is Compression`, found in the format's companion, and the `Data` and
+      `Stream` forms a `Buffering`, for which `Buffering.standard` is in implicit scope.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val payload: Data = Data(1, 1, 2, 3, 5, 8, 13, 21, 34)
+      val whole: Data = payload.compress[Gzip]
+      val chunks: Chain[Data] = Chain(payload).compress[Gzip]
+      val stream: Stream[Data] over Credit = payload.stream.compress[Gzip]
+
+      chunks.flat.to[List] == whole.to[List]   // true: the forms agree byte for byte
+      ```
+
+      An explicit XZ or LZMA2 preset, or an LZW `earlyChange` setting, is not expressible
+      through the verb: `Xz.compress(chain, preset)`, `Xz.compressor(preset)`,
+      `Lzma2.compress(chain, preset)` and `Lzw.compress(chain, earlyChange)` take the
+      parameter directly.
+  refer pneumatic.decompress
+  refer pneumatic.Compression
+
+entry .decompress   `value.decompress[Format]`: decompresses a value, a chain of chunks or a stream
+  detail
+      The inverse of `compress`, with the same three receivers: a `Data` decompresses to a
+      `Data`, a `Chain[Data]` to a lazy `Chain[Data]`, and a `Stream[Data] over Credit` gains
+      the format's decompressor as a stage, consuming the receiver. Each needs a `format is
+      Compression` from the format's companion, and the `Data` and `Stream` forms a `Buffering`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val payload: Data = Data(1, 1, 2, 3, 5, 8, 13, 21, 34)
+      payload.compress[Brotli].decompress[Brotli] == payload   // true
+      payload.compress[Brotli].stream.decompress[Brotli].read[Data] == payload
+      ```
+
+      The forms interoperate: what `compress` produced as a whole decompresses through a
+      stream, and the other way round. Input which is not in the named format, is corrupt, or
+      is truncated throws an `IllegalStateException` — when the `Data` form returns, or when
+      the chain or stream is forced — with a message naming the format and the fault; a
+      decoder over untrusted bytes is wrapped in `safely` or a `try`. Raw `Lzma2` carries no
+      dictionary size, so `decompress[Lzma2]` assumes the preset-6 dictionary of 8 MiB;
+      `Lzma2.decompress(chain, dictSize)` takes another.
+  refer pneumatic.compress
+  refer pneumatic.Compression
+
+entry .Deflate   the raw DEFLATE stream, with no header or checksum
+  detail
+      `Deflate` names the bare DEFLATE bit stream of RFC 1951: the compressed blocks alone,
+      with none of the framing `Zlib` and `Gzip` put around them. It is the form ZIP entries,
+      PNG chunks and HTTP's `deflate` content encoding (in practice) carry, and the one to use
+      when the container supplies its own length and checksum.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val payload: Data = Data(1, 1, 2, 3, 5, 8, 13, 21, 34)
+      payload.compress[Deflate].decompress[Deflate] == payload   // true
+      ```
+
+      The deflater has a single compression level, zlib's default of 6: there is no parameter
+      to choose another. On the JVM the stream is produced by `java.util.zip`; elsewhere by
+      the pure-Scala port in `pneumatic.core`, with byte-identical output. A corrupt stream
+      throws `IllegalStateException`, _the compressed data is corrupt: …_, as it is read.
+  refer pneumatic.Zlib
+  refer pneumatic.Gzip
+  entry .compression   the `Deflate is Compression` given, in implicit scope through the companion
+      Its compressor is a raw deflater and its decompressor a raw inflater, each a
+      `Duct[Data, Data]` over `Credit`, built fresh for every stream and needing a `Buffering`.
+
+entry .Gzip   DEFLATE in the framing of a `.gz` file: header, CRC-32 and length trailer
+  detail
+      `Gzip` is the format of `.gz` files, of `tar.gz` archives and of HTTP's `gzip` content
+      encoding (RFC 1952): a ten-byte header, a raw DEFLATE stream, then the CRC-32 and length
+      of the original bytes. Compressing writes the minimal header, with no name, comment or
+      timestamp; decompressing accepts any header, including the optional extra, name, comment
+      and header-checksum fields, consumes the trailer and does not verify it.
+
+      ```scala
+      import soundness.*
+      import charsets.utf8Charset
+      import textSanitizers.skipSanitizer
+      import strategies.throwUnsafely
+
+      val payload: Data = t"the quick brown fox jumps over the lazy dog".in[Data]
+      payload.compress[Gzip].decompress[Gzip].utf8   // t"the quick brown fox jumps over the lazy dog"
+      payload.stream.compress[Gzip].decompress[Gzip].read[Text]
+      ```
+
+      The stream decompressor reassembles a header or trailer however the input is chunked, so
+      a gzip stream arriving a byte at a time decodes. `gzip` and `gunzip` are the one-shot
+      extensions on `Data` for the same transformation. On the JVM the DEFLATE stream and the
+      CRC-32 come from `java.util.zip`; elsewhere from the pure-Scala port, byte-identically.
+  refer pneumatic.gzip
+  refer pneumatic.gunzip
+  refer pneumatic.Deflate
+  entry .compression   the `Gzip is Compression` given, in implicit scope through the companion
+      Its compressor writes the header, the raw DEFLATE stream and the CRC-32 and size trailer;
+      its decompressor parses the header with a small state machine ahead of the inflater and
+      skips the eight-byte trailer after it finishes. Each is a `Duct[Data, Data]` over
+      `Credit` needing a `Buffering`.
+
+entry .Zlib   DEFLATE in the zlib wrapper: a two-byte header and an Adler-32 trailer
+  detail
+      `Zlib` is the format of RFC 1950, the deflater's own framing: two bytes declaring the
+      method and window, the DEFLATE stream, and an Adler-32 checksum of the original bytes. It
+      is the compression inside PNG's `IDAT` chunks, of git's loose objects and packfile
+      entries, and of PDF's `FlateDecode` streams.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val payload: Data = Data(1, 1, 2, 3, 5, 8, 13, 21, 34)
+      payload.compress[Zlib].decompress[Zlib] == payload   // true
+      ```
+
+      Besides the `Compression` given, `.inflate` decodes one zlib stream which begins at an
+      offset in a larger value and reports how many bytes it consumed, for the containers
+      which concatenate zlib streams without framing them.
+  refer pneumatic.Deflate
+  refer pneumatic.Gzip
+  entry .compression   the `Zlib is Compression` given, in implicit scope through the companion
+      Its compressor and decompressor are the deflater and inflater with the zlib wrapper
+      enabled, each a `Duct[Data, Data]` over `Credit` needing a `Buffering`.
+  entry .inflate   inflates the one zlib stream starting at an offset, with the count of bytes it consumed
+      `Zlib.inflate(data, offset)` decodes the zlib stream which begins at `offset` in `data`
+      and returns a pair: the decompressed bytes, and the number of compressed bytes the stream
+      occupied, so the next thing in `data` can be found. This is the shape git's packfiles
+      have — object after object, each a zlib stream, with no length recorded between them —
+      and is what a packfile reader needs where `decompress[Zlib]` would decode the first
+      stream and discard the rest.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val first: Data = Data(1, 2, 3).compress[Zlib]
+      val second: Data = Data(4, 5, 6).compress[Zlib]
+      val packed: Data = Chain(first, second).flat.to[Array]
+
+      val (one, consumed) = Zlib.inflate(packed, 0)
+      val (two, _) = Zlib.inflate(packed, consumed)
+      one.to[List] == List[Byte](1, 2, 3) && two.to[List] == List[Byte](4, 5, 6)
+      ```
+
+      A stream which ends before its data is complete throws `IllegalStateException`, _the
+      compressed data is truncated_.
+
+entry .gzip   `data.gzip`: a whole value compressed as gzip, in one call
+    An extension on `Data` which compresses the whole value in the `Gzip` format and returns
+    the result as one `Data`; `data.compress[Gzip]` is the same transformation through the
+    duct. It needs nothing in scope. On the JVM it runs over `java.util.zip`, elsewhere over
+    the pure-Scala deflater, so it is available on every platform; `bitumen` uses it to gzip a
+    whole tar archive.
+
+    ```scala
+    import soundness.*
+
+    val payload: Data = Data(1, 1, 2, 3, 5, 8, 13, 21, 34)
+    payload.gzip.gunzip == payload   // true
+    ```
+
+entry .gunzip   `data.gunzip`: a whole gzip value decompressed, in one call
+    An extension on `Data` which decompresses a whole `Gzip` value and returns the original
+    bytes as one `Data`, with no contextual values needed; `data.decompress[Gzip]` is the same
+    transformation through the duct. Input which is not gzip throws `IllegalStateException`.
+
+entry .Xz   LZMA2 in the `.xz` container, with a CRC-64 check: what the `xz` tool produces
+  detail
+      `Xz` is the high-ratio codec: the LZMA2 algorithm inside the `.xz` container of XZ Utils,
+      as a pure-Scala port of the public-domain algorithm, so it runs on every platform. A
+      value compressed with the default preset decodes with the `xz` command-line tool and the
+      tool's output decodes here, including streams it wrote with a CRC-32, SHA-256 or no
+      check; the check of every block is verified on decoding, so a corrupted payload is
+      detected. The compressor writes a CRC-64 check, as `xz` does by default.
+
+      ```scala
+      import soundness.*
+      import charsets.utf8Charset
+      import strategies.throwUnsafely
+
+      val payload: Data = (t"the quick brown fox " * 40).in[Data]
+      payload.compress[Xz].decompress[Xz] == payload   // true
+      payload.compress[Xz].length < payload.length     // true
+      ```
+
+      The preset, 0 to 9, trades speed for ratio: 0 to 3 use a fast greedy encoder and 4 to 9
+      a price-based one which weighs every candidate match, and a higher preset also means a
+      larger dictionary, from 256 KiB at preset 0 to 64 MiB at preset 9. `compress[Xz]` uses
+      `.DefaultPreset`, 6; `.compress` and `.compressor` take a preset of the caller's choice.
+      The encoder is streaming and bounded in memory: it buffers at most one dictionary's worth
+      of input, emits each as a self-contained block, and closes the stream with its index and
+      footer, so a long input becomes a multi-block `.xz` stream. The decoder is a streaming
+      state machine too, and decompresses a 4 MB payload at about the speed of the reference
+      Java implementation.
+
+      `Lzma2` is the same codec without the container framing, standing to `Xz` as `Deflate`
+      stands to `Gzip`. Corrupt input throws `IllegalStateException`: _the data is not in XZ
+      format: bad magic bytes_ for something which is not `.xz` at all, _the XZ data is
+      corrupt: integrity check failed_ for a check mismatch, and _the XZ data is corrupt:
+      truncated_ for a stream which ends early. A stream using a filter other than LZMA2 (the
+      BCJ branch filters, delta) throws _this XZ stream uses an unsupported filter_.
+  refer pneumatic.Lzma2
+  refer pneumatic.Compression
+  entry .DefaultPreset   the preset `compress[Xz]` uses: 6, the `xz` tool's default
+      An `inline val` of 6: an 8 MiB dictionary and the price-based encoder, within a few
+      percent of the `xz` tool's ratio on text and ahead of it on repetitive data.
+  entry .compression   the `Xz is Compression` given, in implicit scope through the companion
+      Its compressor encodes at `.DefaultPreset` with a CRC-64 check, and its decompressor
+      accepts any check type and verifies it. The `Chain` forms drive an engine chunk by chunk
+      rather than through the duct, with the same output.
+  entry .compressor   a compressing duct at an explicit preset, 0 to 9
+      `Xz.compressor(preset)` is the streaming stage `compress[Xz]` would use, at the chosen
+      preset instead of 6, for a pipeline built with `viaDuct`. It needs a `Buffering`. A preset
+      outside 0 to 9 is clamped.
+  entry .compress   compresses a chain of chunks at an explicit preset, 0 to 9
+      `Xz.compress(chain, preset)` is `chain.compress[Xz]` at the chosen preset: a lazy
+      `Chain[Data]` of `.xz` bytes, which decodes with `decompress[Xz]`, since the container
+      records everything the decoder needs.
+
+      ```scala
+      import soundness.*
+      import charsets.utf8Charset
+      import strategies.throwUnsafely
+
+      val payload: Data = (t"the quick brown fox " * 40).in[Data]
+      Xz.compress(Chain(payload), 1).decompress[Xz].flat.to[List] == payload.to[List]
+      ```
+  entry .decompress   decompresses a chain of `.xz` chunks
+      `Xz.decompress(chain)` is `chain.decompress[Xz]` as a method on the companion, for code
+      which holds the format as a value rather than a type argument. The check type and
+      dictionary size are read from the stream.
+
+entry .Lzma2   raw LZMA2 with no container: the codec inside `.xz`, as `Deflate` is to `Gzip`
+  detail
+      `Lzma2` is the chunked LZMA stream which `.xz` carries, without the container's magic
+      bytes, block headers, index and checks: each chunk declares its own uncompressed and
+      compressed sizes and whether the dictionary, state and properties reset at its start,
+      and a control byte of zero ends the stream. It is the form to use inside a container of
+      one's own, or for a format (such as 7z) which frames LZMA2 itself.
+
+      ```scala
+      import soundness.*
+      import charsets.utf8Charset
+      import strategies.throwUnsafely
+
+      val payload: Data = (t"the quick brown fox " * 40).in[Data]
+      payload.compress[Lzma2].decompress[Lzma2] == payload   // true
+      ```
+
+      What the container would have recorded, the caller must know: a raw LZMA2 stream does
+      not say which dictionary size it was encoded with, so `decompress[Lzma2]` assumes the
+      dictionary of `.DefaultPreset` (8 MiB), and a stream encoded at another preset with
+      `.compress` or `.compressor` is decoded with `.decompress` or `.decompressor` given the
+      dictionary size that preset used: 256 KiB, 1 MiB, 2 MiB, 4 MiB, 4 MiB, 8 MiB, 8 MiB,
+      16 MiB, 32 MiB and 64 MiB for presets 0 to 9. A size too small for the stream's
+      backward references fails as corrupt, _the LZMA data is corrupt: invalid match distance_.
+
+      Unlike `Xz`, the raw encoder buffers its whole input before encoding, since there is no
+      block framing to segment it by; the decoder is incremental and holds no more than one
+      chunk's compressed payload. Corrupt input throws `IllegalStateException` with a message
+      beginning _the LZMA2 data is corrupt_.
+  refer pneumatic.Xz
+  entry .UncompressedSizeMax   the most uncompressed bytes one LZMA2 chunk may carry: 2 MiB
+  entry .CompressedSizeMax   the most compressed bytes one LZMA chunk may carry: 64 KiB
+  entry .DefaultPreset   the preset `compress[Lzma2]` uses, and whose 8 MiB dictionary `decompress[Lzma2]` assumes: 6
+  entry .compression   the `Lzma2 is Compression` given, in implicit scope through the companion
+      Its compressor encodes at `.DefaultPreset` and its decompressor assumes that preset's
+      8 MiB dictionary. The `Chain` forms drive an engine chunk by chunk rather than through the
+      duct, with the same output.
+  entry .compressor   a compressing duct at an explicit preset, 0 to 9
+      `Lzma2.compressor(preset)` is the streaming stage `compress[Lzma2]` would use, at the
+      chosen preset, for a pipeline built with `viaDuct`; it needs a `Buffering`. Its output
+      must be decoded with the dictionary size of that preset.
+  entry .compress   compresses a chain of chunks at an explicit preset, 0 to 9
+      `Lzma2.compress(chain, preset)`: a lazy `Chain[Data]` of raw LZMA2, to be decoded with
+      `.decompress(chain, dictSize)` given the preset's dictionary size, which the stream does
+      not record.
+
+      ```scala
+      import soundness.*
+      import charsets.utf8Charset
+      import strategies.throwUnsafely
+
+      val payload: Data = (t"the quick brown fox " * 40).in[Data]
+      val encoded: Chain[Data] = Lzma2.compress(Chain(payload), 1)
+      Lzma2.decompress(encoded, 1 << 20).flat.to[List] == payload.to[List]   // preset 1: 1 MiB
+      ```
+  entry .decompressor   a decompressing duct for a stream encoded with a known dictionary size
+      `Lzma2.decompressor(dictSize)` is the streaming stage `decompress[Lzma2]` would use,
+      with the dictionary size in bytes the producer used instead of the assumed 8 MiB; it
+      needs a `Buffering`.
+  entry .decompress   decompresses a chain of raw LZMA2 chunks with a known dictionary size
+      `Lzma2.decompress(chain, dictSize)` decodes a stream produced at a preset other than 6,
+      given that preset's dictionary size in bytes; `chain.decompress[Lzma2]` is the same call
+      with 8 MiB.
+
+entry .Lzw   the LZW compression of TIFF and PDF streams, written from the specification
+  detail
+      `Lzw` is Lempel-Ziv-Welch as TIFF's compression scheme 5 and PDF's `LZWDecode` filter
+      define it: 8-bit input symbols, MSB-first codes starting at 9 bits and widening to 12, a clear code
+      of 256 and an end-of-information code of 257. The JDK has no implementation of it, so
+      this one is written from the specification and runs on every platform.
+
+      ```scala
+      import soundness.*
+      import charsets.utf8Charset
+      import strategies.throwUnsafely
+
+      val payload: Data = (t"the quick brown fox " * 40).in[Data]
+      payload.compress[Lzw].decompress[Lzw] == payload   // true
+      ```
+
+      The one parameter is `earlyChange`: whether both sides widen their codes one table entry
+      sooner than the arithmetic strictly requires. It is on in `compress[Lzw]`, since it is
+      what TIFF, PDF and every known encoder produce; a format which states the other setting
+      (PDF's `EarlyChange 0`) uses `.compress`, `.decompress`, `.compressor` or
+      `.decompressor` with it off. Both sides must agree, or the output is garbage with no
+      error raised.
+  refer pneumatic.Compression
+  entry .compression   the `Lzw is Compression` given, with `earlyChange` on, in implicit scope through the companion
+      The TIFF and PDF default. Its compressor and decompressor are `Duct[Data, Data]` stages
+      over `Credit` needing a `Buffering`; the `Chain` forms drive the engine chunk by chunk.
+  entry .compressor   a compressing duct with `earlyChange` chosen explicitly
+      `Lzw.compressor(earlyChange)` is the streaming stage for a pipeline built with
+      `viaDuct`; it needs a `Buffering`. `compress[Lzw]` is the same with `earlyChange = true`.
+  entry .decompressor   a decompressing duct with `earlyChange` chosen explicitly
+      `Lzw.decompressor(earlyChange)` is the streaming stage for a pipeline built with
+      `viaDuct`; it needs a `Buffering`. `decompress[Lzw]` is the same with `earlyChange = true`.
+  entry .compress   compresses a chain of chunks, with `earlyChange` on unless given as `false`
+      `Lzw.compress(chain, earlyChange = true)`: a lazy `Chain[Data]`, each input chunk's
+      codes emitted as it is consumed.
+
+      ```scala
+      import soundness.*
+      import charsets.utf8Charset
+      import strategies.throwUnsafely
+
+      val payload: Data = (t"the quick brown fox " * 40).in[Data]
+      val late: Chain[Data] = Lzw.compress(Chain(payload), earlyChange = false)
+      Lzw.decompress(late, earlyChange = false).flat.to[List] == payload.to[List]
+      ```
+  entry .decompress   decompresses a chain of chunks, with `earlyChange` on unless given as `false`
+      `Lzw.decompress(chain, earlyChange = true)`: the inverse of `.compress` at the same
+      setting, as a lazy `Chain[Data]`.
+
+entry .Brotli   the Brotli format of RFC 7932: the web's content encoding, with relative encoding against a base
+  detail
+      `Brotli` compresses smaller than DEFLATE at a comparable speed, and is the `br` content
+      encoding of HTTP. The decoder is a faithful port of Google's reference decoder, with the
+      format's 122 KB static dictionary, so it decodes anything a browser or server emits; the
+      encoder is a fast, specification-compliant path. Both are pure Scala, on every platform.
+
+      ```scala
+      import soundness.*
+      import charsets.utf8Charset
+      import strategies.throwUnsafely
+
+      val payload: Data = (t"the quick brown fox " * 40).in[Data]
+      payload.compress[Brotli].decompress[Brotli] == payload   // true
+      payload.compress[Brotli].length < payload.compress[Gzip].length
+      ```
+
+      Both directions need the whole value before producing any output — the decoder because
+      a backward reference may reach across the entire window, the encoder because it chooses
+      its framing from the total length — so a Brotli stage in a pipeline buffers everything
+      it is given and emits on flush, where a DEFLATE stage emits as it goes. It is still the
+      same stage, and interoperates with the whole-value form.
+
+      Brotli can also encode a value *relative to* a base the receiver already holds, which is
+      how a successor differing from its predecessor by a few edits costs a few bytes.
+      `.continuation` encodes the new value against a window preloaded with the base, as the
+      headerless tail of a stream; `.prefix` is the priming stream which puts the base in a
+      decoder's window, whose bytes are fixed by the format and two parameters alone, so both
+      sides build it without transmitting it. Decoding the prefix and the continuation as one
+      stream yields the base followed by the successor.
+
+      Corrupt input throws `IllegalStateException` with a message beginning _the Brotli data
+      is corrupt_.
+  refer pneumatic.Compression
+  refer pneumatic.Gzip
+  entry .Window   the largest window Brotli allows, as WBITS: 24, the default for `.prefix` and `.continuation`
+      A window of `2^24 - 16` bytes. The prefix is never transmitted, so the widest window
+      costs nothing and only widens what a continuation may reference.
+  entry .Block   the largest meta-block Brotli allows: `1 << 24` bytes, the default for `.prefix`
+  entry .continuation   encodes a value against a window already holding a base
+      `Brotli.continuation(base, next, window = Brotli.Window)` is the meta-block(s) for `next`
+      alone, with no stream header, byte-aligned and ending with the last-block flag, whose
+      backward references may reach up to `2^window - 16` bytes back, into `base`. It is a
+      valid tail of any stream which leaves `base` in the decoder's window, and in particular
+      of `.prefix(base, window, block)`. `window` is WBITS, 10 to 24, and must be the value
+      the receiver's prefix declares. An empty `next` gives the empty last meta-block.
+
+      ```scala
+      import soundness.*
+      import charsets.utf8Charset
+      import strategies.throwUnsafely
+
+      val base: Data = t"the quick brown fox jumps over the lazy dog".in[Data]
+      val next: Data = t"the quick brown fox jumped over the lazy dog".in[Data]
+      val continuation: Data = Brotli.continuation(base, next)
+      val decoded: Data = Chain(Brotli.prefix(base), continuation).decompress[Brotli].read[Data]
+      decoded.length == base.length + next.length   // true: the base, then the successor
+      ```
+
+      A continuation decoded against the wrong base decodes without error to the wrong bytes:
+      nothing in the format identifies the base, so the sender and receiver must agree on it
+      by other means. A successor which does not compress against its base falls back to
+      stored meta-blocks.
+  entry .prefix   the priming stream which leaves a base in a decoder's window
+      `Brotli.prefix(base, window = Brotli.Window, block = Brotli.Block)` is a stream header
+      declaring `window` (WBITS, 10 to 24), then `base` as uncompressed meta-blocks of at most
+      `block` bytes (1 to `2^24`), then the empty metadata meta-block, the byte `0x06`. Its
+      bytes are determined by RFC 7932 and the three arguments alone, so a receiver holding
+      `base` builds the identical prefix locally. It is not a complete stream — it awaits a
+      `.continuation` — so decoding it alone fails; an empty base primes to two bytes, and a
+      base of 4,096 bytes to `3 + 4096 + 1` by default.
+  entry .compression   the `Brotli is Compression` given, in implicit scope through the companion
+      Its compressor and decompressor are buffering `Duct[Data, Data]` stages over `Credit`,
+      needing a `Buffering`, which accumulate the whole input and produce their output on
+      flush. The `Chain` forms feed the engine every chunk and yield the result as one chunk.
