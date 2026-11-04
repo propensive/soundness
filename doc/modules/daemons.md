@@ -242,9 +242,9 @@ xek sign --key release-keys/myapp.seed --in dist/myapp --out dist/myapp.signed
 
 That output is simultaneously a valid executable and a valid upgrade candidate. The application
 stages one by passing `Upgrade.stage` any source of bytes — a file, an HTTP response, a stream. It
-writes the candidate as `.pending` in the application's data directory and returns; the launcher
-verifies it at the start of the next invocation, swaps it into place, and starts a new daemon in
-place of the old one, so nothing is interrupted:
+writes the candidate as `<name>/.pending` in the application's data directory and returns; the
+launcher verifies it at the start of the next invocation, swaps it into place, and starts a new
+daemon in place of the old one, so nothing is interrupted:
 
 ```scala
 import environments.javaBaseEnvironment
