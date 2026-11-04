@@ -45,9 +45,9 @@ snapshots from that audit and must be re-verified at implementation time.
   JVM-only tail off a module may let the remainder *gain* platforms (e.g. facsimile.core can
   drop `scalaJs = false` once its filesystem layer splits out); such gains change the
   `soundness.js`/`soundness.native` aggregates and are made deliberately.
-- The `.wasi` components (turbulence.wasi, capricious.wasi, …) supply alternative backends;
+- The `*.wasi` components (turbulence.wasi, capricious.wasi, …) supply alternative backends;
   any restructure of Stdio or entropy must retarget them and keep `soundness.wasi` green.
-- `bench.model` depends on all six `.staged` modules, and benchmarks are invisible to
+- `bench.model` depends on all six `*.staged` modules, and benchmarks are invisible to
   `soundness.all`; run `make build` after every leg.
 - A given moved out of a companion object leaves implicit scope, requiring a downstream
   import sweep; a given moved *into* the subject type's companion re-enters implicit scope
@@ -593,7 +593,7 @@ Progress (2026-10-21): none. All six engines still define `macroClassloader`,
 `bintelInternal.scala` (which also keep `summonViaStaging`) — prescience's proto-copy makes a
 seventh, and `prescience.staged` does not exist.
 
-Done when: no `.staged` module contains its own copy of the expansion environment, and the
+Done when: no `*.staged` module contains its own copy of the expansion environment, and the
 benchmark corpus shows performance parity per format.
 
 ## mod-7: stretch goals

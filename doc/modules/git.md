@@ -189,7 +189,7 @@ guarantee that it is a well-formed forty-character identifier.
 
 A `Git.Ref` is a fully-qualified reference path, `refs/heads/main`, modelled as a path on the
 `Git.Refs` plane. Reference names follow Git's own rules — no leading dot, no `..`, no trailing
-`.lock`, and the rest — which are checked when a name is parsed from text, with `Git.Branch.parse`,
+`*.lock`, and the rest — which are checked when a name is parsed from text, with `Git.Branch.parse`,
 `Git.Tag.parse` or `Git.Refs.heads`, and reported as a `Git.RefError`.
 
 ### Diffs
