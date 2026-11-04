@@ -317,6 +317,7 @@ entry .Resource   a resource on the classpath, named by `cp"…"` and checked at
       at compile time.
   entry .source   reads a `Resource` as a stream metered by `Credit`
       As `.streamable`, with a `Buffering` in scope, for reading the resource lazily.
+  entry .nominable   a resource's name: the last segment of its path, or `/` for the root
   entry #path   the resource's path on the classpath plane
 
 entry .cp   the `cp"…"` interpolator: a classpath resource, checked as the code compiles
@@ -547,8 +548,8 @@ entry .LocalClasspath   a classpath of local entries alone: directories, JARs an
       `JavaRuntime` shows as `‹jrt›`.
   entry .decodable   reads a classpath from `java.class.path` text
       Splits the text on the platform's `path.separator` (needing a `System`, and raising
-      `Property.Error` if it is unset). An element ending in `/` is a `Directory`, one ending
-      in `.jar` a `Jar`, and anything else a `Directory`.
+      `Property.Error` if it is unset). An element ending in `/` is a `Directory`, one matching
+      `*.jar` a `Jar`, and anything else a `Directory`.
 
       ```scala
       import soundness.*
