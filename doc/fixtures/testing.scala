@@ -7,3 +7,10 @@ given tutorial: (Testable of Impromptu) = Testable.detached
 given runner: Runner[Report] = Runner()
 
 runner.report.declare(tutorial)
+
+// The code the benchmarks measure, which the tutorial does not define.
+object Benchmarks:
+  def decodeUsersDirect(): Int = 0
+  def handOff(): Int = 0
+  def pipeline(): Int = 0
+

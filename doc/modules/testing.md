@@ -84,7 +84,7 @@ letters and digits in lower case, with a `-` for each run of anything else.
 typecheck
 ##
 object Tests extends Suite("parser", m"Parser tests")   // `fume run parser`
-object Tests extends Suite(m"Parser tests")             // `fume run parser-tests`
+object ParserTests extends Suite(m"Parser tests")       // `fume run parser-tests`
 ```
 
 Soundness's own suites always give one, naming what the module is for and not the module —
@@ -209,7 +209,7 @@ test(m"a malformed version literal is rejected"):
   demilitarize:
     v"1.2"
   . map(_.message)
-. assert(_.nonEmpty)
+. assert(!_.nil)
 ```
 
 This is how Soundness's own guarantees are tested — that a wrong-currency addition, an invalid
@@ -236,6 +236,19 @@ A test need not end in a verdict. Three further kinds record measurements, and a
 the same report: a name, its axes, and a sparse map of cells whose figures come from one closed
 set, so every kind renders the same way and charts the same way.
 
+Every measurement is compiled and run on a `BenchmarkDevice`, here the local machine, and so needs
+a system, a temporary directory to stage in, and an embedding for the values it carries in
+scope; a `Decimalizer` renders its sizes and rates:
+
+```scala
+import embeddings.automaticEmbedding
+import systems.javaBaseSystem
+import temporaryDirectories.systemTemporaryDirectory
+
+given device: BenchmarkDevice = LocalhostDevice
+given decimalizer: Decimalizer = Decimalizer(2)
+```
+
 A `Bench` measures speed. Its body is a quoted expression, [staged](staging.md) and dispatched in
 its own JVM, so the measurement is not distorted by the rest of the suite:
 
@@ -256,6 +269,8 @@ up where it matters:
 ```scala fuel
 typecheck
 ##
+import threads.virtualThreads
+
 val stress = Stress()
 val constrained = Stress(heap = t"128m")
 

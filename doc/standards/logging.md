@@ -28,13 +28,13 @@ log output, however expensive.
 A method opts in by naming its event type in the return type:
 
 ```scala
-def fetch(url: HttpUrl): HttpResponse logs HttpEvent = ...
+def fetch(url: HttpUrl): Http.Response logs Http.Event = ???
 ```
 
 A method may log more than one event type by chaining:
 
 ```scala
-def stop(server: Server): Unit logs HttpEvent logs ExecEvent = ...
+def shutdown(server: Pid): Unit logs Http.Event logs Exec.Event = ???
 ```
 
 Do **not** add a `logs` requirement (or a `Log` call) inside a method that
@@ -87,7 +87,8 @@ Because of this, prefer passing the **original typed values** into the event and
 letting the `Communicable` render them, rather than converting at the call site:
 
 ```scala
-Log.info(SendEvent(method, url, headers))   // typed fields; rendering deferred
+def send(method: Http.Method, url: HttpUrl, headers: List[Http.Header]): Unit logs Http.Event =
+  Log.info(Http.Event.Send(method, url, headers))   // typed fields; rendering deferred
 ```
 
 Both forms are free when disabled (the argument is by-name), but typed fields
@@ -98,7 +99,8 @@ available at the call site (for example, a `serpentine.Path on plane` whose
 textual form depends on its `plane`), capture the rendered `Text` *there*:
 
 ```scala
-Log.info(Io.Event.Move(source.show, destination.show))   // path rendering needs `plane`
+def move[plane: Filesystem](source: Path on plane, destination: Path on plane): Unit logs Io.Event =
+  Log.info(Io.Event.Move(source.show, destination.show))   // path rendering needs `plane`
 ```
 
 This is correct, not a compromise: the `.show` runs at the (by-name) call site
@@ -106,24 +108,26 @@ where the context exists, and still only when the event is actually logged.
 
 ## 4. Event types
 
-Each module that logs defines a single `enum` named `<Domain>Event` in its own
-file `<module>.<Event>.scala`, with the companion `object` before the `enum`
-(L3). Cases are CamelCase verb or noun phrases carrying the relevant values
-as typed fields:
+Each module that logs defines a single `enum` named `Event`, nested in the
+object that names its domain (`Exec.Event`, `Http.Event`, `Io.Event`), with the
+companion `object` before the `enum` (L3). Cases are CamelCase verb or noun
+phrases carrying the relevant values as typed fields, and each extends the
+`Log` categories it belongs to:
 
 ```scala
-object ExecEvent:
-  given communicable: ExecEvent is Communicable =
-    case AbortProcess(pid)       => m"the process with PID $pid was aborted"
-    case PipelineStart(commands) => m"started pipeline ${commands.map(_.show).join(t" ")}"
-    case KillProcess(pid)        => m"killed process with PID $pid"
-    case ProcessStart(command)   => m"starting process $command"
+object Exec:
+  object Event:
+    given communicable: Event is Communicable =
+      case AbortProcess(pid)       => m"aborted the process with PID $pid"
+      case PipelineStart(commands) => m"starting the pipeline ${commands.map(_.show).join(t" ")}"
+      case KillProcess(pid)        => m"killed the process with PID $pid"
+      case ProcessStart(command)   => m"starting the process $command"
 
-enum ExecEvent:
-  case ProcessStart(command: Command)
-  case AbortProcess(pid: Pid)
-  case PipelineStart(commands: Seq[Command])
-  case KillProcess(pid: Pid)
+  enum Event:
+    case ProcessStart(command: Command) extends Event, Log.Process
+    case AbortProcess(pid: Pid) extends Event, Log.Process
+    case PipelineStart(commands: List[Command]) extends Event, Log.Process
+    case KillProcess(pid: Pid) extends Event, Log.Process
 ```
 
 The companion holds a `given communicable: <Event> is Communicable` that maps each
@@ -131,16 +135,16 @@ case to an `m"..."` message, with the `=>` arrows aligned (Consequent Style `T1`
 
 The event type must be exported into the `soundness` package (L4).
 
-### Composing with `ExecEvent`
+### Composing with `Exec.Event`
 
-A module that shells out to a subprocess reuses `guillotine.ExecEvent` by
+A module that shells out to a subprocess reuses `guillotine.Exec.Event` by
 transcribing it into its own event, rather than duplicating process cases:
 
 ```scala
-given execEvent: GitEvent transcribes ExecEvent = GitEvent.Exec(_)
+given execEvent: CliEvent transcribes guillotine.Exec.Event = CliEvent.Exec(_)
 ```
 
-(existing pattern: `GitEvent`, `CliEvent`, `Io.Event`).
+(existing pattern: `CliEvent`, `octogenarian.Commandline.Event`).
 
 ## 5. Message style
 
@@ -148,7 +152,9 @@ Log messages are lowercase, terse, present-tense, with no trailing period, and
 interpolate the relevant context — matching the house style for `fulminate`
 error messages (see `messages.md`):
 
-```scala
+```scala fuel
+parse
+##
 m"connected to $remote"
 m"opened $path for reading"
 m"killed process $pid"
@@ -164,13 +170,15 @@ Call `Log.fine`, `Log.info`, `Log.warn`, or `Log.fail` with an event value at th
 point the side effect happens:
 
 ```scala
-Log.info(ExecEvent.ProcessStart(this))
-val process = processBuilder.start()
+def start(command: Command, builder: ProcessBuilder): Unit logs Exec.Event =
+  Log.info(Exec.Event.ProcessStart(command))
+  builder.start()
 ```
 
 ```scala
-Log.warn(ExecEvent.KillProcess(pid))
-process.destroyForcibly()
+def kill(pid: Pid, process: java.lang.Process): Unit logs Exec.Event =
+  Log.warn(Exec.Event.KillProcess(pid))
+  process.destroyForcibly()
 ```
 
 A lifecycle event is logged once, at `Info`; a per-unit event (per frame, per

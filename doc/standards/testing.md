@@ -12,7 +12,7 @@ and implements `run()`:
 
 ```scala
 object Tests extends Suite("logging", m"Eucalyptus tests"):
-  def run(): Unit = ...
+  def run(): Unit = ???
 ```
 
 The suite's title is a `Message`, naming the module under test. Before it comes
@@ -32,10 +32,10 @@ Group related tests with `suite`, and write each individual test with `test`,
 both taking a `Message`:
 
 ```scala
-suite(m"Parsing"):
-  test(m"an empty document parses to an empty value"):
-    t"".read[Json]
-  . assert(_ == Json.empty)
+suite(m"Measuring"):
+  test(m"an empty text has no characters"):
+    t"".length
+  . assert(_ == 0)
 ```
 
 A `test` block evaluates to the value under examination; the `assert` (or `check`)
