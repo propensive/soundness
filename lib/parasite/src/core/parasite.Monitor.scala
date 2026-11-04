@@ -47,6 +47,7 @@ import fulminate.*
 import nomenclature.*
 import prepositional.*
 import rudiments.*
+import turbulence.Stdio
 import vacuous.*
 
 import Async.Error.Reason
@@ -294,6 +295,11 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: SharedProbate
 
   parent.addWorker(this)
 
+  // The diversion of the thread that spawns the task, carried to the thread that runs it: a
+  // task's `System.out` is its parent's, however it is scheduled, so a host's `Stdio.divert`
+  // around a guest covers every task the guest starts.
+  private val diversion: Optional[Stdio] = Stdio.diverted
+
   def chain: List[Codepoint] = frame :: parent.chain
   def evaluate(worker: Worker): Result
   def supervisor: Supervisor^{this} = parent.supervisor
@@ -458,7 +464,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: SharedProbate
     var failure: Optional[Throwable] = Unset
 
     try
-      if started then evaluate(this).tap: result =>
+      if started then diversion.lay(evaluate(this))(Stdio.divert(_)(evaluate(this))).tap: result =>
         state.since:
           case Active(startTime) => Completed(jl.System.currentTimeMillis - startTime, result)
           case other             => other

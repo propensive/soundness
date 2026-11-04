@@ -454,6 +454,37 @@ object Tests extends Suite("filesystem", m"Galilei tests"):
         galilei.Umask.process.mode(galilei.Umask.fileBits)
       . assert(_ == Unset)
 
+    suite(m"Scratch files"):
+      import filesystemOptions.deleteRecursively
+
+      val scratchFileLeaf: Text = Uuid().show
+      val base: Path on Linux = unsafely((% / "tmp" / scratchFileLeaf).on[Linux])
+      unsafely(base.create[Directory]())
+
+      test(m"A scratch file exists and reads back within its scope, and vanishes afterwards"):
+        unsafely:
+          // [by-name-receiver] open lambda shares ambient tactic with receiver
+          scala.caps.unsafe.unsafeAssumeSeparate:
+            val (content, path) = base.open[Scratch.File](Read & Write): file ?=>
+              file.write(Chain(t"payload".in[Data]))
+              (file.path.read[Text], file.path)
+
+            (content, path.existent())
+      . assert(_ == (t"payload", false))
+
+      test(m"A scratch file is removed even when the scope fails"):
+        import errorDiagnostics.emptyDiagnostics
+        unsafely:
+          var path: Optional[Path on Linux] = Unset
+          capture[Io.Error]:
+            // [by-name-receiver]
+            scala.caps.unsafe.unsafeAssumeSeparate:
+              base.open[Scratch.File](Read & Write): file ?=>
+                path = file.path
+                abort(Io.Error(base, Io.Error.Operation.Write, Io.Error.Reason.Unsupported))
+          path.let(_.existent()).or(true)
+      . assert(_ == false)
+
     suite(m"Scratch directories"):
       import filesystemOptions.createNonexistentParents
       import filesystemOptions.overwritePreexisting

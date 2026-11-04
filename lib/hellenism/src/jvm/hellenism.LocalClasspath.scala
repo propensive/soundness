@@ -32,6 +32,9 @@
                                                                                                   */
 package hellenism
 
+import java.net as jn
+import java.nio.file as jnf
+
 import ambience.*
 import anticipation.*
 import contingency.*
@@ -82,6 +85,44 @@ object LocalClasspath:
   // as it is under a host such as fume, which isolates each test suite in one — and otherwise
   // the `java.class.path` property. This, not the property alone, is what a process launched
   // to run the same code must be given: under a host, the property names the host's own jars.
+  // The classpath the running process was loaded from, as the loaders name it: `classloader`'s
+  // URLs, then its parents' (a launcher may load a tool's libraries through a child of the
+  // loader it was given), then `java.class.path`, in that order, each entry once. Each is
+  // classified by what is on disk, so a launcher's executable — an archive with no `.jar`
+  // suffix — is a `Jar`, and an entry that does not exist is a `Directory` which may yet be made.
+  def running(classloader: Classloader = Classloader.threadContext)
+    ( using System, Tactic[Path.Error], Tactic[Io.Error], DereferenceSymlinks )
+  :   LocalClasspath =
+
+    def urls(loader: Optional[Classloader]): List[Text] = loader.lay(Nil): loader =>
+      val own: List[Text] = loader.java match
+        case urlLoader: jn.URLClassLoader =>
+          List.from(urlLoader.getURLs.nn.iterator.map(_.nn)).bind: url =>
+            if url.getProtocol.nn == "file"
+            then List(jnf.Path.of(url.toURI.nn).nn.toString.nn.tt)
+            else Nil
+
+        case _ =>
+          Nil
+
+      own + urls(loader.parent)
+
+    val system: List[Text] =
+      safely(System.properties.java.`class`.path[Text]()).lay(Nil): path =>
+        path.cut(System.properties.path.separator().show).filter(_ != t"")
+
+    // Each once, in the order first named.
+    def once(paths: List[Text], seen: Set[Text]): List[Text] = paths match
+      case Nil          => Nil
+      case head :: tail => if seen.has(head) then once(tail, seen) else head :: once(tail, seen + Set(head))
+
+    val entries: List[Classpath.Entry.Directory | Classpath.Entry.Jar] =
+      once(urls(classloader) + system, Set()).map: (path: Text) =>
+        Classpath.Entry.classify(path.as[Path on Linux])
+
+    val widened: List[Classpath.Entry] = entries
+    new LocalClasspath(entries, widened.to[Set])
+
   def of(classloader: Classloader)(using System): LocalClasspath = classloader.classpath match
     case classpath: LocalClasspath => classpath
 
@@ -115,9 +156,7 @@ object LocalClasspath:
 
     (classpath, path) =>
       path.generic.as[Path on Linux].pipe: path =>
-        val entry: Classpath.Entry.Directory | Classpath.Entry.Jar = path.entry() match
-          case Directory => Classpath.Entry.Directory(path.encode)
-          case _         => Classpath.Entry.Jar(path.encode)
+        val entry: Classpath.Entry.Directory | Classpath.Entry.Jar = Classpath.Entry.classify(path)
 
         if classpath.entrySet.has(entry) then classpath
         else

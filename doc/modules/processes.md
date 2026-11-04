@@ -142,6 +142,17 @@ sleeper.kill()
 A `Pid` is a distinct type rather than a number, so it cannot be confused with an exit code or a
 file descriptor, and it renders and parses in its own form.
 
+A process that should outlive the one that starts it — a server of its own, a daemon — is
+*detached*: `detach` starts it reading the null device and writing nowhere, or appending to a
+log whose parent directories are made, and answers its pid, holding nothing else of it. A
+forked child inherits pipes that nobody drains, and a server writing to them eventually blocks;
+a detached one cannot. Its environment is the `Environment` in scope, so `emptyEnvironment`
+with `variables(…)` gives it exactly the variables named:
+
+```scala
+val pid: Pid = sh"server --port 8080".detach(log = directory / "server.log")
+```
+
 ### On a terminal
 
 A command's standard streams are normally pipes, and many programs behave differently when they

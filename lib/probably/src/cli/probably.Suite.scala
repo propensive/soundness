@@ -39,6 +39,7 @@ import fulminate.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
+import turbulence.*
 import vacuous.*
 
 // A suite is not a main class. The beneficence plugin lists every `Suite` object in the
@@ -75,6 +76,46 @@ object Suite:
     then builder.setLength(builder.length - 1)
 
     if builder.length == 0 then t"suite" else builder.toString.tt
+
+  // The plain-`java` entry point: a suite has no `main` (a host, normally fume, drives it through
+  // `invoke`), so a repository wanting one — for CI, or for a host too old to read the jar's
+  // event schema — runs its suites here, printing a line per completed test, its details, and a
+  // summary, and answering the suites' status: 0 passed, 1 failures, 2 a suite threw. `main`
+  // is the same, then exits with it; a test object's own `main` is `Suite.main(arguments, Tests)`.
+  def run(arguments: Text, suites: Suite[?]*)(using Stdio): Int =
+    val passes: Atomic[Int] = Atomic(0)
+    val failures: Atomic[Int] = Atomic(0)
+
+    val statuses: List[Int] = List.from(suites).map: suite =>
+      suite.invoke(arguments, event => event match
+        case TestEvent.TestCompleted(test, _, _, outcome, _, _) =>
+          val passed: Boolean = outcome.outcome == t"pass" || outcome.outcome == t"aspire-pass"
+          if passed then passes.since(_ + 1) else failures.since(_ + 1)
+          Out.println(t"[${outcome.outcome}] ${test.path.join(t" / ")}")
+
+        case TestEvent.DetailMessage(_, message) =>
+          Out.println(t"    $message")
+
+        case TestEvent.DetailCompare(_, expected, found, _) =>
+          Out.println(t"    expected: $expected")
+          Out.println(t"    found:    $found")
+
+        case TestEvent.RunTerminated(error, _, _) =>
+          Out.println(t"suite threw: ${error.components.map(_.message).join(t"; ")}")
+
+        case _ =>
+          ())
+
+    Out.println(t"${passes()} passed, ${failures()} failed")
+    statuses.fold(0)(_.max(_))
+
+  def main(arguments: scala.Array[String], suites: Suite[?]*): Unit =
+    import stdios.javaLangSystemStdio, termcapDefinitions.basicTermcap
+
+    val words: Text =
+      List.from(scala.collection.immutable.ArraySeq.unsafeWrapArray(arguments)).map(_.tt).join(t" ")
+
+    Exit(run(words, suites*)).terminate()
 
 abstract class Suite[topic <: Label] private (key0: Text, suiteName: Message, unit: Unit)
 extends Testable(suiteName, Nil, Unset, key0):

@@ -40,7 +40,10 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import spectacular.*
+import symbolism.*
+import turbulence.*
 import vacuous.*
+import zephyrine.*
 
 import Io.Error.{Operation, Reason}
 
@@ -89,6 +92,66 @@ object Scratch:
         tactic:  Tactic[Io.Error] )
   =>  ( ScratchOpenable[filesystem, path]^{tactic} ) =
     ScratchOpenable[filesystem, path]
+
+  // The file form: `directory.open[Scratch.File](Read & Write)` creates a fresh, uniquely-named
+  // file beneath `directory`, provides its handle for the scope, and deletes it when the scope
+  // ends, however it ends. The handle also knows its `path`, for a tool that must be told where
+  // the file is — a throwaway index, a fixture — which a path into a scratch directory could
+  // not give without the directory outliving the scope.
+  trait File
+
+  trait Located[filesystem]:
+    val path: Path on filesystem
+
+  class ScratchFileOpenable[filesystem <: Platform: Filesystem, path <: Path on filesystem]
+    ( using backend: FilesystemBackend on filesystem, ioError: Tactic[Io.Error], umask: Umask )
+  extends Openable:
+
+    type Self = path
+    type Form = Scratch.File
+    type Operand = OpenFlag
+    type Result = Handle & Located[filesystem]
+
+    def open[grants <: Grant, result]
+      ( value: path, mode: Mode granting grants, flags: List[OpenFlag] )
+      ( block: (((Handle & Located[filesystem]) & Granting[grants])^) ?=> result )
+    :   result =
+
+      if backend.stat(value, true).entry != Directory
+      then abort(Io.Error(value, Operation.Open, Reason.IsNotDirectory))
+
+      val child: Path on filesystem = value.unsafeChild(Uuid().show)(using Unsafe)
+
+      val modeFlags: List[OpenFlag] =
+        (if mode.atoms.has(Read) then List(OpenFlag.Read) else Nil) +
+          (if mode.atoms.has(Write) then List(OpenFlag.Write) else Nil)
+
+      try
+        backend.open(child, OpenFlag.Create :: modeFlags + flags, umask.mode(Umask.fileBits)):
+          handle =>
+            val located =
+              new Handle with Located[filesystem] with Granting[grants]:
+                val path: Path on filesystem = child
+                def reader()(using Tactic[Truncation.Error]): Chain[Data] = handle.reader()
+
+                def writer(data: Chain[Data])(using Emit[Truncation.Error]): Unit =
+                  handle.writer(data)
+
+                def source()(using Tactic[Truncation.Error]): (Stream[Data] over Credit)^ =
+                  handle.source()
+
+                def intake()(using Emit[Truncation.Error]): Intake[Data] over Credit =
+                  handle.intake()
+
+            block(using located)
+      finally safely(backend.deleteIfExists(child))
+
+  given fileOpenable: [filesystem <: Platform: Filesystem, path <: Path on filesystem]
+  =>  ( backend: FilesystemBackend on filesystem,
+        tactic:  Tactic[Io.Error],
+        umask:   Umask )
+  =>  ( ScratchFileOpenable[filesystem, path]^{tactic} ) =
+    ScratchFileOpenable[filesystem, path]
 
 // The form for transient working directories: `parent.open[Scratch](Read & Write)` creates a
 // fresh, uniquely-named directory beneath `parent`, provides a `Directory.Handle` over it for

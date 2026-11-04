@@ -34,6 +34,8 @@ package turbulence
 
 import java.io as ji
 
+import scala.language.experimental.pureFunctions
+
 import anticipation.*
 import beneficence.*
 import vacuous.*
@@ -79,30 +81,62 @@ object Stdio:
   // block's result. Both are decoded as UTF-8, the encoding the capturing streams wrote.
   case class Capture[result](result: result, out: Text, err: Text)
 
-  // The JVM's own streams, `java.lang.System.out` and `System.err`, are the one route by which
-  // what is printed WITHOUT a `Stdio` — by a library, a `printStackTrace`, or anything holding
-  // `stdios.javaLangSystemStdio` — can be reached. `divert` rebinds them to `stdio`'s for the
-  // duration of `block` and restores them afterwards, whichever way the block ends, so a host
-  // running a guest in-process decides where the guest's stray output goes without naming
-  // `java.lang.System` itself. The binding is the JVM's, seen by every thread, so a host
-  // should not divert around two guests at once; and nothing reaches a diversion through
-  // `stdios.fileDescriptorStdio`, which names the process's own descriptors directly.
+  // A diversion is the thread's, not the JVM's. The first one installs one dispatcher on each
+  // of `System.out` and `System.err`, kept for the life of the JVM, through which every write
+  // reaches the stream the writing thread is diverted to, or the original where it is not. A
+  // thread started under a diversion starts diverted the same way (the binding is inheritable),
+  // and parasite carries the diversion of the thread that spawns a task to whichever thread
+  // runs it, so a diversion follows the hierarchy of structured concurrency, not the accident
+  // of which thread a task lands on: a host may divert around several guests at once and their
+  // output never crosses. Scala's own `println` is thread-local already (`Console.withOut`);
+  // this covers Java prints and anything else that writes to the `System` streams. Nothing
+  // reaches a diversion through `stdios.fileDescriptorStdio`, which names the process's own
+  // descriptors directly.
+  private val diversions: InheritableThreadLocal[Stdio | Null] = InheritableThreadLocal()
+
+  private class Dispatcher(select: Stdio -> ji.PrintStream, original: ji.PrintStream)
+  extends ji.OutputStream:
+    private def target: ji.PrintStream = diversions.get match
+      case null         => original
+      case stdio: Stdio => select(stdio)
+
+    def write(byte: Int): Unit = target.write(byte)
+
+    override def write(bytes: scala.Array[Byte] | Null, offset: Int, length: Int): Unit =
+      target.write(bytes, offset, length)
+
+    override def flush(): Unit = target.flush()
+
+  private class Dispatching(dispatcher: Dispatcher)
+  extends ji.PrintStream(dispatcher, true, "UTF-8")
+
+  // Installed afresh whenever the stream in place is not a dispatcher: anything else that sets
+  // `System.out` — a host's own capture, say, which restores what it found when it is done —
+  // would otherwise leave every later diversion writing to a dispatcher no longer attached.
+  private def install(): Unit = synchronized:
+    System.out match
+      case _: Dispatching => ()
+      case out            => System.setOut(Dispatching(Dispatcher(_.out, out.nn)))
+
+    System.err match
+      case _: Dispatching => ()
+      case err            => System.setErr(Dispatching(Dispatcher(_.err, err.nn)))
+
+  // The stdio this thread's `System` writes are diverted to, if any: what a task carries to
+  // the thread it runs on.
+  def diverted: Optional[Stdio] = Optional(diversions.get)
+
   def divert[result](stdio: Stdio)(block: => result): result =
-    val out: ji.PrintStream = System.out.nn
-    val err: ji.PrintStream = System.err.nn
-    System.setOut(stdio.out)
-    System.setErr(stdio.err)
+    install()
+    val previous: Stdio | Null = diversions.get
+    diversions.set(stdio)
 
     try block finally
       // A guest's streams need not auto-flush; what it printed last must not stay buffered.
       stdio.out.flush()
       stdio.err.flush()
-      System.setOut(out)
-      System.setErr(err)
+      if previous == null then diversions.remove() else diversions.set(previous)
 
-  // Everything `block` prints through the JVM's streams, kept rather than shown: for a host
-  // whose terminal is spoken for (by a live display, say) while a guest runs, to present
-  // afterwards, or elsewhere.
   def capture[result](block: => result): Capture[result] =
     val out: ji.ByteArrayOutputStream = ji.ByteArrayOutputStream()
     val err: ji.ByteArrayOutputStream = ji.ByteArrayOutputStream()
