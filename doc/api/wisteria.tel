@@ -1,0 +1,671 @@
+tel 1.0
+
+base wisteria
+import soundness
+
+info   generic derivation of typeclass instances for products and sums, from two rules written once
+detail
+    _Wisteria_ is the derivation engine behind every derived codec in Soundness — the JSON
+    encoders built from case classes, the CSV rows built from fields, the digests built from
+    structures. A typeclass author writes two rules, `conjunction` (how the instances of a
+    **product**'s fields combine into an instance for the product) and `disjunction` (how an
+    instance for a **sum** chooses among its variants), by extending `Derivation`, and every
+    case class, tuple, enumeration and sealed trait then has an instance, resolved through the
+    inherited `derived` given or requested with a `derives` clause. There is no macro to write:
+    the two rules are ordinary inline methods, and the field-by-field or variant-by-variant
+    work is done by the inherited combinators `fields`, `contexts`, `build`, `construct`,
+    `variant`, `delegate`, `choices` and `singleton`.
+
+    ```scala
+    import soundness.*
+    import dysasymptotics.linearAccess
+    import strategies.throwUnsafely
+
+    trait Presentation[value]:
+      def present(value: value): Text
+
+    object Presentation extends Derivation[Presentation]:
+      given Presentation[Text] = identity(_)
+      given Presentation[Int] = _.toString.tt
+
+      inline def conjunction[derivation <: Product: ProductReflection]: Presentation[derivation] =
+        value =>
+          fields(value):
+            [field] => field => t"$label=${contextual.present(field)}"
+          . join(t"${typeName[derivation]}(", t", ", t")")
+
+      inline def disjunction[derivation: SumReflection]: Presentation[derivation] =
+        value =>
+          variant(value):
+            [variant <: derivation] => variant => contextual.present(variant)
+
+    extension [value](value: value)
+      def present(using presentation: Presentation[value]): Text = presentation.present(value)
+
+    case class Person(name: Text, age: Int) derives Presentation
+
+    Person(t"Ada", 36).present   // t"Person(name=Ada, age=36)"
+    ```
+
+    Inside the polymorphic lambda each combinator takes, the field or variant is described by
+    a handful of contextual values, read through the package's accessors: `contextual` is the
+    typeclass instance for the field's own type, `label` its name as written, `index` its
+    position, `default` (from vacuous) the field's declared default value or `Unset`, and
+    `dereference` a function from the product to the field. The `[field] => field => …`
+    syntax is a polymorphic lambda: every field has a different type, and the body knows only
+    that `contextual` is an instance for precisely that type, which is all it needs.
+
+    A **product** is a case class, a tuple, an enumeration case or a singleton (a case object,
+    or a parameterless enumeration case, which is a product with no fields); its values are
+    **fields**, with fixed types, a canonical order and labels. A **sum** is an enumeration or
+    a sealed trait; its alternatives are **variants**. The engine recognises each through
+    `scala.deriving.Mirror`, aliased here as `Reflection`, `ProductReflection` and
+    `SumReflection`, so a type with no mirror — a plain trait, a class which is not a case
+    class — fails at the point of derivation.
+
+    `Derivation` derives for both products and sums; `ProductDerivation` for products alone,
+    so that applying the typeclass to a sum is a compile error, and `SumDerivation` for sums
+    alone. For a typeclass written in the `Self` style (`value is Display`), the aliases
+    `Derivable` and `ProductDerivable` adapt the shape. A derived instance sits at lower
+    priority than any given written in the companion's own body, so a hand-written instance
+    for one type always wins. The derivation is invisible to the user of a typeclass, for whom
+    defining a case class is enough.
+
+    The engine derives a whole **graph** at once: `derived[T]` visits every type reachable from
+    `T`'s fields and variants, emits one instance per distinct type, and resolves each field
+    through the real implicit search while ignoring the typeclass's own derivation givens, so
+    a field's instance is a hand-written one, a codec for a collection, or a sibling in the
+    same graph — and a recursive type resolves to itself rather than re-entering the
+    derivation. A recursive type is still best given its instance on its companion with a
+    `derives` clause.
+
+    Beyond codecs, the `arithmetic` object derives `Addable`, `Subtractable`, `Multiplicable`
+    and `Divisible` field-wise for any product, each a given imported by name:
+    `import arithmetic.addable`. Per-field overrides come from vicarious: a `derivation is
+    Specific over typeclass` in scope, built with `specifically`, supplies a different instance
+    at a named field path, and every combinator consults it.
+
+    The library is one source set, `wisteria.core`, which compiles for the JVM, Scala.js and
+    Scala Native. Everything is exported to the `soundness` umbrella, with one caveat: the
+    accessor `label` shares its name with tarantula's `Element#label()`, so a file which
+    imports both and sees `label` reported ambiguous should write `wisteria.label`.
+
+refer wisteria.Derivation
+refer wisteria.ProductDerivation
+refer wisteria.SumDerivation
+refer wisteria.Variant
+refer vicarious.Specific
+
+entry .Derivation   the base of a typeclass companion which derives for both products and sums
+  detail
+      `object Typeclass extends Derivation[Typeclass]` gives the typeclass a derivation: the
+      object implements `conjunction` (the product rule, from `ProductDerivation.Methods`) and
+      `disjunction` (the sum rule, from `SumDerivation.Methods`), and inherits `derived`, the
+      given through which any product or sum type resolves an instance. The type parameter
+      is the typeclass's type constructor; a `Self`-style typeclass uses `Derivable` instead.
+
+      ```scala
+      import soundness.*
+      import dysasymptotics.linearAccess
+
+      trait Equivalence[value]:
+        def equal(left: value, right: value): Boolean
+
+      object Equivalence extends Derivation[Equivalence]:
+        given Equivalence[Int] = _ == _
+        given Equivalence[Text] = _.lower == _.lower
+
+        inline def conjunction[derivation <: Product: ProductReflection]: Equivalence[derivation] =
+          (left, right) =>
+            contexts[derivation]():
+              [field] => equivalence =>
+                val extract: derivation => field = dereference
+                equivalence.equal(extract(left), extract(right))
+            . all { boolean => boolean }
+
+        inline def disjunction[derivation: SumReflection]: Equivalence[derivation] =
+          (left, right) =>
+            variant(left):
+              [variant <: derivation] => leftValue =>
+                complement(right).lay(false)(contextual.equal(leftValue, _))
+
+      case class Person(name: Text, age: Int)
+
+      Equivalence.derived[Person].equal(Person(t"Ada", 36), Person(t"ADA", 36))   // true
+      ```
+
+      Both rules are `inline`: they expand at the use site, once per type in the derived
+      graph, which is what lets the lambda's `contextual` be the instance for the right field
+      type and lets `inline if choice[derivation]` reject a shape at compile time with
+      `scala.compiletime.error` (written fully qualified). Two mistakes are common enough to
+      name: a long error ending _given instance derived in trait Derivation does not match
+      type…_ almost always means a polymorphic lambda's type variable lacks its upper bound
+      (`[variant <: derivation]`, not `[variant]`), and a mismatch against `Product` means
+      `conjunction`'s type parameter lacks `<: Product`.
+
+      The object need not be the typeclass's companion. Defined on an ordinary object, the
+      rules give derivation without exposing it to implicit search, and `Rules.derived[T]` is
+      called wherever an instance is wanted — the way to offer two derivations of one typeclass,
+      a strict and a lenient parser, say.
+
+      Under capture checking, a rule's result type is `typeclass[derivation]^`: a derived
+      instance may honestly capture the capabilities its resolution needed, such as a decoder's
+      tactic, and the capture is erased once, in `derivedOne`. A derivation expands in the
+      module which uses it, so a capture error in a derivation is reported in that module, not
+      the typeclass's own. A sum rule which calls `delegate` or `singleton` needs a
+      `Tactic[Variant.Error]` where it expands; the usual shape seals it inside the instance
+      with `provide[Tactic[Variant.Error]]`, so that the derived instance is not itself a
+      capability.
+  refer wisteria.ProductDerivation.Methods
+  refer wisteria.SumDerivation.Methods
+  refer wisteria.Derivable
+  entry #derivedOne   an instance for one type, product or sum, one level deep
+      Chooses `disjunction` for a sum and `conjunction` for a product, by inspecting the type's
+      symbol, and narrows the fresh result to `typeclass[derivation]`. Its fields and variants
+      resolve to sibling instances; `derived` calls it once for every distinct type in the
+      graph, and a derivation reaches it directly when it wants exactly one level.
+  entry #derived   the given which derives an instance for any type with a `Reflection`
+      `derived[derivation]`, taking a `Reflection[derivation]` (a `scala.deriving.Mirror`), is
+      the given implicit search finds for every product and sum type, and the method a
+      `derives Typeclass` clause names. It builds the whole graph of types reachable from
+      `derivation` — every field type and variant type, recursively — emits one lazily
+      bound instance per distinct type, and returns the root's. A field whose type has a
+      hand-written given, or a codec such as `List[T]`'s, uses that; a field whose type is
+      another product or sum in the graph uses its sibling; a type which reaches itself
+      resolves to its own binding. A field type with no instance at all is a compile error at
+      the derivation, and compiling an explicit `Typeclass.derived[T]` at the call site is the
+      quickest way to learn which field is missing one.
+
+entry .ProductDerivation   the base of a typeclass companion which derives for products only
+  detail
+      `object Typeclass extends ProductDerivation[Typeclass]` gives the typeclass a derivation
+      for case classes, tuples and singletons, and none for sums: applying it to an
+      enumeration or a sealed trait is a compile error naming the mismatch rather than a
+      runtime surprise. The object implements `conjunction` alone, and inherits `derived`. The
+      combinators a product rule is written with — `fields`, `contexts`, `build`, `construct`,
+      `complement`, `typeName`, `tuple` and `singleton` — are the members of
+      `ProductDerivation.Methods`.
+
+      ```scala
+      import soundness.*
+      import dysasymptotics.linearAccess
+
+      trait Parsing[value]:
+        def parse(text: Text): value
+
+      object Parsing extends ProductDerivation[Parsing]:
+        given Parsing[Text] = identity(_)
+        given Parsing[Int] = _.s.toInt
+
+        inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
+          text =>
+            val columns = text.cut(t",")
+            build[derivation]:
+              [field] => parsing => parsing.parse(columns(Ordinal.zerary(index)).or(t""))
+
+      case class Person(name: Text, age: Int)
+
+      Parsing.derived[Person].parse(t"Ada,36")   // Person(t"Ada", 36)
+      ```
+  refer wisteria.Derivation
+  refer wisteria.ProductDerivable
+  entry .Methods   the product combinators: the vocabulary a `conjunction` is written in
+    detail
+        The trait every `Derivation` and `ProductDerivation` mixes in. It declares the
+        abstract product rule, `conjunction`, and supplies the inline combinators the rule is
+        written with. Each takes a polymorphic lambda, `[field] => … => result`, and expands
+        it once per field, with the field's contextual values in scope: `contextual`, the
+        `typeclass[field]` instance; `label`, the field's name as `Text`; `index`, its position
+        as `Int & FieldIndex[field]`; `default`, a `Default[Optional[field]]` holding the
+        declared default or `Unset`; and, in `contexts`, `dereference`, a function
+        `derivation -> field`. The combinators are `protected`, so they are reached from inside
+        the deriving object:
+
+        - `fields(value)(lambda)` folds over the fields of a value, giving the lambda each
+          field's value, and returns the results as a frozen `Array[result]`. This is the
+          **consumer**'s combinator: a renderer, an encoder, a hash. The lambda's parameter is
+          the field's value.
+        - `contexts[derivation]()(lambda)` is the same fold with no value: the lambda's
+          parameter is the field's instance, and `dereference` is available for reaching into a
+          value — or two values, which is how an equivalence compares corresponding fields
+          without separating them from the lambda that typed them. For a schema, or the list
+          of a product's labels, no value is needed at all.
+        - `build[derivation](lambda)` constructs a new value of the product: the lambda's
+          parameter is the field's instance, and it returns the field's value. This is the
+          **producer**'s combinator: a parser, a decoder, a generator. Construction goes
+          through the mirror's `fromProduct`, which is what makes it work for case classes
+          nested in objects and declared inside methods.
+        - `construct[constructor, derivation](bind, pure, lambda)` is `build` for a lambda
+          whose result is wrapped in a type constructor — an `Optional`, an `Attempt`, a
+          `List` — threading the fields through the polymorphic `bind` and `pure` it is given,
+          so that a failing field fails the product:
+          `construct[Option, derivation]([in, out] => _.flatMap, [monadic] => Some(_), lambda)`.
+        - `complement(product)` reads the current field out of another value of the same
+          product, typed with the field's type, inside any of the lambdas; `dereference` is the
+          same access as a function.
+
+        A fold summons the typeclass for **every** field, so even a typeclass whose leaf
+        instances are trivial (the labels of a `Text`, say) must provide them. `index` is a
+        branded `Int`, so a native `List` is indexed with `Ordinal.zerary(index)` and yields
+        an `Optional`; the complexity gate for indexing (`dysasymptotics.linearAccess`) must be
+        imported where the derivation expands. Under capture checking, a value a lambda reads
+        from an array-typed field keeps the field's capture annotation, so a product with a
+        frozen `Array[Long]^{}` field derives cleanly.
+
+        Because the rule is `inline`, a gated collection operation inside it — `.all`,
+        `.to[List]`, indexing a `List` by an ordinal — is resolved where the derivation
+        expands, against everything imported there. If such an operation fails to resolve in
+        the expansion though the same line compiles in a plain `def`, move it into an ordinary
+        helper method which the rule calls.
+    entry #conjunction   the product rule: an instance for a product from its fields' instances
+        Abstract, implemented by the deriving object. `conjunction[derivation <: Product:
+        ProductReflection]: typeclass[derivation]^` is called once per product type in a
+        derived graph, with the mirror in scope, and returns the instance, usually as a lambda
+        over `fields`, `contexts`, `build` or `construct`. The `<: Product` bound and the
+        context bound are both required. The result is fresh (`^`) under capture checking, so
+        the instance may capture what its construction needed; `Derivation#derivedOne` erases
+        the capture.
+    entry #typeName   the name of the type being derived for, as `Text`
+        `typeName[derivation]` is the mirror's label: `Person` for `case class Person`, `Tuple2`
+        for a pair. Available in both rules, and in the lambdas, for a rendering which names
+        the type or a variant.
+    entry #tuple   whether the product is a tuple, decided as the code compiles
+        `inline if tuple[derivation] then … else …` lets a rendering drop the type name for a
+        tuple, whose fields are labelled `_1`, `_2`, ….
+    entry #singleton   whether the product is a singleton — a case object or a parameterless case
+        `inline if singleton[derivation] then typeName[derivation] else …`: a singleton has no
+        fields, so a rendering shows only its name, and a parser has nothing to parse.
+  entry #derivedOne   an instance for one product type, one level deep
+      `conjunction` applied to the type, with its mirror summoned, and the fresh result
+      narrowed to `typeclass[derivation]`. A sum type is a compile error here.
+  entry #derived   the given which derives an instance for any product type
+      As `Derivation#derived`: builds the graph of reachable types and returns the root's
+      instance, each type derived with `derivedOne`. A sum among the reachable types is a
+      compile error, since this derivation has no `disjunction`.
+
+entry .SumDerivation   the base of a typeclass companion which derives for sums only
+  detail
+      `object Typeclass extends SumDerivation[Typeclass]` gives the typeclass a derivation for
+      enumerations and sealed traits, and none for products: the variants' instances must come
+      from elsewhere, hand-written givens as a rule. The object implements `disjunction`
+      alone, and inherits `derived`. The combinators a sum rule is written with — `variant`,
+      `delegate`, `choices`, `singleton`, `complement`, `variantLabels` and `choice` — are the
+      members of `SumDerivation.Methods`.
+
+      ```scala
+      import soundness.*
+
+      trait Handling[value]:
+        def handle(value: value): Unit
+
+      enum Signal:
+        case Start(at: Int)
+        case Stop(reason: Text)
+
+      object Handling extends SumDerivation[Handling]:
+        given Handling[Signal.Start] = start => ()
+        given Handling[Signal.Stop] = stop => ()
+
+        inline def disjunction[derivation: SumReflection]: Handling[derivation] =
+          value => variant(value):
+            [variant <: derivation] => value => contextual.handle(value)
+
+      summon[Handling[Signal]].handle(Signal.Stop(t"done"))
+      ```
+  refer wisteria.Derivation
+  refer wisteria.Variant
+  entry .Methods   the sum combinators: the vocabulary a `disjunction` is written in
+    detail
+        The trait every `Derivation` and `SumDerivation` mixes in. It declares the abstract
+        sum rule, `disjunction`, and supplies the inline combinators the rule is written with.
+        Each takes a polymorphic lambda over the variant, `[variant <: derivation] => … =>
+        result` — the upper bound is required — and expands it with the variant's contextual
+        values in scope: `contextual`, the `typeclass[variant]` instance; `label`, the
+        variant's name as `Text`; and `index`, its position as `Int & Variant.Index[variant]`.
+        The combinators are `protected`, so they are reached from inside the deriving object:
+
+        - `variant(sum)(lambda)` dispatches on the actual case of a value: the lambda's
+          parameter is the value narrowed to its variant, so the body is typed at the case
+          rather than at the sum. This is the **consumer**'s combinator.
+        - `delegate(label)(lambda)` is told which variant to produce, by its label, and gives
+          the lambda that variant's instance; this is the **producer**'s combinator, for a
+          decoder whose input carries a discriminator. A label naming no variant raises
+          `Variant.Error`, so a `Tactic[Variant.Error]` must be in scope where the rule
+          expands — sealed inside the instance with `provide[Tactic[Variant.Error]]` as a rule.
+        - `singleton(label)` turns a label back into the value it names, for a sum whose
+          variants are all singletons; an unknown label raises `Variant.Error` likewise.
+        - `choices(lambda)` folds over every variant with no value to dispatch on, giving the
+          lambda each variant's instance, label and index, and returns a frozen
+          `Array[result]`: what a derivation producing a schema rather than an instance needs.
+        - `complement(sum)` reads the other value of a two-value typeclass narrowed to the
+          current variant, as an `Optional`, since the two need not be the same variant.
+        - `variantLabels` lists the variants' labels, in declaration order.
+
+        `choice[derivation]` reports, as the code compiles, whether every variant is a
+        singleton — an enumeration of names, with no data — and is written `inline if
+        choice[derivation] then … else scala.compiletime.error("…")` so that a derivation which
+        makes sense only for such enumerations rejects the rest with its own message.
+    entry #disjunction   the sum rule: an instance for a sum from its variants' instances
+        Abstract, implemented by the deriving object. `disjunction[derivation:
+        SumReflection]: typeclass[derivation]^` is called once per sum type in a derived graph,
+        with the mirror in scope, and returns the instance, usually as a lambda over `variant`
+        or `delegate`. Fresh (`^`) under capture checking, like `conjunction`.
+    entry #choice   whether every variant of the sum is a singleton, decided as the code compiles
+        `transparent inline`, so `inline if choice[derivation]` is resolved at compile time
+        and the branch not taken is eliminated — including a `scala.compiletime.error` which
+        would otherwise fail the build. True for an enumeration of bare names and a sealed
+        trait of case objects; false as soon as one variant carries data. Decided by inspecting
+        the type's symbol, so it is reliable deep inside the graph's inlining.
+  entry #derivedOne   an instance for one sum type, one level deep
+      `disjunction` applied to the type, with its mirror summoned, and the fresh result
+      narrowed to `typeclass[derivation]`. A product type is a compile error here.
+  entry #derived   the given which derives an instance for any sum type
+      As `Derivation#derived`: builds the graph of reachable types and returns the root's
+      instance. A product among the reachable types — a variant with fields, say — must have
+      an instance of its own, since this derivation has no `conjunction`.
+
+entry .Derivable   `Derivation` for a typeclass written in the `Self` style: `value is Display`
+  detail
+      `Derivation` takes a type constructor, `Typeclass[_]`. A typeclass whose subject is a
+      `Self` type member — `trait Display { type Self; def display(value: Self): Text }`, used
+      as `Text is Display` — has no type constructor to give it, so `Derivable[Display]`
+      spells one: it is `Derivation[[self] =>> Display { type Self = self }]`. The rules are
+      then written with the `is` syntax in their result types, and the same combinators apply.
+
+      Watched as a typeclass grows: a `Display` first written for products alone, with
+      `ProductDerivable`, then given a sum rule as well, with `Derivable`.
+
+      ```scala fuel
+      frame
+        label A product rule alone: case classes display, sums do not
+        code
+            import soundness.*
+            import dysasymptotics.linearAccess
+
+            trait Display:
+              type Self
+              def display(value: Self): Text
+
+            object Display extends ProductDerivable[Display]:
+              given (Text is Display) = identity(_)
+              given (Int is Display) = _.toString.tt
+
+              inline def conjunction[derivation <: Product: ProductReflection]: derivation is Display =
+                value =>
+                  fields(value):
+                    [field] => field => contextual.display(field)
+                  . join(t",")
+
+            extension [value](value: value)
+              def display(using display: value is Display): Text = display.display(value)
+
+            case class Employee(name: Text, age: Int)
+
+            sealed trait Contact
+            case class Email(address: Text) extends Contact
+            case class Phone(number: Text) extends Contact
+
+            Employee(t"Ada", 36).display             // t"Ada,36"
+            (Email(t"ada@example.com"): Contact).display   // does not compile
+      frame
+        label A sum rule as well: the variant's own instance displays it
+        code
+            import soundness.*
+            import dysasymptotics.linearAccess
+
+            trait Display:
+              type Self
+              def display(value: Self): Text
+
+            object Display extends Derivable[Display]:
+              given (Text is Display) = identity(_)
+              given (Int is Display) = _.toString.tt
+
+              inline def conjunction[derivation <: Product: ProductReflection]: derivation is Display =
+                value =>
+                  fields(value):
+                    [field] => field => contextual.display(field)
+                  . join(t",")
+
+              inline def disjunction[derivation: SumReflection]: derivation is Display =
+                value =>
+                  variant(value):
+                    [variant <: derivation] => variant => contextual.display(variant)
+
+            extension [value](value: value)
+              def display(using display: value is Display): Text = display.display(value)
+
+            case class Employee(name: Text, age: Int)
+
+            sealed trait Contact
+            case class Email(address: Text) extends Contact
+            case class Phone(number: Text) extends Contact
+
+            Employee(t"Ada", 36).display                   // t"Ada,36"
+            (Email(t"ada@example.com"): Contact).display   // t"ada@example.com"
+      ##
+      ```
+
+      Overrides for one field path come through vicarious: with a `Company is Specific over
+      Display` in scope, built as `specifically { case root.cto.name() => shout }`, the
+      derived instance uses `shout` at exactly that path and the defaults elsewhere.
+  refer wisteria.Derivation
+  refer wisteria.ProductDerivable
+
+entry .ProductDerivable   `ProductDerivation` for a typeclass written in the `Self` style
+    `ProductDerivable[Typeclass]` is `ProductDerivation[[self] =>> Typeclass { type Self =
+    self }]`: the product-only derivation for a typeclass whose subject is its `Self` type
+    member, with `conjunction` returning `derivation is Typeclass`. See `Derivable` for the
+    two-rule form.
+
+entry .Reflection   evidence that a type is a product or a sum: `scala.deriving.Mirror.Of`
+    `Reflection[derivation]` is the compiler's `Mirror.Of[derivation]`, the evidence every
+    `derived` given takes: it exists for every case class, tuple, enumeration, sealed trait
+    and singleton, and for nothing else, which is why a plain trait or a non-case class cannot
+    be derived for. A `ProductReflection` satisfies a `Reflection` requirement, since
+    `Mirror.ProductOf` is a `Mirror.Of`. A mirror resolves within a nested context-bound
+    search, which is what lets a derived instance be summoned from inside another
+    typeclass's own derivation, such as a format's `read[T]`.
+
+entry .ProductReflection   evidence that a type is a product: `scala.deriving.Mirror.ProductOf`
+    `ProductReflection[derivation <: Product]` is the context bound `conjunction` requires. It
+    carries the product's field labels and types, and its `fromProduct` is how `build`
+    constructs a value.
+
+entry .SumReflection   evidence that a type is a sum: `scala.deriving.Mirror.SumOf`
+    `SumReflection[derivation]` is the context bound `disjunction` requires. It carries the
+    variants' labels and types, and its `ordinal` is how `variant` finds the actual case of a
+    value.
+
+entry .contextual   the typeclass instance for the current field or variant, inside a combinator's lambda
+    Inside the polymorphic lambda given to `fields`, `contexts`, `build`, `construct`,
+    `variant`, `delegate` or `choices`, `contextual` is the `typeclass[field]` (or
+    `typeclass[variant]`) instance for the current element's type — a hand-written given,
+    a codec, or a sibling instance from the same derived graph — and the only means the body
+    has of doing anything with a value whose type it cannot see. Most combinators also pass
+    the same instance as the lambda's parameter, so `[field] => parsing => parsing.parse(…)`
+    and `contextual.parse(…)` are the same instance.
+
+entry .label   the name of the current field or variant, as `Text`, inside a combinator's lambda
+    For a field, the name as written in the case class (`_1`, `_2`, … for a tuple); for a
+    variant, the case's name. A renderer uses it as a key, a parser matches it against a
+    discriminator. In the `soundness` umbrella the name is shared with tarantula's
+    `Element#label()`: a file which imports both and finds `label` ambiguous writes
+    `wisteria.label`.
+
+entry .index   the position of the current field or variant, inside a combinator's lambda
+    For a field, an `Int & FieldIndex[field]`; for a variant, an `Int & Variant.Index[variant]`.
+    The brand ties the number to the element's type, so `complement(product)` can read the
+    same field out of another value and type it correctly. It compares and arithmetises as an
+    `Int`, but indexing a native `List` with it is written `columns(Ordinal.zerary(index))`,
+    which yields an `Optional`, under an imported complexity gate such as
+    `dysasymptotics.linearAccess`.
+
+entry .dereference   a function from the product to the current field, inside a `contexts` lambda
+    `dereference` is a `derivation -> field`: with no value to fold over, `contexts` gives
+    each field a way to be read from any value of the product, typed with the field's type.
+    Bind it once — `val extract: derivation => field = dereference` — and apply it to each of
+    the values a two-value typeclass compares, so both fields reach the one `contextual`
+    instance without ever losing their type.
+
+entry .variant   `wisteria.variant` reads the tagged `"variant"` value from context; the combinator is `SumDerivation.Methods#variant`
+    The package-level accessor `variant[value]` reads a contextual value tagged `"variant"`,
+    in the style of `index` and `label`. The combinator a `disjunction` calls as
+    `variant(value) { [variant <: derivation] => variant => … }` is the inherited method of
+    `SumDerivation.Methods`, which dispatches on a sum value's actual case; inside the
+    deriving object the method shadows this accessor.
+
+entry .arithmetic   field-wise `+`, `-`, `*` and `/` for any product, as givens imported by name
+  detail
+      Four derivations of symbolism's arithmetic typeclasses, each adding, subtracting,
+      multiplying or dividing two values of a product field by field through the fields' own
+      instances, so `Text` concatenates while `Int` sums with no instance written for the
+      product. Each is a given to import by name — `import soundness.*` does not bring them in
+      — because an arithmetic on every case class is a choice, not a default.
+
+      ```scala
+      import soundness.*
+      import arithmetic.addable
+
+      case class Pair(label: Text, count: Int)
+
+      Pair(t"foo", 10) + Pair(t"bar", 15)   // Pair(t"foobar", 25)
+      ```
+
+      The derivation objects (`AddableDerivation` and its siblings) are `ProductDerivation`s
+      of the respective typeclass, available for an explicit `derived[T]`, and each given is
+      `Derivation.derived[value]` for any `value <: Product` with a `ProductReflection`.
+  entry .AddableDerivation   `ProductDerivation` of `value is Addable by value to value`
+      Its `conjunction` builds the sum of two products with `build`, adding each pair of
+      corresponding fields (read with `complement`) through the field's `Addable`.
+  entry .addable   the given: any product is `Addable by` itself `to` itself, field-wise
+      `AddableDerivation.derived[value]` for every `value <: Product` with a
+      `ProductReflection`; every field type needs its own `Addable`. Imported by name.
+  entry .SubtractableDerivation   `ProductDerivation` of `value is Subtractable by value to value`
+      As `AddableDerivation`, with each pair of fields subtracted.
+  entry .subtractable   the given: any product is `Subtractable by` itself `to` itself, field-wise
+      `SubtractableDerivation.derived[value]`; imported by name.
+  entry .MultiplicableDerivation   `ProductDerivation` of `value is Multiplicable by value to value`
+      As `AddableDerivation`, with each pair of fields multiplied.
+  entry .multiplicable   the given: any product is `Multiplicable by` itself `to` itself, field-wise
+      `MultiplicableDerivation.derived[value]`; imported by name.
+  entry .DivisibleDerivation   `ProductDerivation` of `value is Divisible by value to value`
+      As `AddableDerivation`, with each pair of fields divided.
+  entry .divisible   the given: any product is `Divisible by` itself `to` itself, field-wise
+      `DivisibleDerivation.derived[value]`; imported by name.
+
+entry .Discriminable   how a sum's variant is told apart on the wire, for a format's decoder
+  detail
+      A format which encodes a sum must say which variant a value is, and a `value is
+      Discriminable in Form` says how: `discriminate` reads the variant's label out of a value
+      in the format's `Form` (a JSON node, say), `variant` strips the discriminator to leave
+      the variant's own payload, and `rewrite` adds a label to a payload for encoding. The
+      typeclass is defined here, next to the derivation which consults it, and implemented by
+      each format: jacinta's `discriminables` package offers a `type` field, a `kind` field, a
+      wrapper object keyed by the variant's name and a `type`/`value` envelope, each a given
+      imported by name. A format's derived decoder calls `discriminate` and then `delegate`s
+      to the variant it names, raising `Variant.Error` for an unknown label.
+  entry #rewrite   a payload in the form, with the variant's label `kind` written into it
+  entry #discriminate   the variant label a value in the form carries, or `Unset` if it has none
+  entry #variant   the variant's own payload, with the discriminator removed
+
+entry .FieldIndex   the brand on a field's `index`: `Int & FieldIndex[field]`
+    A sealed, uninhabited trait intersected with `Int` to tie a field's position to its type,
+    so that `complement(product)`, given the index, can read the field out of another value
+    and return it as `field`. The `index` accessor yields it inside a product combinator's
+    lambda; it is never constructed by hand.
+
+entry .Variant   the vocabulary of sum derivation: a variant's `Index`, and the `Error` for an unknown label
+  detail
+      There is no `Variant` type: a variant is a case of the sum being derived, identified by
+      its position (`Variant.Index`) and its label. The object holds the error a producer
+      raises when a label names no variant, and the brand on a variant's index.
+  refer wisteria.SumDerivation.Methods
+  entry .Error   raised when a label names no variant of the sum: _the specified variant (`x`) is not one of the valid variants (…) of sum type `S`_
+    detail
+        Raised, through a `Tactic[Variant.Error]`, by `delegate` and `singleton` when the
+        label they are given — usually a discriminator read from a decoder's input — matches
+        none of the sum's variants. The message lists the valid variants, so the error says
+        what the input should have carried. A derivation which calls either combinator needs
+        the tactic in scope where it expands: `provide[Tactic[Variant.Error]]` inside the
+        instance keeps the derived instance from capturing the caller's own.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        trait Parsing[value]:
+          def parse(text: Text): value
+
+        object Parsing extends Derivation[Parsing]:
+          given Parsing[Int] = _.s.toInt
+          given Parsing[Boolean] = _ == t"yes"
+
+          inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
+            text => build[derivation] { [field] => parsing => parsing.parse(text) }
+
+          inline def disjunction[derivation: SumReflection]: Parsing[derivation] =
+            text =>
+              text.cut(t":") match
+                case List(prefix: Text, rest: Text) =>
+                  provide[Tactic[Variant.Error]]:
+                    delegate[derivation](prefix):
+                      [variant <: derivation] => parsing => parsing.parse(rest)
+
+        sealed trait Wrapped
+        case class WrappedInt(value: Int) extends Wrapped
+        case class WrappedBool(value: Boolean) extends Wrapped
+
+        try Parsing.derived[Wrapped].parse(t"Unknown:42").toString.tt
+        catch case error: Variant.Error => error.validVariants.join(t", ")   // t"WrappedInt, WrappedBool"
+        ```
+
+        `Variant.Error[derivation](label)` builds the error for a sum type, filling in the
+        sum's name and its variant labels at compile time.
+    entry .apply   builds the error for a sum type: `Variant.Error[Sum](label)`
+        An inline method which fills in `sum` and `validVariants` from the type's symbol, so a
+        caller supplies only the offending label.
+    entry #inputLabel   the label which named no variant
+    entry #sum   the name of the sum type
+    entry #validVariants   the labels of the sum's variants, in declaration order
+  entry .Index   the brand on a variant's `index`: `Int & Variant.Index[variant]`
+    detail
+        A sealed, uninhabited trait intersected with `Int` to tie a variant's position to its
+        type. The `index` accessor yields it inside a sum combinator's lambda, and
+        `complement(sum)` uses it to narrow another value to the same variant.
+    entry .apply   brands an `Int` as the index of a variant: `Variant.Index[variant](int)`
+
+entry .internal   the macros behind the derivation engine and the combinators
+  hidden
+  detail
+      Not for direct use: the object houses the macro implementations the inline combinators
+      splice, and the accessors tests and tooling use. `derived` is `deriveGraph`; `fields`,
+      `contexts`, `build` and `construct` are `fieldsProduct`, `contextsProduct`,
+      `buildProduct` and `constructMonadic`; `choice` is `isChoice`. `fieldInstance` is the
+      implicit search which resolves a field's instance while ignoring the typeclass's own
+      derivation givens, so a field lands on a hand-written given, a codec or a sibling of the
+      graph and never re-enters the derivation.
+  entry .default   a field's declared default value, by its index, or `Unset`
+  entry .sumName   the name of a type, as `Text`, from its symbol
+  entry .variantLabelList   the labels of a sum's variants, in declaration order
+  entry .fieldLabelList   the labels of a product's fields, in declaration order
+  entry .field   the typeclass instance for an element, resolved without re-entering the derivation
+  entry .overridePaths   the dotted field paths a `Specific over typeclass` in scope overrides, or `Nil`
+  entry .overridePathsMacro   the macro behind `overridePaths`
+  entry .Reentrant   a marker given during a re-entry probe, so a type reaching itself resolves to its sibling
+  entry .reentrySentinel   what a re-entry probe returns; never evaluated
+  entry .isSum   whether a type is a sum, decided as the code compiles
+  entry .isSumMacro   the macro behind `isSum`
+  entry .fieldLabels   the macro behind `fieldLabelList`
+  entry .isSumType   whether a type representation is a sealed trait or enumeration with children
+  entry .isProductType   whether a type representation is a product the engine can build
+  entry .isChoice   the macro behind `choice`: whether every variant is a singleton
+  entry .fieldInstance   the macro behind `field`
+  entry .deriveGraph   the macro behind `derived`: one lazily bound instance per reachable type
+  entry .buildProduct   the macro behind `build`
+  entry .contextsProduct   the macro behind `contexts`
+  entry .fieldsProduct   the macro behind `fields`
+  entry .constructMonadic   the macro behind `construct`
+  entry .typeName   the macro behind `sumName`
+  entry .variantLabels   the macro behind `variantLabelList`
+  entry .getDefault   the macro behind `default`: reads the synthetic default-argument method

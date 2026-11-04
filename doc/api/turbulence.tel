@@ -1,0 +1,1300 @@
+tel 1.0
+
+base turbulence
+import soundness
+
+info   byte and text streams: one `read`, `writeTo` and `source` over every source and sink, with lines, stdio and async pumps
+detail
+    _Turbulence_ is the vocabulary for moving bytes and text between the things that produce
+    them and the things that consume them. Three verbs cover every source and every sink:
+    `read[T]` pulls a source in whole as the type named, `writeTo` drains a value into a
+    destination, and `source[element]` opens a value as a pull endpoint — a zephyrine
+    `Stream[Data]` or `Stream[Text]` over `Credit` — which later stages attach to with `via`
+    and terminal operations drain. Which types take part is decided by typeclasses, so a new
+    file type, socket or process joins the same three verbs as everything else:
+
+    - `Streamable` says how a value opens as a stream of `Data` or `Text` chunks;
+    - `Aggregable` says how a stream of `Data` or `Text` collapses into one value;
+    - `Readable` composes the two into `read`, bridging bytes and text through the `Charset`
+      or `Codepage` in scope when the source and the result disagree;
+    - `Writable` says how a destination drains a whole stream, and `Sink` how it opens as a
+      push endpoint (an `Intake`) for callers which write incrementally.
+
+    ```scala
+    import soundness.*
+    import charsets.utf8Charset
+    import codepages.utf8Codepage
+    import strategies.throwUnsafely
+    import lineSeparation.adaptiveLinefeedLineSeparation
+
+    val text: Text = t"The quick brown fox\njumps over the lazy dog"
+    val bytes: Data = text.read[Data]              // the UTF-8 bytes
+    bytes.read[Text]                               // the text again
+    bytes.source[Data].delineate.records.to[List]  // List(t"The quick brown fox", t"jumps over the lazy dog")
+    ```
+
+    A `Stream` is a pull endpoint over a buffer, not a lazy list of chunks: a consumer calls
+    `refill` with the `Credit` it is prepared to take, reads the window it is granted, and
+    skips past it. Nothing is copied or retained, backpressure is the absence of a call, and
+    every stream is an exclusive capability which the capture checker will not let be read
+    twice or shared. `Buffering` (zephyrine's) is the one policy every buffer consults, and
+    the `Truncation.Error` a cut stream reports is zephyrine's too, re-exported here.
+
+    Lines are a policy, not a constant: `delineate` splits a text or byte stream into a record
+    stream of its lines under the `LineSeparation` given in scope, chosen by name from the
+    `lineSeparation` package. Standard streams are a capability: `Out`, `Err` and `In` write
+    and read through the `Stdio` in scope, chosen from the `stdios` package, and
+    `Stdio.divert` and `Stdio.capture` redirect a thread's `System.out` and `System.err`.
+    Where elements are produced over time by other threads, a `Relay` fans any number of
+    producers into one reader; `Confluence` merges streams, `Divergence` replicates one, and
+    `convey` pumps a stream into an intake on its own task.
+
+    The library has four source sets:
+
+    - `turbulence.core` — the typeclasses, the `read`/`writeTo`/`source`/`load` verbs, line
+      separation, `Relay`, `StreamOutputStream` and the JDK adapters (`inputStream`, the
+      `InputStream`/`OutputStream`/channel/`Reader` givens).
+    - `turbulence.stdio` — `Stdio`, `Out`, `Err`, `In` and the `stdios` package's
+      `muteStdio`, `javaLangSystemStdio` and `fileDescriptorStdio`.
+    - `turbulence.async` — `Confluence`, `Divergence` and `convey`, which need a parasite
+      `Monitor` and `Probate`, so they run inside `supervise`.
+    - `turbulence.wasi` — `stdios.wasiStdio`, a `Stdio` over the WASI CLI stream resources,
+      and `wasiApis.wasiCliApi`, the WIT interface it is typechecked against.
+
+    Everything is exported to the `soundness` umbrella, and the `lineSeparation`, `stdios`
+    and `wasiApis` choice packages merge with the umbrella's own. Their givens are imported
+    by name, since `import soundness.*` does not import givens; the companion givens
+    (`Streamable.bytes`, `Readable.dataText`, `Writable.outputStreamData`, …) resolve
+    through implicit scope with no import.
+
+refer turbulence.Streamable
+refer turbulence.Readable
+refer turbulence.Writable
+refer turbulence.Aggregable
+refer turbulence.Sink
+refer turbulence.LineSeparation
+refer turbulence.Stdio
+refer turbulence.Relay
+refer zephyrine.Stream
+refer zephyrine.Buffering
+refer zephyrine.Truncation
+
+entry .Streamable   a value which opens as a pull endpoint: a `Stream` of `Data` or `Text` over `Credit`
+  detail
+      `value is Streamable by medium over Credit` is the evidence that `value` can be opened
+      as a `(Stream[medium] over Credit)^`, where `medium` is `Data` or `Text`. It is the
+      source half of `read`, the source half of `writeTo`, and the whole of `source`. The
+      trait has one abstract method, `#stream`; an instance which needs a buffer policy or an
+      error context takes it as a contextual parameter of the given and captures it, which is
+      why most givens here are written `(tactic: Tactic[Truncation.Error], buffering:
+      Buffering) => (… is Streamable …)^{tactic}`.
+
+      ```scala
+      import soundness.*
+
+      case class Row(name: Text, count: Int)
+
+      object Row:
+        given streamable: Row is Streamable by Text over Credit =
+          row => Stream(t"${row.name},${row.count}")
+
+      Row(t"apples", 3).source[Text]
+      Row(t"apples", 3).read[Text]   // t"apples,3"
+      ```
+
+      Values which are streamable without any instance of their own: `Data` and `Text`
+      (`.bytes`, `.text`, and `.textData` to stream text as bytes through the `Codepage` in
+      scope), a `Chain[Data]` or `Chain[Text]` of chunks, an `HttpStreams.Body`, a
+      zephyrine `Spring[Data]`, and the JDK's `InputStream`, `ReadableByteChannel` and
+      `Reader`. A stream opened from a JDK source raises `Truncation.Error` through the
+      `Tactic` the given captured if the source fails mid-read, and closes the source when it
+      ends.
+
+      Every type which streams by `Data` also reads as `Text` and vice versa: `Readable`
+      bridges through the `Charset` or `Codepage` in scope, so one `Streamable` instance is
+      enough for a source. `#contramap` derives an instance for a type which can be turned
+      into one that already has an instance.
+  refer turbulence.Readable
+  refer turbulence.source
+  refer zephyrine.Stream
+  entry #Transport   the demand type the stream is pulled with: `Credit` for every instance here
+  entry #stream   opens the value as a fresh pull endpoint
+      Each call mints a new `(Stream[Operand] over Transport)^`; the stream is an exclusive
+      capability, drained by one consumer. `value.source[element]` is the fluent form.
+  entry #contramap   an instance for `self2`, by turning it into a `Self` first
+      `streamable.contramap(lambda)` is `self2 is Streamable by Operand over Transport`,
+      streaming `lambda(value)`. The result captures both the original instance and the
+      lambda.
+  entry .bytes   a `Data` streams as itself, in one window
+      `Data is Streamable by Data over Credit`: `Stream(data)`, a region-stable stream whose
+      single window is the array itself, shared by reference and never copied.
+  entry .sizedBytes   a `Data & Sized[length]` streams as its bytes
+      A sized block is a refinement of `Data` which the exact-`Self` `.bytes` instance does
+      not match, so it has an instance of its own with the same behaviour.
+  entry .transported   bytes tagged with a format, `Data over transport`, stream as plain bytes
+      What `value.in[Data over Protobuf]` writes reads back through the ordinary byte
+      pipeline: the tag is a phantom and the stream is `Stream(data)`.
+  entry .text   a `Text` (or any subtype) streams as itself, in one window
+      `textual is Streamable by Text over Credit` for every `textual <: Text`, so a refined
+      or branded text needs no instance of its own.
+  entry .textData   a `Text` streams as bytes, encoded through the `Codepage` in scope
+      Needs a `Codepage` and a `Buffering`. The text is encoded incrementally through the
+      encoder duct, so `text.source[Data]` and `text.read[Data]` never hold the whole
+      encoding at once. With a `Codepage` in scope, `load` prefers this byte route for a
+      `Text` source, as `read` does.
+  entry .chainData   a lazy `Chain[Data]` of chunks is a byte source
+      Each chunk becomes one window. The chain's production is beyond the stream's demand
+      control — a `Chain` is produced by whoever built it — so credit bounds only how much of
+      each chunk is exposed at a time.
+  entry .chainText   a lazy `Chain[Text]` of chunks is a text source
+  entry .httpBody   an `HttpStreams.Body` (the HTTP-body interchange protocol) is a byte source
+      Needs a `Buffering`. Each refill asks the body for one block-sized chunk, so a request
+      or response body is `read` directly, without first being materialised.
+  entry .spring   a zephyrine `Spring[Data]` is a byte source, minting a fresh endpoint per pull
+      Needs a `Tactic[Truncation.Error]`, which the instance captures: a spring's `apply()`
+      raises it when the source is cut, so a request body or a multipart part can be `read`
+      or handed to a parser as it is.
+  entry .inputStream   any `java.io.InputStream` is a byte source
+      Needs a `Tactic[Truncation.Error]` and a `Buffering`. Reads go through a channel over
+      the stream, directly into the stream's own storage, at most one granted block
+      (`buffering.capacity(Substrate.Bytes)`) at a time. End of input closes the
+      `InputStream`; an `IOException` mid-read closes it and aborts with `Truncation.Error`
+      carrying the bytes delivered so far.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val input = java.io.ByteArrayInputStream(Array.unsafeJvm(t"hello".read[Data]))
+      input.read[Text]   // t"hello"
+      ```
+  entry .channel   any `java.nio.channels.ReadableByteChannel` is a byte source
+      As `.inputStream`, reading each block with `channel.read(buffer)`; needs a
+      `Tactic[Truncation.Error]` and a `Buffering`.
+  entry .reader   any `java.io.Reader` is a text source
+      Needs a `Tactic[Truncation.Error]` and a `Buffering`. Characters are read in blocks of
+      `buffering.capacity(Substrate.Chars)` into a char window; the reader is closed at end of
+      input, and an `IOException` aborts with `Truncation.Error` carrying the characters
+      delivered so far.
+
+entry .Readable   a source which can be read whole as a result type: the composition behind `read[T]`
+  detail
+      `source is Readable to result` is what `value.read[result]` needs. It is almost never
+      written by hand: `Readable`'s companion composes it from a `Streamable` instance for
+      the source and an `Aggregable` instance for the result, bridging bytes and text through
+      the `Charset` or `Codepage` in scope when the two disagree. The four pipelines are
+      ordinary prioritised givens, highest first:
+
+      - `dataToData` (in `Readable` itself): a byte source to a byte-aggregated result;
+      - `textToText` (in `Readable1`): a text source to a text-aggregated result;
+      - `dataToText` (in `Readable2`): a byte source decoded through a `Charset` (needs a
+        `Buffering`);
+      - `textToData` (in `Readable3`): a text source encoded through a `Codepage` (needs a
+        `Buffering`).
+
+      So a type with only a `Streamable by Data` instance reads as `Text`, and one with only
+      `Streamable by Text` reads as `Data`, given an encoding; a type with both prefers the
+      direct route. Because they are givens rather than a macro, a missing instance is an
+      ordinary failed implicit search: the message is _turbulence: the source cannot be read
+      as the target type; this needs a `Source` instance for the source and an `Aggregable`
+      instance for the target, plus a `Charset` or `Codepage` if their operands (Data/Text)
+      differ_.
+
+      ```scala
+      import soundness.*
+      import charsets.utf8Charset
+      import codepages.utf8Codepage
+
+      val text = t"The quick brown fox"
+      text.read[Text]          // t"The quick brown fox"
+      text.read[Data]          // the UTF-8 bytes
+      text.read[Chain[Text]]   // the text as a lazy chain of chunks
+      text.read[Data].read[Text]
+      ```
+
+      A whole `Data` in hand has direct instances (`.dataData`, `.dataText`) which decode in
+      one step rather than through a one-window stream, which is what makes a file's
+      `path.read[Text]` a genuinely direct read. The bridged pipelines transcode
+      incrementally, in bounded buffers, on the reading thread.
+  refer turbulence.read
+  refer turbulence.Streamable
+  refer turbulence.Aggregable
+  entry #read   reads the value whole as the result type
+  entry .dataData   a `Data` reads as itself, with no copy
+  entry .dataText   a `Data` reads as `Text`, decoded whole through the `Charset` in scope
+  entry .sizedDataData   a `Data & Sized[length]` reads as `Data`
+      A sized block is a refinement the exact-`Self` `.dataData` does not match, so it has
+      its own instance.
+  entry .sizedDataText   a `Data & Sized[length]` reads as `Text` through the `Charset` in scope
+  entry .dataToData   a byte-streamable source reads as any byte-aggregable result
+      The highest-priority composed pipeline: `source is Streamable by Data over Credit` with
+      `result is Aggregable by Data`, no encoding needed. The result captures both instances.
+
+entry .Readable1   the second-priority `read` pipeline: a text source to a text result
+  hidden
+  detail
+      A priority layer of `Readable`'s companion, not for direct use: it holds the pipeline
+      which `Readable.dataToData` outranks and which outranks the two bridged ones.
+  entry #textToText   a text-streamable source reads as any text-aggregable result
+      `source is Streamable by Text over Credit` with `result is Aggregable by Text`; no
+      encoding is needed.
+
+entry .Readable2   the third-priority `read` pipeline: a byte source decoded to a text result
+  hidden
+  detail
+      A priority layer of `Readable`'s companion, not for direct use.
+  entry #dataToText   a byte-streamable source reads as a text-aggregable result through a `Charset`
+      Needs a `Charset` and a `Buffering`: the bytes are decoded incrementally through the
+      charset duct, so `bytes.read[Text]` on a stream never holds the whole decoding at once.
+
+entry .Readable3   the lowest-priority `read` pipeline: a text source encoded to a byte result
+  hidden
+  detail
+      A priority layer of `Readable`'s companion, not for direct use.
+  entry #textToData   a text-streamable source reads as a byte-aggregable result through a `Codepage`
+      Needs a `Codepage` and a `Buffering`: the text is encoded incrementally through the
+      codepage duct.
+
+entry .Aggregable   a result type which can be built from a stream of `Data` or `Text` chunks
+  detail
+      `result is Aggregable by medium` is the result half of `read[result]`: how a whole
+      stream of `Data` or `Text` collapses into one value. `Data` and `Text` are aggregable
+      by their own medium (`.bytesData`, `.textText`), `Text` also by `Data` through the
+      `Charset` in scope (`.bytesText`), and a `Chain[element]` of anything aggregable is
+      aggregable (`.stream`), which is how `read[Chain[Text]]` works.
+
+      The trait has two methods. `#aggregate` takes the legacy shape, a lazy `Chain` of
+      chunks; `#accept` takes a pull endpoint and, by default, materialises one chunk per
+      refill and delegates to `aggregate`. The `Data` and `Text` instances override `accept`
+      to copy each window straight into a builder, with no intermediate chunks, and a format
+      whose `accept` streams should do the same. `#map` derives an instance for a type
+      reachable from an aggregated one, forwarding `accept` as well as `aggregate` so that a
+      streaming `accept` is not lost under the mapping.
+
+      ```scala
+      import soundness.*
+
+      case class Shout(text: Text)
+
+      object Shout:
+        given aggregable: Shout is Aggregable by Text =
+          summon[Text is Aggregable by Text].map: text =>
+            Shout(text.upper)
+
+      t"the quick brown fox".read[Shout]   // Shout(t"THE QUICK BROWN FOX")
+      ```
+  refer turbulence.Readable
+  refer turbulence.read
+  entry #aggregate   builds the result from a lazy `Chain` of chunks
+  entry #accept   builds the result by draining a pull endpoint
+      The default refills with unbounded credit, materialises each window as a chunk and
+      hands the lazy chain of them to `#aggregate`. Override it to read the windows directly.
+  entry #map   an instance for `self2`, by transforming the aggregated `Self`
+      The mapped instance forwards both `accept` and `aggregate`, and captures the original
+      instance and the lambda.
+  entry .bytesData   a stream of `Data` aggregates to one `Data`
+      Copies each window into a growing byte builder, one copy per region, and builds the
+      result once. The `aggregate` form sums the chunk lengths and places each chunk.
+  entry .bytesText   a stream of `Data` aggregates to `Text`, decoded through the `Charset` in scope
+      `.bytesData` mapped through `Charset#decoded`: the bytes are gathered whole and decoded
+      in one step.
+  entry .textText   a stream of `Text` aggregates to one `Text`
+  entry .stream   a `Chain[element2]` is aggregable by `element` wherever `element2` is
+      Each chunk is aggregated on its own, so `read[Chain[Text]]` yields one element per
+      chunk of the source rather than one joined value.
+
+entry .Writable   a destination which drains a whole stream of `Data` or `Text` chunks
+  detail
+      `target is Writable by medium` is what `value.writeTo(target)` needs on the target's
+      side: a single method, `#write`, which takes the target and a pull endpoint and drains
+      it to completion. The JDK's `OutputStream` and `WritableByteChannel` are writable by
+      `Data` (and `OutputStream` by `Text`, through the `Codepage` in scope), and an adapter
+      pair makes any `Writable by Text` also `Writable by Data` and vice versa, so a
+      destination needs one instance for whichever medium is natural to it.
+
+      ```scala
+      import soundness.*
+      import codepages.utf8Codepage
+      import strategies.throwUnsafely
+
+      class Store():
+        val buffer: StringBuilder = StringBuilder()
+
+      object Store:
+        given writable: Store is Writable by Text = (store, stream) =>
+          stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^].drain:
+            region => range => store.buffer.append(region.materialize(range).s)
+
+      val store = Store()
+      t"hello".writeTo(store)
+      t"hello".read[Data].writeTo(store)   // bytes, through the decoding adapter
+      ```
+
+      A write failure is reported, not thrown: the JDK givens take an `Emit[Truncation.Error]`
+      and `raise` the error with the count of bytes written before the cut, then stop
+      writing. The target is closed whether or not the write failed. A writer never aborts,
+      so a `Writable` given is summoned under an `Emit`, never a `Tactic`.
+
+      `Sink` is the push-side counterpart, for callers which write incrementally through an
+      `Intake` instead of handing over a whole stream. The `write` method's stream parameter
+      is not declared `consume`, so an instance which hands it to a consuming operation
+      crosses it as a neutral reference, as the sample does.
+  refer turbulence.writeTo
+  refer turbulence.Sink
+  refer zephyrine.Truncation
+  entry #write   drains the stream into the target, to completion
+  entry #contramap   an instance for `self2`, by turning it into a `Self` first
+  entry .outputStreamData   any `java.io.OutputStream` is writable by `Data`
+      Needs an `Emit[Truncation.Error]` and a `Buffering`. Each window is written straight
+      from the stream's own storage; the stream is flushed and closed at the end, and an
+      `IOException` at any point raises `Truncation.Error` with the bytes written so far.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val output = java.io.ByteArrayOutputStream()
+      t"hello".read[Data].writeTo(output)
+      output.toByteArray.nn.length   // 5
+      ```
+  entry .outputStreamText   a `java.io.OutputStream` is writable by `Text`, encoded through the `Codepage` in scope
+      As `.outputStreamData`, with the text encoded incrementally through the codepage duct;
+      needs a `Codepage` as well.
+  entry .decodingAdapter   a target writable by `Text` is writable by `Data`, through the `Charset` in scope
+      The bytes are decoded incrementally through the charset duct before reaching the text
+      writer; needs a `Charset` and a `Buffering`.
+  entry .encodingAdapter   a target writable by `Data` is writable by `Text`, through the `Codepage` in scope
+      The text is encoded incrementally through the codepage duct before reaching the byte
+      writer; needs a `Codepage` and a `Buffering`.
+  entry .chunked   a target writable by a medium is writable by a record stream of that medium's chunks
+      `writable is Writable by (Array[medium]^{})`: each record of the stream is one chunk,
+      written in order. This is the shape of an event log, where every formatted event is one
+      `Text` or `Data` chunk, and is what a `Logger`'s destination needs. Needs the medium's
+      `Addressable` and a `Buffering`.
+  entry .channel   a `java.nio.channels.WritableByteChannel` is writable by `Data`
+      Needs an `Emit[Truncation.Error]` and a `Buffering`. Each window is wrapped as a
+      `ByteBuffer` and written until drained; a `-1` from the channel or an exception raises
+      `Truncation.Error` with the bytes written so far. The channel is not closed.
+
+entry .Sink   a destination which opens as a push endpoint: an `Intake` of `Data` or `Text` over `Credit`
+  detail
+      `target is Sink by medium over Credit` is the push-side counterpart of `Writable`:
+      rather than draining a whole stream, `#intake` opens the target as a zephyrine
+      `(Intake[medium] over Credit)^`, which a caller writes to incrementally with `put`, and
+      which a stream is pumped into with `pump` or, on its own task, `convey`. `finish`
+      closes the underlying resource, as `Writable` does at the end of a stream.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val output = java.io.ByteArrayOutputStream()
+      val sink = summon[(java.io.ByteArrayOutputStream is Sink by Data over Credit)^]
+      t"hello".read[Data].source[Data].pump(sink.intake(output))
+      output.toByteArray.nn.length   // 5
+      ```
+
+      A write failure is reported through the `Emit[Truncation.Error]` the given captured —
+      a sink only reports a cut, never aborts — and the intake's demand drops to zero so
+      that a pump stops. `.buffered` adapts a whole-chain writing function to the intake
+      protocol for a target which has only that.
+  refer turbulence.Writable
+  refer turbulence.convey
+  refer zephyrine.Intake
+  entry #Transport   the demand type of the intake: `Credit` for every instance here
+  entry #intake   opens the target as a fresh push endpoint
+  entry #contramap   an instance for `self2`, by turning it into a `Self` first
+  entry .outputStream   any `java.io.OutputStream` opens as a byte intake
+      Needs an `Emit[Truncation.Error]` and a `Buffering`. Writes are staged in a block of
+      `buffering.capacity(Substrate.Bytes)` bytes and written through (and flushed) when it
+      fills, on `flush`, and on `finish`, which then closes the stream. An `IOException`
+      marks the intake broken — its demand becomes zero — and raises `Truncation.Error` with
+      the bytes written so far.
+  entry .channel   a `java.nio.channels.WritableByteChannel` opens as a byte intake
+      As `.outputStream`, writing each staged block through a `ByteBuffer`; `finish` closes
+      the channel.
+  entry .buffered   an intake which accumulates chunks and hands them all to a whole-chain writer on `finish`
+      `Sink.buffered(target, write)` takes a `(target, Chain[medium]) => Unit` and returns an
+      `(Intake[medium] over Credit)^`: writes are staged by the `Buffering` block size, each
+      full block becomes one chunk, and `finish` calls `write` once with every chunk in
+      order. Its demand is honestly unbounded, since it keeps everything until `finish`. It
+      needs the medium's `Addressable` and a `Buffering`.
+
+      ```scala
+      import soundness.*
+
+      var sizes: List[Int] = Nil
+      val intake = Sink.buffered[Unit, Data]((), (_, chunks) => sizes = chunks.map(_.length).to[List])
+      intake.put(Data.fill(8)(_.toByte))
+      intake.finish()
+      ```
+
+entry .Loadable   a document type which parses from a stream of `Data` or `Text`, keeping its metadata
+  detail
+      `result is Loadable by medium` is what `value.load[result]` needs on the result's
+      side: `#load` takes a pull endpoint and returns a `Document[result]`, the parsed root
+      beside the metadata the parse discovered (an XML prologue's encoding, an HTML
+      document's source positions). The `Self` must be a `Documentary`, which declares what
+      its metadata is. Formats such as `Xml`, `Html`, `Tel` and `Math` provide instances,
+      usually one by `Text` and one by `Data`, each capturing the `Tactic` for its own parse
+      error.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import charsets.utf8Charset
+
+      val document: Document[Xml] = t"<doc><a/></doc>".load[Xml]
+      document()         // the parsed Xml root
+      document.metadata
+      ```
+
+      Where a source and a loader disagree on medium, `load` bridges through the `Charset`
+      or `Codepage` in scope; `.fromData` and `.fromText` are the two halves of that
+      dispatch, for code which already holds a stream.
+  refer turbulence.load
+  refer turbulence.Document
+  refer turbulence.Documentary
+  entry #Self   the document type, a `Documentary`
+  entry #Operand   the medium the loader reads: `Data` or `Text`
+  entry #load   parses the stream into a `Document[Self]`
+  entry .fromData   loads a document from a byte stream, decoding through a `Charset` if the loader wants text
+      `Loadable.fromData[result](stream)` consumes the stream. It prefers a `result is
+      Loadable by Data`; failing that it uses a `Loadable by Text` through the `Charset` and
+      `Buffering` in scope; and with neither it fails to compile with _turbulence: the result
+      type has no `Loadable` instance_.
+  entry .fromText   loads a document from a text stream, encoding through a `Codepage` if the loader wants bytes
+      The text twin of `.fromData`: a `Loadable by Text` first, else `Loadable by Data`
+      through the `Codepage` and `Buffering` in scope.
+  entry .whole   a whole-value source's bytes as a one-window stream
+      `Loadable.whole(source)` reads the source with its `Readable to Data` instance and
+      wraps the result as a `Stream[Data]`: the route `load` takes for a source which is not
+      streamable but is readable whole, such as a filesystem path.
+
+entry .Document   a parsed document: its root value beside the metadata the parse discovered
+  detail
+      `Document[content]` is what `load[content]` returns. `#root` (also `#apply`) is the
+      parsed value, and `#metadata` is typed by the content's own `Documentary` declaration:
+      `root.Metadata`, so an `Xml` document's metadata is whatever `Xml` says it is.
+  refer turbulence.Loadable
+  refer turbulence.load
+  entry #root   the parsed document
+  entry #metadata   what the parse discovered beside the content, typed as `root.Metadata`
+  entry #apply   the parsed document, as `document()`
+
+entry .Documentary   a type which can be the content of a `Document`, declaring its metadata type
+  detail
+      A marker trait for a format's root type: `type Metadata` is what a parse of it discovers
+      beside the content, and `Document[content]` exposes it as `root.Metadata`. `Xml`,
+      `Html`, `Tel`, `Email` and `Math` are documentaries; a new format extends it and gives a
+      `Loadable` instance.
+  refer turbulence.Document
+  refer turbulence.Loadable
+  entry #Self   the documentary type itself
+  entry #Metadata   what a parse of this type discovers beside its content
+
+entry .Eof   a file named for appending: `Eof(file)` is the file's end
+  detail
+      `Eof(path)` wraps a path so that opening it means opening the file for appending. The
+      filesystem library makes `Eof[file]` openable wherever `file` is, prepending the `Append`
+      flag, so `Eof(path).open(...)` appends where `path.open(...)` would overwrite. The
+      wrapper itself is just the case class with its one field.
+  entry #file   the wrapped file
+
+entry .Line   one line of text, which renders with the newline the `LineSeparation` in scope uses
+  detail
+      `Line(content)` holds a line without its terminator; `line()` appends the newline
+      sequence of the `LineSeparation` given in scope, so one value renders as `\n`, `\r\n`
+      or `\r` according to the policy chosen.
+  refer turbulence.LineSeparation
+  entry #content   the line's text, without a terminator
+  entry #apply   the line with the `LineSeparation`'s newline appended
+
+entry .LineSeparation   a line-ending policy: which of CR, LF, CRLF and LFCR end a line, and how a line is written
+  detail
+      A `LineSeparation` says how `delineate` splits text into lines, and which sequence
+      `Line#apply` and `#newlineData` write. It is a value of five fields: `#newline`, the
+      `NewlineSeq` written out, and four `Action`s saying what a bare CR, a bare LF, a CRLF
+      pair and an LFCR pair each do when read — end a line (`Nl`), stay in the text as a
+      character (`Cr`, `Lf`), be dropped (`Skip`), or end a line and keep part of themselves
+      (`NlCr`, `NlLf`, `CrNl`, `LfNl`) or end two (`NlNl`).
+
+      The policy is never implicit: the `lineSeparation` package has the standard ones,
+      imported by name, and the same text splits differently under each.
+
+      ```scala fuel
+      frame
+        label Adaptive: any of CR, LF, CRLF or LFCR ends a line
+        code
+            locally:
+              import lineSeparation.adaptiveLinefeedLineSeparation
+              t"a\r\nb\rc\nd".delineate.to[List]   // List(t"a", t"b", t"c", t"d")
+      frame
+        label Linefeeds: LF ends a line and a bare CR is dropped
+        code
+            locally:
+              import lineSeparation.linefeedLineSeparation
+              t"a\r\nb\rc\nd".delineate.to[List]   // List(t"a", t"bc", t"d")
+      frame
+        label Carriage returns: CR ends a line and a bare LF is dropped
+        code
+            locally:
+              import lineSeparation.carriageReturnLineSeparation
+              t"a\r\nb\rc\nd".delineate.to[List]   // List(t"a", t"b", t"cd")
+      frame
+        label CRLF only: a bare CR is dropped and a bare LF stays in the text
+        code
+            locally:
+              import lineSeparation.carriageReturnLinefeedLineSeparation
+              t"a\r\nb\rc\nd".delineate.to[List]   // List(t"a", t"bc\nd")
+      ##
+      ```
+
+      The splitting itself is a zephyrine `Duct`, applied as a stage: `.lines` is the
+      `Ductile` instance which lets a policy value be attached to a text stream with `via`,
+      yielding a record stream with one `Text` per line, without its terminator. A final
+      line with no terminator is still delivered; an empty input yields no lines; and a
+      two-character sequence split across two windows is resolved across the boundary. A
+      byte stream under an ASCII-transparent encoding (UTF-8, ASCII, Latin-1) is split in the
+      raw bytes by `.byteLines`, each line decoded whole in one step, which `delineate`
+      chooses by checking the `Charset`; any other encoding decodes first.
+
+      A line with no separator at all grows the carried partial line without bound, as any
+      line reader must; cap the input upstream if it is adversarial.
+  refer turbulence.delineate
+  refer turbulence.lineSeparation
+  refer turbulence.Line
+  entry .NewlineSeq   the sequence a policy writes as a line ending: `Cr`, `Lf`, `CrLf` or `LfCr`
+    detail
+        An enum of the four newline sequences; `#text` is the sequence as `Text`
+        (`"\r"`, `"\n"`, `"\r\n"`, `"\n\r"`), and `LineSeparation#newlineData` gives the same as
+        bytes.
+    entry #text   the sequence as text
+  entry .Action   what a policy does with a CR, LF, CRLF or LFCR it reads
+      An enum of nine actions: `Nl` ends the line; `Cr` and `Lf` keep the character in the
+      line's text; `Skip` drops it; `NlCr` and `NlLf` end the line and start the next with
+      the character; `CrNl` and `LfNl` append the character and then end the line; and
+      `NlNl` ends two lines. A `LineSeparation` names one for each of its `cr`, `lf`, `crlf`
+      and `lfcr` fields.
+  entry .lines   the `Ductile` instance which applies a policy to a text stream as a stage
+      `stream.via(lineSeparation)` attaches the line-splitting duct, producing a
+      `Stream[Array[Text]^{}]` — a record stream with one `Text` per line — and translating
+      line credit to character credit one for one. `delineate` is the same with the policy
+      taken from scope. It needs a `Buffering`.
+  entry .asciiTransparent   whether a `0x0A` or `0x0D` byte in a charset can only be a line terminator
+      True for UTF-8, US-ASCII and ISO-8859-1, in which no multi-byte sequence contains those
+      bytes, so lines can be found before decoding. False for UTF-16 and the rest.
+  entry .byteLines   the byte-level line duct for an ASCII-transparent encoding
+      `LineSeparation.byteLines(policy, charset)` builds a `Duct[Data, Array[Text]^{}]` which
+      finds terminators in the raw bytes and decodes each completed line in one fused call,
+      with no separate decoding stage; a multi-byte character cut by a window boundary simply
+      accumulates with the line. It is a method rather than a given, applied by `delineate`
+      once it has checked the encoding with `.asciiTransparent`, and must not be used with an
+      encoding that fails that check. Needs a `Buffering`.
+  entry #newline   the sequence written as a line ending
+  entry #cr   what a bare carriage return does when read
+  entry #lf   what a bare linefeed does when read
+  entry #crlf   what a carriage return followed by a linefeed does when read
+  entry #lfcr   what a linefeed followed by a carriage return does when read
+  entry #newlineData   the newline sequence as bytes
+      `Data(13)`, `Data(10)`, `Data(13, 10)` or `Data(10, 13)` for `Cr`, `Lf`, `CrLf` and
+      `LfCr`.
+
+entry .lineSeparation   the standard line-ending policies, each a given to import by name
+  detail
+      Which characters end a line is decided by the `LineSeparation` given in scope, and the
+      choice is never implicit: `import soundness.*` brings none of these in, and one is
+      imported by name. Each is a `LineSeparation` value whose action table the test suite
+      runs through every fragmentation of its input.
+
+      ```scala
+      import soundness.*
+      import lineSeparation.adaptiveLinefeedLineSeparation
+
+      t"one two\nthree four\r\nfive".delineate.to[List]   // List(t"one two", t"three four", t"five")
+      ```
+
+      `adaptiveLinefeedLineSeparation` suits input of unknown provenance; the strict
+      policies are for formats where a lone character of the other kind is data, and
+      `javaBaseLineSeparation` follows the running platform.
+  refer turbulence.LineSeparation
+  refer turbulence.delineate
+  entry .adaptiveLinefeedLineSeparation   any of CR, LF, CRLF or LFCR ends a line; writes LF
+      Every sequence is one line break, so `a\n\nb` is three lines (`a`, an empty line, `b`)
+      and `a\r\nb` two.
+  entry .linefeedLineSeparation   LF ends a line; a bare CR is dropped; CRLF and LFCR are one break; writes LF
+      `a\rb` is the one line `ab`.
+  entry .strictLinefeedsLineSeparation   a bare CR ends a line and an LF stays in the text; writes LF
+      The action table as it stands is `cr = Nl, lf = Lf, crlf = NlLf, lfcr = LfNl` — the
+      same as `strictCarriageReturnLineSeparation` — so `a\nb` is the one line `a\nb` and
+      `a\rb` is two; only the written newline (LF) differs.
+  entry .carriageReturnLineSeparation   CR ends a line; a bare LF is dropped; CRLF and LFCR are one break; writes CR
+      `a\nb` is the one line `ab`.
+  entry .strictCarriageReturnLineSeparation   only CR ends a line; an LF stays in the text; writes CR
+      `a\r\nb` is the two lines `a` and `\nb`.
+  entry .carriageReturnLinefeedLineSeparation   only CRLF ends a line; a bare CR is dropped and a bare LF kept; writes CRLF
+      `a\nb` is the one line `a\nb`, `a\rb` is `ab`, and `a\n\rb` is `a\n` and `b`.
+  entry .javaBaseLineSeparation   the policy matching the JVM's `System.lineSeparator`
+      `carriageReturnLinefeedLineSeparation` on Windows, `linefeedLineSeparation` where the
+      separator is LF, `carriageReturnLineSeparation` for CR, and otherwise the adaptive
+      policy.
+
+entry .source   opens a value as a pull endpoint, naming the element type: `value.source[Data]`
+  detail
+      An extension on any value with a `Streamable by element over Credit` instance:
+      `value.source[Text]` or `value.source[Data]` is `streamable.stream(value)`, a fresh
+      `(Stream[element] over Credit)^`. It is the fluent form of `Streamable#stream`, named
+      `source` because zephyrine's `.stream` constructor owns that name under the umbrella.
+      The element type is given explicitly where a value is streamable both ways, as `Text`
+      is with a `Codepage` in scope.
+
+      ```scala
+      import soundness.*
+      import codepages.utf8Codepage
+
+      t"The quick brown fox".source[Text].memoize
+      t"The quick brown fox".source[Data].memoize
+      ```
+  refer turbulence.Streamable
+
+entry .read   reads a value whole as the type named: `value.read[Text]`, `value.read[Data]`
+  detail
+      An inline extension on any value with a `Readable to result` instance. A source with a
+      `Streamable` instance by either medium reads as `Data`, as `Text`, or as a
+      `Chain[Data]` or `Chain[Text]`, or as any type with an `Aggregable` instance, with the
+      `Charset` or `Codepage` in scope bridging bytes and text. A file, a URL, a process's
+      output and a classpath resource all read with this one verb.
+
+      ```scala
+      import soundness.*
+      import charsets.utf8Charset
+      import codepages.utf8Codepage
+      import strategies.throwUnsafely
+
+      t"The quick brown fox".read[Data].read[Text]   // t"The quick brown fox"
+      ```
+
+      A JDK source raises `Truncation.Error` through the `Tactic` its `Streamable` given
+      captured if it is cut mid-read; a `Data` or `Text` in hand reads without a stream at all.
+  refer turbulence.Readable
+
+entry .writeTo   drains a value into a destination: `value.writeTo(target)`
+  detail
+      An extension on any value with a `Streamable by element over Credit` instance, for any
+      target with a `Writable by element` instance: `value.writeTo(target)` streams the value
+      and hands the stream to the target's writer, which drains it to completion and closes
+      the target. The element type is inferred from the two instances, and the `Writable`
+      adapters let text go to a byte sink and bytes to a text sink through the encoding in
+      scope. A JDK target reports a cut with `Truncation.Error` through its `Emit`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val output = java.io.ByteArrayOutputStream()
+      t"The quick brown fox".read[Data].writeTo(output)
+      ```
+  refer turbulence.Writable
+  refer turbulence.Streamable
+
+entry .load   parses a value as a document type, keeping the metadata: `value.load[Xml]`
+  detail
+      An inline extension on any value: `value.load[result]` returns a `Document[result]` for
+      any `result <: Documentary` with a `Loadable` instance. It resolves its instances at the
+      call site, in order: a byte-streamable source with a byte loader, else a text loader
+      through the `Charset` in scope; a text-streamable source with a text loader, else a byte
+      loader through the `Codepage` in scope; and finally a source which is not streamable but
+      is `Readable to Data` (a filesystem path), read whole. A `Text` with a `Codepage` in
+      scope therefore takes the byte route, as `read` does. Each loader captures the `Tactic`
+      for its own parse error, which must be in scope.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import charsets.utf8Charset
+
+      t"<doc><a/></doc>".load[Xml]()
+      ```
+  refer turbulence.Loadable
+  refer turbulence.Document
+
+entry .delineate   splits text or bytes into lines under the `LineSeparation` in scope
+  detail
+      Four overloads, one implementation. On a `(Stream[Text] over Credit)^` it attaches the
+      `LineSeparation.lines` duct and yields a `(Stream[Array[Text]^{}] over Credit)^` — a
+      record stream with one `Text` per line, without its terminator — to drain with
+      `records`, `memoize`, or compose onward. On a `(Stream[Data] over Credit)^` it needs a
+      `Charset` too: under an ASCII-transparent encoding (UTF-8, ASCII, Latin-1) the
+      separators are found in the raw bytes and each line is decoded whole, in one fused call;
+      under any other encoding the stream is decoded first and the characters split. On a
+      whole `Text` or `Data` it drives the same duct over the value as a single window and
+      returns an `Array[Text]^{}` directly. Every form needs a `LineSeparation` (imported by
+      name from `lineSeparation`) and a `Buffering`.
+
+      ```scala fuel
+      frame
+        label A byte stream
+        code
+            import soundness.*
+            import charsets.utf8Charset
+            import strategies.throwUnsafely
+            import lineSeparation.adaptiveLinefeedLineSeparation
+
+            val bytes: Data = t"first\nsecond\r\nthird".read[Data]
+            bytes.source[Data]
+      frame
+        label Split into lines, as a record stream
+        code
+            import soundness.*
+            import charsets.utf8Charset
+            import strategies.throwUnsafely
+            import lineSeparation.adaptiveLinefeedLineSeparation
+
+            val bytes: Data = t"first\nsecond\r\nthird".read[Data]
+            bytes.source[Data].delineate
+      frame
+        label Drained as records
+        code
+            import soundness.*
+            import charsets.utf8Charset
+            import strategies.throwUnsafely
+            import lineSeparation.adaptiveLinefeedLineSeparation
+
+            val bytes: Data = t"first\nsecond\r\nthird".read[Data]
+            bytes.source[Data].delineate.records.to[List]   // List(t"first", t"second", t"third")
+      frame
+        label Or written out, one line per record
+        code
+            import soundness.*
+            import charsets.utf8Charset
+            import codepages.utf8Codepage
+            import strategies.throwUnsafely
+            import lineSeparation.adaptiveLinefeedLineSeparation
+
+            val bytes: Data = t"first\nsecond\r\nthird".read[Data]
+            val output = java.io.ByteArrayOutputStream()
+            bytes.source[Data].delineate.records.map(_ + t"\n").to[Chain].writeTo(output)
+      ##
+      ```
+
+      A line spanning many windows is reassembled, a final line with no terminator is
+      delivered, and an empty input yields no lines. The name is `delineate` rather than
+      `lines` because gossamer's value-level `lines` would shadow a same-named extension under
+      the umbrella.
+  refer turbulence.LineSeparation
+  refer turbulence.lineSeparation
+
+entry .inputStream   a byte stream as a `java.io.InputStream`, for handing to JDK APIs
+    Two forms. On a `(Stream[Data] over Credit)^` (needing a `Buffering`), the result pulls
+    through the window one block of credit at a time and never materialises a chunk;
+    `close` closes the endpoint, and so does reaching its end. On a `Chain[Data]`, the
+    result walks the chain's chunks; its `close` does nothing. Both are the bridge to a Java
+    library which insists on an `InputStream`.
+
+    ```scala
+    import soundness.*
+    import codepages.utf8Codepage
+
+    val input: java.io.InputStream = t"hello".source[Data].inputStream
+    input.read()   // 104
+    ```
+
+entry .httpBody   a byte stream as an `HttpStreams.Body`, the HTTP-body interchange protocol
+    An extension on a `(Stream[Data] over Credit)^` (consumed): each `next(limit)` of the
+    body refills the stream with `limit` credit and materialises the region delivered, and
+    returns `null` once the stream ends. The inverse of the `stream` extension on a body.
+    Not exported to the umbrella: reach it as `turbulence.httpBody`.
+
+entry .stream   an `HttpStreams.Body` as a pull endpoint, one chunk per block-sized request
+    An extension on `HttpStreams.Body`, needing a `Buffering`: each refill asks the body for
+    at most `buffering.capacity(Substrate.Bytes)` bytes (or the credit granted, if smaller)
+    and exposes the chunk as the window; a `null` from the body ends the stream. It is what
+    `Streamable.httpBody` uses, and it is not exported to the umbrella, where zephyrine's
+    `stream` constructor owns the name: reach it as `turbulence.stream`.
+
+entry .more   the rest of a chain inside a `flow` block
+  detail
+      `more` is the contextual `Chain` labelled `"more"` which `flow` binds beside `next`: the
+      tail still to be consumed. It is an inline accessor which resolves the labelled value,
+      so inside `stream.flow(end)(... more ...)` it reads as a plain name.
+  refer turbulence.flow
+
+entry .flow   a one-step case split over a chain: a termination value, or a block over `next` and `more`
+  detail
+      `chain.flow(termination)(proceed)` evaluates `proceed` with `next` (the head) and `more`
+      (the tail) bound as contextual values if the chain is non-empty, and `termination`
+      otherwise. It is the pattern `case next #:: more => … case _ => …` as a combinator,
+      which `condense`, `drop` and `take` are written with. Under capture checking the
+      labelled bindings may need `next.asInstanceOf[element]` in some positions.
+
+      ```scala
+      import soundness.*
+
+      def head(chain: Chain[Int]): Optional[Int] = chain.flow(Unset)(next)
+      ```
+  refer turbulence.more
+
+entry .condense   collapses each run of consecutive equal elements of a chain to one, lazily
+    `Chain(1, 1, 2, 2, 2, 1).condense` is `Chain(1, 2, 1)`: only adjacent duplicates are
+    merged, which is distinct from `deduplicate`, the whole-collection distinct-by-key. The
+    chain stays lazy.
+
+entry .strict   forces a lazy chain to its end and returns it
+    Evaluates every element of the chain (by taking its size) and returns the same chain,
+    now fully memoized, so that whatever side effects its production had have happened.
+
+entry .drop   drops a number of bytes from the front of a `Chain[Data]`
+    `chain.drop(bytes)` takes a `Bytes` count rather than a chunk count: whole chunks within
+    the count are skipped and the chunk which straddles the boundary is cut, so the result is
+    the same bytes re-chunked at the boundary. Lazy.
+
+entry .take   keeps a number of bytes from the front of a `Chain[Data]`
+    `chain.take(bytes)` takes a `Bytes` count: chunks within the count are kept whole and
+    the one which straddles the boundary is cut, so the result holds exactly `bytes` bytes
+    (or fewer if the chain is shorter). Lazy.
+
+entry .shred   re-chunks a `Chain[Data]` into buffers whose sizes are drawn afresh for each
+    `chain.shred(chunkSize)` evaluates the by-name `chunkSize` once per output chunk (at
+    least 1), so a caller hands in a constant to re-block a stream uniformly, or samples a
+    distribution to produce every fragmentation a parser must survive:
+
+    ```scala
+    import soundness.*
+    import randomization.seededRandomization
+
+    given Seed = Seed(1L)
+    val data: Chain[Data] = Chain(Data.fill(1000)(_.toByte))
+
+    stochastic:
+      given Distribution = Gamma.approximate(20.0, 10.0)
+      data.shred(arbitrary[Double]().toInt).map(_.length).total   // 1000
+    ```
+
+    The bytes are copied into fresh buffers, so the output never aliases the input's chunks.
+
+entry .Relay   a bus from any number of producer threads to one reader of records
+  detail
+      A `Relay[record]` is the push-side bridge for record-granularity traffic — events,
+      notifications, messages: producers `#put` records as they arise, one of them
+      eventually calls `#stop`, and a single reader drains them through `#stream`, `#chain`
+      or `#batches`. Producers never block, by contract rather than oversight: a relay is the
+      bus which fans many writers into one drain (HTTP/2's outbound frame multiplexer relies
+      on it, as does the logging spool), where a blocking `put` would risk deadlock between
+      streams, so its queue is unbounded and its discipline is its single consumer. A bounded
+      hand-off for byte or character traffic between two threads is zephyrine's `Conduit`.
+
+      ```scala
+      import soundness.*
+
+      val relay = Relay[Text]()
+      relay.put(t"one")
+      relay.put(t"two")
+      relay.stop()
+      relay.stream.records.to[List]   // List(t"one", t"two")
+      ```
+
+      The reader blocks for the first record and then takes whatever else has already
+      arrived into the same window, so records batch across the thread boundary instead of
+      costing one hand-off each. Records put after `stop` are never delivered. Order is
+      preserved per producer.
+  refer zephyrine.Conduit
+  refer turbulence.Confluence
+  entry #put   adds a record; never blocks
+  entry #stop   ends the relay: the reader sees the end once every record put before it is drained
+  entry #stream   the pull endpoint over the records, as a record stream: single-owner, created once
+      `(Stream[Array[record]^{}] over Credit)^`, needing the record array's `Addressable` (the
+      generic boxed instance serves any reference type) and a `Buffering`. A refill blocks
+      for a first record and then drains every record already queued into the same window,
+      up to its capacity; a stop found mid-drain still delivers the batch and the next
+      refill ends the stream. Drain it with `records`.
+  entry #chain   the records as a lazy `Chain`, one cons cell per record
+      Needs no `Addressable`, so it works for any record type including an abstract one, at
+      the cost of a cell per record: the form for low-rate delivery such as logging or a
+      message bus. Lazy and single-owner, as `#stream` is.
+  entry #batches   the records coalesced into batches by a quiet period
+      `relay.batches(quiet)` takes any duration abstractable to milliseconds (a `Long` with
+      `abstractables.millisecondsAbstractable`, or an aviation duration) and returns a lazy
+      `Chain[List[record]]`. The reader blocks for a first record; every further arrival
+      restarts a timer of `quiet`; when it expires with nothing new, the records gathered so
+      far are one batch, oldest first, and the reader blocks again. This is the "changed, and
+      then nothing for a while" shape a rebuild or a rehash wants. A stop found mid-burst
+      still delivers the partial batch, and a zero `quiet` degrades to draining whatever has
+      already arrived.
+
+      ```scala
+      import soundness.*
+      import abstractables.millisecondsAbstractable
+
+      val relay = Relay[Text]()
+      relay.put(t"a")
+      relay.put(t"b")
+      relay.stop()
+      relay.batches(50L).to[List]   // List(List(t"a", t"b"))
+      ```
+
+entry .StreamOutputStream   a `java.io.OutputStream` whose writes become a lazy `Chain[Data]`
+  detail
+      For a Java API which can only write to an `OutputStream`: hand it a
+      `StreamOutputStream`, and read what it wrote from `#stream`, a `Chain[Data]` fed through
+      a `Relay`. Single-byte writes are buffered and released as a chunk on `flush`; an array
+      write is copied — the JDK lets a caller reuse its array once `write` returns, and the
+      chunk is read later — and relayed as one chunk; `close` flushes and ends the chain. A
+      reader of `stream` on another thread blocks until the next chunk or the close.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val out = StreamOutputStream()
+      out.write(scala.Array[Byte](1, 2, 3))
+      out.close()
+      out.stream.read[Data].to[List]   // List(1, 2, 3)
+      ```
+  refer turbulence.Relay
+  entry #stream   the bytes written so far and still to come, as a lazy `Chain[Data]`
+  entry #write   writes one byte (buffered until `flush`), or an array, copied and relayed as a chunk
+
+entry .Truncation   `zephyrine.Truncation`, re-exported: the error a stream raises when it is cut short
+  detail
+      `Truncation.Error(total)` is error 264, _the stream was cut prematurely after `total`_,
+      where `total` is the `Bytes` delivered before the cut. A `Spring`'s pull and the
+      `Streamable` givens for JDK sources abort with it through a `Tactic`; the `Writable` and
+      `Sink` givens for JDK targets `raise` it through an `Emit`, since a writer only reports a
+      cut and never aborts. The type lives in zephyrine, beside `Stream` and `Spring`; this
+      export keeps `import turbulence.*` sufficient for modules which name it.
+  refer zephyrine.Truncation
+
+entry .Stdio   the standard streams as a value: `out`, `err`, `in` and the terminal's capabilities
+  detail
+      A `Stdio` holds the three standard streams as JDK `PrintStream`s and an `InputStream`,
+      together with the `Termcap` describing what the terminal at the other end can render.
+      It is a contextual value rather than a global: `Out`, `Err` and `In` write and read
+      through the `Stdio` in scope, so a daemon serving several clients, a test capturing
+      output, or a process launched with a pipe each get the streams that belong to them.
+      One is chosen by name from the `stdios` package (`javaLangSystemStdio` for the JVM's
+      own streams, `fileDescriptorStdio` for the process's descriptors, `muteStdio` for
+      none, `wasiStdio` on WASI), built with `.apply`, or provided by a `Stdio.Provider`
+      such as a CLI invocation, which `.provided` turns into a `Stdio` wherever the
+      invocation is ambient.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import stdios.javaLangSystemStdio
+      import termcapDefinitions.basicTermcap
+
+      Out.println(t"started")
+      Err.println(t"a warning")
+      summon[Stdio].platform   // true
+      ```
+
+      A `Stdio` is a plain value, not a capability trait: it is mixed into exclusive types
+      such as an `Invocation` as an interface, and one built from the JVM's thread-safe
+      streams captures nothing. One which retains a terminal or a flow says so as
+      `Stdio^{…}`.
+
+      Code which cannot be changed — a Java library printing to `System.out` — is redirected
+      with `.divert`, which is a diversion of the calling *thread* and the tasks spawned
+      under it, not of the JVM, so a host may divert around several guests at once without
+      their output crossing; `.capture` is the same with the output collected as text.
+  refer turbulence.Out
+  refer turbulence.Err
+  refer turbulence.In
+  refer turbulence.stdios
+  entry .Provider   something which carries a canonical `Stdio`: a CLI invocation
+    detail
+        A trait with one member, `#stdio`. The `Stdio.provided` given makes a pure `Stdio`
+        summonable wherever a `Provider^` is in scope, which is how `Out.println` inside a
+        CLI's `execute` block finds the invocation's streams without naming them.
+    entry #stdio   the provider's standard streams
+  entry .provided   the `Stdio` of whatever `Stdio.Provider` is in scope
+      A conditional given in the companion of the searched type, so it needs no import: a
+      `Provider^` (a tracked capability such as an invocation) in scope yields its `stdio`,
+      a pure value.
+  entry .apply   builds a `Stdio` from JDK streams and a `Termcap`, muting any that is `null`
+      `Stdio(out, err, in, termcap)`: a `null` output goes to `.MutePrintStream` and a
+      `null` input to `.MuteInputStream`, which reports end of input.
+  entry .MuteOutputStream   an `OutputStream` which discards every write
+  entry .MutePrintStream   a `PrintStream` over `.MuteOutputStream`: what a `null` `out` or `err` becomes
+  entry .MuteInputStream   an `InputStream` at end of input: `read()` is `-1` and nothing is available
+  entry .Capture   what a block printed through the JVM's streams while they were captured, beside its result
+    detail
+        `Stdio.capture` returns `Capture(result, out, err)`: the block's value, and what
+        reached `System.out` and `System.err` meanwhile, decoded as UTF-8, the encoding the
+        capturing streams wrote.
+    entry #result   the block's value
+    entry #out   what was written to standard output, as text
+    entry #err   what was written to standard error, as text
+  entry .diverted   the `Stdio` this thread's `System` writes are diverted to, or `Unset`
+      What a task carries to the thread it runs on. `Unset` on a thread with no diversion
+      in force.
+  entry .divert   runs a block with this thread's `System.out` and `System.err` redirected to a `Stdio`
+      `Stdio.divert(stdio)(block)` is a diversion of the calling thread, not of the JVM. The
+      first call installs one dispatcher on each of `System.out` and `System.err`, kept for
+      the life of the JVM (so `System.out` is a different object after it), through which
+      every write reaches the stream the writing thread is diverted to, or the original
+      where it is not. A thread started under a diversion inherits it, and a parasite task
+      runs under the diversion of the thread that spawned it, so a diversion follows the
+      structure of the concurrency, not the accident of which thread a task lands on. On the
+      way out the guest's streams are flushed and the previous diversion restored, in a
+      `finally`. Scala's own `println` is thread-local already; this covers Java prints and
+      anything else which writes to the `System` streams. Nothing reaches a diversion
+      through `stdios.fileDescriptorStdio`, which names the process's descriptors directly.
+
+      ```scala
+      import soundness.*
+      import termcapDefinitions.basicTermcap
+
+      val buffer = java.io.ByteArrayOutputStream()
+      val guest = Stdio(java.io.PrintStream(buffer, true, "UTF-8"), null, null, basicTermcap)
+
+      Stdio.divert(guest):
+        java.lang.System.out.nn.print("routed")
+
+      buffer.toString("UTF-8").nn.tt   // t"routed"
+      ```
+  entry .capture   runs a block with its `System.out` and `System.err` output collected as text
+      `Stdio.capture(block)` is `.divert` into a pair of in-memory UTF-8 streams, returning a
+      `Capture` of the block's result and the two texts. Output through `Out` under
+      `stdios.javaLangSystemStdio` is captured too, since that `Stdio` wraps the JVM's
+      streams; two concurrent captures on different tasks keep their output apart.
+
+      ```scala
+      import soundness.*
+
+      Stdio.capture:
+        java.lang.System.out.nn.print("shown")
+        7
+      // Stdio.Capture(7, t"shown", t"")
+      ```
+  entry #termcap   what the terminal at the other end can render
+  entry #out   standard output, as a `PrintStream`
+  entry #err   standard error, as a `PrintStream`
+  entry #in   standard input, as an `InputStream`
+  entry #ready   whether a character can be read from `in` without blocking
+      Consults the shared character reader over `in`, so characters already buffered inside
+      its decoder count, which an `available()` check on the raw stream would miss.
+  entry #readChar   reads one character from the shared reader, or `-1` at end of input
+      The companion to `#ready`, for character-at-a-time consumers such as a terminal. The
+      reader is shared with the `read(array: Array[Char])` overload.
+  entry #write   writes bytes to standard output
+  entry #print   writes text to standard output, as `out.print`
+  entry #writeErr   writes bytes to standard error
+  entry #printErr   writes text to standard error
+  entry #read   fills a byte array from `in`, or a char array from the shared reader, returning the count
+  entry #platform   whether these are the JVM's own `System.out`, `System.in` and `System.err`
+
+entry .Out   standard output, through the `Stdio` in scope
+  detail
+      `Out.print` and `Out.println` render any `Printable` value — `Text`, a styled
+      `Teletype`, anything with a `Printable` instance — under the `Stdio`'s `Termcap`, so
+      colour and styling are emitted only where the terminal can show them, and write it to
+      the `Stdio`'s `out`. The argument is a `Termcap ?=> textual`, so an expression which
+      needs the termcap to render may be passed directly. `println` takes any number of
+      lines and writes them under a lock, so lines from concurrent writers do not interleave.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import stdios.javaLangSystemStdio
+      import termcapDefinitions.basicTermcap
+
+      Out.println(t"Hello world")
+      Out.print(t"no newline")
+      Out.println()
+      Out.write(t"raw\n".read[Data])
+      ```
+
+      In a daemon or a CLI the `Stdio` is the client's, so this is the only output which
+      reaches the user; Scala's `println` writes to the daemon process's own `System.out`.
+  refer turbulence.Stdio
+  refer turbulence.Err
+  entry .write   writes bytes to standard output
+  entry .print   renders a `Printable` value under the terminal's `Termcap` and writes it, with no newline
+  entry .println   writes each line, rendered, with a newline after each; with no argument, a newline alone
+      The multi-line form needs a plain `Stdio` (not a capturing one) and holds a mutex for
+      the whole call.
+
+entry .Err   standard error, through the `Stdio` in scope
+  detail
+      The twin of `Out` over the `Stdio`'s `err` stream: `Err.print` and `Err.println`
+      render a `Printable` value under the terminal's `Termcap` and write it, and
+      `Err.write` writes bytes. `println` with several lines writes them under a lock.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import stdios.javaLangSystemStdio
+      import termcapDefinitions.basicTermcap
+
+      Err.println(t"a warning")
+      ```
+  refer turbulence.Stdio
+  refer turbulence.Out
+  entry .write   writes bytes to standard error
+  entry .print   renders a `Printable` value under the terminal's `Termcap` and writes it to standard error
+  entry .println   writes each line to standard error with a newline after each; with no argument, a newline alone
+
+entry .In   standard input, through the `Stdio` in scope
+  detail
+      `In.read(array)` fills a byte array from the `Stdio`'s `in` and returns the count read
+      (or `-1` at end of input), and `In.close()` closes it. Character-level reading goes
+      through `Stdio#readChar` and `Stdio#ready`; a whole line through a reader over
+      `summon[Stdio].in`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import stdios.javaLangSystemStdio
+      import termcapDefinitions.basicTermcap
+
+      val buffer = new scala.Array[Byte](1024)
+      val count = In.read(buffer)
+      ```
+  refer turbulence.Stdio
+  entry .read   fills a byte array from standard input, returning the count or `-1` at the end
+  entry .close   closes standard input
+
+entry .stdios   the standard-stream configurations, each a given to import by name
+  detail
+      Which streams `Out`, `Err` and `In` use is decided by the `Stdio` given in scope, and
+      the choice is never implicit: `import soundness.*` brings none of these in, and one is
+      imported by name. All but `muteStdio` need a `Termcap` in scope too, chosen from
+      `termcapDefinitions`.
+
+      ```scala
+      import soundness.*
+      import stdios.javaLangSystemStdio
+      import termcapDefinitions.basicTermcap
+      ```
+
+      A CLI or daemon invocation provides its own `Stdio` through `Stdio.Provider`, so an
+      `execute` block imports none of these.
+  refer turbulence.Stdio
+  entry .muteStdio   a `Stdio` which discards all output and is at end of input, with the basic `Termcap`
+      For a test, or a program which must not print: `out` and `err` are `Stdio.MutePrintStream`
+      and `in` is `Stdio.MuteInputStream`. Needs no `Termcap`.
+  entry .javaLangSystemStdio   the JVM's `System.out`, `System.err` and `System.in`, with the `Termcap` in scope
+      Output written through it is subject to `Stdio.divert` and `Stdio.capture`, since
+      those redirect the JVM's streams.
+  entry .fileDescriptorStdio   the process's own file descriptors 0, 1 and 2, with the `Termcap` in scope
+      Fresh `PrintStream`s and a `FileInputStream` over `FileDescriptor.out`, `err` and `in`:
+      the streams as the operating system handed them to the process, bypassing anything a
+      JVM or a host has installed in `System.out`. Nothing written through it reaches a
+      `Stdio.divert`.
+  entry .wasiStdio   a `Stdio` over the WASI CLI stream resources, for a Wasm component
+      In `turbulence.wasi`, with the `Termcap` in scope. Each write obtains the `stdout` or
+      `stderr` stream handle, calls its `blocking-write-and-flush`, and disposes of the
+      handle; a read obtains `stdin` and calls `blocking-read`, blocking until a byte is
+      available, with a closed stream read as end of input. `print` and `printErr` send
+      the text's UTF-8 bytes directly rather than through the `PrintStream`s. The given is
+      `inline`, so the WASI imports materialise at the site which summons it, which must
+      also see `wasiApis.wasiCliApi`; summon it once, in the component's entry point.
+
+entry .Confluence   merges several pull endpoints into one, in arrival order
+  detail
+      `Confluence(sources*)` is fan-in. A pull architecture has no `select` over blocked
+      refills, so the merge is the honest cost of multiplexing: one pump task per input,
+      each pulling transfer-sized credits into a shared bounded queue — a full queue parks
+      the pumps, so slow consumption backpressures every input uniformly — and a reader
+      endpoint which parks while the queue is empty. The merged stream ends when every input
+      has ended; an input's failure is rethrown from the reader's next refill. In
+      `turbulence.async`: it needs the medium's `Addressable`, a `Buffering`, and a parasite
+      `Monitor` and `Probate`, so it runs inside `supervise`. The pumps are children of the
+      enclosing scope, and cancelling it releases pumps parked on a merge nobody is reading.
+
+      ```scala
+      import soundness.*
+      import threads.platformThreads
+      import probates.cancelProbate
+
+      supervise:
+        Confluence(Stream(t"one"), Stream(t"two"), Stream(t"three")).memoize
+      ```
+
+      A region-stable source (a fixed in-memory buffer) is shared by reference; a transient
+      one is snapshotted block by block before its window is reused, in blocks of
+      `buffering.transfer(substrate)`.
+  refer turbulence.Divergence
+  refer turbulence.convey
+  refer turbulence.Relay
+  entry .apply   the merged stream of any number of `(Stream[medium] over Credit)^` sources
+
+entry .Divergence   delivers one pull endpoint to several subscribers, each chunk shared
+  detail
+      `Divergence(source, count)` is fan-out: one pump task pulls the source and delivers
+      every chunk to each of `count` subscriber endpoints through a bounded ring per
+      subscriber. Chunks are materialised once and shared read-only between subscribers; a
+      full ring parks the pump, so the slowest subscriber gates the source, which is the
+      right backpressure for replication. A subscriber which closes its stream closes its
+      ring, releasing the pump and discarding later deliveries, so an abandoned slow
+      subscriber cannot wedge the rest. A source failure is rethrown from each subscriber's
+      next refill. In `turbulence.async`: needs the medium's `Addressable`, a `Buffering`,
+      and a parasite `Monitor` and `Probate`, so it runs inside `supervise`; the source is
+      consumed.
+
+      ```scala
+      import soundness.*
+      import threads.platformThreads
+      import probates.cancelProbate
+
+      supervise:
+        val subscribers = Divergence(Stream(t"shared"), 2)
+        subscribers(0).memoize
+      ```
+
+      The result is an `IndexedSeq` of `count` streams, each an exclusive endpoint drained
+      by one consumer; read them on separate tasks or one after another.
+  refer turbulence.Confluence
+  entry .apply   `count` subscriber streams over one consumed source
+
+entry .convey   pumps a stream into an intake on its own task
+  detail
+      An extension in `turbulence.async` on a consumed `(Stream[medium] over transport)^`:
+      `stream.convey(intake)` is `stream.pump(intake)` run on a parasite task, returning the
+      `Task[Unit]`, for fire-and-forget transfers and for pipelines with an asynchronous
+      boundary, where this is the one pumping thread. Both endpoints move onto the task; the
+      caller keeps neither. Needs a `Monitor` and a `Probate`, so it runs inside `supervise`,
+      and cancelling the scope releases a pump blocked on an empty conduit.
+
+      ```scala
+      import soundness.*
+      import threads.platformThreads
+      import probates.cancelProbate
+      import strategies.throwUnsafely
+
+      supervise:
+        val output = java.io.ByteArrayOutputStream()
+        val sink = summon[(java.io.ByteArrayOutputStream is Sink by Data over Credit)^]
+        t"hello".read[Data].source[Data].convey(sink.intake(output)).await()
+      ```
+  refer turbulence.Sink
+  refer turbulence.Confluence
+
+entry .WasiCliApi   the WIT interface of the WASI CLI world, as a type: `Interface in Wit at "/turbulence/cli.wit"`
+  detail
+      In `turbulence.wasi`. The type the `stdios.wasiStdio` navigation is typechecked
+      against, and which the `call` materialiser consults for the `get-stdout`, `get-stderr`
+      and `get-stdin` imports and the stream resources' methods. Its value is
+      `wasiApis.wasiCliApi`.
+  refer turbulence.wasiApis
+
+entry .wasiApis   the WASI interface definitions turbulence links against, each a given to import by name
+  detail
+      In `turbulence.wasi`. A Wasm component which summons `stdios.wasiStdio` must have
+      `wasiCliApi` visible at that site, since the stream calls expand there.
+
+      ```scala
+      import soundness.*
+      import wasiApis.wasiCliApi
+      import stdios.wasiStdio
+      import termcapDefinitions.basicTermcap
+      ```
+  entry .wasiCliApi   the `WasiCliApi` interface, loaded from the `/turbulence/cli.wit` classpath resource
+      `Interface[Wit](cp"/turbulence/cli.wit")`: the resource is checked at compile time, and
+      the WIT it holds defines the `stdout`, `stderr` and `stdin` imports with their
+      `output-stream` and `input-stream` resources.

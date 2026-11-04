@@ -1,0 +1,1487 @@
+tel 1.0
+
+base bitumen
+import soundness
+
+info   tar and ar archives as streams of typed entries: read lazily, built as values, archived from a directory
+detail
+    _Bitumen_ reads and writes the two sequential archive formats of Unix — **tar**, the
+    format a directory tree travels in, and **ar**, the container of every `.deb` package and
+    `.a` static library — as streams of typed entries, with none of the mutable
+    random-access objects or raw header-and-bytes streams the standard APIs offer. ZIP
+    archives are _zeppelin_'s; bitumen shares with it the `archive[Format]` operation, so a
+    directory archives into any of the three formats by naming one.
+
+    An archive is data. A `Tarfile` is a `List` of `Tar.Entry`s — a file, a directory, a hard
+    or symbolic link, a device, a FIFO or a sparse file, each with its Unix mode, owner and
+    timestamp as typed values — and an `Arfile` a `List` of `Ar.Entry` members. Each streams
+    as bytes through a `Streamable` given, so writing one to disk is writing any other
+    value, and a `Tarfile` compresses with `gzip`, `zlib` or `deflate`. An entry's name is a
+    `Tar.Ref`, a `Relative on Tar` path which cannot be absolute or climb above the archive's
+    root, so a malicious entry fails to parse rather than escaping on extraction. An entry's
+    body is an `Archive.Body`: chunks which pull lazily from the source and memoize, so an
+    archive of any size is read entry by entry without being materialised.
+
+    ```scala
+    import soundness.*
+    import codepages.utf8Codepage
+    import strategies.throwUnsafely
+
+    val readme = Tar.Entry(t"README".as[Tar.Ref], t"Read me first".in[Data])
+
+    val script = Tar.Entry.File
+      ( path  = t"bin/run".as[Tar.Ref],
+        mode  = UnixMode(ownerExec = true, groupExec = true, otherExec = true),
+        user  = UnixUser(1000, t"alice"),
+        group = UnixGroup(1000, t"alice"),
+        mtime = 0.bits.u32,
+        data  = Archive.Body(t"#!/bin/sh\necho hello\n".in[Data]) )
+
+    val tarball = Tarfile(List(readme, script))
+    tarball.gzip                                                   // a .tar.gz byte stream
+    Tarfile.read(tarball.source[Data]).map(_.entryName).to[List]   // List(t"README", t"bin/run")
+    ```
+
+    Reading runs the other way: `Tarfile.read` and `Arfile.read` parse entries lazily
+    straight off a byte stream, absorbing whatever chunk boundaries it arrives in, and a
+    compressed archive is a decompressed stream read the same way. A read is single-pass and
+    single-owner — consume the entries in order, on one thread — but an entry passed over
+    stays readable, because its body memoizes when the iterator advances. Opening an archive
+    with `open[Tar]` or `open[Ar]` scopes the source to a block, within which `tar` or `ar`
+    is the handle, and `path.create[Tar]()` lends a `TarBuilder` which streams entries of
+    unknown length straight to disk.
+
+    A directory tree archives with `directory.archive[Tar]()` or `archive[Ar]()`, through
+    galilei's `FilesystemBackend`, in a sorted pre-order which makes two archivings of one
+    tree byte-identical; `Archive.Flag.Owner` and `Archive.Flag.Mtime` are the knobs of a
+    reproducible build, and `extractTo` is the inverse, unpacking a `Tarfile` onto a
+    filesystem.
+
+    The library is split into two source sets:
+
+    - `bitumen.core` — the formats themselves: `Tar`, `Tarfile`, `Ar`, `Arfile`,
+      `Archive.Body`, the in-memory `data.open[Tar]()`/`open[Ar]()`, `archive[Tar]`/`[Ar]`
+      over any `FilesystemBackend`, `Pax`, `TypeFlag`, `UnixMode`, `UnixUser`, `UnixGroup`
+      and `LongNameFormat`. It needs only pure-Scala compression and galilei's
+      platform-neutral filesystem abstraction, so it compiles for the JVM, Scala.js and
+      WASI alike.
+    - `bitumen.jvm` — everything which touches a real file through `java.io`: opening a path
+      as an archive (`tarPathOpenable`, `arPathOpenable`), creating one on disk with a
+      streaming `TarBuilder` (`tarPathCreatable`), and `extractTo`.
+
+    Everything is exported to the `soundness` umbrella. The three JVM givens are top-level
+    (their subject, a path type, is owned by another library), and are exported by name, so
+    `import soundness.*` brings them in; a program importing `bitumen.*` alone must name them
+    (`import bitumen.tarPathOpenable`), since a wildcard import does not import givens. The
+    symbolic-link policy of `archive[Tar]` is galilei's, chosen by importing
+    `filesystemOptions.preserveSymlinks` or `filesystemOptions.dereferenceSymlinks` by name.
+
+refer bitumen.Tar
+refer bitumen.Tarfile
+refer bitumen.Ar
+refer bitumen.Arfile
+refer bitumen.Archive
+refer bitumen.extractTo
+
+entry .Tar   the tar format: a marker type, the plane of entry names, and the home of `Tar.Entry`, `Tar.Error` and `Tar.Handle`
+  detail
+      `Tar` is an uninhabited sealed trait which names the format wherever a format is chosen
+      by type: `path.open[Tar](flags*)`, `data.open[Tar]()`, `path.create[Tar]()` and
+      `directory.archive[Tar]()`. Its companion is also the **plane** of entry names — a
+      `Tar.Ref` is a `Relative on Tar`, a `/`-separated relative path held to `.Rules` — and
+      the home of the format's types: `Tar.Entry` (the kinds of entry), `Tar.Header` (the raw
+      512-byte USTAR header), `Tar.Error` and its reasons, `Tar.Flag` (the compression an
+      archive is wrapped in) and `Tar.Handle` (the scoped handle of an open archive).
+
+      ```scala
+      import soundness.*
+      import codepages.utf8Codepage
+      import strategies.throwUnsafely
+
+      val tarball = Tarfile(List(Tar.Entry(t"hello.txt".as[Tar.Ref], t"hello".in[Data])))
+
+      tarball.source[Data].memoize.open[Tar]():
+        tar.entries.to[List].map(_.entryName)   // List(t"hello.txt")
+
+      tarball.gzip.memoize.open[Tar](Tar.Flag.Gzip):
+        tar.entries.to[List].map(_.entryName)
+      ```
+
+      The companion's givens are in implicit scope, so none needs importing: `.filesystem`
+      and `.nominative` make `Relative on Tar` paths decodable from text, `.dataOpenable`
+      opens in-memory `Data` as an archive, and `.archivable` archives a directory. Opening a
+      *path* on disk as `Tar` needs `bitumen.jvm`'s `tarPathOpenable`.
+  refer bitumen.Tarfile
+  refer bitumen.Archive
+  refer bitumen.tarPathOpenable
+  refer bitumen.tar
+  entry .Ref   the type of an entry's name: `Relative on Tar`
+      A relative path on the `Tar` plane, decoded from text with `t"bin/run".as[Tar.Ref]`
+      (or `as[Relative on Tar]`). Being relative, it cannot name an absolute path, and its
+      segments are held to `.Rules`, so neither `.` nor `..` can appear: an entry cannot
+      escape the directory it is extracted into. A directory entry's name carries no trailing
+      `/`; `Tar.Entry#entryName` adds one when the entry is serialized.
+  entry .Rules   what a segment of an entry name may be
+      A segment must not contain `/`, and must not be `.`, `..` or empty. Text which breaks a
+      rule fails to decode with a `Path.Error`; a name read from an archive which breaks one
+      raises `Tar.Error` with reason `BadName`.
+  entry .compliant   names valid on `Tar` are valid on `Linux`
+      The `Linux is Compliant on Tar` given: a `Tar.Ref` may be joined onto a `Path on
+      Linux`, which is how `extractTo` places each entry beneath its root.
+  entry .compliant2   names valid on `Tar` are valid on `MacOs`
+      The `MacOs is Compliant on Tar` given, the macOS counterpart of `.compliant`.
+  entry .nominative   the given which holds `Tar` names to `.Rules`
+  entry .filesystem   the `Tar` plane as a `Filesystem`: `/`-separated, with no unique root
+      Named `TAR`, with `/` as its separator and `.` and `..` as the self and parent
+      segments. `UniqueRoot` is `false`, since entry names are relative. Its separator is
+      also what `archive[Tar]` and `archive[Ar]` join a descendant's relative name with.
+  entry .dataOpenable   opens in-memory `Data` as a tar archive: `data.open[Tar](flags*)`
+      The given which makes `Data` `Openable` in form `Tar`, in implicit scope so that
+      `bytes.open[Tar]()` resolves with no import. It needs a `Tactic[Tar.Error]` and a
+      `Tactic[Truncation.Error]`, and is a `Tar.DataOpenable`. Opening a path on disk is
+      `tarPathOpenable`, in `bitumen.jvm`.
+  entry .archivable   archives a directory tree as a `Tarfile`: `directory.archive[Tar](flags*)`
+      The given which makes a `Path on plane` `Archivable` in form `Tar`, for any plane with a
+      `FilesystemBackend on plane` in scope, in implicit scope so that `directory.archive[Tar]()`
+      resolves with no import. It also needs a `DereferenceSymlinks` policy (imported from
+      `filesystemOptions` by name), a `Tactic[Io.Error]` and a `Tactic[Tar.Error]`, and is a
+      `Tar.Archivable[plane]`.
+  entry .Archivable   the `Archivable` instance behind `directory.archive[Tar](flags*)`
+    detail
+        Archives a directory tree as a `Tarfile` through the `FilesystemBackend` of its
+        plane, so a tree is archived wherever galilei runs. Every descendant of the root —
+        the root itself is not an entry — becomes the `Tar.Entry` of its kind: a file with its
+        contents, a directory, a symbolic link with its target (under
+        `filesystemOptions.preserveSymlinks`; `dereferenceSymlinks` archives what the link
+        points at instead), a FIFO, or a character or block device with its numbers. Each
+        records the mode, owner and modification time the filesystem reports, unless an
+        `Archive.Flag.Owner` or `Archive.Flag.Mtime` replaces them for every entry.
+
+        Entries are visited in pre-order with each directory's children in codepoint order,
+        so a directory's entry precedes the entries beneath it, as `tar` expects, and two
+        archivings of the same tree produce identical bytes.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import filesystemBackends.javaBaseFilesystem
+        import filesystemOptions.preserveSymlinks
+        import pathInterfaces.pathOnLinux
+        import strategies.throwUnsafely
+        import systems.javaBaseSystem
+        import temporaryDirectories.javaBaseTemporaryDirectory
+
+        val source: Path on Linux = temporaryDirectory[Path on Linux] / "project"
+
+        val tarball: Tarfile =
+          source.archive[Tar](LongNameFormat.Gnu, Archive.Flag.Owner(UnixUser(0), UnixGroup(0)))
+
+        tarball.entries.map(_.entryName)   // List(t"a.txt", t"b.txt", t"sub/", t"sub/c.txt")
+        ```
+
+        The flags are a `LongNameFormat` — `Pax` unless `Gnu` is given — and any number of
+        `Archive.Flag`s. A descendant of a kind tar cannot store (a socket, say) raises
+        `Tar.Error` with reason `DeviceCreationUnsupported`; a read which fails raises
+        `Io.Error`.
+    refer bitumen.Archive
+    refer bitumen.Tarfile
+    entry #Self   the receiver: a `Path on plane`
+    entry #Form   the format selected: `Tar`
+    entry #Operand   the flag type: `LongNameFormat | Archive.Flag`
+    entry #Result   what the archiving produces: a `Tarfile`
+    entry #archive   the entries beneath a root, as a `Tarfile`
+        `archive(root, flags)` is what `root.archive[Tar](flags*)` calls: the descendants of
+        `root`, in sorted pre-order, with the given flags applied.
+  entry .DataOpenable   the `Openable` instance behind `data.open[Tar](flags*)`
+    detail
+        Opens in-memory `Data` as a tar archive, lending a `Tar.Handle` to the block.
+        Archives open read-only: a mode including `Write` is refused with `Tar.Error`, reason
+        `WriteUnsupported`. The flags are `Tar.Flag`s, saying which compression wraps the
+        bytes, if any.
+
+        ```scala
+        import soundness.*
+        import codepages.utf8Codepage
+        import strategies.throwUnsafely
+
+        val bytes: Data = Tarfile(List(Tar.Entry(t"a".as[Tar.Ref], t"A".in[Data]))).gzip.memoize
+
+        bytes.open[Tar](Tar.Flag.Gzip):
+          tar.entries.to[List].map(_.entryName)   // List(t"a")
+        ```
+    entry #Self   the receiver: `Data`
+    entry #Form   the format selected: `Tar`
+    entry #Operand   the flag type: `Tar.Flag`
+    entry #Result   the handle lent to the block: `Tar.Handle`
+    entry #open   parses the data as an archive and runs the block with a `Tar.Handle`
+  entry .Header   the 512-byte USTAR header, as raw field slices, with the decoders for its fields
+    detail
+        A `Tar.Header` holds the sixteen fields of a USTAR header block as undecoded slices
+        of `Data` — nothing is interpreted in the case class — and its companion holds the
+        decoders the reader applies to them: `.parse` slices a block, `.verifyChecksum`
+        checks it, `.decodeOctal` reads a numeric field, `.decodeNulText` a NUL-terminated
+        text one, and `.isZeroBlock` recognises the end-of-archive marker. These are the
+        reader's own tools, public for a program which must inspect or repair an archive at
+        the block level; a program reading entries uses `Tarfile.read`.
+    entry .blockSize   the size of a tar block, and of a header: 512 bytes
+    entry .checksumOffset   where the checksum field begins in a header: byte 148
+    entry .checksumLength   the length of the checksum field: 8 bytes
+    entry .parse   slices a 512-byte block into a `Tar.Header`
+        A block shorter than `.blockSize` raises `Tar.Error` with reason `TruncatedStream` and
+        is then sliced best-effort, with a missing type flag read as a regular file.
+    entry .verifyChecksum   checks a header block's recorded checksum against the sum of its bytes
+        The sum treats the eight checksum bytes as spaces, as the format prescribes; a
+        mismatch raises `Tar.Error` with reason `BadChecksum`, carrying both values. A block
+        which fails its checksum cannot be trusted for anything, including the size which
+        locates the next header, so the reader ends the walk at that point rather than
+        manufacture a cascade of errors from corrupt bytes.
+    entry .decodeOctal   a numeric field: optional leading spaces, octal digits, then NUL or space
+        Returns the value as a `U32`. A field with no digits, or with a terminator other than
+        NUL or space, raises `Tar.Error` with reason `BadOctal`, naming the field.
+    entry .decodeNulText   a text field, up to its first NUL byte, as UTF-8
+    entry .isZeroBlock   whether a block is entirely zero: the end-of-archive marker
+    entry #name   the first 100 bytes of the entry name
+    entry #mode   the permission bits, octal
+    entry #uid   the owner's numeric id, octal
+    entry #gid   the group's numeric id, octal
+    entry #size   the entry's size in bytes, octal
+    entry #mtime   the modification time in seconds since the epoch, octal
+    entry #checksum   the header's checksum, octal
+    entry #typeFlag   the one byte which says what kind of entry this is
+        The byte a `TypeFlag` encodes to: `'0'` or NUL for a file, `'5'` for a directory,
+        `'2'` for a symbolic link, `'x'` for a pax extended header, and so on.
+    entry #linkName   the first 100 bytes of a link's target
+    entry #magic   the six bytes which should read `ustar` and NUL
+    entry #version   the two bytes which should read `00`
+    entry #uname   the owner's name, up to 32 bytes
+    entry #gname   the group's name, up to 32 bytes
+    entry #devMajor   a device entry's major number, octal
+    entry #devMinor   a device entry's minor number, octal
+    entry #prefix   the USTAR prefix: up to 155 bytes joined before `#name` with `/`
+  entry .Entry   an entry of a tar archive: a file, directory, link, device, FIFO, sparse file or metadata block
+    detail
+        `Tar.Entry` is an enum of the kinds of entry the format stores, each a case class
+        carrying the Unix metadata the format exists to preserve: `path` (a `Tar.Ref`), `mode`
+        (a `UnixMode`), `user` (a `UnixUser`), `group` (a `UnixGroup`) and `mtime` (seconds
+        since the epoch, as a `U32`), and a `pax` map of any extended-header records beyond
+        the structural ones (`path`, `linkpath`, `uname` and `gname`, which are folded into
+        the fields they override), such as `atime`, `ctime` or a sub-second `mtime`.
+
+        - `File(path, mode, user, group, mtime, data, pax)` — a regular file, its contents an
+          `Archive.Body`.
+        - `Directory(path, mode, user, group, mtime, pax)` — a directory; its name serializes
+          with a trailing `/`.
+        - `Link(…, target, pax)` — a hard link to `target`, a text naming another entry.
+        - `Symlink(…, target, pax)` — a symbolic link to `target`.
+        - `CharSpecial(…, device, pax)` and `BlockSpecial(…, device, pax)` — a character or
+          block device, `device` its `(major, minor)` numbers as `U32`s.
+        - `Fifo(path, mode, user, group, mtime, pax)` — a named pipe.
+        - `Sparse(…, realSize, segments, data, pax)` — a GNU sparse file: `realSize` is its
+          apparent length, `segments` the `SparseSegment`s which hold data, and `data` the
+          concatenation of those segments' bytes.
+        - `Pax(records)` and `GnuLong(typeFlag, content)` — the metadata pseudo-entries which
+          precede a real entry in the stream, carrying a pax extended header or a GNU long
+          name or link target. `Tarfile` writes these itself from an entry's fields, and the
+          reader folds them into the entry which follows, so a program never sees one from
+          `Tarfile.read`.
+
+        The companion's `apply` and `at` build the common case, a file, with defaults; the
+        case classes take everything explicitly, which is how a mode, an owner or a fixed
+        timestamp is set:
+
+        ```scala
+        import soundness.*
+        import codepages.utf8Codepage
+        import strategies.throwUnsafely
+
+        val script = Tar.Entry.File
+          ( path  = t"bin/run".as[Tar.Ref],
+            mode  = UnixMode(ownerExec = true, groupExec = true, otherExec = true),
+            user  = UnixUser(1000, t"alice"),
+            group = UnixGroup(1000, t"alice"),
+            mtime = 0.bits.u32,
+            data  = Archive.Body(t"#!/bin/sh\necho hello\n".in[Data]) )
+
+        val link = Tar.Entry.Symlink
+          ( path   = t"bin/start".as[Tar.Ref],
+            mode   = UnixMode(),
+            user   = UnixUser(0),
+            group  = UnixGroup(0),
+            mtime  = 0.bits.u32,
+            target = t"run" )
+
+        Tarfile(List(script, link)).entries.map(_.typeFlag)   // List(TypeFlag.File, TypeFlag.Symlink)
+        ```
+
+        A match over the entries of a read archive distinguishes the kinds:
+
+        ```scala
+        import soundness.*
+        import codepages.utf8Codepage
+        import strategies.throwUnsafely
+
+        val tarball = Tarfile(List(Tar.Entry(t"hello.txt".as[Tar.Ref], t"hello".in[Data])))
+
+        Tarfile.read(tarball.source[Data]).to[List].map:
+          case file: Tar.Entry.File       => t"${file.entryName}: ${file.data.size} bytes"
+          case link: Tar.Entry.Symlink    => t"${link.entryName} -> ${link.target}"
+          case other                      => other.entryName
+        ```
+
+        An entry's own methods give its serialized form: `#header` is its 512-byte USTAR
+        header, `#dataBlocks` its payload re-blocked into 512-byte blocks, and `#serialize`
+        the two together. A name or link target longer than 100 bytes, or an owner or group
+        name longer than 32, does not fit the header: `Tarfile` writes the full value in a
+        pax header or a GNU long-name block before the entry, according to its
+        `LongNameFormat`, and the header field holds the truncated prefix.
+    refer bitumen.Archive
+    refer bitumen.Tarfile
+    refer bitumen.TypeFlag
+    entry .apply   a file entry, stamped with the current time
+        `Tar.Entry(name, data, mode, user, group)` makes a `File` from anything `Streamable by
+        Data` — `Data`, `Text` in a codepage, a `Stream` — read into an `Archive.Body` and
+        memoized. The mode defaults to `UnixMode()` (`rw-r--r--`), the owner and group to id
+        `0`, and the modification time to the moment of the call. For a fixed timestamp, as a
+        reproducible archive needs, use `.at`.
+
+        ```scala
+        import soundness.*
+        import codepages.utf8Codepage
+        import strategies.throwUnsafely
+
+        Tar.Entry(t"README".as[Tar.Ref], t"Read me first".in[Data])
+        ```
+    entry .at   a file entry at an explicit modification time, given as any instant type
+        As `.apply`, with the timestamp as its third parameter: any type `Abstractable across
+        Instants to Long`, such as an aviation `Instant`, or a `Long` of epoch milliseconds
+        under `import abstractables.epochMillisecondsAbstractable`. The time is recorded in
+        whole seconds. It is a separate method rather than an optional parameter of `.apply`
+        because an optional parameter of an inferred type would be left uninferred.
+
+        ```scala
+        import soundness.*
+        import abstractables.epochMillisecondsAbstractable
+        import codepages.utf8Codepage
+        import strategies.throwUnsafely
+
+        Tar.Entry.at(t"README".as[Tar.Ref], t"Read me first".in[Data], 86400000L)
+        ```
+    entry #size   the payload's length in bytes, as recorded in the header
+        A file's body length, a `Pax` entry's records, a `GnuLong` entry's content plus its
+        NUL, a sparse entry's stored segments; zero for every other kind. Reading a file's
+        size drains its `Archive.Body`.
+    entry #dataBlocks   the payload as 512-byte blocks, the last zero-padded
+        Re-blocks the body's chunks without regard to their boundaries; empty for a kind with
+        no payload.
+    entry #typeFlag   the `TypeFlag` which names this entry's kind
+    entry #entryName   the name as it is written to the header
+        The path's text, with a trailing `/` for a directory; `PaxHeaders/0` for a `Pax` entry
+        and `././@LongLink` for a `GnuLong` one, as the conventions have it.
+    entry #link   a link's target, or `Unset` for an entry which is not a `Link` or `Symlink`
+    entry #deviceNumbers   a device's `(major, minor)` numbers, or `Unset` for an entry which is not one
+    entry #format   a `U32` as a right-aligned octal header field of a given width
+        Pads the octal digits to `width - 1` characters, leaving the last byte for the
+        terminator.
+    entry #formatLong   a `Long` as a zero-padded octal header field of a given width
+        The form used for sparse-map offsets and sizes.
+    entry #header   the entry's 512-byte USTAR header block
+        Formats every field — the name truncated to 100 bytes, a link target to 100, an
+        owner or group name to 32, the size, the mode, the times, the `ustar` magic and
+        version, a sparse entry's first four segments and real size — and computes the
+        checksum last. The full name or target goes in the preamble `Tarfile` writes.
+    entry #serialize   the header and payload blocks, as an `Iterator[Data]^`
+        For a sparse entry with more than four segments, the extension blocks come between
+        header and payload. The preceding pax or GNU long-name blocks are not included: they
+        depend on the archive's `LongNameFormat`, which `Tarfile` knows.
+  entry .Error   raised when an archive cannot be read or written, with a `Reason` saying why
+    detail
+        Error 284: _the TAR archive could not be read or written because `reason`_. Its
+        `#reason` is a `Tar.Error.Reason`, each with its own number and message:
+
+        - `NameTooLong(field, length, maximum)` (1) — _the `field` field is `length` bytes,
+          exceeding the USTAR limit of `maximum` bytes_.
+        - `BadMagic(actual)` (2) — _the USTAR magic bytes are not valid_.
+        - `BadChecksum(expected, actual)` (3) — _the header checksum did not match_; the
+          reader stops at the corrupt block rather than parse on from untrusted bytes.
+        - `UnknownTypeFlag(byte)` (4) — _the entry type flag `code` is not recognised_. The
+          error is raised and the entry degrades to a regular file, POSIX's prescribed
+          treatment, never to a directory, which would corrupt the archive's tree.
+        - `TruncatedStream(needed, got)` (5) — _the archive stream ended unexpectedly_: a
+          partial header, a body shorter than its header said, or an archive with no
+          terminating zero blocks.
+        - `BadOctal(field, data)` (6) — _the `field` field did not contain a valid octal
+          value_.
+        - `BadPaxRecord(data)` (7) — _a PAX extended-header record could not be parsed_.
+        - `BadName(text)` (8) — _the entry name `text` is not a valid POSIX relative path_:
+          an absolute name, or one with a `.` or `..` segment.
+        - `BadSparseMap(text)` (9) — _the GNU sparse map `text` could not be parsed_.
+        - `DeviceCreationUnsupported(path)` (10) — _the special device entry at `path` could
+          not be created on this filesystem_: `extractTo` met a FIFO or device, or
+          `archive[Tar]` met a descendant tar cannot store.
+        - `WriteUnsupported` (11) — _TAR archives cannot yet be opened for writing_: an
+          `open[Tar]` with a `Write` mode. Writing is `create[Tar]` or writing a `Tarfile`.
+        - `AlreadyExists` (12) — _an archive already exists at this path_: `create[Tar]`
+          without `CreateFlag.Replace`.
+        - `CannotWrite(detail)` (13) — _the archive could not be written: `detail`_: an I/O
+          failure during `create[Tar]`.
+
+        Every reading API needs a `Tactic[Tar.Error]` in scope; `strategies.throwUnsafely`
+        throws it, and `safely` or `mitigate` handles it. A read which can recover — a bad
+        checksum, an unknown type flag, a malformed pax record — raises rather than aborts,
+        so an accruing tactic collects every fault in an archive.
+    entry .Reason   why an archive could not be read or written: an enum of thirteen cases
+      detail
+          Each case is listed on the `Tar.Error` page with its number and message. A
+          `Reason` is a `Clarification`, so it reads as the tail of the error's message.
+      entry #number   the reason's number, `1` to `13`, which becomes the error's sub-number
+    entry .communicable   renders each reason as its message
+    entry #reason   why the archive could not be read or written
+  entry .Compression   an empty object reserved for the compression layer; `Tar.Flag` names the compressions
+      The object has no members. The compression wrapping an archive is stated with a
+      `Tar.Flag` (`Gzip`, `Zlib` or `Deflate`) when it is opened or created, and produced
+      with `Tarfile#gzip`, `#zlib` or `#deflate`.
+  entry .Flag   the compression an archive is wrapped in: `Gzip`, `Zlib` or `Deflate`
+      The flag type of `path.open[Tar](flags*)`, `data.open[Tar](flags*)` and
+      `path.create[Tar](flags*)`. Tar has no self-identifying magic for its compression
+      layer, so the caller states it — `path.open[Tar](Tar.Flag.Gzip)` reads a `.tar.gz` —
+      and an archive opened with no flag is read as plain tar. On creation, a flag makes the
+      builder compress the finished archive; see `TarBuilder` for what that costs in
+      streaming.
+
+      ```scala
+      import soundness.*
+      import codepages.utf8Codepage
+      import strategies.throwUnsafely
+
+      val tarball = Tarfile(List(Tar.Entry(t"a".as[Tar.Ref], t"A".in[Data])))
+
+      tarball.zlib.memoize.open[Tar](Tar.Flag.Zlib):
+        tar.entries.to[List].map(_.entryName)
+      ```
+  entry .Handle   the scoped handle of an open tar archive: `tar` inside an `open[Tar]` block
+    detail
+        What `path.open[Tar](flags*)` and `data.open[Tar](flags*)` lend to their block, and
+        what the contextual accessor `tar` names there. Tar is a sequential format, so
+        `#entries` parses lazily from the underlying source, one entry per step, and the
+        source stays open only for the block: an entry's payload must be consumed within the
+        scope. The handle is an exclusive capability, so neither it nor an iterator or body
+        borrowed from it can be returned from the block.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import filesystemBackends.javaBaseFilesystem
+        import pathInterfaces.pathOnLinux
+        import strategies.throwUnsafely
+        import systems.javaBaseSystem
+        import temporaryDirectories.javaBaseTemporaryDirectory
+
+        val path: Path on Linux = temporaryDirectory[Path on Linux] / "release.tar.gz"
+
+        path.open[Tar](Tar.Flag.Gzip):
+          tar.entries.to[List].map(_.entryName)
+        ```
+
+        The iterator is single-pass: an entry passed over stays readable, since its body
+        memoizes as the iterator advances, but the sequence itself is not replayable within
+        the scope. To keep the entries, convert them with `to[List]` inside the block; the
+        bodies of the entries kept are buffered as the read moves past them.
+    refer bitumen.tar
+    refer bitumen.tarPathOpenable
+    entry #entries   the archive's entries, parsed lazily as the iterator advances
+        An `Iterator[Tar.Entry]` which captures the handle, so it cannot outlive the block.
+        Advancing it drains whatever of the previous entry's body was not read into that
+        entry's `Archive.Body`, so the cursor stands at the next header. A malformed archive
+        raises `Tar.Error` as the fault is reached.
+
+entry .SparseSegment   one data-holding run of a GNU sparse file: its offset and length
+  detail
+      A `Tar.Entry.Sparse` records which runs of its apparent `realSize` hold data as a list
+      of `SparseSegment(offset, length)`; the bytes of those runs, concatenated, are the
+      entry's `data`. The first four segments are written in the header and the rest in
+      extension blocks, which the reader reassembles.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val sparse = Tar.Entry.Sparse
+        ( path     = t"sparse.bin".as[Tar.Ref],
+          mode     = UnixMode(),
+          user     = UnixUser(0),
+          group    = UnixGroup(0),
+          mtime    = 0.bits.u32,
+          realSize = 10000L,
+          segments = List(SparseSegment(0L, 100L), SparseSegment(5000L, 200L)),
+          data     = Archive.Body(Array.fill[Byte](300)('X'.toByte)) )
+
+      Tarfile.read(Tarfile(List(sparse)).source[Data]).to[List].map:
+        case entry: Tar.Entry.Sparse => entry.segments.size   // 2
+        case _                       => 0
+      ```
+  entry #offset   where the run begins in the file's apparent extent
+  entry #length   how many bytes the run holds
+
+entry .Tarfile   a tar archive as a value: a list of entries which streams as blocks, plain or compressed
+  detail
+      `Tarfile(entries, longNameFormat)` is the in-memory form of an archive: its
+      `#entries`, in order, and the convention for names too long for a USTAR header (`Pax`
+      unless `LongNameFormat.Gnu` is given). It is `Streamable by Data` (`.streamable`), so
+      it is written to a file, sent over a connection or hashed as any other value, with the
+      two terminating zero blocks included; and `#gzip`, `#zlib` and `#deflate` are the
+      compressed streams the format usually travels in. Nothing is assembled in memory: each
+      entry's blocks are produced as the stream is consumed, and an entry's body is opened
+      only when it is reached.
+
+      ```scala fuel
+      frame
+        label A tarball built from entries
+        code
+            import soundness.*
+            import codepages.utf8Codepage
+            import strategies.throwUnsafely
+
+            val readme = Tar.Entry(t"README".as[Tar.Ref], t"Read me first".in[Data])
+            val tarball = Tarfile(List(readme))
+      frame
+        label Its bytes, as tar blocks
+        code
+            import soundness.*
+            import codepages.utf8Codepage
+            import strategies.throwUnsafely
+
+            val readme = Tar.Entry(t"README".as[Tar.Ref], t"Read me first".in[Data])
+            val tarball = Tarfile(List(readme))
+            tarball.source[Data].memoize.length   // 2048: a header, a data block, two zero blocks
+      frame
+        label Compressed, as a .tar.gz stream
+        code
+            import soundness.*
+            import codepages.utf8Codepage
+            import strategies.throwUnsafely
+
+            val readme = Tar.Entry(t"README".as[Tar.Ref], t"Read me first".in[Data])
+            val tarball = Tarfile(List(readme))
+            val gzipped: Data = tarball.gzip.memoize
+      frame
+        label Read back from the compressed stream
+        code
+            import soundness.*
+            import codepages.utf8Codepage
+            import strategies.throwUnsafely
+
+            val readme = Tar.Entry(t"README".as[Tar.Ref], t"Read me first".in[Data])
+            val tarball = Tarfile(List(readme))
+            val gzipped: Data = tarball.gzip.memoize
+            Tarfile.read(gzipped.stream.decompress[Gzip]).map(_.entryName).to[List]   // List(t"README")
+      ##
+      ```
+
+      Reading runs the other way: `.read` parses entries lazily off any byte stream, and
+      `.from` reads a whole archive back into a `Tarfile`, which re-serializes with the same
+      entries. A `Tarfile` comes from `directory.archive[Tar]()` too, and unpacks onto a
+      filesystem with `extractTo` (in `bitumen.jvm`). Tar permits duplicate names, later
+      entries superseding earlier ones on extraction, so nothing is checked when a list is
+      built.
+  refer bitumen.Tar
+  refer bitumen.LongNameFormat
+  refer bitumen.extractTo
+  refer bitumen.TarBuilder
+  entry .zeroBlock   a block of 512 zero bytes: two of them end every archive
+  entry .streamable   streams a `Tarfile` as its tar blocks: `tarfile.source[Data]`, `path.write(tarfile)`
+      The given which makes a `Tarfile` `Streamable by Data over Credit`, in implicit scope.
+      The stream is every entry's preamble (pax or GNU long-name blocks, as the
+      `longNameFormat` requires), header and padded payload, then two zero blocks; each
+      entry's body is opened when the stream reaches it.
+  entry .read   parses a byte stream as tar entries, lazily, one entry per step
+      `Tarfile.read(stream)` returns an `Iterator[Tar.Entry]^` which parses straight off the
+      stream as it advances, absorbing whatever chunk boundaries the stream arrives in: the
+      archive is never materialised. It consumes the stream — the stream's ownership passes
+      to the iterator — and needs a `Tactic[Tar.Error]`. A compressed archive is a
+      decompressed stream read the same way: `Tarfile.read(stream.decompress[Gzip])`.
+
+      ```scala
+      import soundness.*
+      import codepages.utf8Codepage
+      import strategies.throwUnsafely
+
+      val tarball = Tarfile(List(Tar.Entry(t"hello.txt".as[Tar.Ref], t"hello".in[Data])))
+
+      Tarfile.read(tarball.source[Data]).to[List].map:
+        case file: Tar.Entry.File => file.data.memoize.utf8   // t"hello"
+        case other                => other.entryName
+      ```
+
+      The entries are single-owner: consume them in order, on one thread. A file entry's
+      `Archive.Body` pulls off the shared cursor in bounded chunks as it is read, so an
+      in-order consumer holds memory bounded by the entries it retains; advancing to the
+      next entry first drains what remains of the previous body into its memo, so an entry
+      passed over is still readable, at the cost of buffering it. Pax extended headers and
+      GNU long-name blocks are folded into the entry they precede (a `path`, `linkpath`,
+      `uname` or `gname` record overrides the header field; every other record lands in the
+      entry's `pax` map), and a sparse file's extension blocks are reassembled. The walk ends
+      at the first zero block; a stream which ends without one raises `Tar.Error` with
+      reason `TruncatedStream`, and a block which fails its checksum ends the walk with
+      `BadChecksum`.
+  entry .from   reads a whole byte stream back into a `Tarfile`
+      `Tarfile.from(stream)` is `.read` with the entries collected into a `List`: a
+      `Tarfile` which re-serializes with the same entries and the default `LongNameFormat`.
+      It consumes the stream and needs a `Tactic[Tar.Error]`. The bodies are memoized, so
+      the whole archive is held in memory; for one too large for that, iterate `.read`.
+  entry #entries   the archive's entries, in the order they are written
+  entry #longNameFormat   how a name or link target over 100 bytes is written: `Pax` or `Gnu`
+  entry #gzip   the archive compressed as gzip: a `.tar.gz` stream
+      A `Stream[Data] over Credit` which compresses the blocks as it is consumed; read it
+      back with `Tarfile.read(stream.decompress[Gzip])`, or open its bytes with
+      `open[Tar](Tar.Flag.Gzip)`.
+  entry #zlib   the archive compressed in zlib format
+      Read back with `decompress[Zlib]` or `Tar.Flag.Zlib`.
+  entry #deflate   the archive as a raw deflate stream, with no gzip or zlib framing
+      Read back with `decompress[Deflate]` or `Tar.Flag.Deflate`.
+
+entry .LongNameFormat   how a tar name longer than a USTAR header holds is written: `Pax` or `Gnu`
+    A USTAR header holds 100 bytes of name and 100 of link target, 32 of owner and group
+    name. A value which does not fit is written in full in a block before the entry: a POSIX
+    pax extended header (`Pax`, the default, which every modern `tar` reads, and which also
+    carries the `pax` records of an entry) or GNU's `././@LongLink` pseudo-entries (`Gnu`,
+    for an archive bound for an older GNU `tar`). Under `Gnu`, an entry's non-structural pax
+    records still go in a pax header, and only `path` and `linkpath` take the GNU form. The
+    format is chosen when an archive is built — `Tarfile(entries, LongNameFormat.Gnu)`,
+    `directory.archive[Tar](LongNameFormat.Gnu)`, `path.create[Tar](LongNameFormat.Gnu)` —
+    and the reader accepts either.
+
+entry .Archive   what the sequential formats share: the memoizing entry body and the archiving flags
+  detail
+      `Archive` holds the two things common to `Tar` and `Ar` (and to zeppelin's `Zip`, for
+      the flags): `Archive.Body`, the replayable, lazily-pulled body of an entry, which both
+      readers lend to their consumers and both writers stream from; and `Archive.Flag`, the
+      flags of `directory.archive[Format](flags*)` which make an archive reproducible by
+      replacing the owner and timestamp the filesystem reports.
+  refer bitumen.Tar
+  refer bitumen.Ar
+  entry .Flag   a flag of `directory.archive[Format](flags*)`: a fixed owner or a fixed timestamp
+    detail
+        The knobs of a reproducible build, as `tar --owner`, `--group` and `--mtime` are.
+        Each replaces what the filesystem reports for *every* entry of the archive:
+
+        - `Owner(user, group)` — every entry records this `UnixUser` and `UnixGroup`, in
+          place of the file's owner.
+        - `Mtime(seconds)` — every entry records this modification time, in seconds since
+          the epoch, in place of the file's. `Archive.Flag.Mtime(instant)` takes any instant
+          type instead.
+
+        They apply to `archive[Tar]`, `archive[Ar]` and `archive[Zip]` alike, mixed with the
+        format's own flags:
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import filesystemBackends.javaBaseFilesystem
+        import filesystemOptions.preserveSymlinks
+        import pathInterfaces.pathOnLinux
+        import strategies.throwUnsafely
+        import systems.javaBaseSystem
+        import temporaryDirectories.javaBaseTemporaryDirectory
+
+        val source: Path on Linux = temporaryDirectory[Path on Linux] / "project"
+        source.archive[Tar](Archive.Flag.Owner(UnixUser(0), UnixGroup(0)), Archive.Flag.Mtime(0L))
+        ```
+    entry .Mtime   the companion of the `Mtime` flag, which also takes an instant
+      entry .apply   `Archive.Flag.Mtime(instant)`: a fixed timestamp from any instant type
+          Takes any value `Abstractable across Instants to Long` — an aviation `Instant`, or
+          epoch milliseconds under `import abstractables.epochMillisecondsAbstractable` —
+          and records it in whole seconds. `Mtime(seconds: Long)`, the case itself, takes the
+          seconds directly.
+  entry .Body   the replayable body of an entry: chunks pulled lazily from the source and memoized
+    detail
+        An `Archive.Body` is what a `Tar.Entry.File`, `Tar.Entry.Sparse` or `Ar.Entry` holds
+        as its contents. Built with `Archive.Body(chunks*)` from data in hand, it is simply
+        those chunks; lent by `Tarfile.read` or `Arfile.read`, it pulls its chunks from the
+        reader's cursor in bounded pieces as they are first read, and memoizes them, so the
+        region of the source is read exactly once however many consumers stream it, and
+        each `#stream` replays from the first chunk. An in-order consumer of a streaming read
+        therefore holds memory bounded by the entries it keeps: a body's chunks are
+        reclaimed with its entry.
+
+        ```scala
+        import soundness.*
+        import codepages.utf8Codepage
+        import strategies.throwUnsafely
+
+        val body = Archive.Body(t"hello, ".in[Data], t"world".in[Data])
+        body.size             // 12
+        body.memoize.utf8     // t"hello, world"
+        body.chunks.to[List].size   // 2
+        ```
+
+        A lent body is valid while its reader's source is: within an `open[Tar]` block, or
+        before the stream `Tarfile.read` was given is closed. Read it, or `#memoize` it, there.
+    refer bitumen.Tar
+    refer bitumen.Ar
+    entry .apply   an in-memory body of the given chunks
+        `Archive.Body(chunks*)` takes any number of `Data` values, drops any that are empty,
+        and pulls nothing lazily. `Archive.Body()` is an empty body.
+    entry .empty   the empty body: `Archive.Body()`
+    entry #size   the body's length in bytes
+        Drains the body from its producer first, if it was lent, so the whole of it is
+        memoized.
+    entry #chunks   the body's chunks, replayed from the start, as an `Iterator[Data]^`
+        Memoized chunks are replayed; chunks not yet read pull from the producer as the
+        iterator advances. The iterator captures the body.
+    entry #stream   a fresh `Stream[Data] over Credit` over the chunks, from the start
+        What `Tar.Entry` is built from and what a consumer reads with `read[Text]` or
+        `decompress[Gzip]`; each call starts again at the first chunk.
+    entry #memoize   the whole body as one `Data` value
+        Drains the body and concatenates its chunks; a body of a single chunk returns it as
+        is. For an entry of a compressed archive this is the entry's own bytes, not the
+        archive's.
+
+entry .tar   the open archive's handle inside an `open[Tar]` block
+    A transparent inline accessor for the `Tar.Handle` the block was given, in the manner of
+    galilei's `file`: `tar.entries` iterates the archive. It keeps the handle's precise type,
+    so what the block may do is what it was opened for. Under `import soundness.*`, it is
+    the umbrella's `tar`.
+
+    ```scala
+    import soundness.*
+    import codepages.utf8Codepage
+    import strategies.throwUnsafely
+
+    val bytes: Data = Tarfile(List(Tar.Entry(t"a".as[Tar.Ref], t"A".in[Data]))).source[Data].memoize
+
+    bytes.open[Tar]():
+      tar.entries.to[List].map(_.entryName)   // List(t"a")
+    ```
+
+entry .ar   the open archive's handle inside an `open[Ar]` block
+    A transparent inline accessor for the `Ar.Handle` the block was given: `ar.entries`
+    iterates the archive's members. It keeps the handle's precise type.
+
+    ```scala
+    import soundness.*
+    import codepages.utf8Codepage
+    import strategies.throwUnsafely
+
+    val member = Ar.Entry(t"debian-binary", Archive.Body(t"2.0\n".in[Data]), 0L, UnixUser(0), UnixGroup(0), 33188)
+    val bytes: Data = Arfile(List(member)).source[Data].memoize
+
+    bytes.open[Ar]():
+      ar.entries.to[List].map(_.name)   // List(t"debian-binary")
+    ```
+
+entry .Ar   the ar format: a marker type and the home of `Ar.Entry`, `Ar.Error`, `Ar.Header` and `Ar.Handle`
+  detail
+      `ar` is the container of every `.deb` package and every `.a` static library: an
+      eight-byte magic, then a flat run of members, each a sixty-byte header followed inline
+      by its payload, padded to an even offset. It carries no index, no checksum, no entry
+      type and — unlike tar — no end-of-archive marker, so a member is just a name, its Unix
+      metadata and a body, the archive ends when the stream does, and a member whose
+      recorded size overruns the file is the only corruption the format can signal.
+
+      `Ar` is an uninhabited sealed trait which names the format wherever one is chosen by
+      type: `path.open[Ar]()`, `data.open[Ar]()` and `directory.archive[Ar]()`. Its companion
+      holds the format's constants and types: `Ar.Entry` (a member), `Ar.Header` (the raw
+      header and its decoders), `Ar.Role` (what a GNU member is for), `Ar.Error` and
+      `Ar.Handle`. There are no open flags, because a `.deb` is plain `ar`: it is the members
+      inside which are compressed.
+
+      ```scala
+      import soundness.*
+      import codepages.utf8Codepage
+      import strategies.throwUnsafely
+
+      val control =
+        Ar.Entry(t"control.tar.xz", Archive.Body(t"...".in[Data]), 0L, UnixUser(0), UnixGroup(0), 33188)
+
+      val deb = Arfile(List(control))
+      Arfile.read(deb.source[Data]).map(_.name).to[List]   // List(t"control.tar.xz")
+
+      deb.source[Data].memoize.open[Ar]():
+        ar.entries.to[List].map(_.name)
+      ```
+
+      The companion's givens are in implicit scope: `.dataOpenable` opens in-memory `Data`
+      and `.archivable` archives a directory. Opening a *path* on disk as `Ar` needs
+      `bitumen.jvm`'s `arPathOpenable`.
+  refer bitumen.Arfile
+  refer bitumen.Archive
+  refer bitumen.arPathOpenable
+  refer bitumen.ar
+  entry .magic   the eight bytes which begin every archive: `!<arch>` and a newline
+  entry .magicSize   the length of the magic: 8 bytes
+  entry .headerSize   the length of a member header: 60 bytes
+  entry .dataOpenable   opens in-memory `Data` as an ar archive: `data.open[Ar]()`
+      The given which makes `Data` `Openable` in form `Ar`, in implicit scope so that
+      `bytes.open[Ar]()` resolves with no import. It needs a `Tactic[Ar.Error]`, and is an
+      `Ar.DataOpenable`. Opening a path on disk is `arPathOpenable`, in `bitumen.jvm`.
+  entry .archivable   archives a directory tree as an `Arfile`: `directory.archive[Ar](flags*)`
+      The given which makes a `Path on plane` `Archivable` in form `Ar`, for any plane with a
+      `FilesystemBackend on plane` in scope, in implicit scope so that `directory.archive[Ar]()`
+      resolves with no import. It needs a `Tactic[Io.Error]` and a `Tactic[Ar.Error]`, and is
+      an `Ar.Archivable[plane]`.
+  entry .Archivable   the `Archivable` instance behind `directory.archive[Ar](flags*)`
+    detail
+        Archives a directory tree as a flat `Arfile` through the `FilesystemBackend` of its
+        plane. `ar` has no directory entries, so the tree is flattened: every regular file
+        beneath the root becomes a member named by its slash-joined relative path (a GNU
+        long name, past fifteen characters), directories contribute nothing, and symbolic
+        links are followed, since a link cannot be a member either. A FIFO or device aborts
+        with `Ar.Error`, reason `Unrepresentable`. Each member's `mode` is the whole
+        `st_mode`, type bits included, as `ar` stores it, and `Archive.Flag.Owner` and
+        `Archive.Flag.Mtime` replace the owner and timestamp the filesystem reports. The
+        walk is the same sorted pre-order as `archive[Tar]`, so the archive is reproducible.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import filesystemBackends.javaBaseFilesystem
+        import pathInterfaces.pathOnLinux
+        import strategies.throwUnsafely
+        import systems.javaBaseSystem
+        import temporaryDirectories.javaBaseTemporaryDirectory
+
+        val source: Path on Linux = temporaryDirectory[Path on Linux] / "project"
+        source.archive[Ar]().entries.map(_.name)   // List(t"a.txt", t"b.txt", t"sub/c.txt")
+        ```
+    refer bitumen.Archive
+    refer bitumen.Arfile
+    entry #Self   the receiver: a `Path on plane`
+    entry #Form   the format selected: `Ar`
+    entry #Operand   the flag type: `Archive.Flag`
+    entry #Result   what the archiving produces: an `Arfile`
+    entry #archive   the regular files beneath a root, as an `Arfile`
+  entry .Role   what a GNU archive member is: `Regular`, `SymbolTable` or `NameTable`
+      `ar` has no type field, so the kinds of member are told apart by name alone. A
+      `.deb` holds `Regular` members only; the other two appear in `.a` static libraries,
+      which nest inside the `data.tar` of every `-dev` package. `SymbolTable` is the member
+      named `/` (or `/SYM64/`, the 64-bit table GNU writes when offsets outgrow 32 bits) and
+      `NameTable` the `//` member which holds every name longer than fifteen characters.
+      `Ar.Entry#role` classifies a member, so a listing can skip the tables:
+
+      ```scala
+      import soundness.*
+      import codepages.utf8Codepage
+      import strategies.throwUnsafely
+
+      val member = Ar.Entry(t"a.txt", Archive.Body(t"aa".in[Data]), 0L, UnixUser(0), UnixGroup(0), 33188)
+
+      Arfile.read(Arfile(List(member)).source[Data]).to[List]
+      . filter(_.role == Ar.Role.Regular)
+      . map(_.name)
+      ```
+  entry .Error   raised when an ar archive cannot be read or written, with a `Reason` saying why
+    detail
+        Error 286: _the ar archive could not be read or written because `reason`_. Its
+        `#reason` is an `Ar.Error.Reason`, each with its own number and message:
+
+        - `BadMagic(actual)` (1) — _the archive does not begin with the ar magic bytes_.
+        - `BadTerminator(actual)` (2) — _the header is not terminated by the two magic
+          bytes_: the cursor is no longer on a header boundary, which is the only structural
+          check a header offers.
+        - `BadDecimal(field, data)` (3) — _the `field` field did not contain a valid decimal
+          value_.
+        - `BadOctal(field, data)` (4) — _the `field` field did not contain a valid octal
+          value_ (the `mode` field is octal; every other numeric field is decimal).
+        - `TruncatedStream(needed, got)` (5) — _the archive stream ended unexpectedly_: a
+          short header, or a body shorter than its header said.
+        - `BadLongNameRef(reference)` (6) — _the long-name reference `reference` does not
+          resolve in the archive's name table_: a `/`-prefixed name with no `//` member
+          before it, or an offset outside the table.
+        - `UnsupportedNameFormat(name)` (7) — _the member name `name` uses the BSD
+          length-prefixed form, which is not supported_: BSD `ar` puts a long name in the
+          payload as `#1/<length>`, a form which does not occur in Debian archives.
+        - `WriteUnsupported` (8) — _ar archives cannot yet be opened for writing_: an
+          `open[Ar]` with a `Write` mode. Writing is writing an `Arfile`.
+        - `Unrepresentable(name)` (9) — _the entry `name` is neither a regular file nor a
+          directory, which ar cannot store_: `archive[Ar]` met a FIFO or device.
+
+        Every reading API needs a `Tactic[Ar.Error]` in scope. Because the format has no
+        checksum and no end marker, a short header cannot be parsed best-effort: the
+        recorded size is the only thing locating the next header, so a truncation aborts.
+    entry .Reason   why an ar archive could not be read or written: an enum of nine cases
+      detail
+          Each case is listed on the `Ar.Error` page with its number and message. A `Reason`
+          is a `Clarification`, so it reads as the tail of the error's message.
+      entry #number   the reason's number, `1` to `9`, which becomes the error's sub-number
+    entry .communicable   renders each reason as its message
+    entry #reason   why the archive could not be read or written
+  entry .Entry   one member of an ar archive: its name, Unix metadata and body
+    detail
+        A member is a `name`, a modification time, an owner and group, a `mode` and an
+        `Archive.Body`. `Ar.Entry(name, data, mtime, user, group, mode)` builds one for
+        writing: the stored name takes the SysV terminating `/`, which is what lets a name
+        with trailing spaces survive a round trip. A member read from an archive carries two
+        more things: `#rawName`, the literal sixteen-byte field (a GNU long-name reference
+        such as `/19`, or a name with its `/`), and `#origin`, the verbatim header, so that
+        the archive re-serializes byte for byte. `#name` is always the resolved name: a long
+        name looked up in the `//` table, a SysV `/` stripped.
+
+        ```scala
+        import soundness.*
+        import codepages.utf8Codepage
+        import strategies.throwUnsafely
+
+        val control =
+          Ar.Entry(t"control.tar.xz", Archive.Body(t"...".in[Data]), 1716989111L, UnixUser(0), UnixGroup(0), 33188)
+
+        control.role         // Ar.Role.Regular
+        control.size         // 3
+        control.rawName      // t"control.tar.xz/"
+        ```
+
+        The `mode` is the raw octal field — `33188`, which is `100644` — rather than a
+        `UnixMode`, because `ar` stores the file-type bits alongside the permissions, which
+        `UnixMode` does not represent, and dropping them would change the formatted header.
+    refer bitumen.Arfile
+    refer bitumen.Archive
+    entry .padded   a payload's size rounded up to even: where the next header begins
+        A member whose size is odd is followed by one newline byte, so every header starts
+        at an even offset.
+    entry .apply   a member built for writing: `Ar.Entry(name, data, mtime, user, group, mode)`
+        The stored `rawName` is `name` with a terminating `/`, in the SysV manner; no verbatim
+        header is retained, so the header is formatted from the fields. `mtime` is seconds
+        since the epoch; `mode` is the whole `st_mode`, `33188` (`100644`) for an ordinary
+        file.
+    entry #name   the member's name, resolved: a long name looked up, a trailing `/` stripped
+    entry #rawName   the literal sixteen-byte name field, as written in the archive
+        `/`, `//` or `/SYM64/` for the tables, `/<offset>` for a GNU long-name reference, or
+        the name with its SysV terminating `/`.
+    entry #mtime   the modification time, in seconds since the epoch
+    entry #user   the owner, as a `UnixUser` (by id only: `ar` stores no names)
+    entry #group   the group, as a `UnixGroup`
+    entry #mode   the whole `st_mode`, type bits included, as `ar` stores it
+    entry #data   the member's body, an `Archive.Body`
+    entry #origin   the verbatim header this member was parsed with, or `Unset` for one built in code
+    entry #role   whether the member is `Regular`, the `SymbolTable` or the `NameTable`
+        Decided by `#rawName`: `/` and `/SYM64/` are the symbol table, `//` the name table,
+        and anything else a regular member.
+    entry #size   the body's length in bytes
+    entry #header   the sixty-byte header: the verbatim one if parsed, else one formatted from the fields
+        Re-emitting the original matters for byte-exact reconstruction: GNU writes the `//`
+        name table with its `mtime`, `uid`, `gid` and `mode` fields left blank, and no
+        decoded number can tell blank from zero. A formatted header writes `#rawName`, not
+        the resolved name, so a long-name archive still round-trips against its own table.
+    entry #serialize   the header, the body's chunks, and the pad byte if the size is odd
+  entry .Header   the sixty-byte member header, as raw field slices, with the decoders for its fields
+    detail
+        An `Ar.Header` holds the seven fields of a member header as undecoded slices of
+        `Data`, as `Tar.Header` does for tar. Every field is left-aligned ASCII padded with
+        trailing spaces — the opposite of tar's right-aligned, space-led form — and every
+        numeric field is decimal except `mode`, which is octal. The companion holds the
+        reader's decoders and the writer's `.format`, public for a program which must
+        inspect or repair an archive at the header level.
+
+        ```scala
+        import soundness.*
+        import codepages.utf8Codepage
+        import strategies.throwUnsafely
+
+        Ar.Header.decodeDecimal(t"1716989111  ".in[Data], t"mtime")   // 1716989111L
+        Ar.Header.decodeOctal(t"100644  ".in[Data], t"mode")          // 33188L
+        Ar.Header.decodeName(t"SAX.o/          ".in[Data])            // t"SAX.o/"
+        Ar.Header.format(t"a.txt/", 1716989111L, 0, 0, 33188, 3L).length   // 60
+        ```
+    entry .headerSize   the length of a header: 60 bytes
+    entry .terminator   the two bytes which end every header: a backquote and a newline
+    entry .padByte   the newline which follows an odd-sized payload
+    entry .parse   slices a sixty-byte block into an `Ar.Header`
+        A block shorter than `.headerSize` aborts with `Ar.Error`, reason `TruncatedStream`:
+        with no checksum and no end marker, a short header cannot be parsed best-effort.
+    entry .verifyTerminator   checks that a header ends in `.terminator`
+        A mismatch aborts with `Ar.Error`, reason `BadTerminator`: the cursor is no longer on
+        a header boundary.
+    entry .decodeDecimal   a decimal field: digits, then space or NUL padding
+        An entirely blank field decodes as zero, since some archivers leave `uid` and `gid`
+        empty; a non-digit, or a digit resuming after padding, raises `Ar.Error` with reason
+        `BadDecimal`, naming the field.
+    entry .decodeOctal   an octal field, as `.decodeDecimal` reads a decimal one
+        For the `mode` field; a malformed one raises `Ar.Error` with reason `BadOctal`.
+    entry .decodeName   the name field with its trailing space padding removed
+        The SysV terminating `/` is kept: `/` and `//` name the symbol and name tables, and
+        telling those apart from a terminated name is the reader's job, which needs the raw
+        form. `Ar.Entry#name` is the resolved name.
+    entry .format   a header from its fields, every one left-aligned and space-padded
+        `format(name, mtime, user, group, mode, size)`: a value too wide for its field is
+        clipped. The name is written as given, so pass the raw form with its `/`.
+    entry #name   the sixteen-byte name field
+    entry #mtime   the twelve-byte modification time, decimal
+    entry #uid   the six-byte owner id, decimal
+    entry #gid   the six-byte group id, decimal
+    entry #mode   the eight-byte mode, octal
+    entry #size   the ten-byte payload size, decimal
+    entry #terminator   the two terminating bytes
+  entry .DataOpenable   the `Openable` instance behind `data.open[Ar]()`
+    detail
+        Opens in-memory `Data` as an ar archive, lending an `Ar.Handle` to the block.
+        Archives open read-only: a mode including `Write` is refused with `Ar.Error`, reason
+        `WriteUnsupported`. The operand type is `Nothing`: there are no flags, since a `.deb`
+        is plain `ar`.
+    entry #Self   the receiver: `Data`
+    entry #Form   the format selected: `Ar`
+    entry #Operand   the flag type: `Nothing`, as there are no flags
+    entry #Result   the handle lent to the block: `Ar.Handle`
+    entry #open   parses the data as an archive and runs the block with an `Ar.Handle`
+  entry .Handle   the scoped handle of an open ar archive: `ar` inside an `open[Ar]` block
+    detail
+        What `path.open[Ar]()` and `data.open[Ar]()` lend to their block, and what the
+        contextual accessor `ar` names there. `ar` is a sequential format, so `#entries`
+        parses lazily from the underlying source, one member per step, and the source stays
+        open only for the block: a member's payload must be consumed within the scope. The
+        handle is an exclusive capability, so neither it nor anything borrowed from it can
+        be returned from the block.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import filesystemBackends.javaBaseFilesystem
+        import pathInterfaces.pathOnLinux
+        import strategies.throwUnsafely
+        import systems.javaBaseSystem
+        import temporaryDirectories.javaBaseTemporaryDirectory
+
+        val path: Path on Linux = temporaryDirectory[Path on Linux] / "hello.deb"
+
+        path.open[Ar]():
+          ar.entries.to[List].map(_.name)   // List(t"debian-binary", t"control.tar.xz", t"data.tar.xz")
+        ```
+
+        The iterator is single-pass: a member passed over stays readable, since its body
+        memoizes as the iterator advances, but the sequence is not replayable within the
+        scope.
+    refer bitumen.ar
+    refer bitumen.arPathOpenable
+    entry #entries   the archive's members, parsed lazily as the iterator advances
+        An `Iterator[Ar.Entry]` which captures the handle, so it cannot outlive the block. A
+        malformed archive raises `Ar.Error` as the fault is reached.
+
+entry .Arfile   an ar archive as a value: a list of members which streams as bytes
+  detail
+      `Arfile(entries)` is the in-memory form of an `ar` archive: its `#entries`, in order.
+      It is `Streamable by Data` (`.streamable`), so writing it to a file is writing any
+      other value: the magic, then each member's header, padded payload and nothing more,
+      since the format has no trailing marker. `.read` parses members lazily off a byte
+      stream and `.from` reads a whole archive back, which re-serializes byte for byte.
+
+      ```scala
+      import soundness.*
+      import codepages.utf8Codepage
+      import strategies.throwUnsafely
+
+      def member(name: Text, content: Text): Ar.Entry =
+        Ar.Entry(name, Archive.Body(content.in[Data]), 1716989111L, UnixUser(0), UnixGroup(0), 33188)
+
+      val deb = Arfile(List(member(t"debian-binary", t"2.0\n"), member(t"control.tar", t"cc")))
+      val bytes: Data = deb.source[Data].memoize
+
+      Arfile.read(bytes.stream).map(_.name).to[List]        // List(t"debian-binary", t"control.tar")
+      Arfile.from(bytes.stream).source[Data].memoize.to[List] == bytes.to[List]   // byte for byte
+      ```
+  refer bitumen.Ar
+  refer bitumen.Archive
+  entry .streamable   streams an `Arfile` as its bytes: `arfile.source[Data]`, `path.write(arfile)`
+      The given which makes an `Arfile` `Streamable by Data over Credit`, in implicit scope.
+      Each member's body is opened when the stream reaches it.
+  entry .read   parses a byte stream as ar members, lazily, one member per step
+      `Arfile.read(stream)` returns an `Iterator[Ar.Entry]^` which parses straight off the
+      stream as it advances, absorbing whatever chunk boundaries it arrives in. It consumes
+      the stream and needs a `Tactic[Ar.Error]`. The members are single-owner — consume
+      them in order, on one thread — and each body pulls off the shared cursor in bounded
+      chunks, memoizing if the iterator moves past it, as `Tarfile.read` does. The one
+      member read whole is the `//` name table, since every later long name resolves
+      against it. The archive ends when the stream does; a stream which does not begin with
+      `Ar.magic` aborts with `BadMagic`.
+  entry .from   reads a whole byte stream back into an `Arfile`
+      `Arfile.from(stream)` is `.read` with the members collected into a `List`. Because
+      each member keeps its verbatim header and raw name, the result re-serializes byte for
+      byte: `Arfile.from(stream).source[Data]` reproduces the original.
+  entry #entries   the archive's members, in order
+
+entry .Pax   the POSIX pax extended-header record format: `length key=value` lines
+  detail
+      A pax extended header is a payload of records, each a decimal length (which counts
+      itself), a space, a key, `=`, a value and a newline. `Tarfile` writes one before any
+      entry whose name, link target, owner or group name overflows the USTAR header, or
+      which carries `pax` records of its own; the reader parses it and folds it into the
+      entry which follows. These functions are the encoder and decoder, public for a program
+      which handles the records itself.
+
+      ```scala
+      import soundness.*
+      import codepages.utf8Codepage
+      import strategies.throwUnsafely
+
+      Pax.record(t"path", t"a/very/long/name").utf8   // t"25 path=a/very/long/name\n"
+      Pax.parse(Pax.records(List(t"atime" -> t"1700000000.5", t"comment" -> t"test")))
+      ```
+  refer bitumen.Tar
+  refer bitumen.LongNameFormat
+  entry .record   one record, `length key=value` and a newline, as bytes
+      The length is the whole record's, its own digits included, which the encoder solves
+      for.
+  entry .records   several records concatenated, as the payload of a pax entry
+  entry .parse   the records of a pax payload, as a `Map` of key to value
+      Needs a `Tactic[Tar.Error]`. A record with a malformed length prefix raises `Tar.Error`
+      with reason `BadPaxRecord` and ends the scan, since the cursor can no longer be
+      trusted; a record with no `=` raises the same and skips just that record, so every
+      malformed record accrues under an accruing tactic.
+
+entry .TypeFlag   the kind of a tar entry, as the one-byte flag which names it in the header
+  detail
+      Every `Tar.Entry` has a `typeFlag`: `File` (`'0'`), `Link` (`'1'`), `Symlink` (`'2'`),
+      `CharSpecial` (`'3'`), `BlockSpecial` (`'4'`), `Directory` (`'5'`), `Fifo` (`'6'`),
+      `Contiguous` (`'7'`, read as a regular file), `NextFile` (`'x'`, a pax header for the next
+      entry), `GlobalExtension` (`'g'`, a pax header for every following entry), `LongLink`
+      (`'K'`) and `LongName` (`'L'`, the GNU long-name blocks) and `Sparse` (`'S'`, a GNU sparse
+      file). `#id` is the byte, as a `Char`.
+
+      ```scala
+      import soundness.*
+
+      TypeFlag.Directory.id   // '5'
+      ```
+  entry #id   the byte written at offset 156 of the header, as a `Char`
+
+entry .UnixMode   a Unix permission mode as twelve named bits
+  detail
+      The permission bits of a tar entry: `setUid`, `setGid`, and read, write and execute for
+      owner, group and other, each a `Boolean`. `UnixMode()` is `rw-r--r--` (`0644`): the
+      owner may read and write, everyone else may read. `.from` decodes an integer mode and
+      `#int` encodes one.
+
+      ```scala
+      import soundness.*
+
+      val executable = UnixMode(ownerExec = true, groupExec = true, otherExec = true)
+      executable.int             // 493, which is 0755
+      UnixMode.from(493) == executable
+      ```
+
+      `Ar.Entry#mode` is not a `UnixMode` but the whole `st_mode` as an `Int`, since `ar`
+      stores the file-type bits too.
+  refer bitumen.Tar
+  entry .from   a mode from its integer bits: `UnixMode.from(493)` is `rwxr-xr-x`
+      Only the low twelve bits are read; file-type bits above them are ignored.
+  entry #setUid   the set-user-id bit, `04000`
+  entry #setGid   the set-group-id bit, `02000`
+  entry #ownerRead   the owner may read, `0400`; `true` by default
+  entry #ownerWrite   the owner may write, `0200`; `true` by default
+  entry #ownerExec   the owner may execute, `0100`
+  entry #groupRead   the group may read, `040`; `true` by default
+  entry #groupWrite   the group may write, `020`
+  entry #groupExec   the group may execute, `010`
+  entry #otherRead   anyone may read, `04`; `true` by default
+  entry #otherWrite   anyone may write, `02`
+  entry #otherExec   anyone may execute, `01`
+  entry #int   the mode as an integer: the sum of its bits
+
+entry .UnixUser   the owner of an entry: a numeric id and, if known, a name
+  detail
+      `UnixUser(1000, t"alice")` or `UnixUser(0)`. Tar stores both, the name in the 32-byte
+      `uname` field or a pax `uname` record when longer; `ar` stores the id alone. A name read
+      from an archive which is blank is `Unset`.
+
+      ```scala
+      import soundness.*
+
+      UnixUser(1000, t"alice").name   // t"alice"
+      UnixUser(0).name                // Unset
+      ```
+  entry #value   the numeric user id
+  entry #name   the user's name, or `Unset` if none is recorded
+
+entry .UnixGroup   the group of an entry: a numeric id and, if known, a name
+  detail
+      `UnixGroup(1000, t"staff")` or `UnixGroup(0)`, the counterpart of `UnixUser`. Tar stores
+      the name in the 32-byte `gname` field or a pax `gname` record when longer; `ar` stores
+      the id alone.
+  entry #value   the numeric group id
+  entry #name   the group's name, or `Unset` if none is recorded
+
+entry .TarBuilder   the authoring handle of `path.create[Tar](flags*)`: entries stream to disk as they are inserted
+  detail
+      A JVM-only class, in `bitumen.jvm`. `path.create[Tar](flags*)` (through
+      `tarPathCreatable`) lends a `TarBuilder` to its block; the block inserts entries, and
+      when it returns the archive is complete on disk. The builder is the only way to write
+      a tar entry of *unknown* length end to end: on an uncompressed target it writes
+      straight through to a hidden temporary sibling as entries are inserted, a file whose
+      payload is lazy streaming to disk in bounded chunks, its header written as a
+      placeholder and backpatched with the real size and checksum once the body has passed.
+      A compressed target (a `Tar.Flag` among the flags) cannot be backpatched through the
+      compressor, so entries accumulate and serialize when the scope closes, each payload
+      buffered. Either way the target appears atomically, by a rename, or not at all: an
+      exception escaping the block leaves nothing behind.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import codepages.utf8Codepage
+      import filesystemBackends.javaBaseFilesystem
+      import pathInterfaces.pathOnLinux
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+      import temporaryDirectories.javaBaseTemporaryDirectory
+
+      val target: Path on Linux = temporaryDirectory[Path on Linux] / "made.tar"
+
+      target.create[Tar](CreateFlag.Replace): builder ?=>
+        builder.insert(t"first.txt".as[Tar.Ref], t"one".in[Data])
+        builder.file(t"log.bin".as[Tar.Ref]): entry ?=>
+          for i <- 1 to 5 do entry.put(Array.fill[Byte](1000)(i.toByte))
+        builder.insert(t"third.txt".as[Tar.Ref], t"three".in[Data])
+
+      target.open[Tar]():
+        tar.entries.to[List].map(_.entryName)   // List(t"first.txt", t"log.bin", t"third.txt")
+      ```
+
+      The flags are `CreateFlag`s (`Replace` to overwrite an existing file, which otherwise
+      raises `Tar.Error` with reason `AlreadyExists`; `Parents` to create missing
+      directories), a `Tar.Flag` to compress the result, and a `LongNameFormat`. Tar permits
+      duplicate names, later entries superseding earlier on extraction, so nothing is checked
+      at insert. An I/O failure raises `Tar.Error` with reason `CannotWrite`. For an archive
+      whose entries are already in hand, writing a `Tarfile` to the path is simpler.
+  refer bitumen.tarPathCreatable
+  refer bitumen.TarEntryWriter
+  refer bitumen.Tarfile
+  entry .TarCreatable   the `Creatable` instance behind `path.create[Tar](flags*)`
+    detail
+        Makes any path type `Abstractable across Paths to Text` `Creatable` in form `Tar`,
+        with a `TarBuilder` as the handle, granting read and write. `tarPathCreatable` is
+        the given which supplies it. It needs a `Tactic[Tar.Error]`.
+    entry #Self   the receiver: the path type
+    entry #Form   the format selected: `Tar`
+    entry #Operand   the flag type: `CreateFlag | Tar.Flag | LongNameFormat`
+    entry #Grants   what the handle is granted: `Grant.Read & Grant.Write`
+    entry #Result   the handle lent to the block: `TarBuilder`
+    entry #create   writes the archive the block authors to the path, atomically
+        Sorts the flags, refuses an existing target without `CreateFlag.Replace`, creates
+        parents under `CreateFlag.Parents`, and runs the block with a builder in streaming
+        mode (no `Tar.Flag`) or accumulating mode (a `Tar.Flag`), then moves the finished
+        temporary file onto the target.
+  entry #insert   adds an entry: a `Tar.Entry` as given, or a file from a name and any streamable data
+      `insert(entry)` writes any `Tar.Entry` — a directory, a link, a file with a fixed mode
+      and owner — through at once on an uncompressed target, or queues it on a compressed
+      one. `insert(name, data)` makes a `File` entry from anything `Streamable by Data`,
+      with the default mode, owner `0` and a zero timestamp, whose body is read lazily from
+      the data as it is written: a large source is never held in memory.
+  entry #file   authors one entry with a streamed, unknown-length body, written through a `TarEntryWriter`
+      `file(name, mode, user, group, mtime)` runs its block with a `TarEntryWriter` whose
+      `put` appends a chunk to the entry's body. On an uncompressed target the chunks go
+      straight to disk and the header is backpatched with the final size; on a compressed
+      target the chunks are buffered and the entry inserted whole when the block returns.
+      The block's result is returned.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import codepages.utf8Codepage
+      import filesystemBackends.javaBaseFilesystem
+      import pathInterfaces.pathOnLinux
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+      import temporaryDirectories.javaBaseTemporaryDirectory
+
+      val target: Path on Linux = temporaryDirectory[Path on Linux] / "streamed.tar"
+
+      target.create[Tar](CreateFlag.Replace): builder ?=>
+        builder.file(t"chunks.bin".as[Tar.Ref], mode = UnixMode(ownerExec = true)): entry ?=>
+          entry.put(t"first chunk\n".in[Data])
+          entry.put(t"second chunk\n".in[Data])
+      ```
+
+entry .TarEntryWriter   the writer lent by `TarBuilder#file`: appends chunks to one entry's body
+  detail
+      A JVM-only class, in `bitumen.jvm`. Inside `builder.file(name): entry ?=> …`, `entry`
+      is a `TarEntryWriter`: `#put` appends one chunk and `#write` streams any streamable
+      value. It is an exclusive capability confined to its block, so it cannot be retained
+      or returned; when the block ends the entry is complete.
+  refer bitumen.TarBuilder
+  entry #put   appends one chunk of `Data` to the entry's body
+  entry #write   streams any `Streamable by Data` value into the entry's body, chunk by chunk
+      Needs a `Buffering` in scope; the value is read through its `Streamable` given and
+      each chunk `put` as it arrives.
+
+entry .TarOpenable   the `Openable` instance behind `path.open[Tar](flags*)`
+  detail
+      A JVM-only class, in `bitumen.jvm`, which makes any path type `Abstractable across
+      Paths to Text` `Openable` in form `Tar`, lending a `Tar.Handle`. `tarPathOpenable` is
+      the given which supplies it. The file is opened with `java.io` and held open for the
+      block; entries parse lazily straight off the live stream, payloads streaming in
+      bounded chunks as they are read and draining when a later entry is forced. Archives
+      open read-only: a mode including `Write` is refused with `Tar.Error`, reason
+      `WriteUnsupported`. The flags are `Tar.Flag`s, naming the compression. It needs a
+      `Tactic[Tar.Error]` and a `Tactic[Truncation.Error]`.
+  refer bitumen.tarPathOpenable
+  refer bitumen.Tar
+  entry #Self   the receiver: the path type
+  entry #Form   the format selected: `Tar`
+  entry #Operand   the flag type: `Tar.Flag`
+  entry #Result   the handle lent to the block: `Tar.Handle`
+  entry #open   opens the file, runs the block with a `Tar.Handle`, and closes it after
+
+entry .ArOpenable   the `Openable` instance behind `path.open[Ar]()`
+  detail
+      A JVM-only class, in `bitumen.jvm`, which makes any path type `Abstractable across
+      Paths to Text` `Openable` in form `Ar`, lending an `Ar.Handle`. `arPathOpenable` is the
+      given which supplies it. The file is opened with `java.io` and held open for the
+      block; members parse lazily off the live stream. Archives open read-only: a mode
+      including `Write` is refused with `Ar.Error`, reason `WriteUnsupported`. There are no
+      flags, so the operand type is `Nothing`. It needs a `Tactic[Ar.Error]` and a
+      `Tactic[Truncation.Error]`.
+  refer bitumen.arPathOpenable
+  refer bitumen.Ar
+  entry #Self   the receiver: the path type
+  entry #Form   the format selected: `Ar`
+  entry #Operand   the flag type: `Nothing`, as there are no flags
+  entry #Result   the handle lent to the block: `Ar.Handle`
+  entry #open   opens the file, runs the block with an `Ar.Handle`, and closes it after
+
+entry .tarPathOpenable   opens a file on disk as a tar archive: `path.open[Tar](flags*)`
+    A top-level given in `bitumen.jvm`, for any path type `Abstractable across Paths to
+    Text` (a galilei `Path`, or text), supplying a `TarOpenable`. It needs a
+    `Tactic[Tar.Error]` and a `Tactic[Truncation.Error]` in scope. It is at the top level
+    because its subject, the path type, belongs to another library; `import soundness.*`
+    brings it in, but a program importing `bitumen.*` must name it, `import
+    bitumen.tarPathOpenable`, since a wildcard import does not import givens.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import filesystemBackends.javaBaseFilesystem
+    import pathInterfaces.pathOnLinux
+    import strategies.throwUnsafely
+    import systems.javaBaseSystem
+    import temporaryDirectories.javaBaseTemporaryDirectory
+
+    val path: Path on Linux = temporaryDirectory[Path on Linux] / "release.tar.gz"
+
+    path.open[Tar](Tar.Flag.Gzip):
+      tar.entries.to[List].map:
+        case file: Tar.Entry.File => t"${file.entryName} (${file.data.size} bytes)"
+        case other                => other.entryName
+    ```
+
+entry .arPathOpenable   opens a file on disk as an ar archive: `path.open[Ar]()`
+    A top-level given in `bitumen.jvm`, for any path type `Abstractable across Paths to
+    Text`, supplying an `ArOpenable`. It needs a `Tactic[Ar.Error]` and a
+    `Tactic[Truncation.Error]` in scope. `import soundness.*` brings it in; a program
+    importing `bitumen.*` names it, `import bitumen.arPathOpenable`.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import filesystemBackends.javaBaseFilesystem
+    import pathInterfaces.pathOnLinux
+    import strategies.throwUnsafely
+    import systems.javaBaseSystem
+    import temporaryDirectories.javaBaseTemporaryDirectory
+
+    val path: Path on Linux = temporaryDirectory[Path on Linux] / "package.deb"
+
+    path.open[Ar]():
+      ar.entries.to[List].map(_.name)
+    ```
+
+entry .tarPathCreatable   creates a tar archive on disk, authored by a block: `path.create[Tar](flags*)`
+    A top-level given in `bitumen.jvm`, for any path type `Abstractable across Paths to
+    Text`, supplying a `TarBuilder.TarCreatable`, so that `path.create[Tar](flags*)` lends a
+    `TarBuilder` to its block. It needs a `Tactic[Tar.Error]` in scope. `import soundness.*`
+    brings it in; a program importing `bitumen.*` names it, `import
+    bitumen.tarPathCreatable`.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import codepages.utf8Codepage
+    import filesystemBackends.javaBaseFilesystem
+    import pathInterfaces.pathOnLinux
+    import strategies.throwUnsafely
+    import systems.javaBaseSystem
+    import temporaryDirectories.javaBaseTemporaryDirectory
+
+    val target: Path on Linux = temporaryDirectory[Path on Linux] / "made.tar.gz"
+
+    target.create[Tar](Tar.Flag.Gzip, CreateFlag.Replace): builder ?=>
+      builder.insert(t"data.txt".as[Tar.Ref], t"payload".in[Data])
+    ```
+
+entry .extractTo   unpacks a `Tarfile` onto a filesystem, beneath a root directory
+    A JVM-only extension on `Tarfile`, in `bitumen.jvm`: the inverse of
+    `directory.archive[Tar]()`. Each entry is placed beneath `root` by its `Tar.Ref` — which,
+    being relative and free of `..`, cannot land outside it — on any `Posix` plane: a file is
+    written with its mode and modification time, a directory is created with its mode, a
+    symbolic link is created with its target (replacing an existing link), and a hard link
+    is linked to the entry it names. Parent directories which the archive does not list are
+    created as needed. A FIFO or device entry raises `Tar.Error` with reason
+    `DeviceCreationUnsupported`; a pax or GNU long-name pseudo-entry is skipped.
+
+    ```scala fuel
+    frame
+      label A directory, archived
+      code
+          import soundness.*
+          import filesystemBackends.javaBaseFilesystem
+          import filesystemOptions.createNonexistentParents
+          import filesystemOptions.overwritePreexisting
+          import filesystemOptions.preserveSymlinks
+          import pathInterfaces.pathOnLinux
+          import strategies.throwUnsafely
+          import systems.javaBaseSystem
+          import temporaryDirectories.javaBaseTemporaryDirectory
+
+          val source: Path on Linux = temporaryDirectory[Path on Linux] / "project"
+          val tarball: Tarfile = source.archive[Tar]()
+    frame
+      label Compressed and written to disk
+      code
+          import soundness.*
+          import filesystemBackends.javaBaseFilesystem
+          import filesystemOptions.createNonexistentParents
+          import filesystemOptions.overwritePreexisting
+          import filesystemOptions.preserveSymlinks
+          import pathInterfaces.pathOnLinux
+          import strategies.throwUnsafely
+          import systems.javaBaseSystem
+          import temporaryDirectories.javaBaseTemporaryDirectory
+
+          val source: Path on Linux = temporaryDirectory[Path on Linux] / "project"
+          val tarball: Tarfile = source.archive[Tar]()
+          val release: Path on Linux = temporaryDirectory[Path on Linux] / "project.tar.gz"
+          release.create[File](): handle ?=> handle.write(tarball.gzip)
+    frame
+      label Unpacked somewhere else
+      code
+          import soundness.*
+          import filesystemBackends.javaBaseFilesystem
+          import filesystemOptions.createNonexistentParents
+          import filesystemOptions.overwritePreexisting
+          import filesystemOptions.preserveSymlinks
+          import pathInterfaces.pathOnLinux
+          import strategies.throwUnsafely
+          import systems.javaBaseSystem
+          import temporaryDirectories.javaBaseTemporaryDirectory
+
+          val source: Path on Linux = temporaryDirectory[Path on Linux] / "project"
+          val tarball: Tarfile = source.archive[Tar]()
+          val release: Path on Linux = temporaryDirectory[Path on Linux] / "project.tar.gz"
+          release.create[File](): handle ?=> handle.write(tarball.gzip)
+          val unpacked: Path on Linux = temporaryDirectory[Path on Linux] / "unpacked"
+          tarball.extractTo(unpacked)
+    ##
+    ```
+
+    It needs `CreateNonexistentParents` and `OverwritePreexisting` policies for the plane
+    (imported from `filesystemOptions` by name), a `Tactic[Io.Error]` and a
+    `Tactic[Tar.Error]`. Modes are set through the `unix:mode` attribute, and silently left
+    as the filesystem's default where that is unsupported. To extract an archive too large
+    to hold as a `Tarfile`, iterate `Tarfile.read` or an `open[Tar]` block and build a
+    `Tarfile` of one entry at a time.

@@ -1,0 +1,553 @@
+tel 1.0
+
+base aperture
+import soundness
+
+info   scoped access to resources: `open`, `create`, `archive` and `session`, with modes carried as grants in the handle's type
+detail
+    _Aperture_ names one pattern which recurs across Soundness: a value says *where* something
+    is — a path, a URL, an in-memory reference — and getting at its contents is a distinct,
+    **scoped** act. A file is opened for streaming, a directory as a confined root, a Git
+    repository for reading its refs, a URL for a session of requests; in each case a handle is
+    lent to a block, and the end of the block is the end of the access.
+
+    The library defines the typeclasses behind four verbs, and the extension methods which
+    invoke them on any value:
+
+    - `open[Form](mode, flags*)`, through `Openable`: access to something which exists, with a
+      `Mode` (`Read`, `Write`, `Exclusive` and their `&`-combinations) whose `Grant`s are
+      carried in the handle's type, so a write through a read-only handle does not compile;
+    - `create[Form](flags*)`, through `Creatable`: bringing something into existence, either
+      empty or by authoring it in a scope that commits when the block completes;
+    - `archive[Form](flags*)`, through `Archivable`: gathering something's contents into an
+      in-memory archive value;
+    - `session`, through `Sessional`: a live interaction — a connection, a warm compiler, a
+      browser — lent to a block and disposed of when it ends.
+
+    ```scala
+    import soundness.*
+    import filesystemBackends.javaBaseFilesystem
+    import filesystemOptions.dereferenceSymlinks
+    import pathInterfaces.pathOnLinux
+    import strategies.throwUnsafely
+    import temporaryDirectories.javaBaseTemporaryDirectory
+    import charsets.utf8Charset
+    import codepages.utf8Codepage
+
+    val file: Path on Linux = temporaryDirectory[Path on Linux] / "notes.txt"
+
+    file.open[File](Write, OpenFlag.Create): handle ?=>
+      handle.write(Chain(t"Hello, world".in[Data]))
+
+    file.open[File]()(file.read[Text])
+    ```
+
+    The *form* — what the target is opened, created or archived *as* — is a type argument,
+    because one target may have several instances: a path opens as a `File`, a `Directory`, a
+    `Zip` or a `Pdf`. Where a target has exactly one instance the form may be omitted; with
+    several, the ambiguity error lists the alternatives. Flags after the mode are of the
+    instance's own `Operand` type, so they are specific to what is being opened and an
+    irrelevant flag does not typecheck. Every instance is written in the prepositional style,
+    `target is Openable in Form by Flag to Handle`.
+
+    Handles are capabilities, confined to their block by capture checking: neither a handle
+    nor a closure over it nor a collection holding it can be the block's result. `Stale` is
+    the companion idea for values read *through* a handle from state the handle does not own.
+
+    Aperture depends only on `prepositional`, so it sits below every library which provides
+    instances: galilei (files, directories, scratch space), octogenarian (`Git.Repo`,
+    `Git.Worktree`), bitumen and zeppelin (archives), facsimile (PDF documents), telekinesis
+    and coaxial (sessions), and others. It has a single source set, `aperture.core`, for every
+    platform, and everything is exported to the `soundness` umbrella.
+
+refer aperture.Openable
+refer aperture.Creatable
+refer aperture.Sessional
+refer aperture.Mode
+refer aperture.Grant
+refer aperture.open
+
+entry .Openable   a typeclass for targets which can be opened in a form, lending a granted handle to a block
+  detail
+      An instance is written `target is Openable in Form by Flag to Handle`: `Self` is the
+      target (a path, a reference), `Form` is what it is opened as, `Operand` the flag type
+      admissible for that pair, and `Result` the handle. The instance's one method, `#open`,
+      receives the target, the `Mode` the caller asked for, and the flags, and runs the block
+      with a handle typed `Result & Granting[grants]`, where `grants` is the mode's `Grants`.
+
+      Users call it through the `open` extension, never directly:
+
+      ```scala
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import filesystemOptions.dereferenceSymlinks
+      import pathInterfaces.pathOnLinux
+      import strategies.throwUnsafely
+      import temporaryDirectories.javaBaseTemporaryDirectory
+      import charsets.utf8Charset
+      import codepages.utf8Codepage
+
+      val directory: Path on Linux = temporaryDirectory[Path on Linux] / "work"
+
+      directory.open[Directory](Read & Write): dir ?=>
+        (dir / "greeting.txt").overwrite(t"Hello directory")
+      ```
+
+      An instance's operations on the handle are extension methods gated on the grants, such
+      as `extension (handle: (DocHandle & Granting[Grant.Write])^) def append(…)`, so the mode
+      chosen at the call site decides what compiles inside the block. An instance translates
+      the mode into its backend's own terms by interrogating `mode.atoms` (`mode.atoms.has(Read)`).
+
+      Instances should be named classes rather than anonymous `given … = new Openable:`
+      instances: an anonymous subclass freshens the handle's capability type in the inferred
+      `Result` member, and the block's handle then fails to typecheck against the extension
+      methods that gate on it.
+  refer aperture.open
+  refer aperture.Opener
+  refer aperture.Mode
+  refer aperture.Granting
+  entry #open   opens a target in a mode, with flags, and runs a block with the granted handle
+      `open(value, mode, flags)(block)`: the implementation an instance provides. The block
+      takes the handle `(Result & Granting[grants])^` as a contextual parameter, and its
+      result is returned once the instance has closed whatever it opened. Called by
+      `Opener#apply`; user code writes `value.open[Form](mode, flags*)` instead.
+
+entry .Opener   the applier `open[Form]` returns, which takes an optional mode, the flags and the block
+  detail
+      `value.open[Form]` resolves the `Openable` instance from the form alone and returns an
+      `Opener`; its overloaded `#apply` then takes the arguments. The two steps are
+      deliberate: overloaded extension methods do not resolve across several parameter
+      lists, so the applier is where the optional mode can be overloaded safely.
+
+      ```scala
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import filesystemOptions.dereferenceSymlinks
+      import pathInterfaces.pathOnLinux
+      import strategies.throwUnsafely
+      import temporaryDirectories.javaBaseTemporaryDirectory
+      import charsets.utf8Charset
+      import codepages.utf8Codepage
+
+      val file: Path on Linux = temporaryDirectory[Path on Linux] / "notes.txt"
+
+      file.open[File]() { handle ?=> handle.read[Text] }
+      file.open[File](Read & Write) { handle ?=> handle.write(Chain(t"more".in[Data])) }
+      ```
+
+      The `#openable` field is `tracked`, so the instance's `Self`, `Operand` and `Result`
+      members stay precise in the types of `#apply`.
+  refer aperture.open
+  refer aperture.Openable
+  entry #openable   the `Openable` instance the form resolved
+  entry #value   the target to be opened
+  entry #apply   opens the target, read-only by default or in the mode given, and runs the block
+      Two overloads. `apply(flags*)(block)` opens with the `Read` mode, so the handle is
+      `Granting[Grant.Read]`; `apply(mode, flags*)(block)` opens with the mode given, so the
+      handle grants exactly `mode.Grants`. Flags are of the instance's `Operand` type and
+      follow the mode. The handle is the block's contextual parameter (`handle ?=> …`).
+
+entry .open   opens a value in a form: `path.open[File](Read & Write) { handle ?=> … }`
+  detail
+      An extension on any value which has an `Openable` instance in the form named. It
+      returns an `Opener`, whose `apply` takes an optional `Mode` (the default is `Read`),
+      then flags of the instance's `Operand` type, then a block which receives the handle as
+      a contextual parameter.
+
+      The mode chosen decides the handle's type, and so which of its operations compile:
+
+      ```scala fuel
+      frame
+        label Opened with no mode: the handle grants only reading
+        code
+            file.open[File](): handle ?=>
+              handle.read[Text]
+              handle.write(Chain(t"more".in[Data]))   // does not compile
+      frame
+        label `Read & Write`: both kinds of operation compile
+        code
+            file.open[File](Read & Write): handle ?=>
+              handle.read[Text]
+              handle.write(Chain(t"more".in[Data]))
+      frame
+        label `Read & Write & Exclusive`: and no other handle may overlap it
+        code
+            file.open[File](Read & Write & Exclusive): handle ?=>
+              handle.read[Text]
+              handle.write(Chain(t"more".in[Data]))
+      ##
+      ```
+
+      The form may be omitted, `value.open()`, when the target has exactly one `Openable`
+      instance; with several, the ambiguity error lists them. The handle is a capability
+      confined to the block: returning it, a closure over it, or a collection of it is a
+      compile error.
+  refer aperture.Openable
+  refer aperture.Opener
+  refer aperture.Mode
+
+entry .Mode   which grants an `open` call confers, composable with `&`
+  detail
+      A `Mode` is a term-level choice of grants, carried as its `#Grants` type member so that
+      the mode written at the call site determines the handle's type inside the block. The
+      atomic modes are `Read`, `Write` and `Exclusive` (and libraries add their own, such as
+      galilei's `Shared`); `&` composes them dependently, so `Read & Write` has `Grants =
+      Grant.Read & Grant.Write` with no macros or inline expansion.
+
+      ```scala
+      import soundness.*
+
+      val mode: Mode granting (Grant.Read & Grant.Write) = Read & Write
+      (Read & Write & Exclusive).atoms == Set(Read, Write, Exclusive)
+      ```
+
+      At runtime a composite mode is identified by `#atoms`, the set of atomic modes it was
+      built from, which is how an `Openable` instance translates a mode into operating-system
+      flags. Atomic modes are global values compared by reference, so a library defining a
+      new one makes it an `object … extends Mode` or a top-level `val`.
+  refer aperture.Grant
+  refer aperture.granting
+  entry #Grants   the grants this mode confers, as an intersection of `Grant` subtypes
+  entry #atoms   the atomic modes this mode was composed from
+      An atomic mode's atoms are itself alone; `Read & Write` has `Set(Read, Write)`. An
+      `Openable` instance tests membership, `mode.atoms.has(Write)`, to decide how to open
+      its target.
+  entry #&   composes two modes: the union of their atoms, the intersection of their grants
+      `Read & Write` is a `Mode granting (Grant.Read & Grant.Write)`. The operation is
+      associative and order-insensitive in effect, since both the grants and the atoms are
+      sets.
+
+entry .Grant   a phantom marker of a permitted kind of operation, composed by intersection
+  detail
+      Grants are never instantiated: they exist only as types, intersected into a handle's
+      type through `Granting`, where they gate which extension methods apply. Intersection
+      makes more grants a more specific type, so an operation demanding `Grant.Write` accepts
+      any handle whose mode included `Write`, whatever else it included.
+
+      The hierarchy is open: a library defining an `Openable` instance may introduce grants
+      particular to its domain by extending `Grant`, with a matching `Mode`.
+  refer aperture.Granting
+  refer aperture.Mode
+  entry .Read   the grant to read a handle's contents, conferred by the `Read` mode
+  entry .Write   the grant to modify a handle's contents, conferred by the `Write` mode
+      Writing does not imply reading: a handle opened with `Write` alone has no read
+      operations, and `Read & Write` is needed for both.
+  entry .Exclusive   a guarantee that no other handle on the same entity is open at the same time
+      Conferred by the `Exclusive` mode. How an instance keeps the guarantee is its own
+      affair: galilei refuses an overlapping open within the program with an `Io.Error`
+      whose reason is `Busy`, and for a file also takes an operating-system lock.
+
+entry .Granting   mixed into a handle to attach the grants its mode selected
+    `Granting[+grants <: Grant]` is the marker an `Openable` or `Creatable` instance mixes into
+    the handle it lends, as `new Handle(…) with Granting[grants] {}`. It is covariant, so a
+    handle `Granting[Grant.Read & Grant.Write]` is also a `Granting[Grant.Read]`, and an
+    extension method written for `(Handle & Granting[Grant.Read])^` applies to it.
+
+    ```scala
+    import soundness.*
+
+    class Notebook extends caps.ExclusiveCapability:
+      def text: Text = t"notes"
+
+    extension (notebook: (Notebook & Granting[Grant.Read])^)
+      def contents: Text = notebook.text
+    ```
+
+entry .granting   `Mode granting Grant.Read`: refines a type's `Grants` member to exactly those grants
+    An infix type alias: `refined granting grants` is `refined { type Grants = grants }`. It
+    reads naturally in signatures, `mode: Mode granting grants`, and is the type of the atomic
+    modes: `Read` is a `Mode granting Grant.Read`.
+
+entry .Read   the mode which grants reading: the default for `open`
+    A `Mode granting Grant.Read`. `value.open[Form]()` with no mode uses it; pass it
+    explicitly to combine it, as `Read & Write` or `Read & Exclusive`.
+
+entry .Write   the mode which grants writing, without reading
+    A `Mode granting Grant.Write`. `Write` alone does not confer read access: open with
+    `Read & Write` for a handle which both reads and writes.
+
+    ```scala
+    import soundness.*
+    import filesystemBackends.javaBaseFilesystem
+    import filesystemOptions.dereferenceSymlinks
+    import pathInterfaces.pathOnLinux
+    import strategies.throwUnsafely
+    import temporaryDirectories.javaBaseTemporaryDirectory
+    import charsets.utf8Charset
+    import codepages.utf8Codepage
+
+    val file: Path on Linux = temporaryDirectory[Path on Linux] / "log.txt"
+
+    file.open[File](Write, OpenFlag.Create): handle ?=>
+      handle.write(Chain(t"entry".in[Data]))
+    ```
+
+entry .Exclusive   the mode which grants exclusivity: no other handle on the entity may be open meanwhile
+    A `Mode granting Grant.Exclusive`, combined with another mode, as `Read & Exclusive`. An
+    overlapping open while the exclusive scope lasts fails, in either order; galilei reports
+    it as an `Io.Error` whose reason is `Busy`, and for a file also takes an
+    operating-system lock so the exclusivity holds against other processes.
+
+entry .Creatable   a typeclass for targets which can be brought into existence, empty or authored in a scope
+  detail
+      The counterpart of `Openable`, for creating rather than accessing. An instance is
+      written `target is Creatable in Form by Flag to Handle`, and serves two kinds of
+      creation with one verb:
+
+      - **instantiation**, `path.create[Directory]()`: the artifact is made to exist, empty,
+        with no scope, and the target is returned;
+      - **scoped authoring**, `path.create[Tar]() { tar ?=> … }`: the artifact is created and
+        populated through a handle granted the instance's `#Grants` — write access from
+        birth, since a newborn artifact is unconditionally its creator's — and committed when
+        the block completes.
+
+      An exception escaping an authoring scope leaves nothing behind: instances guarantee it
+      by staging to a temporary sibling and moving it into place atomically, or by removing
+      what they made.
+
+      ```scala
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import filesystemOptions.dereferenceSymlinks
+      import pathInterfaces.pathOnLinux
+      import strategies.throwUnsafely
+      import temporaryDirectories.javaBaseTemporaryDirectory
+      import charsets.utf8Charset
+      import codepages.utf8Codepage
+
+      val target: Path on Linux = temporaryDirectory[Path on Linux] / "payload.bin"
+
+      target.create[File](): handle ?=>
+        handle.write(Chain(t"payload".in[Data]))
+      ```
+
+      There is no `Mode`: what a creation scope may do is not the caller's choice, and the
+      permissions the created entry persists with are a matter for flags. Creating something
+      which may already exist is governed by per-form flags (galilei's `CreateFlag.Replace`),
+      and replacement is never the default. This differs from *opening* a possibly-absent
+      entity for writing (`OpenFlag.Create`), which accesses whatever is there.
+  refer aperture.create
+  refer aperture.Creator
+  refer aperture.Openable
+  entry #Grants   the grants the authoring handle carries, fixed by the instance
+  entry #make   creates the artifact, empty, with no scope
+      The default runs `#create` with a block which does nothing, which suits builder forms
+      whose discarded handle costs nothing. An instance holding operating-system resources
+      overrides it to create directly — notably a FIFO, which must never be opened merely to
+      be created, since opening one for writing blocks until a reader appears.
+  entry #create   creates the artifact and runs a block with a handle to author it, committing on success
+      `create(value, flags)(block)`: the block takes `(Result & Granting[Grants])^` as a
+      contextual parameter; its result is returned after the artifact is committed, and an
+      exception from it commits nothing. Called by `Creator#apply`; user code writes
+      `value.create[Form](flags*) { handle ?=> … }`.
+
+entry .Creator   the applier `create[Form]` returns, for instantiation or for scoped authoring
+  detail
+      `value.create[Form]` resolves the `Creatable` instance from the form and returns a
+      `Creator`. Its overloaded `#apply` takes the flags alone, to make an empty artifact and
+      return the target, or the flags and a block, to author the artifact's contents.
+  refer aperture.create
+  refer aperture.Creatable
+  entry #creatable   the `Creatable` instance the form resolved
+  entry #value   the target to be created
+  entry #apply   creates the target empty and returns it, or authors it within a block
+      `apply(flags*)` calls `Creatable#make` and returns the target, which now exists;
+      `apply(flags*)(block)` calls `Creatable#create`, lending the block a handle granted the
+      instance's `Grants`, and returns the block's result once the artifact is committed.
+
+entry .create   creates a value in a form: `path.create[Directory]()`, or `path.create[Tar]() { … }`
+  detail
+      An extension on any value with a `Creatable` instance in the form named, returning a
+      `Creator`. With no block, the artifact is made empty and the target returned; with a
+      block, the artifact is authored through a handle and committed when the block
+      completes, and left absent if the block throws.
+
+      ```scala
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import filesystemOptions.dereferenceSymlinks
+      import pathInterfaces.pathOnLinux
+      import strategies.throwUnsafely
+      import temporaryDirectories.javaBaseTemporaryDirectory
+      import charsets.utf8Charset
+      import codepages.utf8Codepage
+
+      val directory: Path on Linux = temporaryDirectory[Path on Linux] / "work"
+
+      directory.create[Directory]()
+
+      (directory / "inner").create[Directory](): dir ?=>
+        (dir / "inner.txt").overwrite(t"hello")
+      ```
+
+      Flags are of the instance's `Operand` type; galilei's are `CreateFlag`s such as
+      `CreateFlag.Parents` and `CreateFlag.Replace`.
+  refer aperture.Creatable
+  refer aperture.Creator
+
+entry .Archivable   a typeclass for values whose contents can be gathered into an archive value
+  detail
+      An instance is written `target is Archivable in Form by Flag to Result`: the form is the
+      archive format (`Tar`, `Zip`, `Ar`), `Operand` the flag type which tunes the archiving
+      for that pair (a long-name convention, an owner to record, a compression method), and
+      `Result` the in-memory archive produced. Unlike `Creatable`, nothing is written: the
+      result is a value, and where it goes — streamed, compressed, written to a file — is the
+      caller's next step.
+
+      ```scala
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import filesystemOptions.dereferenceSymlinks
+      import pathInterfaces.pathOnLinux
+      import strategies.throwUnsafely
+      import temporaryDirectories.javaBaseTemporaryDirectory
+      import charsets.utf8Charset
+      import codepages.utf8Codepage
+
+      val source: Path on Linux = temporaryDirectory[Path on Linux] / "project"
+      source.archive[Tar]().entries.map(_.entryName)
+      ```
+
+      The instances for directories live in the companions of the format types (`Tar`, `Zip`,
+      `Ar`) and walk the tree through galilei's filesystem backend, so they are in implicit
+      scope with no import.
+  refer aperture.archive
+  refer aperture.Archiver
+  entry #archive   gathers a value's contents, tuned by flags, into the archive value
+      `archive(value, flags)`: the implementation an instance provides. Called by
+      `Archiver#apply`; user code writes `value.archive[Form](flags*)`.
+
+entry .Archiver   the applier `archive[Form]` returns, which takes the flags
+  detail
+      `value.archive[Form]` resolves the `Archivable` instance from the form and returns an
+      `Archiver`, whose `#apply` takes flags of the instance's `Operand` type and returns the
+      archive. The shape mirrors `Opener` and `Creator`.
+  refer aperture.archive
+  entry #archivable   the `Archivable` instance the form resolved
+  entry #value   the value to be archived
+  entry #apply   archives the value with the flags given, returning the archive
+
+entry .archive   archives a value in a form: `directory.archive[Tar]()` gives the tarball of a tree
+    An extension on any value with an `Archivable` instance in the form named, returning an
+    `Archiver` whose `apply` takes flags of the instance's `Operand` type. The result is an
+    in-memory archive value of the instance's `Result` type, which the format's library
+    then serializes or compresses.
+
+    ```scala
+    import soundness.*
+    import filesystemBackends.javaBaseFilesystem
+    import filesystemOptions.dereferenceSymlinks
+    import pathInterfaces.pathOnLinux
+    import strategies.throwUnsafely
+    import temporaryDirectories.javaBaseTemporaryDirectory
+    import charsets.utf8Charset
+    import codepages.utf8Codepage
+
+    val source: Path on Linux = temporaryDirectory[Path on Linux] / "project"
+    val tar: Tar = source.archive[Tar]()
+    ```
+
+entry .Sessional   a typeclass for targets which lend a live session to a block and dispose of it after
+  detail
+      A session is a stateful interaction scope: a network connection, a warm compiler, a
+      browser driven remotely, a device over SSH. An instance is written `target is Sessional
+      to Handle`; its `#session` establishes the session with the target, lends the handle to
+      the block for its duration, and disposes of it when the block ends, whether it returns
+      or throws.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import soundness.httpUrlSessional
+      import socketBackends.javaBaseSockets
+
+      val request = Http.Request(Http.Get, 1.1, t"example.com".as[Host], t"/", Nil, () => Http.emptyBody())
+
+      url"https://example.com".session: session ?=>
+        session.fetch(request).status
+        session.fetch(request).status
+      ```
+
+      The block's result type is quantified outside it, so a value still borrowing the
+      session — the handle itself, a closure over it, a response streaming from the live
+      connection — cannot be its result; a session-independent value, such as one which has
+      been read in full, may. Instances at a transport layer (coaxial's for any
+      `Connectable` endpoint) lend a raw connection; richer layers lend protocol-aware
+      handles, such as telekinesis's HTTP sessions or exegesis's language-server sessions.
+
+      Instances whose subject is owned by another library are top-level givens with
+      library-qualified names, imported by name (`import soundness.httpUrlSessional`).
+  refer aperture.session
+  refer aperture.Openable
+  entry #session   establishes a session with a target, runs a block with it, and disposes of it
+      `session(target)(lambda)`: the implementation an instance provides. The handle is the
+      lambda's contextual parameter, and is disposed of in every outcome. User code writes
+      `target.session { handle ?=> … }`.
+
+entry .session   opens a session on a value and lends its handle to a block: `url.session { s ?=> … }`
+    An extension on any value with a `Sessional` instance in scope. The handle — of whatever
+    type the instance provides — is the block's contextual parameter, and is disposed of
+    when the block ends. A value borrowing the session cannot be the result: returning the
+    handle, a closure over it, or a collection holding it, or assigning it to a variable
+    outside the block, is a compile error (_… outlives its scope_, _… cannot flow into
+    capture set …_).
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import soundness.httpUrlSessional
+    import socketBackends.javaBaseSockets
+
+    val request = Http.Request(Http.Get, 1.1, t"example.com".as[Host], t"/", Nil, () => Http.emptyBody())
+
+    url"https://example.com".session: session ?=>
+      session.fetch(request).status
+    ```
+
+    The extension is a plain method, not inline, and the instance and the block may share
+    capabilities (a monitor, a tactic): both take their capture sets as parameters rather
+    than as fresh, separated ones.
+
+entry .Stale   a value as a handle saw it, over state other processes may have changed since
+  detail
+      `Stale[value]` wraps a value read through a handle from state the handle does not own:
+      a ref in a repository other processes write, a file's size, a directory's entries. The
+      value is immutable and pure, but what it records may have changed before the read
+      returned. The type exists so a signature can say so: a method returning
+      `Stale[Git.Hash]` resolved a ref, and a method taking one is conditional on the ref
+      still holding that value, and fails with a typed error if it does not.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import filesystemOptions.dereferenceSymlinks
+      import pathInterfaces.pathOnLinux
+      import strategies.throwUnsafely
+      import temporaryDirectories.javaBaseTemporaryDirectory
+      import charsets.utf8Charset
+      import codepages.utf8Codepage
+
+      val directory: Path on Linux = temporaryDirectory[Path on Linux] / "repo"
+
+      directory.open[Git.Worktree](Read & Write): worktree ?=>
+        val head: Stale[Git.Head] = worktree.head()
+        (worktree / "notes.txt").overwrite(t"Remember the milk")
+        worktree.add(worktree / "notes.txt")
+        worktree.commit(t"Add notes", head)
+      ```
+
+      If another process moved HEAD between the read and the commit, the commit fails with
+      `Git.Error(Moved(…))` rather than overwriting that work.
+
+      There is deliberately no timestamp: a clock would be a dependency, and recency is not a
+      property to reason from. The only sound use of a stale value is to hand it back to the
+      handle which produced it, or to read its `#value` knowing it may be out of date.
+  refer octogenarian.Git
+  entry #value   the value as it was when it was read
+  entry #let   derives a value from a stale one, which stays exactly as stale
+      `Stale(1).let(_ + 1) == Stale(2)`. A method rather than an extension, so that vacuous's
+      `let` on `Optional`, which is imported everywhere, does not claim the receiver.

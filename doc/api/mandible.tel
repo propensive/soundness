@@ -1,0 +1,633 @@
+tel 1.0
+
+base mandible
+import soundness
+
+info   JVM class files as values: methods, bytecode with simulated stacks, declaration surfaces and supertype closures
+detail
+    _Mandible_ reads JVM class files — the `.class` output of `scalac` or `javac` — into
+    immutable, typed values, so that a program can inspect what the compiler and the optimizer
+    actually produced rather than assume it. It reads the files through the JDK's own
+    `java.lang.classfile` API and presents three views of a class, each a value:
+
+    - `Classfile` is the **bytecode** view: the methods of a class, each with its `Bytecode`,
+      a list of `Bytecode.Instruction`s decoded to a typed `Bytecode.Opcode`, carrying the
+      source line it came from and a simulation of the operand stack after it runs. It
+      renders as a coloured table at a terminal, and `disassemble` compiles a quoted block
+      and reads its bytecode straight back.
+    - `ClassSurface` is the **declaration** view: the names, descriptors, access flags,
+      supertypes and generic signatures a compiled consumer links against, and nothing that
+      can legitimately differ between two builds of the same source.
+    - `ClasspathIndex` resolves JVM internal class names to their `ClassSurface`s over a set
+      of classes held in memory plus a classpath, and walks a class's supertype closure.
+
+    ```scala
+    import soundness.*
+    import classloaders.threadContextClassloader
+
+    val classfile: Optional[Classfile] = Classfile[StackTrace]
+    val bytecode: Optional[Bytecode] =
+      classfile.let(_.methods.seek(_.name == t"rewrite")).let(_.bytecode)
+
+    bytecode.let(_.instructions.map(_.opcode.show))
+    ```
+
+    A class file is found through the `Classloader` given in scope, chosen by name from the
+    `classloaders` package (`import soundness.*` imports no givens), or read from any stream
+    of bytes with `read[Classfile]`. The library has a single source set, `mandible.core`,
+    which is JVM-only: it depends on `java.lang.classfile`, on the staging compiler for
+    `disassemble` and on the JVM classpath. Everything is exported to the `soundness`
+    umbrella.
+
+    Rendering `Bytecode` to a terminal needs a `BytecodePalette` in scope, a `Palette` naming
+    the colours for source references, source lines and the stack outline; no default
+    palette is provided, so a program defines its own.
+
+refer mandible.Classfile
+refer mandible.Bytecode
+refer mandible.ClassSurface
+refer mandible.disassemble
+
+entry .Classfile   a parsed JVM class file: its methods, their bytecode and its source attributes
+  detail
+      A `Classfile` wraps the bytes of one `.class` file, parsed on first use through the
+      JDK's `java.lang.classfile` API. It is found on the classpath by name or by type, through
+      the `Classloader` given in scope, or read from any source of bytes — a file, a resource,
+      a stream — with `read[Classfile]`, since it is `Aggregable by Data`.
+
+      ```scala
+      import soundness.*
+      import classloaders.threadContextClassloader
+
+      Classfile[StackTrace].let(_.methods.map(_.name))
+      Classfile(t"scala/Option.class").let(_.sourceFile)
+      ```
+
+      Its members are the parts a disassembler and a stack-trace resolver need: `#methods`,
+      each a `Classfile.Method` whose `bytecode` is decoded on request; `#sourceFile`, the
+      `SourceFile` attribute; and `#sourceDebugExtension`, the JSR-45 SMAP which maps the
+      synthetic line numbers of inlined code back to where it was written. The declaration
+      surface of a class — fields, flags, supertypes, signatures — is the separate
+      `ClassSurface` view.
+
+      A `Classfile` holds no capability: its bytes are copied in at construction, so the
+      value may be kept, shared and passed freely.
+  refer mandible.Bytecode
+  refer mandible.ClassSurface
+  refer mandible.disassemble
+  entry .Error   raised when a class file cannot be read
+      Error 293: _there was an error reading the classfile_. Declared for readers of class
+      files to raise; the `Classfile` constructor itself defers parsing until a member is
+      first used, and `Classfile.apply` gives `Unset` for a class the classloader does not
+      have rather than raising.
+  entry .aggregable   reads a `Classfile` from any stream of bytes, as `read[Classfile]`
+      The `Aggregable by Data` given which lets a file, a classpath resource or any other
+      `Readable` source be read as a class file: the whole stream is collected into one `Data`
+      and wrapped. The bytes are not parsed until a member of the result is used.
+
+      ```scala
+      import soundness.*
+      import classloaders.threadContextClassloader
+      import strategies.throwUnsafely
+
+      val classfile: Classfile = cp"/scala/Option.class".read[Classfile]
+      ```
+  entry .apply   the class file of a resource name, or of a type, through the `Classloader` in scope
+      `Classfile(name)` reads the classpath resource at `name` — a JVM internal name with its
+      extension, `scala/Option.class` — through the `Classloader` given in scope, and
+      `Classfile[T]` finds the class of `T` by its `ClassTag` and reads the resource its
+      binary name denotes, so a nested class resolves to `Outer$Nested.class`. Both give
+      `Unset` when the classloader has no such resource.
+
+      ```scala
+      import soundness.*
+      import classloaders.threadContextClassloader
+
+      Classfile[StackTrace].let(_.methods.size)
+      Classfile(t"scala/Option.class").let(_.methods.size)
+      ```
+
+      The type form takes a `ClassTag`, so it works for a class or an object's type, but not
+      for an unapplied type constructor; `Classloader[T]` in hellenism is the companion
+      operation for finding the classloader itself.
+  entry #sourceFile   the `SourceFile` attribute: the name of the source the class was compiled from
+      The file name alone, `Option.scala`, with no directory, as the compiler records it; or
+      `Unset` when the class file carries no such attribute, as some generated classes do not.
+      It is the file name a stack trace reports, and `Bytecode#sourceFile` carries it on to
+      the rendered listing.
+  entry #sourceDebugExtension   the JSR-45 `SourceDebugExtension` attribute, as text, if present
+      The body of the attribute is an SMAP, a source map which translates the synthetic line
+      numbers the compiler allocates to inlined code back to the file and line they were
+      written at, level by level. It is `Unset` for a class with no inlining. A stack-trace
+      resolver reads it to give an inlined frame its real call-site line; `Smap.parse` in
+      digression decodes the text.
+  entry #methods   the methods of the class, in class-file order, each a `Classfile.Method`
+      Constructors appear as `<init>`, a static initializer as `<clinit>`, and the compiler's
+      synthetic methods — lambda bodies, bridges, default getters — under their compiled
+      names. The list is computed once, on first use, and parsing happens then.
+  entry #Method   one method of a class file, with its name and its decoded bytecode
+    detail
+        A `Classfile.Method` is created by `Classfile#methods` and is not constructed directly.
+        Its `#name` is the method's compiled name, and `#bytecode` decodes its `Code`
+        attribute into a `Bytecode` value: every instruction with its offset, the source line
+        it belongs to, and the operand stack as simulated from the method's stack-map frames.
+
+        ```scala
+        import soundness.*
+        import classloaders.threadContextClassloader
+
+        Classfile[StackTrace].let(_.methods.seek(_.name == t"rewrite")).let(_.bytecode)
+        ```
+    entry #name   the method's name as the class file spells it
+        The compiled name, not the source name: a constructor is `<init>`, an operator such as
+        `+` is `$plus`, and a lambda body is `$anonfun$…`. `StackTrace.rewrite` in digression
+        turns such a name back toward its source spelling.
+    entry #bytecode   the method's `Code` attribute decoded to a `Bytecode`, or `Unset` for an abstract method
+        Decodes every instruction of the method to a `Bytecode.Opcode`, resolving branch
+        targets to byte offsets, and threads a simulation of the operand stack through them:
+        the stack after each instruction is computed by `Bytecode.Opcode#transform`, and reset
+        at every label from the method's `StackMapTable` frames, so the stack at a branch
+        target is what the verifier records, not what the fall-through path left. Line
+        numbers from the `LineNumberTable` are attached to the first instruction of each line.
+        A method with no code — abstract or native — gives `Unset`.
+
+        The result carries the class's `sourceFile`, and the method's declared `maxStack` and
+        `maxLocals`.
+
+entry .Bytecode   a method's instructions, each decoded, placed on its source line, with its simulated operand stack
+  detail
+      A `Bytecode` is the decoded `Code` attribute of one method: its `#instructions`, each a
+      `Bytecode.Instruction` pairing a typed `Bytecode.Opcode` with its byte `offset`, the
+      source `line` it begins, and the operand `stack` — a list of `Bytecode.Frame`s — as it
+      stands after the instruction runs; plus the method's declared `#maxStack` and
+      `#maxLocals` and the class's `#sourceFile`. It is produced by `Classfile.Method#bytecode`
+      from a class on the classpath, or by `disassemble` from a quoted block compiled on the
+      spot, and may also be built by hand from `Instruction`s for analysis.
+
+      ```scala fuel
+      frame
+        label A class file, found through the classloader in scope
+        code
+            import soundness.*
+            import classloaders.threadContextClassloader
+
+            val classfile: Optional[Classfile] = Classfile[StackTrace]
+      frame
+        label One of its methods, by name
+        code
+            import soundness.*
+            import classloaders.threadContextClassloader
+
+            val classfile: Optional[Classfile] = Classfile[StackTrace]
+            val method: Optional[Classfile.Method] =
+              classfile.let(_.methods.seek(_.name == t"rewrite"))
+      frame
+        label Its bytecode, listed as opcodes
+        code
+            import soundness.*
+            import classloaders.threadContextClassloader
+
+            val classfile: Optional[Classfile] = Classfile[StackTrace]
+            val method: Optional[Classfile.Method] =
+              classfile.let(_.methods.seek(_.name == t"rewrite"))
+            val bytecode: Optional[Bytecode] = method.let(_.bytecode)
+
+            bytecode.let(_.instructions.map(_.opcode.show))   // List(t"a·load₀", t"invoke·virtual …", …)
+      frame
+        label One instruction, decoded: its offset, its line and the stack it leaves
+        code
+            import soundness.*
+            import classloaders.threadContextClassloader
+
+            val classfile: Optional[Classfile] = Classfile[StackTrace]
+            val method: Optional[Classfile.Method] =
+              classfile.let(_.methods.seek(_.name == t"rewrite"))
+            val bytecode: Optional[Bytecode] = method.let(_.bytecode)
+
+            bytecode.let(_.instructions.seek(_.opcode == Bytecode.Opcode.Aload0)).let: instruction =>
+              (instruction.offset, instruction.line, instruction.stack.let(_.map(_.show)))
+      ##
+      ```
+
+      The operand stack is a simulation, not a measurement: `Bytecode.Opcode#transform` pushes
+      and pops what each opcode is defined to, and the method's `StackMapTable` resets it at
+      every branch target. A reference on the stack is a `Frame.L(className)` where the
+      instruction that pushed it names a class, and `Frame.L(t"?")` where it does not.
+
+      Rendering needs a `BytecodePalette` in scope: `bytecode.teletype` is a four-column table
+      of source position, offset, opcode (coloured by `Opcode#cost`) and stack, and
+      `bytecode.printable` prints it. `#linearize` follows the static and effectively-static
+      calls a method makes into their callees' bytecode, to a bounded depth, which is how a
+      hot path's full instruction sequence is seen in one listing.
+  refer mandible.Classfile
+  refer mandible.disassemble
+  refer mandible.BytecodePalette
+  entry .teletypeable   renders bytecode as a coloured table: source line, offset, opcode and stack
+      The `Teletypeable` given, needing a `BytecodePalette`. One row per instruction: the
+      source file and line (in the palette's `bytecode` and `sourceCode` colours) where the
+      instruction begins a line, the byte offset as subscripts, the opcode coloured by its
+      `Opcode#cost`, and the simulated stack, outlined in the palette's `outline` colour. The
+      table is laid out for 160 columns.
+  entry .printable   prints a bytecode listing, as `Printable`
+      Renders `.teletypeable`'s table for the terminal it is printed to; needs a
+      `BytecodePalette`.
+  entry .stack   renders a simulated operand stack, a `List[Bytecode.Frame]`, in one line
+      The `Teletypeable` given for a stack, needing a `BytecodePalette`: frames are shown
+      bottom-first, separated by `┊` and outlined with `┃` in the palette's `outline` colour.
+  entry .Frame   one slot of the operand stack or one verification type: a primitive, a reference or an array
+    detail
+        The cases are the JVM's descriptor letters for the primitives — `Z` (boolean), `B`
+        (byte), `C` (char), `S` (short), `I` (int), `J` (long), `F` (float), `D` (double) —
+        with `L(name)` for a reference to a class, by its binary name (`java.lang.String`),
+        and `Array(frame)` for an array of another frame. A reference whose class is unknown is
+        `L(t"?")`; the verifier's special types appear as `L(t"null")`, `L(t"this")`,
+        `L(t"top")` and `L(t"uninit")`.
+
+        ```scala
+        import soundness.*
+
+        Bytecode.Frame.fromFieldDescriptor(t"[Ljava/lang/String;")
+        // Bytecode.Frame.Array(Bytecode.Frame.L(t"java.lang.String"))
+        ```
+
+        A `Frame` shows as its letter, as `*name` for a reference and `[frame]` for an array.
+    entry .showable   renders a frame: a primitive's letter, `*name` for a reference, `[frame]` for an array
+    entry .parseOne   reads one type from a descriptor at a position, giving the frame and the position after it
+        `Frame.parseOne(descriptor, cursor)` decodes the type whose descriptor begins at
+        `cursor` — a letter, a `[`-prefixed array or an `L…;` class — and returns it with the
+        index just past it, for a caller walking a method descriptor's parameter list. An
+        unexpected character is a panic, since a descriptor from a class file is well-formed.
+    entry .fromFieldDescriptor   the frame of a field descriptor, `I` or `Ljava/lang/String;`
+        Decodes a whole field descriptor to one `Frame`, with `/` in a class name rewritten to
+        `.`.
+    entry .fromVerificationType   the frame of a `StackMapTable` verification type
+        Maps the JDK's `VerificationTypeInfo` to a `Frame`: the simple types to their
+        primitives, an object type to `L(name)` (or an array frame when the class is an array
+        class), `null`, `uninitializedThis` and `top` to `L(t"null")`, `L(t"this")` and
+        `L(t"top")`, and an uninitialized object to `L(t"uninit")`.
+  entry .Descriptor   a method descriptor parsed into its parameter frames and its result
+    detail
+        `Bytecode.Descriptor.parse(t"(Ljava/lang/String;I)V")` gives a `Descriptor` whose
+        `#args` are the frames `L(java.lang.String)` and `I` and whose `#result` is `Unset`,
+        since `V` is void. The instruction decoder uses it to know how many operands an
+        invocation pops and whether it pushes a result.
+
+        ```scala
+        import soundness.*
+
+        val descriptor = Bytecode.Descriptor.parse(t"([[Ljava/lang/Object;J)Z")
+        descriptor.args.size     // 2
+        descriptor.result        // Bytecode.Frame.Z
+        ```
+    entry .parse   reads a `(…)R` method descriptor into a `Descriptor`
+        The text must begin with `(`; the parameter types up to `)` become `#args`, and the
+        return type `#result`, with `V` as `Unset`. A malformed descriptor panics.
+    entry #args   the parameter types, in order
+    entry #result   the return type, or `Unset` for `void`
+  entry .Instruction   one decoded instruction: its opcode, source line, resulting stack and offset
+    detail
+        The element of `Bytecode#instructions`. `#line` is set on the first instruction of
+        each source line and `Unset` on the rest; `#stack` is the simulated operand stack
+        after the instruction, or `Unset` once the simulation has been lost; `#offset` is the
+        instruction's position in the method's code, in bytes, which is what branch targets
+        and `Bytecode#effectivelyStaticCalls` refer to.
+
+        ```scala
+        import soundness.*
+
+        val instruction =
+          Bytecode.Instruction(Bytecode.Opcode.Iconst1, Unset, List(Bytecode.Frame.I), 0)
+        ```
+    entry #opcode   the instruction, as a `Bytecode.Opcode`
+    entry #line   the source line this instruction begins, or `Unset` if it continues one
+    entry #stack   the simulated operand stack after the instruction, top first, if known
+    entry #offset   the instruction's byte offset within the method's code
+  entry .Linearized   one instruction of a linearized listing, with its inlining depth and the method it came from
+    detail
+        The element of the list `Bytecode#linearize` returns. `#depth` is `0` for the
+        method's own instructions and one more for each call followed into a callee;
+        `#source` names the callee as `owner.method`, and is empty at depth `0`;
+        `#instruction` is the instruction itself. A `List[Linearized]` renders, with a
+        `BytecodePalette`, as an indented listing.
+    entry .teletypeable   renders a linearized listing, indented two spaces per level of depth
+        The `Teletypeable` given for `List[Bytecode.Linearized]`, needing a `BytecodePalette`:
+        each line is indented by its depth, prefixed with its source method in the palette's
+        `bytecode` colour, and followed by the opcode.
+    entry #depth   how many calls deep the instruction is: `0` in the listed method itself
+    entry #source   the `owner.method` the instruction was inlined from, or empty at depth `0`
+    entry #instruction   the instruction
+  entry .Opcode   every JVM instruction as an enum case, with its operands decoded
+    detail
+        One case per opcode of the JVM instruction set, in opcode order, so a case's
+        `ordinal` is its opcode number: `Nop` (0) through `Jsr`, `GotoW` (200) and `JsrW`
+        (201), with the reserved `Breakpoint`, `Impdep1`, `Impdep2` and the unassigned
+        `OpCb` … `OpFd` filling the gaps. Operands are decoded into fields: a load or store
+        carries its `slot`; `Bipush`, `Sipush`, `Ldc`, `LdcW` and `Ldc2W` their `value`;
+        every branch its `target` as a byte offset; `Tableswitch` and `Lookupswitch` their
+        tables; a field instruction its `owner`, `field` and `descriptor`; an invocation its
+        `owner`, `method` and `descriptor` (`Invokeinterface` also its `count`, and
+        `Invokedynamic` only `method` and `descriptor`); `New`, `Checkcast`, `Instanceof` and
+        `Anewarray` their class; `Newarray` its element `Frame`; `Multianewarray` its class
+        and `dimensions`; `Iinc` its `slot` and `const`.
+
+        Class names are binary names with `.`, as `java.lang.String`; an `Invokedynamic`
+        method name is demangled with `StackTrace.rewrite`, so a lambda call site reads as
+        `λ₁` rather than `$anonfun$1`.
+
+        ```scala
+        import soundness.*
+
+        val call = Bytecode.Opcode.Invokevirtual(t"java.lang.String", t"length", t"()I")
+        call.show         // t"invoke·virtual java.lang.String ⌗ length"
+        call.cost         // 2
+        call.transform(List(Bytecode.Frame.L(t"java.lang.String")))   // List(Bytecode.Frame.I)
+        ```
+
+        An opcode is `Showable` as its mnemonic, written with `·` between the parts of a
+        compound name and subscripts for constants and slots (`a·load₀`, `i·const₋₁`,
+        `dup²∕₁`), followed by its operands; and `Teletypeable`, which colours the mnemonic by
+        `#cost` and italicises the operands. Both givens are anonymous, in the companion, so
+        they are always in scope. An `Opcode` is read from the JDK's instruction model with
+        `.apply`.
+    entry .apply   decodes a `java.lang.classfile.Instruction` to an `Opcode`
+        `Opcode(instruction, labels)` maps the JDK's instruction object to the enum case for
+        its opcode, decoding its operands. `labels` maps the code's `Label`s to byte offsets,
+        so that a branch's `target` is an offset; an instruction whose label is absent from
+        the map gets `0`. An opcode the decoder does not recognise is a panic.
+    entry #cost   a rough relative cost of the instruction, from `0` to `3`
+        A coarse ranking used to colour a listing: `0` for constants, loads, stores, stack
+        shuffles and widening conversions; `1` for arithmetic, comparisons, conditional
+        branches and static or special calls; `2` for array accesses, field accesses, casts,
+        unconditional jumps, returns and virtual calls; `3` for switches, allocations,
+        monitors, `athrow`, interface and dynamic calls.
+    entry #describe   a one-line description of what the instruction does, for the opcodes it knows
+        Describes the constant and push instructions and the reserved opcodes in words —
+        `push the int constant 1` — and gives `unrecognized` for the rest.
+    entry #highlight   the colour for the instruction's `#cost`, from teal (`0`) to crimson (`3`)
+    entry #transform   the operand stack after this instruction, given the stack before it
+        The stack simulation: pops what the instruction consumes and pushes what it produces,
+        with `Frame.I` for an `int` result, `Frame.L(name)` for a `new` object or a loaded
+        field of class type, `Frame.L(t"?")` for a reference the instruction cannot name, and
+        a method's return frame for an invocation (parsed from its descriptor). The stack is
+        top first. A `Dup` on an empty stack fails; a shuffle on a stack shorter than it
+        needs leaves the stack as it was.
+  entry .Error   raised by `disassemble` when the compiled class file cannot be opened or read
+    detail
+        Error 295, _the bytecode could not be extracted because …_, with a `#reason`:
+        `ClassfileMissing` (295.1, _the generated classfile could not be opened_) when the
+        staging compiler left no class file to read, and `ClassfileUnreadable` (295.2, _the
+        generated classfile could not be read_) when the file was truncated or the generated
+        method was not found in it. `disassemble` needs a `Tactic[Bytecode.Error]` in scope.
+    entry .Reason   why extraction failed: `ClassfileMissing` or `ClassfileUnreadable`
+        A `Clarification` whose `number` is the error's sub-number: `ClassfileMissing` is `1`
+        and `ClassfileUnreadable` is `2`.
+    entry .communicable   renders a `Reason` as the message the error embeds
+    entry #reason   the reason
+  entry #sourceFile   the name of the source file the method's class was compiled from, if recorded
+  entry #instructions   the method's instructions, in code order
+  entry #maxStack   the maximum operand stack depth the method declares
+  entry #maxLocals   the number of local variable slots the method declares
+  entry #embed   shifts the listing's line numbers to a `Codepoint`, as if the code were written there
+      `bytecode.embed(codepoint)` adds the codepoint's line (less one) to every instruction's
+      `line`, and replaces `sourceFile` with the last segment of the codepoint's source path.
+      `disassemble` uses it so that the bytecode of a block compiled in a temporary file is
+      reported against the file and line the block was written at.
+  entry #linearize   follows calls into their callees' bytecode, to a bounded depth and length
+      `bytecode.linearize(resolver, maxDepth, maxInstructions)` walks the instructions and,
+      at each `Invokestatic` and at each `Invokevirtual` or `Invokeinterface` which
+      `#effectivelyStaticCalls` has shown to dispatch to a known class, asks `resolver(owner,
+      method, descriptor)` for the callee's `Bytecode` and lists its instructions in place,
+      one level deeper, after the call instruction. The resolver returns `Unset` for a method
+      it cannot find, and the call is then listed alone. `maxDepth` (default `3`) bounds the
+      nesting and `maxInstructions` (default `1000`) the total length of the listing.
+
+      ```scala
+      import soundness.*
+
+      val nop = Bytecode.Instruction(Bytecode.Opcode.Nop, Unset, Nil, 0)
+      val caller = Bytecode(Unset, List.fill(50)(nop), 0, 0)
+
+      caller.linearize((_, _, _) => Unset, maxInstructions = 7).size   // 7
+      ```
+
+      A resolver over the classpath is written with `Classfile`: find the owner's class file,
+      seek the method by name, and take its `bytecode`.
+  entry #effectivelyStaticCalls   the offsets of the virtual and interface calls whose receiver is a known singleton
+      A call through `invokevirtual` or `invokeinterface` whose receiver, in the simulated
+      stack before the call, is a `Frame.L(owner)` of exactly the call's own owner class —
+      as a call on a Scala `object`'s `MODULE$` is — can only dispatch to that class, so it
+      may be followed like a static call. The result is the set of such calls' byte offsets;
+      a receiver of unknown class (`L(t"?")`) or of a different class is excluded, as is a call
+      whose simulated stack is too shallow to hold its receiver.
+
+      ```scala
+      import soundness.*
+
+      val module = Bytecode.Frame.L(t"Foo$$")
+      val load = Bytecode.Instruction
+        (Bytecode.Opcode.Getstatic(t"Foo$$", t"MODULE$$", t"LFoo$$;"), Unset, List(module), 0)
+      val call = Bytecode.Instruction
+        (Bytecode.Opcode.Invokevirtual(t"Foo$$", t"doIt", t"()V"), Unset, Nil, 3)
+
+      Bytecode(Unset, List(load, call), 1, 0).effectivelyStaticCalls   // Set(3)
+      ```
+
+entry .ClassSurface   the declaration surface of a class: what a compiled consumer links against, and nothing else
+  detail
+      A `ClassSurface` is a class file reduced to its **linkage surface**: its internal
+      `#name`, access `#flags`, `#superclass`, `#interfaces`, generic `#signature`, and its
+      `#members` — fields and methods as `ClassSurface.Member`s, each with name, descriptor,
+      flags, generic signature, declared exceptions and inlinable constant. `Code`,
+      `SourceFile`, `LineNumberTable` and annotations are deliberately dropped: two builds of
+      the same source may differ in all of them without changing what a consumer binds to.
+      This is the view for comparing releases for binary compatibility, which is why members
+      are sorted by selector and interfaces and exceptions by name, rather than kept in file
+      order, which is an artifact of the compilation.
+
+      ```scala
+      import soundness.*
+      import classloaders.threadContextClassloader
+      import strategies.throwUnsafely
+
+      val surface: ClassSurface = ClassSurface(cp"/scala/Option.class".read[Data])
+
+      surface.name                       // t"scala/Option"
+      surface.supertypes                 // superclass first, then interfaces
+      surface.members.filter(_.visible).map(_.selector)
+      ```
+
+      Names are JVM internal names, `java/lang/String`, as every reference inside a class
+      file spells them. Accessibility of a nested class is read from the `InnerClasses`
+      attribute (`#innerFlags`) where the class's own flags would misreport a `protected`
+      member class as package-private.
+  refer mandible.ClasspathIndex
+  refer mandible.Classfile
+  entry .Kind   whether a member is a `Method` or a `Field`
+  entry .Member   one field or method of a class, as the JVM resolves it
+    detail
+        A member has a `#kind`, its `#name`, its `#descriptor` (such as `(I)V` or `Ljava/lang/String;`),
+        its access `#flags`, an optional generic `#signature`, the sorted internal names of
+        its declared `#exceptions` (methods only) and, for a `static final` field, the
+        `#constant` its `ConstantValue` attribute carries. Predicates read the flag bits;
+        `#visible` is whether the member is `public` or `protected`, the only accessibilities
+        a consumer outside the package can link to.
+
+        ```scala
+        import soundness.*
+
+        val member = ClassSurface.Member(ClassSurface.Kind.Method, t"length", t"()I", 1)
+        member.selector   // t"#length:()I"
+        member.public     // true
+        ```
+    entry #kind   `Kind.Method` or `Kind.Field`
+    entry #name   the member's name, as compiled
+    entry #descriptor   the JVM descriptor: a method's `(params)result` or a field's type
+    entry #flags   the `access_flags` bitmask
+    entry #signature   the generic `Signature` attribute, kept because erasure loses what a recompiling consumer needs
+    entry #exceptions   the internal names of the `Exceptions` attribute, sorted; `Nil` for a field
+    entry #constant   a `static final` field's `ConstantValue`, as `class:value`, for example `java.lang.Integer:1`
+        The constant's class is folded in with its value, since `1` as an `Integer` and `"1"`
+        as a `String` are different contracts whose `toString`s coincide.
+    entry #selector   the member's key within its class: the name and descriptor, prefixed `#` for a method or `.` for a field
+        The sigil keeps a method and a field of the same name apart, and the descriptor keeps
+        overloads apart, so a selector identifies one member of a class.
+    entry #public   whether `ACC_PUBLIC` is set
+    entry #protect   whether `ACC_PROTECTED` is set
+    entry #priv   whether `ACC_PRIVATE` is set
+    entry #static   whether `ACC_STATIC` is set
+    entry #finl   whether `ACC_FINAL` is set
+    entry #abstrakt   whether `ACC_ABSTRACT` is set
+    entry #bridge   whether `ACC_BRIDGE` is set: a compiler-generated bridge method
+    entry #synthetic   whether `ACC_SYNTHETIC` is set
+    entry #visible   whether the member is `public` or `protected`: linkable from outside its package
+    entry #inlinable   whether a consumer's compiler may already have copied this field's value into its own constant pool
+        True for a `static final` field of primitive or `String` type which has a
+        `#constant`: by the JLS's rules a compiler inlines such a constant at every use, so
+        changing its value does not break linkage, but does change consumers' behaviour
+        until they are recompiled. A `ConstantValue` on any other field is not inlined, so
+        the attribute alone is not the test.
+  entry .apply   parses the bytes of a class file to its `ClassSurface`
+      `ClassSurface(data)` reads the class file through `java.lang.classfile` and keeps only
+      the linkage surface. Fields are read with their signature and constant, methods with
+      their signature and exceptions; members are sorted by `Member#selector` and interfaces
+      by name. The bytes are not retained.
+  entry #name   the class's internal name, `scala/Option`
+  entry #flags   the class's `access_flags` bitmask, as the class file records it
+  entry #superclass   the superclass's internal name, or `Unset` for `java/lang/Object` itself
+  entry #interfaces   the internal names of the directly implemented interfaces, sorted
+  entry #signature   the class's generic `Signature` attribute, if any
+  entry #members   the fields and methods, sorted by `Member#selector`
+  entry #innerFlags   the flags the `InnerClasses` attribute records for this class, if it is nested
+      A nested class's own `access_flags` show the outer view, where a `protected` member
+      class is neither public nor protected; its real accessibility is in the enclosing
+      class's `InnerClasses` entry for it, which this reads back. `Unset` for a top-level
+      class.
+  entry #interface   whether the class is an interface (`ACC_INTERFACE`)
+  entry #isFinal   whether the class is final (`ACC_FINAL`)
+  entry #synthetic   whether the class is compiler-generated (`ACC_SYNTHETIC`)
+  entry #access   the flags which decide accessibility: `#innerFlags` where present, else `#flags`
+  entry #visible   whether the class is `public` or `protected` by its `#access` flags
+  entry #supertypes   the directly named supertypes, superclass first, then interfaces
+      The order the JVM's own resolution walks, and the order inherited members are keyed
+      in by `ClasspathIndex#closure`.
+  entry #member   the member with a given `Member#selector`, or `Unset`
+
+entry .ClasspathIndex   resolves internal class names to their surfaces, over in-memory classes plus a classpath
+  detail
+      A `ClasspathIndex` answers "what does class `name` declare?" for every class a set of
+      classes may refer to. It holds the surfaces of the classes it is given eagerly — a
+      release's own, which are the ones being examined — and resolves everything else lazily
+      by reading `name.class` from a `URLClassLoader` over the classpath entries, with the
+      platform classloader as its parent so the JDK's own classes resolve too. Every
+      resolution, including a failed one, is memoized, which keeps a walk over many classes'
+      supertypes linear.
+
+      ```scala
+      import soundness.*
+      import classloaders.threadContextClassloader
+      import strategies.throwUnsafely
+
+      val own = Map(t"com/example/Main" -> ClassSurface(cp"/com/example/Main.class".read[Data]))
+      val index = ClasspathIndex(own, List(t"/lib/dependency.jar"))
+
+      index(t"java/lang/Object")
+      index.closure(t"com/example/Main")
+      ```
+
+      A class in the in-memory map is never shadowed by a same-named class earlier on the
+      classpath.
+  refer mandible.ClassSurface
+  entry .apply   an index over a map of surfaces by internal name, plus classpath entries as text
+      Each classpath entry is a directory or JAR path, as text; a directory must exist on
+      disk for the loader to treat it as one. An entry which does not exist resolves nothing.
+  entry #own   the internal names of the classes held in memory, sorted
+  entry #apply   the surface of a class by internal name, or `Unset` if nothing can supply it
+      Looks in the in-memory map first, then reads the class file from the classpath,
+      caching the answer either way.
+  entry #closure   a class's transitive supertypes, nearest first, and the names which could not be resolved
+      `index.closure(name)` walks `ClassSurface#supertypes` breadth-first from `name`,
+      excluding `name` itself, and returns a pair: the supertypes found, in order of
+      discovery, and the names of those which no source could resolve. An unresolvable
+      supertype is reported rather than skipped, because without it the class's inherited
+      member set is unknown.
+
+entry .disassemble   compiles a quoted block with the staging compiler and reads its bytecode back
+  detail
+      `disassemble(code)` takes a `Quotes ?=> Expr[Any]` — a block of code quoted with `'{…}` —
+      wraps it in a method, compiles it with the staging compiler into a temporary directory,
+      reads the resulting class file and returns the method's `Bytecode`, with its line
+      numbers shifted by `Bytecode#embed` to the call site's `Codepoint`, so the listing reads
+      against the file the block was written in.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import classloaders.threadContextClassloader
+      import strategies.throwUnsafely
+      import temporaryDirectories.systemTemporaryDirectory
+
+      val bytecode: Bytecode = disassemble('{ (1 to 10).map(_ * 2).sum })
+      bytecode.instructions.map(_.opcode.show)
+      ```
+
+      It needs a `TemporaryDirectory` for the compiler's output, a `Classloader` for the
+      compiler to load against (its `java` instance is handed to the staging compiler), and a
+      `Tactic[Bytecode.Error]`, raised as `ClassfileMissing` when no class file appears and
+      `ClassfileUnreadable` when it cannot be read or the generated method is not in it. The
+      block is compiled with the experimental language flag enabled, under Scala 3.6's
+      settings. Compilation takes a moment, so this is a tool for examining what the compiler
+      and its optimizer produce, not for a hot path.
+  refer mandible.Bytecode
+  refer mandible.Classfile
+
+entry .BytecodePalette   the colours a bytecode listing is rendered with
+    A `Palette` in sRGB with, beyond the `background` and `foreground` every palette has, three colours: `bytecode`, for the source-file reference and the
+    method a linearized instruction came from; `sourceCode`, for line numbers; and `outline`,
+    for the frame of the stack column. A `BytecodePalette` must be in scope to render a
+    `Bytecode`, a `List[Bytecode.Frame]` or a `List[Bytecode.Linearized]` as `Teletype`; the
+    library supplies no default, so a program defines one. Opcode colours are not in the
+    palette: they come from `Bytecode.Opcode#highlight`, by cost.
+
+    ```scala
+    import soundness.*
+
+    given palette: BytecodePalette = new Palette:
+      type Form = Srgb
+      def background: Color in Srgb = WebColors.Black
+      def foreground: Color in Srgb = WebColors.White
+      def bytecode: Color in Srgb   = WebColors.Teal
+      def sourceCode: Color in Srgb = WebColors.YellowGreen
+      def outline: Color in Srgb    = WebColors.Gray
+    ```
+
+entry .internal   the home of a macro which disassembles a method selected by a lambda
+  hidden
+  detail
+      Not for direct use. Holds `disassemble`, a macro implementation which, given a lambda
+      of the form `_.method` over a type and a `Classloader` expression, splices a lookup of
+      that method's `Bytecode` through `Classfile`; no public inline entry point currently
+      invokes it.
+  entry .disassemble   the macro: a `target => Any` selecting a method, to that method's bytecode
+      Halts with _this type of lambda is not supported_ (code 91) for a lambda which is not a
+      plain member selection.

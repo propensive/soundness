@@ -1,0 +1,2547 @@
+tel 1.0
+
+base galilei
+import soundness
+
+info   files, directories and links on disk, operated on through typed paths with explicit policies
+detail
+    _Galilei_ is the filesystem: a `Path on Linux`, `Path on MacOs`, `Path on Windows` or
+    `Path on Local` (serpentine's abstract paths, bound to one of galilei's platform types)
+    gains every operation which touches the disk — reading and writing, opening for a scope,
+    creating, listing, copying, moving, linking, deleting, checksumming — and each operation
+    says in its type what it may raise and which policy it consults. The awkward cases
+    (overwrite or refuse? recurse into a directory or refuse? follow a symlink or not?) are
+    never defaults: they are contextual values from the `filesystemOptions` package, imported
+    by name, and an operation whose policy is missing does not compile.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import filesystemBackends.javaBaseFilesystem
+    import filesystemOptions.createNonexistentParents
+    import filesystemOptions.dereferenceSymlinks
+    import filesystemOptions.deleteRecursively
+    import filesystemOptions.moveAtomically
+    import filesystemOptions.overwritePreexisting
+    import strategies.throwUnsafely
+
+    val directory: Path on Linux = (% / "tmp" / "galilei-example").on[Linux]
+    directory.create[Directory](CreateFlag.Parents)
+
+    val file: Path on Linux = directory / "notes.txt"
+    file.write(t"Hello, world")
+    file.read[Text]                          // t"Hello, world"
+    file.moveTo(directory / "renamed.txt")
+    directory.children.map(_.name)           // Chain(t"renamed.txt")
+    directory.wipe()
+    ```
+
+    **Platforms.** The platform of a path is a phantom type extending `Platform`: `Posix`,
+    its refinements `Linux` and `MacOs`, `Windows`, and `Local`, which is whichever the
+    running machine uses (its `Filesystem` instance reads the separator from the `System` in
+    scope). Each platform's companion holds its naming `Rules` (what a segment may be), its
+    `Filesystem` instance (name, separator, `.` and `..`), and the `Radical`/`Eradicable`
+    pair which read its root — `%` for POSIX, a `Drive` for Windows — from text and back. A
+    path is bound to a platform with `on[Linux]`, decoded from text with
+    `t"/tmp/x".as[Path on Linux]`, or written as a literal with `p"/tmp/x"`, which the
+    compiler checks and types as a `Path on Posix` (or `Path on Windows` by its shape).
+
+    **The backend.** Nothing in the public API names a platform API. The primitive operations
+    — `stat`, `open`, `children`, `createFile`, `copy`, `move`, `delete`, `realPath` and the
+    rest — are gathered into one `FilesystemBackend on <platform>`, chosen by importing a given
+    from the `filesystemBackends` package by name: `javaBaseFilesystem` (`java.nio`, in
+    `galilei.jvm`), `scalaNativeFilesystem` (`galilei.native`) or `wasiFilesystem`
+    (`wasi:filesystem`, in `galilei.wasi`, which additionally needs `wasiApis.wasiFilesystemApi`).
+    An operation a backend cannot support raises `Io.Error` with `Reason.Unsupported` rather
+    than approximating it.
+
+    **Errors.** Every disk operation raises `Io.Error`, which names the path, the
+    `Io.Error.Operation` (`Read`, `Write`, `Create`, `Copy`, `Move`, `Delete`, `Metadata`,
+    `Open`, `Access`) and an `Io.Error.Reason` drawn from the POSIX errno vocabulary
+    (`Nonexistent`, `AlreadyExists`, `PermissionDenied`, `DirectoryNotEmpty`, `Busy`,
+    `Unsupported`, …), so a failure is matched by what went wrong rather than by exception
+    class. Decoding text into a path raises serpentine's `Path.Error` (a bad root, a name
+    which breaks the platform's rules); that is a different error, raised before any disk is
+    touched. A `Tactic[Io.Error]` is needed in scope — `strategies.throwUnsafely`,
+    `safely`, `unsafely`, or a `mitigate` of your own.
+
+    **Scopes.** `path.open[File](Read & Write)` runs a block with a `Handle` which exists only
+    for the block, and `path.open[Directory](…)` a `Directory.Handle` whose paths live on a
+    fresh plane, so `..` does not compile and nothing derived from the handle escapes. The
+    `Mode` is carried in the handle's type as `Grant`s, so writing through a read-only handle
+    is a compile error; `Exclusive` and `Shared` additionally take OS advisory locks and
+    enrol in the in-process `AccessRegister`. `create[File]()` and `create[Directory]()` are
+    the counterparts for something which does not yet exist. `Scratch` and `Scratch.File` are
+    forms whose entry is created fresh and removed when the scope ends, however it ends. `Ram`
+    (JVM) memory-maps a file, and `Slice` windows one byte range of it.
+
+    **Listing and inspecting.** `children` lists a directory's immediate entries,
+    `descendants` its whole subtree in the `TraversalOrder` chosen from `filesystemTraversal`,
+    and `glob` expands a `Glob` pattern beneath it. `entry()` says whether a path is a `File`,
+    `Directory`, `Symlink`, `Fifo`, `Sock`, `BlockDevice` or `CharDevice`; `filesize()`,
+    `modified()`, `accessed()`, `hidden()`, `volume()`, `entryIdentity`, `hardLinks()` read
+    its metadata. `canonical()` is the path as the filesystem itself knows it, every symbolic
+    link resolved. `checksum[Sha2[256]]` digests a file's bytes, or a directory's files with
+    their relative names.
+
+    **Storage-filesystem axis.** Which filesystem an entry is stored on — `Btrfs`, `Ext4`,
+    `Apfs`, `Ntfs` — is established by matching (`case Apfs(path) => …`) and recorded in the
+    path's type as `Path on Linux over Apfs`, which unlocks extended attributes
+    (`attribute`, `attributes`), a total `creation()` time, and btrfs `subvolume()`.
+
+    Beyond single paths: `Cas` is a content-addressed store of blobs under a directory;
+    `Searchpaths.Stems` resolves an XDG searchpath plane (`Xdg.Data`, `Xdg.Config`) onto real
+    directories with `search`, `locations`, `listing` and `destination`; `Umask` and `Fdtable`
+    are contextual values a daemon supplies on behalf of a client (the mask its creations
+    honour, and the descriptor table its `/dev/fd/N` paths open through).
+
+    The library is split by what each platform can do:
+
+    - `galilei.core` — the platforms, `FilesystemBackend`, every path operation, `Io`, the
+      policies, `Handle`, `Directory.Handle`, `Scratch`, `Slice`, `Cas`, `Searchpaths`,
+      `Umask`, `Fdtable`. Platform-neutral.
+    - `galilei.jvm` — `filesystemBackends.javaBaseFilesystem`, memory-mapped `Ram` files,
+      Unix-domain `Sock` creation (`socketCreatable`), device nodes (`Device`), and the
+      `javaPath`/`javaFile` escape hatches (not exported to the umbrella).
+    - `galilei.native` — `filesystemBackends.scalaNativeFilesystem`, the same `java.nio`
+      implementation compiled for Scala Native.
+    - `galilei.wasi` — `filesystemBackends.wasiFilesystem` over the `wasi:filesystem`
+      component interface, and `wasiApis.wasiFilesystemApi`, its WIT definition. WASI has
+      no file locking, no `realpath`, no extended attributes, no volumes and no FIFOs, so
+      those raise `Unsupported`.
+
+    Everything is exported to the `soundness` umbrella, and the `filesystemOptions`,
+    `filesystemTraversal`, `filesystemBackends` and `wasiApis` choice packages merge with the
+    umbrella's own, so a user writes `import soundness.*` and then imports each policy and
+    the backend by name — `import pkg.*` does not import givens. The `pathInterfaces`
+    givens (`pathOnLinux`, `pathOnWindows`, `pathOnMacOs`, `pathOnLocal`, `pathOnPosix`), which
+    let a `Path on Linux` be asked for wherever a path type is expected
+    (`temporaryDirectory[Path on Linux]`, `Home[Path on Linux]()`), are declared in the
+    `anticipation` package and documented there.
+
+refer galilei.Platform
+refer galilei.FilesystemBackend
+refer galilei.Io
+refer galilei.filesystemOptions
+refer galilei.Handle
+refer galilei.Directory
+refer galilei.Scratch
+refer galilei.Cas
+
+entry .Platform   the common base of the OS platform types, and the home of every path's disk givens
+  detail
+      `Platform` is the phantom type every operating-system plane extends: `Posix` (and its
+      refinements `Linux` and `MacOs`), `Windows` and `Local`. A `Path on <platform>` is a
+      serpentine path whose names obey that platform's rules; `Platform` itself carries no
+      members, and is pure (it never captures), so the plane of a path unifies exactly through
+      the `soundness` export aliases.
+
+      The companion is where the givens which make a path *do* things live, so that they are
+      in the implicit scope of every `Path on <platform>` with no import: `.pathReadable`
+      (`path.read[Text]`), `.pathWritable` (the typeclass form of `path.write`),
+      `.pathChecksummable` (`path.checksum[Sha2[256]]`), `.openable` and `.directoryOpenable`
+      (`path.open[File]`, `path.open[Directory]`), `.fileCreatable`, `.directoryCreatable` and
+      `.fifoCreatable` (`path.create[File]()` and the rest), and `.eof` (`Eof(path).open(Write)`
+      appends). All of them need a `FilesystemBackend on <platform>` and a `Tactic[Io.Error]`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import strategies.throwUnsafely
+
+      val file: Path on Linux = (% / "tmp" / "platform.txt").on[Linux]
+      file.write(t"one")
+      file.read[Text]
+      file.open[File](Read & Write): handle ?=>
+        handle.write(Chain(t"two".in[Data]))
+      ```
+  refer galilei.Posix
+  refer galilei.Linux
+  refer galilei.MacOs
+  refer galilei.Windows
+  refer galilei.Local
+  refer galilei.FilesystemBackend
+  entry .uuid   lets a `Uuid` stand as a name on any platform's path
+      The `Admissible` given which admits a `Uuid` as a path segment (`directory / Uuid()`),
+      unchecked, since a UUID's text — hexadecimal digits and hyphens — breaks no platform's
+      rules. `.uuidNavigable` renders it.
+  entry .uuidNavigable   renders a `Uuid` segment as its text
+  entry .pathChecksummable   `path.checksum[Algorithm]`: a file's bytes, or a directory's files with their names
+      The `Checksummable` given for any `Path on <platform>`. A file contributes its bytes, so
+      its checksum is its content's digest. A directory contributes its regular files in the
+      order of their paths relative to it, each as its relative path and its content, every
+      part preceded by its length — so a rename, a move or a change of content changes the
+      digest, two directories holding the same files digest alike wherever they are, and an
+      empty directory has the digest of nothing. Symbolic links are followed, or not, as the
+      `DereferenceSymlinks` in scope decides. It needs a `FilesystemBackend`, a
+      `DereferenceSymlinks`, a `Tactic[Io.Error]` and an `Every[Fdtable]` (satisfied by the
+      default), and the usual gastronomy `Hash` for the algorithm.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import filesystemOptions.dereferenceSymlinks
+      import providers.javaBaseProvider
+      import strategies.throwUnsafely
+
+      val tree: Path on Linux = (% / "tmp" / "tree").on[Linux]
+      val digest: Digest in Sha2[256] = tree.checksum[Sha2[256]]
+      ```
+  entry .pathReadable   `path.read[Text]`, `path.read[Data]`: the whole file, in one read
+      The `Readable` given which makes `path.read[result]` resolve for any `Path on
+      <platform>` with no import. The whole file is read into memory at once, holding no
+      handle and needing no scope — unlike opening the path, which streams within a scope —
+      and handed to a `Data is Readable to result` (`Text`, `Data`, or anything decodable from
+      bytes). It raises `Io.Error` (`Nonexistent`, `PermissionDenied`, `IsDirectory`, …), and
+      a read the file cuts short is reported as `Reason.Physical`. A path the `Fdtable` in
+      scope governs is read through its descriptor rather than from this process's
+      filesystem. The subject is bounded as `path <: Path on plane` so that a `p"…"` literal or
+      an `on[Linux]` path, whose types are richer than `Path on Linux`, matches too.
+  entry .pathWritable   the `Writable` form of `path.write`: replaces the file's whole content from a stream
+      The typeclass counterpart of the eager `write` extension, so that generic writers
+      (`open[Tel]`'s write-back, say) resolve for any `Path on <platform>` with no import.
+      Aggregates the stream and writes it whole; a governed `Fdtable` path is written through
+      its descriptor.
+  entry .openable   `path.open[File](mode, flags*)`: the `FileOpenable` instance for every platform path
+      Anchored here, by the path type, rather than in `File`'s companion, so that
+      `path.open[File](…)` resolves with no import. It needs a backend, a `Tactic[Io.Error]`,
+      a `Umask` (the default is the process's own) and an `Every[Fdtable]`. See
+      `FileOpenable` for what the mode and the `OpenFlag`s do.
+  entry .directoryOpenable   `path.open[Directory](mode)`: the `Directory.Openable` instance for every platform path
+      With both this and `.openable` in scope a bare `path.open(…)` is ambiguous, so the form
+      is always stated: `open[File]` or `open[Directory]`.
+  entry .directoryCreatable   `path.create[Directory](flags*)`: creates a directory, or authors one within a scope
+      Needs a backend, a `Tactic[Io.Error]`, an `Io.Event is Loggable` and a `Umask`. See
+      `Creation.DirectoryCreatable`.
+  entry .fileCreatable   `path.create[File](flags*)`: creates an empty file, or authors one within a scope
+      See `Creation.FileCreatable`: the scoped form writes to a temporary sibling and moves
+      it into place when the block completes.
+  entry .fifoCreatable   `path.create[Fifo](flags*)`: makes a named pipe
+      See `Creation.FifoCreatable`. Only the instantiating form is supported; a scoped
+      authoring of a FIFO would block until a peer opened the other end.
+  entry .eof   `Eof(path).open(Write)`: opens a file for appending
+      The `Openable` instance for `Eof[path]`, for any path which is itself openable as a
+      `File`: it prepends `OpenFlag.Append` and delegates, so the handle's writes go after
+      the existing content.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import strategies.throwUnsafely
+
+      val log: Path on Linux = (% / "tmp" / "events.log").on[Linux]
+      Eof(log).open(Write): handle ?=>
+        handle.write(Chain(t"another line\n".in[Data]))
+      ```
+
+entry .Posix   the POSIX platform: `/`-rooted paths whose names may not contain `/` or `:`
+  detail
+      The plane of a path on any POSIX system, and the supertype of `Linux` and `MacOs`. Its
+      root is `%`, encoded as `/`; its `.Rules` forbid `/` and `:` in a name, and the names
+      `.`, `..`, the empty name and `Icon\r` (the macOS folder-icon file), so a path valid on
+      `Posix` is valid on both refinements. `p"/home/user"` is a `Path on Posix`. The
+      POSIX-only operations — `executable`, `hardLinks()` — are available on any
+      `Path on <plane <: Posix>`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val path: Path on Posix = p"/home/user/data.csv"
+      val linux: Path on Linux = t"/home/user/data.csv".as[Path on Linux]
+      ```
+  refer galilei.Linux
+  refer galilei.MacOs
+  entry .Rules   what a POSIX name may be: no `/`, no `:`, not `.`, `..`, empty or `Icon\r`
+  entry .filesystem   the `Filesystem` instance: named `POSIX`, `/`-separated, `.` and `..`, a single root
+  entry .radical   encodes the root `%` as `/`
+  entry .eradicable   decodes a root from text beginning with `/`, or raises `Path.Error(InvalidRoot)`
+      Needs a `Tactic[Path.Error]`, which it retains, so decoding text into a `Path on Posix`
+      can fail only on its root or on a name which breaks `.Rules`.
+  entry .submissible   lets `%` be the root of a `Path on Posix` built with `/`
+  entry #UniqueRoot   `true`: every POSIX path has the one root `%`
+
+entry .Linux   the Linux platform: POSIX paths with the plain POSIX naming rules
+  detail
+      A refinement of `Posix` whose `.Rules` are the minimal POSIX ones (no `/`; not `.`,
+      `..` or empty), with the `:` and `Icon\r` restrictions of `MacOs` relaxed. `Path on
+      Linux` is the type most code works with: it is what `Xdg`, `Home` and
+      `temporaryDirectory[Path on Linux]` produce, and the target platform of the XDG
+      searchpaths (`Searchpaths.Stems on Xdg.Data onto Linux`). A `Linux`-style relative path
+      may also be reinterpreted on a searchpath plane, through `searchpathCompliant`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val path: Path on Linux = (% / "home" / "user").on[Linux]
+      path.encode   // t"/home/user"
+      ```
+  refer galilei.Posix
+  entry .Rules   no `/`; not `.`, `..` or the empty name
+  entry .nominative   the given which holds Linux paths to `.Rules`
+  entry .pathOnLinux   marks `Path on Linux` as a representative of the `Paths` domain
+      The `Representative of Paths` given, so that a `Path on Linux` can be asked for by
+      domain (`as[Path on Linux]` from a URL or a classpath entry). The same given is also
+      exported from `anticipation.pathInterfaces` as `pathOnLinux`, where it is imported by
+      name.
+  entry .filesystem   the `Filesystem` instance: named `Linux`, `/`-separated, a single root
+  entry .radical   encodes the root `%` as `/`
+  entry .eradicable   decodes a root from text beginning with `/`, or raises `Path.Error(InvalidRoot)`
+  entry .submissible   lets `%` be the root of a `Path on Linux` built with `/`
+
+entry .MacOs   the macOS platform: POSIX paths whose names also exclude `:` and `Icon\r`
+  detail
+      A refinement of `Posix` whose `.Rules` add macOS's own restrictions: a name may not
+      contain `:` (the classic Mac OS separator, still refused by Finder) and may not be
+      `Icon\r`, the hidden file which carries a folder's custom icon. A path which is valid on
+      `MacOs` is valid on `Linux`; the converse is not so. `Local`'s rules are `MacOs.Rules &
+      Windows.Rules`, so a `Path on Local` satisfies macOS too.
+  refer galilei.Posix
+  refer galilei.Local
+  entry .Rules   no `/` or `:`; not `.`, `..`, empty or `Icon\r`
+  entry .pathOnMacOs   marks `Path on MacOs` as a representative of the `Paths` domain
+  entry .filesystem   the `Filesystem` instance: named `Mac OS`, `/`-separated, a single root
+  entry .radical   encodes the root `%` as `/`
+  entry .eradicable   decodes a root from text beginning with `/`, or raises `Path.Error(InvalidRoot)`
+  entry .submissible   lets `%` be the root of a `Path on MacOs` built with `/`
+
+entry .Windows   the Windows platform: drive-rooted, `\`-separated paths with Windows naming rules
+  detail
+      The plane of a Windows path. Its root is a `Drive`, encoded as `C:\`; its `.Rules` are
+      Windows's: no `\`, `/`, `:`, `*`, `?`, `"`, `<`, `>` or `|` in a name, no trailing `.`
+      or space, and none of the reserved device names (`CON`, `PRN`, `AUX`, `NUL`, `COM0`–`COM9`,
+      `LPT0`–`LPT9`, with or without an extension, in any case). A `Path on Windows` has one
+      operation of its own, `created()`, since NTFS records creation times.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val path: Path on Windows = (Drive('C') / "Windows" / "System32").on[Windows]
+      path.encode                                   // t"C:\\Windows\\System32"
+      t"D:\\Data\\file.txt".as[Path on Windows]
+      p"""C:\Windows\notepad.exe"""                 // a Path on Windows, by its shape
+      ```
+  refer galilei.Drive
+  refer galilei.created
+  entry .Rules   no `\ / : * ? " < > |`, no trailing `.` or space, no reserved device name
+  entry .pathOnWindows   marks `Path on Windows` as a representative of the `Paths` domain
+  entry .filesystem   the `Filesystem` instance: named `Windows`, `\`-separated, many roots
+  entry .radical   encodes a `Drive` root as `C:\`
+  entry .eradicable   decodes a `Drive` from text of the form `C:\…`, or raises `Path.Error(InvalidRoot)`
+      The root is three characters long: a letter, `:` and `\`. Text without them fails with
+      `Path.Error(InvalidRoot)` through the `Tactic[Path.Error]` in scope.
+
+entry .Local   the platform of the running machine, whichever it is
+  detail
+      `Local` is for code which must run on any operating system without naming it: its root
+      may be `%` or a `Drive`, so a `Path on Local` may be either POSIX or Windows in shape,
+      and its `.Rules` are the intersection of `Windows.Rules` and `MacOs.Rules`, so a name
+      valid on `Local` is valid everywhere. The `.filesystem` instance needs a `System` in
+      scope (`systems.javaBaseSystem`), from which it reads the `os.name` and `file.separator`
+      properties, so `Local` is the one platform whose separator is not known until runtime.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+
+      val path: Path on Local = t"/tmp/data".as[Path on Local]
+      val other: Path on Local = t"C:\\Data".as[Path on Local]
+      ```
+  entry .Rules   `Windows.Rules & MacOs.Rules`: a name valid on every platform
+  entry .nominative   the given which holds local paths to `.Rules`
+  entry .pathOnLocal   marks `Path on Local` as a representative of the `Paths` domain
+  entry .filesystem   the `Filesystem` instance, read from the `System` in scope
+      Named by the `os.name` property and separated by `file.separator`, with `.` and `..`
+      as the self and parent names, and many roots. Needs a `System`.
+  entry .radical   encodes a root as `/` for `%` or `C:\` for a `Drive`
+  entry .eradicable   decodes a root as `%` from a leading `/`, or a `Drive` from `C:\`
+      The root's length is 1 or 3 accordingly; any other text raises `Path.Error(InvalidRoot)`.
+
+entry .Dos   the DOS 8.3 naming rules, as a nominative plane
+  detail
+      A marker whose `.Rules` are MS-DOS's: a name of one to eight printable, non-space ASCII
+      characters, optionally followed by `.` and one to three more. It has no `Filesystem`
+      instance and no root — it exists so that a name can be checked against the 8.3 form
+      (for a FAT volume, a boot medium, or an archive which must stay DOS-readable), not so
+      that files are operated on through it.
+  entry .Rules   `[^.]{1,8}(\.[^.]{1,3})?`, no spaces, printable ASCII only
+
+entry .Drive   a Windows drive letter, the root of a `Path on Windows`
+  detail
+      `Drive('C')` is the root `C:\`. It is a serpentine `Root` whose plane is `Windows`, so
+      `Drive('C') / "Windows"` is a Windows path, and it is what `Windows.eradicable` decodes
+      from the front of `C:\…`. Two drives are equal when their letters are. The package
+      defines `C` and `D` as the two commonest drives.
+
+      ```scala
+      import soundness.*
+
+      val system: Path on Windows = (Drive('C') / "Windows").on[Windows]
+      Drive('C') == C   // true
+      ```
+  refer galilei.Windows
+  refer galilei.C
+  entry .apply   `Drive(letter)`: the drive with that letter
+  entry .unapply   matches a drive, extracting its letter
+  entry .submissible   lets a `Drive` be the root of a `Path on Windows` built with `/`
+  entry #letter   the drive's letter
+  entry #Plane   the plane a drive roots: `Windows`
+
+entry .C   the drive `C:\`, as `Drive('C')`
+    A top-level value for the usual system drive, so that `C / "Windows"` reads as a Windows
+    path.
+
+entry .D   the drive `D:\`, as `Drive('D')`
+
+entry .p   the `p"…"` interpolator: a path literal, checked and typed as the code compiles
+    `p"/home/user/data.csv"` decodes its literal as a POSIX path and, failing that, as a
+    Windows path, and splices a `Path` whose platform is `Posix` or `Windows` accordingly and
+    whose `Topic` is the tuple of its names' literal types, leaf first: `p"/foo/bar/baz"` is
+    a `Path of ("baz", "bar", "foo") on Posix`. Text which is neither a valid POSIX nor a
+    valid Windows path is a compile error, _The path `…` is not a valid Windows or POSIX
+    path_. The interpolator takes no `$`-substitutions.
+
+    ```scala
+    import soundness.*
+
+    val path = p"/foo/bar/baz"
+    summon[path.Topic =:= ("baz", "bar", "foo")]
+    p"""C:\Windows\System32"""
+    ```
+
+    A `Path on Posix` reads and writes like any platform path (`Posix` has a `Filesystem`),
+    so `p"/tmp/x".write(t"…")` needs no `on[Linux]`.
+
+entry .internal   the macro behind `p"…"`
+  hidden
+  detail
+      Not for direct use: the object exists so that the path-literal macro has a home beside
+      the platform types whose `Radical` givens it needs at expansion time.
+  entry .path   decodes the interpolator's literal as a POSIX, then a Windows, path and splices it
+
+entry .FilesystemBackend   the primitive filesystem operations for a plane, which everything else is built on
+  detail
+      A `FilesystemBackend on <plane>` is the complete set of primitive operations — stat,
+      open, list, create, link, copy, move, delete, attributes, positional access — expressed
+      without reference to any platform API, and every user-facing operation on a `Path on
+      <plane>` is defined in terms of them. One is chosen by importing a given from the
+      `filesystemBackends` package by name: `javaBaseFilesystem` on the JVM,
+      `scalaNativeFilesystem` on Scala Native, `wasiFilesystem` in a Wasm component.
+      Operations which compose several primitives (recursive deletion, copying into a
+      directory, creating missing parents) live in the path API, not here.
+
+      ```scala
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+
+      val backend: FilesystemBackend on Linux = summon[FilesystemBackend on Linux]
+      ```
+
+      Each backend maps its native failures (exceptions, WASI error codes) onto the common
+      `Io.Error.Reason` vocabulary as informatively as it can, and an operation a backend
+      cannot support raises `Io.Error` with `Reason.Unsupported` rather than approximating
+      it: WASI has no locks, no `realpath`, no extended attributes, no volumes and no FIFOs.
+      The `dereference` argument several primitives take says whether a final-component
+      symbolic link is followed. A program implementing its own backend — over a remote
+      filesystem, an archive, a test double — implements this trait; `realPath` was added
+      most recently.
+  refer galilei.filesystemBackends
+  refer galilei.Io
+  refer galilei.Stat
+  entry .Attribute   the coarse permission flags a backend reads and sets: `Readable`, `Writable`, `Executable`
+      From the current user's perspective, as `Files.isReadable` and `File#setReadable`
+      see them. `FilesystemAttribute` is the typed path-level view.
+  entry #stat   the entry's type, size, timestamps and inode fields, in one read
+      Returns a `Stat`. `created` is `Unset` on filesystems which do not record creation
+      times, and the inode fields (`mode`, `user`, `group`, `device`) where the platform has
+      no Unix inode. Raises `Io.Error` with `Operation.Metadata`: `Nonexistent` for a missing
+      entry.
+  entry #linkTarget   the text a symbolic link points at, exactly as stored
+      A relative link stays relative. Raises `Io.Error` if the entry is not a link.
+  entry #realPath   the path as the filesystem knows it: absolute, normalized, every symlink resolved
+      `realpath(3)`. The entry must exist (`Nonexistent` otherwise). `Path#canonical()` is
+      built on it; WASI raises `Unsupported`.
+  entry #exists   whether the entry exists, following a final symlink if `dereference` is true
+      Total: an unreadable or absent entry is simply `false`.
+  entry #children   the names (not paths) of a directory's immediate children
+      Strict — the listing is materialized before returning, so the directory's descriptor
+      is released — and raised through the caller's `Tactic[Io.Error]`. A non-directory lists
+      as empty on the JVM.
+  entry #createDirectory   creates one directory, with the given permission bits if any
+      `mode` is the exact permission bits the new entry should have — an invocation's
+      `Umask` already applied to `Umask.directoryBits` — and a backend whose platform has
+      permission bits sets them at creation; `Unset` leaves the process's own mask to apply,
+      and a platform without POSIX permissions ignores the request. Raises `AlreadyExists` or
+      `Nonexistent` (no parent).
+  entry #createFile   creates one empty file, with the given permission bits if any
+  entry #createFifo   creates a named pipe, with the given permission bits if any
+      On the JVM, through the `mkfifo` command, whose failure is reported as `Unsupported`;
+      WASI raises `Unsupported` outright.
+  entry #delete   deletes one entry, raising `Nonexistent` if absent or `DirectoryNotEmpty` if a full directory
+  entry #deleteIfExists   deletes one entry if it exists, and does nothing otherwise
+  entry #symlink   creates a symbolic link at `link` pointing at `target`
+  entry #hardLink   creates a hard link at `link` to the entry at `target`
+  entry #copy   copies one entry to a destination, following a final symlink if `dereference`
+      Raises `AlreadyExists` if the destination exists: the `OverwritePreexisting` policy in
+      the path API clears it first when asked to.
+  entry #move   moves one entry, atomically if asked, following a final symlink if `dereference`
+      An atomic move which the platform cannot do (across volumes, say) is `Unsupported`;
+      `NotSameVolume` is the reason for a plain move across volumes which fails.
+  entry #touch   sets the entry's modification time to the present moment
+  entry #hidden   whether the entry is hidden by the platform's convention
+      A leading `.` on POSIX; the hidden attribute on Windows.
+  entry #volume   the `Volume` the entry is stored on: its name and filesystem type
+      What `Btrfs`, `Ext4`, `Apfs` and `Ntfs` probe. WASI raises `Unsupported`.
+  entry #hardLinkCount   how many hard links point at the entry
+  entry #attribute   reads a coarse permission flag, or reads or writes an extended attribute
+      Three overloads. `attribute(path, Attribute.Readable)` is the current user's
+      permission, total. `attribute(path, name)` is the extended attribute of that name as
+      `Data`, or `Unset`; `attribute(path, name, value)` sets it. Extended attributes depend
+      on the storage filesystem, so the typed path accessors are gated on the `Attributed`
+      axis; at this seam a filesystem without them raises `Unsupported`.
+  entry #update   sets a coarse permission flag on or off
+      Raises `PermissionDenied` if the platform refuses the change.
+  entry #attributes   the names of the entry's extended attributes
+  entry #identity   the entry's device and inode numbers, or `Unset` where the platform has none
+      Total, and separate from `stat` because the two platforms which cannot answer it (WASI,
+      and the JVM off POSIX) are precisely those for which every other `Stat` field is cheap.
+      `Path#entryIdentity` is the path-level accessor.
+  entry #expanse   opens the entry for scoped positional reading and applies a lambda to the view
+      A `zephyrine.Expanse` — `size` plus `pread`-style `read(offset, length)`, each read
+      independent of any sequential position — valid for the scope of the call and closed
+      afterwards. No whole-file mapping is taken, so files beyond 2 GiB are addressable,
+      unlike `Ram`'s single `Int`-addressed map. A read overlapping the end of the file
+      returns the bytes which exist.
+  entry #slice   opens a byte range of the entry as a windowed view, locking it if the flags ask
+      Like `#expanse`, but the view is a `Slice.Window` confined to `[offset, offset +
+      extent)`: its `size` is the window's, reads are relative to the window's start and
+      clamped to it, and writes store as much as fits and return the count. `OpenFlag.Lock`
+      or `OpenFlag.LockShared` takes an OS advisory lock over exactly that range for the
+      scope; a write is only meaningful with `OpenFlag.Write`. WASI serves the window but
+      refuses a locking open as `Unsupported`.
+  entry #open   opens the entry's content for streaming, applies a lambda to the `Handle`, and closes it
+      `flags` are the `OpenFlag`s (`Read`, `Write`, `Append`, `Create`, `Truncate`, …), and
+      `mode` the permission bits for a file the open creates (`Create` or `Exclusive`), as
+      for `#createFile`. The handle is closed whatever the outcome. On the JVM, `Lock` and
+      `LockShared` take an advisory lock after opening; a read-only channel cannot take an
+      exclusive lock, so a shared one is taken instead (in-process exclusivity is already
+      arbitrated by the `AccessRegister`), and `Await` blocks for the lock rather than
+      failing with `Busy`.
+
+entry .filesystemBackends   the filesystem backends, each a given to import by name
+  detail
+      Every operation on a `Path on <platform>` needs a `FilesystemBackend on <platform>` in
+      scope, and the choice is deliberately never implicit: `import soundness.*` brings none
+      of these in, and one is imported by name. Each is generic over the plane, so one import
+      serves `Path on Linux`, `Path on Windows` and `Path on Local` alike.
+
+      ```scala
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      ```
+  entry .javaBaseFilesystem   the `java.nio.file` backend, in `galilei.jvm`
+      The backend of an ordinary JVM program. `java.nio`'s exceptions are mapped onto
+      `Io.Error.Reason` by type (`NoSuchFileException` to `Nonexistent`,
+      `FileAlreadyExistsException` to `AlreadyExists`, `AccessDeniedException` to
+      `PermissionDenied`, `FileSystemLoopException` to `Cycle`, `AtomicMoveNotSupportedException`
+      to `Unsupported`, an `InterruptedIOException` to `Interrupted`, any other `IOException`
+      to `Physical`) and, for a bare `FileSystemException`, by its reason text (`cross-device`
+      to `NotSameVolume`, `no space` to `StorageFull`, `read-only` to `ReadOnly`, `quota` to
+      `QuotaExceeded`, …). Permission bits are requested at creation and then set exactly, so
+      an entry never exists more permissive than asked; on a filesystem without the POSIX
+      view (Windows) a requested mode is ignored. FIFOs are made through `mkfifo`, locks
+      through `FileChannel.lock`, and extended attributes through the
+      `UserDefinedFileAttributeView`, which is `Unsupported` where the volume lacks one.
+  entry .scalaNativeFilesystem   the Scala Native backend, in `galilei.native`
+      The same `java.nio`-based implementation as `javaBaseFilesystem`, compiled against Scala
+      Native's javalib.
+  entry .wasiFilesystem   the `wasi:filesystem` backend for Wasm components, in `galilei.wasi`
+      An `inline` given over the WASI preview-2 filesystem interface: the `call`s it makes
+      expand at the site which summons it, so the component's imports materialize only in
+      code compiled for a Wasm target, and `wasiApis.wasiFilesystemApi` must be visible there.
+      WASI filesystems are capability-based: the host grants access as preopened directory
+      descriptors (`wasmtime run --dir …`), every operation resolves its path against the
+      preopen with the longest matching prefix, and a path outside every preopen raises
+      `PermissionDenied`. WASI error codes map onto `Io.Error.Reason` (`no-entry` to
+      `Nonexistent`, `quota` to `QuotaExceeded`, `insufficient-space` to `StorageFull`, …).
+      Unsupported here: `realPath` (so `canonical()`), FIFOs, volumes (so the storage-axis
+      extractors never match), extended attributes, permission updates, entry identity, and
+      any locking open (`Exclusive`, `Shared`, `OpenFlag.Lock`).
+
+entry .wasiApis   the WIT interface the WASI backend is typechecked against, as a given to import by name
+  detail
+      `wasiFilesystem` navigates the `wasi:filesystem` world through xenophile's `Interface in
+      Wit`, and the WIT definition is a contextual value so that the `call` materializer can
+      consult it at the downstream expansion site. In `galilei.wasi`; the package merges with
+      the umbrella's own `wasiApis`.
+
+      ```scala
+      import soundness.*
+      import wasiApis.wasiFilesystemApi
+      import filesystemBackends.wasiFilesystem
+      ```
+  entry .wasiFilesystemApi   the `filesystem.wit` resource bundled with `galilei.wasi`, as a `WasiFilesystemApi`
+
+entry .WasiFilesystemApi   the type of the WASI filesystem WIT interface: `Interface in Wit at "/galilei/filesystem.wit"`
+    The WIT definitions `wasiFilesystem` is typechecked against, located on the classpath at
+    that resource path; `wasiApis.wasiFilesystemApi` is the one value of it. In `galilei.wasi`.
+
+entry .Io   galilei's I/O vocabulary: the `Io.Error` every disk operation raises, and the `Io.Event`s it logs
+  detail
+      `Io` groups two things. `Io.Error` is the one error type of the filesystem: it names
+      the path, the `Operation` being attempted and the `Reason` it failed, so a program
+      matches on what went wrong. `Io.Event` is what the mutating operations log — creations,
+      deletions, moves, copies, links and touches — each tagged `Log.Filesystem`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+
+      val path: Path on Linux = unsafely((% / "tmp" / "maybe.txt").on[Linux])
+      val content: Optional[Text] = safely(path.read[Text])
+
+      val reason: Io.Error.Reason = unsafely(capture[Io.Error](path.read[Text])).reason
+      ```
+
+      `safely` turns any `Io.Error` into `Unset`; `capture` keeps the error so its `reason`
+      can be inspected.
+  refer galilei.FilesystemBackend
+  entry .Error   raised when a filesystem operation fails: which path, which operation, and why
+    detail
+        The message reads _the `operation` operation at `path` on `filesystem` failed
+        because `reason`_ — for instance, _the read operation at /tmp/x on Linux failed
+        because the entry does not exist_. Its reasons are the POSIX errno table under
+        readable names (`Nonexistent` is `ENOENT`, `NotSameVolume` is `EXDEV`, `Physical`
+        is `EIO`), so the failures a filesystem can report are named once and every backend
+        maps onto them. The constructor `Io.Error(path, operation, reason)` needs the path's
+        plane to have a `Filesystem` (to render it) and a `Diagnostics` in scope.
+
+        ```scala
+        import soundness.*
+        import errorDiagnostics.emptyDiagnostics
+
+        val path: Path on Linux = unsafely((% / "tmp" / "x").on[Linux])
+        val error = Io.Error(path, Io.Error.Operation.Read, Io.Error.Reason.Nonexistent)
+        error.reason == Io.Error.Reason.Nonexistent
+        ```
+
+        Both `Operation` and `Reason` are `Communicable`, through anonymous givens, so each
+        renders inside a message.
+    entry .Operation   what was being attempted: `Read`, `Write`, `Create`, `Copy`, `Move`, `Delete`, `Metadata`, `Open` or `Access`
+        `Metadata` covers `stat`, `realPath`, `touch`, `volume`, attributes and permissions;
+        `Open` an `open` call, including the lock it takes; `Access` an existence or
+        permission check.
+    entry .Reason   why it failed, in the POSIX errno vocabulary
+        `PermissionDenied` (the user did not have sufficient permissions), `Nonexistent` (the
+        entry does not exist), `AlreadyExists`, `IsNotDirectory`, `IsDirectory`,
+        `DirectoryNotEmpty`, `NotSameVolume` (source and destination on different volumes),
+        `Unsupported` (not supported by the filesystem or backend), `Cycle` (a symlink loop),
+        `Busy` (the entry is in use — including an open the `AccessRegister` refuses),
+        `ReadOnly`, `TooManyLinks`, `NameTooLong`, `QuotaExceeded`, `StorageFull`,
+        `InvalidData`, `Interrupted` and `Physical` (an input/output error, including a read
+        or write the file cut short).
+    entry .apply   `Io.Error(path, operation, reason)`: an error for a path on any plane with a `Filesystem`
+    entry #path   the path the operation was attempted at
+    entry #operation   the `Io.Error.Operation` which failed
+    entry #reason   the `Io.Error.Reason` it failed for
+    entry #filesystem   the `Filesystem` instance of the path's plane, used to render the message
+  entry .Event   what the mutating path operations log
+    detail
+        Every `Event` is tagged `Log.Filesystem`, so a logging configuration can select or
+        silence them by tag. `create`, `delete`, `wipe`, `copyTo`, `moveTo`, `hardLinkTo` and
+        `symlinkTo` log at `info`; `touch` at `fine`. Each of those operations takes an
+        `Io.Event is Loggable` in scope.
+    entry .communicable   renders each event as a message: _created `path`_, _moved `from` to `to`_, …
+    entry .Create   an entry was created: _created `path`_
+      entry #path   the created path, as text
+    entry .Delete   an entry was deleted: _deleted `path`_
+      entry #path   the deleted path, as text
+    entry .Move   an entry was moved: _moved `from` to `to`_
+      entry #from   the source path, as text
+      entry #to   the destination path, as text
+    entry .Copy   an entry was copied: _copied `from` to `to`_
+      entry #from   the source path, as text
+      entry #to   the destination path, as text
+    entry .HardLink   a hard link was made: _hard-linked `from` to `to`_
+      entry #from   the existing entry, as text
+      entry #to   the new link, as text
+    entry .Symlink   a symbolic link was made: _symlinked `link` to `target`_
+      entry #link   the new link, as text
+      entry #target   what it points at, as text
+    entry .Touch   an entry's modification time was set: _touched `path`_
+      entry #path   the touched path, as text
+
+entry .filesystemOptions   the policies for the awkward cases, each a given to import by name
+  detail
+      Moving a file onto a path where something already exists either destroys that thing or
+      refuses to; deleting a directory either empties it or refuses; copying a symlink either
+      follows it or copies the link. Neither answer is right in general, so galilei never
+      chooses silently: each question is a policy trait — `OverwritePreexisting`,
+      `DeleteRecursively`, `CreateNonexistentParents`, `DereferenceSymlinks`, `MoveAtomically`,
+      `CopyAttributes` — and the operation which must answer it takes the policy as a
+      contextual parameter. Calling `moveTo` with neither `overwritePreexisting` nor
+      `failOnPreexisting` in scope is a compile error which names the missing policy. The
+      policies come in pairs, one permissive and one strict, and are imported by name
+      (`import soundness.*` does not import givens), for a whole file or narrowed to one block.
+
+      Which policies an operation needs:
+
+      - `copyTo`, `moveTo`, `hardLinkTo`, `symlinkTo`: `OverwritePreexisting` and
+        `CreateNonexistentParents` (and `DereferenceSymlinks` for copy and move,
+        `MoveAtomically` for move).
+      - `copyInto`, `moveInto`, `symlinkInto`: `OverwritePreexisting` and `DereferenceSymlinks`
+        (and `MoveAtomically`); parents are created, since the destination directory is named.
+      - `delete`, `wipe`: `DeleteRecursively`.
+      - `entry()`, `descendants`, `glob`, `hardLinks()`, `checksum`: `DereferenceSymlinks`.
+      - `create[…]`: none — `CreateFlag.Parents` and `CreateFlag.Replace` state the intent at
+        the call site instead.
+
+      The same file, written, read, moved and deleted, as the imports accumulate:
+
+      ```scala fuel
+      frame
+        label Reading and writing need only a backend and a tactic
+        code
+            import soundness.*
+            import filesystemBackends.javaBaseFilesystem
+            import strategies.throwUnsafely
+
+            val dir: Path on Linux = (% / "tmp" / "options").on[Linux]
+            val file: Path on Linux = dir / "notes.txt"
+            dir.create[Directory](CreateFlag.Parents)
+            file.write(t"draft")
+            file.read[Text]                        // t"draft"
+      frame
+        label Moving needs an answer for a collision, a missing parent, a symlink and atomicity
+        code
+            import soundness.*
+            import filesystemBackends.javaBaseFilesystem
+            import strategies.throwUnsafely
+            import filesystemOptions.failOnPreexisting
+            import filesystemOptions.requireParents
+            import filesystemOptions.preserveSymlinks
+            import filesystemOptions.moveAtomically
+
+            val dir: Path on Linux = (% / "tmp" / "options").on[Linux]
+            val file: Path on Linux = dir / "notes.txt"
+            file.moveTo(dir / "final.txt")         // raises Io.Error(AlreadyExists) if it exists
+      frame
+        label Permissive policies make the collision and the missing parent impossible
+        code
+            import soundness.*
+            import filesystemBackends.javaBaseFilesystem
+            import strategies.throwUnsafely
+            import filesystemOptions.overwritePreexisting
+            import filesystemOptions.createNonexistentParents
+            import filesystemOptions.deleteRecursively
+            import filesystemOptions.dereferenceSymlinks
+            import filesystemOptions.moveAtomically
+
+            val dir: Path on Linux = (% / "tmp" / "options").on[Linux]
+            val file: Path on Linux = dir / "final.txt"
+            file.moveTo(dir / "archive" / "2026" / "final.txt")   // parents made, target replaced
+      frame
+        label Deleting a directory needs a say on recursion
+        code
+            import soundness.*
+            import filesystemBackends.javaBaseFilesystem
+            import strategies.throwUnsafely
+            import filesystemOptions.deleteRecursively
+
+            val dir: Path on Linux = (% / "tmp" / "options").on[Linux]
+            dir.wipe()                             // the directory and everything beneath it
+      ##
+      ```
+
+      With `deleteOnlyEmpty` instead of `deleteRecursively`, the last step would raise
+      `Io.Error` with `DirectoryNotEmpty`. Note that `overwritePreexisting` itself needs a
+      `DeleteRecursively` in scope, since replacing a directory means emptying it.
+  refer galilei.OverwritePreexisting
+  refer galilei.DeleteRecursively
+  refer galilei.CreateNonexistentParents
+  refer galilei.DereferenceSymlinks
+  refer galilei.MoveAtomically
+  refer galilei.CopyAttributes
+  entry .dereferenceSymlinks   follow a final-component symbolic link: operate on what it points at
+      The permissive `DereferenceSymlinks`: `entry()` reports the target's type, `copyTo`
+      copies the target's content, `descendants` and `checksum` walk through linked
+      directories, `hardLinks()` counts the target's links.
+  entry .preserveSymlinks   do not follow a symbolic link: operate on the link itself
+      The strict `DereferenceSymlinks`: `entry()` reports `Symlink`, `copyTo` copies the
+      link, a traversal does not descend through a linked directory. `filesize()` always
+      uses this, so a link's size is the link's.
+  entry .moveAtomically   `moveTo` must be atomic, and is `Unsupported` where it cannot be
+      The `MoveAtomically` which asks the backend for an atomic rename (`ATOMIC_MOVE` on the
+      JVM). A reader never sees a half-moved entry; a move across volumes, which cannot be
+      atomic, raises `Io.Error` with `Unsupported` rather than falling back to a copy.
+  entry .moveNonAtomically   `moveTo` may be a copy followed by a delete
+      The `MoveAtomically` which permits a non-atomic move, so a move across volumes
+      succeeds, at the cost that a failure midway can leave both the source and a partial
+      destination.
+  entry .copyAttributes   a copy carries the source's attributes (timestamps, permissions) with it
+      The permissive `CopyAttributes`. No operation currently consults it: the policy exists
+      so that a copy's treatment of attributes is stated once backends honour it.
+  entry .discardAttributes   a copy takes only the content; the copy's attributes are fresh
+      The strict `CopyAttributes`; see `.copyAttributes` for its current standing.
+  entry .deleteRecursively   `delete` and `wipe` on a directory first delete everything beneath it
+      The permissive `DeleteRecursively on <plane>`, for any plane with an `Explorable` and a
+      backend. It deletes children depth-first before the operation it guards, so `wipe()`
+      removes a whole tree. It is also what `overwritePreexisting` needs, so that replacing a
+      directory can empty it.
+  entry .deleteOnlyEmpty   `delete` and `wipe` refuse a directory which has children
+      The strict `DeleteRecursively`: a directory with any child raises `Io.Error` with
+      `Operation.Delete` and `Reason.DirectoryNotEmpty` before anything is touched. A
+      program which must never remove more than one entry at a time imports this.
+  entry .overwritePreexisting   a destination which already exists is removed first
+      The permissive `OverwritePreexisting on <plane>`, which needs a `DeleteRecursively on
+      <plane>` in scope (to empty a directory being replaced). `copyTo`, `moveTo`,
+      `hardLinkTo`, `symlinkTo` and `Device.create` then cannot raise `AlreadyExists`.
+  entry .failOnPreexisting   a destination which already exists is an `Io.Error`
+      The strict `OverwritePreexisting`: the operation proceeds untouched, and the backend
+      raises `Io.Error` with `Reason.AlreadyExists` when it collides with an existing entry,
+      which the caller must then handle.
+  entry .createNonexistentParents   a destination's missing ancestor directories are created
+      The permissive `CreateNonexistentParents on <plane>`, needing a backend. Before the
+      operation, each absent ancestor of the destination is created, walking up from the
+      nearest. The directories are created with the process's own mask. `copyInto`,
+      `moveInto` and `symlinkInto` use it implicitly, since their destination directory is
+      named.
+  entry .requireParents   a destination whose parent is missing is an `Io.Error`
+      The strict `CreateNonexistentParents`: nothing is created, and the backend raises
+      `Io.Error` with `Reason.Nonexistent` for the missing parent.
+
+entry .DereferenceSymlinks   the policy for a final-component symbolic link: follow it, or act on the link
+  detail
+      A contextual value with one fact, `#dereference`, which the operations reading or
+      copying an entry pass to the backend. `filesystemOptions.dereferenceSymlinks` follows
+      links and `filesystemOptions.preserveSymlinks` keeps them. It is a `Findable`, not a
+      function, so a custom instance is written as a `given DereferenceSymlinks: def
+      dereference = …`. Needed by `entry()`, `copyTo`, `copyInto`, `moveTo`, `moveInto`,
+      `symlinkInto`, `descendants`, `glob`, `hardLinks()` and `checksum`.
+  entry #dereference   `true` to follow a final symlink, `false` to operate on the link itself
+
+entry .MoveAtomically   the policy for whether `moveTo` must be a single atomic rename
+  detail
+      `filesystemOptions.moveAtomically` requires atomicity (and fails with `Unsupported`
+      across volumes); `filesystemOptions.moveNonAtomically` allows a copy-and-delete.
+      Needed by `moveTo`, `moveInto` and `symlinkInto`.
+  entry #atomic   `true` to require an atomic move
+
+entry .CopyAttributes   the policy for whether a copy carries the source's attributes
+  detail
+      `filesystemOptions.copyAttributes` and `filesystemOptions.discardAttributes` are its
+      two instances. No current operation consults it; it is reserved for backends which
+      distinguish the two.
+  entry #attributes   `true` to copy attributes with the content
+
+entry .DeleteRecursively   the policy for deleting a directory which has children: empty it first, or refuse
+  detail
+      A planar policy (`DeleteRecursively on Linux`) whose `#conditionally` wraps a deletion:
+      `filesystemOptions.deleteRecursively` deletes every descendant first;
+      `filesystemOptions.deleteOnlyEmpty` raises `Io.Error(DirectoryNotEmpty)` instead.
+      Needed by `delete()` and `wipe()`, and by `overwritePreexisting`.
+  entry #conditionally   runs a deletion of `path`, after emptying it or refusing, under a `Tactic[Io.Error]`
+
+entry .OverwritePreexisting   the policy for a destination which already exists: remove it first, or fail
+  detail
+      A planar policy (`OverwritePreexisting on Linux`) whose `#apply` wraps the operation
+      which would collide. `filesystemOptions.overwritePreexisting` deletes the existing
+      entry (recursively, through the `DeleteRecursively` in scope) before the operation;
+      `filesystemOptions.failOnPreexisting` runs it unchanged and lets the backend raise
+      `AlreadyExists`. Needed by `copyTo`, `copyInto`, `moveTo`, `moveInto`, `hardLinkTo`,
+      `symlinkTo`, `symlinkInto` and `Device.create`.
+  entry #apply   runs an operation at `path`, after removing an existing entry there or not
+
+entry .CreateNonexistentParents   the policy for a destination whose parent is missing: create it, or fail
+  detail
+      A planar policy (`CreateNonexistentParents on Linux`) whose `#apply` wraps the
+      operation. `filesystemOptions.createNonexistentParents` makes each missing ancestor;
+      `filesystemOptions.requireParents` leaves the backend to raise `Nonexistent`. Needed
+      by `copyTo`, `moveTo`, `hardLinkTo`, `symlinkTo` and `Device.create`. The `create[…]`
+      operations do not consult it: they take `CreateFlag.Parents` at the call instead.
+  entry #apply   runs an operation at `path`, after creating its missing ancestors or not
+
+entry .filesystemTraversal   the order a directory tree is walked in, each a given to import by name
+  detail
+      `descendants` yields a directory's whole subtree, and the `TraversalOrder` in scope
+      says whether each directory comes before or after what it contains. Neither is a
+      default: a program which walks a tree imports one by name. The same tree, walked
+      both ways:
+
+      ```scala fuel
+      frame
+        label Pre-order: each directory before its contents, for printing or copying a tree
+        code
+            import soundness.*
+            import filesystemBackends.javaBaseFilesystem
+            import filesystemOptions.dereferenceSymlinks
+            import filesystemTraversal.preOrderTraversal
+            import strategies.throwUnsafely
+
+            val root: Path on Linux = (% / "tmp" / "walk").on[Linux]
+            root.descendants.map(_.name).to[List]   // List(t"sub", t"inner.txt", t"top.txt")
+      frame
+        label Post-order: each directory after its contents, for deleting or summing a tree
+        code
+            import soundness.*
+            import filesystemBackends.javaBaseFilesystem
+            import filesystemOptions.dereferenceSymlinks
+            import filesystemTraversal.postOrderTraversal
+            import strategies.throwUnsafely
+
+            val root: Path on Linux = (% / "tmp" / "walk").on[Linux]
+            root.descendants.map(_.name).to[List]   // List(t"inner.txt", t"sub", t"top.txt")
+      ##
+      ```
+
+      Siblings come in the order the backend lists them, which is not sorted.
+  refer galilei.TraversalOrder
+  refer galilei.descendants
+  entry .preOrderTraversal   `TraversalOrder.PreOrder`: a directory, then its descendants
+  entry .postOrderTraversal   `TraversalOrder.PostOrder`: a directory's descendants, then the directory
+
+entry .TraversalOrder   whether `descendants` yields a directory before or after its contents
+  detail
+      `PreOrder` places each directory before its descendants, the order for copying or
+      printing a tree; `PostOrder` places it after, the order for deleting one, where a
+      directory can only go once it is empty. The value is a contextual parameter of
+      `descendants`, imported from `filesystemTraversal`; `filesize()` and `checksum` fix
+      `PreOrder` themselves.
+  refer galilei.filesystemTraversal
+
+entry .CreateFlag   what `create[…]` may do beyond making the entry: `Parents` or `Replace`
+  detail
+      Absent flags mean strictness: creating an entry whose parent is missing raises
+      `Io.Error` with `Nonexistent`, and creating one which already exists raises
+      `AlreadyExists`, unless the caller says otherwise at the call site. `Parents` creates
+      every missing ancestor directory (under the `Umask` in scope); `Replace` deletes an
+      existing entry at the path first — recursively, if it is a directory. Flags are the
+      arguments after the form: `path.create[Directory](CreateFlag.Parents)`,
+      `path.create[File](CreateFlag.Replace)`. They are deliberately not policies from
+      `filesystemOptions`: destructive intent at creation is stated where it happens.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import strategies.throwUnsafely
+
+      val deep: Path on Linux = (% / "tmp" / "a" / "b" / "c").on[Linux]
+      deep.create[Directory](CreateFlag.Parents)
+      (deep / "file.txt").create[File]()
+      (deep / "file.txt").create[File](CreateFlag.Replace)
+      ```
+  refer galilei.Creation
+
+entry .Explorable   the typeclass which lists a plane's directories: `path.children`
+  detail
+      `plane is Explorable` says that a `Path on plane` can be listed. Every plane with a
+      `FilesystemBackend` explores identically — `.explorable` asks the backend for the
+      child names and appends each to the parent — so the typeclass is a seam, not
+      something a user implements: it bounds `children`, `descendants`, `glob`,
+      `filesize()` and the `deleteRecursively` policy.
+  entry .explorable   the `Explorable` for any plane with a `FilesystemBackend`
+      In implicit scope: it needs the backend and nothing else.
+  entry #children   the immediate children of a directory, as paths, raising `Io.Error` through the caller's tactic
+      Strict: a listing failure (`Nonexistent`, `PermissionDenied`) is raised here, not
+      deferred into the chain.
+
+entry .Substantiable   the typeclass behind `existent()`: whether a value names something which exists
+  detail
+      `path.existent()` is defined for any `Substantiable` value. Galilei's instance,
+      `.substantiable`, serves every `Path on <platform>`: it is total (never raises) and
+      follows a final symlink, so a dangling link does not exist. A path the `Fdtable` in
+      scope governs exists as far as this process is concerned, without the filesystem being
+      asked. Hellenism supplies another instance, for a `Path on Classpath`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+
+      val path: Path on Linux = unsafely((% / "tmp").on[Linux])
+      path.existent()   // true
+      ```
+  refer galilei.existent
+  entry .substantiable   the `Substantiable` for any platform path, through the backend's `exists`
+  entry #existence   whether the value exists
+
+entry .existent   `value.existent()`: whether a path (or any `Substantiable`) names an existing entry
+    An extension on any `Substantiable` value. For a `Path on <platform>` it needs only a
+    `FilesystemBackend` and never raises: a missing, unreadable or dangling entry is
+    `false`. Inside an `open[Directory]` block the corresponding operation on a handle's
+    path is `extant()`, named differently because a lexically imported extension would
+    shadow it.
+
+entry .children   `path.children`: a directory's immediate entries, as paths
+    An extension on any `Path on <plane: Filesystem>`, needing the plane's `Explorable` and a
+    `Tactic[Io.Error]`. The result is a `Chain[Path on plane]` of the entries' full paths, in
+    the order the backend lists them (unsorted); each name is well-formed by construction,
+    since it came from a real directory entry. A missing or unreadable directory raises
+    `Io.Error` (`Nonexistent`, `PermissionDenied`), and a non-directory lists as empty on
+    the JVM.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import filesystemBackends.javaBaseFilesystem
+    import strategies.throwUnsafely
+
+    val home: Path on Linux = (% / "tmp").on[Linux]
+    home.children.map(_.name)
+    ```
+
+entry .descendants   `path.descendants`: every entry beneath a directory, in the `TraversalOrder` in scope
+    An extension on any `Path on <plane: Filesystem>`, needing a `DereferenceSymlinks`, a
+    `TraversalOrder` (from `filesystemTraversal`) and the plane's `Explorable`, and raising
+    `Io.Error`. The result is a lazy `Chain[Path on plane]`: with `preOrderTraversal` each
+    directory precedes its contents, with `postOrderTraversal` it follows them. With
+    `preserveSymlinks` a linked directory is not descended into.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import filesystemBackends.javaBaseFilesystem
+    import filesystemOptions.dereferenceSymlinks
+    import filesystemTraversal.preOrderTraversal
+    import strategies.throwUnsafely
+
+    val root: Path on Linux = (% / "tmp" / "project").on[Linux]
+    root.descendants.filter(_.name.ends(t".scala")).to[List]
+    ```
+
+entry .glob   `path.glob(pattern)`: the entries beneath a directory which a `Glob` matches
+    An extension on any `Path on <plane: Filesystem>`, needing the plane's `Explorable`, a
+    `DereferenceSymlinks` and a backend, and raising `Io.Error`. The pattern is relative to
+    the path, which should name a directory, and is expanded segment by segment: each
+    ordinary segment filters the current directories' children by match (`*` and `?` within
+    a name, `[bd]` a character class), and a segment which is exactly `**` matches any
+    number of intermediate directories. Only the directories on the pattern's spine are
+    listed, so `sub1/*.jar` never walks `sub2`. A `**` mixed into a segment (`a**b`) matches
+    within a single name, as `*` does. The result is a distinct `List[Path on plane]`.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import filesystemBackends.javaBaseFilesystem
+    import filesystemOptions.dereferenceSymlinks
+    import strategies.throwUnsafely
+
+    val root: Path on Linux = (% / "tmp" / "project").on[Linux]
+    root.glob(Glob.parse(t"*.jar"))          // the root's own jars
+    root.glob(Glob.parse(t"**/*.jar"))       // every jar at any depth
+    root.glob(Glob.parse(t"lib/[ab]*.jar"))  // jars under lib whose name starts with a or b
+    ```
+
+entry .write   `path.write(content)`: replaces the file's whole content, in one direct operation
+    An extension on any `Path on <plane: Filesystem>` taking anything `Streamable by Data`
+    (`Text`, `Data`, a `Chain[Data]`, a stream) and needing a `Tactic[Io.Error]`. The content
+    is aggregated and written at once, holding no handle and needing no scope; a file which
+    exists is replaced and one which does not is created, but a missing parent raises
+    `Io.Error` with `Nonexistent`. A path the `Fdtable` in scope governs is written through
+    its descriptor instead. `read[Text]` is the counterpart, through `Platform.pathReadable`.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import filesystemBackends.javaBaseFilesystem
+    import strategies.throwUnsafely
+
+    val file: Path on Linux = (% / "tmp" / "notes.txt").on[Linux]
+    file.write(t"Hello world")
+    file.read[Text]   // t"Hello world"
+    ```
+
+entry .expanse   `path.expanse(lambda)`: positional reads of a file within a scope, without mapping it
+    An extension on any `Path on <plane: Filesystem>`, needing a backend and a
+    `Tactic[Io.Error]`. The lambda receives a `zephyrine.Expanse` — `size`, and
+    `read(offset, length)`, each read independent of any sequential position — valid for
+    the scope of the call, after which the file is closed. Every backend implements it, so a
+    seek-oriented format reader needs neither `java.nio` nor a whole-file mapping, and files
+    beyond 2 GiB are addressable. A read overlapping the end of the file returns the bytes
+    which exist.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import filesystemBackends.javaBaseFilesystem
+    import strategies.throwUnsafely
+
+    val file: Path on Linux = (% / "tmp" / "data.bin").on[Linux]
+    file.expanse: expanse =>
+      (expanse.size, expanse.read(4L, 6).utf8)
+    ```
+
+entry .filesize   `path.filesize()`: the size of a file, or of everything beneath a directory, in `Bytes`
+    An extension on any `Path on <plane: Filesystem>`, needing the plane's `Explorable` and a
+    backend, and raising `Io.Error`. A file's size is its own; a directory's is its own
+    plus the sizes of all its descendants, walked without following symlinks. Named
+    `filesize` rather than `size` so that it does not compete with the collections' `size`
+    at the `soundness` umbrella.
+
+entry .delete   `path.delete()`: deletes an entry, recursing into a directory as the `DeleteRecursively` policy allows
+    An extension on any `Path on <plane: Filesystem>`, needing a `DeleteRecursively on
+    plane` (`filesystemOptions.deleteRecursively` or `deleteOnlyEmpty`), a backend, a
+    `Tactic[Io.Error]` and an `Io.Event is Loggable`. A missing entry raises `Io.Error`
+    with `Nonexistent`; a non-empty directory under `deleteOnlyEmpty` raises
+    `DirectoryNotEmpty`. Logs `Io.Event.Delete` and returns the path.
+
+entry .wipe   `path.wipe()`: deletes an entry if it exists, recursing as the `DeleteRecursively` policy allows
+    As `delete()`, but a missing entry is not an error, so `wipe()` is the idempotent
+    form: afterwards the path does not exist. With `deleteRecursively` it removes a whole
+    tree.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import filesystemBackends.javaBaseFilesystem
+    import filesystemOptions.deleteRecursively
+    import strategies.throwUnsafely
+
+    val build: Path on Linux = (% / "tmp" / "build").on[Linux]
+    build.wipe()
+    build.existent()   // false
+    ```
+
+entry .volume   `path.volume()`: the storage volume the entry is on, by name and filesystem type
+    An extension on any `Path on <plane: Filesystem>`, needing a backend and raising
+    `Io.Error`. The `Volume`'s `volumeType` (`ext4`, `apfs`, `btrfs`, `ntfs`, …) is what the
+    storage-axis extractors `Ext4`, `Apfs`, `Btrfs` and `Ntfs` test. WASI raises `Unsupported`.
+
+entry .entryIdentity   `path.entryIdentity`: the entry's device and inode numbers, or `Unset`
+    An extension on any `Path on <plane: Filesystem>`, needing a backend. A `Stat.Identity`
+    names a file uniquely on its device: two paths with equal identities are hard links to
+    one file. Total — `Unset`, rather than raising, where the platform does not record it
+    (WASI, and the JVM off POSIX). Named for `entry()` rather than plainly `identity`,
+    which would compete with proscenium's function wherever the umbrella is imported.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import filesystemBackends.javaBaseFilesystem
+
+    val a: Path on Linux = unsafely((% / "tmp" / "a").on[Linux])
+    val b: Path on Linux = unsafely((% / "tmp" / "b").on[Linux])
+    a.entryIdentity == b.entryIdentity   // true only if they are hard links to one file
+    ```
+
+entry .entry   `path.entry()`: what kind of entry the path names
+    An extension on any `Path on <plane: Filesystem>`, needing a `DereferenceSymlinks` and a
+    backend, and raising `Io.Error` (`Nonexistent` for an absent path). The result is one of
+    the `Entry` objects — `File`, `Directory`, `Symlink`, `Fifo`, `Sock`, `BlockDevice`,
+    `CharDevice` — and is `Symlink` only under `preserveSymlinks`; under
+    `dereferenceSymlinks` a link reports its target's kind.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import filesystemBackends.javaBaseFilesystem
+    import filesystemOptions.preserveSymlinks
+    import strategies.throwUnsafely
+
+    val path: Path on Linux = (% / "tmp").on[Linux]
+
+    path.entry() match
+      case Directory => t"a directory"
+      case File      => t"a file"
+      case Symlink   => t"a symbolic link"
+      case _         => t"something else"
+    ```
+
+entry .copyTo   `path.copyTo(destination)`: copies an entry to a path, consulting the policies in scope
+    An extension on any `Path on <plane: Filesystem>`, needing an `OverwritePreexisting on
+    plane`, a `DereferenceSymlinks`, a `CreateNonexistentParents on plane`, a backend, a
+    `Tactic[Io.Error]` and an `Io.Event is Loggable`. Under `failOnPreexisting` an existing
+    destination raises `AlreadyExists`; under `overwritePreexisting` it is removed first.
+    Under `requireParents` a missing parent raises `Nonexistent`. A directory is copied
+    as an empty directory (the JVM's `Files.copy`), not recursively. Logs `Io.Event.Copy`
+    and returns the destination.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import filesystemBackends.javaBaseFilesystem
+    import filesystemOptions.createNonexistentParents
+    import filesystemOptions.dereferenceSymlinks
+    import filesystemOptions.deleteRecursively
+    import filesystemOptions.overwritePreexisting
+    import strategies.throwUnsafely
+
+    val file: Path on Linux = (% / "tmp" / "notes.txt").on[Linux]
+    file.copyTo((% / "tmp" / "backup" / "notes.txt").on[Linux])
+    ```
+
+entry .copyInto   `path.copyInto(directory)`: copies an entry into a directory, keeping its name
+    As `copyTo(directory / path.name)`: the destination names the directory, and the
+    entry's own name is used beneath it. Needs an `OverwritePreexisting on plane`, a
+    `DereferenceSymlinks`, a backend and a `Tactic[Io.Error]`; parents are created, since
+    the destination directory is named explicitly.
+
+entry .moveTo   `path.moveTo(destination)`: moves an entry to a path, consulting the policies in scope
+    An extension on any `Path on <plane: Filesystem>`, needing an `OverwritePreexisting on
+    plane`, a `MoveAtomically`, a `DereferenceSymlinks`, a `CreateNonexistentParents on
+    plane`, a backend, a `Tactic[Io.Error]` and an `Io.Event is Loggable`. With
+    `moveAtomically` the move is a single rename, and one across volumes is `Unsupported`;
+    with `moveNonAtomically` it may be a copy and a delete. `AlreadyExists` and
+    `Nonexistent` arise under the strict policies as for `copyTo`. Logs `Io.Event.Move` and
+    returns the destination.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import filesystemBackends.javaBaseFilesystem
+    import filesystemOptions.createNonexistentParents
+    import filesystemOptions.dereferenceSymlinks
+    import filesystemOptions.deleteRecursively
+    import filesystemOptions.moveAtomically
+    import filesystemOptions.overwritePreexisting
+    import strategies.throwUnsafely
+
+    val draft: Path on Linux = (% / "tmp" / "draft.txt").on[Linux]
+    val renamed: Path on Linux = draft.moveTo((% / "tmp" / "final.txt").on[Linux])
+    ```
+
+entry .moveInto   `path.moveInto(directory)`: moves an entry into a directory, keeping its name
+    As `moveTo(directory / path.name)`. Needs an `OverwritePreexisting on plane`, a
+    `MoveAtomically`, a `DereferenceSymlinks`, a backend and a `Tactic[Io.Error]`; parents
+    are created.
+
+entry .hardLinkTo   `path.hardLinkTo(link)`: makes a hard link at `link` to this entry
+    An extension on any `Path on <plane: Filesystem>`, needing an `OverwritePreexisting on
+    plane`, a `CreateNonexistentParents on plane`, a backend, a `Tactic[Io.Error]` and an
+    `Io.Event is Loggable`. The receiver is the existing entry and the argument the new
+    name; afterwards both have the same `entryIdentity`. Logs `Io.Event.HardLink` and
+    returns the link's path.
+
+entry .symlinkTo   `path.symlinkTo(link)`: makes a symbolic link at `link` pointing at this path
+    An extension on any `Path on <plane: Filesystem>`, needing an `OverwritePreexisting on
+    plane`, a `CreateNonexistentParents on plane`, a backend, a `Tactic[Io.Error]` and an
+    `Io.Event is Loggable`. The receiver is the target and the argument the link, which is
+    created; the link stores the receiver's full text. Logs `Io.Event.Symlink` and returns
+    the link's path.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import filesystemBackends.javaBaseFilesystem
+    import filesystemOptions.createNonexistentParents
+    import filesystemOptions.deleteRecursively
+    import filesystemOptions.overwritePreexisting
+    import strategies.throwUnsafely
+
+    val target: Path on Linux = (% / "tmp" / "current.log").on[Linux]
+    target.symlinkTo((% / "tmp" / "latest.log").on[Linux])
+    ```
+
+entry .symlinkInto   `path.symlinkInto(directory)`: makes a symbolic link to this path inside a directory
+    As `symlinkTo(directory / path.name)`. Needs an `OverwritePreexisting on plane`, a
+    `MoveAtomically`, a `DereferenceSymlinks`, a backend and a `Tactic[Io.Error]`; parents
+    are created.
+
+entry .canonical   `path.canonical()`: the path as the filesystem knows it, every symbolic link resolved
+    An extension on any `Path on <plane: Filesystem>`, needing a backend and raising
+    `Io.Error`. The backend's `realPath` — `realpath(3)` — is rebuilt as a path on the same
+    plane, so two routes to one entry (through a symlink, or through `/tmp` and
+    `/private/tmp` on macOS) canonicalize to the same path, which is what a registry keyed
+    by path should store. The entry must exist (`Nonexistent` otherwise); a real path under
+    a different root (a Windows junction onto another drive) is `Unsupported`, as is WASI.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import filesystemBackends.javaBaseFilesystem
+    import strategies.throwUnsafely
+
+    val link: Path on Linux = (% / "tmp" / "latest.log").on[Linux]
+    link.canonical()   // the path of the file the link points at
+    ```
+
+entry .modified   `path.modified[Instant]()`: when the entry was last modified
+    An extension on any `Path on <plane: Filesystem>`, needing a backend and raising
+    `Io.Error`. The result type is chosen by the caller: any `Instantiable across Instants
+    from Long` — aviation's `Instant`, or a plain `Long` of epoch milliseconds through
+    `instantiables.epochMillisecondsInstantiable`. Follows a final symlink.
+
+entry .accessed   `path.accessed[Instant]()`: when the entry was last accessed
+    As `modified()`, for the access time; `noatime` mounts do not update it.
+
+entry .created   `path.created[Instant]()`: when a Windows entry was created
+    An extension on `Path on Windows` alone, since NTFS records creation times and most
+    POSIX filesystems do not. On a filesystem which does not record one it raises `Io.Error`
+    with `Unsupported`. On other platforms, `creation()` is the same accessor, gated on the
+    storage filesystem being `CreationTimed`.
+
+entry .creation   `path.creation[Instant]()`: the creation time of an entry on a `CreationTimed` filesystem
+    An extension on `Path on plane over <transport <: CreationTimed>` — a path whose storage
+    filesystem has been established, by matching `Btrfs(path)`, `Apfs(path)` or
+    `Ntfs(path)`, as one which records creation times. It is therefore total where
+    `Stat.created` is optional: an absent value here is a backend failure, reported as
+    `Io.Error` with `Unsupported`.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import filesystemBackends.javaBaseFilesystem
+    import instantiables.epochMillisecondsInstantiable
+    import strategies.throwUnsafely
+
+    val path: Path on Linux = (% / "tmp").on[Linux]
+
+    path match
+      case Apfs(path)  => path.creation[Long]()
+      case Btrfs(path) => path.creation[Long]()
+      case _           => 0L
+    ```
+
+entry .readable   `path.readable()` and `path.readable = false`: the entry's read permission for the current user
+    An extension on any `Path on <plane: Filesystem>`, needing a backend. It returns a
+    `FilesystemAttribute.Readable`, whose `apply()` is the current flag (total) and whose
+    `update` sets it, raising `Io.Error` with `PermissionDenied` if the platform refuses.
+
+entry .writable   `path.writable()` and `path.writable = false`: the entry's write permission for the current user
+    As `readable`, returning a `FilesystemAttribute.Writable`.
+
+entry .executable   `path.executable()` and `path.executable = true`: a POSIX entry's execute permission
+    An extension on `Path on <plane <: Posix>` alone, returning a
+    `FilesystemAttribute.Executable`; Windows has no execute bit.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import filesystemBackends.javaBaseFilesystem
+    import strategies.throwUnsafely
+
+    val script: Path on Linux = (% / "tmp" / "run.sh").on[Linux]
+    script.executable = true
+    script.executable()   // true
+    ```
+
+entry .hidden   `path.hidden()`: whether the entry is hidden by the platform's convention
+    A leading `.` in the name on POSIX, the hidden attribute on Windows. Needs a backend and
+    raises `Io.Error`.
+
+entry .touch   `path.touch()`: sets the entry's modification time to now
+    An extension on any `Path on <plane: Filesystem>`, needing a backend, a
+    `Tactic[Io.Error]` and an `Io.Event is Loggable`. Unlike the shell's `touch`, it does
+    not create a missing file: that raises `Nonexistent`. Logs `Io.Event.Touch` at `fine`.
+
+entry .hardLinks   `path.hardLinks()`: how many hard links point at a POSIX entry
+    An extension on `Path on <plane <: Posix>`, needing a `DereferenceSymlinks` and a
+    backend, and raising `Io.Error`. A freshly created file has one.
+
+entry .attributes   `path.attributes()`: the names of an entry's extended attributes
+    An extension on `Path on plane over <transport <: Attributed>` — a path whose storage
+    filesystem has been established, by matching `Ext4(path)`, `Btrfs(path)`, `Apfs(path)`
+    or `Ntfs(path)`, as one which supports user-defined attributes. Needs a backend and
+    raises `Io.Error`. Without the match the extension is not available: the type says
+    that the filesystem is unknown.
+
+entry .attribute   `path.attribute[Data](name)` reads an extended attribute; `path.attribute(name, data)` sets one
+    Two overloads, both on `Path on plane over <transport <: Attributed>`, needing a backend
+    and raising `Io.Error`. The reader is generic in its result, decoded through
+    `Aggregable by Data` (`Data`, `Text`), and gives `Unset` when the attribute is absent;
+    the setter takes the value as `Data`. On Linux the names are the `user.` namespace as
+    `java.nio`'s `UserDefinedFileAttributeView` presents them, without the prefix.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import filesystemBackends.javaBaseFilesystem
+    import strategies.throwUnsafely
+
+    val file: Path on Linux = (% / "tmp" / "tagged.txt").on[Linux]
+
+    file match
+      case Ext4(path) =>
+        path.attribute(t"origin", t"soundness".in[Data])
+        path.attribute[Data](t"origin").let(_.utf8)   // t"soundness"
+      case Apfs(path) =>
+        path.attribute(t"origin", t"soundness".in[Data])
+        path.attribute[Data](t"origin").let(_.utf8)
+      case _ => Unset
+    ```
+
+entry .subvolume   `path.subvolume()`: the btrfs subvolume an entry is stored in
+    An extension on `Path on plane over Btrfs`, needing a backend and raising `Io.Error`.
+    Btrfs gives every subvolume its own anonymous device number, so the subvolume's root is
+    found by ascending while the device number holds, from `stat` alone. The result is a
+    `Btrfs.Subvolume` naming that root; a platform which cannot report entry identity
+    raises `Unsupported`.
+
+entry .subvolumeRoot   `path.subvolumeRoot`: whether a btrfs entry is itself the root of a subvolume
+    An extension on `Path on plane over Btrfs`, needing a backend. Every btrfs subvolume
+    root is inode 256, so this is total, like `existent()`: an entry whose inode cannot be
+    read is not a subvolume root as far as anything gated on this can tell.
+
+entry .file   the contextual `Handle` inside an `open[File]` block, as a value
+    Within `path.open[File](mode): handle ?=> …` the handle is a contextual parameter; `file`
+    names it without declaring a binder, so `path.open[File]()(file.stream.read[Data])`
+    reads the open file. It is transparent inline, so the handle's precise grant-refined
+    type is kept: `file.write(…)` compiles only when the mode granted `Write`.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import filesystemBackends.javaBaseFilesystem
+    import strategies.throwUnsafely
+
+    val path: Path on Linux = (% / "tmp" / "notes.txt").on[Linux]
+    path.open[File]()(file.stream.read[Data]).utf8
+    ```
+
+entry .dir   the contextual `Directory.Handle` inside an `open[Directory]` block, as a value
+    As `file`, for a directory scope: `path.open[Directory]()(dir.base.entries)` lists the
+    opened directory without naming a binder.
+
+entry .Entry   what a filesystem entry can be: the common type of `File`, `Directory`, `Symlink` and the rest
+  detail
+      `path.entry()` and `Stat#entry` answer with one of the entry objects: `File`,
+      `Directory`, `Symlink`, `Fifo`, `Sock`, `BlockDevice`, `CharDevice`. `UnixEntry` and
+      `WindowsEntry` are the two subsets — `File`, `Directory` and `Symlink` exist on both,
+      the others on Unix only — so a match over a Windows path's entries need not handle
+      a FIFO. Each object is also the *form* of the same name passed to `open` and `create`
+      (`open[File]`, `create[Directory]`): the kind of a thing and the way it is opened share
+      a name.
+  refer galilei.entry
+  refer galilei.File
+  refer galilei.Directory
+
+entry .UnixEntry   an entry kind which exists on Unix: `File`, `Directory`, `Symlink`, `Fifo`, `Sock`, `BlockDevice`, `CharDevice`
+
+entry .WindowsEntry   an entry kind which exists on Windows: `File`, `Directory` or `Symlink`
+
+entry .File   a regular file, as an entry kind and as the form opened or created for its content
+  detail
+      As the object `File`, it is what `entry()` returns for a regular file. As the trait
+      `File`, it is the form of `path.open[File](mode, flags*)`, which yields a `Handle` over
+      the file's content for the block (see `FileOpenable`), of `path.create[File](flags*)`,
+      which makes an empty file or authors one within a scope (see
+      `Creation.FileCreatable`), and of `Slice(path, offset, extent).open[File](…)`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import strategies.throwUnsafely
+
+      val path: Path on Linux = (% / "tmp" / "notes.txt").on[Linux]
+
+      path.create[File](): handle ?=>
+        handle.write(Chain(t"payload".in[Data]))
+
+      path.open[File](Read & Write): handle ?=>
+        handle.write(Chain(t"more".in[Data]))
+
+      locally:
+        import filesystemOptions.dereferenceSymlinks
+        path.entry() == File
+      ```
+  refer galilei.FileOpenable
+  refer galilei.Handle
+  refer galilei.Creation
+
+entry .Directory   a directory, as an entry kind and as the form opened for scoped, confined access
+  detail
+      As the object `Directory`, it is what `entry()` returns for a directory. As the trait
+      `Directory`, it is the form of `path.open[Directory](mode)`, which runs a block with a
+      `Directory.Handle`: paths derived from the handle (`dir / "src" / "main.scala"`) live
+      on a fresh plane of the handle's own, so `..` does not compile, a path from one open
+      directory cannot be used under another, and nothing derived from the handle survives
+      the block. Within the scope the subtree operations are `contents`, `overwrite`,
+      `extant`, `entries` and `remove` (see `Subtree`), each gated by the grants the mode
+      selected. `path.create[Directory](flags*)` makes a directory, or authors one within
+      the same kind of scope.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import strategies.throwUnsafely
+
+      val project: Path on Linux = (% / "tmp" / "project").on[Linux]
+
+      project.open[Directory](Read & Write): dir ?=>
+        (dir / "greeting.txt").overwrite(t"Hello directory")
+        (dir / "greeting.txt").contents[Text]
+        dir.base.entries.map(_.name)
+      ```
+
+      Opening verifies that the entry exists and is a directory (`Io.Error` with
+      `IsNotDirectory` otherwise) and enrols the scope in the `AccessRegister`: any number of
+      overlapping `Read` and `Write` scopes may coexist, but an `Exclusive` scope conflicts
+      with any other open of an overlapping subtree, in either direction, and the second
+      open raises `Io.Error` with `Busy`.
+  refer galilei.Subtree
+  refer galilei.AccessRegister
+  refer galilei.Scratch
+  entry .Handle   the capability an `open[Directory]` block holds: a fresh plane rooted at the directory
+    detail
+        Each handle's `#Plane` is a fresh abstract subtype of `Subtree`, so paths formed
+        within the scope are typed on that handle alone; `#Under` is the real platform
+        beneath it and `#stem` the real directory. `dir / "name"` builds a path on the fresh
+        plane, and `#base` is the plane's root (the directory itself). The handle is an
+        exclusive capability, so it cannot be stored or returned.
+    entry #Plane   the handle's own fresh plane, a subtype of `Subtree`
+    entry #Under   the real platform the directory is on
+    entry #stem   the real path of the opened directory
+    entry #atoms   the `Mode` atoms the handle was opened with, for runtime attenuation and register checks
+    entry #base   the root of the handle's plane: the opened directory, as a `Path on Plane`
+        `dir.base.entries` lists the directory itself.
+    entry #/   `dir / "name"`: a path beneath the directory, on the handle's plane
+        A method rather than an extension, so that generic `/` extensions in lexical scope
+        do not shadow it. The name is checked against `Subtree.Rules` as the code compiles:
+        `dir / ".."` does not compile.
+    entry #resolve   the real path a handle-plane path denotes, beneath `#stem`
+        What the subtree operations call to reach the disk; public because they are
+        transparent inline.
+  entry .Openable   the `Openable` instance behind `path.open[Directory](mode)`
+    detail
+        A named class, instantiated by `Platform.directoryOpenable` for any platform path.
+        It needs a backend and a `Tactic[Io.Error]`, takes no flags, and its result is a
+        `Directory.Handle { type Under = filesystem }` refined with the mode's grants.
+    entry #open   checks the entry is a directory, acquires the register, and runs the block with a handle
+
+entry .Fifo   a named pipe, as an entry kind and as the form `create[Fifo]()` makes
+    As the object `Fifo`, what `entry()` returns for a FIFO. As the trait `Fifo`, the form of
+    `path.create[Fifo](flags*)`, which makes the pipe (through `mkfifo` on the JVM;
+    `Unsupported` on WASI). Only the instantiating form exists: authoring a FIFO within its
+    creation scope is refused as `Unsupported`, since opening either end blocks until a peer
+    appears.
+
+entry .BlockDevice   a block device node, as an entry kind
+    What `entry()` returns for a block device. The object is the entry kind and the trait a
+    marker; `Device.create` (JVM) makes one.
+
+entry .CharDevice   a character device node, as an entry kind
+    What `entry()` returns for a character device, such as a terminal.
+
+entry .Symlink   a symbolic link, as an entry kind, and a value naming one by its path
+  detail
+      The object `Symlink` is what `entry()` returns for a link under `preserveSymlinks`;
+      under `dereferenceSymlinks` a link reports its target's kind instead. The case class
+      `Symlink[plane](path)` carries a link's path as a value, and inspects as
+      `symlink:<path>`. Links are made with `symlinkTo` and `symlinkInto`, and their stored
+      text read with `FilesystemBackend#linkTarget`.
+  refer galilei.symlinkTo
+  entry #path   the link's path
+
+entry .Sock   a Unix-domain socket, as an entry kind, and a bound socket's channel
+  detail
+      The object `Sock` is what `entry()` returns for a socket file. The case class
+      `Sock(channel)` is the value a `create[Sock]` scope holds on the JVM: the live, bound
+      `ServerSocketChannel`, closed when the scope ends (see `socketCreatable`).
+  entry #channel   the bound `java.nio.channels.ServerSocketChannel`
+
+entry .Stat   an entry's metadata in one value: its kind, size, timestamps and inode fields
+  detail
+      What `FilesystemBackend#stat` returns, and what `entry()`, `filesize()`, `modified()`
+      and `accessed()` each read one field of. Timestamps are epoch milliseconds. `created`
+      is `Unset` on filesystems which do not record creation times (most POSIX filesystems,
+      and WASI). `mode` is the whole `st_mode` — the type bits as well as the permissions,
+      as `ar` stores it — and `device` is `st_rdev`, meaningful only for a device node; all
+      four inode fields are `Unset` where the platform has no Unix inode (Windows, WASI).
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import strategies.throwUnsafely
+
+      val backend: FilesystemBackend on Linux = summon[FilesystemBackend on Linux]
+      val path: Path on Linux = (% / "tmp").on[Linux]
+      val stat: Stat = backend.stat(path, true)
+      stat.entry == Directory
+      ```
+  entry .Identity   an entry's identity on its device: the device number and the inode number
+    detail
+        Two paths with equal identities are hard links to one file. Btrfs's subvolume
+        boundaries are read from the device number (every subvolume has its own) and every
+        btrfs subvolume root is inode 256. `Path#entryIdentity` reads one.
+    entry #device   the device number (`st_dev`)
+    entry #inode   the inode number (`st_ino`)
+  entry #entry   the entry's kind: `File`, `Directory`, `Symlink`, `Fifo`, `Sock`, `BlockDevice` or `CharDevice`
+  entry #size   the size in bytes
+  entry #modified   the last modification time, in epoch milliseconds
+  entry #accessed   the last access time, in epoch milliseconds
+  entry #created   the creation time, in epoch milliseconds, or `Unset` where unrecorded
+  entry #mode   the whole `st_mode`, type bits included, or `Unset` without a Unix inode
+  entry #user   the owner's numeric user ID, or `Unset`
+  entry #group   the owning group's numeric ID, or `Unset`
+  entry #device   `st_rdev`, the device a device node refers to, or `Unset`
+
+entry .Volume   a storage volume: its name and filesystem type
+  detail
+      What `path.volume()` returns: on the JVM, the `FileStore`'s name (`/dev/sda1`, say) and
+      type (`ext4`, `apfs`, `btrfs`, `ntfs`). Inspects as `volume[name:type]`. The storage
+      axis extractors compare the type, lowercased, against their filesystem's name.
+  entry #name   the volume's name, as the platform reports it
+  entry #volumeType   the filesystem type, as the platform reports it
+
+entry .CreationTimed   the storage filesystems which record creation times: `Btrfs`, `Apfs`, `Ntfs`
+    A sealed marker in the storage-filesystem axis of a path's type. A path matched as
+    `Path on plane over <transport <: CreationTimed>` gains the total `creation()`
+    accessor, where `Stat#created` is optional because most POSIX filesystems record none.
+
+entry .Attributed   the storage filesystems which support extended attributes: `Btrfs`, `Ext4`, `Apfs`, `Ntfs`
+    A sealed marker in the storage-filesystem axis. A path matched as `Path on plane over
+    <transport <: Attributed>` gains `attributes()` and the two `attribute` accessors.
+
+entry .Btrfs   the btrfs storage filesystem: an extractor which types a path as stored on btrfs
+  detail
+      Which filesystem an entry is stored on determines which metadata it can carry,
+      orthogonally to its platform, and a path cannot know it from its syntax. So the axis
+      is established by runtime probing, through each filesystem's extractor: `case
+      Btrfs(path) =>` binds `path` as `Path on plane over Btrfs`, a refinement which unlocks
+      the gated extensions `subvolume()`, `subvolumeRoot`, `attributes()`, `attribute` and
+      `creation()`. The probe is `path.volume().volumeType`, lowercased; a probe which fails
+      (an unreadable volume, or WASI) simply does not match. `Btrfs` is both `CreationTimed`
+      and `Attributed`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import strategies.throwUnsafely
+
+      val path: Path on Linux = (% / "home").on[Linux]
+
+      path match
+        case Btrfs(path) => path.subvolume().root.encode
+        case Ext4(path)  => t"ext4, no subvolumes"
+        case _           => t"something else"
+      ```
+  refer galilei.subvolume
+  refer galilei.Ext4
+  refer galilei.Apfs
+  refer galilei.Ntfs
+  entry .unapply   matches a path stored on btrfs, typing it `Path on plane over Btrfs`
+      Needs a `FilesystemBackend on plane`. Returns an `Option`, as a Scala extractor must.
+  entry .Subvolume   a btrfs subvolume, named by the directory it is rooted at
+    detail
+        What `subvolume()` returns. Btrfs partitions one filesystem into
+        independently-snapshottable subtrees, so an entry's subvolume is part of where it is
+        stored. The subvolume's numeric ID, UUID and generation are not carried: btrfs exposes
+        those only through an `ioctl` no backend can issue, whereas the root is recoverable
+        from `stat` alone.
+    entry #root   the subvolume's root directory, as a `Path on plane over Btrfs`
+
+entry .Ext4   the ext4 storage filesystem: an extractor which types a path as stored on ext4
+  detail
+      `case Ext4(path) =>` binds `path` as `Path on plane over Ext4`, which is `Attributed`
+      (so `attribute` and `attributes()` apply) but not `CreationTimed`. The probe is
+      `path.volume().volumeType`; it needs a `FilesystemBackend on plane`. See `Btrfs` for
+      the axis.
+  entry .unapply   matches a path stored on ext4, typing it `Path on plane over Ext4`
+
+entry .Apfs   the APFS storage filesystem: an extractor which types a path as stored on APFS
+  detail
+      `case Apfs(path) =>` binds `path` as `Path on plane over Apfs`, which is both
+      `CreationTimed` and `Attributed`: macOS records creation times and supports extended
+      attributes. Needs a `FilesystemBackend on plane`. See `Btrfs` for the axis.
+  entry .unapply   matches a path stored on APFS, typing it `Path on plane over Apfs`
+
+entry .Ntfs   the NTFS storage filesystem: an extractor which types a path as stored on NTFS
+  detail
+      `case Ntfs(path) =>` binds `path` as `Path on plane over Ntfs`, both `CreationTimed`
+      and `Attributed`. Meaningful under `Windows`, and under `Linux` for a mounted NTFS
+      volume. Needs a `FilesystemBackend on plane`. See `Btrfs` for the axis.
+  entry .unapply   matches a path stored on NTFS, typing it `Path on plane over Ntfs`
+
+entry .FilesystemAttribute   the typed views of an entry's coarse permission flags, read with `()` and set with `=`
+  detail
+      `path.readable`, `path.writable` and `path.executable` each return one of these: a
+      small object over the path whose `apply()` reads the flag (total, from the current
+      user's perspective) and whose `update` sets it, so the syntax is `path.readable()` and
+      `path.readable = false`. Setting raises `Io.Error` with `PermissionDenied` if the
+      platform refuses (or `Unsupported` on WASI).
+  refer galilei.readable
+  refer galilei.writable
+  refer galilei.executable
+  entry .Readable   the read flag of a path on any platform
+    entry #apply   whether the current user may read the entry
+    entry #update   sets the read flag, raising `Io.Error` if refused
+  entry .Writable   the write flag of a path on any platform
+    entry #apply   whether the current user may write the entry
+    entry #update   sets the write flag, raising `Io.Error` if refused
+  entry .Executable   the execute flag of a path on a POSIX platform
+    entry #apply   whether the current user may execute the entry
+    entry #update   sets the execute flag, raising `Io.Error` if refused
+
+entry .Handle   an open file's endpoints, held for the scope of an `open[File]` or `create[File]` block
+  detail
+      A `Handle` is the capability an `open[File]` block holds: the whole content as a chain
+      (`#reader`, `#writer`) and the streaming forms (`#source`, `#intake`) the backend serves
+      from its own buffers. It is an exclusive capability, so it cannot be stored, returned
+      or captured, and the file is closed when the block ends. What may be done with it is
+      in its type: the mode's `Grant`s refine it, so `handle.write(…)` on a handle opened with
+      `Read` alone does not compile, and the `Streamable`, `Writable` and `Sink` givens in the
+      companion are each bounded by the grant they need.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import strategies.throwUnsafely
+
+      val path: Path on Linux = (% / "tmp" / "notes.txt").on[Linux]
+
+      path.open[File](Read & Write, OpenFlag.Create): handle ?=>
+        handle.write(Chain(t"Hello".in[Data]))
+
+      path.open[File](): handle ?=>
+        handle.stream.read[Data].utf8   // t"Hello"
+      ```
+
+      A read or write the file cuts short raises `Truncation.Error`, taken as a tactic at
+      the call rather than when the handle was made; `path.read` and `path.write` map it to
+      `Io.Error` with `Reason.Physical`. `#read` and `#write` are extensions as well as
+      typeclass givens, because summoning a typeclass on a scoped capability's refined type
+      can fail under capture checking; the extensions resolve the typeclass on the source
+      or result type instead.
+  refer galilei.FileOpenable
+  refer galilei.File
+  refer galilei.file
+  entry .whole   a handle over whole-chunk endpoints alone, for a source which is not a file of this process
+      `Handle.whole(reader, writer)` builds a handle from a function yielding the whole
+      content and one accepting it, with the streaming forms derived. It is what an
+      `Fdtable.Descriptor` supplies for a client's descriptor carried to a daemon.
+  entry .streamable   a handle granting `Read` is `Streamable by Data`, so `read[T]` and `stream` work on it
+      Retains the `Tactic[Truncation.Error]` it is summoned under.
+  entry .writable   a handle granting `Write` is `Writable by Data`, so a stream may be written to it
+      Retains the `Emit[Truncation.Error]` it is summoned under.
+  entry .sink   a handle granting `Write` is a `Sink by Data over Credit`
+  entry .stream   `handle.stream`: the whole content as a `Chain[Data]`, on a handle granting `Read`
+  entry .read   `handle.read[T]`: the content decoded as `T`, on a handle granting `Read`
+      Through any `Chain[Data] is Readable to T` — `Data`, `Text`, or a format's reader —
+      under a `Tactic[Truncation.Error]`.
+  entry .write   `handle.write(source)`: writes anything `Streamable by Data`, on a handle granting `Write`
+      A `Chain[Data]`, a `Text`, a `Data` or a stream; pumped into the handle's intake under
+      an `Emit[Truncation.Error]`.
+  entry #reader   the whole content as a `Chain[Data]`
+  entry #writer   writes a `Chain[Data]` as the content
+  entry #source   the content as a `Stream[Data] over Credit`, served from the backend's buffers
+  entry #intake   an `Intake[Data] over Credit` which writes to the file
+
+entry .FileOpenable   the `Openable` instance behind `path.open[File](mode, flags*)`
+  detail
+      A named class, instantiated by `Platform.openable` for any platform path; it needs a
+      backend, a `Tactic[Io.Error]`, a `Umask` and an `Every[Fdtable]`. The mode's atoms
+      become `OpenFlag`s — `Read`, `Write` — and the block receives a `Handle` refined with
+      the mode's grants. `Exclusive` is not translated to `OpenFlag.Exclusive` (POSIX
+      `O_EXCL` governs exclusive *creation*): instead it enrols the open in the
+      `AccessRegister`, so file opens participate in the same in-process arbitration as
+      directory scopes, and adds `OpenFlag.Lock` so the backend takes an OS advisory lock
+      for the cross-process case. `Shared` does the same with `OpenFlag.LockShared`. A
+      conflicting open raises `Io.Error` with `Busy`, unless `OpenFlag.Await` asks it to wait.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import strategies.throwUnsafely
+
+      val path: Path on Linux = (% / "tmp" / "ledger.dat").on[Linux]
+
+      path.open[File](Read & Exclusive, OpenFlag.Await): handle ?=>
+        handle.stream.read[Data]
+      ```
+
+      A path the `Fdtable` in scope governs (`/dev/fd/3`, say) is opened through the table,
+      before the filesystem, the register or the backend is consulted.
+  refer galilei.Handle
+  refer galilei.OpenFlag
+  refer galilei.Shared
+  entry #open   opens the file with the mode's flags, under the register and lock the mode asks for
+
+entry .OpenFlag   the platform-neutral options for opening a file's content
+  detail
+      `Read` and `Write` are contributed by the `open` call's `Mode`, `Append` by opening an
+      `Eof(path)`, and the rest may be passed after the mode: `path.open[File](Write,
+      OpenFlag.Create, OpenFlag.Truncate)`. All are interpreted by the `FilesystemBackend`.
+
+      - `Create`: create the file if it does not exist (under the `Umask` in scope);
+        without it, opening a missing file raises `Nonexistent`.
+      - `Exclusive`: with `Create`, fail with `AlreadyExists` if the file exists (`O_EXCL`).
+      - `Truncate`: empty the file on opening.
+      - `Sync`, `Dsync`: synchronous writes, of data and metadata or of data alone.
+      - `NoFollow`: refuse to open through a symbolic link.
+      - `Lock`, `LockShared`: hold an OS advisory lock for the duration of the open,
+        exclusive or shared. Added by `FileOpenable` when the mode grants `Exclusive` or
+        `Shared`; backends which cannot lock (WASI) refuse the open as `Unsupported` rather
+        than silently not locking.
+      - `Await`: block until the lock and the in-process registration can be acquired,
+        rather than failing at once with `Busy`.
+
+      `Read` and `Append` cannot be combined on a JVM `FileChannel`.
+  refer galilei.FileOpenable
+
+entry .Shared   the shared-lock mode: `path.open[File](Read & Shared)`
+  detail
+      A third `Mode` beside aperture's `Read`, `Write` and `Exclusive`, and a filesystem
+      concern, so it is defined here. Any number of `Shared` opens of one file may coexist,
+      across processes through a shared OS advisory lock, but a `Shared` open conflicts with
+      an `Exclusive` one in either direction: an exclusive open waits for the shared holders
+      (with `OpenFlag.Await`) or fails at once with `Busy`. `Read` deliberately does not
+      imply it: taking even a shared lock would make every ordinary read contend with
+      exclusive lockers.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import strategies.throwUnsafely
+
+      val path: Path on Linux = (% / "tmp" / "ledger.dat").on[Linux]
+
+      path.open[File](Read & Shared): handle ?=>
+        handle.stream.read[Data]
+      ```
+  entry .Grant   the grant a `Shared` mode confers, for a handle's type
+
+entry .Creation   the `Creatable` instances behind `path.create[Directory]`, `create[File]` and `create[Fifo]`
+  detail
+      `path.create[Directory]()` and `path.create[File]()` instantiate an empty entry; the
+      block forms — `path.create[Directory](): dir ?=> …`, `path.create[File](): handle ?=>
+      …` — author the newborn entry, a fresh-plane `Directory.Handle` for a directory and a
+      write `Handle` for a file, with the guarantee that an exception escaping the scope
+      leaves nothing behind. Both consult the `Umask` in scope and the `CreateFlag`s given:
+      without `Parents` a missing parent is `Nonexistent`, without `Replace` an existing
+      entry is `AlreadyExists`. Each logs `Io.Event.Create`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import strategies.throwUnsafely
+
+      val target: Path on Linux = (% / "tmp" / "payload.bin").on[Linux]
+
+      target.create[File](CreateFlag.Replace): handle ?=>
+        handle.write(Chain(t"payload".in[Data]))
+
+      (% / "tmp" / "inner").on[Linux].create[Directory](): dir ?=>
+        (dir / "inner.txt").overwrite(t"hello")
+      ```
+
+      The instances are instantiated by `Platform.fileCreatable`, `directoryCreatable` and
+      `fifoCreatable`, so no import is needed; the object is reached directly only for
+      `.wipe`.
+  refer galilei.CreateFlag
+  refer galilei.Umask
+  refer galilei.File
+  refer galilei.Directory
+  entry .wipe   `Creation.wipe(path)`: deletes an entry and, recursively, everything beneath it
+      The recursive deletion a failed creation scope and `CreateFlag.Replace` perform,
+      public so that other scoped cleanups can share it. It takes no `DeleteRecursively`
+      policy — recursion is its purpose — and raises `Io.Error`. The policy-governed
+      path operation is `wipe()`.
+  entry .DirectoryCreatable   creates a directory, or authors one within a scope over a fresh-plane handle
+    detail
+        The instance for `create[Directory]`. Its grants are `Read & Write`, and its result a
+        `Directory.Handle { type Under = filesystem }`. The newborn directory has a
+        caller-chosen, visible name, so unlike a `Scratch` scope it participates in the
+        `AccessRegister` like any open directory, and a conflicting open raises `Busy`. A
+        throwable escaping the block wipes the directory before propagating.
+    entry #make   creates the directory, honouring `Parents` and `Replace` and the `Umask`
+    entry #create   creates the directory and runs the block with a handle over it, wiping it on failure
+  entry .FileCreatable   creates an empty file, or authors one into a temporary sibling moved into place on success
+    detail
+        The instance for `create[File]`. The scoped form writes the content into a
+        temporary sibling (the target's name with a leading `.` and a `part` suffix) and
+        moves it onto the target atomically when the block completes: creation is the one
+        moment atomic replacement is free, since nothing can yet hold the path. A
+        throwable escaping the block deletes the sibling, so the target never exists
+        half-written. Without `Replace`, an existing target is `AlreadyExists` before any
+        write.
+    entry #make   creates an empty file, honouring `Parents` and `Replace` and the `Umask`
+    entry #create   stages the block's writes in a sibling and moves it onto the target on success
+  entry .FifoCreatable   creates a named pipe; the scoped form is refused
+    detail
+        The instance for `create[Fifo]`. Only `#make` does anything: `#create` raises
+        `Io.Error` with `Unsupported`, since opening either end of a FIFO blocks until a
+        peer appears, so a scoped handle could never be provided safely.
+    entry #make   creates the FIFO, honouring `Parents` and `Replace` and the `Umask`
+    entry #create   raises `Io.Error` with `Unsupported`
+
+entry .Scratch   the forms for transient working directories and files, created fresh and removed when the scope ends
+  detail
+      `parent.open[Scratch](Read & Write)` creates a fresh, uniquely-named directory beneath
+      `parent`, provides a `Directory.Handle` over it for the block, and deletes it — and
+      everything created within it — when the block ends, however it ends. The lifetime of
+      the directory *is* the scope, and the fresh-plane machinery guarantees that no path
+      into it survives beyond it, so the deletion is always sound. The handle's `stem` is
+      the directory's real path, for the rare tool which must be told it.
+
+      `parent.open[Scratch.File](Read & Write)` is the file form: a fresh, uniquely-named
+      file beneath `parent`, whose handle is a `Handle` which also knows its `path`
+      (`Scratch.Located`), for a tool which must be told where the file is — a throwaway
+      index, a fixture. Both need a backend and a `Tactic[Io.Error]`; the file form also
+      takes the `Umask` in scope and any `OpenFlag`s. The parent must be a directory
+      (`IsNotDirectory` otherwise).
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import strategies.throwUnsafely
+
+      val base: Path on Linux = (% / "tmp").on[Linux]
+
+      base.open[Scratch](Read & Write): scratch ?=>
+        (scratch / "work.txt").overwrite(t"data")
+        (scratch / "work.txt").contents[Text]
+
+      base.open[Scratch.File](Read & Write): file ?=>
+        file.write(Chain(t"data".in[Data]))
+        file.path.read[Text]   // t"data", until the scope ends
+      ```
+
+      A scratch directory needs no `AccessRegister` arbitration: no other scope can denote
+      its fresh name.
+  refer galilei.Directory
+  refer galilei.Handle
+  entry .ScratchOpenable   the `Openable` instance behind `path.open[Scratch](mode)`
+    detail
+        A named class, instantiated by `.openable` for any platform path. Its result is a
+        `Directory.Handle { type Under = filesystem }` over the new directory, created with
+        the process's own mask.
+    entry #open   creates a uniquely-named directory beneath the path, runs the block, and wipes it
+  entry .openable   `path.open[Scratch](mode)` for any platform path, needing a backend and a `Tactic[Io.Error]`
+  entry .File   the form for a scratch file: `parent.open[Scratch.File](mode, flags*)`
+      The handle is a `Handle & Scratch.Located[filesystem]`, so `file.path` is the file's
+      real path for the duration of the block, after which the file is deleted.
+  entry .Located   a handle which knows the path of the file it is over
+    detail
+        Mixed into a scratch file's handle, so that `file.path` is available beside the
+        usual `Handle` endpoints.
+    entry #path   the real path of the scratch file
+  entry .ScratchFileOpenable   the `Openable` instance behind `path.open[Scratch.File](mode, flags*)`
+    detail
+        A named class, instantiated by `.fileOpenable`. It creates the file with
+        `OpenFlag.Create` and the mode's flags under the `Umask` in scope, and deletes it
+        when the block ends.
+    entry #open   creates a uniquely-named file beneath the path, runs the block with its handle, and deletes it
+  entry .fileOpenable   `path.open[Scratch.File](…)` for any platform path, needing a backend, a tactic and a `Umask`
+
+entry .Slice   a byte range of a file, opened as a windowed view and optionally range-locked
+  detail
+      `Slice(path, offset, extent)` is a subject for `open`: `Slice(path, 0L,
+      1024L).open[File](Read & Write & Exclusive): window ?=> …` opens the file and hands the
+      block a `Slice.Window` confined to `[offset, offset + extent)`. The window's `size` is
+      the window's, reads are relative to its start and clamped to it, and writes store as
+      much as fits and return the count, in the manner of `pwrite`, so a write cannot stray
+      outside its range. An `Exclusive` or `Shared` mode takes an OS advisory lock over
+      exactly that range and enrols the range in the `AccessRegister`, where it conflicts
+      only with overlapping ranges — a whole-file open overlaps every range. Opened without a
+      locking mode, a slice is simply a windowed view, which even lockless backends (WASI)
+      support.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import strategies.throwUnsafely
+
+      val path: Path on Linux = (% / "tmp" / "records.dat").on[Linux]
+
+      Slice(path, 4L, 6L).open[File](Read & Write & Exclusive): window ?=>
+        window.write(2L, t"XY".in[Data])   // 2: stored at offset 6 of the file
+        window.read(0L, 6)
+      ```
+
+      The `read` and `write` extensions are gated by the mode's grants, as `Ram`'s are.
+  refer galilei.FileOpenable
+  refer galilei.expanse
+  refer galilei.AccessRegister
+  entry .Window   the handle for an open slice: a positional view windowed to its range
+    detail
+        `#size` is the window's extent, clamped to the file; `#readFrom` and `#writeTo` are
+        the operational methods, already windowed, which the grant-gated `.read` and `.write`
+        extensions call.
+    entry #size   the bytes available in the window, `min(extent, fileSize - offset)`
+    entry #readFrom   reads up to `length` bytes at an offset within the window, clamped to it
+    entry #writeTo   stores as much of `data` as fits at an offset within the window; how many bytes were written
+  entry .read   `window.read(offset, length)`: a positional read, on a window granting `Read`
+  entry .write   `window.write(offset, data)`: a positional write returning the count stored, on a window granting `Write`
+      Clamped to the window's extent, so a caller storing near the boundary observes the
+      truncation rather than losing data silently; a write at or past the end stores
+      nothing and returns `0`.
+  entry .SliceOpenable   the `Openable` instance behind `slice.open[File](mode, flags*)`
+    detail
+        A named class instantiated by `.openable`. It translates the mode to `OpenFlag`s,
+        acquires the range in the register (or waits, with `OpenFlag.Await`), asks the
+        backend for the windowed view, and mixes the grants into the window it hands the
+        block. A conflict raises `Io.Error` with `Busy`.
+    entry #open   opens the slice under the register and lock the mode asks for, and runs the block
+  entry .openable   `slice.open[File](…)` for a slice on any plane, needing a backend and a `Tactic[Io.Error]`
+  entry #path   the file the slice is of
+  entry #offset   where the window starts, in bytes from the file's start
+  entry #extent   the window's length in bytes
+
+entry .Subtree   the common upper bound of every `Directory.Handle`'s fresh plane, and the operations on its paths
+  detail
+      Every opened directory's handle has a `Plane` which is a fresh subtype of `Subtree`.
+      Serpentine givens defined generically over `plane <: Subtree` supply the naming rules
+      for paths on any handle's plane, so `dir / "name"` validates its names as the code
+      compiles: `.` and `..` are inadmissible, making escape from an opened directory
+      inexpressible rather than checked. Deliberately, a subtree plane has no `Filesystem`
+      instance, so galilei's absolute-path operations (`read`, `write`, `delete`, `children`)
+      cannot apply to a subtree path, which would resolve it against the working directory
+      instead of the handle; the subtree operations here are the replacements, each
+      selecting the handle by plane and gated by the grant it needs.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import strategies.throwUnsafely
+
+      val project: Path on Linux = (% / "tmp" / "project").on[Linux]
+
+      project.open[Directory](Read & Write): dir ?=>
+        val note = dir / "note.txt"
+        note.overwrite(t"hello")
+        note.contents[Text]            // t"hello"
+        note.extant()                  // true
+        dir.base.entries.map(_.name)   // Chain(t"note.txt", …)
+        note.remove()
+      ```
+
+      The names differ from the absolute-path operations' (`contents` not `read`, `extant`
+      not `existent`, `remove` not `delete`) because a lexically imported extension of the
+      same name would be tried first and fail without falling through. The `…Resolved`
+      helpers are public only because the operations are transparent inline; call the
+      operations.
+  refer galilei.Directory
+  entry .Rules   what a name on a handle's plane may be: no `/`; not `.`, `..` or empty
+  entry .nominative   the given which holds every subtree plane's paths to `.Rules`
+  entry .contents   `path.contents[T]`: reads a file beneath the open directory, as `T`
+      Through any `Data is Readable to T`, needing the handle to grant `Read` and raising
+      `Io.Error`.
+  entry .overwrite   `path.overwrite(content)`: writes a file beneath the open directory, replacing it
+      Takes anything `Streamable by Data`, needing the handle to grant `Write` and raising
+      `Io.Error`.
+  entry .extant   `path.extant()`: whether an entry beneath the open directory exists
+      Needs the handle to grant `Read`; total.
+  entry .entries   `path.entries`: the children of a directory beneath the open directory, on the handle's plane
+      `dir.base.entries` lists the opened directory itself. Needs `Read` and raises
+      `Io.Error`.
+  entry .remove   `path.remove()`: deletes an entry beneath the open directory, if it is a file or an empty directory
+      Needs `Write` and raises `Io.Error`: a non-empty directory is `DirectoryNotEmpty`,
+      since the `deleteOnlyEmpty` policy is fixed here.
+  entry .readResolved   the real-path read behind `.contents`
+  entry .writeResolved   the real-path write behind `.overwrite`
+  entry .existsResolved   the real-path existence check behind `.extant`
+  entry .entriesResolved   the real-path listing behind `.entries`
+  entry .removeResolved   the real-path deletion behind `.remove`
+
+entry .AccessRegister   the process-wide register of open scopes, which refuses conflicting `Exclusive` opens
+  detail
+      Every `open[Directory]`, `create[Directory]` scope and every locking `open[File]` or
+      `Slice` open registers its real (symlink-resolved) path and mode atoms here for its
+      duration. Conflicts are detected over subtree overlap — a directory and anything
+      beneath it overlap; two siblings do not — and over byte ranges for slices: any number
+      of overlapping `Read`, `Write` and `Shared` opens may coexist, but an `Exclusive` open
+      conflicts with any other open of an overlapping subtree or range, in either direction.
+      No type system can see that two independently opened handles denote overlapping
+      trees, so this is checked at runtime, at the `open` call, where the conflict becomes
+      `Io.Error` with `Busy` — or a wait, with `OpenFlag.Await`.
+
+      The register arbitrates only between scopes within one process; OS advisory locks,
+      taken for `Exclusive` and `Shared` file opens, cover other processes. It is not
+      exported to the `soundness` umbrella: the `open` forms use it, and a program has no
+      reason to call it directly.
+  refer galilei.Directory
+  refer galilei.FileOpenable
+  entry .acquire   registers a real path and mode atoms (and a byte range), or returns `false` on a conflict
+  entry .acquireAwait   registers as `.acquire` does, waiting until no conflicting registration remains
+      Waiters are woken by `.release`; fairness is the monitor's.
+  entry .release   removes one registration made by `.acquire`, waking any waiters
+
+entry .Umask   a file-creation mask, as POSIX `umask(2)` defines it, applied to every entry created while it is in scope
+  detail
+      The permission bits withheld from every file and directory created while the mask
+      applies: `Umask(0x3f)` (octal `077`) yields entries readable and writable by their
+      owner alone. For an ordinary process the operating system applies the process's own
+      mask for free, and `Umask.process` — the default given — asks for exactly that. A
+      daemon serving several invocations, each with its own mask, cannot rely on the
+      process's, so the mask reaches galilei as a contextual value: a `Umask` in scope is
+      applied to every `create[…]`, `open[File]` with `Create`, `Scratch.File` and
+      `CreateFlag.Parents` directory, requested at creation so that the entry never exists
+      more permissive than asked. A `Umask.Provider` (a daemon's service handle) makes the
+      invocation's mask summonable with no declaration.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import strategies.throwUnsafely
+
+      val secret: Path on Linux = (% / "tmp" / "secret.txt").on[Linux]
+
+      locally:
+        given Umask = Umask(0x3f)   // 077: the owner alone
+        secret.create[File](): handle ?=>
+          handle.write(Chain(t"payload".in[Data]))
+
+      Umask.parse(t"022").let(_.octal)   // t"022"
+      ```
+
+      `Umask` is an opaque `Int`; it shows, encodes and decodes as the octal form `umask`
+      prints (`022`, `077`), with `Umask.process` rendering as empty text. On a filesystem
+      without POSIX permission bits (Windows) the request is ignored.
+  refer galilei.Creation
+  entry .Provider   something which knows an invocation's mask, making it summonable as a `Umask`
+    detail
+        A daemon's service handle implements it; `.provided` turns any `Provider` in scope
+        into the `Umask` given, falling back to `.process` when the provider has none.
+    entry #umask   the invocation's mask, or `Unset` to use the process's
+  entry .process   the process's own mask, whatever it is, applied by the operating system
+      The default `Umask` when none is declared. Its `mode(bits)` is `Unset`, so a backend
+      requests no permission bits and the OS applies the process mask as it always did.
+  entry .fileBits   `0o666`: the conventional bits a file or FIFO is created with before any mask applies
+  entry .directoryBits   `0o777`: the conventional bits a directory is created with before any mask applies
+  entry .apply   `Umask(bits)`: the mask withholding those bits (masked to the low nine)
+      Scala has no octal literals, so `Umask(0x3f)` is `077` and `Umask(0x12)` is `022`;
+      `.parse` reads the octal form.
+  entry .parse   `Umask.parse(text)`: a mask from the octal form `umask` prints, or `Unset` if unparseable
+  entry .provided   the `Umask` of any `Umask.Provider` in scope, or `.process` if it has none
+      Outranks the inherited default, so a provider wins and, absent one, nothing changes.
+  entry .showable   renders a mask in octal: `022`
+  entry .encodable   encodes a mask as its octal text
+  entry .decodable   decodes a mask from octal text, falling back to `.process`
+  entry .octal   `umask.octal`: the three-digit octal rendering, or empty text for `.process`
+  entry .bits   `umask.bits`: the withheld bits as an `Int`
+  entry .mode   `umask.mode(bits)`: the permission bits a creation should request, or `Unset` for the process mask
+      `bits & ~umask`: `Umask.fileBits` or `Umask.directoryBits` with the mask applied, which
+      a backend sets at creation.
+
+entry .Fdtable   a process's file-descriptor table as paths name it, consulted before the filesystem
+  detail
+      `/dev/fd/63`, `/dev/stdin`, `/proc/self/fd/3` are slots of one process's descriptor
+      table, and opening them from any other process reaches that process's slot of the same
+      number, or nothing. An application run by a daemon on behalf of a client receives such
+      paths as arguments and must open the *client's* descriptors, which only the launcher
+      can reach. An `Fdtable` is the client's table as galilei sees it: consulted before
+      every `open`, `read`, `write` and `existent()`, it answers for the paths it governs
+      with a `Descriptor` which opens the right thing, and declines every other path, which
+      then goes to the filesystem as it always did.
+
+      It reaches galilei as a contextual value, like `Umask`: a `Fdtable.Provider` (a
+      daemon's service handle) makes the invocation's table summonable, and where none is in
+      scope the empty `.none` applies. The consulting sites take `Every[Fdtable]`, so tables
+      may be layered and the first which answers for a path wins. A program writing its own
+      — a test double, say — gives a function from the encoded path to an `Optional[Descriptor]`:
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import strategies.throwUnsafely
+
+      val virtual: Path on Linux = (% / "virtual" / "input").on[Linux]
+
+      val descriptor: Fdtable.Descriptor = new Fdtable.Descriptor:
+        def open[result](flags: List[OpenFlag])(lambda: Handle => result): result =
+          lambda(Handle.whole(() => Chain(t"from the table".in[Data]), _ => ()))
+
+      given table: Fdtable = path => if path == t"/virtual/input" then descriptor else Unset
+
+      virtual.existent()   // true, without any filesystem entry
+      virtual.read[Text]   // t"from the table"
+      ```
+  refer galilei.Umask
+  refer galilei.Handle
+  entry .Provider   something which knows an invocation's descriptor table, making it summonable as an `Fdtable`
+    entry #fdtable   the invocation's table, or `Unset` for none
+  entry .Descriptor   what a governed path names: something which can be opened for the flags asked, within a scope
+    detail
+        `open(flags)(lambda)` opens the descriptor for the operations its `OpenFlag`s ask —
+        which must be ones the descriptor admits — and runs the lambda with a `Handle`,
+        closed when it returns. A descriptor which cannot be opened so (one the client does
+        not hold, or one opened for writing which admits only reading) throws a
+        `Fdtable.Refusal`, which the consulting site raises as the `Io.Error` of the path it
+        was opening.
+    entry #open   opens the descriptor for the flags and runs the lambda with its `Handle`
+  entry .Refusal   thrown by a `Descriptor` which cannot be opened as asked; becomes the path's `Io.Error`
+    detail
+        An exception carrying only the `Io.Error.Reason` (`Nonexistent`, `PermissionDenied`,
+        …): a table has no path of its own to name, so the site which consulted it supplies
+        the path and the operation.
+    entry #reason   why the descriptor refused
+  entry .none   the empty table, which answers for no path
+  entry .provided   the `Fdtable` of any `Fdtable.Provider` in scope, or `.none` if it has none
+      Outranks the inherited default, so a provider wins and, absent one, nothing changes.
+  entry .resolve   `Fdtable.resolve(tables, path)`: the first descriptor among every table in scope, if any answers
+  entry #descriptor   the `Descriptor` a path names in this table, or `Unset` for a path it does not govern
+      The path is in its encoded form, as the platform would name it.
+
+entry .Cas   a content-addressed store: one blob per digest of its bytes, under one root
+  detail
+      A directory of blobs, each named by the digest of its own bytes, is a store in which a
+      blob is written once, verified as it is written, and found by anything which knows its
+      digest. `Cas` is that store, with the hash algorithm in its type and in the type of
+      every digest it accepts — a `Cas in Sha2[256]` cannot be asked for a BLAKE3 digest — and
+      the storage in the type of its root: `Cas in Sha2[256] on (Path on Linux)`. A store is
+      made with `Cas[Sha2[256]](root, suffix)` for any root with a `Cas.Storage` instance; a
+      directory on any platform with a backend is one.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import providers.javaBaseProvider
+      import strategies.throwUnsafely
+
+      val root: Path on Linux = (% / "tmp" / "blobs").on[Linux]
+      val store: Cas in Sha2[256] on (Path on Linux) = Cas[Sha2[256]](root, t".blob")
+
+      val digest: Digest in Sha2[256] = store() = t"some bytes".in[Data]
+      store(digest)                    // the bytes, or Unset
+      store.has(digest)                // true
+      store.missing(List(digest))      // Nil
+      store.prune(Set(digest))         // 0: nothing else to delete
+      ```
+
+      `store() = data` stores the data under its own digest, which it returns, and does
+      nothing if the blob is already there; `store(digest) = data` does the same after
+      checking that the data really has that digest, raising `Cas.Error` if not. A blob is
+      written to a uniquely named sibling and moved into place atomically, so a reader never
+      sees a partial blob. As a collection, a store is its digests: `size`, `has`, `at` and
+      traversal all work on it, through pure views which treat an unreadable store as empty;
+      the methods are where an `Io.Error` is raised.
+  refer galilei.Cas.Storage
+  entry .Storage   how blobs are kept at a root of a given type: tested, read, replaced atomically, listed, deleted
+    detail
+        The typeclass a `Cas` stores through. `Cas.Storage.path` is the instance for a
+        directory on any platform; another storage (a database, an object store) provides
+        another instance and gets a store with the same interface. `replace` must be atomic
+        from a reader's point of view.
+    entry .path   the `Storage` for a `Path on <platform>` directory, needing a backend
+        Blob names are hexadecimal plus the suffix, so they are well-formed on every plane.
+        A blob is written to a sibling named with a leading `.`, a UUID and a `part` suffix,
+        then moved into place atomically; a failure leaves nothing behind.
+    entry #has   whether a blob of that name exists under the root
+    entry #read   the blob's bytes, raising `Io.Error`
+    entry #replace   writes the blob atomically, raising `Io.Error`
+    entry #names   every name under the root, raising `Io.Error`
+    entry #delete   deletes the blob if it exists, raising `Io.Error`
+  entry .Error   raised by `store(digest) = data` when the data's digest is not the one given
+    detail
+        The message reads _the data's digest, `actual`, is not `expected`_, both in
+        lowercase hexadecimal. Nothing is written when it is raised.
+    entry #expected   the digest the caller claimed, as hex
+    entry #actual   the digest the data really has, as hex
+  entry .apply   `Cas[Algorithm](root, suffix)`: the store at `root` whose blobs are named `<digest><suffix>`
+      The algorithm's `Hash` and its weakness permit are checked here, once, so a store over
+      a weak algorithm needs the same `Permit` as any other use of it. The root may be any
+      value with a `Cas.Storage`; the suffix defaults to empty.
+  entry .countable   a store's `size` is how many digests it holds
+  entry .traversable   a store traverses as its digests
+  entry .inclusive   `store.has(digest)` through the collection vocabulary
+  entry .applicable   `store.at(digest)`: the blob's bytes, after `defines(digest)` has said it is there
+      `at` reads only after `contains`, so a failure there is a blob which vanished in
+      between, which panics rather than returning `Unset`.
+  entry #Form   the hash algorithm, as a type
+  entry #Plane   the type of the root
+  entry #root   the root the blobs are kept under
+  entry #suffix   the suffix appended to every blob's hexadecimal name
+  entry #name   `store.name(digest)`: the blob's name, lowercase hex then the suffix
+  entry #digest   `store.digest(data)`: the data's digest in the store's algorithm
+  entry #has   `store.has(digest)`: whether the blob is stored
+  entry #missing   `store.missing(digests)`: which of the digests are not stored
+  entry #apply   `store(digest)`: the blob's bytes, or `Unset` if not stored; raises `Io.Error`
+  entry #update   `store() = data` stores under the data's own digest; `store(digest) = data` checks it first
+      The first returns the digest and needs a `Tactic[Io.Error]`; the second also needs a
+      `Tactic[Cas.Error]`. Neither rewrites a blob already present.
+  entry #digests   every digest stored: the names with the suffix whose remainder is hexadecimal
+      Other files under the root are ignored. Raises `Io.Error`.
+  entry #prune   `store.prune(keep)`: deletes every blob whose digest is not in the set; how many were deleted
+
+entry .Searchpaths   the machinery which resolves a searchpath plane onto an ordered list of real directories
+  detail
+      Many files are looked up not at one location but along a list of them — an icon in
+      whichever XDG data directory holds it, a configuration file in the first of several
+      places. An ambience `Searchpath` plane (`Xdg.Data`, `Xdg.Config`) is such a list
+      presented as one navigable tree, and resolution onto the real platform goes through a
+      contextual `Searchpaths.Stems`: the ordered directories to try, the head stem being the
+      writable one. A relative path on the plane then resolves with `search()` to the first
+      stem holding it, with `locations()` to every stem holding it, with `listing()` to the
+      merged directory listing, and with `destination()` to its place under the head stem.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import strategies.throwUnsafely
+
+      val stemA: Path on Linux = (% / "tmp" / "share-a").on[Linux]
+      val stemB: Path on Linux = (% / "tmp" / "share-b").on[Linux]
+
+      given Searchpaths.Stems on Xdg.Data onto Linux = new Searchpaths.Stems:
+        type Plane = Xdg.Data
+        type Target = Linux
+        val stems: List[Path on Linux] & Populated = List(stemA, stemB)
+
+      (% / "icons" / "app.png").on[Xdg.Data].search()        // the first stem's copy, or Unset
+      (% / "icons" / "app.png").on[Xdg.Data].locations()     // every stem's copy
+      (% / "icons").on[Xdg.Data].listing().map(_.name)       // merged, earlier stems shadowing
+      (% / "themes" / "new.css").on[Xdg.Data].destination()  // under stemA
+      ```
+
+      `dataSearch()` and `configSearch()` build the `Stems` for the XDG data and
+      configuration searchpaths from the environment. The helpers in the object are public
+      only because the operations are transparent inline; call the operations.
+  refer galilei.search
+  refer galilei.dataSearch
+  entry .Stems   the ordered real directories a searchpath plane resolves onto
+    detail
+        `Searchpaths.Stems on Xdg.Data onto Linux`: `#Plane` is the virtual plane, `#Target`
+        the platform beneath it, and `#stems` the directories in precedence order, at least
+        one — the head is where writes go, as the XDG Base Directory specification directs
+        applications to write only to the user-specific base directory.
+    entry #Plane   the searchpath plane, such as `Xdg.Data`
+    entry #Target   the platform the stems are on, such as `Linux`
+    entry #stems   the directories to try, in precedence order; non-empty
+  entry .resolve   `Searchpaths.resolve(stem, path)`: the path's names appended beneath a stem
+  entry .locateResolved   the first stem under which the path exists, or `Unset`
+  entry .locationsResolved   every stem under which the path exists, in precedence order
+  entry .entryNames   the merged child names across all stems, deduplicated, earlier stems first
+
+entry .search   `path.search()`: the first real directory of a searchpath in which the path exists, or `Unset`
+    An extension on `Path on <plane <: Searchpath>`, needing a `Searchpaths.Stems` for the
+    plane and a `FilesystemBackend` for its target. First-match-wins, per the XDG
+    specification; the result is a `Path on stems.Target`. Named `search` rather than
+    `locate`, which zephyrine exports at the umbrella.
+
+entry .locations   `path.locations()`: every real path of a searchpath at which the path exists, in precedence order
+    An extension on `Path on <plane <: Searchpath>`, for cascade-merging consumers which
+    read every copy of a configuration file.
+
+entry .listing   `path.listing()`: the merged listing of a searchpath directory across every stem
+    An extension on `Path on <plane <: Searchpath>`, needing the target's `Explorable` and a
+    `Tactic[Io.Error]`. Children are deduplicated by name, earlier stems shadowing later
+    ones, and returned on the searchpath plane, so the virtual tree is navigable.
+
+entry .destination   `path.destination()`: the path's place under the head stem, where the XDG specification directs writes
+    An extension on `Path on <plane <: Searchpath>`. Total: nothing is checked on disk.
+    Creating any missing intermediate directories is the caller's, through
+    `filesystemOptions.createNonexistentParents` on the write itself.
+
+entry .searchpathCompliant   lets a `Linux`-style relative or literal path be reinterpreted on a searchpath plane
+    The `Compliant` given which makes `(% / "icons" / "app.png").on[Xdg.Data]` typecheck: a
+    name valid under `Linux` rules is valid on any `Searchpath` plane. It is a top-level
+    given, library-qualified by name, since neither subject's companion can host it; it is
+    inline and needs no import beyond `soundness.*` when the umbrella's export is in scope.
+
+entry .dataSearch   `Xdg.dataSearch()`: the XDG data searchpath, as `Searchpaths.Stems on Xdg.Data onto Linux`
+    An extension on the `Xdg` object, needing an `Environment` and a `System`. The stems
+    are `XDG_DATA_HOME` (or its default) followed by each entry of `XDG_DATA_DIRS`, in spec
+    precedence order, read once at construction; an unparseable set of directories falls
+    back to the spec defaults.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import environments.javaBaseEnvironment
+    import systems.javaBaseSystem
+
+    given Searchpaths.Stems on Xdg.Data onto Linux = Xdg.dataSearch()
+    ```
+
+entry .configSearch   `Xdg.configSearch()`: the XDG configuration searchpath, as `Searchpaths.Stems on Xdg.Config onto Linux`
+    As `dataSearch()`, for `XDG_CONFIG_HOME` followed by `XDG_CONFIG_DIRS`.
+
+entry .Ram   the form for random access to a file's bytes through memory mapping: `path.open[Ram](mode)`
+  detail
+      In `galilei.jvm`. The handle serves positional reads with `ram(offset, length)` and,
+      when the `Write` grant was selected, positional writes with `ram(offset) = data` and
+      growth with `ram.grow(size)`; both go through a `MappedByteBuffer`, so the OS pages
+      data in and out on demand. An `Exclusive` mode additionally acquires an OS file lock
+      for the scope, so exclusivity holds against other processes. The mapping addresses
+      with `Int`, so a file beyond 2 GiB raises `Io.Error` with `Unsupported`; `path.expanse`
+      is the platform-neutral, unbounded alternative for reads. Writes are flushed when the
+      scope ends.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import strategies.throwUnsafely
+
+      val file: Path on Linux = (% / "tmp" / "data.bin").on[Linux]
+
+      file.open[Ram](): ram ?=>
+        ram(2, 3)                         // three bytes from offset 2
+
+      file.open[Ram](Read & Write): ram ?=>
+        ram(3L) = t"XYZ".in[Data]
+        ram.grow(13L)
+        ram(10L) = t"abc".in[Data]
+
+      file.create[Ram](RamFlag.Size(16L)): ram ?=>
+        ram(0L) = t"ABCD".in[Data]
+      ```
+
+      `path.create[Ram](RamFlag.Size(n))` creates a new file of exactly that size, mapped
+      read-write for the scope and removed if the scope fails; the size is mandatory, since
+      an empty mapping is useless.
+  refer galilei.expanse
+  refer galilei.RamFlag
+  entry .RamHandle   the handle over a mapped file: positional reads, writes, growth and an `Expanse` view
+    detail
+        An exclusive capability. The grant-gated operations are the extensions `.apply`,
+        `.update` and `.grow`; `#readFrom`, `#writeTo` and `#growTo` are their ungated
+        operational forms.
+    entry #size   the mapped size in bytes
+    entry #readFrom   reads `length` bytes at an offset
+    entry #writeTo   writes data at an offset, within the current size
+    entry #growTo   extends the file and remaps it to a larger size; a smaller size is a no-op
+        The new size must fit in an `Int`.
+    entry #flush   forces the mapping's changes to the file
+    entry #expanse   a shared positional view, for consumers written against zephyrine's `Expanse`
+  entry .apply   `ram(offset, length)`: a positional read, on a handle granting `Read`
+  entry .update   `ram(offset) = data`: a positional write, on a handle granting `Write`
+  entry .grow   `ram.grow(size)`: extends the mapping so writes past the old end can be addressed, on a handle granting `Write`
+  entry .RamOpenable   the `Openable` instance behind `path.open[Ram](mode)`
+    detail
+        A named class instantiated by `.openable`. An `Exclusive` mode implies a writable
+        channel (OS exclusive locks require one) and a lock held for the scope; a conflict
+        raises `Io.Error` with `Busy`.
+    entry #open   maps the file for the scope and runs the block with a `RamHandle`
+  entry .openable   `path.open[Ram](…)` for any platform path, needing a `Tactic[Io.Error]`
+  entry .RamCreatable   the `Creatable` instance behind `path.create[Ram](RamFlag.Size(n), flags*)`
+    detail
+        Creates the named file, extends it to the size, maps it read-write for the scope,
+        and deletes it if the scope fails. `CreateFlag.Parents` and `CreateFlag.Replace`
+        are honoured; a missing `Size`, a non-positive one or one beyond `Int.MaxValue` is
+        `Unsupported`, and an existing file without `Replace` is `AlreadyExists`.
+    entry #create   creates, sizes and maps the file, and runs the block with a `RamHandle`
+  entry .creatable   `path.create[Ram](…)` for any platform path, needing a backend and a `Tactic[Io.Error]`
+
+entry .RamFlag   the flags of `create[Ram]`: `Size(bytes)`, the mapped file's size, which is mandatory
+  detail
+      Creating a mapped file requires its size up front, so `RamFlag.Size(n)` must be among
+      the flags beside any `CreateFlag`. In `galilei.jvm`.
+  entry .Size   `RamFlag.Size(bytes)`: the size of the file to create and map
+    entry #bytes   the size in bytes
+
+entry .Device   creates a block or character device node on a POSIX filesystem, through `mknod`
+  detail
+      In `galilei.jvm`. `Device.create(path, Device.Kind.Block, major, minor)` runs the
+      `mknod` command, consulting the `CreateNonexistentParents` and `OverwritePreexisting`
+      policies in scope, and raises `Io.Error` with `PermissionDenied` if the command fails
+      — making a device node ordinarily needs root.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import filesystemOptions.createNonexistentParents
+      import filesystemOptions.deleteRecursively
+      import filesystemOptions.overwritePreexisting
+      import strategies.throwUnsafely
+
+      val node: Path on Linux = (% / "tmp" / "null-copy").on[Linux]
+      Device.create(node, Device.Kind.Char, 1, 3)
+      ```
+  entry .Kind   `Block` or `Char`: which kind of device node to make
+    entry #flag   the `mknod` type flag: `b` or `c`
+  entry .create   makes the device node at a path with the given kind and major and minor numbers
+
+entry .SocketCreation   the `Creatable` instance behind `path.create[Sock]()` on the JVM
+  hidden
+  detail
+      The home of `socketCreatable`, which is exported from here; reach the instance through
+      that name. Binding a Unix-domain socket is inherently scoped: the block form provides
+      the live, bound `Sock` and closes its channel when the scope ends (the socket file
+      remains; an exception escaping the scope removes it), and the no-block form binds and
+      immediately closes, leaving just the socket file.
+  entry .SocketCreatable   binds a Unix-domain socket at a POSIX path for the scope of a block
+    entry #create   binds a `ServerSocketChannel` to the path and runs the block with the `Sock`
+  entry .socket   the given, for any POSIX platform path with a backend and a `Tactic[Io.Error]`
+
+entry .socketCreatable   `path.create[Sock]()`: binds a Unix-domain socket at a POSIX path, for the scope of a block
+    The `Creatable` given for the `Sock` form, in `galilei.jvm`, needing a backend and a
+    `Tactic[Io.Error]`. The block receives a `Sock` holding the bound
+    `ServerSocketChannel`, closed when the block ends; `CreateFlag.Parents` and
+    `CreateFlag.Replace` are honoured. The socket file remains afterwards, unless an
+    exception escaped the scope.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import filesystemBackends.javaBaseFilesystem
+    import strategies.throwUnsafely
+
+    val socket: Path on Linux = (% / "tmp" / "app.sock").on[Linux]
+
+    socket.create[Sock](CreateFlag.Replace): sock ?=>
+      sock.channel.isOpen   // true: bound, and closed when the block ends
+    ```
+
+entry .javaPath   `path.javaPath`: the `java.nio.file.Path` for a platform path, for Java APIs which take one
+    An extension on any `Path on <plane: Filesystem>` in `galilei.jvm`, deliberately *not*
+    exported to the `soundness` umbrella: it is an escape hatch from the typed API, and
+    reaching it as `galilei.javaPath` (or through `import galilei.javaPath`) keeps that
+    deliberate.
+
+    ```scala
+    import soundness.*
+    import galilei.javaPath
+
+    val path: Path on Linux = unsafely((% / "tmp").on[Linux])
+    path.javaPath.toAbsolutePath
+    ```
+
+entry .javaFile   `path.javaFile`: the `java.io.File` for a platform path
+    As `javaPath`, for the older API; in `galilei.jvm` and not exported to the umbrella.

@@ -1,0 +1,1213 @@
+tel 1.0
+
+base anticipation
+import soundness
+
+info   the interface typeclasses libraries agree on, so that each can accept the others' types without depending on them
+detail
+    _Anticipation_ holds the small typeclasses through which Soundness's libraries, and
+    libraries outside it, exchange values without depending on one another. A library which
+    opens a file needs *some* path, a library which sleeps needs *some* duration, and a
+    library which fetches needs *some* URL; none of them should have to choose between
+    galilei's `Path`, `java.nio.file.Path` and `java.io.File`, or between aviation's
+    `Instant`, `java.time.Instant` and a `Long`. Each asks instead for a type which is
+    `Abstractable across Paths to Text`, or `Instantiable across Instants from Long`, and the
+    library that owns the concrete type provides the instance.
+
+    The typeclasses live here, apart from every implementation, because the dependency must
+    point *into* a common, almost empty module from both sides. If `galilei` defined the path
+    typeclass, a library accepting paths would depend on the whole filesystem library; if the
+    library defined it, `galilei` would depend on that. Here neither depends on the other:
+    both depend on `anticipation`, which depends on almost nothing.
+
+    Two typeclasses carry most of the traffic, each parameterised by a **domain**, a sealed
+    marker type which names the concept being exchanged (`Paths`, `Urls`, `Instants`,
+    `Durations`, `Uuids`, `Hostnames`, `EmailAddresses`, `IpAddresses`, `HttpStreams`, …):
+
+    - `Abstractable across Domain to Result`: a value becomes its **generic** representation,
+      `value.generic`: text for a path or URL, nanoseconds for a duration, epoch milliseconds
+      for an instant.
+    - `Instantiable across Domain from Origin`: a generic representation becomes a value of
+      the caller's chosen type, `target(origin)` inside a method with the bound
+      `[target: Instantiable across Paths from Text]`.
+
+    So a value of one library's type is converted to another's by abstracting it and
+    instantiating the result, with neither library knowing of the other:
+
+    ```scala fuel
+    frame
+      label A galilei path, abstracted to its generic text
+      code
+          import soundness.*
+          import strategies.throwUnsafely
+
+          val path: Path on Linux = t"/home/work".as[Path on Linux]
+          path.generic   // t"/home/work"
+    frame
+      label The same text instantiated as a `java.nio.file.Path`
+      code
+          import soundness.*
+          import strategies.throwUnsafely
+          import pathInterfaces.javaNioPath
+
+          def relocate[target: Instantiable across Paths from Text](path: Path on Linux)
+          :   target =
+            target(path.generic)
+
+          val path: Path on Linux = t"/home/work".as[Path on Linux]
+          val nio: java.nio.file.Path = relocate[java.nio.file.Path](path)
+    frame
+      label Or as a `java.io.File`, by importing a different interface
+      code
+          import soundness.*
+          import strategies.throwUnsafely
+          import pathInterfaces.javaIoFile
+
+          def relocate[target: Instantiable across Paths from Text](path: Path on Linux)
+          :   target =
+            target(path.generic)
+
+          val path: Path on Linux = t"/home/work".as[Path on Linux]
+          val file: java.io.File = relocate[java.io.File](path)
+    ##
+    ```
+
+    A Soundness type's own instances live in its companion (`Path.generic`, `Url.abstractable`,
+    `Instant.generic`), so they need no import. But a method bounded `[target: Instantiable
+    across Paths from Text]` names no concrete type whose companion could be searched, and a
+    Java type has no companion Soundness can write to, so the instances which *choose* a
+    representation are offered in **choice packages**, one per domain, and imported by name:
+    `pathInterfaces`, `urlInterfaces`, `instantInterfaces`, `durationInterfaces`,
+    `uuidInterfaces`, `hostnameInterfaces`, `emailAddressInterfaces` and
+    `ipAddressInterfaces`. Each package is declared in `anticipation` by the library which
+    owns the type it offers: diuretic contributes the Java types (`javaNioPath`,
+    `javaTimeInstant`, …), aviation its `Instant` and `Quantity`, galilei and serpentine the
+    path representatives, inimitable `Uuid`, and urticose its URL and network types. Their
+    names follow the house provenance words: a Java type keeps its type-path name
+    (`javaNioPath`, `javaUtilDate`), and Soundness's own type is `soundness…`
+    (`soundnessUrl`, `soundnessUuid`). The givens are imported by name, because `import
+    pkg.*` does not import givens: `import pathInterfaces.javaNioPath`.
+
+    A bare `Long` cannot say whether it counts nanoseconds or milliseconds, so it has no
+    unit-agnostic instance: `abstractables` and `instantiables` hold one given per unit,
+    named for it, and a file imports exactly one duration reading.
+
+    The rest of the module is the same idea applied to other concepts: `Text` itself (the
+    opaque string every library shares), `Data` for bytes, `Encodable` for encoding into a
+    named format, `Loggable`/`LogSink`/`Transcribable` for logging without a logging
+    runtime, `Printable` and `Termcap` for terminal rendering, `Chromatic`, `Chroma` and the
+    pixel `Channel`s for colour, `Graphical` for images, `Focusable` for browser locators,
+    `Nominable` for names, `Textualizable` for text conversion, and `Durable` for
+    capabilities safe to share across threads.
+
+    The library is split into many small, platform-neutral components, so that a library
+    depends only on the concepts it exchanges: `anticipation.generic` (`Abstractable`,
+    `Instantiable`, `Representative`), `text`, `opaque`, `codec`, `color`, `gfx`, `focus`,
+    `http`, `log`, `net`, `path`, `print`, `time`, `url` and `uuid`. Everything is exported
+    to the `soundness` umbrella except `Channel`, which clashes with another library's and is
+    reached as `anticipation.Channel`; the choice packages merge with the umbrella's own
+    blocks of the same names.
+
+refer anticipation.Abstractable
+refer anticipation.Instantiable
+refer anticipation.Representative
+refer anticipation.Text
+refer anticipation.pathInterfaces
+refer anticipation.instantInterfaces
+
+entry .Abstractable   a typeclass turning a value into the generic representation of a domain
+  detail
+      `value is Abstractable across Domain to Result` says that `value` can be reduced to a
+      `Result`, the representation every library agrees on for `Domain`: `Text` for `Paths`
+      and `Urls`, a `Long` of nanoseconds for `Durations`, a `Long` of milliseconds since the
+      epoch for `Instants`, an `HttpStreams.Content` for `HttpStreams`. A library which
+      *consumes* paths, durations or URLs bounds its parameter by it and calls `#generic`,
+      accepting any type with an instance and depending on none of them.
+
+      ```scala
+      import soundness.*
+
+      def describe[path: Abstractable across Paths to Text](path: path): Text =
+        t"the path ${path.generic}"
+      ```
+
+      Instances live in the companion of the abstracted type (`Path.generic`,
+      `Url.abstractable`, `Moment.generic`), so they are found without an import; a Java
+      type's instance is offered in a choice package such as `pathInterfaces` or
+      `instantInterfaces`. A bare `Long` duration or instant has instances only in
+      `abstractables`, one per unit, imported by name.
+
+      `Abstractable` is a pure typeclass: an instance captures nothing.
+  refer anticipation.Instantiable
+  refer anticipation.abstractables
+  entry #genericize   reduces a value to its generic representation
+      The method an instance implements; `#generic` is the extension a caller writes.
+  entry #generic   the generic representation of a value: `value.generic`
+      An extension on the abstracted type. `path.generic` is the path as text,
+      `duration.generic` its nanoseconds, `instant.generic` its epoch milliseconds.
+  entry #contramap   an instance for another type, by first mapping it to this one
+      `abstractable.contramap[Wrapper](_.inner)` abstracts a `Wrapper` across the same domain
+      to the same result. The function must be pure.
+
+entry .Instantiable   a typeclass building a value from the generic representation of a domain
+  detail
+      `target is Instantiable across Domain from Origin` says that a `target` can be made from
+      an `Origin`, the representation every library agrees on for `Domain`. A library which
+      *produces* paths, instants or URLs bounds its result type by it, so the caller chooses
+      the type it receives:
+
+      ```scala
+      import soundness.*
+
+      def home[path: Instantiable across Paths from Text]: path = path(t"/home/work")
+      ```
+
+      The context-bound name is itself the instance, so `path(text)` applies it. Instances
+      for a Soundness type are in its companion; but where a method's bound names no concrete
+      type, the choice of representation is made by importing an instance by name from a
+      choice package, as `import pathInterfaces.javaNioPath` or `import
+      urlInterfaces.soundnessUrl` does. An instance which parses (a `Uuid`, a `Hostname`, an
+      `HttpUrl`) needs a `Tactic` for its error and captures it, which is why
+      `Instantiable` is a tracked typeclass rather than a pure one.
+  refer anticipation.Abstractable
+  refer anticipation.instantiables
+  refer anticipation.Representative
+  entry #apply   builds a value from its generic representation
+  entry #instantiate   builds a value from its generic representation: `origin.instantiate`
+      An extension on the origin type, available where exactly one applicable instance is in
+      scope; with several, apply the instance (`#apply`) instead.
+  entry #map   an instance for another type, by mapping each value this one builds
+      The result captures this instance and the function.
+
+entry .Representative   evidence that a type may stand for a domain, such as a path type for `Paths`
+  detail
+      `path is Representative of Paths` marks a type as an acceptable representation of a
+      domain where the API must name the type the caller wants without converting anything
+      yet: `workingDirectory[path: Representative of Paths]` and
+      `temporaryDirectory[path: Representative of Paths]` in ambience accept only a type
+      with this evidence, and then instantiate it through `Paths.Resolver`. It is a sealed,
+      memberless marker, whose instances are erased (`inline given … = !!`) and cost nothing.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+      import workingDirectories.systemWorkingDirectory
+
+      val directory = workingDirectory[Path on Linux]
+      ```
+
+      galilei's platform paths (`Path on Linux`, `Path on Windows`, `Path on MacOs`, `Path on
+      Local`, `Path on Posix`) carry their evidence in their platform's companion and in
+      `pathInterfaces`; serpentine makes `Text` a representative (`pathInterfaces.textPath`),
+      and diuretic `java.nio.file.Path` and `java.io.File`.
+  refer anticipation.Paths
+  refer anticipation.pathInterfaces
+
+entry .Paths   the domain of filesystem paths, whose generic representation is text
+  detail
+      A sealed marker naming the concept of a path, used as the `Domain` of `Abstractable`,
+      `Instantiable` and `Representative`. A path's generic form is its text, as the
+      filesystem writes it: `path is Abstractable across Paths to Text` reads a path of any
+      type, and `path is Instantiable across Paths from Text` makes one. A second origin,
+      `Paths.Trusted`, marks text which came from the operating system and so needs no
+      validation.
+
+      ```scala
+      import soundness.*
+
+      def open[path: Abstractable across Paths to Text](path: path): Text = path.generic
+      ```
+
+      Instances: galilei and serpentine's `Path` in its companion; `java.nio.file.Path` and
+      `java.io.File` in `pathInterfaces`, from diuretic.
+  refer anticipation.pathInterfaces
+  refer anticipation.Representative
+  entry .Trusted   path text known to be valid, such as a directory the operating system reported
+    detail
+        An `Instantiable` origin distinct from plain `Text`: a path type which is
+        `Instantiable across Paths from Paths.Trusted` can be made from it without the
+        validation (and the `Tactic`) which instantiating from untrusted text needs.
+        serpentine's `Path` has such an instance; `Paths.Resolver` prefers it.
+    entry #text   the trusted path text
+  entry .Resolver   resolves a directory's text into the requested path type, preferring trusted instantiation
+    detail
+        The contextual value behind ambience's `workingDirectory` and `temporaryDirectory`:
+        given the text of a directory the operating system reported, `resolver(text)`
+        builds the caller's chosen path type. Its companion's `.trusted` instance, through
+        `Instantiable across Paths from Trusted`, outranks the fallback `fromText` instance
+        inherited from `Resolver2`, which instantiates from plain `Text`. The choice is made
+        by ordinary implicit search rather than an inline `summonFrom`, so that it still
+        works when the calling code is expanded inside a staged quote.
+    entry .trusted   resolves through the path type's `Instantiable across Paths from Trusted` instance
+    entry #apply   the path for a directory's text
+  entry .Resolver2   the lower-priority parent of the `Paths.Resolver` companion
+    hidden
+    detail
+        Holds the fallback resolver, so that the trusted one in `Paths.Resolver`'s companion
+        is preferred where both apply.
+    entry #fromText   resolves through the path type's `Instantiable across Paths from Text` instance
+
+entry .Nominable   a typeclass giving a value's name as text, such as a path's final segment
+  detail
+      `value is Nominable` provides `#name`: for a serpentine `Path`, the last segment of its
+      descent, or its root if it has none. A library which displays or sorts by name asks for
+      a `Nominable` rather than for a particular path type. It is a pure typeclass.
+  entry #name   the value's name
+
+entry .Urls   the domain of URLs, whose generic representation is text
+  detail
+      A sealed marker naming the concept of a URL. `url is Abstractable across Urls to Text`
+      reads a URL of any type as text, and `url is Instantiable across Urls from Text` makes
+      one. urticose's `HttpUrl` has both in its companion, and the instantiation is also
+      offered by name as `urlInterfaces.soundnessUrl`; `java.net.URL` is
+      `urlInterfaces.javaNetUrl`, from diuretic.
+  refer anticipation.urlInterfaces
+
+entry .Instants   the domain of points in time, whose generic representation is epoch milliseconds
+  detail
+      A sealed marker naming the concept of an instant. The generic form is a `Long` of
+      **milliseconds** since the Unix epoch: `instant is Abstractable across Instants to Long`
+      and `instant is Instantiable across Instants from Long`. A library which schedules or
+      stamps asks for one of these rather than for aviation's `Instant` or `java.time`.
+
+      ```scala
+      import soundness.*
+      import instantInterfaces.javaTimeInstant
+
+      def at[instant: Instantiable across Instants from Long](epochMilliseconds: Long): instant =
+        instant(epochMilliseconds)
+
+      at[java.time.Instant](0L)
+      ```
+
+      Instances: aviation's `Instant` and `Moment` in their companions, and by name in
+      `instantInterfaces`; `java.time.Instant`, `java.util.Date` and a raw `Long` in
+      `instantInterfaces`, from diuretic; a bare `Long` in `abstractables` and
+      `instantiables` as `epochMillisecondsAbstractable` and `epochMillisecondsInstantiable`.
+      Note the asymmetry with `Durations`, whose `Long` counts nanoseconds.
+  refer anticipation.instantInterfaces
+  refer anticipation.Durations
+
+entry .Durations   the domain of lengths of time, whose generic representation is nanoseconds
+  detail
+      A sealed marker naming the concept of a duration. The generic form is a `Long` of
+      **nanoseconds**: `duration is Abstractable across Durations to Long` and `duration is
+      Instantiable across Durations from Long`. parasite's `sleep` and `snooze`, and every
+      timeout in Soundness, accept any type with an instance, so an aviation `Timespan`, a
+      quantitative `Quantity[Seconds[1]]` and a bare `Long` in a chosen unit all serve.
+
+      ```scala
+      import soundness.*
+      import abstractables.millisecondsAbstractable
+
+      def nanoseconds[duration: Abstractable across Durations to Long](duration: duration): Long =
+        duration.generic
+
+      nanoseconds(200L)   // 200000000L
+      ```
+
+      A bare `Long` has no unit, so it has an instance only by import, one per unit, and the
+      three share a type, so exactly one may be imported into a file. Instances: aviation's
+      `Timespan` and `Quantity` in their companions, and by name as
+      `durationInterfaces.aviationDuration`; a raw nanosecond `Long` as
+      `durationInterfaces.javaLongDuration`, from diuretic.
+  refer anticipation.abstractables
+  refer anticipation.durationInterfaces
+  entry .ms   converts between nanoseconds and milliseconds, inline
+      Two overloads: `ms(long: Long): Double` scales a `Long` up by a million, and `ms(double:
+      Double): Long` scales a `Double` down by a million, truncating. Note that the direction
+      is set by the argument's type, not by the name.
+  entry .ns   converts between a `Long` and a `Double` count of nanoseconds, inline
+      `ns(long: Long): Double` widens; `ns(double: Double): Long` truncates.
+
+entry .Dates   the domain of calendar dates, as a marker for `Abstractable` and `Instantiable`
+    A sealed marker naming the concept of a date, with no fixed generic representation of its
+    own: an instance states its `Result` or `Origin` type.
+
+entry .Times   the domain of times of day, as a marker for `Abstractable` and `Instantiable`
+    A sealed marker naming the concept of a time of day, with no fixed generic
+    representation of its own: an instance states its `Result` or `Origin` type.
+
+entry .Uuids   the domain of UUIDs, whose generic representation is text
+    A sealed marker naming the concept of a UUID. `uuid is Instantiable across Uuids from
+    Text` parses one; inimitable's `Uuid` is offered by name as
+    `uuidInterfaces.soundnessUuid`, so a library can accept UUIDs without depending on
+    inimitable.
+
+entry .EmailAddresses   the domain of email addresses, whose generic representation is text
+    A sealed marker naming the concept of an email address. urticose's `EmailAddress` is
+    `Instantiable across EmailAddresses from Text` by the given
+    `emailAddressInterfaces.soundnessEmailAddress`, imported by name.
+
+entry .Hostnames   the domain of hostnames, whose generic representation is text
+    A sealed marker naming the concept of a hostname. urticose's `Hostname` is `Instantiable
+    across Hostnames from Text` by the given `hostnameInterfaces.soundnessHostname`,
+    imported by name.
+
+entry .IpAddresses   the domain of IP addresses, whose generic representation is text
+    A sealed marker naming the concept of an IP address. urticose's `Ipv4` and `Ipv6` are
+    `Instantiable across IpAddresses from Text` by the givens
+    `ipAddressInterfaces.soundnessIpv4` and `ipAddressInterfaces.soundnessIpv6`, imported by
+    name.
+
+entry .HttpRequests   the domain of HTTP request bodies, as a marker for `Instantiable`
+    A sealed marker naming what an HTTP server receives. telekinesis can decode a request
+    body as any `content` which is `Instantiable across HttpRequests from Text`, and codec
+    libraries (jacinta, xylophone, ypsiloid) provide such instances for their own types, so
+    neither side depends on the other.
+
+entry .HttpStreams   the domain of HTTP message bodies, with a minimal pull protocol for their bytes
+  detail
+      A sealed marker naming what is sent as an HTTP body. A type which is `Abstractable
+      across HttpStreams to HttpStreams.Content` can be posted by telekinesis's client or
+      served by its server: a `Content` is a media type paired with a `Body`. jacinta's
+      `Json`, xylophone's `Xml` and the binary codecs provide instances in their own
+      companions.
+
+      ```scala
+      import soundness.*
+
+      val content: HttpStreams.Content =
+        (t"text/plain", HttpStreams.Body(Data(72, 105)))
+      ```
+
+      The `Body` protocol is deliberately dependency-free, so that libraries below
+      turbulence can produce one; turbulence's streams adapt to and from it.
+  refer anticipation.HttpRequests
+  entry .Body   a demand-driven source of body bytes, pulled one bounded chunk at a time
+    detail
+        A `Body` is asked for its bytes with `#next(limit)`, which returns at most `limit`
+        bytes as one chunk, or `null` at the end of the stream, and may block until input
+        is available.
+    entry .empty   the body with no bytes
+    entry .apply   a body from a whole `Data` value, an iterator of chunks or a `Chain` of chunks
+        From a `Data` value, the bytes are delivered in slices of at most `limit` bytes. From
+        a stdlib iterator or a lazy `Chain` of chunks, each call delivers the next chunk
+        whole, so `limit` does not bound its size; a body from an iterator captures it.
+    entry #next   the next chunk of at most `limit` bytes, or `null` at the end of the body
+  entry .Content   a body with its media type: `(Text, HttpStreams.Body)`
+
+entry .abstractables   the readings of a bare `Long` as a duration or an instant, each a given to import by name
+  detail
+      A `Long` cannot say whether it counts nanoseconds, microseconds, milliseconds or
+      milliseconds since the epoch, so `import soundness.*` gives it no reading at all, and a
+      method which takes any `Abstractable across Durations` or `across Instants` rejects a
+      bare `Long` until a unit is chosen by importing one of these by name:
+
+      ```scala
+      import soundness.*
+      import abstractables.millisecondsAbstractable
+
+      supervise:
+        snooze(200L)   // 200 milliseconds
+      ```
+
+      The three duration givens share a type, so exactly one may be imported into a file;
+      importing a duration reading and `epochMillisecondsAbstractable` together makes a
+      `Long` passed where either is accepted ambiguous. `instantiables` mirrors all four in
+      the opposite direction.
+  refer anticipation.instantiables
+  refer anticipation.Durations
+  entry .nanosecondsAbstractable   reads a `Long` duration as nanoseconds, the generic representation itself
+  entry .microsecondsAbstractable   reads a `Long` duration as microseconds, multiplying by a thousand
+  entry .millisecondsAbstractable   reads a `Long` duration as milliseconds, multiplying by a million
+  entry .epochMillisecondsAbstractable   reads a `Long` instant as milliseconds since the epoch, the generic representation
+
+entry .instantiables   the ways to receive a duration or an instant as a bare `Long`, each a given to import by name
+  detail
+      The `Instantiable` counterparts of `abstractables`: with one imported, a method which
+      returns any `Instantiable across Durations from Long` (or `across Instants`) can return
+      a `Long` in the chosen unit. Conversions to a coarser unit truncate.
+
+      ```scala
+      import soundness.*
+      import instantiables.millisecondsInstantiable
+
+      def length[duration: Instantiable across Durations from Long]: duration =
+        duration(5_000_000L)
+
+      length[Long]   // 5L
+      ```
+
+      As with `abstractables`, the three duration givens share a type and only one may be in
+      scope.
+  refer anticipation.abstractables
+  entry .nanosecondsInstantiable   gives a duration as a `Long` of nanoseconds, unchanged
+  entry .microsecondsInstantiable   gives a duration as a `Long` of microseconds, dividing by a thousand
+  entry .millisecondsInstantiable   gives a duration as a `Long` of milliseconds, dividing by a million
+  entry .epochMillisecondsInstantiable   gives an instant as a `Long` of milliseconds since the epoch, unchanged
+
+entry .pathInterfaces   the path types a path-producing API may return, each a given to import by name
+  detail
+      A method which returns `[path: Instantiable across Paths from Text]`, or which asks for
+      `[path: Representative of Paths]`, lets its caller choose a path type; for a type with
+      no companion to search, the choice is made by importing one of these givens by name,
+      since `import pathInterfaces.*` does not import givens.
+
+      ```scala
+      import soundness.*
+      import pathInterfaces.javaNioPath
+
+      def home[path: Instantiable across Paths from Text]: path = path(t"/home/work")
+      val path: java.nio.file.Path = home[java.nio.file.Path]
+      ```
+
+      The package is assembled from three libraries: diuretic declares `javaNioPath` and
+      `javaIoFile`, galilei the platform path representatives, and serpentine `textPath`.
+  refer anticipation.Paths
+  refer anticipation.Representative
+  entry .javaNioPath   `java.nio.file.Path` as a path, abstracted to and instantiated from its text (diuretic)
+      Both `Abstractable across Paths to Text` and `Instantiable across Paths from Text`, as
+      the object `diuretic.JavaNioPath`. Abstraction gives the path's absolute form; a
+      relative `java.nio.file.Path` is resolved against the JVM's working directory. JVM only.
+  entry .javaIoFile   `java.io.File` as a path, abstracted to and instantiated from its text (diuretic)
+      Both `Abstractable across Paths to Text` and `Instantiable across Paths from Text`, as
+      the object `diuretic.JavaIoFile`; abstraction gives the file's absolute path.
+  entry .pathOnLinux   `Path on Linux` as a `Representative of Paths` (galilei)
+      Erased evidence; the same given is in the companion of `Linux`, where it is found
+      without an import.
+  entry .pathOnWindows   `Path on Windows` as a `Representative of Paths` (galilei)
+      Erased evidence; the same given is in the companion of `Windows`.
+  entry .pathOnMacOs   `Path on MacOs` as a `Representative of Paths` (galilei)
+      Erased evidence; the same given is in the companion of `MacOs`.
+  entry .pathOnLocal   `Path on Local`, the host platform's path, as a `Representative of Paths` (galilei)
+      Erased evidence; the same given is in the companion of `Local`.
+  entry .pathOnPosix   `Path on Posix` as a `Representative of Paths` (galilei)
+      Erased evidence, for a path on any POSIX filesystem.
+  entry .textPath   `Text` as a `Representative of Paths`, so a directory may be asked for as plain text (serpentine)
+      With it imported, `workingDirectory[Text]` gives the working directory's text without
+      choosing a path type.
+
+entry .urlInterfaces   the URL types a URL-producing API may return, each a given to import by name
+  detail
+      A method bounded `[url: Instantiable across Urls from Text]` names no concrete URL type,
+      so the instance is chosen by importing one of these by name.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import urlInterfaces.soundnessUrl
+
+      def site[url: Instantiable across Urls from Text]: url = url(t"https://example.com/")
+      val url: HttpUrl = site[HttpUrl]
+      ```
+  refer anticipation.Urls
+  entry .javaNetUrl   `java.net.URL` as a URL, abstracted to and instantiated from its text (diuretic)
+      Both `Abstractable across Urls to Text` and `Instantiable across Urls from Text`, as the
+      object `diuretic.JavaNetUrl`; instantiation goes through `java.net.URI`, so malformed
+      text throws as the Java API does.
+  entry .soundnessUrl   urticose's `HttpUrl`, instantiated from text by parsing (urticose)
+      `HttpUrl is Instantiable across Urls from Text`, the instance `Url.instantiable` from
+      `HttpUrl`'s companion offered by name. It needs a `Tactic[Url.Error]`, raised for text
+      which is not a valid URL, and captures it.
+
+entry .instantInterfaces   the instant types a time-producing API may return, each a given to import by name
+  detail
+      A method bounded `[instant: Instantiable across Instants from Long]` lets the caller
+      choose the instant type it receives, from a `Long` of milliseconds since the epoch.
+
+      ```scala
+      import soundness.*
+      import instantInterfaces.javaTimeInstant
+
+      def epoch[instant: Instantiable across Instants from Long]: instant = instant(0L)
+      val start: java.time.Instant = epoch[java.time.Instant]
+      ```
+
+      diuretic declares the Java types, aviation its own `Instant`.
+  refer anticipation.Instants
+  entry .aviationInstant   aviation's `Instant`, as epoch milliseconds in both directions (aviation)
+      `(Instant over transport) is Abstractable & Instantiable across Instants to Long from
+      Long`, for any `transport`, from `Instant.generic`.
+  entry .javaTimeInstant   `java.time.Instant`, as epoch milliseconds in both directions (diuretic)
+      Abstraction is `toEpochMilli`, so sub-millisecond precision is dropped.
+  entry .javaLongInstant   a raw `Long` of epoch milliseconds, unchanged in both directions (diuretic)
+      The identity: the `Long` is already the generic representation.
+  entry .javaUtilDate   `java.util.Date`, as epoch milliseconds in both directions (diuretic)
+
+entry .durationInterfaces   the duration types a time-measuring API may return, each a given to import by name
+  detail
+      A method bounded `[duration: Instantiable across Durations from Long]` lets the caller
+      choose the duration type it receives, from a `Long` of nanoseconds.
+
+      ```scala
+      import soundness.*
+      import durationInterfaces.aviationDuration
+
+      def second[duration: Instantiable across Durations from Long]: duration =
+        duration(1_000_000_000L)
+
+      second[Quantity[Seconds[1]]]
+      ```
+  refer anticipation.Durations
+  refer anticipation.abstractables
+  entry .aviationDuration   a quantitative `Quantity` of time, as nanoseconds in both directions (aviation)
+      `Quantity[units] is Abstractable & Instantiable across Durations to Long from Long`, for
+      any units normalizable to seconds: abstraction normalizes to seconds and scales to
+      nanoseconds, truncating; instantiation scales back into `units`.
+  entry .javaLongDuration   a raw `Long` of nanoseconds, unchanged in both directions (diuretic)
+      The `Long` counts **nanoseconds**, the generic representation, unlike `javaLongInstant`,
+      whose `Long` counts epoch milliseconds. For a `Long` in another unit, import a reading
+      from `abstractables` or `instantiables` instead.
+
+entry .uuidInterfaces   the UUID types a UUID-producing API may return, each a given to import by name
+  detail
+      A method bounded `[uuid: Instantiable across Uuids from Text]` names no concrete type,
+      so its instance is imported by name.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import uuidInterfaces.soundnessUuid
+
+      def parse[uuid: Instantiable across Uuids from Text](text: Text): uuid = uuid(text)
+      parse[Uuid](t"e3b0c442-98fc-1c14-9afb-f4c8996fb924")
+      ```
+  refer anticipation.Uuids
+  entry .soundnessUuid   inimitable's `Uuid`, parsed from text (inimitable)
+      Needs a `Tactic[Uuid.Error]`, raised for text which is not a UUID, and captures it.
+
+entry .emailAddressInterfaces   the email-address types an API may return, each a given to import by name
+  detail
+      For a method bounded `[email: Instantiable across EmailAddresses from Text]`, which
+      names no concrete type whose companion could hold the instance.
+  refer anticipation.EmailAddresses
+  entry .soundnessEmailAddress   urticose's `EmailAddress`, parsed from text (urticose)
+      Needs a `Tactic[EmailAddress.Error]`, raised for text which is not a valid address, and
+      captures it.
+
+entry .hostnameInterfaces   the hostname types an API may return, each a given to import by name
+  detail
+      For a method bounded `[hostname: Instantiable across Hostnames from Text]`, which names
+      no concrete type whose companion could hold the instance.
+  refer anticipation.Hostnames
+  entry .soundnessHostname   urticose's `Hostname`, parsed from text (urticose)
+      Needs a `Tactic[Hostname.Error]`, raised for text which is not a valid hostname, and
+      captures it.
+
+entry .ipAddressInterfaces   the IP-address types an API may return, each a given to import by name
+  detail
+      For a method bounded `[ip: Instantiable across IpAddresses from Text]`, which names no
+      concrete type whose companion could hold the instance. The two givens instantiate
+      different types, so both may be imported.
+  refer anticipation.IpAddresses
+  entry .soundnessIpv4   urticose's `Ipv4`, parsed from dotted-decimal text (urticose)
+      Needs a `Tactic[IpAddress.Error]`, raised for text which is not an IPv4 address.
+  entry .soundnessIpv6   urticose's `Ipv6`, parsed from text (urticose)
+      Needs a `Tactic[IpAddress.Error]`, raised for text which is not an IPv6 address.
+
+entry .Text   the pure, opaque string type every Soundness library exchanges text as
+    `Text` is the opaque type `anticipation.internal.Text`, exported here: a `String` at
+    runtime, with no `String` methods at the type level, and pure, so the capture checker
+    treats a value of it as capturing nothing. Every Soundness API takes and returns `Text`
+    rather than `String`, and its operations come from gossamer and the collection
+    typeclasses rather than from `java.lang.String`.
+
+    ```scala
+    import soundness.*
+
+    val greeting: Text = t"Hello"
+    val legacy: Text = "world".tt
+    val joined: Text = greeting+t", "+legacy
+    joined.s   // back to a String, for a Java API
+    ```
+
+    A `String` converts implicitly where a `Text` is expected (`Text.conversion`), and `tt`
+    and `s` convert explicitly. Its companion supplies `+` with `Text` and with `String`,
+    `*` by an `Int`, the empty text as `Zeroic`, the collection typeclasses (`Traversable by
+    Char`, `Reshapable`, `Inclusive`, `Reversible`), equality with itself and with
+    `String`, a `Typeable` so that `case text: Text` matches a `String`, and `ToExpr` and
+    `FromExpr` for macros. All are in implicit scope; none needs an import.
+
+    A macro author should know that `Expr(text)` lifts through a quote typed inside
+    `Text`'s own scope, where the alias is transparent, so the spliced tree is typed as
+    `String & caps.Pure`; at an expansion site compiled with separation checking that fails
+    as `Text`. Lift the `String` and convert instead: `'{${Expr(text.s)}.tt}`.
+
+entry .tt   converts a `String` to `Text`: `"…".tt`
+    The explicit conversion, a runtime no-op. Prefer a `t"…"` literal for constant text.
+
+entry .ss   converts a collection of `Text` to a collection of `String`, for Java and stdlib APIs
+    `texts.ss` maps every element with `Text.s`, as an `Iterable[String]`.
+
+entry .subsumes   whether a `Text` contains another as a substring
+    `text.subsumes(t"lo")` is substring containment through `String.indexOf`, with no
+    traversal and no interim collections, which is why it is a separate extension from the
+    generic collection `subsumes` (still importable as `murmuration.subsumes`).
+
+    ```scala
+    import soundness.*
+
+    t"Hello".subsumes(t"ell")   // true
+    ```
+
+entry .Textualizable   a typeclass converting a value to `Text`, for APIs which take anything textual
+  detail
+      `value is Textualizable` provides the extension `#textual`, so an API can accept any
+      value with a canonical textual form without depending on the library that defines it.
+      Unlike `Showable`, which renders for a human, a `Textualizable` value *is* text in
+      another guise.
+  entry #convert   the value as `Text`
+  entry #textual   the value as `Text`: `value.textual`
+  entry #contramap   an instance for another type, by first mapping it to this one
+
+entry .Durable   the classifier of shared capabilities which may be retained across a thread boundary
+    A capture-checking classifier (a `caps.SharedCapability`) for monitors, running
+    processes, connections, channels, loggers and log sinks. A task's body runs on another
+    thread and is retained by a worker, so it is typed `->{caps.any.only[Durable]}`: it may
+    capture `Durable` capabilities but not, for example, a `Tactic`, which is a
+    `caps.Control` capability holding a return point on its installer's stack. A task
+    raises only through its own tactic.
+
+    A library declares its own long-lived capability by extending `Durable`; one meant to
+    be ambient is provided by a given that is a *value* (or an object), not a polymorphic
+    method, since a value is a static capability visible from every level.
+
+entry .Bidi   the reading direction of a positional operation: from the start or from the end
+    An enum with the cases `Ltr`, which anchors at the start, and `Rtl`, which anchors at
+    the end. It is the vocabulary of the generic positional operations (`keep`, `skip`,
+    `snip`) on collections and on text, so that both share one type.
+
+    ```scala
+    import soundness.*
+
+    t"filename.txt".keep(3, Bidi.Rtl)   // t"txt"
+    ```
+
+    `Ltr` is the default wherever a direction is optional. The umbrella exports `Bidi`
+    through gossamer.
+
+entry .internal   the home of the opaque `Text` type and its companion instances
+  hidden
+  detail
+      Not for direct use: `Text` is exported from here to the `anticipation` package, and its
+      page there has the full account.
+  entry .Text   the opaque string type; see `anticipation.Text`
+    detail
+        The opaque type `Text <: Matchable & caps.Pure`, a `String` at runtime. Its
+        companion holds the instances which make it a first-class text type.
+    entry .apply   makes `Text` from a `String`, an array of characters or an array of ASCII bytes
+        Bytes are decoded as US-ASCII; for another charset use a decoder.
+    entry .s   the `Text` as a `String`: `text.s`
+    entry .zeroic   the empty text as `Text`'s zero
+    entry .concatenable   `text+text`, concatenating two `Text`s
+    entry .addableString   `text+string`, appending a `String` to a `Text`
+    entry .multiplicable   `text*n`, repeating a `Text` `n` times; a negative count gives the empty text
+    entry .fromString   lets a `@main` method take `Text` parameters from the command line
+    entry .traversable   traverses a `Text` as its `Char`s
+    entry .reshapable   rebuilds a `Text` from a traversal of `Char`s
+    entry .inclusive   whether a `Text` contains a `Char`
+    entry .convertible   collects any traversal of `Char`s into a `Text`
+    entry .reversible   reverses a `Text`, keeping surrogate pairs intact
+    entry .fromExpr   reads a constant `Text` from a macro's `Expr`
+    entry .toExpr   lifts a `Text` into a macro's `Expr`
+        The lifted tree is typed as `String & caps.Pure`; under separation checking at the
+        expansion site, lift the `String` and convert with `.tt` instead.
+    entry .conversion   converts a `String` to `Text` wherever a `Text` is expected
+    entry .canEqual   permits `==` between two `Text`s under strict equality
+    entry .canEqual2   permits `==` between a `String` and a `Text` under strict equality
+    entry .canEqual3   permits `==` between a `Text` and a `String` under strict equality
+    entry .typeable   lets a pattern `case text: Text` match any `String`
+
+entry .Data   immutable bytes: an `Array[Byte]` which captures nothing
+  detail
+      `Data` is the type alias `Array[Byte]^{}`, the byte sequence every Soundness library
+      reads, writes, hashes and encodes. It is built with `apply`, `.build` or `.fill`, and
+      a block whose length is a literal is branded `Sized[n]`.
+
+      ```scala
+      import soundness.*
+
+      val header: Data = Data(0x50, 0x4b, 0x03, 0x04)
+      val zeros = Data.fill(16)(_ => 0)
+      ```
+  refer anticipation.Encodable
+  refer anticipation.bytestream
+  entry .apply   `Data` from the bytes given
+  entry .build   `Data` of a given length, filled in by a function writing into a fresh array
+      `Data.build(n)(array => …)` allocates an `n`-byte array, passes it to the function to
+      populate, and returns it frozen. With a literal length the result is branded
+      `Data & Sized[n]`; with a non-literal one it is plain `Data`.
+  entry .fill   `Data` of a given length, each byte computed from its index
+      With a literal length the result is branded `Data & Sized[n]`.
+
+entry .Encodable   a typeclass encoding a value into a named format, `value.in[Format]`
+  detail
+      `value is Encodable in Form` says that `value` can be encoded as a `Form`: `Text`,
+      `Data`, `Json`, `Xml`, a binary protocol, or any carrier type a codec library defines.
+      Encoding is a value-level operation, `value.in[Json]` (`in`), and `#encode` where the
+      instance is in hand. Codec libraries provide instances, often derived, in their format's
+      companion.
+
+      ```scala
+      import soundness.*
+
+      42.in[Text]   // t"42"
+      ```
+
+      The companion gives the primitives as `Text` (their `toString`), `Data` as itself, and
+      a `Long` as its eight big-endian bytes. `Encodable` is a tracked typeclass: an instance
+      derived from codecs which raise retains their `Tactic`.
+  refer anticipation.in
+  refer anticipation.Schematic
+  entry .bytes   `Data` encodes in `Data` as itself
+  entry .sizedBytes   `Data & Sized[n]` encodes in `Data` as itself
+  entry .longData   a `Long` encodes in `Data` as its eight bytes, big-endian
+  entry .int   an `Int` encodes in `Text` as its decimal form
+  entry .double   a `Double` encodes in `Text` by `toString`
+  entry .byte   a `Byte` encodes in `Text` as its decimal form
+  entry .short   a `Short` encodes in `Text` as its decimal form
+  entry .long   a `Long` encodes in `Text` as its decimal form
+  entry .float   a `Float` encodes in `Text` by `toString`
+  entry .text   `Text` encodes in `Text` as itself
+  entry .char   a `Char` encodes in `Text` as a one-character text
+  entry .string   a `String` encodes in `Text` as the same text
+  entry #encoded   encodes a value into the format
+  entry #encode   encodes a value into the format: `value.encode`
+  entry #contramap   an instance for another type, by first mapping it to this one
+      The result captures this instance and the function.
+
+entry .in   encodes a value into the named format: `value.in[Json]`
+    The value-level counterpart of `value is Encodable in Format`. It replaces both
+    `.encode`, whose format is implicit in the instance found, and per-format shorthands such
+    as `.json`, naming the target format at the call.
+
+    ```scala
+    import soundness.*
+
+    val text: Text = 42.in[Text]
+    val bytes: Data = 42L.in[Data]
+    ```
+
+entry .bytestream   a value as bytes, through its `Encodable in Data` instance
+    `value.bytestream` is `value.in[Data]`.
+
+entry .Schematic   a typeclass giving the schema of a value's encoding, in a chosen schema representation
+  detail
+      `value is Schematic over JsonSchema` provides `#schema`, the schema of the value's
+      encoding in the `Transport` representation (`JsonSchema` in jacinta, `Tels.Type` in
+      stratiform). It is the sibling of `Encodable`, and the two are commonly required
+      together, as `Encodable & Schematic in Json over JsonSchema`, so that a value's
+      encoding and its schema come from the same derivation. Format-specific instances live
+      with their format.
+  refer anticipation.Morphology
+  entry #schema   the schema, in the `Transport` representation
+
+entry .Schema   a typeclass for a schema type which parses text into a typed form
+  detail
+      A schema whose `Form` has a `Topic` type member: `#parse` reads a document as text into
+      a `Form of Topic`, typed by the schema.
+  entry #Form   the parsed form, refined with a `Topic` type member
+  entry #parse   parses a lazy chain of text into the schema's typed form
+
+entry .Morphology   the format-neutral shape of an encoding, carried by a codec beside its schema
+  detail
+      A codec (jacinta's `Json.Encodable`, stratiform's TEL codecs) carries the morphology of
+      the values it encodes, so that the codec and the schema derived from it are coherent by
+      construction; the morphology is then reified into a format-specific schema, a
+      `JsonSchema` or a `Tels.Type`, downstream. It records structure only; descriptions,
+      formats and bounds belong to each format's own schema.
+
+      The leaf cases are `Str` (a string), `Whole` (an integer), `Real` (a fractional
+      number), `Bool`, `Empty` (null or unit) and `Any` (unconstrained); the compound ones
+      follow.
+
+      ```scala
+      import soundness.*
+
+      val person = Morphology.Obj(List(t"name" -> Morphology.Str, t"age" -> Morphology.Whole),
+          List(t"name", t"age"))
+      ```
+  entry #optional   whether a value of this shape may be absent: true only for `Opt`
+      Used to compute which fields of a record are required.
+  entry .Opt   an optional value of a shape
+    entry #shape   the shape when present
+  entry .Arr   a homogeneous sequence
+    entry #items   the shape of each element
+  entry .Dict   a map of arbitrary keys to values
+    entry #key     the shape of the keys
+    entry #value   the shape of the values
+  entry .Obj   a record of named fields, with those which are required
+    entry #fields     the fields' names and shapes, in order
+    entry #required   the names of the fields which must be present
+  entry .OneOf   a tagged disjunction of shapes
+    entry #variants   the shape of each variant
+
+entry .Underlying   erased evidence that an opaque type is represented by a primitive
+    `Underlying[Alias, Primitive]` is declared, erased, in an opaque type's companion (as
+    `Chroma` declares `Underlying[Chroma, Int]`) to permit `underlying`, which views a value
+    of the alias as its representation at no cost. It is sealed and has no runtime value.
+
+entry .underlying   views an opaque value as its primitive representation, where the alias permits it
+    `value.underlying[Int]` compiles only where an erased `Underlying[Alias, Int]` is in
+    scope, and is a cast with no runtime cost.
+
+entry .Log   logs an event at one of four levels, and names the categories an event may belong to
+  detail
+      `Log.fine`, `Log.info`, `Log.warn` and `Log.fail` log a value through the `Loggable`
+      instance in scope, which `Loggable.fanOut` derives in implicit scope from every
+      `LogSink` present. The argument is taken by name and the level is checked first, so
+      when no sink accepts the level, including when there is no sink at all, the value is
+      never constructed: a disabled log statement costs nothing and needs no guard.
+
+      ```scala
+      import soundness.*
+
+      def report(remote: Text): Unit =
+        Log.fine(m"starting...")
+        Log.info(m"connected to $remote")
+      ```
+
+      A library declares that a method logs its own event type with `logs`, as in `Long logs
+      Backup.Event`.
+
+      The object also holds a growable vocabulary of **categories** describing the nature of
+      an event: an event type, or one of its enum cases, mixes in one or more of the marker
+      traits (`Log.Network`, `Log.Filesystem`, …), and a sink configured with a set of
+      `Log.Category` values (such as eucalyptus's `Logger(…, categories = Set(Log.Network))`)
+      records only events whose runtime type mixes one in. Each trait is paired with an
+      object of the same name, the `Category` value carrying its runtime class. The filter
+      crosses libraries, so every library's network events can be selected at once.
+
+      ```scala
+      import soundness.*
+
+      enum Fetch:
+        case Requested(url: Text) extends Fetch, Log.Network
+        case Cached(url: Text) extends Fetch, Log.Network, Log.Cache
+      ```
+  refer anticipation.Loggable
+  refer anticipation.LogSink
+  refer anticipation.logs
+  entry .fine   logs a value at `Level.Fine`: high-frequency detail, useful while debugging
+  entry .info   logs a value at `Level.Info`: one line per significant operation
+  entry .warn   logs a value at `Level.Warn`: a recoverable or unexpected-but-handled condition
+  entry .fail   logs a value at `Level.Fail`: an operation which failed unrecoverably
+  entry .Category   a category of log event, carrying the runtime class of its marker trait
+    detail
+        Each category is an object paired with a marker trait of the same name; a sink
+        tests an event against a category with `#reference`, at runtime, since the call site
+        knows only the event's general type.
+    entry #reference   the runtime class of the category's marker trait
+  entry .Memory   events about memory use and allocation, as a marker trait and its `Category`
+  entry .Cpu   events about processor use, as a marker trait and its `Category`
+  entry .Threading   events about threads, tasks and their scheduling, as a marker trait and its `Category`
+  entry .Process   events about operating-system processes, as a marker trait and its `Category`
+  entry .Filesystem   events about files and directories, as a marker trait and its `Category`
+  entry .Disk   events about storage devices and volumes, as a marker trait and its `Category`
+  entry .Network   events about network connections and traffic, as a marker trait and its `Category`
+  entry .Database   events about database access, as a marker trait and its `Category`
+  entry .Cache   events about caching, hits and evictions, as a marker trait and its `Category`
+  entry .Serialization   events about encoding and decoding, as a marker trait and its `Category`
+  entry .Crypto   events about cryptographic operations, as a marker trait and its `Category`
+  entry .Auth   events about authentication and authorization, as a marker trait and its `Category`
+  entry .Configuration   events about reading configuration, as a marker trait and its `Category`
+  entry .Dependency   events about resolving dependencies, as a marker trait and its `Category`
+  entry .Scheduler   events about scheduled and periodic work, as a marker trait and its `Category`
+  entry .Time   events about clocks and timing, as a marker trait and its `Category`
+  entry .Ui   events about the user interface, as a marker trait and its `Category`
+  entry .Protocol   events about protocol messages and handshakes, as a marker trait and its `Category`
+  entry .Compiler   events about compilation, as a marker trait and its `Category`
+  entry .Runtime   events about the runtime environment, such as loading code, as a marker trait and its `Category`
+  entry .Gc   events about garbage collection, as a marker trait and its `Category`
+  entry .Resource   events about reading bundled resources, as a marker trait and its `Category`
+  entry .Security   events about security-relevant conditions, as a marker trait and its `Category`
+
+entry .Level   the severity of a log event: `Fine`, `Info`, `Warn` or `Fail`
+  detail
+      An enum, ordered from least to most severe. `Fine` is high-frequency detail, normally
+      switched off; `Info` one line per significant operation; `Warn` a recoverable or
+      unexpected-but-handled condition; `Fail` an operation which failed unrecoverably,
+      logged beside the error being raised. A sink's threshold (`LogSink#accepts`) drops
+      everything below a chosen level, as eucalyptus's `Logger(Out, level = Level.Warn)` does.
+  entry .comparable   orders levels by severity, from `Fine` to `Fail`
+
+entry .Loggable   a typeclass logging events of one type, derived from the sinks in scope
+  detail
+      `event is Loggable` is what `Log.info` and its siblings need. It is rarely written by
+      hand: `.fanOut`, in implicit scope, derives one by transcribing the event once to each
+      sink's carrier type (`Transcribable`) and fanning it out to every `LogSink` in scope,
+      so several sinks in scope each receive every event, each applying its own threshold.
+      With no sink in scope the derived instance is silent. An explicitly imported instance
+      outranks the derived one: `import logging.silentLogging`, from eucalyptus, suppresses
+      all logging in a file.
+
+      A `Loggable` is a shared capability (`Durable`): it is written to from every task at
+      once, and captures the sinks it fans out to, which is why `logs` makes its evidence a
+      capturing one.
+  refer anticipation.LogSink
+  refer anticipation.Transcribable
+  refer anticipation.logs
+  entry .silent   a logger for an event type which records nothing, as a pure value
+  entry .fanOut   derives a logger from every `LogSink` in scope, through the event's `Transcribable`
+      For each logged event, if any sink accepts its level, the by-name event is forced once
+      and, unless `Transcribable#skip` rejects it, transcribed lazily to the carrier and
+      submitted to every sink whose threshold and categories (`LogSink#admits`) accept it.
+  entry #log   logs an event at a level and timestamp
+  entry #contramap   a logger for another type, by first mapping each event to this one
+      The function may capture only `Durable` capabilities, since the logger retains it.
+
+entry .LogSink   a destination for log events of a carrier type, such as eucalyptus's `Logger`
+  detail
+      A `LogSink[Event, Carrier]` records events transcribed to `Carrier` (a `Message`,
+      say). It is the abstraction `Loggable.fanOut` gathers from scope, so this module
+      needs no logging runtime; eucalyptus's `Logger` implements it. It is contravariant in
+      its event type, so a `LogSink[Any, Message]` collects every event.
+
+      A sink is a `Durable` capability: it is shared and synchronised, since every task
+      writes to it, and ambient, typically an imported package given.
+  refer anticipation.Loggable
+  entry #accepts   whether the sink records events at a level
+      Consulted before the event is forced, so a rejected event is never constructed.
+  entry #admits   whether the sink records this particular event; true unless overridden
+      Takes the original event rather than its transcription, so that a sink filtered to
+      `Log.Category`s can test the event's runtime type.
+  entry #submit   records an event, already transcribed, at a level and timestamp
+
+entry .Transcribable   a typeclass transcribing an event into a sink's carrier type
+  detail
+      `event is Transcribable to Carrier` converts an event into the type a `LogSink`
+      records, and is how one library's events are carried inside another's. `transcribes`
+      reads more naturally in a given:
+
+      ```scala
+      import soundness.*
+
+      enum Inner:
+        case Copied(source: Text)
+
+      enum Outer:
+        case Ran(event: Inner)
+
+      given (Outer transcribes Inner) = Outer.Ran(_)
+      ```
+
+      A message type is transcribable from any `Communicable` event, which is why logging an
+      `m"…"` message needs no declaration.
+  refer anticipation.transcribes
+  entry #record   transcribes an event into the carrier type
+  entry #skip   whether to drop an event rather than transcribe it; false unless overridden
+  entry #contramap   an instance for another type, by first mapping each event to this one
+
+entry .logs   the type of a result computed by code that logs events of a type: `Result logs Event`
+    `Long logs Backup.Event` is a context function needing a capturing `Backup.Event is
+    Loggable`, so a caller must either declare the event itself or have a sink for it in
+    scope. Declarations chain: `Unit logs Http.Event logs Exec.Event`.
+
+    ```scala
+    import soundness.*
+
+    enum Backup:
+      case Started(source: Text)
+
+    def backup(source: Text): Unit logs Backup =
+      Log.info(Backup.Started(source))
+    ```
+
+entry .transcribes   the type of a `Transcribable` instance read in the direction of the wrapping
+    `Outer transcribes Inner` is `Inner is Transcribable to Outer`: a given of it lets
+    `Inner` events be logged where `Outer` events are accepted, wrapped as `Outer`.
+
+entry .Printable   a typeclass rendering a value as text for a terminal of known capabilities
+  detail
+      `value is Printable` renders a value to `Text` given a `Termcap`, so that a value which
+      may carry colour or styling (an escapade `Teletype`, a `Message`) degrades to plain
+      text on a terminal without ANSI support. turbulence's `Out.println` and `Err.println`
+      take any `Printable` value, with a `Termcap` in scope.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import termcapDefinitions.basicTermcap
+      import stdios.javaLangSystemStdio
+
+      Out.println(t"Hello")
+      ```
+
+      The companion makes `Text`, `String` and `Char` printable as themselves; escapade
+      provides instances for its styled text.
+  refer anticipation.Termcap
+  entry .text   `Text` prints as itself, on any terminal
+  entry .string   a `String` prints as the same text
+  entry .char   a `Char` prints as a one-character text
+  entry #print   renders a value for a terminal with the given capabilities
+  entry #contramap   an instance for another type, by first mapping each value, with the `Termcap` in context
+      The function is a context function of the `Termcap`, so the mapping itself can depend
+      on what the terminal supports.
+
+entry .Termcap   the capabilities of a terminal: ANSI support, colour depth and size
+  detail
+      A `Termcap` in scope tells a `Printable` how to render: whether ANSI escapes are
+      understood, how many colours are available, and the terminal's width and height, which
+      default to unbounded (`Int.MaxValue`), so that nothing wraps. A fixed one is imported
+      by name from `termcapDefinitions`; ambience's `termcaps.environmentTermcap` reads the
+      terminal's capabilities from the environment, and a daemon's invocation carries its
+      client's.
+  refer anticipation.termcapDefinitions
+  refer anticipation.ColorDepth
+  entry #ansi    whether the terminal understands ANSI escape sequences
+  entry #color   how many colours the terminal can show
+  entry #width   the terminal's width in columns; unbounded unless known
+  entry #height   the terminal's height in rows; unbounded unless known
+
+entry .ColorDepth   how many colours a terminal can display, from none to 24-bit true colour
+  detail
+      An enum, from least to most capable: `NoColor`; `Indexed8` and `Indexed16`, the basic
+      ANSI palettes; `Cube4` and `Cube6`, the 88- and 256-colour palettes with a colour cube;
+      and `TrueColor`, 24-bit colour.
+
+      ```scala
+      import soundness.*
+
+      ColorDepth(256)   // ColorDepth.Cube6
+      ```
+  entry .apply   the colour depth for a terminal's colour count, as `tput colors` reports it
+      8 is `Indexed8`; 15 or 16 `Indexed16`; 52, 64 or 88 `Cube4`; 256 `Cube6`; 65536 or
+      16777216 `TrueColor`; anything else `NoColor`.
+
+entry .termcapDefinitions   fixed terminal capabilities, each a given to import by name
+  detail
+      For a program which knows what its output is rendered on, or a test or document whose
+      output must not depend on the terminal running it. Each is a given imported by name,
+      since `import termcapDefinitions.*` does not import givens:
+
+      ```scala
+      import soundness.*
+      import termcapDefinitions.basicTermcap
+      ```
+
+      None reports a width or height, so text never wraps.
+  refer anticipation.Termcap
+  entry .basicTermcap   a terminal with no ANSI support and no colour: plain text
+  entry .xterm256Termcap   an ANSI terminal with the 256-colour palette
+  entry .xtermTrueColorTermcap   an ANSI terminal with 24-bit true colour
+
+entry .Chromatic   a typeclass reducing a colour of any representation to a packed 24-bit RGB `Chroma`
+  detail
+      `color is Chromatic` lets an API which draws or styles accept a colour from any
+      library: cataclysm's CSS, savagery's SVG and escapade's terminal styling each take a
+      `Chromatic` value, and iridescence's colour spaces and pixels provide instances.
+
+      ```scala
+      import soundness.*
+
+      def hex[color: Chromatic](color: color): Int = color.chroma.underlying
+
+      hex(Chroma(255, 128, 0))
+      ```
+  refer anticipation.Chroma
+  entry #convert   the colour as a `Chroma`
+  entry #chroma   the colour as a `Chroma`: `color.chroma`
+  entry #red     the colour's red component, 0 to 255
+  entry #green   the colour's green component, 0 to 255
+  entry #blue    the colour's blue component, 0 to 255
+  entry #contramap   an instance for another type, by first mapping it to a colour of this one
+
+entry .Chroma   a colour as 24-bit RGB packed into an `Int`, the common currency of `Chromatic`
+    `Chroma` is the opaque type `anticipation.internal2.Chroma`, exported here: an `Int`
+    whose low 24 bits hold red, green and blue, eight bits each, most significant first. It
+    is the type every `Chromatic` instance converts to, and is itself `Chromatic`.
+
+    ```scala
+    import soundness.*
+
+    val orange: Chroma = Chroma(255, 128, 0)
+    orange.red        // 255
+    orange.underlying // 0xff8000
+    ```
+
+    The `red`, `green` and `blue` extensions mask the component, so the top eight bits of
+    the `Int` are never part of the colour; `underlying` gives the packed `Int`.
+
+entry .internal2   the home of the opaque `Chroma` type
+  hidden
+  detail
+      Not for direct use: `Chroma` is exported from here to the `anticipation` package, and
+      its page there has the full account.
+  entry .Chroma   a packed 24-bit RGB colour; see `anticipation.Chroma`
+    detail
+        The opaque type `Chroma <: Matchable`, an `Int` at runtime.
+    entry .apply   a `Chroma` from a packed `Int`, or from red, green and blue components
+        Each component is masked to eight bits.
+    entry .chromatic   a `Chroma` is `Chromatic` as itself
+    entry .underlying   erased evidence that a `Chroma` is represented by an `Int`
+  entry .underlying   the packed `Int` of a `Chroma`
+  entry .red     the red component of a `Chroma`, 0 to 255
+  entry .green   the green component of a `Chroma`, 0 to 255
+  entry .blue    the blue component of a `Chroma`, 0 to 255
+
+entry .Channel   a phantom channel of a packed pixel layout, such as `Red[10]`, with match types over layouts
+  detail
+      A channel is a colour component with a bit depth, never instantiated: `Red[10]` is ten
+      bits of red. A pixel **layout** is a tuple of channels, most significant first, such as
+      `(Red[10], Green[12], Blue[10])`, and iridescence's pixel types are parameterised by
+      one. Each channel family carries a literal label (`"red"`, `"cyan"`, …) by which the
+      match types in the companion find it within a layout; the hierarchy is open, so a
+      library may add channels with labels of its own.
+
+      ```scala
+      import soundness.*
+
+      type Rgb565 = (Red[5], Green[6], Blue[5])
+      summon[anticipation.Channel.TotalBits[Rgb565] =:= 16]
+      summon[anticipation.Channel.Storage[Rgb565] =:= Short]
+      ```
+
+      `Channel` is not exported to the `soundness` umbrella, where the name belongs to a
+      WebSocket channel; reach it as `anticipation.Channel`. The channel families `Red`,
+      `Green`, `Blue` and the rest are exported.
+  refer anticipation.Red
+  entry .Label   the literal label of a channel: `Label[Red[8]]` is `"red"`
+  entry .Bits   the bit depth of a channel: `Bits[Red[8]]` is `8`
+  entry .TotalBits   the total bit width of a layout
+  entry .Has   whether a layout has a channel with a label, as a literal `Boolean`
+  entry .Shift   the bit offset of a labelled channel within a layout
+      The total width of the channels packed below it. It does not reduce for a layout
+      without the channel, which statically gates accessors such as `.red` or `.cyan` to
+      layouts which have it.
+  entry .Depth   the bit depth of a labelled channel within a layout
+  entry .Storage   the narrowest primitive holding one pixel of a layout: `Byte`, `Short`, `Int` or `Long`
+
+entry .Red   a pixel channel of red, of a given bit depth, labelled `"red"`
+entry .Green   a pixel channel of green, of a given bit depth, labelled `"green"`
+entry .Blue   a pixel channel of blue, of a given bit depth, labelled `"blue"`
+entry .Alpha   a pixel channel of opacity, of a given bit depth, labelled `"alpha"`
+entry .Cyan   a pixel channel of cyan, for CMYK layouts, labelled `"cyan"`
+entry .Magenta   a pixel channel of magenta, for CMYK layouts, labelled `"magenta"`
+entry .Yellow   a pixel channel of yellow, for CMYK layouts, labelled `"yellow"`
+entry .Key   a pixel channel of black (the K of CMYK), labelled `"key"`
+entry .Grey   a pixel channel of grey intensity, for monochrome layouts, labelled `"grey"`
+
+entry .Graphical   a typeclass reading any image as a grid of `Chroma` pixels
+  detail
+      `image is Graphical` exposes an image's dimensions and its pixels as packed RGB, so a
+      consumer can draw an image of any library's type: escapade renders any `Graphical`
+      value on a terminal, and hallucination's `Raster` provides an instance.
+  refer anticipation.Chroma
+  entry #width    the image's width in pixels
+  entry #height   the image's height in pixels
+  entry #pixel    the colour of the pixel at a column and row
+
+entry .Focusable   a typeclass locating an element in a document, in a browser driver's terms
+  detail
+      `value is Focusable` names a WebDriver locating strategy (`#strategy`: `css selector`,
+      `xpath`, `link text`, `tag name`) and renders a value in it (`#focus`), so tarantula's
+      `element` and `\` accept a selector, an XPath, an HTML tag or plain link text without
+      depending on the libraries defining them. Those libraries (cataclysm, xylophone,
+      honeycomb, nomenclature) provide instances in their own companions; the companion here
+      makes `Text` focus as link text.
+
+      ```scala
+      import soundness.*
+
+      case class TestId(name: Text)
+      given TestId is Focusable = Focusable(t"css selector", id => t"[data-testid='${id.name}']")
+      ```
+
+      It is a pure typeclass: the rendering function must capture nothing.
+  entry .apply   a `Focusable` from a strategy name and a pure rendering function
+  entry .text   `Text` focuses as link text: the element whose link has exactly that text
+  entry #strategy   the WebDriver locating strategy, such as `css selector` or `xpath`
+  entry #focus   the value rendered in the locating strategy's syntax

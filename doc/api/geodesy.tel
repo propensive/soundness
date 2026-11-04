@@ -1,0 +1,585 @@
+tel 1.0
+
+base geodesy
+import soundness
+
+info   angles, positions on the Earth, compass bearings, geohashes and `geo:` URIs as typed values
+detail
+    _Geodesy_ gives geographic code types for the things it otherwise keeps in bare doubles.
+    An `Angle` is a genuine angular quantity — constructed in degrees, radians or turns,
+    added and scaled modularly, normalised to a principal or canonical value — so that no
+    `Double` ever stands for an angle whose unit is a matter of memory. A `Location` is a
+    latitude and a longitude packed into one machine word, from which the initial bearing to
+    another location, the great-circle distance between them and the position's geohash are
+    computed. A bearing resolves to a point of a 4-, 8- or 16-point compass rose, chosen by a
+    type argument, or stays an `Angle` measured from north or east; and a `Geolocation` is a
+    location with altitude, uncertainty and parameters, read from and written as an
+    RFC 5870 `geo:` URI.
+
+    ```scala
+    import soundness.*
+    import soundness.angleShowable
+    import compassBearings.eightPointCompassBearing
+    import strategies.throwUnsafely
+
+    val london = Location(51.5074.deg, Angle.degrees(-0.1278))
+    val paris = Location(48.8566.deg, 2.3522.deg)
+
+    london.bearing[Compass[8]](paris)             // Southeast
+    london.surfaceDistance(paris).radians*6371.0  // about 344 km
+    london.geohash(6)                             // t"gcpvj0"
+    (350.deg + 20.deg).show                       // t"10.0°"
+    Compass[16](Angle.degrees(247.5))             // WestSouthwest
+    t"geo:51.5,-0.13;u=35".as[Geolocation].uncertainty   // 35.0
+    ```
+
+    Two givens are imported by name, since `import soundness.*` brings in no givens. An
+    angle's textual form, degrees to one decimal place with a `°`, is `angleShowable`, a
+    top-level given because `Angle` lives in a component below the text stack and its
+    companion cannot carry it. Which compass a bearing is resolved on is a given from the
+    `compassBearings` choice package: `fourPointCompassBearing`, `eightPointCompassBearing`,
+    `sixteenPointCompassBearing`, or `fromNorthBearing` and `fromEastBearing` for the bearing
+    as an angle. Everything else — the arithmetic on angles, their inspection, the codecs for
+    `Location` and `Geolocation` — is in the companions and needs no import.
+
+    The library is two source sets:
+
+    - `geodesy.angle` — `Angle`, its arithmetic, `Degree`, `ArcMinute`, `ArcSecond` and the
+      `deg` and `rad` extensions. It depends on nothing but hypotenuse and symbolism, so
+      libraries below the text stack (a colour's hue, a rotation) can use an angle without
+      the rest.
+    - `geodesy.core` — `Location`, `Compass` and the winds, `Directional`, `Locatable`,
+      `Geolocation`, `angleShowable` and the `compassBearings` package.
+
+    Both compile for the JVM, Scala.js and Scala Native, and everything is exported to the
+    `soundness` umbrella, where the `compassBearings` package merges with the umbrella's own.
+
+refer geodesy.Angle
+refer geodesy.Location
+refer geodesy.Compass
+refer geodesy.Geolocation
+refer geodesy.compassBearings
+
+entry .Angle   an angle as a quantity: built in degrees, radians or turns, with wrapping arithmetic
+  detail
+      `Angle` is an opaque type over a `Double` of radians, so an angle cannot be confused
+      with a bare number or a length, and its unit is never a matter of convention. One is
+      made through its unit — `Angle.degrees(45)`, `45.deg`, `Angle.turns(0.25)`,
+      `Angle(math.Pi/4)` or `0.785.rad` — and read back in any: `degrees`, `radians`,
+      `turns`.
+
+      ```scala
+      import soundness.*
+      import soundness.angleShowable
+
+      val bearing: Angle = 45.deg
+      bearing.show                        // t"45.0°"
+      bearing.radians                     // 0.7853981633974483
+      (350.deg + 20.deg).show             // t"10.0°"
+      (10.deg - 20.deg).show              // t"350.0°"
+      (Angle.degrees(100)*4.0).show       // t"40.0°"
+      Angle.degrees(375).principal.show   // t"15.0°"
+      Angle.degrees(355).canonical.show   // t"-5.0°"
+      ```
+
+      Arithmetic wraps as angles do: `+` and `-` between angles, and `*` and `/` by a
+      `Double` on either side, all reduce modulo a full turn, so 370° and 10° are the same
+      angle after any operation. Two normal forms are available: `principal` in `[0°, 360°)`
+      and `canonical` in `[−180°, 180°)`. The literal `45.deg` works for an integer literal
+      because it widens to the `Double` the extension takes.
+
+      Rendering is in two places. `inspect` is in the companion, at full precision
+      (`7.25°`), so a debug rendering never depends on remembering an import; `show`, which
+      rounds to one decimal place for display, is the top-level given `angleShowable` and
+      must be imported by name, because the `geodesy.angle` component sits below the text
+      stack and cannot put it here.
+
+      `Compass[n](angle)` resolves an angle to a compass point, and `Location#bearing`
+      produces one, measured clockwise from north.
+  refer geodesy.angleShowable
+  refer geodesy.deg
+  refer geodesy.Compass
+
+entry .Degree   one degree, as an `Angle`: π/180 radians
+    A constant to multiply: `45.0*Degree` is 45°, and `Degree/60.0` is `ArcMinute`. The
+    `deg` extension is the same angle times its receiver.
+
+entry .ArcMinute   one minute of arc, a sixtieth of a degree, as an `Angle`
+
+entry .ArcSecond   one second of arc, a sixtieth of an arcminute, as an `Angle`
+
+entry .deg   an angle of this many degrees, as `45.0.deg`
+    An extension on `Double`: `51.5074.deg`. An integer literal widens, so `45.deg` works
+    too. A negative value is clearest bracketed, `(-0.1278).deg`, or as
+    `Angle.degrees(-0.1278)`; `Angle` has no unary negation of its own.
+
+entry .rad   an angle of this many radians, as `math.Pi.rad`
+    An extension on `Double`, the same as `Angle(value)`.
+
+entry .angleShowable   renders an angle as degrees to one decimal place with a `°`: `45.0°`
+    The `Showable` given for `Angle`. It is a top-level given, so it must be imported by
+    name — `import soundness.angleShowable` — because `Angle` is declared in the
+    `geodesy.angle` component, below the text stack, and its companion cannot hold a
+    `Showable`. The rounding is for display: `Angle.degrees(7.25).show` is `7.3°`, where
+    `inspect` gives `7.25°`.
+
+    ```scala
+    import soundness.*
+    import soundness.angleShowable
+
+    Angle.degrees(7.25).show          // t"7.3°"
+    Angle.degrees(-30).principal.show // t"330.0°"
+    ```
+
+entry .angleInternal   the object which declares the opaque type `Angle` and its extensions
+  hidden
+  detail
+      Not for direct use: `Angle` is exported from here to the `geodesy` package, and the
+      extensions below are found through the opaque type's implicit scope. Its page under the
+      `geodesy` package has the full account.
+  entry .Angle   the opaque angle type; see `geodesy.Angle`
+    entry .apply   an angle of the given radians
+        `Angle(math.Pi)` is a half turn; `.rad` on a `Double` is the same.
+    entry .degrees   an angle of the given degrees, as `Angle.degrees(45)`
+        The companion's constructor; the extension `degrees` on an angle reads it back.
+        `45.deg` and `45.0*Degree` are the same angle.
+    entry .turns   an angle of the given fraction of a full turn, as `Angle.turns(0.5)`
+    entry .addable   `angle + angle`, reduced modulo a full turn
+        `350.deg + 20.deg` is 10°. The `Addable` given, in the companion.
+    entry .subtractable   `angle - angle`, reduced modulo a full turn to a non-negative result
+        `10.deg - 20.deg` is 350°: the result is the principal value.
+    entry .multiplicable   `angle * double`, reduced modulo a full turn
+        `Angle.degrees(100)*4.0` is 40°. `ArcMinute*60.0` is a degree.
+    entry .divisible   `angle / double`, reduced modulo a full turn
+        `Angle.degrees(90)/2.0` is 45°; `Degree/60.0` is `ArcMinute`.
+    entry .multiplicable2   `double * angle`: a scalar multiplying an angle from the left
+        `2.0*Angle.degrees(90)` is 180°, as `Angle.degrees(90)*2.0` is.
+    entry .inspectable   a debug rendering in degrees at full precision: `7.25°`
+        Unlike `angleShowable`, which rounds to one decimal place for display, inspection
+        writes the `Double`'s own rendering of the degrees, since a rendering that rounded
+        would hide the state it exists to show. In the companion, so it needs no import.
+  entry .degrees   the angle in degrees, as a `Double`
+      `45.deg.degrees` is `45.0`. Not reduced: an angle built as `Angle.degrees(375)` reads
+      back as 375 until `principal` or `canonical` is taken.
+  entry .radians   the angle in radians, as a `Double`
+      The representation itself: `90.deg.radians` is π/2. A great-circle distance from
+      `Location#surfaceDistance` is an angle whose radians, times a sphere's radius, are a
+      length along its surface.
+  entry .turns   the angle as a fraction of a full turn
+      `Angle.degrees(90).turns` is `0.25`.
+  entry .principal   the equivalent angle in `[0, 2π)`: 375° becomes 15°, −30° becomes 330°
+      The form a compass bearing is normalised to before it reaches a `Directional`.
+  entry .canonical   the equivalent angle in `[−π, π)`: 355° becomes −5°, 190° becomes −170°
+      The form a longitude is stored in, so that a western longitude keeps its sign.
+
+
+entry .Location   a latitude and a longitude packed into one machine word, with bearings, distances and geohashes
+  detail
+      `Location` is an opaque type over a `Long`: the latitude and the longitude are each
+      stored as a 32-bit fixed-point fraction of a half turn, so a position costs one machine
+      word, a collection of them is unboxed, and two equal positions are equal values. It is
+      built from two angles, latitude first, and read back as angles:
+
+      ```scala
+      import soundness.*
+
+      val sydney = Location(Angle.degrees(-33.8688), 151.2093.deg)
+      val melbourne = Location(Angle.degrees(-37.8136), 144.9631.deg)
+
+      sydney.latitude.degrees                         // about -33.8688
+      sydney.pair                                     // (latitude, longitude)
+      sydney.surfaceDistance(melbourne).radians*6371  // about 713 km
+      sydney.geohash(8)                               // t"r3gx2f77"
+      sydney.encode                                   // t"-33.868800,151.209300"
+      ```
+
+      The fixed-point form holds a coordinate to about a centimetre on the Earth's surface,
+      so a coordinate reads back within about a ten-millionth of a degree of what was
+      given, not exactly: compare read-back angles with a tolerance. The longitude is stored in its
+      canonical range, `[−180°, 180°)`, so a western longitude reads back negative.
+
+      The geographic questions are extension methods on `Location`, found through the opaque
+      type's implicit scope:
+
+      - `latitude` and `longitude`, each an `Angle`, and `pair`, the two as a tuple;
+      - `surfaceDistance(other)`, the great-circle separation as an `Angle` (by the haversine
+        formula), whose radians times a sphere's radius are the distance along its surface,
+        so the same code serves the Earth and Mars;
+      - `bearing[Compass[8]](other)`, the initial bearing toward another location, resolved
+        on whichever rose or angular convention a `Directional` given from
+        `compassBearings` provides;
+      - `geohash(n)`, the position's base-32 geohash of `n` characters, where a shorter hash
+        is always a prefix of a longer one.
+
+      A `Location` encodes as `latitude,longitude` in degrees to six decimal places
+      (`.encodable`), the form a `geo:` URI uses, and inspects at full precision as
+      `⌖51.4999999718275°,0.12599995365645733°`. With an altitude, an uncertainty or a
+      coordinate reference system it becomes a `Geolocation`.
+  refer geodesy.Angle
+  refer geodesy.Geolocation
+  refer geodesy.compassBearings
+  refer geodesy.Locatable
+
+entry .Compass   a compass rose of 4, 8 or 16 points, as a type, and the resolution of an angle to one of its points
+  detail
+      `Compass[4]`, `Compass[8]` and `Compass[16]` are match types naming the winds of each
+      rose: `CardinalWind` for four points, `CardinalWind | IntercardinalWind` for eight, and
+      those with `HalfWind` for sixteen. Because the number of points is a type argument,
+      the type of a resolved bearing says which rose it came from, and a match on a
+      four-point bearing is exhaustive over four cases rather than sixteen.
+
+      `Compass[n](angle)` resolves an angle, measured clockwise from north, to the nearest
+      point of the rose; each point covers the sector centred on it, so on an eight-point
+      rose `Northeast` covers 22.5° to 67.5°. The angle is normalised first, so a negative
+      angle is measured anticlockwise and one past a full turn wraps.
+
+      ```scala
+      import soundness.*
+
+      Compass[4](Angle.degrees(44))      // North
+      Compass[4](Angle.degrees(46))      // East
+      Compass[8](Angle.degrees(315))     // Northwest
+      Compass[16](Angle.degrees(247.5))  // WestSouthwest
+      Compass[8](Angle.degrees(-90))     // West
+      ```
+
+      A `Location#bearing` resolves on a rose through a `Directional` given, imported by
+      name from `compassBearings`; the four- eight- and sixteen-point givens there call
+      `Compass[n]`.
+
+      `CardinalWind` and `IntercardinalWind` show as arrows (`↑`, `↗`); `HalfWind` has no
+      `Showable`, so a sixteen-point bearing is shown by matching on it.
+  refer geodesy.CardinalWind
+  refer geodesy.IntercardinalWind
+  refer geodesy.HalfWind
+  refer geodesy.compassBearings
+  entry .apply   the point of a 4-, 8- or 16-point rose nearest an angle measured clockwise from north
+      `Compass[8](Angle.degrees(315))` is `Northwest`. An inline method: the number of points
+      is a literal type argument, `4`, `8` or `16`, and the result is typed `Compass[n]`.
+  entry .points4   the four cardinal winds, clockwise from north
+      An immutable array of `North`, `East`, `South`, `West`: point *i* is centred on *i* × 90°.
+  entry .points8   the eight winds, clockwise from north
+      The cardinal winds with an intercardinal between each pair: `North`, `Northeast`,
+      `East`, … `Northwest`. Point *i* is centred on *i* × 45°.
+  entry .points16   the sixteen winds, clockwise from north
+      The eight winds with a half wind between each pair: `North`, `NorthNortheast`,
+      `Northeast`, … `NorthNorthwest`. Every fourth point is a cardinal wind, and point *i* is
+      centred on *i* × 22.5°.
+
+entry .CardinalWind   the four cardinal points: `North`, `East`, `South` and `West`
+  detail
+      The points of a `Compass[4]` rose, and the cardinal points of every larger one. The
+      cases are exported to the `geodesy` package (and the umbrella), so they are written
+      bare: `North`, not `CardinalWind.North`.
+
+      ```scala
+      import soundness.*
+
+      Compass[4](Angle.degrees(100)) match
+        case North => t"up"
+        case East  => t"right"
+        case South => t"down"
+        case West  => t"left"
+      ```
+  refer geodesy.Compass
+  entry .showable   renders a cardinal wind as an arrow: `↑`, `→`, `↓` or `←`
+      In the companion, so it needs no import: `North.show` is `t"↑"`.
+
+entry .IntercardinalWind   the four intercardinal points: `Northeast`, `Southeast`, `Southwest` and `Northwest`
+  detail
+      The points between the cardinal winds, which a `Compass[8]` rose adds to
+      `CardinalWind`. The cases are exported to the `geodesy` package and the umbrella, so
+      they are written bare: `Northeast`.
+  refer geodesy.Compass
+  entry .showable   renders an intercardinal wind as a diagonal arrow: `↗`, `↘`, `↙` or `↖`
+      In the companion, so it needs no import: `Northeast.show` is `t"↗"`.
+
+entry .HalfWind   the eight half winds of a 16-point rose, from `NorthNortheast` to `NorthNorthwest`
+    The points between each cardinal and intercardinal wind, which a `Compass[16]` rose adds
+    to the eight: `NorthNortheast`, `EastNortheast`, `EastSoutheast`, `SouthSoutheast`,
+    `SouthSouthwest`, `WestSouthwest`, `WestNorthwest` and `NorthNorthwest`. The cases are
+    exported to the `geodesy` package and the umbrella, so they are written bare. Unlike
+    `CardinalWind` and `IntercardinalWind`, a half wind has no `Showable` arrow.
+
+entry .North   the cardinal wind north, 0°: `CardinalWind.North`, exported
+entry .East   the cardinal wind east, 90°: `CardinalWind.East`, exported
+entry .South   the cardinal wind south, 180°: `CardinalWind.South`, exported
+entry .West   the cardinal wind west, 270°: `CardinalWind.West`, exported
+entry .Northeast   the intercardinal wind northeast, 45°: `IntercardinalWind.Northeast`, exported
+entry .Southeast   the intercardinal wind southeast, 135°: `IntercardinalWind.Southeast`, exported
+entry .Southwest   the intercardinal wind southwest, 225°: `IntercardinalWind.Southwest`, exported
+entry .Northwest   the intercardinal wind northwest, 315°: `IntercardinalWind.Northwest`, exported
+entry .NorthNortheast   the half wind north-northeast, 22.5°: `HalfWind.NorthNortheast`, exported
+entry .EastNortheast   the half wind east-northeast, 67.5°: `HalfWind.EastNortheast`, exported
+entry .EastSoutheast   the half wind east-southeast, 112.5°: `HalfWind.EastSoutheast`, exported
+entry .SouthSoutheast   the half wind south-southeast, 157.5°: `HalfWind.SouthSoutheast`, exported
+entry .SouthSouthwest   the half wind south-southwest, 202.5°: `HalfWind.SouthSouthwest`, exported
+entry .WestSouthwest   the half wind west-southwest, 247.5°: `HalfWind.WestSouthwest`, exported
+entry .WestNorthwest   the half wind west-northwest, 292.5°: `HalfWind.WestNorthwest`, exported
+entry .NorthNorthwest   the half wind north-northwest, 337.5°: `HalfWind.NorthNorthwest`, exported
+
+entry .Directional   a typeclass turning a bearing, an angle clockwise from north, into a direction value
+  detail
+      `Directional` is what `Location#bearing[T]` needs of its result type `T`: a single
+      method, `direction`, from the bearing's principal angle (in `[0°, 360°)`, clockwise from
+      north) to a `T`. The `compassBearings` package provides the standard instances, each
+      imported by name: the 4-, 8- and 16-point roses, and the bearing as an `Angle` from
+      north or from east.
+
+      A domain with sectors of its own implements one:
+
+      ```scala
+      import soundness.*
+
+      enum Clock:
+        case Twelve, Three, Six, Nine
+
+      given Clock is Directional = angle => Clock.fromOrdinal((0.5 + angle.turns*4).toInt%4)
+
+      Location(51.5.deg, 0.0.deg).bearing[Clock](Location(51.5.deg, 1.0.deg))  // Three
+      ```
+  refer geodesy.compassBearings
+  refer geodesy.Compass
+  entry #direction   the direction for a bearing, given as an angle clockwise from north in `[0°, 360°)`
+
+entry .Locatable   a typeclass for a value which has a position on the Earth
+  detail
+      A `Locatable` type can give a `Location` for any of its values: a city, a station, a
+      photograph. Its one method, `location`, extracts it, so code generic over located
+      things can ask for `T is Locatable` and read a position from each.
+
+      ```scala
+      import soundness.*
+
+      case class City(name: Text, centre: Location)
+
+      given City is Locatable = _.centre
+
+      def near[place: Locatable](a: place, b: place): Boolean =
+        place.location(a).surfaceDistance(place.location(b)).degrees < 1.0
+      ```
+
+      Geodesy itself defines no instances and no operation that takes one, so the
+      `Location` extensions still need a `Location`; `Locatable` is the seam for a library
+      built on top.
+  refer geodesy.Location
+  entry #location   the position of a value, as a `Location`
+
+entry .Geolocation   a location with optional altitude, uncertainty, reference system and parameters: an RFC 5870 `geo:` URI
+  detail
+      A `Geolocation` is the content of an RFC 5870 `geo:` URI as a case class: a `Location`,
+      an optional altitude in metres, an optional coordinate reference system (`crs`), an
+      optional uncertainty in metres (`u`), and any further parameters. It decodes from
+      `geo:` text and encodes back to it:
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val vienna = t"geo:48.2010,16.3695,183;crs=wgs84;u=35;name=Vienna".as[Geolocation]
+      vienna.altitude      // 183.0
+      vienna.crs           // t"wgs84"
+      vienna.uncertainty   // 35.0
+      vienna.parameters    // Map(t"name" -> t"Vienna")
+
+      Geolocation(Location(51.5.deg, 0.25.deg), 12.5, uncertainty = 3.0).encode
+      // t"geo:51.500000,0.250000,12.500000;u=3.000000"
+      ```
+
+      Decoding needs a `Tactic[Geolocation.Error]` and raises one whose `Reason` names the
+      fault; under a tactic which recovers, a partial `Geolocation` is returned, with the
+      parts that did parse. Coordinates and altitude are numbers of the form `-?[0-9]+(.[0-9]+)?`
+      (no exponent, no leading `+`). As the RFC orders them, `crs` is recognised only as the
+      first parameter and `u` only as the first after it; any other parameter, including a
+      `crs` or `u` out of place, is kept in `#parameters`.
+
+      Encoding writes every number to six decimal places, so a decoded and re-encoded URI is
+      equal in value but not always in text.
+  refer geodesy.Location
+  refer geodesy.Geolocation.Error
+  entry .decoder   reads a `geo:` URI as a `Geolocation`, raising `Geolocation.Error` if malformed
+      The `Decodable in Text` given, in the companion, so `text.as[Geolocation]` needs only a
+      `Tactic[Geolocation.Error]` in scope. A text with another scheme raises `BadScheme`,
+      and a `geo:` text without two coordinates raises `ExpectedCoordinates`; in both cases
+      the recovered value is a `Geolocation` at 0°, 0°.
+  entry .encodable   writes a `Geolocation` as a `geo:` URI, numbers to six decimal places
+      Writes `geo:`, the location's `latitude,longitude`, then `,altitude`, `;crs=…`, `;u=…`
+      and the remaining parameters, each only if present. In the companion, so it needs no
+      import.
+  entry .Error   raised when text is not a well-formed `geo:` URI
+    detail
+        Error 420: _the geo URI is not in the correct format because …_, followed by the
+        `Reason`'s message. Raised by `Geolocation.decoder`, through the
+        `Tactic[Geolocation.Error]` in scope.
+
+        ```scala
+        import soundness.*
+
+        capture[Geolocation.Error](t"geo:1,2,3;u=far".as[Geolocation]).reason
+        // Geolocation.Error.Reason.BadUncertainty
+        ```
+
+        Each `Reason` is numbered as a sub-code of 420: `MissingEquals` (1), _the parameter
+        does not contain an `=`_; `MultipleEquals` (2), _the parameter contains more than one
+        `=`_; `BadScheme` (3), _the value does not begin with the `geo:` URI scheme_;
+        `ExpectedSemicolon` (4), _a `;` was expected after the altitude value_;
+        `UnexpectedSuffix` (5), _a `,` or `;` was expected_, for junk after the longitude or a
+        non-numeric altitude; `ExpectedCoordinates` (6), _latitude and longitude coordinates
+        were expected_; and `BadUncertainty` (7), _the `uncertainty` parameter was not a
+        valid number_.
+    entry .Reason   why a `geo:` URI failed to decode, numbered as a sub-code of error 420
+      detail
+          An enumeration of `Clarification`s: `MissingEquals`, `MultipleEquals`, `BadScheme`,
+          `ExpectedSemicolon`, `UnexpectedSuffix`, `ExpectedCoordinates` and
+          `BadUncertainty`, numbered 1 to 7 in that order. See `Geolocation.Error` for each
+          message.
+      entry #number   the reason's sub-code, 1 to 7
+    entry .communicable   renders each `Geolocation.Error.Reason` as its message
+    entry #reason   why the URI failed to decode, a `Geolocation.Error.Reason`
+  entry #location   the latitude and longitude, as a `Location`
+  entry #altitude   the altitude in metres, or `Unset`
+  entry #crs   the coordinate reference system named by the `crs` parameter, or `Unset` (meaning WGS-84)
+  entry #uncertainty   the uncertainty in metres, from the `u` parameter, or `Unset`
+  entry #parameters   every parameter after `crs` and `u`, by name, as `Map[Text, Text]`
+
+entry .compassBearings   the conventions a bearing may be resolved on, each a `Directional` given to import by name
+  detail
+      `Location#bearing[T]` needs a `T is Directional`, and which one is a choice — the
+      number of points on the rose, or an angle and its zero — so none is in implicit scope
+      and `import soundness.*` brings none in: one is imported by name, since a wildcard
+      import does not import givens. The package merges with the umbrella's own
+      `compassBearings`.
+
+      The same bearing, from London to Paris, under each:
+
+      ```scala fuel
+      frame
+        label Four points
+        code
+            import soundness.*
+            import compassBearings.fourPointCompassBearing
+
+            val london = Location(51.5074.deg, Angle.degrees(-0.1278))
+            val paris = Location(48.8566.deg, 2.3522.deg)
+
+            london.bearing[Compass[4]](paris)   // South
+      frame
+        label Eight points
+        code
+            import soundness.*
+            import compassBearings.eightPointCompassBearing
+
+            val london = Location(51.5074.deg, Angle.degrees(-0.1278))
+            val paris = Location(48.8566.deg, 2.3522.deg)
+
+            london.bearing[Compass[8]](paris)   // Southeast
+      frame
+        label Sixteen points
+        code
+            import soundness.*
+            import compassBearings.sixteenPointCompassBearing
+
+            val london = Location(51.5074.deg, Angle.degrees(-0.1278))
+            val paris = Location(48.8566.deg, 2.3522.deg)
+
+            london.bearing[Compass[16]](paris)   // SouthSoutheast
+      frame
+        label An angle from north
+        code
+            import soundness.*
+            import soundness.angleShowable
+            import compassBearings.fromNorthBearing
+
+            val london = Location(51.5074.deg, Angle.degrees(-0.1278))
+            val paris = Location(48.8566.deg, 2.3522.deg)
+
+            london.bearing[Angle](paris).show   // t"148.1°"
+      frame
+        label An angle from east
+        code
+            import soundness.*
+            import soundness.angleShowable
+            import compassBearings.fromEastBearing
+
+            val london = Location(51.5074.deg, Angle.degrees(-0.1278))
+            val paris = Location(48.8566.deg, 2.3522.deg)
+
+            london.bearing[Angle](paris).show   // t"58.1°"
+      ##
+      ```
+
+      Each rose gives a coarser or finer answer of a different type; the angular givens keep
+      the bearing exact. Only one `Angle is Directional` should be in scope at a time, since
+      `fromNorthBearing` and `fromEastBearing` give the same type.
+  refer geodesy.Directional
+  refer geodesy.Compass
+  entry .fourPointCompassBearing   resolves a bearing to the nearest cardinal wind, as `Compass[4]`
+      `Compass[4] is Directional`, by `Compass[4](angle)`: `North`, `East`, `South` or `West`.
+  entry .eightPointCompassBearing   resolves a bearing to the nearest of eight winds, as `Compass[8]`
+      `Compass[8] is Directional`, by `Compass[8](angle)`: a `CardinalWind` or an
+      `IntercardinalWind`.
+  entry .sixteenPointCompassBearing   resolves a bearing to the nearest of sixteen winds, as `Compass[16]`
+      `Compass[16] is Directional`, by `Compass[16](angle)`: a `CardinalWind`, an
+      `IntercardinalWind` or a `HalfWind`.
+  entry .fromNorthBearing   gives a bearing as an `Angle` clockwise from north, in `[0°, 360°)`
+      `Angle is Directional`, as the identity: the navigator's convention, where 90° is east.
+  entry .fromEastBearing   gives a bearing as an `Angle` from east: the compass bearing less 90°
+      `Angle is Directional`, subtracting a quarter turn from the bearing, so due east is 0°
+      and due north 270°. Since angle subtraction wraps to a non-negative result, the angle
+      is in `[0°, 360°)` and still increases clockwise; it is not the anticlockwise angle of
+      mathematical convention.
+
+entry .internal   the object which declares the opaque type `Location` and its extensions
+  hidden
+  detail
+      Not for direct use: `Location` is exported from here to the `geodesy` package, and the
+      extensions below are found through the opaque type's implicit scope. Its page under the
+      `geodesy` package has the full account.
+  entry .Location   the opaque location type; see `geodesy.Location`
+    detail
+        The opaque type `Location = Long`, with its constructors and codecs. Its page under
+        the `geodesy` package has the full account.
+    entry .apply   a location from a latitude and a longitude, as two angles or two microdegree integers
+        `Location(51.5.deg, Angle.degrees(-0.13))` takes the latitude first. Any angles are
+        accepted: the longitude is reduced to `[−180°, 180°)`, and a latitude is not range-checked, so a
+        latitude beyond ±90° gives a meaningless position rather than an error.
+
+        `Location(north, east)` with two `Int`s takes millionths of a degree, a compact form for
+        tables of coordinates: `Location(51500000, -130000)` is 51.5° N, 0.13° W.
+
+        ```scala
+        import soundness.*
+
+        Location(51.5.deg, Angle.degrees(-0.13))
+        Location(51500000, -130000)
+        ```
+    entry .encodable   writes a location as `latitude,longitude` in degrees, to six decimal places
+        `Location(51.5.deg, 0.25.deg).encode` is `t"51.500000,0.250000"`: the coordinate pair of
+        a `geo:` URI, which `Geolocation`'s encoder reuses. In the companion, so it needs no
+        import.
+    entry .inspectable   a debug rendering at full precision, marked as a position: `⌖51.5°,0.126°`
+        Each coordinate is rendered by `Angle`'s own inspection, at the full precision of the
+        stored value, after a `⌖` which marks the pair as a position rather than two loose
+        angles. In the companion, so it needs no import.
+  entry .latitude   the latitude, as an `Angle` in `[−90°, 90°]`
+      Read back from the fixed-point form, so within about a ten-millionth of a degree of
+      the angle the location was built from.
+  entry .longitude   the longitude, as an `Angle` in `[−180°, 180°)`
+      A western longitude is negative:
+      `Location(0.deg, Angle.degrees(-74.006)).longitude.degrees` is about `-74.006`.
+  entry .pair   the latitude and the longitude, as a tuple of angles
+  entry .geohash   the location's base-32 geohash, of the given number of characters
+      `Location(57.64911.deg, 10.40744.deg).geohash(11)` is `t"u4pruydqqvj"`, the canonical
+      example. A shorter hash is a prefix of a longer one, and nearby locations usually share
+      a prefix, though two either side of a cell boundary may share none, so a prefix match is
+      a first filter for proximity, not an answer.
+  entry .surfaceDistance   the great-circle separation of two locations, as an `Angle`
+      By the haversine formula. The angle's radians times a sphere's radius are the distance
+      along its surface: `london.surfaceDistance(paris).radians*6371` is about 344 km on the
+      Earth. Symmetric, and zero from a location to itself; the poles are half a turn apart.
+  entry .bearing   the initial bearing toward another location, resolved by a `Directional` given
+      `here.bearing[Compass[8]](there)` takes the great-circle bearing at `here`, clockwise
+      from north and normalised to `[0°, 360°)`, and passes it to the `T is Directional` in
+      scope: a compass rose or an angular convention from `compassBearings`, imported by
+      name. Along a great circle the bearing changes as one travels, so this is the bearing
+      at departure.

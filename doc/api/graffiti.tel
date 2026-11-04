@@ -1,0 +1,511 @@
+tel 1.0
+
+base graffiti
+import soundness
+
+info   web pages composed from archetype traits: each adds a feature, its CSS and its metadata
+detail
+    _Graffiti_ assembles a web page from reusable parts. A page is a class extending
+    `Archetype` which mixes in the features it wants — a `Masthead`, a `Hero` banner,
+    `Breadcrumbs`, a `VersoPanel` beside the content, a `Colophon` at the foot, `Keywords` and
+    a `Favicon` in the head — and supplies its one obligation, `content`, the central matter.
+    Each feature trait contributes its own markup, its own CSS rules and its own `<head>`
+    metadata by wrapping what the traits listed before it produced, so mixing them nests them
+    in the order they are listed, and independent features never collide. The result is a
+    complete HTML document, typed with honeycomb's element vocabulary, which renders to text
+    with `html`, streams, and serves directly as an HTTP response.
+
+    ```scala
+    import soundness.*
+    import htmlDoms.whatwg.*
+    import formatting.indentedCssFormatting
+
+    class Welcome extends Archetype, Mainstay, Masthead, Colophon, Headline(t"Welcome"):
+      def content: Html of (? <: Flow) = P("Hello, world!")
+      override def masthead: Html of (? <: Flow) = Strong("Example Site")
+      override def colophon: Html of (? <: Flow) = P("Copyright 2026")
+
+    Welcome().html.show
+    Welcome().css.show
+    ```
+
+    Because the page is a class, the compiler sees its structure: a page without `content`
+    does not compile, a slot given an element which does not belong there is a type error,
+    and two features which each define a slot of the same name are reported where they are
+    combined. Each feature exposes hooks a page overrides directly — a slot (`masthead`,
+    `verso`, `hero`), a setting (`versoWidth`, `menuGap`) and a rule set (`mastheadStyles`,
+    `menuStyles`) — so a page adjusts a feature without touching its markup or calling
+    `super`. Every layout uses only logical CSS properties, so setting `direction` to
+    `HDir.Rtl` mirrors the page with the stylesheet unchanged.
+
+    There is one source set, `graffiti.core`, which builds on honeycomb (HTML), cataclysm
+    (CSS) and parasite, and compiles for every platform honeycomb does; nothing in it exists
+    only on Scala.js. Everything, including the `urlText` given, is exported to the
+    `soundness` umbrella. A page needs honeycomb's element constructors in scope
+    (`import htmlDoms.whatwg.*`) and, to render its stylesheet, a CSS formatting choice such
+    as `formatting.indentedCssFormatting`; the `cataclysm.formatting.indentedCssFormatting`
+    import inside the library renders the inline `<style>` element.
+
+refer graffiti.Archetype
+refer graffiti.Dashboard
+refer honeycomb.Html
+refer cataclysm.Css
+
+entry .Archetype   the base of every page: its content, title, direction, stylesheet and the seams features compose through
+  detail
+      A concrete page extends `Archetype` and the feature traits it wants, and defines
+      `#content`. The traits compose through three protected seams: `#frame`, the wrapping
+      pipeline, which a layout trait overrides as some decoration of `super.frame`;
+      `#styles`, the stylesheet accumulator, overridden as `super.styles + ownRules`; and
+      `#head`, the `<head>` accumulator, overridden as a fragment of a new element and
+      `super.head`. A page author rarely touches them: each feature exposes its own hooks
+      instead.
+
+      The whole page is `#document`, a `Document[Html]` with a doctype, or `html` (honeycomb's
+      extension, through `.renderable`): `<html>` with a `<head>` of the `#pageTitle`, the
+      stylesheet — inline in a `<style>`, or a `<link>` to `#stylesheetUrl` when one is
+      given — and the accumulated metadata, and a `<body>` whose `dir` is `#direction`,
+      holding the framed content. The assembly is final, so a page cannot override it and
+      silently lose its stylesheet or its direction; `#css` is the stylesheet alone, for
+      serving at `#stylesheetUrl`.
+
+      ```scala fuel
+      frame
+        label The bare page: content, and nothing else
+        code
+            import soundness.*
+            import htmlDoms.whatwg.*
+
+            class Guide extends Archetype:
+              def content: Html of (? <: Flow) = P("The guide")
+
+            Guide().html   // <html><head><title></title><style></style></head><body dir="ltr"><p>The guide</p></body></html>
+      frame
+        label A headline sets the title and puts an <h1> above the content
+        code
+            import soundness.*
+            import htmlDoms.whatwg.*
+
+            class Guide extends Archetype, Headline(t"Guide"):
+              def content: Html of (? <: Flow) = P("The guide")
+
+            Guide().html   // <title>Guide</title> … <h1 class="graffiti-headline">Guide</h1><p>The guide</p>
+      frame
+        label A landmark wraps what came before it
+        code
+            import soundness.*
+            import htmlDoms.whatwg.*
+
+            class Guide extends Archetype, Headline(t"Guide"), Mainstay:
+              def content: Html of (? <: Flow) = P("The guide")
+
+            Guide().html   // <main class="graffiti-mainstay"><h1 …>Guide</h1><p>The guide</p></main>
+      frame
+        label A masthead listed after the landmark sits outside it
+        code
+            import soundness.*
+            import htmlDoms.whatwg.*
+
+            class Guide extends Archetype, Headline(t"Guide"), Mainstay, Masthead:
+              def content: Html of (? <: Flow) = P("The guide")
+              override def masthead: Html of (? <: Flow) = Strong("Example Site")
+
+            Guide().html   // <header class="graffiti-masthead"><strong>Example Site</strong></header><main …>…</main>
+      frame
+        label Metadata goes to the head, and a linked stylesheet replaces the inline one
+        code
+            import soundness.*
+            import htmlDoms.whatwg.*
+
+            class Guide extends Archetype, Headline(t"Guide"), Mainstay, Masthead, StandardMetadata(t"A guide"):
+              def content: Html of (? <: Flow) = P("The guide")
+              override def masthead: Html of (? <: Flow) = Strong("Example Site")
+              override def stylesheetUrl: Optional[Text] = t"/site.css"
+
+            Guide().html   // <head><title>Guide</title><link rel="stylesheet" href="/site.css"><meta name="description" …><meta name="viewport" …></head>
+            Guide().css    // the stylesheet to serve at /site.css
+      ##
+      ```
+
+      A page is also a response body in its own right: it declares the media type
+      `text/html` (`.media`) and streams its rendered document (`.streamable`), so an HTTP
+      handler returns it directly and the `Content-Type` header follows from the value. A
+      `Css` value serves the same way, as `text/css`, which is all a linked stylesheet needs.
+
+      ```scala fuel
+      typecheck
+      ##
+      def site(): Unit = supervise:
+        SocketServer(8080).handle:
+          request.target match
+            case t"/"         => Http.Response(Http.Ok)(Guide())
+            case t"/site.css" => Http.Response(Http.Ok)(Guide().css)
+            case _            => Http.Response(Http.NotFound)(t"No such page")
+      ```
+  refer graffiti.Headline
+  refer graffiti.Mainstay
+  refer graffiti.Masthead
+  refer graffiti.VersoPanel
+  refer graffiti.StandardMetadata
+  entry .media   every page's media type: `text/html; charset=UTF-8`
+      The `Media` given for any `page <: Archetype`, in implicit scope, from which a
+      `Servable` is synthesised wherever an HTTP handler returns a page.
+  entry .renderable   renders any page as its complete `<html>` element
+      The `Renderable in "html"` given for any `page <: Archetype`, in implicit scope: it is
+      what honeycomb's `page.html` extension calls, giving the `<html>` element with its
+      `<head>` (title, stylesheet, metadata) and `<body dir="…">`. A page which defines its
+      own `html` member shadows the extension rather than failing to compile.
+  entry .streamable   streams any page's rendered document as text
+      The `Streamable by Text` given for any `page <: Archetype`, needing a `Monitor` and a
+      `Probate` in scope: the page's `document` is rendered as it is streamed, within the
+      supervising scope a server runs under, with nothing buffered. `page.read[Text]` under
+      `supervise` is the whole document, doctype first.
+  entry #content   the central matter of the page; the one member a concrete page must define
+      Flow content: a `P`, a `Div`, a fragment of several. Every feature's `frame` wraps or
+      flanks this.
+  entry #pageTitle   the document's `<title>`; empty unless overridden or set by `Headline` or `Dashboard`
+  entry #direction   the writing direction, `HDir.Ltr` by default
+      Set as `dir` on the `<body>`, since `<html>` admits no global attributes here. Every
+      layout uses only logical properties (`inline-size`, `inline-start`), so `HDir.Rtl`
+      swaps verso and recto in the browser and the emitted CSS is byte-for-byte the same.
+  entry #frame   the wrapping pipeline: the content as framed by every feature so far; protected
+      `content` at the base. A layout trait overrides it as a decoration of `super.frame`,
+      so features nest in linearization order; a page author uses the features' hooks
+      instead.
+  entry #styles   the stylesheet accumulator: every feature's rules so far; protected
+      Empty at the base; each feature overrides it as `super.styles + ownRules`. `css` is
+      its final value.
+  entry #head   the `<head>` metadata accumulator: every feature's elements so far; protected
+      An empty fragment at the base; a metadata trait overrides it as a fragment of its own
+      `<meta>` or `<link>` and `super.head`.
+  entry #stylesheetUrl   where the stylesheet is served, if the page links it rather than embedding it
+      `Unset` by default, so the stylesheet is embedded in a `<style>` element and the page
+      is self-contained. When set, the head refers to it with `<link rel="stylesheet">`
+      instead, and the application serves `css` at that address, so a site with many pages
+      serves one stylesheet.
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg.*
+
+      class Linked extends Archetype, VersoPanel:
+        def content: Html of (? <: Flow) = P("body")
+        override def stylesheetUrl: Optional[Text] = t"/site.css"
+
+      Linked().html   // <link rel="stylesheet" href="/site.css"> in the head, and no <style>
+      ```
+  entry #css   the page's whole stylesheet, as structured `Css`; final
+      The accumulated rules of every feature, for serving at `stylesheetUrl` or rendering
+      with `show` (which needs a CSS formatting choice such as
+      `formatting.indentedCssFormatting`). It is final: a page restyles a feature through
+      that feature's rule hook, such as `mastheadStyles`, not by overriding this.
+  entry #document   the page as a `Document[Html]` with a leading doctype; final
+      The form served over HTTP and streamed by `.streamable`: the doctype, then the
+      `<html>` element `html` renders.
+
+entry .Headline   sets the document title and prepends a top-level heading
+  detail
+      `Headline(title)` makes `pageTitle` the title and puts an `<h1 class="graffiti-headline">`
+      at the head of the frame, so it appears above whatever the features listed before it
+      built. It fills no slot of its own.
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg.*
+
+      class Welcome extends Archetype, Headline(t"Welcome"):
+        def content: Html of (? <: Flow) = P("Hello, world!")
+
+      Welcome().html   // <title>Welcome</title> … <h1 class="graffiti-headline">Welcome</h1><p>Hello, world!</p>
+      ```
+  entry .headlineClass   the CSS class of the heading: `graffiti-headline`
+  entry #heading   the rendered heading, an `<h1>`; protected, override to restructure it
+  entry #headlineStyles   this feature's rules, a margin below the heading; protected, override to restyle it
+
+entry .TopMenu   a horizontal navigation bar across the top of the page, reusable as `menu`
+  detail
+      Prepends a `<nav class="graffiti-top-menu">` of the `#menuItems`, laid out as a flex row
+      with `#menuGap` between items. The rendered bar is also `#menu`, a helper a page may
+      place elsewhere — in a side panel, say — instead of or as well as at the top.
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg.*
+
+      class Manual extends Archetype, VersoPanel, TopMenu, Headline(t"Manual"):
+        def content: Html of (? <: Flow) = P("Chapter one")
+        override def menuItems: List[Html of (? <: Phrasing)] = List(Strong("Home"), Strong("About"))
+        override def verso: Html of (? <: Flow) = menu
+      ```
+  entry .menuClass   the CSS class of the bar: `graffiti-top-menu`
+  entry #menuItems   the bar's links, phrasing elements; empty until overridden
+  entry #menuGap   the spacing between items, `1rem` by default
+  entry #menu   the rendered `<nav>`; protected, a helper a page may reuse to fill another slot
+  entry #menuStyles   this feature's rules, a flex row with `menuGap`; protected, override to restyle it
+
+entry .VersoPanel   a side panel on the inline-start edge, beside the content
+  detail
+      The verso page of a spread: the left in left-to-right text, the right in right-to-left.
+      The content and an `<aside class="graffiti-verso">` of the `#verso` slot are placed in a
+      two-column grid whose source order is panel-then-content, so the grid follows the
+      writing direction and `direction = HDir.Rtl` mirrors it with no change to the CSS. The
+      panel is `#versoWidth` wide with `#versoGap` before the content. It is independent of
+      `RectoPanel`: a page may mix in both, in either order.
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg.*
+
+      class WideVerso extends Archetype, VersoPanel:
+        def content: Html of (? <: Flow) = P("body")
+        override def verso: Html of (? <: Flow) = P("A table of contents")
+        override def versoWidth = 20.0*Rem
+
+      WideVerso().css   // .graffiti-verso { inline-size: 20rem }
+      ```
+  refer graffiti.RectoPanel
+  entry .layoutClass   the CSS class of the grid container: `graffiti-verso-layout`
+  entry .versoClass   the CSS class of the panel: `graffiti-verso`
+  entry .contentClass   the CSS class of the content column: `graffiti-verso-content`
+  entry #verso   the panel's content; empty until overridden
+  entry #versoWidth   the panel's inline size, `16rem` by default
+  entry #versoGap   the gap between panel and content, `1rem` by default
+  entry #versoArrangement   how panel and content are arranged, a grid `<div>`; protected, override to change the container
+  entry #versoStyles   this feature's rules, the grid and the panel's width; protected, override to restyle it
+
+entry .RectoPanel   a side panel on the inline-end edge, beside the content
+  detail
+      The recto page of a spread: the right in left-to-right text, the left in right-to-left.
+      The content and an `<aside class="graffiti-recto">` of the `#recto` slot are placed in
+      a two-column grid whose source order is content-then-panel, using only logical
+      properties, so `direction = HDir.Rtl` mirrors it for free. The panel is `#rectoWidth`
+      wide with `#rectoGap` after the content. `FoldableRectoPanel` refines it with a fold.
+  refer graffiti.VersoPanel
+  refer graffiti.FoldableRectoPanel
+  entry .layoutClass   the CSS class of the grid container: `graffiti-recto-layout`
+  entry .rectoClass   the CSS class of the panel: `graffiti-recto`
+  entry .contentClass   the CSS class of the content column: `graffiti-recto-content`
+  entry #recto   the panel's content; empty until overridden
+  entry #rectoWidth   the panel's inline size, `16rem` by default
+  entry #rectoGap   the gap between content and panel, `1rem` by default
+  entry #rectoArrangement   how content and panel are arranged, a grid `<div>`; protected, override to change the container
+  entry #rectoStyles   this feature's rules, the grid and the panel's width; protected, override to restyle it
+
+entry .FoldableRectoPanel   a recto panel which can fold away, by CSS alone
+  detail
+      Adds nothing structural over `RectoPanel`: it layers further rules onto the stylesheet,
+      clipping the panel's overflow and bounding its inline size at `#maxRectoWidth` with a
+      transition, so a script or a hover rule which lowers that size folds the panel shut. It
+      shows how a feature refines another purely through its rules.
+  refer graffiti.RectoPanel
+  entry #maxRectoWidth   the inline size the panel folds down from, `16rem` by default
+  entry #foldedStyles   the fold's rules, over `RectoPanel`'s; protected, override to change the fold
+
+entry .Breadcrumbs   a breadcrumb trail of path segments, before the content
+  detail
+      `Breadcrumbs(segments*)` prepends a `<nav class="graffiti-breadcrumbs">` holding an
+      `<ol>` with one `<li>` per segment, as a flex row.
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg.*
+
+      class Guide extends Archetype, Breadcrumbs(t"home", t"docs"), Mainstay:
+        def content: Html of (? <: Flow) = P("The guide")
+
+      Guide().html   // <main><nav class="graffiti-breadcrumbs"><ol><li>home</li><li>docs</li></ol></nav><p>The guide</p></main>
+      ```
+  entry .crumbsClass   the CSS class of the trail: `graffiti-breadcrumbs`
+  entry #breadcrumbs   the rendered trail, a `<nav>`; protected, override to restructure it
+  entry #breadcrumbStyles   this feature's rules, a flex row; protected, override to restyle it
+
+entry .Logo   a phrasing-level mark, `logo`, for a page or another feature to place anywhere
+  detail
+      Contributes no structure of its own: `#logo` is a `<span class="graffiti-logo">` of the
+      `#logoText`, rendered bold, which a page drops into a masthead, a menu or a panel.
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg.*
+
+      class Branded extends Archetype, Masthead, Logo:
+        def content: Html of (? <: Flow) = P("body")
+        override def logoText: Text = t"Example"
+        override def masthead: Html of (? <: Flow) = logo
+      ```
+  entry .logoClass   the CSS class of the mark: `graffiti-logo`
+  entry #logoText   the logo's wording; empty until overridden
+  entry #logo   the rendered mark, a `<span>`; protected, for placing wherever the page likes
+  entry #logoStyles   this feature's rules, bold text; protected, override to restyle it
+
+entry .Masthead   a `<header>` masthead at the top of the page, filled through the `masthead` slot
+  detail
+      Prepends a `<header class="graffiti-masthead">` of the `#masthead` slot — often a logo,
+      a headline and a menu — laid out as a flex row, before whatever the features listed
+      earlier built. Listed after `Mainstay`, it sits outside the `<main>` landmark.
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg.*
+
+      class Welcome extends Archetype, Mainstay, Masthead:
+        def content: Html of (? <: Flow) = P("Hello, world!")
+        override def masthead: Html of (? <: Flow) = Strong("Example Site")
+      ```
+  refer graffiti.Colophon
+  refer graffiti.Mainstay
+  entry .mastheadClass   the CSS class of the header: `graffiti-masthead`
+  entry #masthead   the masthead's content; empty until overridden
+  entry #mastheadStyles   this feature's rules, a flex row with a gap; protected, override to restyle it
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg.*
+
+      class Welcome extends Archetype, Masthead:
+        def content: Html of (? <: Flow) = P("Hello, world!")
+
+      class Branded extends Welcome:
+        override def mastheadStyles: Css =
+          super.mastheadStyles + css".graffiti-masthead { padding-block: 1rem }"
+      ```
+
+entry .Colophon   a `<footer>` colophon at the foot of the page, filled through the `colophon` slot
+  detail
+      Appends a `<footer class="graffiti-colophon">` of the `#colophon` slot — a sitemap, a
+      copyright line, contact details — after whatever the features listed earlier built,
+      with a margin above it.
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg.*
+
+      class Welcome extends Archetype, Mainstay, Colophon:
+        def content: Html of (? <: Flow) = P("Hello, world!")
+        override def colophon: Html of (? <: Flow) = P("Copyright 2026")
+      ```
+  refer graffiti.Masthead
+  entry .colophonClass   the CSS class of the footer: `graffiti-colophon`
+  entry #colophon   the colophon's content; empty until overridden
+  entry #colophonStyles   this feature's rules, the margin and padding; protected, override to restyle it
+
+entry .Mainstay   wraps the content so far in a `<main>` landmark
+  detail
+      Wraps the frame built by the features listed before it in a
+      `<main class="graffiti-mainstay">`. List it before the page chrome (`Masthead`,
+      `Colophon`) so the landmark encloses the content but not the chrome; listed after
+      them, it would enclose the masthead too. It adds no rules.
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg.*
+
+      class Guide extends Archetype, Breadcrumbs(t"home", t"docs"), Mainstay, Masthead:
+        def content: Html of (? <: Flow) = P("The guide")
+        override def masthead: Html of (? <: Flow) = Strong("Example Site")
+
+      Guide().html   // <header>…</header><main><nav>…</nav><p>The guide</p></main>
+      ```
+  entry .mainstayClass   the CSS class of the landmark: `graffiti-mainstay`
+
+entry .Hero   a prominent banner introducing the page, headed by the trait parameter
+  detail
+      `Hero(headline)` prepends a `<section class="graffiti-hero">` holding an `<h1>` of the
+      headline and whatever the `#hero` slot supplies beneath it, centred with generous
+      vertical padding.
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg.*
+
+      class Landing extends Archetype, Hero(t"Build pages from parts"):
+        def content: Html of (? <: Flow) = P("Welcome aboard")
+        override def hero: Html of (? <: Flow) = P("Compose, don't template")
+      ```
+  entry .heroClass   the CSS class of the banner: `graffiti-hero`
+  entry #hero   further banner material beneath the headline; empty until overridden
+  entry #heroBanner   the rendered banner, a `<section>`; protected, override to restructure it
+  entry #heroStyles   this feature's rules, padding and centred text; protected, override to restyle it
+
+entry .Description   adds a `<meta name="description">` to the head
+    `Description(text)` contributes the description element and nothing to the body.
+    `StandardMetadata` supplies the same together with a viewport.
+
+entry .Viewport   adds a responsive `<meta name="viewport">` to the head
+  detail
+      The directive is `#viewport`, `width=device-width, initial-scale=1` unless overridden.
+      `StandardMetadata` extends this trait.
+  entry #viewport   the viewport directive, `width=device-width, initial-scale=1` by default
+
+entry .Keywords   adds a `<meta name="keywords">` to the head, from the trait parameters
+    `Keywords(words*)` joins the words with `, ` as the element's content.
+
+entry .Author   adds a `<meta name="author">` to the head
+    `Author(name)` contributes the author element and nothing to the body.
+
+entry .ThemeColor   adds a `<meta name="theme-color">` to the head
+    `ThemeColor(color)` takes the colour as CSS colour text, such as `t"#336699"`.
+
+entry .Favicon   adds a `<link rel="icon">` to the head
+    `Favicon(href)` takes the icon's address as `Text` — a path such as `t"/icon.png"` as
+    readily as a URL — through the `urlText` given.
+
+entry .Canonical   adds a `<link rel="canonical">` to the head
+    `Canonical(href)` takes the canonical address as `Text`, through the `urlText` given.
+
+entry .StandardMetadata   the metadata nearly every page wants: a description and a responsive viewport
+    `StandardMetadata(description)` extends `Viewport` and adds a `<meta name="description">`
+    from its parameter, so a page mixes in one trait instead of wiring each element. Add
+    `Keywords`, `Author`, `Favicon`, `Canonical` and `ThemeColor` alongside it as needed.
+
+    ```scala
+    import soundness.*
+    import htmlDoms.whatwg.*
+
+    class Landing extends Archetype, Hero(t"Build pages from parts"),
+        StandardMetadata(t"Pages composed from archetypes"), Author(t"Ada"),
+        Keywords(t"scala", t"html"), Favicon(t"/icon.png"),
+        Canonical(t"https://example.com/"), ThemeColor(t"#336699"):
+      override def pageTitle: Text = t"Example"
+      def content: Html of (? <: Flow) = P("Welcome aboard")
+
+    Landing().html
+    ```
+
+entry .Dashboard   a dashboard view: a brand in the masthead and cards in a responsive grid
+  detail
+      An archetype composed from `Mainstay` and `Masthead`. It titles the document after
+      `#brand`, shows the brand in the masthead, and lays `#cards` out as the content in a
+      grid of `<article class="graffiti-card">` tiles, each rendered by `#card`. A concrete
+      dashboard supplies only the brand and the cards.
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg.*
+
+      class Admin extends Dashboard:
+        def brand: Text = t"Admin"
+
+        def cards: List[Dashboard.Card] =
+          List(Dashboard.Card(t"Users", P("128 active")), Dashboard.Card(t"Revenue", P("4200")))
+
+      Admin().html
+      ```
+  refer graffiti.Mainstay
+  refer graffiti.Masthead
+  entry .gridClass   the CSS class of the grid: `graffiti-dashboard`
+  entry .cardClass   the CSS class of a tile: `graffiti-card`
+  entry .Card   one tile of a dashboard: a heading and its own flow content
+    entry #heading   the tile's heading, rendered as an `<h2>`
+    entry #body   the tile's content
+  entry #brand   the name shown in the masthead and used as the title; abstract
+  entry #cards   the tiles, as `Dashboard.Card`s; abstract
+  entry #card   renders one tile as an `<article>`; protected, override to restructure it
+  entry #dashboardStyles   this view's rules, the grid and the tiles' borders; protected, override to restyle it
+
+entry .urlText   lets a `Text` be given where honeycomb wants a URL attribute, such as `href`
+    The `Text is Attributive to Whatwg.Url` given, at the package's top level and exported
+    to the `soundness` umbrella. honeycomb types `href` as a URL attribute and accepts an
+    `HttpUrl` or anything abstractable to one, but a favicon or canonical address is
+    naturally an arbitrary path such as `/icon.png`, so `Favicon` and `Canonical` take
+    `Text` and this given passes it through unchanged. It is in scope with
+    `import soundness.*`; outside the umbrella, import it by name.

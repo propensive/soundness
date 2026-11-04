@@ -1,0 +1,289 @@
+tel 1.0
+
+base vicarious
+import soundness
+
+info   values indexed by the field paths of a type, addressed through a compile-time-checked proxy
+detail
+    _Vicarious_ treats the structure of a case class — every field reachable from it, at any
+    depth, and the whole value itself — as a fixed set of **paths**, `cto.name` rather than
+    `name`, and lets code name those paths through a **proxy**: a stand-in value of the type
+    with no fields of its own, on which each selection is resolved as the code compiles into the
+    index of the path it names. A path the type does not have is a compile error, so no path is
+    ever written as text.
+
+    Two structures are built on the proxy. A `Catalog[Key, Value]` holds one `Value` for every
+    path of `Key`, computed by one function from a value of `Key`, read by path, transformed
+    with `map` and combined entry by entry with `braid`. A `Specific` maps some paths of a type
+    to typeclass instances, for a derivation (`wisteria`'s, and so `jacinta`'s, `stratiform`'s
+    and the other codecs') to use at exactly those paths in place of the instance for the
+    field's type.
+
+    ```scala
+    import soundness.*
+
+    case class Person(name: Text, age: Int)
+    case class Org(ceo: Person, cto: Person)
+
+    val org = Org(Person(t"Ann", 51), Person(t"Bob", 47))
+    val labels: Catalog[Org, Text] = catalog(org)([field] => (field: field) => field.toString.tt)
+
+    labels(proxy ?=> proxy.cto.name)    // t"Bob"
+    labels(proxy ?=> proxy.cto.title)   // does not compile
+    ```
+
+    Paths are flattened depth-first with the root first: for `Org` they are the whole `Org`,
+    `ceo`, `ceo.name`, `ceo.age`, `cto`, `cto.name` and `cto.age`, so a catalog over `Org` has
+    seven entries, and two catalogs over the same key align position for position.
+
+    The library has a single source set, `vicarious.core`. `Catalog`, `catalog`, `Proxy`,
+    `Specific`, `root` and `specifically` are exported to the `soundness` umbrella; the
+    `Proxy` given is in its companion, in implicit scope, so nothing is imported by name.
+
+refer vicarious.Catalog
+refer vicarious.catalog
+refer vicarious.Proxy
+refer vicarious.Specific
+refer vicarious.specifically
+
+entry .catalog   builds a `Catalog` by applying one polymorphic function to a value and to every field within it
+    `catalog(value)(lambda)` is a macro which walks the case-class structure of `value`'s type
+    as the code compiles, and applies `lambda` — a pure polymorphic function `[field] =>
+    (field: field) -> result` — to the whole value and then to each field, depth-first, in
+    declaration order. The function must accept a field of any type, so it may do with one only
+    what every value supports. A `ClassTag` for the result type is needed, since the entries are
+    held in an array.
+
+    ```scala
+    import soundness.*
+
+    case class Person(name: Text, age: Int)
+    case class Org(ceo: Person, cto: Person)
+
+    val org = Org(Person(t"Ann", 51), Person(t"Bob", 47))
+    val labels: Catalog[Org, Text] = catalog(org)([field] => (field: field) => field.toString.tt)
+    labels.size   // 7: the whole Org, ceo, ceo.name, ceo.age, cto, cto.name, cto.age
+    ```
+
+entry .Catalog   one value for every field path of a key type, read by a path checked as the code compiles
+  detail
+      A `Catalog[Key, Value]` holds a `Value` at each position of `Key`'s flattened structure —
+      the whole value first, then every field depth-first — in `#values`. It is built with
+      `catalog`, read with `#apply` and a path written through a proxy, transformed with `#map`,
+      overridden at named paths with `.brush`, and combined with another catalog over the same
+      key with `#braid`. The key type is what makes two catalogs combinable and what checks
+      every path used to read one.
+
+      ```scala fuel
+      frame
+        label A catalog of the label of every field
+        code
+            import soundness.*
+
+            case class Person(name: Text, age: Int)
+            case class Org(ceo: Person, cto: Person)
+
+            val org = Org(Person(t"Ann", 51), Person(t"Bob", 47))
+            val labels = catalog(org)([field] => (field: field) => field.toString.tt)
+
+            labels(proxy ?=> proxy.cto.name)   // t"Bob"
+      frame
+        label Mapped to a catalog of widths, addressed by the same paths
+        code
+            import soundness.*
+
+            case class Person(name: Text, age: Int)
+            case class Org(ceo: Person, cto: Person)
+
+            val org = Org(Person(t"Ann", 51), Person(t"Bob", 47))
+            val labels = catalog(org)([field] => (field: field) => field.toString.tt)
+            val widths: Catalog[Org, Int] = labels.map(_.length)
+
+            widths(proxy ?=> proxy.cto.name)   // 3
+      frame
+        label Braided with the labels, entry by entry
+        code
+            import soundness.*
+
+            case class Person(name: Text, age: Int)
+            case class Org(ceo: Person, cto: Person)
+
+            val org = Org(Person(t"Ann", 51), Person(t"Bob", 47))
+            val labels = catalog(org)([field] => (field: field) => field.toString.tt)
+            val widths: Catalog[Org, Int] = labels.map(_.length)
+            val cells = labels.braid(widths)((label, width) => t"$label ($width)")
+
+            cells(proxy ?=> proxy.cto.name)   // t"Bob (3)"
+      ##
+      ```
+
+      This is how a table of per-field settings is assembled: catalogs of labels, widths and
+      whatever else matters, built separately and braided together, each addressed by the same
+      paths. A `Catalog` is `Findable`.
+  refer vicarious.catalog
+  refer vicarious.Proxy
+  entry .brush   a copy of a catalog with the entries at some paths replaced, by a partial function of paths
+      An extension on any `Catalog`, needing the derived `Proxy` for the key type. The argument
+      is a context function from the proxy to a partial function over proxies: each `case` names
+      a path, as a pattern on the proxy, and gives its new value; every path not matched keeps
+      its entry.
+
+      ```scala
+      import soundness.*
+
+      case class Person(name: Text, age: Int)
+      case class Org(ceo: Person, cto: Person)
+
+      val org = Org(Person(t"Ann", 51), Person(t"Bob", 47))
+      val labels = catalog(org)([field] => (field: field) => field.toString.tt)
+
+      val redacted = labels.brush(proxy ?=> { case proxy.cto.name() => t"(withheld)" })
+      ```
+  entry #values   the entries, one per path, the whole value first and then each field depth-first
+  entry #size   the number of entries: one for the whole value and one for each field at any depth
+  entry #apply   the entry at a path, written as selections on a proxy of the key type
+      `catalog(proxy ?=> proxy.cto.name)` resolves the path as the code compiles into the index
+      of its entry; `proxy ?=> proxy` is the entry for the whole value, and a field the type does
+      not have is a compile error. `ceo.name` and `cto.name` are different entries, since a
+      path is a position, not a name.
+  entry #map   a catalog over the same key with a function applied to every entry
+      The paths are unchanged, so any path valid on this catalog is valid on the result. A
+      `ClassTag` for the new value type is needed.
+  entry #braid   combines two catalogs over the same key, entry by entry, with a function of both values
+      `left.braid(right)(lambda)` needs no matching of names: catalogs over the same key align
+      position for position. A `ClassTag` for the result type is needed.
+  entry #tie   evaluates a block with this catalog and its key's proxy in context, so a path reads its entry
+      Inside the block, the catalog is a contextual value, so `proxy.cto.name()` — a path
+      followed by `()`, which is `Proxy#apply` — reads that path's entry directly; several paths
+      may be read in one expression.
+
+      ```scala
+      import soundness.*
+
+      case class Person(name: Text, age: Int)
+      case class Org(ceo: Person, cto: Person)
+
+      val org = Org(Person(t"Ann", 51), Person(t"Bob", 47))
+      val labels = catalog(org)([field] => (field: field) => field.toString.tt)
+
+      labels.tie((catalog, proxy) ?=> t"${proxy.ceo.name()} and ${proxy.cto.name()}")
+      ```
+
+entry .Proxy   a stand-in for a value of a key type, whose field selections are resolved to path indices as the code compiles
+  detail
+      A `Proxy[Key, Value, Ordinal]` stands at one path of `Key`: `Ordinal` is that path's index
+      as a literal type (`0` for the root), and `#id` the same index at runtime. Selecting a
+      field on a proxy (`proxy.cto.name`) is a `selectDynamic` macro which looks the extended
+      path up in `Key`'s flattened structure and gives the proxy for it, so a field the type does
+      not have is a compile error, _vicarious: `cto.title` is not a valid field path_.
+
+      The root proxy for a key type is `.derived`, in implicit scope; `Catalog#apply` and
+      `Catalog#tie` provide it, and `specifically` provides one as `root`. A proxy is used three
+      ways: as an address (`Catalog#apply`), to read an entry from a catalog in context
+      (`#apply`), and as an extractor in a pattern (`#unapply`), which is how `specifically` and
+      `.brush` name paths in their `case`s. A `Proxy` is `Findable`.
+  refer vicarious.Catalog
+  refer vicarious.specifically
+  entry .derived   the root proxy for a key type, refined with its fields' proxies so that selections type-check
+      A `transparent inline given` macro, in implicit scope: its type is `Proxy[Key, Value, 0]`
+      refined with a member for each field, recursively, each a proxy whose `Ordinal` is that
+      field's path index.
+  entry #selectDynamic   the proxy for a field of this proxy's path, or a compile error if there is none
+      Called by a selection such as `proxy.cto`; not written directly.
+  entry #id   the index of this proxy's path in its key type's flattened structure, the root being `0`
+  entry #apply   the entry at this proxy's path in the `Catalog` in context
+      `proxy.cto.name()` needs a `Catalog[Key, Value]` as a contextual value, as `Catalog#tie`
+      provides.
+  entry #unapply   matches a proxy for the same path, so that a path can be a `case` pattern
+      `case root.cto.name() =>` matches exactly the proxy whose `#id` is that of `cto.name`.
+
+entry .Specific   typeclass instances for named field paths of a type, for a derivation to use there
+  detail
+      `Key is Specific over Typeclass` records exceptions to a generic derivation: for some
+      field paths of `Key`, the instance to use at that exact path rather than the one the
+      field's type would resolve to. A given in scope changes every field of a type at once; a
+      `Specific` changes one path and nowhere else. It is built with `specifically`, which
+      checks each path and each instance's type as the code compiles, and is consulted by
+      `wisteria`'s derivations, and so by the codecs derived through them.
+
+      ```scala
+      import soundness.*
+      import formatting.compactJsonFormatting
+
+      case class Person(name: Text, age: Int)
+      case class Org(ceo: Person, cto: Person)
+
+      val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
+
+      given (Org is Specific over Json.Encodable) =
+        specifically:
+          case root.cto.name() => shout
+
+      Org(Person(t"Ann", 51), Person(t"Bob", 47)).in[Json].show
+      // t"""{"ceo":{"name":"Ann","age":51},"cto":{"name":"BOB","age":47}}"""
+      ```
+
+      A `Specific` whose `#Transport` is for a different typeclass is ignored by a derivation.
+  refer vicarious.specifically
+  refer vicarious.root
+  entry .Cases   the partial function of field-path cases `specifically` reads: proxy patterns to instances
+      `Specific.Cases[Key]` is `PartialFunction[Proxy[Key, Any, Nat], Any]`. `specifically`
+      reads its `case`s from the tree as the code compiles; the function itself is never run.
+  entry #Self   the key type whose field paths are overridden
+  entry #Transport   the typeclass the overriding instances are for, such as `Json.Encodable`
+  entry #instances   each overridden dotted path (`"cto.name"`), with its instance, type-erased
+      The derivation reads an instance from this map and re-types it at the field it visits.
+
+      ```scala fuel
+      typecheck
+      ##
+      orgSpecific.instances.keys   // Set("cto.name", "ceo.name")
+      ```
+
+entry .specifically   builds a `Specific` from `case` patterns naming field paths through `root`
+    `specifically { case root.cto.name() => instance; … }` is a macro whose `Key` and
+    `Typeclass` come from the expected type (`Org is Specific over Json.Encodable`). For each
+    `case`, the proxy pattern gives the path, and the instance must be a `Typeclass` for the type
+    at that path, or the definition does not compile, _vicarious: the instance for this path is
+    not a …_; an unknown path is likewise a compile error.
+
+    ```scala fuel
+    typecheck
+    ##
+    val custom: Org is Specific over (Codec in Json) =
+      specifically:
+        case root.cto.name() => nameCodec
+        case root.ceo.age()  => ageCodec
+    ```
+
+    A path ending at a collection takes an instance for the collection, so re-deriving it there
+    under a local given re-encodes its elements in that one place:
+
+    ```scala fuel
+    typecheck
+    ##
+    given (Crew is Specific over Json.Encodable) =
+      specifically:
+        case root.rowers() =>
+          given Person is Json.Encodable = nameOnly
+          summon[List[Person] is Json.Encodable]
+    ```
+
+entry .root   the root proxy inside `specifically`'s cases, from which every path is selected
+    Resolves to the proxy which `specifically` provides as a contextual value tagged `"root"`, so
+    `case root.cto.name() =>` needs no binder. Outside a `specifically` block there is no such
+    value, and `root` does not compile.
+
+entry .internal   the macros behind `catalog`, `Proxy` and `specifically`
+  hidden
+  detail
+      Not for direct use: `catalog`, `Proxy.derived`, `Proxy#selectDynamic` and `specifically`
+      splice these. The path helpers flatten a case class's fields depth-first with the root,
+      `""`, at index 0.
+  entry .catalog   builds a `Catalog` from a value and a polymorphic function
+  entry .fieldNames   the dotted paths of a product's fields, depth-first, under a prefix
+  entry .paths   every flattened path of a product, with the root path `""` first
+  entry .fieldReprs   the type at every flattened path of a product, aligned with `.paths`
+  entry .dereference   resolves a field selection on a proxy to the proxy for the extended path
+  entry .specific   builds a `Specific` from the `case`s of a partial function of paths
+  entry .proxy   builds the refined root proxy for a key type

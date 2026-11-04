@@ -1,0 +1,1425 @@
+tel 1.0
+
+base ypsiloid
+import soundness
+
+info   YAML parsed into typed values and rendered back: documents, paths, codecs and `y"…"` literals
+detail
+    _Ypsiloid_ handles YAML the way Soundness handles JSON: text parses into a `Yaml` value,
+    a `Yaml` decodes into a case class (or any type with a `Decodable in Yaml`) and encodes
+    back from one, and the `y"…"` interpolator writes YAML which is checked as the code
+    compiles. The parser covers the language as it is really used — block and flow styles,
+    the three scalar quotings, block scalars with their chomping indicators, tags, anchors
+    and aliases, directives and multi-document streams — and a `Yaml` renders back to clean,
+    re-parseable block-style text with `show`.
+
+    The central type is `Yaml`, a document: an immutable tree (`Yaml.Ast`) plus, when the
+    document was parsed with position tracking on, an index from which any node's line and
+    column can be recovered. A node within a document is addressed by a `YamlPath` (the same
+    RFC 6901 escaping as a JSON Pointer, written `#/a/b`), which is how a decoding error says
+    _where_ it happened, and how `locate` finds a node's source position.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+    import formatting.blockYamlFormatting
+
+    case class Person(name: Text, age: Int)
+
+    val alice: Person = t"{name: Alice, age: 30}".read[Yaml].as[Person]
+    val same: Person = t"name: Alice\nage: 30".read[Person in Yaml]
+    val text: Text = Person(t"Alice", 30).in[Yaml].show   // name: Alice\nage: 30\n
+    ```
+
+    Decoding is the derivation every other format uses (wisteria's, over `Decodable in Yaml`
+    and `Encodable in Yaml`), so a record needs no annotation: `@name` renames a field or a
+    variant on the wire, an enumeration encodes with a discriminator field named by the
+    `discriminables` given in scope, and an `Optional` or `Option` field reads an absent key
+    or a `null` as `Unset`/`None` under policies the `optionalityOptions` package varies.
+    Under an accruing strategy (`validate`), a decode collects every fault in the document,
+    each tagged with a `Yaml.Focus` — its path and, for a tracked document, its position —
+    rather than stopping at the first.
+
+    A record can also carry a _direct_ parser and printer (`Yaml.Parsable` and
+    `Yaml.Printable`), which read fields straight off the parsed tree and write text with no
+    tree built: `derives Yaml.Direct` derives both into the companion, and `import
+    codecs.direct` selects the direct path for every record in scope (`codecs.derived` and
+    `codecs.strict` are the other modes).
+
+    The library has two source sets:
+
+    - `ypsiloid.core` — `Yaml` and everything inside it, `YamlPath`, the `y"…"` and `yp"…"`
+      interpolators, and the choice packages `formatting`, `optionalityOptions`,
+      `discriminables`, `dynamicAccess` and `conversions`. It compiles for the JVM, Scala.js
+      and Scala Native.
+    - `ypsiloid.http` — the `postables`, `servables` and `construables` givens which let a
+      `Yaml` travel as an `application/yaml` request or response body.
+
+    Several givens are choices and must be imported by name, since `import soundness.*` does
+    not import givens: `formatting.blockYamlFormatting` enables `show` and HTTP encoding,
+    `dynamicAccess.dynamicYaml` enables `yaml.field` access and `yaml.field = value`
+    updates, `discriminables.yamlByTypeDiscriminable` (or `…ByKind…`) is needed to encode or
+    decode a sum type, and `parsing.trackPositions` (from zephyrine) turns position tracking
+    on. Everything is exported to the `soundness` umbrella, where the choice packages merge
+    with those of the other formats.
+
+refer ypsiloid.Yaml
+refer ypsiloid.YamlPath
+refer ypsiloid.y
+refer ypsiloid.formatting
+refer ypsiloid.optionalityOptions
+
+entry .Yaml   a YAML document: an immutable tree, decoded with `as`, updated through lenses, rendered with `show`
+  detail
+      A `Yaml` wraps the parsed tree (`#root`, a `Yaml.Ast`) and, when it was parsed with
+      `parsing.trackPositions` in scope, a `#positionIndex` from which `locate(path)` finds
+      any node's line and column. It is produced by `text.read[Yaml]`, `data.read[Yaml]`, a
+      `y"…"` literal, `value.in[Yaml]`, or `Yaml.make(field = …)`, and consumed by `#as`,
+      which decodes it as any type with a `Decodable in Yaml`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import formatting.blockYamlFormatting
+      import dynamicAccess.dynamicYaml
+
+      case class Person(name: Text, age: Int)
+
+      val doc: Yaml = t"name: Alice\nage: 30".read[Yaml]
+      doc.as[Person]                 // Person(t"Alice", 30)
+      doc(t"age").as[Int]            // 30
+      doc.age.as[Int]                // 30, with `dynamicYaml` in scope
+      (doc.age = 31).as[Person]      // a new document; `doc` is unchanged
+      doc.show                       // name: Alice\nage: 30\n
+      ```
+
+      A document is a value: every update (`#update`, `#updateDynamic`, a `lens`) builds a
+      new `Yaml` and leaves the old one as it was. Two documents are equal when their trees
+      are structurally equal (`Yaml.Ast.deepEquals`), whatever their positions.
+
+      Reading: `.decodable` and `.aggregable` parse text, `.aggregableData` parses bytes
+      without transcoding, and `.aggregableAll` reads a `---`-separated stream as a
+      `List[Yaml]`. A stream source is parsed as it arrives, never concatenated first, so a
+      large file parses without being held whole. Parsing raises `Parse.Error`, whose issue
+      is a `Yaml.Ast.Issue` naming what was wrong and where.
+
+      Decoding: `#as` and the primitive, collection, `Option`/`Optional` and derived codecs
+      raise `Yaml.Error` — `Reason.NotType(found, expected)` for a value of the wrong shape,
+      `Reason.Absent` for a missing field — and track a `Yaml.Focus`, so an accruing strategy
+      reports each fault at its path. Shorthand: `text.read[Person in Yaml]` reads and decodes
+      in one step, and `person.in[Text over Yaml]` encodes and renders in one.
+
+      Rendering: `show` needs a `Yaml.Formatting` in scope (`formatting.blockYamlFormatting`,
+      the only one) and emits block style — two-space indentation, `{}` and `[]` for empty
+      collections, a string plain only when it cannot be mistaken for a number, boolean or
+      null, double-quoted otherwise — chosen so that the text re-parses to the same tree.
+      `.emit` renders a block at a time, and `.streamable` makes a `Yaml` a `Stream[Text]`.
+
+      Dynamic access (`#selectDynamic`, `#applyDynamic`, `#updateDynamic`, `#update` and the
+      `.lens` given) is gated on a `Yaml is Dynamical`, which `dynamicAccess.dynamicYaml`
+      grants to a scope and `dynamically[Yaml]:` to a block, so that `doc.name` is never
+      mistaken for a member of `Yaml` by accident.
+
+      The fallback codecs every type reaches — `decodable`, `encodable`, `optional`,
+      `optionalEncodable`, `encodableOver` and `aggregableIn` — are inherited from the
+      priority layer `Yaml2`, and the direct-codec entry points (`aggregableParsed`,
+      `encodableOverPrinted` and the two `codecs.strict` failures) from `Yaml1`; they are
+      documented on those traits.
+  refer ypsiloid.Yaml.Ast
+  refer ypsiloid.Yaml.Error
+  refer ypsiloid.Yaml.Focus
+  refer ypsiloid.YamlPath
+  refer ypsiloid.formatting
+  entry #root   the document's tree, a `Yaml.Ast`
+      The parsed tree, for the accessors in `Yaml.Ast`'s companion (`isObject`, `objectKey`,
+      `arrayElement`, `string`, …) and for bridges to other tree formats. `Yaml.unseal` is
+      the same node, as a named act of breaking through the abstraction.
+  entry #positionIndex   the position index built by a tracked parse, or `Unset`
+      Populated only when the document was parsed with `parsing.trackPositions` in scope;
+      `Unset` for an untracked parse and for every `Yaml` built from a value. It is what
+      `locate(path)` and `locateKey(path)` (zephyrine's `Positionable` extensions, through
+      `.positionable`) walk to find a node's `Yaml.Ast.Position`.
+  entry #as   decodes the document as any type with a `Decodable in Yaml`
+      `doc.as[Person]` decodes through the `Person is Decodable in Yaml` in scope — derived
+      for a case class or enumeration, or one of the companion's givens for primitives,
+      `Text`, `List`, `Set`, `Map[Text, _]`, `Option` and `Optional`. It raises `Yaml.Error`
+      and tracks `Yaml.Focus`: under `strategies.throwUnsafely` the first fault throws; under
+      a `validate[Yaml.Focus]` block every fault is accrued, and each focus carries the
+      path of the field (`#/address/city`) and, for a tracked document, its source position,
+      which `#as` fills in for every registered focus before returning.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      case class Person(name: Text, age: Int, email: Text)
+
+      t"name: Alice\nage: 30\nemail: a@b.c".read[Yaml].as[Person]
+      capture[Yaml.Error](t"name: Alice\nage: thirty".read[Yaml].as[Person]).reason
+      // Yaml.Error.Reason.NotType(Yaml.Primitive.Str, Yaml.Primitive.Integer)
+      ```
+  entry #apply   `doc(index)` is a sequence item; `doc(field)` is a mapping value, or absent
+      `doc(1)` is the second item of a sequence, raising `Yaml.Error` with
+      `Reason.NotType(found, Sequence)` when the root is not one. `doc(t"name")` is the value
+      under a string key, or an absent `Yaml` (one whose root `isAbsent`) when the key is
+      missing or the root is not a mapping; decoding an absent document as an `Option` or
+      `Optional` gives `None`/`Unset`, and as anything else raises `Reason.Absent`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      t"[10, 20, 30]".read[Yaml](1).as[Int]            // 20
+      t"{name: Alice}".read[Yaml](t"age").as[Option[Int]]   // None
+      ```
+  entry #selectDynamic   `doc.field`: a mapping value by name, with dynamic access enabled
+      `doc.name` desugars to `selectDynamic("name")` and is `#apply` with a text key, so a
+      missing key gives an absent document rather than an error. It needs a `Yaml is
+      Dynamical` in scope: `import dynamicAccess.dynamicYaml`, or a `dynamically[Yaml]:`
+      block.
+  entry #applyDynamic   `doc.field(index)`: an item of a sequence-valued field
+      `doc.items(1)` is `doc(t"items")(1)`: the field by name, then the item by index,
+      raising `Yaml.Error` when the field is not a sequence. Needs a `Yaml is Dynamical`.
+  entry #update   `doc(index) = value`: a new document with one sequence item replaced
+      Encodes `value` through its `Encodable in Yaml` and returns a copy of the document with
+      the item at `index` replaced; an index past the end leaves the sequence as it was. A
+      root which is not a sequence raises `Yaml.Error`. Needs a `Yaml is Dynamical`.
+  entry #updateDynamic   `doc.field = value` adds or replaces a mapping entry; `= Unset` removes it
+      `doc.age = 31` desugars to `updateDynamic("age")(31)`: the value is encoded through its
+      `Encodable in Yaml`, and the result is a new document in which `age` is replaced if
+      present and appended otherwise. `doc.age = Unset` deletes the entry, and is a no-op for
+      a key not present. A root which is not a mapping raises `Yaml.Error`. Needs a `Yaml is
+      Dynamical`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import dynamicAccess.dynamicYaml
+
+      val doc = t"{name: Alice, age: 30}".read[Yaml]
+      (doc.age = 31)(t"age").as[Int]           // 31
+      (doc.age = Unset)(t"age").as[Option[Int]]   // None
+      ```
+  entry .apply   wraps a tree as a document: `Yaml(ast)` or `Yaml(ast, positions)`
+      Builds a `Yaml` over a node, optionally with the `Yaml.PositionIndex` of a tracked
+      parse. The parameter is typed `Any` because `object Yaml` extends `Dynamic` (for
+      `.make`), which suppresses the constructor proxy; the value must really be a
+      `Yaml.Ast`. `.ast` is the typed form for a node already in hand.
+  entry .ast   wraps a `Yaml.Ast` node as a document
+      `Yaml.ast(node)` is `Yaml(node)` with the node's type checked: the way the optics and
+      codecs rebuild a document after replacing part of its tree.
+
+      ```scala
+      import soundness.*
+
+      Yaml.ast(Yaml.Ast.Integer(42))
+      ```
+  entry .unseal   the tree inside a document, as a named act of breaking the abstraction
+      `Yaml.unseal(doc)` is `doc.root`: the `Yaml.Ast`, for pattern matching with the
+      `Yaml.Ast.Sequence`, `Mapping`, `Str`, … extractors, or for comparing two parses with
+      `Yaml.Ast.deepEquals`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      Yaml.unseal(t"[1, 2, 3]".read[Yaml]) match
+        case Yaml.Ast.Sequence(items) => items.length
+        case _                        => -1
+      ```
+  entry .applyDynamicNamed   `Yaml.make(field = yaml, …)`: a mapping document from named arguments
+      `Yaml.make(name = t"Anna".in[Yaml], age = 30.in[Yaml])` desugars to
+      `applyDynamicNamed("make")(("name", …), ("age", …))` and builds a mapping with the
+      entries in the order written; each argument is already a `Yaml`, so nest `Yaml.make`
+      calls for nested mappings. The only method name accepted is `make`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      case class Person(name: Text, age: Int)
+
+      Yaml.make(name = t"Anna".in[Yaml], age = 30.in[Yaml]).as[Person]
+      ```
+  entry .showable   renders a document as block-style YAML text, given a `Yaml.Formatting`
+      The `Showable` in `Yaml`'s companion, so `doc.show` works wherever a `Yaml.Formatting`
+      is in scope (`import formatting.blockYamlFormatting`). The output is conservative
+      block style, chosen to re-parse to a structurally identical tree: integers as bare
+      digits, decimals through `Double.toString` or `.inf`, `-.inf`, `.nan`, booleans as
+      `true`/`false`, null as `null`, a string plain only when it is a run of letters, digits,
+      `_` and `-` beginning with a letter which does not spell a boolean or null, and
+      double-quoted (with `\"`, `\\`, `\n`, `\r`, `\t` and `\uXXXX` escapes) otherwise;
+      mappings and sequences are two-space-indented block collections, and empty ones `{}`
+      and `[]`. The text always ends with a newline.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import formatting.blockYamlFormatting
+
+      t"{name: Alice, tags: [x, y], meta: {}}".read[Yaml].show
+      // name: Alice
+      // tags:
+      //   - x
+      //   - y
+      // meta: {}
+      ```
+  entry .inspectable   a debug rendering of a document on one line: `yaml"name: Alice\nage: 30\n"`
+      Needs no `Formatting`, so a debugger or a test failure can always show a document: the
+      block-style text with its line breaks escaped, wrapped as `yaml"…"`, so a document is
+      distinguishable from the `Text` which holds the same characters.
+  entry .emit   renders a document a block at a time, pulled as an iterator or pushed to a function
+      `Yaml.emit(doc)` is an `Iterator[Text]` which renders the next entries of the tree each
+      time it is pulled, stopping between two entries once a block holds the `Buffering`
+      capacity in scope (one long scalar may overrun it). `Yaml.emit(doc, deliver)` is the
+      push form: it renders on the caller's thread and hands each block to `deliver` as it
+      fills, the shape for writing to a file, socket or `OutputStream`. The blocks joined are
+      exactly what `show` renders. Both need a `Yaml.Formatting` and a `Buffering`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import formatting.blockYamlFormatting
+
+      val doc = t"items:\n  - 1\n  - nested:\n      deep: [1, 2]\n".read[Yaml]
+      Yaml.emit(doc).to[List].join == doc.show
+      ```
+  entry .streamable   a document as a `Stream[Text] over Credit`, rendered as it is pulled
+      Built on `.emit`, so the stream's chunks are the emitter's blocks; needs a
+      `Yaml.Formatting` and a `Buffering`. This is what lets a `Yaml` be written to any
+      text sink which takes a stream.
+  entry .Formatting   the options a document is rendered under: currently only block style
+      A `Yaml.Formatting` (a `zephyrine.Formatting`) must be in scope for `show`, `in[Text
+      over Yaml]`, `.emit`, `.streamable`, `.abstractable` and the HTTP givens. YAML's block
+      style is fixed and constrained by round-tripping, so the trait carries no options yet;
+      `formatting.blockYamlFormatting` is the one instance, imported by name.
+  entry .decodable   `Yaml is Decodable in Text`: `text.as[Yaml]` parses the whole text as a document
+      As `Yaml is Decodable in Text`, this is `text.as[Yaml]`: it parses the whole text with
+      `Yaml.Parser`, under the `PositionTracking` in scope (positions are recorded only with
+      `parsing.trackPositions` imported), and raises `Parse.Error` for malformed input.
+  entry .aggregable   parses a text stream as one document, as it arrives
+      The `Yaml is Aggregable by Text` behind `text.read[Yaml]` and `stream.read[Yaml]`: a
+      `Chain[Text]` is joined and parsed whole, but a `Stream[Text] over Credit` is
+      transcoded to UTF-8 and fed to the parser's cursor as it is pulled, so a large document
+      is never held whole and a `---` marker split across two chunks is still a boundary.
+      Needs a `Tactic[Parse.Error]` and honours the `PositionTracking` in scope.
+  entry .aggregableData   parses a byte stream as one document, with no transcoding
+      The `Yaml is Aggregable by Data` behind `data.read[Yaml]` and reading a file or an
+      HTTP body: the parser is UTF-8-byte-based, so bytes are read as delivered, and a
+      leading byte-order mark is absorbed. Needs a `Tactic[Parse.Error]`.
+  entry .aggregableAll   reads a `---`-separated stream as a `List[Yaml]`, one per document
+      `text.read[List[Yaml]]`: every document of a YAML stream, in order. Directives (`%YAML`,
+      `%TAG`) apply only to the document which follows them, as the specification says, and
+      an empty text gives an empty list. Honours `PositionTracking` as `.aggregable` does.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      t"---\n1\n---\n2\n---\n3".read[List[Yaml]].map(_.as[Int])   // List(1, 2, 3)
+      ```
+  entry .aggregableDerived   `import codecs.derived`: the tree path even where a direct parser is in scope
+      Outranks `.aggregableParsed` only under `Codecs.Derived`, and sends the read through
+      `.aggregableIn`.
+  entry .aggregableStrict   `import codecs.strict`: the direct parser, or a compile error
+      Under `Codecs.Strict`, a type with a `Yaml.Parsable` reads directly through this, and
+      one without meets `.aggregableStrictFailure`, which reports _has no direct codec_ naming
+      the type at the use site rather than falling back to the tree.
+  entry .encodableOverDerived   `import codecs.derived`: the tree path even where a direct printer is in scope
+  entry .encodableOverStrict   `import codecs.strict`: the direct printer, or a compile error
+      Pairs with `.encodableOverStrictFailure`, which fails compilation for a type with no
+      `Yaml.Printable` — for instance an enumeration, which has no product reflection and so
+      no derived printer.
+  entry .encodableOverData   `person.in[Data over Yaml]`: the YAML text as bytes in the `Codepage` in scope
+      Encodes through `in[Text over Yaml]` and then the `Codepage` (such as
+      `codepages.utf8Codepage`); `data.read[Person in Yaml]` reads it back.
+  entry .abstractable   a document as an HTTP body, with the `application/yaml` content type
+      `Yaml is Abstractable across HttpStreams to HttpStreams.Content`: the body is the
+      rendered text in the `Codepage` in scope, with the content type `application/yaml;
+      charset=<encoding>`. Needs a `Yaml.Formatting`; `ypsiloid.http`'s `postables` and
+      `servables` givens are the telekinesis instances built from the same rendering.
+  entry .instantiable   reads an HTTP request or response body back as a document
+      `Yaml is Instantiable across HttpRequests from Text`: the body's text is parsed as
+      `text.read[Yaml]`, raising `Parse.Error`, under the `PositionTracking` in scope.
+  entry .yaml   `Yaml is Decodable in Yaml`: `doc.as[Yaml]` is the document itself
+      The identity decoder, so a field typed `Yaml` in a case class keeps that part of the
+      tree undecoded, to be inspected or decoded later.
+  entry .yamlEncodable   `Yaml is Encodable in Yaml`: a document encodes as itself
+      The identity encoder, the counterpart of `.yaml`: a `Yaml`-typed field is spliced into
+      the mapping as it is, and `Yaml.make` takes its arguments through it.
+  entry .int   `Int is Decodable in Yaml`: an integer or decimal scalar, truncated to `Int`
+      A YAML integer (`42`, `0x2A`, `0o17`) or a decimal (truncated) reads as an `Int`; any
+      other node registers `Yaml.Error` with `Reason.NotType(found, Integer)` — or
+      `Reason.Absent` for a missing field — and continues with `0` so that sibling fields can
+      accrue their own faults under a `validate` block. Under `throwUnsafely` the first fault
+      throws.
+  entry .long   `Long is Decodable in Yaml`: an integer or decimal scalar as a `Long`
+      As `.int`. An integer beyond a `Long`'s range is held as a `Bcd` in the tree and
+      truncates here; read it as `Yaml.Ast#bcd` through `Yaml.unseal` for its full precision.
+  entry .double   `Double is Decodable in Yaml`: a decimal or integer scalar as a `Double`
+      `.inf`, `-.inf` and `.nan` read as the IEEE values. A wrong-shaped node registers
+      `Reason.NotType(found, Decimal)` and continues with `0.0`.
+  entry .float   `Float is Decodable in Yaml`: a decimal or integer scalar as a `Float`
+  entry .boolean   `Boolean is Decodable in Yaml`: a boolean scalar
+      Only `true`/`false` (in any of YAML's spellings) resolve as booleans; a quoted `"true"`
+      is a string and registers `Reason.NotType(Str, Bool)`.
+  entry .text   `Text is Decodable in Yaml`: a string scalar
+      A quoted scalar, a block scalar, a plain scalar which does not resolve as a number,
+      boolean or null, or any scalar tagged `!!str`. A number is not coerced: `42` registers
+      `Reason.NotType(Integer, Str)`; write `!!str 42` or `"42"` for the text.
+  entry .string   `String is Decodable in Yaml`: a string scalar, as a Java `String`
+  entry .unit   `Unit is Decodable in Yaml`: a null scalar
+      `null`, `~`, an empty value or anything tagged `!!null`; any other node registers
+      `Reason.NotType(found, Null)`.
+  entry .bytes   `Bytes is Decodable in Yaml`: a byte count from an integer scalar
+      Reads the node as a `Long` and makes a `Bytes` (hypotenuse's unit) of it.
+  entry .listDecodable   `List[T] is Decodable in Yaml` for any element with a decoder
+      Reads a sequence, focusing each element by its ordinal so an element's fault is
+      reported at `#/items/2`. A node which is not a sequence registers
+      `Reason.NotType(found, Sequence)`. `List` is Soundness's own (opaque) list, so this is
+      a separate given from `.iterable`, which covers the stdlib collections.
+  entry .setDecodable   `Set[T] is Decodable in Yaml`: a sequence read into a `Set`
+  entry .seriesDecodable   `Sequence[T] is Decodable in Yaml`: a sequence read into a `Sequence`
+  entry .iterable   any stdlib `Iterable` with a `Factory` is decodable from a sequence
+      The general given for `scala.collection` types (`Vector`, `scala.List`, …) built
+      through their `Factory`; `.listDecodable`, `.setDecodable` and `.seriesDecodable` are
+      its instances for Soundness's own collections.
+  entry .map   `Map[Text, T] is Decodable in Yaml`: a mapping read with its keys as text
+      Each key must be a scalar: a string is taken as is, a number or boolean key is
+      rendered as text, and a `null` key becomes `t"null"`; a collection key aborts with
+      `Reason.NotType(found, Str)`. A node which is not a mapping registers
+      `Reason.NotType(found, Mapping)` and continues with an empty map.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      t"a: 1\nb: 2".read[Yaml].as[Map[Text, Int]]   // Map(t"a" -> 1, t"b" -> 2)
+      ```
+  entry .option   `Option[T] is Decodable in Yaml`, under the `optionalityOptions` policies
+      A missing key reads as `None` unless `strictYamlAbsence` is in scope (then
+      `Yaml.Error(Absent)`); a YAML `null` reads as `None` unless `strictYamlNulls` is in
+      scope (then the inner decoder sees it, and fails for anything but `Unit`); and a value
+      the inner decoder rejects is an error unless `lenientYamlFaults` is in scope (then
+      `None`). The three policies are `Decodable.Absence`, `Nullity` and `Fault` `in Yaml`,
+      with the lenient-absence, lenient-null, strict-fault defaults in distillate.
+  entry .optionEncodable   `Option[T] is Encodable in Yaml`: `None` encodes as absent
+  entry .intEncodable   `Int is Encodable in Yaml`: an integer scalar
+  entry .longEncodable   `Long is Encodable in Yaml`: an integer scalar
+  entry .integralEncodable   any `Integral` type encodes as an integer scalar, through `toLong`
+  entry .doubleEncodable   `Double is Encodable in Yaml`: a decimal scalar, with `.inf` and `.nan` spelt as YAML does
+  entry .floatEncodable   `Float is Encodable in Yaml`: a decimal scalar
+  entry .booleanEncodable   `Boolean is Encodable in Yaml`: `true` or `false`
+  entry .textEncodable   `Text is Encodable in Yaml`: a string scalar, quoted when rendering requires
+      The tree holds the text as it is; `show` decides whether it can be a plain scalar or
+      must be double-quoted, so `t"42"` round-trips as the string `"42"` and not the number.
+  entry .stringEncodable   `String is Encodable in Yaml`: a string scalar
+  entry .unitEncodable   `Unit is Encodable in Yaml`: a `null` scalar
+  entry .listEncodable   `List[T] is Encodable in Yaml`: a sequence of the elements' encodings
+  entry .setAliasEncodable   `Set[T] is Encodable in Yaml`: a sequence, in the set's iteration order
+  entry .seriesAliasEncodable   `Sequence[T] is Encodable in Yaml`: a sequence
+  entry .iterableEncodable   any stdlib `Iterable` encodes as a sequence
+  entry .mapEncodable   `Map[K, V] is Encodable in Yaml` for any key with an `Encodable in Text`
+      Keys are rendered to text through their `Encodable in Text` and become string scalars;
+      values encode through their `Encodable in Yaml`. The entries follow the map's iteration
+      order.
+  entry .discriminatedUnion   a `Discriminable in Yaml` keyed on a mapping field of any name
+      `Yaml.discriminatedUnion[Shape](t"kind")` is how a sum type's variant is named on the
+      wire: `discriminate` reads the string under `kind`, `rewrite` adds or replaces the field
+      with the variant's name when encoding, and `variant` strips it before the variant's own
+      decoder runs. The `discriminables` package holds the two common choices, `type` and
+      `kind`, as importable givens; call this for any other field name and bind the result as
+      a local given.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      enum Shape:
+        case Circle(radius: Double)
+        case Square(side: Double)
+
+      given Shape is Discriminable in Yaml = Yaml.discriminatedUnion[Shape](t"shape")
+      t"{shape: Circle, radius: 2.5}".read[Yaml].as[Shape]   // Shape.Circle(2.5)
+      ```
+  entry .positionable   `doc.locate(path)` and `doc.locateKey(path)`: a node's source position
+      The `Yaml is Positionable by YamlPath to Yaml.Ast.Position` behind zephyrine's `locate`
+      extensions. `locate` gives the position of the value at a `YamlPath` and `locateKey`
+      that of the mapping key which holds it; both are `Unset` for an untracked document
+      (parsed without `parsing.trackPositions`), for a path which does not resolve, and
+      `locateKey` for the root. Lines and columns are 1-based.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import parsing.trackPositions
+
+      val doc = t"outer:\n  inner: 99\n".read[Yaml]
+      doc.locate(YamlPath()(t"outer")(t"inner"))      // line 2, column 10, length 2
+      doc.locateKey(YamlPath()(t"outer")(t"inner"))   // line 2, column 3, length 5
+      ```
+  entry .interpolator   the given behind `y"…"`: a YAML literal parsed as the code compiles
+      `Yaml is Interpolable`, with `Yaml` as its result. See `ypsiloid.y` for what the
+      interpolator accepts.
+  entry .extrapolator   the given behind `case y"…" =>`: a YAML literal as a pattern
+      `Yaml is Extrapolable`: a `y"…"` pattern matches a document structurally, and a `$x`
+      hole in it binds the node at that position as a `Yaml`. See `ypsiloid.y`.
+  entry .lens   `"field" is Lens from Yaml onto Yaml`: a mapping entry as a lens, by its label
+      The given which makes `doc.lens(_.inner.n = value)` work: each label in the path is a
+      lens whose getter is `#selectDynamic` and whose setter replaces (or inserts) the entry,
+      so a nested update rebuilds the mapping at each level and returns a new document.
+      It is gated on a `Yaml is Dynamical` (`dynamicAccess.dynamicYaml`) and needs a
+      `Tactic[Yaml.Error]`. The assigned value must be a `Yaml`: encode it with `in[Yaml]`,
+      or import `conversions.encodableToYaml` to assign any encodable value directly.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import dynamicAccess.dynamicYaml
+      import conversions.encodableToYaml
+
+      case class Inner(n: Int)
+      case class Outer(name: Text, inner: Inner)
+
+      val doc = Outer(t"a", Inner(7)).in[Yaml]
+      doc.lens(_.inner.n = 99).as[Outer]            // Outer(t"a", Inner(99))
+      doc.lens(_.extra = 7)(t"extra").as[Int]       // 7: an absent field is inserted
+      ```
+  entry .ordinalOptical   `Ordinal is Optical from Yaml onto Yaml`: one sequence item, by position
+      Makes `doc.lens(_.items(Prim) = value)` update the first item of a sequence-valued
+      field; an ordinal past the end, or a node which is not a sequence, leaves the document
+      unchanged.
+  entry .eachOptical   `Each is Optical from Yaml onto Yaml`: every item of a sequence
+      `doc.lens(_.items(Each) = 0)` applies the update to every item of the sequence, and is
+      a no-op on anything which is not one.
+  entry .filterOptical   `Filter[Yaml] is Optical from Yaml onto Yaml`: the items a predicate selects
+      `doc.lens(_.items(Filter[Yaml](_.as[Int] > 15)) = 0)` updates only the items for which
+      the predicate holds and leaves the rest as they are.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import dynamicAccess.dynamicYaml
+      import conversions.encodableToYaml
+
+      val doc = t"items: [10, 20, 30]".read[Yaml]
+      doc.lens(_.items(Filter[Yaml](_.as[Int] > 15)) = 0).items.as[List[Int]]   // List(10, 0, 0)
+      ```
+  entry .primitive   the `Yaml.Primitive` kind of a node: what an error reports as _found_
+      `Yaml.primitive(ast)` classifies a node as `Null`, `Bool`, `Integer`, `Decimal`, `Str`,
+      `Sequence` or `Mapping`; a high-precision `Bcd` number reports as `Decimal`, and the
+      absent node as `Null`.
+  entry .YamlString   the JVM representation of a string scalar in the tree: `String`
+  entry .YamlInteger   the representation of an integer scalar: `Long`, or `Bcd` beyond a `Long`'s range
+  entry .YamlDecimal   the representation of a decimal scalar: `Double`, or `Bcd` beyond 17 significant digits
+  entry .YamlBoolean   the representation of a boolean scalar: `Boolean`
+  entry .YamlNull   the sentinel for a YAML `null` in the tree, distinct from the absent node
+      The object and its singleton type. A YAML `null` and an absent value (a missing field,
+      represented as `Unset`) must stay distinct — an `Optional` field treats them under
+      different policies — so the null is this sentinel rather than the JVM's `null`.
+      `Yaml.Ast.Null` is the node, and `isNull` the test.
+  entry .YamlSequence   the representation of a sequence: a frozen `Array[Any]` of odd length
+      Sequences and mappings share one array representation and are told apart by length
+      parity: a sequence array is always odd-length, padded with a sentinel when the item
+      count is even. `Yaml.Ast.sequenceLength` gives the real count.
+  entry .YamlMapping   the representation of a mapping: a frozen `Array[Any]` of alternating keys and values
+      Always even-length, `[k0, v0, k1, v1, …]`, in document order. Keys are nodes, and only
+      string keys are addressable by `Yaml#apply`, `YamlPath` and the derived decoders.
+  entry .PositionIndex   the flat index of source positions a tracked parse records beside the tree
+      An opaque frozen `Array[Int]` of position descriptors, one per node, laid out so that
+      the slice at any descriptor boundary is itself a valid index. It is built only when
+      `parsing.trackPositions` is in scope, carried as `Yaml#positionIndex`, and walked by
+      `.positionable` to answer `locate` and `locateKey`; there is no public way to read it
+      directly.
+  entry .Focus   where a decoding fault happened: its `YamlPath`, and its position if the document was tracked
+    detail
+        The focus `Yaml#as` tracks, so that an accruing strategy can report each fault at its
+        place: `pointer` is the path to the field (`#/address/city`, root-first), and
+        `position` is its line and column, filled in by `#withPosition` for every registered
+        focus when the document has a `positionIndex`, and `Unset` otherwise.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import parsing.trackPositions
+
+        case class Person(name: Text, age: Int, email: Text)
+
+        case class Issues(items: List[Text] = Nil)(using Diagnostics)
+        extends Error(m"${items.size} issues"):
+          def +(focus: Text): Issues = Issues(items :+ focus)
+
+        val doc = t"name: Alice\nage: thirty\n".read[Yaml]
+
+        validate[Yaml.Focus](Issues()):
+          case error: Yaml.Error => accrual + prior.let(_.pointer.encode).or(t"#")
+        . protect(doc.as[Person]).items   // List(t"#/age", t"#/email")
+        ```
+    entry #pointer   the path of the faulting node, root-first
+    entry #position   the node's source position, or `Unset` for an untracked document
+    entry #withPosition   a copy with `position` resolved against a document's index
+        `focus.withPosition(doc)` is `focus` with `position` set to `doc.locate(pointer)`;
+        `Yaml#as` applies it to every registered focus, so a handler rarely needs to.
+  entry .Ast   a node of the tree: an unboxed scalar, a sequence or a mapping, inspected through extensions
+    detail
+        `Yaml.Ast` is an opaque type over the JVM representations of YAML's values — a
+        `String`, `Long`, `Double`, `Boolean` or `Bcd` scalar, the `YamlNull` sentinel, a
+        frozen array for a sequence or mapping, and `Unset` for an absent value — so a scalar
+        is stored without a wrapper. The companion is the whole API: constructors (`Str`,
+        `Integer`, `Sequence`, …) which double as extractors for pattern matching,
+        predicates (`isString`, `isObject`, …) and accessors (`string`, `arrayElement`,
+        `objectIndexOf`, …) as extension methods, `deepEquals` for structural comparison,
+        and the `Position` and `Issue` types a parse reports.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        val node: Yaml.Ast = Yaml.unseal(t"{name: Alice, tags: [a, b]}".read[Yaml])
+
+        node.isObject                                    // true
+        node.objectIndexOf("tags")                       // 1
+        node.objectValue(1).arrayLength                  // 2
+        node.objectValue(1).arrayElement(0).string       // t"a"
+
+        node match
+          case Yaml.Ast.Mapping(entries) => entries.length
+          case _                         => 0
+        ```
+
+        A document (`Yaml`) wraps a node; most code works through the document and its
+        codecs, and reaches the node only to match on structure or to read a high-precision
+        number as a `Bcd`. The companion is also the `Format` of a YAML parse, named
+        `YAML`, whose `Parse.Error`s carry a `Yaml.Ast.Issue` and a `Yaml.Ast.Position`.
+    refer ypsiloid.Yaml
+    refer ypsiloid.Yaml.Ast.Issue
+    refer ypsiloid.Yaml.Ast.Position
+    entry .name   the format's name, `YAML`, as `Parse.Error` messages report it
+    entry .showable   renders a node as block-style YAML text, given a `Yaml.Formatting`
+        The same emitter as `Yaml`'s `showable`, on a bare node.
+    entry .inspectable   a debug rendering of a node on one line, suffixed `ᵃˢᵗ`
+        As a document inspects, with its line breaks escaped, plus a superscript `ᵃˢᵗ` so a
+        bare node is distinguishable from the `Yaml` which would wrap it.
+    entry .apply   wraps any representation value as a node
+        `Yaml.Ast(value)` for a `Long`, `Double`, `Bcd`, `Boolean`, `String`, frozen
+        `Array[Any]`, `YamlNull` or `Unset`; the typed constructors `.Str`, `.Integer`, … are
+        clearer where the kind is known.
+    entry .Null   the `null` node
+    entry .Bool   `Yaml.Ast.Bool(true)` makes a boolean node; `case Yaml.Ast.Bool(b)` matches one
+    entry .Integer   `Yaml.Ast.Integer(42L)` makes an integer node; `case Yaml.Ast.Integer(n)` matches one
+        The extractor matches only a `Long`-ranged integer; an integer held as a `Bcd`
+        matches `.BcdValue`.
+    entry .Decimal   `Yaml.Ast.Decimal(3.14)` makes a decimal node; `case Yaml.Ast.Decimal(d)` matches one
+    entry .BcdValue   a high-precision number node, held as a `Bcd`; matches one in a pattern
+        An integer beyond a `Long`'s range, or a decimal with more than 17 significant
+        digits, parses to a `Bcd` rather than being rounded; this constructs or extracts one.
+    entry .Str   `Yaml.Ast.Str(t"x")` makes a string node; `case Yaml.Ast.Str(text)` matches one
+    entry .Sequence   `Yaml.Ast.Sequence(items)` makes a sequence from a frozen array of nodes; matches one
+        The extractor yields the items as a frozen `Array[Yaml.Ast]`, without the padding
+        sentinel the representation may carry; both the constructor and the extractor copy
+        when the count is even.
+    entry .Mapping   `Yaml.Ast.Mapping(entries)` makes a mapping from key-value pairs; matches one
+        The constructor takes a frozen `Array[(Yaml.Ast, Yaml.Ast)]` and flattens it; the
+        extractor yields the pairs, in document order.
+    entry .sequenceLength   the item count of a sequence array, excluding the padding sentinel
+        A low-level accessor on the representation (`Array[Any]`); `arrayLength` is the
+        same on a node.
+    entry .mappingSize   the entry count of a mapping array: half its length
+    entry .foreachItem   applies an inline body to each item of a sequence array
+        A hot-path loop for collection decoders, with no iterator and no boxing of the index.
+    entry .foreachEntry   applies an inline body to each key and value of a mapping array
+    entry .deepEquals   structural equality of two nodes, walking sequences and mappings
+        Two parses of the same text are different array instances; this compares them by
+        content, and is what `Yaml#equals` uses. Numbers compare by kind and value, so
+        `Integer(1)` and `Decimal(1.0)` are not equal.
+    entry .deepHash   a hash consistent with `.deepEquals`, used by `Yaml#hashCode`
+    entry .isAbsent   whether the node is the absent sentinel: a missing field, or `Yaml#apply` on a missing key
+    entry .isNull   whether the node is a YAML `null`
+    entry .isLong   whether the node is an integer within a `Long`'s range
+    entry .isDouble   whether the node is a decimal held as a `Double`
+    entry .isBcd   whether the node is a high-precision number held as a `Bcd`
+    entry .isNumber   whether the node is an integer or decimal of any precision
+    entry .isString   whether the node is a string scalar
+    entry .isBoolean   whether the node is a boolean scalar
+    entry .isObject   whether the node is a mapping
+    entry .isArray   whether the node is a sequence
+    entry .arrayLength   the item count of a sequence node; undefined on any other node
+        The accessors `arrayLength`, `arrayElement`, `objectSize`, `objectKey` and
+        `objectValue` are unchecked for speed: test `isArray` or `isObject` first, or use the
+        checked `array`, `string`, `long`, … which register a `Yaml.Error`.
+    entry .arrayElement   the item at an index of a sequence node, unchecked
+    entry .objectSize   the entry count of a mapping node, unchecked
+    entry .objectKey   the key at a pair index of a mapping node, as a `String`, unchecked
+        The key's `String`; a non-string key fails the cast, so use `objectIndexOf` or match
+        on `.Mapping` for a mapping which may have scalar keys of other kinds.
+    entry .objectValue   the value at a pair index of a mapping node, unchecked
+    entry .objectIndexOf   the pair index of a string key in a mapping, or `-1`
+        A linear scan matching only string keys; `-1` for a missing key and for a node which
+        is not a mapping. The index feeds `objectKey` and `objectValue`.
+    entry .array   the items of a sequence node, or a registered `Yaml.Error` and an empty array
+        Needs a `Tactic[Yaml.Error]`: a node which is not a sequence registers
+        `Reason.NotType(found, Sequence)` (or `Reason.Absent`) and continues with no items.
+    entry .double   the node as a `Double`, from a decimal, integer or `Bcd`; else a registered `Yaml.Error`
+    entry .long   the node as a `Long`, from an integer, decimal or `Bcd`; else a registered `Yaml.Error`
+    entry .bcd   the node as a `Bcd`, at full precision, from any number; else a registered `Yaml.Error`
+        The way to read a number too large for a `Long` or too precise for a `Double`
+        without loss: `Yaml.unseal(doc).bcd.toBigDecimal`.
+    entry .string   the node as `Text`, from a string scalar; else a registered `Yaml.Error`
+    entry .boolean   the node as a `Boolean`; else a registered `Yaml.Error`
+    entry .primitive   the node's `Yaml.Primitive` kind
+    entry .Position   a source position: line and column (1-based), with the node's offset and length
+      detail
+          The `Format.Position` of a YAML parse, carried by every `Parse.Error` and returned
+          by `locate`. `line` and `column` are 1-based as an editor shows them; `span` is the
+          0-based range a diagnostic highlights. `describe` renders `line 2, column 10`.
+      entry #line   the 1-based line
+      entry #column   the 1-based column
+      entry #offset   the character offset from the start of the source, if known
+      entry #length   the length of the node's source text, if known
+      entry #describe   the position as text: `line 2, column 10`
+      entry #span   the position as a 0-based `Span` of `length` characters
+    entry .Issue   what a parse can find wrong, each with its message
+      detail
+          The `Format.Issue` of a YAML parse: a `Parse.Error`'s `issue` is one of these, and
+          `describe` gives its message. The cases cover the document structure (a `---`
+          missing between documents, content after `...`, a directive out of place or
+          malformed, `%YAML` repeated or without a `major.minor` version, `%TAG` without a
+          handle and prefix), node properties (two anchors or two tags on a node, an anchor on
+          an alias, an unterminated verbatim tag, `UndefinedTagHandle(handle)`,
+          `UnknownAlias(name)`, a reserved indicator at a node's start), block structure (a
+          tab in indentation, a mapping starting on the `---` line, a sequence on a key's
+          line, a key without its `:`, a multi-line implicit key, a chained value on one
+          line, under-indented continuation), quoted scalars (unterminated single or double
+          quotes, an unterminated, invalid or truncated escape, a bad hex digit, trailing
+          content after the closing quote, a document marker inside a multi-line scalar),
+          flow collections (unterminated `[` or `{`, an empty entry, `,` or the closer
+          expected, a key and its `:` on different lines, under-indented content, a document
+          marker in flow context), block scalars (a header which is invalid, an indentation
+          indicator outside 1–9 or repeated, a repeated chomping indicator, leading blank
+          lines over-indented, a header comment without whitespace before it), and a comment
+          not preceded by whitespace.
+
+          ```scala
+          import soundness.*
+          import strategies.throwUnsafely
+
+          capture[Parse.Error](t"a: *missing".read[Yaml]).issue
+          // Yaml.Ast.Issue.UnknownAlias(t"missing")
+          ```
+      entry #describe   the issue's message, such as _the alias *name does not refer to a known anchor_
+    entry .Byte   the ASCII byte constants the parser switches on
+      hidden
+      detail
+          Not for direct use: named constants (`Colon`, `Minus`, `OpenBracket`, …) for the
+          byte values the parser's dispatch tables compare against.
+  entry .Error   raised when a document cannot be decoded as the type asked for
+    detail
+        Error 31: _could not access the YAML value because `reason`_. Raised by `Yaml#as`,
+        `Yaml#apply`, the updates and every `Decodable in Yaml` when a node has the wrong
+        shape or a required field is missing. The reason is one of two:
+        `Reason.NotType(found, expected)` — _the YAML value had type `found` instead of
+        `expected`_, both `Yaml.Primitive`s — and `Reason.Absent` — _the YAML value was not
+        present_. The primitive decoders register the error and continue with a sentinel,
+        so under an accruing strategy a record with three bad fields reports three errors,
+        each focused on its field; the gated construction never runs the record's
+        constructor on sentinel values.
+
+        A parse failure is not a `Yaml.Error`: malformed text raises zephyrine's
+        `Parse.Error`, with a `Yaml.Ast.Issue` and a `Yaml.Ast.Position`.
+    refer ypsiloid.Yaml.Focus
+    refer ypsiloid.Yaml.Primitive
+    entry #reason   why the value could not be read: `NotType(found, expected)` or `Absent`
+    entry .Reason   the two reasons: a node of the wrong kind, or a missing value
+      detail
+          `NotType(found: Yaml.Primitive, expected: Yaml.Primitive)` (number 1) is a node of
+          the wrong kind, such as a string where an integer was due; `Absent` (number 2) is a
+          field the mapping does not have, or a `null` or missing value under a strict
+          optionality policy. Both are `Clarification`s, so an error's number is `31.1` or
+          `31.2`.
+      entry .communicable   renders a reason as its message
+  entry .Primitive   the seven kinds of node, as an error names what it found and expected
+    detail
+        `Null`, `Bool`, `Integer`, `Decimal`, `Str`, `Sequence` and `Mapping`.
+        `Yaml.primitive(node)` classifies a node; a `Bcd` number is `Decimal`, and the absent
+        node is `Null`.
+    entry .communicable   renders a primitive's name in a message
+  entry .Direct   the `derives` carrier for a record's direct parser and printer
+    detail
+        `case class Config(…) derives Yaml.Direct` derives `Config`'s `Yaml.Parsable` and
+        `Yaml.Printable` once, into its companion, where they serve every `read[Config in
+        Yaml]` and `in[Text over Yaml]` — with or without `import codecs.direct`, which would
+        otherwise derive them afresh at each use, and ahead of it, since a companion instance
+        outranks the import. A `Self`-typed typeclass cannot appear in a `derives` clause
+        itself, which is why this parameterised carrier exists; `.declared` in `Parsable`
+        and `Printable` unpack it.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import formatting.blockYamlFormatting
+
+        case class Config(port: Int, host: Text) derives Yaml.Direct
+
+        Config(8080, t"localhost").in[Text over Yaml].read[Config in Yaml]
+        ```
+    entry .derived   derives a `Direct` for a product: its parser and printer, field by field
+    entry #parsable   the record's direct parser
+    entry #printable   the record's direct printer
+  entry .Parsable   a type read straight off the parsed tree, with no `Yaml` built around each node
+    detail
+        The opt-in surface of direct reading: a type with a `Yaml.Parsable` is read by
+        `read[T in Yaml]` through `.aggregableParsed` rather than through a `Decodable in
+        Yaml`. An instance comes from `derives Yaml.Direct`, from `Parsable.derived[T]` bound
+        as a given, from `import codecs.direct` (every product, derived at the use site), or
+        from the bridges `fromField` and `fromDecodable`. A `Parsable` is a `Yaml.Field`, so
+        a record's parser also serves as a field parser inside another record. A direct
+        parser gives the same results and the same focused errors as the tree path, and
+        honours `@name`, defaults and the `optionalityOptions` policies.
+        The `generated` given is inherited from the priority layer `Parsable2`, and
+        documented there.
+    refer ypsiloid.Yaml.Field
+    refer ypsiloid.Yaml.Direct
+    refer ypsiloid.Yaml.Reader
+    entry .derived   derives a direct parser for a product from its `ProductReflection`
+    entry .fromField   a `Parsable` from a `Yaml.Field`: the opt-in surface from the always-resolving one
+    entry .fromDecodable   a `Parsable` which decodes the node as a `Yaml` through a `Decodable in Yaml`
+        The bridge from the tree world, whole: for a type whose reading cannot be direct
+        but which must satisfy `codecs.strict`.
+    entry .declared   the parser of a type which `derives Yaml.Direct`, from its companion's `Direct`
+  entry .Field   a value read from a node of the tree, as a derived parser reads each field
+    detail
+        The always-resolving supertype of `Yaml.Parsable`: every type has a `Yaml.Field` —
+        the companion's givens for the primitives, `Text`, `Unit`, `Option`, `Optional`,
+        `List`, `Set`, `Sequence`, `Map[Text, _]` and any stdlib `Iterable`, a derived one
+        for any product (`.product`), and a bridge from any `Decodable in Yaml`
+        (`.decodable`) — so a derived parser can read any field type. A `Field` reads from
+        `(reader, node)`, where the node is the absent sentinel for a key the mapping lacks.
+        The `product` and `decodable` givens are inherited from the priority layers `Field1`
+        and `Field2`, and documented there.
+    refer ypsiloid.Yaml.Parsable
+    refer ypsiloid.Yaml.Reader
+    entry #Transport   the format a field is read from: `Yaml`
+    entry #Reader   the reader a field reads through: `Yaml.Reader`
+    entry #parse   reads the value from a node, or from the absent node when called with the reader alone
+    entry .parseField   reads one field through its `Field`, from the reader carried as an `AnyRef`
+        A rim call point for derived code, which cannot hold the capability-typed reader in
+        a function parameter.
+    entry .readerOf   the reader, from its `AnyRef` carrier
+    entry .lookup   the value under a string key in a mapping node, or `null`
+        `null` also for a node which is not a mapping. Only string keys match, as the tree
+        decoder's lookup.
+    entry .int   `Int is Yaml.Field`: an integer or decimal node
+    entry .long   `Long is Yaml.Field`
+    entry .double   `Double is Yaml.Field`
+    entry .float   `Float is Yaml.Field`
+    entry .boolean   `Boolean is Yaml.Field`
+    entry .text   `Text is Yaml.Field`: a string node
+    entry .string   `String is Yaml.Field`
+    entry .unit   `Unit is Yaml.Field`: a null node
+    entry .optional   `Optional[T] is Yaml.Field`, under the `optionalityOptions` policies
+        As the tree decoder's `Yaml.optional`: absent and `null` read as `Unset` unless
+        `strictYamlAbsence` or `strictYamlNulls` is in scope, and a rejected value is a fault
+        unless `lenientYamlFaults` is.
+    entry .option   `Option[T] is Yaml.Field`, under the same policies, yielding `None`
+    entry .iterable   any stdlib `Iterable` with a `Factory`, from a sequence node, each item focused by ordinal
+    entry .list   `List[T] is Yaml.Field`: a sequence node
+    entry .set   `Set[T] is Yaml.Field`: a sequence node
+    entry .series   `Sequence[T] is Yaml.Field`: a sequence node
+    entry .map   `Map[Text, T] is Yaml.Field`: a mapping node with string keys
+  entry .Reader   the context a direct parser reads under: the tactic and foci of the read
+    detail
+        A `Yaml.Parsable` reads its nodes through a `Reader`, which holds the
+        `Tactic[Yaml.Error]` and `Foci[Yaml.Focus]` of the read, so instances are
+        construction-free and the same parser serves every read. Its scalar methods register
+        a wrong-kind or absent fault through the tactic and continue with a sentinel, as the
+        tree decoders do, so sibling fields accrue their own errors. Only
+        `.aggregableParsed` makes one; a hand-written `Parsable` receives it.
+    entry #int   an integer or decimal node as an `Int`, or a registered fault and `0`
+    entry #long   an integer or decimal node as a `Long`, or a registered fault and `0`
+    entry #double   a decimal or integer node as a `Double`, or a registered fault and `0.0`
+    entry #float   a decimal or integer node as a `Float`, or a registered fault and `0.0f`
+    entry #boolean   a boolean node, or a registered fault and `false`
+    entry #string   a string node as a `String`, or a registered fault and `""`
+    entry #unit   checks the node is `null`, registering a fault otherwise
+    entry #shape   registers a node of the wrong shape — a scalar where a sequence or mapping was due — and continues
+  entry .Printable   a type written straight to YAML text from its fields, with no tree built
+    detail
+        The opt-in surface of direct writing: a type with a `Yaml.Printable` is written by
+        `in[Text over Yaml]` through `.encodableOverPrinted`, and by `Printable.print` and
+        `Printable.emit`, rather than through an `Encodable in Yaml` and `show`. An instance
+        comes from `derives Yaml.Direct`, from `Printable.derived[T]`, from `import
+        codecs.direct`, or from the bridges `fromWritable` and `fromEncodable`. The text is
+        exactly what `show` renders for the value's tree.
+        The `generated` given is inherited from the priority layer `Printable2`, and
+        documented there.
+    refer ypsiloid.Yaml.Writable
+    refer ypsiloid.Yaml.Direct
+    refer ypsiloid.Yaml.Out
+    entry .derived   derives a direct printer for a product from its `ProductReflection`
+    entry .fromWritable   a `Printable` from a `Yaml.Writable`
+    entry .fromEncodable   a `Printable` which encodes the value to a tree and writes that in place
+    entry .declared   the printer of a type which `derives Yaml.Direct`, from its companion's `Direct`
+    entry .print   a value's whole YAML text through its `Printable`
+        ```scala
+        import soundness.*
+
+        case class Person(name: Text, age: Int) derives Yaml.Direct
+
+        Yaml.Printable.print(Person(t"Ada", 36))   // name: Ada\nage: 36\n
+        ```
+    entry .emit   writes a value's text in blocks of the `Buffering` capacity, handing each to a function
+        The push form for a large value: each completed line is handed to `deliver` once the
+        text reaches the capacity, so no text of the whole value is ever built.
+  entry .Writable   a value written as a mapping value, a sequence item or a document, as a derived printer writes each field
+    detail
+        The always-resolving supertype of `Yaml.Printable`: every type has a `Yaml.Writable`
+        — the companion's givens for the primitives, `Text`, `Unit`, `Option`, `Optional`,
+        `List`, `Set`, `Sequence`, `Map` and any stdlib `Iterable`, a derived one for any
+        product (`.product`), and a bridge from any `Encodable in Yaml` (`.encodable`). A
+        `Writable` writes into a `Yaml.Out` as the value due after a `key:` or `-` marker,
+        and says through `#absent` whether it should be left out of a mapping altogether.
+        The `product` and `encodable` givens are inherited from the priority layers
+        `Writable1` and `Writable2`, and documented there.
+    refer ypsiloid.Yaml.Printable
+    refer ypsiloid.Yaml.Out
+    entry #absent   whether a value is left out of a mapping: an `Unset` or `None` field
+    entry #write   writes the value into a `Yaml.Out`, as the value due after a marker or as the document
+    entry .writeField   writes one field through its `Writable`, into the writer carried as an `AnyRef`
+    entry .keyOf   writes a `key:` marker into the writer carried as an `AnyRef`
+    entry .int   `Int is Yaml.Writable`
+    entry .long   `Long is Yaml.Writable`
+    entry .double   `Double is Yaml.Writable`
+    entry .float   `Float is Yaml.Writable`
+    entry .boolean   `Boolean is Yaml.Writable`
+    entry .text   `Text is Yaml.Writable`: plain or double-quoted, as `show` decides
+    entry .string   `String is Yaml.Writable`
+    entry .unit   `Unit is Yaml.Writable`: writes `null`
+    entry .optional   `Optional[T] is Yaml.Writable`: `Unset` is absent, and omitted from a mapping
+    entry .option   `Option[T] is Yaml.Writable`: `None` is absent
+    entry .iterable   any stdlib `Iterable` writes as a block sequence, `[]` when empty
+    entry .list   `List[T] is Yaml.Writable`: a block sequence
+    entry .set   `Set[T] is Yaml.Writable`: a block sequence
+    entry .series   `Sequence[T] is Yaml.Writable`: a block sequence
+    entry .map   `Map[K, V] is Yaml.Writable` for any key with an `Encodable in Text`: a block mapping, `{}` when empty
+  entry .Out   the writer a direct printer writes into: text so far, indentation, and the marker awaiting its value
+    detail
+        Lays text out exactly as the block emitter lays out a tree: `#key` or `#item` writes
+        a `key:` or `-` marker and leaves the value due after it; a scalar then writes on the
+        same line, and a non-empty collection on the lines below, one step deeper, between
+        `#open` and `#close`. Each completed line is handed on once the text reaches the
+        writer's limit, so `Printable.emit` can write a value a block at a time. Only
+        `Printable.print` and `Printable.emit` make one; a hand-written `Writable` receives
+        it.
+
+        ```scala
+        import soundness.*
+
+        case class Point(x: Int, y: Int)
+
+        given Point is Yaml.Printable:
+          def write(point: Point, out: Yaml.Out^): Unit =
+            val outer = out.open()
+            out.key("x"); out.long(point.x)
+            out.key("y"); out.long(point.y)
+            out.close(outer)
+
+        Yaml.Printable.print(Point(1, 2))   // x: 1\ny: 2\n
+        ```
+    entry #long   writes an integer as the value due
+    entry #double   writes a decimal as the value due, with `.inf`, `-.inf` and `.nan` as YAML spells them
+    entry #boolean   writes `true` or `false` as the value due
+    entry #string   writes a string as the value due, plain or double-quoted as `show` decides
+    entry #nullValue   writes `null` as the value due
+    entry #empty   writes `{}` or `[]` as the value due
+    entry #key   writes the `key:` marker of a mapping entry, at the current indentation
+    entry #item   writes the `-` marker of a sequence item
+    entry #open   opens a non-empty collection on the lines below its marker, returning what `#close` restores
+        At the top of the document nothing is due, and the entries write at the margin.
+    entry #close   restores the indentation `#open` returned
+    entry #tree   writes a `Yaml.Ast` as the value due, as the block emitter would
+  entry .FieldDerivation   the derivation of a product's `Yaml.Field`, behind direct parsing
+    hidden
+    detail
+        Not for direct use: `Yaml.Field.product` and `Yaml.Parsable.derived` reach it.
+    entry .conjunction   a product's field parser: each field read off the mapping's nodes
+    entry .FieldProductParser   the `Field` a derived parser becomes, over a lambda taking the reader as an `AnyRef`
+  entry .WritableDerivation   the derivation of a product's `Yaml.Writable`, behind direct printing
+    hidden
+    detail
+        Not for direct use: `Yaml.Writable.product` and `Yaml.Printable.derived` reach it.
+    entry .conjunction   a product's field writer: each present field written after its `key:` marker
+    entry .WritableProductPrinter   the `Writable` a derived printer becomes, over a lambda taking the writer as an `AnyRef`
+  entry .Field1   the priority layer holding `Yaml.Field.product`
+    hidden
+    detail
+        Not for direct use: a parent of `object Yaml.Field`, so that the derived product
+        parser ranks below the companion's own givens and above the `Decodable` bridge.
+    entry #product   a derived field parser for any product, from its `ProductReflection`
+        Inline, in `Yaml.Field1`, so a nested record inside a direct parser is itself read
+        directly, with no codec dispatched for it.
+  entry .Field2   the priority layer holding `Yaml.Field.decodable`
+    hidden
+    detail
+        Not for direct use: the lowest parent of `object Yaml.Field`.
+    entry #decodable   the bridge: any `Decodable in Yaml` reads the node wrapped as a `Yaml`
+        In `Yaml.Field2`, lowest in priority, so a type with no direct field parser of its
+        own — an enumeration, or a type with a hand-written decoder — still reads inside a
+        direct parser, through the tree path for that one field.
+  entry .Writable1   the priority layer holding `Yaml.Writable.product`
+    hidden
+    detail
+        Not for direct use: a parent of `object Yaml.Writable`.
+    entry #product   a derived field writer for any product, in `Yaml.Writable1`
+  entry .Writable2   the priority layer holding `Yaml.Writable.encodable`
+    hidden
+    detail
+        Not for direct use: the lowest parent of `object Yaml.Writable`.
+    entry #encodable   the bridge: any `Encodable in Yaml` writes its tree in place, in `Yaml.Writable2`
+  entry .Parsable2   the priority layer holding `Yaml.Parsable.generated`
+    hidden
+    detail
+        Not for direct use: the parent of `object Yaml.Parsable`, so that `import
+        codecs.direct` ranks below a companion instance or `derives Yaml.Direct`.
+    entry #generated   `import codecs.direct`: a derived parser for every product, at the use site
+        Resolves only under `Codecs.Direct`, and only for a type with a
+        `ProductReflection`; an enumeration keeps the tree path. A companion instance or a
+        `derives Yaml.Direct` outranks it.
+  entry .Printable2   the priority layer holding `Yaml.Printable.generated`
+    hidden
+    detail
+        Not for direct use: the parent of `object Yaml.Printable`.
+    entry #generated   `import codecs.direct`: a derived printer for every product, at the use site
+
+entry .Yaml1   the priority layer of `object Yaml` holding the direct-codec entry points
+  hidden
+  detail
+      Not for direct use: a parent of `object Yaml`, holding `aggregableParsed`,
+      `encodableOverPrinted` and the two `codecs.strict` failures, so that a type with a
+      direct codec takes it ahead of the tree codecs in `Yaml2`.
+  entry #aggregableParsed   `text.read[Person in Yaml]` through a direct parser, where one exists
+      For a type with a `Yaml.Parsable` — one which `derives Yaml.Direct`, has an instance
+      in its companion, or is a product under `import codecs.direct` — the document is still
+      parsed whole (YAML's aliases can refer back to any earlier node, so no record can be
+      read before the document is held), but the record's fields are then read straight off
+      the tree's nodes with no `Yaml` built around any of them and no codec dispatched per
+      field. Errors carry the same focus and position as the tree path's.
+  entry #encodableOverPrinted   `in[Text over Yaml]` through a direct printer, where one exists
+      For a type with a `Yaml.Printable`, the text is written straight from the fields, with
+      no tree built, through `Yaml.Printable.print`; the text is the same as the tree path's.
+  entry #aggregableStrictFailure   the compile error `codecs.strict` raises for a type with no direct parser
+      Inline and above the tree entries, so under `Codecs.Strict` any type `.aggregableStrict`
+      does not take reaches it and fails to compile, naming the type.
+  entry #encodableOverStrictFailure   the compile error `codecs.strict` raises for a type with no direct printer
+
+entry .Yaml2   the lowest priority layer of `object Yaml`: the tree codecs and the derivations
+  hidden
+  detail
+      Not for direct use: the lowest parent of `object Yaml`, holding the fallback
+      `decodable` and `encodable` givens for every type, `optional`, `optionalEncodable`,
+      `encodableOver`, `aggregableIn` and the two derivation objects.
+  entry #decodable   any type's `Decodable in Yaml`, from its text decoder or by derivation
+      As `[value] => value is Decodable in Yaml`, inline and lowest in priority, it gives
+      every type a decoder: a type with a `Decodable in Text` is read from a YAML string
+      scalar (so an enumeration with a text decoder reads from its name), and a type with a
+      wisteria `Reflection` — a case class or a sealed hierarchy — is derived by
+      `#DecodableDerivation`. A case class reads from a mapping, field by field, taking a
+      field's default for a key the mapping lacks and raising `Yaml.Error(Absent)` for one
+      with no default; a sum type reads its variant from the discriminator field named by
+      the `Discriminable in Yaml` in scope (`discriminables.yamlByTypeDiscriminable`). The
+      `@name[Yaml](t"full_name")` and bare `@name` annotations rename a field or variant on
+      the wire.
+  entry #encodable   any type's `Encodable in Yaml`, from its text encoder or by derivation
+      Inline and lowest in priority: a type with an `Encodable in Text` encodes as a string
+      scalar, and a type with a `Reflection` is derived by `#EncodableDerivation` — a case
+      class to a mapping in field order, omitting a field whose encoding is absent (an
+      `Unset` or `None`), and a sum type to its variant's mapping with the discriminator
+      field added by the `Discriminable in Yaml` in scope. `@name` renames apply on the way
+      out as on the way in.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import formatting.blockYamlFormatting
+      import discriminables.yamlByTypeDiscriminable
+
+      enum Shape:
+        case Circle(radius: Double)
+        case Square(side: Double)
+
+      (Shape.Circle(2.0): Shape).in[Yaml].show   // radius: 2.0\ntype: Circle\n
+      ```
+  entry #optional   `Optional[T] is Decodable in Yaml`: as `.option`, yielding `Unset`
+      The same three policies, for a field typed `Optional[Int]` (or any `value >: Unset.type`
+      which is `Mandatable to inner`): absent and `null` read as `Unset` by default, a
+      wrong-typed value is a fault unless `lenientYamlFaults` is imported.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      case class Member(name: Text, age: Optional[Int])
+
+      t"name: Eve\nage: null".read[Yaml].as[Member]   // Member(t"Eve", Unset)
+
+      locally:
+        import optionalityOptions.strictYamlNulls
+        capture[Yaml.Error](t"name: Eve\nage: null".read[Yaml].as[Member]).reason
+        // Yaml.Error.Reason.NotType(Yaml.Primitive.Null, Yaml.Primitive.Integer)
+      ```
+  entry #optionalEncodable   `Optional[T] is Encodable in Yaml`: `Unset` encodes as absent
+      An `Unset` field encodes as the absent node, which a derived mapping omits altogether;
+      a present value encodes through the inner `Encodable in Yaml`.
+  entry #encodableOver   `person.in[Text over Yaml]`: encode to the tree and render, in one step
+      The write-side mirror of `read[Person in Yaml]`: the value's `Encodable in Yaml` builds
+      the tree and the `Yaml.Formatting` in scope renders it, giving exactly the text `show`
+      renders. A type with a `Yaml.Printable` takes `.encodableOverPrinted` instead.
+  entry #aggregableIn   `text.read[Person in Yaml]`: parse and decode in one step, through the tree
+      The `(value in Yaml) is Aggregable by Text` for any type with a `Decodable in Yaml`:
+      the text (or stream) is parsed to a `Yaml` and decoded with `as`, so it needs a
+      `Tactic[Parse.Error]` and a `Tactic[Yaml.Error]`. A type with a `Yaml.Parsable` takes
+      `.aggregableParsed` instead, which outranks this.
+  entry #DecodableDerivation   the wisteria derivation of `Decodable in Yaml` for products and sums
+    hidden
+    detail
+        Not for direct use: `Yaml.decodable` reaches it for any type with a `Reflection`.
+        `conjunction` derives a product's decoder — each field read at its own focus, a
+        missing field taking its default or registering `Absent`, and construction gated so
+        the constructor never runs on sentinel values — and `disjunction` a sum's, through
+        the `Discriminable in Yaml` in scope, with `Variant.Error` for an unknown or missing
+        discriminator folded into one `Yaml.Error` at the sum's focus.
+    entry .conjunction   a product's decoder, from a mapping, field by field
+    entry .disjunction   a sum's decoder, by the discriminator field
+  entry #EncodableDerivation   the wisteria derivation of `Encodable in Yaml` for products and sums
+    hidden
+    detail
+        Not for direct use: `Yaml.encodable` reaches it for any type with a `Reflection`.
+        `conjunction` writes a product as a mapping in field order, omitting absent
+        encodings; `disjunction` writes a sum's variant and adds the discriminator field.
+    entry .conjunction   a product's encoder, to a mapping
+    entry .disjunction   a sum's encoder, with the discriminator added
+
+entry .YamlPath   the address of a node in a document, written `#/a/0/b` with JSON Pointer escaping
+  detail
+      A `YamlPath` names a node by the keys and indices from the root: `YamlPath()` is the
+      whole document (`#`), and `YamlPath()(t"servers")(Prim)(t"port")` is the `port` of the
+      first server (`#/servers/0/port`). It is a serpentine path on its own plane, so it is
+      built with `/` or the `apply` methods, written with the `yp"…"` interpolator (checked
+      as the code compiles), decoded from text with `as[YamlPath]`, and encoded with `encode`.
+      Segments use RFC 6901's escaping — `~0` for `~` and `~1` for `/` — so a path is the
+      JSON Pointer of the same node when the document is treated as JSON. Only string
+      mapping keys are addressable.
+
+      A path is what a `Yaml.Focus` carries, so an accrued decoding error says `#/age`; and
+      it is what `locate` takes to find a node's source position in a tracked document.
+
+      ```scala fuel
+      frame
+        label A document, parsed with positions recorded
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+            import parsing.trackPositions
+
+            val doc = t"servers:\n  - host: a.example\n    port: 8080\n".read[Yaml]
+      frame
+        label A path to the first server's port
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+            import parsing.trackPositions
+
+            val doc = t"servers:\n  - host: a.example\n    port: 8080\n".read[Yaml]
+            val path: YamlPath = yp"#/servers/0/port"
+            path.encode                                   // t"#/servers/0/port"
+      frame
+        label Where that node sits in the source
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+            import parsing.trackPositions
+
+            val doc = t"servers:\n  - host: a.example\n    port: 8080\n".read[Yaml]
+            val path: YamlPath = yp"#/servers/0/port"
+            doc.locate(path).let(_.describe)              // t"line 3, column 11"
+      frame
+        label The node itself, navigated and decoded
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+            import parsing.trackPositions
+
+            val doc = t"servers:\n  - host: a.example\n    port: 8080\n".read[Yaml]
+            val path: YamlPath = yp"#/servers/0/port"
+            doc.locate(path).let(_.describe)              // t"line 3, column 11"
+            doc(t"servers")(0)(t"port").as[Int]           // 8080
+      ##
+      ```
+
+      Decoding text raises `YamlPath.Error` when it does not begin with `#`, when the
+      fragment does not begin with `/`, or when a `~` is not followed by `0` or `1`.
+  refer ypsiloid.yp
+  refer ypsiloid.Yaml.Focus
+  refer ypsiloid.Yaml.positionable
+  entry .Plane   the plane of YAML paths: `YamlPath` itself
+  entry .navigable   an `Ordinal` as a path segment: its zero-based index as text
+      `YamlPath()(Prim)` encodes as `#/0`, so an index is written the way a JSON Pointer
+      writes one.
+  entry .admissible   any `Ordinal` is an acceptable segment
+  entry .admissible2   any `Text` is an acceptable segment; escaping happens on encoding
+  entry .filesystem   the path grammar: `/`-separated, `#` as self, `..` as parent, RFC 6901 escaping
+      Named `YAML`. `escape` turns `~` into `~0` and `/` into `~1`, and `unescape` reverses
+      it, so a key containing either character is addressable.
+  entry .interpolable   the given behind `yp"…"`; see `ypsiloid.yp`
+  entry .decodable   reads a path from text: `#`, `#/`, or `#/a/b`
+      `t"#/a/b".as[YamlPath]`, raising `YamlPath.Error` with the character offset of the
+      fault: `ExpectedHash` at 0 for text not beginning with `#`, `ExpectedSlash` at 1 for a
+      fragment not beginning with `/`, and `BadEscape` at the `~` for a malformed escape.
+      Segments are unescaped as they are read, and empty segments are dropped. The path also
+      has an anonymous `Encodable in Text` given in the companion, so `path.encode` renders
+      `#/a/b` (and `#` for the root) with the segments escaped.
+  entry .unsafeParse   decodes a path already proved valid, with no tactic
+      For the `yp"…"` interpolator, which has parsed the literal while compiling: the
+      `Unsafe` token asserts that the runtime re-parse cannot fail.
+  entry .divisible   `path / t"key"`: a path extended by a text segment
+  entry .divisible2   `path / ordinal`: a path extended by an index segment
+  entry .Error   raised when text is not a valid YAML path
+    detail
+        Error 546: _the YAML path was not valid because `reason`_. Raised by `.decodable`
+        and reported, at the exact character, by the `yp"…"` interpolator as the code
+        compiles. `offset` is the index within the text where the fault was found.
+    entry #reason   `ExpectedHash`, `ExpectedSlash` or `BadEscape`
+    entry #offset   the character index of the fault within the text
+    entry .Reason   the three ways a path can be malformed
+      detail
+          `ExpectedHash` (number 2): _a YAML path must begin with '#'_. `ExpectedSlash`
+          (number 3): _a YAML path fragment must begin with '/'_. `BadEscape` (number 4): _a
+          '~' in a YAML path must be followed by '0' or '1'_.
+      entry .communicable   renders a reason as its message
+  entry #path   the underlying serpentine `Path on YamlPath`
+  entry #apply   `path(t"key")` or `path(ordinal)`: the path extended by one segment
+      The same as `/`, as a method: `YamlPath()(t"servers")(Prim)(t"port")`.
+
+entry .y   the `y"…"` interpolator: a YAML literal, checked as the code compiles, with `$`-holes; also a pattern
+    `y"name: $name\nage: $age"` is a `Yaml` document whose text is parsed while the code
+    compiles — a malformed literal is a compile error whose highlight is the exact bad span
+    of the template — and whose `$`-holes are filled at runtime. A hole in value position
+    takes any `Yaml` (or a value with an `Encodable in Yaml`, encoded through it); a hole
+    inside a plain scalar (`greeting: hello $name`) splices the value's text into the
+    string; and `$xs*`, as the last element of a sequence, spreads an `Iterable`'s items
+    into it (each encoded through its `Encodable in Yaml`). A value with no encoder, or a
+    spread which is not last or not an `Iterable`, is a compile error highlighted at the
+    hole. The result carries no positions.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    case class Person(name: Text, age: Int)
+
+    val name = t"Alice"
+    val age = 30
+
+    y"""
+      name: $name
+      age: $age
+    """.as[Person]                        // Person(t"Alice", 30)
+
+    val more: List[Int] = List(2, 3)
+    y"[$age, $more*]".as[List[Int]]       // List(30, 2, 3)
+    ```
+
+    In a pattern, `case y"name: $n" =>` matches a document whose structure is the
+    literal's and binds `n` to the node at the hole, as a `Yaml`; a literal with no holes
+    matches by structural equality.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    t"name: Alice".read[Yaml] match
+      case y"name: $n" => n.as[Text]   // t"Alice"
+      case _           => t""
+    ```
+
+entry .yp   the `yp"…"` interpolator: a `YamlPath` literal, checked as the code compiles
+    `yp"#/servers/0/port"` is the `YamlPath` of that text, decoded while the code compiles
+    through `YamlPath`'s own decoder, so a malformed path is a compile error pointing at the
+    offending character: `yp"/foo"` is rejected at the `/` (_a YAML path must begin with
+    '#'_), and `yp"#/a~2b"` at the `~`. The interpolator takes no `$`-substitutions.
+
+    ```scala
+    import soundness.*
+
+    yp"#/servers/0/port".encode   // t"#/servers/0/port"
+    yp"#".encode                  // t"#"
+    ```
+
+entry .formatting   how a document is rendered: one given, imported by name
+  detail
+      `show`, `in[Text over Yaml]`, `Yaml.emit` and the HTTP givens need a `Yaml.Formatting`
+      in scope, and `import soundness.*` brings none in, so the choice is always explicit:
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import formatting.blockYamlFormatting
+
+      t"{a: [1, 2], b: {}}".read[Yaml].show   // a:\n  - 1\n  - 2\nb: {}\n
+      ```
+
+      Block style is the only formatting at present; the package exists so that a flow-style
+      or option-carrying formatting can be added beside it without changing any call site.
+      In the `soundness` umbrella the package merges with the other formats' `formatting`
+      packages (`indentedJsonFormatting`, …).
+  entry .blockYamlFormatting   two-space-indented block style, with `{}` and `[]` for empty collections
+      The default and only `Yaml.Formatting`. Its output is chosen to re-parse to the same
+      tree: scalars are written so the parser resolves them back to the same kind, and a
+      string is plain only when it cannot be mistaken for anything else.
+
+entry .optionalityOptions   how an `Optional` or `Option` field reads a missing key, a `null`, or a bad value
+  detail
+      Three independent policies, each a pair of givens of which one is imported by name;
+      the defaults (from distillate) are lenient absence, lenient nulls and strict faults.
+      They govern `Yaml.optional`, `Yaml.option` and the direct `Yaml.Field.optional` and
+      `Yaml.Field.option` alike. In the umbrella the package merges with the other formats'
+      `optionalityOptions`, so the names carry `Yaml` to stay distinct.
+
+      ```scala fuel
+      frame
+        label The defaults: a null reads as Unset, a wrong-typed value is an error
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            case class Member(name: Text, age: Optional[Int])
+
+            t"name: Eve\nage: null".read[Yaml].as[Member]        // Member(t"Eve", Unset)
+            t"name: Eve".read[Yaml].as[Member]                   // Member(t"Eve", Unset)
+            capture[Yaml.Error](t"name: Eve\nage: abc".read[Yaml].as[Member]).reason
+            // Yaml.Error.Reason.NotType(Yaml.Primitive.Str, Yaml.Primitive.Integer)
+      frame
+        label Strict nulls: a null is handed to the inner decoder, which rejects it
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+            import optionalityOptions.strictYamlNulls
+
+            case class Member(name: Text, age: Optional[Int])
+
+            capture[Yaml.Error](t"name: Eve\nage: null".read[Yaml].as[Member]).reason
+            // Yaml.Error.Reason.NotType(Yaml.Primitive.Null, Yaml.Primitive.Integer)
+      frame
+        label Strict absence: the key must be present, even if null
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+            import optionalityOptions.strictYamlAbsence
+
+            case class Member(name: Text, age: Optional[Int])
+
+            capture[Yaml.Error](t"name: Eve".read[Yaml].as[Member]).reason
+            // Yaml.Error.Reason.Absent
+      frame
+        label Lenient faults: a value the inner decoder rejects reads as Unset
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+            import optionalityOptions.lenientYamlFaults
+
+            case class Member(name: Text, age: Optional[Int])
+
+            t"name: Eve\nage: abc".read[Yaml].as[Member]         // Member(t"Eve", Unset)
+      ##
+      ```
+  entry .strictYamlAbsence   a missing key is `Yaml.Error(Absent)`, even for an `Optional` field
+  entry .lenientYamlAbsence   a missing key reads as `Unset` or `None`: the default
+  entry .strictYamlNulls   a `null` is handed to the inner decoder, which fails for anything but `Unit`
+  entry .lenientYamlNulls   a `null` reads as `Unset` or `None`: the default
+  entry .strictYamlFaults   a value the inner decoder rejects is an error: the default
+  entry .lenientYamlFaults   a value the inner decoder rejects reads as `Unset` or `None`
+      The inner decode runs under `tactic.tolerate`, so under an accruing strategy the fault
+      is not registered either.
+
+entry .discriminables   how a sum type's variant is named on the wire: by a `type` or a `kind` field
+  detail
+      Encoding or decoding an enumeration or sealed hierarchy needs a `Discriminable in
+      Yaml` in scope, which `import soundness.*` does not bring; import one of these by
+      name, or build one for another field with `Yaml.discriminatedUnion`. The variant's
+      name (or its `@name`) is written as a string scalar under the field, alongside the
+      variant's own fields; on decoding the field is read and then stripped before the
+      variant's decoder runs. The umbrella merges this package with the other formats'.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import discriminables.yamlByTypeDiscriminable
+
+      enum Shape:
+        case Circle(radius: Double)
+        case Square(side: Double)
+
+      t"type: Square\nside: 7.0".read[Yaml].as[Shape]   // Shape.Square(7.0)
+      ```
+  entry .yamlByTypeDiscriminable   the variant's name under a `type` field
+  entry .yamlByKindDiscriminable   the variant's name under a `kind` field
+
+entry .dynamicAccess   the given which enables `doc.field` reads and `doc.field = value` updates
+  detail
+      `Yaml#selectDynamic`, `#applyDynamic`, `#update`, `#updateDynamic` and the `Yaml.lens`
+      given are all gated on a `Yaml is Dynamical`, so that a misspelt member name is a
+      compile error rather than a silent field lookup. Import `dynamicYaml` to grant it to a
+      scope, or wrap a block in `dynamically[Yaml]:` (or `dynamically:` for every format)
+      to grant it there alone.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import dynamicAccess.dynamicYaml
+
+      val doc = t"outer: {inner: {n: 7}}".read[Yaml]
+      doc.outer.inner.n.as[Int]   // 7
+      ```
+  entry .dynamicYaml   `Yaml is Dynamical`: dynamic member access on documents, for the scope it is imported into
+      An erased given: it costs nothing at runtime and exists only to be in scope.
+
+entry .conversions   a conversion letting any encodable value be assigned through a lens
+  detail
+      `doc.lens(_.field = value)` wants a `Yaml` on the right; with `encodableToYaml`
+      imported, any value with an `Encodable in Yaml` is converted on the spot, so
+      `doc.lens(_.age = 31)` reads as it should instead of `doc.lens(_.age = 31.in[Yaml])`.
+      The conversion is scoped to the import.
+  entry .encodableToYaml   `Conversion[T, Yaml]` for any `T` with an `Encodable in Yaml`
+
+entry .postables   a document as an HTTP request body, for the `ypsiloid.http` source set
+  detail
+      Imported by name, as every telekinesis `Postable` choice is:
+      `import postables.yamlPostable` lets a `Yaml` be the body of a `post` or `put`.
+  entry .yamlPostable   `Yaml is Postable` with the `application/yaml; charset=UTF-8` media type
+      The body is the rendered text (`show`) in the `Codepage` in scope, so a `Codepage` and
+      a `Yaml.Formatting` are both needed.
+
+entry .servables   a document as an HTTP response body, for the `ypsiloid.http` source set
+  detail
+      `import servables.yamlServable` lets a handler respond with a `Yaml` value; the
+      response is the rendered text as a fixed-length body with the `application/yaml;
+      charset=UTF-8` media type.
+  entry .yamlServable   `Yaml is Servable` with the `application/yaml; charset=UTF-8` media type
+      Needs a `Codepage` and a `Yaml.Formatting` in scope.
+
+entry .construables   reading an `application/yaml` body as a `Yaml`, for the `ypsiloid.http` source set
+  detail
+      `import construables.yamlConstruable` tells gesticulate's content negotiation that a
+      body of media type `application/yaml` is constructed as a `Yaml`, so a request or
+      response body of that type parses on arrival. Not available on Scala.js.
+  entry .yamlConstruable   `"application/yaml" is Construable to Yaml`
+
+entry .internal   the macro implementations behind `y"…"` and `yp"…"`
+  hidden
+  detail
+      Not for direct use: the object exists so that the macros have a stable home. `y"…"`
+      joins the literal's parts with a sentinel marker, parses the result with the real
+      parser, and recognises the sentinel in the tree as a hole; a parse error's offset is
+      mapped back through the parts to the source span of the template.
+  entry .interpolator   the macro behind `y"…"` as an expression
+  entry .extractor   the macro behind `y"…"` as a pattern
+  entry .yamlPath   the macro behind `yp"…"`: decodes the literal while compiling and reports the fault's character

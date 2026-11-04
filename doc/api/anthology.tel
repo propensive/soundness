@@ -1,0 +1,2309 @@
+tel 1.0
+
+base anthology
+import soundness
+
+info   compilers and linkers as values: Scala, Java and Kotlin in-process, with JVM, JavaScript, Wasm, native and Android outputs
+detail
+    _Anthology_ drives compilers and linkers programmatically, as typed values rather than
+    command lines. A compiler — `Scalac`, `Javac` or `Kotlinc` — is a value carrying typed
+    options, valid only for the language versions which accept them; it compiles a map of
+    named sources against a `LocalClasspath` into a directory, and hands back a
+    `CompileProcess` whose diagnostics (`Notice`s with their importance, file and span),
+    progress and `CompileResult` are values, not console output to re-parse. A crash is a
+    `CompileResult.Crash` with its stack trace, and a running compilation can be aborted.
+
+    Linking is the second half. The intermediate representation a compilation emits is a
+    `Universe` — `Classfile`, `Sjsir` or `Nir` — and the things a build produces are
+    `Artifact.Application` nodes: an executable `Artifact.Jar`, a `Library` JAR, JavaScript
+    (`anthology.Js`) under a chosen module system, browser Wasm (`anthology.Wasm`), a WASI
+    component (`Wasi`), an `OciImage` wrapping one, a native `Artifact.Binary` per `Triple`,
+    a `Dex` archive and a signed `Apk`. Universes, languages and applications are the nodes of
+    a `Toolchain`, a directed acyclic graph whose edges are tools; producing one format from
+    another is path search over it, so a multi-stage build (classfiles dexed, then packaged
+    as an APK; a component linked, then wrapped as an OCI artifact) composes from the edges
+    without any bespoke pipeline.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import environments.javaBaseEnvironment
+    import logging.silentLogging
+    import probates.cancelProbate
+    import strategies.throwUnsafely
+    import systems.javaBaseSystem
+    import threads.virtualThreads
+    import workingDirectories.javaBaseWorkingDirectory
+
+    val classpath: LocalClasspath = Bundler.applicationClasspath
+    val out: Path on Linux = t"/tmp/out".as[Path on Linux]
+    val source = t"object Main:\n  def main(args: scala.Array[String]): Unit = println(\"hello\")\n"
+
+    supervise:
+      val compiler = Scalac[3.8](List(scalacOptions.newSyntax, scalacOptions.warnings.deprecation))
+      val process = compiler(classpath)(Map(t"hello.scala" -> source), out)
+      val result: CompileResult = process.complete()
+
+      process.notices.each: notice =>
+        println(t"${notice.file}: ${notice.message}")
+
+      Toolchain(jarEdges()).produce
+        ( Deliverable.Emission(out, classpath),
+          Universe.Classfile,
+          Artifact.Jar,
+          out,
+          List(jarOptions.name(t"app.jar")),
+          List(EntryPoint(Fqcn(t"Main"))) )
+    ```
+
+    The library is split into components by the tool each one wraps, so that a build takes on
+    only the dependencies it uses:
+
+    - `anthology.core` — the vocabulary: `Compiler`, `CompileProcess`, `Notice`, `Importance`,
+      `CompileResult`, `CompileEvent`, `Artifact`, `Universe`, `Deliverable`, `Edge`, `Tool`,
+      `Toolchain`, `EntryPoint`, `Link`, `LinkEvent`, `Triple`, `NirPlugin` and the two
+      edgeless nodes `Component` and `WasmObject`. JVM only (it needs hellenism's classpath).
+    - `anthology.scala` — `Scalac`, its `scalacOptions`, warm `Scalac.Session`s, and the
+      `scalacEdges` compile edges. The Scala compiler (`scala3-compiler`) is a *compile-only*
+      dependency: the program which drives it puts the compiler it wants on its own runtime
+      classpath, and `Scalac.version` reports which one that was.
+    - `anthology.java` — `Javac` and `javacEdges`, over the running JDK's own compiler.
+    - `anthology.kotlin` — `Kotlinc`, `kotlincOptions` and `kotlincEdges`, over
+      `kotlin-compiler-embeddable`, again compile-only: the caller supplies the compiler.
+    - `anthology.linker` — `jarEdges`, `jarOptions`, `Library` and `Bundler`: JAR packaging,
+      which needs no external tool.
+    - `anthology.link` — `sjsEdges`, `linkerOptions`, `Wasi`, `WasiToolchain` (and the
+      unexported `anthology.Js` and `anthology.Wasm` nodes), driving the Scala.js linker, a JVM
+      library bundled with the component. A WASI component link additionally shells out to
+      `wasm-tools` and the scala-wasm fork of `wit-bindgen`, which `WasiToolchain()` probes for.
+    - `anthology.nir` — `nativeEdges` and `nativeOptions`, driving the Scala Native build
+      (`tools_3`, bundled) through `clang` and `clang++`, which `nativeEdges()` probes for on
+      the `PATH`. Compiling *into* `Universe.Nir` needs the Scala Native compiler plugin, named
+      by a `NirPlugin` given.
+    - `anthology.dex` — `Dex`, `dexEdges` and `dexOptions`, driving R8's D8 dexer (bundled).
+    - `anthology.apk` — `Apk`, `apkEdges`, `apkOptions` and `Axml`: a complete, signed,
+      zip-aligned Android package with no Android SDK build tool at all; only a keystore.
+    - `anthology.oci` — `OciImage`, `ociEdges`, `ociOptions` and `OciConfiguration`: a WASI
+      component wrapped as a Wasm OCI artifact.
+
+    Every component is JVM-only, and everything is exported to the `soundness` umbrella except
+    three names which would collide there: `anthology.Js` and `anthology.Wasm` (the umbrella's
+    `Js` and `Wasm` are xenophile's, the JavaScript and Wasm foreign-function interfaces) and
+    `anthology.Language` (the umbrella's is cosmopolite's). Under `import soundness.*` these
+    three are written fully qualified, `anthology.Js(anthology.Js.Module.Es)`. The option
+    objects `scalacOptions` and `kotlincOptions` are mirrored as packages of the umbrella, so
+    `scalacOptions.experimental` reads the same way from either.
+
+    The contextual values a compile needs are a `System` (`systems.javaBaseSystem`), a
+    `Monitor` (inside `supervise`, with a `threads` given) and a `Probate`
+    (`probates.cancelProbate`), a `CompileEvent is Loggable` (`logging.silentLogging` to
+    discard the events) and a `Tactic[Compiler.Error]`; a `Toolchain#produce` needs a
+    `Monitor`, a `System`, a `WorkingDirectory`, a `Tactic[Link.Error]` and a `LinkEvent is
+    Loggable`. The tool-probing constructors `WasiToolchain()` and `nativeEdges()` also need a
+    `WorkingDirectory` and an `Environment`.
+
+refer anthology.Compiler
+refer anthology.Scalac
+refer anthology.CompileProcess
+refer anthology.Toolchain
+refer anthology.Artifact
+refer anthology.Universe
+
+entry .Compiler   the shape of an in-process compiler: a version, and sources plus classpath to a `CompileProcess`
+  detail
+      `Compiler` is the interface `Scalac`, `Javac` and `Kotlinc` all present: `#version`
+      reports the compiler the value drives, as the compiler itself reports it, and `#apply`
+      compiles a map of named sources against a `LocalClasspath` into an output directory,
+      returning a `CompileProcess` whose diagnostics and result arrive as values. Each
+      compiler takes the same arguments in the same order, so a tool which orchestrates
+      compilation does not change idiom per language.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import logging.silentLogging
+      import probates.cancelProbate
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+      import threads.virtualThreads
+
+      val classpath: LocalClasspath = Bundler.applicationClasspath
+      val out: Path on Linux = t"/tmp/out".as[Path on Linux]
+
+      supervise:
+        val process = Javac(Nil)(classpath)(Map(t"Hello.java" -> t"class Hello {}"), out)
+        process.complete()
+      ```
+
+      The companion holds `Compiler.Error`, the one error every compiler raises when it cannot
+      be configured at all, as distinct from a compilation which runs and fails.
+  refer anthology.Scalac
+  refer anthology.Javac
+  refer anthology.Kotlinc
+  refer anthology.CompileProcess
+  entry .Error   raised when a compiler cannot be set up from its options
+    detail
+        Error 779: _there was a problem with the compiler configuration_. Raised when the
+        compiler's base context cannot be built from the arguments the `Scalac` was given —
+        an option the embedded compiler rejects — which happens when a `Scalac.Session` is
+        opened. It is a configuration fault, not a compilation failure: sources which do not
+        compile give a `CompileResult.Failure` with `Notice`s, and a compiler which throws
+        gives a `CompileResult.Crash`, neither of which raises this.
+  entry #version   the version of the compiler this value drives, as the compiler reports it
+      `3.10.0` for an embedded Scala compiler, `25.0.4` for the running JDK's Java compiler,
+      `2.4.10` for the Kotlin compiler on the classpath. A build records it as the tool which
+      produced an output, and a memoization key must include it so that a rebuild misses when
+      the compiler changes. The `CompileProcess` a compile returns carries the same text as
+      its own `version`.
+  entry #apply   compiles named sources against a classpath into a directory, as a `CompileProcess`
+      `compiler(classpath)(sources, out)`: the sources are a `Map` from a name (which the
+      diagnostics will cite, `hello.scala`) to its content, the classpath a `LocalClasspath`
+      the sources compile against, and `out` any path type `Abstractable across Paths to
+      Text`. It needs a `System` and a `Monitor`, logs `CompileEvent`s, and raises
+      `Compiler.Error`. The output directory must already exist for `Scalac`; the compile
+      edges of a `Toolchain` create it, but a direct call does not.
+
+entry .Compilation   a compilation's output directory and classpath, tagged with its `Universe`
+  detail
+      A token pairing the directory a compilation wrote to with the `LocalClasspath` it was
+      compiled against, and carrying the universe it inhabits as a type parameter, so that a
+      `Compilation[Universe.Sjsir]` cannot be passed where a `Compilation[Universe.Nir]` is
+      wanted: the two are different types, and the mismatch is a compile error in the build
+      tool rather than a failure at link time.
+
+      ```scala
+      import soundness.*
+
+      val compilation: Compilation[Universe.Sjsir] = ???
+      val native: Compilation[Universe.Nir] = compilation   // does not compile
+      ```
+
+      The `Toolchain` machinery flows the same pair untagged, as a `Deliverable.Emission`,
+      since there the universe is a node of the graph rather than a type.
+  entry #out   the directory the compilation wrote its output to
+  entry #classpath   the classpath the sources were compiled against
+
+entry .CompileProcess   a running or finished compilation: its diagnostics, progress and result as values
+  detail
+      Every compiler's `apply` returns a `CompileProcess` at once, while the compilation runs
+      in a task of its own (`Scalac`, `Javac`, `Kotlinc`) or has already completed (a
+      `Scalac.Session.Process`). `#complete()` awaits the `CompileResult`; `#notices` is the
+      list of diagnostics so far, oldest first; `#errors` and `#warnings` count them; and
+      `#updates` is a live feed interleaving diagnostics and progress ticks in arrival order,
+      for a tool which shows a compilation as it happens. `#abort()` asks the compiler to
+      stop at its next progress tick.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import logging.silentLogging
+      import probates.cancelProbate
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+      import threads.virtualThreads
+
+      val classpath: LocalClasspath = Bundler.applicationClasspath
+      val out: Path on Linux = t"/tmp/out".as[Path on Linux]
+
+      supervise:
+        val process = Scalac[3.8](Nil)(classpath)(Map(t"bad.scala" -> t"class Bad:\n  def x: Int = \"nope\"\n"), out)
+
+        process.complete() match
+          case CompileResult.Success      => t"compiled"
+          case CompileResult.Failure      => t"${process.errors} errors"
+          case CompileResult.Crash(trace) => t"crashed: ${trace.show}"
+      ```
+
+      A process is also the sink the compilers write into — the three `#put` overloads — which
+      is how a tool wrapping another compiler feeds one. Its `#version` is the version of the
+      compiler which ran it, so a completed compilation can say what produced its output
+      without the caller keeping the compiler in hand.
+  refer anthology.Notice
+  refer anthology.CompileResult
+  refer anthology.CompileProgress
+  entry .Update   one element of the live feed: a diagnostic, or a progress tick
+      `Noticed(notice)` carries a `Notice` as the compiler reports it and `Progressed(progress)`
+      a `CompileProgress`, in the order they arrived; `#updates` yields them. A consumer
+      matches on the two cases:
+
+      ```scala
+      import soundness.*
+
+      def describe(update: CompileProcess.Update): Text = update match
+        case CompileProcess.Update.Noticed(notice)      => notice.message
+        case CompileProcess.Update.Progressed(progress) => progress.stage
+      ```
+  entry #version   the version of the compiler which ran this compilation
+  entry #put   records a notice, a progress tick, the result, or the task running the compilation
+      Four overloads, for the compilers which feed a process: `put(notice)` appends a
+      `Notice`, counts it as an error or a warning by its importance, and offers it to the
+      feed; `put(progress)` offers a `CompileProgress` to the feed; `put(result)` completes
+      the process with a `CompileResult`; and `put(task)` registers the `Task[Unit]` the
+      compilation runs in, so that `#complete()` can wait for it to finish after the result.
+  entry #errors   the number of error-level notices reported so far
+  entry #warnings   the number of warning-level notices reported so far
+  entry #complete   awaits the compilation's result, then stops the update feed
+      Waits for the `CompileResult` — `Success`, `Failure` or `Crash` — then waits for the
+      compilation's task to finish and stops the feed, so that a consumer of `#updates` sees
+      its end. It needs a `Monitor`, a `Tactic[Async.Error]` (for the await) and a
+      `CompileEvent is Loggable`. After it returns, `#notices` is complete.
+  entry #abort   asks the compiler to stop
+      Clears an atomic flag the compiler polls through its progress callback, so an aborted
+      compilation stops at its next progress tick rather than running to completion. The
+      result it then completes with is whatever the compiler reports. `#cancelled` reads the
+      flag back.
+  entry #cancelled   whether `#abort()` has been called
+  entry #updates   the live feed of diagnostics and progress ticks, as a stream of windows
+      A single-owner stream over the process's relay: each window is an `Array` of
+      `CompileProcess.Update`s, the first arriving when the first update does and the rest
+      draining whatever else has arrived since. Claim it once, and consume it element-wise
+      with `updates.records.each`. It ends when the compilation completes (`#complete()`
+      stops the relay); a claim after completion replays the whole feed and then ends, which
+      is how a finished process can still be inspected. It needs a `Buffering` in scope.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import logging.silentLogging
+      import probates.cancelProbate
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+      import threads.virtualThreads
+
+      val classpath: LocalClasspath = Bundler.applicationClasspath
+      val out: Path on Linux = t"/tmp/out".as[Path on Linux]
+
+      supervise:
+        val process = Scalac[3.8](Nil)(classpath)(Map(t"a.scala" -> t"class A"), out)
+        process.complete()
+
+        process.updates.records.each:
+          case CompileProcess.Update.Progressed(progress) => println(progress.stage)
+          case CompileProcess.Update.Noticed(notice)      => println(notice.message)
+      ```
+  entry #notices   the diagnostics reported so far, oldest first
+      A strict snapshot for post-hoc inspection, complete once `#complete()` has returned. A
+      live consumer should prefer `#updates`, which also carries progress.
+
+entry .CompileResult   how a compilation ended: success, failure, or a crash with its stack trace
+    `Success` means the compiler ran and reported no errors; `Failure` that it ran and
+    reported at least one, which the `CompileProcess`'s `notices` describe; and
+    `Crash(error)` that the compiler itself threw, with the `StackTrace` it threw. A crash
+    arrives as a value rather than an exception, and after one the stateless compilers
+    replace their shared compiler instance (`Scalac.refresh()`, `Javac.refresh()`) and a
+    `Scalac.Session` rebuilds its warm state, so the next compile starts clean.
+
+    ```scala
+    import soundness.*
+
+    def succeeded(result: CompileResult): Boolean = result match
+      case CompileResult.Success  => true
+      case CompileResult.Failure  => false
+      case CompileResult.Crash(_) => false
+    ```
+
+entry .Notice   one diagnostic: its importance, file, message, span and semantic markup
+  detail
+      What a compiler reports about the sources, as a value: `#importance` is `Info`,
+      `Warning` or `Error`; `#file` the name the source was given in the compile's `Map`
+      (`hello.scala`), not a path on disk; `#message` the text; and `#span` the region of the
+      source it concerns, as a denominative `Span`, or `Unset` for a diagnostic with no
+      position. A tool can underline the offending code rather than echo the compiler's
+      output.
+
+      ```scala
+      import soundness.*
+
+      def render(notice: Notice): Text = notice.span.lay(t"${notice.file}: ${notice.message}"): span =>
+        t"${notice.file}:${span.start.line}: ${notice.message}"
+      ```
+
+      `#markup` is only set by `Scalac` under `scalacOptions.semanticDiagnostics`: the raw
+      message with the compiler's in-band semantic markers (U+E000 and its companions)
+      preserved, which the delicious library parses into a `SemanticMessage` of styled spans,
+      placeholders and pickled types, so that a "found `A`, required `B`" message arrives as
+      two types to render and compare rather than as text to re-parse.
+  entry #importance   whether the notice is informational, a warning or an error
+  entry #file   the name the source was given when it was compiled
+  entry #message   the diagnostic's text, with any semantic markers stripped
+  entry #span   the region of the source the notice concerns, or `Unset`
+  entry #markup   the raw message with semantic markers, under `-Zsemantic-diagnostics`, else `Unset`
+
+entry .Importance   the level of a diagnostic: `Info`, `Warning` or `Error`
+    Ordered as the Scala compiler's own levels (its ordinal is the compiler's), so a notice
+    counts as an error when its importance is `Importance.Error`. `Link.Error.Reason
+    .CompilationFailed` counts its errors the same way:
+    `notices.filter(_.importance == Importance.Error).length`.
+
+entry .CompileEvent   what a compiler logs as it runs: start, arguments, each diagnostic, a crash
+  detail
+      Every `CompileEvent` carries the `Log.Compiler` tag. `Running(arguments)` is logged at
+      `info` with the compiler's full argument list before it starts; `Notice(diagnostic)` at
+      `fine` for each diagnostic as it is reported; `CompilerCrash` at `fail` when the
+      compiler throws; and `Start` at `info` by `Javac` and `Kotlinc` before they run. A
+      `CompileEvent is Loggable` must be in scope for every compile; `logging.silentLogging`
+      discards them, and `CompileEvents.relay` forwards them onto a `LinkEvent` channel.
+  entry .communicable   renders each event as a message
+      _starting compilation_, _the compiler crashed_, _the compiler emitted a diagnostic:
+      `diagnostic`_ and _running the compiler with arguments `arguments`_.
+
+entry .CompileEvents   relays a compiler's events onto a toolchain's `LinkEvent` channel
+  detail
+      The compile edges of a `Toolchain` are given the toolchain's `LinkEvent is Loggable`,
+      while the compilers they drive speak `CompileEvent`; `.relay` bridges the two for the
+      duration of a compile, so a build watching one path's events sees compilation and
+      linking alike.
+  entry .relay   a `CompileEvent is Loggable` which forwards each event as a `LinkEvent.Message`
+      `CompileEvents.relay(using linkEvents)` builds the loggable from the `LinkEvent is
+      Loggable` in scope: each compile event is rendered through `CompileEvent.communicable`
+      and logged at the same level as a `LinkEvent.Message`. It captures whatever the link
+      channel captures.
+
+entry .CompileProgress   a progress tick: the fraction complete and the compiler's current stage
+  detail
+      `Scalac` reports one tick per whole percentage point, with the phase name the compiler
+      is in (`typer`, `erasure`, …) as its `#stage`; `Javac` and `Kotlinc`, which expose no
+      progress, report `0.1` on starting and `1.0` on success, with the compiler's name as the
+      stage. Ticks arrive through `CompileProcess#updates` as `Update.Progressed`.
+  entry #complete   the fraction of the compilation done, from `0.0` to `1.0`
+  entry #stage   the compiler's current phase, as it names it
+
+entry .Language   the source languages, as the source nodes of a toolchain: `Scala`, `Java`, `Kotlin`
+    An `Artifact.Source` per language the library has a compiler for, with ids `scala`,
+    `java` and `kotlin`: the node a `Deliverable.Sources` sits at, from which `scalacEdges`,
+    `javacEdges` and `kotlincEdges` lead to the universes each compiler can emit. It is
+    **not exported** to the `soundness` umbrella, whose `Language` is cosmopolite's, so under
+    `import soundness.*` it is written `anthology.Language.Scala`. `Artifact.source(t"scala")`
+    is the same node.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    val toolchain = Toolchain(List(scalacEdges.classfile(Scalac[3.8](Nil))), jarEdges())
+    toolchain.path(anthology.Language.Scala, Artifact.Jar).map(_.tool.name)   // List(t"scalac", t"jar")
+    ```
+
+entry .NirPlugin   the location of the Scala Native compiler plugin, as evidence that NIR can be emitted
+  detail
+      NIR is emitted by a compiler plugin (`nscplugin`) rather than by a backend built into
+      the Scala compiler, so compiling into `Universe.Nir` requires knowing where the plugin's
+      JAR is. A `NirPlugin` given in scope is that evidence: `Universe.nir` builds the
+      `Universe.Emission[Universe.Nir]` from it, adding `-Xplugin:<jar>` to the compiler's
+      arguments, and `scalacEdges.nir` demands it. Without one, `Scalac#targeting[Universe.Nir]`
+      cannot be applied and the edge cannot be built.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      given NirPlugin = NirPlugin(t"/home/user/.cache/nscplugin_3-0.5.12.jar".as[Path on Linux])
+      summon[Universe.Emission[Universe.Nir]].flags   // List(t"-Xplugin:/home/user/.cache/nscplugin_3-0.5.12.jar")
+      ```
+
+      The stock published plugin (`org.scala-native:nscplugin_<scala version>:0.5.12`) works
+      with the Soundness compiler; the Scala Native runtime (`scalalib`, `scala3lib`,
+      `javalib`, `auxlib`, `clib`, `posixlib` and `nativelib`) goes on the classpath like any
+      other library, and its absence shows as ordinary compiler diagnostics.
+  entry #jar   the plugin JAR's path
+
+entry .Artifact   a node of a toolchain: a source language, an intermediate representation or an application format
+  detail
+      Every node of a `Toolchain` is an `Artifact`, in one of three tiers: a `.Source` such as
+      `anthology.Language.Scala`, which compilers consume; an `.Ir` such as a `Universe`,
+      holding open-world, pre-link content in which libraries compose; or an `.Application`
+      such as `Artifact.Jar` or `Apk`, a closed format a host runs. Tools consume any format
+      but only ever produce an `Ir` or an `Application` — `Edge` says so in its types.
+
+      A format's identity is its `#kind` and its `#id`, and nothing else: `equals` and
+      `hashCode` are final and compare only those. So wherever a parameter changes what a
+      user receives — a JavaScript artifact's module system, a WASI artifact's interface
+      version, a native binary's target triple — it is part of the `id`, and each
+      parameterization is a distinct node. `Artifact.Binary(Triple.Arm64MacOs)` is as
+      distinct from `Artifact.Binary(Triple.X64Linux)` as a JAR is from a JavaScript bundle;
+      that they share a linker does not make them interchangeable.
+
+      The node set is open. A format can be declared as data, by its kind and name, with
+      `.apply`, `.source`, `.ir` and `.application`, as a registry read at run time declares
+      the forms no Soundness release knows; and a declared format is the *same node* as the
+      built-in format of its kind and name, so `Artifact.ir(t"classfile")` reaches every edge
+      registered for `Universe.Classfile`.
+
+      ```scala
+      import soundness.*
+
+      Artifact.ir(t"classfile") == Universe.Classfile                   // true
+      Artifact(Artifact.Kind.Application, t"apk") == Apk                // true
+      Artifact.source(t"wasm") == Artifact.application(t"wasm")         // false: different kinds
+      Artifact.Binary(Triple.Arm64MacOs) == Artifact.Binary(Triple.X64Linux)   // false
+      ```
+
+      A class extending `Artifact` other than through one of the three tier traits must
+      define `#kind` itself, and none may override `equals` or `hashCode`; a case class
+      extending it has no synthesized structural equality, so a format whose parameters
+      distinguish nodes must encode them in its `id`, as every built-in format does.
+  refer anthology.Universe
+  refer anthology.Toolchain
+  refer anthology.Edge
+  entry .Kind   the tier a format belongs to: `Source`, `Ir` or `Application`
+      The kind a format is declared with, as data. Two formats are equal only when their
+      kinds are, so a source and an application may share a name.
+  entry .Source   the tier of formats compilers consume: a source language
+      `kind` is fixed to `Kind.Source`. The built-in sources are the cases of
+      `anthology.Language`; `Artifact.source(id)` declares another.
+  entry .Ir   the tier of intermediate representations: classfiles, `.sjsir`, `.nir`, components
+      `kind` is fixed to `Kind.Ir`. The built-in intermediate representations are the
+      `Universe`s a Scala compilation emits, plus the edgeless `Component` and `WasmObject`;
+      `Artifact.ir(id)` declares another.
+  entry .Application   the tier of closed formats a host runs: a JAR, an APK, a bundle, a binary
+      `kind` is fixed to `Kind.Application`. The built-in applications are `Artifact.Jar`,
+      `Artifact.Binary`, `Library`, `anthology.Js`, `anthology.Wasm`, `Wasi`, `OciImage`,
+      `Dex` and `Apk`; `Artifact.application(id)` declares another.
+  entry .Jar   an executable JAR, bound to the JDK: the node `jarEdges` reaches from `Classfile`
+      The application node with id `jar`: an executable JAR of a compilation's output together
+      with its whole classpath, with the single `EntryPoint` as its `Main-Class`. It is
+      nested here as `Artifact.Jar` because the `soundness` umbrella's `Jar` is zeppelin's.
+  entry .Binary   a machine-code executable for one target `Triple`: one node per triple
+    detail
+        The application node with id `binary-<triple>`, `binary-arm64-apple-darwin` for
+        example, reached from `Universe.Nir` through `nativeEdges`. A binary is bound to one
+        operating system and architecture's C library, so each triple is its own node and a
+        toolchain built with `nativeEdges(Triple.X64Linux)` has no path to
+        `Artifact.Binary(Triple.Arm64MacOs)`. Nested here as `Artifact.Binary` because the
+        umbrella's `Binary` is monotonous's.
+    entry #triple   the target platform the binary runs on
+  entry .apply   `Artifact(kind, id)`: a format declared as data, by its kind and name
+      Dispatches on the kind to `.source`, `.ir` or `.application`. The result is equal to,
+      and hashes as, the built-in format of that kind and id, if one exists.
+  entry .source   `Artifact.source(id)`: a declared source format
+      `Artifact.source(t"proto")`, for a language no Soundness compiler knows but a registered
+      edge can consume. It inspects as `Artifact.source(proto)`.
+  entry .ir   `Artifact.ir(id)`: a declared intermediate representation
+      `Artifact.ir(t"descriptor")`, a universe with its own carrier. `Artifact.ir(t"classfile")`
+      is `Universe.Classfile`.
+  entry .application   `Artifact.application(id)`: a declared application format
+      `Artifact.application(t"bundle")`, a deliverable with its own host contract.
+      `Artifact.application(t"js-es")` is `anthology.Js(anthology.Js.Module.Es)`.
+  entry #id   the format's name, which with its kind is its whole identity
+  entry #kind   the tier the format belongs to
+
+entry .Universe   the intermediate representation a compilation emits: `Classfile`, `Sjsir` or `Nir`
+  detail
+      A compilation emits one intermediate representation, and that choice decides which
+      library artifacts it can link against and which application formats it can become.
+      `Classfile` is JVM classfiles, linkable as an `Artifact.Jar`, a `Dex` or an `Apk`;
+      `Sjsir` is Scala.js IR, whose linked form — JavaScript, browser Wasm or a WASI component —
+      is chosen at link time; `Nir` is Scala Native IR, linked to machine code through LLVM.
+      Each universe is an `Artifact.Ir` node of a `Toolchain`, with ids `classfile`, `sjsir`
+      and `nir`, and every universe additionally has a `Library` JAR packaging its unlinked
+      output.
+
+      The universe is also a *type*, the second type parameter of `Scalac`, so that a
+      compiler configured for one cannot be used as another: `Scalac[3.8](options)` targets
+      `Universe.Classfile`, and `targeting[Universe.Sjsir]` retargets it. The compiler flags
+      each universe needs follow from the `.Emission` given for it — none for classfiles,
+      `-scalajs` for Scala.js, and the plugin flag for Native, which exists only when a
+      `NirPlugin` is in scope — rather than being supplied by hand.
+
+      ```scala
+      import soundness.*
+
+      val forJs: Scalac[3.8, Universe.Sjsir] = Scalac[3.8](Nil).targeting[Universe.Sjsir]
+      summon[Universe.Emission[Universe.Sjsir]].flags   // List(t"-scalajs")
+      ```
+
+      Each universe beyond the JVM's has runtime prerequisites, supplied on the classpath like
+      any other library: `Sjsir` needs `scalajs-javalib`, `scalajs-library_2.13`,
+      `scalajs-scalalib_2.13` and `scala3-library_sjs1`, and `Nir` the Scala Native runtime
+      (`scalalib`, `scala3lib`, `javalib`, `auxlib`, `clib`, `posixlib`, `nativelib`). Their
+      absence surfaces as ordinary compiler diagnostics rather than as a distinct failure.
+  refer anthology.Scalac
+  refer anthology.Compilation
+  refer anthology.NirPlugin
+  entry .Classfile   JVM classfiles; also the type `Universe.Classfile`, the case's singleton type
+      The universe a plain `Scalac[version](options)` targets, and the only one `Javac` and
+      `Kotlinc` emit. It links as an `Artifact.Jar`, a `Library(Universe.Classfile)`, a `Dex`
+      or an `Apk`. The type alias `Universe.Classfile` is `Universe.Classfile.type`, so the
+      case can be named as a type parameter: `Compilation[Universe.Classfile]`.
+  entry .Sjsir   Scala.js IR; also the type `Universe.Sjsir`
+      Reached with `scalac.targeting[Universe.Sjsir]`, which adds `-scalajs`. It links through
+      `sjsEdges` as JavaScript under any module system, as browser Wasm, or — given a
+      `WasiToolchain` and a `Wasi.World` — as a WASI component, and packages as
+      `Library(Universe.Sjsir)`.
+  entry .Nir   Scala Native IR; also the type `Universe.Nir`
+      Reached with `scalac.targeting[Universe.Nir]`, which needs a `NirPlugin` given for its
+      `-Xplugin:` flag. It links through `nativeEdges` to an `Artifact.Binary` per target
+      triple, and packages as `Library(Universe.Nir)`.
+  entry .Emission   the compiler flags a universe's emission needs, as a typeclass over the universe
+    detail
+        `Universe.Emission[universe]` is what `Scalac#apply` and `Scalac.Setup`'s session
+        summon to learn the flags to add for the universe the compiler targets. The three
+        givens `.classfile`, `.sjsir` and `.nir` live in this companion, so no import is
+        needed; the last exists only when a `NirPlugin` is in scope, which is what makes
+        compiling for Native impossible without naming the plugin.
+    entry #flags   the arguments to add to the compiler's command line
+  entry .classfile   the `Emission[Classfile]` given: no extra flags
+  entry .sjsir   the `Emission[Sjsir]` given: `-scalajs`
+  entry .nir   the `Emission[Nir]` given, built from the `NirPlugin` in scope: `-Xplugin:<jar>`
+      Summoning it without a `NirPlugin` given is a compile error, so a `Scalac` retargeted to
+      `Universe.Nir` cannot be applied until the plugin's location is in scope.
+  entry #section   the label of the LIRA section holding this universe's content: `jvm`, `sjsir` or `nir`
+  entry #suffixes   the filename suffixes of this universe's stored forms, with `.tasty`
+      `.class` and `.tasty` for `Classfile`, `.sjsir` and `.tasty` for `Sjsir`, `.nir` and
+      `.tasty` for `Nir`: each universe's binary form, plus the TASTy which carries its
+      interface.
+
+entry .Deliverable   the value flowing along a toolchain path: sources, an emission, or a product
+  detail
+      What each edge's tool consumes and produces, and its case says where in the graph it
+      belongs: `Sources(sources, classpath)` — a map of named sources and the classpath to
+      compile them against — sits at a source-language node; `Emission(out, classpath)` — a
+      compilation's output directory and the classpath it was compiled against — at an
+      intermediate representation; and `Product(file)` — a linked or packaged file — at an
+      application. `Toolchain#produce` takes one as its input, at the node it names as its
+      source.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val classpath: LocalClasspath = Bundler.applicationClasspath
+      val out: Path on Linux = t"/tmp/out".as[Path on Linux]
+
+      val fromSource = Deliverable.Sources(Map(t"hello.scala" -> t"object Main"), classpath)
+      val fromClasses = Deliverable.Emission(out, classpath)
+      val fromJar = Deliverable.Product(out / "app.jar")
+      ```
+
+      A tool knows statically which variant its edge consumes, and the three accessors
+      `#sources`, `#emission` and `#product` are its coercions: each raises `Link.Error` with
+      reason `UnexpectedInput(format)` when given another variant, naming the format under
+      production, which is how a miswired toolchain is diagnosed.
+  refer anthology.Toolchain
+  refer anthology.Tool
+  entry #sources   the named sources and classpath, for a compile edge
+      Raises `Link.Error(UnexpectedInput(target.id))` unless this is a `Sources`.
+  entry #emission   the output directory and classpath, for a link or packaging edge
+      Raises `Link.Error(UnexpectedInput(target.id))` unless this is an `Emission`.
+  entry #product   the file, for an edge which repackages a finished product
+      The `Apk` and `OciImage` tools consume the product of the edge before them this way.
+      Raises `Link.Error(UnexpectedInput(target.id))` unless this is a `Product`.
+
+entry .Edge   one edge of a toolchain: a tool producing the `target` format from the `source` format
+  detail
+      `Edge(source, target, tool)`. The target is typed `Artifact.Ir | Artifact.Application`,
+      since sources are never produced. The edge providers — `jarEdges()`, `dexEdges()`,
+      `apkEdges()`, `sjsEdges()`, `nativeEdges()`, `ociEdges()`, `scalacEdges.classfile(…)`,
+      `javacEdges(…)`, `kotlincEdges(…)` — each return the edges for their tool, and
+      `Toolchain(…)` assembles any number of such lists; an edge for a new format is written
+      directly, with a `Tool` of its own.
+
+      ```scala
+      import soundness.*
+
+      val proto = Artifact.source(t"proto")
+      val descriptor = Artifact.ir(t"descriptor")
+
+      def protoc: Tool = ???
+      val edge = Edge(proto, descriptor, protoc)
+      ```
+  entry #source   the format the tool consumes
+  entry #target   the format the tool produces: an intermediate representation or an application
+  entry #tool   the tool which runs the edge
+
+entry .Tool   a toolchain edge's implementation: a compiler, linker or packager, with its settings type
+  detail
+      A `Tool` is an inert value: the capabilities its execution needs — a `Monitor`, a
+      `System`, a `WorkingDirectory` — flow through `#run`'s context rather than being
+      captured when it is built. It declares a `#Settings` type and an `#initial`
+      configuration of that type, which `Toolchain#produce` folds the applicable
+      `Toolchain.Setting`s into before calling `#run`.
+
+      ```scala
+      import soundness.*
+
+      def passThrough(label: Text): Tool = new Tool:
+        type Settings = Unit
+
+        def name: Text = label
+        def initial: Unit = ()
+
+        def run
+          ( settings:    Unit,
+            input:       Deliverable,
+            entryPoints: List[EntryPoint],
+            out:         Path on Linux )
+          ( using Monitor, System, WorkingDirectory )
+          ( using Tactic[Link.Error], (LinkEvent is Loggable)^ )
+        :   Deliverable =
+
+          input
+      ```
+
+      The built-in tools are private to their edge providers; what a user holds is the
+      `Edge`, whose `tool.name` is what a path reports.
+  refer anthology.Edge
+  refer anthology.Toolchain
+  entry #Settings   the configuration type this tool is driven by
+      `Unit` for the compile edges (the compiler carries its own options), `Text` for the JAR
+      edges (the filename), the Scala.js `StandardConfig` for `sjsEdges`, Scala Native's
+      `NativeConfig` for `nativeEdges`, `Apk.Configuration` for `apkEdges` and
+      `OciConfiguration` for `ociEdges`.
+  entry #name   the tool's name, as a path reports it: `scalac`, `jar`, `dex`, `apk`, `oci`, …
+  entry #initial   the default settings, before any `Toolchain.Setting` is applied
+  entry #run   runs the tool on a deliverable, writing into a directory, and returns what it produced
+      `run(settings, input, entryPoints, out)`: `input` is the `Deliverable` at the edge's
+      source node, `entryPoints` are ambient along the whole path (each tool applies or
+      ignores them as its format demands), and `out` is the directory to write into. It needs
+      a `Monitor`, `System` and `WorkingDirectory`, raises `Link.Error`, and logs
+      `LinkEvent`s.
+
+entry .Toolchain   a graph of formats and tools, over which producing one format from another is path search
+  detail
+      A `Toolchain` is a directed acyclic graph whose nodes are `Artifact`s and whose edges
+      are `Tool`s. `#produce` takes what you have, the format you want and an output
+      location, finds the unique shortest path between the two nodes, and runs each tool on
+      it in turn; `#path` reports the route without running anything. The graph is assembled
+      from edge lists with `.apply`, which rejects a duplicate edge between the same pair of
+      formats and rejects a cycle.
+
+      ```scala fuel
+      frame
+        label An executable JAR links straight from classfiles
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            val toolchain = Toolchain(jarEdges())
+            toolchain.path(Universe.Classfile, Artifact.Jar).map(_.tool.name)   // List(t"jar")
+      frame
+        label Adding the dex edges makes `Dex` reachable, one step away
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            val toolchain = Toolchain(jarEdges(), dexEdges())
+            toolchain.path(Universe.Classfile, Dex).map(_.target.id)   // List(t"dex")
+      frame
+        label Adding the APK edge extends the path: classfiles are dexed, then packaged
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            val toolchain = Toolchain(jarEdges(), dexEdges(), apkEdges())
+            toolchain.path(Universe.Classfile, Apk).map(_.target.id)   // List(t"dex", t"apk")
+      ##
+      ```
+
+      Nothing about the two-stage sequence is written into the APK tool: the path composes
+      it. A format which cannot be reached raises `Link.Error` with reason `NoPath`, naming
+      the two formats, rather than failing part-way through; two equally short routes raise
+      `AmbiguousPath`, resolved by producing an intermediate format explicitly in a separate
+      step rather than by a tie-break the caller cannot see.
+
+      Tools are configured by `.Setting`s addressed to the *formats* whose production they
+      configure, not to tools: `apkOptions.minApi(24)` applies to both `Dex` and `Apk`, since
+      the API level governs both how D8 desugars and what the manifest declares, and
+      `linkerOptions.optimize.fast` to every format the Scala.js linker produces. A setting
+      matching no format on the path is rejected before any tool runs.
+  refer anthology.Edge
+  refer anthology.Deliverable
+  refer anthology.Link
+  entry .apply   assembles a toolchain from any number of edge lists, checking for duplicates and cycles
+      `Toolchain(jarEdges(), dexEdges(), apkEdges())`, or `Toolchain(List(edge1, edge2))`.
+      Raises `Link.Error` with reason `DuplicateEdge(source, target)` when two edges join the
+      same pair of formats, and `CyclicToolchain` when the edges form a cycle; a toolchain
+      which exists is therefore a DAG whose every pair of nodes has at most one direct edge.
+  entry .Error   raised when a native tool a toolchain shells out to is not on the `PATH`
+    detail
+        Error 586: _the native tool `tool` is not available on the PATH_. Raised by the
+        probing constructors — `WasiToolchain()` for `wasm-tools` and `wit-bindgen`,
+        `nativeEdges()` for `clang` and `clang++` — so that an edge whose tooling is absent
+        cannot be built, and a missing tool is found when the toolchain is assembled, not
+        when a link fails. `nativeEdges()` also reports an unrecognised build host, which
+        cannot name its own triple, as the absence of `clang`.
+    entry #tool   the name of the missing tool
+  entry .Setting   a tool setting, addressed to the formats whose production it configures
+    detail
+        A `Toolchain` applies each setting, in the order given, to the initial settings of
+        every edge on the path whose target `#appliesTo` accepts; `#edit` then transforms
+        that edge's settings. The contract is that `appliesTo(format)` implies `edit(format,
+        _)` accepts and returns the settings type of every edge targeting `format`; a setting
+        spanning formats with different settings types — the Android API level configures
+        both dexing and packaging — dispatches on its `format` argument.
+
+        The option objects (`jarOptions`, `linkerOptions`, `nativeOptions`, `dexOptions`,
+        `apkOptions`, `ociOptions`) are the built-in settings; `.apply` makes one for a tool
+        of the caller's own.
+
+        ```scala
+        import soundness.*
+
+        val everyJar: Toolchain.Setting =
+          Toolchain.Setting[Text](format => format == Artifact.Jar)(_ => t"renamed.jar")
+        ```
+    entry .apply   `Toolchain.Setting[settings](appliesTo)(edit)`: a setting over one settings type
+        The first argument says which formats the setting configures; the second edits the
+        settings of every edge targeting one of them, typed as `settings`. An `edit` which
+        throws fails the production with `Link.Error` reason `Failed`.
+    entry #appliesTo   whether the setting configures the production of a format
+    entry #edit   the setting applied to an edge's settings, given the format that edge produces
+  entry #edges   the toolchain's edges
+  entry #path   the unique shortest path between two formats, as the edges to run in order
+      `toolchain.path(Universe.Classfile, Apk)` is the list of `Edge`s from the first to the
+      second; a format is a zero-length path from itself. Raises `Link.Error` with reason
+      `NoPath(source, target)` when no route exists — against the direction of the edges, or
+      to a node whose edge was never registered — and `AmbiguousPath(source, target)` when two
+      or more routes are equally short. A declared format (`Artifact.ir(t"classfile")`) routes
+      exactly as the built-in it equals.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val android = Toolchain(jarEdges(), dexEdges(), apkEdges())
+      android.path(Dex, Dex)                                    // Nil
+      android.path(Universe.Classfile, Apk).map(_.tool.name)    // List(t"dex", t"apk")
+      safely(android.path(Apk, Universe.Classfile))             // Unset: no path backwards
+      ```
+  entry #produce   produces the target format from the input by running each tool on the path, and returns the output's path
+      `produce(input, source, target, out, settings = Nil, entryPoints = Nil)`: `input` is the
+      `Deliverable` at `source`; each intermediate product on a multi-stage path is written
+      below `out` in a directory named by its format's `id` (an APK's dex archive lands in
+      `out/dex/`), and the final product in `out` itself. The result is the final `Product`'s
+      file, or, when the target is an intermediate representation such as
+      `Universe.Classfile`, the `Emission`'s directory.
+
+      Every setting is checked against the path's targets first, and one which applies to
+      none raises `Link.Error` with reason `InapplicableSetting` before any tool runs. Entry
+      points are ambient along the whole path: an executable JAR takes at most one as its
+      `Main-Class`, a native binary and an APK require exactly one, and a `Library` or `Dex`
+      ignores them.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+      import threads.virtualThreads
+      import workingDirectories.javaBaseWorkingDirectory
+
+      val classpath: LocalClasspath = Bundler.applicationClasspath
+      val out: Path on Linux = t"/tmp/out".as[Path on Linux]
+      val staged: Path on Linux = t"/tmp/staged".as[Path on Linux]
+
+      supervise:
+        Toolchain(jarEdges(), dexEdges(), apkEdges()).produce
+          ( Deliverable.Emission(out, classpath),
+            Universe.Classfile,
+            Apk,
+            staged,
+            List(apkOptions.minApi(26), apkOptions.packageName(t"com.example.app")),
+            List(EntryPoint(Fqcn(t"com.example.MainActivity"))) )
+      ```
+
+      It needs a `Monitor`, a `System` and a `WorkingDirectory`, raises `Link.Error`, and logs
+      `LinkEvent.Start` before the first tool and `LinkEvent.Linked` with the output's path
+      after the last; a compile edge on the path relays its `CompileEvent`s onto the same
+      channel.
+
+entry .Component   the WebAssembly component universe: an intermediate node with no edges yet
+    An `Artifact.Ir` with id `component`: WebAssembly library components, composing with one
+    another through interfaces described by WIT, as TASTy lets `sjsir` and `nir` compose. It
+    is an `Ir` rather than a `Universe`, since no Scala compilation emits it — a component is
+    an application (`Wasi`) when the world it exports is runnable, and content in this
+    universe when it is composed with others. No built-in edge produces or consumes it; the
+    node exists so that composition tools can register theirs, and a path to it raises
+    `NoPath` until one does.
+
+entry .EntryPoint   a class whose `main(args: Array[String])` runs when the linked artifact loads
+  detail
+      `EntryPoint(Fqcn(t"com.example.Main"))`. Entry points are passed to `Toolchain#produce`
+      and are ambient along the whole path, each tool applying or ignoring them as its
+      format demands: an executable `Artifact.Jar` takes at most one, as its `Main-Class`
+      (none means a JAR with no main class; two raise `Link.Error` reason `ManyEntryPoints`);
+      a native `Artifact.Binary` requires exactly one (`NoEntryPoint` otherwise); an `Apk`
+      requires exactly one, which is its launcher activity; JavaScript and Wasm links
+      initialise each as a module initializer; and a `Library` or a `Dex` ignores them
+      entirely, since neither records an entry point.
+  entry #mainClass   the fully-qualified class name
+
+entry .Link   the namespace of `Link.Error`, the failure of linking, path search or packaging
+  detail
+      Everything a `Toolchain` can fail with is a `Link.Error` carrying a `Link.Error.Reason`,
+      so one `Tactic[Link.Error]` covers assembling a toolchain, searching it and running its
+      tools. A tool's own fault (a thrown exception) is `Failed` with its stack trace; a
+      structural fault (no path, a duplicate edge, a setting with nothing to configure) is
+      its own reason; and a compile edge's failure is `CompilationFailed`, carrying every
+      `Notice` the compiler reported.
+  entry .Error   raised by a toolchain: error 443, _linking failed because `reason`_
+    detail
+        `Link.Error(reason)`; its number's detail part is the reason's own number. Match on
+        `#reason` to tell the cases apart:
+
+        ```scala
+        import soundness.*
+
+        def explain(error: Link.Error): Text = error.reason match
+          case Link.Error.Reason.NoPath(source, target)         => t"no route from $source to $target"
+          case Link.Error.Reason.CompilationFailed(notices)     => t"${notices.length} diagnostics"
+          case Link.Error.Reason.Failed(trace)                  => trace.show
+          case other                                            => other.communicate.text
+        ```
+    entry .Reason   why linking failed: fifteen numbered cases, each with its message
+      detail
+          Each case carries its number as `#number`, which is the detail part of the error's
+          code (`443.5` for `NoPath`):
+
+          - `Failed(trace)` (1): _the linker terminated abnormally_ — a tool threw; the
+            `StackTrace` is kept.
+          - `NoEntryPoint` (3): _a native executable requires exactly one entry point_ — also
+            raised by the APK tool, which needs its launcher activity.
+          - `ManyEntryPoints` (4): _an executable JAR permits at most one entry point_.
+          - `NoPath(source, target)` (5): _the toolchain has no path from `source` to
+            `target`_.
+          - `AmbiguousPath(source, target)` (6): _the toolchain has several shortest paths
+            from `source` to `target`, so an intermediate format must be produced
+            explicitly_.
+          - `InapplicableSetting` (7): _a setting applies to no format produced on the path_.
+          - `DuplicateEdge(source, target)` (8): _the toolchain declares more than one edge
+            from `source` to `target`_.
+          - `CyclicToolchain` (9): _the toolchain's edges form a cycle_.
+          - `UnexpectedInput(format)` (10): _the tool producing `format` cannot consume the
+            content it was given_ — a `Deliverable` of the wrong variant reached a tool.
+          - `CompilationFailed(notices)` (11): _compilation failed with N errors_, where N
+            counts the notices whose importance is `Error`; the list holds every diagnostic.
+          - `MissingSetting(name)` (12): _the setting `name` is required but unspecified_.
+          - `Packaging(detail)` (13): _packaging failed: `detail`_ — a zip, path, I/O or
+            filename fault while bundling a JAR, dexing or packaging an APK, with the
+            underlying error's message.
+          - `CompilerCrash` (14): _the compiler crashed_ — a compile edge's compiler threw.
+          - `CompilerUnusable(detail)` (15): _the compiler could not be run: `detail`_ — a
+            compile edge could not configure or await its compiler (`scalac`, `javac`,
+            `kotlinc`).
+      entry #number   the reason's number, the detail part of the error code
+    entry .communicable   renders each reason as the message listed under `Link.Error.Reason`
+    entry #reason   why linking failed
+
+entry .LinkEvent   what a toolchain logs as it links: start, each message, and the output's path
+  detail
+      Every `LinkEvent` carries the `Log.Compiler` tag. `Toolchain#produce` logs `Start` at
+      `info` before the first tool and `Linked(path)` at `info` after the last; every tool
+      relays its linker's own output as `Message(message)` — the Scala.js linker's errors and
+      warnings at `warn`, its info at `info` and the rest at `fine`; D8's errors and warnings
+      at `warn`; and, through `CompileEvents.relay`, a compile edge's `CompileEvent`s at their
+      own levels. A `LinkEvent is Loggable` must be in scope for every `produce`.
+  entry .communicable   renders each event as a message
+      _starting linking_, _the linker reported: `message`_ and _linked output written to
+      `path`_.
+
+entry .Triple   a target platform for a native link, rendered as an LLVM target triple
+  detail
+      Six targets: `Arm64MacOs`, `X64MacOs`, `Arm64Linux`, `X64Linux`, `Arm64Windows` and
+      `X64Windows`, each rendering through `#text` as the LLVM triple Scala Native is given
+      (`arm64-apple-darwin`, `x86_64-apple-darwin`, `aarch64-unknown-linux-gnu`,
+      `x86_64-unknown-linux-gnu`, `aarch64-pc-windows-msvc`, `x86_64-pc-windows-msvc`).
+      `Artifact.Binary(triple)` is the application node for a binary on that platform, and
+      `nativeEdges(triples*)` registers one edge per triple. Targets beyond the build host
+      require a C toolchain and sysroot capable of cross-compiling to them.
+
+      ```scala
+      import soundness.*
+
+      Triple.Arm64MacOs.text                       // t"arm64-apple-darwin"
+      Triple.host.let(Artifact.Binary(_))          // the build host's own binary node, or Unset
+      ```
+  refer anthology.nativeEdges
+  entry .host   the build host's own triple, from `os.name` and `os.arch`, or `Unset` if unrecognised
+      macOS, Linux and Windows on ARM64 or x86-64 are recognised; any other platform is
+      `Unset`, and `nativeEdges()` with no explicit triples reports it as the absence of
+      `clang`, since such a host has no Scala Native runtime either.
+  entry #text   the LLVM target triple
+
+entry .WasmObject   the relocatable-WebAssembly-object universe: an intermediate node with no edges yet
+    An `Artifact.Ir` with id `wasm-object`: relocatable WebAssembly objects composing by the
+    symbols of their linking sections — what `rustc --target wasm32` and clang emit, linked
+    by `wasm-ld` into a WASI 0.1 module or lifted by component tools into the `Component`
+    universe. No Scala compilation emits it and no built-in edge produces or consumes it;
+    the node exists so that foreign compilers and wasm linkers can register theirs.
+
+entry .Scalac   the Scala compiler as a value: typed options, a language version and a target universe
+  detail
+      A `Scalac[version, universe]` carries a list of `Scalac.Option`s, each typed by the
+      language versions which accept it, and the `Universe` it emits. `Scalac[3.8](options)`
+      — the single-type-argument form — targets `Universe.Classfile`; `#targeting` retargets
+      it. Applied to a classpath and sources, it compiles in-process, in a task of its own,
+      and returns a `CompileProcess`:
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import logging.silentLogging
+      import probates.cancelProbate
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+      import threads.virtualThreads
+
+      val classpath: LocalClasspath = Bundler.applicationClasspath
+      val out: Path on Linux = t"/tmp/out".as[Path on Linux]
+
+      supervise:
+        val compiler = Scalac[3.8](List(scalacOptions.newSyntax, scalacOptions.warnings.feature))
+        val process = compiler(classpath)(Map(t"hello.scala" -> t"object Main"), out)
+        process.complete()
+      ```
+
+      The version parameter is a *declared language target* which gates the options
+      statically: an option whose versions do not include the compiler's is a compile error
+      in the tool, not a complaint from the compiler at run time. It does not select a
+      compiler. The compiler which actually runs is whichever `scala3-compiler` is on the
+      program's runtime classpath — a compile-only dependency of `anthology.scala`, so the
+      driving program chooses it — and `.version` reports which that is.
+
+      ```scala fuel
+      frame
+        label An option valid at every version
+        code
+            import soundness.*
+
+            val compiler = Scalac[3.8](List(scalacOptions.newSyntax))
+            compiler.commandLineArguments   // List(t"-new-syntax")
+      frame
+        label `experimental` is accepted from 3.4 to 3.8, so 3.8 may take it
+        code
+            import soundness.*
+
+            val compiler = Scalac[3.8](List(scalacOptions.newSyntax, scalacOptions.experimental))
+            compiler.commandLineArguments   // List(t"-new-syntax", t"-experimental")
+      frame
+        label `semanticDiagnostics` exists only at 3.9: the 3.8 compiler rejects it
+        code
+            import soundness.*
+
+            val compiler = Scalac[3.8](List(scalacOptions.newSyntax, scalacOptions.semanticDiagnostics))   // does not compile
+      frame
+        label Retargeting keeps the options and changes the universe
+        code
+            import soundness.*
+
+            val compiler = Scalac[3.8](List(scalacOptions.newSyntax, scalacOptions.experimental))
+            val forJs: Scalac[3.8, Universe.Sjsir] = compiler.targeting[Universe.Sjsir]
+            forJs.commandLineArguments   // List(t"-new-syntax", t"-experimental"); `-scalajs` is added by the emission
+      ##
+      ```
+
+      Besides the stateless `#apply`, a compiler bound to a classpath with `#on` opens a
+      *warm session* — `scalac.on(classpath).session: …` — in which several compiles share one
+      loaded symbol table, each seeing what the previous ones defined; see `Scalac.Session`.
+      The compile edges of a `Toolchain` (`scalacEdges`) carry a `Scalac` the same way.
+
+      The stateless compiles share one compiler instance across the program (`.compiler()`),
+      replaced by `.refresh()` after a crash. Diagnostics become `Notice`s with their spans;
+      under `scalacOptions.semanticDiagnostics` each also keeps its semantic markup. Progress
+      is reported per whole percentage point, with the compiler's phase as the stage, and
+      `CompileProcess#abort()` is observed at the next tick.
+  refer anthology.scalacOptions
+  refer anthology.scalacEdges
+  refer anthology.Universe
+  refer anthology.CompileProcess
+  entry .Versions   the language versions a `Scalac` can be declared for: `3.0` to `3.9`
+      The union of literal types `3.0 | 3.1 | … | 3.9`, the bound of a `Scalac`'s version
+      parameter and the widest version an `Option` can be declared for. A version is a
+      literal, `Scalac[3.8]`, never a value.
+  entry .Option   a compiler option, as the flags it adds, typed by the versions which accept it
+    detail
+        `Scalac.Option[-version <: Versions](flags*)`: the version parameter is
+        *contravariant*, so an option declared for `3.4 | 3.5 | 3.6` is accepted by a
+        `Scalac[3.5]`, and one declared for `Scalac.Versions` by any. The `scalacOptions`
+        object holds the built-in ones; an option the object lacks is written directly:
+
+        ```scala
+        import soundness.*
+
+        val color = Scalac.Option[Scalac.Versions](t"-color", t"never")
+        Scalac[3.8](List(color)).commandLineArguments   // List(t"-color", t"never")
+        ```
+    entry #flags   the command-line arguments the option contributes, in order
+  entry .refresh   replaces the shared compiler instance, as happens after a crash
+      The stateless compiles share one `dotty.tools.dotc.Compiler`; a crash replaces it
+      automatically, and `refresh()` does so on demand.
+  entry .compiler   the shared compiler instance the stateless compiles run on
+  entry .version   the version of the embedded compiler, as it reports itself
+      `dotty.tools.dotc.config.Properties.versionNumberString`: the version of the
+      `scala3-compiler` on the runtime classpath, which is what every `Scalac`'s `#version`
+      and every process's `version` report.
+  entry .apply   `Scalac[version](options)`: a compiler for the classfile universe
+      The single-type-argument form, which fixes the universe to `Universe.Classfile`;
+      `#targeting` changes it. Each option's versions must include the one named.
+  entry .Setup   a compiler bound to a classpath: the subject of a warm session
+    detail
+        `scalac.on(classpath)` makes one, and `.session` on it opens a `Scalac.Session`
+        through aperture's `Sessional` — the `.sessional` given here — in which the
+        classpath's symbol table, loaded once, is retained across compiles. A `Setup` is only
+        the pair; the session is where the state lives.
+    entry .sessional   the `Sessional` given which opens a `Scalac.Session` from a `Setup`
+        In the companion, so no import is needed. It needs a `System`, the
+        `Universe.Emission` for the setup's universe, a `Tactic[Compiler.Error]` and a
+        `CompileEvent is Loggable`, and it is what `setup.session: …` resolves to.
+    entry #scalac   the compiler, with its options and universe
+    entry #classpath   the classpath the session compiles against
+  entry .Session   a warm compiler session: one retained symbol table across several compiles
+    detail
+        Opened with `scalac.on(classpath).session: …`; inside the block the session is the
+        contextual `Scalac.Session^`, reached as `compilation`, and `sources.compile()` or
+        `compilation.compile(sources)` compiles within it. One base context, whose symbol
+        table persists from run to run as in the REPL, and one compiler are reused, so the
+        second compile sees the first's classes and pays for none of the classpath's loading
+        again. Compiles run synchronously on the caller's thread (the compiler pins a
+        context to the thread of its first run), and the `.Process` returned is complete by
+        the time it is returned.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import logging.silentLogging
+        import strategies.throwUnsafely
+        import systems.javaBaseSystem
+
+        val classpath: LocalClasspath = Bundler.applicationClasspath
+        val alpha = Map(t"alpha.scala" -> t"class Alpha:\n  def x: Int = 42\n")
+        val beta = Map(t"beta.scala" -> t"class Beta:\n  def alpha: Alpha = Alpha()\n")
+
+        Scalac[3.8](Nil).on(classpath).session:
+          alpha.compile().complete()
+          val process = beta.compile()
+          process.complete()                    // CompileResult.Success: `Alpha` is known
+          process.classfiles.keys.to[List]      // the emitted classfiles, in memory
+        ```
+
+        Output is kept in memory: `Process#classfiles` exposes every emitted artifact keyed by
+        its classpath path, and `Process#save(directory)` writes them to disk only if wanted.
+        A failed compile leaves the session usable; a crash rebuilds its compiler and
+        context together, so the next compile starts clean. Opening a session with options
+        the compiler rejects raises `Compiler.Error`.
+
+        Two limitations follow from the REPL-style retained symbol table: redefining a
+        top-level name compiled earlier in the same session is unsupported (distinct source
+        and class names per compile, as a REPL generates, are safe); and a macro defined by
+        one compile loads at its next use from the *classpath*, not the retained symbols, so
+        a caller wanting same-session macro expansion must `save` to a directory on the
+        session's classpath. The session handle is a fresh, exclusive capability confined to
+        the block, so it cannot be returned from it.
+    refer anthology.compilation
+    refer anthology.compile
+    entry .Frontend   the session's compiler, base context, classpath and options, as they stand
+      detail
+          For a tool which types sources in the session without compiling them — harlequin's
+          `highlighting.sessionScala` given takes one — and so sees what the session's
+          compiles have defined, paying for none of the loading again. These are the
+          compiler's own values: good only on the session's thread, and only until its next
+          crash (which replaces them), so a caller takes `Session#frontend` afresh for each
+          use rather than keeping one.
+      entry #compiler   the session's `dotty.tools.dotc.Compiler`
+      entry #context   the base context whose symbol table the session has loaded and added to
+      entry #classpath   the classpath the session was opened with, as text
+      entry #options   the compiler arguments the session was opened with
+    entry .Process   the process of one compile within a session, with its output held in memory
+      detail
+          A `CompileProcess` whose result is already complete when it is returned, since
+          session compiles run synchronously; `complete()` still works and returns it.
+          `#classfiles` holds what the compile emitted and `#save` materialises it.
+      entry #classfiles   every artifact the compile emitted, keyed by its path on the classpath
+          Classfiles, TASTy, `.sjsir` or `.nir`, as a `Map[Path on Classpath, Data]` keyed by
+          the location each would have on a classpath rooted at the output (`/Alpha.class`,
+          `/pkg/Name.tasty`). Empty if the compile failed before the back end ran.
+
+          ```scala fuel
+          typecheck
+          ##
+          import soundness.*
+          import logging.silentLogging
+          import strategies.throwUnsafely
+          import systems.javaBaseSystem
+
+          val classpath: LocalClasspath = Bundler.applicationClasspath
+
+          Scalac[3.8](Nil).on(classpath).session:
+            val process = Map(t"alpha.scala" -> t"class Alpha").compile()
+            process.classfiles.defines(t"/Alpha.class".as[Path on Classpath])   // true
+          ```
+      entry #save   writes the emitted artifacts below a directory, as `pkg/Name.class`
+          Takes any path type `Abstractable across Paths to Text`, creating the package
+          directories as needed. Saving to a directory on the session's classpath is how a
+          macro compiled in the session becomes expandable by its later compiles.
+    entry #frontend   the session's compiler and context as they stand, for typing without compiling
+    entry #compile   compiles named sources within the session, synchronously
+        `session.compile(sources)` — or, with the session contextual, `sources.compile()` —
+        runs the compiler on the caller's thread against the retained symbol table and
+        returns a `Scalac.Session.Process` whose result is already complete. The process
+        borrows the session, so the next compile waits for it to be consumed.
+  entry .Sessional   the `aperture.Sessional` instance class which opens a `Scalac.Session` for a `Setup`
+    detail
+        The named class behind `Scalac.Setup.sessional`; a user reaches it only through
+        `setup.session: …`. Its `#Self` is `Scalac.Setup[version, universe]` and its `#Result`
+        the fresh `Scalac.Session^` handle each `session` call confines to its block.
+    entry #Self   the subject: `Scalac.Setup[version, universe]`
+    entry #Result   the handle a session block receives: a fresh `Scalac.Session^`
+    entry #session   runs a block with a new session as its contextual handle
+        Nothing OS-level is torn down when the block ends: the warm context is only memory,
+        reclaimed with the handle.
+  entry #options   the compiler's options, in order
+  entry #commandLineArguments   the flags of every option, concatenated in order
+      What the options contribute; the universe's emission flags, `-d`, `-classpath` and the
+      sources are added at the call.
+  entry #version   the version of the embedded compiler, `Scalac.version`
+  entry #targeting   the same compiler retargeted to another universe: `scalac.targeting[Universe.Sjsir]`
+      Options are preserved; only the universe changes, and with it the emission flags the
+      compile adds (`-scalajs`, or `-Xplugin:` for Native, which then needs a `NirPlugin`
+      given at the call).
+  entry #on   binds the compiler to a classpath, as a `Scalac.Setup`, ready to open a session
+      `scalac.on(classpath).session: …`.
+  entry #apply   compiles named sources against a classpath into a directory, in a task of its own
+      `scalac(classpath)(sources, out)`: the compiler's arguments are the universe's emission
+      flags, `-d out`, `-classpath`, then `#commandLineArguments`; it logs them as
+      `CompileEvent.Running`, starts a task named `scalac` which runs the compilation on the
+      shared compiler, and returns the `CompileProcess` at once. It needs a `System`, a
+      `Monitor`, a `Probate`, the `Universe.Emission` for the compiler's universe, a
+      `Tactic[Compiler.Error]` and a `CompileEvent is Loggable`. The output directory must
+      exist already: the compiler refuses a `-d` it cannot find, which a direct call does
+      not create (the `scalacEdges` tools do). A crash becomes `CompileResult.Crash` and
+      replaces the shared compiler.
+
+      The same sources under the same compiler yield byte-identical output, run after run
+      and whatever the output directory: the TASTy UUID is a hash of the file's own
+      sections, and virtual sources carry the names they were given.
+
+entry .scalacOptions   the Scala compiler's options as typed values, each valid only at the versions which accept it
+  detail
+      Mirrors the compiler's command line — syntax, warnings, language features, internal
+      flags — as `Scalac.Option`s under `scalacOptions`, each typed by the language versions
+      which accept it, so that `Scalac[3.8](List(scalacOptions.experimental))` compiles and
+      `Scalac[3.9](List(scalacOptions.experimental))` does not. Nested objects group them:
+      `warnings` (with `warnings.lint`), `internal`, `advanced` and
+      `language.experimental`. The object is mirrored as a package of the `soundness`
+      umbrella, so `scalacOptions.newSyntax` reads the same way from either.
+
+      ```scala
+      import soundness.*
+
+      val strict = Scalac[3.6]
+        ( List
+            ( scalacOptions.newSyntax,
+              scalacOptions.warnings.deprecation,
+              scalacOptions.warnings.unused(Unused.All),
+              scalacOptions.internal.explicitNulls,
+              scalacOptions.language.experimental.modularity ) )
+
+      strict.commandLineArguments
+      ```
+
+      An option the object lacks is written directly as `Scalac.Option[Scalac.Versions](flags*)`.
+  refer anthology.Scalac
+  entry .newSyntax   `-new-syntax`, at every version
+  entry .sourceFuture   `-source future`, at every version
+  entry .experimental   `-experimental`, at 3.4 to 3.8
+  entry .semanticDiagnostics   `-Zsemantic-diagnostics`, at 3.9: keeps each notice's semantic markup
+      Under this option the compiler marks each interpolated argument of a message in band,
+      with pickled TASTy for the types among them, and a `Notice` keeps that marked-up form
+      as its `markup` alongside the plain `message`, for the delicious library to parse into
+      a `SemanticMessage`.
+  entry .warnings   the warning options: `-feature`, `-deprecation`, `-W…` flags and `-Wunused`
+    detail
+        Each is a `Scalac.Option` typed by the versions it exists at; `.unused` takes an
+        `Unused` selection, and `.lint` holds the `-Wshadow` flags.
+    entry .feature   `-feature`, at every version
+    entry .deprecation   `-deprecation`, at every version
+    entry .implausiblePatterns   `-Wimplausible-patterns`, at 3.3 to 3.6
+    entry .enumCommentDiscard   `-Wenum-comment-discard`, at 3.4 to 3.6
+    entry .unstableInlineAccessors   `-WunstableInlineAccessors`, at 3.4 to 3.6
+    entry .nonUnitStatement   `-Wnonunit-statement`, at 3.4 to 3.6
+    entry .valueDiscard   `-Wvalue-discard`, at 3.4 to 3.6
+    entry .unused   `-Wunused:…` from an `Unused` selection: all, none, or a subset of features
+        `warnings.unused(Unused.All)` is `-Wunused:all`, `Unused.None` is `-Wunused:none`, and
+        `Unused.Subset(List(UnusedFeature.Privates, UnusedFeature.Locals))` is
+        `-Wunused:privates,locals`. The option's version is the selection's.
+    entry .lint   the `-Wshadow` lint flags
+      detail
+          `privateShadow` and `typeParameterShadow`, at 3.4 to 3.6.
+      entry .privateShadow   `-Wshadow:private-shadow`
+      entry .typeParameterShadow   `-Wshadow:type-parameter-shadow`
+  entry .internal   the `-Y` flags: target names, safe init, explicit nulls, pattern checks, capture checking
+    detail
+        The compiler's internal options, as values.
+    entry .requireTargetName   `-Yrequire-targetName`, at every version
+    entry .safeInit   `-Ysafe-init`, at every version
+    entry .explicitNulls   `-Yexplicit-nulls`, at every version
+    entry .checkPatterns   `-Ycheck-all-patmat`, at every version
+    entry .ccNew   `-Ycc-new`, at 3.4 to 3.6
+    entry .ccDebug   `-Ycc-debug`, at 3.5 and 3.6
+    entry .ccLog   `-Ycc-log`, at 3.5 and 3.6
+  entry .advanced   the `-X` flags
+    detail
+        Only `maxInlines` so far; others are written directly as `Scalac.Option`s.
+    entry .maxInlines   `-Xmax-inlines n`, at every version
+  entry .language   the `-language:` options
+    detail
+        Holds `experimental`, the `-language:experimental.…` features.
+    entry .experimental   the `-language:experimental.…` features, each at the versions which offer it
+      detail
+          One option per experimental language feature, named as the feature is:
+          `clauseInterleaving` (3.3 to 3.6), `givenLoopPrevention` (3.4 to 3.6),
+          `fewerBraces` (3.1 to 3.6), `into` (3.4 to 3.6), `relaxedExtensionImports` (3.3),
+          `erasedDefinitions` (all), `saferExceptions` (3.2 to 3.6), `namedTypeArguments`
+          (all), `pureFunctions` (3.3 to 3.6), `captureChecking` (3.3 to 3.6), `modularity`
+          (3.5 and 3.6), `namedTuples` (3.5 and 3.6), `genericNumberLiterals` (all),
+          `betterMatchTypeExtractors` (3.5 and 3.6), `quotedPatternsWithPolymorphicFunctions`
+          (3.6) and `betterFors` (3.6).
+      entry .clauseInterleaving   `-language:experimental.clauseInterleaving`, at 3.3 to 3.6
+      entry .givenLoopPrevention   `-language:experimental.givenLoopPrevention`, at 3.4 to 3.6
+      entry .fewerBraces   `-language:experimental.fewerBraces`, at 3.1 to 3.6
+      entry .into   `-language:experimental.into`, at 3.4 to 3.6
+      entry .relaxedExtensionImports   `-language:experimental.relaxedExtensionImports`, at 3.3
+      entry .erasedDefinitions   `-language:experimental.erasedDefinitions`, at every version
+      entry .saferExceptions   `-language:experimental.saferExceptions`, at 3.2 to 3.6
+      entry .namedTypeArguments   `-language:experimental.namedTypeArguments`, at every version
+      entry .pureFunctions   `-language:experimental.pureFunctions`, at 3.3 to 3.6
+      entry .captureChecking   `-language:experimental.captureChecking`, at 3.3 to 3.6
+      entry .modularity   `-language:experimental.modularity`, at 3.5 and 3.6
+      entry .namedTuples   `-language:experimental.namedTuples`, at 3.5 and 3.6
+      entry .genericNumberLiterals   `-language:experimental.genericNumberLiterals`, at every version
+      entry .betterMatchTypeExtractors   `-language:experimental.betterMatchTypeExtractors`, at 3.5 and 3.6
+      entry .quotedPatternsWithPolymorphicFunctions   `-language:experimental.quotedPatternsWithPolymorphicFunctions`, at 3.6
+      entry .betterFors   `-language:experimental.betterFors`, at 3.6
+
+entry .scalacEdges   the Scala compile edges of a toolchain: `Language.Scala` to each universe
+  detail
+      Each edge carries the `Scalac` it drives, options and all, so the compiler's own
+      configuration stays where the caller wrote it and the edge's settings are empty
+      (`Unit`). A toolchain holding one can start from `Deliverable.Sources`, so one path runs
+      from `.scala` text to a runnable JAR with the compiler and the bundler both selected by
+      the path:
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+      import threads.virtualThreads
+      import workingDirectories.javaBaseWorkingDirectory
+
+      val classpath: LocalClasspath = Bundler.applicationClasspath
+      val staged: Path on Linux = t"/tmp/staged".as[Path on Linux]
+      val source = t"object Main:\n  def main(args: scala.Array[String]): Unit = println(\"hello\")\n"
+
+      supervise:
+        val toolchain = Toolchain(List(scalacEdges.classfile(Scalac[3.8](Nil))), jarEdges())
+
+        toolchain.produce
+          ( Deliverable.Sources(Map(t"hello.scala" -> source), classpath),
+            anthology.Language.Scala,
+            Artifact.Jar,
+            staged,
+            List(jarOptions.name(t"whole.jar")),
+            List(EntryPoint(Fqcn(t"Main"))) )
+      ```
+
+      The tool, named `scalac`, creates the output directory, relays the compiler's
+      `CompileEvent`s onto the toolchain's `LinkEvent` channel, and maps the result: a
+      failure raises `Link.Error` with reason `CompilationFailed(notices)` carrying every
+      diagnostic, a crash `CompilerCrash`, and a compiler which cannot be configured or
+      awaited `CompilerUnusable(t"scalac")`. The `Scalac` given is retargeted to the edge's
+      universe, whatever it was declared for.
+  refer anthology.Scalac
+  refer anthology.Toolchain
+  entry .classfile   the edge from `Language.Scala` to `Universe.Classfile`, driving the given `Scalac`
+  entry .sjsir   the edge from `Language.Scala` to `Universe.Sjsir`, adding `-scalajs`
+  entry .nir   the edge from `Language.Scala` to `Universe.Nir`; needs a `NirPlugin` given
+      NIR is emitted by the Scala Native compiler plugin, so this edge exists only given
+      evidence of the plugin's location, which supplies its `-Xplugin:` flag.
+
+entry .compile   `sources.compile()`: compiles a map of named sources in the contextual `Scalac.Session`
+    An extension on `Map[Text, Text]`, usable inside a `scalac.on(classpath).session: …`
+    block, where the session is the contextual `Scalac.Session^`; it delegates to the
+    session's own `compile`. The result is a `Scalac.Session.Process`, already complete.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import logging.silentLogging
+    import strategies.throwUnsafely
+    import systems.javaBaseSystem
+
+    val classpath: LocalClasspath = Bundler.applicationClasspath
+
+    Scalac[3.8](Nil).on(classpath).session:
+      Map(t"a.scala" -> t"class A").compile().complete()
+    ```
+
+entry .compilation   the contextual `Scalac.Session` handle, inside a session block
+    A `transparent inline def` returning the session in scope at its precise, scoped type,
+    so that `compilation.compile(sources)` and `compilation.frontend` can be written where
+    the handle has no name. Outside a `session: …` block there is no session to summon, and
+    the call does not compile.
+
+entry .CompileFlag   an enumeration with the single case `Explain`
+    Declared in `anthology.scala` but consumed by nothing in the library: `-explain` is not
+    among `scalacOptions`, and would be written as `Scalac.Option[Scalac.Versions](t"-explain")`.
+
+entry .JavaVersion   a Java release, as a JDK or a JRE: `Jdk(version)` or `Jre(version)`
+  detail
+      `JavaVersion.Jdk(21)` or `JavaVersion.Jre(17)`, where the version is a literal of
+      `.Version`, `8` to `26`. It is declared in `anthology.scala` but consumed by no option
+      in the library.
+  entry .Version   the Java release numbers, as literal types: `8 | 9 | … | 26`
+
+entry .LanguageFeature   the names of Scala language features, as an enumeration
+    `ClauseInterleaving`, `FewerBraces`, `RelaxedExtensionImports`, `ErasedDefinitions`,
+    `SaferExceptions`, `PostfixOps`, `ImplicitConversions`, `Dynamics`, `ReflectiveCalls`,
+    `CaptureChecking`, `GenericNumberLiterals`, `NamedTypeArguments`, `PureFunctions` and
+    `Into`. Declared in `anthology.scala` but consumed by nothing in the library; the
+    `-language:` options are the values of `scalacOptions.language.experimental`.
+
+entry .Unused   a selection for `-Wunused`: `All`, `None`, or a `Subset` of `UnusedFeature`s
+    The argument of `scalacOptions.warnings.unused`, typed by version: `All` and `None`
+    exist at 3.1 to 3.8, and `Subset(features)` at 3.3 to 3.8, with its version that of the
+    features it names. `Unused.None` is this enumeration's case, not vacuous's `Unset`.
+
+    ```scala
+    import soundness.*
+
+    scalacOptions.warnings.unused(Unused.Subset(List(UnusedFeature.Privates, UnusedFeature.Locals)))
+    . flags   // List(t"-Wunused:privates,locals")
+    ```
+
+entry .UnusedFeature   one category `-Wunused` can check: imports, privates, locals, explicits, implicits, params, linted
+  detail
+      `Imports(strict)` exists at 3.3; `Privates`, `Locals`, `Explicits`, `Implicits`,
+      `Params` and `Linted` at 3.3 to 3.6. `#name` is the word `-Wunused:` takes, and a
+      `List` of them is an `Unused.Subset`.
+  entry #name   the category as `-Wunused` spells it: `imports`, `privates`, `locals`, …
+
+entry .WarningFlag   an enumeration of `Deprecation` and `Feature`
+    Declared in `anthology.scala` but consumed by nothing in the library; the corresponding
+    options are `scalacOptions.warnings.deprecation` and `scalacOptions.warnings.feature`.
+
+entry .Javac   the Java compiler as a value, over the running JDK's own compiler
+  detail
+      `Javac(options)` drives the system Java compiler (`ToolProvider.getSystemJavaCompiler`)
+      in-process, through the same shape of API as `Scalac`: a map of named sources and a
+      classpath compile into a directory in a task of their own, and the result is a
+      `CompileProcess`. Java has one backend, so the output is always `Universe.Classfile`,
+      and a mixed Scala and Java application links into one artifact.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import logging.silentLogging
+      import probates.cancelProbate
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+      import threads.virtualThreads
+
+      val classpath: LocalClasspath = Bundler.applicationClasspath
+      val out: Path on Linux = t"/tmp/out".as[Path on Linux]
+
+      supervise:
+        val javac = Javac(List(Javac.Option(t"-Xlint:all")))
+        val process = javac(classpath)(Map(t"Hello.java" -> t"class Hello {}"), out)
+        process.complete()
+      ```
+
+      Java diagnostics become `Notice`s: errors as `Error`, warnings and mandatory warnings
+      as `Warning`, the rest as `Info`, each with a single-line span where the compiler gives
+      a position. The notice's `file` is not currently the name the source was given: it is
+      the placeholder `name`, so a tool which must attribute a Java diagnostic to its source
+      should read the message. Progress is two ticks, `0.1` on starting and `1.0` on
+      success. The compiler is the running JDK's, so there is no version parameter and
+      `.version` is the runtime's.
+  refer anthology.Compiler
+  refer anthology.javacEdges
+  entry .refresh   replaces the shared compiler instance, as happens after a crash
+  entry .compiler   the shared `javax.tools.JavaCompiler` the compiles run on
+  entry .version   the running JDK's version, `Runtime.version()`: `25.0.4`
+  entry .Option   a Java compiler option, as the flags it adds
+    detail
+        `Javac.Option(flags*)`: Java options are not version-typed, since the compiler is
+        whichever JDK is running. `Javac.Option(t"--release", t"17")` or
+        `Javac.Option(t"-Xlint:all")`.
+    entry #flags   the command-line arguments the option contributes
+  entry #options   the compiler's options, in order
+  entry #version   the running JDK's version, `Javac.version`
+  entry #JavaSource   a named in-memory source, as the `JavaFileObject` the compiler reads
+    detail
+        `javac.JavaSource(name, code)`, a `SimpleJavaFileObject` with a `string:///name` URI
+        whose content is the code. `#apply` wraps each source in one; it is public for a tool
+        which drives the `JavaCompiler` API directly.
+    entry #name   the source's name
+    entry #code   the source's content
+  entry #apply   compiles named sources against a classpath into a directory, in a task of its own
+      `javac(classpath)(sources, out)`: runs the system compiler with `-classpath`, `-d` and
+      the options, in an `async` task, and returns the `CompileProcess` at once. It needs a
+      `System`, a `Monitor` and a `Probate`, logs `CompileEvent`s (`Start`, `Running`, and
+      `CompilerCrash` on a throw) and is declared to raise `Compiler.Error`. A crash becomes
+      `CompileResult.Crash` and replaces the shared compiler.
+
+entry .javacEdges   the Java compile edge of a toolchain: `Language.Java` to `Universe.Classfile`
+  detail
+      `javacEdges(javac)` is a one-edge list carrying the `Javac` it drives. The tool, named
+      `javac`, creates the output directory, relays the compiler's events onto the
+      toolchain's `LinkEvent` channel, and maps a failure to `Link.Error` reason
+      `CompilationFailed(notices)`, a crash to `CompilerCrash` and an unconfigurable compiler
+      to `CompilerUnusable(t"javac")`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val toolchain = Toolchain(javacEdges(Javac(Nil)), jarEdges())
+      toolchain.path(anthology.Language.Java, Artifact.Jar).map(_.tool.name)   // List(t"javac", t"jar")
+      ```
+  entry .apply   the edge list for a `Javac`
+
+entry .Kotlinc   the Kotlin compiler as a value: typed options and a language version, emitting classfiles
+  detail
+      `Kotlinc[version](options)` drives the Kotlin compiler in-process, presenting the same
+      interface as `Scalac` and `Javac`: a map of named sources and a classpath compile into
+      a directory, and the compiler's messages become `Notice`s on the resulting
+      `CompileProcess`. The version parameter is one of `.Versions` (`1.9` to `2.4`), and
+      each `kotlincOptions` value is typed by the versions which accept it, so an option a
+      version lacks is a compile error in the tool.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import logging.silentLogging
+      import probates.cancelProbate
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+      import threads.virtualThreads
+
+      val classpath: LocalClasspath = Bundler.applicationClasspath
+      val out: Path on Linux = t"/tmp/out".as[Path on Linux]
+      val greeting = t"package demo\n\nfun greet(): String = \"hello\"\n"
+
+      supervise:
+        val kotlinc = Kotlinc[2.4](List(kotlincOptions.warnings.asErrors, kotlincOptions.jvmTarget(17)))
+        val process = kotlinc(classpath)(Map(t"demo/Greeting.kt" -> greeting), out)
+        process.complete()
+      ```
+
+      Kotlin reads its sources from disk, so they are written to a scratch directory for the
+      duration of the compilation, removed when it ends; a diagnostic still names the source
+      as it was given (`demo/Greeting.kt`), not the file it was written to. The Kotlin
+      standard library is never implied — the compiler runs with `-no-stdlib`, so
+      `kotlin-stdlib` goes on the classpath like every other entry — and the output is
+      classfiles, linkable as any classfile artifact, including a `Dex` or an `Apk`.
+
+      Only what the compiler says about the sources becomes a notice: an info-level message
+      with no source location (the logging `-verbose` makes copious) is dropped. The
+      compiler itself (`kotlin-compiler-embeddable`) is a compile-only dependency of
+      `anthology.kotlin`: the program which drives it puts the version it wants on its own
+      runtime classpath, and `.version` reports which.
+  refer anthology.kotlincOptions
+  refer anthology.kotlincEdges
+  refer anthology.Compiler
+  entry .Versions   the Kotlin language versions a `Kotlinc` can be declared for: `1.9` to `2.4`
+  entry .Option   a Kotlin compiler option, as the flags it adds, typed by the versions which accept it
+    detail
+        `Kotlinc.Option[-version <: Versions](flags*)`, contravariant in its version as
+        `Scalac.Option` is, so an option declared for `Kotlinc.Versions` fits any compiler.
+        An option `kotlincOptions` lacks is written directly:
+        `Kotlinc.Option[Kotlinc.Versions](t"-Xcontext-receivers")`.
+    entry #flags   the command-line arguments the option contributes
+  entry .version   the version of the embedded compiler, as it reports itself: `2.4.10`
+  entry #options   the compiler's options, in order
+  entry #commandLineArguments   the flags of every option, concatenated in order
+  entry #version   the version of the embedded compiler, `Kotlinc.version`
+  entry #apply   compiles named sources against a classpath into a directory, in a task of its own
+      `kotlinc(classpath)(sources, out)`: writes the sources to a scratch directory, runs the
+      JVM compiler with `-no-stdlib`, `-classpath`, `-d` and the options, in an `async` task,
+      and returns the `CompileProcess` at once; the scratch tree is removed when the task
+      ends. It needs a `System`, a `Monitor` and a `Probate`, logs `CompileEvent`s, and is
+      declared to raise `Compiler.Error`. Diagnostics carry the span the compiler reports,
+      mapped back onto the name each source was given; a crash becomes
+      `CompileResult.Crash`.
+
+entry .kotlincOptions   the Kotlin compiler's options as typed values
+  detail
+      Mirrors the Kotlin command line under `kotlincOptions`, each a `Kotlinc.Option` typed
+      by the versions which accept it, with nested objects `warnings`, `compatibility`,
+      `explicitApi` and `advanced`. The object is mirrored as a package of the `soundness`
+      umbrella.
+
+      ```scala
+      import soundness.*
+
+      Kotlinc[2.4](List(kotlincOptions.warnings.asErrors, kotlincOptions.jvmTarget(17)))
+      . commandLineArguments   // List(t"-Werror", t"-jvm-target", t"17")
+
+      Kotlinc[1.9](List(kotlincOptions.warnings.extra))   // does not compile
+      ```
+  refer anthology.Kotlinc
+  entry .javaParameters   `-java-parameters`: keeps parameter names for Java reflection
+  entry .noJdk   `-no-jdk`: does not put the JDK on the classpath
+  entry .progressive   `-progressive`: enables progressive mode
+  entry .verbose   `-verbose`: verbose compiler logging (its messages are not notices)
+  entry .moduleName   `-module-name name`
+  entry .jvmTarget   `-jvm-target version`: the JVM bytecode version, as a number such as `17`
+  entry .optIn   `-opt-in marker`: opts in to an annotated API
+  entry .warnings   `-nowarn`, `-Werror` and `-Wextra`
+    detail
+        `none` and `asErrors` at every version; `extra` from 2.0.
+    entry .none   `-nowarn`
+    entry .asErrors   `-Werror`: warnings fail the compilation
+    entry .extra   `-Wextra`, at 2.0 to 2.4
+  entry .compatibility   the API, language and JDK release versions to compile against
+    detail
+        `api` and `language` take a `Kotlinc.Versions` literal; `jdkRelease` a JDK number.
+    entry .api   `-api-version v`
+    entry .language   `-language-version v`
+    entry .jdkRelease   `-Xjdk-release=n`
+  entry .explicitApi   `-Xexplicit-api=strict` or `=warning`
+    detail
+        Explicit API mode, for library authors: every public declaration must state its
+        visibility and return type.
+    entry .strict   `-Xexplicit-api=strict`
+    entry .warning   `-Xexplicit-api=warning`
+  entry .advanced   `-Xno-call-assertions` and `-Xno-param-assertions`
+    detail
+        Drops the null-check assertions Kotlin emits at Java boundaries.
+    entry .noCallAssertions   `-Xno-call-assertions`
+    entry .noParameterAssertions   `-Xno-param-assertions`
+
+entry .kotlincEdges   the Kotlin compile edge of a toolchain: `Language.Kotlin` to `Universe.Classfile`
+  detail
+      `kotlincEdges(kotlinc)` is a one-edge list carrying the `Kotlinc` it drives. Only the
+      JVM backend is modelled: Kotlin's other backends emit klib rather than a universe
+      anthology knows. The tool, named `kotlinc`, maps a failure to `Link.Error` reason
+      `CompilationFailed(notices)`, a crash to `CompilerCrash` and an unconfigurable compiler
+      to `CompilerUnusable(t"kotlinc")`, as `scalacEdges` does.
+  entry .apply   the edge list for a `Kotlinc`
+
+entry .Js   JavaScript bound to a host through a module system: one application node per module system
+  detail
+      `anthology.Js(module)` is the application node with id `js-<module>`: `js-es`,
+      `js-commonjs` or `js-script`. The module system is part of the artifact's binding
+      contract — how a browser or Node imports it — so it is part of the node's identity, and
+      `sjsEdges()` registers one edge from `Universe.Sjsir` to each. It is **not exported** to
+      the `soundness` umbrella, whose `Js` is xenophile's JavaScript foreign-function
+      interface, so under `import soundness.*` it is written fully qualified.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val target = anthology.Js(anthology.Js.Module.Es)
+      Toolchain(sjsEdges()).path(Universe.Sjsir, target).map(_.tool.name)   // List(t"js-es")
+      Artifact.application(t"js-es") == target                               // true
+      ```
+
+      The link writes `main.js` into the output directory.
+  refer anthology.sjsEdges
+  refer anthology.linkerOptions
+  entry .Module   how a JavaScript host consumes the artifact: `Es`, `CommonJs` or `Script`
+    detail
+        An ECMAScript module (`ModuleKind.ESModule`), a CommonJS module, or a plain script
+        with no module system, with `#id`s `es`, `commonjs` and `script`.
+    entry #id   the module system's name within the node's id
+  entry #module   the module system the artifact is bound to
+
+entry .Wasi   a standalone WebAssembly artifact bound to a version of the WASI interface: one node per version
+  detail
+      `Wasi(version)` is the application node whose id is the version's: `wasip1`, `wasip2`
+      or `wasip3`. WASI generations are separate nodes because they determine the artifact's
+      ABI, and only `Wasi(Wasi.Version.Wasip2)` — a component-model `.wasm` whose imports and
+      exports are described by WIT — has an edge producing it, `sjsEdges.wasi()`, so asking
+      for `Wasip3` raises `NoPath` rather than silently producing something else. The
+      component edge has two prerequisites beyond the linker, both givens: a
+      `WasiToolchain`, obtainable only by probing for `wasm-tools` and `wit-bindgen`, and a
+      `.World` naming the WIT directory and world to link against. `ociEdges()` then wraps the
+      component as an `OciImage`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+      import threads.virtualThreads
+      import workingDirectories.javaBaseWorkingDirectory
+
+      val classpath: LocalClasspath = Bundler.applicationClasspath
+      val out: Path on Linux = t"/tmp/out".as[Path on Linux]
+      val linked: Path on Linux = t"/tmp/linked".as[Path on Linux]
+
+      given WasiToolchain = WasiToolchain()
+      given Wasi.World = Wasi.World(t"/home/user/project/wit".as[Path on Linux], t"my-world")
+
+      supervise:
+        Toolchain(sjsEdges(), List(sjsEdges.wasi()), ociEdges()).produce
+          ( Deliverable.Emission(out, classpath), Universe.Sjsir, OciImage, linked )
+      ```
+
+      The link writes `main.wasm` into the output directory.
+  refer anthology.WasiToolchain
+  refer anthology.sjsEdges
+  refer anthology.OciImage
+  entry .Version   the WASI generations: `Wasip1`, `Wasip2`, `Wasip3`
+    detail
+        `wasip1` (0.1) is a flat, libc-style syscall ABI on core modules; `wasip2` (0.2) is
+        the component model, with imports and exports described by WIT; `wasip3` (0.3) adds
+        native asynchrony. `#id` is the lowercase name.
+    entry #id   `wasip1`, `wasip2` or `wasip3`
+  entry .World   the WIT definitions a component link resolves against: a directory of packages and a world name
+    detail
+        `Wasi.World(directory, world)`: the directory holds `.wit` packages (with their
+        dependencies under `deps/`), and `world` names the world to link. `sjsEdges.wasi()`
+        and `ociEdges()` both take one as a given; the OCI tool reads the world's imports and
+        exports from the directory's top-level `.wit` files to describe the artifact.
+    entry #directory   the directory of `.wit` packages
+    entry #world   the name of the world to link
+  entry #version   the WASI generation the artifact is bound to
+
+entry .WasiToolchain   evidence that `wasm-tools` and `wit-bindgen` are installed, obtained only by probing
+  detail
+      A WASI component link shells out to `wasm-tools` and the scala-wasm fork of
+      `wit-bindgen`; a `WasiToolchain` value is the evidence they are present, and the only
+      way to make one is `.apply`, which runs each with `--version`. `sjsEdges.wasi()` takes
+      one as a given, so a component edge whose tooling is absent cannot be constructed, and
+      a missing tool is discovered when the toolchain is assembled rather than when a link
+      fails.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import strategies.throwUnsafely
+      import workingDirectories.javaBaseWorkingDirectory
+
+      given WasiToolchain = WasiToolchain()
+      ```
+  entry .apply   probes for `wasm-tools` and `wit-bindgen`, raising `Toolchain.Error` if either is missing
+      Runs `<tool> --version` through guillotine with the `WorkingDirectory` and
+      `Environment` in scope — supply the environment the processes should inherit
+      (`environments.javaBaseEnvironment`, or a CLI's own) — and raises `Toolchain.Error`
+      naming the first tool which does not exit successfully.
+
+entry .Wasm   a core WebAssembly module with JavaScript glue, bound to a JavaScript host
+    `anthology.Wasm` is the application node with id `wasm`, reached from `Universe.Sjsir`
+    through `sjsEdges()`: the Scala.js linker's WebAssembly backend, emitted as an ES2022
+    module which a browser or Node loads with its glue. It is **not exported** to the
+    `soundness` umbrella, whose `Wasm` is xenophile's, so it is written fully qualified. The
+    link writes `main.wasm` into the output directory, and needs no native tooling.
+
+entry .linkerOptions   settings for every format the Scala.js linker produces: IR checks, source maps, ES version, optimizer
+  detail
+      Each is a `Toolchain.Setting` addressed to `anthology.Js` (any module system),
+      `anthology.Wasm` and `Wasi` alike, editing the linker's `StandardConfig`; on a path
+      producing none of those it is rejected as `InapplicableSetting`.
+
+      ```scala
+      import soundness.*
+
+      val settings = List(linkerOptions.optimize.fast, linkerOptions.esVersion.es2020, linkerOptions.sourceMaps)
+      ```
+  entry .checkIr   checks the IR before linking
+  entry .sourceMaps   emits source maps
+  entry .esVersion   the ECMAScript version to emit: `es2015` to `es2022`
+    detail
+        One setting per version, `linkerOptions.esVersion.es2020` for example.
+    entry .es2015   targets ECMAScript 2015
+    entry .es2016   targets ECMAScript 2016
+    entry .es2017   targets ECMAScript 2017
+    entry .es2018   targets ECMAScript 2018
+    entry .es2019   targets ECMAScript 2019
+    entry .es2020   targets ECMAScript 2020
+    entry .es2021   targets ECMAScript 2021
+    entry .es2022   targets ECMAScript 2022
+  entry .optimize   whether the linker's optimizer runs: `none` or `fast`
+    detail
+        `fast` enables the optimizer, `none` disables it.
+    entry .none   disables the optimizer
+    entry .fast   enables the optimizer
+
+entry .sjsEdges   the Scala.js link edges: `Sjsir` to each JavaScript module system, to browser Wasm, and to a WASI component
+  detail
+      `sjsEdges()` registers four edges from `Universe.Sjsir`: to `anthology.Js` under the
+      ES, CommonJS and script module systems, and to `anthology.Wasm`; `.wasi()` adds the
+      fifth, to `Wasi(Wasi.Version.Wasip2)`, and exists only given a `WasiToolchain` and a
+      `Wasi.World`. All drive the Scala.js linker — a JVM library bundled with
+      `anthology.link` — over the emission directory and its classpath's directories and
+      JARs, with each `EntryPoint` as a module initializer calling its `main`, and write
+      `main.js` or `main.wasm` into the output directory. The linker's messages are logged as
+      `LinkEvent.Message`s, and a linker which throws raises `Link.Error` reason `Failed`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+      import threads.virtualThreads
+      import workingDirectories.javaBaseWorkingDirectory
+
+      val classpath: LocalClasspath = Bundler.applicationClasspath
+      val out: Path on Linux = t"/tmp/out".as[Path on Linux]
+      val linked: Path on Linux = t"/tmp/linked".as[Path on Linux]
+
+      supervise:
+        Toolchain(sjsEdges()).produce
+          ( Deliverable.Emission(out, classpath),
+            Universe.Sjsir,
+            anthology.Js(anthology.Js.Module.Es),
+            linked,
+            List(linkerOptions.optimize.fast),
+            List(EntryPoint(Fqcn(t"Main"))) )
+      ```
+
+      The emission must have been compiled with `-scalajs` (a `Scalac` retargeted to
+      `Universe.Sjsir`) against the Scala.js runtime JARs; a classfile compilation has no
+      path to any of these nodes.
+  refer anthology.linkerOptions
+  refer anthology.Wasi
+  entry .apply   the four edges needing no native tooling: three JavaScript module systems and browser Wasm
+      The tool of each is named by its node's id (`js-es`, `js-commonjs`, `js-script`,
+      `wasm`), and the Wasm edge fixes ES2022 and the WebAssembly backend.
+  entry .wasi   the edge to `Wasi(Wasip2)`, given a probed `WasiToolchain` and a `Wasi.World`
+      Configures the linker for a `WasmComponent` module against the world's WIT directory
+      and world name; the link runs `wasm-tools` and `wit-bindgen` as it goes. A WASI link
+      whose native tooling is absent is not expressible, since the given cannot be made.
+
+entry .Bundler   the running application's classpath, for a build which must package itself
+  detail
+      Its one public member, `.applicationClasspath`, is the classpath the running program
+      was loaded from. A staging rig which must fold its own running classpath into the JARs
+      it produces pairs it with its compiled output as a `Deliverable.Emission` and packages
+      the two through the `Artifact.Jar` edge, so the JAR carries the rig's own executor and
+      dependencies:
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+      import threads.virtualThreads
+      import workingDirectories.javaBaseWorkingDirectory
+
+      def stage(out: Path on Linux, executor: Fqcn)(using Monitor): Path on Linux =
+        Toolchain(jarEdges()).produce
+          ( Deliverable.Emission(out, Bundler.applicationClasspath),
+            Universe.Classfile,
+            Artifact.Jar,
+            out,
+            List(jarOptions.name(t"staged.jar")),
+            List(EntryPoint(executor)) )
+      ```
+
+      The JAR assembly itself is not public: it is what the `jarEdges` tools run.
+  entry .applicationClasspath   the classpath of the running application, read from its own classloader
+      `LocalClasspath.of(Classloader[Bundler.type])`: introspected from the classloader which
+      loaded this class — its own, rather than the thread's context loader, which a pooled
+      thread may have inherited from whatever ran first — falling back to the
+      `java.class.path` property. Under a host such as a test runner, which isolates code in
+      a `URLClassLoader`, this is the classpath the code actually came from.
+
+entry .Library   a JAR of one universe's unlinked compilation output, for downstream assembly: one node per universe
+  detail
+      `Library(universe)` is the application node with id `library-<universe>`
+      (`library-classfile`, `library-sjsir`, `library-nir`), reached from its universe
+      through `jarEdges()`. It packages only the compilation's own output — classfiles, and
+      any `.sjsir` or `.nir` alongside them, with their TASTy — not the classpath, and
+      records no entry point, so entry points are ignored. A library's universe must match
+      its compilation's: `Toolchain(jarEdges()).path(Universe.Sjsir, Library(Universe.Nir))`
+      raises `NoPath`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+      import threads.virtualThreads
+      import workingDirectories.javaBaseWorkingDirectory
+
+      val classpath: LocalClasspath = Bundler.applicationClasspath
+      val out: Path on Linux = t"/tmp/out".as[Path on Linux]
+      val linked: Path on Linux = t"/tmp/linked".as[Path on Linux]
+
+      supervise:
+        Toolchain(jarEdges()).produce
+          ( Deliverable.Emission(out, classpath), Universe.Sjsir, Library(Universe.Sjsir), linked )
+      ```
+
+      The JAR is named `main.jar` unless `jarOptions.name` says otherwise.
+  refer anthology.jarEdges
+  entry #universe   the universe whose output the library packages
+
+entry .jarOptions   settings for the JAR-packaging edges
+  detail
+      Only the filename: `jarOptions.name(t"app.jar")`, addressed to `Artifact.Jar` and
+      every `Library` node alike.
+  entry .name   the JAR's filename within the output directory, for `Artifact.Jar` and `Library` nodes
+      The default is `main.jar`.
+
+entry .jarEdges   the JAR-packaging edges: `Classfile` to `Artifact.Jar`, and each universe to its `Library`
+  detail
+      `jarEdges()` registers four edges, needing no external tool: from `Universe.Classfile`
+      to `Artifact.Jar`, and from each of `Universe.Classfile`, `Universe.Sjsir` and
+      `Universe.Nir` to its `Library`. Both tools' settings are the JAR's filename
+      (`jarOptions.name`, default `main.jar`).
+
+      The `jar` tool bundles the emission directory *and the whole classpath*: a directory
+      entry's files are added (omitting any `MANIFEST.MF` and `plugin.properties`), a JAR
+      entry's entries are re-emitted verbatim without recompression (omitting its manifest),
+      and duplicates by path are dropped, the first occurrence winning. The manifest records
+      `Created-By: Soundness` and, from the single `EntryPoint`, `Main-Class`; no entry point
+      gives a JAR without one, and two raise `Link.Error` reason `ManyEntryPoints`. The
+      `library` tool bundles only the emission directory and ignores entry points. A zip,
+      path, I/O, truncation or filename fault is `Link.Error` reason `Packaging(detail)`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+      import threads.virtualThreads
+      import workingDirectories.javaBaseWorkingDirectory
+
+      val classpath: LocalClasspath = Bundler.applicationClasspath
+      val out: Path on Linux = t"/tmp/out".as[Path on Linux]
+      val linked: Path on Linux = t"/tmp/linked".as[Path on Linux]
+
+      supervise:
+        val jar: Path on Linux =
+          Toolchain(jarEdges()).produce
+            ( Deliverable.Emission(out, classpath),
+              Universe.Classfile,
+              Artifact.Jar,
+              linked,
+              List(jarOptions.name(t"app.jar")),
+              List(EntryPoint(Fqcn(t"Main"))) )
+
+        sh"java -jar $jar".exec[Text]()
+      ```
+  refer anthology.Library
+  refer anthology.jarOptions
+  entry .apply   the four packaging edges
+
+entry .nativeOptions   settings for native binaries: garbage collector, build mode and link-time optimization
+  detail
+      Each is a `Toolchain.Setting` addressed to every `Artifact.Binary` node, editing Scala
+      Native's `NativeConfig`; on a path producing no binary it is rejected as
+      `InapplicableSetting`. The defaults are `gc.immix`, `mode.debug` and `lto.none`.
+
+      ```scala
+      import soundness.*
+
+      val release = List(nativeOptions.mode.releaseFast, nativeOptions.gc.commix, nativeOptions.lto.thin)
+      ```
+  entry .gc   the garbage collector: `immix`, `commix`, `boehm` or `none`
+    detail
+        Immix is the default; Commix its concurrent variant; Boehm the conservative
+        collector; `none` allocates without collecting.
+    entry .immix   the Immix collector (the default)
+    entry .commix   the concurrent Commix collector
+    entry .boehm   the Boehm conservative collector
+    entry .none   no garbage collection
+  entry .mode   the build mode: `debug`, `releaseFast` or `releaseFull`
+    detail
+        `debug` is the default and quickest to link; the release modes optimise, `releaseFull`
+        most aggressively.
+    entry .debug   a debug build (the default)
+    entry .releaseFast   an optimised build, favouring link time
+    entry .releaseFull   a fully optimised build
+  entry .lto   link-time optimization: `none`, `thin` or `full`
+    detail
+        `none` is the default.
+    entry .none   no link-time optimization (the default)
+    entry .thin   ThinLTO
+    entry .full   full LTO
+
+entry .nativeEdges   the native link edges: `Nir` to an `Artifact.Binary` per target triple, through `clang`
+  detail
+      `nativeEdges(triples*)` probes once for `clang` and `clang++` on the `PATH` (with the
+      `WorkingDirectory` and `Environment` in scope), raising `Toolchain.Error` if either is
+      missing, and registers one edge from `Universe.Nir` to `Artifact.Binary(triple)` for
+      each triple given — or for the build host's own, `Triple.host`, when none is. The tool
+      drives the Scala Native build (bundled with `anthology.nir`) over the emission
+      directory and its classpath, requires exactly one `EntryPoint` as the binary's main
+      class (`NoEntryPoint` otherwise), and writes the binary, named `main`, below the
+      output directory. Targets beyond the build host require a C toolchain and sysroot
+      capable of cross-compiling to them.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+      import threads.virtualThreads
+      import workingDirectories.javaBaseWorkingDirectory
+
+      val classpath: LocalClasspath = Bundler.applicationClasspath
+      val out: Path on Linux = t"/tmp/out".as[Path on Linux]
+      val linked: Path on Linux = t"/tmp/linked".as[Path on Linux]
+
+      supervise:
+        Toolchain(nativeEdges(Triple.Arm64MacOs, Triple.X64Linux)).produce
+          ( Deliverable.Emission(out, classpath),
+            Universe.Nir,
+            Artifact.Binary(Triple.X64Linux),
+            linked,
+            List(nativeOptions.mode.releaseFast, nativeOptions.gc.commix),
+            List(EntryPoint(Fqcn(t"Main"))) )
+      ```
+
+      The emission must have been compiled into `Universe.Nir` — a `Scalac` retargeted with
+      a `NirPlugin` given — against the Scala Native runtime JARs. The compiler's own JARs
+      are compile-classpath only and unreachable at native run time, which is why code
+      which uses the compiler only inside macros still links. A build which throws raises
+      `Link.Error` reason `Failed`.
+  refer anthology.nativeOptions
+  refer anthology.Triple
+  refer anthology.NirPlugin
+  entry .apply   probes for `clang` and `clang++`, then one edge per triple (or the host's)
+      Raises `Toolchain.Error(t"clang")` for a missing compiler, and the same for a build host
+      whose triple is unrecognised when no triples are named.
+
+entry .Dex   Dalvik bytecode bound to the Android runtime: an archive of `classes*.dex` files
+  detail
+      The application node with id `dex`, reached from `Universe.Classfile` through
+      `dexEdges()`: a zip archive, `main.dex.jar`, of `classes.dex`, `classes2.dex`, …, which
+      ART and a `DexClassLoader` consume directly, and the intermediate node on the path from
+      classfiles to an `Apk`. DEX carries no entry-point metadata — ART is told its main class
+      at invocation — so the edge ignores entry points.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+      import threads.virtualThreads
+      import workingDirectories.javaBaseWorkingDirectory
+
+      val classpath: LocalClasspath = Bundler.applicationClasspath
+      val out: Path on Linux = t"/tmp/out".as[Path on Linux]
+      val linked: Path on Linux = t"/tmp/linked".as[Path on Linux]
+
+      supervise:
+        Toolchain(dexEdges()).produce(Deliverable.Emission(out, classpath), Universe.Classfile, Dex, linked)
+      ```
+
+      Scala 3 output dexes cleanly: the compiler emits Java 17 class files with lambdas as
+      `invokedynamic` but no `ConstantDynamic` and no nest attributes, so D8's weakest
+      desugaring areas are untouched, and API level 26 needs no platform stubs. Libraries
+      which need Panama or `java.net.http` have no Android runtime to run on, dexed or not.
+  refer anthology.dexEdges
+  refer anthology.dexOptions
+  refer anthology.Apk
+
+entry .dexOptions   settings for dexing: the minimum API level, the platform stubs, and D8's mode
+  detail
+      Each is a `Toolchain.Setting` addressed to the `Dex` node. The defaults are API level
+      26, debug mode and no platform stubs. `apkOptions.minApi` sets the level on `Dex` and
+      `Apk` together, which an APK build should prefer.
+  entry .minApi   the lowest Android API level the output must run on (default 26)
+      Lower levels oblige D8 to desugar more. Levels below 24 lack native default interface
+      methods, which Scala 3 emits for trait members, so they additionally demand `.platform`
+      to desugar against.
+  entry .platform   an Android SDK's platform stubs, `platforms/android-<n>/android.jar`
+      Needed only below API level 24, or when the program references platform types.
+  entry .mode   D8's compilation mode: `debug` or `release`
+    detail
+        `debug` is the default.
+    entry .debug   `CompilationMode.DEBUG`
+    entry .release   `CompilationMode.RELEASE`
+
+entry .dexEdges   the dexing edge: `Classfile` to `Dex`, driving R8's D8 through its API
+  detail
+      `dexEdges()` is a one-edge list. The tool, named `dex`, feeds D8 (a JVM library bundled
+      with `anthology.dex`) the emission directory's classfiles and the whole classpath —
+      archives wholesale, directories as their enumerated `.class` files, with
+      `module-info.class` excluded — and writes `main.dex.jar` into the output directory.
+      D8's errors and warnings are logged as `LinkEvent.Message`s at `warn`; a run which
+      throws raises `Link.Error` reason `Failed`.
+  entry .apply   the dexing edge
+
+entry .Apk   a complete, installable Android package: dexed code, a binary manifest, aligned and signed
+  detail
+      The application node with id `apk`, reached from `Universe.Classfile` through `Dex` by
+      `Toolchain(dexEdges(), apkEdges())`. The tool encodes a binary `AndroidManifest.xml`
+      (`Axml`), stores the dex files uncompressed and 4-byte aligned so the runtime can
+      memory-map them, and signs the package with APK Signature Scheme v2 (`.Signer`) — a
+      debuggable, emulator-installable `app.apk`, produced with no Android SDK build tool,
+      only a keystore. Exactly one `EntryPoint` is required: its class is the launcher
+      activity.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+      import threads.virtualThreads
+      import workingDirectories.javaBaseWorkingDirectory
+
+      val classpath: LocalClasspath = Bundler.applicationClasspath
+      val out: Path on Linux = t"/tmp/out".as[Path on Linux]
+      val staged: Path on Linux = t"/tmp/staged".as[Path on Linux]
+
+      supervise:
+        Toolchain(dexEdges(), apkEdges()).produce
+          ( Deliverable.Emission(out, classpath),
+            Universe.Classfile,
+            Apk,
+            staged,
+            List
+              ( apkOptions.packageName(t"com.example.app"),
+                apkOptions.label(t"Example"),
+                apkOptions.version(3, t"1.2"),
+                apkOptions.permission(t"android.permission.INTERNET") ),
+            List(EntryPoint(Fqcn(t"com.example.MainActivity"))) )
+      ```
+
+      The configuration's defaults (`Apk.Configuration.default`) sign with the conventional
+      Android debug keystore, `~/.android/debug.keystore`, which Android Studio shares; a
+      release build names its own with `apkOptions.keystore`. The dex archive lands in
+      `staged/dex/` and the package in `staged/app.apk`, alongside the `unsigned.apk` it was
+      signed from.
+  refer anthology.apkEdges
+  refer anthology.apkOptions
+  refer anthology.Dex
+  refer anthology.Axml
+  entry .Configuration   what a package needs beyond its code: API levels, names, permissions and the signing key
+    detail
+        The settings type of the APK tool, which `apkOptions` edits: the API level range,
+        the package name and human label, the version code and name, the requested runtime
+        permissions, and the PKCS#12 keystore, its password, the key's alias and the key's
+        password. The launcher activity is not here: it is the path's `EntryPoint`.
+    entry .default   the defaults: API 26 to 34, `dev.soundness.app`, version 1 `1.0`, the Android debug keystore
+        `minApi` 26, `targetApi` 34, package `dev.soundness.app`, version code 1 and name
+        `1.0`, label `Soundness App`, no permissions, and the debug keystore
+        `~/.android/debug.keystore` with store password `android`, alias `androiddebugkey`
+        and key password `android`.
+    entry #minApi   the lowest Android API level the application runs on
+    entry #targetApi   the API level the application targets
+    entry #packageName   the Android package name
+    entry #versionCode   the integer version code
+    entry #versionName   the human-readable version
+    entry #label   the application's label
+    entry #permissions   the runtime permissions requested, by name
+    entry #keystore   the path of the PKCS#12 keystore to sign with
+    entry #storePass   the keystore's password
+    entry #alias   the alias of the signing key within the keystore
+    entry #keyPass   the signing key's password
+  entry .Manifest   builds the `Axml.Element` tree of an Android manifest
+    detail
+        `Apk.Manifest(packageName, versionCode, versionName, minSdk, targetSdk, label,
+        activity, permissions)` returns the `manifest` element — `uses-sdk`, one
+        `uses-permission` per permission, and an `application` holding the exported launcher
+        `activity` with its `MAIN`/`LAUNCHER` intent filter — ready for `Axml.encode`. The
+        attribute resource IDs are the stable public `android.R.attr` constants, so no
+        platform `android.jar` is consulted.
+    entry .apply   the manifest element for the given package, versions, API levels, label, activity and permissions
+  entry .Signer   APK Signature Scheme v2, over a finished unsigned package
+    detail
+        Signs an aligned, unsigned ZIP by inserting an APK Signing Block between its entries
+        and its central directory; the signature covers a SHA-256 digest of the whole file in
+        1 MiB chunks, so any later byte change invalidates it, which is why signing is the
+        last step. The RSA signature (`SHA256withRSA`), keystore and certificate use
+        `java.security` directly, so the key must be an RSA key in a PKCS#12 store. No
+        Android SDK tool is involved: this replaces `apksigner`.
+    entry .sign   signs the unsigned package's bytes with the key and certificate from a keystore
+        `Apk.Signer.sign(unsigned, keystore, storePass, alias, keyPass)` returns the signed
+        package's bytes.
+
+entry .Axml   Android binary XML: the encoding of `AndroidManifest.xml` inside a package
+  detail
+      Android reads a package's manifest as binary XML, with a string pool, a resource map
+      and typed attribute values, not as text. `Axml` models a document as `.Element`s with
+      `.Attribute`s whose values are a `.Value` — a string, an integer or a boolean, since
+      Android reads each attribute at a specific type — and `.encode` writes the binary form.
+      `Apk.Manifest` builds the tree an application needs; `Axml` is public for a manifest
+      which needs more.
+
+      ```scala
+      import soundness.*
+
+      val manifest =
+        Axml.Element
+          ( t"manifest",
+            List(Axml.Attribute(Unset, t"package", Unset, Axml.Value.Str(t"com.example.app"))),
+            Nil )
+
+      val bytes: Data = Axml.encode(manifest)
+      ```
+  refer anthology.Apk
+  entry .androidUri   the Android resources namespace, `http://schemas.android.com/apk/res/android`
+  entry .androidPrefix   the prefix a manifest conventionally binds the namespace to, `android`
+  entry .Value   a typed attribute value: `Str(text)`, `Num(value)` or `Bool(flag)`
+      Android reads each attribute at a specific `TypedValue` type, so the encoder commits to
+      one rather than emitting every value as a string: a string references the pool, an
+      integer or boolean is stored inline.
+  entry .Attribute   an attribute: its namespace, local name, public resource ID and typed value
+    detail
+        `Axml.Attribute(namespace, name, resourceId, value)`: the namespace is `.androidUri`
+        for an `android:` attribute or `Unset` for an unnamespaced one such as `package`; the
+        resource ID is the public `android.R.attr` constant Android identifies the attribute
+        by, or `Unset`.
+    entry #namespace   the namespace URI, or `Unset`
+    entry #name   the local name
+    entry #resourceId   the public resource ID, or `Unset`
+    entry #value   the typed value
+  entry .Element   an element: its name, attributes and children
+    detail
+        `Axml.Element(name, attributes, children)`.
+    entry #name   the element's name
+    entry #attributes   the element's attributes, in order
+    entry #children   the child elements, in order
+  entry .encode   the binary XML document for an element tree, as `Data`
+      Writes the chunk header, the string pool (every name, namespace and string value,
+      interned in order of first use), the resource map of the attributes' IDs, the
+      `android` namespace declaration and the element tree, each chunk 4-byte aligned.
+
+entry .apkOptions   settings for an Android package: API levels, package name, label, version, permissions, keystore
+  detail
+      Each is a `Toolchain.Setting` editing `Apk.Configuration` on the `Apk` node; `.minApi`
+      alone addresses `Dex` as well, since the level governs both how D8 desugars and what
+      the manifest declares. Dex settings other than the level (`dexOptions.mode`,
+      `dexOptions.platform`) are addressed to the `Dex` node.
+
+      ```scala
+      import soundness.*
+
+      val settings =
+        List
+          ( apkOptions.minApi(26),
+            apkOptions.targetApi(34),
+            apkOptions.packageName(t"com.example.app"),
+            apkOptions.keystore(t"/keys/release.p12", t"secret", t"release", t"secret") )
+      ```
+  entry .minApi   the lowest API level, applied to both `Dex` and `Apk`
+      Dispatches on the format it is applied to: the `DexConfiguration` on `Dex`, the
+      `Apk.Configuration` on `Apk`.
+  entry .targetApi   the API level the application targets
+  entry .packageName   the Android package name
+  entry .label   the application's human label
+  entry .version   the version code and version name, together
+  entry .permission   adds a requested runtime permission, such as `android.permission.VIBRATE`
+      Repeatable: each call appends one.
+  entry .keystore   the PKCS#12 keystore path, its password, the key alias and the key password
+
+entry .apkEdges   the packaging edge: `Dex` to `Apk`
+  detail
+      `apkEdges()` is a one-edge list, consuming the dex archive the `Dex` edge produced
+      before it on the path, so `Toolchain(dexEdges(), apkEdges())` is the usual pairing.
+      The tool, named `apk`, requires exactly one `EntryPoint` (`NoEntryPoint` or
+      `ManyEntryPoints` otherwise), encodes the manifest, stores each `classes*.dex` from the
+      archive uncompressed and 4-byte aligned, writes `unsigned.apk`, signs it, and writes
+      `app.apk`. A dex archive which does not read, or a package which does not write, is
+      `Link.Error` reason `Packaging(detail)`.
+  entry .apply   the packaging edge
+
+entry .OciConfiguration   the metadata written into an OCI artifact's config: architecture, OS, author, annotations
+  detail
+      The settings type of the OCI tool, which `ociOptions` edits; the defaults are
+      architecture `wasm`, OS `wasip2`, no author and no annotations. `#os` names the WASI
+      generation the component was built for: it is the field a container runtime
+      dispatches on, and it moves with WASI — `wasip1` for the preview-1 syscall ABI,
+      `wasip2` for the component model, `wasip3` once native async lands.
+
+      ```scala
+      import soundness.*
+
+      val config = OciConfiguration()
+      (config.architecture, config.os)   // (t"wasm", t"wasip2")
+      ```
+  entry #architecture   the platform architecture, `wasm` by default
+  entry #os   the platform OS, the WASI generation: `wasip2` by default
+  entry #author   the artifact's author, or `Unset`
+  entry #annotations   OCI annotations, as a map
+
+entry .OciImage   a WASI component packaged as a Wasm OCI artifact, written as an `oci-archive`
+    The application node with id `oci`, reached from `Universe.Sjsir` through the `wasip2`
+    component by `Toolchain(sjsEdges(), List(sjsEdges.wasi()), ociEdges())`: the form a
+    container runtime with a Wasm shim (`io.containerd.wasmtime.v1`) schedules and a
+    registry distributes. The tool writes `image.tar` into the output directory, with the
+    component in `linked/wasip2/` beside it. Its `component` metadata — the interfaces the
+    workload imports and exports — is read from the `Wasi.World` the component was linked
+    against, not from the binary; a world which exports `wasi:http/incoming-handler@0.2.0`
+    is marked with the target `wasi:http/proxy@0.2.0`, which is what lets a host know the
+    component is servable.
+
+entry .ociOptions   settings for an OCI image: architecture, OS, author and annotations
+  detail
+      Each is a `Toolchain.Setting` editing `OciConfiguration` on the `OciImage` node.
+
+      ```scala
+      import soundness.*
+
+      val settings =
+        List
+          ( ociOptions.author(t"Example Ltd"),
+            ociOptions.annotation(t"org.opencontainers.image.version", t"1.2.0") )
+      ```
+  entry .architecture   the platform architecture (default `wasm`)
+  entry .os   the platform OS, the WASI generation (default `wasip2`)
+  entry .author   the artifact's author
+  entry .annotation   adds one OCI annotation, by key and value
+      Repeatable: each call defines one more key.
+
+entry .ociEdges   the wrapping edge: the `wasip2` component to its `OciImage`
+  detail
+      `ociEdges()` is a one-edge list from `Wasi(Wasi.Version.Wasip2)` to `OciImage`, taking
+      the `Wasi.World` as a given. The tool, named `oci`, consumes the component the
+      preceding edge (`sjsEdges.wasi()`) linked, builds the image through embarcadero's
+      `Image.wasm` with the world's imports and exports read from the top-level `.wit` files
+      of the world's directory (only that level is searched: `deps/` holds the packages the
+      world draws on, and none declares the world itself; a world that cannot be found
+      contributes no interfaces rather than failing), and writes `image.tar`. The edge
+      itself needs only the world — it is the component edge whose provider probes the WASI
+      toolchain — so its graph shape can be checked without `wasm-tools` installed. A write
+      which throws raises `Link.Error` reason `Failed`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      given Wasi.World = Wasi.World(t"/home/user/project/wit".as[Path on Linux], t"main")
+      val toolchain = Toolchain(ociEdges())
+      safely(toolchain.path(Universe.Sjsir, OciImage))   // Unset: the component edge is missing
+      ```
+  refer anthology.OciImage
+  refer anthology.Wasi
+  entry .apply   the wrapping edge, given a `Wasi.World`

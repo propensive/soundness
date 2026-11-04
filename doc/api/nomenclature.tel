@@ -1,0 +1,650 @@
+tel 1.0
+
+base nomenclature
+import soundness
+
+info   names whose validity rules are part of their type, checked as the code compiles and as text arrives
+detail
+    _Nomenclature_ represents a name — a filename, a DOM id, a CSS class, a Git branch, a test
+    id — as a `Name[plane]`: text which is known to satisfy the rules of the namespace, or
+    **plane**, it belongs to. A plane is a marker type with a `Nominative` given which states
+    its rules as an intersection of constraint types, `MustNotContain["/"] & MustNotEqual[".."]`,
+    and a `Name` for that plane exists only if its text satisfies every one of them: a literal
+    written with the `n"…"` interpolator is checked while the code compiles, and text arriving
+    at runtime becomes a `Name` through `Name[plane](text)` or `text.as[Name[plane]]`, which
+    raise a `Name.Error` naming the one rule it broke. Holding a `Name[plane]` is therefore
+    proof that it is valid in that plane.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+    import errorDiagnostics.stackTracesDiagnostics
+
+    sealed trait Tag
+    inline given Tag is Nominative under MustNotStart["0"] & MustNotContain["."] & MustNotEqual[""] = !!
+
+    val tag: Name[Tag] = n"release"
+    val checked: Name[Tag] = Name[Tag](t"v2")
+    capture[Name.Error](Name[Tag](t"0hello")).message.show
+    // t"the name 0hello is not valid because it must not start with 0"
+    ```
+
+    A `Name` is a subtype of `Text`, so it is passed wherever text is and compares equal to
+    the text it wraps; it is covariant in its plane, so a `Name[A & B]` serves where a
+    `Name[A]` or a `Name[B]` is required, which is how one `n"…"` literal takes the type of
+    every plane in scope whose rules it satisfies. The rules are `Rule` objects paired with
+    `Check` types — `MustStart`, `MustNotStart`, `MustEnd`, `MustNotEnd`, `MustContain`,
+    `MustNotContain`, `MustNotEqual`, `MustMatch` and `MustNotMatch`, each parameterised by a
+    literal — and three predicate rules parameterised by their own description instead:
+    `JavaIdentifier`, `CssIdentifier` and `DomIdentifier`. A rule knows how to describe itself,
+    so the compile error for a bad literal and the runtime error for bad input say the same
+    thing, in the same words. The planes `DomId`, `CssClass` and `Required` are built in; the
+    filesystem planes of galilei (`Linux`, `Windows`, `MacOs`, …), the `Classpath` plane of
+    hellenism and the `Probing` plane of probably's test ids are defined the same way.
+
+    The library has two source sets:
+
+    - `nomenclature.core` — `Name`, `n"…"`, `Nominative`, `Rule`, `Check`, the `Must…` rules,
+      the identifier rules and the three built-in planes. It compiles for the JVM, Scala.js and
+      Scala Native.
+    - `nomenclature.lexicon` — `Moniker` and `Vocabulary`: human-friendly names of the shape
+      `brilliant-leopard` for small integers, built from word lists read from any streamable
+      source.
+
+    A `Nominative` given is declared `inline given … = !!`: the macros behind `n"…"` and
+    `Name[plane](…)` read only its *type*, so no instance is ever constructed, and `!!` is the
+    erased placeholder. Since `import pkg.*` does not import givens, a plane declared in a
+    library's companion object is found through implicit scope, while one declared at the top
+    of a package has to be imported by name. Everything is exported to the `soundness`
+    umbrella.
+
+refer nomenclature.Name
+refer nomenclature.Nominative
+refer nomenclature.Rule
+refer nomenclature.Moniker
+
+entry .Name   text proven valid in a naming plane: `Name[plane]`, a subtype of `Text`
+  detail
+      `Name[plane]` is the opaque type `nomenclature.internal.Name[plane]`, exported here. It is
+      a `Text` which has passed every rule of `plane`, where `plane` is a type with a
+      `Nominative` given in implicit scope. A name is made in three ways: `n"…"` writes a
+      literal and checks it against every plane in scope while the code compiles;
+      `Name[plane](text)` checks runtime text against one plane's rules and raises `Name.Error`
+      if a rule fails; and `text.as[Name[plane]]` is the same check through the `Decodable`
+      typeclass. A name which exists is valid, so code which takes a `Name[Linux]` never
+      re-validates it. The companion's members — `Name.apply`, `Name.verify`, its givens,
+      `Name.Error` and `Name.Extractor` — are documented under `nomenclature.internal.Name`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import errorDiagnostics.stackTracesDiagnostics
+
+      sealed trait Branch
+      inline given Branch is Nominative under MustNotContain[" "] & MustNotStart["-"] = !!
+
+      val literal: Name[Branch] = n"main"
+      val checked: Name[Branch] = Name[Branch](t"feature/x")
+      val decoded: Name[Branch] = t"hotfix".as[Name[Branch]]
+      val text: Text = checked
+      checked == t"feature/x"
+      ```
+
+      `Name` is covariant in its plane, so `Name[A & B]` is a `Name[A]` and a `Name[B]`: a
+      name valid in several planes at once has their intersection as its plane. Two planes
+      with identical rules are still different types, so a `Name[Branch]` is not accepted
+      where a `Name[Tag]` is required.
+
+      The rules are checked in the order the plane's intersection writes them, and the first
+      one violated is the one reported, so an error names a single concrete fault. The check
+      is run at compile time for a literal and at runtime for text, by the same `Rule.check`
+      predicates, so the two never disagree.
+  refer nomenclature.n
+  refer nomenclature.Nominative
+  refer nomenclature.Rule
+
+entry .n   the `n"…"` interpolator: a name literal, checked against the planes in scope as the code compiles
+    `n"main"` is a `Name` whose plane is the intersection of every plane with a `Nominative`
+    given in scope whose rules the literal satisfies, so one literal serves wherever any of
+    those planes is required, and it is a compile error if no plane in scope accepts it: _the
+    name `.` is not a valid identifier in any namespace in scope_. With an expected type
+    `Name[Tag]`, a literal which breaks one of `Tag`'s rules fails to conform, since `Tag` is
+    not among the planes it was found valid in.
+
+    ```scala
+    import soundness.*
+
+    sealed trait Tag
+    inline given Tag is Nominative under MustNotStart["0"] & MustNotContain["."] = !!
+
+    val tag: Name[Tag] = n"release"
+    val bad: Name[Tag] = n"0hello"   // does not compile
+    ```
+
+    The interpolator takes no `$`-substitutions, since the text must be known as the code
+    compiles; text known only at runtime is checked with `Name[plane](text)`. The literal's
+    characters are taken verbatim, without escape processing. As a pattern, `case n"main" =>`
+    matches a `Name` equal to the literal, and the literal is checked against the scrutinee's
+    plane first.
+
+    Which planes are in scope decides what `n"…"` infers: a plane declared in a companion
+    object is always visible through implicit scope, and the umbrella's own planes — the
+    filesystem planes, `Classpath`, `Probing` — are among the candidates, so an unascribed
+    `n"…"` has a wide intersection type. Tightening a plane's rules narrows what it accepts:
+
+    ```scala fuel
+    frame
+      label One rule: a tag may not be empty
+      code
+          locally:
+            sealed trait Tag
+            inline given Tag is Nominative under MustNotEqual[""] = !!
+            val tag: Name[Tag] = n"v1.0-beta"
+    frame
+      label Two rules: nor may it contain a dot
+      code
+          locally:
+            sealed trait Tag
+            inline given Tag is Nominative under MustNotEqual[""] & MustNotContain["."] = !!
+            val tag: Name[Tag] = n"v1-beta"
+            val dotted: Name[Tag] = n"v1.0-beta"   // does not compile
+    frame
+      label Three rules: and it must match a pattern
+      code
+          locally:
+            sealed trait Tag
+            inline given Tag is Nominative under
+                MustNotEqual[""] & MustNotContain["."] & MustMatch["v[0-9]+(-[a-z]+)?"] = !!
+            val tag: Name[Tag] = n"v1-beta"
+            val capital: Name[Tag] = n"v1-Beta"   // does not compile
+    ##
+    ```
+
+entry .Nominative   the typeclass which gives a plane its rules: `plane is Nominative under rules`
+  detail
+      A `Nominative` is a `Typeclass` whose `Self` is the plane and whose `Limit` (from
+      `Limited`, written with the `under` alias) is the plane's rules: an intersection of
+      `Check` types, each a rule applied to a literal, such as
+      `MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]`. The
+      macros behind `n"…"`, `Name[plane](text)` and `text.as[Name[plane]]` summon the given
+      for a plane and read its `Limit` type to find which rules to run, in the order they
+      are written.
+
+      ```scala
+      import soundness.*
+
+      sealed trait Branch
+      object Branch:
+        type Rules = MustNotContain[" "] & MustNotStart["-"] & MustNotEnd["/"]
+        inline given nominative: Branch is Nominative under Rules = !!
+      ```
+
+      The given is declared `inline given … = !!`: only its type is ever read, so no instance
+      is constructed and `!!` stands in for the value. It belongs in the plane's companion,
+      where implicit scope finds it with no import; a plane with a `Rules` alias, as the
+      filesystem planes have, lets the same rules be reused by a `Path`'s element type. A
+      rule whose parameter is not a string literal type cannot be evaluated at compile time:
+      `n"…"` skips such a plane, and `Name[plane](text)` and `Name.verify` report it as a bad
+      type.
+  refer nomenclature.Name
+  refer nomenclature.Check
+  entry .apply   `Nominative[plane, rules]()`: a runtime instance, for code which needs a value
+      Makes a `plane is Nominative under rules` instance. The macros read a given's type and
+      never its value, so a plane's given is usually `!!`; this constructor is for a given
+      which must be a real value, as when it is passed explicitly.
+
+entry .Rule   what a constraint object is: a predicate on a name, and a phrase describing it
+  detail
+      Every constraint, `MustStart`, `MustNotContain`, `CssIdentifier` and the rest, is an
+      object extending `Rule` with two things: `#check`, a predicate of the name and the rule's
+      parameter, and `#describe`, which turns the parameter into the phrase the error uses,
+      _must start with x-_. Alongside the object is a sealed trait of the same name extending
+      `Check[parameter]`, which is the type written in a plane's rules; the macros find the
+      object as the trait's companion and call `check` on it, at compile time for a literal
+      and at runtime for text.
+
+      A new rule is the pair:
+
+      ```scala
+      import soundness.*
+
+      object MustBeShort extends Rule({ limit => m"must be no longer than $limit characters" }, (name, limit) => name.length <= limit.s.toInt)
+      sealed trait MustBeShort[limit <: Label] extends Check[limit]
+
+      sealed trait Handle
+      inline given Handle is Nominative under MustBeShort["12"] & MustNotContain[" "] = !!
+      ```
+
+      The description is part of the rule rather than written at each use, so the compile
+      error for a bad literal and the runtime `Name.Error` say the same thing. A rule's
+      parameter is always a string literal type, which is read as text; a rule which has no
+      natural parameter, as `JavaIdentifier` has none, takes the description to use in the
+      error as its parameter instead.
+  refer nomenclature.Check
+  refer nomenclature.Nominative
+  entry #describe   the phrase a violation is reported with, from the rule's parameter
+      A `Text => Message` function: for `MustNotStart` and the parameter `0`, _must not start
+      with 0_. `Name.Error`'s message is _the name … is not valid because it_ followed by
+      this phrase.
+  entry #check   whether a name satisfies the rule: `(name, parameter) => Boolean`
+      The predicate, taking the candidate text and the rule's parameter. It is called at
+      runtime by `Name[plane](text)` and at compile time, by the macro, for an `n"…"` literal.
+
+entry .Check   the type of a rule applied to its parameter: `MustStart["x-"]` is a `Check["x-"]`
+    The trait a rule's sealed trait extends, parameterised by the rule's literal parameter. A
+    plane's rules are an intersection of `Check`s, and the macros take the intersection apart
+    into its `Check` members, read each one's parameter as a string constant, and find the
+    `Rule` object which shares its name. A `Check` is never instantiated: it is a type-level
+    description only.
+
+entry .MustStart   the rule that a name begins with the given text: `MustStart["x-"]`
+    _must start with x-_. The whole prefix must be at the beginning: `x-ray` and `x-` alone
+    pass `MustStart["x-"]`, and `ray-x-` does not.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+    import errorDiagnostics.stackTracesDiagnostics
+
+    sealed trait Prefixed
+    inline given Prefixed is Nominative under MustStart["x-"] = !!
+
+    Name[Prefixed](t"x-ray")
+    capture[Name.Error](Name[Prefixed](t"ray")).message.show
+    // t"the name ray is not valid because it must start with x-"
+    ```
+
+entry .MustNotStart   the rule that a name does not begin with the given text: `MustNotStart["0"]`
+    _must not start with 0_. The complement of `MustStart`: a name whose first characters
+    are the parameter fails, and any other name passes, including one which contains the
+    text elsewhere.
+
+entry .MustEnd   the rule that a name ends with the given text: `MustEnd["!"]`
+    _must end with !_. A name whose last characters are the parameter passes; `hello!9`
+    fails `MustEnd["!"]`.
+
+entry .MustNotEnd   the rule that a name does not end with the given text: `MustNotEnd["z"]`
+    _must not end with z_. `quartz` fails `MustNotEnd["z"]`; `zebra` and `quartz-a` pass,
+    since the text is forbidden only at the end.
+
+entry .MustContain   the rule that a name contains the given text anywhere: `MustContain["-"]`
+    _must contain -_. The text may be at the start, in the middle or at the end: `main-nav`,
+    `-nav` and `main-` all pass `MustContain["-"]`, and `mainnav` does not.
+
+entry .MustNotContain   the rule that a name contains the given text nowhere: `MustNotContain["/"]`
+    _must not contain /_. The rule the filesystem planes use to forbid a separator inside a
+    path element, and a DOM id uses to forbid a space.
+
+entry .MustNotEqual   the rule that a name is not exactly the given text: `MustNotEqual[".."]`
+    _must not equal .._, or, for the empty parameter `MustNotEqual[""]`, _must not be empty_.
+    The common form of a non-emptiness rule, and of excluding the special names a namespace
+    reserves: the filesystem planes write `MustNotEqual["."] & MustNotEqual[".."] &
+    MustNotEqual[""]`. There is no `MustEqual`, since a plane with one valid name is not a
+    namespace.
+
+entry .MustMatch   the rule that a name matches a regular expression in full: `MustMatch["[a-z]+"]`
+    _must match [a-z]+_. The parameter is a Java regular expression, and the match is
+    anchored at both ends, as `String.matches` is: `MustMatch["a+"]` accepts `aaa` and
+    rejects `baa` and `aab`, where the pattern is found only within the name. The empty name
+    fails a one-or-more pattern. This is the rule to reach for when a namespace's alphabet
+    is a character class: probably's test tags are `MustMatch["[A-Za-z_][A-Za-z0-9_-]*"]`.
+
+entry .MustNotMatch   the rule that a name does not match a regular expression in full: `MustNotMatch["[0-9]+"]`
+    _must not match [0-9]+_. The complement of `MustMatch`, with the same anchoring: `123`
+    fails `MustNotMatch["[0-9]+"]`, and `1a3` passes, since the pattern does not match the
+    whole name. The `Classpath` plane uses `MustNotMatch["[0-9].*"]` to forbid a leading
+    digit.
+
+entry .JavaIdentifier   the rule that a name is a Java identifier, parameterised by its description
+    _must be a valid Java identifier_, for `JavaIdentifier["a valid Java identifier"]`. The
+    check is `java.lang.Character`'s definition: nonempty, an identifier-start character
+    followed by identifier-part characters; keywords are not excluded. Unlike the `Must…`
+    rules, the parameter is not something to compare against but the phrase the error
+    should use, which is the shape a rule takes when its check is a predicate of its own
+    rather than a comparison with a literal. It is the rule of probably's `Probing` plane,
+    the plane of test ids.
+
+entry .CssIdentifier   the rule that a name is a CSS identifier, parameterised by its description
+    _must be a valid CSS identifier_, for `CssIdentifier["a valid CSS identifier"]`. The
+    check is the CSS Syntax Module Level 3 `<ident-token>` grammar without escapes: an
+    optional leading `-` or `--`, an identifier-start character (a letter, `_` or any
+    non-ASCII character), then identifier characters, which also admit digits and `-`. A lone
+    `-`, a leading digit and an escape sequence are all rejected. It is the rule of the
+    `CssClass` plane.
+
+entry .DomIdentifier   the rule that a name is an HTML element id, parameterised by its description
+    _must be a valid DOM id_, for `DomIdentifier["a valid DOM id"]`. The check is the HTML
+    Living Standard's: at least one character and no ASCII whitespace (tab, newline, form
+    feed, carriage return or space). It is the rule of the `DomId` plane.
+
+entry .CssClass   the plane of CSS class names: `Name[CssClass]` is a valid CSS identifier
+  detail
+      A marker type with the single rule `CssIdentifier["a valid CSS identifier"]`, so a
+      `Name[CssClass]` is text which can follow `.` in a selector. honeycomb's HTML elements
+      take their classes as `Name[CssClass]`s, which is how a misspelt class literal fails to
+      compile.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import errorDiagnostics.stackTracesDiagnostics
+
+      val cls: Name[CssClass] = n"main-nav"
+      capture[Name.Error](Name[CssClass](t"1col")).message.show
+      // t"the name 1col is not valid because it must be a valid CSS identifier"
+      ```
+  refer nomenclature.CssIdentifier
+  entry .nominative   the given which holds CSS class names to `CssIdentifier`
+      In the companion, so in implicit scope wherever `CssClass` is named.
+
+entry .DomId   the plane of DOM element ids: `Name[DomId]` is a valid HTML id
+  detail
+      A marker type with the single rule `DomIdentifier["a valid DOM id"]`: nonempty, with
+      no ASCII whitespace. honeycomb's `id` attributes take a `Name[DomId]`, and a DOM id is
+      `Focusable`, so it can be the target of a `focus` as the CSS selector `#id`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import errorDiagnostics.stackTracesDiagnostics
+
+      val id: Name[DomId] = n"main-content"
+      capture[Name.Error](Name[DomId](t"a b")).message.show
+      // t"the name a b is not valid because it must be a valid DOM id"
+      ```
+  refer nomenclature.DomIdentifier
+  entry .nominative   the given which holds DOM ids to `DomIdentifier`
+      In the companion, so in implicit scope wherever `DomId` is named.
+  entry .focusable   a DOM id focuses its element as the CSS selector `#id`
+      The `Focusable` given for `Name[DomId]`, with the strategy `css selector` and the focus
+      text `#` followed by the id, for the libraries which locate an element on a page by a
+      selector.
+
+entry .Required   the plane whose only rule is non-emptiness: `Name[Required]` is any nonempty text
+    A marker type with the single rule `MustNotEqual[""]`, for the common case where "not
+    empty" is the whole of what a field requires. Its `Nominative` given is anonymous, in
+    the companion, so it is in implicit scope wherever `Required` is named.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+    import errorDiagnostics.stackTracesDiagnostics
+
+    val title: Name[Required] = n"Untitled"
+    capture[Name.Error](Name[Required](t"")).message.show
+    // t"the name “” is not valid because it must not be empty"
+    ```
+
+entry .disintersect   `disintersect[A & B & C]`: an intersection type taken apart into a tuple type
+    A `transparent inline` method whose result is a value of the tuple type `(A, B, C)` for
+    the intersection `A & B & C`, and `EmptyTuple` for a type which is not an intersection.
+    It is the type-level operation the macros use to walk a plane's rules, exposed for code
+    which needs to enumerate the members of an intersection type; the value itself is
+    `null` cast to the tuple type and must not be used, only its type.
+
+entry .staticCompanion   `staticCompanion[T]`: the companion object of a type, as a value
+    A `transparent inline` method which resolves to the companion object of `T`, typed as
+    `Matchable`: `staticCompanion[MustStart[""]]` is the `MustStart` object. It is how the
+    macros reach a `Rule` from a `Check` type, exposed for code which needs the same.
+
+entry .internal   the opaque `Name` type and its companion, which the `nomenclature` package exports
+  hidden
+  detail
+      Not for direct use: `Name` lives here so that its representation as `Text` is hidden
+      from the rest of the package, and is exported as `nomenclature.Name`, whose page has the
+      full account. Its members are `Name.apply`, `Name.verify`, the givens `encodable`,
+      `inspectable` and `decodable`, `Name.Error` and `Name.Extractor`.
+  entry .Name   text proven valid in a plane; see `nomenclature.Name`
+    detail
+        The opaque type `Name[+plane] <: Text`, with its companion. Its page under the
+        `nomenclature` package has the full account; the companion's members, which the
+        export does not declare, are documented here.
+    entry .apply   `Name[plane](text)`: checks text against the plane's rules, raising `Name.Error`
+        A `transparent inline` method which expands to the plane's rule checks, one after the
+        other, followed by the text cast to `Name[plane]`. It needs a `plane is Nominative` given
+        in scope — a missing one is a compile error, _Couldn't find a `Nominative` instance on
+        `plane`_ — and a `Tactic[Name.Error]`, raised with the first rule which fails. Each
+        rule's parameter must be a string literal type, as the `Must…` rules take.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import errorDiagnostics.stackTracesDiagnostics
+
+        Name[CssClass](t"main-nav")
+        capture[Name.Error](Name[CssClass](t"1col")).message.show
+        // t"the name 1col is not valid because it must be a valid CSS identifier"
+        ```
+    entry .verify   `Name.verify[literal, plane]`: a literal checked against one plane as the code compiles
+        An `inline` method which takes the name as a literal string type and the plane as a
+        type, and either expands to the literal cast to `Name[plane]` or fails compilation with
+        the rule's own words, _the name is not valid because it must not start with 0_. The
+        `n"…"` interpolator is the usual way to write a checked literal; `verify` is the form for
+        code which has the plane in hand and does not want the inference over every plane in
+        scope which `n"…"` performs.
+    entry .encodable   a name encodes as the text it is
+        The `Encodable in Text` given for any `Name[plane]`: the identity, so a name serialises
+        exactly as its text does.
+    entry .inspectable   a name inspects as `n"…"`, distinguishable from the text it is
+        The `Inspectable` given for any subtype of `Name[Any]`. A `Name` is a `Text`, so without
+        an instance of its own it would reach the `Text` instance and render as `t"…"`, and a
+        validated name would be indistinguishable from unchecked text; this one renders
+        `n"foo"`, with the characters escaped as a text literal's are. It is written for every
+        subtype of `Name[Any]` rather than for one plane, since the `Self` of a typeclass is
+        invariant and an instance for `Name[Linux]` would not cover `Name[Linux & Posix]`.
+    entry .decodable   `text.as[Name[plane]]`: validated decoding, through the `Decodable` typeclass
+        An `inline` given, available for any `plane` with a `Nominative` given in scope, which
+        decodes text by `Name[plane](text)`. It needs a `Tactic[Name.Error]` in scope, raised
+        with the first rule the text fails, so any format which decodes its fields through
+        `Decodable` — a JSON document, a command-line argument, a path element — can read a
+        `Name[plane]` directly and reject an invalid one at the boundary.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import errorDiagnostics.stackTracesDiagnostics
+
+        val id: Name[DomId] = t"main-content".as[Name[DomId]]
+        ```
+    entry .Error   raised when text is not a valid name in its plane
+      detail
+          Error 79: _the name `name` is not valid because it `must not start with 0`_. The
+          second half is the violated rule's own description of its parameter
+          (`Rule.describe`), so the message states the precise rule the text broke, not merely
+          that it was invalid. Raised by `Name[plane](text)` and by `text.as[Name[plane]]` for
+          the first rule in the plane's intersection which the text fails, and needs a
+          `Diagnostics` in scope, such as `errorDiagnostics.stackTracesDiagnostics`.
+
+          ```scala
+          import soundness.*
+          import strategies.throwUnsafely
+          import errorDiagnostics.stackTracesDiagnostics
+
+          capture[Name.Error](Name[Required](t"")).message.show
+          // t"the name “” is not valid because it must not be empty"
+          ```
+      entry #name   the text which was rejected
+      entry #rule   the `Rule` which rejected it, as `MustNotStart` or `CssIdentifier`
+      entry #parameter   the rule's parameter: the literal its `Check` type was applied to
+          For `MustNotStart["0"]` this is `0`; for a description-parameterised rule such as
+          `CssIdentifier["a valid CSS identifier"]` it is the description.
+    entry .Extractor   the object an `n"…"` literal expands to: a name by inference, or a pattern
+      detail
+          `n"hello"` expands to `Name.Extractor["hello"]()`, so this class is where both uses of
+          the interpolator live: `#apply` makes the name, with the most precise plane the
+          literal is valid in, and `#unapply` lets `n"hello"` be written as a pattern against a
+          `Name[plane]`. It is not constructed directly.
+      entry #apply   the literal as a `Name` of every plane in scope whose rules it satisfies
+          A `transparent inline` method whose result type is the intersection of the `Self`
+          types of every `Nominative` given in scope that accepts the literal, as
+          `Name[A & B]`. A literal which no plane in scope accepts is a compile error, _the name
+          `.` is not a valid identifier in any namespace in scope_. A plane whose rule has a
+          non-literal parameter is skipped rather than reported.
+      entry #unapply   `case n"main" =>`: matches a `Name[plane]` equal to the literal
+          An `inline` extractor which checks, as the code compiles, that the literal is a valid
+          name in the scrutinee's plane — a pattern which could never match is an error with
+          the rule's words — and then compares the two texts at runtime.
+
+entry .protointernal   the macro implementations behind `n"…"`, `Name[plane](…)` and `Name.verify`
+  hidden
+  detail
+      Not for direct use: the object exists so that the macros have a stable home. Its public
+      members are the macro bodies `extractor`, `inferName`, `makeName`, `parse`, `parse2` and
+      `disintersection`, and the helpers they share: `build`, `decompose`, `everyNominative`,
+      `planeAccepts`, `constant` and `companion`.
+  entry .extractor   the macro behind `n"…"`: wraps the literal's type in a `Name.Extractor`
+  entry .inferName   the macro behind `Name.Extractor#apply`: the intersection of every accepting plane in scope
+      Collects every `Nominative` given in scope, keeps the `Self` of each whose rules all
+      accept the literal, and splices the literal as a `Name` of their intersection; with no
+      accepting plane it halts with _the name … is not a valid identifier in any namespace in
+      scope_.
+  entry .makeName   the macro behind `Name[plane](text)`: the plane's checks spliced in sequence
+  entry .parse   the macro behind `Name.verify`: a literal checked against one plane, halting with the rule's words
+  entry .parse2   the macro behind `Name.Extractor#unapply`: `parse`, then an equality test
+  entry .disintersection   the macro behind `disintersect`
+  entry .build   a list of types made into a tuple type
+  entry .decompose   an intersection type taken apart into the set of its members
+  entry .everyNominative   every `Nominative` given in scope at the expansion point, not only the best
+      Runs the implicit search repeatedly, ignoring the givens already found and folding in
+      both sides of an ambiguity, so that `n"…"` sees every plane in scope.
+  entry .planeAccepts   whether every rule of a plane's `Limit` accepts a name
+  entry .constant   the string a literal type stands for, with capture-checking annotations stripped
+  entry .companion   the companion object of a symbol, loaded reflectively and typed as the caller asks
+
+entry .anteprotointernal   the macro behind `staticCompanion`
+  hidden
+  detail
+      Not for direct use: holds `staticCompanion`, the macro which resolves a type to its
+      companion object, which `protointernal.makeName` uses to reach a `Rule` from a `Check`.
+  entry .staticCompanion   the macro behind `nomenclature.staticCompanion`
+
+entry .Moniker   a small integer with a memorable two-word name, `brilliant-leopard`, from a `Vocabulary`
+  detail
+      A `Moniker` is an `Int` ordinal paired, through its plane, with the `Vocabulary` which
+      names it: `Moniker over Session` is a moniker whose words come from the
+      `Vocabulary over Session` in scope. It encodes as `adjective-animal` and decodes from
+      that text, so a session, a build or a job can be given a name a person can read back
+      over the phone, while the program keeps the number. It lives in the
+      `nomenclature.lexicon` source set.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import errorDiagnostics.stackTracesDiagnostics
+      import classloaders.threadContextClassloader
+
+      sealed trait Session
+      given (Vocabulary over Session) = Vocabulary(cp"/nomenclature/adjectives.txt", cp"/nomenclature/animals.txt")
+
+      Moniker[Session](10351).encode                      // t"brilliant-leopard"
+      t"brilliant-leopard".as[Moniker over Session].ordinal   // 10351
+      ```
+
+      The plane is a type the program chooses, so two vocabularies can coexist as
+      `Vocabulary over Session` and `Vocabulary over Job`, and `Moniker(10351)` with no plane
+      written infers it from the single vocabulary in scope. Encoding and decoding both need
+      a `Tactic[Moniker.Error]`, since a number can lie outside the vocabulary's range and
+      text can name a word it does not have; a moniker *inspects* as its ordinal, `10351ᵐᵏ`,
+      since a debug rendering can rely on neither the vocabulary nor a tactic.
+  refer nomenclature.Vocabulary
+  entry .Moniker   the opaque type itself, an `Int`, which `nomenclature` exports as `Moniker`
+      `Moniker.Moniker` is declared inside the companion so that its representation as an
+      `Int` is visible only there; the package exports it as `nomenclature.Moniker`, which is
+      the name to write. Its plane is given by refinement, `Moniker over Session`.
+  entry .apply   `Moniker[plane](ordinal)`: a moniker on the plane of the `Vocabulary` in scope
+      Needs a `Vocabulary over plane` given; the plane is inferred from it when only one is
+      in scope. The ordinal is not range-checked here, but when the moniker is encoded,
+      which raises `Moniker.Error` with `OutOfRange` for an ordinal at or above the
+      vocabulary's `size`.
+  entry .ordinal   the integer a moniker stands for
+      An extension on `Moniker`: the ordinal it was made from, or the one its text decoded
+      to, `adjectiveIndex × animalCount + animalIndex`.
+  entry .inspectable   a moniker inspects as its ordinal with a superscript suffix: `10351ᵐᵏ`
+      The suffix distinguishes it from the `Int` it erases to. The rendering uses neither
+      the vocabulary nor a tactic, which a debug rendering cannot assume to be in scope.
+  entry .encodable   `moniker.encode`: the two-word name, through the `Vocabulary` in scope
+      The `Encodable in Text` given for a `Moniker over plane`, needing a
+      `Vocabulary over plane` and a `Tactic[Moniker.Error]`, raised with `OutOfRange` when the
+      ordinal is not one the vocabulary can name. The given captures the tactic, so it is a
+      capability and is resolved where the tactic is in scope.
+  entry .decodable   `text.as[Moniker over plane]`: a two-word name read back as a moniker
+      The `Decodable in Text` given for a `Moniker over plane`, needing a
+      `Vocabulary over plane` and a `Tactic[Moniker.Error]`: `Malformed` is raised for text
+      which is not two words joined by `-`, and `UnknownWord` for a word which is not in the
+      vocabulary's list for its position.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import errorDiagnostics.stackTracesDiagnostics
+      import classloaders.threadContextClassloader
+
+      sealed trait Session
+      given (Vocabulary over Session) = Vocabulary(cp"/nomenclature/adjectives.txt", cp"/nomenclature/animals.txt")
+
+      capture[Moniker.Error](t"justoneword".as[Moniker over Session]).message.show
+      // t"the moniker is not valid because justoneword is not of the form <adjective>-<animal>"
+      ```
+  entry .Error   raised when a moniker cannot be named or its text cannot be read
+    detail
+        Error 80, with a sub-number for its `#reason`: _the moniker is not valid because the
+        number 100000 is outside the representable range_. Raised by `Moniker.encodable` for
+        an ordinal the vocabulary cannot name, and by `Moniker.decodable` for text which is not
+        `adjective-animal` or whose words the vocabulary does not have. Needs a `Diagnostics`
+        in scope.
+    entry #reason   why: `Unreadable`, `OutOfRange`, `Malformed` or `UnknownWord`
+    entry .Reason   the four reasons a moniker is invalid, each with its own error sub-number
+      detail
+          `Unreadable` (1) is _the vocabulary could not be read_; `OutOfRange(value)` (2) is
+          _the number `value` is outside the representable range_, for an ordinal below zero or
+          at or above the vocabulary's `size`; `Malformed(moniker)` (3) is _`moniker` is not of
+          the form <adjective>-<animal>_, for text which does not split into exactly two words
+          on `-`; and `UnknownWord(word)` (4) is _the word `word` does not appear in the
+          vocabulary_, for a word missing from the adjective or animal list.
+      entry #number   the reason's sub-number, which `Moniker.Error` reports alongside error 80
+    entry .communicable   renders each reason of a `Moniker.Error` as its message
+
+entry .Vocabulary   two word lists, adjectives and animals, which name the monikers of a plane
+  detail
+      A `Vocabulary over plane` is built from two sources of words, one word per line, and
+      names every ordinal from `0` to `#size - 1` as `adjective-animal`, taking the adjective
+      at `ordinal / animals` and the animal at `ordinal % animals`. The sources are anything
+      `Streamable by Data over Credit`: the word lists bundled with the `nomenclature.lexicon`
+      component as the classpath resources `/nomenclature/adjectives.txt` (400 words) and
+      `/nomenclature/animals.txt` (250 words), which name 100,000 monikers, or a program's
+      own files.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import errorDiagnostics.stackTracesDiagnostics
+      import classloaders.threadContextClassloader
+
+      sealed trait Session
+      val vocabulary: Vocabulary over Session = Vocabulary(cp"/nomenclature/adjectives.txt", cp"/nomenclature/animals.txt")
+      vocabulary.size                   // 100000
+      vocabulary.name(10351)            // t"brilliant-leopard"
+      vocabulary.number(t"brilliant-leopard")   // 10351
+      ```
+
+      A vocabulary is bound as a given, `given (Vocabulary over Session) = …`, for
+      `Moniker[Session](…)`, `encode` and `as[Moniker over Session]` to find; the plane is
+      the program's own marker type, and the same two lists bound on two planes give two
+      independent namespaces. Blank lines and surrounding whitespace in the sources are
+      dropped; the order of the lines is the order of the ordinals, so a list must not be
+      reordered once monikers have been stored.
+  refer nomenclature.Moniker
+  entry .apply   `Vocabulary(adjectives, animals)`: a vocabulary read from two streamable sources
+      Reads each source as text, splits it on newlines, trims each line and drops the empty
+      ones. The plane is the type parameter `transport`, inferred from the expected type
+      `Vocabulary over Session`; the reads need the contextual values the sources' `Streamable`
+      givens need, such as a `Classloader` for a classpath resource.
+  entry #Transport   the plane the vocabulary names monikers on, written `Vocabulary over plane`
+  entry #size   how many monikers the vocabulary can name: adjectives × animals
+  entry #name   the two-word name of an ordinal, raising `Moniker.Error` if it is out of range
+      `OutOfRange` is raised for an ordinal below zero or at or above `#size`. Needs a
+      `Tactic[Moniker.Error]`.
+  entry #number   the ordinal of a two-word name, raising `Moniker.Error` if it cannot be read
+      Splits on `-` and looks each word up in its list: `Malformed` for text which is not
+      exactly two words, `UnknownWord` for a word not in the list for its position. Needs a
+      `Tactic[Moniker.Error]`.

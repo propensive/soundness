@@ -1,0 +1,2017 @@
+tel 1.0
+
+base exegesis
+import soundness
+
+info   the Language Server Protocol as typed values: servers from handlers, clients as sessions, proxies between them
+detail
+    _Exegesis_ implements the [Language Server
+    Protocol](https://microsoft.github.io/language-server-protocol/) three ways round. A
+    **server** is one call to `Lsp.listen`, whose block registers a typed handler for each
+    feature the language provides, and which then serves `Content-Length`-framed JSON-RPC over
+    standard input and output until the editor closes the pipe. A **client** is a session with
+    an `Lsp.Server` — a command to launch, or a pair of streams already connected to one — which
+    lends an `Lsp.Connection` for the duration of a block, with a typed method for every request
+    and notification an editor sends. A **proxy**, `Lsp.proxy`, is both at once: it serves an
+    editor while holding a session with a real server, forwarding everything and amending what
+    the `rewrite` combinators register.
+
+    The protocol's vocabulary is modelled as ordinary case classes and enums inside `object Lsp`
+    — `Lsp.Position`, `Lsp.Range`, `Lsp.Diagnostic`, `Lsp.Hover`, `Lsp.CompletionList`,
+    `Lsp.ServerCapabilities` and the rest — each with a derived JSON codec, so a handler takes
+    typed values and returns typed values and never assembles JSON by hand. The wire surface
+    itself is seven `@rpc` traits (`LspLifecycle`, `LspLanguage`, `LspNavigation`,
+    `LspEditing`, `LspAdvanced`, `LspWorkspace`, `LspResolve`), unioned in the `Lsp` trait;
+    `Lsp.Dispatch` turns any implementation of it into a JSON-RPC dispatcher, and
+    `Lsp.Connection` holds the generated client proxy for each.
+
+    ```scala
+    import soundness.*
+
+    object DemoServer:
+      import Lsp.*
+
+      def main(args: Array[Text]): Unit = cli:
+        execute:
+          supervise:
+            Lsp.listen(t"Demo", t"0.1.0"):
+              hover:
+                document.word(position).let: word =>
+                  Hover(MarkupContent(value = t"**$word**"))
+
+              complete():
+                CompletionList(items = List(CompletionItem(label = t"alpha")))
+
+          Exit.Ok
+    ```
+
+    A server's shape is the **registry**: the block given to `Lsp.listen` is lent an
+    `Lsp.Registry`, and each combinator — `hover`, `complete`, `opened`, `command`, … —
+    records its handler there. The server's `ServerCapabilities` are derived from what was
+    registered, so the capabilities announced to the editor can never disagree with the
+    handlers that exist; options a capability needs beyond mere presence (completion trigger
+    characters, a semantic-tokens legend, diagnostic options) are parameters of the
+    registration. Once the block returns the registry is consumed: nothing can register after
+    serving begins.
+
+    A **handler** is a context function. A document-scoped (`Focused`) handler is lent the
+    current `Document`, the `Workspace` and an `Emit[Lsp.Error]`; a workspace-scoped
+    (`Ambient`) handler is lent the workspace and the emitter alone; and each request's payload
+    arrives as a tagged context parameter, read through an accessor of the same name
+    (`position`, `range`, `options`, `arguments`, `item`, …). The handles are capabilities
+    confined to the one dispatch, so a handler cannot stash `document` or `client` for later
+    (capture checking rejects it), while the pure values it reads from them — `document.text`,
+    a `Hover` — may leave freely. A handler that cannot answer raises an `Lsp.Error`, which
+    becomes an error response with the reason's wire code for a request, or a
+    `window/logMessage` for a notification.
+
+    The accessors `document`, `workspace`, `client`, `position`, `context`, `arguments`,
+    `query` and the type `Document` share their names with members of other Soundness
+    libraries, so the `soundness` umbrella does not flatten `Lsp`'s members: write
+    `import Lsp.*` **inside** the server's own object, as `DemoServer` above does, where the
+    nested wildcard legitimately shadows the umbrella's.
+
+    The same vocabulary reads in the other direction. `Lsp.Server(command)` or
+    `Lsp.Server.streams(in, out)` describes a server, and `session` (aperture's `Sessional`
+    extension, provided by `Lsp.Server.sessional`) opens the channel and lends an
+    `Lsp.Connection`; requests return `Optional[Hover]`, `CompletionList` and `List[Location]`
+    just as handlers do, and an error response is raised as an `Lsp.Error`. What the server
+    says unbidden reaches an `Lsp.Listener`, supplied contextually, and an `Lsp.Observer` sees
+    the raw traffic in both directions.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+    import threads.virtualThreads
+    import probates.awaitProbate
+    import errorDiagnostics.stackTracesDiagnostics
+    import workingDirectories.javaBaseWorkingDirectory
+    import environments.javaBaseEnvironment
+
+    def query(source: Text): Optional[Lsp.Hover] = supervise:
+      Lsp.Server(sh"rust-analyzer").session: server ?=>
+        server.initialize(root = t"file:///project")
+        server.initialized()
+        server.open(t"file:///project/src/main.rs", t"rust", source)
+        server.hover(t"file:///project/src/main.rs", Lsp.Position(10, 4))
+    ```
+
+    The library has two components:
+
+    - `exegesis.core` — everything above: `Lsp`, the seven wire traits, `LspSessional`,
+      `rewrite` and `upstream`. JVM only (it depends on `obligatory.json`, which has no
+      Scala.js build).
+    - `exegesis.demo` — `DemoLspServer` and `DemoLspProxy`, two complete programs in the
+      resident-daemon idiom (ethereal's `cli`/`execute`), one a minimal language server and
+      the other a proxy which launches the server named by its arguments.
+
+    `Lsp`, `LspSessional`, `rewrite` and `upstream` are exported to the `soundness` umbrella.
+    The wire traits and the demos are not, and are reached with `import exegesis.*`. The
+    givens a session needs — `Lsp.Listener.quiet`, `Lsp.Observer.silent` and
+    `Lsp.Server.sessional` — live in their subjects' companions, so none is imported by name;
+    a listener or observer of one's own is bound as a local `given` and outranks them.
+
+refer exegesis.Lsp
+refer exegesis.Lsp.listen
+refer exegesis.Lsp.Registry
+refer exegesis.Lsp.Connection
+refer exegesis.Lsp.Proxy
+refer exegesis.rewrite
+refer exegesis.LspSessional
+
+entry .Lsp   the protocol: its types, the handler registry, `listen`, `proxy`, and the client half
+  detail
+      `Lsp` is two things which share a name. As a **trait**, it is the full Language Server
+      Protocol wire surface — the union of `LspLifecycle`, `LspLanguage`, `LspNavigation`,
+      `LspEditing`, `LspAdvanced`, `LspWorkspace` and `LspResolve`, mixed with obligatory's
+      `JsonRpc` and fixing `#Origin` to `Lsp.Client` — which `Lsp.listen`'s session implements
+      and `Lsp.Dispatch` serves. An implementation of one's own is possible (`dispatcher`
+      routes it) but the registration API is the intended way to build a server.
+
+      As an **object**, it is the vocabulary. Three groups of members live here:
+
+      - the **protocol types**, one case class or enum per LSP structure, each with a JSON
+        codec — `Position`, `Range`, `Location`, `Diagnostic`, `Hover`, `CompletionItem`,
+        `CompletionList`, `TextEdit`, `WorkspaceEdit`, `ServerCapabilities`, `SymbolKind`,
+        `DiagnosticSeverity` and the rest;
+      - the **server side**: the handler types (`Focused`, `Ambient`, `HoverHandler`, …), the
+        ambient accessors a handler reads (`document`, `workspace`, `client`, `position`, …),
+        the registration combinators (`hover`, `complete`, `opened`, `command`, …), the
+        `Registry` they write to, `listen`, which serves, and `Error`, which a handler raises;
+      - the **client side**: `Server`, which describes a server to speak to, `Connection`,
+        the handle a session lends, `Listener` and `Observer`, and `Client`, the
+        notifications a server sends its editor; and `Proxy` and `proxy`, which put one
+        process between an editor and a server.
+
+      ```scala
+      import soundness.*
+
+      object Features:
+        import Lsp.*
+
+        def register(using Lsp.Registry^): Unit =
+          hover:
+            document.word(position).let: word =>
+              Hover(MarkupContent(value = t"**$word** at line ${position.line}"))
+
+          definition(Nil)
+
+          command(t"demo.reverse"):
+            arguments.let(_.head).let: argument =>
+              val text: Text = argument.as[Text]
+              Text(StringBuilder(text.s).reverse.toString).in[Json]
+      ```
+
+      Registration is possible wherever an `Lsp.Registry^` is in scope — the block of
+      `listen`, or a helper such as `register` above which takes one — so a large server
+      splits its features across methods.
+
+      Import `Lsp.*` inside the object which uses it: several of its members (`document`,
+      `context`, `arguments`, `query`, `Document`) collide with other libraries' names in
+      the `soundness` umbrella, which is why the umbrella exports `Lsp` and not its contents.
+  refer exegesis.Lsp.listen
+  refer exegesis.Lsp.Registry
+  refer exegesis.Lsp.Connection
+  refer exegesis.Lsp.Server
+  refer exegesis.Lsp.Error
+  entry #Origin   the far end of the protocol from a server's point of view: `Lsp.Client`
+      The `JsonRpc` origin type: the interface whose methods an `Lsp` implementation may
+      call back on the peer which sent it a message. A server's `client` handle is one.
+  entry .Position   a line and a character, both zero-based, in UTF-16 code units
+    detail
+        The protocol's position: `line` and `character` count from zero, and `character` is
+        an offset in UTF-16 code units, the protocol's default encoding and the unit of
+        `Text`'s underlying characters, so no transcoding happens anywhere in the library.
+        `Document#offset` and `Document#position` convert between a position and an offset
+        into a document's text, clamping as the protocol requires. `#span` and `.from` convert
+        to and from zephyrine's `Span`, which is zero-based too.
+    entry .from   a position from the start of a `Span`, or `Unset` if the span has no line
+        Takes the span's start line and start column (zero when absent).
+    entry #line   the zero-based line
+    entry #character   the zero-based offset within the line, in UTF-16 code units
+    entry #span   the position as a zero-width `Span` on its line
+  entry .Range   two positions, the start inclusive and the end exclusive
+    detail
+        The protocol's range. `Document#apply(range)` reads the text within one, and
+        `Document#fullRange` is the range of a whole document. `.from` converts a `Span`,
+        using the start line and column for a missing end, and `#span` converts back. The
+        companion's `encodable` and `decodable` are the JSON codec, derived once here so
+        every use shares it.
+    entry .from   a range from a `Span`, or `Unset` if the span has no start line
+    entry .encodable   the derived JSON encoder for a range
+    entry .decodable   the derived JSON decoder for a range; a malformed range throws `Json.Error`
+    entry #start   where the range begins
+    entry #end   where the range ends, exclusive
+    entry #span   the range as a `Span` over its area
+  entry .Location   a range within a document named by URI
+    detail
+        What `definition`, `declaration`, `references`, `typeDefinition` and `implementation`
+        return a list of. The companion holds the derived JSON codec.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed location throws `Json.Error`
+    entry #uri   the document's URI, as the editor spells it (`file:///…`)
+    entry #range   the range within that document
+  entry .Envelope   the two members of any JSON-RPC message which decide its handling
+    detail
+        A message read only for its `method`, which a response lacks, and its `id`, which a
+        notification lacks. Both are optional, so every message decodes, and a proxy uses
+        one to classify a message without knowing its shape: no method means a response, no
+        id means a notification.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder
+    entry #method   the method the message names, or `Unset` for a response
+    entry #id   the id the message correlates on, as raw JSON, or `Unset` for a notification
+  entry .TextDocumentIdentifier   a document named by its URI
+    entry #uri   the document's URI
+  entry .VersionedTextDocumentIdentifier   a document named by its URI and its version
+    detail
+        What `textDocument/didChange` carries: the version is the editor's count of edits,
+        which the session records as `Document#version`.
+    entry #uri   the document's URI
+    entry #version   the editor's version number for the document
+  entry .TextDocumentItem   an open document in full: URI, language, version and text
+    detail
+        What `textDocument/didOpen` carries, and what `Workspace#document` returns as a
+        snapshot of a document the session holds.
+    entry #uri   the document's URI
+    entry #languageId   the editor's language identifier, such as `scala` or `rust`
+    entry #version   the editor's version number for the document
+    entry #text   the document's whole text
+  entry .TextDocumentContentChangeEvent   one edit: a range replaced by text, or the whole text replaced
+    detail
+        An event with a `range` splices the text at the range's UTF-16 offsets; one without
+        replaces the whole document, which is how an editor using full synchronisation
+        reports every change. `Connection#edit` sends a list of these, and `Connection#replace`
+        sends the unranged form.
+    entry #range   the range replaced, or `Unset` to replace the whole document
+    entry #text   the replacement text
+  entry .ClientInfo   the editor's name and version, as reported at initialization
+    entry #name   the editor's name
+    entry #version   the editor's version, if it gave one
+  entry .ServerInfo   the server's name and version, as announced in the `initialize` result
+    detail
+        `Lsp.listen(name, version)` sends these; `Connection#initialize` returns them inside
+        the `InitializeResult`.
+    entry #name   the server's name
+    entry #version   the server's version, if it gave one
+  entry .Folder   a workspace folder: its URI and its display name
+    entry #uri   the folder's URI
+    entry #name   the folder's display name
+  entry .CompletionOptions   how a server completes: trigger characters and whether items resolve
+    detail
+        Derived by `Registry#capabilities` from a `complete(triggers*)` registration, with
+        `resolveProvider` set when `resolveCompletion` was registered too.
+    entry #triggerCharacters   characters whose typing asks for completion, if any
+    entry #resolveProvider   whether `completionItem/resolve` is served
+  entry .SignatureHelpOptions   the characters which trigger signature help
+    entry #triggerCharacters   the trigger characters, if any
+  entry .DocumentLinkOptions   whether document links resolve lazily
+    entry #resolveProvider   whether `documentLink/resolve` is served
+  entry .CodeLensOptions   whether code lenses resolve lazily
+    entry #resolveProvider   whether `codeLens/resolve` is served
+  entry .DocumentOnTypeFormattingOptions   the characters whose typing triggers formatting
+    detail
+        Derived from `formatOnType(first, more*)`: the protocol requires one trigger character
+        and allows more.
+    entry #firstTriggerCharacter   the character which must trigger formatting
+    entry #moreTriggerCharacter   further trigger characters, if any
+  entry .SemanticTokensOptions   the legend a server's semantic tokens use, and which requests it serves
+    detail
+        Derived from `semanticTokens(legend)`, with `full` set when that handler exists and
+        `range` when `semanticTokensRange` was registered.
+    entry #legend   the token types and modifiers the server's token data indexes into
+    entry #range   whether `textDocument/semanticTokens/range` is served
+    entry #full   whether `textDocument/semanticTokens/full` is served
+  entry .DiagnosticOptions   how a server's pull diagnostics behave
+    detail
+        The options `diagnostics(options)` takes at registration: the protocol requires a
+        server to say whether a document's diagnostics depend on other files and whether it
+        can report for the whole workspace.
+    entry #identifier   an identifier under which the client keeps the results, if any
+    entry #interFileDependencies   whether a change in one file may change another's diagnostics
+    entry #workspaceDiagnostics   whether the server reports diagnostics for the whole workspace
+  entry .ExecuteCommandOptions   the commands a server executes
+    detail
+        Derived from every `command(name)` registration; absent when there are none.
+    entry #commands   the registered command names
+  entry .ServerCapabilities   what a server tells its editor it can do
+    detail
+        The record sent in the `initialize` result. A server built with `Lsp.listen` never
+        writes one: `Registry#capabilities` derives it from the registered handlers, each
+        provider flag set exactly when its handler exists, with `textDocumentSync` always
+        `Incremental`, and the `capabilities(adjust)` registration amends the derived record
+        last. A proxy amends the upstream server's record with `rewrite.capabilities`, and a
+        client reads one from `Connection#initialize`.
+
+        ```scala
+        import soundness.*
+
+        val capabilities: Lsp.ServerCapabilities =
+          Lsp.ServerCapabilities(hoverProvider = true, definitionProvider = true)
+
+        capabilities.copy(completionProvider = Lsp.CompletionOptions(triggerCharacters = List(t".")))
+        ```
+
+        Every field is optional and defaults to `Unset`, which the codec omits.
+    entry #textDocumentSync   how the server wants document changes reported
+    entry #completionProvider   completion, with its options
+    entry #hoverProvider   hover
+    entry #definitionProvider   go to definition
+    entry #referencesProvider   find references
+    entry #documentSymbolProvider   document symbols
+    entry #documentFormattingProvider   whole-document formatting
+    entry #renameProvider   rename
+    entry #codeActionProvider   code actions
+    entry #signatureHelpProvider   signature help, with its trigger characters
+    entry #declarationProvider   go to declaration
+    entry #typeDefinitionProvider   go to type definition
+    entry #implementationProvider   go to implementation
+    entry #documentHighlightProvider   document highlights
+    entry #foldingRangeProvider   folding ranges
+    entry #selectionRangeProvider   selection ranges
+    entry #colorProvider   document colours and colour presentations
+    entry #documentRangeFormattingProvider   range formatting
+    entry #documentLinkProvider   document links, with their options
+    entry #codeLensProvider   code lenses, with their options
+    entry #documentOnTypeFormattingProvider   on-type formatting, with its trigger characters
+    entry #callHierarchyProvider   call hierarchy
+    entry #typeHierarchyProvider   type hierarchy
+    entry #semanticTokensProvider   semantic tokens, with their legend
+    entry #inlayHintProvider   inlay hints
+    entry #inlineValueProvider   inline values
+    entry #linkedEditingRangeProvider   linked editing ranges
+    entry #monikerProvider   monikers
+    entry #diagnosticProvider   pull diagnostics, with their options
+    entry #workspaceSymbolProvider   workspace symbols
+    entry #executeCommandProvider   commands, with their names
+  entry .InitializeResult   the server's answer to `initialize`: its capabilities and its identity
+    detail
+        Returned by `Connection#initialize`, and the payload `rewrite.capabilities` amends
+        in a proxy. The companion holds the derived JSON codec.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed result throws `Json.Error`
+    entry #capabilities   what the server can do
+    entry #serverInfo   the server's name and version, if it gave them
+  entry .MarkupContent   text for display, Markdown unless its kind says otherwise
+    detail
+        What a `Hover` and a `CompletionItem`'s documentation carry. The `kind` defaults to
+        `markdown`; `plaintext` is the other value the protocol knows.
+    entry #kind   `markdown` (the default) or `plaintext`
+    entry #value   the text
+  entry .CompletionContext   why the editor asked for completion
+    detail
+        The `triggerKind` is the protocol's number: 1 for an explicit request, 2 for a trigger
+        character (then given in `triggerCharacter`), 3 for a re-request of an incomplete list.
+        A `complete` handler reads it as `context`, which is `Unset` when the editor sent none.
+    entry #triggerKind   the protocol's number for the kind of trigger
+    entry #triggerCharacter   the character typed, when a trigger character asked for completion
+  entry .CompletionItem   one completion: its label, kind, detail, documentation and insert text
+    detail
+        What a `CompletionList` holds, and what `resolveCompletion` fills in lazily: a server
+        which computes documentation on demand returns a bare item from `complete` and
+        completes it in `resolveCompletion`, carrying whatever it needs in `data`.
+
+        ```scala
+        import soundness.*
+
+        Lsp.CompletionItem(label = t"soundness", kind = Lsp.CompletionItemKind.Keyword)
+        ```
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed item throws `Json.Error`
+    entry #label   the text shown in the list, and inserted unless `insertText` says otherwise
+    entry #kind   the item's kind, which the editor renders as an icon
+    entry #detail   a short type or signature, shown beside the label
+    entry #documentation   longer documentation, as markup
+    entry #insertText   the text inserted, when it differs from the label
+    entry #data   anything the server wants back at `completionItem/resolve`, as raw JSON
+  entry .CompletionList   the items a completion request returns, and whether there are more
+    detail
+        What a `complete` handler returns. `isIncomplete` tells the editor to ask again as the
+        user types rather than filtering the list it has.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed list throws `Json.Error`
+    entry #isIncomplete   whether further typing should ask the server again
+    entry #items   the completions
+  entry .Hover   what a hover shows: markup, and the range it applies to
+    detail
+        What a `hover` handler returns inside an `Optional`: `Unset` means nothing to show,
+        and goes on the wire as `null`.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed hover throws `Json.Error`
+    entry #contents   the markup shown
+    entry #range   the range the hover describes, which the editor may highlight, if given
+  entry .ReferenceContext   whether a references request wants the declaration included
+    entry #includeDeclaration   whether the symbol's own declaration counts as a reference
+  entry .DocumentSymbol   a symbol in a document, with its kind, ranges and children
+    detail
+        What a `documentSymbols` handler returns a list of, and the hierarchical form of the
+        protocol's symbol (as against the flat `WorkspaceSymbol`): a symbol nests its
+        `children`, and its `range` encloses the whole definition while `selectionRange`
+        picks out its name.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed symbol throws `Json.Error`
+    entry #name   the symbol's name
+    entry #kind   the kind of symbol
+    entry #range   the whole definition
+    entry #selectionRange   the symbol's name within the definition
+    entry #detail   a type or signature, if any
+    entry #children   nested symbols, if any
+  entry .FormattingOptions   the editor's formatting preferences: tab size and spaces or tabs
+    entry #tabSize   the width of a tab
+    entry #insertSpaces   whether indentation uses spaces rather than tabs
+  entry .TextEdit   a range of a document replaced by new text
+    detail
+        What `format`, `formatRange`, `formatOnType` and `savingEdits` return lists of, and
+        what a `WorkspaceEdit` holds per document.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed edit throws `Json.Error`
+    entry #range   the range replaced
+    entry #newText   the replacement text
+  entry .WorkspaceEdit   edits across documents, keyed by URI
+    detail
+        What `rename` returns, and what the `creatingFiles`, `renamingFiles` and
+        `deletingFiles` handlers may return to amend a file operation before it happens.
+        Only the `changes` form of the protocol's edit is modelled, not document changes with
+        versions.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed edit throws `Json.Error`
+    entry #changes   the edits to each document, by URI, if any
+  entry .CodeActionContext   the diagnostics at the range a code action was requested for
+    detail
+        A `codeActions` handler reads it as `context`; a quick fix is usually computed from
+        these diagnostics.
+    entry #diagnostics   the diagnostics the editor shows at the range
+  entry .CodeAction   a titled action the editor may offer: an edit, under a kind
+    detail
+        What a `codeActions` handler returns a list of. The `kind` is a dotted protocol string
+        such as `quickfix` or `refactor.extract`; `edit` may be left `Unset` and filled in by
+        `resolveCodeAction`, carrying what it needs in `data`.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed action throws `Json.Error`
+    entry #title   the title shown to the user
+    entry #kind   the action's kind, such as `quickfix`
+    entry #edit   the edit the action applies, if computed
+    entry #data   anything the server wants back at `codeAction/resolve`, as raw JSON
+  entry .ParameterInformation   one parameter of a signature, by its label
+    entry #label   the parameter's label, as it appears in the signature
+  entry .SignatureInformation   one signature: its label, documentation and parameters
+    entry #label   the signature, as text
+    entry #documentation   documentation, as markup, if any
+    entry #parameters   the parameters, if listed
+  entry .SignatureHelp   the signatures at a call site, and which is active
+    detail
+        What a `signatureHelp` handler returns inside an `Optional`: `Unset` means nothing to
+        show.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed value throws `Json.Error`
+    entry #signatures   the candidate signatures
+    entry #activeSignature   the index of the signature to show first, if any
+  entry .DocumentHighlight   a range to highlight, as a read, a write or plain text
+    detail
+        What a `documentHighlights` handler returns a list of: every occurrence of the symbol
+        under the cursor.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed highlight throws `Json.Error`
+    entry #range   the range to highlight
+    entry #kind   whether the occurrence reads, writes, or is plain text
+  entry .FoldingRange   a foldable region of lines, optionally of a kind
+    detail
+        What a `foldingRanges` handler returns a list of. The `kind` is a protocol string such
+        as `comment`, `imports` or `region`.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed range throws `Json.Error`
+    entry #startLine   the first folded line
+    entry #startCharacter   the character on the first line the fold begins at, if not the end
+    entry #endLine   the last folded line
+    entry #endCharacter   the character on the last line the fold ends at, if not the end
+    entry #kind   `comment`, `imports`, `region`, or a kind of the server's own
+    entry #collapsedText   text shown in place of the folded lines, if any
+  entry .SelectionRange   a range and the enclosing range it expands to
+    detail
+        What a `selectionRanges` handler returns, one per position asked for: a chain of
+        ever-wider ranges, each the `parent` of the last, which the editor's expand-selection
+        command walks.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed range throws `Json.Error`
+    entry #range   this range
+    entry #parent   the next wider range, if any
+  entry .Command   a titled command with arbitrary arguments, as a code lens or action carries one
+    detail
+        The `arguments` are the protocol's `LSPAny[]`, kept as raw `Json`. The editor runs
+        the command by sending `workspace/executeCommand`, which a `command(name)`
+        registration answers.
+    entry #title   the title shown to the user
+    entry #command   the command's name
+    entry #arguments   the arguments, as a raw JSON array, if any
+  entry .CodeLens   a command shown inline at a range
+    detail
+        What a `codeLenses` handler returns a list of. The `command` may be left `Unset` and
+        filled in by `resolveCodeLens`, carrying what it needs in `data`.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed lens throws `Json.Error`
+    entry #range   where the lens is shown
+    entry #command   the command the lens runs, if computed
+    entry #data   anything the server wants back at `codeLens/resolve`, as raw JSON
+  entry .DocumentLink   a range which links to a target
+    detail
+        What a `documentLinks` handler returns a list of. The `target` may be left `Unset`
+        and filled in by `resolveDocumentLink`.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed link throws `Json.Error`
+    entry #range   the linked range
+    entry #target   the URI the range links to, if computed
+    entry #tooltip   text shown when hovering the link, if any
+    entry #data   anything the server wants back at `documentLink/resolve`, as raw JSON
+  entry .Color   a colour as red, green, blue and alpha, each from 0 to 1
+    entry #red   the red component
+    entry #green   the green component
+    entry #blue   the blue component
+    entry #alpha   the alpha component
+  entry .ColorInformation   a colour literal in a document: its range and its value
+    detail
+        What a `documentColors` handler returns a list of; the editor shows a swatch at
+        each.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed value throws `Json.Error`
+    entry #range   where the colour literal is
+    entry #color   the colour it denotes
+  entry .ColorPresentation   one way of writing a colour, as a labelled edit
+    detail
+        What a `colorPresentations` handler returns a list of: each is a spelling of the
+        colour the user picked (`#ff0000`, `rgb(255, 0, 0)`, …) with the edit that writes it.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed value throws `Json.Error`
+    entry #label   the spelling shown to the user
+    entry #textEdit   the edit which writes it, if it differs from inserting the label
+    entry #additionalTextEdits   further edits, such as an import, if any
+  entry .CallHierarchyItem   a callable in the call hierarchy: a symbol with its location
+    detail
+        What `callHierarchy`'s prepare handler returns a list of, and what its incoming and
+        outgoing handlers receive as `item`. `data` carries whatever the server needs to find
+        the callable again when the editor asks for its callers or callees.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed item throws `Json.Error`
+    entry #name   the callable's name
+    entry #kind   the kind of symbol
+    entry #tags   the symbol's tags, such as deprecated, if any
+    entry #detail   a signature or type, if any
+    entry #uri   the document the callable is defined in
+    entry #range   the whole definition
+    entry #selectionRange   the callable's name within the definition
+    entry #data   anything the server wants back with the item, as raw JSON
+  entry .CallHierarchyIncomingCall   a caller of an item, and where in the caller the calls are
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed value throws `Json.Error`
+    entry #from   the calling item
+    entry #fromRanges   the ranges within the caller where the calls happen
+  entry .CallHierarchyOutgoingCall   a callee of an item, and where in the item the calls are
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed value throws `Json.Error`
+    entry #to   the called item
+    entry #fromRanges   the ranges within the caller where the calls happen
+  entry .TypeHierarchyItem   a type in the type hierarchy: a symbol with its location
+    detail
+        What `typeHierarchy`'s prepare handler returns a list of, and what its supertypes and
+        subtypes handlers receive as `item`.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed item throws `Json.Error`
+    entry #name   the type's name
+    entry #kind   the kind of symbol
+    entry #tags   the symbol's tags, if any
+    entry #detail   further detail, if any
+    entry #uri   the document the type is defined in
+    entry #range   the whole definition
+    entry #selectionRange   the type's name within the definition
+    entry #data   anything the server wants back with the item, as raw JSON
+  entry .SemanticTokensLegend   the token types and modifiers a server's token data indexes into
+    detail
+        Given at registration, `semanticTokens(legend)`, and advertised in the capabilities:
+        each token in `SemanticTokens#data` names its type and modifiers by index into these
+        lists.
+    entry #tokenTypes   the token types, in index order
+    entry #tokenModifiers   the token modifiers, in bit order
+  entry .SemanticTokens   a document's semantic tokens, as the protocol's flat integer array
+    detail
+        What `semanticTokens` and `semanticTokensRange` handlers return. `data` is the
+        protocol's encoding: five integers per token — line delta, start-character delta,
+        length, token type index, modifier bit set — relative to the previous token.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed value throws `Json.Error`
+    entry #resultId   an identifier for this result, which a later delta request names
+    entry #data   the tokens, five integers each, relative to the previous token
+  entry .SemanticTokensEdit   a splice into a previous token array
+    entry #start   the index into the previous data at which the edit starts
+    entry #deleteCount   how many integers are removed
+    entry #data   the integers inserted, if any
+  entry .SemanticTokensDelta   the edits which turn a previous token array into the current one
+    detail
+        What a `semanticTokensDelta` handler returns, given `previousResultId`.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed value throws `Json.Error`
+    entry #resultId   an identifier for the result after the edits
+    entry #edits   the splices to apply
+  entry .InlayHint   a label shown inline at a position, such as an inferred type
+    detail
+        What an `inlayHints` handler returns a list of. `tooltip` may be left `Unset` and
+        filled in by `resolveInlayHint`.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed hint throws `Json.Error`
+    entry #position   where the hint is shown
+    entry #label   the hint's text
+    entry #kind   whether the hint is a type or a parameter name
+    entry #tooltip   text shown when hovering the hint, if any
+    entry #paddingLeft   whether to pad before the hint
+    entry #paddingRight   whether to pad after the hint
+    entry #data   anything the server wants back at `inlayHint/resolve`, as raw JSON
+  entry .InlineValueContext   the debugger's state an inline-value request is made under
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed value throws `Json.Error`
+    entry #frameId   the stack frame the debugger is stopped in
+    entry #stoppedLocation   the range of the statement the debugger is stopped at
+  entry .InlineValueText   a value shown inline at a range while debugging
+    detail
+        What an `inlineValues` handler returns a list of. Only the literal-text form of the
+        protocol's inline value is modelled.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed value throws `Json.Error`
+    entry #range   where the value is shown
+    entry #text   the text shown
+  entry .LinkedEditingRanges   ranges which are edited together, such as a tag's two names
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed value throws `Json.Error`
+    entry #ranges   the ranges which change together
+    entry #wordPattern   a regular expression the linked text must match, if any
+  entry .Moniker   a stable identity for a symbol across projects
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed moniker throws `Json.Error`
+    entry #scheme   the moniker scheme, such as `tsc` or `.NET`
+    entry #identifier   the identifier within the scheme
+    entry #unique   how unique the moniker is: `document`, `project`, `group`, `scheme` or `global`
+    entry #kind   `import`, `export` or `local`, if given
+  entry .DocumentDiagnosticReport   the pull-diagnostics answer for one document
+    detail
+        What a `diagnostics` handler returns, and `Connection#diagnostics` asks for. Only the
+        `full` kind is modelled: `kind` defaults to it, and an unchanged report is expressed by
+        returning the same `resultId`.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed report throws `Json.Error`
+    entry #kind   `full`, the default
+    entry #resultId   an identifier for this result, which a later request names
+    entry #items   the diagnostics
+  entry .WorkspaceSymbol   a symbol anywhere in the workspace, with its location
+    detail
+        What a `workspaceSymbols` handler returns a list of, in answer to a `query`; the flat
+        counterpart of `DocumentSymbol`. `resolveWorkspaceSymbol` may fill in the location
+        lazily.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed symbol throws `Json.Error`
+    entry #name   the symbol's name
+    entry #kind   the kind of symbol
+    entry #tags   the symbol's tags, if any
+    entry #location   where the symbol is
+    entry #containerName   the name of the symbol's container, if any
+    entry #data   anything the server wants back at `workspaceSymbol/resolve`, as raw JSON
+  entry .FileEvent   a watched file which was created, changed or deleted
+    detail
+        What a `watchedFiles` handler receives a list of as `changes`. The field is spelled
+        `` `type` `` in Scala, as in the protocol.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed event throws `Json.Error`
+    entry #uri   the file's URI
+    entry #type   whether it was created, changed or deleted
+  entry .WorkspaceFoldersChangeEvent   folders added to and removed from the workspace
+    detail
+        What a `foldersChanged` handler receives as `event`.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed event throws `Json.Error`
+    entry #added   the folders added
+    entry #removed   the folders removed
+  entry .FileCreate   a file about to be, or just, created
+    detail
+        What `creatingFiles` and `createdFiles` handlers receive a list of as `files`.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed value throws `Json.Error`
+    entry #uri   the file's URI
+  entry .FileRename   a file about to be, or just, renamed
+    detail
+        What `renamingFiles` and `renamedFiles` handlers receive a list of as `files`.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed value throws `Json.Error`
+    entry #oldUri   the URI before the rename
+    entry #newUri   the URI after it
+  entry .FileDelete   a file about to be, or just, deleted
+    detail
+        What `deletingFiles` and `deletedFiles` handlers receive a list of as `files`.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed value throws `Json.Error`
+    entry #uri   the file's URI
+  entry .Diagnostic   a problem at a range: its severity, code, source and message
+    detail
+        What a server publishes with `client.publishDiagnostics`, returns from a `diagnostics`
+        handler, and what reaches a client's `Listener#diagnostics`.
+
+        ```scala
+        import soundness.*
+
+        Lsp.Diagnostic
+          ( range    = Lsp.Range(Lsp.Position(0, 0), Lsp.Position(0, 5)),
+            severity = Lsp.DiagnosticSeverity.Warning,
+            message  = t"unused import" )
+        ```
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed diagnostic throws `Json.Error`
+    entry #range   where the problem is
+    entry #severity   error, warning, information or hint, if given
+    entry #code   the problem's code, as text, if any
+    entry #source   what reported it, such as a compiler's name, if given
+    entry #message   the message shown to the user
+  entry .MessageActionItem   one button of a `window/showMessageRequest`, by its title
+    entry #title   the button's title
+  entry .DiagnosticSeverity   how serious a diagnostic is: `Error`, `Warning`, `Information` or `Hint`
+    detail
+        An integer-valued protocol enum: numbered from 1 on the wire, so `Error` encodes as
+        `1` and `Warning` as `2`. The companion's `encodable` and `decodable` are the codec;
+        the decoder takes the caller's `Tactic[Json.Error]` and captures it, so decoding one
+        needs a tactic in scope, and a wire integer outside the range raises through it.
+    entry .encodable   encodes the severity as its protocol number, from 1
+    entry .decodable   decodes a protocol number, raising `Json.Error` through the caller's tactic
+  entry .MessageType   the level of a window or log message: `Error`, `Warning`, `Info` or `Log`
+    detail
+        Numbered from 1 on the wire. `Client#showMessage` sends `Info` and `Client#logMessage`
+        sends `Log`; the wire methods take any level. The decoder captures the caller's
+        `Tactic[Json.Error]`.
+    entry .encodable   encodes the level as its protocol number, from 1
+    entry .decodable   decodes a protocol number, raising `Json.Error` through the caller's tactic
+  entry .TextDocumentSyncKind   how document changes are reported: `None`, `Full` or `Incremental`
+    detail
+        The one enum numbered from 0 on the wire, so `None` is `0`, `Full` is `1` and
+        `Incremental` is `2`. A server built with `Lsp.listen` always advertises
+        `Incremental`; a document's state is kept correct under either form of change event.
+        The decoder captures the caller's `Tactic[Json.Error]`.
+    entry .encodable   encodes the kind as its protocol number, from 0
+    entry .decodable   decodes a protocol number, raising `Json.Error` through the caller's tactic
+  entry .CompletionItemKind   the kind of a completion: `Text`, `Method`, `Function`, …, `TypeParameter`
+    detail
+        The protocol's twenty-five kinds, in wire order from 1: `Text`, `Method`, `Function`,
+        `Constructor`, `Field`, `Variable`, `Class`, `Interface`, `Module`, `Property`, `Unit`,
+        `Value`, `Enum`, `Keyword`, `Snippet`, `Color`, `File`, `Reference`, `Folder`,
+        `EnumMember`, `Constant`, `Struct`, `Event`, `Operator`, `TypeParameter`. Some share
+        their names with Scala types (`Text`, `Unit`), which is harmless as enum cases but
+        means `CompletionItemKind.Unit` must be qualified. The decoder captures the caller's
+        `Tactic[Json.Error]`.
+    entry .encodable   encodes the kind as its protocol number, from 1
+    entry .decodable   decodes a protocol number, raising `Json.Error` through the caller's tactic
+  entry .SymbolKind   the kind of a symbol: `File`, `Module`, `Namespace`, `Package`, `Class`, …, `TypeParameter`
+    detail
+        The protocol's twenty-six kinds, in wire order from 1: `File`, `Module`, `Namespace`,
+        `Package`, `Class`, `Method`, `Property`, `Field`, `Constructor`, `Enum`, `Interface`,
+        `Function`, `Variable`, `Constant`, `String`, `Number`, `Boolean`, `Array`, `Object`,
+        `Key`, `Null`, `EnumMember`, `Struct`, `Event`, `Operator`, `TypeParameter`. The cases
+        which name Scala types are written with backticks in the source and must be
+        qualified (`SymbolKind.String`). The decoder captures the caller's `Tactic[Json.Error]`.
+    entry .encodable   encodes the kind as its protocol number, from 1
+    entry .decodable   decodes a protocol number, raising `Json.Error` through the caller's tactic
+  entry .DocumentHighlightKind   what an occurrence does: `Text`, `Read` or `Write`
+    detail
+        Numbered from 1 on the wire. The decoder captures the caller's `Tactic[Json.Error]`.
+    entry .encodable   encodes the kind as its protocol number, from 1
+    entry .decodable   decodes a protocol number, raising `Json.Error` through the caller's tactic
+  entry .TextDocumentSaveReason   why a document is being saved: `Manual`, `AfterDelay` or `FocusOut`
+    detail
+        What the `saving` and `savingEdits` handlers read as `reason`. Numbered from 1 on
+        the wire. The decoder captures the caller's `Tactic[Json.Error]`.
+    entry .encodable   encodes the reason as its protocol number, from 1
+    entry .decodable   decodes a protocol number, raising `Json.Error` through the caller's tactic
+  entry .SymbolTag   a tag on a symbol; only `Deprecated` is defined
+    detail
+        Numbered from 1 on the wire. The decoder captures the caller's `Tactic[Json.Error]`.
+    entry .encodable   encodes the tag as its protocol number, from 1
+    entry .decodable   decodes a protocol number, raising `Json.Error` through the caller's tactic
+  entry .InlayHintKind   what an inlay hint shows: a `Type` or a `Parameter` name
+    detail
+        Numbered from 1 on the wire. The decoder captures the caller's `Tactic[Json.Error]`.
+    entry .encodable   encodes the kind as its protocol number, from 1
+    entry .decodable   decodes a protocol number, raising `Json.Error` through the caller's tactic
+  entry .FileChangeType   what happened to a watched file: `Created`, `Changed` or `Deleted`
+    detail
+        The `type` of a `FileEvent`. Numbered from 1 on the wire. The decoder captures the
+        caller's `Tactic[Json.Error]`.
+    entry .encodable   encodes the change as its protocol number, from 1
+    entry .decodable   decodes a protocol number, raising `Json.Error` through the caller's tactic
+  entry .Document   a live view of the open document a handler concerns, lent for one dispatch
+    detail
+        The handle a document-scoped handler reads as `document`: the text the editor has
+        reported so far for the document the request names, with incremental changes applied
+        at UTF-16 offsets, plus line access, conversion between protocol positions and
+        offsets, and the word under a position. It is an exclusive capability, lent for the
+        duration of one handler and confined to it — assigning `document` to an outer
+        variable, or capturing it in a task, is a compile error — while every value it
+        returns (`Text`, `Position`, `Range`) is a pure snapshot which may leave.
+
+        ```scala
+        import soundness.*
+
+        object Features:
+          import Lsp.*
+
+          def register(using Lsp.Registry^): Unit =
+            hover:
+              val line: Optional[Text] = document.line(position.line)
+              val word: Optional[Text] = document.word(position)
+              word.let { word => Hover(MarkupContent(value = t"`$word` in ${document.uri}")) }
+        ```
+
+        Positions and offsets are in UTF-16 code units, which is both the protocol's default
+        position encoding and the unit of `Text`'s characters. A position beyond the end of
+        the text or of its line is clamped, as the protocol requires. Lines are delimited by
+        `\n`, `\r\n` or `\r`.
+
+        A request naming a document the editor never opened reaches no handler: the session
+        records an `Lsp.Error` with reason `InvalidParams`, _the document `uri` is not open_,
+        and answers with it.
+    refer exegesis.Lsp.Workspace
+    refer exegesis.Lsp.document
+    entry #uri   the document's URI
+    entry #language   the editor's language identifier for the document
+    entry #version   the version the editor last reported
+    entry #text   the whole text, as the editor has reported it so far
+    entry #lineCount   the number of lines, counting a trailing unterminated line
+    entry #line   the text of a line by its zero-based number, without its terminator, or `Unset`
+    entry #apply   the text within a range: `document(range)`
+        The end is clamped to be no earlier than the start, so an inverted range gives empty
+        text.
+    entry #offset   the ordinal offset into the text of a position, clamped to the document
+    entry #position   the position of an ordinal offset into the text
+    entry #word   the run of letters, digits and underscores under a position, or `Unset`
+        The word is found by extending left and right from the position; a position on
+        whitespace or punctuation gives `Unset`.
+    entry #fullRange   the range from the first position to the end of the text
+        What a diagnostic covering the whole document uses.
+  entry .Workspace   the session's state as a handler sees it: open documents, the editor's details, the client
+    detail
+        The handle every handler reads as `workspace`: the URIs of the open documents, a
+        snapshot of any one of them, what the editor reported at `initialize` (its process
+        id, name and version, root, folders, capabilities and trace setting), and `#client`,
+        the channel back to the editor. An exclusive capability, confined to the one
+        dispatch like `Document`; the values it returns are pure snapshots.
+
+        ```scala
+        import soundness.*
+
+        object Features:
+          import Lsp.*
+
+          def register(using Lsp.Registry^): Unit =
+            opened:
+              val others: List[Text] = workspace.documents.filter(_ != document.uri)
+              client.logMessage(t"opened ${document.uri}; also open: ${others.join(t", ")}")
+        ```
+    refer exegesis.Lsp.Document
+    refer exegesis.Lsp.Client
+    entry #documents   the URIs of every document the editor has opened and not closed
+    entry #document   a snapshot of an open document by URI, as a `TextDocumentItem`, or `Unset`
+    entry #processId   the editor's process id, if it reported one
+    entry #clientInfo   the editor's name and version, if it reported them
+    entry #root   the workspace root URI the editor reported, if any
+    entry #folders   the workspace folders the editor reported
+    entry #clientCapabilities   the editor's capabilities, as the raw JSON it sent
+        Not modelled, since the client-capabilities record is large and a server reads only
+        the corners it cares about; a `dynamicAccess.dynamicJson` import reaches into it.
+    entry #trace   the trace level the editor last set with `$/setTrace`, if any
+    entry #client   the notifications the server may send its editor, as an `Lsp.Client`
+        Confined with the workspace: it captures the handle it was read from.
+  entry .Focused   the shape of a document-scoped handler with no payload
+      `(document: Document^, workspace: Workspace^, emit: Emit[Lsp.Error]^) ?=> result`. The
+      handler is lent the document the request names, the workspace, and an emitter which
+      `raise(Lsp.Error(…))` reports through; the result is pure, so nothing lent can leave by
+      return value, closure or task. `OpenedHandler`, `ClosedHandler`,
+      `DocumentSymbolsHandler`, `FoldingRangesHandler`, `DocumentLinksHandler`,
+      `CodeLensesHandler`, `DocumentColorsHandler` and `SemanticTokensHandler` are instances.
+  entry .Focused1   a document-scoped handler with one tagged payload
+      As `Focused`, with a first context parameter `payload: payload` which carries a tag
+      (`Position aka "position"`, `Range aka "range"`, …) and is read through the accessor of
+      that name. `HoverHandler` is `Focused1[Position aka "position", Optional[Hover]]`.
+  entry .Focused2   a document-scoped handler with two tagged payloads
+      As `Focused1`, with two payloads; `CompleteHandler` takes a `position` and an optional
+      `context`, `RenameHandler` a `position` and a `newName`.
+  entry .Focused3   a document-scoped handler with three tagged payloads
+      As `Focused1`, with three payloads; `FormatOnTypeHandler` takes a `position`, the
+      `character` typed and the formatting `options`.
+  entry .Ambient   the shape of a workspace-scoped handler with no payload
+      `(workspace: Workspace^, emit: Emit[Lsp.Error]^) ?=> result`: no single document is the
+      subject, so only the workspace and the emitter are lent. `ReadyHandler` and
+      `TerminatingHandler` are instances.
+  entry .Ambient1   a workspace-scoped handler with one tagged payload
+      As `Ambient`, with a tagged payload; `WorkspaceSymbolsHandler` reads a `query`,
+      `CommandHandler` its `arguments`, `ResolveHandler` its `item`.
+  entry .ReadyHandler   the handler for `initialized`: `Ambient[Unit]`
+  entry .TerminatingHandler   the handler for `shutdown`: `Ambient[Unit]`
+  entry .OpenedHandler   the handler for `textDocument/didOpen`: `Focused[Unit]`
+  entry .ChangedHandler   the handler for `textDocument/didChange`, with the `changes` applied
+      `Focused1[List[TextDocumentContentChangeEvent] aka "changes", Unit]`; by the time it
+      runs the session has already applied the changes, so `document.text` is current.
+  entry .SavedHandler   the handler for `textDocument/didSave`, with the `savedText` if the editor sent it
+  entry .ClosedHandler   the handler for `textDocument/didClose`: `Focused[Unit]`
+      The document is still readable during the handler and removed afterwards.
+  entry .SavingHandler   the handler for `textDocument/willSave`, with the `reason`
+  entry .SavingEditsHandler   the handler for `textDocument/willSaveWaitUntil`: edits to apply before saving
+  entry .HoverHandler   the handler for `textDocument/hover`: a `position` to an optional `Hover`
+  entry .CompleteHandler   the handler for `textDocument/completion`: `position` and `context` to a list
+  entry .DefinitionHandler   the handler for `textDocument/definition`: a `position` to locations
+  entry .ReferencesHandler   the handler for `textDocument/references`, with `includeDeclaration`
+  entry .DocumentSymbolsHandler   the handler for `textDocument/documentSymbol`
+  entry .FormatHandler   the handler for `textDocument/formatting`, with the editor's `options`
+  entry .RenameHandler   the handler for `textDocument/rename`: `position` and `newName` to a `WorkspaceEdit`
+  entry .CodeActionsHandler   the handler for `textDocument/codeAction`: a `range` and its `context`
+  entry .SignatureHelpHandler   the handler for `textDocument/signatureHelp`
+  entry .DeclarationHandler   the handler for `textDocument/declaration`
+  entry .TypeDefinitionHandler   the handler for `textDocument/typeDefinition`
+  entry .ImplementationHandler   the handler for `textDocument/implementation`
+  entry .DocumentHighlightsHandler   the handler for `textDocument/documentHighlight`
+  entry .FoldingRangesHandler   the handler for `textDocument/foldingRange`
+  entry .SelectionRangesHandler   the handler for `textDocument/selectionRange`: `positions` to ranges
+  entry .DocumentLinksHandler   the handler for `textDocument/documentLink`
+  entry .CodeLensesHandler   the handler for `textDocument/codeLens`
+  entry .DocumentColorsHandler   the handler for `textDocument/documentColor`
+  entry .ColorPresentationsHandler   the handler for `textDocument/colorPresentation`: a `color` and its `range`
+  entry .FormatRangeHandler   the handler for `textDocument/rangeFormatting`: a `range` and `options`
+  entry .FormatOnTypeHandler   the handler for `textDocument/onTypeFormatting`: `position`, `character`, `options`
+  entry .PrepareRenameHandler   the handler for `textDocument/prepareRename`: the range to rename, or `Unset`
+  entry .CallHierarchyHandler   the prepare handler of `callHierarchy`: a `position` to hierarchy items
+  entry .IncomingCallsHandler   the incoming handler of `callHierarchy`: an `item` to its callers
+  entry .OutgoingCallsHandler   the outgoing handler of `callHierarchy`: an `item` to its callees
+  entry .TypeHierarchyHandler   the prepare handler of `typeHierarchy`: a `position` to hierarchy items
+  entry .SupertypesHandler   the supertypes handler of `typeHierarchy`: an `item` to its supertypes
+  entry .SubtypesHandler   the subtypes handler of `typeHierarchy`: an `item` to its subtypes
+  entry .SemanticTokensHandler   the handler for `textDocument/semanticTokens/full`
+  entry .SemanticTokensDeltaHandler   the handler for `textDocument/semanticTokens/full/delta`, with `previousResultId`
+  entry .SemanticTokensRangeHandler   the handler for `textDocument/semanticTokens/range`, with the `range`
+  entry .InlayHintsHandler   the handler for `textDocument/inlayHint`, with the `range`
+  entry .InlineValuesHandler   the handler for `textDocument/inlineValue`: a `range` and its `context`
+  entry .LinkedEditingRangeHandler   the handler for `textDocument/linkedEditingRange`
+  entry .MonikersHandler   the handler for `textDocument/moniker`
+  entry .DiagnosticsHandler   the handler for `textDocument/diagnostic`: `identifier` and `previousResultId`
+  entry .WorkspaceSymbolsHandler   the handler for `workspace/symbol`: a `query` to symbols
+  entry .CommandHandler   the handler for one `workspace/executeCommand` name: `arguments` to an optional result
+  entry .ConfigurationHandler   the handler for `workspace/didChangeConfiguration`, with the `settings`
+  entry .WatchedFilesHandler   the handler for `workspace/didChangeWatchedFiles`, with the `changes`
+  entry .FoldersChangedHandler   the handler for `workspace/didChangeWorkspaceFolders`, with the `event`
+  entry .CreatingFilesHandler   the handler for `workspace/willCreateFiles`: `files` to an optional edit
+  entry .CreatedFilesHandler   the handler for `workspace/didCreateFiles`
+  entry .RenamingFilesHandler   the handler for `workspace/willRenameFiles`: `files` to an optional edit
+  entry .RenamedFilesHandler   the handler for `workspace/didRenameFiles`
+  entry .DeletingFilesHandler   the handler for `workspace/willDeleteFiles`: `files` to an optional edit
+  entry .DeletedFilesHandler   the handler for `workspace/didDeleteFiles`
+  entry .ResolveHandler   the handler for a `*/resolve` request: an `item` returned filled in
+      `ResolveHandler[item] = Ambient1[item aka "item", item]`: the editor sends back an item
+      it received earlier, and the handler returns it with its lazily-computed fields set.
+      Read the item as `item[CompletionItem]` (or whichever type), since the accessor is
+      generic.
+  entry .document   the current document, inside a document-scoped handler
+      A transparent inline accessor for the `Document^` context parameter: `document.text`,
+      `document.word(position)`, `document.uri`. Available only where a `Focused` handler's
+      parameters are in scope.
+  entry .workspace   the workspace handle, inside any handler
+      A transparent inline accessor for the `Workspace^` context parameter.
+  entry .client   the editor, as an `Lsp.Client`, inside any handler
+      `workspace.client`: the channel for `publishDiagnostics`, `showMessage`, `logMessage`
+      and the other notifications a server sends unbidden. It captures the workspace handle
+      and is confined with it.
+  entry .position   the `position` payload of a hover, definition, rename or similar request
+      An inline accessor for the `Position aka "position"` context parameter.
+  entry .range   the `range` payload of a code-action, inlay-hint, range-formatting or similar request
+  entry .options   the `FormattingOptions` payload of a formatting request
+  entry .newName   the new name a rename request asks for
+  entry .character   the character typed, in an on-type formatting request
+  entry .savedText   the text the editor sent with `didSave`, if it included it
+  entry .reason   why a document is being saved, in a `saving` or `savingEdits` handler
+  entry .color   the `Color` a colour-presentation request concerns
+  entry .positions   the positions a selection-range request asks about
+  entry .previousResultId   the result id a semantic-tokens delta request builds on
+  entry .identifier   the diagnostic identifier a pull-diagnostics request names, if any
+  entry .query   the query text of a workspace-symbol request
+  entry .arguments   the arguments of a command, as a list of raw JSON values, if any
+  entry .settings   the settings a configuration change delivers, as raw JSON
+  entry .event   the folders-changed event
+  entry .includeDeclaration   whether a references request wants the declaration included
+  entry .item   the item a resolve, call-hierarchy or type-hierarchy request concerns
+      Generic over the item's type, so the handler names it: `item[CompletionItem]`,
+      `item[CallHierarchyItem]`, `item[TypeHierarchyItem]`.
+  entry .context   the context of a completion, code-action or inline-value request
+      Generic: `Optional[CompletionContext]` in a `complete` handler, `CodeActionContext` in
+      `codeActions`, `InlineValueContext` in `inlineValues`; the type is inferred from the
+      handler.
+  entry .changes   the content changes of a `changed` handler, or the file events of `watchedFiles`
+  entry .files   the files a file-operation handler concerns
+  entry .ready   registers what runs once the editor sends `initialized`
+      Every registration combinator takes a handler and needs an `Lsp.Registry^` in scope —
+      the block of `listen`, or a method taking `(using Lsp.Registry^)` — and records the
+      handler in it; the combinators are ordinary methods, not inline, so a handler's context
+      function is typed once at the definition. A second registration of the same feature
+      replaces the first. `ready` is a `ReadyHandler`, run after the handshake, where a server
+      starts indexing or asks the editor for configuration.
+  entry .terminating   registers what runs when the editor sends `shutdown`
+      A `TerminatingHandler`; the `exit` notification which follows ends the process's input
+      and so the `listen` loop.
+  entry .opened   registers what runs when the editor opens a document
+      An `OpenedHandler`: the document is in the store before it runs, so publishing
+      diagnostics for it is the usual body.
+
+      ```scala
+      import soundness.*
+
+      object Features:
+        import Lsp.*
+
+        def register(using Lsp.Registry^): Unit =
+          opened:
+            client.publishDiagnostics
+              ( document.uri,
+                List
+                  ( Diagnostic
+                      ( range    = document.fullRange,
+                        severity = DiagnosticSeverity.Warning,
+                        message  = t"a diagnostic for the whole document" ) ) )
+      ```
+  entry .changed   registers what runs after the editor's changes to a document are applied
+      A `ChangedHandler`; `changes` is the batch the editor sent and `document.text` already
+      reflects it.
+  entry .saved   registers what runs when the editor saves a document
+      A `SavedHandler`; `savedText` is the saved content if the editor includes it.
+  entry .closed   registers what runs when the editor closes a document
+      A `ClosedHandler`; the document is removed from the store after it runs.
+  entry .saving   registers what runs before a document is saved
+      A `SavingHandler`, given the `reason`.
+  entry .savingEdits   registers the edits applied before a document is saved
+      A `SavingEditsHandler`: `textDocument/willSaveWaitUntil`, which the editor awaits.
+  entry .hover   registers the hover handler, and advertises `hoverProvider`
+      A `HoverHandler`: the `position` to an `Optional[Hover]`, `Unset` meaning nothing to
+      show.
+
+      ```scala
+      import soundness.*
+
+      object Features:
+        import Lsp.*
+
+        def register(using Lsp.Registry^): Unit =
+          hover:
+            document.word(position).let: word =>
+              Hover(MarkupContent(value = t"**$word**"))
+      ```
+  entry .complete   registers the completion handler, with its trigger characters
+      `complete(triggers*)(handler)`: the trigger characters become the advertised
+      `CompletionOptions`, and `resolveProvider` is set if `resolveCompletion` is registered.
+      The handler is a `CompleteHandler`, reading `position` and the optional `context`.
+
+      ```scala
+      import soundness.*
+
+      object Features:
+        import Lsp.*
+
+        def register(using Lsp.Registry^): Unit =
+          complete(t"."):
+            CompletionList(items = List(CompletionItem(label = t"length")))
+      ```
+  entry .definition   registers the go-to-definition handler
+      A `DefinitionHandler`: the `position` to a list of `Location`s, empty for none.
+  entry .references   registers the find-references handler
+      A `ReferencesHandler`, reading `position` and `includeDeclaration`.
+  entry .documentSymbols   registers the document-symbols handler
+  entry .format   registers the whole-document formatting handler
+      A `FormatHandler`, reading the editor's `options`, returning the edits to apply.
+  entry .rename   registers the rename handler
+      A `RenameHandler`, reading `position` and `newName`, returning a `WorkspaceEdit`.
+  entry .codeActions   registers the code-actions handler
+      A `CodeActionsHandler`, reading the `range` and the `context` holding its diagnostics.
+  entry .signatureHelp   registers the signature-help handler, with its trigger characters
+      `signatureHelp(triggers*)(handler)`: the triggers become the advertised
+      `SignatureHelpOptions`.
+  entry .declaration   registers the go-to-declaration handler
+  entry .typeDefinition   registers the go-to-type-definition handler
+  entry .implementation   registers the go-to-implementation handler
+  entry .documentHighlights   registers the document-highlights handler
+  entry .foldingRanges   registers the folding-ranges handler
+  entry .selectionRanges   registers the selection-ranges handler
+      A `SelectionRangesHandler`: one `SelectionRange` chain per position in `positions`.
+  entry .documentLinks   registers the document-links handler
+  entry .codeLenses   registers the code-lens handler
+      `resolveProvider` in the advertised `CodeLensOptions` is set if `resolveCodeLens` is
+      registered.
+  entry .documentColors   registers the document-colours handler, and advertises `colorProvider`
+  entry .colorPresentations   registers the colour-presentations handler
+  entry .formatRange   registers the range-formatting handler
+  entry .formatOnType   registers the on-type formatting handler, with its trigger characters
+      `formatOnType(first, more*)(handler)`: the protocol requires one trigger character; the
+      handler reads `position`, the `character` typed and the `options`.
+  entry .prepareRename   registers the handler which says what a rename at a position would cover
+  entry .callHierarchy   registers the three call-hierarchy handlers together
+      `callHierarchy(prepare)(incoming, outgoing)`: the capability is atomic, so the prepare
+      handler (a `position` to items), the incoming-calls handler and the outgoing-calls
+      handler (each an `item` to calls) are registered at once.
+  entry .typeHierarchy   registers the three type-hierarchy handlers together
+      `typeHierarchy(prepare)(supertypes, subtypes)`, as `callHierarchy`.
+  entry .semanticTokens   registers the full semantic-tokens handler, with its legend
+      `semanticTokens(legend)(handler)`: the `SemanticTokensLegend` is required, since the
+      token data indexes into it, and is advertised in `SemanticTokensOptions`.
+  entry .semanticTokensDelta   registers the semantic-tokens delta handler
+      A `SemanticTokensDeltaHandler`, reading `previousResultId`.
+  entry .semanticTokensRange   registers the ranged semantic-tokens handler
+      Sets `range` in the advertised `SemanticTokensOptions`, which exist only if
+      `semanticTokens` was registered too.
+  entry .inlayHints   registers the inlay-hints handler
+  entry .inlineValues   registers the inline-values handler
+  entry .linkedEditingRange   registers the linked-editing-range handler
+  entry .monikers   registers the moniker handler
+  entry .diagnostics   registers the pull-diagnostics handler, with its options
+      `diagnostics(options)(handler)`: the `DiagnosticOptions` are required by the protocol
+      and advertised as given.
+  entry .workspaceSymbols   registers the workspace-symbol search handler
+      A `WorkspaceSymbolsHandler`, reading `query`.
+  entry .command   registers a command by name
+      `command(name)(handler)`: `workspace/executeCommand` requests are multiplexed across
+      the registered names, which are advertised in `ExecuteCommandOptions`. The handler is a
+      `CommandHandler`, reading `arguments` (an optional list of raw JSON) and returning an
+      optional JSON result. A request for a name nobody registered is answered with an
+      `InvalidParams` error, _the command `name` is not registered_.
+
+      ```scala
+      import soundness.*
+
+      object Features:
+        import Lsp.*
+
+        def register(using Lsp.Registry^): Unit =
+          command(t"demo.reverse"):
+            arguments.let(_.head).let: argument =>
+              val text: Text = argument.as[Text]
+              Text(StringBuilder(text.s).reverse.toString).in[Json]
+      ```
+  entry .configuration   registers what runs when the editor's configuration changes
+      A `ConfigurationHandler`, reading `settings` as raw JSON.
+  entry .watchedFiles   registers what runs when a watched file changes
+      A `WatchedFilesHandler`, reading `changes`, a list of `FileEvent`.
+  entry .foldersChanged   registers what runs when workspace folders are added or removed
+  entry .creatingFiles   registers what runs before files are created, returning an optional edit
+  entry .createdFiles   registers what runs after files are created
+  entry .renamingFiles   registers what runs before files are renamed, returning an optional edit
+  entry .renamedFiles   registers what runs after files are renamed
+  entry .deletingFiles   registers what runs before files are deleted, returning an optional edit
+  entry .deletedFiles   registers what runs after files are deleted
+  entry .resolveCompletion   registers the handler which fills in a completion item on demand
+      A `ResolveHandler[CompletionItem]`, read as `item[CompletionItem]`; registering it sets
+      `resolveProvider` in the advertised `CompletionOptions`.
+
+      ```scala
+      import soundness.*
+
+      object Features:
+        import Lsp.*
+
+        def register(using Lsp.Registry^): Unit =
+          resolveCompletion(item[CompletionItem].copy(detail = t"resolved"))
+      ```
+  entry .resolveCodeAction   registers the handler which fills in a code action on demand
+  entry .resolveCodeLens   registers the handler which fills in a code lens on demand
+      Sets `resolveProvider` in the advertised `CodeLensOptions`.
+  entry .resolveDocumentLink   registers the handler which fills in a document link on demand
+      Sets `resolveProvider` in the advertised `DocumentLinkOptions`.
+  entry .resolveInlayHint   registers the handler which fills in an inlay hint on demand
+  entry .resolveWorkspaceSymbol   registers the handler which fills in a workspace symbol on demand
+  entry .capabilities   registers an adjustment to the derived capabilities, applied last
+      `capabilities(adjust)`: an escape hatch for a corner the derivation does not cover. The
+      function is pure (`ServerCapabilities -> ServerCapabilities`) and runs once, at
+      `initialize`, on the record `Registry#capabilities` derived.
+  entry .dispatcher   the JSON-RPC dispatcher for any implementation of the `Lsp` trait
+      `Lsp.Dispatch(server)`: a `Json => Optional[Json]` which routes each message to the
+      wire method of `server` its method names and returns the response, or `Unset` for a
+      notification. The low-level escape hatch for a server written as a class implementing
+      `Lsp` by hand; `listen`'s own session is dispatched the same way.
+  entry .Observer   a hook on the raw traffic: every message as it crosses the transport
+    detail
+        A server's standard output is the wire, so it cannot print a log of what it exchanges;
+        an observer sees each message instead, as the JSON body it was carried as — inbound
+        before parsing, so a message which fails to decode is observed too, and outbound
+        before framing, so both directions read alike. `listen`, `proxy` and `LspSessional`
+        take one. Both methods are abstract, and the observer is called from the writer task
+        and the reader task at once, so an implementation must be safe to call from two
+        threads.
+
+        ```scala
+        import soundness.*
+
+        val observer = new Lsp.Observer:
+          def received(message: Text): Unit = Err.println(t"recv $message")
+          def sent(message: Text): Unit = Err.println(t"send $message")
+        ```
+
+        `Observer.Silent` is the default, and `Observer.silent` supplies it contextually to a
+        session.
+    entry .Silent   the observer which does nothing, as a pure value
+    entry .silent   the given which supplies `Silent` to an `LspSessional`; in implicit scope
+    entry #received   called with each message read from the wire, before it is parsed
+    entry #sent   called with each message written, as its encoded body, before it is framed
+  entry .Listener   what a client does with the messages a server sends unbidden
+    detail
+        The inbound half of a client's exchange: the notifications a server sends without
+        being asked (diagnostics, window and log messages, traces, telemetry, progress,
+        cancellations), and the requests it makes of its client. Every method has a no-op
+        default, so a listener implements only what it acts on, and `Listener.Quiet` is the
+        default, supplied by the given `Listener.quiet`. A listener is bound as a local given
+        and found by `Lsp.Server.sessional` when a session opens.
+
+        ```scala
+        import soundness.*
+
+        given diagnostics: Lsp.Listener = new Lsp.Listener:
+          override def diagnostics(uri: Text, version: Optional[Int], reports: List[Lsp.Diagnostic])
+          :   Unit =
+            reports.each { report => Err.println(t"$uri: ${report.message}") }
+        ```
+
+        The listener runs on the session's reader task, so a method must not await a request
+        of the same connection: the answer would arrive on the thread it is blocking.
+    entry .Quiet   the listener which ignores everything
+    entry .quiet   the given which supplies `Quiet`; in implicit scope
+    entry #diagnostics   diagnostics the server published for a document, with its version if given
+    entry #message   a `window/showMessage`, to show the user, with its level
+    entry #log   a `window/logMessage`, for the editor's log, with its level
+    entry #trace   a `$/logTrace` message
+    entry #telemetry   a `telemetry/event`, as raw JSON
+    entry #progress   a `$/progress` notification: its token and value, as raw JSON
+    entry #cancel   a `$/cancelRequest`, with the id the server wants cancelled
+    entry #request   a request the server made of its client, answered raw
+        `workspace/applyEdit`, `workspace/configuration`, `window/showMessageRequest`,
+        `client/registerCapability` and whatever else a server asks: the set is open, so the
+        method and parameters are raw and the answer is raw JSON. `Unset`, the default,
+        answers with JSON `null`, which a server must tolerate for a capability its client
+        never claimed.
+    entry #intercept   sees every message first; `true` means it is handled and routed no further
+        What a proxy uses to relay messages, responses included, rather than act on them; a
+        normal client leaves the default `false`.
+  entry .Transit   what a proxy does with a message a hook was shown
+    detail
+        The result of a `rewrite.outbound` or `rewrite.inbound` hook. `Forward` passes the
+        message on unchanged, which is also what happens to everything no hook sees;
+        `Rewrite(message)` passes on another message instead; `Drop` swallows it — a request
+        dropped on the way out is never answered, so drop notifications, or answer the request
+        instead; and `Answer(result)` answers an outbound request here, so the server never
+        sees it, and is ignored for a message which is not a request and for an inbound
+        message.
+
+        ```scala fuel
+        typecheck
+        ##
+        rewrite.outbound: (method, message) =>
+          if method == t"textDocument/inlineValue" then Lsp.Transit.Drop else Lsp.Transit.Forward
+        ```
+  entry .Server   a language server this process can speak to: a command, or a pair of streams
+    detail
+        A plain value describing where a server is, holding no channel of its own:
+        `Server.Process(command)` is a server launched as a subprocess, whose standard input
+        and output carry the protocol, and `Server.Streams(input, output)` one already running
+        behind a pair of `java.io` streams — in this process, behind a socket, or a fixture in
+        a test. `Server(command)` and `Server.streams(input, output)` build each, widened to
+        `Server`.
+
+        A session with it is opened by `session`, aperture's `Sessional` extension, through
+        the given `.sessional`: the channel is minted when the session opens, an
+        `Lsp.Connection` is lent for the duration of the block, and both are disposed of
+        afterwards, so the connection cannot outlive the server. A subprocess is killed when
+        the session ends, rather than waited for.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import threads.virtualThreads
+        import probates.awaitProbate
+        import errorDiagnostics.stackTracesDiagnostics
+        import workingDirectories.javaBaseWorkingDirectory
+        import environments.javaBaseEnvironment
+
+        supervise:
+          Lsp.Server(sh"rust-analyzer").session: server ?=>
+            server.initialize(root = t"file:///project")
+            server.initialized()
+            server.shutdown()
+            server.exit()
+        ```
+    refer exegesis.Lsp.Connection
+    refer exegesis.LspSessional
+    entry .apply   a server launched as a subprocess: `Lsp.Server(command)`
+    entry .streams   a server already running behind an input and an output stream
+        Which stream is which is from this process's point of view: `input` is what the server
+        writes, `output` what it reads.
+    entry .sessional   the given which opens a session with a `Server`; in implicit scope
+        An `LspSessional`, built from the context: it needs a `Monitor`, a `Probate`,
+        `Diagnostics`, a `WorkingDirectory` and an `Environment` (for launching a
+        subprocess), a `Tactic[Lsp.Error]`, and a `Listener^` and `Observer^` — the quiet
+        and silent ones unless a given of one's own is in scope. A listener or observer is
+        supplied by binding it as a given, never by passing it: an instance capturing the
+        session's monitor could not be bound to a name at the use site.
+  entry .proxy   serves an editor over stdio while forwarding everything to a server upstream
+    detail
+        `Lsp.proxy(upstream, observer)(register)`: this process reads an editor from its
+        standard input and writes to its standard output, holds a session with `upstream`,
+        and relays every message between them, amending what the block registers on the
+        lent `Lsp.Proxy` through the `rewrite` combinators. The relay is asynchronous in both
+        directions, so requests are in flight in any number and answered in any order,
+        and request ids pass through unchanged. Everything unregistered — methods this
+        library does not model, capabilities it does not know — crosses byte for byte.
+
+        ```scala fuel
+        typecheck
+        ##
+        Lsp.proxy(Lsp.Server(sh"rust-analyzer")):
+          rewrite.capabilities(_.copy(hoverProvider = true))
+
+          rewrite.hover: hover =>
+            hover.copy(contents = Lsp.MarkupContent(value = t"_(proxied)_ ${hover.contents.value}"))
+
+          rewrite.diagnostics(_.filter(_.severity != Lsp.DiagnosticSeverity.Hint))
+        ```
+
+        It needs a `Stdio^`, a `Monitor^`, a `Probate`, a `WorkingDirectory`, an
+        `Environment`, `Diagnostics`, and tactics for `Lsp.Error` (a server which fails to
+        launch is `Reason.Unstarted`), `Framing.Error` (a malformed frame) and
+        `Truncation.Error` (a stream cut short). The registration block runs once,
+        synchronously, before the session opens, and may capture the monitor. `Lsp.Proxy.run`
+        is the same call with an explicit observer.
+  refer exegesis.Lsp.Proxy
+  refer exegesis.rewrite
+  refer exegesis.upstream
+  entry .listen   serves a language server over standard input and output, from registered handlers
+    detail
+        `Lsp.listen(name, version, observer)(register)`: the block registers the server's
+        handlers on a lent `Lsp.Registry`; once it returns the registry is consumed, the
+        `ServerCapabilities` are derived from it, and the loop reads `Content-Length`-framed
+        JSON-RPC from standard input until it is exhausted, dispatching each message to its
+        handler on the reading thread. A single writer task drains the outgoing channel —
+        responses and the notifications handlers send through `client` alike — and frames each
+        onto standard output, so writes never interleave. `name` and `version` are what the
+        `initialize` result reports as `ServerInfo`; the observer, if given, sees every message
+        in both directions.
+
+        A server grows by registration, and its capabilities grow with it:
+
+        ```scala fuel
+        frame
+          label A server with no features answers initialize, and tracks documents
+          code
+              import soundness.*
+
+              object Features:
+                import Lsp.*
+
+                def register(using Lsp.Registry^): Unit = ()
+        frame
+          label Registering hover advertises hoverProvider
+          code
+              import soundness.*
+
+              object Features:
+                import Lsp.*
+
+                def register(using Lsp.Registry^): Unit =
+                  hover:
+                    document.word(position).let: word =>
+                      Hover(MarkupContent(value = t"**$word**"))
+        frame
+          label Registering completion advertises completionProvider, with its trigger
+          code
+              import soundness.*
+
+              object Features:
+                import Lsp.*
+
+                def register(using Lsp.Registry^): Unit =
+                  hover:
+                    document.word(position).let: word =>
+                      Hover(MarkupContent(value = t"**$word**"))
+
+                  complete(t"."):
+                    CompletionList(items = List(CompletionItem(label = t"length")))
+        frame
+          label An opened handler publishes diagnostics as each document arrives
+          code
+              import soundness.*
+
+              object Features:
+                import Lsp.*
+
+                def register(using Lsp.Registry^): Unit =
+                  hover:
+                    document.word(position).let: word =>
+                      Hover(MarkupContent(value = t"**$word**"))
+
+                  complete(t"."):
+                    CompletionList(items = List(CompletionItem(label = t"length")))
+
+                  opened:
+                    client.publishDiagnostics
+                      ( document.uri,
+                        List
+                          ( Diagnostic
+                              ( range    = document.fullRange,
+                                severity = DiagnosticSeverity.Warning,
+                                message  = t"a diagnostic for the whole document" ) ) )
+        ##
+        ```
+
+        The whole server is then a `main` in the resident-daemon idiom, so that an editor
+        which restarts its language server often reconnects to a JVM already running:
+
+        ```scala fuel
+        typecheck
+        ##
+        object DemoServer:
+          def main(args: Array[Text]): Unit = cli:
+            execute:
+              supervise:
+                Lsp.listen(t"Demo", t"0.1.0"):
+                  Features.register
+              Exit.Ok
+        ```
+
+        It needs a `Stdio`, a `Monitor` and a `Probate` (the writer is a task), and tactics
+        for `Framing.Error` and `Truncation.Error`. Faults are answered, not thrown: a message
+        which is not JSON gets a `-32700` parse error, a payload which does not decode a
+        `-32602` invalid-params error, any other exception in a handler a `-32603` internal
+        error, and an `Lsp.Error` a handler raises an error response with the reason's wire
+        code and the request's id — or, for a notification, a `window/logMessage`. The
+        registry, the session and the dispatcher are all locals of the call: nothing holding
+        a capability is stored in an application-lifetime object, and capture checking
+        rejects a handler which tries (see `Document` and `Workspace`).
+  refer exegesis.Lsp.Registry
+  refer exegesis.Lsp.Document
+  refer exegesis.Lsp.Workspace
+  refer exegesis.Lsp.Client
+  refer exegesis.Lsp.Error
+  entry .Client   the notifications a server sends its editor
+    detail
+        The server-to-client half of the protocol, as the server calls it: a handler reaches
+        one as `client` and sends `publishDiagnostics`, `showMessage`, `logMessage`,
+        `telemetry`, `logTrace`, `progress` or `cancelRequest`. Only notifications are
+        exposed, never requests: a handler runs on the thread which reads the editor's
+        messages, so a round-trip awaited from inside one would wait for a response that
+        thread must read, and deadlock. A client which needs the editor's answer to something
+        asks in `ready` and reads the result when the editor's notification arrives.
+
+        The wire methods — `` `textDocument/publishDiagnostics` ``, `` `window/showMessage` ``,
+        `` `window/logMessage` ``, `` `telemetry/event` ``, `` `$/logTrace` ``,
+        `` `$/progress` `` and `` `$/cancelRequest` `` — are the `@rpc` surface the generated
+        proxy implements; the named methods wrap them with the usual defaults (no version,
+        `Info` and `Log` levels, no verbose trace). A client that *receives* these messages —
+        `LspSessional`'s reader — dispatches the same trait to an `Lsp.Listener`.
+
+        A `Client` is a shared capability: publishing from a task spawned in a handler is
+        legitimate, since the outgoing channel is multi-producer, but the handle is confined
+        to the serving scope which minted it and cannot be stashed for use after the session
+        ends.
+
+        ```scala
+        import soundness.*
+
+        object Features:
+          import Lsp.*
+
+          def register(using Lsp.Registry^): Unit =
+            saved:
+              client.showMessage(t"saved ${document.uri}")
+              client.logMessage(t"version ${document.version}")
+        ```
+    refer exegesis.Lsp.Workspace
+    refer exegesis.Lsp.Listener
+    entry #publishDiagnostics   sends the diagnostics for a document, replacing those shown
+        An empty list clears them. The document's version is not sent.
+    entry #showMessage   shows the user a message at `Info` level
+    entry #logMessage   writes a line to the editor's log at `Log` level
+    entry #telemetry   sends a `telemetry/event` with a raw JSON payload
+    entry #logTrace   sends a `$/logTrace` message, without the verbose part
+    entry #progress   sends a `$/progress` notification: a token and a value, both raw JSON
+        A progress token is a string or an integer and a value is protocol-specific, so both
+        are raw.
+    entry #cancelRequest   asks the editor to cancel a request it made, by id
+  entry .Connection   the client's handle on a running server, lent for the duration of a session
+    detail
+        The mirror of a server's session: what `session` lends an editor, or a proxy, while
+        it is open. Every request the protocol defines has a method — `#hover`, `#complete`,
+        `#definition`, `#rename`, … — taking the document's URI and the request's parameters
+        and returning the same types a server's handlers return, and every notification
+        (`#open`, `#edit`, `#save`, `#close`, `#initialized`, `#exit`, `#configure`) returns
+        nothing. A request blocks the caller until its response arrives, but never blocks
+        the reader task, so several may be in flight at once from different tasks and may be
+        answered out of order.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+        import threads.virtualThreads
+        import probates.awaitProbate
+        import errorDiagnostics.stackTracesDiagnostics
+        import workingDirectories.javaBaseWorkingDirectory
+        import environments.javaBaseEnvironment
+
+        def labels(source: Text): List[Text] = supervise:
+          Lsp.Server(sh"rust-analyzer").session: server ?=>
+            server.initialize(root = t"file:///project")
+            server.initialized()
+            server.open(t"file:///project/src/main.rs", t"rust", source)
+            server.complete(t"file:///project/src/main.rs", Lsp.Position(0, 0)).items.map(_.label)
+        ```
+
+        Every request needs a `Tactic[Lsp.Error]`: an error response from the server is
+        raised as an `Lsp.Error` whose reason is the one the wire code names
+        (`Lsp.Error.reason`), or `Internal` with the server's own message as the details for
+        a code outside the standard set, rather than being awaited forever. The connection
+        is a shared capability, driven by its writer, its reader and the caller at once, and
+        a `JsonRpc`, so `#send` puts a raw message on its channel.
+
+        The generated proxies behind the methods are the public `vals` `#lifecycle`,
+        `#language`, `#navigation`, `#editing`, `#advanced`, `#workspace` and `#resolve`, one
+        per wire trait, for a request the named methods do not cover (selection ranges,
+        colours, the hierarchies, resolves, file operations): each wire method takes the
+        protocol's own parameters and summons its result's decoder under the call's tactic.
+    refer exegesis.Lsp.Server
+    refer exegesis.Lsp.Error
+    refer exegesis.Lsp.Listener
+    entry #Origin   the far end of the connection: `Lsp`
+    entry #lifecycle   the generated client for `LspLifecycle`: initialize, shutdown and document sync
+    entry #language   the generated client for `LspLanguage`: completion, hover, definition and the rest
+    entry #navigation   the generated client for `LspNavigation`: declaration, folding, links, colours
+    entry #editing   the generated client for `LspEditing`: range and on-type formatting, hierarchies
+    entry #advanced   the generated client for `LspAdvanced`: semantic tokens, inlay hints, diagnostics
+    entry #workspace   the generated client for `LspWorkspace`: symbols, commands, file operations
+    entry #resolve   the generated client for `LspResolve`: the `*/resolve` requests
+    entry #send   sends a message exactly as given, minting no id and awaiting no answer
+        The raw seam a proxy forwards through, so the editor's own ids and the methods this
+        library does not model cross unchanged.
+    entry #initialize   the handshake: sends `initialize` and returns the server's capabilities
+        `initialize(root, name, version, folders, capabilities)`: all optional; the client
+        reports itself as `soundness` with no version and no capabilities unless told
+        otherwise, and the server's answer is an `InitializeResult`. Follow it with
+        `#initialized`.
+    entry #initialized   tells the server the handshake is complete
+    entry #shutdown   asks the server to shut down, and awaits its acknowledgement
+    entry #exit   tells the server to exit; the notification which ends a well-behaved server
+    entry #open   tells the server a document is open, with its language, text and version
+        `open(uri, language, text, version = 1)`.
+    entry #edit   sends a batch of changes to an open document, with its new version
+    entry #replace   the whole-document form of `#edit`: replaces the text under a new version
+    entry #save   tells the server a document was saved, with its text if the server wants it
+    entry #close   tells the server a document is closed
+    entry #hover   the hover at a position, or `Unset`
+    entry #complete   the completions at a position, with an optional `CompletionContext`
+    entry #definition   the definition locations of the symbol at a position
+    entry #references   the references to the symbol at a position, including its declaration by default
+    entry #symbols   the document's symbols
+    entry #format   the edits which format a document under the given options
+    entry #rename   the workspace edit which renames the symbol at a position
+    entry #codeActions   the code actions at a range, given its context
+    entry #signatureHelp   the signature help at a position, or `Unset`
+    entry #declaration   the declaration locations of the symbol at a position
+    entry #typeDefinition   the type-definition locations of the symbol at a position
+    entry #implementation   the implementation locations of the symbol at a position
+    entry #highlights   the document highlights for the symbol at a position
+    entry #foldingRanges   the document's folding ranges
+    entry #documentLinks   the document's links
+    entry #codeLenses   the document's code lenses
+    entry #semanticTokens   the document's full semantic tokens
+    entry #inlayHints   the inlay hints within a range
+    entry #diagnostics   the document's pull diagnostics, as a full report
+    entry #search   the workspace symbols matching a query
+    entry #execute   runs a command by name with raw JSON arguments, returning its raw result
+    entry #configure   tells the server the configuration changed, with the settings as raw JSON
+  entry .Dispatch   builds the JSON-RPC dispatcher for an `Lsp` implementation
+    detail
+        `Lsp.Dispatch(server)` is a `Json => Optional[Json]`: it reads the method a message
+        names and routes the message to the generated dispatcher of the wire trait which
+        declares it, returning the response or `Unset` for a notification; a message with no
+        method is a response and is handled by the lifecycle dispatcher; an unknown method
+        gives `Unset`. The dispatch is generated per sub-trait rather than once for the whole
+        protocol because obligatory's `JsonRpc.serve` inlines a codec for every method, and
+        one class for all of LSP would exceed the JVM's constant-pool limit — which is also
+        why the trait is split seven ways. `Lsp.dispatcher` is the same call.
+    entry .apply   the dispatcher for a server, routing each message by the trait which declares its method
+  entry .Error   the fault a handler raises, and the error response a server answers with
+    detail
+        Error 147: _the LSP operation failed because `reason`_, numbered by reason (147.1 for
+        `Parse` through 147.11 for `Unstarted`). Each `Reason` carries the JSON-RPC wire code
+        the protocol assigns it: `Parse` −32700, `InvalidRequest` −32600, `MethodNotFound`
+        −32601, `InvalidParams` −32602, `Internal` −32603, `ServerNotInitialized` −32002,
+        `RequestCancelled` −32800, `ContentModified` −32801, `ServerCancelled` −32802,
+        `RequestFailed` −32803 and `Unstarted` −32000, this library's own, for a server
+        subprocess which failed to launch.
+
+        A handler raises one through the `Emit[Lsp.Error]` it is lent, and `Lsp.listen`
+        answers the request with an error response carrying the reason's code and
+        `#response` as the message — or, for a notification, a `window/logMessage`. The
+        session raises `InvalidParams` itself for a request about a document which is not
+        open and for a command nobody registered.
+
+        ```scala
+        import soundness.*
+        import errorDiagnostics.stackTracesDiagnostics
+
+        object Features:
+          import Lsp.*
+
+          def register(using Lsp.Registry^): Unit =
+            command(t"demo.run"):
+              raise(Lsp.Error(Lsp.Error.Reason.RequestFailed, t"nothing to run"))
+              Unset
+        ```
+
+        On the client side, `Connection`'s requests raise one for an error response, with the
+        reason `.reason` recovers from the wire code, and `LspSessional` raises `Unstarted`
+        when the server's command cannot be forked. Constructing one needs `Diagnostics` in
+        scope, as every fulminate error does.
+    entry .Reason   why the operation failed, each with its JSON-RPC wire `code` and its `number`
+        The eleven reasons above. `code` is the wire code, `number` the sub-number of error
+        147.
+    entry .reason   the reason a wire code names, or `Unset` for a code outside the standard set
+        The inverse of `Reason#code`, for a client reading an error response; a server may
+        answer with an implementation-defined code, which `Connection` reports as `Internal`.
+    entry .communicable   renders a reason as its message, _the request failed_ and the like
+    entry #reason   why the operation failed
+    entry #details   the message given when the error was raised, if any
+    entry #response   the message sent in the error response: the details, or the reason's description
+  entry .Registry   where a server's handlers are recorded, lent to the block given to `listen`
+    detail
+        The target of the registration combinators: `Lsp.listen` mints one, lends it to the
+        registration block as a context parameter, and consumes it when the block returns, so
+        registration after serving begins is impossible by construction. It is a shared
+        capability which cannot escape the block — capture checking rejects a `listen` block
+        which assigns `summon[Lsp.Registry]` to an outer variable — and `#capabilities`
+        derives the `ServerCapabilities` the server advertises from what was registered.
+
+        ```scala
+        import soundness.*
+
+        object Features:
+          import Lsp.*
+
+          def navigation(using Lsp.Registry^): Unit =
+            definition(Nil)
+            references(Nil)
+
+          def register(using Lsp.Registry^): Unit =
+            navigation
+            hover(Unset)
+        ```
+
+        Its slots — one public `var` per feature, named for the combinator with a trailing
+        `0`, plus the options registered beside a handler — are public only because the
+        combinators assign them, and each handler slot is typed `AnyRef | Null`: a union
+        mentioning a context-function type would freshen its capture sets at every
+        adaptation, so the typed boundary is the combinator's parameter, where a handler
+        closing over the registry is rejected, and the session restores the type when it
+        dispatches. Read a slot through its combinator, not directly.
+    refer exegesis.Lsp.listen
+    refer exegesis.Lsp.ServerCapabilities
+    entry .Slot   the box a registered handler is kept in
+      detail
+          A context-function value adapts to any expected type which is not a context
+          function by being applied, so a handler cannot inhabit an `Optional` or an `AnyRef`
+          slot directly: `Slot[handler](value)` holds it intact, and the session unboxes it.
+      entry #value   the handler
+    entry #capabilities   the `ServerCapabilities` the registrations imply, with the adjustment applied last
+        Each provider flag is set exactly when its handler was registered; the options given
+        at registration (completion and signature-help triggers, on-type trigger characters,
+        the semantic-tokens legend, diagnostic options, command names) fill in the structured
+        providers; `textDocumentSync` is always `Incremental`; and `capabilities(adjust)`, if
+        registered, runs on the result.
+    entry #ready0   the `ready` handler, boxed, or `null`
+    entry #terminating0   the `terminating` handler, boxed, or `null`
+    entry #opened0   the `opened` handler, boxed, or `null`
+    entry #changed0   the `changed` handler, boxed, or `null`
+    entry #saved0   the `saved` handler, boxed, or `null`
+    entry #closed0   the `closed` handler, boxed, or `null`
+    entry #saving0   the `saving` handler, boxed, or `null`
+    entry #savingEdits0   the `savingEdits` handler, boxed, or `null`
+    entry #hover0   the `hover` handler, boxed, or `null`
+    entry #complete0   the `complete` handler, boxed, or `null`
+    entry #completeTriggers0   the trigger characters `complete` was registered with
+    entry #definition0   the `definition` handler, boxed, or `null`
+    entry #references0   the `references` handler, boxed, or `null`
+    entry #documentSymbols0   the `documentSymbols` handler, boxed, or `null`
+    entry #format0   the `format` handler, boxed, or `null`
+    entry #rename0   the `rename` handler, boxed, or `null`
+    entry #codeActions0   the `codeActions` handler, boxed, or `null`
+    entry #signatureHelp0   the `signatureHelp` handler, boxed, or `null`
+    entry #signatureHelpTriggers0   the trigger characters `signatureHelp` was registered with
+    entry #declaration0   the `declaration` handler, boxed, or `null`
+    entry #typeDefinition0   the `typeDefinition` handler, boxed, or `null`
+    entry #implementation0   the `implementation` handler, boxed, or `null`
+    entry #documentHighlights0   the `documentHighlights` handler, boxed, or `null`
+    entry #foldingRanges0   the `foldingRanges` handler, boxed, or `null`
+    entry #selectionRanges0   the `selectionRanges` handler, boxed, or `null`
+    entry #documentLinks0   the `documentLinks` handler, boxed, or `null`
+    entry #codeLenses0   the `codeLenses` handler, boxed, or `null`
+    entry #documentColors0   the `documentColors` handler, boxed, or `null`
+    entry #colorPresentations0   the `colorPresentations` handler, boxed, or `null`
+    entry #formatRange0   the `formatRange` handler, boxed, or `null`
+    entry #formatOnType0   the `formatOnType` handler, boxed, or `null`
+    entry #formatOnTypeFirst0   the first trigger character `formatOnType` was registered with
+    entry #formatOnTypeMore0   the further trigger characters `formatOnType` was registered with
+    entry #prepareRename0   the `prepareRename` handler, boxed, or `null`
+    entry #prepareCallHierarchy0   the prepare handler of `callHierarchy`, boxed, or `null`
+    entry #incomingCalls0   the incoming-calls handler of `callHierarchy`, boxed, or `null`
+    entry #outgoingCalls0   the outgoing-calls handler of `callHierarchy`, boxed, or `null`
+    entry #prepareTypeHierarchy0   the prepare handler of `typeHierarchy`, boxed, or `null`
+    entry #supertypes0   the supertypes handler of `typeHierarchy`, boxed, or `null`
+    entry #subtypes0   the subtypes handler of `typeHierarchy`, boxed, or `null`
+    entry #semanticTokens0   the `semanticTokens` handler, boxed, or `null`
+    entry #semanticTokensLegend0   the legend `semanticTokens` was registered with
+    entry #semanticTokensDelta0   the `semanticTokensDelta` handler, boxed, or `null`
+    entry #semanticTokensRange0   the `semanticTokensRange` handler, boxed, or `null`
+    entry #inlayHints0   the `inlayHints` handler, boxed, or `null`
+    entry #inlineValues0   the `inlineValues` handler, boxed, or `null`
+    entry #linkedEditingRange0   the `linkedEditingRange` handler, boxed, or `null`
+    entry #monikers0   the `monikers` handler, boxed, or `null`
+    entry #diagnostics0   the `diagnostics` handler, boxed, or `null`
+    entry #diagnosticOptions0   the options `diagnostics` was registered with
+    entry #workspaceSymbols0   the `workspaceSymbols` handler, boxed, or `null`
+    entry #commands0   the registered commands: each name with its boxed handler
+    entry #commandNames0   the registered command names, kept apart for the capabilities
+    entry #configuration0   the `configuration` handler, boxed, or `null`
+    entry #watchedFiles0   the `watchedFiles` handler, boxed, or `null`
+    entry #foldersChanged0   the `foldersChanged` handler, boxed, or `null`
+    entry #creatingFiles0   the `creatingFiles` handler, boxed, or `null`
+    entry #createdFiles0   the `createdFiles` handler, boxed, or `null`
+    entry #renamingFiles0   the `renamingFiles` handler, boxed, or `null`
+    entry #renamedFiles0   the `renamedFiles` handler, boxed, or `null`
+    entry #deletingFiles0   the `deletingFiles` handler, boxed, or `null`
+    entry #deletedFiles0   the `deletedFiles` handler, boxed, or `null`
+    entry #resolveCompletion0   the `resolveCompletion` handler, boxed, or `null`
+    entry #resolveCodeAction0   the `resolveCodeAction` handler, boxed, or `null`
+    entry #resolveCodeLens0   the `resolveCodeLens` handler, boxed, or `null`
+    entry #resolveDocumentLink0   the `resolveDocumentLink` handler, boxed, or `null`
+    entry #resolveInlayHint0   the `resolveInlayHint` handler, boxed, or `null`
+    entry #resolveWorkspaceSymbol0   the `resolveWorkspaceSymbol` handler, boxed, or `null`
+    entry #adjust0   the pure capabilities adjustment `capabilities(adjust)` registered, if any
+  entry .Proxy   where a proxy's rewriters and hooks are recorded, lent to the block given to `Lsp.proxy`
+    detail
+        The target of the `rewrite` combinators, as `Lsp.Registry` is of the server's. Two
+        layers of interception live here: the typed rewriters (`rewrite.hover`,
+        `rewrite.capabilities`, `rewrite.diagnostics`, …) are keyed by method and act on a
+        decoded payload, and the raw hooks (`rewrite.outbound`, `rewrite.inbound`) act on
+        whole messages, including methods this library does not model. What neither covers
+        is forwarded byte for byte. An exclusive capability, confined to the registration
+        block; its public slots are assigned by the combinators and read once, by `Proxy.run`,
+        when registration is over.
+
+        The session with the server upstream comes in with the proxy and is reached through
+        `upstream`: a rewriter or hook is registered before the session exists but runs while
+        it does, so a proxy may ask the server something the editor never asked for.
+    refer exegesis.rewrite
+    refer exegesis.upstream
+    refer exegesis.Lsp.proxy
+    entry .Rewriter   a rewriter of one payload, keyed by method in the proxy's tables
+      detail
+          What `rewrite.hover` and the other typed combinators construct: `rewrite(json)`
+          takes a `Tactic[Json.Error]` at each call, from the loop which applies it, so the
+          instance the proxy retains holds no tactic of its own, and a payload it cannot
+          decode passes through unchanged — a `null` hover, for instance, is forwarded as the
+          `null` it is.
+      entry #rewrite   the amended payload, or a `Json.Error` raised through the given tactic
+    entry .run   runs a proxy with an explicit observer: what `Lsp.proxy` calls
+        `Proxy.run(upstream, observer)(register)`, with the same contextual requirements as
+        `Lsp.proxy`. The block runs once; then the rules are read out of the proxy, the
+        session with `upstream` opens, `rewrite.connected`'s block starts on a task of its
+        own, and the loop reads the editor from standard input until it is exhausted. The
+        editor's messages are classified by method and forwarded under their own ids; the
+        server's are intercepted by a listener which retypes each response by the method of
+        the request it answers, applies the matching rewriter, and writes the result to
+        standard output. A response to a request the proxy made itself (whose id is a string
+        obligatory minted) is routed to the caller awaiting it instead, so it never reaches
+        the editor.
+    entry #results   the rewriters for responses, by the method of the request they answer
+    entry #notices   the rewriters for notifications and server-to-client requests, by method
+    entry #outbound0   the `rewrite.outbound` hook, boxed, or `null`
+    entry #inbound0   the `rewrite.inbound` hook, boxed, or `null`
+    entry #connected0   the `rewrite.connected` block, boxed, or `null`
+
+entry .LspLifecycle   the wire trait for the lifecycle and document-sync methods
+    One of the seven `@rpc` traits which, unioned in `Lsp`, make up the wire surface; split
+    out so that obligatory's `JsonRpc.serve` and `JsonRpc.proxy` generate a class of
+    manageable size per trait. It declares `initialize`, `initialized`, `shutdown`, `exit`,
+    `textDocument/didOpen`, `textDocument/didChange`, `textDocument/didSave` and
+    `textDocument/didClose`, each taking the protocol's own parameter names and types
+    (`textDocument: Lsp.TextDocumentIdentifier`, and so on). `Lsp.Connection#lifecycle` is
+    the generated client for it, and `Lsp.listen`'s session implements it. Not exported to
+    the `soundness` umbrella: reached with `import exegesis.*`, and needed only by a server
+    written as an `Lsp` by hand or a client calling a wire method directly.
+
+entry .LspLanguage   the wire trait for the core language features
+    `textDocument/completion`, `textDocument/hover`, `textDocument/definition`,
+    `textDocument/references`, `textDocument/documentSymbol`, `textDocument/formatting`,
+    `textDocument/rename`, `textDocument/codeAction` and `textDocument/signatureHelp`. See
+    `LspLifecycle` for why the surface is split; `Lsp.Connection#language` is its client.
+
+entry .LspNavigation   the wire trait for navigation, folding, links, lenses and colours
+    `textDocument/declaration`, `textDocument/typeDefinition`,
+    `textDocument/implementation`, `textDocument/documentHighlight`,
+    `textDocument/foldingRange`, `textDocument/selectionRange`, `textDocument/documentLink`,
+    `textDocument/codeLens`, `textDocument/documentColor` and
+    `textDocument/colorPresentation`. `Lsp.Connection#navigation` is its client.
+
+entry .LspEditing   the wire trait for range and on-type formatting, rename preparation, saves and hierarchies
+    `textDocument/rangeFormatting`, `textDocument/onTypeFormatting`,
+    `textDocument/prepareRename`, `textDocument/willSave`, `textDocument/willSaveWaitUntil`,
+    `textDocument/prepareCallHierarchy`, `callHierarchy/incomingCalls`,
+    `callHierarchy/outgoingCalls`, `textDocument/prepareTypeHierarchy`,
+    `typeHierarchy/supertypes` and `typeHierarchy/subtypes`. `Lsp.Connection#editing` is its
+    client.
+
+entry .LspAdvanced   the wire trait for semantic tokens, inlay hints, inline values, monikers and pull diagnostics
+    `textDocument/semanticTokens/full`, `textDocument/semanticTokens/full/delta`,
+    `textDocument/semanticTokens/range`, `textDocument/inlayHint`,
+    `textDocument/inlineValue`, `textDocument/linkedEditingRange`, `textDocument/moniker`
+    and `textDocument/diagnostic`. `Lsp.Connection#advanced` is its client.
+
+entry .LspWorkspace   the wire trait for workspace symbols, commands, configuration and file operations
+    `workspace/symbol`, `workspace/executeCommand`, `workspace/didChangeConfiguration`,
+    `workspace/didChangeWatchedFiles`, `workspace/didChangeWorkspaceFolders`, the six
+    `workspace/willCreateFiles`…`workspace/didDeleteFiles` methods, and `$/setTrace`.
+    `Lsp.Connection#workspace` is its client.
+
+entry .LspResolve   the wire trait for the `*/resolve` requests
+    `completionItem/resolve`, `codeAction/resolve`, `codeLens/resolve`,
+    `documentLink/resolve`, `inlayHint/resolve` and `workspaceSymbol/resolve`. Each takes
+    the item itself as its `params`, not an object with named fields, so the parameter is
+    marked `@bare`. `Lsp.Connection#resolve` is its client.
+
+entry .LspSessional   the `Sessional` instance which opens a session with an `Lsp.Server`
+  detail
+      What `session` runs on an `Lsp.Server`: it mints the channel to the server — the pipes
+      of a forked subprocess for `Server.Process`, the given streams for `Server.Streams` —
+      starts a writer task draining the connection's outgoing messages onto it and a reader
+      task routing what comes back, lends an `Lsp.Connection^` to the block, and cancels
+      both tasks afterwards, aborting a subprocess rather than waiting for it. Its `Self` is
+      `Lsp.Server` and its `Result` is `Lsp.Connection^`.
+
+      The reader dispatches what the server sends to the `Lsp.Listener` the instance was
+      built with: a notification the `Lsp.Client` trait models reaches the listener's named
+      method; any other method is a request the server makes of its client, answered by
+      `Listener#request`; a response is matched to the request awaiting it. The observer sees
+      every message in both directions.
+
+      The ambient instance is the given `Lsp.Server.sessional`, built from the listener and
+      observer givens in scope; construct one explicitly only to pass a listener or observer
+      as a value, and bind it as a local given:
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import threads.virtualThreads
+      import probates.awaitProbate
+      import errorDiagnostics.stackTracesDiagnostics
+      import workingDirectories.javaBaseWorkingDirectory
+      import environments.javaBaseEnvironment
+
+      val tracing = new Lsp.Observer:
+        def received(message: Text): Unit = Err.println(t"recv $message")
+        def sent(message: Text): Unit = Err.println(t"send $message")
+
+      supervise:
+        given sessional: LspSessional^ = LspSessional(observer = tracing)
+        Lsp.Server(sh"rust-analyzer").session: server ?=>
+          server.initialize()
+      ```
+
+      It needs a `Monitor`, a `Probate`, `Diagnostics`, a `WorkingDirectory`, an
+      `Environment` and a `Tactic[Lsp.Error]`: a subprocess which cannot be launched is
+      reported as `Lsp.Error(Reason.Unstarted, details)` through the tactic. A malformed
+      frame or a truncated stream is the reader's or the writer's fault, reported to the
+      probate.
+  refer exegesis.Lsp.Server
+  refer exegesis.Lsp.Connection
+  refer exegesis.Lsp.Listener
+  refer exegesis.Lsp.Observer
+  entry #Self   the subject: `Lsp.Server`
+  entry #Result   what the session lends: `Lsp.Connection^`
+  entry #session   opens the channel to a server, lends a connection to the block, and closes it after
+
+entry .rewrite   the proxy's registration combinators: amend what a server upstream says
+  detail
+      A namespace of its own, so that `rewrite.hover` (amend a hover the server returned)
+      and `Lsp.hover` (serve a hover) never collide. Each typed combinator is keyed by
+      method, decodes the payload into the same `Lsp` type the server side uses, applies the
+      function, and re-encodes; a method with no rewriter is forwarded untouched, and a
+      payload which does not decode — the `null` a server sends for a hover it has none of
+      — passes through as it stands, so a rewriter never spells out the empty case. Each
+      needs an `Lsp.Proxy^` in scope: the block of `Lsp.proxy`.
+
+      ```scala fuel
+      typecheck
+      ##
+      Lsp.proxy(Lsp.Server(sh"rust-analyzer")):
+        rewrite.capabilities(_.copy(hoverProvider = true))
+
+        rewrite.hover: hover =>
+          hover.copy(contents = Lsp.MarkupContent(value = t"_(proxied)_ ${hover.contents.value}"))
+
+        rewrite.diagnostics(_.map { report => report.copy(message = t"[proxy] ${report.message}") })
+
+        rewrite.outbound: (method, message) =>
+          if method == t"textDocument/inlineValue" then Lsp.Transit.Drop else Lsp.Transit.Forward
+      ```
+
+      `.result` and `.notification` are the escape hatches for a method with no combinator,
+      and `.outbound`, `.inbound` and `.connected` are the whole-message hooks. A hook runs on
+      the thread which delivered the message it amends, which decides how it may use
+      `upstream`: see `exegesis.upstream`.
+  refer exegesis.Lsp.Proxy
+  refer exegesis.Lsp.proxy
+  refer exegesis.upstream
+  refer exegesis.Lsp.Transit
+  entry .capabilities   amends the capabilities the server upstream advertised
+      Rewrites the `initialize` result: a proxy which adds a feature must claim it, and one
+      which removes a feature must stop claiming it.
+  entry .hover   amends each hover the server returns
+  entry .completions   amends each completion list the server returns
+  entry .definitions   amends each list of definition locations the server returns
+  entry .symbols   amends each list of document symbols the server returns
+  entry .codeActions   amends each list of code actions the server returns
+  entry .codeLenses   amends each list of code lenses the server returns
+  entry .inlayHints   amends each list of inlay hints the server returns
+  entry .signatureHelp   amends each signature help the server returns
+  entry .diagnostics   amends the diagnostics the server publishes
+      The one notification among the typed rewriters: the `uri` and `version` the server
+      reported are kept, and only the list of reports is the proxy's to change.
+  entry .result   amends the result of any request, by method, as raw JSON
+      `rewrite.result(method)(lambda)`: for a method this library does not model, or a
+      payload a proxy would rather treat as JSON. The lambda takes a `Tactic[Json.Error]`
+      from the proxy at each call, so a payload it cannot read passes through unchanged. A
+      response carrying an `error` is left alone.
+  entry .notification   amends the parameters of any notification the server sends, by method
+      `rewrite.notification(method)(lambda)`, as `.result` for the `params` of a notification
+      or of a request the server makes of its client; the message is rebuilt with its id, if
+      it had one.
+  entry .outbound   sees every message the editor sends, before it is forwarded
+      `rewrite.outbound { (method, message) => … }`, returning a `Transit`: forward, rewrite,
+      drop, or answer the request here so the server never sees it. Runs on the loop reading
+      the editor, so a request to `upstream` may be awaited, though the editor waits with it.
+  entry .inbound   sees every message the server sends, after any rewriter, before it is forwarded
+      `rewrite.inbound { (method, message) => … }`: the method is that of a notification, or
+      of the request a response answers, or `Unset`. Returns a `Transit`; `Answer` is ignored
+      here. Runs on the task reading the server, which is the task that would deliver the
+      answer to any request made of `upstream`, so such a request must be made in an `async`
+      block, never awaited inline.
+  entry .connected   runs a block once, on a task of its own, as soon as the session upstream is open
+      The place for what a proxy must ask the server before it can amend anything, and the
+      only hook free to await an answer. The loop reading the editor does not wait for it,
+      since an editor's first request may arrive before a server has finished starting up.
+
+      ```scala fuel
+      typecheck
+      ##
+      Lsp.proxy(Lsp.Server(sh"jdtls")):
+        val classpath: Promise[Json] = Promise()
+
+        rewrite.connected:
+          classpath.offer(upstream.execute(t"java.project.getClasspaths").or(Json()))
+      ```
+
+entry .upstream   the proxy's session with the server upstream, for questions of its own
+    `upstream` (needing an `Lsp.Proxy^` in scope) is the `Lsp.Connection` a proxy holds on
+    the server it forwards to: the way a hook asks the server something the editor never
+    asked, typically for project state only the server knows. Answers return to the caller
+    which asked and never reach the editor. It is a method, not a value, because
+    registration runs before the proxy has a server to talk to: calling it inside the
+    registration block but outside a hook, before the session exists, is a panic.
+
+    Which hook calls it decides whether it may await the answer. `rewrite.connected` has a
+    task of its own and may await freely; `rewrite.outbound` runs on the loop reading the
+    editor, so awaiting is safe but holds the editor up; `rewrite.inbound` runs on the task
+    reading the server — the task that would deliver the response — so a request awaited
+    there waits forever, and must be made in an `async` block.
+
+    ```scala fuel
+    typecheck
+    ##
+    Lsp.proxy(Lsp.Server(sh"jdtls")):
+      rewrite.outbound: (method, message) =>
+        if method == t"workspace/executeCommand"
+        then Lsp.Transit.Answer(upstream.execute(t"java.project.getClasspaths").or(Json()))
+        else Lsp.Transit.Forward
+    ```
+
+entry .DemoLspServer   a complete, minimal language server, in `exegesis.demo`
+    The `main` class of the `exegesis.demo` component: a resident daemon (ethereal's `cli`
+    and `execute`, with the `completionsExecutive`) which calls `Lsp.listen` with four
+    registrations — an `opened` handler publishing a warning over the whole document, a
+    `hover` showing the word under the cursor, a fixed `complete()` list, and a
+    `demo.reverse` command which reverses its text argument — and returns `Exit.Ok` when the
+    editor closes the pipe. Point an editor at it as a language server for any language to
+    see the protocol exercised end to end. Not exported to the `soundness` umbrella.
+
+entry .DemoLspProxy   a complete, minimal proxy, in `exegesis.demo`
+    A resident daemon which launches the language server named by its own arguments
+    (`demo-proxy rust-analyzer`), forwards everything an editor sends it, and amends two of
+    the answers on the way back: every hover is prefixed with _(proxied)_ and every
+    published diagnostic is labelled `[demo]`, with `rewrite.capabilities` claiming hover in
+    case the server did not. Everything else crosses unchanged, under the editor's own
+    request ids. Not exported to the `soundness` umbrella.

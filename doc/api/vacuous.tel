@@ -1,0 +1,532 @@
+tel 1.0
+
+base vacuous
+import soundness
+
+info   absent values without a wrapper: `Optional`, `Unset`, and the combinators that consume them
+detail
+    _Vacuous_ represents a value that may be absent as an `Optional[value]`, which is
+    exactly the union type `Unset | value`: a present value is the value itself, with no
+    `Some` to allocate or unwrap, and absence is the single sentinel `Unset`. Unlike
+    `null`, absence is visible in the type and cannot be dereferenced by accident; unlike
+    `Option`, optionality is *flat* — a union absorbs a repeated member, so
+    `Optional[Optional[Int]]` is the same type as `Optional[Int]`, and a "present absence"
+    such as `Some(None)` cannot be written at all.
+
+    ```scala
+    import soundness.*
+
+    val name: Optional[Text] = t"Ada"
+    val nickname: Optional[Text] = Unset
+
+    name.or(t"anonymous")          // t"Ada"
+    nickname.or(t"anonymous")      // t"anonymous"
+    name.let(_.upper)              // Optional[Text]: t"ADA"
+    name.lay(0)(_.length)          // Int: 3
+    name.present                   // true
+    ```
+
+    The combinators read as the questions they answer. `or` supplies a fallback; `let`
+    transforms a present value and passes `Unset` through, serving where `Option` would
+    need both `map` and `flatMap`; `lay` takes a fallback and a transformation together
+    and so returns a plain value; `present` and `absent` ask directly; `mask` discards a
+    present value which fails a predicate; `assume` and `presume` require a value, by
+    throwing `Optional.Error` or by falling back to the type's `Default`. Going the other
+    way, `unless`, `puncture` and `only` make any value optional by a condition, and
+    `optional`/`option`/`javaOptional` convert at the boundary with code that speaks
+    `Option` or `java.util.Optional`.
+
+    `Optional` is deliberately not a monad: there is no `flatMap` and no `for`
+    comprehension over it. Absence is dealt with where it arises — close to where the value
+    was obtained — rather than carried through the program in a wrapper every later step
+    must accommodate.
+
+    The flat representation has one cost, which the compiler enforces. The absorption
+    works because both members of the union are known, and for an *abstract* type they are
+    not: a `value` later instantiated to something already optional would merge two
+    absences meant to be distinct. So the combinators require an `Optionality` proof that
+    their receiver's type really is an `Optional` (calling `let` on a plain `Text` is a
+    compile error, _the type Text is not an `Optional`_), and a generic method taking an
+    `Optional[value]` for an abstract `value` asks for `value: Concrete` in its signature.
+    `Distinct` and `Mandatable` are the other two type-level facts: that a type is not a
+    member of a union, and the non-optional type a present value has.
+
+    ```scala fuel
+    frame
+      label With `Option`: every step wraps, and the result may be a `Some(None)`
+      code
+          val users: Map[Text, Option[Text]] = Map(t"ada" -> Some(t"Ada"))
+          def email(name: Text): Option[Text] = if name == t"Ada" then Some(t"ada@example.com") else None
+          val result: Option[Option[Text]] = users.stdlib.get(t"ada").map(_.flatMap(email))
+    frame
+      label With `Optional`: a present value is itself, and `let` never nests
+      code
+          val users: Map[Text, Optional[Text]] = Map(t"ada" -> t"Ada")
+          def email(name: Text): Optional[Text] = if name == t"Ada" then t"ada@example.com" else Unset
+          val result: Optional[Text] = users.at(t"ada").let(email)
+    frame
+      label And a fallback closes the question where it was asked
+      code
+          val users: Map[Text, Optional[Text]] = Map(t"ada" -> t"Ada")
+          def email(name: Text): Optional[Text] = if name == t"Ada" then t"ada@example.com" else Unset
+          val address: Text = users.at(t"ada").let(email).or(t"nobody@example.com")
+    ##
+    ```
+
+    Every collection accessor which may find nothing — `head` on a list not proven
+    `Populated`, `at` on a `Map`, an index on a `Sequence` — returns an `Optional`, so the
+    combinators here are the ordinary way to consume the collections' results.
+
+    The library is a single source set, `vacuous.core`, compiled for the JVM, Scala.js
+    and Scala Native, and everything is exported to the `soundness` umbrella. Its only
+    givens are in companions (`Default`'s instances for the types with an obvious zero;
+    the macro-backed `Concrete`, `Distinct`, `Mandatable` and `Optionality` proofs) and so
+    resolve with no import. The `Unsafe` capability token also lives here, below
+    contingency's `unsafely`, which supplies it.
+
+refer vacuous.Optional
+refer vacuous.Unset
+refer vacuous.or
+refer vacuous.let
+refer vacuous.lay
+refer vacuous.Default
+
+entry .Optional   a value which may be absent, as the flat union `Unset | value`
+  detail
+      `Optional[value]` is the type alias `Unset | value`. A present value is stored,
+      passed and read as itself; absence is `Unset`. Because a union absorbs a repeated
+      member, `Optional[Optional[Int]]` is `Optional[Int]`, so optionality never nests and
+      there is no ambiguous "present absence". An `Optional[Text]` therefore costs nothing
+      to hold that a `Text` does not, which is the whole reason for the design: `Option`
+      allocates a `Some` for every present value.
+
+      ```scala
+      import soundness.*
+
+      val name: Optional[Text] = t"Ada"
+      val missing: Optional[Text] = Unset
+
+      name.let(_.upper).or(t"ANONYMOUS")   // t"ADA"
+      missing.lay(t"nobody")(_.upper)      // t"nobody"
+      missing.absent                       // true
+      ```
+
+      The combinators — `or`, `let`, `lay`, `present`, `absent`, `mask`, `assume`,
+      `presume`, `option`, `javaOptional`, `letGiven`, `layGiven` — are package-level
+      extensions, each guarded by an `Optionality` proof that the receiver's type is an
+      `Optional`; `Optional.check[value]` makes the same check explicitly. The object has
+      `.apply`, which turns a nullable Java result into an `Optional`, and the two
+      `CanEqual` givens which let any value be compared with `Unset` under strict equality.
+
+      Two capture-checking facts matter to a user. A *frozen array* inside the union — a
+      method returning `Optional[Data]`, say — is freshened to a read-only capture at every
+      call site as soon as the method also takes a capability parameter (a `Loggable`, or
+      the `logs Event` sugar), and that result then cannot enter `safely` or a type
+      variable; the shape which works is a capability-free method returning the
+      `Optional[Data]`, called from an `inline` shell which does the logging, and the shell
+      should test `present` rather than `let` over the bytes, since a lambda over them
+      freshens them again. And an `Optional` of a *capability* (`Optional[Handle^]`)
+      should be branched by a `match` whose first case is `case Unset =>`, rather than
+      through a `| Null` sentinel and flow typing, which loses the separation checker's
+      tracking of a consumed value.
+  refer vacuous.Unset
+  refer vacuous.Optionality
+  refer vacuous.or
+  refer vacuous.let
+  refer vacuous.lay
+  entry .Unset   the one absent value; its type is the opaque `Unset`
+      `Unset` is both the opaque type `Unset <: Matchable & caps.Pure` and the one value of
+      it. The underlying representation is `null`, so a present value is never boxed and
+      an absence costs nothing, but the type is opaque: `Unset` is not a subtype of `Null`,
+      so `nn` does not strip it and `Unset | value` normalises predictably in given
+      resolution. It is pure, so `Optional[value]` is pure whenever `value` is. The name
+      is exported at the package level too, so `Unset` is reached with `import soundness.*`
+      alone.
+  entry .unsetEquality   `CanEqual[value, Unset]`: any value may be compared with `Unset`
+      Under strict equality, `optional == Unset` would otherwise be rejected for a `value`
+      with no `CanEqual` of its own; this given and `.equalityUnset` admit the comparison
+      in either order, which is what `absent` and `present` compile to.
+  entry .equalityUnset   `CanEqual[Unset, value]`: `Unset` may be compared with any value
+  entry .apply   turns a nullable value into an `Optional`: `Optional(javaResult)`
+      `Optional(value)` is `Unset` when `value` is `null` and `value` otherwise. It is the
+      entry point for a Java API's nullable result:
+
+      ```scala
+      import soundness.*
+
+      val home: Optional[Text] = Optional(java.lang.System.getProperty("user.home")).let(_.tt)
+      ```
+  entry .check   a compile-time check that a type is an `Optional`
+      `Optional.check[value]` expands to nothing if `Unset` is a subtype of `value`, and
+      otherwise fails to compile with error 465, _the type `value` is not an `Optional`_.
+      It is what the `Optionality` given does, exposed for code which wants to assert the
+      property directly.
+  entry .Error   raised by `assume` when the value was absent
+      Error 591: _the value was not set_. Thrown by `assume`, which needs a
+      `CanThrow[Optional.Error]` in scope (`import unsafeExceptions.canThrowAny`, or an
+      enclosing `unsafely`) precisely because it is an unchecked assertion of presence.
+
+entry .Unset   the one absent value, exported from `Optional.Unset`
+    The value every `Optional` holds when it is absent, and the type of that value. It is
+    `Optional.Unset`, exported at the package level so that `Unset` reads as a keyword.
+    Compare with `== Unset` (the `CanEqual` givens in `Optional` admit it), match with
+    `case Unset =>`, and construct an absent `Optional[Text]` as `Unset` with no type
+    argument, since `Unset` conforms to every `Optional`.
+
+entry .or   the value if present, or a fallback
+    `optional.or(fallback)` is the value when it is present and `fallback` otherwise; the
+    fallback is by-name and evaluated only when needed. Its result is a plain `value`, so
+    `or` is the usual last step of a chain of `let`s. It is a macro: a receiver which is an
+    `optimizable` block is rewritten so that the fallback is supplied to the block
+    directly, with no intermediate `Optional`, and a receiver whose type is not an
+    `Optional` is a compile error (465, _the type `T` is not an `Optional`_).
+
+    ```scala
+    import soundness.*
+
+    val nickname: Optional[Text] = Unset
+    nickname.or(t"anonymous")   // t"anonymous"
+    ```
+
+entry .let   transforms a present value; passes `Unset` through
+    `optional.let(lambda)` applies `lambda` to a present value and yields `Unset` for an
+    absent one. Since optionality is flat, a `lambda` which itself returns an `Optional`
+    adds no layer — `let` serves where `Option` needs both `map` and `flatMap`:
+
+    ```scala
+    import soundness.*
+
+    def initial(text: Text): Optional[Char] = text.chars.head
+    val name: Optional[Text] = t"Ada"
+
+    name.let(_.upper)                 // Optional[Text]: t"ADA"
+    name.let(_.keep(1)).let(initial)  // Optional[Char]: 'A', with no nesting
+    ```
+
+    Needs an `Optionality` proof for the receiver's type, which is in implicit scope for
+    any `Optional`.
+
+entry .lay   a fallback for absence and a function for presence, giving a plain value
+    `optional.lay(alternative)(lambda)` is `lambda(value)` when the value is present and
+    `alternative` (by-name) otherwise, so it returns a plain `value2` rather than an
+    `Optional`. It is `let` and `or` in one step, and is inlined.
+
+    ```scala
+    import soundness.*
+
+    val name: Optional[Text] = t"Ada"
+    name.lay(0)(_.length)   // 3
+    ```
+
+entry .letGiven   `let` with the present value supplied as a contextual value
+    `optional.letGiven(block)` evaluates `block` with the present value as a `given`,
+    yielding `Unset` for an absent one. For a block whose body summons the value (a
+    `Tactic`, a `Classloader`, a session) rather than naming it.
+
+entry .layGiven   `lay` with the present value supplied as a contextual value
+    `optional.layGiven(alternative)(block)` evaluates `block` with the present value as a
+    `given` and `alternative` (by-name) when it is absent, returning a plain value.
+
+entry .present   whether the value is present
+    `optional.present` is `optional != Unset`, inlined. Requires an `Optionality` proof,
+    so it can only be asked of a type which is an `Optional`.
+
+entry .absent   whether the value is `Unset`
+    `optional.absent` is `optional == Unset`, inlined.
+
+entry .mask   discards a present value which satisfies a predicate
+    `optional.mask(predicate)` is `Unset` when the value is present and `predicate` holds
+    of it, and otherwise the receiver unchanged. The sense is "mask out": the predicate
+    names what to *remove*.
+
+    ```scala
+    import soundness.*
+
+    val name: Optional[Text] = t"Ada"
+    name.mask(_.length > 64)   // t"Ada": unchanged, since it is not unreasonably long
+    ```
+
+entry .assume   the value, or a thrown `Optional.Error` if it is absent
+    `optional.assume` asserts presence. It is an unchecked assertion, so it needs a
+    `CanThrow[Optional.Error]` in scope — `import unsafeExceptions.canThrowAny`, or an
+    enclosing `unsafely` — and throws error 591, _the value was not set_, when the
+    assertion is wrong. Prefer `or`, `lay` or a match where the code can say what absence
+    means.
+
+    ```scala
+    import soundness.*
+    import unsafeExceptions.canThrowAny
+
+    val name: Optional[Text] = t"Ada"
+    name.assume   // t"Ada"
+    ```
+
+entry .presume   the value, or the type's `Default` if it is absent
+    `optional.presume` is `optional.or(default)` for a `value` with a `Default` instance:
+    an empty text, zero, an empty list. A type with no `Default` cannot be presumed, which
+    is a compile error rather than a surprise at runtime.
+
+    ```scala
+    import soundness.*
+
+    val nickname: Optional[Text] = Unset
+    nickname.presume   // t"": the default Text
+    ```
+
+entry .option   the value as an `Option`, for the boundary with code that speaks `Option`
+    `optional.option` is `Some(value)` or `None`. The conversion is meant for the edge of
+    a program — a library which returns or takes `Option` — and `optional` converts back;
+    a Soundness program's interior speaks `Optional` alone.
+
+entry .javaOptional   the value as a `java.util.Optional`, for Java APIs
+    `optional.javaOptional` is `java.util.Optional.of(value)` or `java.util.Optional.empty`;
+    `optional` on a `java.util.Optional` converts back.
+
+entry .optional   an `Option` or a `java.util.Optional` as an `Optional`
+    Two extensions share the name: `option.optional` is the value of a `Some` or `Unset`
+    for `None`, and `javaOptional.optional` is the same for a `java.util.Optional`. Both
+    are the boundary conversions inward; `option` and `javaOptional` are the conversions
+    outward.
+
+    ```scala
+    import soundness.*
+
+    Some(t"Ada").optional                    // t"Ada": Optional[Text]
+    java.util.Optional.empty[Text].optional  // Unset
+    ```
+
+entry .unless   makes a value optional: `Unset` when a predicate holds
+    `value.unless(predicate)` is `Unset` if `predicate(value)` holds (or, in the overload
+    taking a `Boolean`, if the condition is true) and `value` otherwise. The condition names
+    the case to *discard*.
+
+    ```scala
+    import soundness.*
+
+    val count = 0
+    count.unless(_ == 0)      // Unset: the count is zero
+    count.unless(count < 0)   // 0
+    ```
+
+entry .puncture   makes a value optional: `Unset` when it equals one particular value
+    `value.puncture(point)` is `Unset` when `value == point` and `value` otherwise, for the
+    sentinel values an API uses for absence — the empty text, `-1`, `0`:
+
+    ```scala
+    import soundness.*
+
+    t"".puncture(t"")   // Unset
+    ```
+
+entry .only   keeps a value only where a partial function is defined, applying it
+    `value.only { case pattern => result }` is `result` when the partial function is
+    defined at `value` and `Unset` otherwise: a filter and a transformation in one match.
+    The partial function may capture a capability (an extractor which raises an error
+    captures its `Tactic`), so it is taken as a capturing value.
+
+    ```scala
+    import soundness.*
+
+    7.only { case n if n > 0 => n*n }   // 49
+    ```
+
+entry .per   applies a function to a value only if an optional second argument is present
+    `value.per(optional)(lambda)` is `lambda(value, present)` when `optional` is present
+    and `value` unchanged when it is absent: the shape for applying an optional setting to
+    a builder, `element.per(start)(_.start = _)`.
+
+entry .compact   the present elements of a collection or iterator of `Optional`s
+    `iterable.compact` drops every `Unset` and yields the present values, as an
+    `Iterable[value]`; the overload on a `murmuration` `Iterator[Optional[value]]^`
+    consumes the iterator and yields an `Iterator[value]^` which drops absent elements as
+    it advances. The result is typed as the element type with the optionality removed.
+
+    ```scala
+    import soundness.*
+
+    List[Optional[Text]](t"a", Unset, t"c").compact   // List(t"a", t"c")
+    ```
+
+entry .entire   the whole collection if every element is present, or `Unset`
+    `iterable.entire` is all-or-nothing: an `Optional[List[value]]` which is the list of
+    every element when none is `Unset`, and `Unset` if any is. One presence sweep, with the
+    answer recorded in the result's type, where `compact` would silently drop the gaps.
+
+entry .default   the `Default` value of a type, summoned: `default[Text]` is `t""`
+    `default[value]` is `summon[Default[value]]()`, the value a type falls back to.
+    `presume` uses the same instance for an absent `Optional`.
+
+entry .optimizable   marks a block whose fallback `or` can supply directly
+    `optimizable[value] { default => body }` builds an `Optional[value]` from a lambda
+    which receives the fallback, and is at first applied to `Unset`. When the result is
+    immediately consumed by `or(fallback)`, the `or` macro rewrites the application so
+    that `fallback` is passed to the lambda instead and no intermediate `Optional` is
+    built: concordance's indexed `apply` uses it so that `xs(index).or(fallback)` reads
+    the slot with the fallback in hand. Library code; a program has little call for it.
+
+entry .invite   an instance of a type if one is in scope, or `Unset`
+    `invite[entity]` is a `transparent inline` summon which yields the given of type
+    `entity` when one is available and `Unset` otherwise, where `summon` would fail to
+    compile. For an optional capability — a logger, a diagnostics context — which a method
+    uses if present and does without if not.
+
+entry .Default   the value a type falls back to, used by `presume` and `default`
+  detail
+      A `Default[value]` is a by-name thunk, `() => value`, so a default which is
+      expensive to compute is computed only where it is used. Instances exist in the
+      companion for the types with an obvious zero — `Int`, `Long`, `Text`, `String`,
+      `List`, `Set`, `Sequence` — and for any singleton type with a `ValueOf`; a type
+      declares its own by defining one:
+
+      ```scala
+      import soundness.*
+
+      case class Volume(level: Int)
+      given Default[Volume] = Default(Volume(0))
+
+      val setting: Optional[Volume] = Unset
+      setting.presume   // Volume(0)
+      default[Volume]   // Volume(0)
+      ```
+
+      `Default` is covariant and pure (`scala.caps.Pure` directly, since it is
+      parameterised rather than selected through a `Self` member), and `Findable`,
+      beneficence's marker for a type whose values are supplied contextually.
+  refer vacuous.presume
+  refer vacuous.default
+  entry .apply   makes a `Default` from a by-name value: `Default(Volume(0))`
+      The argument is a pure by-name thunk (`-> value`), evaluated at each use.
+  entry .int   `Default[Int]`: `0`
+  entry .default   `Default[Long]`: `0L`
+      The given for `Long`, named `default` rather than `long`.
+  entry .singleton   `Default[value]` for any singleton type with a `ValueOf`: its value
+  entry .text   `Default[Text]`: the empty text
+  entry .string   `Default[String]`: the empty string
+  entry .list   `Default[List[element]]`: `Nil`
+  entry .set   `Default[Set[element]]`: the empty set
+  entry .sequence   `Default[Sequence[element]]`: the empty sequence
+  entry #apply   the default value, computed at each call
+
+entry .Optionality   the proof that a type is an `Optional`, required by every combinator
+  detail
+      `Optionality[value]` is a sealed marker whose only given, `.default`, is a macro
+      which succeeds when `Unset` is a subtype of `value` and fails with error 465, _the
+      type `value` is not an `Optional`_, otherwise. The extensions `or`, `let`, `lay`,
+      `present`, `absent`, `mask`, `assume`, `presume`, `option`, `javaOptional`,
+      `letGiven` and `layGiven` take an `Optionality[optional.type]`, so they resolve only
+      on a receiver whose static type admits `Unset`; a plain `Text` has no `let`. The
+      check costs nothing at runtime: the given is a `null` cast to the marker.
+
+      ```scala
+      import soundness.*
+
+      val name: Text = t"Ada"
+      name.let(_.upper)   // does not compile
+      ```
+  entry .default   the macro given: an `Optionality[value]` when `Unset <: value`
+
+entry .Concrete   the proof that a type is definite, not abstract
+  detail
+      `self is Concrete` is produced by the inline given `.concrete`, a macro which
+      succeeds when `self` is not an abstract type and otherwise fails with error 991,
+      _type `self` is abstract_. A generic method which takes an `Optional[value]` asks for
+      `value: Concrete` because the flat union is only unambiguous when both members are
+      known — an abstract `value` might later be instantiated to a type already optional,
+      merging two absences meant to be distinct:
+
+      ```scala
+      import soundness.*
+
+      def firstOrElse[value: Concrete](values: List[Optional[value]], fallback: value): value =
+        values.compact.to(List).head.or(fallback)
+
+      summon[String is Concrete]
+      ```
+
+      Inside an `inline` method the check is deferred to the expansion site, where the
+      type parameter is concrete, so `inline def f[value: Concrete]` compiles and each
+      call to it is checked. `Concrete.apply[self]()` makes an instance by hand, for a
+      macro which has established the fact itself.
+  entry .concrete   the macro given: `typeRef is Concrete` when the type is not abstract
+  entry .apply   an instance by assertion: `Concrete[self]()`
+
+entry .Distinct   the proof that a type is not a member of a union: `self is Distinct from union`
+  detail
+      `typeRef is Distinct from otherType` is produced by the inline given `.distinct`, a
+      macro which first requires `typeRef` to be `Concrete` (error 991 otherwise) and then
+      fails with error 401, _type `typeRef` cannot be proven distinct from `otherType`_,
+      when `typeRef` is a subtype of `otherType`. It is the check which keeps `Unset` out
+      of a value type, and it lets an API accept "one or several" without ambiguity:
+      caduceus's `many[entity: Distinct from List[Any]](value: entity | List[entity])`
+      can tell a single element from a list of them only because `entity` is proven not
+      to be a list itself.
+
+      ```scala
+      import soundness.*
+
+      summon[Int is Distinct from String]
+      summon[Int is Distinct from (Int | String)]   // does not compile
+      summon[String is Distinct from String]        // does not compile
+      ```
+
+      `Distinct` extends `Original`, so the other type is its `Origin` and is named with
+      `from`. `Distinct.apply[self, origin]()` makes an instance by assertion.
+  entry .distinct   the macro given: `typeRef is Distinct from otherType` unless `typeRef <: otherType`
+  entry .apply   an instance by assertion: `Distinct[self, origin]()`
+
+entry .Mandatable   the non-optional type a present value has: `self is Mandatable to result`
+  detail
+      `typeRef is Mandatable` is produced by the transparent inline given `.mandatable`, a
+      macro which strips every `Unset` from a union type and records what is left as its
+      `#Result`: `Optional[Text] is Mandatable to Text`. A type with no `Unset` in it fails
+      with error 259, _the value is not an `Optional`_. Derivation code uses it to find the
+      type to encode or render for an optional field — breviloquence's CBOR encoder and the
+      derived `Inspectable` both take `[inner <: value, value >: Unset.type: Mandatable to
+      inner]`.
+  entry .mandatable   the macro given: `typeRef is Mandatable to result`, with the `Unset` removed
+  entry .apply   an instance by assertion: `Mandatable[self, result]()`
+  entry #Result   the type with optionality removed; a subtype of `Self`
+
+entry .Extractor   a pattern extractor which answers with an `Optional`
+  detail
+      A trait for an object meant to be used in `case Name(value) =>` patterns: implement
+      `#extract`, returning an `Optional[extraction]`, and `#unapply` is derived from it as
+      the `Option` the pattern matcher requires. `Uuid` and phoenicia's `Otf` are
+      `Extractor[Text, …]`, so `case Uuid(uuid) =>` matches text that parses as one.
+
+      ```scala
+      import soundness.*
+
+      object Positive extends Extractor[Int, Int]:
+        def extract(value: Int): Optional[Int] = value.unless(_ <= 0)
+
+      7 match
+        case Positive(n) => n
+        case _           => 0
+      ```
+  entry #extract   the extraction, or `Unset` if the scrutinee does not match
+  entry #unapply   `extract(value).option`, for the pattern matcher
+
+entry .Unsafe   the capability token which gates operations that bypass a safety guarantee
+    A method which performs an unchecked operation — parsing a literal the compiler has
+    already validated, an interpolation whose parts a macro has checked — takes a
+    `(using Unsafe)` parameter and is named `unsafe…`; the caller supplies the token
+    through contingency's `unsafely` block, or passes `Unsafe` explicitly. `Unsafe` is
+    both the sealed trait and its single object value. It is a real value rather than an
+    `erased` one, since the Scala.js backend cannot compile a closure over an erased
+    parameter, but a `using erased Unsafe` parameter still erases it at its call sites.
+    The token is a greppable claim, confined to the operations which need it; a method
+    should take it only where its own body genuinely relies on an unproven property.
+
+entry .internal   the macro implementations behind the proofs and the optimised `or`
+  hidden
+  detail
+      Not for direct use. `check[value]` is the `Optionality` and `Optional.check` macro;
+      `concrete`, `distinct` and `mandatable` produce the `Concrete`, `Distinct` and
+      `Mandatable` proofs; and `optimizeOr` is the macro behind `or`, which rewrites an
+      `optimizable` receiver so that the fallback is supplied to it directly.
+  entry .check   the `Optionality[value]` macro: succeeds when `Unset <: value`, else error 465
+  entry .concrete   the `typeRef is Concrete` macro: fails with error 991 on an abstract type
+  entry .distinct   the `typeRef is Distinct from union` macro: fails with error 401 on a subtype
+  entry .mandatable   the `typeRef is Mandatable` macro: strips `Unset`, or error 259 if there is none
+  entry .optimizeOr   the macro behind `or`: inlines the fallback into an `optimizable` receiver

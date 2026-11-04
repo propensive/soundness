@@ -1,0 +1,969 @@
+tel 1.0
+
+base hieroglyph
+import soundness
+
+info   character encodings, sanitisers, display widths, Unicode properties, grapheme breaks and collation
+detail
+    _Hieroglyph_ is where text meets bytes and where a `Char` meets Unicode. The boundary
+    between `Text` and `Data` is a character encoding, and the library makes that choice
+    explicit and typed: a `Codepage` turns text into bytes, a `Charset` turns bytes back into
+    text, and each is a contextual value chosen by importing one of the `codepages` or
+    `charsets` givens by name, so no conversion happens under an assumed platform default.
+    What to do with bytes which cannot be decoded is a separate, equally explicit choice: a
+    `TextSanitizer` from the `textSanitizers` package, which skips them, substitutes `?`,
+    raises `Charset.Error` at the first fault, or accrues every fault while decoding the rest.
+
+    ```scala
+    import soundness.*
+    import codepages.utf8Codepage
+    import charsets.utf8Charset
+    import textSanitizers.strictSanitizer
+    import strategies.throwUnsafely
+
+    val bytes: Data = t"café".in[Data]   // 5 bytes of UTF-8
+    bytes.utf8                           // t"café"
+    enc"ISO-8859-1".encoder.encoded(t"café").length   // 4
+    ```
+
+    Any encoding the JVM knows is named with the `enc"…"` interpolator, which checks as the
+    code compiles that the encoding exists, and whether it can encode as well as decode:
+    `enc"ISO-2022-CN".decoder` compiles, `enc"ISO-2022-CN".encoder` does not. Encoding and
+    decoding also run as stream stages (`Codepage#encoded` and `Charset#decoded` over a
+    `Chain`), and a multi-byte character or a surrogate pair split across two chunks is
+    carried over the boundary rather than corrupted.
+
+    Alongside the encodings are the character-level facts a program sometimes needs:
+
+    - **display width** — `metrics` measures a `Char` or a `Text` through the `Measurable`
+      given in scope, chosen from `textMetrics`: `uniformMetric` counts every character as one
+      column, `eastAsianScriptsMetric` gives wide ideographs two, and
+      `wideCharacterWidthMetric` additionally gives combining marks and controls none;
+    - **Unicode properties** — the extensions `letter`, `digit`, `whitespace`, `control`,
+      `printable`, `majuscular`, `minuscular`, `description`, `superscript` and `subscript` on
+      `Char`, the `ucs"…"` interpolator for a character by its Unicode name, and `Unicode`'s
+      tables of names and east-Asian widths;
+    - **grapheme clusters** — `GraphemeBreak.boundaries` finds where one user-perceived
+      character ends and the next begins, by the rules of UAX #29;
+    - **normalisation and collation** — `Normalization.decompose` gives a text's canonical
+      decomposition (NFD), and `CollationTable` orders text by the Unicode Collation Algorithm
+      (UTS #10), with `tailor` for the common European tailorings. These are what
+      gossamer's `collations.unicodeCollation` and `Writing` are built on. The collation types
+      are reached as `hieroglyph.CollationTable`, `hieroglyph.CollationRule` and
+      `hieroglyph.CollationLevel`, which the `soundness` umbrella does not export.
+
+    The library is one source set, `hieroglyph.core`, which compiles for the JVM and Scala
+    Native. The Unicode data it needs (`UnicodeData.txt`, `EastAsianWidth.txt`,
+    `GraphemeBreakProperty.txt`, `emoji-data.txt`, `IndicConjunctBreak.txt` and `allkeys.txt`,
+    all version 16.0.0) is read from the classpath under `/hieroglyph/` when first used; on the
+    JVM, a table missing from the classpath is fetched from unicode.org, while on Scala Native
+    the tables must be embedded in the binary and a missing one is simply absent.
+
+    Everything is exported to the `soundness` umbrella except the collation types, and the
+    five choice packages — `charsets`, `codepages`, `textSanitizers`, `textMetrics` and
+    `communication` — merge with the umbrella's own packages of those names. Since
+    `import soundness.*` imports no givens, a program names the encoding, sanitiser and metric
+    it wants: `import codepages.utf8Codepage`, `import textSanitizers.strictSanitizer`,
+    `import textMetrics.uniformMetric`. The `iso88591Charset` and `iso88591Codepage` givens are
+    declared only in `hieroglyph.charsets` and `hieroglyph.codepages`, not re-exported in the
+    umbrella's packages.
+
+refer hieroglyph.Charset
+refer hieroglyph.Codepage
+refer hieroglyph.Encoding
+refer hieroglyph.TextSanitizer
+refer hieroglyph.Measurable
+refer hieroglyph.GraphemeBreak
+
+entry .Encoding   a named character encoding the platform supports, from which a `Charset` or a `Codepage` is made
+  detail
+      An `Encoding` is a character encoding by name — `UTF-8`, `ISO-8859-1`, `ISO-2022-CN` —
+      and the common root of the two directions of conversion: `#decoder` makes the `Charset`
+      which reads bytes as text, and `.encoder` makes the `Codepage` which writes text as
+      bytes. Its type member `#CanEncode` records, as `true` or `false`, whether the platform
+      can encode with it, and `.encoder` exists only on an `Encoding { type CanEncode = true }`,
+      so an encoding which can only decode has no way to be asked for bytes.
+
+      The way to get one is the `enc"…"` interpolator, which checks the name as the code
+      compiles and gives the precise `CanEncode` type:
+
+      ```scala
+      import soundness.*
+      import textSanitizers.skipSanitizer
+
+      enc"UTF-8".encoder          // a Codepage
+      enc"ISO-2022-CN".decoder    // a Charset
+      enc"ISO-2022-CN".encoder    // does not compile
+      enc"ABCDEF"                 // does not compile
+      ```
+
+      At runtime, `Encoding.unapply(name)` looks a name up in the platform's table (case
+      insensitively, by display name or alias) as an `Option`, with `CanEncode` left abstract.
+      `#name` is the platform's canonical display name, whatever spelling the encoding was
+      asked for by, and `#charset` is the `java.nio.charset.Charset` behind it, resolved once.
+
+      An encoding renders as text as its name (`.textualizable`), and as a message the same
+      way (`.communicable`); its `toString` is the source which would make it,
+      `enc"UTF-8"`.
+  refer hieroglyph.enc
+  refer hieroglyph.Charset
+  refer hieroglyph.Codepage
+  entry .textualizable   renders an encoding as its canonical name
+  entry .communicable   renders an encoding as a message holding its name
+      The given which lets an `Encoding` be interpolated into an `m"…"` message, as
+      `Charset.Error` and `Codepage.Error` do.
+  entry .unapply   looks an encoding up by name at runtime, as an `Option`
+      `Encoding.unapply(t"utf-8")` is `Some(encoding)` if the platform has an encoding of that
+      name or alias, compared case-insensitively, and `None` otherwise. The result's
+      `CanEncode` is not known statically, so `encoder` is unavailable on it; for a name known
+      when the code is written, `enc"…"` gives the precise type. It is an extractor, so it also
+      serves in a match: `case Encoding(encoding) =>`.
+  entry .apply   makes an encoding from a name and whether it can encode, without checking either
+      `Encoding(name, canEncode)` wraps a name as an `Encoding { type CanEncode = canEncode.type }`
+      and does not verify that the platform has it: `#charset` resolves the name lazily, and a
+      name the platform lacks fails there with the JDK's `UnsupportedCharsetException`. Prefer
+      `enc"…"` or `.unapply`, which check.
+  entry .encoder   the `Codepage` which encodes text as bytes in this encoding
+      An extension available only on an `Encoding { type CanEncode = true }`, so it does not
+      compile on a decode-only encoding such as `enc"ISO-2022-CN"`. `enc"UTF-8".encoder` is
+      the same codepage `codepages.utf8Codepage` provides.
+  entry #name   the encoding's canonical display name, as the platform spells it
+  entry #CanEncode   whether the platform can encode with this encoding: `true`, `false`, or unknown
+      A type member bounded by `Boolean`. `enc"…"` fixes it to `true` or `false` from the
+      platform's table; `Encoding.unapply` leaves it abstract. Only an encoding whose
+      `CanEncode` is `true` has `encoder`.
+  entry #decoder   the `Charset` which decodes bytes of this encoding as text
+      Needs a `TextSanitizer` in scope, which the charset keeps as its own and consults for
+      every undecodable byte sequence. Every encoding can decode, so this is available
+      whatever `CanEncode` is.
+  entry #charset   the `java.nio.charset.Charset` behind this encoding, resolved once
+      A lazy value, so the platform's lookup by name happens on first use and never again:
+      `Codepage#encoded` passes this to `getBytes` rather than the name, since a lookup by name
+      on every call is measurable in a byte-heavy pipeline.
+
+entry .Charset   decodes bytes as text in one encoding, treating bad input as its sanitiser says
+  detail
+      A `Charset` is the decoding direction of an `Encoding`: `#decoded` turns `Data` into
+      `Text`, either all at once or as a stream of chunks. It is made from an encoding with
+      `Encoding#decoder` or found by name with `Charset.unapply`, and most often it is a given
+      imported by name from the `charsets` package — `charsets.utf8Charset` and the others —
+      which is what turbulence's `read[Text]`, `utf8` and the `Readable`/`Aggregable` givens
+      for text over bytes resolve.
+
+      Every charset carries a `TextSanitizer`, taken as a contextual value when it is made
+      (`#sanitizer`), which decides what happens at a byte sequence the encoding cannot decode:
+      `textSanitizers.skipSanitizer` drops it, `substituteSanitizer` writes `?`,
+      `strictSanitizer` raises `Charset.Error` naming its position, and `accrueSanitizer`
+      writes `?` and records a `Charset.Error` at each fault so that the whole input is
+      recovered and every fault reported.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import errorDiagnostics.stackTracesDiagnostics
+
+      val badUtf8 = Data(45, -62, 49, 48)   // `-`, then a truncated two-byte sequence, then `10`
+
+      locally:
+        import textSanitizers.skipSanitizer
+        charsets.utf8Charset.decoded(badUtf8)   // t"-10"
+
+      locally:
+        import textSanitizers.substituteSanitizer
+        charsets.utf8Charset.decoded(badUtf8)   // t"-?10"
+
+      locally:
+        import textSanitizers.strictSanitizer
+        capture[Charset.Error](charsets.utf8Charset.decoded(badUtf8))   // Charset.Error(1, enc"UTF-8")
+      ```
+
+      Decoding a stream of chunks (`decoded(stream: Chain[Data])`) is incremental: a
+      multi-byte character split across two chunks is carried over the boundary and decoded
+      whole, and a sequence still incomplete when the input ends is a fault at the final
+      position, so a truncated `café` under the strict sanitiser is `Charset.Error(4, …)`.
+
+      A `Charset` is `Findable` with `Self = Text` and `Form = Data`, which is how it serves as
+      the decoding duct in turbulence's stream stages.
+  refer hieroglyph.Encoding
+  refer hieroglyph.TextSanitizer
+  refer hieroglyph.charsets
+  refer hieroglyph.textSanitizers
+  entry .system   the platform's default charset, with the sanitiser in scope
+      `Charset.defaultCharset` wrapped as a `Charset`, which depends on the locale and the
+      JVM's `file.encoding`, so it is not a given and is never resolved implicitly: a program
+      which wants the platform default asks for it by this name. Needs a `TextSanitizer`.
+  entry .unapply   finds a charset by encoding name at runtime, as an `Option`
+      `Charset.unapply(t"ISO-8859-1")` is `Encoding.unapply(name)` wrapped as a `Charset`
+      with the `TextSanitizer` in scope: `Some` if the platform has the encoding (by display
+      name or alias, case insensitively), `None` otherwise. Usable as an extractor in a match.
+      This is how the `charsets` givens are built, and how a charset named in a `Content-Type`
+      header is resolved.
+  entry .Focus   the position being decoded, for an accruing sanitiser's `validate` block
+    detail
+        A `Charset.Focus(position)` is what `textSanitizers.accrueSanitizer` puts in focus
+        around each fault it reports, so that a `validate[Charset.Focus]` block, which
+        accumulates the faults, learns where each occurred: `prior` in the block is the focus,
+        an `Optional[Charset.Focus]`.
+
+        ```scala
+        import soundness.*
+        import errorDiagnostics.stackTracesDiagnostics
+        import dysasymptotics.linearSize
+
+        case class DecodeIssues(items: List[(Int, Charset.Error)] = Nil)(using Diagnostics)
+        extends Error(m"${items.size} decoding issues"):
+          def +(position: Int, error: Charset.Error): DecodeIssues =
+            DecodeIssues(items :+ (position, error))
+
+        val badUtf8 = Data(45, -62, 49, 48)
+
+        validate[Charset.Focus](DecodeIssues()):
+          case error: Charset.Error => accrual + (prior.let(_.position).or(0), error)
+        . protect:
+            import textSanitizers.accrueSanitizer
+            charsets.utf8Charset.decoded(badUtf8)   // t"-?10", with one issue at position 1
+        ```
+    entry #position   the byte offset at which the fault occurred
+  entry .Error   raised when a byte sequence cannot be decoded and the sanitiser is strict
+    detail
+        _The byte sequence at position `position` could not be decoded with the encoding
+        `encoding`_. Raised through a `Tactic[Charset.Error]` by `textSanitizers.strictSanitizer`
+        at the first undecodable sequence, and by `textSanitizers.accrueSanitizer` at every one
+        (which carries on decoding). The position is the byte offset into the input, counted
+        across chunks when a stream is decoded, and a sequence left incomplete at the end of
+        the input is reported at the input's length. The skipping and substituting sanitisers
+        never raise it.
+    entry #position   the byte offset of the undecodable sequence
+    entry #encoding   the encoding which could not decode it
+  entry #encoding   the encoding this charset decodes
+  entry #sanitizer   the sanitiser consulted at each undecodable byte sequence
+      The `TextSanitizer` which was in scope when the charset was made. A `charsets` given
+      takes it from the use site, so the same `charsets.utf8Charset` is strict in one block and
+      tolerant in another according to which sanitiser is imported there; `iso88591Charset`
+      alone fixes `skipSanitizer`, since every byte is valid Latin-1 and there is nothing to
+      sanitise.
+  entry #Self   what this charset produces: `Text`
+  entry #Form   what this charset consumes: `Data`
+  entry #decoded   the text of some bytes, or a stream of text from a stream of bytes
+      `decoded(bytes)` decodes a whole `Data` as one `Text`. `decoded(stream)` takes a
+      `Chain[Data]` and gives a `Chain[Text]`, decoding each buffer-load as it arrives and
+      carrying an incomplete multi-byte sequence over to the next chunk, so the chunking of
+      the input never affects the text; empty chunks are dropped from the output. Both consult
+      `#sanitizer` at each fault, and so may raise `Charset.Error` through its tactic under
+      `strictSanitizer` or `accrueSanitizer`. The two-parameter overload
+      `decoded(bytes, omit)` is the same as `decoded(bytes)`.
+
+      ```scala
+      import soundness.*
+      import textSanitizers.skipSanitizer
+
+      val japanese = t"平ぱ記動テ使村方島"
+      val bytes: Data = codepages.utf8Codepage.encoded(japanese)
+      charsets.utf8Charset.decoded(bytes) == japanese
+      charsets.utf8Charset.decoded(Chain(bytes)).join == japanese
+      ```
+
+entry .Codepage   encodes text as bytes in one encoding, whole or as a stream of chunks
+  detail
+      A `Codepage` is the encoding direction of an `Encoding` which can encode: `#encoded`
+      turns `Text` into `Data`, either whole or chunk by chunk. It is made from an encoding
+      with `Encoding.encoder`, found by name with `Codepage.unapply`, and most often it is a
+      given imported by name from the `codepages` package — `codepages.utf8Codepage` and the
+      others — which is what `in[Data]`, `write`, `Postable` givens and every other place text
+      becomes bytes resolve.
+
+      ```scala fuel
+      frame
+        label UTF-8: one byte for `c`, `a` and `f`, two for `é`
+        code
+            locally:
+              import codepages.utf8Codepage
+              t"café".in[Data].length   // 5
+      frame
+        label UTF-16: a byte-order mark, then two bytes per character
+        code
+            locally:
+              import codepages.utf16Codepage
+              t"café".in[Data].length   // 10
+      frame
+        label UTF-16LE: the byte order is fixed, so no mark
+        code
+            locally:
+              import codepages.utf16LeCodepage
+              t"café".in[Data].length   // 8
+      frame
+        label ISO-8859-1: one byte per character, `é` included
+        code
+            locally:
+              import hieroglyph.codepages.iso88591Codepage
+              t"café".in[Data].length   // 4
+      frame
+        label ASCII: one byte per character, but `é` becomes `?`
+        code
+            locally:
+              import codepages.asciiCodepage
+              t"café".in[Data].length   // 4
+      ##
+      ```
+
+      A character the encoding cannot represent is replaced (with the encoding's substitute,
+      `?` for ASCII) rather than raised: `Codepage.Error` exists for a caller which wants to
+      report one, but `#encoded` itself does not raise it. Encoding a stream is incremental
+      and stages characters through a buffer, so a surrogate pair split across two chunks is
+      encoded as one astral character, where encoding each chunk alone would corrupt it.
+
+      A `Codepage` is `Encodable` and `Findable` with `Self = Text` and `Form = Data`, which is
+      how it serves as the encoding duct in turbulence's stream stages.
+  refer hieroglyph.Encoding
+  refer hieroglyph.Charset
+  refer hieroglyph.codepages
+  entry .system   the platform's default charset as a codepage
+      The encoding the JVM's `Charset.defaultCharset` names, which depends on the locale and
+      `file.encoding`, so it is not a given: a program which wants the platform default asks
+      for it by this name.
+  entry .unapply   finds a codepage by encoding name at runtime, as an `Option`
+      `Codepage.unapply(t"UTF-8")` is `Some(codepage)` if the platform has an encoding of that
+      name or alias (case insensitively) which can encode, and `None` for an unknown or a
+      decode-only name. Usable as an extractor in a match. This is how the `codepages` givens
+      are built.
+  entry .Error   a character which the encoding cannot represent
+    detail
+        Error 282: _character `char` cannot be encoded with the encoding `encoding`_. The
+        error type for a character outside an encoding's repertoire. `Codepage#encoded` does
+        not raise it — an unmappable character is replaced, as `String#getBytes` replaces it —
+        so it is for callers which detect the condition themselves.
+    entry #char   the character which could not be encoded
+    entry #encoding   the encoding which could not encode it
+  entry #encoding   the encoding this codepage encodes with, known to be able to encode
+      Typed `Encoding { type CanEncode = true }`.
+  entry #Self   what this codepage consumes: `Text`
+  entry #Form   what this codepage produces: `Data`
+  entry #encoded   the bytes of a text, or a stream of bytes from a stream of text
+      `encoded(text)` encodes a whole `Text` as one `Data`, through `String#getBytes` with the
+      resolved charset. `encoded(stream)` takes a `Chain[Text]` and gives a `Chain[Data]`,
+      encoding buffer-load by buffer-load: a surrogate pair whose halves fall in different
+      chunks is carried across and encoded whole, a stateful encoding is flushed once at the
+      end, and empty chunks are dropped from the output. Malformed or unmappable input is
+      replaced, never raised.
+
+      ```scala
+      import soundness.*
+      import textSanitizers.skipSanitizer
+
+      val astral = t"😀 smiles"
+      val chunks: Chain[Text] = Chain(t"\ud83d", t"\ude00 smi", t"les")
+      charsets.utf8Charset.decoded(codepages.utf8Codepage.encoded(chunks)).join == astral
+      ```
+
+entry .TextSanitizer   what a decoder does with a byte sequence it cannot decode
+  detail
+      A `TextSanitizer` is consulted by a `Charset` at every byte sequence its encoding cannot
+      decode, with the position of the fault and the encoding, and answers with the character
+      to write in its place, or `Unset` to write nothing. It is a contextual value chosen by
+      importing one of the `textSanitizers` package's givens by name, and is captured by the
+      `Charset` when that is made, so the choice is visible at the import of the code which
+      decodes.
+
+      The four provided policies: `skipSanitizer` answers `Unset`; `substituteSanitizer`
+      answers `?`; `strictSanitizer` aborts with `Charset.Error` at the first fault; and
+      `accrueSanitizer` raises a `Charset.Error` at each fault in a `Charset.Focus`, for a
+      `validate` block to collect, then answers `?` and lets decoding continue. A custom
+      policy is a lambda: `given TextSanitizer = (position, encoding) => '�'` substitutes
+      the Unicode replacement character.
+  refer hieroglyph.textSanitizers
+  refer hieroglyph.Charset
+  entry #sanitize   the character to write at a fault, or `Unset` for nothing
+      Called with the byte offset of the undecodable sequence (counted across chunks when a
+      stream is decoded) and the encoding. The decoder then skips the bad bytes and continues
+      from the next.
+
+entry .Measurable   how wide a character or a text is in columns of a monospaced display
+  detail
+      A `Measurable` gives its `Self` a width in display columns: a `Char is Measurable` says
+      how many columns one character occupies, and `Measurable.general` lifts any such metric
+      to `Text is Measurable` by summing. The width is read with the `metrics` extension, and
+      it is what gossamer's `pad`, `center` and `fit` measure with, so a column of Japanese
+      text aligns where counting characters would not.
+
+      No metric is in scope by default: one is imported by name from the `textMetrics`
+      package, since the choice is also one of cost. Under `uniformMetric` a text's width is
+      its length, in constant time; under `eastAsianScriptsMetric` or
+      `wideCharacterWidthMetric` every character is looked up and summed.
+
+      ```scala
+      import soundness.*
+      import textMetrics.eastAsianScriptsMetric
+
+      'a'.metrics                   // 1
+      '身'.metrics                  // 2
+      t"平ぱ記動テ使村方島".metrics   // 18
+      ```
+
+      gossamer's `Grapheme` and `Writing` are also `Measurable`, through the `Char` metric in
+      scope, which measures a grapheme cluster as a whole.
+  refer hieroglyph.textMetrics
+  refer hieroglyph.metrics
+  entry .general   `Text is Measurable`, as the sum of its characters' widths under the `Char` metric in scope
+      In implicit scope, so a `Char is Measurable` import is all a text measurement needs.
+      The sum is over UTF-16 code units, so a metric is asked about each half of a surrogate
+      pair separately.
+  entry #width   the number of display columns a value occupies
+
+entry .metrics   the width of a character or a text, through the `Measurable` in scope
+    `'身'.metrics` and `t"…".metrics`: an extension on any type with a `Measurable`, which
+    returns `width`. Needs a `Char is Measurable` imported by name from `textMetrics`
+    (`uniformMetric`, `eastAsianScriptsMetric` or `wideCharacterWidthMetric`); a `Text` is
+    measured through `Measurable.general`.
+
+entry .textMetrics   the display-width metrics, each a given to import by name
+  detail
+      Which metric measures a character is decided by the `Char is Measurable` given in
+      scope, and `import soundness.*` brings none of these in: one is imported by name. The
+      three differ in what they count and what they cost.
+
+      ```scala
+      import soundness.*
+
+      locally:
+        import textMetrics.uniformMetric
+        t"日本".metrics   // 2
+
+      locally:
+        import textMetrics.eastAsianScriptsMetric
+        t"日本".metrics   // 4
+      ```
+
+      `uniformMetric` is right wherever the text is known to hold nothing wide, and is free;
+      `eastAsianScriptsMetric` is right for terminals showing CJK text; and
+      `wideCharacterWidthMetric` is the most faithful to what a terminal draws, counting
+      combining marks and control characters as nothing.
+  entry .uniformMetric   every character is one column
+      A text's width under this metric is its length, with no lookup.
+  entry .eastAsianScriptsMetric   a wide or full-width character is two columns, any other one
+      Looks each character up in Unicode's `EastAsianWidth.txt` table (`Unicode.eastAsianWidth`):
+      `Wide` and `FullWidth` are two columns; `Narrow`, `HalfWidth`, `Neutral`, `Ambiguous` and
+      a character absent from the table are one. Combining marks still count as one here; for a
+      metric which gives them nothing, use `wideCharacterWidthMetric`.
+  entry .wideCharacterWidthMetric   Markus Kuhn's `wcwidth`: wide is two, combining and control is zero
+      `WideCharacterWidth.width` for each character: zero for `NUL`, C0 and C1 controls,
+      non-spacing and enclosing marks and format characters (so a combining accent or a
+      zero-width joiner adds nothing), two for east-Asian `Wide` and `FullWidth`, and one for
+      everything else. The metric gossamer's grapheme measurements are documented with, since
+      a base letter with a combining mark then measures one.
+
+entry .Unicode   Unicode's tables: character names, east-Asian widths, and a few renderings
+  detail
+      The `Unicode` object reads Unicode's data files from the classpath, lazily, and offers
+      what they hold: `.name` and `.apply` look a character's name up either way, through
+      `.unicodeData` and `.unicodeNames`; `.eastAsianWidth` gives a code point's
+      `EaWidth` category, which the `textMetrics` and `WideCharacterWidth` are built on; and
+      `.visible` and `.smallCaps` are two small renderings. The tables are `UnicodeData.txt`
+      and `EastAsianWidth.txt` for Unicode 16.0.0, under `/hieroglyph/` on the classpath; on
+      the JVM a missing table is fetched from unicode.org, and on Scala Native a missing table
+      is a panic, so the resources must be embedded in the binary.
+
+      ```scala
+      import soundness.*
+
+      Unicode.name('é')                             // t"Latin Small Letter E With Acute"
+      Unicode(t"LATIN SMALL LETTER E WITH ACUTE")   // 'é'
+      Unicode.eastAsianWidth('身')                  // Unicode.EaWidth.Wide
+      Unicode.visible('\t')                         // '␉'
+      Unicode.smallCaps(t"hello")                   // t"ʜᴇʟʟᴏ"
+      ```
+
+      A character's name is also reached as `char.description` or `char.designation`, and a
+      character by its name as `ucs"…"`, checked as the code compiles.
+  refer hieroglyph.ucs
+  refer hieroglyph.description
+  refer hieroglyph.WideCharacterWidth
+  entry .smallCaps   a text with its lowercase ASCII letters replaced by small capitals
+      `a`–`z` become `ᴀ`–`ᴢ` (with `ꜰ` for `f`, `ǫ` for `q`, and `s` and `x`, which have no
+      small-capital forms, left as they are); every other character is unchanged. Used by
+      `communication.unicodeCharNamesCommunicable` to typeset a character's name.
+  entry .EaWidth   a code point's east-Asian width category, from `EastAsianWidth.txt`
+    detail
+        The six categories Unicode assigns: `Neutral` (`N`), `Narrow` (`Na`), `Wide` (`W`),
+        `Ambiguous` (`A`), `FullWidth` (`F`) and `HalfWidth` (`H`). `#width` reduces them to
+        columns, and `.unapply` reads one from the table's two-letter code. `Ambiguous`
+        characters — Greek, Cyrillic, some symbols — are wide in east-Asian legacy contexts and
+        narrow elsewhere; `#width` counts them as one.
+    entry .unapply   the category for a table code: `N`, `Na`, `W`, `A`, `F` or `H`
+        An extractor over `Text`, `None` for any other text.
+    entry #width   the category's width in columns: two for `Wide` and `FullWidth`, one otherwise
+  entry .eastAsianWidth   the `EaWidth` of a character or a code point, or `Unset` if the table has none
+      Takes a `Char` or an `Int` code point. The lookup is a search of the table's ranges, so
+      it costs a logarithm of the table's size per character; a code point no range covers is
+      `Unset`, which the `textMetrics` treat as one column.
+  entry .visible   a control character as its Control Pictures glyph, for display
+      `DEL` becomes `␥`, a space `␣`, and any other character at or below a space its picture
+      from the `␀`–`␟` block (`'\t'` is `␉`, `'\n'` is `␊`); every other character is itself.
+      For showing text whose control characters would otherwise be invisible or act on the
+      terminal.
+  entry .apply   the character with a Unicode name, or `Unset`
+      `Unicode(t"GREEK SMALL LETTER ALPHA")` is `'α'`. The name is as `UnicodeData.txt` spells
+      it, in capitals. A character beyond the Basic Multilingual Plane is a `Text` of its
+      surrogate pair rather than a `Char`, so the result is `Optional[Char | Text]`. The lookup
+      is `.unicodeData`, so the first call loads the table.
+  entry .name   the Unicode name of a character, in title case, or `Unset`
+      `Unicode.name('é')` is `t"Latin Small Letter E With Acute"`: the table's name with each
+      word capitalised. `Unset` for a character the table does not name, such as a control
+      character or an unassigned code point. Also reached as `char.description` and
+      `char.designation`.
+  entry .unicodeData   every named character, by its name as `UnicodeData.txt` spells it
+      A lazily built `Map[Text, Char | Text]` from the capitalised name to the character — a
+      `Char`, or a `Text` of two surrogates for a character beyond the Basic Multilingual
+      Plane. Range entries such as `<CJK Ideograph, First>` are omitted.
+  entry .unicodeNames   every named character's name, in title case, by the character
+      The inverse of `.unicodeData`, as a `Map[Char | Text, Text]`, with each word of the name
+      capitalised: `Unicode.name` reads it.
+  entry .eastAsianWidths   the east-Asian width table, as ranges of code points to `EaWidth`
+      A lazily loaded `TreeMap` from `hieroglyph.internal.CharRange` to `EaWidth`, with
+      adjacent ranges of the same category merged. `.eastAsianWidth` searches it; it is public
+      so that a tool can enumerate the table.
+
+entry .WideCharacterWidth   Markus Kuhn's `wcwidth` algorithm: a code point's width in terminal columns
+  detail
+      The width a terminal gives a code point, by the rules of the classic `wcwidth`: zero for
+      `NUL`, for C0 (below `0x20`) and C1 (`0x7f`–`0x9f`) controls, and for non-spacing marks,
+      enclosing marks and format characters; two for a code point whose `Unicode.eastAsianWidth`
+      is `Wide` or `FullWidth`; and one for everything else. It takes an `Int` code point, so
+      an emoji beyond the Basic Multilingual Plane (`0x1f468`) is measured whole, as two.
+
+      ```scala
+      import soundness.*
+
+      WideCharacterWidth.width('a'.toInt)     // 1
+      WideCharacterWidth.width(0x0300)        // 0: a combining grave accent
+      WideCharacterWidth.width('日'.toInt)    // 2
+      WideCharacterWidth.width(0x1f468)       // 2: an emoji
+      ```
+
+      `textMetrics.wideCharacterWidthMetric` applies it per `Char`.
+  refer hieroglyph.textMetrics
+  entry .width   the terminal width of a code point: zero, one or two columns
+
+entry .Chars   the superscript and subscript forms of digits and arithmetic signs
+  detail
+      Two partial functions from a character to its Unicode superscript or subscript form,
+      defined for the digits `0`–`9` and for `(`, `)`, `+`, `-` and `=`. They are reached as
+      `char.superscript` and `char.subscript`, which give `Unset` where no form exists.
+  entry .superscript   `'2'` to `'²'`, for digits, parentheses, `+`, `-` and `=`
+  entry .subscript   `'2'` to `'₂'`, for digits, parentheses, `+`, `-` and `=`
+
+entry .superscript   a character's superscript form, or `Unset`
+    An extension on `Char`: `'2'.superscript` is `'²'`, `'('.superscript` is `'⁽'`, and a
+    letter — for which Unicode has no consistent superscript alphabet — is `Unset`. Defined
+    for `0`–`9`, `(`, `)`, `+`, `-` and `=`, through `Chars.superscript`.
+
+entry .subscript   a character's subscript form, or `Unset`
+    An extension on `Char`: `'2'.subscript` is `'₂'`, `'+'.subscript` is `'₊'`, and any
+    character other than `0`–`9`, `(`, `)`, `+`, `-` and `=` is `Unset`. Through
+    `Chars.subscript`.
+
+entry .description   a character's Unicode name, in title case, or `Unset`
+    An extension on `Char`: `'é'.description` is `t"Latin Small Letter E With Acute"`, and a
+    character the Unicode database does not name is `Unset`. The same as `designation`, and
+    as `Unicode.name`; the first call loads the table.
+
+entry .designation   a character's Unicode name, in title case, or `Unset`
+    An extension on `Char`, identical to `description`: `'ß'.designation` is
+    `t"Latin Small Letter Sharp S"`. `communication.unicodeCharNamesCommunicable` renders a character
+    in a message by it.
+
+entry .minuscule   a character in lower case
+    An extension on `Char`: `Character.toLowerCase`. The predicate is `minuscular`. The pair
+    is named for the letter forms rather than `lower`/`upper`, which are gossamer's `Text` case
+    conversions and would collide with them in the `soundness` umbrella.
+
+entry .majuscule   a character in upper case
+    An extension on `Char`: `Character.toUpperCase`. The predicate is `majuscular`.
+
+entry .whitespace   whether a character is whitespace
+    An extension on `Char`: `Character.isWhitespace`, which counts spaces, tabs, line breaks
+    and the Unicode space separators but not the no-break space.
+
+entry .control   whether a character is an ISO control character
+    An extension on `Char`: `Character.isISOControl`, which is `0x00`–`0x1f` and
+    `0x7f`–`0x9f`.
+
+entry .printable   whether a character is neither a control character nor whitespace
+    An extension on `Char`: `!control && !whitespace`. A character which marks on the page.
+
+entry .letter   whether a character is a letter in any script
+    An extension on `Char`: `Character.isLetter`, so `'é'.letter` and `'身'.letter` hold as
+    `'a'.letter` does, and `'7'.letter` and `'.'.letter` do not.
+
+entry .digit   whether a character is a digit in any script
+    An extension on `Char`: `Character.isDigit`, which includes the digits of other scripts
+    (Arabic-Indic, Devanagari, …) as well as `0`–`9`.
+
+entry .alphanumeric   whether a character is a letter or a digit
+    An extension on `Char`: `Character.isLetterOrDigit`. Punctuation and whitespace are
+    neither.
+
+entry .majuscular   whether a character is upper case
+    An extension on `Char`: `Character.isUpperCase`. `'A'.majuscular` holds; `'a'` and the
+    caseless `'7'` do not. The conversion is `majuscule`.
+
+entry .minuscular   whether a character is lower case
+    An extension on `Char`: `Character.isLowerCase`. `'a'.minuscular` holds; `'A'` and the
+    caseless `'7'` do not. The conversion is `minuscule`.
+
+entry .unicode   a code point as text, as `0x1f600.unicode`
+    An extension on `Int`: the `Text` of the character with that code point, which is two
+    UTF-16 code units for a character beyond the Basic Multilingual Plane. An invalid code
+    point throws the JDK's `IllegalArgumentException`.
+
+entry .enc   the `enc"…"` interpolator: an encoding by name, checked as the code compiles
+    `enc"UTF-8"` names a character encoding and checks, while the code compiles, that the
+    platform has an encoding of that name (by display name or alias, case insensitively). A
+    name it does not is a compile error, _the encoding `ABCDEF` was not available_ (SN-541),
+    and a name which is not IANA-registered compiles with a warning that it may not be
+    universally available. The result's `CanEncode` type member is fixed to `true` or `false`
+    from the platform's table, so `enc"ISO-2022-CN".decoder` compiles and
+    `enc"ISO-2022-CN".encoder` does not.
+
+    ```scala
+    import soundness.*
+    import textSanitizers.skipSanitizer
+
+    enc"UTF-8".encoder.encoded(t"café").length           // 5
+    enc"ISO-8859-1".encoder.encoded(t"café").length      // 4
+    enc"ISO-2022-CN".decoder.decoded(Data(0x41, 0x42))   // t"AB"
+    ```
+
+    The interpolator takes no `$`-substitutions: the name must be a literal, since it is
+    checked at compile time. The compile-time check consults the compiler's JVM, so an
+    encoding present there and absent at runtime fails when the encoding's `charset` is first
+    resolved.
+
+entry .ucs   the `ucs"…"` interpolator: a character by its Unicode name, checked as the code compiles
+    `ucs"GREEK SMALL LETTER ALPHA"` is `'α'`, and `ucs"Grinning Face"` is the text of
+    U+1F600's surrogate pair: the result is `Char | Text`, a `Char` for a character in the
+    Basic Multilingual Plane and a `Text` beyond it. The name is matched against
+    `UnicodeData.txt` in capitals, so case does not matter, and a name the database does not
+    have is a compile error, _the unicode character `…` does not exist_ (SN-954). Takes no
+    `$`-substitutions.
+
+    ```scala
+    import soundness.*
+
+    ucs"LATIN SMALL LETTER E WITH ACUTE" == 'é'
+    ```
+
+entry .GraphemeBreak   where one user-perceived character ends and the next begins, by UAX #29
+  detail
+      What a reader sees as one character may be several code points — a flag is two regional
+      indicators, a family emoji is several joined by zero-width joiners, an accented letter
+      may be a base and a combining mark — so code which truncates, reverses or measures text
+      by code point splits characters in half. `GraphemeBreak.boundaries` finds the boundaries
+      between extended grapheme clusters by the rules of Unicode Standard Annex #29 (version
+      16.0.0, including the Indic conjunct rule GB9c), and the property lookups behind it are
+      public too.
+
+      ```scala
+      import soundness.*
+
+      GraphemeBreak.boundaries(t"abc").to[List]       // List(0, 1, 2, 3)
+      GraphemeBreak.boundaries(t"a\r\nb").to[List]    // List(0, 1, 3, 4): CR LF is one cluster
+      GraphemeBreak.boundaries(t"🇬🇧🇫🇷").to[List]       // List(0, 4, 8): two flags
+      GraphemeBreak.boundaries(t"").to[List]          // List(0)
+      ```
+
+      The tables are `GraphemeBreakProperty.txt`, `emoji-data.txt` and
+      `IndicConjunctBreak.txt` from the classpath, loaded on first use. gossamer's `Writing`
+      and `Grapheme` are the higher-level view: a text as its clusters.
+  refer hieroglyph.Normalization
+  entry .Property   the Grapheme_Cluster_Break property values
+    detail
+        The values UAX #29 assigns to a code point: `Other`, `Cr`, `Lf`, `Control`, `Extend`,
+        `Zwj`, `RegionalIndicator`, `Prepend`, `SpacingMark`, and the Hangul jamo and syllable
+        classes `L`, `V`, `T`, `Lv` and `Lvt`. `.property` reads one for a code point.
+  entry .property   the Grapheme_Cluster_Break property of a code point, `Other` if the table has none
+  entry .extendedPictographic   whether a code point has the Extended_Pictographic emoji property
+      From `emoji-data.txt`; the property which lets an emoji sequence continue across a
+      zero-width joiner.
+  entry .incb   a code point's Indic_Conjunct_Break value: `0` consonant, `1` extend, `2` linker, `-1` none
+      From `DerivedCoreProperties.txt`, carried on the classpath as `IndicConjunctBreak.txt`;
+      the property behind rule GB9c, which keeps a consonant, virama and consonant together.
+  entry .boundaries   the offsets at which grapheme clusters begin and end
+      An array of UTF-16 offsets into the text, beginning with `0` and ending with the text's
+      length, so a text of `n` clusters has `n + 1` boundaries and the empty text has one.
+      The slice between two adjacent boundaries is one cluster.
+
+entry .Normalization   canonical decomposition (NFD) and combining classes, from `UnicodeData.txt`
+  detail
+      The normalisation `CollationTable` needs: a text's canonical decomposition, with Hangul
+      syllables decomposed arithmetically into their jamo and combining marks reordered by
+      combining class, as Unicode Normalization Form D prescribes. Composition (NFC) is not
+      provided.
+
+      ```scala
+      import soundness.*
+
+      Normalization.decompose(t"é").to[List]    // List(0x65, 0x301): e, combining acute
+      Normalization.decompose(t"각").to[List]   // List(0x1100, 0x1161, 0x11a8)
+      Normalization.combiningClass(0x301)       // 230
+      ```
+  refer hieroglyph.CollationTable
+  entry .combiningClass   a code point's canonical combining class, `0` for a starter
+      Read from field 3 of `UnicodeData.txt`; values run to 240. A mark with a higher class
+      sorts after one with a lower class within a run of marks.
+  entry .decompose   the canonical decomposition of a text, or of an array of code points, as code points
+      `decompose(text)` reads the text's code points (a surrogate pair as one) and decomposes
+      them; `decompose(codepoints)` takes an array of code points. Mappings are closed
+      recursively at load time, so each code point is a single table hit, and each maximal run
+      of combining marks is stably sorted by combining class.
+
+entry .CollationTable   the Unicode Collation Algorithm (UTS #10): sort keys and comparison over the DUCET
+  detail
+      A `CollationTable` orders text the way a dictionary does: by letters first, then by
+      accents, then by case, so `cafe < café < caff` and `abc < ABC`, with `æ` between `ae`
+      and `af` and unmapped CJK ideographs in code-point order. `.root` is the table built
+      from the Default Unicode Collation Element Table (`allkeys.txt`, version 16.0.0), and
+      `#tailor` derives a table for a language whose order differs, from a list of
+      `CollationRule`s. Comparison is non-ignorable — punctuation and spaces keep their
+      weights — and a sort key has the three levels.
+
+      ```scala
+      import soundness.*
+      import hieroglyph.{CollationTable, CollationRule, CollationLevel}
+
+      val root = CollationTable.root
+      root.compare(t"cafe", t"café") < 0    // true
+      root.compare(t"café", t"caff") < 0    // true
+      root.compare(t"abc", t"ABC") < 0      // true
+
+      val polish = root.tailor(List(CollationRule(t"o", t"ó", CollationLevel.Primary)))
+      polish.compare(t"ó", t"p") < 0        // true: ó is a letter after o
+      root.compare(t"ó", t"oz") < 0         // true: in the root, ó is an accented o
+      ```
+
+      The table is not exported to the `soundness` umbrella: it is reached as
+      `hieroglyph.CollationTable`, and most programs meet it through gossamer's
+      `collations.unicodeCollation`, which sorts `Text` with `.root`. Loading `.root` parses
+      `allkeys.txt` from the classpath (`/hieroglyph/allkeys.txt`, or unicode.org on the JVM
+      if it is absent) on first use, which takes a moment; the table is then shared.
+  refer hieroglyph.CollationRule
+  refer hieroglyph.Normalization
+  entry .root   the table built from the Default Unicode Collation Element Table
+      A lazy value: built on first use from `allkeys.txt`, and shared thereafter. Panics if
+      the file is on neither the classpath nor, on the JVM, reachable from unicode.org.
+  entry #key   the sort key of a text, or of an array of code points
+      An array of weights: every non-zero primary weight, then `0`, the secondaries, `0`, and
+      the tertiaries, so that two keys compare lexicographically with `#compareKeys`. The
+      input is decomposed (`Normalization.decompose`) first, contractions are matched longest
+      first including the discontiguous case, and a code point with no mapping takes the
+      implicit weights UTS #10 derives from its code point. For sorting many texts, compute
+      each key once and compare keys.
+  entry #compare   compares two texts: negative, zero or positive
+      `compareKeys(key(left), key(right))`: keys both texts and compares them. Zero means the
+      texts are equal at all three levels — the same letters, accents and case — which does
+      not require them to be the same code points.
+  entry #compareKeys   compares two sort keys lexicographically, the shorter first on a tie
+  entry #tailor   a table with each rule's target sorted just after its base, at the rule's level
+      Applies a list of `CollationRule`s in order, so a rule may use an earlier rule's target
+      as its base (Polish `ż` after `ź` after `z`). A rule's base must have a mapping in this
+      table, and at most 255 rules may share one base and level; either breach is a panic.
+      This covers the common European tailoring shape and is not an interpreter for CLDR's
+      full rule syntax.
+
+entry .CollationRule   one tailoring: a target sorts immediately after a base, differing at a level
+  detail
+      `CollationRule(base, target, level)`: in the tailored table, `target` sorts just after
+      `base`, with the difference counted at `level` — `Primary` for a distinct letter, as
+      Polish `ó` is from `o`; `Secondary` for an accent; `Tertiary` for a case variant. Rules
+      are applied in order by `CollationTable#tailor`. Not exported to the `soundness`
+      umbrella: `hieroglyph.CollationRule`.
+  refer hieroglyph.CollationTable
+  refer hieroglyph.CollationLevel
+  entry #base   the text, already in the table, after which the target sorts
+  entry #target   the text to install
+  entry #level   the level at which the target differs from its base
+
+entry .CollationLevel   the level of a collation difference: `Primary`, `Secondary` or `Tertiary`
+    `Primary` differences are between letters, `Secondary` between accents on the same
+    letters, and `Tertiary` between cases. Used by `CollationRule`. Not exported to the
+    `soundness` umbrella: `hieroglyph.CollationLevel`.
+
+entry .charsets   the standard decoders, each a `Charset` given to import by name
+  detail
+      Which encoding bytes are read as is decided by the `Charset` given in scope, and the
+      choice is never implicit: `import soundness.*` brings none of these in, and one is
+      imported by name. Each resolves the `TextSanitizer` in scope at the use site, so the
+      same `utf8Charset` is strict where `strictSanitizer` is imported and tolerant where
+      `skipSanitizer` is; `iso88591Charset` alone fixes the skipping sanitiser, since every
+      byte is valid Latin-1.
+
+      ```scala
+      import soundness.*
+      import charsets.utf8Charset
+      import textSanitizers.strictSanitizer
+      import strategies.throwUnsafely
+
+      Data(0x63, 0x61, 0x66, 0xc3, 0xa9).read[Text]   // t"café"
+      ```
+
+      These are what turbulence's `read[Text]`, `utf8`, and the `Readable` and `Aggregable`
+      givens from bytes to text resolve. An encoding not listed here is `enc"…".decoder`,
+      bound as a local `given Charset`.
+  refer hieroglyph.Charset
+  refer hieroglyph.textSanitizers
+  entry .utf8Charset   UTF-8, with the sanitiser in scope
+  entry .utf16Charset   UTF-16, reading a byte-order mark and defaulting to big-endian, with the sanitiser in scope
+  entry .utf16LeCharset   UTF-16 little-endian, with the sanitiser in scope
+  entry .utf16BeCharset   UTF-16 big-endian, with the sanitiser in scope
+  entry .asciiCharset   US-ASCII, with the sanitiser in scope
+      Any byte above `0x7f` is a fault, handled as the sanitiser says.
+  entry .iso88591Charset   ISO-8859-1 (Latin-1), always with the skipping sanitiser
+      Every byte is a valid Latin-1 character, so there is nothing to sanitise and no
+      `TextSanitizer` is needed in scope. Declared in `hieroglyph.charsets` only; the
+      `soundness` umbrella's `charsets` package does not re-export it, so it is imported as
+      `hieroglyph.charsets.iso88591Charset`.
+
+entry .codepages   the standard encoders, each a `Codepage` given to import by name
+  detail
+      Which encoding text is written in is decided by the `Codepage` given in scope, and the
+      choice is never implicit: `import soundness.*` brings none of these in, and one is
+      imported by name. These are what `in[Data]`, `write`, the `Postable` and `Servable`
+      givens for text formats, and every other place text becomes bytes resolve.
+
+      ```scala
+      import soundness.*
+      import codepages.utf8Codepage
+
+      t"café".in[Data].length   // 5
+      ```
+
+      An encoding not listed here is `enc"…".encoder`, bound as a local `given Codepage`.
+  refer hieroglyph.Codepage
+  entry .utf8Codepage   UTF-8
+  entry .utf16Codepage   UTF-16, written big-endian with a byte-order mark
+  entry .utf16LeCodepage   UTF-16 little-endian, without a byte-order mark
+  entry .utf16BeCodepage   UTF-16 big-endian, without a byte-order mark
+  entry .asciiCodepage   US-ASCII; a character above `0x7f` is written as `?`
+  entry .iso88591Codepage   ISO-8859-1 (Latin-1); a character above `0xff` is written as `?`
+      Declared in `hieroglyph.codepages` only; the `soundness` umbrella's `codepages` package
+      does not re-export it, so it is imported as `hieroglyph.codepages.iso88591Codepage`.
+
+entry .textSanitizers   the policies for undecodable bytes, each a `TextSanitizer` given to import by name
+  detail
+      A `Charset` consults the `TextSanitizer` in scope at each byte sequence its encoding
+      cannot decode, and `import soundness.*` brings none of these in: the code which decodes
+      says which it wants, at its import. Strictness suits input which should be trusted
+      absolutely; tolerance suits text recovered from a lossy source; accrual gives both the
+      text and a list of where it was wrong.
+
+      ```scala fuel
+      frame
+        label Skipping: the bad bytes vanish
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+            import errorDiagnostics.stackTracesDiagnostics
+
+            val badUtf8 = Data(45, -62, 49, 48)
+
+            locally:
+              import textSanitizers.skipSanitizer
+              charsets.utf8Charset.decoded(badUtf8)   // t"-10"
+      frame
+        label Substituting: a `?` marks each fault
+        code
+            locally:
+              import textSanitizers.substituteSanitizer
+              charsets.utf8Charset.decoded(badUtf8)   // t"-?10"
+      frame
+        label Strict: the first fault is an error naming its position
+        code
+            locally:
+              import textSanitizers.strictSanitizer
+              capture[Charset.Error](charsets.utf8Charset.decoded(badUtf8))   // Charset.Error(1, enc"UTF-8")
+      ##
+      ```
+  refer hieroglyph.TextSanitizer
+  refer hieroglyph.Charset
+  entry .skipSanitizer   drops an undecodable sequence and carries on
+      Answers `Unset` at every fault: the text is whatever could be decoded, with no sign of
+      what was lost.
+  entry .substituteSanitizer   writes `?` in place of an undecodable sequence and carries on
+  entry .strictSanitizer   aborts with `Charset.Error` at the first undecodable sequence
+      Needs a `Tactic[Charset.Error]` in scope where it is resolved — `strategies.throwUnsafely`,
+      a `safely`, `capture` or `recover` block — and the error names the byte offset of the
+      fault and the encoding. The sanitiser retains the tactic, so it lives as long as the
+      scope which resolved it.
+  entry .accrueSanitizer   records every undecodable sequence, writes `?` and carries on
+      Raises a `Charset.Error` at each fault, in focus of a `Charset.Focus(position)`, and
+      then substitutes `?` and continues, so decoding completes and every fault is reported.
+      Needs a `Tactic[Charset.Error]` and a `Foci[Charset.Focus]`, which a
+      `validate[Charset.Focus](accumulator)` block provides: its first block says how each
+      error joins the accumulator (with `prior` the focus) and its `protect` block does the
+      decoding.
+
+      ```scala
+      import soundness.*
+      import errorDiagnostics.stackTracesDiagnostics
+      import dysasymptotics.linearSize
+
+      case class DecodeIssues(items: List[(Int, Charset.Error)] = Nil)(using Diagnostics)
+      extends Error(m"${items.size} decoding issues"):
+        def +(position: Int, error: Charset.Error): DecodeIssues =
+          DecodeIssues(items :+ (position, error))
+
+      validate[Charset.Focus](DecodeIssues()):
+        case error: Charset.Error => accrual + (prior.let(_.position).or(0), error)
+      . protect:
+          import textSanitizers.accrueSanitizer
+          charsets.utf8Charset.decoded(Data(45, -62, 49, -62, 48))   // t"-?1?0", two issues
+      ```
+
+entry .communication   a `Char is Communicable` which names characters, a given to import by name
+  detail
+      How a `Char` is rendered when interpolated into an `m"…"` message is a choice, and this
+      package's given makes it the character's Unicode name. It merges with the umbrella's
+      `communication` package, and is imported by name:
+      `import communication.unicodeCharNamesCommunicable`.
+  entry .unicodeCharNamesCommunicable   renders a character in a message by its Unicode name, in small capitals
+      `m"found $char"` with `'é'` reads _found ʟᴀᴛɪɴ sᴍᴀʟʟ ʟᴇᴛᴛᴇʀ ᴇ ᴡɪᴛʜ ᴀᴄᴜᴛᴇ [é]_: the name
+      from `designation`, lower-cased and set in small capitals by `Unicode.smallCaps`,
+      followed by the character itself in brackets if it is printable. A character with no
+      name reads as _unknown_.
+
+entry .Nul   the `NUL` character, `'\u0000'`, as a literal-typed constant
+    Each of the eleven constants `Nul`, `Bel`, `Bs`, `Ht`, `Lf`, `Ff`, `Cr`, `Esc`, `Sqt`,
+    `Dqt` and `Bsl` is a `final val` of the character's singleton type, so it may be used
+    where a literal type is wanted and reads as a name where `'\u001b'` would not.
+
+entry .Bel   the bell character, `'\u0007'`
+entry .Bs   the backspace character, `'\u0008'`
+entry .Ht   the horizontal tab, `'\u0009'`
+entry .Lf   the line feed, `'\u000a'`
+entry .Ff   the form feed, `'\u000c'`
+entry .Cr   the carriage return, `'\u000d'`
+entry .Esc   the escape character, `'\u001b'`, which begins a terminal control sequence
+entry .Sqt   the single quote, `'\''`
+entry .Dqt   the double quote, `'"'`
+entry .Bsl   the backslash, `'\\'`
+
+entry .internal   the macros behind `enc"…"` and `ucs"…"`, and the `CharRange` key of the width table
+  hidden
+  detail
+      Not for direct use: the object exists so that the macros have a stable home, and so
+      that `Unicode.eastAsianWidths` has a compact key type.
+  entry .CharRange   an inclusive range of code points, packed into a `Long`
+    detail
+        `CharRange(from, to)`, or `CharRange(char)` for a range of one, packed as
+        `(from << 32) + to` so that ranges order by their first code point. The key of
+        `Unicode.eastAsianWidths`.
+    entry .apply   a range from two code points, or of one character or code point
+    entry .textualizable   renders a range as `from..to`
+    entry .comparable   orders ranges as the `Long`s they are: by first code point
+  entry .from   the first code point of a `CharRange`
+  entry .to   the last code point of a `CharRange`
+  entry .contains   whether a `CharRange` includes a character
+  entry .encoding   the macro behind `enc"…"`: checks the name against the platform's encodings
+      Halts with SN-541 for a name the platform lacks, warns for one not registered with
+      IANA, and splices a lookup whose `CanEncode` type is fixed from the table.
+  entry .char   the macro behind `ucs"…"`: a character by its Unicode name
+      Halts with SN-954 for a name `UnicodeData.txt` does not have.

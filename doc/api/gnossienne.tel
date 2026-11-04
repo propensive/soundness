@@ -1,0 +1,179 @@
+tel 1.0
+
+base gnossienne
+import soundness
+
+info   typed references to entities, holding only their keys and resolved back through a store
+detail
+    _Gnossienne_ represents a reference to an entity — a person, a product, a row — as a
+    value which holds nothing but the entity's key, typed by what it refers to. A
+    `Reference to Person` built from `t"jill@example.com"` is not a `Text`, and cannot be
+    confused with a reference to anything else.
+
+    How a key finds its entity is a `Resolvable` typeclass instance. The usual one is built
+    from a set of values with `Resolvable(store)`, and searches them by the field marked with
+    the `@primary` annotation. With that instance in scope, the `ref` extension takes the
+    reference of any value, and applying a reference resolves it back, raising a
+    `Reference.Error` if nothing in the store has that key.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    case class Person(@primary email: Text, name: Text)
+
+    val jack = Person(t"jack@example.com", t"Jack")
+    val jill = Person(t"jill@example.com", t"Jill")
+
+    given Person is Resolvable by Text = Resolvable(Set(jack, jill))
+
+    val reference: Reference to Person = jill.ref
+    reference.key                                   // t"jill@example.com"
+    reference()                                     // jill
+    safely(Reference[Person](t"nobody@example.com")())   // Unset
+    ```
+
+    A reference encodes as its key and decodes from it, so it can be stored or sent as text
+    and resolved later. It is validated only when it is applied, never when it is built.
+
+    The library has a single source set, `gnossienne.core`, for every platform, and
+    everything is exported to the `soundness` umbrella. The database tutorial shows
+    references used together with relations.
+
+refer gnossienne.Reference
+refer gnossienne.Resolvable
+refer gnossienne.primary
+refer gnossienne.ref
+
+entry .Reference   a typed reference to an entity, holding its key and resolved through a `Resolvable`
+  detail
+      A `Reference` holds the key of an entity and, as its `#Result` type member, the type
+      of the entity it refers to: `Reference to Person` is a reference to a `Person`. It is
+      made from a value with the `ref` extension, or from a key with `Reference[Person](key)`;
+      either way, its `#key` is typed as the `Operand` of the `Resolvable` instance in scope.
+
+      Applying a reference, `reference()`, looks the key up through `Person is Resolvable`
+      and returns the entity, raising `Reference.Error` if there is none. A reference made
+      from a key which matches nothing is still a valid reference: the failure comes only
+      when it is applied.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      case class Product(@primary code: Int, description: Text)
+
+      val widget = Product(1001, t"Widget")
+      given Product is Resolvable by Int = Resolvable(Set(widget))
+
+      val reference = Reference[Product](1001)
+      reference().description   // t"Widget"
+      ```
+
+      A reference encodes as text through `.encodable` and decodes through `.decodable`,
+      each by way of the key's own codec, so `t"1001".as[Reference to Product]` reads one.
+  refer gnossienne.Resolvable
+  refer gnossienne.ref
+  entry .apply   makes a reference from a key, as `Reference[Entity](key)`
+      The key's type is the `Operand` of the `Resolvable` instance for the entity, which must
+      be in scope. Nothing is looked up: a key which matches no entity makes a reference
+      which raises `Reference.Error` when it is applied.
+  entry .encodable   encodes a reference as text: the encoding of its key
+      Available for `Reference to Entity` whenever `Entity is Resolvable` and its key type
+      is `Encodable in Text`. It is in implicit scope.
+  entry .decodable   decodes a reference from text, by decoding its key
+      Available for `Reference to Entity` whenever `Entity is Resolvable` and its key type
+      is `Decodable in Text`. The decoded reference is not checked against the store until
+      it is applied.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      case class Person(@primary email: Text, name: Text)
+      given Person is Resolvable by Text = Resolvable(Set(Person(t"jill@example.com", t"Jill")))
+
+      t"jill@example.com".as[Reference to Person]().name   // t"Jill"
+      ```
+  entry .Error   raised when a reference's key matches no entity in the store
+    detail
+        Error 519: _the reference `reference` could not be resolved because `reason`_.
+        Raised by `Reference#apply` (and `Resolvable#resolve`) when the store has no entity
+        whose `@primary` field equals the key. `#reference` is the key, encoded as text.
+    entry #reference   the key which could not be resolved, encoded as text
+    entry #reason   why the reference could not be resolved, a `Reference.Error.Reason`
+    entry .Reason   why a reference could not be resolved
+        The only case is `NotFound`: _no target with that reference was found in the
+        store_.
+    entry .communicable   renders a `Reference.Error.Reason` as a message
+  entry #Result   the type of the entity the reference refers to
+  entry #key   the reference's key, typed as the `Resolvable` instance's `Operand`
+      Needs `Result is Resolvable` in scope, which fixes the key's type.
+  entry #apply   resolves the reference to its entity, raising `Reference.Error` if there is none
+      Needs `Result is Resolvable` in scope and a `Tactic[Reference.Error]`. Each
+      application looks the key up afresh, so a reference made before its entity was added
+      to the store resolves once it is there.
+
+entry .Resolvable   a typeclass saying how a key of type `Operand` resolves to an entity of type `Self`
+  detail
+      `Person is Resolvable by Text` says that a `Text` key identifies a `Person`, which
+      field of `Person` is that key (`#field`), and how a key is resolved (`#resolve`). The
+      `ref` extension and `Reference#apply` both need one in scope.
+
+      The usual instance is built from a store of values with `Resolvable(store)`:
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      case class Person(@primary email: Text, name: Text)
+
+      val people = Set(Person(t"jack@example.com", t"Jack"), Person(t"jill@example.com", t"Jill"))
+      given resolvable: Person is Resolvable by Text = Resolvable(people)
+
+      resolvable.field                          // t"email"
+      resolvable.resolve(t"jack@example.com")   // Person(t"jack@example.com", t"Jack")
+      ```
+
+      A store of another kind — a database table, a remote service — can implement the
+      trait directly.
+  refer gnossienne.primary
+  refer gnossienne.Reference
+  entry .apply   a `Resolvable` which searches a set of values by their `@primary` field
+      `Resolvable(store)` needs the entity type to have exactly one field annotated
+      `@primary` (so that it is `Annotated by primary`), that field to be selectable as
+      `Dereferenceable to Operand`, and the field's type to be `Encodable in Text` (for the
+      error message). Both the key's type and the field are inferred from the annotation.
+
+      The store is taken by name and evaluated on every resolution, so a store which
+      changes is searched as it is at the moment a reference is applied. The search is a
+      linear scan of the set.
+
+      Its result type is `raises Reference.Error`, so building the instance needs a
+      `Tactic[Reference.Error]` in scope (or `unsafely(Resolvable(store))`), although
+      nothing can fail until a key is resolved.
+  entry #Self   the type of the entity a key resolves to
+  entry #Operand   the type of the key
+  entry #resolve   finds the entity with a given key, raising `Reference.Error` if there is none
+  entry #field   the name of the entity's key field, as text
+
+entry .primary   marks the field of a case class which is its key, for `Resolvable(store)`
+    An annotation on one parameter of a case class: `case class Person(@primary email:
+    Text, name: Text)`. `Resolvable(store)` finds the annotated field through `Annotated by
+    primary`, and uses its type as the key type of every `Reference` to the class.
+
+entry .ref   the reference to a value: its key, typed as a `Reference` to the value's type
+    An extension on any value whose type is `Resolvable`. It reads the value's key field
+    (the one marked `@primary`) and wraps it as a `Reference to Entity`. Nothing is looked
+    up, so it needs no tactic; applying the reference later resolves it back.
+
+    ```scala
+    import soundness.*
+
+    case class Person(@primary email: Text, name: Text)
+
+    val jill = Person(t"jill@example.com", t"Jill")
+    given Person is Resolvable by Text = unsafely(Resolvable(Set(jill)))
+
+    jill.ref.key   // t"jill@example.com"
+    ```

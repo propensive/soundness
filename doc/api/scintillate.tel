@@ -1,0 +1,773 @@
+tel 1.0
+
+base scintillate
+import soundness
+
+info   HTTP servers: a handler served on a port, over raw sockets, the JDK server or a servlet container
+detail
+    _Scintillate_ serves HTTP. A server is a **handler** — a block of code which reads the
+    ambient `request`, matches on its method and target, and returns an `Http.Response` —
+    bound to a port by a `RequestServable` backend: `SocketServer`, the raw-TCP backend
+    which speaks HTTP/1.1 (keep-alive, pipelining, chunked bodies, `100-continue`, TLS and
+    `101` protocol upgrades) and HTTP/2 on any TLS connection whose handshake negotiates it;
+    or `Httpd`, the same handler over the JDK's `com.sun.net.httpserver`. A third component
+    adapts a handler to a Jakarta servlet (`JavaServlet`, `@servlet`) for a container such as
+    Jetty or Tomcat.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import logging.silentLogging
+    import strategies.throwUnsafely
+    import threads.virtualThreads
+    import probates.awaitProbate
+    import webserverErrorPages.minimalErrorPage
+
+    def main(): Unit = supervise:
+      SocketServer(8080).handle:
+        request.target match
+          case t"/"       => Http.Response(Http.Ok)(t"<h1>Welcome</h1>")
+          case t"/status" => Http.Response(Http.Ok)(t"OK")
+          case _          => Http.Response(NotFound(t"No such page"))
+    ```
+
+    `handle` binds the port and returns a `Service`, whose `cancel()` stops the server and
+    whose `port` is the one bound (the system's choice, for a request of `0`). The server
+    runs on tasks of the enclosing `supervise`, so the block lasts as long as the server
+    does, and it needs a `Monitor`, a `Probate`, an `Httpd.Event is Loggable` (such as
+    `logging.silentLogging`), a `Tactic[Httpd.Error]` for a port which cannot be bound, and
+    a `WebserverErrorPage` for a handler which throws. Within a handler, `request` is the
+    `Http.Connection` being served — its method, target, headers, cookies and body — and
+    `cookie`, `basicAuth` and `as[Multipart]` read from it.
+
+    A response body is a stream: a handler's `Http.Response` may capture the connection it
+    answers (`Http.Response^{connection}`), which is how a chunked response, a server-sent
+    event stream or an upgraded WebSocket reads the live request stream, and the server
+    writes it out block by block within the connection's lifetime. Nothing else scoped may
+    be captured, and the connection cannot be stashed past the handler: capture checking
+    rejects both. A request body likewise arrives as it is received, and a second
+    `request.body()` resumes where the first left off rather than replaying, so a handler
+    which needs a body twice calls `request.body().memoize` once.
+
+    The three components:
+
+    - `scintillate.server` (JVM) — `SocketServer`, `Httpd`, `Reactor`, `RequestServable`,
+      `Http2Session`, the response wrappers `Redirect`, `NotFound`, `NoCache` and
+      `Unfulfilled`, `Acceptable`, `WebserverErrorPage`, the handler helpers `request`,
+      `cookie`, `basicAuth` and `as`, and the choice packages `frontends`, `httpServers`
+      and `webserverErrorPages`.
+    - `scintillate.servlet` (JVM) — `JavaServlet` and the `@servlet` annotation, for a
+      servlet container.
+
+    Everything is exported to the `soundness` umbrella except the request-body `as`
+    extension, which clashes with distillate's `as` and is reached as `scintillate.as`. The
+    choice packages are mirrored in the umbrella (`soundness.frontends`,
+    `soundness.httpServers`, `soundness.webserverErrorPages`); their givens are imported by
+    name, since `import soundness.*` does not import givens. The `httpServers` givens in the
+    umbrella are hand-written forwarders rather than an `export`, because a synthesized
+    export forwarder loses a given's capture-annotated refinement type.
+
+refer scintillate.SocketServer
+refer scintillate.Httpd
+refer scintillate.RequestServable
+refer scintillate.request
+refer scintillate.WebserverErrorPage
+refer telekinesis.Http
+
+entry .SocketServer   the raw-TCP backend: HTTP/1.1 keep-alive, TLS and ALPN-negotiated HTTP/2
+  detail
+      `SocketServer(port, local, ssl)` is an HTTP server over a `java.net.ServerSocket`,
+      independent of the JDK's `httpserver`. `port` is the port to bind, or `0` for a free
+      port chosen by the system; `local` (default `true`) binds `localhost` only, and `false`
+      binds every interface; `ssl` is an `Optional[javax.net.ssl.SSLContext]` which, when
+      present, serves TLS and offers `h2` then `http/1.1` by ALPN, so a client which speaks
+      HTTP/2 negotiates it during the handshake. It needs a `WebserverErrorPage` given, which
+      turns a throwing handler into a response.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import threads.virtualThreads
+      import probates.awaitProbate
+      import webserverErrorPages.minimalErrorPage
+
+      def main(): Unit = supervise:
+        val service: Service = SocketServer(0).handle:
+          Http.Response(Http.Ok)(t"${request.method.show} ${request.target}")
+
+        service.port
+        service.cancel()
+      ```
+
+      Each accepted connection is served by `#serveConnection`: a keep-alive loop which
+      parses one request head after another off the socket, frames each body by its
+      `Content-Length` or its chunking (or as empty), answers `Expect: 100-continue` with
+      an interim `100` before the handler reads the body, and drains an unread body of up
+      to 64 KiB to reach the next pipelined request, closing instead of reading a larger
+      one. A request line over the limit is refused with `414`, headers over it with
+      `431`, any other malformed head with `400`, and a read timeout (30 s idle) with a
+      best-effort `408`. A `Connection: close` from either side ends the loop after the
+      response, and a streaming body to an HTTP/1.0 client is delimited by closing the
+      connection, since it cannot be chunked.
+
+      A request carrying `Connection: Upgrade` and an `Upgrade` header (other than
+      `h2c`, which Java's `HttpClient` offers on every cleartext request and this server
+      never performs) is a protocol upgrade: its body is the unbounded remainder of the
+      connection, and a handler which answers `101 Switching Protocols` with a streaming
+      body takes over the socket for as long as that body runs — this is how a WebSocket
+      handler works. Small responses are not delayed by Nagle's algorithm (`TCP_NODELAY`),
+      and a fixed-extent response's head and body coalesce into one socket write.
+
+      The listening socket has a backlog of 1024 (the kernel caps it: 128 on a default
+      macOS, 4096 on Linux). A failure inside one connection is logged as
+      `Httpd.Event.ConnectionFailed` and confined to that connection; the server keeps
+      accepting.
+  refer scintillate.Httpd
+  refer scintillate.Frontend
+  refer scintillate.Http2Session
+  refer scintillate.WebserverErrorPage
+  entry #port   the port given at construction: the one to bind, or `0` for any free port
+      The `Service` returned by `#handle` reports the port actually bound, as does every
+      `Http.Connection` served, so a server built with `0` is still addressable.
+  entry #local   whether only `localhost` is bound (`true`, the default) or every interface
+  entry #ssl   the `SSLContext` to serve TLS with, or `Unset` for cleartext
+      A TLS server offers `h2` and `http/1.1` by ALPN; a connection which negotiates `h2`
+      is driven by the HTTP/2 engine, with the same handler. The TLS path always uses a
+      virtual thread per connection, whatever `Frontend` is in scope, since an `SSLSocket`
+      cannot ride a selector.
+  entry #handle   serves every request with a handler, on a chosen `Frontend`
+      Binds the port and returns a `Service^` which stops the server when cancelled. The
+      handler is a context function from the `Http.Connection` to an
+      `Http.Response^{connection}`: it may retain the connection in a streamed body, and
+      nothing else. It needs a `Monitor` and `Probate` (the server's accept loop and each
+      connection run as daemons under them), an `Httpd.Event is Loggable`, a
+      `Tactic[Httpd.Error]` (raised if the port cannot be bound) and a `Frontend`, which the
+      companion defaults to `Frontend.ThreadPerConnection` and which
+      `import frontends.reactiveFrontend` overrides for a cleartext server: the selector-loop
+      `Reactor` then serves it, with the handler run inline on the loop. A TLS server
+      ignores the frontend and takes the per-connection daemon path.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import threads.virtualThreads
+      import probates.awaitProbate
+      import webserverErrorPages.minimalErrorPage
+      import frontends.reactiveFrontend
+
+      def main(): Unit = supervise:
+        SocketServer(8080).handle:
+          Http.Response(Http.Ok)(t"served inline on a selector lane")
+      ```
+
+      The per-request `handle` is the degenerate case of `#handleSession`: every connection
+      is served with no per-connection setup.
+  entry #handleSession   serves each connection as a session, with state set up once per connection
+      `handleSession(scope)` runs `scope` once for every accepted connection — an HTTP/2
+      connection, or an HTTP/1.1 keep-alive socket — with an `Http2Session` in scope. The
+      scope may set up per-connection state (an authenticated principal, a rate limiter, a
+      counter) and then call `session.handle(handler)` to serve that connection's requests
+      or streams with the state in scope. Capture checking confines the state to its
+      connection, so it cannot leak to another client's.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import threads.virtualThreads
+      import probates.awaitProbate
+      import webserverErrorPages.minimalErrorPage
+
+      def main(context: javax.net.ssl.SSLContext): Unit = supervise:
+        SocketServer(8443, ssl = context).handleSession: session ?=>
+          val counter = java.util.concurrent.atomic.AtomicInteger(0)
+          session.handle:
+            Http.Response(Http.Ok)(t"request ${counter.incrementAndGet} on this connection")
+      ```
+
+      Over HTTP/2, the streams multiplexed on one connection are served concurrently, each
+      on its own virtual thread, sharing the scope's state. It takes the same contextual
+      values as `#handle` except the `Frontend`: a session is always per-thread.
+  entry #serveConnection   drives the HTTP/1.1 keep-alive loop over an input and output stream
+      `serveConnection(handler)(in, out)` serves every request readable from `in`, writing
+      the responses to `out`, until the input ends or a request closes the connection. The
+      server calls it once per accepted socket; it is also the in-process entry point for
+      tests and benchmarks, which feed a `ByteArrayInputStream` of requests and read the
+      responses from a `ByteArrayOutputStream`, with no socket or thread involved. The
+      caller owns the streams: closing them and any read timeout. It needs only an
+      `Httpd.Event is Loggable`; a stream error tearing the connection down is logged as
+      `Httpd.Event.BrokenStream`.
+
+      ```scala
+      import soundness.*
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import webserverErrorPages.minimalErrorPage
+
+      val in = java.io.ByteArrayInputStream(t"GET / HTTP/1.1\r\nHost: x\r\n\r\n".s.getBytes("US-ASCII").nn)
+      val out = java.io.ByteArrayOutputStream()
+      SocketServer(0).serveConnection(Http.Response(Http.Ok)(t"in-process"))(in, out)
+      String(out.toByteArray.nn, "US-ASCII").tt.contains(t"in-process")
+      ```
+
+entry .Httpd   the JDK backend: the same handler over `com.sun.net.httpserver`, and the server events and error
+  detail
+      `Httpd(port, local)` serves a handler through the JDK's built-in `HttpServer`, on a
+      virtual thread per exchange. Its `#handle` has the signature of `SocketServer`'s, so
+      the two backends are interchangeable, but the JDK server has one engine: the
+      `Frontend` is accepted and ignored, there is no TLS or HTTP/2, and there are no
+      sessions. `SocketServer` is the backend to prefer; `Httpd` remains for a program which
+      wants the JDK's server, and its companion is where every backend's events and error
+      live.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import threads.virtualThreads
+      import probates.awaitProbate
+      import webserverErrorPages.minimalErrorPage
+
+      def main(): Unit = supervise:
+        Httpd(8080).handle:
+          Http.Response(Http.Ok)(t"served by the JDK")
+      ```
+
+      A request whose host cannot be parsed is answered `400` and logged as
+      `Httpd.Event.ConnectionFailed`; a response cut short is logged as `BrokenStream`.
+  refer scintillate.SocketServer
+  refer scintillate.RequestServable
+  entry .Event   what a server logs: requests received and processed, broken streams and failed connections
+    detail
+        Every `Event` is tagged `Log.Network`, and `Received` also `Log.Protocol`. Both
+        backends log `Received` at `fine` when a request's head has been parsed and
+        `Processed` at `info` once its response has been delivered, with the time taken;
+        `BrokenStream` is a warning when writing a response (or reading a request) is cut
+        short, and `ConnectionFailed` is logged at `fail` when a connection's handling throws
+        something which was not turned into a response. An `Httpd.Event is Loggable` must be
+        in scope to serve at all; `logging.silentLogging` discards them.
+    entry .communicable   renders each event as a message
+    entry .Received   a request's head has been read: _received the request `request`_
+      entry #request   the request
+    entry .Processed   a response has been sent: _processed the request `request` in `duration`ms_
+      entry #request   the request
+      entry #duration   the milliseconds from the request's arrival to its response's delivery
+    entry .BrokenStream   a response could not be written in full: _sending the response was aborted after `length`_
+      entry #length   the bytes written before the failure
+    entry .ConnectionFailed   a connection's handler failed: _the connection handler failed: `message`_
+      entry #error   the failure, as a `fulminate.Error`
+  entry .Error   raised when the port cannot be bound
+    detail
+        Error 632: _could not start an HTTP server on port `port`_. Raised by `handle` (of
+        either backend) and `SocketServer#handleSession` when binding the listening socket
+        throws a `BindException`, typically because the port is already in use. A
+        `Tactic[Httpd.Error]` is required to call `handle`.
+    entry #port   the port which could not be bound
+  entry #port   the port to bind, or `0` for a free port chosen by the system
+  entry #local   whether only `localhost` is bound (`true`, the default) or every interface
+  entry #handle   serves every request with a handler, on the JDK server
+      Creates the `HttpServer`, installs the handler on the root context, starts it and
+      returns a `Service^` whose `cancel()` stops it (with a one-second grace period) and
+      whose `port` is the one bound. Takes the same contextual values as
+      `SocketServer#handle`; the `Frontend` is ignored.
+
+entry .RequestServable   what every HTTP server backend offers: `handle(handler)` on a port
+  detail
+      The trait `SocketServer` and `Httpd` implement. Its one method, `#handle`, takes the
+      handler which serves every request, and a program which wants to choose its backend
+      at runtime can hold either as a `RequestServable`. The handler's type is the contract
+      of the whole library: a context function from the live `Http.Connection` to an
+      `Http.Response^{connection}`, which may retain the connection in a streamed body and
+      nothing else.
+  refer scintillate.SocketServer
+  refer scintillate.Httpd
+  entry #handle   serves every request with a handler, returning the running `Service`
+      Needs a `Monitor` and `Probate`, an `Httpd.Event is Loggable`, a
+      `Tactic[Httpd.Error]` and a `Frontend`. The `Frontend` is a parameter rather than
+      summoned inside the implementation so that a `frontends` given imported at the call
+      site, not the companion default, is the one found.
+
+entry .Http2Session   a per-connection scope: `handle` serves one connection's requests with shared state
+  detail
+      The value `SocketServer#handleSession` lends its scope, for each accepted connection.
+      `#handle(handler)` serves every request on that connection (every stream, for HTTP/2,
+      concurrently) with the handler, which closes over whatever state the scope set up;
+      the state is confined to the connection by capture checking. A session over an
+      HTTP/1.1 keep-alive socket serves its requests in order; over HTTP/2 it is the server
+      dual of the client's `Http2.Endpoint.session`.
+  refer scintillate.SocketServer
+  entry #handle   serves every request or stream of this connection with the handler
+
+entry .Frontend   which engine `SocketServer.handle` serves on: a thread per connection, or the reactor
+  detail
+      A `SocketServer` serving cleartext HTTP/1.1 can run in two ways, and the `Frontend`
+      given in scope when `handle` is called chooses. `ThreadPerConnection`, the default
+      (`.default`, in the companion), spawns a virtual-thread daemon per accepted socket: a
+      handler may block — on a database, a file, another service — and only its own
+      connection waits; it serves streaming responses, TLS, HTTP/2 and sessions. `Reactive`
+      serves on the `Reactor`, an event loop of selector lanes which runs the handler inline
+      with no per-request thread transition: about half again the throughput on small
+      requests, and less allocation, at the price that a handler which blocks stalls every
+      connection on its lane. The reactor hands anything it cannot serve inline — a chunked
+      or oversized body, `Expect: 100-continue`, a protocol upgrade — to the
+      thread-per-connection path, so a WebSocket handler works under either, and a TLS
+      server ignores the selection entirely.
+
+      ```scala
+      import soundness.*
+      import frontends.reactiveFrontend
+
+      summon[Frontend] == Frontend.Reactive
+      ```
+
+      The choice is made by importing one of the `frontends` givens by name, which outranks
+      the companion's default.
+  refer scintillate.frontends
+  refer scintillate.Reactor
+  entry .default   the companion's default, `Frontend.ThreadPerConnection`
+      In implicit scope with no import, and outranked by a `frontends` given imported by
+      name.
+
+entry .frontends   the two front-ends, each a given to import by name
+  detail
+      `import frontends.reactiveFrontend` selects the selector-loop `Reactor` for cleartext
+      servers; `import frontends.threadPerConnectionFrontend` states the default explicitly.
+      `import soundness.*` brings neither in; `Frontend.default` applies when no import is
+      made.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import threads.virtualThreads
+      import probates.awaitProbate
+      import webserverErrorPages.minimalErrorPage
+      import frontends.reactiveFrontend
+
+      def main(): Unit = supervise:
+        SocketServer(8080).handle(Http.Response(Http.Ok)(t"Hello, world!"))
+      ```
+  entry .threadPerConnectionFrontend   a virtual thread per connection: handlers may block
+  entry .reactiveFrontend   the selector-loop reactor: handlers must not block
+
+entry .Reactor   the event-loop front-end: selector lanes serving cleartext HTTP/1.1 with the handler inline
+  detail
+      `Reactor(requested, local, loops)(handler)` binds a listening channel and starts
+      `loops` platform threads (one per available processor, if `0`), each owning a
+      `Selector` and every connection registered with it, plus a boss thread accepting
+      connections and distributing them round-robin. A lane services a batch of ready
+      connections per wake-up: it accumulates each request until its head (and any fixed
+      body up to 64 KiB) is complete, parses it over an in-memory cursor which cannot block,
+      runs the handler inline, and writes a response of known extent in one gathering
+      write. A slow reader is back-pressured: past 256 KiB of queued response bytes a
+      connection's read interest is withdrawn until the queue drains to 64 KiB.
+
+      `SocketServer.handle` constructs one when `frontends.reactiveFrontend` is in scope;
+      it can also be used directly, as a value with a `#port` and a `#stop()`, which is how
+      a test exercises it without a `Monitor`. It needs a `WebserverErrorPage` and an
+      `Httpd.Event is Loggable`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import webserverErrorPages.minimalErrorPage
+
+      val reactor = Reactor(0, loops = 2)(Http.Response(Http.Ok)(t"from the reactor"))
+      reactor.port
+      reactor.stop()
+      ```
+
+      The contract is a non-blocking handler: one which computes its response from what it
+      already has, or hands off to other tasks and answers from memory. A streaming
+      (`Flowing`) response is forced to completion on the lane before it is written.
+      Requests the lane cannot serve inline — a chunked or oversized body, `Expect:
+      100-continue`, a protocol upgrade — leave the reactor: the channel and every byte
+      already read are handed to a virtual thread running `SocketServer#serveConnection`,
+      which re-parses the request as if it had owned the socket from the start. A head
+      which exceeds the limits is refused with `431` (or `414`, `400`); the threads are
+      daemons, so a reactor never pins a JVM whose main thread has ended.
+  refer scintillate.Frontend
+  refer scintillate.SocketServer
+  entry #port   the port bound: the one requested, or the system's choice for a request of `0`
+  entry #stop   closes the listener, wakes every lane and joins the threads
+
+entry .WebserverErrorPage   how a handler's exception becomes a response
+  detail
+      A `WebserverErrorPage` is a function from the `Throwable` a handler threw and the
+      `Http.Request` it was serving to the `Http.Response` the client receives. Every
+      backend needs one as a given when it is constructed (`SocketServer`, `Httpd`,
+      `Reactor`), and the three in `webserverErrorPages` — minimal, styled and with a stack
+      trace — are imported by name; a program's own is a lambda:
+
+      ```scala
+      import soundness.*
+
+      given WebserverErrorPage = (throwable, request) =>
+        Http.Response(Unfulfilled(t"Something went wrong serving ${request.target}"))
+      ```
+
+      A handler's exception reaches the error page only when it escapes the handler as a
+      thrown exception; an error raised through a `Tactic` the handler supplies is the
+      handler's own business.
+  refer scintillate.webserverErrorPages
+  refer scintillate.Unfulfilled
+  entry #handle   the response for a throwable and the request it interrupted
+
+entry .webserverErrorPages   the standard error pages, each a given to import by name
+  detail
+      A `WebserverErrorPage` is required by every server; none is chosen by default.
+      `minimalErrorPage` is a one-line text response, with no dependencies.
+      `styledErrorPage` and `stackTracesErrorPage` are HTML pages built from templates
+      bundled in scintillate's jar, read through the `Classloader` given in scope (such as
+      `classloaders.threadContextClassloader`), and the latter includes the exception's
+      stack trace, which suits development and not production.
+
+      ```scala
+      import soundness.*
+      import webserverErrorPages.minimalErrorPage
+
+      summon[WebserverErrorPage]
+      ```
+  entry .minimalErrorPage   a `500` with the text _An error occurred which prevented the request from completing._
+  entry .styledErrorPage   a `500` with a styled HTML page; needs a `Classloader` for the bundled template
+  entry .stackTracesErrorPage   a `500` with a styled HTML page showing the exception's stack trace; needs a `Classloader`
+
+entry .request   the request being served, inside a handler
+    `request` is an inline accessor for the `Http.Request` in context — inside a handler,
+    the `Http.Connection` being served, which is a request with the means of answering it.
+    It gives the method, version, host, target, headers, cookies and body, so routing is a
+    match on `request.target` and content negotiation a read of `request.headers`. A handler
+    grows one concern at a time:
+
+    ```scala fuel
+    frame
+      label One response to every request
+      code
+          import soundness.*
+          import logging.silentLogging
+          import strategies.throwUnsafely
+          import threads.virtualThreads
+          import probates.awaitProbate
+          import webserverErrorPages.minimalErrorPage
+
+          def main(): Unit = supervise:
+            SocketServer(8080).handle:
+              Http.Response(Http.Ok)(t"Hello, world!")
+    frame
+      label Routed on the request's target
+      code
+          import soundness.*
+          import logging.silentLogging
+          import strategies.throwUnsafely
+          import threads.virtualThreads
+          import probates.awaitProbate
+          import webserverErrorPages.minimalErrorPage
+
+          def main(): Unit = supervise:
+            SocketServer(8080).handle:
+              request.target match
+                case t"/"       => Http.Response(Http.Ok)(t"Hello, world!")
+                case t"/status" => Http.Response(Http.Ok)(t"OK")
+                case _          => Http.Response(NotFound(t"No such page"))
+    frame
+      label A posted body, read as it arrives
+      code
+          import soundness.*
+          import logging.silentLogging
+          import strategies.throwUnsafely
+          import threads.virtualThreads
+          import probates.awaitProbate
+          import webserverErrorPages.minimalErrorPage
+
+          def main(): Unit = supervise:
+            SocketServer(8080).handle:
+              (request.method, request.target) match
+                case (Http.Get, t"/")        => Http.Response(Http.Ok)(t"Hello, world!")
+                case (Http.Get, t"/status")  => Http.Response(Http.Ok)(t"OK")
+                case (Http.Post, t"/echo")   => Http.Response(Http.Ok)(request.body().memoize.utf8)
+                case _                       => Http.Response(NotFound(t"No such page"))
+    frame
+      label A cookie, and a redirect for a visitor without one
+      code
+          import soundness.*
+          import logging.silentLogging
+          import strategies.throwUnsafely
+          import threads.virtualThreads
+          import probates.awaitProbate
+          import webserverErrorPages.minimalErrorPage
+
+          def main(): Unit = supervise:
+            SocketServer(8080).handle:
+              (request.method, request.target) match
+                case (Http.Get, t"/") =>
+                  cookie(t"name").lay(Http.Response(Redirect(t"/welcome"))): name =>
+                    Http.Response(Http.Ok)(t"Hello, $name!")
+
+                case (Http.Get, t"/welcome") => Http.Response(Http.Ok)(t"Welcome, stranger")
+                case (Http.Get, t"/status")  => Http.Response(Http.Ok)(t"OK")
+                case (Http.Post, t"/echo")   => Http.Response(Http.Ok)(request.body().memoize.utf8)
+                case _                       => Http.Response(NotFound(t"No such page"))
+    ##
+    ```
+
+    The body is a stream the connection owns: `request.body()` reads on from wherever the
+    previous read stopped, so a handler which needs the whole body more than once calls
+    `request.body().memoize` once and keeps the result. Whatever the handler leaves unread
+    is drained by the server (up to 64 KiB) to reach the next pipelined request. `request`
+    is `infer[Http.Request]`, so outside a handler it is a compile error for want of a
+    contextual `Http.Request`.
+
+entry .cookie   the value of a named request cookie, inside a handler
+    `cookie(key)` is `request.textCookies(key)`: the cookie's value as `Text`, or `Unset`
+    if the request carries no cookie of that name. It needs an `Http.Request` in context,
+    so it is called from a handler.
+
+    ```scala
+    import soundness.*
+
+    def greeting(using Http.Request): Text = cookie(t"name").lay(t"Hello, stranger")(t"Hello, "+_)
+    ```
+
+entry .basicAuth   guards a response behind HTTP Basic authentication
+    `basicAuth(validate, realm)(response)` checks the request's `Authorization` header: if
+    it carries exactly one `Basic` credential and `validate(username, password)` is true,
+    the by-name `response` is evaluated and returned; a wrong credential is answered `403
+    Forbidden`, and a missing one `401 Unauthorized` with a `WWW-Authenticate: Basic
+    realm="…", charset="UTF-8"` challenge, which makes a browser prompt. It needs the
+    `Http.Connection` in context and a `Tactic[Auth.Error]`, raised when the header cannot
+    be parsed.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    def secret(using Http.Connection): Http.Response =
+      basicAuth((user, password) => user == t"admin" && password == t"hunter2", t"Admin"):
+        Http.Response(Http.Ok)(t"the secret")
+    ```
+
+entry .as   reads the request body as a typed value, through `Acceptable`: `request.as[Multipart]`
+    An extension on `Http.Request`, `request.as[body]` for any `body: Acceptable`, which
+    decodes the request according to its headers and body. The one instance scintillate
+    provides is `Acceptable.multipart`, for a `multipart/form-data` upload. The extension is
+    not exported to the `soundness` umbrella, since distillate's generic `as` (decoding a
+    `Text` through `Decodable`) has the same name: reach it as `scintillate.as`.
+
+    ```scala
+    import soundness.*
+    import scintillate.as
+    import strategies.throwUnsafely
+
+    def upload(using Http.Request): Http.Response =
+      val parts = request.as[Multipart]
+      Http.Response(Http.Ok)(t"received the upload")
+    ```
+
+entry .Acceptable   a typeclass for reading a request body as a value: `request.as[T]`
+  detail
+      `T is Acceptable` says how an `Http.Request` becomes a `T`, from its headers and its
+      body, and `request.as[T]` (the `scintillate.as` extension) applies it. The library's
+      one instance is `.multipart`, which parses a `multipart/form-data` body; a program
+      adds its own by giving `MyType is Acceptable`.
+  refer scintillate.as
+  entry .multipart   reads a `multipart/form-data` request as a `Multipart`, part by part
+      Checks the `Content-Type` is `multipart/form-data` with a `boundary` parameter, and
+      parses the body with `Multipart.parse`. The parts are lent from the body as it
+      arrives, so a handler reads each part's content before moving to the next. It needs a
+      `Tactic[Multipart.Error]`: raised with reason `MediaType` for a missing or wrong
+      content type or boundary, and `Truncated` for a body cut short.
+  entry #accept   the value read from a request
+
+entry .Redirect   a response which redirects: `302 Found`, or `301 Moved Permanently`
+  detail
+      `Redirect(location, permanent)` is a `Servable` value, so `Http.Response(Redirect(…))`
+      is a response with the status and a `Location` header. `location` may be any type
+      `Abstractable across Urls to Text` — a `Text`, an `HttpUrl` — and `permanent` (default
+      `false`) chooses `301` over `302`.
+
+      ```scala
+      import soundness.*
+
+      Http.Response(Redirect(t"/elsewhere")).status == Http.Found
+      Http.Response(Redirect(t"/moved", permanent = true)).status == Http.MovedPermanently
+      ```
+  entry .apply   `Redirect(location, permanent = false)` from any URL-like value
+  entry .redirect   the `Servable` which renders the redirect as a response with a `Location` header
+  entry #location   the target, as text
+  entry #permanent   whether the redirect is `301` rather than `302`
+
+entry .NotFound   wraps a servable value as a `404 Not Found` response
+  detail
+      `NotFound(content)` serves `content` — any `Servable` value: text, HTML, JSON —
+      exactly as it would be served otherwise, with its headers and body, but with status
+      `404`. The usual last case of a route match.
+
+      ```scala
+      import soundness.*
+
+      Http.Response(NotFound(t"No such page")).status == Http.NotFound
+      ```
+  entry .servable   the `Servable` for `NotFound[content]`, given `content is Servable`
+  entry #content   the value served with the `404`
+
+entry .Unfulfilled   wraps a servable value as a `500 Internal Server Error` response
+  detail
+      `Unfulfilled(content)` serves `content` with status `500`, keeping its headers and
+      body. The `webserverErrorPages` givens build their responses from it, and a handler
+      which detects its own failure can do the same.
+
+      ```scala
+      import soundness.*
+
+      Http.Response(Unfulfilled(t"The database is unavailable")).status == Http.InternalServerError
+      ```
+  entry .servable   the `Servable` for `Unfulfilled[content]`, given `content is Servable`
+  entry #content   the value served with the `500`
+
+entry .NoCache   wraps a servable value with headers which forbid caching
+  detail
+      `NoCache(content)` serves `content` with its own status and body, and the headers
+      `Cache-Control: no-store`, `Pragma: no-cache` and `Expires: 0` prepended, so neither
+      a browser nor a proxy keeps it.
+
+      ```scala
+      import soundness.*
+
+      Http.Response(NoCache(t"""{"time": 1}""")).textHeaders.map(_.key)
+      ```
+  entry .servable   the `Servable` for `NoCache[content]`, given `content is Servable`
+  entry #content   the value served uncached
+
+entry .httpServers   HTTP as a `Protocolic` protocol over a port: `tcp"8080".serve[Http](handler)`
+  detail
+      urticose's `port.serve[protocol](handler)` serves a protocol on a port through a
+      `protocol is Protocolic over port` given, and these four givens make `Http` such a
+      protocol over the `Tcp.Port`s `80`, `443`, `8080` and `8000`: `jdkHttpserver` and
+      `jdkHttpserverPublic` serve through `Httpd`, `soundnessHttpd` and
+      `soundnessHttpdPublic` through `SocketServer`, the `Public` variants binding every
+      interface rather than `localhost` only. One is imported by name, and the handler is
+      the same context function `handle` takes. Each given retains the `Tactic[Httpd.Error]`,
+      `Monitor`, `Probate`, `Httpd.Event is Loggable` and `WebserverErrorPage` it is built
+      from, so the same contextual values are needed as for `SocketServer#handle`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import threads.virtualThreads
+      import probates.awaitProbate
+      import webserverErrorPages.minimalErrorPage
+      import httpServers.soundnessHttpd
+
+      def main(): Unit = supervise:
+        tcp"8080".serve[Http](Http.Response(Http.Ok)(t"served through Protocolic"))
+      ```
+
+      In the `soundness` umbrella the four are hand-written forwarding givens rather than
+      an `export`, since a synthesized export forwarder would lose their capture-annotated
+      refinement type; they have the same names.
+  refer urticose.Protocolic
+  refer scintillate.SocketServer
+  refer scintillate.Httpd
+  entry .HttpdFor   the type of these givens: `Http is Protocolic` over a `Tcp.Port of port`, serving `Http.Connection`s
+      `HttpdFor[port]` refines `Protocolic` with `Transport = Tcp.Port of port`, `Request =
+      Http.Connection^`, `Response = Http.Response` and `Server = Service`. Public so that
+      the umbrella's forwarders can name it.
+  entry .jdkHttpserver   `Http` served by `Httpd` on `localhost`
+  entry .jdkHttpserverPublic   `Http` served by `Httpd` on every interface
+  entry .soundnessHttpd   `Http` served by `SocketServer` on `localhost`
+  entry .soundnessHttpdPublic   `Http` served by `SocketServer` on every interface
+
+entry .Http2Serve   the HTTP/2 engine behind a TLS `SocketServer`: serves one negotiated connection's streams
+  detail
+      `SocketServer` dispatches here once a TLS socket has negotiated `h2` by ALPN. Each
+      client-initiated stream becomes an `Http.Connection` served by the handler on its own
+      virtual thread, so requests multiplexed on the connection run concurrently; the
+      engine applies flow control, HPACK, and trailers (a response `Trailer` header names
+      the headers sent after the body, as gRPC's `grpc-status` is), and tolerates the frame
+      types it does not act on. Both methods block the calling thread for the connection's
+      lifetime, and take the handler or scope as an `AnyRef` carrier (an `AnyRef => AnyRef`
+      from a connection to a response, or an `AnyRef => Unit` over an `Http2Session`), which
+      is why a program reaches HTTP/2 through `SocketServer#handle` or `#handleSession`
+      rather than here. A response body is driven block by block off its stream, never
+      memoized: a body transformed by a text encoder does not terminate under `memoize`.
+  refer scintillate.SocketServer
+  refer scintillate.Http2Session
+  entry .serve   serves every stream of an HTTP/2 connection over a socket's streams, with a handler
+      `serve(handler, in, out, port)`: opens the server connection over `in` and `out`,
+      and runs the handler for each stream until the client sends `GOAWAY` or the socket
+      closes. Needs a `Monitor`, a `Tactic[Async.Error]` for the connection's start, and
+      an `Httpd.Event is Loggable`.
+  entry .serveSession   serves an HTTP/2 connection as a session, lending an `Http2Session` to the scope
+      `serveSession(scope, in, out, port)`: as `.serve`, but the scope runs once with an
+      `Http2Session` whose `handle` serves every stream; the state the scope sets up is
+      shared by that connection's streams and no other's.
+
+entry .Responder   a sink for a status, headers and body: `sendBody` and `addHeader`
+  detail
+      A minimal response sink: `#addHeader(key, value)` adds a header and
+      `#sendBody(status, body)` sends the status with a body given as a `Chain[Data]`. It is
+      declared and exported but not implemented by any backend in this component; the
+      backends answer through `Http.Connection.Respond`.
+  entry #sendBody   sends a status and a body of data blocks
+  entry #addHeader   adds a response header
+
+entry .JavaServlet   a handler as a Jakarta `HttpServlet`, for a servlet container
+  detail
+      `JavaServlet(handle)` is an `HttpServlet` which turns each servlet request into an
+      `Http.Connection` — method, version, host, target, headers (lowercased) and the body
+      streamed from the servlet's input — runs `handle` on it, and writes the response's
+      status, headers and body back through the servlet response, chunked for a streaming
+      body. In the `scintillate.servlet` component. The handler is a plain function
+      `Http.Connection => Http.Response`, not a context function, because a context-function
+      class parameter cannot be applied from a subclass's superclass argument; a subclass
+      (or `.Fn`) supplies it. A body read error or an unparseable host is printed to the
+      servlet's standard output, and the latter answered `400`.
+
+      ```scala
+      import soundness.*
+
+      class Hello extends JavaServlet(connection => Http.Response(Http.Ok)(t"Hello from a servlet"))
+      ```
+
+      The `@servlet` annotation generates such a class from a method.
+  refer scintillate.servlet
+  entry .Fn   `JavaServlet.Fn(handle)`: a servlet from a function, to extend or instantiate
+      An open class whose constructor takes the handler, so an anonymous subclass or a
+      generated one (what `@servlet` produces) needs no body of its own.
+  entry #handle   serves one servlet request and response pair through the handler
+      Builds the `Http.Connection`, applies the handler and delivers the response. The
+      servlet's `service` calls it for every request, and prints any exception to standard
+      output rather than letting it escape to the container.
+
+entry .servlet   the `@servlet` annotation: a method returning `Http.Response` becomes a servlet class
+    A macro annotation on a method `def name(connection: Http.Connection): Http.Response`,
+    which adds beside it a class of the same name extending `JavaServlet.Fn`, delegating
+    to the method, so that a servlet container can instantiate it by name. The method's
+    result type must be a subtype of `Http.Response`, and the annotation must be applied to
+    a method: either violation is a compile error. In the `scintillate.servlet` component.
+
+    ```scala
+    import soundness.*
+
+    @servlet
+    def hello(connection: Http.Connection): Http.Response = Http.Response(Http.Ok)(t"Hello")
+    ```

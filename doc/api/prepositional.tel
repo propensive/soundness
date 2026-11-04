@@ -1,0 +1,330 @@
+tel 1.0
+
+base prepositional
+import soundness
+
+info   the prepositions which refine a typeclass's type members, so that a type reads as a phrase
+detail
+    _Prepositional_ supplies the vocabulary that lets a Soundness type be written as a
+    phrase — `Path on Linux`, `Text is Decodable in Json`, `Quantity is Multiplicable by
+    Duration` — instead of a type constructor applied to positional arguments. Each
+    preposition is an infix type alias which refines exactly one abstract type member of
+    the type to its left: `in` sets `Form`, `on` sets `Plane`, `by` sets `Operand`, `to`
+    sets `Result`, and so on. Because each refines a *different* member, prepositions are
+    applied in succession without nesting, in any order, and only the members a signature
+    cares about need be mentioned: `Text is Decodable` is a complete type, which `in Json`
+    narrows.
+
+    The library has two halves. Twelve one-member **traits** declare the members the
+    prepositions refine: `Formal` (`Form`), `Planar` (`Plane`), `Operable` (`Operand`),
+    `Resultant` (`Result`), `Topical` (`Topic`), `Original` (`Origin`), `Domainal`
+    (`Domain`), `Transportive` (`Transport`), `Targetable` (`Target`), `Contrastive`
+    (`Contrast`), `Limited` (`Limit`) and `Locative` (`Locus`). A typeclass mixes in the
+    ones it needs. Twelve **prepositions** then refine them: `in`, `on`, `by`, `to`, `of`,
+    `from`, `across`, `over`, `onto`, `against`, `under` and `at`. Each is bounded so that it
+    applies only to a type which declares the member, so a preposition cannot be attached
+    to a type that has no place for it; the two exceptions are `in`, whose form may be a
+    type constructor of any kind, and `over`, which carry no bound and attach to any type.
+
+    The third piece is `Typeclass`, the base of every Soundness typeclass. It declares
+    `Self`, the type the instance is *for*, which the prelude's `is` refines: `Text is
+    Decodable` is `Decodable { type Self = Text }`. `Typeclass.Pure` is the subset whose
+    instances the compiler has verified hold no capability.
+
+    ```scala
+    import soundness.*
+
+    trait Serialisable extends Typeclass, Formal, Resultant:
+      def serialise(value: Self): Result
+
+    given Int is Serialisable in Json to Text = (value: Int) => value.show
+
+    def stringify[value](value: value)(using serialisable: value is Serialisable in Json to Text)
+    :   Text =
+      serialisable.serialise(value)
+    ```
+
+    `is`, `Self` and the preposition names are all that a typeclass's user sees; the
+    traits matter to its author, who chooses which members to declare. A typeclass's
+    *definition* mixes in the traits; its *uses* read as prose. The compiler, however,
+    reports the desugared form — a mismatch is described as `{ type Form = Json }` rather
+    than `in Json` — which is the one place the translation runs the other way.
+
+    A type is built up one clause at a time, and each clause is a refinement the previous
+    type already admits. The same given is found at every step; what changes is how much
+    the caller knows about it:
+
+    ```scala fuel
+    frame
+      label The bare typeclass: an instance, with every member still abstract
+      code
+          val anySerialiser: Serialisable = infer
+    frame
+      label `is` fixes the subject: an instance for `Int`
+      code
+          val forInt: Int is Serialisable = infer
+    frame
+      label `in` fixes the form: an instance for `Int`, in JSON
+      code
+          val forIntInJson: Int is Serialisable in Json = infer
+    frame
+      label `to` fixes the result, and the phrase is complete
+      code
+          val complete: Int is Serialisable in Json to Text = infer
+          val rendered: Text = complete.serialise(42)
+    ##
+    ```
+
+    Only in the last frame is `serialise`'s result known to be a `Text`: through
+    `anySerialiser`, it is the abstract `Result`.
+
+    The library is a single source set, `prepositional.core`, with no dependencies beyond
+    `beneficence` (for `Findable`) and no platform-specific parts; it compiles for the JVM,
+    Scala.js and Scala Native. Everything is exported to the `soundness` umbrella, and
+    because every Soundness module compiles with `-Yimports:java.lang,proscenium`, the
+    `is` that joins a subject to its typeclass is always in scope without an import.
+
+refer prepositional.Typeclass
+refer prepositional.in
+refer prepositional.on
+refer prepositional.by
+refer prepositional.to
+
+entry .Typeclass   the base of every Soundness typeclass: an instance for a `Self` type
+  detail
+      A `Typeclass` declares one abstract type member, `#Self`, the type its instance is
+      *for*. The prelude's infix `is` refines it, so `Text is Decodable` is the type
+      `Decodable { type Self = Text }`, and a context bound `[value: Decodable in Json]`
+      asks for an instance whose `Self` is `value` and whose `Form` is `Json`. Every
+      Soundness typeclass — `Showable`, `Encodable`, `Comparable`, `Traversable` — extends
+      it, together with the prepositional traits for whichever other members it needs.
+
+      ```scala
+      import soundness.*
+
+      trait Greetable extends Typeclass:
+        def greet(value: Self): Text
+
+      given Text is Greetable = (name: Text) => t"Hello, $name"
+
+      def welcome[value](value: value)(using greetable: value is Greetable): Text =
+        greetable.greet(value)
+
+      welcome(t"Ada")   // t"Hello, Ada"
+      ```
+
+      A `Typeclass` is *not* a pure type: many instances are built from capabilities — a
+      `Tactic` for raising errors, an encoder, a backend — and retain them, so their
+      captures are tracked rather than assumed away. An instance which holds only data and
+      logic should extend `.Pure` instead, which the compiler verifies. Nor is it a
+      capability class, so holding an instance in a companion or a `given` does not make
+      the holder a capability.
+
+      `Typeclass` extends `Findable`, beneficence's marker trait for a type whose values
+      are supplied as contextual values (`System`, `Environment` and `Calendar` wear it
+      too), so a typeclass instance is recognised as something to be found rather than
+      constructed.
+  refer prepositional.Typeclass.Pure
+  entry .Pure   the typeclasses whose instances the compiler has verified hold no capability
+      `Typeclass.Pure` extends `Typeclass` and `scala.caps.Pure`, so an instance whose body
+      references a capability is rejected where it is defined: purity here is a checked
+      fact, not an assertion. The typeclasses of comparison, arithmetic, hashing and
+      collection traversal — anything that computes with its argument and nothing else —
+      extend it; a typeclass whose instances may legitimately retain a `Tactic`, a
+      filesystem or an encoder stays on plain `Typeclass`. A pure instance which must
+      nonetheless hold one resolution-scoped capability names it in a single field marked
+      `@caps.unsafe.untrackedCaptures`, which is narrower and more greppable than giving up
+      purity for the whole instance.
+
+      ```scala
+      import soundness.*
+
+      trait Doublable extends Typeclass.Pure:
+        def double(value: Self): Self
+
+      given Int is Doublable = (value: Int) => value*2
+      ```
+  entry #Self   the type the typeclass instance is for; refined by `is`
+
+entry .Formal   declares the `Form` member, which `in` refines
+  detail
+      A typeclass extends `Formal` when its instances are specific to a *form* — a
+      format, a representation, or a shape — chosen with `in`: `Text is Decodable in Json`,
+      `Int is Encodable in Tel`, `Ordinal in xs.type`. The member may be declared
+      `<: AnyKind`, in which case `in` can apply an unapplied type constructor
+      (`self is Convertible in Map`).
+  entry #Form   the form, format or representation an instance is specific to
+
+entry .Planar   declares the `Plane` member, which `on` refines
+  detail
+      A *plane* is the space a value lives on: a filesystem for a path (`Path on Linux`,
+      `Path on Classpath`), a classloader's search space, or the nodes a graph is drawn
+      over. A typeclass or a value type extends `Planar` so that `on` can name the plane,
+      and galilei's filesystem policies (`CreateNonexistentParents`, `DeleteRecursively`)
+      are `Planar` so that one policy is chosen per filesystem.
+  entry #Plane   the space, such as a filesystem or a classpath, a value is located on
+
+entry .Operable   declares the `Operand` member, which `by` refines
+  detail
+      The *operand* is the other type an operation takes: the right-hand side of a binary
+      operator (`Quantity is Multiplicable by Duration`), the element type of a collection
+      (`List[Int] is Traversable by Int`), or the argument of a lookup. It is the most
+      widely used of the members, extended by over forty typeclasses.
+  entry #Operand   the other type an operation takes: a right operand, an element, an argument
+
+entry .Resultant   declares the `Result` member, which `to` refines
+  detail
+      The *result* is what an operation produces: `Quantity is Multiplicable by Duration to
+      Quantity`, `self is Mandatable to result`, `Text is Decodable in Json to Record`. A
+      typeclass whose operation returns a type that depends on the instance declares
+      `Result` and the caller selects or reads it with `to`.
+  entry #Result   the type an operation yields
+
+entry .Topical   declares the `Topic` member, which `of` refines
+  detail
+      The *topic* is what a value is *about* or *of*: the tag of an HTML element (`Html of
+      "br"`), the property an `ambience.Property` instance reads, the event a `Recurrent`
+      describes, the field an `Annotated` instance was found on. It is the member for a
+      literal or a phantom type that classifies a value without being contained in it.
+  entry #Topic   what a value is about: a tag, a name, a classification
+
+entry .Original   declares the `Origin` member, which `from` refines
+  detail
+      The *origin* is where a value or a proof comes from: `self is Distinct from (Int |
+      String)` (vacuous), a polyvinyl `Record` built from a `Specification`, an
+      `Intensional` record whose fields derive from another type.
+  entry #Origin   the type a value or a proof derives from
+
+entry .Domainal   declares the `Domain` member, which `across` refines
+  detail
+      The *domain* is the whole space a value ranges over: `Abstractable across Paths to
+      Text` makes any path type abstract across the whole family of paths, and
+      cacophony's `Pcm` and `Recording` are `Domainal` in the signal's domain. The
+      preposition reads as "across the domain of".
+  entry #Domain   the family or space a value ranges across
+
+entry .Transportive   declares the `Transport` member, which `over` refines
+  detail
+      The *transport* is what a value is carried by or measured against: a stream's credit
+      (`Streamable by Data over Credit`), a timeline (`Instant over Unix`), the format a
+      `Parsable` reads over, the stage a superlunary `Stageable` value crosses. `over` is,
+      with `in`, one of the two prepositions with no bound on the type it refines, so it
+      attaches to any type; a type meant to be used with it extends `Transportive`.
+  entry #Transport   what a value is carried over: a credit, a timeline, a format
+
+entry .Targetable   declares the `Target` member, which `onto` refines
+  detail
+      The *target* is what an operation lands on: the host-and-path target a telekinesis
+      `Fetchable` URL resolves to, the registry a parasite `Interceptable` signal is routed
+      onto, the response an obligatory `Associable` session is associated with. It differs
+      from `Result` in being a destination rather than a product.
+  entry #Target   the destination an operation lands on
+
+entry .Contrastive   declares the `Contrast` member, which `against` refines
+  detail
+      The *contrast* is what a value is compared against: hypotenuse's `Commensurable`
+      has `Int is Commensurable against Double`, the typeclass of comparing two different
+      numeric types.
+  entry #Contrast   the type a value is compared against
+
+entry .Limited   declares the `Limit` member, which `under` refines
+  detail
+      The *limit* is a bound a value is held under: nomenclature's `Nominative` names a
+      value under a set of rules (`plane is Nominative under Rules`), and an adversaria `Annotated` field
+      is found under its enclosing type.
+  entry #Limit   a bound, a rule set or an enclosure a value is held under
+
+entry .Locative   declares the `Locus` member, which `at` refines
+  detail
+      The *locus* is the place a value is at: the path an apoplexy `Api` is served at
+      (`Api at "/"`), the location a distillate `Decodable` instance decodes at, the
+      position a phoenicia `Typesettable` text is set at.
+  entry #Locus   the place, position or address a value is at
+
+entry .in   `refined in form`: refines the `Form` member
+    `refined in form` is `refined { type Form = form }`, the preposition for a format or
+    representation: `Text is Decodable in Json`, `value is Encodable in Tel`, `Ordinal in
+    xs.type` (denominative's confined index). It is deliberately unbounded, and its `form`
+    parameter admits any kind, so a `Form` declared `<: AnyKind` can be refined with an
+    unapplied type constructor, `self is Convertible in Map`. Because it is unbounded, it
+    will also attach to a type with no `Form` member, producing a refinement nothing reads:
+    a typeclass which means to be used with `in` extends `Formal`.
+
+    ```scala
+    import soundness.*
+
+    val decoder: Text is Decodable in Json = infer
+    ```
+
+entry .on   `refined on plane`: refines the `Plane` member
+    `refined on plane` is `refined { type Plane = plane }`, for a type which extends
+    `Planar`: `Path on Linux`, `Path on Classpath`, `Classloader` as `Findable on
+    Classpath`. The bound is enforced, so `on` cannot be attached to a type without a
+    `Plane`.
+
+    ```scala
+    import soundness.*
+
+    val path: Path on Linux = t"/etc/hosts".as[Path on Linux]
+    ```
+
+entry .by   `refined by operand`: refines the `Operand` member
+    `refined by operand` is `refined { type Operand = operand }`, for a type which extends
+    `Operable`: `Quantity is Multiplicable by Duration`, `List[Int] is Traversable by Int`,
+    `Data is Streamable by Data`. The operand is the *other* type an operation takes.
+
+entry .to   `refined to result`: refines the `Result` member
+    `refined to result` is `refined { type Result = result }`, for a type which extends
+    `Resultant`: `Int is Addable by Int to Int`, `Optional[Text] is Mandatable to Text`.
+    Written last in a phrase by convention, since it names what comes out.
+
+    ```scala
+    import soundness.*
+
+    val sum: Int is Addable by Int to Int = infer
+    ```
+
+entry .of   `refined of topic`: refines the `Topic` member
+    `refined of topic` is `refined { type Topic = topic }`, for a type which extends
+    `Topical`: `Html of "br"`, `Property of "java.home"`, `Typeface of "sans-serif"`. The
+    topic is usually a literal type which classifies the value.
+
+entry .from   `refined from origin`: refines the `Origin` member
+    `refined from origin` is `refined { type Origin = origin }`, for a type which extends
+    `Original`: `Int is Distinct from String` (vacuous's proof that a type is not a member
+    of a union), `Record from Specification` (polyvinyl).
+
+entry .across   `refined across domain`: refines the `Domain` member
+    `refined across domain` is `refined { type Domain = domain }`, for a type which extends
+    `Domainal`: `Abstractable across Paths to Text`, `Instantiable across Urls from Text`.
+    The domain is a family of types the instance covers as a whole.
+
+entry .over   `refined over transport`: refines the `Transport` member
+    `refined over transport` is `refined { type Transport = transport }`: `Streamable by
+    Data over Credit`, `Instant over Unix`, `Html.Element of "ul" over "li"`. Like `in` it
+    is unbounded, so it attaches to any type; a type which means to be used with it
+    extends `Transportive`.
+
+entry .onto   `refined onto target`: refines the `Target` member
+    `refined onto target` is `refined { type Target = target }`, for a type which extends
+    `Targetable`: a telekinesis `Fetchable` URL `onto` its target, a parasite
+    `Interceptable` signal `onto` its registry.
+
+entry .against   `refined against contrast`: refines the `Contrast` member
+    `refined against contrast` is `refined { type Contrast = contrast }`, for a type which
+    extends `Contrastive`: `Int is Commensurable against Double`.
+
+entry .under   `refined under limit`: refines the `Limit` member
+    `refined under limit` is `refined { type Limit = limit }`, for a type which extends
+    `Limited`: `plane is Nominative under Rules` (nomenclature), `Dot.Id is Nominative
+    under Dot.Identifier["a valid DOT identifier"]` (acyclicity), an adversaria `Annotated`
+    field under its enclosing type.
+
+entry .at   `refined at locus`: refines the `Locus` member
+    `refined at locus` is `refined { type Locus = locus }`, for a type which extends
+    `Locative`: `Api at "/"` (apoplexy), a distillate `Decodable` instance `at` the
+    location it decodes.
+
+entry .Prepositional   the library's marker object; it has no members
+    An empty object which exists so that the `prepositional` package has a stable, named
+    term to refer to. It is not used in code.

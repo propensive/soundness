@@ -1,0 +1,1925 @@
+tel 1.0
+
+base hypotenuse
+import soundness
+
+info   fixed-width integers, bit patterns, floats, rationals and decimals, with opt-in checked arithmetic
+detail
+    _Hypotenuse_ replaces the JVM's grab-bag of numbers with a regular set of types, each of
+    which says in its name how wide it is and how its bits are to be read. `U8`, `U16`,
+    `U32` and `U64` are unsigned integers; `S8`, `S16`, `S32` and `S64` are two's-complement
+    signed integers; `F32` and `F64` are IEEE floating-point numbers; and `B8`, `B16`, `B32`
+    and `B64` are raw bit patterns, with shifts, rotations and masks but no arithmetic at all.
+    Beyond the machine word, `Decimal` is an arbitrary-precision decimal, and `Q64` and `Q32`
+    are exact rationals packed into a single `Long` or `Int`. Every one is an opaque type
+    over a JVM primitive (or, for `Decimal`, a frozen array), so none of the distinctions
+    survives to runtime.
+
+    The arithmetic operators are not methods of these types: `+`, `-`, `*`, `/` and prefix
+    `-` are symbolism's generic operators, resolved through `Addable`, `Subtractable`,
+    `Multiplicable`, `Divisible` and `Negatable` instances in each type's companion. For the
+    integer types those instances come from a **policy** chosen by import: `+`, `-` and `*`
+    take the `CheckOverflow` given in scope, and `/` the `DivisionByZero` given, and the
+    `arithmeticOptions` package offers each in a checked and an unchecked form. Under
+    `uncheckedOverflow` a sum wraps as the hardware's does; under `checkedOverflow` its type
+    becomes `S32 raises Arithmetic.Error`, and an overflow is a handled failure rather than a
+    silent wrap. With no policy imported, the operator does not compile at all: the choice is
+    always made, and made visibly.
+
+    ```scala
+    import soundness.*
+    import scala.language.experimental.genericNumberLiterals
+    import arithmeticOptions.checkedOverflow
+    import arithmeticOptions.uncheckedDivision
+
+    val big: S32 = 2000000000
+    safely(big + big)              // Unset: the sum overflows
+    val ratio: F64 = 1.5
+    ratio*2 + 0.25                 // F64(3.25): the Int and the Double convert first
+    val flags: B32 = 0xf0.bits
+    (flags << 2).hex               // t"000003c0"
+    val third: Q64 = 1 \ 3
+    third + 1 \ 6                  // Q64(1, 2), exactly
+    Decimal(1).divide(Decimal(3), 10, Decimal.Rounding.HalfEven).text   // t"0.3333333333"
+    ```
+
+    Each policy's instances are singleton objects named by their singleton types, so that
+    the inliner can drop the proxies it introduces for them: an unchecked `a + b` on an `S32`
+    compiles to the one `iadd` instruction the hardware has, with nothing allocated, and a
+    checked one is the same instruction followed by the test. The same pattern gives `F64`
+    and `F32` their mixed arithmetic: a `Double`, `Int` or `U8` operand converts through a
+    `Widening` object which carries the instances for that operand type, so `ratio*2` costs
+    a conversion and a multiplication and no more.
+
+    Comparison is a compile-time typeclass, `Commensurable`, whose `<`, `<=`, `>` and `>=`
+    are inline and chain as they do in mathematics: `1.2 < x < 1.4` is one range test. The
+    mathematical functions Java scatters across `java.lang.Math` are extension methods on
+    every numeric type (`abs`, `floor`, `round`, `**`, the floor-modulus `%%`, `gcd`), the
+    trigonometric and logarithmic functions are plain functions over `F64`, and `median`,
+    `minimum` and `maximum` reduce collections.
+
+    The library has two source sets, both compiled for the JVM, Scala.js and Scala Native:
+
+    - `hypotenuse.core` — every type above, the policies, the `bin"…"` and `hex"…"`
+      literals, the extension methods, the mathematical functions and the `arithmeticOptions`
+      package.
+    - `hypotenuse.check` — the `Checkable` typeclass behind the `===` and `!==` operators,
+      and `Tolerance`, built with `+/-` (or `±`), for comparing values within a margin. It is
+      what probably's assertions compare with.
+
+    Everything is exported to the `soundness` umbrella, and `arithmeticOptions` merges with
+    the umbrella's own package of that name, so a user writes `import soundness.*` and then
+    imports a policy by name: `import p.*` does not import givens, which is why
+    `arithmeticOptions.*` on its own brings no policy into scope.
+
+refer hypotenuse.U64
+refer hypotenuse.S32
+refer hypotenuse.F64
+refer hypotenuse.B32
+refer hypotenuse.arithmeticOptions
+refer hypotenuse.CheckOverflow
+refer hypotenuse.Decimal
+refer hypotenuse.Q64
+refer hypotenuse.Commensurable
+refer hypotenuse.Checkable
+
+entry .U64   an unsigned 64-bit integer, from `0` to `18446744073709551615`
+  detail
+      `U64` is an opaque type over `Long` whose bits are read as an unsigned integer. It is
+      made from a bit pattern, `U64(42L.bits)`, or from a literal where
+      `genericNumberLiterals` is enabled, `val count: U64 = 123`, which the compiler parses
+      with `Long.parseUnsignedLong` and rejects at compile time if it is out of range.
+
+      ```scala
+      import soundness.*
+      import scala.language.experimental.genericNumberLiterals
+      import arithmeticOptions.uncheckedOverflow
+      import arithmeticOptions.uncheckedDivision
+
+      val count: U64 = 41
+      count + (1: U64)          // U64(42L.bits)
+      U64.Max/U64(2L.bits)      // U64(Long.MaxValue.bits): division is unsigned
+      count.text                // t"41"
+      ```
+
+      `+`, `-` and `*` resolve through `.addable`, `.subtractable` and `.multiplicable`,
+      each of which is the instance of the `CheckOverflow` policy in scope, and `/` through
+      `.divisible`, from the `DivisionByZero` policy; with no policy imported from
+      `arithmeticOptions`, the operator does not compile. An integer literal operand does not
+      take the receiver's type, since the generic operator's operand is a type parameter, so
+      it is ascribed: `count + (1: U64)`. The remainder `%`, which cannot overflow, is an
+      extension method always available, computed as unsigned.
+
+      The extension methods on a `U64` are `bits` (the pattern as a `B64`), `text`,
+      `base32`, `hex`, `octal` and `binary` (the unsigned value in each radix, without
+      padding), `%` and `gcd`. Comparison with `<`, `<=`, `>`, `>=`, `min` and `max` is
+      unsigned (`.orderable`), and `==` is permitted only with another `U64`. There is no
+      conversion to `F64`, since one would be inexact.
+
+      Its companion's members are declared in `internal.U64`, from which the type is exported,
+      and documented there.
+  refer hypotenuse.CheckOverflow
+  refer hypotenuse.DivisionByZero
+  refer hypotenuse.arithmeticOptions
+
+entry .U32   an unsigned 32-bit integer, from `0` to `4294967295`
+  detail
+      `U32` is an opaque type over `Int` read as unsigned. It is made from a bit pattern,
+      `U32(0x80000000.bits)`, or from an integer literal under `genericNumberLiterals`,
+      checked at compile time to be in range. `+`, `-` and `*` take the `CheckOverflow`
+      policy in scope and `/` the `DivisionByZero` policy, as for every integer type; `/`
+      divides as unsigned.
+
+      ```scala
+      import soundness.*
+      import arithmeticOptions.uncheckedOverflow
+      import arithmeticOptions.uncheckedDivision
+
+      U32(0x80000000.bits)*U32(2.bits)   // U32.Min: the product wraps
+      U32.Max/U32(2.bits)                // U32(Int.MaxValue.bits)
+      ```
+
+      The extension methods on a `U32` are `bits`, `text`, `base32`, `hex`, `octal`,
+      `binary`, `long` (the unsigned value as a `Long`), the unsigned remainder `%`, `s64`
+      and `u64` (exact widenings) and `gcd`. A `U32` converts implicitly to `F64` through
+      `F64.u32Conversion`, exactly, so `F64(1.0) + u32` and `f64*u32` need no cast.
+
+      Its companion's members are declared in `internal.U32`, from which the type is exported,
+      and documented there.
+  refer hypotenuse.CheckOverflow
+  refer hypotenuse.arithmeticOptions
+
+entry .U16   an unsigned 16-bit integer, from `0` to `65535`
+  detail
+      `U16` is an opaque type over `Short` read as unsigned. It is made from a bit pattern,
+      `U16(256.toShort.bits)`, or from an integer literal under `genericNumberLiterals`,
+      which is a compile error below `0` or above `65535`. `+`, `-` and `*` take the
+      `CheckOverflow` policy in scope and `/` the `DivisionByZero` policy.
+
+      The extension methods on a `U16` are `bits`, `text`, `base32`, `hex`, `octal`,
+      `binary`, `int` and `long` (the unsigned value), the unsigned remainder `%`, the exact
+      widenings `s32`, `s64`, `u32` and `u64`, and `gcd`. A `U16` converts implicitly to
+      `F64` and `F32`, exactly, through `F64.u16Conversion` and `F32.u16Conversion`.
+
+      Its companion's members are declared in `internal.U16`, from which the type is exported,
+      and documented there.
+  refer hypotenuse.CheckOverflow
+
+entry .U8   an unsigned 8-bit integer, from `0` to `255`
+  detail
+      `U8` is an opaque type over `Byte` read as unsigned, so `U8(200.toByte.bits)` is `200`,
+      not `-56`. It is made from a bit pattern or from an integer literal under
+      `genericNumberLiterals`. `+`, `-` and `*` take the `CheckOverflow` policy in scope and
+      `/` the `DivisionByZero` policy.
+
+      ```scala
+      import soundness.*
+      import arithmeticOptions.checkedOverflow
+
+      safely(U8(200.toByte.bits) + U8(100.toByte.bits))   // Unset: 300 does not fit
+      safely(U8(16.toByte.bits)*U8(15.toByte.bits))       // U8(240.toByte.bits)
+      F64(0.5) + U8(200.toByte.bits)                      // F64(200.5)
+      ```
+
+      The extension methods on a `U8` are `bits`, `text`, `base32`, `hex`, `octal`, `binary`,
+      `byte` (the raw byte), `short`, `int` and `long` (the unsigned value), the unsigned
+      remainder `%`, the exact widenings `s16`, `s32`, `s64`, `u16`, `u32` and `u64`, and
+      `gcd`. A `U8` converts implicitly to `F64` and `F32` through `F64.u8Conversion` and
+      `F32.u8Conversion`, giving a value above 127 its unsigned value.
+
+      Its companion's members are declared in `internal.U8`, from which the type is exported,
+      and documented there.
+  refer hypotenuse.CheckOverflow
+
+entry .S64   a signed 64-bit integer, two's complement, from `S64.Min` to `S64.Max`
+  detail
+      `S64` is an opaque type over `Long`, which is also exactly what it means: the type
+      exists so that a signed 64-bit quantity is distinguished from a bit pattern (`B64`) and
+      from an unsigned one (`U64`), and so that its arithmetic goes through a policy. It is
+      made from a bit pattern, `S64(5L.bits)`, or from an integer literal under
+      `genericNumberLiterals`, and `long` gives the `Long` back.
+
+      ```scala
+      import soundness.*
+      import arithmeticOptions.checkedOverflow
+
+      safely(S64.Min + S64((-1L).bits))              // Unset: overflows
+      safely(S64.Max*S64(2L.bits))                   // Unset: overflows
+      safely(S64((-5L).bits) + S64((-3L).bits))      // S64((-8L).bits)
+
+      def sum(left: S64, right: S64): S64 raises Arithmetic.Error = left + right
+      ```
+
+      `+`, `-` and `*` take the `CheckOverflow` policy in scope and `/` the `DivisionByZero`
+      policy. The checked detection is exact: a sum overflows when both operands have the
+      sign the sum lacks, a difference when the operands differ in sign and the result
+      differs from the minuend's, and a product when `Math.multiplyHigh` is not the sign
+      extension of the low word, so `S64.Min + S64(-1)` is caught while ordinary negative
+      arithmetic is undisturbed.
+
+      The extension methods on an `S64` are `abs`, `long`, `octal`, `hex`, `base32` and
+      `binary` (as `java.lang.Long` renders them: two's complement for negatives), `%%`
+      (floor-modulus, never negative for a positive divisor), `/-` (floor-division), `%`
+      (truncating remainder), `**` (power, as a `Double`), `bits` and `gcd`. An `S64` may be
+      compared with `==` to any signed or floating type, but has no implicit conversion to
+      `F64`, since one would be inexact.
+
+      Its companion's members are declared in `internal.S64`, from which the type is exported,
+      and documented there.
+  refer hypotenuse.CheckOverflow
+  refer hypotenuse.arithmeticOptions
+
+entry .S32   a signed 32-bit integer, two's complement, from `S32.Min` to `S32.Max`
+  detail
+      `S32` is an opaque type over `Int`. It is made from a bit pattern, `S32(42.bits)`, or
+      from an integer literal under `genericNumberLiterals`, and `int` and `long` give the
+      primitive back. `+`, `-` and `*` take the `CheckOverflow` policy in scope and `/` the
+      `DivisionByZero` policy; the unchecked sum compiles to a single `iadd`, and the checked
+      one to the same instruction followed by an exact overflow test.
+
+      ```scala
+      import soundness.*
+      import scala.language.experimental.genericNumberLiterals
+      import arithmeticOptions.checkedOverflow
+      import arithmeticOptions.checkedDivision
+
+      val big: S32 = 2000000000
+      safely(big + big)                        // Unset
+      safely(S32(3.bits) - S32(5.bits))        // S32((-2).bits)
+      safely(S32(1.bits)/S32(0.bits))          // Unset: division by zero
+
+      def twice[number: Addable by number to number](value: number): number = value + value
+      twice(S32(21.bits))                      // S32(42.bits): the instance satisfies a generic bound
+      ```
+
+      The extension methods on an `S32` are `int`, `long`, `abs`, `**`, `octal`, `hex`,
+      `base32`, `binary`, `%%`, `/-`, `%`, `bits` and `gcd`. An `S32` converts implicitly to
+      `F64` through `F64.s32Conversion`, exactly, and may be compared with `==` to any signed
+      or floating type.
+
+      Its companion's members are declared in `internal.S32`, from which the type is exported,
+      and documented there.
+  refer hypotenuse.CheckOverflow
+  refer hypotenuse.arithmeticOptions
+
+entry .S16   a signed 16-bit integer, two's complement, from `-32768` to `32767`
+  detail
+      `S16` is an opaque type over `Short`, made from a bit pattern, `S16((1: Short).bits)`,
+      or from an integer literal under `genericNumberLiterals`, which is a compile error
+      outside the 16-bit range. `+`, `-` and `*` take the `CheckOverflow` policy in scope and
+      `/` the `DivisionByZero` policy; each operation is computed in an `Int` and narrowed,
+      or checked, as the policy says.
+
+      The extension methods on an `S16` are `short`, `int`, `long`, `abs`, `**`, `octal`,
+      `hex`, `base32`, `binary`, `%%`, `/-`, `%`, `bits` and `gcd`. An `S16` converts
+      implicitly to `F64` and `F32` through `F64.s16Conversion` and `F32.s16Conversion`.
+
+      Its companion's members are declared in `internal.S16`, from which the type is exported,
+      and documented there.
+  refer hypotenuse.CheckOverflow
+
+entry .S8   a signed 8-bit integer, two's complement, from `-128` to `127`
+  detail
+      `S8` is an opaque type over `Byte`, made from a bit pattern, `S8((-1: Byte).bits)`, or
+      from an integer literal under `genericNumberLiterals`, which is a compile error outside
+      the 8-bit range. `+`, `-` and `*` take the `CheckOverflow` policy in scope and `/` the
+      `DivisionByZero` policy; under `checkedOverflow`, `S8.Min*S8(-1)` raises
+      `Arithmetic.Error`, since `128` does not fit.
+
+      The extension methods on an `S8` are `byte`, `short`, `int`, `long`, `abs`, `**`,
+      `octal`, `hex`, `base32`, `binary`, `%%`, `/-`, `%`, `bits` and `gcd`. An `S8`
+      converts implicitly to `F64` and `F32` through `F64.s8Conversion` and
+      `F32.s8Conversion`.
+
+      Its companion's members are declared in `internal.S8`, from which the type is exported,
+      and documented there.
+  refer hypotenuse.CheckOverflow
+
+entry .F64   a 64-bit IEEE floating-point number, with mixed arithmetic against anything that widens to it
+  detail
+      `F64` is an opaque type over `Double`. It is made with `F64(1.5)`, from its bit
+      pattern with `F64(bits: B64)`, from its sign, exponent and mantissa, or from a literal
+      under `genericNumberLiterals`; `double` gives the `Double` back. Its `+`, `-`, `*`, `/`
+      and prefix `-` are symbolism's operators, resolved through the instances in this
+      companion, and they take not only another `F64` but any operand with a `Widening`
+      conversion: `Double`, `Float`, `Int`, `Short`, `Byte`, `U32`, `S32`, `U16`, `S16`,
+      `U8` and `S8`. The operand is converted and the operation is the primitive one, so
+      `ratio*2` costs a conversion and a multiplication and allocates nothing.
+
+      ```scala
+      import soundness.*
+      import scala.language.experimental.genericNumberLiterals
+
+      val ratio: F64 = 1.5
+      ratio*2                       // F64(3.0): the Int is converted first
+      ratio + 0.25                  // F64(1.75)
+      -ratio                        // F64(-1.5)
+      F64(1.0) + S32(2.bits)        // F64(3.0)
+      F64(0.5) + U8(200.toByte.bits)   // F64(200.5)
+      ratio < 2 && ratio > 1.0      // Commensurable against Int and against Double
+      ```
+
+      `Long`, `S64` and `U64` have no widening, since the conversion would be inexact; a
+      value of one of those is converted explicitly. The extension methods on an `F64` are
+      `double`, `**` (power, with any widening operand), `mantissa` (the low 52 bits as a
+      `B64`), `exponent` (as a `B16`), `abs`, `sqrt`, `cbrt`, `ceiling`, `floor`,
+      `increment` and `successor` (the next representable value up), `decrement` and
+      `predecessor`, `round` (to a `Long`), `scalb`, `signum`, `ulp`, `bits` and `rawBits`
+      (the IEEE pattern, with and without `NaN` canonicalised), and the tests `finite`,
+      `infinite` and `nan`. The trigonometric and logarithmic functions `sin`, `cos`, `exp`,
+      `ln` and the rest are plain functions over `F64`.
+
+      Its companion's members are declared in `internal.F64`, from which the type is exported,
+      and documented there.
+  refer hypotenuse.F32
+  refer hypotenuse.cos
+
+entry .F32   a 32-bit IEEE floating-point number, with mixed arithmetic against anything that widens to it
+  detail
+      `F32` is an opaque type over `Float`, the single-precision counterpart of `F64`. It is
+      made with `F32(1.5f)`, from a bit pattern with `F32(bits: B32)`, or from its sign,
+      exponent and mantissa, and `float` and `double` give the primitives back. Its `+`,
+      `-`, `*`, `/` and prefix `-` resolve through the instances in this companion and
+      accept, through a `Widening`, a `Float`, `Short`, `Byte`, `U16`, `S16`, `U8` or `S8`
+      operand; `Double`, `Int`, `U32` and `S32` have no widening to `F32`, since it would be
+      inexact.
+
+      ```scala
+      import soundness.*
+
+      F32(1.5f)/2.0f      // F32(0.75f)
+      -F32(2.0f)          // F32(-2.0f)
+      F32(2.0f).sqrt      // F32(1.4142135f)
+      ```
+
+      The extension methods on an `F32` are `float`, `double`, `**`, `abs`, `sqrt`, `cbrt`,
+      `ceiling`, `floor`, `exponent` (as an `Int`), `increment`, `decrement`, `successor`,
+      `predecessor`, `round`, `scalb`, `signum`, `ulp`, `bits`, `rawBits`, `finite`,
+      `infinite` and `nan`.
+
+      Its companion's members are declared in `internal.F32`, from which the type is exported,
+      and documented there.
+  refer hypotenuse.F64
+
+entry .B64   a 64-bit pattern: shifts, rotations, masks and bit addressing, but no arithmetic
+  detail
+      `B64` is an opaque type over `Long` read as a set of bits. It has no `+`: a `B64` is
+      what a number looks like before it is interpreted, and `s64` and `u64` reinterpret it
+      as a signed or unsigned integer for free, as `F64(bits)` does for a float. A pattern is
+      made from any integer with `.bits` (`0xf0L.bits`), with `B64(long)` and its narrower
+      overloads, or from eight big-endian bytes with `B64(bytes, offset)`.
+
+      Bits are addressed by ordinal, `Prim` for the least significant bit, so an index cannot
+      be confused with a specification's own counting convention, and a run of bits is an
+      `Interval`:
+
+      ```scala
+      import soundness.*
+
+      val word = B64(Data(0, 0, 0, 0, 0, 0, 0, 6))
+      word.bit(Sec)                // true
+      word(Prim thru Ter)          // B64(6): the low three bits
+      word(Sec thru Ter)           // B64(3)
+      word.set(Prim).clear(Sec)    // B64(5)
+      B64.set(Ter)                 // B64(4): a mask with one bit
+      ```
+
+      The extension methods on a `B64` are `apply(interval)` (the bits of a run, shifted
+      down), `apply(bit: Int)` (one bit by zero-based position), `bit`, `set`, `clear` and
+      `flip` (each by an `Ordinal` or an `Interval`), the shifts `<<` and `>>` (the latter
+      logical, never sign-extending), the rotations `<<<` and `>>>`, `&`, `|`, `^` and
+      prefix `~`, `leadingZeros`, `trailingZeros`, `ones` and `zeros` (population counts),
+      `reverse`, `bytes` (eight big-endian bytes), `hex` and `octal` (zero-padded to the
+      type's full width, 16 and 22 characters), `binary`, and the reinterpretations `s64`
+      and `u64`. A `B64` may be compared with `==` only to another `B64`.
+
+      Its companion's members are declared in `internal.B64`, from which the type is exported,
+      and documented there.
+  refer hypotenuse.B32
+  refer hypotenuse.bits
+
+entry .B32   a 32-bit pattern: shifts, rotations, masks and bit addressing, but no arithmetic
+  detail
+      `B32` is an opaque type over `Int` read as a set of bits, with the same operations as
+      `B64` at 32 bits: `apply` by interval or by position, `bit`, `set`, `clear`, `flip`,
+      `<<`, `>>`, `<<<`, `>>>`, `&`, `|`, `^`, `~`, `leadingZeros`, `trailingZeros`, `ones`,
+      `zeros`, `reverse`, `bytes` (four big-endian bytes), `hex` (eight characters), `octal`
+      (eleven), `binary`, and the reinterpretations `s32` and `u32`.
+
+      ```scala
+      import soundness.*
+
+      val flags: B32 = 0xf0.bits
+      flags << 2            // B32(0x3c0)
+      flags & 0x30.bits     // B32(0x30)
+      flags.hex             // t"000000f0"
+      (flags >>> 4).hex     // t"0000000f", rotated
+      ~flags                // B32(0xffffff0f)
+      ```
+
+      Rendering pads to the type's width rather than dropping leading zeros, so the number
+      of characters says which type produced it.
+
+      Its companion's members are declared in `internal.B32`, from which the type is exported,
+      and documented there.
+  refer hypotenuse.B64
+
+entry .B16   a 16-bit pattern: shifts, rotations, masks and bit addressing, but no arithmetic
+  detail
+      `B16` is an opaque type over `Short` read as a set of bits, with the operations of
+      `B64` at 16 bits, `bytes` giving two big-endian bytes, `hex` four characters and
+      `octal` six, and the reinterpretations `s16` and `u16`. It is made with
+      `(0x1234: Short).bits`, `B16(short)`, `B16(byte)` or `B16(bytes, offset)`, and
+      `Short(bits: B16)` turns one back into a primitive.
+
+      Its companion's members are declared in `internal.B16`, from which the type is exported,
+      and documented there.
+  refer hypotenuse.B64
+
+entry .B8   an 8-bit pattern: shifts, rotations, masks and bit addressing, but no arithmetic
+  detail
+      `B8` is an opaque type over `Byte` read as a set of bits, with the operations of `B64`
+      at 8 bits: `hex` is two characters and `octal` three, and `s8` and `u8` reinterpret the
+      byte as a signed or unsigned integer. It is made with `(0xf0.toByte).bits` or `B8(byte)`,
+      and the `bin"…"` literal of eight digits gives a `Byte` to make one from.
+
+      ```scala
+      import soundness.*
+
+      val byte: B8 = bin"00001111".bits
+      byte.ones             // 4
+      byte.leadingZeros     // 4
+      (byte <<< 2).hex      // t"3c"
+      ```
+
+      Its companion's members are declared in `internal.B8`, from which the type is exported,
+      and documented there.
+  refer hypotenuse.B64
+  refer hypotenuse.bin
+
+entry .arithmeticOptions   the overflow, division-by-zero and rational-division policies, each a given to import by name
+  detail
+      Arithmetic on the integer types needs a `CheckOverflow` given in scope for `+`, `-`
+      and `*`, and a `DivisionByZero` given for `/`, and `import soundness.*` brings neither:
+      the choice is made by importing one given of each kind by name, and an operator used
+      with no policy in scope does not compile. The two checks are independent, so a program
+      that must not wrap but trusts its divisors imports only `checkedOverflow`.
+
+      ```scala fuel
+      frame
+        label No policy: the operator does not resolve
+        code
+            import soundness.*
+
+            val big: S32 = S32(2000000000.bits)
+            big + big   // does not compile
+      frame
+        label Unchecked: the sum wraps, as the hardware's does
+        code
+            import soundness.*
+            import arithmeticOptions.uncheckedOverflow
+
+            val big: S32 = S32(2000000000.bits)
+            big + big   // S32((-294967296).bits)
+      frame
+        label Checked: the result type can raise, and `safely` absorbs the failure
+        code
+            import soundness.*
+            import arithmeticOptions.checkedOverflow
+
+            val big: S32 = S32(2000000000.bits)
+            safely(big + big)   // Unset
+      frame
+        label Checked and handled: the failure is an `Arithmetic.Error`, and a default replaces it
+        code
+            import soundness.*
+            import arithmeticOptions.checkedOverflow
+
+            val big: S32 = S32(2000000000.bits)
+            safely(big + big).or(S32.Max)   // S32.Max
+      ##
+      ```
+
+      Each policy is a singleton object, and its given is typed by the object's singleton
+      type, so that an operator inlined under it refers to a pure path which the inliner
+      drops rather than an instance it must allocate: an unchecked `a + b` on an `S32` is one
+      `iadd`, and a checked one is the same instruction followed by the overflow test. The
+      checked givens change the result type of the operator to `Tactic[Arithmetic.Error]^
+      ?->{} result`, a pure context function which is a subtype of `result raises
+      Arithmetic.Error`, so `safely`, `recover` and a `raises` return type all accept it.
+
+      The two rational givens are different in kind: importing `q64RationalDivision` makes
+      `/` on two `Q64`s yield a `Double` in that scope, outranking the companion's exact
+      division, which is what lets `std` (whose variance must divide to a `Double`) resolve
+      for a collection of rationals.
+  refer hypotenuse.CheckOverflow
+  refer hypotenuse.DivisionByZero
+  refer hypotenuse.Arithmetic
+  entry .uncheckedOverflow   `+`, `-` and `*` on the integer types wrap, as the hardware's do
+      `CheckOverflow.Unchecked`, by its singleton type. The result of each operator is the
+      bare type, and the operation inlines to the one instruction for it.
+  entry .checkedOverflow   `+`, `-` and `*` on the integer types raise `Arithmetic.Error` where the result does not fit
+      `CheckOverflow.Checked`, by its singleton type. Each operator's result becomes `T
+      raises Arithmetic.Error` (reason `Overflow`), so it is used inside `safely`,
+      `recover`, `unsafely` or a method which itself raises. The detection is exact.
+  entry .uncheckedDivision   `/` on the integer types divides as the hardware does, throwing on a zero divisor
+      `DivisionByZero.Unchecked`, by its singleton type: a zero divisor throws
+      `java.lang.ArithmeticException`, unscoped.
+  entry .checkedDivision   `/` on the integer types raises `Arithmetic.Error` on a zero divisor
+      `DivisionByZero.Checked`, by its singleton type. The result becomes `T raises
+      Arithmetic.Error` (reason `DivisionByZero`).
+  entry .q64RationalDivision   `/` on two `Q64`s yields their quotient as a `Double`, in this scope
+      Lexically imported, it outranks `Q64.divisible` in the companion, so `List[Q64]#std`
+      resolves; exact division is `Q64.divisible` again once the import is out of scope.
+  entry .q32RationalDivision   `/` on two `Q32`s yields their quotient as a `Double`, in this scope
+
+entry .CheckOverflow   a policy for `+`, `-` and `*` on the fixed-width integers: wrap, or raise
+  detail
+      A `CheckOverflow` supplies the `Addable`, `Subtractable` and `Multiplicable` instances
+      for every `U*` and `S*` type, and `#Wrap` is what it makes of each result: the bare
+      type for `.Unchecked`, or `Tactic[Arithmetic.Error]^ ?->{} result` for `.Checked`, a
+      pure context function which satisfies `result raises Arithmetic.Error`. The
+      companions' givens (`S32.addable` is `overflow.addS32`) forward to the policy in
+      scope, which is imported by name from `arithmeticOptions`.
+
+      Every instance is an `object` reached by a stable path from its given, so that the
+      proxies the inliner introduces for them are pure paths, which it drops: `a + b`
+      compiles to the one instruction the hardware has for it. An instance constructed with
+      `new`, whether anonymous or final, would survive inlining as an allocation per
+      operation. A policy of one's own — logging, saturating — is an object extending this
+      trait whose 24 members are objects extending `Arithmetic.Addition[S32, Wrap]` and
+      its siblings, with a given of the policy's singleton type.
+
+      ```scala
+      import soundness.*
+      import arithmeticOptions.checkedOverflow
+
+      val overflow: CheckOverflow = summon[CheckOverflow]
+      safely(overflow.addS32.add(S32.Max, S32(1.bits)))   // Unset
+      ```
+  refer hypotenuse.arithmeticOptions
+  refer hypotenuse.DivisionByZero
+  refer hypotenuse.Arithmetic
+  entry .Unchecked   the policy which wraps, as the hardware does
+      `Wrap[result] = result`; each operation is the primitive one, narrowed to the type's
+      width. `arithmeticOptions.uncheckedOverflow` is this object.
+  entry .Checked   the policy which raises `Arithmetic.Error` where the result does not fit
+      `Wrap[result] = Tactic[Arithmetic.Error]^ ?->{} result`. A signed sum overflows when
+      both operands have the sign the sum lacks; an unsigned sum when it comes out below
+      either operand; a product when its high word is not the sign extension of its low
+      word, or, for the narrower widths, when the product computed in a wider type falls
+      outside the range. `arithmeticOptions.checkedOverflow` is this object.
+  entry #Wrap   what the policy makes of a result: the bare type, or one that can raise
+  entry #addU64   `U64 is Addable by U64 to Wrap[U64]`
+  entry #addS64   `S64 is Addable by S64 to Wrap[S64]`
+  entry #addU32   `U32 is Addable by U32 to Wrap[U32]`
+  entry #addS32   `S32 is Addable by S32 to Wrap[S32]`
+  entry #addU16   `U16 is Addable by U16 to Wrap[U16]`
+  entry #addS16   `S16 is Addable by S16 to Wrap[S16]`
+  entry #addU8   `U8 is Addable by U8 to Wrap[U8]`
+  entry #addS8   `S8 is Addable by S8 to Wrap[S8]`
+  entry #subtractU64   `U64 is Subtractable by U64 to Wrap[U64]`
+  entry #subtractS64   `S64 is Subtractable by S64 to Wrap[S64]`
+  entry #subtractU32   `U32 is Subtractable by U32 to Wrap[U32]`
+  entry #subtractS32   `S32 is Subtractable by S32 to Wrap[S32]`
+  entry #subtractU16   `U16 is Subtractable by U16 to Wrap[U16]`
+  entry #subtractS16   `S16 is Subtractable by S16 to Wrap[S16]`
+  entry #subtractU8   `U8 is Subtractable by U8 to Wrap[U8]`
+  entry #subtractS8   `S8 is Subtractable by S8 to Wrap[S8]`
+  entry #multiplyU64   `U64 is Multiplicable by U64 to Wrap[U64]`
+  entry #multiplyS64   `S64 is Multiplicable by S64 to Wrap[S64]`
+  entry #multiplyU32   `U32 is Multiplicable by U32 to Wrap[U32]`
+  entry #multiplyS32   `S32 is Multiplicable by S32 to Wrap[S32]`
+  entry #multiplyU16   `U16 is Multiplicable by U16 to Wrap[U16]`
+  entry #multiplyS16   `S16 is Multiplicable by S16 to Wrap[S16]`
+  entry #multiplyU8   `U8 is Multiplicable by U8 to Wrap[U8]`
+  entry #multiplyS8   `S8 is Multiplicable by S8 to Wrap[S8]`
+
+entry .DivisionByZero   a policy for `/` on the fixed-width integers: throw on zero, or raise
+  detail
+      The counterpart of `CheckOverflow` for division: a `DivisionByZero` supplies the
+      `Divisible` instance for every `U*` and `S*` type, and `#Wrap` is what it makes of the
+      quotient. The companions' givens (`U64.divisible` is `division.divideU64`) forward to
+      the policy in scope, imported by name as `arithmeticOptions.uncheckedDivision` or
+      `checkedDivision`. Unsigned types divide as unsigned under either policy, and signed
+      ones truncate towards zero, as the hardware does; `/-` is the flooring division.
+
+      ```scala
+      import soundness.*
+      import arithmeticOptions.checkedDivision
+
+      safely(S32(7.bits)/S32(2.bits))     // S32(3.bits)
+      safely(U8(1.toByte.bits)/U8(0.toByte.bits))   // Unset
+      ```
+  refer hypotenuse.arithmeticOptions
+  refer hypotenuse.CheckOverflow
+  entry .Unchecked   divides as the hardware does, so a zero divisor throws `ArithmeticException`
+      `Wrap[result] = result`. `arithmeticOptions.uncheckedDivision` is this object.
+  entry .Checked   raises `Arithmetic.Error` on a zero divisor
+      `Wrap[result] = Tactic[Arithmetic.Error]^ ?->{} result`, with reason
+      `DivisionByZero`. `arithmeticOptions.checkedDivision` is this object.
+  entry #Wrap   what the policy makes of a quotient: the bare type, or one that can raise
+  entry #divideU64   `U64 is Divisible by U64 to Wrap[U64]`, unsigned
+  entry #divideS64   `S64 is Divisible by S64 to Wrap[S64]`, truncating
+  entry #divideU32   `U32 is Divisible by U32 to Wrap[U32]`, unsigned
+  entry #divideS32   `S32 is Divisible by S32 to Wrap[S32]`, truncating
+  entry #divideU16   `U16 is Divisible by U16 to Wrap[U16]`
+  entry #divideS16   `S16 is Divisible by S16 to Wrap[S16]`
+  entry #divideU8   `U8 is Divisible by U8 to Wrap[U8]`
+  entry #divideS8   `S8 is Divisible by S8 to Wrap[S8]`
+
+entry .Arithmetic   the failure of an arithmetic operation, and the shapes of the policies' instances
+  detail
+      `Arithmetic.Error` is raised when an operation has no representable result: a division
+      by zero under `arithmeticOptions.checkedDivision`, an overflow under
+      `checkedOverflow`, or a `Decimal` divided by zero with `divide`. The two are one error type with two
+      `Reason`s rather than two types, since they are one concept, while the checks that
+      detect them remain independent imports. The four traits `Addition`, `Subtraction`,
+      `Multiplication` and `Division` are the shapes a `CheckOverflow` or `DivisionByZero`
+      policy's instances take: a number with itself, to a result the policy wraps.
+
+      ```scala
+      import soundness.*
+      import arithmeticOptions.checkedOverflow
+
+      safely(S32.Max + S32(1.bits)).or(S32.Max)   // S32.Max: the Overflow is absorbed
+      ```
+  refer hypotenuse.CheckOverflow
+  refer hypotenuse.arithmeticOptions
+  entry .Error   raised when an operation has no representable result: a zero divisor or an overflow
+    detail
+        Error 868, _the arithmetic operation could not be completed because `reason`_, where
+        the reason is `Reason.DivisionByZero` (_the divisor was zero_) or `Reason.Overflow`
+        (_the result exceeded the range of its type_); the reason's number (1 or 2) is the
+        error's detail number. Raised by the checked policies through a
+        `Tactic[Arithmetic.Error]`, which `safely`, `recover`, `unsafely` or a `raises`
+        signature supplies.
+    entry .Reason   why the operation failed: `DivisionByZero` or `Overflow`
+        An enum with a `number` (1 for `DivisionByZero`, 2 for `Overflow`) and a
+        `communicable` given which renders each as its message.
+    entry .communicable   renders a `Reason` as its message
+    entry #reason   which of the two failures occurred
+  entry .Addition   the shape of a policy's `+` instance: `number is Addable by number to wrap[number]`
+      A trait which fixes `Self`, `Operand` and `Result`, leaving `add` to the policy's
+      object; `F64.Addition` and `CheckOverflow.Unchecked.addS32` are instances.
+  entry .Subtraction   the shape of a policy's `-` instance: `number is Subtractable by number to wrap[number]`
+  entry .Multiplication   the shape of a policy's `*` instance: `number is Multiplicable by number to wrap[number]`
+  entry .Division   the shape of a policy's `/` instance: `number is Divisible by number to wrap[number]`
+
+entry .Commensurable   the compile-time comparison typeclass behind `<`, `<=`, `>` and `>=`
+  detail
+      A `left is Commensurable against right` says how a `left` compares with a `right`,
+      through one inline method, `#compare`, whose `strict` and `greaterThan` flags are
+      inline constants, so that each of the four operators reduces at compile time to the
+      one primitive comparison it means. The operators `<`, `<=`, `>` and `>=` are
+      extension methods on any value with such an instance in scope; `Orderable` is the
+      special case of a type compared with itself, which `min` and `max` and the collection
+      reductions `minimum` and `maximum` need.
+
+      Comparisons chain as they do in mathematics. `1.2 < x < 1.4` parses as `(1.2 < x) <
+      1.4`, a `Boolean` compared with a `Double`, which the `.numeric` given handles: a macro
+      reads the left comparison back out of the `Boolean` expression and rewrites the whole
+      into a single range test, `1.2 < x && x < 1.4`.
+
+      ```scala
+      import soundness.*
+
+      List(1.1, 1.2, 1.3, 1.4, 1.5).filter(1.2 < _ < 1.4)      // List(1.3)
+      List(1, 2, 3, 4, 5).filter(2 <= _ <= 4)                  // List(2, 3, 4)
+      List('1', '2', '3', '4', '5').filter('2' < _ <= '4')     // List('3', '4')
+      ```
+
+      The chain must begin with a bound on the left: `1.4 > x > 1.2` is error 966, _this
+      cannot be written as a range expression_. Every numeric type in this library has an
+      `Orderable` in its companion, `F64` additionally compares against an `Int` and a
+      `Double`, and any type with a symbolism `Comparable` (or a stdlib `Ordering`, through
+      `Comparable`'s bridge) is `Orderable` through `.orderable`.
+  refer hypotenuse.Orderable
+  refer hypotenuse.<
+  refer hypotenuse.min
+  entry .numeric   `(a < x) < b`: a chained comparison on the primitives, rewritten into one range test
+      `Boolean is Commensurable against Int | Long | Double | Float | Char | Byte | Short`.
+      Its `compare` is a macro which inspects the `Boolean` for a comparison of the same
+      primitive type, and halts with error 966 if the expression is not one.
+  entry .bytes   `Bytes is Orderable`: memory sizes compare by their byte count
+  entry .ordinal   `Ordinal is Orderable`: `Prim < Sec`
+  entry .orderable   any `Comparable` type is `Orderable`, so `<` and `max` work on it
+      `[value: Comparable] => value is Orderable`: the runtime three-way `compare` confers
+      the four compile-time operators. Types whose order is still a stdlib `Ordering` reach
+      this through `Comparable`'s own low-priority bridge, so the one instance covers both.
+  entry #compare   `compare(left, right, strict, greaterThan)`: the one comparison the four operators reduce to
+      `strict` distinguishes `<` from `<=`, and `greaterThan` the `>` family from the `<`
+      family; both are inline, so an implementation branches on them at compile time.
+
+entry .Orderable   a type compared with itself: `Commensurable` with `Contrast = Self`
+  detail
+      An `Orderable` is the instance every numeric type keeps in its companion (`S32.orderable`,
+      `Q64.orderable`, `Decimal.orderable`, `F64.orderable`), and what `min`, `max`,
+      `minimum`, `maximum`, `median` and `Checkable.commensurable` require. A type whose
+      order is a function of another's gets one with `#contramap`:
+
+      ```scala
+      import soundness.*
+
+      case class Person(name: Text, age: Int)
+      given Person is Orderable = summon[Int is Orderable].contramap(_.age)
+
+      Person(t"Ada", 36) < Person(t"Grace", 85)   // true
+      ```
+  refer hypotenuse.Commensurable
+  entry #Contrast   the type compared against: the type itself
+  entry #contramap   an `Orderable` for another type, by mapping it into this one
+      `orderable.contramap(f)` compares two values by comparing `f` of each.
+
+entry .Rational   the error raised when text is not a rational number
+  detail
+      `Q64.parse` and `Q32.parse` raise `Rational.Error` for text which is neither an
+      integer, a fraction `numerator/denominator`, nor `NaR`.
+  refer hypotenuse.Q64
+  entry .Error   Error 741: _`text` is not a representable rational number_
+    detail
+        Raised by `Q64.parse(text)` and `Q32.parse(text)` through a `Tactic[Rational.Error]`.
+    entry #text   the text which could not be parsed
+
+entry .Decimal   an arbitrary-precision decimal number: sign, magnitude and scale, exact and canonical
+  detail
+      A `Decimal` is a sign, an arbitrary magnitude and a decimal scale, so it holds a
+      monetary total, a coordinate read from a document, or any figure that promised nothing
+      about its size, exactly. It is pure Scala rather than a wrapper over the JVM's
+      `BigDecimal`, so it works on every platform, and nothing in it needs native 64-bit
+      arithmetic: the magnitude is kept in base-10⁹ limbs, so every intermediate product
+      fits a `Long`.
+
+      ```scala
+      import soundness.*
+      import scala.language.experimental.genericNumberLiterals
+      import strategies.throwUnsafely
+
+      Decimal(1234567890123L).text        // t"1234567890123"
+      Decimal(-1234567, 4).text           // t"-123.4567": an unscaled value and a scale
+      Decimal(0.1).text                   // t"0.1": by the Double's shortest representation
+      Decimal.parse(t"-12.34e+2").text    // t"-1234"
+      val price: Decimal = 12.99          // a literal, under genericNumberLiterals
+      price + Decimal(1) < Decimal(14)    // true
+      ```
+
+      Every value is canonical: trailing zeros are absorbed into the scale as a value is
+      made, and zero has one representation, so two numerically equal decimals are the same
+      value and there is no counterpart of `BigDecimal`'s disagreement between `equals` and
+      `compareTo`. `+`, `-`, `*` and prefix `-` are symbolism's operators through the givens
+      in this companion, exact and needing no policy. Division cannot always be exact, so it
+      is not `/`: `.divide` takes the result's scale and a `Rounding`, and raises
+      `Arithmetic.Error` on a zero divisor.
+
+      ```scala fuel
+      frame
+        label An eighth, to two places, rounded down
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            Decimal(1).divide(Decimal(8), 2, Decimal.Rounding.Down).text       // t"0.12"
+      frame
+        label The same quotient, rounded half up: the tie goes up
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            Decimal(1).divide(Decimal(8), 2, Decimal.Rounding.HalfUp).text     // t"0.13"
+      frame
+        label Half even: the tie goes to the even digit
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            Decimal(1).divide(Decimal(8), 2, Decimal.Rounding.HalfEven).text   // t"0.12"
+      frame
+        label More scale: no rounding is needed, and the trailing zeros are never kept
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            Decimal(1).divide(Decimal(8), 10, Decimal.Rounding.HalfEven).text  // t"0.125"
+      ##
+      ```
+
+      The rounding modes agree with `java.math.RoundingMode`'s, and `text` renders in plain
+      notation without an exponent, as `BigDecimal#stripTrailingZeros.toPlainString` would.
+      `Decimal` is `Orderable`, renders through `Textualizable`, and is a pure value, so a
+      collection of decimals boxes nothing extra.
+
+      Its companion's members are declared in `decimalInternal.Decimal`, from which the type
+      is exported, and documented there.
+  refer hypotenuse.Arithmetic
+  refer hypotenuse.Q64
+
+entry .decimalInternal   the opaque scope of `Decimal`
+  hidden
+  detail
+      Not for direct use: the object exists so that `Decimal`'s representation (a frozen
+      `Array[Int]^{}`: signum, scale, then base-10⁹ limbs) is hidden even from the rest of
+      the package, keeping companion-scope given resolution intact everywhere outside. The
+      type and its companion are exported to `hypotenuse` as `Decimal`.
+  entry .Decimal   the arbitrary-precision decimal; see `hypotenuse.Decimal`
+    detail
+        The companion of the opaque type `Decimal`, exported with it to the `hypotenuse`
+        package.
+    entry .Zero   the one representation of zero
+    entry .Rounding   how a quotient is rounded to its scale: `Up`, `Down`, `Ceiling`, `Floor`, `HalfUp`, `HalfDown` or `HalfEven`
+        `Up` rounds away from zero and `Down` towards it; `Ceiling` towards positive infinity
+        and `Floor` towards negative; the three `Half` modes round to the nearest, breaking a
+        tie away from zero, towards zero, or to the even neighbour. Each agrees with the
+        `java.math.RoundingMode` of the same name.
+    entry .apply   a `Decimal` from an `Int`, a `Long`, an unscaled `Long` and a scale, or a `Double`
+        `Decimal(unscaled, scale)` is `unscaled × 10⁻ˢᶜᵃˡᵉ`, so `Decimal(-1234567, 4)` is
+        `-123.4567` and `Decimal(42, -3)` is `42000`. `Decimal(double)` converts a finite
+        `Double` through its shortest round-tripping decimal representation, so `Decimal(0.1)`
+        is exactly `0.1` rather than the 55-digit binary expansion `java.math.BigDecimal`'s
+        `Double` constructor gives; it raises `Decimal.Error` for `NaN` or an infinity.
+    entry .parse   a `Decimal` from text such as `-12.34e+2`, or `Decimal.Error`
+        The grammar is an optional sign, digits with an optional point (digits on at least one
+        side of it), and an optional exponent with its own sign. Anything else — `1.2.3`, an
+        empty string, a bare exponent — raises `Decimal.Error`.
+    entry .comparison   the signed three-way comparison: `-1`, `0` or `1`
+        Decides by sign first, then by the count of digits before the point, and aligns the
+        magnitudes only when those agree, so pathological scale differences are never
+        expanded.
+    entry .orderable   `<`, `<=`, `>`, `>=`, `min` and `max` on decimals, by `Decimal.comparison`
+    entry .fromDigits   a `Decimal` from a numeric literal, under `genericNumberLiterals`
+        `val price: Decimal = 12.99`. Literal digits are compiler-validated, so the parse
+        cannot fail for them.
+    entry .negation   the value with its sign flipped; zero is unchanged
+    entry .sum   the exact sum of two decimals, aligned to the larger scale
+    entry .product   the exact product of two decimals, with the scales added
+    entry .addable   `Decimal + Decimal`, exactly
+    entry .subtractable   `Decimal - Decimal`, exactly
+    entry .multiplicable   `Decimal * Decimal`, exactly
+    entry .negatable   prefix `-` on a `Decimal`
+    entry .textualizable   renders a decimal in plain notation, as `.text` does
+    entry .signum   an extension on `Decimal`: `-1`, `0` or `1`
+    entry .scale   an extension on `Decimal`: the power of ten the magnitude is divided by
+        Negative for a value with trailing zeros, since the canonical form absorbs them:
+        `Decimal(42000).scale` is `-3`.
+    entry .abs   an extension on `Decimal`: the absolute value
+    entry .divide   an extension on `Decimal`: the quotient, to a stated scale and rounding
+        `left.divide(right, scale, rounding)` computes the quotient to `scale` decimal places
+        and rounds the remainder as the `Rounding` says, with Knuth's algorithm D in base 10⁹.
+        It raises `Arithmetic.Error` (reason `DivisionByZero`) through a
+        `Tactic[Arithmetic.Error]` when the divisor is zero. The result is canonical, so a
+        quotient which needs fewer places than `scale` has fewer.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        Decimal(1).divide(Decimal(3), 10, Decimal.Rounding.HalfEven).text   // t"0.3333333333"
+        safely(Decimal(1).divide(Decimal(0L), 2, Decimal.Rounding.HalfUp))  // Unset
+        ```
+    entry .text   an extension on `Decimal`: plain decimal notation, with no exponent and no trailing zeros
+        `Decimal(7, 5).text` is `0.00007` and `Decimal(1100, 2).text` is `11`; the text parses
+        back to the same value.
+    entry .double   an extension on `Decimal`: the nearest `Double`, correctly rounded
+    entry .whole   an extension on `Decimal`: whether the value is an integer
+    entry .Error   Error 740: _`text` is not a representable decimal number_
+      detail
+          Raised by `Decimal.parse` for text outside the grammar, and by `Decimal(double)` for
+          a `NaN` or infinite `Double`, through a `Tactic[Decimal.Error]`.
+      entry #text   the text, or the `Double`'s rendering, which was refused
+
+entry .Q64   an exact rational number in one `Long`: canonical, total under division, with `NaR` for the undefined
+  detail
+      A `Q64` is a rational number packed into a single machine word, so a collection of
+      them is a primitive `long[]` and their arithmetic allocates nothing. The magnitude is
+      the value's continued fraction, Elias-gamma coded, which gives each rational exactly
+      one encoding, already in lowest terms: bit-equality is value-equality, and no gcd
+      normalisation exists anywhere. The sign is the top bit, and the all-zero magnitude
+      with the sign set is `NaR`, "not a rational", the result of dividing by zero, which
+      propagates through arithmetic and compares as unordered, like `Double.NaN`.
+
+      ```scala
+      import soundness.*
+      import scala.language.experimental.genericNumberLiterals
+
+      val third: Q64 = 1 \ 3           // `\` makes a fraction, and binds tighter than `+`
+      third + 1 \ 6                    // Q64(1, 2)
+      2 \ 3*3 \ 4                      // Q64(1, 2)
+      Q64(6, 4) == Q64(3, 2)           // true: canonical
+      Q64(5, -3).text                  // t"-5/3"
+      (1 \ 0).nar                      // true
+      val approx: Q64 = 3.14           // Q64(157, 50): a decimal literal converts exactly
+      Q64(9, 4).sqrt                   // Q64(3, 2)
+      Q64(3, 4) match
+        case n /: d => (n, d)          // (3L, 4L)
+      ```
+
+      Integers reach `2³¹−2` (`Q64.Max`) and unit fractions `1/(2³¹−1)`, and every rational
+      whose numerator and denominator are at most `2²⁴` is exactly representable. When an
+      exact result needs more than the 62 payload bits, the encoder keeps the longest prefix
+      of its continued fraction that fits, so the result is a convergent or semiconvergent
+      of the exact value: the best approximation among rationals of no greater denominator,
+      rather than a wrap or an exception. `Q64(Long.MaxValue)` saturates to `Q64.Max`.
+
+      `+`, `-`, `*`, `/`, prefix `-` and `sqrt` are symbolism's operators through the inline
+      givens in this companion, with no policy to import; `*` and `/` also take an `Int`,
+      `Long` or `Double` operand. The statistical reductions `mean`, `median` and `variance`
+      are exact over rationals, and `std` resolves under `import
+      arithmeticOptions.q64RationalDivision`, which makes `/` yield a `Double`. The
+      extension methods are `numerator`, `denominator`, `signum`, `nar`, `abs`, `whole`,
+      `reciprocal`, `floor`, `ceiling`, `round`, `double`, `text` and `q32`.
+
+      Its companion's members are declared in `rationalInternal.Q64`, from which the type is
+      exported, and documented there.
+  refer hypotenuse.Q32
+  refer hypotenuse.\
+  refer hypotenuse.Rational
+  refer hypotenuse.arithmeticOptions
+
+entry .Q32   an exact rational number in one `Int`: the 32-bit counterpart of `Q64`
+  detail
+      A `Q32` packs a rational into an `Int` with the encoding of `Q64` at 30 payload bits:
+      integers reach `±32766`, unit fractions `1/32767`, and every rational whose numerator
+      and denominator are at most `2¹¹` is exact. Its arithmetic is the same as `Q64`'s —
+      `+`, `-`, `*`, `/`, prefix `-` and `sqrt` through inline givens, `*` and `/` by an
+      `Int`, `Long` or `Double`, `Nar` for a zero divisor, best-approximation rounding past
+      the budget — and a `Q32` widens to `Q64` exactly with `q64` or implicitly.
+
+      ```scala
+      import soundness.*
+
+      Q32(6, 4) == Q32(3, 2)      // true
+      Q32(2, 3)/2                 // Q32(1, 3)
+      Q32(32767)                  // Q32(32766): saturates
+      Q32(3, 4).q64 == Q64(3, 4)  // true
+      ```
+
+      Arrays of `Q32` are primitive `int[]`s, which is the type's reason to exist beside
+      `Q64`: twice the rationals in the same memory, for the fractions that fit.
+
+      Its companion's members are declared in `rationalInternal.Q32`, from which the type is
+      exported, and documented there.
+  refer hypotenuse.Q64
+
+entry .rationalInternal   the opaque scope of `Q64` and `Q32`
+  hidden
+  detail
+      Not for direct use: the object confines the rationals' representation (a position in
+      the Stern–Brocot tree, as a gamma-coded continued fraction in a `Long` or an `Int`)
+      so that it is hidden even from the rest of the package. The two types and their
+      companions are exported to `hypotenuse` as `Q64` and `Q32`.
+  entry .Q64   the 64-bit rational; see `hypotenuse.Q64`
+    detail
+        The companion of the opaque type `Q64`, exported with it to the `hypotenuse` package.
+    entry .Zero   zero, the all-zero word
+    entry .One   one
+    entry .Nar   not a rational: the result of dividing by zero, which propagates and compares as unordered
+    entry .Max   the largest integer, `2147483646`
+    entry .Min   `-2147483646`
+    entry .underlying   evidence that a `Q64` is a `Long` underneath
+    entry .canEqual   a `Q64` may be compared with `==` only to another `Q64`
+    entry .classTag   a `ClassTag` which makes an `Array[Q64]` a primitive `long[]`
+    entry .apply   a `Q64` from an `Int` or `Long`, from a numerator and denominator, or from a `Double`
+        `Q64(numerator, denominator)` reduces to lowest terms and moves a negative sign to the
+        numerator; a zero denominator gives `Nar`, and a value beyond the budget rounds to its
+        best approximation. `Q64(double)` is the best representable approximation of a finite
+        `Double` (`Q64(0.375)` is exactly `3/8`), and `Nar` for `NaN` or an infinity.
+    entry .parse   a `Q64` from `7`, `-5/3` or `NaR`, or `Rational.Error`
+    entry .comparison   the signed three-way comparison, with `NaR` below everything
+        The relational operators themselves treat `NaR` as unordered; this is the total order
+        a sort needs.
+    entry .orderable   `<`, `<=`, `>`, `>=`, `min` and `max` on rationals; every comparison with `NaR` is false
+    entry .fromDigits   a `Q64` from an integer or decimal literal, under `genericNumberLiterals`
+        `val ratio: Q64 = 0.35` is exactly `7/20`; a decimal literal converts exactly whenever
+        the fraction fits the payload.
+    entry .textualizable   renders a rational as `7`, `-5/3` or `NaR`
+    entry .addable   `Q64 + Q64`, exactly, or to the best approximation that fits
+        Inline, with an inline `add`, so a use at the type itself performs the `Long`
+        arithmetic with no instance call and no boxing; typed `[self <: Q64]` so that a
+        skolemised element type, as the statistical reductions make, still finds it.
+    entry .subtractable   `Q64 - Q64`
+    entry .multiplicable   `Q64 * Q64`
+    entry .divisible   `Q64 / Q64`: total, giving `Nar` for a zero divisor
+    entry .negatable   prefix `-` on a `Q64`; `-Nar` is `Nar`
+    entry .zeroic   `Q64.Zero` as the additive identity, for `total` and `mean`
+    entry .unital   `Q64.One` as the multiplicative identity
+    entry .rootable   `sqrt` on a `Q64`: exact for a square of a representable rational, else the best approximation
+        `Q64(2).sqrt` approximates √2 to the full depth of the encoding; a negative operand
+        gives `Nar`.
+    entry .divisibleDouble   `Q64 / Double`, the divisor converted to a rational first
+        Collection sizes and exact halves convert exactly, which is what keeps `mean` and
+        `median` exact.
+    entry .multiplicableDouble   `Q64 * Double`, the multiplier converted to a rational first
+    entry .multiplicableInt   `Q64 * Int`, exact for every `Int` but the two extremes, which clamp
+    entry .multiplicableLong   `Q64 * Long`, exact within `±(2³¹−2)`; larger multipliers clamp
+    entry .divisibleInt   `Q64 / Int`; division by zero gives `Nar`
+    entry .divisibleLong   `Q64 / Long`; division by zero gives `Nar`
+    entry .quotient   destructures a `Q64` as `case numerator /: denominator`; `NaR` does not match
+    entry .intConversion   an `Int` converts implicitly to `Q64`, exactly but for `Int.MaxValue` and `Int.MinValue`
+        The two extremes round by one to `±(2³¹−2)`. There is no conversion from `Long`, as
+        there is none to `F64`, since it would not be exact.
+    entry .shortConversion   a `Short` converts implicitly to `Q64`
+    entry .byteConversion   a `Byte` converts implicitly to `Q64`
+    entry .q32Conversion   a `Q32` converts implicitly to `Q64`, always exactly
+    entry .numerator   an extension on `Q64`: the signed numerator in lowest terms; `0` for zero and `NaR`
+    entry .denominator   an extension on `Q64`: the denominator in lowest terms; `1` for zero, `0` for `NaR` alone
+    entry .signum   an extension on `Q64`: `-1`, `0` or `1`, with `0` for `NaR`
+    entry .nar   an extension on `Q64`: whether the value is `NaR`
+    entry .abs   an extension on `Q64`: the absolute value
+    entry .whole   an extension on `Q64`: whether the denominator is one
+    entry .reciprocal   an extension on `Q64`: `1/q`, with `Nar` for zero
+    entry .floor   an extension on `Q64`: the largest integer not above the value, as a `Q64`
+    entry .ceiling   an extension on `Q64`: the smallest integer not below the value, as a `Q64`
+    entry .round   an extension on `Q64`: the nearest integer as a `Long`, half up, as `math.round` on a `Double`
+    entry .double   an extension on `Q64`: the correctly rounded `Double`; `NaN` for `NaR`
+    entry .text   an extension on `Q64`: `7`, `-5/3`, `0` or `NaR`, which `Q64.parse` reads back
+    entry .q32   an extension on `Q64`: the best `Q32` approximation, exact whenever the value fits
+  entry .Q32   the 32-bit rational; see `hypotenuse.Q32`
+    detail
+        The companion of the opaque type `Q32`, exported with it to the `hypotenuse` package.
+    entry .Zero   zero
+    entry .One   one
+    entry .Nar   not a rational: the result of dividing by zero
+    entry .Max   the largest integer, `32766`
+    entry .Min   `-32766`
+    entry .underlying   evidence that a `Q32` is an `Int` underneath
+    entry .canEqual   a `Q32` may be compared with `==` only to another `Q32`
+    entry .classTag   a `ClassTag` which makes an `Array[Q32]` a primitive `int[]`
+    entry .apply   a `Q32` from an `Int` or `Long`, from a numerator and denominator, or from a `Double`
+    entry .parse   a `Q32` from `7`, `-5/3` or `NaR`, or `Rational.Error`
+    entry .comparison   the signed three-way comparison, with `NaR` below everything
+    entry .orderable   `<`, `<=`, `>`, `>=`, `min` and `max` on `Q32`s; every comparison with `NaR` is false
+    entry .fromDigits   a `Q32` from an integer or decimal literal, under `genericNumberLiterals`
+    entry .textualizable   renders a `Q32` as `7`, `-5/3` or `NaR`
+    entry .addable   `Q32 + Q32`, inline and allocation-free
+    entry .subtractable   `Q32 - Q32`
+    entry .multiplicable   `Q32 * Q32`
+    entry .divisible   `Q32 / Q32`: total, giving `Nar` for a zero divisor
+    entry .negatable   prefix `-` on a `Q32`
+    entry .zeroic   `Q32.Zero` as the additive identity
+    entry .unital   `Q32.One` as the multiplicative identity
+    entry .rootable   `sqrt` on a `Q32`, exact for a square of a representable rational
+    entry .divisibleDouble   `Q32 / Double`
+    entry .multiplicableDouble   `Q32 * Double`
+    entry .multiplicableInt   `Q32 * Int`, exact within `±32766`
+    entry .multiplicableLong   `Q32 * Long`, exact within `±32766`
+    entry .divisibleInt   `Q32 / Int`
+    entry .divisibleLong   `Q32 / Long`
+    entry .quotient   destructures a `Q32` as `case numerator /: denominator`
+    entry .shortConversion   a `Short` converts implicitly to `Q32`, exactly but for the two extremes
+    entry .byteConversion   a `Byte` converts implicitly to `Q32`
+    entry .numerator   an extension on `Q32`: the signed numerator in lowest terms
+    entry .denominator   an extension on `Q32`: the denominator in lowest terms; `0` for `NaR`
+    entry .signum   an extension on `Q32`: `-1`, `0` or `1`
+    entry .nar   an extension on `Q32`: whether the value is `NaR`
+    entry .abs   an extension on `Q32`: the absolute value
+    entry .whole   an extension on `Q32`: whether the denominator is one
+    entry .reciprocal   an extension on `Q32`: `1/q`, with `Nar` for zero
+    entry .floor   an extension on `Q32`: the largest integer not above the value
+    entry .ceiling   an extension on `Q32`: the smallest integer not below the value
+    entry .round   an extension on `Q32`: the nearest integer as a `Long`, half up
+    entry .double   an extension on `Q32`: the correctly rounded `Double`
+    entry .text   an extension on `Q32`: `7`, `-5/3`, `0` or `NaR`
+    entry .q64   an extension on `Q32`: the same value as a `Q64`, always exactly
+
+entry .Bcd   a packed binary-coded-decimal number, as a JSON or YAML parser accumulates one
+  detail
+      A `Bcd` holds the digits of a number as it was written — digits, a point, an exponent
+      and its sign, one nibble each — in a frozen `Array[Double]^{}` whose first word is a
+      header (sign and nibble count) and whose remaining words carry sixteen nibbles each.
+      It is the number representation of jacinta's JSON parser, moved here so that a YAML
+      library need not depend on a JSON one, and it keeps a number's exact text without
+      committing to a `Double`, a `Long` or a `BigDecimal` until one is asked for.
+
+      The nibbles are `0x0`–`0x9` for digits, `0xA` for `.`, `0xB` for `e` and `0xC` for
+      `e-`. A leading `0` before a point is omitted in storage and reinserted on rendering.
+      Besides the array form, two compact packings exist for small numbers, so that a parser
+      can keep a value in a single `Long` (up to 14 nibbles) or `Int` (up to 7) and only
+      build a `Bcd` when it overflows them; the `packBcdLong` family reads and writes those.
+
+      ```scala
+      import soundness.*
+
+      val bcd: Bcd = Bcd.fromString("12.5e3", negative = true)
+      bcd.text          // "-12.5e3"
+      bcd.toDouble      // -12500.0
+      bcd.toLong        // Unset: not an integer as written
+      bcd.nibbleCount   // 6
+      ```
+  entry .adopt   wraps a freshly built `Array[Double]` as a `Bcd`, discharging the array's capability once
+  entry .NibblesPerDouble   sixteen: the nibbles one data word holds
+  entry .MaxBcdLongNibbles   fourteen: the most nibbles the single-`Long` packing holds
+  entry .packBcdLong   packs an accumulated `content`, its nibble count and a sign into the single-`Long` form
+      Bit 63 is the sign, bits 56–62 the count, and bits 0–55 the nibbles, newest in the low
+      four bits. The caller checks that the count is at most `MaxBcdLongNibbles`; `0L` is
+      reserved for an uninitialised slot, since a valid value has at least one nibble.
+  entry .bcdLongNibbleCount   the nibble count of a single-`Long` value
+  entry .bcdLongNegative   the sign of a single-`Long` value
+  entry .bcdLongText   the canonical JSON-number text of a single-`Long` value
+  entry .bcdLongToDouble   a single-`Long` value as a `Double`, by way of its text
+  entry .MaxBcdIntNibbles   seven: the most nibbles the single-`Int` packing holds
+  entry .packBcdInt   packs an accumulated `content`, its nibble count and a sign into the single-`Int` form
+      Bit 31 is the sign, bits 28–30 the count, and bits 0–27 the nibbles.
+  entry .bcdIntNibbleCount   the nibble count of a single-`Int` value
+  entry .bcdIntNegative   the sign of a single-`Int` value
+  entry .bcdIntText   the canonical JSON-number text of a single-`Int` value
+  entry .bcdIntToDouble   a single-`Int` value as a `Double`, by way of its text
+  entry .repackBcdIntAsLong   the single-`Int` form re-encoded as the single-`Long` form
+  entry .packBcdIntFromLong   the single-`Long` form re-encoded as the single-`Int` form, for a value of at most seven nibbles
+  entry .fromContent15   a `Bcd` of exactly fifteen nibbles straight from a parser's `Long` accumulator
+  entry .apply   `Bcd(bigDecimal)`: the digits of a `BigDecimal`'s plain string
+  entry .fromString   a `Bcd` from a positive-magnitude number string and a sign flag
+      The text may hold digits, one `.`, and an `e`/`E` exponent with an optional sign; the
+      caller strips any leading `-` and passes it as `negative`. A leading `0.` is stored
+      without the zero, as the parser does.
+  entry .Builder   assembles a `Bcd` one nibble at a time, as a parser reads them
+    detail
+        A mutable accumulator: `#add` appends a nibble, committing a data word each sixteen,
+        `#overwriteLast` rewrites the latest one (an `e` becoming `e-` when a `-` follows),
+        `#seedFromLong` copies a parser's single-`Long` accumulator in when it overflows,
+        and `#finish` freezes the result with its sign.
+    entry #add   appends one nibble, `0x0`–`0xC`
+    entry #overwriteLast   replaces the most recently added nibble
+    entry #seedFromLong   appends the `count` nibbles held in a single-`Long` accumulator
+    entry #nibbleCount   how many nibbles have been added
+    entry #finish   the completed `Bcd`, with the given sign
+  entry .negative   an extension on `Bcd`: whether the number is negative
+  entry .nibbleCount   an extension on `Bcd`: how many nibbles the number has
+  entry .eachNibble   an extension on `Bcd`: visits each nibble, oldest first
+      Named `eachNibble` rather than `each`, since a `Bcd` is a number rather than a
+      collection and the collection `each` would otherwise be shadowed for every receiver
+      in a file importing `Bcd.*`.
+  entry .text   an extension on `Bcd`: the number as it was written, in canonical JSON form
+      Digits, an optional point and fraction, and an optional `e[-]digits` exponent, with a
+      `-` prefix if negative and a `0` reinserted before a leading point.
+  entry .toBigDecimal   an extension on `Bcd`: the exact value as a `BigDecimal`
+  entry .toDouble   an extension on `Bcd`: the nearest `Double`
+  entry .toLong   an extension on `Bcd`: the value as a `Long`, or `Unset` if it is not an integer that fits
+
+entry .bin   the `bin"…"` literal: a `Byte`, `Short`, `Int` or `Long` from 8, 16, 32 or 64 binary digits
+    `bin"00001111"` is the `Byte` `15`, checked while the code compiles: the digits may be
+    separated by spaces for readability, and the result's type is chosen by their count, so
+    `bin"1111 0000 1111 0000"` is a `Short`. A character other than `0`, `1` or a space is
+    error 118, _a binary value can only contain characters '0' or '1'_, and a count other
+    than 8, 16, 32 or 64 is error 167. The result is a primitive; `bits` makes a `B8`,
+    `B16`, `B32` or `B64` of it.
+
+    ```scala
+    import soundness.*
+
+    val mask: B8 = bin"00001111".bits
+    bin"1000 0000 0000 0000 0000 0000 0000 0001"   // an Int
+    ```
+
+entry .hex   the `hex"…"` literal, a frozen byte array; and the hexadecimal rendering of any integer
+    `hex"cafe babe"` is an `Array[Byte]^{}` of the bytes the digits spell, built while the
+    code compiles: spaces and newlines between digits are ignored, so a long constant can be
+    laid out in rows, and the digits may be in either case. A character that is not a hex
+    digit is error 148, and an odd number of digits is error 137, _a hexadecimal value must
+    have an even number of digits_.
+
+    ```scala
+    import soundness.*
+
+    val header = hex"89 50 4e 47 0d 0a 1a 0a"
+    header.length   // 8
+    ```
+
+    As an extension method, `hex` renders a `Byte`, `Short`, `Int` or `Long` in hexadecimal
+    as `java.lang.Integer.toHexString` does — a `Byte` or `Short` as its unsigned pattern
+    (`(-1: Byte).hex` is `t"ff"`), an `Int` or `Long` as two's complement — without
+    zero-padding. The `hex` of a `B8`…`B64` pads to the type's width, and the `hex` of a
+    `U*` or `S*` is its unsigned or signed value in base 16.
+
+entry .minimum   the least element of a collection, or `Unset` if it is empty
+    An extension on any `Traversable` collection and on any `Iterable`, for elements with an
+    `Orderable` (strictly, a `Commensurable against` themselves). A single pass; the first
+    of several equal least elements wins.
+
+    ```scala
+    import soundness.*
+
+    List(3, 1, 2).minimum       // 1
+    List[Int]().minimum         // Unset
+    ```
+
+entry .maximum   the greatest element of a collection, or `Unset` if it is empty
+    An extension on any `Traversable` collection and on any `Iterable`, for elements with an
+    `Orderable`, as `minimum` is.
+
+entry .median   the middle value of a collection, or the mean of the two middle values, or `Unset`
+    An extension on any `Traversable` collection and on any `Iterable`. The median is found
+    by quickselect — a selection, not a sort, so the whole collection is never ordered —
+    and where the count is even the two middle values are averaged, which is why the
+    element type needs not only an `Orderable` but `Subtractable` by itself, its difference
+    `Divisible` by a `Double`, and the result `Addable` back onto the element. Numbers,
+    quantities and rationals all qualify, and the result type is whatever that addition
+    produces.
+
+    ```scala
+    import soundness.*
+
+    Iterable[Double](7, 25, 1, 24, 2, 3, 23, 4, 22, 5, 21).median       // 7.0
+    List(25, 1, 24, 2, 3, 23, 4, 22, 5, 21, 7, 8).median                 // 7.5
+    List(Q64(1, 2), Q64(1, 3), Q64(1, 6)).median                         // Q64(1, 3), exactly
+    ```
+
+entry .abs   the absolute value of a `Float`, `Double`, `Byte`, `Short`, `Int` or `Long`
+    An extension on each primitive, as `math.abs`; the signed types `S8`…`S64`, `F32`,
+    `F64`, `Q64`, `Q32` and `Decimal` have an `abs` of their own. `Byte.MinValue.abs` is
+    `Byte.MinValue`, as in Java.
+
+entry .ceiling   the smallest integral value not below a `Float` or `Double`
+    `math.ceil`, as an extension; also on `F32` and `F64`, and on `Q64` and `Q32`.
+
+entry .floor   the largest integral value not above a `Float` or `Double`
+    `math.floor`, as an extension; also on `F32`, `F64`, `Q64` and `Q32`. The flooring
+    division of integers is `/-`.
+
+entry .exponent   the unbiased binary exponent of a `Float` (as an `Int`) or a `Double` (as a `B16`)
+    `math.getExponent`, as an extension; also on `F32` and `F64`.
+
+entry .increment   the next representable `Float` or `Double` above this one
+    `math.nextUp`, as an extension; `successor` is the same. Also on `F32` and `F64`.
+
+entry .decrement   the next representable `Float` or `Double` below this one
+    `math.nextDown`, as an extension; `predecessor` is the same. Also on `F32` and `F64`.
+
+entry .successor   the next representable `Float` or `Double` above this one, as `increment`
+
+entry .predecessor   the next representable `Float` or `Double` below this one, as `decrement`
+
+entry .round   a `Float` or `Double` rounded to the nearest `Long`, half up
+    `math.round`, as an extension; also on `F32`, `F64`, `Q64` and `Q32`.
+
+entry .scalb   a `Float` or `Double` multiplied by a power of two: `value.scalb(n)` is `value × 2ⁿ`
+    `math.scalb`, as an extension, exact for every result in range; also on `F32` and `F64`.
+
+entry .signum   the sign of a `Float` or `Double`, typed as `-1.0 | 0.0 | 1.0`
+    `math.signum`, as an extension, with its result typed as the union of the three values
+    it can be; also on `F32` and `F64`. `Q64`, `Q32` and `Decimal` have an integer `signum`.
+
+entry .ulp   the unit in the last place of a `Float` or `Double`: the distance to the next value
+    `math.ulp`, as an extension; also on `F32` and `F64`.
+
+entry .bits   a primitive's bit pattern as the `B8`, `B16`, `B32` or `B64` of its width
+    `(0xf0: Byte).bits` is a `B8`, `0xf0.bits` a `B32`, `0xf0L.bits` a `B64`, free, and the
+    reverse is `Short(bits)`, `Int(bits)` and `Long(bits)`. For a `Float` and a `Double`, it
+    is the IEEE pattern (`floatToIntBits`, `doubleToLongBits`, with `NaN` canonicalised),
+    the `Double`'s as a `B64`. The `U*` and `S*` types each have a `bits` giving their
+    pattern, and `F64`'s and `F32`'s give the IEEE one.
+
+    ```scala
+    import soundness.*
+
+    val pattern: B32 = 0xf0.bits
+    S32(42.bits)            // an S32 from a pattern
+    Int(pattern)            // 240
+    1.0.bits.hex            // t"3ff0000000000000"
+    ```
+
+entry .rawBits   the IEEE pattern of a `Float` or `Double`, with `NaN` payloads preserved
+    `floatToRawIntBits` and `doubleToRawLongBits`, as extensions; `bits` canonicalises
+    every `NaN` to one pattern. Also on `F32` and `F64`.
+
+entry .finite   whether a `Float` or `Double` is neither infinite nor `NaN`
+    Also on `F32` and `F64`.
+
+entry .infinite   whether a `Float` or `Double` is positive or negative infinity
+    Also on `F32` and `F64`.
+
+entry .nan   whether a `Float` or `Double` is `NaN`
+    Also on `F32` and `F64`; a rational's undefined value is tested with `nar` instead.
+
+entry .mantissa   the low 52 bits of a `Double`'s IEEE pattern, as a `B64`
+    An extension on `Double` and on `F64`.
+
+entry .**   raises a number to a power: `base ** exponent`, with a `Double` exponent
+    An extension on `Float` (to a `Float`) and on `Double`, `Byte`, `Short`, `Int` and `Long`
+    (to a `Double`), as `math.pow`: the integer forms widen rather than truncate, so
+    `(200: Short) ** 2.0` is `40000.0` and `2 ** 0.5` is `√2`. `F64 ** x` and `F32 ** x`
+    take any operand which widens to them and return their own type, and the `S*` types
+    return a `Double`.
+
+entry .%%   the floor-modulus: a remainder with the sign of the divisor, never negative for a positive one
+    An extension on `Float`, `Double`, `Byte`, `Short`, `Int` and `Long`, and on `S8`…`S64`.
+    Unlike `%`, which takes the sign of the dividend, `-7 %% 3` is `2` and `7 %% -3` is
+    `-2`, so a value is brought into a range the way a clock's hour is; `/-` is the matching
+    division.
+
+    ```scala
+    import soundness.*
+
+    7.0 %% 3.0     // 1.0
+    -7.0 %% 3.0    // 2.0
+    -7 %% 3        // 2
+    ```
+
+entry ./-   the floor-division: the quotient rounded towards negative infinity
+    An extension on `Byte`, `Short`, `Int` and `Long`, and on `S8`…`S64`, as
+    `math.floorDiv`: `-7 /- 2` is `-4`, where `/` gives `-3`. It pairs with `%%`, so that
+    `(a /- b)*b + (a %% b) == a`.
+
+entry .long   a `Byte`, `Short` or `Int` widened to a `Long`
+    An extension on each; the `S*` types have `long` too, and the `U*` types' `long` is their
+    unsigned value.
+
+entry .int   a `Byte` widened; and the `Int` value of an `S8`, `S16`, `S32`, `U8` or `U16`
+    The extension on `Byte` is typed `Long`, as `short` is.
+
+entry .short   a `Byte` widened; and the `Short` value of an `S8`, `S16` or `U8`
+
+entry .octal   a `Byte`, `Short`, `Int` or `Long` in octal
+    As `toOctalString`, a `Byte` or `Short` by its unsigned pattern, without padding: `(-1:
+    Byte).octal` is `t"377"`. The `B*` types pad to their width, and the `U*` and `S*` types
+    render their value in base 8.
+
+entry .base32   a `Byte`, `Short`, `Int` or `Long` in base 32, with the digits `0`–`9` and `a`–`v`
+    As `java.lang.Integer.toString(value, 32)`, signed; also on the `U*` and `S*` types.
+
+entry .binary   a `Byte`, `Short`, `Int` or `Long` in binary
+    As `toBinaryString`, a `Byte` or `Short` by its unsigned pattern, so `(-1: Byte).binary`
+    is eight `1`s. The `B*` types pad to their width, and the `U*` and `S*` types render
+    their value in base 2.
+
+entry .gcd   the greatest common divisor of two integers, by Euclid's algorithm
+    An extension on `Byte`, `Short`, `Int` and `Long`, and on every `U*` and `S*` type, each
+    with an operand of its own type. `gcd(0)` is the receiver.
+
+entry .lcm   the least common multiple of two `Byte`s, `Short`s, `Int`s or `Long`s
+    `a*b/a.gcd(b)`, in the receiver's own width, so a product beyond it wraps.
+
+entry .\   `numerator \ denominator`: an exact rational, as a `Q64`
+    An extension on `Int` and on `Long`. `\` is in the highest precedence tier, binding
+    tighter than `*`, `/`, `+` and `-`, so `1 \ 3 + 1 \ 6` is the sum of two fractions and
+    `2 \ 3*3 \ 4` their product, with no parentheses. A zero denominator gives `Q64.Nar`,
+    and a negative numerator or denominator moves the sign: `-5 \ 3` is `Q64(-5, 3)`.
+
+    ```scala
+    import soundness.*
+
+    1 \ 3 + 1 \ 6          // Q64(1, 2)
+    (1 \ 0).nar            // true
+    3L \ 4L                // Q64(3, 4)
+    ```
+
+entry .apply   `Short(bits)`, `Int(bits)`, `Long(bits)`, `Double(long)`, and the big-endian reads `Short(bytes)`, `Int(bytes)`, `Long(bytes)`
+    Extensions on the companions of the primitives. `Short(bits: B16)`, `Int(bits: B32)` and
+    `Long(bits: B64)` reinterpret a pattern as the primitive, free; `Double(long)` is
+    `Double.longBitsToDouble`; and `Short(bytes)`, `Int(bytes)` and `Long(bytes)` read the
+    first 2, 4 or 8 bytes of a frozen `Array[Byte]^{}` as a big-endian integer. They are
+    not exported to the `soundness` umbrella, so they need `import hypotenuse.*`.
+
+entry .erf   the Gauss error function, `erf(x)`, to about seven decimal places
+    The Abramowitz and Stegun rational approximation (formula 7.1.26), whose absolute error
+    is below `1.5 × 10⁻⁷` everywhere. `erf(0.0)` is `0.0` and `erf(x)` tends to `±1`.
+
+entry .π   the ratio of a circle's circumference to its diameter, `math.Pi`
+
+entry .pi   `π`, for a keyboard without one
+
+entry .euler   Euler's number, `math.E`
+
+entry .φ   the golden ratio, `(1 + √5)/2`
+
+entry .goldenRatio   `φ`, for a keyboard without one
+
+entry .cos   the cosine of an angle in radians, as an `F64`
+    Each trigonometric and logarithmic function takes anything which converts to `F64` — a
+    `Double`, an `Int`, an `F64`, a `U8` — and returns an `F64`, so the functions compose
+    without casts: `cos(π/3)`, `ln(exp(2))`.
+
+    ```scala
+    import soundness.*
+
+    cos(π)               // F64(-1.0)
+    sin(π/2)             // F64(1.0)
+    hyp(3.0, F64(4.0))   // F64(5.0)
+    ```
+
+entry .acos   the arc cosine, in radians, as an `F64`
+
+entry .cosh   the hyperbolic cosine, as an `F64`
+
+entry .sin   the sine of an angle in radians, as an `F64`
+
+entry .asin   the arc sine, in radians, as an `F64`
+
+entry .sinh   the hyperbolic sine, as an `F64`
+
+entry .tan   the tangent of an angle in radians, as an `F64`
+
+entry .atan   the arc tangent, in radians, as an `F64`
+
+entry .hyp   `hyp(a, b)`: the hypotenuse, `√(a² + b²)`, without intermediate overflow
+    `math.hypot`; the first argument may be anything which converts to `F64`, the second is
+    an `F64`.
+
+entry .exp   `e` raised to a power, as an `F64`
+
+entry .expm1   `exp(x) - 1`, accurate for small `x`
+
+entry .ln   the natural logarithm, as an `F64`
+
+entry .log10   the base-10 logarithm, as an `F64`
+
+entry .log1p   `ln(1 + x)`, accurate for small `x`
+
+entry .<   `left < right`, for any `left is Commensurable against right`
+    An inline extension on any value. It takes the `Commensurable` given in scope — every
+    numeric type's companion `Orderable`, `F64`'s comparisons against `Int` and `Double`,
+    any `Comparable` type through `Commensurable.orderable` — and chains: `a < x < b` is a
+    single range test, rewritten by `Commensurable.numeric`.
+
+entry .<=   `left <= right`, for any `left is Commensurable against right`; chains as `<` does
+
+entry .>   `left > right`, for any `left is Commensurable against right`
+
+entry .>=   `left >= right`, for any `left is Commensurable against right`
+
+entry .min   `left min right`: the lesser of two values of an `Orderable` type
+    The receiver's type is the operand's, so `S32.Max min S32(1.bits)` and `1.5 min 2.0` both
+    resolve; `minimum` is the collection form.
+
+entry .max   `left max right`: the greater of two values of an `Orderable` type
+
+entry .internal   the opaque scope of the fixed-width types and their extension methods
+  hidden
+  detail
+      Not for direct use: `U8`…`U64`, `S8`…`S64`, `F32`, `F64` and `B8`…`B64` are opaque
+      types declared here, so that their representations are hidden even from the rest of
+      the package, and exported to `hypotenuse` under their own names, where each has its
+      page. The extension methods on them are declared here too, and are listed as its entries by
+      name; each type's page says which it has.
+  entry .Bits   `Bits[8 | 16 | 32 | 64]`: the `B*` type of a given width, as a match type
+  entry .U64   an unsigned 64-bit integer, from `0` to `18446744073709551615`; see `hypotenuse.U64`
+    detail
+        The companion of the opaque type `U64`, exported with it to the `hypotenuse` package.
+    entry .Min   zero
+    entry .Max   `18446744073709551615`, every bit set
+    entry .underlying   evidence that a `U64` is a `Long` underneath, for the opaque-type machinery
+    entry .addable   `U64 + U64`, as the `CheckOverflow` policy in scope defines it
+        The instance is `overflow.addU64` for the `CheckOverflow` given in scope, typed by its
+        singleton type so that the addition inlines to a single `ladd` under
+        `arithmeticOptions.uncheckedOverflow`. Under `checkedOverflow` the result is `U64
+        raises Arithmetic.Error`, raised when the sum comes out below either operand.
+    entry .subtractable   `U64 - U64`, as the `CheckOverflow` policy in scope defines it
+        `overflow.subtractU64`: wrapping under `uncheckedOverflow`; under `checkedOverflow`,
+        raising `Arithmetic.Error` when the subtrahend is the larger.
+    entry .multiplicable   `U64 * U64`, as the `CheckOverflow` policy in scope defines it
+        `overflow.multiplyU64`: under `checkedOverflow`, raising `Arithmetic.Error` when the
+        product's high word is nonzero (`Math.unsignedMultiplyHigh`).
+    entry .divisible   `U64 / U64`, unsigned, as the `DivisionByZero` policy in scope defines it
+        `division.divideU64`, dividing with `Long.divideUnsigned`. Under
+        `arithmeticOptions.uncheckedDivision` a zero divisor throws the JVM's
+        `ArithmeticException`; under `checkedDivision` it raises `Arithmetic.Error`.
+    entry .canEqual   a `U64` may be compared with `==` only to another `U64`
+    entry .fromDigits   a `U64` from an integer literal, under `genericNumberLiterals`
+        Parsed as unsigned; a literal that is not a valid unsigned 64-bit integer fails at
+        compile time.
+    entry .textualizable   renders the unsigned decimal value as `Text`
+    entry .apply   `U64(bits: B64)`: reads a bit pattern as an unsigned integer
+        Free: the pattern is the value. `U64(Long.MinValue.bits)` is `9223372036854775808`.
+    entry .orderable   unsigned comparison for `<`, `<=`, `>`, `>=`, `min` and `max`
+        In implicit scope through the companion; compares with `Long.compareUnsigned`.
+  entry .U32   an unsigned 32-bit integer, from `0` to `4294967295`; see `hypotenuse.U32`
+    detail
+        The companion of the opaque type `U32`, exported with it to the `hypotenuse` package.
+    entry .Min   zero
+    entry .Max   `4294967295`, every bit set
+    entry .underlying   evidence that a `U32` is an `Int` underneath
+    entry .addable   `U32 + U32`, from the `CheckOverflow` policy in scope
+        `overflow.addU32`; under `checkedOverflow`, raises `Arithmetic.Error` when the sum
+        exceeds `4294967295`.
+    entry .subtractable   `U32 - U32`, from the `CheckOverflow` policy in scope
+        `overflow.subtractU32`; under `checkedOverflow`, raises `Arithmetic.Error` when the
+        result would be negative.
+    entry .multiplicable   `U32 * U32`, from the `CheckOverflow` policy in scope
+        `overflow.multiplyU32`; the product is computed in a `Long` and checked against the
+        32-bit range under `checkedOverflow`.
+    entry .divisible   `U32 / U32`, unsigned, from the `DivisionByZero` policy in scope
+        `division.divideU32`, with `Integer.divideUnsigned`; a zero divisor raises
+        `Arithmetic.Error` under `checkedDivision` and throws under `uncheckedDivision`.
+    entry .canEqual   a `U32` may be compared with `==` only to another `U32`
+    entry .fromDigits   a `U32` from an integer literal, under `genericNumberLiterals`
+    entry .textualizable   renders the unsigned decimal value as `Text`
+    entry .apply   `U32(bits: B32)`: reads a bit pattern as an unsigned integer
+    entry .orderable   unsigned comparison for `<`, `<=`, `>`, `>=`, `min` and `max`
+  entry .U16   an unsigned 16-bit integer, from `0` to `65535`; see `hypotenuse.U16`
+    detail
+        The companion of the opaque type `U16`, exported with it to the `hypotenuse` package.
+    entry .Min   zero
+    entry .Max   `65535`, every bit set
+    entry .underlying   evidence that a `U16` is a `Short` underneath
+    entry .addable   `U16 + U16`, from the `CheckOverflow` policy in scope
+        `overflow.addU16`; computed in an `Int` and, under `checkedOverflow`, checked against
+        `65535`.
+    entry .subtractable   `U16 - U16`, from the `CheckOverflow` policy in scope
+        `overflow.subtractU16`; under `checkedOverflow`, a negative result raises
+        `Arithmetic.Error`.
+    entry .multiplicable   `U16 * U16`, from the `CheckOverflow` policy in scope
+        `overflow.multiplyU16`; `U16(256) * U16(256)` overflows under `checkedOverflow`.
+    entry .divisible   `U16 / U16`, from the `DivisionByZero` policy in scope
+    entry .canEqual   a `U16` may be compared with `==` only to another `U16`
+    entry .fromDigits   a `U16` from an integer literal, under `genericNumberLiterals`
+        Error 764, _a U16 may not be less than 0_, and error 772, _a U16 may not be greater
+        than 65535_, are reported at compile time for a literal out of range.
+    entry .textualizable   renders the unsigned decimal value as `Text`
+    entry .apply   `U16(bits: B16)`: reads a bit pattern as an unsigned integer
+    entry .orderable   unsigned comparison for `<`, `<=`, `>`, `>=`, `min` and `max`
+  entry .U8   an unsigned 8-bit integer, from `0` to `255`; see `hypotenuse.U8`
+    detail
+        The companion of the opaque type `U8`, exported with it to the `hypotenuse` package.
+    entry .Min   zero
+    entry .Max   `255`, every bit set
+    entry .underlying   evidence that a `U8` is a `Byte` underneath
+    entry .addable   `U8 + U8`, from the `CheckOverflow` policy in scope
+        `overflow.addU8`; under `checkedOverflow`, a sum above `255` raises
+        `Arithmetic.Error`.
+    entry .subtractable   `U8 - U8`, from the `CheckOverflow` policy in scope
+    entry .multiplicable   `U8 * U8`, from the `CheckOverflow` policy in scope
+    entry .divisible   `U8 / U8`, from the `DivisionByZero` policy in scope
+    entry .canEqual   a `U8` may be compared with `==` only to another `U8`
+    entry .fromDigits   a `U8` from an integer literal, under `genericNumberLiterals`
+        Error 689, _a U8 may not be less than 0_, and error 709 for a literal above the upper
+        bound, are reported at compile time.
+    entry .textualizable   renders the unsigned decimal value as `Text`
+    entry .apply   `U8(bits: B8)`: reads a bit pattern as an unsigned integer
+    entry .orderable   unsigned comparison for `<`, `<=`, `>`, `>=`, `min` and `max`
+  entry .S64   a signed 64-bit integer, two's complement, from `S64.Min` to `S64.Max`; see `hypotenuse.S64`
+    detail
+        The companion of the opaque type `S64`, exported with it to the `hypotenuse` package.
+    entry .Min   `-9223372036854775808`
+    entry .Max   `9223372036854775807`
+    entry .underlying   evidence that an `S64` is a `Long` underneath
+    entry .addable   `S64 + S64`, from the `CheckOverflow` policy in scope
+        `overflow.addS64`: a single `ladd` under `uncheckedOverflow`; under `checkedOverflow`,
+        the result is `S64 raises Arithmetic.Error`, raised when both operands have the sign
+        the sum lacks.
+    entry .subtractable   `S64 - S64`, from the `CheckOverflow` policy in scope
+    entry .multiplicable   `S64 * S64`, from the `CheckOverflow` policy in scope
+        Under `checkedOverflow`, `S64.Min*S64(-1)` raises `Arithmetic.Error`, as does any
+        product whose high word (`Math.multiplyHigh`) is not the sign extension of its low
+        word.
+    entry .divisible   `S64 / S64`, truncating, from the `DivisionByZero` policy in scope
+        `S64((-7L).bits)/S64(2L.bits)` is `-3`, as `Long` division truncates towards zero; `/-`
+        is the flooring division.
+    entry .canEqual   an `S64` may be compared with `==` to any signed, floating or primitive numeric type
+        `F64`, `F32`, `S64`, `S32`, `S16`, `S8`, `Float`, `Double`, `Long`, `Int`, `Short` and
+        `Byte`.
+    entry .fromDigits   an `S64` from an integer literal, under `genericNumberLiterals`
+    entry .textualizable   renders the signed decimal value as `Text`
+    entry .apply   `S64(bits: B64)`: reads a bit pattern as a signed integer
+    entry .orderable   signed comparison for `<`, `<=`, `>`, `>=`, `min` and `max`
+  entry .S32   a signed 32-bit integer, two's complement, from `S32.Min` to `S32.Max`; see `hypotenuse.S32`
+    detail
+        The companion of the opaque type `S32`, exported with it to the `hypotenuse` package.
+    entry .Min   `-2147483648`
+    entry .Max   `2147483647`
+    entry .underlying   evidence that an `S32` is an `Int` underneath
+    entry .addable   `S32 + S32`, from the `CheckOverflow` policy in scope
+        `overflow.addS32`; under `checkedOverflow`, `S32.Max + S32(1)` and `S32.Min +
+        S32(-1)` raise `Arithmetic.Error`.
+    entry .subtractable   `S32 - S32`, from the `CheckOverflow` policy in scope
+    entry .multiplicable   `S32 * S32`, from the `CheckOverflow` policy in scope
+        The product is computed in a `Long` and, under `checkedOverflow`, checked to fit an
+        `Int`.
+    entry .divisible   `S32 / S32`, truncating, from the `DivisionByZero` policy in scope
+    entry .canEqual   an `S32` may be compared with `==` to any signed, floating or primitive numeric type
+    entry .fromDigits   an `S32` from an integer literal, under `genericNumberLiterals`
+    entry .textualizable   renders the signed decimal value as `Text`
+    entry .apply   `S32(bits: B32)`: reads a bit pattern as a signed integer
+    entry .orderable   signed comparison for `<`, `<=`, `>`, `>=`, `min` and `max`
+  entry .S16   a signed 16-bit integer, two's complement, from `-32768` to `32767`; see `hypotenuse.S16`
+    detail
+        The companion of the opaque type `S16`, exported with it to the `hypotenuse` package.
+    entry .Min   `-32768`
+    entry .Max   `32767`
+    entry .underlying   evidence that an `S16` is a `Short` underneath
+    entry .addable   `S16 + S16`, from the `CheckOverflow` policy in scope
+    entry .subtractable   `S16 - S16`, from the `CheckOverflow` policy in scope
+    entry .multiplicable   `S16 * S16`, from the `CheckOverflow` policy in scope
+    entry .divisible   `S16 / S16`, truncating, from the `DivisionByZero` policy in scope
+    entry .canEqual   an `S16` may be compared with `==` to any signed, floating or primitive numeric type
+    entry .fromDigits   an `S16` from an integer literal, under `genericNumberLiterals`
+        Error 46, _an S16 may not be less than -32768_, and error 461, _an S16 may not be
+        greater than 32767_, are reported at compile time.
+    entry .textualizable   renders the signed decimal value as `Text`
+    entry .apply   `S16(bits: B16)`: reads a bit pattern as a signed integer
+    entry .orderable   signed comparison for `<`, `<=`, `>`, `>=`, `min` and `max`
+  entry .S8   a signed 8-bit integer, two's complement, from `-128` to `127`; see `hypotenuse.S8`
+    detail
+        The companion of the opaque type `S8`, exported with it to the `hypotenuse` package.
+    entry .Min   `-128`
+    entry .Max   `127`
+    entry .underlying   evidence that an `S8` is a `Byte` underneath
+    entry .addable   `S8 + S8`, from the `CheckOverflow` policy in scope
+    entry .subtractable   `S8 - S8`, from the `CheckOverflow` policy in scope
+    entry .multiplicable   `S8 * S8`, from the `CheckOverflow` policy in scope
+    entry .divisible   `S8 / S8`, truncating, from the `DivisionByZero` policy in scope
+    entry .canEqual   an `S8` may be compared with `==` to any signed, floating or primitive numeric type
+    entry .fromDigits   an `S8` from an integer literal, under `genericNumberLiterals`
+        Error 287, _an S8 may not be less than -128_, and error 768, _an S8 may not be
+        greater than 127_, are reported at compile time.
+    entry .textualizable   renders the signed decimal value as `Text`
+    entry .apply   `S8(bits: B8)`: reads a bit pattern as a signed integer
+    entry .inquality   signed comparison for `<`, `<=`, `>`, `>=`, `min` and `max`
+        The `S8 is Orderable` given, in implicit scope through the companion; it is the
+        counterpart of the `orderable` given of every other numeric type, under a different
+        name.
+  entry .F64   a 64-bit IEEE floating-point number, with mixed arithmetic against anything that widens to it; see `hypotenuse.F64`
+    detail
+        The companion of the opaque type `F64`, exported with it to the `hypotenuse` package.
+    entry .Min   `Double.MinValue`, the most negative finite value
+    entry .Max   `Double.MaxValue`
+    entry .underlying   evidence that an `F64` is a `Double` underneath
+    entry .Addition   the `F64 + F64` instance, a singleton object so that `add` inlines to `dadd`
+    entry .Subtraction   the `F64 - F64` instance, a singleton object
+    entry .Multiplication   the `F64 * F64` instance, a singleton object
+    entry .Division   the `F64 / F64` instance, a singleton object
+    entry .Negation   the prefix `-` instance for `F64`, a singleton object
+    entry .addable   `F64 + F64`, the `Addition` object by its singleton type
+        In implicit scope through the companion, so a generic `[n: Addable by n to n]` bound is
+        satisfied by `F64` with no import.
+    entry .subtractable   `F64 - F64`, the `Subtraction` object by its singleton type
+    entry .multiplicable   `F64 * F64`, the `Multiplication` object by its singleton type
+    entry .divisible   `F64 / F64`, the `Division` object by its singleton type
+    entry .negatable   prefix `-` on an `F64`, the `Negation` object by its singleton type
+    entry .Widening   a conversion into `F64` which also carries the arithmetic of an `F64` with that operand
+      detail
+          `Widening[right]` extends `Conversion[right, F64]` and holds four singleton objects,
+          `Addition`, `Subtraction`, `Multiplication` and `Division`, each an instance of the
+          corresponding symbolism typeclass for an `F64` on the left and a `right` on the
+          right: the right operand is converted and the operation is the primitive one. Every
+          conversion object in this companion (`DoubleConversion`, `IntConversion`,
+          `U8Conversion`, …) extends it, and the `addableWidening` family of givens finds the
+          instances through it, which is how `F64(1.5)*2` and `F64(0.5) + u8` resolve. A
+          library adding a new operand type for `F64` arithmetic gives an object extending
+          `Widening[T]` and a given of its singleton type.
+      entry #Addition   `F64 + right`, converting the right operand first
+      entry #Subtraction   `F64 - right`
+      entry #Multiplication   `F64 * right`
+      entry #Division   `F64 / right`
+    entry .addableWidening   `F64 + right` for any `right` with a `Widening`, as `F64 is Addable by right to F64`
+        Transparent, with a plain refinement type rather than a dependent one, so that the
+        search fixes `right` from the expected operand before it looks for the `Widening`; the
+        summoned instance still has the object's singleton type, through which `add` inlines.
+    entry .subtractableWidening   `F64 - right` for any `right` with a `Widening`
+    entry .multiplicableWidening   `F64 * right` for any `right` with a `Widening`
+    entry .divisibleWidening   `F64 / right` for any `right` with a `Widening`
+    entry .canEqual   an `F64` may be compared with `==` to `F64`, the signed integers, `Double`, `Long`, `Int`, `Short` and `Byte`
+    entry .apply   `F64(double)`, `F64(bits: B64)`, or `F64(sign, exponent: B16, mantissa: B64)`
+        `F64(bits)` is `Double.longBitsToDouble`; the three-argument form assembles the IEEE
+        pattern from its sign bit, biased exponent and 52-bit mantissa.
+    entry .orderable   comparison of two `F64`s for `<`, `<=`, `>`, `>=`, `min` and `max`
+        IEEE comparison, so every comparison with `NaN` is false.
+    entry .commensurableInt   `f64 < 2`: comparison of an `F64` against an `Int`
+    entry .commensurable   `f64 < 2.5`: comparison of an `F64` against a `Double`
+    entry .DoubleConversion   the `Widening[Double]`: a `Double` is already an `F64`
+    entry .doubleConversion   the given which lets a `Double` stand where an `F64` is wanted, and be an operand of one
+    entry .FloatConversion   the `Widening[Float]`
+    entry .floatConversion   the given converting a `Float` to `F64`
+    entry .IntConversion   the `Widening[Int]`
+    entry .intConversion   the given converting an `Int` to `F64`, exactly
+    entry .ShortConversion   the `Widening[Short]`
+    entry .shortConversion   the given converting a `Short` to `F64`
+    entry .ByteConversion   the `Widening[Byte]`
+    entry .byteConversion   the given converting a `Byte` to `F64`
+    entry .U32Conversion   the `Widening[U32]`, by the unsigned value
+    entry .u32Conversion   the given converting a `U32` to `F64`, exactly
+    entry .S32Conversion   the `Widening[S32]`
+    entry .s32Conversion   the given converting an `S32` to `F64`, exactly
+    entry .U16Conversion   the `Widening[U16]`, by the unsigned value
+    entry .u16Conversion   the given converting a `U16` to `F64`
+    entry .U8Conversion   the `Widening[U8]`, by the unsigned value, so `U8(200)` is `200.0`
+    entry .u8Conversion   the given converting a `U8` to `F64`
+    entry .S16Conversion   the `Widening[S16]`
+    entry .s16Conversion   the given converting an `S16` to `F64`
+    entry .S8Conversion   the `Widening[S8]`
+    entry .s8Conversion   the given converting an `S8` to `F64`
+  entry .F32   a 32-bit IEEE floating-point number, with mixed arithmetic against anything that widens to it; see `hypotenuse.F32`
+    detail
+        The companion of the opaque type `F32`, exported with it to the `hypotenuse` package.
+    entry .Min   `Float.MinValue`, the most negative finite value
+    entry .Max   `Float.MaxValue`
+    entry .underlying   evidence that an `F32` is a `Float` underneath
+    entry .Addition   the `F32 + F32` instance, a singleton object so that `add` inlines to `fadd`
+    entry .Subtraction   the `F32 - F32` instance, a singleton object
+    entry .Multiplication   the `F32 * F32` instance, a singleton object
+    entry .Division   the `F32 / F32` instance, a singleton object
+    entry .Negation   the prefix `-` instance for `F32`, a singleton object
+    entry .addable   `F32 + F32`, the `Addition` object by its singleton type
+    entry .subtractable   `F32 - F32`, the `Subtraction` object by its singleton type
+    entry .multiplicable   `F32 * F32`, the `Multiplication` object by its singleton type
+    entry .divisible   `F32 / F32`, the `Division` object by its singleton type
+    entry .negatable   prefix `-` on an `F32`, the `Negation` object by its singleton type
+    entry .Widening   a conversion into `F32` which also carries the arithmetic of an `F32` with that operand
+      detail
+          `Widening[right]` extends `Conversion[right, F32]` and holds the `Addition`,
+          `Subtraction`, `Multiplication` and `Division` instances for an `F32` on the left and
+          a `right` on the right, as `F64.Widening` does for `F64`. The conversion objects
+          `FloatConversion` … `S8Conversion` extend it.
+      entry #Addition   `F32 + right`, converting the right operand first
+      entry #Subtraction   `F32 - right`
+      entry #Multiplication   `F32 * right`
+      entry #Division   `F32 / right`
+    entry .addableWidening   `F32 + right` for any `right` with a `Widening`
+    entry .subtractableWidening   `F32 - right` for any `right` with a `Widening`
+    entry .multiplicableWidening   `F32 * right` for any `right` with a `Widening`
+    entry .divisibleWidening   `F32 / right` for any `right` with a `Widening`
+    entry .canEqual   an `F32` may be compared with `==` to `F32`, the signed integers, `Float`, `Long`, `Int`, `Short` and `Byte`
+    entry .orderable   IEEE comparison of two `F32`s for `<`, `<=`, `>`, `>=`, `min` and `max`
+    entry .apply   `F32(float)`, `F32(bits: B32)`, or `F32(sign, exponent: B16, mantissa: B32)`
+    entry .FloatConversion   the `Widening[Float]`: a `Float` is already an `F32`
+    entry .floatConversion   the given which lets a `Float` stand where an `F32` is wanted, and be an operand of one
+    entry .ShortConversion   the `Widening[Short]`
+    entry .shortConversion   the given converting a `Short` to `F32`, exactly
+    entry .ByteConversion   the `Widening[Byte]`
+    entry .byteConversion   the given converting a `Byte` to `F32`
+    entry .U16Conversion   the `Widening[U16]`, by the unsigned value
+    entry .u16Conversion   the given converting a `U16` to `F32`
+    entry .U8Conversion   the `Widening[U8]`, by the unsigned value
+    entry .u8Conversion   the given converting a `U8` to `F32`
+    entry .S16Conversion   the `Widening[S16]`
+    entry .s16Conversion   the given converting an `S16` to `F32`
+    entry .S8Conversion   the `Widening[S8]`
+    entry .s8Conversion   the given converting an `S8` to `F32`
+  entry .B64   a 64-bit pattern: shifts, rotations, masks and bit addressing, but no arithmetic; see `hypotenuse.B64`
+    detail
+        The companion of the opaque type `B64`, exported with it to the `hypotenuse` package.
+    entry .underlying   evidence that a `B64` is a `Long` underneath
+    entry .block   `B64.block(n)`: the lowest `n` bits set
+    entry .set   a mask with one bit set, by ordinal, or a run of bits set, by interval
+        `B64.set(Ter)` is `0b100`; `B64.set(Prim thru Ter)` is `0b111`.
+    entry .apply   a `B64` from a `Long`, `Int`, `Short` or `Byte`, or from eight big-endian bytes
+        `B64(bytes, offset = 0)` reads `bytes(offset)` as the most significant byte. The
+        narrower primitives are sign-extended, as `toLong` does.
+  entry .B32   a 32-bit pattern: shifts, rotations, masks and bit addressing, but no arithmetic; see `hypotenuse.B32`
+    detail
+        The companion of the opaque type `B32`, exported with it to the `hypotenuse` package.
+    entry .underlying   evidence that a `B32` is an `Int` underneath
+    entry .block   `B32.block(n)`: the lowest `n` bits set
+    entry .set   a mask with one bit set, by ordinal, or a run of bits set, by interval
+    entry .apply   a `B32` from an `Int`, `Short` or `Byte`, or from four big-endian bytes at an offset
+  entry .B16   a 16-bit pattern: shifts, rotations, masks and bit addressing, but no arithmetic; see `hypotenuse.B16`
+    detail
+        The companion of the opaque type `B16`, exported with it to the `hypotenuse` package.
+    entry .underlying   evidence that a `B16` is a `Short` underneath
+    entry .block   `B16.block(n)`: the lowest `n` bits set
+    entry .set   a mask with one bit set, by ordinal, or a run of bits set, by interval
+    entry .apply   a `B16` from a `Short` or `Byte`, or from two big-endian bytes at an offset
+  entry .B8   an 8-bit pattern: shifts, rotations, masks and bit addressing, but no arithmetic; see `hypotenuse.B8`
+    detail
+        The companion of the opaque type `B8`, exported with it to the `hypotenuse` package.
+    entry .underlying   evidence that a `B8` is a `Byte` underneath
+    entry .block   `B8.block(n)`: the lowest `n` bits set
+    entry .set   a mask with one bit set, by ordinal, or a run of bits set, by interval
+    entry .apply   `B8(byte)`: a pattern from a `Byte`
+  entry .abs   absolute value: `S8`…`S64`, `F32`, `F64`
+  entry .long   the value as a `Long`: `S8`…`S64`, and the unsigned value of `U8`…`U32`
+  entry .int   the value as an `Int`: `S8`, `S16`, `S32`, and the unsigned value of `U8` and `U16`
+  entry .short   the value as a `Short`: `S8`, `S16`, and the unsigned value of `U8`
+  entry .byte   the raw byte of an `S8` or `U8`
+  entry .octal   the value in base 8: every `U*` and `S*` type; padded to the width on `B8`…`B64`
+  entry .hex   the value in base 16: every `U*` and `S*` type; padded to the width on `B8`…`B64`
+  entry .base32   the value in base 32: every `U*` and `S*` type
+  entry .binary   the value in base 2: every `U*` and `S*` type; padded to the width on `B8`…`B64`
+  entry .text   the unsigned decimal value of a `U8`…`U64`, as `Text`
+  entry .%%   floor-modulus on `S8`…`S64`
+  entry ./-   floor-division on `S8`…`S64`
+  entry .%   truncating remainder on `S8`…`S64`, and unsigned remainder on `U8`…`U64`
+  entry .**   power, to a `Double` on `S8`…`S64`, and to the same type on `F32` and `F64`
+  entry .bits   the bit pattern of any `U*`, `S*` or `F*` value as the `B*` of its width
+  entry .gcd   greatest common divisor on every `U*` and `S*` type
+  entry .s8   a `B8` reinterpreted as signed
+  entry .u8   a `B8` reinterpreted as unsigned
+  entry .s16   a `B16` reinterpreted as signed, or a `U8` widened
+  entry .u16   a `B16` reinterpreted as unsigned, or a `U8` widened
+  entry .s32   a `B32` reinterpreted as signed, or a `U8` or `U16` widened
+  entry .u32   a `B32` reinterpreted as unsigned, or a `U8` or `U16` widened
+  entry .s64   a `B64` reinterpreted as signed, or a `U8`, `U16` or `U32` widened
+  entry .u64   a `B64` reinterpreted as unsigned, or a `U8`, `U16` or `U32` widened
+  entry .apply   on a `B*`: the bits of an `Interval`, shifted down, or one bit by zero-based position
+  entry .set   on a `B*`: the pattern with a bit, or a run of bits, set
+  entry .clear   on a `B*`: the pattern with a bit, or a run of bits, cleared
+  entry .flip   on a `B*`: the pattern with a bit, or a run of bits, inverted
+  entry .bit   on a `B*`: whether the bit at an ordinal is set; `Prim` is the least significant
+  entry .<<<   on a `B*`: rotation left by a count of bits
+  entry .>>>   on a `B*`: rotation right by a count of bits
+  entry .<<   on a `B*`: shift left
+  entry .>>   on a `B*`: logical shift right, never sign-extending
+  entry .&   on a `B*`: bitwise and, with any operand which converts to the pattern type
+  entry .|   on a `B*`: bitwise or
+  entry .^   on a `B*`: bitwise exclusive or
+  entry .unary_~   on a `B*`: bitwise inversion, as prefix `~`
+  entry .leadingZeros   on a `B*`: the count of zero bits above the highest set bit
+  entry .trailingZeros   on a `B*`: the count of zero bits below the lowest set bit
+  entry .ones   on a `B*`: the population count, as an `S32`
+  entry .zeros   on a `B*`: the width less the population count, as an `S32`
+  entry .reverse   on a `B*`: the pattern with its bits in reverse order
+  entry .bytes   on a `B16`, `B32` or `B64`: the pattern as big-endian bytes
+  entry .double   the `Double` of an `F64` or `F32`
+  entry .float   the `Float` of an `F32`
+  entry .mantissa   the low 52 bits of an `F64`'s pattern, as a `B64`
+  entry .exponent   the unbiased exponent of an `F64` (as a `B16`) or an `F32` (as an `Int`)
+  entry .sqrt   the square root of an `F64` or `F32`
+  entry .cbrt   the cube root of an `F64` or `F32`
+  entry .ceiling   the ceiling of an `F64` or `F32`
+  entry .floor   the floor of an `F64` or `F32`
+  entry .increment   the next `F64` or `F32` up
+  entry .decrement   the next `F64` or `F32` down
+  entry .successor   the next `F64` or `F32` up, as `increment`
+  entry .predecessor   the next `F64` or `F32` down, as `decrement`
+  entry .round   an `F64` or `F32` rounded to the nearest `Long`
+  entry .scalb   an `F64` or `F32` multiplied by a power of two
+  entry .signum   the sign of an `F64` or `F32`, as `-1.0 | 0.0 | 1.0`
+  entry .ulp   the unit in the last place of an `F64` or `F32`
+  entry .rawBits   the IEEE pattern of an `F64` or `F32`, `NaN` payloads preserved
+  entry .finite   whether an `F64` or `F32` is finite
+  entry .infinite   whether an `F64` or `F32` is infinite
+  entry .nan   whether an `F64` or `F32` is `NaN`
+
+entry .protointernal   the macro implementations behind `bin"…"`, `hex"…"`, the typed literals and chained comparison
+  hidden
+  detail
+      Not for direct use: the object exists so that the macros have a stable home.
+  entry .bin   the macro behind `bin"…"`: validates the digits and splices a `Byte`, `Short`, `Int` or `Long`
+  entry .hex   the macro behind `hex"…"`: validates the digits and splices a frozen byte array
+  entry .parseU64   parses the digits of a `U64` literal at compile time, through `FromDigits`
+  entry .parseS64   parses the digits of an `S64` literal
+  entry .parseU32   parses the digits of a `U32` literal
+  entry .parseS32   parses the digits of an `S32` literal
+  entry .parseU16   parses the digits of a `U16` literal, halting if out of range
+  entry .parseS16   parses the digits of an `S16` literal, halting if out of range
+  entry .parseU8   parses the digits of a `U8` literal, halting if out of range
+  entry .parseS8   parses the digits of an `S8` literal, halting if out of range
+  entry .commensurable   the macro behind `Commensurable.numeric`: rewrites `(a < x) < b` into `a < x && x < b`
+
+entry .Checkable   the typeclass behind `===` and `!==`: whether a value checks against another, possibly of another type
+  detail
+      A `left is Checkable against right` decides whether a `left` matches a `right`, and is
+      what `===` consults. It is deliberately looser than `==`: the two sides may differ in
+      type, so a value may be checked against a `Tolerance` (`x === 1.0 ± 0.01`), a frozen
+      array against another by its contents, or a `Chain` against a `Chain` element by
+      element, and a test assertion written with `===` reads as the comparison it means.
+      It is the comparison probably's assertions use, and lives in `hypotenuse.check`.
+
+      ```scala
+      import soundness.*
+
+      3.0 === 3.0                 // true, through `Checkable.commensurable`
+      3.01 === 3.0 ± 0.1          // true, through `Checkable.tolerance2`
+      3.2 !== 3.0 +/- 0.1         // true
+
+      given Text is Checkable against Text = Checkable(_.lower == _.lower)
+      t"Hello" === t"hello"       // true
+      ```
+
+      An instance is written as a lambda, through `.apply`, and `#contramap` derives one for
+      a type by mapping it into the subject.
+  refer hypotenuse.Tolerance
+  refer hypotenuse.===
+  entry .frozenArray   two frozen arrays check equal when their elements do, whatever their element types
+  entry .stream   two `Chain`s check equal element by element, when their elements are `Checkable`
+      The lengths must agree: a shorter chain is not a prefix match.
+  entry .tolerance2   a value checks against a `Tolerance` of its type when the tolerance covers it
+  entry .commensurable   any type comparable with itself checks equal when neither is less than the other
+      `left <= right && right <= left`, through the `Commensurable` in scope, so every numeric
+      type is `Checkable` against itself with no instance of its own.
+  entry .apply   `Checkable((left, right) => …)`: an instance from a predicate
+  entry #check   whether `left` matches `right`
+  entry #contramap   an instance for another type, by mapping it into this one before checking
+
+entry .Tolerance   a value with a margin either side of it, which `===` matches a value against
+  detail
+      `Tolerance(base, tolerance)` covers every value from `base - tolerance` to
+      `base + tolerance`, bounds included. One is made with `+/-` or `±` on any type with an `Orderable`, an
+      `Addable` and a `Subtractable` by itself, and checked against with `===`:
+
+      ```scala
+      import soundness.*
+
+      val reading = 9.81
+      reading === 9.8 ± 0.05     // true
+      reading === 9.8 ± 0.01     // false
+      (10 ± 2).covers(12)        // true: the bounds are included
+      ```
+  refer hypotenuse.Checkable
+  refer hypotenuse.±
+  entry #base   the centre of the range
+  entry #tolerance   the half-width of the range
+  entry #covers   whether a value lies within the range, bounds included
+
+entry .===   `left === right`: whether `left` checks against `right`, through a `Checkable`
+    An extension on any value, in `hypotenuse.check`, taking the `left is Checkable against
+    right` in scope. Unlike `==`, the two sides may be of different types, so a number can
+    be compared against a `Tolerance`, and a type's notion of equivalence for testing can be
+    given without touching its `equals`.
+
+entry .!==   `left !== right`: the negation of `===`
+
+entry .+/-   `base +/- tolerance`: a `Tolerance` for `===` to match against
+    An extension on any value whose type is `Commensurable` against itself, `Addable` by
+    itself to itself and `Subtractable` by itself to itself: the primitives, the typed
+    numbers, quantities. `10 +/- 2` covers every value from `8` to `12`, bounds included,
+    through the `>=` of the type's `Commensurable`.
+
+entry .±   `base ± tolerance`: the same `Tolerance` as `+/-`, for a keyboard with the symbol

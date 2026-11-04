@@ -1,0 +1,1087 @@
+tel 1.0
+
+base espionage
+import soundness
+
+info   a client for the Agent Client Protocol, version 1: drive a coding agent through sessions, prompts and tool calls
+detail
+    _Espionage_ is the client half of the [Agent Client
+    Protocol](https://agentclientprotocol.com/), version 1: the role an editor plays towards a
+    coding agent such as Claude Code or Gemini CLI, here for programmatic use. A program
+    launches an agent as a subprocess (or reaches one behind a pair of streams), opens a
+    session, sends prompts, and watches the agent's work stream back — message chunks,
+    thoughts, tool calls, plans — while answering the requests the agent makes of it:
+    permission to act, file reads and writes, terminals.
+
+    The protocol is JSON-RPC in both directions at once, and a prompt is not a function call
+    but a **turn**: one long-lived request whose response arrives only after everything the
+    agent did inside it. The library models the turn directly. `Acp.connect` takes two blocks:
+    the first registers handlers on a lent `Acp.Registry` with the combinators `Acp.updated`,
+    `Acp.permission`, `Acp.readFile`, `Acp.writeFile` and `Acp.terminals`; the second holds the
+    live `Acp.Connection`, whose `prompt` blocks until the agent reports a `StopReason` while
+    the turn's updates stream concurrently to the registered handler. The capabilities the
+    client advertises at `initialize` are derived from what was registered, so the declaration
+    can never disagree with the implementation.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import environments.javaBaseEnvironment
+    import errorDiagnostics.stackTracesDiagnostics
+    import probates.awaitProbate
+    import stdios.javaLangSystemStdio
+    import strategies.throwUnsafely
+    import threads.virtualThreads
+    import workingDirectories.javaBaseWorkingDirectory
+
+    supervise:
+      Acp.connect(Acp.Agent(sh"claude-code-acp")):
+        Acp.updated:
+          Acp.update match
+            case Acp.AgentMessageChunk(Acp.TextContent(text, _)) => Out.print(text)
+            case other                                           => ()
+
+        Acp.permission:
+          Acp.options.filter(_.kind == Acp.PermissionOptionKind.AllowOnce).head
+          . lay(Acp.Cancelled): option => Acp.Selected(option.optionId)
+
+      . apply:
+          val session = Acp.connection.newSession(t"/workspace")
+          Acp.connection.prompt(session.sessionId, t"Fix the failing test")
+    ```
+
+    A connection needs, as contextual values, a `Monitor` (it runs a reader task and a writer
+    task, so it sits inside `supervise`), a `Probate`, `Diagnostics`, a `WorkingDirectory` and
+    an `Environment` for launching the agent, and a `Tactic[Acp.Error]`. Every handler is lent
+    the session id it concerns and its payloads, read with the contextual accessors
+    `Acp.sessionId`, `Acp.update`, `Acp.toolCall`, `Acp.options`, `Acp.path`, `Acp.line`,
+    `Acp.limit` and `Acp.content`, and an `Emit[Acp.Error]`, so a fault raised in a handler
+    becomes an error response to the agent rather than a hung turn.
+
+    Every message type is a case class or enum nested in `Acp`, each with its JSON codec in
+    its companion: `SessionUpdate` and its eight cases, `ToolCall` and `ToolCallUpdate`,
+    `PermissionOption`, `StopReason`, the capability records, and the content blocks, which
+    ACP adopts from the Model Context Protocol and which are re-exported here from
+    `synesthesia.Content`, so content crosses between the two protocols without translation.
+
+    Several of `Acp`'s members — `update`, `path`, `content`, `options`, `line`, `connection`,
+    `Cancelled` — are names other libraries use too, which is why the umbrella exports `Acp`
+    and not its contents. Write them as `Acp.update`, or `import Acp.*` inside the object which
+    uses them, as the demo does.
+
+    The stdio framing is newline-delimited JSON, one compact UTF-8 message per line, split on
+    the raw linefeed byte before any decoding. A message is delivered the moment its newline
+    arrives: the framer peeks at the terminator and advances past it without asking for more
+    input, so on a live pipe it never waits for the agent's next message to deliver this one.
+    Blank lines, and the remnant of a `\r\n` terminator, are skipped.
+
+    The library has two source sets:
+
+    - `espionage.core` — `Acp` and the `@rpc` wire traits (`AcpAgent`, `AcpClient` and their
+      parts). It is built for the JVM only, since it depends on obligatory's JSON-RPC
+      support, and needs capture checking.
+    - `espionage.demo` — `DemoAcpClient`, a complete command-line client, not published as a
+      library.
+
+    `Acp` and the wire traits are exported to the `soundness` umbrella; the demo is not. The
+    library takes no choice-package givens of its own, but a connection needs the named
+    imports above (`threads`, `probates`, `workingDirectories`, `environments`, and an error
+    strategy), because `import soundness.*` imports no givens.
+
+refer espionage.Acp
+refer espionage.Acp.connect
+refer espionage.Acp.Connection
+refer espionage.Acp.SessionUpdate
+refer espionage.Acp.Error
+refer synesthesia.Content
+
+entry .Acp   the Agent Client Protocol: its message types, the handler registry, `connect`, and the connection
+  detail
+      `Acp` holds the whole client. Its members fall into four groups:
+
+      - the **protocol types**, one case class or enum per ACP structure, each with its JSON
+        codec in its companion: the capability records (`ClientCapabilities`,
+        `AgentCapabilities`, …), sessions (`McpServer`, `SessionMode`, `NewSessionResult`),
+        turns (`StopReason`, `PromptResult`), updates (`SessionUpdate` and its cases), tool
+        calls (`ToolCall`, `ToolCallUpdate`, `ToolCallContent`), plans, permissions and the
+        filesystem and terminal results, together with the content blocks re-exported from
+        `synesthesia.Content`;
+      - the **handler side**: the handler types (`UpdateHandler`, `PermissionHandler`,
+        `ReadFileHandler`, `WriteFileHandler`, and the `Terminals` bundle), the contextual
+        accessors a handler reads (`sessionId`, `update`, `toolCall`, `options`, `path`,
+        `line`, `limit`, `content`), the registration combinators (`updated`, `permission`,
+        `readFile`, `writeFile`, `terminals`, `capabilities`) and the `Registry` they write to;
+      - the **connection side**: `Agent`, which says where the agent is, `connect`, which
+        opens the exchange, `Connection`, the handle it lends, reached as `connection`, and
+        `Observer`, which sees the raw traffic;
+      - `Error`, which the connection raises and a handler emits.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+
+      object Client:
+        import Acp.*
+
+        def register(using Acp.Registry^): Unit =
+          updated:
+            update match
+              case AgentMessageChunk(TextContent(text, _)) => Out.print(text)
+              case call: ToolCall                          => Out.println(call.title)
+              case _                                       => ()
+
+          readFile:
+            t"contents of $path"
+      ```
+
+      Registration is possible wherever an `Acp.Registry^` is in scope — the first block of
+      `connect`, or a helper such as `register` above which takes one — so a client can split
+      its handlers across methods.
+  refer espionage.Acp.connect
+  refer espionage.Acp.Connection
+  refer espionage.Acp.Registry
+  refer espionage.Acp.SessionUpdate
+  entry .version   the protocol version this library implements: `1`
+      ACP versions are a single integer, incremented only for breaking changes. The client
+      sends this at `initialize`, and `Connection#initialize` aborts with
+      `Acp.Error.Reason.Incompatible` if the agent answers with any other.
+
+  entry .Icon   an icon's source, MIME type, sizes and theme; re-exported from `synesthesia.Content`
+      `Acp.Icon` is `synesthesia.Content.Icon`, shared with MCP, whose page has the full account.
+  entry .Annotations   audience, priority and modification hints on content; re-exported from `synesthesia.Content`
+      `Acp.Annotations` is `synesthesia.Content.Annotations`.
+  entry .Role   who a piece of content is for, `User` or `Assistant`; re-exported from `synesthesia.Content`
+      `Acp.Role` is `synesthesia.Content.Role`.
+  entry .ContentBlock   a block of content: text, image, audio, resource link or embedded resource; re-exported from `synesthesia.Content`
+      `Acp.ContentBlock` is `synesthesia.Content.ContentBlock`, whose page has the full
+      account. A prompt is a `List[ContentBlock]`, and every message and thought chunk an agent
+      streams carries one. It is discriminated on the wire by its `type` member.
+  entry .TextContent   a block of text, with optional annotations; re-exported from `synesthesia.Content`
+      `Acp.TextContent` is `synesthesia.Content.TextContent`. The usual pattern for streamed
+      text is `case Acp.AgentMessageChunk(Acp.TextContent(text, _))`, and
+      `Connection#prompt(sessionId, text)` wraps its text in one.
+  entry .ImageContent   a Base64 image with its MIME type, and an optional URI; re-exported from `synesthesia.Content`
+      `Acp.ImageContent` is `synesthesia.Content.ImageContent`. Its `uri` member is ACP's
+      addition to MCP's shape, and vanishes from the wire when unset. An agent accepts images
+      in a prompt only if its `PromptCapabilities#image` says so.
+  entry .AudioContent   Base64 audio with its MIME type; re-exported from `synesthesia.Content`
+      `Acp.AudioContent` is `synesthesia.Content.AudioContent`. An agent accepts audio in a
+      prompt only if its `PromptCapabilities#audio` says so.
+  entry .ResourceLink   a link to a resource by URI, with its name and optional metadata; re-exported from `synesthesia.Content`
+      `Acp.ResourceLink` is `synesthesia.Content.ResourceLink`.
+  entry .EmbeddedResource   a resource's contents carried inline; re-exported from `synesthesia.Content`
+      `Acp.EmbeddedResource` is `synesthesia.Content.EmbeddedResource`. An agent accepts
+      embedded context in a prompt only if its `PromptCapabilities#embeddedContext` says so.
+  entry .Contents   a resource's contents, as text or as a blob; re-exported from `synesthesia.Content`
+      `Acp.Contents` is `synesthesia.Content.Contents`.
+  entry .ResourceContents   the common shape of a resource's contents: URI, MIME type and metadata; re-exported from `synesthesia.Content`
+      `Acp.ResourceContents` is `synesthesia.Content.ResourceContents`.
+  entry .TextResourceContents   a resource's contents as text; re-exported from `synesthesia.Content`
+      `Acp.TextResourceContents` is `synesthesia.Content.TextResourceContents`.
+  entry .BlobResourceContents   a resource's contents as a Base64 blob; re-exported from `synesthesia.Content`
+      `Acp.BlobResourceContents` is `synesthesia.Content.BlobResourceContents`.
+
+  entry .Envelope   the two members of any JSON-RPC message which decide how it is handled
+    detail
+        A message read only for its `method`, which a response lacks, and its `id`, which a
+        notification lacks. Both are optional, so every message decodes: no method means a
+        response, and no id a notification. The exchange's reader uses it to route each
+        message without knowing its shape.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed envelope throws `Json.Error`
+    entry #method   the method the message names, or `Unset` for a response
+    entry #id   the id the message correlates on, as raw JSON, or `Unset` for a notification
+
+  entry .FsCapabilities   whether the client serves the agent's file reads and writes
+    detail
+        Part of `ClientCapabilities`. `Acp.connect` sets `#readTextFile` exactly when a
+        `readFile` handler was registered and `#writeTextFile` exactly when a `writeFile`
+        handler was, so a conformant agent never asks for an operation the client cannot do.
+    entry #readTextFile   `true` if the client answers `fs/read_text_file`
+    entry #writeTextFile   `true` if the client answers `fs/write_text_file`
+
+  entry .ClientCapabilities   what the client tells the agent it can do, at `initialize`
+    detail
+        Derived by `Acp.connect` from the registrations: `#fs` is present if either
+        filesystem handler was registered, and `#terminal` is `true` if a `Terminals` bundle
+        was. The `capabilities` combinator adjusts the derived value, last, for a client which
+        must declare something the registrations do not imply.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+
+        def register(using Acp.Registry^): Unit =
+          Acp.readFile(t"")
+          Acp.capabilities(_.copy(terminal = Unset))
+        ```
+    entry #fs   the filesystem capabilities, or `Unset` if the client serves no file operations
+    entry #terminal   `true` if the client offers terminals, or `Unset`
+
+  entry .PromptCapabilities   which kinds of content an agent accepts in a prompt
+    detail
+        Reported by the agent in `AgentCapabilities#promptCapabilities`. Text and resource
+        links are always accepted; images, audio and embedded resources only where the
+        agent says so.
+    entry #image   whether `ImageContent` may appear in a prompt
+    entry #audio   whether `AudioContent` may appear in a prompt
+    entry #embeddedContext   whether `EmbeddedResource` content may appear in a prompt
+
+  entry .McpCapabilities   which MCP transports, beyond stdio, the agent can connect to
+    entry #http   whether the agent connects to MCP servers over HTTP
+    entry #sse   whether the agent connects to MCP servers over server-sent events
+
+  entry .AgentCapabilities   what the agent tells the client it can do, at `initialize`
+    detail
+        The agent's half of the capability negotiation, kept by the connection after the
+        handshake and read as `Connection#agentCapabilities`. A client checks `#loadSession`
+        before calling `Connection#loadSession`, and `#promptCapabilities` before putting
+        anything but text and resource links in a prompt.
+    entry #loadSession   whether the agent can resume a session with `session/load`
+    entry #promptCapabilities   which content kinds the agent accepts in a prompt
+    entry #mcpCapabilities   which MCP transports the agent can connect to
+
+  entry .AuthMethod   one way the agent offers to authenticate the client
+    detail
+        Listed in `InitializeResult#authMethods`, and so in `Connection#authMethods`. When a
+        request fails with `Acp.Error.Reason.AuthRequired`, the client answers with
+        `Connection#authenticate(method.id)`.
+    entry #id   the identifier to pass to `Connection#authenticate`
+    entry #name   the method's display name
+    entry #description   a longer description, if the agent gives one
+
+  entry .InitializeResult   the agent's answer to `initialize`: its protocol version, capabilities and auth methods
+    detail
+        What `Connection#initialize` returns. `Acp.connect` performs the handshake itself, so a
+        client reads the agent's answer as `Connection#agentCapabilities` and
+        `Connection#authMethods` rather than handling this directly.
+    entry .decodable   the derived JSON decoder; a malformed result throws `Json.Error`
+    entry #protocolVersion   the version the agent speaks, which must be `Acp.version`
+    entry #agentCapabilities   what the agent can do, if it says
+    entry #authMethods   the ways the agent offers to authenticate, if any
+    entry #_meta   the agent's implementation-defined metadata, as raw JSON
+
+  entry .EnvVariable   an environment variable, by name and value
+    detail
+        Carried by `McpServer#env` for an MCP server the agent launches, and by a terminal the
+        agent asks the client to create (`Terminals#create`).
+    entry #name   the variable's name
+    entry #value   the variable's value
+
+  entry .McpServer   an MCP server the client wants the agent to connect to, by its launch command
+    detail
+        Passed to `Connection#newSession` or `Connection#loadSession`: the agent launches each
+        server with the stdio transport and makes its tools available within the session.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+
+        val server = Acp.McpServer(t"files", t"mcp-files", List(t"--root", t"/workspace"))
+        Acp.connection.newSession(t"/workspace", List(server))
+        ```
+    entry #name   the server's name, as the agent will refer to it
+    entry #command   the command which launches the server
+    entry #args   the command's arguments
+    entry #env   environment variables to set for the server
+
+  entry .SessionMode   one mode an agent can work in, such as asking before every edit
+    entry #id   the identifier to pass to `Connection#setMode`
+    entry #name   the mode's display name
+    entry #description   a longer description, if the agent gives one
+
+  entry .SessionModeState   the modes a session offers, and which is current
+    detail
+        Reported in `NewSessionResult#modes`. The current mode changes with
+        `Connection#setMode`, or at the agent's own initiative, reported as a
+        `CurrentModeUpdate`.
+    entry #currentModeId   the id of the mode the session is in
+    entry #availableModes   every mode the session may switch to
+
+  entry .NewSessionResult   the agent's answer to `session/new`: the session's id, and its modes
+    detail
+        Returned by `Connection#newSession`. `#sessionId` is what every later call about the
+        session — `prompt`, `cancel`, `setMode`, `loadSession` — takes, and what every handler
+        is lent as `Acp.sessionId`.
+    entry .decodable   the derived JSON decoder; a malformed result throws `Json.Error`
+    entry #sessionId   the new session's identifier
+    entry #modes   the session's modes, if the agent offers any
+    entry #_meta   the agent's implementation-defined metadata, as raw JSON
+
+  entry .StopReason   why a prompt turn ended: `EndTurn`, `MaxTokens`, `MaxTurnRequests`, `Refusal` or `Cancelled`
+    detail
+        What `Connection#prompt` returns, once the agent has finished everything it did in the
+        turn. `EndTurn` means the agent finished; `MaxTokens` and `MaxTurnRequests` that it ran
+        out of budget, in tokens or in model requests; `Refusal` that it declined to go on;
+        and `Cancelled` that the client cancelled the turn with `Connection#cancel`, which the
+        agent is obliged to answer this way. On the wire the cases are `end_turn`,
+        `max_tokens`, `max_turn_requests`, `refusal` and `cancelled`.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+
+        Acp.connection.prompt(sessionId, t"Run the tests") match
+          case Acp.StopReason.EndTurn   => Out.println(t"done")
+          case Acp.StopReason.Cancelled => Out.println(t"cancelled")
+          case other                    => Out.println(t"stopped: $other")
+        ```
+    entry .encodable   encodes a stop reason as its wire string
+    entry .decodable   decodes a stop reason from its wire string, raising `Json.Error` for any other
+        Needs a `Tactic[Json.Error]`, which an unknown string raises through with the reason
+        `OutOfRange`.
+
+  entry .PromptResult   the agent's answer to `session/prompt`: why the turn ended
+    detail
+        `Connection#prompt` returns only its `#stopReason`.
+    entry .decodable   the derived JSON decoder; a malformed result throws `Json.Error`
+    entry #stopReason   why the turn ended
+    entry #_meta   the agent's implementation-defined metadata, as raw JSON
+
+  entry .ToolKind   the kind of a tool call: read, edit, delete, move, search, execute, think, fetch or other
+    detail
+        Reported in `ToolCall#kind`, so that a client can show a tool call with a fitting icon
+        or decide how cautious to be about permitting it. The cases are `Read`, `Edit`,
+        `Delete`, `Move`, `Search`, `Execute`, `Think`, `Fetch` and `Other`; on the wire each
+        is its lower-case name.
+    entry .encodable   encodes a kind as its wire string
+    entry .decodable   decodes a kind from its wire string; an unknown kind is `Other`
+        Unlike the other enums' decoders, it never fails: the protocol lets agents add kinds,
+        so one this library does not know reads as `ToolKind.Other`.
+
+  entry .ToolCallStatus   where a tool call has got to: `Pending`, `InProgress`, `Completed`, `Failed` or `Cancelled`
+    detail
+        Reported in `ToolCall#status` and updated by `ToolCallUpdate#status`. On the wire the
+        cases are `pending`, `in_progress`, `completed`, `failed` and `cancelled`.
+    entry .encodable   encodes a status as its wire string
+    entry .decodable   decodes a status from its wire string, raising `Json.Error` for any other
+
+  entry .ToolCallLocation   a file, and optionally a line, that a tool call is working on
+    detail
+        Listed in `ToolCall#locations`, so that a client can follow the agent through the
+        files it reads and edits.
+    entry #path   the file's absolute path
+    entry #line   the line within it, if the agent says
+
+  entry .ToolCallContent   what a tool call produced: content, a file diff, or a terminal
+    detail
+        A sealed hierarchy of three cases, discriminated on the wire by a `type` member:
+        `ToolContent` (`content`) wraps an ordinary `ContentBlock`; `ToolDiff` (`diff`) is a
+        structured edit to one file; `ToolTerminal` (`terminal`) refers to a terminal the
+        client created for the agent, whose output the client can show.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+
+        def describe(content: Acp.ToolCallContent): Text = content match
+          case Acp.ToolContent(Acp.TextContent(text, _)) => text
+          case Acp.ToolContent(_)                        => t"(content)"
+          case Acp.ToolDiff(path, _, _)                  => t"edited $path"
+          case Acp.ToolTerminal(terminalId)              => t"terminal $terminalId"
+        ```
+    entry .encodable   encodes any of the three cases with its `type` discriminator
+    entry .decodable   decodes by the `type` member, raising `Json.Error` for an unknown type
+
+  entry .ToolContent   tool output as an ordinary content block
+    detail
+        A `ToolCallContent` case, `type` `content` on the wire.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; malformed content throws `Json.Error`
+    entry #content   the content block
+
+  entry .ToolDiff   tool output as a structured edit to one file: its old text and its new
+    detail
+        A `ToolCallContent` case, `type` `diff` on the wire. `#oldText` is `Unset` for a file
+        the tool created.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder; a malformed diff throws `Json.Error`
+    entry #path   the file's absolute path
+    entry #oldText   the file's text before the edit, or `Unset` for a new file
+    entry #newText   the file's text after the edit
+
+  entry .ToolTerminal   tool output as a reference to a terminal the client created
+    detail
+        A `ToolCallContent` case, `type` `terminal` on the wire. The id is one `Terminals#create`
+        returned, so the client can show that terminal's output alongside the tool call.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder
+    entry #terminalId   the terminal's id
+
+  entry .ToolCall   a tool call as the agent first reports it: the `tool_call` session update
+    detail
+        A `SessionUpdate` case. Only the id and the title are required; everything else may be
+        filled in later by a `ToolCallUpdate` with the same `#toolCallId`, so a client which
+        displays tool calls keeps them by id and merges each update in.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+
+        def register(using Acp.Registry^): Unit = Acp.updated:
+          Acp.update match
+            case call: Acp.ToolCall =>
+              Out.println(t"${call.title} (${call.kind.let(_.show).or(t"unknown")})")
+
+            case update: Acp.ToolCallUpdate =>
+              Out.println(t"${update.toolCallId}: ${update.status.let(_.show).or(t"unchanged")}")
+
+            case _ => ()
+        ```
+    entry .decodable   the derived JSON decoder; a malformed tool call throws `Json.Error`
+    entry #toolCallId   the id later updates and permission requests refer to it by
+    entry #title   a human-readable description of what the tool is doing
+    entry #kind   the kind of tool, if the agent says
+    entry #status   where the call has got to, if the agent says
+    entry #content   what the call has produced so far
+    entry #locations   the files the call is working on
+    entry #rawInput   the tool's input, as raw JSON
+    entry #rawOutput   the tool's output, as raw JSON
+
+  entry .ToolCallUpdate   a later report about a tool call, or the tool call a permission request concerns
+    detail
+        A `SessionUpdate` case, `tool_call_update` on the wire. Every member but
+        `#toolCallId` is optional, and a member which is present replaces what was reported
+        before, so `#content` is the whole content, not an addition to it. The same shape
+        carries the tool call a permission request is about, lent to a permission handler as
+        `Acp.toolCall`.
+    entry .decodable   the derived JSON decoder; a malformed update throws `Json.Error`
+    entry #toolCallId   the id of the tool call being updated
+    entry #title   a new title, or `Unset` to keep the old
+    entry #kind   a new kind, or `Unset` to keep the old
+    entry #status   a new status, or `Unset` to keep the old
+    entry #content   the call's whole content, replacing what was reported, or `Unset` to keep it
+    entry #locations   the call's whole list of locations, or `Unset` to keep it
+    entry #rawInput   the tool's input, as raw JSON, or `Unset` to keep it
+    entry #rawOutput   the tool's output, as raw JSON, or `Unset` to keep it
+
+  entry .PlanPriority   how important a step of the agent's plan is: `High`, `Medium` or `Low`
+    entry .encodable   encodes a priority as its wire string
+    entry .decodable   decodes a priority from its wire string, raising `Json.Error` for any other
+
+  entry .PlanStatus   where a step of the agent's plan has got to: `Pending`, `InProgress` or `Completed`
+    entry .encodable   encodes a status as its wire string
+    entry .decodable   decodes a status from its wire string, raising `Json.Error` for any other
+
+  entry .PlanEntry   one step of the agent's plan: what it is, how important, and how far along
+    entry #content   a human-readable description of the step
+    entry #priority   how important the step is
+    entry #status   where the step has got to
+
+  entry .AvailableCommand   a slash command the agent offers in a session, with its description
+    detail
+        Listed in an `AvailableCommandsUpdate`, so that a client can offer the commands for
+        completion as the user types a prompt.
+    entry #name   the command's name, without its slash
+    entry #description   what the command does
+    entry #input   the command's input specification, as raw JSON, if it takes input
+
+  entry .SessionUpdate   one `session/update` notification: something the agent reports about a session as it works
+    detail
+        A sealed hierarchy of the eight things an agent streams during a turn — and, during
+        `Connection#loadSession`, replays from a resumed one — discriminated on the wire by
+        the `sessionUpdate` member:
+
+        - `UserMessageChunk` (`user_message_chunk`) — a piece of the user's own message, in a
+          replayed session;
+        - `AgentMessageChunk` (`agent_message_chunk`) — a piece of the agent's answer;
+        - `AgentThoughtChunk` (`agent_thought_chunk`) — a piece of its reasoning;
+        - `ToolCall` (`tool_call`) and `ToolCallUpdate` (`tool_call_update`) — a tool call
+          reported, and a later change to it;
+        - `Plan` (`plan`) — the agent's plan, in full;
+        - `AvailableCommandsUpdate` (`available_commands_update`) — the slash commands now
+          offered;
+        - `CurrentModeUpdate` (`current_mode_update`) — the session's mode has changed.
+
+        Updates reach the handler registered with `Acp.updated` in the order the agent sent
+        them: they are dispatched on the connection's reader task itself, not on spawned
+        tasks, since the order of chunks matters. A handler should therefore return promptly,
+        and must not block on a request of the same connection.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+
+        def register(using Acp.Registry^): Unit = Acp.updated:
+          Acp.update match
+            case Acp.AgentMessageChunk(Acp.TextContent(text, _)) => Out.print(text)
+            case Acp.AgentThoughtChunk(Acp.TextContent(text, _)) => Out.print(t"(thinking) $text")
+            case Acp.Plan(entries)                               => entries.each { entry => Out.println(entry.content) }
+            case Acp.CurrentModeUpdate(modeId)                   => Out.println(t"mode: $modeId")
+            case _                                               => ()
+        ```
+    refer espionage.Acp.updated
+    refer espionage.Acp.update
+    entry .encodable   encodes any update with its `sessionUpdate` discriminator
+    entry .decodable   decodes by the `sessionUpdate` member, raising `Json.Error` for an unknown kind
+
+  entry .UserMessageChunk   a piece of the user's message, as an agent replays a resumed session
+    detail
+        A `SessionUpdate` case, `user_message_chunk` on the wire.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder
+    entry #content   the piece of content
+
+  entry .AgentMessageChunk   a piece of the agent's answer, streamed as it is written
+    detail
+        A `SessionUpdate` case, `agent_message_chunk` on the wire. A turn's answer arrives as
+        many chunks, in order; printing each `TextContent` as it arrives shows the answer as
+        the agent writes it.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder
+    entry #content   the piece of content, usually a `TextContent`
+
+  entry .AgentThoughtChunk   a piece of the agent's reasoning, streamed as it thinks
+    detail
+        A `SessionUpdate` case, `agent_thought_chunk` on the wire: text a client may show
+        apart from the answer, or not at all.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder
+    entry #content   the piece of content
+
+  entry .Plan   the agent's plan for the turn, in full
+    detail
+        A `SessionUpdate` case, `plan` on the wire. Each report is the whole plan, replacing
+        the last, not a change to it.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder
+    entry #entries   the plan's steps, in order
+
+  entry .AvailableCommandsUpdate   the slash commands the agent now offers in the session
+    detail
+        A `SessionUpdate` case, `available_commands_update` on the wire. Each report is the
+        whole list.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder
+    entry #availableCommands   the commands now offered
+
+  entry .CurrentModeUpdate   the session's mode has changed
+    detail
+        A `SessionUpdate` case, `current_mode_update` on the wire, sent when the mode changes
+        at the agent's initiative or in answer to `Connection#setMode`.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder
+    entry #currentModeId   the id of the mode the session is now in
+
+  entry .PermissionOptionKind   what choosing a permission option means: allow or reject, once or always
+    detail
+        The cases are `AllowOnce`, `AllowAlways`, `RejectOnce` and `RejectAlways` (on the wire
+        `allow_once`, `allow_always`, `reject_once` and `reject_always`). The kinds let a
+        client pick an option by policy rather than by the agent's wording:
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+
+        def allowOnce(using Acp.Registry^): Unit = Acp.permission:
+          Acp.options.filter(_.kind == Acp.PermissionOptionKind.AllowOnce).head
+          . lay(Acp.Cancelled): option => Acp.Selected(option.optionId)
+        ```
+    entry .encodable   encodes a kind as its wire string
+    entry .decodable   decodes a kind from its wire string, raising `Json.Error` for any other
+
+  entry .PermissionOption   one answer the agent offers to a permission request
+    detail
+        A permission handler is lent the offered options as `Acp.options`, and answers with
+        `Acp.Selected(option.optionId)` for the one it chooses.
+    entry .encodable   the derived JSON encoder
+    entry .decodable   the derived JSON decoder
+    entry #optionId   the id to answer with, in `Selected`
+    entry #name   the option's label, to show the user
+    entry #kind   what choosing the option means
+
+  entry .RequestPermissionOutcome   the answer to a permission request: `Selected(optionId)` or `Cancelled`
+    detail
+        A permission handler's result. `Selected` names one of the options offered;
+        `Cancelled` declines to choose. `Cancelled` is also the answer the protocol requires to
+        every permission request pending when its turn is cancelled, and the connection
+        supplies it itself: a request which arrives after `Connection#cancel` is answered
+        `Cancelled` without calling the handler, and one already in the handler when the
+        cancellation arrives is answered `Cancelled` when the handler returns, its selection
+        discarded. On the wire the outcome is discriminated by an `outcome` member.
+    entry .encodable   encodes an outcome with its `outcome` discriminator
+    entry .decodable   decodes by the `outcome` member, raising `Json.Error` for an unknown outcome
+
+  entry .Selected   the permission answer which chooses one of the offered options
+    entry #optionId   the chosen option's id, from `PermissionOption#optionId`
+
+  entry .Cancelled   the permission answer which chooses nothing, required for a cancelled turn
+      A `RequestPermissionOutcome`. A handler returns it to decline, and it is the answer to
+      a request for which no handler was registered. It is distinct from
+      `StopReason.Cancelled`, which is how a cancelled turn ends.
+
+  entry .RequestPermissionResult   the client's response to `session/request_permission`, wrapping the outcome
+    entry #outcome   the handler's answer, or `Cancelled`
+
+  entry .ReadTextFileResult   the client's response to `fs/read_text_file`: the file's content
+    entry #content   the text read
+
+  entry .CreateTerminalResult   the client's response to `terminal/create`: the new terminal's id
+    entry #terminalId   the id `Terminals#create` returned
+
+  entry .TerminalExitStatus   how a terminal's command ended: its exit code, or the signal which killed it
+    entry #exitCode   the command's exit code, if it exited
+    entry #signal   the name of the signal which killed it, if one did
+
+  entry .TerminalOutputResult   a terminal's output so far, and its exit status if it has finished
+    entry #output   the output captured so far
+    entry #truncated   whether output was dropped from the start to stay within the byte limit
+    entry #exitStatus   how the command ended, or `Unset` while it runs
+
+  entry .Terminals   the five terminal operations a client offers an agent, supplied together
+    detail
+        The protocol advertises terminal support as a single capability, so the operations are
+        all or nothing: a client implements this trait and registers it with `Acp.terminals`,
+        and `ClientCapabilities#terminal` is then `true`. Each method is called on a task of
+        its own, with the session id it concerns; the terminal ids are the client's to mint.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+
+        def register(using Acp.Registry^): Unit = Acp.terminals:
+          new Acp.Terminals:
+            def create
+              ( sessionId:       Text,
+                command:         Text,
+                args:            List[Text],
+                env:             List[Acp.EnvVariable],
+                cwd:             Optional[Text],
+                outputByteLimit: Optional[Long] )
+            :   Text =
+              t"term1"
+
+            def output(sessionId: Text, terminalId: Text): Acp.TerminalOutputResult =
+              Acp.TerminalOutputResult(t"", false)
+
+            def waitForExit(sessionId: Text, terminalId: Text): Acp.TerminalExitStatus =
+              Acp.TerminalExitStatus(0)
+
+            def kill(sessionId: Text, terminalId: Text): Unit = ()
+            def release(sessionId: Text, terminalId: Text): Unit = ()
+        ```
+
+        A request for a terminal operation when no bundle was registered is answered with a
+        `MethodNotFound` error, so a misbehaving agent is told rather than left waiting.
+    entry #create   starts a command in a new terminal, returning the terminal's id
+        Called with the command, its arguments and environment, an optional working directory,
+        and an optional limit in bytes on the output to retain; the oldest output beyond it
+        is dropped, and `TerminalOutputResult#truncated` reports that.
+    entry #output   the terminal's output so far, and its exit status if it has finished
+    entry #waitForExit   blocks until the terminal's command exits, returning how it ended
+    entry #kill   kills the terminal's command, keeping the terminal for its output
+    entry #release   kills the command if it still runs, and frees the terminal
+
+  entry .Turned1   a handler's context: the session id, one tagged payload, and an error emitter
+      `(sessionId: Text aka "sessionId", payload: payload, emit: Emit[Acp.Error]^) ?=> result`.
+      Each payload is tagged with `aka`, so that the contextual accessors (`Acp.update`, and
+      so on) find it by name. Everything lent is a context parameter and the result is pure,
+      so nothing lent to a handler can leave it. `UpdateHandler` is one.
+  entry .Turned2   a handler's context: the session id, two tagged payloads, and an error emitter
+      As `Turned1`, with two payloads. `PermissionHandler` and `WriteFileHandler` are ones.
+  entry .Turned3   a handler's context: the session id, three tagged payloads, and an error emitter
+      As `Turned1`, with three payloads. `ReadFileHandler` is one.
+
+  entry .UpdateHandler   the handler `Acp.updated` takes: sees each `SessionUpdate`, returns nothing
+      Lent `Acp.sessionId` and `Acp.update`. It runs on the connection's reader task, in the
+      order the agent sent the updates.
+  entry .PermissionHandler   the handler `Acp.permission` takes: chooses among the offered options
+      Lent `Acp.sessionId`, `Acp.toolCall` (the `ToolCallUpdate` the request concerns) and
+      `Acp.options`, and returns a `RequestPermissionOutcome`. It runs on a task of its own,
+      so it may block — waiting for the user, for minutes — without stalling the turn's
+      updates.
+  entry .ReadFileHandler   the handler `Acp.readFile` takes: returns a file's text
+      Lent `Acp.sessionId`, `Acp.path`, and the optional `Acp.line` (one-based) to start at and
+      `Acp.limit` on the number of lines, and returns the text. It may serve the client's own
+      view of the file, such as an editor's unsaved buffer.
+  entry .WriteFileHandler   the handler `Acp.writeFile` takes: writes a file's text
+      Lent `Acp.sessionId`, `Acp.path` and `Acp.content`, and returns nothing.
+
+  entry .connection   the live connection `Acp.connect` lends to its second block
+      `Acp.connection` reads the `Acp.Connection` context parameter, with its singleton type,
+      so `Acp.connection.prompt(…)` is a call on the very connection in scope. It is
+      available only inside `connect`'s second block, or a method which takes a `using
+      Acp.Connection`.
+  entry .sessionId   in a handler, the id of the session the request or update concerns
+      Every handler is lent it.
+  entry .update   in an update handler, the `SessionUpdate` being reported
+  entry .toolCall   in a permission handler, the tool call the agent wants permission for
+      A `ToolCallUpdate`: its id, and whatever the agent says of the call it is about to make.
+  entry .options   in a permission handler, the answers the agent offers, as `PermissionOption`s
+  entry .path   in a file handler, the absolute path of the file to read or write
+  entry .line   in a read handler, the one-based line to start reading at, or `Unset` for the start
+  entry .limit   in a read handler, the most lines to return, or `Unset` for no limit
+  entry .content   in a write handler, the text to write
+      Not to be confused with the `#content` members of the content-carrying records: this is
+      the accessor, and needs a write handler's context.
+
+  entry .updated   registers the handler for `session/update`: sees every update of every session
+      An `UpdateHandler`, lent `Acp.sessionId` and `Acp.update`. Registering none discards the
+      updates. Needs an `Acp.Registry` in scope, as in the first block of `Acp.connect`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+
+      def register(using Acp.Registry^): Unit = Acp.updated:
+        Acp.update match
+          case Acp.AgentMessageChunk(Acp.TextContent(text, _)) => Out.print(text)
+          case _                                               => ()
+      ```
+  entry .permission   registers the handler for `session/request_permission`
+      A `PermissionHandler`, lent `Acp.sessionId`, `Acp.toolCall` and `Acp.options`, and
+      returning `Acp.Selected(optionId)` or `Acp.Cancelled`. With no handler registered, every
+      request is answered `Cancelled`. A request in a cancelled turn is answered `Cancelled`
+      whatever the handler says.
+  entry .readFile   registers the handler for `fs/read_text_file`, and advertises the capability
+      A `ReadFileHandler`, lent `Acp.path`, `Acp.line` and `Acp.limit`, returning the text.
+      Registering it sets `FsCapabilities#readTextFile`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import charsets.utf8Charset
+      import filesystemBackends.javaBaseFilesystem
+
+      def files(using Acp.Registry^): Unit = Acp.readFile:
+        Acp.path.as[Path on Linux].open[File]()(file.read[Text])
+      ```
+  entry .writeFile   registers the handler for `fs/write_text_file`, and advertises the capability
+      A `WriteFileHandler`, lent `Acp.path` and `Acp.content`. Registering it sets
+      `FsCapabilities#writeTextFile`.
+  entry .terminals   registers the `Terminals` bundle, and advertises the terminal capability
+      The five terminal operations are registered together, since the protocol advertises
+      them as one capability. Registering them sets `ClientCapabilities#terminal`.
+  entry .capabilities   adjusts the client capabilities derived from the registrations, last, at initialization
+      An escape hatch: `Acp.capabilities(adjust)` is applied to the derived
+      `ClientCapabilities` just before `initialize` is sent, so a client may withdraw a
+      capability, or declare one it serves by other means. The derived declaration is right
+      for almost every client.
+
+  entry .connect   connects to an agent for the duration of a block: registers handlers, initializes, lends a connection
+    detail
+        `Acp.connect(agent, observer)(register)(lambda)`. The first block registers the
+        client's handlers on the lent `Acp.Registry`; when it returns, the registry is consumed
+        and the client's capabilities are derived from it, so nothing can be registered once
+        the exchange begins. Then the exchange opens — a writer task drains outgoing messages
+        onto the agent's input, and a reader task routes what comes back — and `initialize` is
+        exchanged, raising `Acp.Error` with reason `Incompatible` if the agent speaks a
+        protocol version other than `Acp.version`. The second block then runs with a live,
+        initialized `Acp.Connection`, reached as `Acp.connection`, and its value is the value
+        of `connect`. When it returns, the exchange is torn down and a subprocess agent is
+        killed, so nothing outlives the agent it speaks to.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import environments.javaBaseEnvironment
+        import errorDiagnostics.stackTracesDiagnostics
+        import probates.awaitProbate
+        import stdios.javaLangSystemStdio
+        import strategies.throwUnsafely
+        import threads.virtualThreads
+        import workingDirectories.javaBaseWorkingDirectory
+
+        val reason: Acp.StopReason = supervise:
+          Acp.connect(Acp.Agent(sh"claude-code-acp")):
+            Acp.updated:
+              Acp.update match
+                case Acp.AgentMessageChunk(Acp.TextContent(text, _)) => Out.print(text)
+                case _                                               => ()
+
+          . apply:
+              val session = Acp.connection.newSession(t"/workspace")
+              Acp.connection.prompt(session.sessionId, t"Explain this repository")
+        ```
+
+        It needs a `Monitor` (so it sits inside `supervise`), a `Probate`, `Diagnostics`, a
+        `WorkingDirectory` and an `Environment` (for launching a subprocess agent), and a
+        `Tactic[Acp.Error]`. A subprocess which cannot be launched raises `Acp.Error` with
+        reason `Internal` and the launch failure's message. The connection block may capture
+        the monitor freely — a block which prompts on one task and cancels from another, say
+        — since a monitor is a shared capability.
+
+        Messages from the agent are routed by kind. Responses are correlated with the requests
+        awaiting them, so several requests may be in flight and answered in any order.
+        `session/update` notifications are dispatched on the reader task, in order. Requests —
+        permissions, file operations, terminals — are each dispatched on a spawned task, so a
+        permission handler waiting on the user stalls neither the updates nor the responses.
+        A request for a method this library does not model is answered `Method not found`, and
+        an unmodelled notification is ignored.
+
+        `observer`, if given, sees every message in both directions as it crosses the
+        transport; the default is `Acp.Observer.Silent`.
+    refer espionage.Acp.Agent
+    refer espionage.Acp.Connection
+    refer espionage.Acp.Registry
+    refer espionage.Acp.Observer
+
+  entry .Observer   a hook on the raw traffic: every message as it crosses the transport
+    detail
+        An agent's standard output is the wire, and a client may want a log or a protocol
+        trace of what it exchanges: an observer sees each message as its JSON text — inbound
+        before parsing, so a message which fails to decode is observed too, and outbound
+        before framing, so both directions read alike. It is passed to `Acp.connect` as
+        `observer`.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+
+        val trace = new Acp.Observer:
+          def received(message: Text): Unit = Err.println(t"← $message")
+          def sent(message: Text): Unit = Err.println(t"→ $message")
+        ```
+
+        The writer task calls `#sent` and the reader task `#received`, at once, so an
+        implementation must be safe to call from two threads. It is a shared, durable
+        capability.
+    entry .Silent   the observer which does nothing, as a pure value; `connect`'s default
+    entry .silent   the given which supplies `Silent` contextually; in implicit scope
+    entry #received   called with each message read from the agent, before it is parsed
+    entry #sent   called with each message sent to the agent, as its encoded body, before it is framed
+
+  entry .Agent   an agent this process can speak to: a command to launch, or a pair of streams
+    detail
+        A plain value saying where the agent is, holding no channel of its own: the channel is
+        opened when `Acp.connect` begins and closed when it ends. `Agent.Process(command)` is
+        an agent launched as a subprocess, whose standard input and output carry the protocol,
+        and `Agent.Streams(input, output)` one already running behind a pair of `java.io`
+        streams — in this process, behind a socket, or a fixture in a test. `Agent(command)`
+        and `Agent.streams(input, output)` build each, widened to `Agent`.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+
+        val launched: Acp.Agent = Acp.Agent(sh"claude-code-acp")
+        val gemini: Acp.Agent = Acp.Agent(sh"gemini --experimental-acp")
+        ```
+
+        A subprocess agent is launched with a silent exec log, since its standard output is
+        the wire, and is killed, not waited for, when the connection ends.
+    refer espionage.Acp.connect
+    entry .apply   an agent launched as a subprocess: `Acp.Agent(command)`
+        Takes a guillotine `Command`, written with `sh"…"`.
+    entry .streams   an agent already running behind an input and an output stream
+        Which stream is which is from this process's point of view: `input` is what the agent
+        writes, `output` what it reads. Each message the agent writes is delivered as soon as
+        its terminating newline arrives, so a fixture writing to a pipe need only flush after
+        each line.
+
+  entry .Error   a fault in an ACP exchange, or one the agent reported, by its JSON-RPC reason
+    detail
+        Error 148: _the ACP operation failed because `reason`_, numbered by reason (148.1 for
+        `Parse` through 148.7 for `Incompatible`). Each `Reason` carries the JSON-RPC wire
+        code the protocol assigns it: `Parse` −32700, `InvalidRequest` −32600,
+        `MethodNotFound` −32601, `InvalidParams` −32602, `Internal` −32603 and `AuthRequired`
+        −32000; `Incompatible` is this library's own, raised by `Acp.connect` when the agent
+        answers `initialize` with another protocol version.
+
+        The connection's requests raise one, through the `Tactic[Acp.Error]` in scope, for an
+        error response from the agent, with the reason recovered from the wire code by
+        `.reason` (a code outside the standard set is `Internal`) and the agent's message as
+        `#details`. An agent which needs authentication answers with `AuthRequired`; the client
+        then calls `Connection#authenticate`.
+
+        A handler raises one through the `Emit[Acp.Error]` it is lent, and the client answers
+        the agent's request with an error response carrying the reason's code and `#response`
+        as the message:
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import errorDiagnostics.stackTracesDiagnostics
+
+        def register(using Acp.Registry^): Unit = Acp.readFile:
+          if Acp.path.starts(t"/secret") then
+            raise(Acp.Error(Acp.Error.Reason.InvalidParams, t"not readable"))
+          t""
+        ```
+
+        Constructing one needs `Diagnostics` in scope, as every fulminate error does.
+    entry .Reason   why the operation failed, each with its JSON-RPC wire `code` and its `number`
+      detail
+          `Parse` (1, −32700): _the message could not be parsed as JSON_; `InvalidRequest` (2,
+          −32600): _the message was not a valid JSON-RPC request_; `MethodNotFound` (3,
+          −32601): _the method name was not recognised_; `InvalidParams` (4, −32602): _the
+          parameters were not valid for the requested method_; `Internal` (5, −32603): _an
+          internal error occurred_; `AuthRequired` (6, −32000): _the agent requires
+          authentication_; `Incompatible` (7, no wire code): _the agent does not support the
+          protocol version this client implements_.
+      entry #number   the sub-number of error 148
+      entry #code   the JSON-RPC wire code, or `0` for `Incompatible`, which has none
+    entry .reason   the reason a wire code names, or `Unset` for a code outside the standard set
+        The inverse of `Reason#code`, for reading an error response. `0` is never a wire code,
+        so it never yields `Incompatible`.
+    entry .communicable   renders a reason as its message, _the agent requires authentication_ and the like
+    entry #reason   why the operation failed
+    entry #details   the agent's message, or the message given when the error was raised, if any
+    entry #response   the message sent in an error response: the details, or the reason's description
+
+  entry .Registry   where a client's handlers are recorded, lent to the first block of `connect`
+    detail
+        The target of the registration combinators: `Acp.connect` makes one, lends it to the
+        registration block as a context parameter, and consumes it when the block returns, so
+        registration after the exchange begins is impossible by construction. Its constructor
+        is private, and it is a capability which cannot escape the block. A method of one's
+        own which registers handlers takes it as `using Acp.Registry^`.
+
+        Its slots — one public `var` per combinator, named for it with a trailing `0` — are
+        public only because the inline combinators assign them, and each handler slot is
+        typed `AnyRef | Null`: a union mentioning a context-function type would freshen its
+        capture sets at every adaptation, so the typed boundary is the combinator's parameter,
+        where a handler closing over the registry is rejected. Register through the
+        combinators, not the slots.
+    refer espionage.Acp.connect
+    refer espionage.Acp.ClientCapabilities
+    entry .Slot   the box a registered handler is kept in
+      detail
+          A context-function value adapts to any expected type which is not a context
+          function by being applied, so a handler cannot inhabit an `Optional` or `AnyRef`
+          slot directly: `Slot[handler](value)` holds it intact, and the service unboxes it
+          when it dispatches.
+      entry #value   the handler
+    entry #updated0   the `updated` handler, boxed, or `null`
+    entry #permission0   the `permission` handler, boxed, or `null`
+    entry #readFile0   the `readFile` handler, boxed, or `null`
+    entry #writeFile0   the `writeFile` handler, boxed, or `null`
+    entry #terminal0   the `terminals` bundle, boxed, or `null`
+    entry #adjust0   the `capabilities` adjustment, or `Unset`
+
+  entry .Connection   the client's handle on a running agent, lent by `connect` for the duration of a block
+    detail
+        What `Acp.connect` lends its second block, reached as `Acp.connection`. It is a
+        capability, disposed of when the block returns, so it cannot outlive the agent it
+        speaks to. Its constructor is private.
+
+        A request blocks its caller until the agent's response arrives, but never blocks the
+        reader, so several may be in flight at once, on different tasks, and be answered out
+        of order: one task may hold a prompt turn open while another cancels it.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+
+        val session = Acp.connection.newSession(t"/workspace")
+        val turn = async(Acp.connection.prompt(session.sessionId, t"Refactor the parser"))
+        Acp.connection.cancel(session.sessionId)
+        turn.await()   // Acp.StopReason.Cancelled
+        ```
+
+        Every request raises `Acp.Error`, through the `Tactic[Acp.Error]` in scope, for an
+        error response. The connection is obligatory's `JsonRpc` underneath, with `#Origin`
+        the agent's interface `AcpAgent`, and `#send` sends a message of a method this library
+        does not model.
+    refer espionage.Acp.connect
+    refer espionage.AcpAgent
+    entry #Origin   the far end of the connection: `AcpAgent`
+    entry #lifecycle   the generated client for `AcpAgentLifecycle`: `initialize` and `authenticate`
+        Calling it directly bypasses the error conversion and version check the connection's
+        own methods make.
+    entry #sessions   the generated client for `AcpAgentSession`: the `session/*` methods
+        As `#lifecycle`, prefer the connection's own methods.
+    entry #send   sends a message exactly as given, minting no id and awaiting no answer
+        The raw seam for an extension method or a notification this library does not model.
+        A request sent this way has its response routed nowhere, so it is for notifications.
+    entry #initialize   the handshake: sends the protocol version and the client's capabilities
+        `Acp.connect` calls it before lending the connection, so a client does not. It raises
+        `Acp.Error` with reason `Incompatible` if the agent answers with a protocol version
+        other than `Acp.version`, and records the agent's answer for `#agentCapabilities` and
+        `#authMethods`.
+    entry #authenticate   authenticates with one of the methods the agent offered, by its id
+        For an agent which answered a request with `Acp.Error.Reason.AuthRequired`: the id is
+        an `AuthMethod#id` from `#authMethods`.
+    entry #newSession   opens a session in a working directory, with optional MCP servers
+        `newSession(cwd, mcpServers)` returns a `NewSessionResult`, whose `sessionId` every
+        later call about the session takes. `cwd` should be an absolute path: the agent works
+        relative to it.
+    entry #loadSession   resumes a session by its id, replaying its history through the update handler
+        The agent replays the whole conversation as `session/update` notifications — routed to
+        the handler registered with `Acp.updated`, `UserMessageChunk`s included — before this
+        returns. Only an agent whose `AgentCapabilities#loadSession` is `true` supports it.
+    entry #prompt   one prompt turn: blocks until the agent reports why the turn ended
+        `prompt(sessionId, content)` takes a `List[ContentBlock]`, and `prompt(sessionId,
+        text)` a single `TextContent`. It returns the `StopReason` once the agent has finished
+        everything it did in the turn, while the turn's updates stream concurrently to the
+        update handler. Opening a turn clears the session's cancellation, so a client may
+        prompt again after cancelling.
+    entry #cancel   cancels the session's current turn
+        A notification, not a request: the turn's outcome is the in-flight `#prompt`, which the
+        agent must complete with `StopReason.Cancelled`. Permission requests pending when this
+        is called, and any which arrive before the next turn opens, are answered `Cancelled`,
+        as the protocol requires.
+    entry #setMode   switches the session to one of its modes, by id
+        The ids are the `SessionMode#id`s in `NewSessionResult#modes`.
+    entry #agentCapabilities   what the agent reported it can do, at initialization
+    entry #authMethods   the ways the agent offered to authenticate, at initialization
+
+entry .AcpAgentLifecycle   the wire trait for `initialize` and `authenticate`, the client→agent handshake
+  detail
+      One of the `@rpc` traits which, together, make up the agent's interface `AcpAgent`;
+      split out so that obligatory's `JsonRpc.proxy` generates a class of manageable size per
+      trait. `Acp.Connection#lifecycle` is the generated client for it. A program needs it
+      only to build a connection of its own; `Acp.Connection` wraps it.
+  refer espionage.AcpAgent
+  entry #initialize   sends `initialize` with the protocol version and client capabilities
+  entry #authenticate   sends `authenticate` with an auth method's id
+
+entry .AcpAgentSession   the wire trait for the `session/*` methods the client calls on the agent
+    `session/new`, `session/load`, `session/prompt`, `session/cancel` (a notification, so
+    returning `Unit`) and `session/set_mode`, each a method of that name, taking the
+    protocol's own parameter names and types. `Acp.Connection#sessions` is the generated
+    client for it, and `Acp.Connection`'s `newSession`, `loadSession`, `prompt`, `cancel` and
+    `setMode` wrap it.
+
+entry .AcpAgent   the agent's whole interface, as the client calls it: `AcpAgentLifecycle` and `AcpAgentSession`
+    The union of the client→agent wire traits, and the `JsonRpc` `Origin` of an
+    `Acp.Connection`. Nothing implements it on the client side: it is the type of the far
+    end.
+
+entry .AcpClientSession   the wire trait for what the agent calls on the client about a session
+    `session/update`, the protocol's only notification in this direction, and
+    `session/request_permission`, a request the agent blocks on. Implemented by the service
+    `Acp.connect` builds, which routes them to the handlers registered with `Acp.updated` and
+    `Acp.permission`.
+
+entry .AcpClientFs   the wire trait for the agent's filesystem requests: `fs/read_text_file` and `fs/write_text_file`
+    Implemented by the service `Acp.connect` builds, which routes them to the handlers
+    registered with `Acp.readFile` and `Acp.writeFile`, and answers `MethodNotFound` for one
+    which was not registered.
+
+entry .AcpClientTerminal   the wire trait for the agent's terminal requests: `terminal/create`, `output`, `wait_for_exit`, `kill`, `release`
+    Implemented by the service `Acp.connect` builds, which routes them to the `Acp.Terminals`
+    bundle registered with `Acp.terminals`, and answers `MethodNotFound` if none was.
+
+entry .AcpClient   the client's whole interface, as the agent calls it: session, filesystem and terminal methods
+    The union of `AcpClientSession`, `AcpClientFs` and `AcpClientTerminal`. The service
+    `Acp.connect` builds implements it, with one generated JSON-RPC dispatcher per part, so
+    a program implements it itself only to serve the protocol by other means than
+    `Acp.connect`.
+
+entry .DemoAcpClient   a complete, minimal ACP client, in `espionage.demo`
+    The `main` class of the `espionage.demo` component: a command-line program (ethereal's
+    `cli` and `execute`, with the `completionsExecutive`) which launches `claude-code-acp`
+    from the path, opens a session in the current working directory, sends its command-line
+    arguments as one prompt, prints the agent's answer as it streams, grants every
+    permission the agent asks for with the first `AllowOnce` option, and prints the turn's
+    `StopReason`. It writes `import Acp.*` inside its object, the recommended way to use the
+    handler vocabulary without colliding with other libraries' names. Not exported to the
+    `soundness` umbrella.

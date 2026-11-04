@@ -1,0 +1,1231 @@
+tel 1.0
+
+base tasseomancy
+import soundness
+
+info   SVG charts from typed data: bars, lines, scatter, pie, histogram, box plots and doughnuts
+detail
+    _Tasseomancy_ draws charts as savagery `Svg` values from typed data, keeping four decisions
+    apart which charting libraries usually tangle into one call: the **shape** of the data,
+    the **kind** of chart, the **fit** of the one to the other, and the **style**.
+
+    - The shape is in the types. A `Series[x, y]` is a named run of points; its abscissa type
+      decides the axis: a `Text`, an enum or a `Category` is `Categorical`, a number, a
+      `Duration`, an `Instant` or any `Quantity` is `Continuous`. `Samples[y]` are raw
+      measurements, `Estimate` a value with its interval, `Noted` a value with a note, and a
+      `Dag` of `Weighted`, `Progressive` nodes is a dependency graph.
+    - A kind is a value — `Bars()`, `StackedBars()`, `Lines()`, `Scatter()`, `Pie()`,
+      `Histogram()`, `Boxes()` or `Doughnut()` — and `data.chart(kind)` compiles only where a
+      `Plottable` instance says the kind can draw the data's shape: a pie of three series or a
+      line through category labels is a compile error.
+    - The fit — each axis's range, transform and gradations — is chosen by a `Calibration`
+      keyed on the axis's value type, overridden by a scoped given, an import from
+      `calibrations`, or an argument to the kind. The result is a `Scale` or `Bands`: plain
+      data, which is what lets a chart tell whether new data still fits its axes.
+    - The style is a `Chart.Style` value — `Chart.Standard` by default — with a method for
+      every component drawn, a `ChartPalette` of colours named by role, and a `FontMetric`
+      which measures text for the layout.
+
+    ```scala
+    import soundness.*
+
+    val north = Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0))
+    val south = Series(t"south")((t"jan", 2.0), (t"feb", 1.0), (t"mar", 6.0))
+    val sales = List(north, south).chart(Bars())
+
+    sales.fit.bands.categories           // Sequence(t"jan", t"feb", t"mar")
+    sales.fit.ordinate.upper             // 6.0, padded to a whole gradation step
+    sales.in[Svg].in[Xml].show.keep(4)   // t"<svg"
+    ```
+
+    A `Chart` is immutable. `revise` takes new data and yields the next chart with a list of
+    `Chart.Revision`s: if the fit still accommodates the data, the axes hold still and only the
+    identified parts (`series-0`, `legend`, `rank-1`, …) that changed are replaced; otherwise
+    the whole chart is redrawn. A page holding the SVG needs only those two operations.
+
+    Rendering is `chart.in[Svg]`, which needs the kind's own style (`Bars.Style` for bars),
+    a `ChartPalette`, a `FontMetric` and a cartouche `Arranger` in scope; every one has a
+    companion default, so nothing need be imported. The choice packages `calibrations`,
+    `palettes` and `fontMetrics` each hold givens to import **by name** — `import
+    palettes.solarizedDarkChartPalette` — since `import tasseomancy.*` brings in no givens,
+    and a lexically-scoped given outranks any companion default. Label placement is
+    cartouche's: `import arrangers.annealingArranger` chooses simulated annealing for a
+    crowded chart.
+
+    The library is one source set, `tasseomancy.core`, which depends on savagery, cartouche,
+    cataclysm (for `Css.Style` and `Font in Web`), phoenicia, iridescence, quantitative,
+    aviation and acyclicity. Everything is exported to the `soundness` umbrella, where the
+    three choice packages merge with the umbrella's own.
+
+refer tasseomancy.Chart
+refer tasseomancy.Series
+refer tasseomancy.Plottable
+refer tasseomancy.Calibration
+refer tasseomancy.Scale
+refer savagery.Svg
+
+entry .chart   pairs data with a chart kind, checked for compatibility as the code compiles
+    An extension on any value: `data.chart(form)` needs a `data is Plottable in form to fit by
+    style` instance, which exists only where the kind can draw the data's shape, and returns a
+    `Chart[data, form, fit, style]` already fitted to the data with the instance's `fit`. The
+    fit type is the kind's own (`Lines.Fit`, with its `abscissa` and `ordinate` scales), so
+    the axes are visible on the result, and the style type is the kind's own too, so
+    rendering asks for exactly the components the kind draws.
+
+    ```scala
+    import soundness.*
+
+    val growth = Series(t"growth")((0.0, 0.0), (10.0, 10.0))
+    val chart: Chart[Series[Double, Double], Lines, Lines.Fit, Lines.Style] = growth.chart(Lines())
+    chart.fit.abscissa.upper   // 10.0
+    ```
+
+    An incompatible pairing does not compile: a categorical series cannot be `Lines()`, a
+    collection of series cannot be `Pie()`, `Samples` cannot be `Bars()`, and a `Dag` whose
+    nodes lack `Weighted` or `Progressive` cannot be `Doughnut()`.
+
+    ```scala
+    import soundness.*
+
+    Series(t"a")((t"x", 1.0)).chart(Lines())   // does not compile
+    ```
+
+entry .Chart   data, a chart kind, and the fit of one to the other, revisable as data arrives
+  detail
+      A `Chart[data, form, fit, style]` holds its `#data`, its kind (`#form`), the `#fit` the
+      kind computed from the data, and the `Plottable` instance that pairs them. It is made by
+      the `chart` extension rather than directly. The fit's type is the kind's own — `Bars.Fit`
+      with `bands` and `ordinate`, `Lines.Fit` with two scales, `Doughnut.Fit[node]` with its
+      bands — and the style type is the kind's style trait, so a bar chart renders against a
+      `Bars.Style` and a pie against a `Pie.Style`; `Chart.Standard` implements all of them.
+
+      ```scala
+      import soundness.*
+
+      val sales =
+        List
+          ( Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0)),
+            Series(t"south")((t"jan", 2.0), (t"feb", 1.0), (t"mar", 6.0)) )
+
+      val chart = sales.chart(Bars())
+      val svg: Svg = chart.in[Svg]
+      svg.in[Xml].show.contains(t"""id="series-1"""")   // true
+      ```
+
+      Rendering as `chart.in[Svg]` (the `.encodable` given) or `#drawing` needs the kind's
+      style, a `ChartPalette`, a `FontMetric` and an `Arranger` in scope, each of which has a
+      companion default: `Chart.Style.standard`, `ChartPalette.slate`, `FontMetric.fromStyle`
+      and cartouche's sequential arranger. A given `Chart.Standard` in lexical scope replaces
+      the default style for every kind at once.
+
+      A chart is immutable; `#revise` is how it follows new data, keeping the fit while it
+      still accommodates the data so that the axes hold still, and returning what changed on
+      the page.
+
+      ```scala fuel
+      frame
+        label A line chart fitted to two points
+        code
+            val latency = Series(t"p99")((0.0, 12.0), (10.0, 14.0)).chart(Lines())
+            latency.fit.ordinate.upper                        // 14.0
+      frame
+        label A point within the axes replaces one part
+        code
+            val latency = Series(t"p99")((0.0, 12.0), (10.0, 14.0)).chart(Lines())
+            val (next, revisions) = latency.revise(latency.data.add((5.0, 13.0)))
+            revisions.size                                    // 1: a Chart.Revision.Replace of series-0
+            next.fit.ordinate.upper                           // 14.0: the fit survived
+      frame
+        label A point beyond them redraws the chart
+        code
+            val latency = Series(t"p99")((0.0, 12.0), (10.0, 14.0)).chart(Lines())
+            val (next, revisions) = latency.revise(latency.data.add((20.0, 30.0)))
+            revisions.size                                    // 1: a Chart.Revision.Redraw
+            next.fit.ordinate.upper                           // 30.0: a new fit
+      ##
+      ```
+  refer tasseomancy.chart
+  refer tasseomancy.Plottable
+  refer tasseomancy.Chart.Standard
+  refer tasseomancy.ChartPalette
+  refer tasseomancy.FontMetric
+  entry .Legend   where the legend goes: `Hidden`, `Right` or `Bottom`
+      `Chart.Style#legend` chooses one. `Right` stacks a swatch and name per series beside the
+      plot, `Bottom` flows them along the bottom in one row, and `Hidden` draws no legend and
+      reserves no room for one. A doughnut has no legend whatever the setting.
+  entry .Axis   which axis a cartesian style hook is drawing: `Abscissa` or `Ordinate`
+      Passed to `Chart.Cartesian`'s `axisLine`, `tick`, `tickLabel`, `gridLine`, `axisTitle`,
+      `arrowhead`, `axisBreak` and `labelRoom`, so that one override may treat the horizontal
+      axis differently from the vertical.
+  entry .Anchoring   where a run of text is set, as the arrangement decided: point and alignment
+    detail
+        A label's anchor `#point`, with the `Lettering.Anchor` and `Lettering.Baseline` that put
+        the text on the right side of it. `Chart.Cartesian#tickLabel`, `#pointLabel` and
+        `Pie.Style#wedgeLabel` receive one: the position is cartouche's to choose, since a
+        label may have been moved to another side of its point, or off it with a leader line,
+        to avoid a collision; a style draws the text at `at.point` with `at.anchor` and
+        `at.baseline`, applying any transform of its own to the point.
+    entry .of   the anchoring for a placed cartouche `Caption.Position`
+        Text to the east of its point starts there and is centred on it vertically; text to
+        the west ends there; text to the north sits on it (alphabetic baseline) and text to the
+        south hangs from it; the diagonal attachments combine the two, and `Center` is middle
+        and middle.
+    entry #point   the anchor point, in the drawing's coordinates
+    entry #anchor   the `text-anchor`: whether the point is the text's start, middle or end
+    entry #baseline   the `dominant-baseline`: which line of the glyphs lies on the point
+  entry .Style   what every chart kind shares: canvas, font, legend, and how common components are drawn
+    detail
+        The root of the style hierarchy. A chart kind computes the geometry — where a label
+        sits, how tall a bar is — and calls a method of the style for each component, which
+        returns the `Figure`s to draw; a style overrides the methods it wants drawn differently
+        and inherits the rest. `Chart.Cartesian` adds the axes, and each kind adds its own
+        trait (`Bars.Style`, `Lines.Style`, `Pie.Style`, …); `Chart.Standard` implements every
+        one, and is the companion default, so a chart renders with no style in scope.
+
+        The `#font` is a `Font in Web`: a face paired with a provision for its typeface, so a
+        chart can only be set in a typeface the SVG will carry a `@font-face` for, or in a
+        generic family. A named family is a provision plus a font:
+
+        ```scala
+        import soundness.*
+
+        given (Typeface of "Menlo") is Typesettable in Web = Web.local()
+        given Chart.Standard = Chart.Standard(font = Web.font(Typeface["Menlo"].face))
+
+        val growth = Series(t"growth")((0.0, 0.0), (10.0, 10.0))
+        growth.chart(Lines()).in[Svg].in[Xml].show.contains(t"@font-face")   // true
+        ```
+    refer tasseomancy.Chart.Cartesian
+    refer tasseomancy.Chart.Standard
+    entry .standard   the no-import default style: `Chart.Standard()`
+        A companion given, so any `Chart.Standard` (or other style) given in lexical scope
+        outranks it.
+    entry #width   the drawing's width, in pixels
+    entry #height   the drawing's height, in pixels
+    entry #inset   the margin between the drawing's edge and anything drawn, in pixels
+    entry #font   the font every run of text is set in, a `Font in Web`
+    entry #fontSize   the type size, in pixels, from which the spacing of components derives
+    entry #legend   where the legend goes, a `Chart.Legend`
+    entry #gap   the unit of spacing between components: four tenths of the font size
+    entry #fontStyle   the CSS for a run of text in a colour: `font-size` and `fill`
+        The face itself is not here; it is the lettering's `font`. An override may add
+        properties, such as a letter-spacing or a weight.
+    entry #lettering   sets a run of text at a point: every label, title and legend entry comes through here
+        Makes a savagery `Lettering` at the position with the anchor, baseline, `#fontStyle`
+        of the colour, the style's `#font` and any transforms. Overriding it restyles all of a
+        chart's text at once; the more specific hooks (`tickLabel`, `legendLabel`, …) call it.
+    entry #backdrop   the figures behind everything: a rectangle in the palette's background colour
+        Drawn first, as the `backdrop` part, so that a dark palette's lettering is not set on
+        the page's white. Override to return `Nil` for a transparent chart.
+    entry #legendLineHeight   the height of one legend entry: 1.6 times the font size
+    entry #swatchSize   the side of a legend swatch: the font size
+    entry #swatch   the colour sample beside a legend entry's name: a filled square by default
+        Takes the swatch's top-left corner, the series' colour and its index, so a style may
+        draw a line sample for one series and a box for another.
+    entry #legendLabel   a legend entry's name, set to the right of its swatch
+    entry #leader   the line from a label that had to move away from its point back to that point
+        A one-pixel stroked polyline by default. A point's note, or a pie wedge's percentage,
+        is moved off with a leader when every side of its point is taken; override this to
+        style or suppress the line.
+  entry .Cartesian   what every chart with an abscissa and an ordinate shares: axes, grid, titles, markers
+    detail
+        Extends `Chart.Style` with the axis components and the parameters of their layout.
+        Positions are given in the drawing's coordinates; the style decides the shape, the
+        stroke and where a label sits relative to its tick. `Bars.Style`, `Lines.Style`,
+        `Scatter.Style`, `Boxes.Style` and (through `Bars.Style`) `StackedBars.Style` and
+        `Histogram.Style` extend it; `Pie.Style` and `Doughnut.Style` do not, having no axes.
+
+        ```scala
+        import soundness.*
+
+        given Chart.Standard = new Chart.Standard(grid = false, abscissaTitle = t"month"):
+          override def arrowhead(tip: Point, axis: Chart.Axis, color: Color in Srgb): List[Figure] =
+            List(Polyline(List(tip, Point(tip.x - 6, tip.y - 3), Point(tip.x - 6, tip.y + 3)), closed = true))
+        ```
+    entry #pitch   the room one gradation wants along an axis, in pixels: how many ticks the axis gets
+        An axis of length `L` is given a budget of `L / pitch` gradations; the ruler chooses
+        round steps within it, and an abscissa whose labels would still overlap is given fewer.
+    entry #tickLength   how far a tick extends beyond the axis line, in pixels
+    entry #grid   whether grid lines are drawn at the major gradations
+    entry #abscissaTitle   a title for the abscissa, or `Unset` for the one its type supplies
+        A quantity axis is titled by its dimension and unit, `distance / m`, from the type; a
+        title given here replaces the name but keeps the unit: `tide height / m`.
+    entry #ordinateTitle   a title for the ordinate, or `Unset` for the one its type supplies
+    entry #strokeWidth   the width of a series line and a box plot's median, in pixels
+    entry #markerRadius   the radius of a point's marker, in pixels
+    entry #axisLine   the line of an axis, from one end to the other
+    entry #arrowhead   a mark at the far end of an axis; nothing by default
+    entry #axisBreak   a mark at the origin end of a linear axis whose range excludes zero; nothing by default
+        Called only for a linear scale which starts above zero or ends below it, which is where
+        a reader might otherwise assume the axis begins at zero.
+    entry #gridLine   a grid line across the plot at a major gradation, if `#grid` is set
+    entry #tick   a tick mark at a gradation: downward from an abscissa, leftward from an ordinate
+        `major` is false for an unlabelled minor gradation, such as the `2`–`9` multiples on a
+        logarithmic axis.
+    entry #tickLabel   a gradation's label, at the anchoring the arrangement chose
+        Set beyond its tick by `tickLength + gap`: below an abscissa's, beside an ordinate's.
+        A label that would overlap its neighbour is hidden rather than drawn. An override which
+        rotates or moves labels must also override `#labelRoom`, so the layout reserves the
+        right space.
+    entry #labelRoom   the room an axis's ticks and labels take beyond its line, which the layout reserves
+        For the abscissa, the tick, the gap and one line of text; for the ordinate, the tick,
+        the gap and the widest label as the `FontMetric` in scope measures it.
+    entry #titleRoom   the room an axis title takes: 1.6 times the font size
+    entry #axisTitle   an axis's title: below the middle of the abscissa, or upright beside the ordinate
+        The ordinate's title is set at the drawing's left edge, rotated ninety degrees
+        anticlockwise about its anchor.
+    entry #marker   the mark at a point: a filled circle of `#markerRadius`
+        Takes the series index, so markers may differ by series.
+    entry #errorBar   the bar from a value's lower bound to its upper, with caps
+        Drawn for an `Estimate`: a vertical line between `top` and `bottom` and a horizontal
+        cap of half-width `cap` at each end, in the palette's axis colour.
+    entry #pointLabel   the note a `Noted` value carries, set beside its marker
+        To the right by default, or on whichever side the arrangement found clear of other
+        labels, markers and lines, at the `Chart.Anchoring` given.
+  entry .Standard   the default style of every chart kind, as a case class of named parameters
+    detail
+        Implements `Bars.Style`, `StackedBars.Style`, `Histogram.Style`, `Lines.Style`,
+        `Scatter.Style`, `Boxes.Style`, `Pie.Style` and `Doughnut.Style` at once, so one value
+        in scope styles any chart. Every parameter has a default: `width = 640.0`, `height =
+        400.0`, `inset = 12.0`, `font = Web.sansSerifFont`, `fontSize = 12.0`, `legend =
+        Legend.Right`, `pitch = 60.0`, `tickLength = 5.0`, `grid = true`, `abscissaTitle` and
+        `ordinateTitle` unset, `strokeWidth = 2.0`, `markerRadius = 3.5`, `markers = false`,
+        `smoothing = 0.0`, `barGap = 0.25`, `boxGap = 0.25`, `hole = 0.0`, `sectorGap = 2.0`
+        and `bandGap = 2.0`. Any component's rendering is an override on an anonymous subclass:
+
+        ```scala
+        import soundness.*
+
+        given Chart.Standard = new Chart.Standard(width = 800.0, ordinateTitle = t"units sold"):
+          override def bar(corner: Point, width: Double, height: Double, color: Color in Srgb, series: Int)
+          :   List[Figure] =
+            List(Circle(corner, (width/2.0).toFloat))
+
+        val sales = List(Series(t"north")((t"jan", 3.0), (t"feb", 5.0)))
+        sales.chart(Bars()).in[Svg].in[Xml].show.contains(t"<circle")   // true
+        ```
+
+        A helper that renders charts should take the style as a `using` parameter; one which
+        does not silently renders with the companion defaults.
+  entry .Drawing   a rendered chart as its parts, each under a stable identifier, in drawing order
+    detail
+        The result of `Chart#drawing`: the canvas size, any SVG definitions, and a `Ledger`
+        from `Svg.Id` to `Figure` holding `backdrop`, then (for a cartesian chart) `grid`,
+        `abscissa`, `ordinate`, `series-0`, `series-1`, … and `legend`; a pie has `wedges` and
+        `legend`; a doughnut `rank-0`, `rank-1`, …. The identifiers are what a
+        `Chart.Revision.Replace` names, and each becomes the `id` of a `<g>` in the SVG.
+    entry .encodable   the whole drawing as one `Svg`, as `drawing.in[Svg]`
+    entry #width   the canvas width, from the style
+    entry #height   the canvas height, from the style
+    entry #defs   SVG definitions the drawing needs; none for the standard kinds
+    entry #parts   the parts by identifier, in drawing order
+  entry .encodable   a chart as an `Svg`, as `chart.in[Svg]`, with the components it asks for
+      Needs the chart's own style type (`Bars.Style` for a bar chart; `Chart.Standard`
+      satisfies every kind), a `ChartPalette`, a `FontMetric` and an `Arranger` in scope, all
+      of which have companion defaults. `chart.in[Svg].in[Xml].show` is the SVG text.
+  entry .Revision   what changed between one drawing of a chart and the next
+    detail
+        Returned by `Chart#revise`. `Redraw(svg)` carries the whole new drawing, because the
+        axes moved to fit the new data; `Replace(id, figure)` names one part — `series-0`,
+        `legend`, `rank-1` — whose rendering differs, with the figure that replaces it. A page
+        holding the SVG needs only to replace an element by its identifier, or the whole
+        element, so a chart can be kept current over a WebSocket by sending each revision.
+        Unchanged data yields an empty list.
+  entry #data   the data the chart was made from
+  entry #form   the chart kind: the `Bars()`, `Lines()`, … value, with any explicit calibrations
+  entry #fit   the fit of the data to the kind: the kind's own fit type, with its axes visible
+      `chart.fit.ordinate.transform` on a line chart, `chart.fit.bands.categories` on a bar
+      chart, `chart.fit.edges` on a histogram, `chart.fit.total` on a pie.
+  entry #plottable   the `Plottable` instance pairing the data with the kind
+  entry #drawing   renders the chart as a `Chart.Drawing`: its parts under their identifiers
+      Needs the kind's style, a `ChartPalette`, a `FontMetric` and an `Arranger`, as `.encodable`
+      does. The drawing is computed afresh on each call.
+  entry #revise   the next chart for new data, with the list of what changed on the page
+      If the `Plottable`'s `accommodates` says the current fit still holds the new data, the
+      fit is kept — the axes hold still — and each part whose rendering differs becomes a
+      `Chart.Revision.Replace`; otherwise the data is refitted and the single revision is a
+      `Chart.Revision.Redraw` of the new SVG. The new data must have the same type: a chart
+      of `Series[Double, Double]` is revised with another such series, typically
+      `chart.data.add(point)`.
+
+      ```scala
+      import soundness.*
+
+      val growth = Series(t"growth")((0.0, 0.0), (10.0, 10.0))
+      val chart = growth.chart(Lines())
+      chart.revise(growth)(1)                        // Nil
+      chart.revise(growth.add((5.0, 5.0)))(1).size   // 1: a Replace of series-0
+      chart.revise(growth.add((20.0, 20.0)))(1).size // 1: a Redraw
+      ```
+
+entry .Plottable   the compatibility of a shape of data with a kind of chart, and what it takes to draw it
+  detail
+      `data is Plottable in form to fit by style` exists only where the kind can draw the
+      data: a pie needs one categorical series, a line needs numeric axes, a doughnut a `Dag`
+      of weighted, progressive nodes. The kind is the `Form`, the fit the `Result` (so a
+      chart's fit is the kind's own, with its axes visible), and the style the `Operand`,
+      bounded by `Chart.Style`. The standard instances live in each kind's companion —
+      `Bars.series`, `Bars.traversable`, `Lines.series`, `Histogram.samples`, `Doughnut.dag`,
+      … — so they are found with no import; a `traversable` instance covers any collection
+      of series or samples (a `List`, `Set` or `Sequence`), its traversal evidence resolved
+      before the element types' typeclasses.
+
+      A new kind of chart is a new value with instances for the shapes it can draw; nothing
+      else changes. An instance's `#draw` receives the kind's style, a `ChartPalette`, a
+      `FontMetric` and an `Arranger`.
+  refer tasseomancy.chart
+  refer tasseomancy.Chart
+  entry #fit   chooses the axes from the data: the `Result`, such as `Lines.Fit`
+  entry #accommodates   whether a fit still holds new data, so that a revision can replace one part
+      For a cartesian kind, every position and interval lies within the scales and every
+      category is a known band; for a pie, the categories are unchanged; for a doughnut, the
+      graph's shape and weights are unchanged.
+  entry #draw   renders the data against a fit as a `Chart.Drawing`
+      Takes the style (the `Operand`), a `ChartPalette`, a `FontMetric` and an `Arranger` as
+      contextual values.
+
+entry .Series   one named run of points: the unit of data a chart kind is compatible with
+  detail
+      A `Series[x, y]` is a name and a `Sequence` of `(x, y)` pairs. The abscissa type decides
+      the axis: a `Text`, enum or `Category` is `Categorical` and suits `Bars`, `StackedBars`
+      and `Pie`; a number, `Duration`, `Instant` or `Quantity` is `Continuous` and suits
+      `Lines` and `Scatter`. The ordinate is always `Continuous`, and may be an `Estimate`
+      (drawn with error bars or a band) or a `Noted` value (labelled beside its marker).
+      Several series are any collection of them — a `List`, `Set` or `Sequence` — since the
+      kinds' `traversable` instances cover anything traversable by series.
+
+      ```scala
+      import soundness.*
+
+      val north = Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0))
+      val timings = Series(t"sort")((1000, Estimate(2.1, 1.9, 2.4)), (10000, Estimate(24.0, 22.5, 26.1)))
+      val cities = Series(t"cities")((1.0, Noted(3.0, t"Paris")), (2.0, Noted(5.0, t"Rome")))
+      val year = Series(2024)((t"jan", 1.0))   // named by any showable value
+      year.name                                 // t"2024"
+      ```
+
+      A series is immutable; `#add` appends a point in amortized constant time, which is what
+      a chart fed one measurement at a time needs.
+  refer tasseomancy.chart
+  refer tasseomancy.Samples
+  entry .apply   `Series(name)(points*)`: a series named by any showable value, with its points
+      The name is shown once, at construction: `Series(t"north")(…)`, `Series(2024)(…)` or
+      `Series(Quarter.Q1)(…)` all give a `Text` name.
+  entry #name   the series' name, as text: its legend entry
+  entry #points   the points, in the order given
+      A line chart sorts them by abscissa before drawing; a scatter plot and a bar chart keep
+      the order, which for bars is the order categories first appear.
+  entry #add   the series with one more point, appended in amortized constant time
+  entry #categorical   the same points with each abscissa as a `Category`, for a bar chart over a numeric axis
+      Needs `x is Showable`. A series over input sizes becomes a bar per size rather than a
+      line over sizes: `timings.categorical.chart(Bars())`.
+
+entry .Samples   raw measurements under one name, before any summary: what a histogram bins and a box plot summarizes
+  detail
+      `Samples[y]` is a name and a `Sequence` of values of a `Continuous` type. `Histogram`
+      cuts their range into bins and counts them; `Boxes` summarizes them as quartiles and
+      extremes. A collection of sample sets is drawn as one series per set.
+
+      ```scala
+      import soundness.*
+
+      val before = Samples(t"before")(21.0, 22.5, 23.1, 22.8, 24.0)
+      val after = Samples(t"after")(18.2, 18.9, 19.5, 18.1, 19.0)
+      List(before, after).chart(Boxes()).fit.summaries.size   // 2
+      ```
+  refer tasseomancy.Histogram
+  refer tasseomancy.Boxes
+  entry .apply   `Samples(name)(values*)`: a sample set named by any showable value
+  entry #name   the set's name, as text
+  entry #values   the measurements, in the order given
+  entry #add   the set with one more measurement appended
+
+entry .Estimate   a value with the interval it is believed to lie in, drawn with error bars or a band
+    `Estimate(value, lower, upper)`: a mean with its confidence interval, a median with its
+    quartiles. It is `Continuous` by its `value`, with `bounds` of `(lower, upper)`, so a
+    scatter plot or bar chart draws an error bar through each one (`Chart.Cartesian#errorBar`)
+    and a line chart fills a translucent band between the bounds (`Lines.Style#band`); the
+    bounds also count towards the axis's extent, so the whole interval is on the axis.
+
+    ```scala
+    import soundness.*
+
+    val timings = Series(t"sort")((t"small", Estimate(5.0, 4.0, 6.0)), (t"large", Estimate(9.0, 8.5, 9.5)))
+    timings.chart(Bars()).fit.ordinate.upper   // 10.0
+    ```
+
+entry .Noted   a value with a note attached, which a scatter plot or line chart sets beside its marker
+    `Noted(value, note)`: the value is `Continuous` by `value`, and its `annotation` is the
+    note, which `Chart.Cartesian#pointLabel` sets to the right of the marker, or on another
+    side, or off with a leader, as cartouche's arrangement finds room. Either coordinate of a
+    point may be `Noted`; the abscissa's note wins if both are.
+
+    ```scala
+    import soundness.*
+
+    val cities = Series(t"cities")((1.0, Noted(3.0, t"Paris")), (2.0, Noted(5.0, t"Rome")))
+    cities.chart(Scatter()).in[Svg].in[Xml].show.contains(t">Paris<")   // true
+    ```
+
+    The name was `Annotated` until 0.72.0; it collided in the umbrella with adversaria's
+    `Annotated` typeclass.
+
+entry .Category   a category with no type of its own: any showable value wrapped as a label
+  detail
+      What `Series#categorical` makes from a numeric abscissa, or anything wrapped by hand:
+      `Category(42)` has the label `t"42"`. A `Category` is `Categorical` by its `#label`.
+  entry .apply   `Category(value)`: a category labelled by any showable value
+  entry #label   the label, as text
+
+entry .Categorical   a value that names a category on an axis: distinct labels, no arithmetic
+  detail
+      The typeclass of a bar chart's or a pie's abscissa. Categories are distinct labels in
+      first-appearance order across all the series, with no positions between them. `Text`,
+      `Category` and any `scala.reflect.Enum` with an `Enumerable` instance are `Categorical`
+      through the companion; a type of your own needs one line:
+
+      ```scala
+      import soundness.*
+
+      case class Region(name: Text)
+      given Region is Categorical = _.name
+      ```
+  entry .text   text is its own label
+  entry .category   a `Category` by its label
+  entry .enumerable   an enum case by its name, through its `Enumerable` instance
+  entry #label   the label a value contributes to the axis
+
+entry .Continuous   a value with a position on a numeric axis, and optionally an interval around it
+  detail
+      The typeclass of every numeric axis. `#position` is the number drawn from, `#bounds` an
+      optional interval (an `Estimate` has one), `#annotation` an optional note (a `Noted`
+      value has one), and `#notation` says how an axis of this type is graduated, written and
+      titled, since seconds are read differently from counts and a quantity is measured in
+      units. The companion covers `Int`, `Long`, `Double`, `Float`, `F64`, every `Quantity`,
+      `Duration`, `Instant`, `Estimate` and `Noted`; a type of your own needs only a position:
+
+      ```scala
+      import soundness.*
+
+      case class Reading(celsius: Double)
+      given Reading is Continuous = _.celsius
+      ```
+  refer tasseomancy.Scale.Notation
+  refer tasseomancy.Calibration
+  entry .int   an `Int` by its value
+  entry .long   a `Long` by its value
+  entry .double   a `Double` by itself
+  entry .float   a `Float` by its value
+  entry .f64   a hypotenuse `F64` by its value
+  entry .quantity   any `Quantity`, by its magnitude in its own units, which name and title the axis
+      An inline given: the units and the quantity's dimension are read from the type where
+      the chart is made, so an axis of `Quantity[Metres[1]]` is titled `distance / m` and one
+      of `Metre/Second` values `velocity / m·s¯¹`, with the units written as they are
+      everywhere in Soundness. A style's `abscissaTitle` or `ordinateTitle` replaces the name
+      and keeps the unit. The more specific `.duration` takes precedence for seconds.
+  entry .QuantityContinuous   the class behind `.quantity`: a `Continuous` for one `Quantity` type with its notation
+      Named rather than anonymous, because an inline given would otherwise duplicate the
+      class at every expansion site. Not normally written by a user.
+  entry .duration   an aviation `Duration`, by its seconds, on a clock-stepped axis titled `time`
+      Its notation is `Spacing.Sexagesimal` and `Labelling.Interval`: gradations fall at
+      seconds, half-minutes, minutes, hours, and carry their own units, `250ms`, `1m30s`.
+  entry .instant   an aviation `Instant`, by its seconds since the epoch, labelled as a time of day
+      Whatever the resolution of its timeline. The notation is sexagesimal with
+      `Labelling.Clock`, so gradations read `01:01:01`, in UTC.
+  entry .estimate   an `Estimate` by its value, with its interval as the bounds
+  entry .noted   a `Noted` value by its value, with its note as the annotation
+  entry #position   where the value lies on the axis, as a number
+  entry #bounds   the interval around the value, or `Unset`
+      Drawn as an error bar or a band, and included in the axis's extent.
+  entry #annotation   a note to set beside the value's marker, or `Unset`
+  entry #notation   how an axis of this type is spaced, labelled, named and united: a `Scale.Notation`
+      Decimal spacing with bare numbers and no name or unit, unless overridden.
+
+entry .Weighted   the extent of a doughnut's node: its share of its rank's angle and of the band's thickness
+    `node is Weighted` gives `weight(node): Double`. In a `Doughnut`, a node's sector sweeps
+    the share of its band's turn that its weight is of the rank's total, and a band is as
+    thick as its rank's share of the whole graph's weight. A negative weight counts as zero.
+
+    ```scala
+    import soundness.*
+
+    case class Step(name: Text, size: Double, done: Double)
+    given Step is Weighted = _.size
+    ```
+
+    The name was `Sized` until 0.74.0, when that name went to proscenium's length proof.
+
+entry .Progressive   how far a doughnut's node has come, from 0 (not started) to 1 (done)
+    `node is Progressive` gives `completion(node): Double`, clipped to `[0, 1]` when drawn.
+    A node carries its own progress, so a doughnut is revised like any chart, with a new
+    `Dag` of the same shape whose nodes have come further, and only the bands whose sectors
+    filled further are replaced.
+
+    ```scala
+    import soundness.*
+
+    case class Step(name: Text, size: Double, done: Double)
+    given Step is Progressive = _.done
+    ```
+
+entry .Bars   bars grouped by category: one bar per series in each category's band, from zero
+  detail
+      A chart kind for one `Series[x, y]` or any collection of them, where `x` is
+      `Categorical` and `y` is `Continuous` with a `Calibration`. Each category is a band of
+      the abscissa, in first-appearance order across all the series, and within it one bar per
+      series rises (or falls) from zero to the value, with an error bar where the value is an
+      `Estimate`. The ordinate is anchored at zero, since a bar's length is its meaning.
+
+      ```scala
+      import soundness.*
+
+      val sales =
+        List
+          ( Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0)),
+            Series(t"south")((t"jan", 2.0), (t"feb", 1.0), (t"mar", 6.0)) )
+
+      val chart = sales.chart(Bars())
+      chart.fit.bands.categories     // Sequence(t"jan", t"feb", t"mar")
+      chart.fit.ordinate.lower       // 0.0
+      ```
+
+      `Bars(ordinate = calibrations.logarithmicCalibration)` fixes the ordinate's calibration
+      for this chart alone; otherwise the `Calibration` given for `y` applies. The drawing's
+      parts are `backdrop`, `grid`, `abscissa`, `ordinate`, `series-0`, …, `legend`.
+  refer tasseomancy.StackedBars
+  refer tasseomancy.Bands
+  entry .Fit   a bar chart's fit: the categories as `#bands` and the ordinate `Scale`
+    entry #bands   the `Bands` of the abscissa: one per category, in first-appearance order
+    entry #ordinate   the ordinate `Scale`, anchored at zero
+  entry .Style   the components of a bar chart beyond the axes: the bars, and the gap within a band
+    detail
+        Extends `Chart.Cartesian`. `StackedBars.Style` and `Histogram.Style` extend this in
+        turn, so a `bar` override applies to all three kinds.
+    entry #barGap   the fraction of a category's band left empty around its group of bars
+        `0.25` in `Chart.Standard`: the group takes three quarters of the band.
+    entry #bar   one bar, from its top-left corner with its width and height, in the series' colour
+        A filled `Rectangle` by default. The corner is the top of a positive bar, or the
+        zero line of a negative one, so the rectangle always extends downward.
+  entry .series   one categorical series is plottable as bars
+      Needs `x is Categorical`, `y is Continuous` and `y is Calibration`.
+  entry .traversable   any collection traversable by categorical series is plottable as bars
+      The traversal evidence is resolved first, since it is what determines `x` and `y`.
+  entry #ordinate   a calibration for the ordinate, or `Unset` for the one given for the value type
+
+entry .StackedBars   bars stacked by category: each series' value sits on the total of those before it
+  detail
+      As `Bars`, but one bar per category, whose full height is the category's total: each
+      series' value is stacked on the running total of the series before it, with positive and
+      negative values stacking apart in opposite directions from zero. The ordinate spans the
+      largest total, anchored at zero.
+
+      ```scala
+      import soundness.*
+
+      val sales =
+        List
+          ( Series(t"north")((t"jan", 3.0), (t"feb", 5.0), (t"mar", 4.0)),
+            Series(t"south")((t"jan", 2.0), (t"feb", 1.0), (t"mar", 6.0)) )
+
+      sales.chart(StackedBars()).fit.ordinate.upper   // 10.0
+      ```
+
+      Only a collection of series is plottable as stacked bars: a single series has nothing
+      to stack, and is drawn as `Bars`.
+  refer tasseomancy.Bars
+  entry .Fit   a stacked chart's fit: the categories as `#bands` and the ordinate `Scale`
+    entry #bands   the `Bands` of the abscissa, one per category
+    entry #ordinate   the ordinate `Scale`, anchored at zero and spanning the largest total
+  entry .Style   the same components as `Bars.Style`: a stacked chart draws what a grouped one does
+  entry .traversable   any collection traversable by categorical series is plottable as stacked bars
+  entry #ordinate   a calibration for the ordinate, or `Unset` for the one given for the value type
+
+entry .Histogram   the distribution of samples: the range cut into equal bins, and a bar per series in each
+  detail
+      A chart kind for `Samples[y]` or any collection of sample sets, where `y` is
+      `Continuous` with a `Calibration`. The range of all the samples is cut into equal bins —
+      `#bins` of them if given, otherwise by Sturges' rule, one more than the base-two
+      logarithm of the sample count — at round edges in the value type's notation, and a bar
+      per series in each bin counts the samples that fall in it. The ordinate is a linear count
+      from zero, titled `count`.
+
+      ```scala
+      import soundness.*
+
+      val samples = Samples(t"s")(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0)
+      samples.chart(Histogram()).fit.edges.size      // 5: four bins
+      samples.chart(Histogram(bins = 2)).fit.edges.size   // 3
+      ```
+  refer tasseomancy.Samples
+  refer tasseomancy.Boxes
+  entry .Fit   a histogram's fit: the bin `#edges`, the abscissa over them and the ordinate of counts
+    entry #edges   the bin edges, one more than the bins, at round steps
+    entry #abscissa   the linear `Scale` from the first edge to the last
+    entry #ordinate   the `Scale` of counts, from zero to the most-counted bin, padded to a round step
+  entry .Style   the same components as `Bars.Style`: a histogram draws bars
+  entry .samples   one sample set is plottable as a histogram
+  entry .traversable   any collection traversable by sample sets is plottable as a histogram
+  entry #bins   the number of bins, or `Unset` for Sturges' rule
+  entry #ordinate   a calibration for the ordinate of counts, or `Unset` for linear
+
+entry .Lines   a line per series through its points in abscissa order, with bands for intervals
+  detail
+      A chart kind for one `Series[x, y]` or any collection of them, where both `x` and `y`
+      are `Continuous` with a `Calibration`. Each series is a polyline through its points
+      sorted by abscissa; where the values are `Estimate`s a translucent band is filled
+      between their bounds; markers are drawn at the points if the style's `markers` is set;
+      and a `Noted` value's note is set beside its marker. Neither axis is anchored at zero: a
+      line shows change, not magnitude. The same fit as `Scatter`.
+
+      ```scala
+      import soundness.*
+
+      val growth = Series(t"growth")((0.0, 0.0), (10.0, 10.0))
+      val decay = Series(t"decay")((0.0, 10.0), (10.0, 0.0))
+      List(growth, decay).chart(Lines()).fit.abscissa.upper   // 10.0
+      ```
+
+      A style with `smoothing > 0.0` draws each line through the Kalman-smoothed values of
+      its points instead, while the markers stay at the points measured:
+
+      ```scala
+      import soundness.*
+
+      given Chart.Standard = Chart.Standard(markers = true, smoothing = 4.0)
+      val noisy = Series(t"noisy")((0.0, 10.0), (1.0, 10.0), (2.0, 20.0), (3.0, 10.0), (4.0, 10.0))
+      noisy.chart(Lines()).in[Svg].in[Xml].show.contains(t"<circle")   // true
+      ```
+
+      `Lines(abscissa = …, ordinate = …)` fixes a calibration for either axis of this chart
+      alone, which is how two axes of the same type are calibrated differently.
+  refer tasseomancy.Scatter
+  refer tasseomancy.Kalman
+  entry .Fit   a line chart's fit: the `#abscissa` and `#ordinate` scales
+    entry #abscissa   the abscissa `Scale`, over the extent of the positions
+    entry #ordinate   the ordinate `Scale`, over the extent of the positions and their intervals
+  entry .Style   the components of a line chart beyond the axes: the line, the band and the markers
+    detail
+        Extends `Chart.Cartesian` with `#markers` and `#smoothing` as parameters and three
+        hooks. A series' colour and index are passed to each, so lines may differ by series.
+    entry #markers   whether a marker is drawn at each point
+    entry #smoothing   how much the line is smoothed: the Kalman measurement-to-process noise ratio
+        Zero draws the line through the points; a larger ratio trusts each measurement less
+        and smooths more. See `Kalman.smooth`.
+    entry #line   the line through a series' points: a polyline stroked at `strokeWidth`
+    entry #band   the area between a series' upper and lower bounds: a closed polyline filled at 20% opacity
+        The points run along the upper bounds and back along the lower.
+    entry #lineMarker   the marker at a point, if `#markers` is set: `marker` by default
+  entry .series   one series with continuous axes is plottable as lines
+  entry .traversable   any collection traversable by such series is plottable as lines
+  entry #abscissa   a calibration for the abscissa, or `Unset` for the one given for its type
+  entry #ordinate   a calibration for the ordinate, or `Unset` for the one given for its type
+
+entry .Scatter   a marker per point, with error bars for intervals and labels for notes
+  detail
+      A chart kind for one `Series[x, y]` or any collection of them, where both `x` and `y`
+      are `Continuous` with a `Calibration`. Every point is a marker (`Chart.Cartesian#marker`),
+      an `Estimate` adds an error bar, and a `Noted` value a label beside the marker, placed
+      by cartouche so that notes at the same point are set on different sides. The fit is
+      exactly a line chart's; only the drawing differs.
+
+      ```scala
+      import soundness.*
+
+      given Chart.Standard = Chart.Standard(grid = false, legend = Chart.Legend.Hidden)
+      val growth = Series(t"growth")((0.0, 0.0), (10.0, 10.0))
+      growth.chart(Scatter()).in[Svg].in[Xml].show.contains(t"<circle")   // true
+      ```
+  refer tasseomancy.Lines
+  entry .Fit   a scatter plot's fit: the `#abscissa` and `#ordinate` scales
+    entry #abscissa   the abscissa `Scale`
+    entry #ordinate   the ordinate `Scale`, including any intervals
+  entry .Style   a scatter plot's components are the ones every cartesian chart shares: `Chart.Cartesian`
+  entry .series   one series with continuous axes is plottable as a scatter plot
+  entry .traversable   any collection traversable by such series is plottable as a scatter plot
+  entry #abscissa   a calibration for the abscissa, or `Unset` for the one given for its type
+  entry #ordinate   a calibration for the ordinate, or `Unset` for the one given for its type
+
+entry .Boxes   a box per set of samples: quartiles, median and whiskers to the extremes
+  detail
+      A chart kind for `Samples[y]` or any collection of sample sets, where `y` is
+      `Continuous` with a `Calibration`. Each set is a category on the abscissa, drawn as a
+      box from its lower to its upper quartile with the median across it, and whiskers with
+      caps to its least and greatest sample. The ordinate spans all the extremes and is not
+      anchored at zero.
+
+      ```scala
+      import soundness.*
+
+      val runs = List(Samples(t"a")(1.0, 2.0, 3.0), Samples(t"b")(2.0, 4.0, 8.0))
+      runs.chart(Boxes()).fit.summaries.size   // 2
+      ```
+  refer tasseomancy.Samples
+  refer tasseomancy.Histogram
+  entry .Summary   the five-number summary of one set of samples
+    detail
+        `Summary(minimum, lowerQuartile, median, upperQuartile, maximum)`, computed by `.of`
+        with quartiles interpolated linearly between the order statistics either side, so the
+        lower quartile of `1, 2, 3, 4` is `1.75`.
+
+        ```scala
+        import soundness.*
+
+        Boxes.Summary.of(Sequence(5.0, 1.0, 4.0, 2.0, 3.0))   // Summary(1.0, 2.0, 3.0, 4.0, 5.0)
+        ```
+    entry .of   the summary of a sequence of values, sorted and interpolated
+    entry #minimum   the least value
+    entry #lowerQuartile   the value a quarter of the way through the sorted values
+    entry #median   the middle value
+    entry #upperQuartile   the value three quarters of the way through
+    entry #maximum   the greatest value
+  entry .Fit   a box plot's fit: the sets as `#bands`, the ordinate `Scale` and each set's `#summaries`
+    entry #bands   the `Bands` of the abscissa, one per sample set, by name
+    entry #ordinate   the ordinate `Scale`, spanning every set's extremes
+    entry #summaries   one `Boxes.Summary` per set, in the sets' order
+  entry .Style   the components of a box plot beyond the axes: box, whiskers, caps and median
+    detail
+        Extends `Chart.Cartesian`. Whiskers, caps and medians are drawn in the palette's axis
+        colour; the box in the series' colour.
+    entry #boxGap   the fraction of a set's band left empty around its box: `0.25` by default
+    entry #box   the box between the quartiles: a filled rectangle
+    entry #whisker   the line from a quartile to an extreme
+    entry #whiskerCap   the short crossbar at an extreme
+    entry #median   the line across the box at the median, stroked at `strokeWidth`
+  entry .samples   one sample set is plottable as a box plot
+  entry .traversable   any collection traversable by sample sets is plottable as a box plot
+  entry #ordinate   a calibration for the ordinate, or `Unset` for the one given for the value type
+
+entry .Pie   parts of a whole: one series, each category a wedge proportional to its value
+  detail
+      A chart kind for exactly one `Series[x, y]`, where `x` is `Categorical` and `y` is
+      `Continuous`; a collection of series is not plottable as a pie. Wedges run clockwise from
+      the top, each sweeping its share of the total of the non-negative values, with its
+      percentage set inside it (or moved outward with a leader where a neighbour's label is in
+      the way) when the share is at least the style's `labelThreshold`. A pie has no axes and
+      needs no `Calibration`.
+
+      ```scala
+      import soundness.*
+
+      val share = Series(t"share")((t"a", 25.0), (t"b", 75.0))
+      share.chart(Pie()).fit.total                                   // 100.0
+      share.chart(Pie()).in[Svg].in[Xml].show.contains(t"75%")       // true
+      ```
+
+      `Chart.Standard(hole = 0.3)` hollows the centre to three tenths of the radius. The
+      drawing's parts are `backdrop`, `wedges` and `legend`. A pie has no axes to hold still,
+      so a revision keeps the fit — and replaces only `wedges` — while the categories are the
+      same, and redraws otherwise.
+  refer tasseomancy.Doughnut
+  entry .Fit   a pie's fit: the category `#labels` in order and the `#total` they share
+    entry #labels   the categories, in the series' order
+    entry #total   the sum of the non-negative values
+  entry .Style   the components of a pie: its wedges and their percentage labels
+    detail
+        Extends `Chart.Style` (not `Chart.Cartesian`). `Chart.Standard` supplies `hole`.
+    entry #hole   the fraction of the radius hollowed from the centre: `0.0` for a full pie
+        Clipped to `[0, 0.95]`. A hollow pie's wedges are rings cut by the even-odd rule.
+    entry #labelThreshold   the least share of the whole a wedge needs for its percentage to be set: `0.04`
+    entry #wedge   one wedge, from the path operations of its outline, in the series' colour
+        An `Outline` filled with `fill-rule: evenodd`, so that a hollow wedge keeps its hole.
+        The operations are listed last to first, as an `Outline` holds them.
+    entry #wedgeLabel   a wedge's percentage, at the anchoring the arrangement chose
+        Centred in the wedge when that is clear of other labels, or moved outward with a
+        leader when it is not.
+  entry .series   one categorical series is plottable as a pie
+
+entry .Doughnut   a dependency graph as concentric bands: one per rank, each node a sector filled as far as it is complete
+  detail
+      A chart kind for an acyclicity `Dag[node]` whose nodes are `Weighted` and
+      `Progressive`, with a `Ranking` in scope (acyclicity's companion default; `import
+      rankings.balancedRanking` draws each node as close to its dependents as it can be). The
+      nodes depending on nothing form the innermost band, each further band the nodes one
+      rank further out, so a build fills in from the centre outward. A node's sector sweeps an
+      angle proportional to its weight within its rank, ordered so that it sits over the
+      dependencies it was drawn to, and a band is as thick as its rank's share of the total
+      weight. The sector fills clockwise as far as the node is complete, with the remainder in
+      a subdued tint; the colour is the palette's first colour shaded by where the sector
+      lies. A doughnut has no labels, no axes and no legend.
+
+      ```scala
+      import soundness.*
+
+      case class Step(name: Text, size: Double, done: Double)
+      given Step is Weighted = _.size
+      given Step is Progressive = _.done
+
+      val parse = Step(t"parse", 2.0, 1.0)
+      val typecheck = Step(t"typecheck", 3.0, 0.5)
+      val emit = Step(t"emit", 1.0, 0.0)
+      val doughnut = Dag(typecheck -> parse, emit -> typecheck).chart(Doughnut())
+      doughnut.fit.bands.size   // 3: one band per rank
+
+      val typechecked = typecheck.copy(done = 1.0)
+      doughnut.revise(Dag(typechecked -> parse, emit -> typechecked))(1).size   // 1: a Replace of rank-1
+      ```
+
+      The drawing's parts are `backdrop` and `rank-0`, `rank-1`, …, each a group of
+      `sector-N` and `sector-N-rest` paths. The fit depends on the graph's shape and weights
+      alone, so it survives a graph of the same shape whose nodes have only progressed, and a
+      revision replaces only the bands whose sectors filled further.
+  refer tasseomancy.Weighted
+  refer tasseomancy.Progressive
+  refer tasseomancy.Pie
+  entry .Sector   a node's place in its band: the angles its sector starts and ends at, and its weight
+    detail
+        Angles are in radians, clockwise from north.
+    entry #node   the node
+    entry #start   the angle the sector starts at
+    entry #end   the angle the sector ends at
+    entry #size   the weight the sector was laid out with
+  entry .Band   a rank's band, counted outward from the centre, with its edges and its sectors
+    detail
+        `#inner` and `#outer` are fractions of the distance between the hole and the rim.
+    entry #rank   the rank, from `0` at the centre
+    entry #inner   the inner edge, as a fraction of the usable radius
+    entry #outer   the outer edge, as a fraction of the usable radius
+    entry #sectors   the rank's sectors, in drawing order
+  entry .Fit   everything that holds still across revisions: the `#bands`
+    detail
+        Completion is not here; it is read from the nodes on every draw.
+    entry #bands   the bands, innermost first
+  entry .Style   the components of a doughnut: each sector's completed part and remainder, and the grout
+    detail
+        Extends `Chart.Style`. `Chart.Standard` supplies `hole`, `sectorGap` and `bandGap`.
+    entry #hole   the fraction of the radius hollowed from the centre, shared with `Pie.Style`
+    entry #sectorGap   the width in pixels of the grout between neighbouring sectors
+    entry #bandGap   the width in pixels of the grout between neighbouring bands
+    entry #shade   a sector's colour from its position, from the palette's first colour
+        `x` and `y` run from -1 at the left or bottom of the doughnut to 1 at the right or
+        top: the hue turns through thirty degrees from left to right, and from bottom to top
+        the colour passes from a fifth darker, through the pure hue, to a fifth lighter.
+    entry #sector   the completed part of a node's sector, from its path operations: `sector-N`
+    entry #remainder   the unfinished part, in a subdued tint: `sector-N-rest`
+  entry .dag   a `Dag` of weighted, progressive nodes is plottable as a doughnut, given a `Ranking`
+
+entry .Ruler   the mapping of an axis: a `Scale` over a numeric range, or the `Bands` of a categorical one
+  detail
+      A ruler says where its gradations fall, as fractions of the axis's length, given how
+      many the axis has room for. `Scale` and `Bands` are the two rulers; a fit holds one per
+      axis, and the layout asks each for its `gradations(budget)` to draw ticks, labels and
+      grid lines.
+  entry #gradations   the marks for a budget of about so many, each with its position and label
+
+entry .Gradation   one mark on an axis: where it lies, as a fraction of the axis's length, and its label
+  detail
+      `Gradation(position, label, major = true)`. A minor gradation — the `2`–`9` multiples
+      between the decades of a logarithmic axis — has an empty label, is drawn as a tick
+      without a label, and gets no grid line.
+  entry #position   the mark's position, from `0.0` at the axis's start to `1.0` at its end
+  entry #label   the label text, empty for a minor gradation
+  entry #major   whether the mark is labelled and gridded
+
+entry .Bands   the categorical counterpart of a `Scale`: the axis divided into equal bands, one per category
+  detail
+      A `Ruler` over a `Sequence` of category labels in first-appearance order. The axis is
+      divided into `#count` equal bands of `#width`, and a value is placed at the `#centre` of
+      its band; `#index` finds a label's band, or `Unset` for a category the fit never saw,
+      which is what makes a bar chart redraw rather than revise when a new category arrives.
+
+      ```scala
+      import soundness.*
+
+      val bands = Bands(Sequence(t"jan", t"feb", t"mar"))
+      bands.index(t"feb")    // 1
+      bands.centre(1)        // 0.5
+      bands.index(t"apr")    // Unset
+      ```
+  refer tasseomancy.Scale
+  entry #categories   the category labels, in first-appearance order
+  entry #count   the number of bands
+  entry #width   one band's share of the axis: `1.0/count`, or `1.0` for no bands
+  entry #centre   the position of a band's middle, from its index
+  entry #index   the band of a label, or `Unset` if the label is not a category
+  entry #gradations   one major gradation per category, at its centre, labelled with it
+      The budget is ignored: every category is marked. The layout hides a label that would
+      overlap its neighbour.
+
+entry .Scale   a fitted numeric axis: its range, its transform, and how it is graduated and labelled
+  detail
+      `Scale(lower, upper, transform, notation)` is plain data, which is what lets a chart
+      tell whether a new point still fits the axis it was drawn with (`#accommodates`). A
+      `Calibration` produces one from the data's extent; `#unit` places a value along it; and
+      `#gradations` chooses round steps for a budget — multiples of 1, 2 and 5 across the
+      decades for decimal notation, clock steps (seconds, half-minutes, hours, days) for
+      sexagesimal, powers of ten with minor marks at their multiples on a logarithmic scale.
+
+      ```scala
+      import soundness.*
+
+      val growth = Series(t"growth")((0.0, 0.0), (10.0, 97.0))
+      val scale: Scale = growth.chart(Lines()).fit.ordinate
+      (scale.lower, scale.upper)                                         // (0.0, 100.0)
+      scale.gradations(5).filter(_.major).map(_.label).to[List]         // List(t"0", t"20", t"40", t"60", t"80", t"100")
+      scale.unit(50.0)                                                   // 0.5
+      ```
+
+      The companion holds the number formatting the labels use — `.step`, `.format`,
+      `.interval`, `.clock` — which is fixed decimals from the step rather than a
+      `DecimalConverter`, since gradation labels are multiples of a known step.
+  refer tasseomancy.Calibration
+  refer tasseomancy.Bands
+  refer tasseomancy.Ruler
+  entry .Transform   how a position follows from a value: `Linear`, `Logarithmic` or `Exponential(curvature)`
+      Linear is in proportion to the value; logarithmic to its logarithm, where a value at or
+      below zero has no position and is clipped to the axis's start; exponential to an
+      exponential of it, which opens up the top of the range so that small differences among
+      large values show. On an exponential axis the gradations still fall at regular intervals
+      of value, as on a linear one; it is their spacing that grows. The `curvature` is the
+      exponent's range across the axis: the top is stretched `e^curvature` times as much as
+      the bottom.
+  entry .Spacing   how gradations are spaced on a linear scale: `Decimal` or `Sexagesimal`
+      Decimal steps are 1, 2 and 5 times a power of ten, as numbers are read; sexagesimal
+      steps are those of clock time, from a millisecond to a day, and decimal days beyond.
+  entry .Labelling   how a gradation's value is written: a `Number(suffix)`, an `Interval` or a `Clock` time
+      `Number(t"")` writes `250`; `Interval` writes seconds as `250ms`, `2m30s`, `1h05m`;
+      `Clock` writes seconds since the epoch as `HH:MM:SS` in UTC.
+  entry .Notation   how an axis of some type is read: spacing, labelling, name and unit
+    detail
+        `Notation(spacing = Decimal, labelling = Number(t""), name = Unset, unit = Unset)`
+        travels from a `Continuous` instance through `Calibration#scale` into the `Scale`.
+        The name and unit make the axis title — `distance / m` — unless the style gives a
+        title, in which case the unit is appended to that instead.
+    entry #spacing   decimal or sexagesimal steps
+    entry #labelling   how each gradation is written
+    entry #name   what the quantity is called — `distance`, `time` — or `Unset`
+    entry #unit   the unit the values are in — `m`, `kg·s¯²` — or `Unset`
+    entry #title   the axis title: a supplied title or the name, with ` / unit` appended if there is one
+        `Unset` if there is neither a title, a name nor a unit, as for a bare number.
+  entry .step   the smallest of 1, 2 and 5 times a power of ten no less than a raw step
+      `Scale.step(1.9)` is `2.0`, `Scale.step(0.3)` is `0.5`; a raw step at or below zero
+      gives `1.0`.
+  entry .sexagesimalStep   the smallest clock step no less than a raw step, in seconds
+      From a millisecond through seconds, quarter- and half-minutes, minutes, hours and
+      half-days to a day; beyond a day, decimal multiples of a day. Below a millisecond,
+      `.step`.
+  entry .decimals   the decimal places needed to write multiples of a step exactly
+      `0` for a step of `1.0` or more, `1` for `0.5`, `2` for `0.05`.
+  entry .format   a number to a fixed count of decimal places: `format(2.5, 1)` is `2.5`
+      A whole number has no point (`format(1000.0, 0)` is `1000`), a small negative keeps its
+      leading zero (`-0.05`), and zero is `0`.
+  entry .interval   seconds as a short interval: `250ms`, `1.5µs`, `41s`, `1m30s`, `1h01m`, `3d02h`
+      Below a second the unit keeps the number short and trailing zeros are trimmed; from a
+      minute, the two largest units are paired, the minor one zero-padded, and dropped when it
+      rounds to nothing (`2m`, not `2m00s`).
+  entry .clock   seconds since the epoch as a time of day, `HH:MM:SS`, in UTC
+  entry #lower   the value at the axis's start
+  entry #upper   the value at the axis's end
+  entry #transform   linear, logarithmic or exponential positions
+  entry #notation   the `Scale.Notation` the axis is graduated and titled with
+  entry #spacing   the notation's spacing
+  entry #labelling   the notation's labelling
+  entry #unit   where a value lies along the axis, as a fraction of its length
+      `0.5` everywhere on an empty range; on a logarithmic scale, `0.0` for a value at or
+      below zero.
+  entry #accommodates   whether a value lies within `[lower, upper]`
+  entry #label   a value's label for a given step, in the scale's labelling
+  entry #gradations   round-stepped marks for a budget: the largest step giving about that many
+      A linear or exponential scale steps decimally or sexagesimally per its spacing from the
+      first multiple at or above `lower`; a logarithmic scale marks the powers of ten (every
+      `stride`th decade when there are more decades than budget) and, when the budget allows
+      two marks per decade, the `2`–`9` multiples as minor gradations. A logarithmic scale
+      with a non-positive `lower` is graduated linearly.
+
+entry .Calibration   how the extent of the data becomes the range of an axis
+  detail
+      `value is Calibration` gives `scale(lower, upper, anchored, notation): Scale`: whether
+      positions are linear, logarithmic or exponential, whether the range is padded out to
+      whole gradation steps or tight to the data, and (when the chart kind asks, as a bar
+      chart does) whether it must include zero. It is keyed on the type of the values on the
+      axis, so a scoped given for one type changes every axis of that type; the methods never
+      mention `Self`, so the polymorphic `calibrations.*` givens double as explicit
+      `Optional[Calibration]` arguments to a chart kind, for one axis alone.
+
+      ```scala
+      import soundness.*
+
+      val sizes = Series(t"sort")((100, 1.2), (1000, 14.0), (10000, 160.0), (100000, 1900.0))
+
+      val logged =
+        given Int is Calibration = calibrations.logarithmicCalibration
+        sizes.chart(Lines())
+
+      logged.fit.abscissa.transform                                  // Scale.Transform.Logarithmic
+      sizes.chart(Lines(ordinate = calibrations.adaptiveCalibration)).fit.ordinate.transform
+      ```
+
+      The no-import default, `.linear`, is linear and padded. A logarithmic calibration over
+      a range that includes zero or a negative falls back to linear rather than failing.
+  refer tasseomancy.calibrations
+  refer tasseomancy.Scale
+  entry .linear   the no-import default for every value type: linear, padded to whole steps
+      A companion given, outranked by any `import calibrations.…` or scoped given.
+  entry .Policy   the choices a calibration makes: `Linear`, `Logarithmic`, `Adaptive`, `Tight` or `Exponential(curvature)`
+      `Linear` pads outward to whole gradation steps; `Tight` is linear over exactly the
+      data's extent; `Logarithmic` spans whole decades, falling back to linear where a
+      logarithm is undefined; `Adaptive` is logarithmic when the range's ratio is at least a
+      thousand and linear otherwise, which is what benchmark timings over input sizes want;
+      `Exponential` has a linear scale's range and gradations with exponentially spread
+      positions, its curvature defaulting to `Calibration.curvature`.
+  entry .curvature   the curvature of an exponential axis unless a policy gives one: `3.0`
+      The top of the axis is stretched about twenty times as much as the bottom.
+  entry .apply   `Calibration[value](policy)`: a calibration for one type from a policy
+      ```scala
+      import soundness.*
+
+      val decimal = Scale.Notation()
+      Calibration[Double](Calibration.Policy.Adaptive).scale(1.0, 5000.0, false, decimal).transform
+      // Scale.Transform.Logarithmic
+      ```
+  entry #scale   the `Scale` for a data extent: `scale(lower, upper, anchored, notation)`
+      `anchored` asks for zero to be included, which a bar chart, stacked bar chart and
+      histogram do and a line chart does not. The notation is carried into the scale.
+
+entry .Kalman   a Kalman smoother for a run of measurements in order, used by a smoothed line chart
+  detail
+      The model is a constant velocity: each value is the last plus its rate of change, both
+      perturbed by process noise of unit variance, and observed with measurement noise of
+      variance `ratio`, so a larger ratio trusts each measurement less and smooths more. The
+      forward filter is followed by the Rauch–Tung–Striebel backward pass, so the estimate at
+      each point draws on the points after it as well as those before: a smoothed line follows
+      a rise without lagging it and settles on a plateau without overshooting.
+      `Lines.Style#smoothing` is the ratio a line chart passes.
+  entry .smooth   the smoothed values of a list, in order, for a noise ratio
+      ```scala
+      import soundness.*
+
+      Kalman.smooth(List(5.0, 5.0, 5.0, 5.0), 4.0)     // List(5.0, 5.0, 5.0, 5.0)
+      Kalman.smooth(List(10.0, 10.0, 20.0, 10.0, 10.0), 4.0).at(Ter).or(0.0)   // between 10.0 and 20.0
+      ```
+
+      The result has the length and order of its input; an empty list smooths to itself.
+
+entry .FontMetric   the width of a run of text in ems, as the chart's typeface will set it
+  detail
+      Multiplied by the style's font size, this decides how much room an axis's labels and a
+      legend need, and whether an abscissa's labels would overlap. The no-import default,
+      `.fromStyle`, follows the style's font: an embedded font file's own glyph advances, so
+      the face measured is the face rendered and the margins fit exactly, or an average width
+      for a font without a file to hand. `fontMetrics.averageFontMetric` and
+      `fontMetrics.tabularFontMetric` override it by import.
+
+      ```scala
+      import soundness.*
+
+      summon[FontMetric].width(t"abcde").value   // 3.0: six tenths of an em per character
+      ```
+  refer tasseomancy.fontMetrics
+  refer tasseomancy.Chart.Style
+  entry .fromStyle   the no-import default: the metric of the style's font, embedded or average
+      Needs a `Chart.Style` in scope. Any `import fontMetrics.…` outranks it.
+  entry .of   the metric of an `Sfnt` font's own glyph advances, or of a `Font`'s first embedded file
+      `FontMetric.of(sfnt)` sums the advances of a text's glyphs; a character the face lacks
+      would raise, so the average width stands in for any text containing one.
+      `FontMetric.of(font)` uses the first `Typesettable.Source.Embedded` among the font's
+      provision's sources, and the average metric if there is none (a `Web.local()` or
+      generic family).
+  entry #width   the width of a text, as a `Quantity[Ems[1]]`
+
+entry .ChartPalette   the colours a chart draws with, named by the role each plays rather than by hue
+  detail
+      The series ramp (cycled when there are more series than colours), the axes and their
+      gradations, the grid, the lettering, and — as a `Palette` — the background and
+      foreground. One style renders under any palette. The no-import default is `.slate`, a
+      light palette with eight distinguishable hues; `palettes.solarizedDarkChartPalette` and
+      `palettes.solarizedLightChartPalette` are chosen by import, and `.of` makes one from an
+      iridescence `Theme`.
+
+      ```scala
+      import soundness.*
+      import palettes.solarizedDarkChartPalette
+
+      val growth = Series(t"growth")((0.0, 0.0), (10.0, 10.0))
+      growth.chart(Lines()).in[Svg].in[Xml].show.contains(t"#002b36")   // true: the backdrop
+      ```
+  refer tasseomancy.palettes
+  entry .slate   the no-import default: a light palette with a categorical ramp of eight hues
+      A companion given, outranked by any `import palettes.…`.
+  entry .of   a palette from an `Srgb` `Theme`: its colours for the series, its foreground for axes and text
+      The axis colour is the foreground mixed three tenths of the way to the background; the
+      grid, 85% of the way.
+  entry #series   the colours for the series, in order
+  entry #axis   the colour of the axis lines, ticks, whiskers and error bars
+  entry #grid   the colour of grid lines
+  entry #text   the colour of all lettering
+  entry #color   the colour of a series by index, cycling through `#series`; the foreground if there are none
+
+entry .calibrations   the standard calibrations, each a given to import by name, or to pass to a chart kind
+  detail
+      Each is polymorphic in the value type, so one import changes every axis of every type,
+      while a scoped `given Int is Calibration = calibrations.logarithmicCalibration` changes
+      every axis of one type, and `Lines(ordinate = calibrations.tightCalibration)` changes
+      one axis of one chart. `import tasseomancy.*` brings none of them in, and the
+      companion default `Calibration.linear` applies until one is imported.
+
+      ```scala fuel
+      frame
+        label The default: linear, padded to whole steps
+        code
+            val growth = Series(t"growth")((0.0, 0.0), (10.0, 97.0))
+            val fit = growth.chart(Lines()).fit
+            (fit.ordinate.transform, fit.ordinate.upper)     // (Scale.Transform.Linear, 100.0)
+      frame
+        label Tight: exactly the data's extent
+        code
+            import calibrations.tightCalibration
+            val growth = Series(t"growth")((0.0, 0.0), (10.0, 97.0))
+            val fit = growth.chart(Lines()).fit
+            (fit.ordinate.transform, fit.ordinate.upper)     // (Scale.Transform.Linear, 97.0)
+      frame
+        label Logarithmic: whole decades, where the range allows
+        code
+            import calibrations.logarithmicCalibration
+            val growth = Series(t"growth")((1.0, 3.0), (10.0, 4200.0))
+            val fit = growth.chart(Lines()).fit
+            (fit.ordinate.transform, fit.ordinate.upper)     // (Scale.Transform.Logarithmic, 10000.0)
+      frame
+        label Adaptive: logarithmic only over a thousandfold range
+        code
+            import calibrations.adaptiveCalibration
+            val growth = Series(t"growth")((1.0, 3.0), (10.0, 4200.0))
+            val fit = growth.chart(Lines()).fit
+            (fit.abscissa.transform, fit.ordinate.transform)   // (Scale.Transform.Linear, Scale.Transform.Logarithmic)
+      ##
+      ```
+  refer tasseomancy.Calibration
+  entry .linearCalibration   linear positions, padded outward to whole gradation steps: the same as the default
+  entry .logarithmicCalibration   logarithmic positions over whole decades; linear where the range reaches zero or below
+  entry .adaptiveCalibration   logarithmic when the range's ratio is a thousand or more, linear otherwise
+  entry .exponentialCalibration   exponential positions with the default curvature `3.0`, over a linear scale's range
+      Not mirrored in the `soundness` umbrella's `calibrations` package, so it is imported as
+      `import tasseomancy.calibrations.exponentialCalibration`; `Calibration[Double]
+      (Calibration.Policy.Exponential(2.0))` makes one with another curvature.
+  entry .tightCalibration   linear positions over exactly the data's extent, with no padding
+
+entry .palettes   the standard chart palettes, each a given to import by name
+  detail
+      `import tasseomancy.*` brings none in; the companion default is `ChartPalette.slate`,
+      which `slateChartPalette` repeats. A lexically-scoped import outranks the default:
+
+      ```scala
+      import soundness.*
+      import palettes.solarizedLightChartPalette
+      ```
+  refer tasseomancy.ChartPalette
+  entry .slateChartPalette   a light palette: white background, dark grey text and axes, eight distinct hues
+  entry .solarizedDarkChartPalette   the Solarized dark theme: deep blue-black background, eight Solarized accents
+  entry .solarizedLightChartPalette   the Solarized light theme: cream background, the same eight accents
+
+entry .fontMetrics   text metrics to import by name, when the style's font should not decide
+  detail
+      The companion default, `FontMetric.fromStyle`, measures with the style's font's own
+      advances where it has an embedded file, and otherwise with the average; these two fix a
+      metric regardless. `import tasseomancy.*` brings neither in.
+
+      ```scala
+      import soundness.*
+      import fontMetrics.tabularFontMetric
+      ```
+  refer tasseomancy.FontMetric
+  entry .averageFontMetric   six tenths of an em per character: the width of an average proportional face
+  entry .tabularFontMetric   half an em per character: a monospace face

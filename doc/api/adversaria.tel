@@ -1,0 +1,355 @@
+tel 1.0
+
+base adversaria
+import soundness
+
+info   static annotations read back as typeclass instances, and fields reached by name, all resolved at compile time
+detail
+    _Adversaria_ reads Scala's static annotations without the consumer writing a macro.
+    Summoning `Annotated` for a type yields the annotations on the type itself, on its fields,
+    or on the variants of a sealed hierarchy, computed while the code compiles, with no runtime
+    reflection; the query is written in the prepositional style, narrowing by annotation type
+    with `by`, by field with `on`, and to the variants of a sum type with `under`.
+
+    ```scala
+    import soundness.*
+
+    final case class ident() extends StaticAnnotation
+    final case class primary() extends StaticAnnotation
+
+    case class Employee(name: Text, @ident @primary code: Long)
+
+    summon[Employee is Annotated on "code"]()          // Set(ident(), primary())
+    summon[Employee is Annotated by ident].field       // "code"
+    ```
+
+    The library also defines `@name`, the annotation every Soundness serialization format
+    honours to rename a field or a variant on the wire, with `relabelling` and
+    `variantRelabelling`, which format derivations read; and `Dereferenceable`, which reaches
+    a record's fields by name at runtime through a table of accessors generated as the code
+    compiles, each one a panopticon `Lens`.
+
+    The library has a single source set, `adversaria.core`, for every platform; the
+    `adversaria.examples` component holds test fixtures and is not published. Everything is
+    exported to the `soundness` umbrella, and the instances are given in the typeclasses'
+    companions, so no import beyond `soundness.*` is needed.
+
+refer adversaria.Annotated
+refer adversaria.Dereferenceable
+refer adversaria.name
+refer adversaria.relabelling
+refer adversaria.fieldAnnotations
+
+entry .Annotated   a typeclass whose instances hold the static annotations on a type, its fields or its variants
+  detail
+      `Annotated` instances are never written by hand: `.annotations`, a transparent inline
+      given in the companion, generates one for whatever is asked. The request is a
+      prepositional type:
+
+      - `T is Annotated` — every annotation on the type `T` itself, and on its fields;
+      - `T is Annotated by A` — only those of annotation type `A` (a subtype check, so
+        `by marker[Person]` excludes a `marker[Company]`);
+      - `T is Annotated on "field"` — only the field named, whose name is checked against
+        `T`'s primary constructor;
+      - `Annotated under S` — the annotations on each variant of the sealed type or enum `S`.
+
+      The instance's precise type depends on the answer, which is why the given is
+      transparent: a query on fields gives an `Annotated.Fields` with `fields`, `annotations`
+      and `apply()`; one which matches exactly one field gives an `Annotated.Field`, which
+      also knows that field's name and offers a lens onto it; and an `under` query gives an
+      `Annotated.Subtypes`.
+
+      The narrowing is best watched one preposition at a time:
+
+      ```scala fuel
+      frame
+        label Every annotation on the type and its fields
+        code
+            summon[Employee is Annotated].fields
+            // Map("code" -> Set(ident(), primary()))
+      frame
+        label `on`: the annotations of one field
+        code
+            summon[Employee is Annotated on "code"]()
+            // Set(ident(), primary())
+      frame
+        label `by`: only one annotation type, on that field
+        code
+            summon[Employee is Annotated by ident on "code"]()
+            // Set(ident())
+      frame
+        label `by` alone: the one field so annotated, and a lens onto it
+        code
+            summon[Employee is Annotated by ident].field
+            // "code"
+      ##
+      ```
+
+      Annotations are rebuilt in the generated code from their trees, so an annotation's
+      arguments should be literals, references to stable values, or nested constructor
+      calls; an annotation whose arguments cannot be rebuilt is silently left out.
+  refer adversaria.fieldAnnotations
+  refer adversaria.subtypeAnnotations
+  refer adversaria.Annotated.Field
+  entry .annotations   generates the `Annotated` instance for any request, as the code compiles
+      A transparent inline given in the companion, so in implicit scope: `summon[T is
+      Annotated by A on "field"]` expands it with the annotation type (`StaticAnnotation`
+      when no `by` is given), the subject, the field (the `Plane`) and the variant root (the
+      `Limit`). Its result type is the most precise of `Annotated.Fields`,
+      `Annotated.Field` and `Annotated.Subtypes` that fits the answer.
+  entry .Fields   the instance for a query on a type and its fields: their annotations, by field name
+    detail
+        What `summon[T is Annotated]` or `summon[T is Annotated by A]` gives when the answer
+        is not a single field. `#fields` maps each field carrying an annotation of *any* type
+        to its annotations of the requested type, so a field with only other annotations
+        appears with an empty set; `fieldAnnotations` filters those out.
+
+        ```scala
+        import soundness.*
+
+        final case class ref(x: Int) extends StaticAnnotation
+
+        case class Letters(@ref(1) alpha: Int, @ref(2) @ref(3) beta: Int, gamma: Int)
+
+        summon[Letters is Annotated].fields
+        // Map("alpha" -> Set(ref(1)), "beta" -> Set(ref(2), ref(3)))
+        ```
+    entry #fields   each annotated field's name, with its annotations of the requested type
+  entry .AnnotatedFields   the concrete `Annotated.Fields` the macro builds
+    detail
+        Holds the type's own annotations and the fields' annotations, as the macro found
+        them. It is what `summon[T is Annotated]` returns, so its members are the ones a
+        caller uses.
+    entry #fields   each annotated field's name, with its annotations of the requested type
+    entry #annotations   the annotations of the requested type on the type itself
+        `summon[Company is Annotated by unique].annotations` is the empty set if `Company`
+        carries no `unique`, whatever its fields carry.
+    entry #apply   the annotations: on the type itself, or on the field named with `on`
+        `summon[Company is Annotated]()` gives the type's own annotations; for a query with
+        `on "field"`, or one matching exactly one field, it gives that field's.
+  entry .Field   the instance for a query which matched exactly one field: its name, and a lens onto it
+    detail
+        When the requested annotations sit on exactly one field — `summon[T is Annotated by
+        A]` where only one field carries an `A`, or any query naming a field with `on` —
+        the instance is a `Field`, which knows the field's name and type. Finding "the field
+        marked as the identifier" is usually the prelude to reading or writing it, so it
+        offers a lens:
+
+        ```scala
+        import soundness.*
+
+        final case class ident() extends StaticAnnotation
+
+        case class Person(name: Text, @ident email: Text)
+
+        val person = Person(t"Jack", t"jack@example.com")
+        summon[Person is Annotated by ident].field                                   // "email"
+        summon[Person is Annotated by ident].lens(person)                            // t"jack@example.com"
+        summon[Person is Annotated by ident].lens.update(person, t"jill@example.com")
+        ```
+
+        If several fields carry the annotation, the instance is only an `Annotated.Fields`,
+        and `field` and `lens` do not compile: the instance's type records whether the match
+        was unique.
+    entry #field   the name of the one annotated field
+    entry #lens   a panopticon `Lens` onto the annotated field, to read or update it
+        Summoned at the use site, where the subject is known to be a product: the field's
+        name, as a literal type, is resolved against it by panopticon. `lens(value)` reads
+        the field; `lens.update(value, replacement)` returns a copy with it replaced.
+  entry .AnnotatedField   the concrete `Annotated.Field` the macro builds when one field matched
+    detail
+        An `Annotated.AnnotatedFields` whose `Unique` type is `true`, whose `Topic` is the
+        field's type and whose `Target` is its name as a literal type.
+    entry #field   the name of the one annotated field
+  entry .Subtypes   the instance for an `under` query: the annotations on each variant of a sealed type
+    detail
+        `summon[Annotated under S]` maps the name of each direct subtype of the sealed trait
+        or enum `S` to its annotations of the requested type.
+
+        ```scala
+        import soundness.*
+
+        final case class number(number: Int) extends StaticAnnotation
+        final case class primary() extends StaticAnnotation
+
+        sealed trait Colored
+        @number(3) case class Hsv(hue: Double, saturation: Double, value: Double) extends Colored
+        @primary() case class Rgb(red: Int, green: Int, blue: Int) extends Colored
+
+        summon[Annotated under Colored].subtypes
+        // Map("Hsv" -> Set(number(3)), "Rgb" -> Set(primary()))
+        ```
+    entry #subtypes   each variant's name, with its annotations of the requested type
+    entry #apply   each variant's name, with its annotations: the same map as `#subtypes`
+  entry .AnnotatedSubtypes   the concrete `Annotated.Subtypes` the macro builds
+    entry #subtypes   each variant's name, with its annotations of the requested type
+    entry #apply   each variant's name, with its annotations
+  entry #Operand   the annotation type the query asked for, `StaticAnnotation` when it named none
+  entry #Unique   whether the query matched exactly one field, as a literal Boolean type
+
+entry .Dereferenceable   a typeclass for reaching a record's fields by name, as values of one type
+  detail
+      `entity is Dereferenceable to value` lists the fields of `entity` whose type conforms to
+      `value`, and reads, updates or modifies one by name, through a table of accessors
+      generated as the code compiles rather than by runtime reflection. The instance is an
+      inline given in the companion, so in implicit scope for any type. A record whose fields
+      are all `Int` dereferences `to Int`; any record dereferences `to Any`, covering every
+      field.
+
+      ```scala
+      import soundness.*
+
+      case class Letters(alpha: Int, beta: Int, gamma: Int)
+
+      val letters = Letters(1, 2, 3)
+      val fields = summon[Letters is Dereferenceable to Int]
+
+      fields.names(letters)                 // List(t"alpha", t"beta", t"gamma")
+      fields.select(letters, t"beta")       // 2
+      fields.update(letters, t"beta", 20)   // Letters(1, 20, 3)
+      ```
+
+      Reading covers every field member of the right type, including an object's `val`s.
+      Writing needs a lens, and there is one only for a primary-constructor parameter whose
+      type accepts every value of the instance's `Result` type: a `val` computed in a body has
+      nothing to write, and a `Long` field of a record dereferenced `to Any` cannot accept an
+      arbitrary `Any`, so both are readable but `#lens`, `#update` and `#modify` give `Unset`
+      for them.
+  refer adversaria.membersOfType
+  entry #names   the names of the fields whose type conforms to the instance's `Result`
+  entry #select   the value of the field named
+      `select(entity, name)` reads the field through its generated accessor. The name must be
+      one of `#names`; any other fails at runtime with a missing key, so check `#names` (or
+      use `#members`) for a name from outside the program.
+  entry #values   the values of every such field, in declaration order
+  entry #lens   a panopticon `Lens` onto the field named, or `Unset` if it cannot be written
+      `Unset` where the name is not a field, is not a parameter of the primary constructor,
+      or has a type narrower than `Result`. The lens rebuilds the record with the primary
+      constructor, replacing one field. Being an optic, it composes with any other.
+  entry #update   a copy of the record with the field named replaced, or `Unset` if it cannot be written
+      `update(entity, name, value)` is `lens(name)` applied, so it is `Unset` in the same
+      cases as `#lens`.
+  entry #modify   a copy of the record with a function applied to the field named, or `Unset`
+      `modify(entity, name)(lambda)`: `numbers.modify(letters, t"gamma")(_*10)`. `Unset` in
+      the same cases as `#lens`.
+  entry #members   every such field, as a map from its name to its value
+      ```scala
+      import soundness.*
+
+      case class Employee(name: Text, code: Long)
+
+      summon[Employee is Dereferenceable to Any].members(Employee(t"Jack", 7L))
+      // Map(t"name" -> t"Jack", t"code" -> 7L)
+      ```
+
+entry .membersOfType   the values of every field of a record which have the type asked for
+    An extension on any value: `record.membersOfType[Int]` is the `values` of its
+    `Dereferenceable to Int` instance, in declaration order. It lets a generic renderer or a
+    template engine read a value's fields of one type without casting.
+
+    ```scala
+    import soundness.*
+
+    object Settings:
+      val width: Int = 80
+      val name: Text = t"main"
+      val height: Int = 24
+
+    Settings.membersOfType[Int]   // List(80, 24)
+    ```
+
+entry .fieldAnnotations   the annotations of one type on each field of a type, omitting fields without one
+    `fieldAnnotations[T, A]` is the `fields` of `T is Annotated by A`, with the fields which
+    carry no `A` removed, keyed by field name as `Text`. It returns an empty map for a type
+    whose instance is not field-based, so a caller need not match on the instance's kind.
+
+    ```scala
+    import soundness.*
+
+    final case class marker[topic](id: Int) extends StaticAnnotation
+
+    case class Tagged(@marker(1) bare: Int, @marker[Text](2) specific: Int, plain: Int)
+
+    fieldAnnotations[Tagged, marker[Any]]    // Map(t"bare" -> Set(marker(1)))
+    fieldAnnotations[Tagged, marker[Text]]   // Map(t"specific" -> Set(marker[Text](2)))
+    ```
+
+    A bare annotation infers its type argument as `Any`, so a `marker[Any]` query sees it and
+    a `marker[Text]` query does not.
+
+entry .subtypeAnnotations   the annotations of one type on each variant of a sealed type, omitting variants without one
+    `subtypeAnnotations[S, A]` is the `subtypes` of `Annotated by A under S`, with the variants
+    which carry no `A` removed, keyed by variant name. It is what renaming the cases of a sum
+    type is built on.
+
+    ```scala
+    import soundness.*
+
+    sealed trait Decision
+    @name[Json](t"yes") case object Accept extends Decision
+    @name(t"no") case object Reject extends Decision
+    case object Defer extends Decision
+
+    subtypeAnnotations[Decision, name[Json]]   // Map(t"Accept" -> Set(name[Json](t"yes")))
+    ```
+
+entry .relabelling   the serialized names of a type's fields for one format, from its `@name` annotations
+    `relabelling[T, Format]` maps each `@name`-annotated field of `T` to the name it takes in
+    `Format`: a `@name[Format](…)` overrides a bare `@name(…)`, which applies to every format.
+    Fields without a `@name` are absent, and keep their own names. Each Soundness format's
+    derivation reads it, so one annotation serves JSON, XML, YAML and the rest alike.
+
+    ```scala fuel
+    frame
+      label The field names in Scala
+      code
+          case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
+    frame
+      label As JSON: the JSON-specific rename and the bare one both apply
+      code
+          relabelling[Record, Json]   // Map(t"firstName" -> t"first_name", t"year" -> t"yob")
+    frame
+      label As XML: only the bare rename applies
+      code
+          relabelling[Record, Xml]    // Map(t"year" -> t"yob")
+    ##
+    ```
+
+entry .variantRelabelling   the serialized names of a sum type's variants for one format, from their `@name` annotations
+    As `relabelling`, for the cases of an enum or the subtypes of a sealed trait: each renamed
+    variant's name maps to its discriminator in `Format`, a `@name[Format](…)` overriding a
+    bare `@name(…)`.
+
+    ```scala
+    import soundness.*
+
+    sealed trait Decision
+    @name[Json](t"yes") case object Accept extends Decision
+    @name(t"no") case object Reject extends Decision
+    case object Defer extends Decision
+
+    variantRelabelling[Decision, Json]   // Map(t"Accept" -> t"yes", t"Reject" -> t"no")
+    ```
+
+entry .name   `@name(t"…")`: renames a field or variant in serialization, for every format or for one
+  detail
+      A static annotation. `@name(t"first_name")` (inferred as `name[Any]`) renames the field
+      or variant in every serialization format; `@name[Json](t"first_name")` only in JSON.
+      Several `@name`s with different formats may sit on one field, and a format-specific one
+      overrides the bare one for its format. Derivations read them through `relabelling` and
+      `variantRelabelling`.
+
+      ```scala
+      import soundness.*
+
+      case class Book(@name[Xml](t"Title") title: Text, @name(t"pub") published: Int)
+      ```
+  entry #name   the name the field or variant takes in serialization
+
+entry .internal   the macros which build `Annotated` and `Dereferenceable` instances
+  hidden
+  detail
+      Not for direct use: the object houses the macro implementations behind
+      `Annotated.annotations` and the `Dereferenceable` given.
+  entry .general   the macro behind `Annotated`: collects the annotations a query asks for
+  entry .dereferenceable   the macro behind `Dereferenceable`: generates the accessor and lens tables

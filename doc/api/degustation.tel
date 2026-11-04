@@ -1,0 +1,948 @@
+tel 1.0
+
+base degustation
+import soundness
+
+info   a reader of compiled Scala: TASTy files as plain data, resolved against a classpath, and erased
+detail
+    _Degustation_ reads what the Scala compiler leaves behind. Every Scala 3 class file is
+    accompanied by a **TASTy** file (`Option.tasty` beside `Option.class`), the compiler's
+    typed syntax tree pickled into a compact binary form: every definition, its modifiers and
+    annotations, its parameter and result types, the parents of every class, and the bodies
+    of inline and macro definitions. It is the complete record of a module's API, and the
+    thing any tool which must understand compiled Scala — an API walker, a documentation
+    renderer, a compatibility checker — needs to read. Degustation reads it without running
+    the compiler: the only dependency is `tasty-core`, the small library which knows the
+    format's byte layout, so a reading runs on the JVM, in a browser and in a native binary.
+
+    The reader yields **values**. `Unpickler(data)` turns the bytes of one file into an
+    `Unpickler.File` of `Pickled.Tree`s, `Pickled.Type`s and `Pickled.Name`s, exactly as the
+    format lays them out and with no symbol table behind them: a reference to a local
+    definition is the address of its definition node, and a reference to anything else is a
+    name against a prefix type, as the file spells it. A `Universe` answers the questions the
+    bytes alone cannot — what a name refers to, which class declares a selected member, how a
+    class linearizes — by loading further files lazily from a `ClassSource`, a classpath
+    reduced to the two operations of reading an entry and listing a directory. Over a
+    universe, an `Erasure` computes Scala 3's type erasure, so that a member's erased
+    signature — `(scala.Function1)scala.Option` — is spelled as the compiler would spell it.
+
+    ```scala
+    import soundness.*
+    import classloaders.threadContextClassloader
+    import strategies.throwUnsafely
+
+    val file: Unpickler.File = Unpickler(cp"/scala/Option.tasty".read[Data])
+    val scope: Scope = degustation.Universe.index(t"scala/Option.tasty", file)
+
+    scope.names.values.filter(_.s.startsWith("scala.Option."))
+    ```
+
+    On top of the reader sits the **atomizer**, the reason the library exists: `Degustation.
+    atomize` applies the rules of LIRA's Scala discipline (`tasty/2`) to a module's files,
+    cutting its API into `ScalaAtom`s — each a stable key such as `fixture.Overloads.f(scala.
+    Int)scala.Int`, a canonical binary encoding whose hash is the atom's value, and, for an
+    inline body, the `ScalaReference`s it makes — so that two versions of a library can be
+    compared by set arithmetic. `Inspection.atomize` is the same over files and a classpath
+    on disk.
+
+    The library's parts, by what each platform can do:
+
+    - `degustation.tasty` — the data model (`Pickled`), the reader (`Unpickler`), the
+      classfile reader (`Classfile`), the classpath universe (`ClassSource`, `Scope`,
+      `ClassInfo`, `Member`, `Kind`, `Resolution`, `Universe`), erasure (`Erasure`), the
+      atomizer (`Degustation`) and its output (`ScalaAtom`, `ScalaReference`). Compiles for
+      the JVM, Scala.js and Scala Native; nothing in it touches a filesystem.
+    - `degustation.core` — `Inspection`, the filesystem face: `.tasty` files and classpath
+      directories read through galilei's filesystem backend, jars through zeppelin. JVM and
+      Scala Native. On the JVM the JDK's own classes are read from the running JVM's class
+      loader; on Native there is no JVM to read them from, so a jar of the JDK's class files
+      must be on the classpath.
+
+    Everything but `Universe` and `Classfile` is exported to the `soundness` umbrella; those
+    two keep their simple names for anthology and mandible there, and are reached as
+    `degustation.Universe` and `degustation.Classfile`. The library has no choice packages and
+    one given, `Inspection.Error.communicable`, which is in implicit scope.
+
+refer degustation.Unpickler
+refer degustation.Pickled
+refer degustation.Universe
+refer degustation.Erasure
+refer degustation.Degustation
+refer degustation.Inspection
+
+entry .Unpickler   reads a `.tasty` file's bytes into the `Pickled` model: trees, definitions and binders by address
+  detail
+      `Unpickler(data)` checks the file's header, decodes its name table and unpickles its
+      ASTs section into `Pickled.Tree`s; the positions, comments and attributes sections are
+      skipped, since nothing in them is API. Every shared subtree (`SHAREDtype`, `SHAREDterm`)
+      is resolved to the tree it shares, memoized by address, so the result is a plain tree in
+      which only the identity-bearing nodes — definitions, binders, recursive types — keep
+      their addresses. The grammar followed is the one `TastyFormat` documents; where the
+      compiler's own unpickler departs from it to build symbols or re-type nodes, this reader
+      keeps what the file says.
+
+      ```scala
+      import soundness.*
+      import classloaders.threadContextClassloader
+      import strategies.throwUnsafely
+
+      val file: Unpickler.File = Unpickler(cp"/scala/Option.tasty".read[Data])
+      file.statements
+      ```
+
+      A file whose header is not a TASTy header, or whose version the embedded `tasty-core`
+      cannot read, throws `dotty.tools.tasty.UnpickleException`; so does a node which does
+      not read to its recorded end, which means the grammar has drifted from the file's and is
+      reported rather than silently misread. The bytes are copied once into a JVM array
+      before reading.
+  refer degustation.Pickled
+  refer degustation.Scope
+  entry .apply   unpickles one file's bytes into its `File`
+      Reads the header, the names and the ASTs of `data`. A file with no ASTs section (which
+      a valid file never lacks) gives an empty `File`.
+  entry .File   the ASTs of one file: top-level statements, every definition by address, every binder by address
+    detail
+        A `File` is what `Unpickler(data)` returns and what `Universe.index` indexes into a
+        `Scope`. `#statements` are the file's top-level trees, each a `Pickled.Tree.Package`;
+        `#definitions` maps the address of every definition node to the node, so a local
+        reference (`Type.TermRefDirect` and its kin) can be followed to the definition it
+        names; `#binders` maps the address of every methodic, lambda or recursive type to it,
+        for `Type.Param` and `Type.RecursiveThis` references to resolve against.
+    entry #statements   the top-level trees, in file order
+    entry #definitions   every definition node — `TypeDef`, `ValDef`, `DefDef`, `TypeParam`, `Param`, `Bind` — by its address
+    entry #binders   every `Type.Method`, `Type.Poly`, `Type.Lambda` and `Type.Recursive`, by its address
+
+entry .Pickled   the TASTy data model: names, types, trees and modifiers as the format lays them out
+  detail
+      `Pickled` holds the types which model a `.tasty` file as data, with no symbol table
+      behind them: a `Name` from the name table, a `Type`, a `Tree`, the `Modifiers` of a
+      definition, and the smaller enumerations they are built from. A reference to a local
+      definition is the address of its definition node; a reference to anything else is a
+      name and a prefix type, as the file spells it. Everything a semantic question needs —
+      what a name refers to, what a type erases to, which class declares a selected member —
+      is answered elsewhere, by `Universe` and `Erasure`.
+
+      A few forms are not pickled at all but made by the reader or the universe for their own
+      use, and say so: `Type.AppliedTerms`, `Type.Opaque`, `Type.Abstraction`, `Type.Foreign`,
+      `Flag.ParamAccessor` and `Tree.Path`.
+
+      ```scala
+      import soundness.*
+
+      val tpe: Pickled.Type =
+        Pickled.Type.Applied(
+          Pickled.Type.TypeRef(t"Option", Pickled.Type.TermRefPkg(t"scala")),
+          List(Pickled.Type.TypeRef(t"Int", Pickled.Type.TermRefPkg(t"scala"))))
+
+      degustation.Universe.className(tpe)   // t"scala.Option"
+      ```
+  refer degustation.Unpickler
+  refer degustation.Universe
+  entry .Name   a name from the name table, structured as the compiler's name kinds structure it
+    detail
+        A `Name` is `Simple(value)` for a plain name, or one of the compiler's derived kinds
+        over another name: `Qualified(prefix, selector)` for `a.b`, `Expanded` and
+        `ExpandPrefix` for the `$$`- and `$`-separated expansions of a private or local name,
+        `Unique(separator, number, original)` for a fresh name, `DefaultGetter(method, index)`
+        for a default argument's getter, `SuperAccessor`, `InlineAccessor`, `ObjectClass` (the
+        `X$` of a module class) and `BodyRetainer` wrappers, and `Signed(original, target,
+        result, params)` — a term name carrying the erased signature of the member it refers
+        to, which is how a reference to an overloaded method says which alternative it means.
+
+        `#text` renders a name as the compiler's `Name#toString` does, so what a stack frame or
+        a classfile shows can be matched against it; `#spelled` is the `fullName` spelling,
+        which differs only for a constructor's default getter; `#unsigned` drops a signature,
+        and `#signature` is the signature a signed name carries, spelled `(paramSigs)resultSig`
+        exactly as the keys of `ScalaAtom`s spell theirs.
+    entry #text   the name as the compiler's `Name#toString` renders it
+        `Simple` is its value; `Qualified` joins with `.`; `Expanded` with `$$` and
+        `ExpandPrefix` with `$`; a `Unique` name is `original`, separator, number (or `$3$`
+        for a fresh name with nothing to derive from); a `DefaultGetter` is `method$default$N`
+        with a constructor's `<init>` mangled to `$lessinit$greater`; `SuperAccessor`,
+        `InlineAccessor` and `BodyRetainer` put `super$`, `inline$` and `$retainedBody` on
+        the last segment of a qualified name; `ObjectClass` appends `$`; and a `Signed` name
+        renders as its original.
+    entry #spelled   the name as the compiler's `fullName` spells it
+        The same as `#text`, except that a constructor's default getter keeps `<init>`
+        unmangled: `<init>$default$1`. This is the spelling `Scope#names` and `ScalaAtom`
+        keys use.
+    entry #unsigned   the name without its signature, if it had one
+    entry #signature   the erased signature a signed name carries, or `Unset`
+        Spelled `(paramSigs)resultSig`, each parameter signature a fully-qualified erased
+        class name or a type-parameter count — the spelling `Erasure` produces for a
+        declaration, so the two sides of a reference agree by construction.
+  entry .ParamSig   one component of a signed name's erased signature
+    detail
+        `Erased(name)` is a fully-qualified erased type name; `TypeParams(count)` is the
+        length of a type-parameter section. `#text` renders either as the signature spells it:
+        the name, or the count as digits.
+    entry #text   the component as it appears in a spelled signature
+  entry .Constant   a literal constant: unit, booleans, null, the numeric and character primitives, a string or a class
+    detail
+        The cases are `UnitValue`, `FalseValue`, `TrueValue`, `NullValue`, `ByteValue`,
+        `ShortValue`, `CharValue`, `IntValue`, `LongValue`, `FloatValue`, `DoubleValue`,
+        `StringValue(value: Text)` and `ClassValue(tpe: Type)`, which is what a `classOf[T]`
+        literal pickles as.
+    entry #className   the fully-qualified class the constant's type is a reference to
+        `scala.Unit`, `scala.Boolean`, `scala.Null`, `scala.Int` and the other primitives,
+        `java.lang.String` for a string and `java.lang.Class` for a class literal.
+  entry .Variance   `Invariant`, `Covariant` or `Contravariant`, as a type lambda's parameters carry them
+  entry .Clause   the kind of a method type's parameter clause: `Plain`, `Implicit` or `Contextual`
+  entry .Type   a type as pickled: references by address or by name against a prefix, and the type constructors
+    detail
+        References come in three families. A **local** reference names a definition in the
+        same file by the address of its node: `TermRefDirect(address)` and
+        `TypeRefDirect(address)`, or `TermRefLocal(address, prefix)` and `TypeRefLocal(address,
+        prefix)` when a prefix is recorded too. A **package member** is named outright:
+        `TermRefPkg(name)` and `TypeRefPkg(name)` carry a fully-qualified name. Anything else
+        is a name against a prefix type: `TermRef(name, prefix)` with a `Name` that may be
+        signed, `TypeRef(name, prefix)`, and the `TermRefIn` and `TypeRefIn` forms which also
+        record the class the member was selected in.
+
+        The constructors are the format's: `This(cls)` and `Super(thisType, underlying)`;
+        `Recursive(address, parent)` and `RecursiveThis(address)` for a recursive refinement;
+        `Refined(parent, name, info)`; `Applied(constructor, arguments)`; `Bounds(low, high,
+        variances)`, where an absent `high` means an alias of `low`; `Annotated(underlying,
+        annotation)`; `And` and `Or`; `Match(bound, scrutinee, cases)` and `MatchCase(pattern,
+        rhs)`; `Flexible(underlying)` for a Java null-flexible type; `ByName(underlying)`;
+        `Literal(constant)`; and `Bind(address, name, bounds)`. The binders — `Method(address,
+        names, params, result, clause)`, `Poly(address, names, bounds, result)` and
+        `Lambda(address, names, bounds, result)` — carry the address a `Param(binder, number)`
+        inside them refers back to, and `Unpickler.File#binders` finds them by it.
+
+        Four forms are not pickled but made by the reader or the universe: `AppliedTerms
+        (function, arguments)`, the type of a term application whose function's type is not
+        yet resolved; `Opaque(alias, bounds)`, an opaque type's right-hand side with the bounds
+        it is seen through from outside; `Abstraction(params, names, bounds, result)`, a type
+        lambda as a lambda type *tree* spells it, binding its parameters as definitions by
+        address; and `Foreign(path, tpe)`, a type pinned to the file it was read from, so its
+        local references still resolve when it is carried into another file's types — a type
+        argument substituted into an alias, say.
+
+        `Universe.resolve` says what a type refers to; `Universe.transform` and
+        `Universe.mapChildren` rewrite one; `Erasure#erase` erases one.
+  entry .Flag   a modifier flag, named as the format's tags are
+    detail
+        `Private`, `Protected`, `Abstract`, `Final`, `Sealed`, `Case`, `Implicit`, `Given`,
+        `Erased`, `Lazy`, `Override`, `Opaque`, `Inline`, `Macro`, `InlineProxy`, `Static`,
+        `Object`, `Trait`, `Enum`, `Local`, `Synthetic`, `Artifact`, `Mutable`,
+        `FieldAccessor`, `CaseAccessor`, `Covariant`, `Contravariant`, `HasDefault`, `Stable`,
+        `Extension`, `ParamSetter`, `ParamAlias`, `Exported`, `Open`, `Invisible`,
+        `Transparent`, `Infix`, `Tracked`, `Into` and `AbsOverride` are the format's own.
+        `ParamAccessor` is not a TASTy modifier: the universe adds it to mark a class
+        parameter among its class's members, as the compiler's flag of that name does.
+  entry .Annotation   an annotation on a definition: its type and the tree which constructs it
+    entry #tpe   the annotation's class type
+    entry #tree   the constructor call, as pickled
+  entry .Modifiers   a definition's flags, its `private[X]` qualifier and its annotations
+    detail
+        Every `Tree.TypeDef`, `ValDef`, `DefDef`, `TypeParam`, `Param` and `Bind` carries
+        one. `#has(flag)` tests a flag; `#privateWithin` is the type a `private[X]` or
+        `protected[X]` qualifier names, or `Unset`; `.empty` has no flags, no qualifier and no
+        annotations.
+    entry .empty   no flags, no qualifier, no annotations
+    entry #flags   the definition's flags, as a set
+    entry #privateWithin   the `X` of `private[X]` or `protected[X]`, as a type, or `Unset`
+    entry #annotations   the definition's annotations, in order
+    entry #has   whether a flag is set
+  entry .Selector   one selector of an `import` or `export`: `Imported(name)`, `Renamed(to)` or `Bounded(tpe)`
+  entry .Tree   a tree as pickled: definitions, templates, terms, patterns and type trees
+    detail
+        A file's top-level trees are `Package(path, statements)`. Definitions are
+        `TypeDef(address, name, rhs, modifiers)` — a class when `rhs` is a `Template
+        (typeParams, params, parents, self, body)`, else a type alias, bounds or opaque type
+        — `ValDef(address, name, tpt, rhs, modifiers)`, `DefDef(address, name, clauses, returns,
+        rhs, modifiers)` with its clauses as lists of `TypeParam` or `Param` trees, and
+        `Import` and `Export` with their `Selector`s. Each definition carries the address its
+        local references name it by.
+
+        Terms are the usual Scala forms — `Ident`, `Select`, `SelectIn`, `QualifiedThis`,
+        `New`, `Apply`, `TypeApply`, `ApplySigPoly`, `Typed`, `Assign`, `Block`, `Inlined`,
+        `Lambda`, `If`, `Match`, `Try`, `Return`, `While`, `Repeated`, `Throw`, `NamedArg`,
+        `SuperRef`, `SelectOuter`, `Elided` — with the quotation forms `Quote`, `Splice`,
+        `SplicePattern`, `QuotePattern` and `Hole`, and the pattern forms `Bind`,
+        `Alternative`, `Unapply` and `CaseDef`. `Match` carries a `Tree.MatchKind`.
+
+        Type trees are `IdentTpt`, `SelectTpt`, `SingletonTpt`, `RefinedTpt`, `AppliedTpt`,
+        `LambdaTpt`, `BoundsTpt`, `AnnotatedTpt`, `MatchTpt`, `ByNameTpt` and `ExplicitTpt`;
+        `#isTypeTree` is whether a tree is one of them. `Path(tpe)` is not a pickled form: a
+        path or constant in tree position, whose whole content is a type.
+
+        `Universe.typeOf` is the type a type tree denotes, `Universe.termType` the type of a
+        term used as a prefix, and `Universe.children` a tree's immediate subtrees.
+    entry .MatchKind   how a `Match` was written: `Plain`, `Inline`, `Implicit` or `Sub`
+    entry #isTypeTree   whether this is a type tree, one the compiler would read with `readTpt`
+
+entry .ClassSource   where a universe finds its classes: read an entry by path, list a directory
+  detail
+      A classpath reduced to two questions, so that the same semantic layer runs wherever the
+      bytes can be fetched from: directories and jars on the JVM, a bundle in a browser, a
+      linked-in archive in a native binary. Paths are slash-separated and relative, as
+      classfiles and `.tasty` files are named: `scala/collection/immutable/List.tasty`.
+      `#read` gives an entry's bytes or `Unset`; `#list` gives the simple names in a
+      directory, which a `Universe` uses to find a package's top-level-definition carriers
+      (the `<file>$package.tasty` files), and may be empty where listing is impossible, at the
+      cost of package-level definitions resolving only through a package object.
+
+      `ClassSource(first, second, …)` combines sources, the first that has an entry answering
+      for it. `Degustation.atomize` takes the dependency classpath as one, and `Inspection`
+      builds one over directories, jars and the JDK's classes.
+
+      ```scala
+      import soundness.*
+      import classloaders.threadContextClassloader
+
+      val source: ClassSource = new ClassSource:
+        def read(path: Text): Optional[Data] = threadContextClassloader.resource(path)
+        def list(directory: Text): List[Text] = List()
+
+      source.read(t"scala/Option.tasty").present
+      ```
+  refer degustation.Universe
+  refer degustation.Inspection
+  entry .apply   combines several sources: the first that has an entry answers for it
+      `read` returns the first source's answer that is present; `list` is the union of every
+      source's listing, without duplicates.
+  entry #read   the bytes of the entry at a slash-separated relative path, or `Unset`
+  entry #list   the simple names of the entries directly in a directory (`t""` for the root)
+
+entry .Scope   a loaded `.tasty` file, indexed: every definition's full name, locality and owner by address
+  detail
+      `Universe.index(path, file)` makes a `Scope` from an `Unpickler.File`, and
+      `Universe#scope(path)` loads and indexes one from a `ClassSource`. It holds the `#path`
+      the file was read from, the `#file` itself, `#names` — the fully-qualified name of every
+      definition a reference from outside a term body can reach, by address, spelled as the
+      compiler's `fullName` spells it (a method's parameters as `pkg.Class._$param`) — the
+      `#locals`, the definitions inside term bodies, and `#owners`, each definition's owner:
+      the address of the definition enclosing it, or the name of its package at the top.
+
+      ```scala
+      import soundness.*
+      import classloaders.threadContextClassloader
+      import strategies.throwUnsafely
+
+      val scope: Scope =
+        degustation.Universe.index(t"scala/Option.tasty", Unpickler(cp"/scala/Option.tasty".read[Data]))
+
+      scope.names.values.filter(_.s.startsWith("scala.Option."))
+      ```
+
+      `Universe#resolve` takes a scope as the context in which a type's local references are
+      followed; a type carried into another file keeps its own scope as a `Type.Foreign`.
+  refer degustation.Universe
+  refer degustation.Unpickler
+  entry #path   the classpath-relative path the file was read from
+  entry #file   the unpickled file
+  entry #names   the fully-qualified name of every reachable definition, by address
+  entry #locals   the addresses of the definitions inside term bodies
+  entry #owners   each definition's owner: an enclosing definition's address, or a package name at the top
+  entry #definition   the definition node at an address, or `Unset`
+  entry #binder   the methodic, lambda or recursive type at an address, or `Unset`
+  entry #within   whether the definition at one address is enclosed, at any depth, by the one at another
+  entry #enclosingClass   the address of the nearest enclosing class of a definition, or `Unset` at the top
+
+entry .Kind   the kind of a class member: `Val`, `Def`, `Type` or `Class`
+    `Universe#memberIn` and `Universe#packageObjectMember` take a set of kinds to search for,
+    so a type member and a term member of the same name are told apart.
+
+entry .Member   one member of a class, by declaration: its name, kind, declared type, flags and address
+  detail
+      A `ClassInfo#members` entry. `#tpe` is the member's declared type — for a method, the
+      methodic type its clauses spell, built by `Universe.methodType` — and `#address` finds
+      the declaring tree in the class's `Scope`. For a member read from a Java classfile,
+      `#erased` is the erased signature its descriptor already is, and `#address` is `-1`;
+      `Erasure#signature(owner, member)` uses whichever is there.
+  entry #name   the member's name, as `Name#spelled` spells it
+  entry #kind   `Val`, `Def`, `Type` or `Class`
+  entry #tpe   the declared type: a methodic type for a method, the alias or bounds for a type member
+  entry #flags   the member's modifier flags
+  entry #address   the address of the declaring tree in the class's scope, or `-1` for a Java member
+  entry #erased   a Java member's erased signature, read off its descriptor; `Unset` for a Scala member
+
+entry .ClassInfo   a class as the universe knows it, from its TASTy or its classfile
+  detail
+      `Universe#classOf(fullName)` gives one. It carries the class's `#fullName`, `#flags`,
+      `#typeParams` (name and bounds) with the `#typeParamAddresses` the class's own types
+      refer to them by, `#parents` as types, `#members`, the underlying type `#valueParam` of
+      a class extending `AnyVal`, the `#scope` of the file it was read from (`Unset` for a
+      Java class or a synthetic one), whether it is `#java`, and the `#address` of its
+      definition in its scope (`-1` without TASTy).
+
+      A Java class's members come from its classfile's descriptors, with the members the
+      compiler gives `Any` and `AnyRef` added to `java.lang.Object` and the `+` the compiler
+      gives `java.lang.String`; its interfaces are its parents, and a Java interface with no
+      superclass has `scala.Any`, so that a universal trait of Java's is treated as the
+      compiler treats it.
+
+      ```scala
+      import soundness.*
+      import classloaders.threadContextClassloader
+
+      val source: ClassSource = new ClassSource:
+        def read(path: Text): Optional[Data] = threadContextClassloader.resource(path)
+        def list(directory: Text): List[Text] = List()
+
+      val universe = degustation.Universe(source)
+
+      universe.classOf(t"scala.Option").let: info =>
+        (info.isTrait, info.typeParams.map(_(0)), info.members.map(_.name))
+      ```
+  refer degustation.Universe
+  refer degustation.Member
+  entry #fullName   the class's fully-qualified name, a nested class's joined to its owner's with `.`
+  entry #flags   the class's modifier flags: `Trait`, `Object`, `Abstract`, `Final`, `Sealed`, `Case`, …
+  entry #typeParams   each type parameter's name and bounds, in order
+  entry #typeParamAddresses   the addresses of the type parameters' definitions, which the class's own types refer to
+  entry #parents   the parent types, as the template's parent clauses name them
+  entry #members   the class's own declarations, as `Member`s; not its inherited ones
+  entry #valueParam   the underlying type of a class extending `AnyVal`, or `Unset`
+  entry #scope   the scope of the file the class was read from; `Unset` for a Java or synthetic class
+  entry #java   whether the class was read from a classfile rather than TASTy
+  entry #address   the address of the class's definition in its scope; `-1` for a class without TASTy
+  entry #pkg   the package the class is in: the owner of its top-level class
+  entry #isTrait   whether the `Trait` flag is set; a Java interface counts
+  entry #isObject   whether the `Object` flag is set: a module class
+  entry #isValueClass   whether the compiler treats the class as a value class
+      A class extending `AnyVal` that is not one of the primitives (nor `AnyVal` or `Null`
+      themselves), which is the rule the compiler applies, and which decides whether a
+      parameter of that type erases to its underlying type.
+
+entry .Resolution   what a type reference turns out to name: a class, an alias, an abstract type, a term, a package
+  detail
+      `Universe#resolve` returns one. `Class(info, arguments, scope)` is a class with the type
+      arguments it was applied to, if any. `Alias(arity, apply, scope, body, opaque)` is a
+      type alias, opaque or not: `apply` substitutes arguments into its right-hand side,
+      `body` is that right-hand side as declared (a lambda, when parameterized), and `opaque`
+      says whether it is an opaque type, which erasure sees through and resolution does not.
+      `Abstract(high, scope)` is an abstract type or type parameter, known only by its upper
+      bound; `Term(tpe, scope)` a term, known by its declared type; `Package(path)` a
+      package; and `Unknown(reason)` a reference the universe could not follow, with the
+      reason in words. Each carries the scope its result is spelled in, for following it
+      further.
+
+entry .Universe   the classes a module's TASTy can reach, loaded lazily, and the semantic questions over them
+  detail
+      A `Universe` is built over a `ClassSource` and loads from it on demand: a file's `Scope`
+      the first time a path is asked for, a `ClassInfo` the first time a class is named, from
+      the first of its TASTy or its classfile that exists. Over them it answers what the bytes
+      of one file cannot: what a name refers to (`#resolve`), which class declares a selected
+      member and which alternative an overloaded reference means (`#memberIn`, `#termsIn`,
+      `#choose`), how a class linearizes (`#linearization`, `#derivesFrom`), and what type
+      arguments a class hands its base (`#baseArguments`). Nothing here subtypes, infers or
+      substitutes beyond an alias's parameters: erasure and member lookup need no more.
+
+      It is `@unexported` from the umbrella, since `Universe` is a name anthology owns there,
+      so it is written `degustation.Universe`. The companion holds the pure functions over
+      the `Pickled` model which need no classpath: `typeOf`, `termType`, `methodType`,
+      `substitute`, `transform`, `index`, `encode`, `classRef`, `className` and the rest.
+
+      A class file's TASTy opened, its definitions listed, and one member's type erased:
+
+      ```scala fuel
+      frame
+        label Open a file and unpickle it
+        code
+            import soundness.*
+            import classloaders.threadContextClassloader
+            import strategies.throwUnsafely
+
+            val file: Unpickler.File = Unpickler(cp"/scala/Option.tasty".read[Data])
+            file.statements   // one `Tree.Package` for `scala`
+      frame
+        label Index it as a scope and list its definitions
+        code
+            import soundness.*
+            import classloaders.threadContextClassloader
+            import strategies.throwUnsafely
+
+            val file: Unpickler.File = Unpickler(cp"/scala/Option.tasty".read[Data])
+            val scope: Scope = degustation.Universe.index(t"scala/Option.tasty", file)
+            scope.names.values.filter(_.s.startsWith("scala.Option."))
+      frame
+        label Build a universe over the classpath
+        code
+            import soundness.*
+            import classloaders.threadContextClassloader
+            import strategies.throwUnsafely
+
+            val source: ClassSource = new ClassSource:
+              def read(path: Text): Optional[Data] = threadContextClassloader.resource(path)
+              def list(directory: Text): List[Text] = List()
+
+            val universe = degustation.Universe(source)
+            val option: Optional[ClassInfo] = universe.classOf(t"scala.Option")
+            option.let(_.parents.map(degustation.Universe.className))
+      frame
+        label Find a member and erase its signature
+        code
+            import soundness.*
+            import classloaders.threadContextClassloader
+            import strategies.throwUnsafely
+
+            val source: ClassSource = new ClassSource:
+              def read(path: Text): Optional[Data] = threadContextClassloader.resource(path)
+              def list(directory: Text): List[Text] = List()
+
+            val universe = degustation.Universe(source)
+
+            universe.classOf(t"scala.Option").let: info =>
+              universe.memberIn(info, t"map", scala.collection.immutable.Set(Kind.Def)).let: (owner, member) =>
+                universe.erasure.signature(owner, member)   // t"(1,scala.Function1)scala.Option"
+      ##
+      ```
+
+      A universe caches everything it loads and is not thread-safe: build one per reading. A
+      name no source has gives `Unset` from `#classOf` rather than an error; `Erasure` turns
+      that into `Erasure.Unresolved` only where a signature cannot be spelled without it.
+  refer degustation.ClassSource
+  refer degustation.Scope
+  refer degustation.ClassInfo
+  refer degustation.Resolution
+  refer degustation.Erasure
+  entry .marker   a `scala.annotation.internal` marker annotation, as a tree
+      `Universe.marker(t"Repeated")` is the `New` of the named class in
+      `scala.annotation.internal`, as the compiler attaches to a parameter's type for a
+      modifier a method type cannot otherwise represent.
+  entry .synthetic   the classes the compiler defines with no classfile or TASTy behind them
+      `scala.Any` (with the members the compiler gives it), `scala.AnyKind`,
+      `scala.Matchable`, `scala.Nothing`, `scala.Null`, `scala.Singleton`, the repeated-
+      parameter marker `scala.<repeated>`, `scala.&` and `scala.|`, and the function classes
+      the compiler makes up by arity — `FunctionN` beyond 22 and every `ContextFunctionN` —
+      each as a `ClassInfo`; `Unset` for any other name. `Universe#classOf` consults this
+      before the classpath.
+  entry .impureFunction   `scala.ImpureFunctionN` and `scala.ImpureContextFunctionN` as the aliases they are
+      The compiler's own aliases, in no file: `[-T1, …, -TN, +R] =>> FunctionN[T1, …, TN,
+      R]^`, given as a `Resolution.Alias` whose body is the lambda; `Unset` for any other name.
+  entry .anyMembers   the members the compiler gives `Any`, with their signatures
+      `==`, `!=`, `equals`, `##`, `hashCode`, `toString`, `getClass`, `isInstanceOf`,
+      `asInstanceOf` and their `$`-wrapped forms, each a `Member` whose `erased` signature is
+      the one the compiler assigns (`getClass` and `isInstanceOf` take a type parameter).
+  entry .objectMembers   the members the compiler gives `AnyRef` beyond `java.lang.Object`'s
+      `eq`, `ne`, `synchronized` and `getClass`, added to `java.lang.Object` when it is loaded.
+  entry .functionArity   the arity of a function class the compiler synthesizes, or `-1`
+      `scala.FunctionN` for N beyond the implemented 22, and any `scala.ContextFunctionN`,
+      `scala.ImpureFunctionN` or `scala.ImpureContextFunctionN`.
+  entry .encode   a class name as it is spelled in a classfile or `.tasty` file name
+      Operator characters become their `NameTransformer` names (`*:` is `$times$colon`) and a
+      dot — which a top-level-definition carrier's name may contain — becomes `$u002E`.
+  entry .decode   the inverse of `.encode`, for a class name read from a file name
+  entry .qualify   a package member's full name: `pkg.name`, or `name` alone in the empty or root package
+  entry .nth   the element of a list at an index, or `Unset` when the index is out of range
+  entry .pin   types leaving the file they were read in, pinned to it as `Type.Foreign`
+      Arguments substituted into another file's alias or value class keep resolving their
+      local references in their own scope; with no scope to pin to, the types are returned as
+      they are.
+  entry .primitives   the nine primitive value classes, `scala.Unit` to `scala.Double`, by full name
+  entry .classRef   a reference to a class by fully-qualified name, as a `Type`
+      `Universe.classRef(t"scala.Option")` is `TypeRef(t"Option", TermRefPkg(t"scala"))`;
+      a name with no package refers into `<empty>`. A Java nested class's binary `$` is read
+      as a `.` in its name.
+  entry .className   the fully-qualified name a class type names, when it can be read off the type alone
+      Follows `TypeRefPkg`, `TypeRef` and `TypeRefIn` through package, `this` and stable-term
+      prefixes, and `Applied` and `Annotated` to their underlying type; `Unset` for a type
+      whose name needs resolution — a local reference, a type parameter, an alias.
+  entry .upper   the upper bound a bounds type imposes, or the type itself when it is not bounds
+  entry .typeOf   the type a type tree denotes
+      `IdentTpt` and `Path` carry their type; `SelectTpt` becomes a `TypeRef` against its
+      qualifier's `termType`; `SingletonTpt` its reference's type; `AppliedTpt` an `Applied`
+      (or an `And`/`Or`, when the constructor is `scala.&` or `scala.|` written as a type
+      tree); `RefinedTpt`, `LambdaTpt`, `BoundsTpt`, `AnnotatedTpt`, `MatchTpt` and
+      `ByNameTpt` their corresponding types, with a lambda's parameters bound by address as a
+      `Type.Abstraction`.
+  entry .termType   the type of a term tree used as a type's prefix, or of a parent constructor call
+      `Ident` carries its type; `Select` and `SelectIn` become term references against their
+      qualifier; `QualifiedThis` a `This`; `New` its type; `Apply` the result of applying its
+      function's type, or an `AppliedTerms` to be resolved later when that type is not yet at
+      hand; a `Block` its expression's; and anything else `scala.Nothing`.
+  entry .memberInfo   a type member's info as the compiler keeps it: an alias is bounds which coincide
+  entry .annotationType   the class type an annotation tree constructs
+      Looks through the `Apply`, `TypeApply`, `Select` of `<init>` and `New` of an annotation's
+      constructor call to the annotated class, applied to any explicit type arguments.
+  entry .parentType   the class type a parent clause names: the type under its constructor call, if any
+  entry .methodType   the methodic type a definition's clauses and result spell
+      `Universe.methodType(address, clauses, returns)` folds a `DefDef`'s clauses into nested
+      `Type.Poly` and `Type.Method` types with the definition's own address as every clause's
+      binder, so a `Type.Param` reference inside them resolves through
+      `Universe#clauseAddresses`. This is how a `Member#tpe` for a method is built.
+  entry .substitute   the parameters of the lambda at a binder replaced by arguments, throughout a type
+  entry .replace   local references by address replaced by types, throughout a type
+      Replaces `TypeRefDirect`, `TypeRefLocal`, `TermRefDirect` and `TermRefLocal` references
+      to the given addresses: type parameters in a type, or term parameters whose singleton
+      types a dependent method type mentions.
+  entry .transform   rewrites every subtype for which a partial function is defined, bottom-up
+  entry .mapChildren   rebuilds a type with a function applied to each of its immediate component types
+  entry .index   indexes an unpickled file into a `Scope`
+      Walks the file's trees, entering every definition by address with the fully-qualified
+      name the compiler's `fullName` would give it: members of a class or package qualified by
+      it, and a method's parameters and local types with the compiler's `_$` filler for each
+      enclosing term (`pkg.Class._$param`). Definitions inside term bodies are recorded as
+      local; a local type keeps its qualified name too, since an inline body refers to it by
+      it. `Universe#scope` does this for a file found on the classpath.
+  entry .children   the immediate subtrees of a tree
+  entry #erasure   the `Erasure` over this universe, made once
+  entry #scope   the scope of the `.tasty` file at a path, loaded and indexed once, or `Unset`
+  entry #enter   a file supplied directly rather than found on the classpath, entered under a path
+      The module being atomized, say: its classes become resolvable like any other's. Returns
+      the `Scope` made for it.
+  entry #classOf   the class named by a full name, or the class a type refers to
+      `classOf(fullName)` gives the `ClassInfo` from the first of the class's synthetic
+      definition, TASTy or classfile that exists, cached. A nested class lives in its
+      top-level class's TASTy, and a class's simple name may itself contain dots (a
+      top-level-definitions carrier is named after its source file), so every split of the
+      name between package segments, a top-level class and nested classes is tried, longest
+      package first; a module class `X$` is found in `X.tasty`. `classOf(tpe, scope)` is the
+      class a type refers to, through aliases, bounds and singletons; both give `Unset` for
+      what cannot be found.
+  entry #resolve   what a type refers to, following local references in a scope
+      The central question. Package references resolve to a class or a `Package`; named
+      references to the member of their prefix, searched along its class's linearization and
+      through an intersection's parts; local references to the definition at their address;
+      an applied alias to whatever its expansion resolves to, with the arguments pinned to
+      the scope they were spelled in; a `Param` to its binder's bound or parameter; a method
+      type to its result; a literal to its constant's class. What cannot be followed is a
+      `Resolution.Unknown` with the reason in words, never an exception.
+  entry #parts   the two parts of a prefix that is an intersection or a union, or `Unset`
+      Spelled as `And`/`Or`, or as an application of `scala.&` or `scala.|` (or an alias of
+      one), whose members are those of its parts, the first part that has the member
+      providing it.
+  entry #clauseAddresses   the addresses of the parameters of a definition's clause, by the clause's names
+      Which is how a `Type.Param(binder, number)` of a `methodType` is tied back to the
+      parameter definition it stands for. Empty when the binder is not a definition's (a
+      synthetic member's, say).
+  entry #applicationType   the type of an application of a method reference, with the arguments substituted
+      A type application of a polymorphic method, or a term application of a method, gives
+      the method's result with the arguments in place of the parameters — by address for a
+      definition's, by position for a synthetic member's — which is where a dependent result
+      comes to refer to an argument. A reference that is no application resolves to its
+      declared type. Returns the type with the scope it is spelled in.
+  entry #expansionOf   the expansion of an alias reference or application, with the scope it is spelled in, or `Unset`
+  entry #choose   among the members of a name along a class's linearization, the one a reference denotes
+      The one whose signature the reference's `Name#signature` carries, if it is signed; an
+      unsigned reference to an overloaded name denotes the parameterless alternative, since
+      the pickler signs every other kind of method. A concrete member is preferred over an
+      abstract redeclaration, as the compiler's `findMember` joins them.
+  entry #baseArguments   the type arguments with which a class, applied to arguments, instantiates a base class
+      The arguments themselves for the class itself; otherwise those of the parent clause
+      which leads to the base, with the class's own parameters substituted; `Unset` when the
+      class does not derive from the base.
+  entry #packageObjectMember   a member of a package's package object or of one of its top-level-definition carriers
+      Where a reference pickled against a package prefix finds a package-level type alias or
+      definition: the `package$` object first, then each `<file>$package` carrier the
+      `ClassSource` lists in the package's directory.
+  entry #owner   the class or package a prefix denotes: a package path, a class's `this`, a term's class
+  entry #selfType   the self type a class declares, if any
+  entry #memberIn   the member of a name and kinds, in a class or the first of its linearization that declares one
+      Returns the member with its declaring class. The class's own declarations are searched
+      first, then its linearization in order.
+  entry #termsIn   every term member of a name along a class's linearization, declaring class first
+  entry #linearization   the class's linearization by full name: itself, then its parents' from last to first
+      `L(C) = C, L(Pn) +: … +: L(P1)`, keeping the last occurrence of a class that appears
+      more than once, so a superclass's linearization is a suffix. A class asked for while its
+      own linearization is being computed contributes only itself.
+  entry #derivesFrom   whether a class has a base of the given full name in its linearization
+
+entry .Erasure   Scala 3's type erasure over the `Pickled` model, as far as spelling an erased signature needs it
+  detail
+      An `Erasure` is made over a `Universe` — `universe.erasure` is the one made for it —
+      and reproduces the rules of the compiler's `TypeErasure` and `Signature`, for Scala 3
+      source, with value classes semi-erased, in signature-name mode: the setting under
+      which the compiler spells the signature it stores in a `SIGNED` name. A member's
+      signature is `(paramSigs)resultSig`, each part a fully-qualified erased class name or a
+      type-parameter count: `(1,scala.Function1)scala.Option` for `Option#map`. Those are the
+      disambiguators in `ScalaAtom` keys and in `Name#signature`, so the two sides of a
+      reference agree by construction.
+
+      ```scala
+      import soundness.*
+      import classloaders.threadContextClassloader
+
+      val source: ClassSource = new ClassSource:
+        def read(path: Text): Optional[Data] = threadContextClassloader.resource(path)
+        def list(directory: Text): List[Text] = List()
+
+      val universe = degustation.Universe(source)
+      val erasure: Erasure = universe.erasure
+
+      erasure.sigName(degustation.Universe.classRef(t"scala.Int"), Unset)      // t"scala.Int"
+      erasure.sigName(degustation.Universe.classRef(t"scala.Any"), Unset)      // t"java.lang.Object"
+      erasure.resultSigName(degustation.Universe.classRef(t"scala.Unit"), Unset)   // t"scala.Unit"
+      ```
+
+      The rules, in brief: `Any`, `AnyVal`, `Matchable`, `Singleton` and `caps.Pure` erase to
+      `java.lang.Object`; `Tuple` and `NonEmptyTuple` to `scala.Product`; `Unit` to
+      `scala.runtime.BoxedUnit` as a parameter and `scala.Unit` as a result; a value class to
+      its underlying type as a parameter and to itself as an array element; an alias or
+      opaque type to its right-hand side; an abstract type or type parameter to its upper
+      bound; a by-name parameter to `scala.Function0`; a polymorphic function type to the
+      `FunctionN` of its arity; a `*:` tuple to `TupleN` or `TupleXXL`; an `Array[T]` to an
+      array of `T`'s erasure, or to `Object` when `T` is generic; an intersection to the
+      erased greatest lower bound of its parts (dropping a pure capability part); a union to
+      the erased least upper bound; a match type to its reduction, or its bound.
+
+      A type whose erasure needs a class the universe cannot find throws
+      `Erasure.Unresolved`, which `Inspection.atomize` reports as `Inspection.Error` with
+      `Reason.Unencodable`.
+  refer degustation.Universe
+  refer degustation.Pickled
+  entry .Erased   an erased type: a reference to a class by full name, or an array of one
+      `Ref(name)` or `Array(element)`; `Erasure#render` spells them as `name` and `name[]`.
+  entry .Unresolved   thrown when a type's erasure needs a class the universe cannot find
+    detail
+        A `RuntimeException` carrying `#detail`: the reason the universe gave, or the package
+        which was used as a type. Erasure can fail only on a classpath that lacks something
+        the module refers to, so the dependency classpath handed to `Degustation.atomize` or
+        `Inspection.atomize` must carry everything the files reference, including the Scala
+        library and the JDK's classes.
+    entry #detail   why the type could not be resolved
+  entry #signature   the erased signature of a definition, or of a member found by lookup
+      `signature(tree, scope, owner)` is a `DefDef`'s signature: each type clause as its
+      parameter count, each term parameter's erased name (an `erased` parameter, or one whose
+      type is an `erased class`, has no place in it), and the result's; a constructor's
+      result is its own class, erased as the class is. Anything that is not a method — a
+      value, a parameterless method — has the signature the compiler gives a non-method, `()`.
+      `signature(owner, member)` is a member's from lookup: a Java member's is read off its
+      descriptor, a Scala member's from its declaration in its class's file.
+  entry #signatureOf   the signature of a pickled methodic type — a refinement's method, say — spelled as a declaration's would be
+  entry #javaSignature   a Java member's signature from its descriptor types, which are already erased
+  entry #sigName   the erased name of a type as a parameter: `render(erase(tpe, scope, vc = true))`
+  entry #resultSigName   the erased name of a type as a result: as a parameter's, except that `Unit` stays `scala.Unit`
+  entry #render   an `Erased` spelled as a signature does: the class's full name, with `[]` for each array level
+  entry #erase   the erasure |T| of a type, in a scope, with or without value classes semi-erased
+      `vc` is the compiler's `semiEraseVCs`: `true` erases a value class to its underlying
+      type, as a parameter is erased; `false` keeps it as itself, as an array element or the
+      underlying of another value class is. Throws `Erasure.Unresolved` for a type the
+      universe cannot follow.
+  entry #erasedGlb   the erased greatest lower bound: one of its two arguments, by the compiler's total order
+      Arrays before non-arrays, primitives before others, classes before traits, subclasses
+      before superclasses, then by name. This is how an intersection erases.
+  entry #erasedLub   the erased least upper bound, as a union erases
+      `Nothing` vanishes against anything, `Null` against a type that derives from `Object`
+      (a universal trait does not); arrays join elementwise; two classes join at the last
+      minimal common base class, preferring classes over traits, or at `java.lang.Object`.
+
+entry .Classfile   the little of a Java classfile that erasure and member lookup need
+  detail
+      A reader of the class's name, kind and supertypes, and its members' names and
+      descriptors — which, for a Java member, already *are* its erased signature. Nothing
+      generic is read: a Java type parameter erases to its bound, which the descriptor spells
+      out, and the erasure of a Scala reference to a Java class is the class. A `Universe`
+      reads one for every class it finds a `.class` file but no `.tasty` for, which is how
+      the JDK's and any Java library's classes join the universe.
+
+      It is `@unexported` from the umbrella, where `Classfile` is mandible's name, so it is
+      written `degustation.Classfile`.
+
+      ```scala
+      import soundness.*
+      import classloaders.threadContextClassloader
+      import strategies.throwUnsafely
+
+      val cls: degustation.Classfile.Class = degustation.Classfile(cp"/java/lang/String.class".read[Data])
+      (cls.name, cls.superclass, cls.interfaces, cls.isInterface)
+      cls.methods.filter(_.name == t"charAt").map(_.descriptor)   // List(t"(I)C")
+      ```
+  refer degustation.Universe
+  entry .apply   reads a classfile's constant pool, header and member tables; attributes are skipped
+      Of the class's own attributes only `InnerClasses` is read, for the entry describing the
+      class itself: its enclosing class and whether it is static there. Bytes that do not
+      begin with the classfile magic, or an unknown constant-pool tag, throw
+      `Classfile.Malformed`.
+  entry .Class   a class as read: name, flags, supertypes, members, and its enclosing class if nested
+    detail
+        `#name` is the dotted binary name; `#superclass` is `Unset` only for `java.lang.
+        Object`; `#outer` and `#static` come from the `InnerClasses` attribute, and tell a
+        `Universe` to name a nested class under its outer (`Outer.Inner`, or `Outer$.Inner`
+        for a static one, which Scala sees as a member of the companion).
+    entry #name   the class's name, with `.` between its package segments
+    entry #flags   the class's access flags, as the classfile stores them
+    entry #superclass   the superclass's name, or `Unset` for `java.lang.Object`
+    entry #interfaces   the names of the interfaces the class implements
+    entry #fields   the class's fields
+    entry #methods   the class's methods, including constructors and static ones
+    entry #outer   the binary name of the enclosing class, from `InnerClasses`, or `Unset`
+    entry #static   whether a nested class is static within its outer
+    entry #isInterface   whether the `ACC_INTERFACE` flag is set
+  entry .Method   a method's name, descriptor and access flags
+    entry #name   the method's name; `<init>` for a constructor
+    entry #descriptor   the JVM descriptor, `(I)C` for `charAt`
+    entry #flags   the method's access flags
+  entry .Field   a field's name, descriptor and access flags
+    entry #name   the field's name
+    entry #descriptor   the JVM descriptor of the field's type
+    entry #flags   the field's access flags
+  entry .Descriptor   a descriptor's types as `Pickled.Type`s
+    detail
+        References to the named classes, with primitives as the Scala value classes they
+        correspond to (`I` is `scala.Int`, `V` is `scala.Unit`) and arrays as applications of
+        `scala.Array`.
+    entry .parameters   the parameter types of a method descriptor
+    entry .result   the result type of a method descriptor
+    entry .field   the type of a field descriptor
+  entry .Malformed   thrown for bytes that are not a classfile, or a descriptor that cannot be parsed
+    entry #detail   what was wrong: _not a classfile_, _unknown constant pool tag N_, _bad descriptor …_
+
+entry .Degustation   the atomizer: a module's TASTy files cut into the `ScalaAtom`s of LIRA's Scala discipline
+  detail
+      `Degustation.atomize` applies the atomization rules of the Scala discipline (`tasty/2`)
+      over the `Pickled` model of a module's files, with a `Universe` answering the two
+      questions the bytes cannot: what a reference names, and what a declaration's
+      parameters erase to. The folding principle governs every decision: a declaration whose
+      addition cannot break consumers — a class, a method, a value, a type member — stands
+      alone as an atom, keyed by its fully-qualified name and erased signature; a fragment
+      whose addition *can* break consumers — an abstract member of an open trait, a child of a
+      sealed type, a parameter — folds into its enclosing atom's value, so that the whole
+      compatibility check between two versions of a library stays set arithmetic over keys
+      and values.
+
+      Canonicalization is structural, never printed: symbols appear as fully-qualified names,
+      types as a tag-length-value fold over the type constructors, type-lambda parameters as
+      de Bruijn indices, and members in sorted key order. Positions, tool versions and
+      sharing never enter the encoding, so recompiling a module, or reordering its
+      declarations, yields byte-identical atoms; adding a concrete method leaves every other
+      atom unchanged; and changing an inline body changes that body's atom alone. A construct
+      outside the encoder's vocabulary is a hard error, `Degustation.Unencodable`, so
+      vocabulary drift in the toolchain is detected rather than silently absorbed.
+
+      ```scala
+      import soundness.*
+      import classloaders.threadContextClassloader
+      import strategies.throwUnsafely
+
+      val dependencies: ClassSource = new ClassSource:
+        def read(path: Text): Optional[Data] = threadContextClassloader.resource(path)
+        def list(directory: Text): List[Text] = List()
+
+      val files: List[(Text, Data)] =
+        List((t"scala/Option.tasty", cp"/scala/Option.tasty".read[Data]))
+
+      val atoms: List[ScalaAtom] = Degustation.atomize(files, dependencies)
+      atoms.map(_.key).filter(_.s.startsWith("scala.Option.map("))
+      ```
+
+      Private members are not API and yield no atom; a `private[pkg]` member is
+      conservatively API; an export forwarder atomizes exactly as its hand-written
+      equivalent; an inline or macro definition yields a *replaceable* atom, keyed with an
+      `[inline]` suffix, whose references name what its body splices. `Inspection.atomize`
+      is this over files and a classpath on disk.
+  refer degustation.ScalaAtom
+  refer degustation.Inspection
+  refer degustation.Universe
+  entry .atomize   atomizes a module's `.tasty` files, each named by its classpath-relative path, against a dependency classpath
+      The files are `(path, bytes)` pairs, the path relative to the classpath as a `.tasty`
+      file is named (`fixture/Overloads.tasty`), and are entered into the universe before the
+      dependencies, so the module's own classes resolve first. `dependencies` must carry
+      everything the files reference, including the Scala library and the JDK's classes;
+      a reference it cannot resolve throws `Erasure.Unresolved` where a signature needed it.
+      References collected from inline bodies are classified at the end: those matching an
+      atom of the module are `ScalaReference.Own`, the rest `ScalaReference.Foreign`, to be
+      resolved against dependencies at assembly time.
+  entry .Unencodable   thrown for a construct outside the encoder's vocabulary
+    detail
+        A `RuntimeException` carrying the `#construct` which could not be encoded. It means a
+        form of TASTy the discipline has no canonical encoding for was met, and is the signal
+        that the vocabulary needs extending; `Inspection.atomize` reports it as
+        `Inspection.Error` with `Reason.Unencodable`, or `Reason.DuplicateKey` when the
+        construct is a key produced twice.
+    entry #construct   the construct, in words
+
+entry .ScalaAtom   one atom of the Scala discipline, before hashing: key, class, canonical encoding and references
+  detail
+      The unit of LIRA's compatibility check. `#key` is the stable key: the definition's
+      fully-qualified name with, for a method, its erased signature — `fixture.Overloads.
+      f(scala.Int)scala.Int` — and an `[inline]` suffix for a replaceable atom.
+      `#replaceable` is whether the atom is an inline or macro body, which a consumer copies
+      and so depends on by value, rather than a rigid declaration it links against.
+      `#encoding` is the canonical encoding whose hash is the atom's value, and
+      `#references` the symbolic references collected from a replaceable body, empty for a
+      rigid atom.
+
+      ```scala
+      import soundness.*
+
+      val atom = ScalaAtom(t"fixture.Tops.value", false, Data())
+      atom.key
+      atom.references
+      ```
+  refer degustation.Degustation
+  refer degustation.ScalaReference
+  entry #key   the stable key: fully-qualified name, erased signature for a method, `[inline]` for a replaceable atom
+  entry #replaceable   whether the atom is an inline or macro body rather than a rigid declaration
+  entry #encoding   the canonical encoding whose hash is the atom's value
+  entry #references   the references a replaceable body makes; empty for a rigid atom
+
+entry .ScalaReference   a symbolic reference from an inline body: to an atom of the same module, or of a dependency
+    `Own(key)` names an atom of the same module by its key; `Foreign(key)` names one in a
+    dependency, resolved to a value hash at assembly time, when the dependency's atoms are at
+    hand. `Degustation.atomize` classifies every reference it collected by whether the key
+    is among the module's own atoms.
+
+    ```scala
+    import soundness.*
+
+    val reference: ScalaReference = ScalaReference.Foreign(t"scala.Option.map(1,scala.Function1)scala.Option")
+
+    reference match
+      case ScalaReference.Own(key)     => t"own: $key"
+      case ScalaReference.Foreign(key) => t"foreign: $key"
+    ```
+
+entry .Inspection   atomizes `.tasty` files on disk against a classpath of directories and jars
+  detail
+      The filesystem face of `Degustation.atomize`, in `degustation.core`. `Inspection.
+      atomize(tastyFiles, classpath)` reads each file and each classpath directory through the
+      galilei `FilesystemBackend on Linux` in scope, and each jar through zeppelin, builds a
+      `ClassSource` over them, and atomizes. No compiler is involved, so neither
+      `scala3-compiler` nor `scala3-tasty-inspector` need be on the classpath to call it.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+      import filesystemBackends.javaBaseFilesystem
+
+      val atoms: List[ScalaAtom] =
+        Inspection.atomize(
+          List(t"/build/classes/fixture/Overloads.tasty"),
+          List(t"/build/classes", t"/lib/scala3-library.jar", t"/lib/scala-library.jar"))
+
+      atoms.map(_.key)
+      ```
+
+      Each `Text` must parse as an absolute Linux path. Every classpath entry is a directory
+      or a jar, by what is on disk; the classpath must carry everything the files reference,
+      including the Scala library. The JDK's own classes are read from the running JVM's
+      class loader on the JVM; on Scala Native there is no JVM to read them from, so a jar of
+      the JDK's class files must be on the classpath. A file inside one of the classpath
+      directories is named by its path relative to it; a file outside every one is placed by
+      the package it declares, read from the file itself.
+
+      A malformed path, an unreadable file or a malformed jar raises `Inspection.Error` with
+      `Reason.InspectionFailed`; a construct the encoder cannot encode raises it with
+      `Reason.Unencodable`, and a key produced twice with `Reason.DuplicateKey`. The atoms
+      are those `Degustation.atomize` produces: byte-identical for a recompilation or a
+      reordering of declarations, and the discipline they implement is `tasty/2`.
+  refer degustation.Degustation
+  refer degustation.ScalaAtom
+  entry .atomize   atomizes the named `.tasty` files against the named classpath entries
+      Needs a `FilesystemBackend on Linux` (`import filesystemBackends.javaBaseFilesystem` on
+      the JVM, `filesystemBackends.scalaNativeFilesystem` on Native) and a
+      `Tactic[Inspection.Error]`. Jars are read lazily: a jar's central directory is parsed
+      once, and each entry's bytes when a class in it is first asked for.
+  entry .Error   raised when the Scala discipline cannot be applied to the files
+    detail
+        Error 642: _the Scala discipline failed because `reason`_, where the reason is one of
+        `Inspection.Error.Reason`'s cases: `InspectionFailed(detail)` (reason 1), _the TASTy
+        could not be read: `detail`_, for a malformed path, an unreadable file, a malformed
+        jar or a malformed classfile; `Unencodable(construct)` (reason 2), _no canonical
+        encoding is defined for `construct`_, for a form the encoder has no vocabulary for or a
+        type whose erasure needs a class the classpath lacks; and `DuplicateKey(key)` (reason
+        3), _the key `key` was produced twice_. Raised by `Inspection.atomize` alone; the
+        library's lower layers throw `Degustation.Unencodable`, `Erasure.Unresolved` and
+        `Classfile.Malformed` instead, which `Inspection` translates.
+    entry .Reason   why the discipline failed: `InspectionFailed`, `Unencodable` or `DuplicateKey`
+        Each case carries its detail — the text of what could not be read, the construct, or
+        the key — and the reason's number, 1 to 3, which becomes the error's sub-number.
+    entry .communicable   renders each `Reason` as a message
+        In implicit scope through the companion; nothing need be imported.
+    entry #reason   the `Reason` the error carries

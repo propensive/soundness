@@ -1,0 +1,617 @@
+tel 1.0
+
+base serpentine
+import soundness
+
+info   paths as typed values: absolute and relative, bound to a platform, composed with `/` and checked as the code compiles
+detail
+    _Serpentine_ is the path algebra every hierarchy in Soundness shares: filesystem paths, the
+    classpath, URL paths, JSON pointers, Git refs and archive entries are all a `Path` or a
+    `Relative` on some **plane**. It is about the *shape* of a path, not a file on disk;
+    reading and writing files is galilei's business, and the platform planes themselves
+    (`Linux`, `MacOs`, `Posix`, `Windows`, `Local`) and the `p"…"` interpolator live there too.
+
+    An absolute path is a `Path`: a root, which is plain text in the plane's own notation, and
+    a descent of names, held leaf-first. A relative path is a `Relative`: a number of steps up
+    and then a descent. Both carry three type members, each read through an infix alias:
+
+    - `on` — the `Plane`, the filesystem or hierarchy whose rules the path obeys, so a `Path
+      on Linux` and a `Path on Windows` are distinct types;
+    - `of` — the `Topic`, the tuple of the path's names when the compiler knows them,
+      innermost first: `% / "home" / "work"` is a `Path of ("work", "home")`;
+    - `under` — the `Limit`: for a `Path`, the type of its root (`%.type`, `Drive`); for a
+      `Relative`, how many steps it climbs.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    val work = % / "home" / "work"                      // Path of ("work", "home")
+    val linux: Path on Linux = work.on[Linux]           // each name checked against Linux's rules
+    val up = ? / ^ / "more"                             // Relative of Mono["more"] under 1
+    linux + up                                          // % / "home" / "more"
+    work.toward(% / "home" / "more")                    // ? / ^ / "more"
+    t"/home/work".as[Path on Linux].encode              // t"/home/work"
+    ```
+
+    A path built with `/` is platform-neutral until `on` binds it, checking each name; a path
+    built on a value which already has a plane (`Drive('C') / "Windows"`) stays on it, and
+    each name added is checked as it is added. Where the names are literals the check, and
+    the arithmetic of `+`, `toward` and `conjunction`, happens as the code compiles; where
+    they are runtime text, a `Tactic[Name.Error]` must be in scope.
+
+    The typeclasses describe what a plane provides: `Filesystem` (its separator, and its self
+    and parent names), `Radical` and `Eradicable` (how a root type is written as text and read
+    back), `Admissible` and `Navigable` (which values may be a name on it, and how), and
+    `Submissible` and `Compliant` (which roots and which other planes' relative paths it
+    accepts). A new hierarchy is a type with these givens in its companion, and a root object
+    extending `Root`.
+
+    There is one source set, `serpentine.core`, which compiles for every platform. Everything
+    is exported to the `soundness` umbrella, including `%`, `^` and `?`.
+
+refer serpentine.Path
+refer serpentine.Relative
+refer serpentine.Filesystem
+refer serpentine.Radical
+refer serpentine.Eradicable
+refer serpentine.Admissible
+
+entry .%   the root of a POSIX path, from which an absolute path descends with `/`
+    The object `Path.%`, exported to the package: `% / "home" / "work"` is an absolute path,
+    platform-neutral until `on` binds it (`(% / "home").on[Linux]`). Its type is used as the
+    `Limit` of a path rooted at `/`, so `Path on Linux under %.type` is a Linux path known to
+    start at the root. The galilei planes `Linux`, `MacOs` and `Posix` give `%.type` its
+    `Radical` and `Eradicable` instances, so it reads and writes as `/`.
+
+entry .^   one step up, in a relative path: `? / ^ / "sibling"`
+    The object `Relative.^`, exported to the package. It is only ever a child of `?` or of
+    another ascent: `? / ^ / ^` climbs two levels, as an `Ascent under 2`, and a name after
+    it begins the descent.
+
+entry .?   the current location: the self-relative path, from which a relative path is built
+    The object `Relative.?`, exported to the package: the `Relative` with no ascent and no
+    descent, which encodes as the filesystem's self name (`.`). A relative path is built from
+    it with `/`, by steps up (`^`) and then names: `? / ^ / "more"`.
+
+entry .Path   an absolute path: a root and a descent of names, typed by plane, names and root
+  detail
+      A `Path` is a case class of a `#root` — the root as text, in the plane's own notation,
+      `/` or `C:\` — and a `#descent` of names, held **leaf-first**, so `% / "home" / "work"`
+      is `Path(t"/", t"work", t"home")`. Its type members say what is known about it: the
+      `Plane` it is on (`Path on Linux`), the `#Topic` tuple of its names, innermost first
+      (`Path of ("work", "home")`), and the `Limit`, the type of its root (`Path under
+      %.type`). Each is optional: a bare `Path` is still a path.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val path: Path of ("bar", "foo") = % / "foo" / "bar"
+      val linux: Path on Linux = path.on[Linux]
+      linux.parent                       // % / "foo"
+      linux.name                         // t"bar"
+      linux.encode                       // t"/foo/bar"
+      t"/home/work/".as[Path on Linux]   // % / "home" / "work"
+      ```
+
+      A `Path of …` with a known `Topic` converts to the same path on a plane implicitly
+      (`.convert`), checking its names, so a literal path may be passed where a `Path on
+      Linux` is wanted. Text decodes to a path only when the plane is named (`as[Path on
+      Linux]`), since the plane decides the separator and the rules; the root is read by the
+      plane's `Eradicable`, which raises `Path.Error` reason `InvalidRoot` through the
+      `Tactic[Path.Error]` in scope. A trailing separator is ignored.
+
+      A path matches with the `/:` extractor, peeling the root and then each name from the
+      top (`.quotient`):
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val path = t"/home/work".as[Path on Linux under %.type]
+
+      path match
+        case root /: t"home" /: rest => rest   // t"work"
+        case _                       => path.relative
+      ```
+
+      A trap: a name whose type is refined at the call site — `dir / t"$name.txt"`, or a path
+      built off a lambda parameter — gives a `Topic` that some givens over plain `Path on
+      Linux` do not match. Bind the path to a `val` ascribed `Path on Linux`, call `on[Linux]`
+      straight after composing off a stable value, or build it from text:
+      `t"${dir.encode}/$name".as[Path on Linux]`.
+  refer serpentine.Relative
+  refer serpentine.Filesystem
+  refer serpentine.Radical
+  refer serpentine.Eradicable
+  entry .%   the root of a POSIX path, exported to the package as `%`
+      An object extending `Path(t"/")` with an empty `Topic`, whose `Limit` is its own type.
+      `% / "name"` is the start of every POSIX path; it is exported to `serpentine` and the
+      `soundness` umbrella, so it is written bare.
+  entry .apply   a path from its root text and its names, leaf-first, with the plane and types chosen
+      `Path(t"/", t"bar", t"foo")` is the case-class constructor, the root text then the names
+      deepest first, and is what `% / "foo" / "bar"` equals. The overload
+      `Path[filesystem, root, topic](root, descent: List[Text])` makes a path with all three
+      type members set, without checking anything: it is the building block of the
+      operations, and of a plane's own decoders.
+
+      ```scala
+      import soundness.*
+
+      Path(t"/", t"bar", t"foo") == % / "foo" / "bar"
+      ```
+  entry .unplatformed   a path with a known topic and root but no plane, unchecked
+      `Path.unplatformed[root, topic](root, descent*)`: what `/` builds when the child is not
+      admissible on the parent's plane, so the result has no `Plane` until `on` binds one.
+  entry .decodable   reads a `Path on filesystem` from text, with the plane's separator and root
+      Needs the plane's `Filesystem`, and a `Radical` and an `Eradicable` for its root type.
+      The root is read by the `Eradicable`, the rest split on the separator, a trailing empty
+      name dropped, and each name unescaped. The instance retains the `Eradicable`, and with it
+      whatever `Tactic[Path.Error]` it took: a plane whose root cannot be malformed (a zip
+      archive, the web) gives a decoder which needs no tactic.
+  entry .decodable2   reads a `Path on filesystem under root` from text, keeping the root type
+      As `.decodable`, for a target type which also names the root, such as `Path on Linux
+      under %.type`, which a pattern match with `/:` needs.
+  entry .instantiable   makes a `Path on filesystem` from text, for APIs which take any path type
+      The `Instantiable across Paths from Text` given: a library which returns paths of the
+      caller's choosing (`entry[Path on Linux]()`) decodes them through this, with the same
+      requirements as `.decodable`.
+  entry .trustedInstantiable   makes a `Path on filesystem` from path text already known to be valid
+      The `Instantiable across Paths from Paths.Trusted` given: path data which came from the
+      filesystem itself cannot be malformed, so the decode runs under its own `unsafely` and
+      the caller needs no `Tactic[Path.Error]`. It needs the plane's `Filesystem`, its root's
+      `Radical`, and an `Eradicable` which takes a tactic.
+  entry .encodable   renders a path as text in its plane's notation: the root, then the names joined by its separator
+      Needs the plane's `Filesystem`; each name is escaped by `Filesystem#escape`. A Windows
+      path `Drive('D') / "Foo"` encodes as `D:\Foo`.
+  entry .showable   shows a path as its encoded text, for any path on a plane with a `Filesystem`
+  entry .communicable   renders a path as a message, its encoded text
+  entry .inspectable   a debug rendering of any path, with or without a plane: `/foo/bar`
+      Always available, since it needs no `Filesystem`: the root is shown as stored, which
+      already carries the plane's notation, and the names are joined with `/`, unescaped.
+      `(% / "foo" / "bar").inspect` is `t"/foo/bar"`.
+  entry .nominable   a path's name, for APIs which name things: its leaf, or its root text if it has none
+  entry .generic   any path on a plane with a `Filesystem` as `Abstractable across Paths to Text`
+      What lets a serpentine path be passed to any API which takes a path of any type (as
+      `Classpath.Directory(path)` does): it abstracts to its encoded text.
+  entry .convert   the implicit conversion of a path with known names to the same path on a plane
+      `Conversion[Path of topic under root, Path of topic on filesystem under root]`, through
+      `#on`, so the names are checked against the target plane as the code compiles:
+
+      ```scala
+      import soundness.*
+
+      def receive(path: into[Path on Linux]): Unit = ()
+      receive(% / "foo" / "bar")
+      ```
+  entry .quotient   the `/:` extractor for a path: its root, then the rest as a name or a `Relative`
+      A path with no names does not match. A path of one name matches as `root /: name`, and
+      one of more as `root /: relative`, where the `Relative` matches again with `/:`, peeling
+      the top name each time. The root is decoded with the plane's `Eradicable`, so a match
+      needs the path's `Limit` to be known (`Path on Linux under %.type`) and, for a root which
+      can be malformed, a `Tactic[Path.Error]`.
+  entry .conjunction   the deepest common ancestor of two paths, computed as the code compiles where it can
+      An extension on any `Path`. Where both paths' names are known and they share a root, the
+      result's names are in its type: `(% / "home" / "work" / "data").conjunction(% / "home"
+      / "more")` is a `Path of Mono["home"]`. Otherwise it is computed at runtime. The result
+      is `Optional`, for two paths with different roots.
+
+      ```scala
+      import soundness.*
+
+      val a = % / "home" / "work" / "data"
+      val b = % / "home" / "work" / "more"
+      a.conjunction(b)   // % / "home" / "work"
+      ```
+  entry .toward   the relative path from one path to another, computed as the code compiles where it can
+      An extension on any `Path`: `a.toward(b)` is the `Relative` which, added to `a`, gives
+      `b` — up from `a` to the two paths' `conjunction`, then down to `b`. The relative path
+      keeps the plane of the target, and where every name is known its ascent and names are
+      in its type. The result is `Optional`.
+
+      ```scala
+      import soundness.*
+
+      val a = % / "home" / "work" / "data" / "foo"
+      val b = % / "home" / "more"
+      a.toward(b)   // ? / ^ / ^ / ^ / "more"
+      b.toward(a)   // ? / ^ / "work" / "data" / "foo"
+      ```
+  entry .Error   raised when a path cannot be read or resolved: an invalid root or name, or roots which differ
+    detail
+        Error `SN-831`: _the path `path` was invalid because `reason`_, where the path is
+        named if known. The `#reason` is a `Path.Error.Reason`:
+
+        - `RootParent` (1) — _the root has no parent_;
+        - `InvalidRoot` (2) — _the root is not valid_: text which does not begin as the
+          plane's root does, such as `C:` on Linux;
+        - `DifferentRoots` (3) — _it does not have the same root as the source_;
+        - `InvalidName` (4) — _the name is not valid_.
+
+        It is raised by a plane's `Eradicable` when text is decoded as a path, and by
+        `Path#resolve`. A name which breaks a plane's rules when it is *added* to a path is a
+        `Name.Error`, not this.
+
+        ```scala
+        import soundness.*
+
+        capture[Path.Error](t"C:\\Windows".as[Path on Linux]).reason   // Path.Error.Reason.InvalidRoot
+        ```
+    entry .apply   a path error from a reason, chosen as `_.InvalidRoot`, and the path's text if known
+        `Path.Error(_.InvalidRoot, t"C:")`: the reason is a function of the `Reason` companion,
+        so a plane's `Eradicable` writes `abort(Path.Error(_.InvalidRoot))`. Needs a
+        `Diagnostics` in scope, as every error's construction does.
+    entry .Reason   why a path was invalid: `RootParent`, `InvalidRoot`, `DifferentRoots` or `InvalidName`
+      detail
+          An enum of four numbered cases, which are the second part of the error's code. Its
+          companion has an anonymous `Communicable` given rendering each as a message, such
+          as _the root is not valid_.
+      entry #number   the reason's number, `1` to `4`
+    entry #reason   why the path was invalid
+    entry #path   the path's text, or `Unset` if it is not known
+  entry #root   the root, as text in the plane's notation: `/`, `C:\`, `refs/`
+  entry #descent   the path's names, leaf first
+      `(% / "home" / "work").descent` is `t"work"`, `t"home"`; `encode` reverses them. A path
+      rebuilt from names read in top-down order must reverse them first.
+  entry #Topic   the tuple of the path's names, innermost first, where the compiler knows them
+      `% / "foo" / "bar"` is a `Path of ("bar", "foo")`, read through the infix alias `of`. A
+      name from runtime text contributes its singleton type, and a path whose names are not
+      known at all has the bound `Tuple`.
+
+      ```scala fuel
+      frame
+        label The root
+        code
+            import soundness.*
+
+            val path = %                          // %.type: no names, Topic EmptyTuple
+      frame
+        label One name
+        code
+            import soundness.*
+
+            val path = % / "home"                 // Path of Mono["home"] under %.type
+      frame
+        label Two names, innermost first
+        code
+            import soundness.*
+
+            val path = % / "home" / "work"        // Path of ("work", "home") under %.type
+      frame
+        label Bound to a plane
+        code
+            import soundness.*
+
+            val path = (% / "home" / "work").on[Linux]   // Path of ("work", "home") on Linux under %.type
+      ##
+      ```
+  entry #name  the path's leaf name, or its root text if it has no names
+  entry #nil   whether the path has no names: the root alone
+  entry #knownElementTypes   whether the `Topic` is a known tuple, even if some of its names are runtime values
+  entry #knownElements   whether every name in the `Topic` is a literal known to the compiler
+      `(% / "foo" / "bar").knownElements` is `true`; a path with a name from a variable, or one
+      ascribed `Path on Linux`, is `false`.
+  entry #depth   how many names the path has, computed from the `Topic` where it is known
+  entry #on   this path bound to a plane, checking each name against its rules
+      `path.on[Linux]` checks each name with its `Admissible on Linux` instance — at compile
+      time for a literal, and through a `Tactic[Name.Error]` for runtime text — and checks the
+      root: that its type is `Submissible` on the plane, or decodes with the plane's
+      `Eradicable`, or that the plane has a unique root. A path already on the plane is
+      returned as it is. A root of another plane is a compile error, so `(Drive('C') /
+      "foo").on[Linux]` does not compile, and a path on Linux converts freely to `MacOs`.
+
+      ```scala
+      import soundness.*
+
+      (% / "home" / "work").on[Linux]
+      (% / "fo/o").on[Linux]   // does not compile
+      ```
+  entry #/   a child of this path: one more name, checked against the plane if the path has one
+      The child may be a literal string, `Text`, a `Name`, or any value with a `Navigable`
+      instance (a `Uuid`, an `Ordinal` on a JSON pointer). If the child is `Admissible` on the
+      path's plane, the result stays on the plane, and the name is checked — at compile time
+      for a literal, through a `Tactic[Name.Error]` for runtime text. Otherwise the result is
+      platform-neutral, with the child's singleton type added to the `Topic`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val dir: Text = t"work"
+      val home: Path on Linux = % / "home"
+      home / dir / "data"     // Path on Linux, with `dir` checked at runtime
+      ```
+  entry #peer   a sibling of this path: its leaf replaced by another name
+      `path.peer("baz")` on `% / "foo" / "bar"` is `% / "foo" / "baz"`. The name must be
+      `Admissible` on the path's plane. It reads the `Topic`, so on a path whose `Topic` is
+      abstract it degenerates; there, build the sibling from `#parent`.
+  entry #parent   the path one level up, or `Unset` for a root
+      Typed from the `Topic` where it is known, so the parent of a `Path of ("bar", "foo")`
+      is a `Path of Mono["foo"]`, and the parent of a root is statically `Unset`.
+  entry #ancestors   every ancestor of this path, nearest first, up to the root
+  entry #+   this path with a relative path applied: its ascent climbed, then its names descended
+      `(% / "home" / "work" / "data") + (? / ^ / "more")` is `% / "home" / "work" / "more"`,
+      with the result's `Topic` computed from both.
+
+      ```scala
+      import soundness.*
+
+      val path = (% / "home" / "work" / "data" / "foo").on[Linux]
+      path + (? / ^ / ^ / "baz" / "quux")   // % / "home" / "work" / "baz" / "quux"
+      ```
+  entry #resolve   text resolved against this path: an absolute path as itself, a relative one from here
+      `base.resolve(text)` decodes the text as a `Path on Plane`, and failing that as a
+      `Relative on Plane` added to this path; text which is neither raises `Path.Error` reason
+      `InvalidRoot`. Needs the plane's path and relative decoders and a `Tactic[Path.Error]`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val base: Path on Linux = % / "home" / "work"
+      base.resolve(t"../more")    // % / "home" / "more"
+      base.resolve(t"/etc")       // % / "etc"
+      ```
+  entry #precedes   whether this path is an ancestor of another, or the same path
+      `(% / "foo" / "bar").precedes(% / "foo" / "bar" / "baz")` is `true`; the roots must be
+      the same.
+  entry #relative   this path's names as a `Relative` with no ascent, as though from its root
+  entry #shift   this path with its topmost names removed: `(% / "a" / "b" / "c").shift(1)` is `% / "b" / "c"`
+  entry #graft   the same names on a different root
+      `path.graft(root)` needs the new root's `Radical` on the path's plane, which writes the
+      root as text; the result's `Limit` is the new root's singleton type.
+  entry #sameRoot   whether two paths share a root, statically `true` on a plane with a unique root
+  entry #rename   this path with its leaf renamed by a function of its old name, or `Unset` for a root
+      The block receives the old name as a contextual `Text aka "prior"`, which `prior` reads:
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val file: Path on Linux = % / "home" / "notes.txt"
+      file.rename(t"$prior.bak")   // % / "home" / "notes.txt.bak"
+      ```
+  entry #unsafeChild   a child from runtime text with no check at all, for one already validated
+      `path.unsafeChild(name)(using Unsafe)` adds the name without consulting the plane's
+      rules; the erased `Unsafe` token marks the call site. Use it where the name is known to
+      be valid — a name read from a directory listing — and the cost or the tactic of a check
+      is not wanted, or where `/` cannot be used because the path's `Topic` is abstract.
+
+entry .Relative   a relative path: a number of steps up, then a descent of names, typed by plane
+  detail
+      A `Relative` is a case class of an `#ascent`, the number of steps up, and a `#descent` of
+      names, held leaf-first. It is built from `?` with `/`, by `^` for each step up and then
+      names, and its type carries the plane (`on`), the `#Topic` of its names (`of`) and its
+      ascent as a literal `#Limit` (`under`), so `? / ^ / "more"` is a `Relative of
+      Mono["more"] under 1`.
+
+      ```scala
+      import soundness.*
+
+      val relative: Relative on Linux = ? / ^ / ^ / "foo"
+      relative.encode                     // t"../../foo"
+      t"../foo/bar".as[Relative on Linux] // ? / ^ / "foo" / "bar"
+      (% / "home" / "work") + (? / ^)     // % / "home"
+      ```
+
+      A relative path is produced by `Path#toward`, applied with `Path#+`, and encodes and
+      decodes with its plane's self, parent and separator names, so `? / ^ / "foo"` is
+      `../foo` on Linux and `..\foo` on Windows. Like a path, it decodes from text only when
+      its plane is named.
+  refer serpentine.Path
+  refer serpentine.Ascent
+  refer serpentine.Compliant
+  entry .^   one step up, written after `?` or another step: `? / ^ / ^`
+      Exported to the package as `^`. It carries no value of its own: `Ascent#/` takes it and
+      adds one to the ascent.
+  entry .?   the current location, the empty `Relative`, from which relative paths are built
+      Exported to the package as `?`. An `Ascent` of zero, so `?` encodes as the plane's self
+      name, `.`, and `? / ^` climbs one level.
+  entry .apply   a relative path from its ascent and names, leaf-first, with the plane and types chosen
+      `Relative(1, List(t"foo"))` is the case-class constructor, and equals `? / ^ / "foo"`.
+      The overload `Relative[filesystem, topic, limit](ascent, descent*)` sets the three type
+      members without checking anything.
+  entry .decodable   reads a `Relative on filesystem` from text, with the plane's self, parent and separator
+      Text equal to the self name is `?`; otherwise it is split on the separator, a trailing
+      empty name and a leading self name dropped, the leading parent names counted as the
+      ascent, and the rest taken as the descent. It raises nothing.
+  entry .encodable   renders a relative path in its plane's notation: `../foo` on Linux, `..\foo` on Windows
+      The self-relative path is the self name (`.`), and a path with an ascent and no names is
+      the parent name repeated (`../..`).
+  entry .showable   shows a relative path as its encoded text, for one on a plane with a `Filesystem`
+  entry .inspectable   a debug rendering of any relative path, in POSIX notation: `../../foo`, or `.`
+      Always available, with or without a plane: each step up is `..`, names are joined with
+      `/`, and the self-relative path is `.`.
+  entry .conversion   the implicit conversion of a relative path with known names to the same path on a plane
+      Through `#on`, so the names are checked against the target plane.
+  entry .quotient   the `/:` extractor for a relative path: its top name, then the rest
+      A relative path of two names matches as `name /: name`, one of more as `name /:
+      relative`, so a path matched with `/:` can be taken apart name by name. A relative path
+      of fewer than two names does not match.
+  entry #ascent   how many steps up the path climbs before descending
+  entry #descent   the path's names, leaf first
+  entry #Topic   the tuple of the path's names, innermost first, where the compiler knows them
+  entry #Limit   the path's ascent, as a literal type where it is known
+  entry #delta   the path's change in depth: its names less its ascent
+  entry #name   the leaf name, or `Unset` if the path has no names
+  entry #self   whether this is the self-relative path, with no ascent and no names
+  entry #rename   this path with its leaf renamed by a function of its old name, read as `prior`
+  entry #on   this relative path bound to a plane, checking each name against its rules
+      A relative path already on a plane which is `Compliant` on the target (a Linux path,
+      inside a tar archive) converts without checks; otherwise each name is checked by its
+      `Admissible` instance on the target plane.
+  entry #unqualified   this relative path with its plane forgotten
+  entry #parent   the path one level up: its leaf dropped, or one more step of ascent if it has no names
+  entry #/   a child of this relative path: one more name, checked against the plane if it has one
+
+entry .Ascent   a relative path of steps up alone, which takes `^` as a child
+  detail
+      `?` is an `Ascent` of zero, and `? / ^ / ^` an `Ascent under 2`: a `Relative` with no
+      names, whose `/` accepts `^` as well as a name. Its type carries the ascent as a literal,
+      so a relative path which climbs above a root can be caught where it is written.
+  entry #ascent0   the number of steps up, as the constructor took it
+  entry #Topic   always `EmptyTuple`: an ascent has no names
+  entry #/   one more step up, written `/ ^`
+
+entry .Root   the base class of a root object: a `Path` with no names and a fixed root text
+    `abstract class Root(name: Text)`: extend it to give a new hierarchy its root, as
+    `Classpath` (`Root(t"")`), `JsonPointer` and galilei's `Drive` (`Root(t"C:\")`) do. Two
+    roots are equal when their root texts are, and a root's `Topic` is `EmptyTuple`, so `/`
+    on it begins a path.
+
+    ```scala
+    import soundness.*
+
+    object Archive extends Root(t"/")
+    Archive / "docs" / "readme.txt"
+    ```
+
+entry .Filesystem   a plane's notation: its name, its separator, its self and parent names, and its escaping
+  detail
+      The typeclass which makes a type a plane paths can be written on. Its instance lives in
+      the plane's companion, so it is found without an import: `Linux` has `/`, `.` and `..`;
+      `Windows` has `\`; the classpath, a tar archive and a Git tree have their own. Every
+      encoding and decoding of a `Path` or a `Relative` needs it.
+
+      ```scala
+      import soundness.*
+
+      summon[Linux is Filesystem].separator     // t"/"
+      summon[Windows is Filesystem].separator   // t"\\"
+      ```
+
+      `#UniqueRoot` says whether the plane has one root (`Linux`) or several (`Windows`, with
+      a root per drive): on a unique-root plane two paths always share a root, so
+      `Path#sameRoot` is statically `true` and `on` needs no check of the root.
+  entry #UniqueRoot   `true` if every path on the plane has the same root, as a literal type
+  entry #name   the plane's name, for messages: `Linux`, `Windows`, `Java classpath`
+  entry #separator   the text between names: `/` or `\`
+  entry #self   the name of the current location in a relative path: `.`
+  entry #parent   the name of one step up in a relative path: `..`
+  entry #escape   escapes a name for encoding, by default leaving it as it is
+  entry #unescape   reverses `#escape` on a decoded name, by default leaving it as it is
+
+entry .Radical   how a root type is written as text: the pure half of a root's path algebra
+  detail
+      `root is Radical on plane` encodes a root value as the text a `Path`'s `#root` holds:
+      `%` as `/` on Linux, a `Drive` as `C:\` on Windows. It cannot fail, so it takes no
+      tactic. Its reading half is `Eradicable`; a plane's root type has both, in the plane's
+      companion, and `Path.decodable` needs the pair.
+
+      ```scala
+      import soundness.*
+
+      summon[%.type is Radical on Linux].encode(%)   // t"/"
+      ```
+  refer serpentine.Eradicable
+  entry #encode   the root as text, in the plane's notation
+
+entry .Eradicable   how a root is read from text, and how much of the text it occupies
+  detail
+      `root is Eradicable on plane` reads the root at the start of a path's text — `/` on
+      Linux, `C:\` on Windows — and says how many characters it took, so the rest can be split
+      into names. Neither method declares an error: a root which can be malformed has an
+      instance which takes a `Tactic[Path.Error]` in its given's signature and captures it,
+      raising reason `InvalidRoot`, while a root which cannot (a zip archive, a searchpath,
+      the web) has a pure instance, so a path decoded against it needs no tactic.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val eradicable = summon[%.type is Eradicable on Linux]
+      eradicable.length(t"/home")    // 1
+      eradicable.decode(t"/home")    // %
+      ```
+
+      It is the reading half of `Radical`, split from it so that the pure rendering never
+      carries a capability.
+  refer serpentine.Radical
+  entry #decode   the root at the start of the text, or the plane's `Path.Error` raised through its tactic
+  entry #length   how many characters of the text the root occupies
+
+entry .Submissible   which root types a plane accepts, checked when a path is bound to it with `on`
+  detail
+      `root is Submissible on plane` lets a path rooted on `root` be bound to `plane` with
+      `Path#on`, after a check of its root text: `%.type` is submissible on `Linux` and
+      `MacOs`, and `Drive` on `Windows`, so `(% / "foo").on[Windows]` does not compile.
+  entry #check   checks a root's text, raising through whatever tactic the instance captures
+
+entry .Compliant   that a plane's relative paths are valid on another, so convert without checks
+    `source is Compliant on target` lets `Relative#on[target]` take a relative path on
+    `source` as it is, without checking its names: a `Relative on Linux` names valid entries
+    in a tar archive, so `Linux is Compliant on Tar`. The typeclass has no methods: its
+    presence is the proof.
+
+entry .Admissible   which values may be a name on a plane, and the check each must pass
+  detail
+      `value is Admissible on plane` checks text about to become a name in a path on `plane`,
+      as `Path#/`, `Path#peer` and `on` add it. A literal string is checked at compile time
+      against the plane's `Nominative` rules (`.admissible`), so `% / "fo/o"` on Linux does not
+      compile; runtime `Text` is checked when it is added, raising `Name.Error` through the
+      `Tactic[Name.Error]` in scope (`.text`), unless it is already a `Name` of the plane.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val dir: Text = t"work"
+      (% / dir).on[Linux]          // checked at runtime: needs a Tactic[Name.Error]
+      (% / "fo/o").on[Linux]       // does not compile
+      ```
+
+      A new kind of name gets an instance in its own companion, made with `.apply` or, for
+      a type whose every value is valid, `.unchecked` (as galilei does for a `Uuid` on every
+      OS plane).
+  refer serpentine.Navigable
+  entry .unchecked   an instance which accepts every value, for a name type which cannot be invalid
+  entry .apply   an instance from a checking function, which raises if the text is not a valid name
+  entry .text   checks runtime `Text` against the plane's rules, through a `Tactic[Name.Error]`
+      A `Name` of the plane needs no check and no tactic; any other text is checked as a
+      `Name` when it is added to a path, raising `Name.Error` if it breaks a rule.
+  entry .admissible   checks a literal string against the plane's `Nominative` rules as the code compiles
+  entry #check   checks the text of a name, raising if it is not admissible
+
+entry .Navigable   how a value becomes a name in a path: its text
+  detail
+      `value is Navigable on plane` turns a path's child into the text of its name. Literal
+      strings, `Text` and `Name`s are navigable on every plane; other libraries add their own,
+      such as an `Ordinal` on a JSON pointer, or a `Uuid` on every OS plane.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val id = Uuid()
+      ((% / "tmp").on[Linux] / id).encode   // t"/tmp/…", the UUID as a name
+      ```
+  entry .label   a literal string is the name it spells
+  entry .text   `Text` is the name it holds
+  entry .name   a `Name` of the plane is the name it holds
+  entry #follow   the text of the name a child value stands for
+
+entry .Case   how a filesystem treats the case of names: sensitive, folded lower or upper, or preserving
+  detail
+      An enum of four cases. `Sensitive` compares names exactly and keeps them as written;
+      `Preserving` keeps them as written but compares them without regard to case, as macOS
+      and Windows do; `Lower` and `Upper` fold every name to one case, and compare without
+      regard to case.
+
+      ```scala
+      import soundness.*
+
+      Case.Preserving.equal(t"README", t"readme")   // true
+      Case.Upper(t"readme")                         // t"README"
+      ```
+  entry #apply   a name as the filesystem stores it: folded for `Lower` and `Upper`, unchanged otherwise
+  entry #equal   whether two names, or two lists of names, are the same under this case rule
+  entry #hash   a hash of a descent of names, consistent with `#equal`
+
+entry .internal   the macros behind `Path.toward` and `Path.conjunction`
+  hidden
+  detail
+      Not for direct use: the object holds the compile-time path arithmetic which the
+      extensions `toward` and `conjunction` in the `Path` companion splice.
+  entry .toward   the macro behind `Path.toward`: the relative path between two paths, statically where it can
+  entry .conjunction   the macro behind `Path.conjunction`: the common ancestor of two paths, statically where it can

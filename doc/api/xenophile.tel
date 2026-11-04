@@ -1,0 +1,2229 @@
+tel 1.0
+
+base xenophile
+import soundness
+
+info   foreign type systems read as the code compiles: typed navigation of C, WIT, TypeScript, WebIDL and Kotlin, and the calls it emits
+detail
+    _Xenophile_ reads another language's own definitions — a C header, a WebAssembly WIT
+    description, a TypeScript declaration file, a WebIDL interface, or the `@Metadata` a
+    Kotlin compiler leaves in a classfile — while the Scala code compiles, and checks every
+    *foreign* expression against them. Selecting a member of a foreign type, applying a
+    foreign function, indexing a foreign array: each step is resolved against the foreign
+    declarations, and a member that does not exist or an argument of the wrong foreign type
+    is a Scala compile error, not a runtime surprise.
+
+    Three abstractions carry this. An `Ecosystem` names a foreign world (`Native` for C, `Wit`
+    for the Component Model, `Typescript`, `WebIdl`, `Kotlin`) and the `Dialect` which parses
+    its definitions. An `Interface` binds an ecosystem to a definitions file on the compiler's
+    classpath, as a given. A `Foreign` value is a value of a foreign type, whose refined type
+    `Foreign of "Point" from Native` records both the foreign type (`Topic`) and the ecosystem
+    (`Origin`); its members navigate as though the foreign declarations were Scala, building a
+    `Foreign.Expression` and refining the type at each step.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+
+    given (Interface in Native at "/xenophile/library.h") =
+      Interface[Native](cp"/xenophile/library.h")
+
+    val library: Foreign of "library" from Native = Foreign["library", Native]
+    val absolute: Foreign of "int" from Native = library.abs(-5)
+    val point: Foreign of "Point" from Native = Foreign["Point", Native]
+    val x: Foreign of "int" from Native = point.x
+
+    library.abs(t"five")      // does not compile: abs expects an argument of foreign type int
+    library.missing(1)        // does not compile: the foreign type library has no member missing
+    ```
+
+    Scala values pass as arguments wherever an `Interoperable` instance maps them onto the
+    foreign type — `Text` to a C `string` or a WIT `string`, `Int` to a C `int`, the sized
+    `hypotenuse` numbers (`U8`, `S32`, `U64`, …) to their WIT widths — through the
+    `Foreign.converter` conversion, which wraps the value as a `Foreign.Expression.Literal`
+    typed by the instance's `Topic`.
+
+    Navigation alone *performs nothing*: it builds an expression. What runs the expression is
+    the ecosystem's business, and for the ecosystems that execute inside the Scala program
+    the single `call` extension is the terminal: `library.abs(-5).call[Int]()` hands a
+    fully-applied navigation to the `Materializer` the build put on the classpath — a Panama
+    downcall on the JVM (`PanamaInvoke`), a `dlsym`/`CFuncPtr` call on Scala Native
+    (`NativeInvoke`), a Component Model import in a Wasm component (`WasmInvoke`), a
+    `js.Dynamic` call under Scala.js (`JsInvoke`), or a direct JVM call to Kotlin
+    (`KotlinInvoke`). Which one is read from the ecosystem's `Emission` member, so `call` is
+    one method for every language and every platform, and a C binding written once compiles
+    unchanged for the JVM and for Scala Native.
+
+    The library is split into components by what each contributes:
+
+    - `xenophile.core` — `Foreign`, `Interface`, `Ecosystem`, `Dialect`, `Prototype`,
+      `Interoperable`, `Materializer` and `call`. Platform-neutral: it compiles for the JVM,
+      Scala.js and Scala Native, and depends on no ecosystem and no backend (both are reached
+      reflectively at compile time, by the names an `Ecosystem` records).
+    - `xenophile.cffi` — the C front end: the `Native` ecosystem with its `Interoperable`
+      markers, the `CHeader` parser and dialect, and `Address`, the opaque raw pointer.
+      Platform-neutral.
+    - `xenophile.native` — the JVM backend for C: `PanamaInvoke`, and the Panama-backed
+      `ForeignLibrary` (library loading and symbol resolution) and `ForeignBuffer` (manually
+      managed foreign memory).
+    - `xenophile.scalanative` — `NativeInvoke`, the Scala Native backend for C, with the Scala
+      Native twins of `ForeignLibrary` and `ForeignBuffer` which present the same surface over
+      `dlopen`/`dlsym` and `malloc`. A build depends on `xenophile.native` *or*
+      `xenophile.scalanative`, never both; the C ecosystem names both and `call` uses whichever
+      it finds.
+    - `xenophile.wit` and `xenophile.wasm` — the `Wit` ecosystem and `WitDialect`, and the Wasm
+      backend: `WasmInvoke`, the `Wasm` marshalling form with its codecs, and `Wasm.Handle`,
+      `Wasm.Case`, `Wasm.Variant` and `Wasm.Error` for WIT resources, variants and results.
+    - `xenophile.typescript`, `xenophile.webidl` and `xenophile.js` — the `Typescript` and
+      `WebIdl` ecosystems with their dialects, and `JsInvoke` with the `Js` form, the Scala.js
+      backend shared by both.
+    - `xenophile.kotlin` — the `Kotlin` ecosystem, whose `KotlinDialect` reads declarations from
+      classfiles on the compile classpath rather than from a file, `KotlinInvoke`, and the
+      `Facade` which wraps a live Kotlin or Java value so that `make[kotlin.text.Regex](t"[0-9]+")`
+      navigates with direct, statically-typed JVM calls: `companion`, `singleton` and
+      `enumEntry` reach the other kinds of Kotlin declaration.
+
+    Everything is exported to the `soundness` umbrella. The library has no choice packages:
+    the `Interoperable` and codec givens live in the companions of `Native`, `Js` and `Wasm`
+    and resolve through implicit scope, and the only given a program writes itself is its
+    `Interface`, bound locally or as a package-level given.
+
+refer xenophile.Foreign
+refer xenophile.Interface
+refer xenophile.Ecosystem
+refer xenophile.call
+refer xenophile.Native
+refer xenophile.Wasm
+
+entry .Foreign   a value of a foreign type, navigated against its language's own declarations
+  detail
+      A `Foreign` stands for a value of a foreign type. Its static type is refined with the
+      foreign type as a string-literal `Topic` and the source language as `Origin` — written
+      `Foreign of "Foo" from Typescript` — and, when an `Interface` was in scope where the
+      navigation began, the definitions path as `Locus`. A root is made with
+      `Foreign["Foo", Typescript]`; from there, member selection (`foo.bar`), function
+      application (`foo.greet(t"hello")`) and array indexing (`foo.tags(0)`) are each a macro
+      which looks the member up in the parsed definitions and refines the result's type by
+      what the declarations say.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+
+      given (Interface in Typescript at "/xenophile/definitions.ts") =
+        Interface[Typescript](cp"/xenophile/definitions.ts")
+
+      val foo: Foreign of "Foo" from Typescript = Foreign["Foo", Typescript]
+      val bar: Foreign of "Bar" from Typescript = foo.bar
+      val greeting: Foreign of "string" from Typescript = foo.greet(t"hello")
+      val tags: Foreign of ("Array" over "string") from Typescript = foo.tags
+      val tag: Foreign of "string" from Typescript = tags(0)
+      val nickname: Foreign of ("string" | "undefined") from Typescript = foo.nickname
+      ```
+
+      A foreign type which the declarations spell as a union is a union of literal types
+      (`"string" | "undefined"`), and a generic application such as `Array<string>` or
+      `Map<number, string>` is the prepositional `over`: `"Array" over "string"`, `"Map" over
+      ("number", "string")`. A compound topic has no members to select.
+
+      Every navigation builds a `Foreign.Expression` — `#expr` — and performs nothing. The
+      expression is what an ecosystem's runtime consumes: the browser ecosystem renders it to
+      JavaScript, and `call` hands a fully-applied one to the backend on the classpath to
+      execute as a real C, Wasm, JavaScript or Kotlin call.
+
+      Arguments are typed `Foreign from Origin`: a foreign value from the same ecosystem, or a
+      Scala value with an `Interoperable` instance for it, which `.converter` turns into a
+      `Foreign.Expression.Literal` at the call site. The macro then checks each argument's
+      `Topic` against the declared parameter type by subsumption: a `string` satisfies an
+      `option<string>` (`"string" | "none"`) parameter, the `ok` arm's type satisfies a WIT
+      `result<ok, err>` parameter, and a C `Address` (topic `pointer`) satisfies any `ptr<T>`
+      parameter.
+
+      Compile errors name the problem precisely: _xenophile: the foreign type Foo has no
+      member nonexistent_, _xenophile: greet expects 1 arguments, not 2_, _xenophile: greet
+      expects an argument of foreign type string_, and _xenophile: no `Interface` with a
+      definitions path is in scope_ when nothing binds the ecosystem to a file.
+
+      `Foreign` is `Completable`: a completion engine asks `.completions` for the members of a
+      receiver's foreign type, read from the definitions the type's `Locus` records, so a
+      foreign type completes in an editor like a Scala one.
+  refer xenophile.Interface
+  refer xenophile.Interoperable
+  refer xenophile.call
+  entry .apply   `Foreign["Foo", Typescript]`: a reference to the named foreign type, as a root
+      A transparent inline macro taking the foreign type's name as a string-literal type and
+      the `Ecosystem` it belongs to. The result is `Foreign of "Foo" from Typescript`, with the
+      definitions path recorded as `Locus` when an `Interface` for the ecosystem is in scope
+      here; a root made without one still navigates (each step summons the `Interface`
+      afresh) but offers no completions. The name must be a literal: _xenophile: the foreign
+      type name must be a string literal type_ otherwise.
+
+      Inside another `inline` definition the refinement may be left implicit by deferred
+      expansion; binding the root to a `val` with an explicit ascription, as
+      `Foreign["tcp-create-socket", Wit].asInstanceOf[Foreign of "tcp-create-socket" from Wit]`,
+      pins it so that argument conversions can resolve their ecosystem.
+  entry .make   wraps an `Expression` as a `Foreign`, with no refinement
+      `Foreign.make(expression)` is the plain constructor the macros splice; its result type is
+      the bare `Foreign`, so it is for code which builds expressions itself rather than
+      navigating.
+  entry .completions   the members of a receiver's foreign type, for a completion engine
+      Invoked reflectively through `prophesy.Completable`: given the receiver's `TypeRepr` and
+      the prefix typed so far, it reads `Topic`, `Origin` and `Locus` from the refinement,
+      parses the definitions at the locus, and lists each member as a term or a method with
+      its signature (`(string): Foo`) rendered symbolically. A receiver with a compound topic,
+      or whose root recorded no `Locus`, offers nothing.
+  entry .converter   a Scala value with an `Interoperable` instance converts to a `Foreign` literal
+      The `Conversion[value, Foreign of Topic from Ecosystem]` which lets `t"hello"` be passed
+      where a `Foreign from Typescript` of topic `string` is expected, or a `Wasm.Handle of
+      "tcp-socket"` be bound as a `Foreign of "tcp-socket" from Wit` and then navigated. The
+      value is carried verbatim inside `Foreign.Expression.Literal`, and the foreign type is
+      the instance's `Topic`. Pinning the ecosystem to the receiver's `Origin` in
+      `#applyDynamic` is what lets the conversion infer its type parameters, so a bare `"…"`
+      `String` literal is not convertible where a `Text` is: the C and WIT instances are for
+      `Text`.
+  entry .Expression   the AST a navigation builds: references, selections, applications, indexes, literals
+      An `enum` of five cases. `Reference(name)` is a root, the named foreign type or value.
+      `Select(target, member, owner)` is a member selection, recording the foreign type
+      `owner` it was selected from, which a backend needing the type's layout (the C
+      evaluator) uses and a self-describing one ignores. `Apply(target, arguments)` is a
+      function application; `Index(target, index)` an indexed access into an array-typed
+      value; and `Literal(value)` a Scala operand carried verbatim, as `.converter` makes it.
+
+      ```scala
+      import soundness.*
+
+      val select = Foreign.Expression.Select(Foreign.Expression.Reference(t"Foo"), t"bar", t"Foo")
+      val literal = Foreign.Expression.Literal(t"hi")
+      val call = Foreign.Expression.Apply(select, scala.collection.immutable.List(literal))
+      ```
+
+      The `Apply` case's argument list is a standard-library `List`, not Soundness's.
+  entry .Type   a foreign type as a dialect reports it: named, a union, or a generic application
+    detail
+        The `enum` a `Dialect` uses to describe member types. `Named(name)` is a plain type
+        (`int`, `string`, `Foo`); `Union(members)` a union of alternatives (an optional WIT
+        value is `Union(List(Named("string"), Named("none")))`); and `Applied(constructor,
+        arguments)` a generic application such as TypeScript's `Map<number, string>`, WebIDL's
+        `sequence<T>`, WIT's `list<T>`, `option<T>`, `result<ok, err>` and `tuple<…>`, and the
+        C dialect's `ptr<T>`, `const<T>`, `array<T, n>` and `fn<result, params…>`. The macros
+        map these onto types: a `Named` to its literal type, a `Union` to a union of literal
+        types, and an `Applied` to `constructor over arguments`.
+    entry #text   the type rendered as source: `Map<number, string>`, `string|undefined`
+  entry #expr   the expression this navigation built
+      The `Foreign.Expression` tree: a `Reference` for a root, a `Select` for a member, an
+      `Apply` for an application, an `Index` for an element. This is what a test inspects, and
+      what an ecosystem's runtime renders or executes.
+  entry #selectDynamic   `foreign.member`: selects a declared field or a zero-parameter method
+      A transparent inline macro, reached through `Dynamic`. The member is looked up in the
+      receiver's foreign type; the result is a `Foreign` of the member's declared type, with
+      `Origin` and `Locus` carried over. A field and a zero-parameter method may both be
+      selected bare — a nullary WIT function such as `` `get-random-u64` `` is selected and then
+      `call`ed, with no empty argument list — but a method with parameters must be applied:
+      _xenophile: greet is a method of Foo and must be called with arguments_. An unknown name
+      is _xenophile: the foreign type Foo has no member nonexistent_.
+  entry #applyDynamic   `foreign.method(args…)`: applies a declared method to foreign-typed arguments
+      A transparent inline macro, reached through `Dynamic`. Each argument is a `Foreign from
+      Origin` — a navigation from the same ecosystem, or a Scala value converted by
+      `.converter` — and its `Topic` is checked against the declared parameter type by
+      subsumption. The arity must match (_xenophile: greet expects 1 arguments, not 2_), the
+      arguments must be written directly rather than spread from a sequence, and the result is
+      typed by the method's declared result. Selecting a field as though it were a method is
+      _xenophile: bar is not a method of Foo_.
+  entry #apply   `foreign(index)`: an element of an array-typed foreign value
+      A real `apply`, taking precedence over `Dynamic`, so `tags(0)` resolves here. The
+      receiver's topic must be one of the array constructors — WebIDL `sequence` and
+      `FrozenArray`, TypeScript `Array` and `ReadonlyArray`, WIT `list` — applied to one
+      element type, and the result is a `Foreign` of that element type. Any other receiver is
+      _xenophile: this foreign type is not an indexable array type_.
+
+entry .Interface   binds an ecosystem to a definitions file on the compiler's classpath, as a given
+  detail
+      An `Interface in Typescript at "/xenophile/definitions.ts"` is a value whose type records
+      the ecosystem (`Form`) and the classpath path of its definitions (`Locus`, a string
+      literal type). The navigation macros summon the `Interface` for the receiver's `Origin`
+      and read the definitions from its `Locus`; the file is read and parsed at compile time,
+      so it must be on the compiler's classpath, not merely the program's.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+
+      type NativeLibrary = Interface in Native at "/xenophile/library.h"
+      given nativeLibrary: NativeLibrary = Interface[Native](cp"/xenophile/library.h")
+      ```
+
+      One `Interface` per ecosystem is summoned, so two definitions files for the same grammar
+      need two ecosystems: a second `trait Dom extends Ecosystem { type Grammar =
+      WebIdlDialect.type }` lets a real DOM IDL and a synthetic sample coexist. A
+      self-resolving ecosystem such as `Kotlin`, whose dialect reads classfiles, needs no
+      `Interface` at all.
+
+      Parsed definitions are cached by path for the lifetime of a compilation run, so a chain
+      such as `foo.bar.qux` parses its file once.
+  refer xenophile.Ecosystem
+  refer xenophile.Dialect
+  entry .apply   `Interface[Native](cp"/lib.h")` or `Interface[Native]("/lib.h")`: an interface over a definitions path
+      Two transparent inline overloads. The first takes any `Locative` — anything carrying a
+      `Locus` singleton path type, in particular a hellenism `Resource` from `cp"…"`, which
+      checks that the file exists as the code compiles. The second takes the classpath path as
+      a `String` literal, for code which cross-compiles to Scala Native, where `cp"…"` is not
+      available; it is checked when a navigation first reads it, with _xenophile: could not
+      read foreign definitions at /lib.h on the classpath_ if absent. The result type is
+      `Interface { type Form = Native; type Locus = "/lib.h" }`, which the `in`/`at` prepositions
+      spell as `Interface in Native at "/lib.h"`.
+
+entry .Ecosystem   a foreign source language: which `Dialect` parses it and which backends can call into it
+  detail
+      A marker trait with two type members. `#Grammar` is the singleton type of the `Dialect`
+      object which parses the language's definitions, which the navigation macros load
+      reflectively so that `xenophile.core` depends on no ecosystem. `#Emission` names the
+      `Materializer` object (or objects) which can execute a call in the language, as
+      fully-qualified class names in literal types, so that `call` can find the backend the
+      build chose without the ecosystem depending on it.
+
+      The provided ecosystems are `Native` (C headers), `Wit`, `Typescript`, `WebIdl` and
+      `Kotlin`. A new one is a trait which names a dialect:
+
+      ```scala
+      import soundness.*
+
+      trait Dom extends Ecosystem:
+        type Grammar = WebIdlDialect.type
+      ```
+
+      An ecosystem with no `Emission` can be navigated but not `call`ed: _xenophile: the
+      source language names no materializer (it defines no `Emission`)_.
+  refer xenophile.Dialect
+  refer xenophile.Materializer
+  entry #Grammar   the singleton type of the `Dialect` object which parses this language's definitions
+      Bounded by `Dialect`. Resolved at compile time by loading the object's `MODULE$` field
+      through the macro's own classloader; a grammar which cannot be loaded is _xenophile:
+      could not load the grammar for the foreign source language_.
+  entry #Emission   the fully-qualified names of the `Materializer` objects which can emit a call, as literal types
+      A single name, or a union of names where a language has more than one backend: the C
+      ecosystem's is `"xenophile.PanamaInvoke" | "xenophile.NativeInvoke"`, one per target
+      platform. `call` loads the first candidate on the classpath; since no real classpath
+      carries both C backends, the build's dependency decides, and the same source compiles for
+      either. A member which is not a literal name is _xenophile: the source language's
+      `Emission` is not a materializer's name_, and none loadable is _xenophile: no
+      materializer for this foreign source language is on the classpath_.
+
+entry .Dialect   a grammar for a foreign type system: parses definitions into each type's member prototypes
+  detail
+      A `Dialect` turns a definitions source into a `Map` from foreign type name to its
+      members, each a `Prototype`. The navigation macros call `#parse` on the text of the
+      `Interface`'s file, or, for a self-resolving dialect, `#resolve` per type name. The
+      provided dialects are `CHeader.Dialect` (C headers), `WitDialect`, `TypescriptDialect`,
+      `WebIdlDialect` and `KotlinDialect`; each is an object, since an `Ecosystem` names it by
+      singleton type.
+
+      ```scala
+      import soundness.*
+
+      val members: Map[Text, Map[Text, Prototype]] =
+        CHeader.Dialect.parse(t"int add(int a, int b); const char* version(void);")
+
+      members(t"library").let(_(t"add")).let(_.parameters)
+      ```
+
+      `parse` is total in every provided dialect: a source which does not parse defines
+      nothing, and the macro reports _xenophile: the foreign type Foo is not defined_ from the
+      empty result.
+  refer xenophile.Prototype
+  refer xenophile.Ecosystem
+  entry #parse   the definitions in a source, as a map from type name to member prototypes
+  entry #resolves   whether this dialect answers `resolve` per type, instead of parsing a file
+      `false` by default. A dialect whose definitions live in compiled artefacts on the
+      classpath — `KotlinDialect`, reading `@Metadata` from classfiles — returns `true`, needs
+      no `Interface` (there is no `Locus`), and records no `Locus` on the types it produces.
+  entry #resolve   the members of one named type, for a self-resolving dialect; `Unset` if unknown
+      `Unset` by default, and for a self-resolving dialect when the type is not on the compile
+      classpath: _xenophile: the foreign type Foo is not defined on the compile classpath_.
+
+entry .Prototype   the signature of one member of a foreign type: its parameters, result and addressing
+  detail
+      A case class a `Dialect` produces for each member. A field has no `#parameters`
+      (`Unset`); a method records its parameter types, in order. `#result` is the foreign type
+      the member produces. The remaining fields serve ecosystems whose members must be
+      addressed at the point of call: `#module` is the WIT module id (`wasi:random/random@0.2.0`)
+      the member is imported from, `#resource` the WIT resource it is a method of, and
+      `#static` whether it is a `static` function or `constructor` of that resource, taking no
+      receiver.
+
+      ```scala
+      import soundness.*
+
+      val add = Prototype(List(Foreign.Type.Named(t"int"), Foreign.Type.Named(t"int")), Foreign.Type.Named(t"int"))
+      val field = Prototype(Unset, Foreign.Type.Named(t"string"))
+      ```
+  refer xenophile.Dialect
+  entry #parameters   the parameter types, in order, or `Unset` for a field
+  entry #result   the foreign type the member produces
+  entry #module   the module the member is addressed through, where the ecosystem needs one
+      `Unset` for grammars with no module qualifier. For WIT it is the fully-qualified
+      interface id, which `WasmInvoke` passes to the Component Model import, and a WIT member
+      without one is _xenophile: api.f is not addressable as a WIT import (it has no module id)_.
+  entry #resource   the stateful foreign type (a WIT `resource`) the member is a method of, if any
+      When set, `WasmInvoke` imports the member as `[method]resource.name` and passes the
+      receiver's `Wasm.Handle` as its first parameter.
+  entry #static   whether a resource member takes no receiver: a WIT `static` function or `constructor`
+      A `constructor` is imported as `[constructor]resource`, another static as
+      `[static]resource.name`.
+
+entry .Interoperable   records that a Scala type stands for a foreign type in an ecosystem
+  detail
+      `Int is Interoperable in Native of "int"` says that an `Int` may be passed where the C
+      declarations expect an `int`. It is a pure type-level marker: the navigation macro uses
+      it to type-check arguments, and `Foreign.converter` uses it to give a converted Scala
+      value its `Foreign of Topic from Form` type. It carries no runtime representation —
+      marshalling the value across the boundary is the backend's work, through `ForeignLibrary`
+      on the JVM, the Scala Native call, or the `Encodable in Wasm`/`Decodable in Js` codecs.
+
+      The instances live in the ecosystems' companions and resolve through implicit scope:
+      `Native` has `int`, `long`, `short`, `char`, `double`, `float`, `boolean`, `string` and
+      `pointer`; `Wasm.Handle`, `Wasm.Case` and `Wasm.Variant` are interoperable in `Wit` with
+      the resource or variant they carry as topic; and the `Wit`, `Typescript`, `WebIdl` and
+      `Kotlin` companions hold their own. A new instance is one line:
+
+      ```scala
+      import soundness.*
+
+      given (Byte is Interoperable in Native of "char") = Interoperable[Byte, Native, "char"]()
+      ```
+  refer xenophile.Foreign
+  entry .apply   `Interoperable[Int, Native, "int"]()`: an instance for a Scala type, ecosystem and foreign type
+  entry #Self   the Scala type the instance is about
+
+entry .Materializer   a backend which turns a fully-applied foreign navigation into the tree that executes it
+  detail
+      The terminal step of `call`. The steps before it — peeling the navigation apart into
+      the foreign type, the member and the operand trees, and checking the call against the
+      ecosystem's definitions — are shared; a `Materializer` receives the navigation as an
+      `Expr[Foreign]` and the requested result type, and emits the call. There is one per
+      backend: `PanamaInvoke` (a JVM Panama downcall), `NativeInvoke` (a Scala Native
+      `dlsym`/`CFuncPtr` call), `WasmInvoke` (a Component Model import), `JsInvoke` (a Scala.js
+      dynamic call) and `KotlinInvoke` (a direct JVM call). An `Ecosystem` names the ones which
+      serve it in its `Emission`, and `call` loads whichever the build put on the classpath.
+
+      A new backend is an `object` extending `Materializer`, named by an ecosystem's `Emission`.
+  refer xenophile.call
+  refer xenophile.Ecosystem
+  entry #materialize   emits the expression of type `result` which performs the navigated call
+
+entry .call   `navigation.call[Result]()`: executes a fully-applied foreign call through the backend on the classpath
+    The one terminal for every ecosystem and every target platform. An inline extension on
+    `Foreign`: it reads the receiver's `Origin`, finds the `Materializer` the ecosystem's
+    `Emission` names and the classpath carries, and splices the call that backend emits, typed
+    as `Result`. Which backend that is follows from the build: a C navigation becomes a Panama
+    downcall when `xenophile.native` is on the classpath and a `dlsym`/`CFuncPtr` call when
+    `xenophile.scalanative` is, so one source compiles for both.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+
+    given (Interface in Native at "/xenophile/library.h") =
+      Interface[Native](cp"/xenophile/library.h")
+
+    val library: Foreign of "library" from Native = Foreign["library", Native]
+    val five: Int = library.abs(-5).call[Int]()
+    val length: Long = library.strlen(t"hello, world").call[Long]()
+    val version: Text = library.version().call[Text]()
+    ```
+
+    `call` must be applied directly to an inline navigation chain — `interface.function(…)` or
+    the bare selection of a nullary function, `interface.function` — not to a navigation bound
+    to a `val`: _xenophile: `call` expects a foreign function invocation,
+    `interface.function(…)`_ otherwise. A WIT resource handle may be bound to a `val` and
+    navigated, since its handle is recovered from the expression at runtime.
+
+    The result type is the caller's to choose, and each backend checks it against the
+    declaration: a C `string` result as `Text`, a pointer result as `Address`, `void` as
+    `Unit`; a WIT result through its `Decodable in Wasm` codec, a resource as a `Wasm.Handle
+    of "name"`, a `result<…>` unwrapped (its `err` arm raised as `Wasm.Error`), an `option<T>`
+    as an `Optional`, a `tuple<…>` as a Scala tuple and a `list<T>` as a `List`.
+
+    `call` is plain `inline`, not `transparent`, so that inside another `inline` definition —
+    a library publishing an inline given, say — the expansion is deferred to the downstream
+    call site, where the platform runtime (Scala.js, scala-wasm, the Scala Native runtime) is
+    on the classpath.
+
+entry .Xenophile   the macro implementations behind `Foreign`, `Interface` and `call`
+  hidden
+  detail
+      Not for direct use: the object houses the navigation macros and the shared machinery
+      every backend uses — recovering a navigation's foreign type, member and operand trees,
+      finding an ecosystem's dialect and materializer reflectively, and the per-compilation
+      cache of parsed definitions.
+  entry .invoke   the macro behind `call`: finds the receiver's materializer and lets it emit the call
+  entry .definitions   the parsed definitions at a classpath path, for an ecosystem, cached per compilation run
+      Reads the resource through the macro's classloader and parses it with the ecosystem's
+      `Grammar`; _xenophile: could not read foreign definitions at path on the classpath_ when
+      the resource is absent. A backend uses it to read the prototype of the member being
+      called.
+  entry .select   the macro behind `Foreign#selectDynamic`
+  entry .index   the macro behind `Foreign#apply`
+  entry .applied   the macro behind `Foreign#applyDynamic`
+  entry .interface   the macro behind `Interface[form](locative)`
+  entry .interfaceFromPath   the macro behind `Interface[form]("/path")`
+  entry .root   the macro behind `Foreign["name", Ecosystem]`
+
+entry .Address   an opaque C pointer: the raw address every `T*` but `char*` crosses the boundary as
+  detail
+      `Address` is an opaque `Long` holding a raw memory address — the platform-neutral
+      currency for every pointer a C header declares beyond the `char*`↔`Text` special case:
+      a buffer (`ForeignBuffer#pointer`), an opaque handle such as OpenSSL's `EVP_MD*`
+      returned by one call and passed to the next, or an out-parameter. On the JVM a
+      `pointer` argument travels as `MemorySegment.ofAddress`, and on Scala Native it is cast
+      to a `Ptr[Byte]`; a pointer-typed result comes back as an `Address`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+
+      given (Interface in Native at "/enigmatic/openssl.h") =
+        Interface[Native]("/enigmatic/openssl.h")
+
+      val md: Address = Foreign["library", Native].EVP_sha256().call[Address]()
+      val none: Address = Address.Null
+      md.isNull
+      md.address
+      ```
+
+      An `Address` satisfies *any* pointer-typed parameter: the C dialect reads `T*` as
+      `ptr<T>`, and the navigation macro accepts the `pointer` topic for every `ptr<T>`, so
+      the check is exactly as strong as C's own — arity and pointerness, not pointee identity.
+      Memory reachable through an `Address` is manually managed; `ForeignBuffer` owns the
+      blocks a program allocates itself.
+  refer xenophile.ForeignBuffer
+  refer xenophile.Native
+  entry .Null   the C null pointer, for an optional pointer parameter
+      `Address(0L)`. Passed where a C API accepts `NULL`, such as the unused `impl` of
+      `EVP_EncryptInit_ex`, or as the fallback of an absent buffer: `iv.lay(Address.Null)(_.pointer)`.
+  entry .apply   wraps a raw address as an `Address`
+  entry .address   the raw address, as a `Long`
+      An extension on `Address`, exported to `soundness` alongside `isNull`.
+  entry .isNull   whether the address is zero
+      An extension on `Address`.
+
+entry .Native   the C ecosystem: a header's declarations as foreign types, called natively on the JVM or Scala Native
+  detail
+      `Native` is the `Ecosystem` whose definitions are C headers, parsed by `CHeader.Dialect`,
+      and whose calls are executed by `PanamaInvoke` on the JVM or `NativeInvoke` on Scala
+      Native — its `Emission` names both, and `call` uses whichever backend the build depends
+      on. Its companion holds the `Interoperable` markers which say which Scala type stands
+      for each C type, so they resolve with no import.
+
+      Every top-level prototype in a header is a member of the synthetic foreign type
+      `library`; a `struct` or `union` is a foreign type whose members are its fields; an
+      `enum` is an `int`; a `typedef` resolves to what it names. One source, with the header
+      on the compile classpath, serves both platforms:
+
+      ```scala fuel
+      frame
+        label The header, on the compile classpath as /xenophile/library.h
+        code
+            // int abs(int n);
+            // size_t strlen(const char* s);
+            // const char* version(void);
+            // typedef struct Point { int x; int y; } Point;
+      frame
+        label The Scala source, written once
+        code
+            import soundness.*
+
+            given (Interface in Native at "/xenophile/library.h") =
+              Interface[Native]("/xenophile/library.h")
+
+            val library: Foreign of "library" from Native = Foreign["library", Native]
+            val five: Int = library.abs(-5).call[Int]()
+            val twelve: Long = library.strlen(t"hello, world").call[Long]()
+      frame
+        label What `call` becomes on the JVM, with xenophile.native on the classpath
+        code
+            import soundness.*
+            import java.lang.foreign.*
+
+            val five: Int =
+              ForeignLibrary.downcall(t"abs", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT))
+              . invokeWithArguments(java.util.List.of(-5: Integer)).asInstanceOf[Int]
+
+            val twelve: Long =
+              val arena = Arena.ofConfined().nn
+              try
+                ForeignLibrary.downcall(t"strlen", FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS))
+                . invokeWithArguments(java.util.List.of(arena.allocateFrom("hello, world"))).asInstanceOf[Long]
+              finally arena.close()
+      frame
+        label What `call` becomes on Scala Native, with xenophile.scalanative on the classpath
+        code
+            import soundness.*
+            import scala.scalanative.unsafe.*
+
+            val five: Int =
+              CFuncPtr.fromPtr[CFuncPtr1[Int, Int]](ForeignLibrary.resolve(c"abs"))(-5)
+
+            val twelve: Long =
+              Zone.acquire: zone =>
+                CFuncPtr.fromPtr[CFuncPtr1[CString, Long]](ForeignLibrary.resolve(c"strlen"))
+                  (toCString("hello, world")(using zone))
+      ##
+      ```
+
+      The two lowerings marshal identically. A C primitive passes through; a `string`
+      argument (`Text`) is copied into a confined arena or a `Zone` for the duration of the
+      call; any other pointer travels as its raw `Address`; a `string` result is read back out
+      of native memory, a pointer result becomes an `Address`, and `void` yields `Unit`. On
+      both platforms the symbol is resolved at runtime from the libraries
+      `ForeignLibrary.register` loaded and the process's default lookup, so a library missing
+      at its declared paths fails loudly at registration rather than at link time.
+
+      The C types a program can express as arguments are the scalars `int`, `long`, `short`,
+      `char` (a `Byte`), `double`, `float` and `bool`, the C string, and pointers. Structs by
+      value are outside the marshalling vocabulary: a struct's *fields* navigate and type, but
+      a function taking or returning one by value cannot be `call`ed, and on Scala Native is
+      _xenophile: library.f uses a struct type, unsupported on native_.
+  refer xenophile.CHeader
+  refer xenophile.ForeignLibrary
+  refer xenophile.ForeignBuffer
+  refer xenophile.Address
+  refer xenophile.call
+  entry .int   `Int` stands for a C `int`
+      Also what `unsigned int`, `int32_t`, `uint32_t` and every `enum` canonicalise to.
+  entry .long   `Long` stands for a C `long`
+      Also `long long`, the unsigned longs, `int64_t`, `uint64_t`, `intptr_t`, `uintptr_t`,
+      `size_t` and `ssize_t`, which `CHeader.Dialect` collapses to `long` so the layout stays
+      eight bytes wide.
+  entry .short   `Short` stands for a C `short`, signed or unsigned
+  entry .char   `Byte` stands for a C `char` as a scalar — not `char*`, which is `string`
+  entry .double   `Double` stands for a C `double`
+  entry .float   `Float` stands for a C `float`
+  entry .boolean   `Boolean` stands for a C `bool`
+  entry .string   `Text` stands for a C string: a plain `char*` or `const char*`
+      Only a *plain* `char*` is the string type; `unsigned char*` and `signed char*`
+      conventionally mean a byte buffer and stay pointers. A `Text` argument is copied into
+      per-call native memory and a `char*` result is read back as NUL-terminated text.
+  entry .pointer   `Address` stands for any other C pointer: `T*`, `void*`, an opaque handle, an out-parameter
+      The navigation macro accepts the `pointer` topic for every `ptr<T>` parameter, so one
+      `Address` type serves every pointee.
+  entry #Grammar   `CHeader.Dialect`
+  entry #Emission   `"xenophile.PanamaInvoke" | "xenophile.NativeInvoke"`: the JVM and Scala Native backends
+      Two backends which differ by target platform, not by language. A build depends on
+      `xenophile.native` or `xenophile.scalanative`, never both, and `call` takes the first it
+      can load.
+
+entry .CHeader   the C header front end: its declaration model, parser, the `Dialect` which projects it, and its error
+  detail
+      `CHeader` reads a C header — the kind `cbindgen` emits for a Rust crate's `extern "C"`
+      API, or a hand-written subset of a system library's — into two views. `.Parser` retains
+      the declared surface faithfully as `.Declaration`s: prototypes with their exact
+      arithmetic spellings and pointer structure, typedefs, structs and unions with their
+      fields, and enumerations with their enumerator values. `.Dialect` is the `Dialect` the
+      `Native` ecosystem names, a *projection* of that model onto the flat form the FFI
+      backends marshal against.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val header = t"""
+        typedef struct Point { int x; int y; } Point;
+        typedef int Counter;
+        int abs(int n);
+        Counter increment(Counter c);
+        const char* version(void);
+      """
+
+      val declared: List[CHeader.Declaration] = CHeader.Parser.parse(header)
+      val projected: Map[Text, Map[Text, Prototype]] = CHeader.Dialect.parse(header)
+      projected(t"library").let(_(t"increment")).let(_.result)   // Foreign.Type.Named(t"int")
+      projected(t"Point").let(_(t"x"))                           // a field: parameters Unset
+      ```
+
+      Preprocessor lines (`#include`, `#define`, include guards) and comments are skipped:
+      macros are not part of the parsed vocabulary. Any other construct the grammar does not
+      accept is a hard `CHeader.Error`, since a partially-read header would understate the
+      contract.
+  refer xenophile.Native
+  entry .Declaration   one declaration of a header, as the parser retains it
+    detail
+        An `enum` of four cases. `Function(name, result, parameters, variadic)` is a prototype,
+        with `variadic` set for a trailing `...`. `Alias(name, target)` is a `typedef`,
+        including a function-pointer typedef, whose target is `fn<result, params…>` (wrapped in
+        `variadic<…>` if it is). `Structure(name, union, fields, opaque)` is a `struct` or
+        `union`, with its fields in order and `opaque` set for a forward declaration (`struct
+        tag;`) with no body. `Enumeration(name, cases)` is an `enum` with each enumerator's
+        name and value, counting from zero or from the last explicit `=`.
+
+        Types keep their spelling: `unsigned long long` is `Named("unsigned-long-long")`,
+        `const char*` is `ptr<const<char>>`, `int values[4]` in a field is `array<int, 4>`, and
+        an array parameter degrades to a pointer, which is what the caller passes.
+    entry #named   the declared name, whichever case this is
+  entry .Parser   parses a header into its `Declaration`s, faithfully
+    detail
+        `CHeader.Parser.parse(source)` tokenises the header (skipping comments and
+        preprocessor lines) and reads each declaration: `extern` and `static` are dropped, a
+        parameter's name is ignored (C calls are positional), `(void)` is an empty parameter
+        list, `const` on a by-value type drops away while `const` through a pointer is kept,
+        and `volatile` is ignored. It raises `CHeader.Error` for a syntax error or an
+        unsupported construct.
+    entry .parse   the declarations of a header, in order; raises `CHeader.Error`
+  entry .Dialect   the `Dialect` for C: a header projected onto what a downcall can marshal
+    detail
+        The grammar `Native` names. It parses with `.Parser` and then erases what a downcall
+        cannot use: every top-level prototype becomes a member of the synthetic type
+        `.library`; each `struct` and `union` becomes a foreign type whose members are its
+        non-array fields; each `enum` is `int`; each `typedef` alias is resolved transitively;
+        the width-exact and sign-qualified spellings collapse to the primitive of the same size
+        (`int32_t`, `unsigned int` to `int`; `size_t`, `long long`, `int64_t` to `long`;
+        `unsigned char` to `char`); a plain `char*` becomes `string`; and any other pointer
+        becomes `ptr<T>` at depth one. Array fields, function-pointer typedefs and opaque tags
+        are not navigable.
+
+        `parse` is total: a header which does not parse defines nothing, and the navigation
+        macro reports _xenophile: the foreign type library is not defined_ from the empty
+        result rather than surfacing the parse error. Run `CHeader.Parser.parse` to see it.
+    entry .library   `t"library"`: the synthetic foreign type which holds a header's top-level functions
+        `Foreign["library", Native]` is the root every C function is called through.
+    entry .parse   the projected definitions of a header: `library` plus one type per struct and union
+  entry .Error   raised when a C header could not be read as declarations
+    detail
+        Error 646: _the C header could not be read because `reason`_, where the reason is a
+        `Syntax` failure (_`detail`, near `tokens`_, quoting the next few tokens, or _the end_)
+        or an `Unsupported` construct (_the construct `x` is outside the grammar this parser
+        accepts_). Raised by `CHeader.Parser.parse`; `CHeader.Dialect.parse` swallows it and
+        defines nothing.
+    entry .Reason   why the header could not be read: a syntax error, or a construct the grammar rejects
+      detail
+          A `Clarification` enum with `Syntax(detail, near)` (number 1) and `Unsupported(construct)`
+          (number 2).
+      entry #number   the reason's number within error 646: 1 for `Syntax`, 2 for `Unsupported`
+    entry .communicable   renders each reason as a message
+    entry #reason   the reason, as a `CHeader.Error.Reason`
+
+entry .ForeignBuffer   a manually-managed block of foreign memory, the same on the JVM and Scala Native
+  detail
+      The portable scratch space for a pointer-typed C parameter: an input buffer copied in
+      from `Data`, an output buffer the callee fills and `#data` reads back, or an
+      out-parameter read with `#int`. Two implementations present one surface — on the JVM
+      (`xenophile.native`) an `Arena`-backed `MemorySegment`, on Scala Native
+      (`xenophile.scalanative`) a `malloc`ed `Ptr[Byte]` — so code which allocates buffers
+      around a `call` cross-compiles unchanged. Both copy: `Data` is heap memory a C callee
+      must never retain.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+
+      given (Interface in Native at "/enigmatic/openssl.h") =
+        Interface[Native]("/enigmatic/openssl.h")
+
+      def random(size: Int): Data =
+        val output = ForeignBuffer(size)
+
+        try
+          Foreign["library", Native].RAND_bytes(output.pointer, size).call[Int]()
+          output.data(size)
+        finally output.free()
+      ```
+
+      Lifetime is explicit on both platforms: a buffer lives until `#free`, and reading it
+      afterwards is undefined. The usual shape is `try … finally buffer.free()`.
+  refer xenophile.Address
+  refer xenophile.Native
+  entry .apply   `ForeignBuffer(size)`: an uninitialised block; `ForeignBuffer(data)`: a block holding a copy of the bytes
+      On the JVM the block comes from a fresh shared `Arena`; on Scala Native from `malloc`.
+  entry #size   the block's length in bytes
+  entry #pointer   the block's address, to pass where a C parameter is a pointer
+  entry #data   the first `length` bytes of the block, copied out as `Data`
+      For an output buffer: `output.data(outputLength.int)` after a call which wrote into it.
+  entry #int   the 32-bit integer at the start of the block, for an `int*` out-parameter
+      Allocate `ForeignBuffer(4)`, pass its `#pointer`, then read the value the callee wrote.
+  entry #free   releases the memory: closes the arena, or `free`s the allocation
+
+entry .ForeignLibrary   loads native libraries and resolves C symbols, on the JVM through Panama and on Scala Native through `dlopen`
+  detail
+      `ForeignLibrary` is the runtime half of the C ecosystem, with a JVM implementation in
+      `xenophile.native` and a Scala Native one in `xenophile.scalanative`. Both load libraries
+      by path at *runtime* and resolve symbols from the loaded set, so a program has no
+      link-time dependency on the foreign library: a library missing at every declared path
+      fails loudly at `.register`, naming the paths tried, rather than as an undefined symbol
+      at link time or a null-pointer crash on first call.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+
+      ForeignLibrary.register
+        ( t"/opt/homebrew/opt/openssl@3/lib/libcrypto.dylib",
+          t"libcrypto.so.3",
+          t"libcrypto.dylib" )
+      ```
+
+      Registration belongs in the initializer of the object which makes the calls, before any
+      task could reach them. Symbols are searched in the registered libraries first and then
+      the process's default lookup — the C standard library and whatever is already loaded —
+      so `strlen`, `getpid` or `getenv` resolve with nothing registered at all.
+
+      The JVM object also carries the pieces a program needs to drive Panama by hand around a
+      header: `.apply` and `.system` give a `ForeignLibrary` instance whose `#handle` is a
+      bound `MethodHandle` for a named function, with `.layout`, `.descriptor`, `.segment`,
+      `.bytes` and `.text` for the layouts and the copies in and out. These are JVM-only; the
+      typed `call` through `PanamaInvoke` needs none of them.
+
+      ```scala
+      import soundness.*
+
+      val arena = java.lang.foreign.Arena.global().nn
+      val libc = ForeignLibrary.system(t"long strlen(const char* s);")
+      val text = arena.allocateFrom("hello, world").nn
+      libc.handle(t"strlen").invokeWithArguments(text).nn.asInstanceOf[Long]   // 12L
+      ```
+  refer xenophile.Native
+  refer xenophile.PanamaInvoke
+  refer xenophile.NativeInvoke
+  entry .register   loads the first of several candidate library paths, for the life of the process
+      Tries each path in order — `SymbolLookup.libraryLookup` bound to the global arena on
+      the JVM, `dlopen` with `RTLD_NOW` on Scala Native — keeps the first that loads, and adds
+      it to the search path `call` resolves symbols from. If none loads, it throws an
+      `IllegalArgumentException` (JVM) or panics (Scala Native) naming the paths. A registered
+      library is never unloaded. Register before the first call, from the provider's object
+      initializer, so no concurrent call races the registration.
+  entry .resolve   a C symbol's address from the registered libraries, then the default lookup; panics if unbound
+      Scala Native only: what `NativeInvoke`'s emitted call looks each symbol up with. The
+      registered handles are searched newest first, then `dlopen(null)`; a symbol nowhere is
+      _xenophile: unresolved native symbol name (is its library registered?)_, rather than a
+      null function pointer.
+  entry .downcall   a cached Panama `MethodHandle` for a symbol, found wherever it lives
+      JVM only: what `PanamaInvoke`'s emitted call binds with. The symbol is searched in the
+      default lookup and every registered library, bound to the given `FunctionDescriptor`,
+      and cached by name; a symbol nowhere panics with _no such foreign symbol: name (is its
+      library `ForeignLibrary.register`ed?)_.
+  entry .apply   loads the first of `paths` into a `ForeignLibrary` over the prototypes parsed from `header`
+      JVM only. The lookup is bound to the `Arena` in scope; the header's top-level functions
+      become the signatures `#handle` builds descriptors from. Throws
+      `IllegalArgumentException` if no path loads.
+  entry .system   a `ForeignLibrary` over the process-wide default lookup, for libc symbols
+      JVM only: `Linker.nativeLinker.defaultLookup` paired with a header's prototypes, for
+      calling the C standard library without naming a library file.
+  entry .layout   the Panama `MemoryLayout` of a C type, as `CHeader.Dialect` canonicalises it
+      JVM only. `int`, `long`, `short`, `char`, `double`, `float` and `bool` map to the
+      same-width `ValueLayout`; everything else — `string`, every pointer, any opaque name —
+      is `ADDRESS`.
+  entry .descriptor   the `FunctionDescriptor` of a prototype: its result and parameter layouts
+      JVM only. A `void` result is `FunctionDescriptor.ofVoid`.
+  entry .segment   copies bytes into freshly-allocated native memory in the `Arena` in scope
+      JVM only.
+  entry .bytes   reads `length` bytes back out of a `MemorySegment` as `Data`
+      JVM only.
+  entry .text   reads a NUL-terminated C string from a downcall's `ADDRESS` result as `Text`
+      JVM only. A downcall's address result is a zero-length segment, so it is reinterpreted
+      to an unbounded one before the string is read.
+  entry #handle   a bound `MethodHandle` for a named function of this library, from its parsed prototype
+      JVM only. Invoke it with `invokeWithArguments`, passing `MemorySegment`s for pointer
+      and string parameters and boxed primitives for the rest. A function the header did not
+      declare panics with _no such foreign function: name_, and one the library does not
+      export throws from the symbol lookup.
+
+
+entry .PanamaInvoke   the C backend for the JVM: a navigated C call becomes a Panama downcall
+  detail
+      The `Materializer` the `Native` ecosystem's `Emission` names first, in `xenophile.native`.
+      Given a fully-applied navigation such as `library.abs(-5)`, it reads the function's
+      prototype from the header the `Interface` in scope names, builds the `FunctionDescriptor`
+      at compile time from the header's own types, and emits a call through
+      `ForeignLibrary.downcall`, which resolves the symbol at runtime from the registered
+      libraries and the default lookup and caches the bound `MethodHandle`.
+
+      Marshalling: a C primitive is boxed for `invokeWithArguments`; a `string` argument
+      (`Text`) is copied into a confined `Arena` opened for the call and closed in a `finally`;
+      any other pointer travels as `MemorySegment.ofAddress` of its `Address`. A `string`
+      result is read back as `Text` with `ForeignLibrary.text`, a pointer result becomes an
+      `Address`, a primitive is unboxed, and `void` yields `Unit`. Arity is checked against the
+      prototype: _xenophile: wrong number of arguments for library.abs_.
+
+      Not for direct use: `call` reaches it by name. The same navigation lowers through
+      `NativeInvoke` when `xenophile.scalanative` is on the classpath instead.
+  refer xenophile.NativeInvoke
+  refer xenophile.ForeignLibrary
+  entry .materialize   emits the Panama downcall for a navigated C function
+
+entry .NativeInvoke   the C backend for Scala Native: a navigated C call becomes a `dlsym`/`CFuncPtr` call
+  detail
+      The `Materializer` the `Native` ecosystem's `Emission` names second, in
+      `xenophile.scalanative`. Given a fully-applied navigation, it reads the function's
+      prototype from the header, maps each C type to the Scala type of identical ABI (`int` to
+      `Int`, `char` to `Byte`, `string` to `CString`, any `ptr<T>` to `Ptr[Byte]`), and emits
+      `CFuncPtr.fromPtr[CFuncPtrN[…]](ForeignLibrary.resolve(c"name"))(args…)`: the symbol is
+      resolved at runtime from the registered libraries and `dlopen(null)`, and panics rather
+      than returning null when unbound.
+
+      Marshalling matches `PanamaInvoke`: a `Text` argument is converted with `toCString`
+      inside a `Zone.acquire` opened only when some parameter needs it; an `Address` becomes a
+      `Ptr[Byte]`; a `string` result is read with `fromCString`; a pointer result is lowered to
+      its raw address as an `Address`. A struct by value is _xenophile: library.f uses a struct
+      type, unsupported on native_.
+
+      The macro itself runs on the JVM and names every Scala Native entry point rather than
+      referencing it, so the module compiles without the Native runtime; the emitted call is
+      linked at the downstream `.native` call site. Not for direct use: `call` reaches it by
+      name.
+  refer xenophile.PanamaInvoke
+  refer xenophile.ForeignLibrary
+  entry .materialize   emits the Scala Native call for a navigated C function
+
+entry .Js   the uniform form a value takes crossing a JavaScript boundary, with the codecs for the types that can
+  detail
+      A `Js` wraps a value marshalled to the carrier type it crosses a JavaScript call as — a
+      `String` for `Text`, a `Boolean`, or a `Byte`/`Short`/`Int` for the sized integers, all
+      of which Scala.js represents as JavaScript values. A single form lets `JsInvoke` summon
+      a codec for any Scala type without knowing its JavaScript carrier in advance: the
+      companion holds `Encodable in Js` and `Decodable in Js` givens whose `Carrier` type
+      member names it, and a value with no codec cannot cross, reported when the code
+      compiles: _xenophile: no way to read a T from a JavaScript boundary_.
+
+      The codecs cover `Text`, `Boolean` and the `hypotenuse` integers up to 32 bits — `S8`,
+      `S16`, `S32`, `U8`, `U16`, `U32` — which canonicalise onto `Byte`, `Short` and `Int`.
+      JavaScript's sole number type is an IEEE-754 double, so `S64` and `U64` have no faithful
+      carrier without `BigInt` and are not provided; nor are floating-point types yet.
+
+      ```scala
+      import soundness.*
+
+      val encoded: Js = summon[Text is Encodable in Js].encoded(t"hello")
+      encoded.as[String]
+      summon[U16 is Decodable in Js].decoded(Js(7.toShort))
+      ```
+
+      The givens are in the companion and resolve with no import.
+  refer xenophile.JsInvoke
+  refer xenophile.Wasm
+  entry .apply   wraps a carrier value as a `Js`
+  entry .as   the wrapped value at its carrier type: `js.as[String]`
+      An extension on `Js`; an unchecked cast, so the carrier must be the one the codec names.
+  entry .s8Encodable   `S8` crosses as a `Byte`
+  entry .s8Decodable   an `S8` read from a `Byte`
+  entry .s16Encodable   `S16` crosses as a `Short`
+  entry .s16Decodable   an `S16` read from a `Short`
+  entry .s32Encodable   `S32` crosses as an `Int`
+  entry .s32Decodable   an `S32` read from an `Int`
+  entry .u8Encodable   `U8` crosses as a `Byte`, by its bits
+  entry .u8Decodable   a `U8` read from a `Byte`'s bits
+  entry .u16Encodable   `U16` crosses as a `Short`, by its bits
+  entry .u16Decodable   a `U16` read from a `Short`'s bits
+  entry .u32Encodable   `U32` crosses as an `Int`, by its bits
+  entry .u32Decodable   a `U32` read from an `Int`'s bits
+  entry .boolEncodable   `Boolean` crosses as itself
+  entry .boolDecodable   a `Boolean` read as itself
+  entry .textEncodable   `Text` crosses as a `String`
+  entry .textDecodable   a `Text` read from a `String`
+  entry #value   the wrapped carrier value, untyped
+
+entry .JsInvoke   the JavaScript backend: a navigated WebIDL or TypeScript call becomes a Scala.js dynamic call
+  detail
+      The `Materializer` for the JavaScript ecosystems, in `xenophile.js`. A fully-applied
+      navigation `Foreign["Math", WebIdl].random()` with `call[…]()` becomes
+      `js.Dynamic.global.Math.random()`: the owner recorded on the navigation's `Select` is
+      the global property to read, and the member is applied on it. The result is decoded
+      through the requested type's `Decodable in Js` codec, which reads the `js.Dynamic` value
+      at its `Carrier` type.
+
+      The `js.Dynamic` entry points are looked up in the downstream classpath by name, so the
+      module needs no dependency on the Scala.js library and the macro runs on the JVM; the
+      call is lowered by Scala.js at link time, so `call` on a JavaScript navigation only
+      materializes in a `.js` compilation.
+
+      This backend materializes nullary calls, `receiver.method()`; marshalling arguments
+      through `Encodable in Js` is not yet provided. Not for direct use: `call` reaches it by
+      name.
+  refer xenophile.Js
+  refer xenophile.call
+  entry .materialize   emits the `js.Dynamic` call for a navigated JavaScript method
+
+entry .Wasm   the uniform form a value takes crossing a WIT boundary, with the codecs and the handle, case, variant and error types
+  detail
+      A `Wasm` wraps a value marshalled to the carrier type it crosses a WIT function as: a
+      `String` for `Text`, a `Long` for `U64`, an `Array[Byte]` for `Data`, and so on. A
+      single form lets `WasmInvoke` summon a codec for any Scala type without knowing its
+      carrier in advance: the companion holds `Encodable in Wasm` and `Decodable in Wasm`
+      givens whose `Carrier` type member names the type the scala-wasm compiler accepts in a
+      WIT signature, and a value with no codec cannot cross, reported when the code compiles:
+      _xenophile: no way to pass a T across a WIT boundary_, or _no way to read a T from a WIT
+      boundary_.
+
+      The leaf codecs cover `Text`, `Boolean`, `Char`, `Data` and the eight `hypotenuse`
+      integers `S8`…`S64` and `U8`…`U64`. Structured WIT shapes are derived from them by
+      `WasmInvoke`, driven by the WIT declaration: a `tuple<…>` or a record as a Scala tuple, a
+      `list<T>` as a `List`, an `option<T>` as an `Optional`, a `result<ok, err>` unwrapped
+      with its `err` raised as `.Error`, and a `resource` as a `.Handle`. The companion also
+      holds the Scala-side values for WIT's stateful and sum types: `.Handle` for a resource,
+      `.Case` for a payload-less variant or enum case, and `.Variant` for a payload-carrying
+      case, each `Interoperable in Wit` with the WIT type as its topic so it passes as an
+      argument and, for a handle, navigates.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+
+      given (Interface in Wit at "/coaxial/sockets.wit") = Interface[Wit]("/coaxial/sockets.wit")
+
+      val factory: Foreign of "tcp-create-socket" from Wit = Foreign["tcp-create-socket", Wit]
+
+      val socketHandle: Wasm.Handle of "tcp-socket" =
+        factory.`create-tcp-socket`(Wasm.Case["ip-address-family"]("ipv4"))
+        . call[Wasm.Handle of "tcp-socket"]()
+
+      val socket: Foreign of "tcp-socket" from Wit = socketHandle
+      socket.`finish-bind`.call[Unit]()
+      socketHandle.dispose()
+      ```
+
+      `F32` and `F64` codecs are not yet provided. The givens are in the companion and resolve
+      with no import.
+  refer xenophile.WasmInvoke
+  refer xenophile.call
+  entry .apply   wraps a carrier value as a `Wasm`
+  entry .as   the wrapped value at its carrier type: `wasm.as[String]`
+      An extension on `Wasm`; an unchecked cast, so the carrier must be the one the codec
+      names.
+  entry .s8Encodable   `S8` crosses as a `Byte`
+  entry .s8Decodable   an `S8` read from a `Byte`
+  entry .s16Encodable   `S16` crosses as a `Short`
+  entry .s16Decodable   an `S16` read from a `Short`
+  entry .s32Encodable   `S32` crosses as an `Int`
+  entry .s32Decodable   an `S32` read from an `Int`
+  entry .s64Encodable   `S64` crosses as a `Long`
+  entry .s64Decodable   an `S64` read from a `Long`
+  entry .u8Encodable   `U8` crosses as a `Byte`, by its bits
+  entry .u8Decodable   a `U8` read from a `Byte`'s bits
+  entry .u16Encodable   `U16` crosses as a `Short`, by its bits
+  entry .u16Decodable   a `U16` read from a `Short`'s bits
+  entry .u32Encodable   `U32` crosses as an `Int`, by its bits
+  entry .u32Decodable   a `U32` read from an `Int`'s bits
+  entry .u64Encodable   `U64` crosses as a `Long`, by its bits
+  entry .u64Decodable   a `U64` read from a `Long`'s bits
+  entry .boolEncodable   `Boolean` crosses as itself
+  entry .boolDecodable   a `Boolean` read as itself
+  entry .charEncodable   `Char` crosses as itself
+  entry .charDecodable   a `Char` read as itself
+  entry .textEncodable   `Text` crosses as a `String`
+  entry .textDecodable   a `Text` read from a `String`
+  entry .dataEncodable   `Data` crosses as a frozen `Array[Byte]`, which it already is
+      The carrier is `Array[Byte]^{}`: the same `byte[]` the WIT bridge passes for a
+      `list<u8>`, and pure under capture checking, so the codec stays a pure value.
+  entry .dataDecodable   a `Data` read from a frozen `Array[Byte]`
+  entry .Error   the `err` arm of a WIT `result<…>`, raised when a `call` returns it
+    detail
+        _the WIT import returned the error `name`_, where the name is the failing case's
+        lower-kebab-case name (`not-permitted`, `dns-timeout`), as a `Wasm.Case` would spell
+        it. Thrown — not raised through a tactic, since it comes from generated code — by the
+        decoder `WasmInvoke` emits for a `result<ok, err>` result when the import returns the
+        `err` arm. The error value (a case of `wasi:filesystem`'s `error-code`, say) is held
+        untyped in `#value`; `#name` recovers which case it is, so a WASI backend translates
+        failures into its own vocabulary:
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+
+        def attempt[result](block: => result): Optional[result] =
+          try block catch case error: Wasm.Error =>
+            val failure: Text = error.name   // t"not-permitted", t"dns-timeout", …
+            Unset
+        ```
+    entry #value   the WIT error value, untyped
+    entry #name   the failing case's lower-kebab-case name
+  entry .Case   a payload-less case of a WIT `variant` or `enum`, by name, for passing as an argument
+    detail
+        `Wasm.Case["ip-address-family"]("ipv4")` is a value of the WIT type `ip-address-family`
+        whose case is `ipv4`: the type argument is the variant's name and the argument the
+        case's lower-kebab-case name. The phantom `Topic` records the variant, so the value is
+        `Interoperable in Wit of "ip-address-family"` and converts into an argument of that
+        foreign type; at the Wasm link site `call` selects the matching facade case object by
+        name at runtime, and a name which is no case of the variant throws then. A variant or
+        enum *result* is read back as a `Wasm.Case of "name"` when requested as one; a
+        payload-carrying case loses its payload that way.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+
+        val family: Wasm.Case of "ip-address-family" = Wasm.Case["ip-address-family"]("ipv4")
+        val method: Wasm.Case of "method" = Wasm.Case["method"](t"get")
+        family.name
+        ```
+    refer xenophile.Wasm.Variant
+    entry .apply   `Wasm.Case["variant"]("case")`: the named case of the named variant
+    entry .caseName   the lower-kebab-case name of a facade case object, recovered from its class
+        `DnsTimeout` gives `dns-timeout`: the same spelling `apply` accepts, used by the
+        decoder when a variant result is read as a `Wasm.Case`.
+    entry .interoperable   a `Wasm.Case of topic` passes where the WIT type `topic` is expected
+    entry #name   the case's lower-kebab-case name
+  entry .Handle   an opaque handle to a WIT resource: a stateful foreign value, navigable and disposable
+    detail
+        A `Wasm.Handle of "tcp-socket"` is what `call[Wasm.Handle of "tcp-socket"]()` returns
+        for a WIT function whose result is the resource `tcp-socket`, and what a constructor
+        (`Foreign["fields", Wit].constructor.call[Wasm.Handle of "fields"]()`) returns. The
+        underlying value is held untyped; the phantom `Topic` records the resource type, which
+        makes the handle `Interoperable in Wit of "tcp-socket"`, so it passes as an argument
+        and — bound as a `Foreign of "tcp-socket" from Wit` — navigates to the resource's
+        methods, each imported as `[method]tcp-socket.name` with the handle threaded as the
+        receiver. A handle receiver may be a `val`, unlike other navigations, since its handle
+        is recovered from the expression at runtime.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+
+        given (Interface in Wit at "/coaxial/sockets.wit") = Interface[Wit]("/coaxial/sockets.wit")
+
+        def ready(socketHandle: Wasm.Handle of "tcp-socket"): Unit =
+          val socket: Foreign of "tcp-socket" from Wit = socketHandle
+          val pollableHandle = socket.subscribe.call[Wasm.Handle of "pollable"]()
+          val pollable: Foreign of "pollable" from Wit = pollableHandle
+          pollable.block.call[Unit]()
+          pollableHandle.dispose()
+        ```
+
+        A resource is owned: `handle.dispose()` — an inline extension exported by the
+        `soundness` umbrella from `xenophile.wasm`, backed by `WasmInvoke.dispose` — emits the
+        resource's `[resource-drop]` import. Every handle a program obtains should be disposed
+        when it is done with it, typically in a `finally`.
+    refer xenophile.WasmInvoke
+    entry .interoperable   a `Wasm.Handle of topic` passes where the WIT resource `topic` is expected
+    entry #value   the resource's facade instance, untyped; only meaningful in Wasm-compiled code
+  entry .Variant   a payload-carrying case of a WIT `variant`, for passing as an argument
+    detail
+        `Wasm.Variant["ip-socket-address", "ipv4"](payload)` is a value of the WIT variant
+        `ip-socket-address` in its `ipv4` case, carrying `payload`. The variant and the case
+        are literal type arguments (both lower-kebab-case), because the payload's type differs
+        per case and the facade case is built with no runtime dispatch; the payload's Scala
+        type is inferred by the second application, through `.Applier`. The phantom `Topic`
+        records the variant, so the value is `Interoperable in Wit of "ip-socket-address"`,
+        and at the Wasm link site `call` constructs the named facade case around the payload —
+        a record or tuple payload built element-wise from a Scala tuple, each leaf through its
+        `Encodable in Wasm` codec. A case which the variant does not declare is a compile
+        error, _xenophile: the variant ip-socket-address has no case ipv7_.
+
+        ```scala
+        import soundness.*
+
+        val octets = (U8(127.toByte.bits), U8(0.toByte.bits), U8(0.toByte.bits), U8(1.toByte.bits))
+        val address = Wasm.Variant["ip-socket-address", "ipv4"]((U16(8080.toShort.bits), octets))
+        address.payload
+        ```
+
+        `Wasm.Case` is the payload-less counterpart.
+    refer xenophile.Wasm.Case
+    entry .apply   `Wasm.Variant["variant", "case"]`: an `Applier` which then takes the payload
+    entry .Applier   the second step of `Wasm.Variant[…, …](payload)`, which infers the payload's type
+      detail
+          Holds the variant and case fixed by the type arguments; its `apply` takes the payload
+          and gives the `(Variant[payload] of topic) { type Case = name }` value.
+      entry #apply   applies the payload, inferring its Scala type
+    entry .interoperable   a `Wasm.Variant` of a topic passes where that WIT variant is expected
+    entry #payload   the payload, at its Scala type
+  entry #value   the wrapped carrier value, untyped
+
+entry .WasmInvoke   the Wasm backend: a navigated WIT call becomes a Component Model import
+  detail
+      The `Materializer` for the `Wit` ecosystem, in `xenophile.wasm`. A fully-applied
+      navigation — `Foreign["random", Wit]` selecting `get-random-u64` — with `call[U64]()` becomes a
+      `witImportCall` of the function's module id (`wasi:random/random@0.2.0`, the
+      prototype's `module`) and its Component Model name — `name`, `[method]resource.name`,
+      `[static]resource.name` or `[constructor]resource` — which the scala-wasm compiler
+      lowers to an import. The import's signature is described structurally from the `.wit`
+      declaration, so nested shapes such as `list<tuple<string, string>>` keep their exact
+      types.
+
+      The requested result type drives decoding, recursively by the WIT result: a
+      `result<…>` is checked and its `err` thrown as `Wasm.Error`; an `option<T>` becomes an
+      `Optional`; a resource requested as `Wasm.Handle of "name"` is wrapped; a `tuple<…>` or
+      record requested as a Scala tuple is decoded element-wise; a `list<T>` requested as a
+      `List[T]` likewise; a variant requested as `Wasm.Case of "name"` gives the case's name;
+      a `unit` function requested as `Unit` decodes nothing; and a leaf uses the type's
+      `Decodable in Wasm`. Requesting `Unit` of anything but a `result` or void function is
+      _xenophile: `call[Unit]` requires a WIT `result<…>` or void function_.
+
+      Each argument crosses through its `Encodable in Wasm` codec: an `Optional[T]` (or a bare
+      `Unset`) against an `option<T>` as a `java.util.Optional`; a `Wasm.Handle` as its raw
+      handle; a `Wasm.Case` as the facade case object selected by name; a `Wasm.Variant` as
+      the named facade case built around its payload; a Scala tuple against a `tuple<…>` or
+      record element-wise; a plain value against an `option<T>` as a present optional, and
+      against a `result<…>` as its `Ok`.
+
+      Every scala-wasm symbol is looked up in the downstream classpath by name, so the module
+      compiles on the JVM, where the macro runs, and the call materializes only at a
+      Wasm-linked call site. Not for direct use: `call` reaches it by name.
+  refer xenophile.Wasm
+  refer xenophile.call
+  entry .materialize   emits the Component Model import call for a navigated WIT function
+  entry .dispose   the macro behind `handle.dispose()`: emits a resource's `[resource-drop]` import
+      Reads the resource type from the `Wasm.Handle`'s `Topic`, finds its module in the WIT
+      definitions the `Interface in Wit` in scope names, and emits `[resource-drop]name` with
+      the handle as its only parameter. The `dispose()` extension on `Wasm.Handle` which calls
+      it is declared in the `soundness` package, so it is available after `import soundness.*`.
+
+entry .Facade   a zero-cost, statically-typed view of a live Kotlin or Java value, navigated as though it were Scala
+  detail
+      A `Facade over T` wraps a JVM value of the Scala type `T` — type arguments included, so a
+      `Facade over kotlin.Pair[Text, Text]` knows both of its components are `Text` — and lets its
+      members be reached as though the Kotlin declarations were Scala's. Every member access is
+      resolved as the code compiles against the `@Metadata` the Kotlin compiler wrote into the
+      classfile (through `KotlinDialect`), and materializes immediately as a direct, statically
+      typed JVM call: no reflection, no wrapper object, and the value itself travels verbatim.
+      This is the difference from a `Foreign` value, which is a deferred expression for another
+      runtime to execute; a facade is eager, because the Kotlin world is the same JVM.
+
+      A facade is made with `make[T](arguments)` (a constructor call), `companion[T]` (a class's
+      companion object), `singleton[T]` (a Kotlin `object`) or `enumEntry[T](name)`, or arrives
+      as the result of another facade's member. The Kotlin standard library must be on the
+      compile classpath for the metadata to be read:
+
+      ```scala
+      import soundness.*
+
+      val pair = make[kotlin.Pair[Text, Text]](t"a", t"b")
+      val first: Text = pair.first
+      val regex = make[kotlin.text.Regex](t"[0-9]+")
+      val matched: Boolean = regex.matches(t"123")
+      val found: Optional[Facade over kotlin.text.MatchResult] = regex.find(t"a1b2", 0)
+      ```
+
+      What the metadata contributes is exactly what a Java signature cannot say. A Kotlin
+      `String` result reads as `Text`; a nullable result `T?` is an `Optional`, absent where
+      Kotlin would return null, and a nullable primitive unboxes to its Scala primitive inside
+      the `Optional`; a primitive, `Unit` or substituted type-parameter result passes through as
+      itself; and any other Kotlin-typed result wraps as a further facade, so navigation
+      continues. A property reads as a member (`regex.pattern`), a `var` property accepts
+      assignment through its setter (`parameter.name = t"y"`), and assigning to a `val` is a
+      compile error. A `const` or `@JvmField` property is read as the bare field it compiles to.
+
+      Arguments are adapted to the parameter Kotlin declares: a `Text` satisfies a `String` or
+      `CharSequence` parameter; a facade unwraps to its underlying value; an `Int` widens to a
+      `Long` parameter, and an in-scope `Conversion` fits any other gap; a Soundness `List`,
+      `Set` or `Map` (or a stdlib `Seq`) satisfies a `java.util.Collection`, `Set` or `Map`
+      parameter through a constant-time `asJava` view; a Scala array satisfies a Java array
+      parameter whose element type it is assignable to. Omitted trailing parameters which
+      declare Kotlin defaults fall back to them (`regex.find(t"a7b")`), and arguments may be
+      named (`regex.find(startIndex = 2, input = t"1a2b")`), in any order, with the missing
+      positions again taking their defaults. Surplus arguments collect into a `vararg` tail.
+
+      A Scala lambda satisfies a Kotlin function-type parameter, implementing the
+      `kotlin.jvm.functions.FunctionN` interface around it (arities 0 to 2); its own parameters
+      may be declared as facades, so the value inside navigates too, and a facade result
+      unwraps for Kotlin. A lambda likewise satisfies a Java functional interface (`Runnable`,
+      `Predicate`, `Comparator`, a listener) through a dynamic proxy. Where the method's only
+      functional parameter has a plain result, the facade's type is refined so that an
+      *untyped* lambda infers its parameter types (`list.removeIf(text => text.length > 1)`);
+      elsewhere a lambda's parameters must be written (`(m: Facade over MatchResult) => …`),
+      since `Dynamic` gives an argument no expected type.
+
+      ```scala
+      import soundness.*
+
+      val regex = make[kotlin.text.Regex](t"[0-9]+")
+      val replaced: Text =
+        regex.replace(t"a1b2", (m: Facade over kotlin.text.MatchResult) => t"<${m.value}>")
+
+      val list = make[java.util.ArrayList[Text]](List(t"a", t"bb", t"ccc").stdlib)
+      list.removeIf(text => text.length > 1)
+      val size: Int = list.size()
+      ```
+
+      A plain Java class — the JDK, `android.jar`, any library without Kotlin metadata —
+      resolves through a reflection-based fallback over its public surface, with the same model:
+      a `getX()` or `isX()` method reads as the short property `x`, a `setX(v)` method writes
+      through the assignment `x = v`, and a `setX(SamInterface)` pair becomes a `var`-like
+      property to which a lambda can be assigned with its parameters inferred
+      (`handler.filter = record => …`). Java declares no nullability, so every reference result
+      of a Java class reads as definite.
+
+      A member the class does not declare, a wrong arity, an unsatisfiable argument, an
+      ambiguous overload, a member of a Kotlin value class (whose JVM names are mangled), a
+      suspending function (omitted from the model) or a functional interface above arity 2 is a
+      compile error, phrased as Kotlin would declare the member — _xenophile: kotlin.text.Regex
+      has no member matchez; did you mean: fun matches(CharSequence): Boolean_. The facade's
+      members are also offered as tab completions, rendered in Kotlin syntax, by a completion
+      engine which understands `Completable`.
+
+      `toString`, `equals` and `hashCode` are real members of the facade wrapper itself, so
+      `Dynamic` cannot intercept them: reach the underlying value's with `#k`
+      (`pair.k.toString`). The facade type is `Facade over T`, with `T` as its `Transport`, the type
+      member it inherits from prepositional's `Transportive`: the Scala type of the underlying
+      value, type arguments included.
+  refer xenophile.make
+  refer xenophile.companion
+  refer xenophile.singleton
+  refer xenophile.enumEntry
+  refer xenophile.KotlinDialect
+  entry .apply   wraps a JVM value as a `Facade over T`
+      `Facade[T](value)` is the sole constructor: it records `T` as the facade's `Transport`
+      and keeps the value as it is. User code rarely needs it, since `make`, `companion`,
+      `singleton` and `enumEntry` build facades and every navigated result arrives wrapped; it
+      is how a lambda's facade parameters are made, and how a value obtained from plain Java
+      interop is brought into facade navigation.
+  entry .completions   the facade's members as tab completions, rendered in Kotlin syntax
+      The `Completable` hook a completion engine calls reflectively: the members of the
+      underlying class, each as `fun name(Type): Result` or `val name: Type` in Kotlin's own
+      spelling, with nullability as `?`. Not for direct use.
+  entry #raw   the underlying value at its erased runtime type, `Any`
+      The accessor the emitted code reads; user code prefers `#k`, which recovers the precise
+      static type.
+  entry #k   the underlying value at its full recorded Scala type
+      The escape hatch back to plain Java-level interop (`k` for Kotlin): `pair.k` is a
+      `kotlin.Pair[Text, Text]` with no cast needed, for a Java API that takes one, or for
+      `toString`, `equals` and `hashCode`, which the facade wrapper cannot intercept.
+  entry #selectDynamic   reads a property, a `const`/`@JvmField` field or a Java bean getter
+      `facade.name` reads a Kotlin property through its getter, a `const` or `@JvmField`
+      property as its field, or — for a class without Kotlin metadata — the bean getter
+      `getName()` or `isName()`. A `String` result reads as `Text`, a nullable one as an
+      `Optional`, and a Kotlin-typed one as a further facade. An unknown member is a compile
+      error naming near misses in Kotlin syntax.
+  entry #applyDynamic   calls a function or method, with arguments adapted to its declared parameters
+      `facade.name(arguments)` resolves the member against the Kotlin metadata and the Scala
+      view of the class, picks the overload every argument satisfies (exact conformance
+      outranks adaptation, so `Text` never makes two `String`-flavoured overloads ambiguous),
+      adapts the arguments — `Text` for `String`, facades unwrapped, lambdas to function types
+      and functional interfaces, collections and arrays bridged, numerics widened — and emits
+      the direct call. Trailing parameters with Kotlin defaults may be omitted; a property
+      followed by an argument list reaches Kotlin's `operator fun get` on the property's value.
+      A missing member, an unsatisfiable argument list or an ambiguous overload is a compile
+      error quoting the member as Kotlin declares it.
+  entry #applyDynamicNamed   calls a function with named (or mixed) arguments
+      `regex.find(startIndex = 2, input = t"1a2b")`: each named value is assigned to its
+      declared parameter's position and positional values fill the earliest unassigned ones;
+      a position left unfilled must declare a Kotlin default. An unknown parameter name is a
+      compile error listing the declared names, and a missing one without a default names it.
+  entry #updateDynamic   assigns to a `var` property or a Java bean setter
+      `facade.name = value` emits the Kotlin setter, or `setName(value)` for a class without
+      metadata. Where the setter is overloaded (`setColor(int)` and `setColor(long)`), the
+      overload the value fits exactly wins over one reached by a conversion. Assigning to a
+      `val`, or to a name with no setter, is a compile error.
+  entry #tuple   a data class's components as a Scala tuple
+      `make[kotlin.Pair[Text, Text]](t"a", t"b").tuple` is `(t"a", t"b")`: the `componentN`
+      functions in order, each with its facade-refined type. A class declaring no components is
+      a compile error.
+  entry #scala   an explicit copy of a Kotlin or Java collection into the Soundness equivalent
+      A `java.util.List` copies to a `List`, a `java.util.Set` to a `Set` and a `java.util.Map`
+      to a `Map`, with `String` elements reading as `Text` (`regex.split(t"a1b2").scala` is a
+      `List[Text]`). The copy is explicit because a facade is otherwise a zero-cost view; a
+      facade over any other type is a compile error.
+  entry #apply   `facade(key)`: Kotlin's `operator fun get`
+      Reaches the class's `get` method with the arguments given, as Kotlin's index syntax
+      does, so `groups(0)` on a `MatchResult` facade is `groups.get(0)`.
+  entry #update   `facade(key) = value`: Kotlin's `operator fun set`
+      Reaches the class's `set` method, discarding its result.
+
+entry .make   constructs a Kotlin or Java class through its facade: `make[T](arguments)`
+    `make[kotlin.Pair[Text, Text]](t"a", t"b")` resolves the class on the compile classpath,
+    chooses the constructor every argument satisfies — with the same adaptations a method call
+    makes: `Text` for `String`, lambdas for function types and functional interfaces,
+    collections through `asJava` views, numeric widening, in-scope `Conversion`s — and returns
+    a `Facade over T`. A generic class's constructor is typed with the facade's own type
+    arguments, so `make[java.util.ArrayList[Text]](…)` knows its elements are `Text`.
+
+    ```scala
+    import soundness.*
+
+    val regex = make[kotlin.text.Regex](t"[0-9]+")
+    val relaxed = make[kotlin.text.Regex](t"[a-z]+", enumEntry[kotlin.text.RegexOption]("IGNORE_CASE"))
+    val thread = make[java.lang.Thread](() => ())
+    ```
+
+    A class which is not on the compile classpath, or no constructor accepting the arguments,
+    is a compile error. A plain Java class (one with no Kotlin metadata) is constructed through
+    the reflection-based fallback model, so the JDK's classes work as well as Kotlin's. The
+    facade's type is refined with the class's methods which take a functional interface, so an
+    untyped lambda passed to one of them infers its parameter types.
+
+entry .companion   the facade of a Kotlin class's companion object: `companion[T]`
+    `companion[kotlin.text.Regex].escape(t"a.b")` reaches the members of `Regex.Companion`
+    through its static field. The class must declare a companion object — a class without one
+    is a compile error, _xenophile: kotlin.Pair has no companion object_ — and the companion's
+    members resolve from its own metadata, so a member of a value class (whose JVM names are
+    mangled, such as `kotlin.time.Duration.parse`) is rejected with a diagnostic naming the
+    value class.
+
+entry .singleton   the facade of a Kotlin `object`: `singleton[T]`
+    `singleton[kotlin.text.Typography].quote` reaches an `object`'s members through its static
+    `INSTANCE` field; `const` properties read as the fields they compile to. A type which is a
+    class rather than an object is a compile error, _xenophile: kotlin.Pair is not a Kotlin
+    object_, as is one not on the compile classpath.
+
+entry .enumEntry   the facade of an `enum class` entry, by name: `enumEntry[T]("NAME")`
+    `enumEntry[kotlin.text.RegexOption]("IGNORE_CASE")` is a `Facade over RegexOption` for the
+    entry, usable wherever the enum type is expected — as a constructor or method argument,
+    say. The name is a literal, checked against the entries the metadata declares: an unknown
+    one is a compile error listing the real entries, _xenophile: kotlin.text.RegexOption has no
+    entry IGNORE_CAES; its entries are: IGNORE_CASE, MULTILINE, …_. The method is `enumEntry`
+    rather than `entry` because `entry` is already exported into `soundness` by another
+    library, and a wildcard import would otherwise resolve the collision by classpath order.
+
+entry .Kotlin   the Kotlin/JVM ecosystem: Scala types mapped to Kotlin's, resolved from classfile metadata
+  detail
+      `Kotlin` is the `Ecosystem` whose definitions are not a text file but the `@Metadata`
+      annotation the Kotlin compiler writes into every classfile. Its `#Grammar` is
+      `KotlinDialect`, which resolves a type by name from the compile classpath on demand, so
+      no `Interface` is needed: a `Foreign` value names the Kotlin class directly,
+      `Foreign["kotlin.internal.ProgressionUtilKt", Kotlin]`, and `invoke` materializes the
+      navigation through `KotlinInvoke` as a direct JVM call. The eager `Facade` is the more
+      usual way into Kotlin code; the `Foreign` path exists so that the Kotlin world is
+      addressable like every other ecosystem.
+
+      ```scala
+      import soundness.*
+
+      val last: Int =
+        Foreign["kotlin.internal.ProgressionUtilKt", Kotlin]
+        . getProgressionLastElement(1, 10, 2)
+        . call[Int]()
+      ```
+
+      The companion holds the `Interoperable` givens which say which Scala type stands for
+      which Kotlin type — the primitives, `Text` for `kotlin.String`, `Unit`, and `Optional`
+      for a nullable `T?`, which the dialect reads as the union `T | null` — and `Runtime`,
+      the one reflective edge of the ecosystem. The givens are in the companion, so they are
+      in implicit scope with no import. A class absent from the classpath, an unknown member,
+      a wrong arity or a wrongly-typed argument is a compile error.
+  refer xenophile.Facade
+  refer xenophile.KotlinDialect
+  refer xenophile.KotlinInvoke
+  entry .int   `Int` stands for `kotlin.Int`
+  entry .long   `Long` stands for `kotlin.Long`
+  entry .short   `Short` stands for `kotlin.Short`
+  entry .byte   `Byte` stands for `kotlin.Byte`
+  entry .boolean   `Boolean` stands for `kotlin.Boolean`
+  entry .double   `Double` stands for `kotlin.Double`
+  entry .float   `Float` stands for `kotlin.Float`
+  entry .char   `Char` stands for `kotlin.Char`
+  entry .text   `Text` stands for `kotlin.String`
+  entry .unit   `Unit` stands for `kotlin.Unit`
+  entry .none   `Unset` stands for Kotlin's `null`
+      A nullable Kotlin type `T?` is read as the union `T | null`, so the absent `Optional`
+      value corresponds to the `null` alternative, as `Unset` does to WIT's `none` and
+      TypeScript's `undefined`.
+  entry .optional   an `Optional[T]` stands for a nullable `T?`
+      Derived from `T`'s own instance: an `Optional[Text]` is a `kotlin.String?`. The
+      `Mandatable` constraint identifies the mandatory type, so the instance applies only to a
+      genuine optional and never competes with the instance for `T` itself.
+  entry .Runtime   the one reflective edge: Kotlin's `$default` bridges, called through cached method handles
+    detail
+        Kotlin carries default-argument values in synthetic `name$default` bridge methods,
+        which are marked ACC_SYNTHETIC and so are invisible to the compiler's symbol table: no
+        direct call to one can be emitted. A call which omits defaulted parameters therefore
+        resolves the bridge once per call shape into a cached `java.lang.invoke.MethodHandle`
+        and invokes it through that — the same linkage-time trade the Panama backend makes for
+        `dlsym`. `Runtime` also holds the support a lambda proxied to a Java functional
+        interface needs. None of it is called by user code; the facade macros emit the calls.
+    entry .dispatch   unwraps a facade returned from an adapted lambda, so Kotlin or Java receives the raw value
+    entry .forwarder   the invocation handler behind a functional-interface proxy
+        Answers `equals`, `hashCode` and `toString` locally and forwards the single abstract
+        method to the lambda.
+    entry .invokeDefault   calls a `name$default` bridge on a class through a cached `MethodHandle`
+        Takes the owner class, the bridge's name and the full argument array (receiver, every
+        declared parameter with absent ones zero-filled, the bitmask of absent positions and a
+        null marker). Throws `IllegalStateException` if the class has no such bridge.
+  entry #Grammar   `KotlinDialect`, the self-resolving grammar over classfile metadata
+  entry #Emission   the materializer's name, `xenophile.KotlinInvoke`
+
+entry .KotlinDialect   the Kotlin grammar: a type's members, read on demand from `@Metadata` on the compile classpath
+  detail
+      `KotlinDialect` is the `Dialect` which gives the `Kotlin` ecosystem its definitions. It
+      is self-resolving (`#resolves` is true): rather than parsing a text resource, `#resolve`
+      loads the named class through the macro classloader — without running its static
+      initialisers — reads its `kotlin.Metadata` annotation with kotlin-metadata-jvm, and
+      returns the members as ecosystem-neutral `Prototype`s: functions, `val` and `var`
+      properties (through their getters, or as bare fields for `const` and `@JvmField`) and
+      constructors (under the name `<init>`). A multi-file facade's members are gathered from
+      its part classes; a nested class may be named with dots (`Regex.Companion`), and the
+      `$`-separated binary name is derived. Suspending functions are omitted, since their JVM
+      shape takes a hidden continuation parameter, so the diagnostic for one is `no member`.
+      Resolutions are cached per type name for the lifetime of a compilation.
+
+      Types are mapped to the foreign model as Kotlin names them: a class by its
+      fully-qualified name, a generic application through `Applied`, a nullable `T?` as the
+      union with `"null"`, and a type-parameter reference as `#<id>`, which `Facade` resolves
+      against the receiver's type arguments. A class with no Kotlin metadata — the JDK,
+      `android.jar`, any plain Java library — falls back to the same model built by reflection
+      over its public methods, fields and constructors, with Java's primitives and `String`
+      read under their Kotlin names; Java declares no nullability, so every reference type
+      reads as definite.
+
+      Beside the neutral prototypes, the dialect keeps a side-table of each member's JVM
+      identity (`JvmMember`) for the materializers `KotlinInvoke` and `KotlinFacade` to emit
+      direct calls from; those lookups are internal to the library.
+  refer xenophile.Kotlin
+  refer xenophile.Facade
+  entry .parse   always empty: this dialect never parses a text resource
+      The `Dialect` contract requires it; a Kotlin definition lives in classfiles, so `parse`
+      returns an empty `Map` and `#resolve` does the work.
+  entry .resolves   `true`: the dialect answers `resolve` on demand, per type name
+  entry .resolve   the members of a Kotlin or Java class by its fully-qualified name, or `Unset` if none is loadable
+      `KotlinDialect.resolve(t"kotlin.text.Regex")` is a `Map` from member name to
+      `Prototype` (the first declaration wins where a name is overloaded), or `Unset` when no
+      class of that name is on the compile classpath.
+  entry .JvmMember   a member's JVM-level identity: owner, name, descriptor, kind and defaults
+    detail
+        The side-table entry the materializers emit from. It records the declaring class
+        (`#owner`, which for a multi-file facade is the part class), the JVM `#jvmName` and
+        `#descriptor`, whether the member is `#static`, a `#property`, reached directly as a
+        `#field`, its `#arity`, which parameters declare `#defaults`, the parameter names
+        (`#parameters`, for named arguments) and whether it is `#vararg`. A value class's
+        members carry mangled names containing `-`, which is how the facade recognises and
+        rejects them.
+    entry #owner   the declaring class's name
+    entry #jvmName   the member's name in the classfile
+    entry #descriptor   the member's JVM descriptor, `(Ljava/lang/String;)Z`
+    entry #static   whether the member is static (a top-level or `@JvmStatic` function)
+    entry #property   whether the member is a property rather than a function
+    entry #field   whether the property is read directly as a field (`const`, `@JvmField`)
+    entry #arity   the number of declared parameters
+    entry #defaults   for each parameter, whether it declares a default value
+    entry #parameters   the declared parameter names, in order
+    entry #vararg   whether the last parameter is a `vararg`
+
+entry .KotlinInvoke   the materializer which turns a Kotlin `Foreign` navigation into a direct JVM call
+  detail
+      The terminal `Materializer` for the `Kotlin` ecosystem, named by `Kotlin`'s `Emission`:
+      `invoke` (or `call[T]()`) on a fully-applied `Foreign … from Kotlin` navigation resolves
+      the JVM owner, method and descriptor through `KotlinDialect`, selects the overload whose
+      descriptor the arguments' Scala types satisfy (primitives must match exactly, so `Int`
+      arguments pick `(III)I` over `(JJJ)J`), and emits the static call with no runtime
+      reflection. It materializes calls to top-level (static) functions; an instance member, or
+      an overloaded name, is a compile error — _xenophile: kotlin.text.StringsKt.trim is an
+      instance member, which is not yet supported_ — and the eager `Facade` is the path for
+      those. A multi-file facade's part classes are package-private in kotlin-stdlib, so a
+      call resolved to one may be inaccessible even though the JVM would reach it through the
+      public facade.
+  refer xenophile.Kotlin
+  refer xenophile.Facade
+  entry .materialize   emits a static JVM call for a navigation, cast to the requested result type
+
+entry .KotlinFacade   the macro engine behind `Facade`
+  hidden
+  detail
+      Not for direct use: the implementations of `Facade`'s `selectDynamic`, `applyDynamic`,
+      `applyDynamicNamed`, `updateDynamic`, `tuple`, `scala`, `apply`, `update` and `k`, and
+      of the top-level `make`, `companion`, `singleton` and `enumEntry`, which resolve each
+      access against `KotlinDialect`'s metadata and materialize it as a direct JVM call. The
+      public members `select`, `applied`, `appliedNamed`, `update`, `discarded`, `construct`,
+      `companion`, `singleton`, `enumEntry`, `tuple`, `scalaCollection` and `unwrapped` are the
+      macro entry points those inline methods splice.
+
+entry .Typescript   the TypeScript ecosystem: a `.d.ts` file read as the code compiles, and Scala types mapped to its types
+  detail
+      `Typescript` is the `Ecosystem` whose definitions are TypeScript declaration files. An
+      `Interface in Typescript at "/path.d.ts"` given loads one from the classpath, and a
+      `Foreign["Name", Typescript]` value then navigates the declared types: each member
+      selection, application and index is checked against the declarations by
+      `TypescriptDialect`, the `#Grammar`, and a navigation materializes through the JS backend
+      named by `#Emission` (`xenophile.JsInvoke`, in the `xenophile.js` component).
+
+      ```scala
+      import soundness.*
+
+      given (Interface in Typescript at "/xenophile/definitions.ts") =
+        Interface[Typescript](cp"/xenophile/definitions.ts")
+
+      val foo: Foreign of "Foo" from Typescript = Foreign["Foo", Typescript]
+      val bar: Foreign of "Bar" from Typescript = foo.bar
+      val greeting: Foreign of "string" from Typescript = foo.greet(t"hello")
+      val tags: Foreign of ("Array" over "string") from Typescript = foo.tags
+      val tag: Foreign of "string" from Typescript = tags(0)
+      val nickname: Foreign of ("string" | "undefined") from Typescript = foo.nickname
+      ```
+
+      The companion holds two things. First, the `Interoperable` givens by which a Scala value
+      passes as an argument: `Text` for `string`, `Int` for `number`, `Boolean`, a `List` for
+      `T[]`, a `Map` for `Map<K, V>`, and an `Optional` for `T?`, which the dialect reads as
+      the union `T | undefined`. They are in the companion, so they are in implicit scope with
+      no import. Second, the declaration model and its parser: `Typescript.Parser.parse` reads
+      a `.d.ts` source into `Typescript.Declaration`s — interfaces, classes, aliases, enums,
+      functions and variables, with their members and `Typescript.Type`s — faithfully enough
+      for a compatibility discipline to hash, raising `Typescript.Error` for anything outside
+      its grammar rather than approximating it.
+
+      A member the file does not declare is a compile error, _xenophile: the foreign type Foo
+      has no member nonexistent_; a wrong arity, _xenophile: greet expects 1 arguments, not
+      2_; a wrongly-typed argument, _xenophile: greet expects an argument of foreign type
+      string_. The members of a type are also offered as tab completions by a completion
+      engine which understands `Completable`.
+  refer xenophile.TypescriptDialect
+  refer xenophile.Foreign
+  refer xenophile.Interface
+  entry .text   `Text` stands for `string`
+  entry .int   `Int` stands for `number`
+  entry .boolean   `Boolean` stands for `boolean`
+  entry .list   a `List[T]` stands for `T[]`, that is `Array<T>`
+      Derived from the element's own instance: a `List[Text]` is an `Array<string>`, written
+      as the foreign type `"Array" over "string"`.
+  entry .map   a `Map[K, V]` stands for `Map<K, V>`
+      Derived from the key's and value's instances: the foreign type is
+      `"Map" over (keyTopic, valueTopic)`.
+  entry .undefined   `Unset` stands for `undefined`
+      An optional property or parameter `x?: T` is read as the union `T | undefined`, so the
+      absent `Optional` value corresponds to the `undefined` alternative. TypeScript `null` is
+      read as `undefined` too.
+  entry .optional   an `Optional[T]` stands for `T | undefined`
+      Derived from `T`'s own instance: an `Optional[Text]` passes where `string | undefined`
+      is declared. The `Mandatable` constraint identifies the mandatory type, so the instance
+      applies only to a genuine optional and never competes with the instance for `T` itself.
+  entry .Declared   what every declaration has in common: a name, a namespace scope and whether it is exported
+    detail
+        The sealed trait every case of `Typescript.Declaration` implements through its own
+        parameters: `#name`, `#scope` and `#exported`.
+    entry #name   the declared name
+    entry #scope   the namespace path enclosing the declaration, outermost first
+    entry #exported   whether a consumer of the module can reach the declaration
+  entry .Declaration   a top-level declaration of a `.d.ts` file: interface, class, alias, enum, function or variable
+    detail
+        An enum of the six declaration shapes a declaration file may contain, each carrying
+        its `name`, its namespace `scope`, and whether it is `exported`. `Interface` records
+        its type parameters, `extends` clause and members; `Class` its type parameters, base
+        class, `implements` clause, members and whether it is abstract; `Alias` its type
+        parameters and target type; `Enumeration` its members (name and optional value) and
+        whether it is a `const enum`, which is inlined into consumers at their compile time
+        and so is a materially different guarantee; `Function` its signatures (several where
+        it is overloaded, in declaration order); and `Variable` its type and whether it is a
+        `const`. The three common members are inherited from `Typescript.Declared`, which
+        documents them.
+
+        `exported` means what it says by the time a declaration is read: in a module (a file
+        with any top-level `import` or `export`) only exported declarations are reachable; in
+        a global script every one is; and an ambient namespace exports all it contains.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        val declarations: List[Typescript.Declaration] =
+          Typescript.Parser.parse(t"interface Box<T> { value: T; }\ntype Id = string | number;")
+
+        declarations.map(_.key)   // List(t"Box", t"Id")
+        ```
+    entry .Scope   a declaration's namespace path, outermost first, as a `List[Text]`
+        `declare namespace a { namespace b { interface X {} } }` gives `X` the scope
+        `List(t"a", t"b")`. Two declarations of one name in different namespaces are different
+        contracts, so the scope is part of every `key`.
+    entry .qualify   an extension on a `Scope`: a name qualified by the scope, `a.b.X`
+        The empty scope leaves the name as it is.
+    entry #declaredMembers   the members an interface or class presents; empty for the other shapes
+        Named apart from the `members` parameter the two cases carry, which a method of the
+        same name would collide with.
+    entry #key   the declaration's scope-qualified name, `a.b.X`
+  entry .Member   one member of an interface, class or inline object type
+    detail
+        A member has a `#name`, a `#kind` (property, method, getter, setter, call signature,
+        construct signature or index signature), its `#signatures` — several where a method
+        is overloaded, in declaration order, since TypeScript resolves a call against them in
+        order — and the modifiers `#visibility`, `#static`, `#readonly`, `#optional` and
+        `#isAbstract`. A property and a method of the same name are different contracts even
+        when their types agree, which is why the kind is part of the member.
+    entry .Kind   what a member is: `Property`, `Method`, `Getter`, `Setter`, `Call`, `Construct` or `Index`
+        The kind decides how a consumer may address the member: a call signature is reachable
+        only by invoking the enclosing type, and an index signature by indexing it.
+    entry .Visibility   `Public`, `Protected` or `Private`
+    entry #name   the member's name; empty for call, construct and index signatures
+    entry #kind   the member's `Typescript.Member.Kind`
+    entry #signatures   the member's type, or types where it is overloaded, in declaration order
+    entry #visibility   the member's `Typescript.Member.Visibility`
+    entry #static   whether the member is `static`
+    entry #readonly   whether the member is `readonly`
+    entry #optional   whether the member is `x?: T`
+    entry #isAbstract   whether the member is `abstract`
+    entry #selector   the key the member is addressed by within its declaration
+        The bare name for a property or method, `get x` and `set x` for accessors, `()` for a
+        call signature, `new()` for a construct signature and `[]` for an index signature, so
+        a getter, a setter and a property of one name stay distinct.
+    entry #visible   whether the member is part of a consumer's contract: everything but `private`
+        A `protected` member is, since a subclass may reach it.
+  entry .Type   a TypeScript type expression
+    detail
+        A closed vocabulary: `Named` (with type arguments), `Literal` (a string, number or
+        boolean literal type), `Union`, `Intersection`, `Tuple` (with optional labels),
+        `Array`, `Object` (an inline object type's members), `Keyof`, `Typeof`, `Indexed`
+        (`T[K]`), `Predicate` (`x is T`) and `Function` (parameters, result, type parameters
+        and whether it is a `new (…) => T` construct signature). The vocabulary is closed on
+        purpose: `Typescript.Parser` raises rather than guessing when it meets a conditional
+        type, a mapped type, a template literal type or an `infer` binder, so a file using
+        one is rejected loudly instead of being read as a smaller interface than it declares.
+        The companion holds `LiteralKind`, `Parameter` (a type parameter) and `Argument` (a
+        value parameter).
+    entry .LiteralKind   `String`, `Number` or `Boolean`: which kind of literal a `Literal` is
+        Kept apart from the literal's text because `"1"` and `1` are different types whose
+        source forms differ only in quoting, which the lexer has already removed.
+    entry .Parameter   a type parameter: its name, its `extends` bound and its default
+      entry #name   the parameter's name
+      entry #bound   the `T extends U` bound, if any
+      entry #default   the `T = U` default, if any
+    entry .Argument   a value parameter of a function, method or constructor
+      detail
+          `rest` marks `...args: T[]`, whose arity is unbounded, and `optional` marks `a?: T`
+          (or a parameter with a default value), which callers may omit; both change what
+          call sites are legal, so both are part of the contract.
+      entry #name   the parameter's name
+      entry #typed   the parameter's declared type, or `Unset` if none is written
+      entry #optional   whether the parameter may be omitted
+      entry #rest   whether the parameter is a `...rest` parameter
+    entry #text   a stable rendering of the type, as the source would write it
+        `string[][]`, `A & B`, `(event: string) => void`, `x is Foo`. It is for diagnostics;
+        the canonical encoding a discipline hashes is structural and lives with the discipline.
+  entry .Error   raised when a `.d.ts` source cannot be read
+    detail
+        Error 643: _the TypeScript declarations could not be read because `reason`_, raised
+        by `Typescript.Parser.parse` (and `lex`). The `#reason` is a `Typescript.Error.Reason`:
+        a `Syntax` error with its detail and the token it was near; an `Unsupported` construct
+        — a conditional type, a mapped type, a template literal type, an `infer` binder, a
+        decorator, an assertion signature, a `unique symbol`, a computed property name — which
+        is deliberately an error and not a silent skip, since a declaration file read
+        partially is a smaller contract than it declares; or a `Duplicate` name, where a
+        class, alias or enum is declared twice in one scope (interfaces and functions merge,
+        so a repeated interface is accepted).
+
+        ```scala
+        import soundness.*
+
+        val reason: Optional[Typescript.Error.Reason] =
+          capture[Typescript.Error](Typescript.Parser.parse(t"type T<A> = A extends string ? number : boolean;")).reason
+        // Typescript.Error.Reason.Unsupported(t"a conditional type")
+        ```
+    entry .Reason   why the source could not be read: `Syntax`, `Unsupported` or `Duplicate`
+        Each case carries its error sub-number: `Syntax(detail, near)` is 1, `Unsupported
+        (construct)` 2 and `Duplicate(name)` 3.
+    entry .communicable   renders a reason as a message
+        _`detail`, near `near`_; _the construct `construct` is outside the grammar this parser
+        accepts_; _the declaration `name` appears twice in the same scope_.
+    entry #reason   the `Typescript.Error.Reason`
+  entry .Parser   a parser for TypeScript declaration files
+    detail
+        A *declaration* parser, not a TypeScript compiler: it reads the shapes a `.d.ts` file
+        may contain and nothing about expressions or statements. Within that scope every
+        construct is either understood or rejected with a `Typescript.Error` — never skipped,
+        which is the property that lets a discipline hash what it reads. It handles generic
+        interfaces and classes, `extends` and `implements` clauses, namespaces (nested, and
+        `declare module`/`global`), overloads (folded into one member with several
+        signatures, in order), getters and setters, call, construct and index signatures,
+        inline object types, function types, tuples, literal types, `keyof`, `typeof`,
+        indexed access and type predicates; `import` statements and re-export forms bind no
+        contract and are skipped. Comments are skipped, and a string literal's value is its
+        token, so `"a"` and `'a'` lex identically.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        val source = t"export interface A { x: number; f(x: number): string; f(x: string): number; }"
+        Typescript.Parser.parse(source).bind(_.declaredMembers).map(_.selector)   // List(t"x", t"f")
+        ```
+
+        The parser needs a `Tactic[Typescript.Error]` in scope: `strategies.throwUnsafely`, or
+        `safely` to read an unreadable file as `Unset`.
+    entry .Token   a lexical token: a `Word`, a `Str` literal, a `Num` literal or `Punct`uation
+      entry #show   the token as text, with a string literal in single quotes
+    entry .lex   the tokens of a source, raising `Typescript.Error` for an unterminated string or a stray character
+        A template literal (a backtick) is refused as `Unsupported` at this stage.
+    entry .parse   the declarations of a `.d.ts` source, raising `Typescript.Error` if it cannot be read
+        Whether the file is a module (any top-level `import` or `export`) or a global script
+        is settled by one scan of the whole token stream before parsing, because an `export`
+        at the end of a file retroactively decides the status of a declaration at the top.
+        A repeated class, alias or enum name in one scope is a `Duplicate` error.
+  entry #Grammar   `TypescriptDialect`, the grammar which projects declarations onto the foreign model
+  entry #Emission   the materializer's name, `xenophile.JsInvoke`
+
+entry .TypescriptDialect   the TypeScript grammar for foreign navigation: declarations projected onto the foreign model
+  detail
+      The `Dialect` adapter over `Typescript.Parser`, and the `Grammar` of the `Typescript`
+      ecosystem. `#parse` reads a `.d.ts` source and projects its interfaces and classes onto
+      the flat form a `Foreign` navigation reads: a `Map` from each type's scope-qualified
+      name to its members' `Prototype`s. The projection is lossy by design — a prototype
+      describes only what a call site needs to marshal — but the parse beneath it is not:
+      generic interfaces are read, and a member inherited through `extends` (or a class's
+      `extends` and `implements`) is resolved against the declarations of the same file, so
+      `B extends A` offers `A`'s members too. A base the file does not declare contributes
+      nothing but removes nothing.
+
+      Index, call and construct signatures have no name a selection could use, and a
+      `private` member is not the consumer's to call, so neither is projected. A property or
+      getter projects as a field; a method or setter as a function, taking the *first*
+      declared signature where it is overloaded (a prototype records one arity, and
+      TypeScript resolves against the signatures in order); an optional member or parameter
+      becomes the union with `undefined`; `T[]` becomes `Array` applied to `T`; a literal type
+      becomes a named type of its value; and `null` reads as `undefined`.
+
+      ```scala
+      import soundness.*
+
+      val members = TypescriptDialect.parse(t"interface A { x: number; }\ninterface B extends A { y: number; }")
+      members.at(t"B").let(_.keys)   // x and y
+      ```
+
+      `parse` is total: a source that does not parse defines nothing (an empty `Map`) rather
+      than raising, and the navigation macro then reports _the foreign type is not defined_.
+      Code computing a compatibility claim must not take that path, and calls
+      `Typescript.Parser.parse` directly, where an unreadable declaration is an error.
+  refer xenophile.Typescript
+  refer xenophile.Dialect
+  entry .parse   every interface and class of a `.d.ts` source, by qualified name, with its members' prototypes
+      Total: an unreadable source gives an empty `Map`.
+
+entry .WebIdl   the WebIDL ecosystem: `.idl` interfaces read as the code compiles, and Scala types mapped to WebIDL's
+  detail
+      `WebIdl` is the `Ecosystem` whose definitions are WebIDL fragments — the language the
+      web platform's own specifications declare the DOM in, as published by webref. An
+      `Interface in WebIdl at "/path.idl"` given loads one from the classpath, and a
+      `Foreign["Node", WebIdl]` value navigates the declared interfaces: attributes read as
+      fields, operations apply with their arguments checked, and inheritance, mixins and
+      partials are resolved by `WebIdlDialect`, the `#Grammar`. A navigation materializes
+      through the JS backend named by `#Emission` (`xenophile.JsInvoke`).
+
+      ```scala
+      import soundness.*
+
+      given (Interface in WebIdl at "/xenophile/dom.idl") = Interface[WebIdl](cp"/xenophile/dom.idl")
+
+      val node: Foreign of "Node" from WebIdl = Foreign["Node", WebIdl]
+      val name: Foreign of "string" from WebIdl = node.nodeName
+      val kind: Foreign of "u16" from WebIdl = node.nodeType
+      val appended: Foreign of "Node" from WebIdl = node.appendChild(Foreign["Node", WebIdl])
+      ```
+
+      WebIDL's numeric types are read under width-explicit names and stand for Hypotenuse's
+      fixed-width numbers: `byte` is `s8`, `octet` `u8`, `short` `s16`, `unsigned short` `u16`,
+      `long` `s32`, `unsigned long` `u32`, `long long` `s64`, `unsigned long long` `u64`,
+      `float` `f32` and `double` `f64`; `DOMString`, `USVString`, `ByteString` and
+      `CSSOMString` are all `string`, which `Text` stands for; a nullable `T?` is the union
+      `T | null`, which an `Optional` stands for; `sequence<T>` and `FrozenArray<T>` take a
+      `List`, and `record<K, V>` a `Map`. The `Interoperable` givens are in the companion, so
+      they are in implicit scope with no import.
+
+      The companion also holds the declaration model and its parser: `WebIdl.Parser.parse`
+      reads a fragment into `WebIdl.Definition`s, retaining partiality, mixin identity,
+      `[Exposed]` scopes, required-versus-optional dictionary members and enumeration values
+      — what a compatibility discipline needs and foreign navigation does not — and raises
+      `WebIdl.Error` for anything outside its grammar. A wrongly-typed argument is a compile
+      error, _xenophile: appendChild expects an argument of foreign type Node_.
+  refer xenophile.WebIdlDialect
+  refer xenophile.Foreign
+  refer xenophile.Interface
+  entry .s8   `S8` stands for `s8`, WebIDL's `byte`
+  entry .s16   `S16` stands for `s16`, WebIDL's `short`
+  entry .s32   `S32` stands for `s32`, WebIDL's `long`
+  entry .s64   `S64` stands for `s64`, WebIDL's `long long`
+  entry .u8   `U8` stands for `u8`, WebIDL's `octet`
+  entry .u16   `U16` stands for `u16`, WebIDL's `unsigned short`
+  entry .u32   `U32` stands for `u32`, WebIDL's `unsigned long`
+  entry .u64   `U64` stands for `u64`, WebIDL's `unsigned long long`
+  entry .f32   `F32` stands for `f32`, WebIDL's `float`
+  entry .f64   `F64` stands for `f64`, WebIDL's `double`
+  entry .boolean   `Boolean` stands for `boolean`
+  entry .string   `Text` stands for `string`: `DOMString`, `USVString`, `ByteString` and `CSSOMString`
+  entry .sequence   a `List[T]` stands for `sequence<T>`
+      Derived from the element's own instance; the foreign type is `"sequence" over topic`.
+  entry .frozenArray   a `List[T]` stands for `FrozenArray<T>`
+      Derived from the element's own instance; the foreign type is `"FrozenArray" over topic`.
+  entry .record   a `Map[K, V]` stands for `record<K, V>`
+      Derived from the key's and value's instances.
+  entry .nullable   `Unset` stands for `null`
+      A nullable `T?` is read as the union `T | null`, so the absent `Optional` value
+      corresponds to the `null` alternative.
+  entry .optional   an `Optional[T]` stands for a nullable `T?`
+      Derived from `T`'s own instance. The `Mandatable` constraint identifies the mandatory
+      type, so the instance applies only to a genuine optional and never competes with the
+      instance for `T` itself.
+  entry .Argument   one argument of an operation, constructor or callback
+    detail
+        Its `#name`, its `#typed` foreign type, and whether it is `#optional`, `#variadic`
+        (`T... args`) or carries a `#default` value; the value itself is behaviour rather than
+        contract, so only its presence is kept.
+    entry #name   the argument's name
+    entry #typed   the argument's type, canonicalised as the dialect canonicalises it
+    entry #optional   whether the argument is `optional`
+    entry #variadic   whether the argument is variadic
+    entry #default   whether the argument declares a default value
+  entry .Member   one member of an interface, mixin or namespace: an attribute, operation, constant or constructor
+    detail
+        A member's `#kind`, `#name`, `#typed` type (the attribute's or constant's type, or an
+        operation's result), its `#arguments`, and whether it is `#readonly` or `#static`; a
+        special operation (`getter`, `setter`, `deleter`) records its keyword as `#special`
+        and may be anonymous. The companion holds `Kind`.
+    entry .Kind   `Attribute`, `Operation`, `Constant` or `Constructor`
+    entry #kind   the member's `WebIdl.Member.Kind`
+    entry #name   the member's name; empty for a constructor or an anonymous special operation
+    entry #typed   the attribute's or constant's type, or the operation's result type
+    entry #arguments   an operation's or constructor's arguments
+    entry #readonly   whether an attribute is `readonly` (a constant always is)
+    entry #static   whether the member is `static`
+    entry #special   the special-operation keyword, `getter`, `setter` or `deleter`, if any
+    entry #selector   the member's key within its container
+        The bare name for an attribute or constant, the name with its argument types for an
+        operation (so overloads have distinct selectors, `describe(string)`), `new(…)` for a
+        constructor, and the special keyword in brackets for an anonymous getter, setter or
+        deleter.
+  entry .Field   one member of a dictionary: its name, type, and whether it is `required` or has a default
+    detail
+        A required member folds into the dictionary's own identity — adding one breaks every
+        caller constructing the dictionary — while an optional member stands alone.
+    entry #name   the field's name
+    entry #typed   the field's type
+    entry #required   whether the field is `required`
+    entry #default   whether the field declares a default value
+  entry .Definition   a top-level definition of a WebIDL fragment
+    detail
+        An enum of the definition shapes: `Interface` (with its parent, `[Exposed]` scopes,
+        members, intrinsics such as `iterable<…>`, `maplike<…>`, `setlike<…>` and
+        `stringifier`, and whether it is `partial`, a `mixin` or a `callback interface`),
+        `Dictionary` (parent, fields, partial), `Namespace`, `Enumeration` (its string
+        values), `Alias` (a `typedef`), `CallbackFunction` and `Includes` (`Target includes
+        Mixin;`). Partials, mixins and typedefs are deliberately *not* resolved here —
+        resolution is the first step of whoever consumes the model, and folding it into
+        parsing would erase the structure a deterministic merge needs; `WebIdlDialect` is the
+        consumer which flattens them for navigation.
+    entry #named   the definition's own name; for an `includes` statement, the including target
+  entry .Error   raised when a WebIDL fragment cannot be read
+    detail
+        Error 644: _the WebIDL could not be read because `reason`_, raised by
+        `WebIdl.Parser.parse`. The `#reason` is a `WebIdl.Error.Reason`: a `Syntax` error with
+        its detail and the tokens it was near, an `Unsupported` construct — deliberately an
+        error and not a skip, since a capability contract read partially understates what the
+        file declares — or a `Duplicate` definition.
+    entry .Reason   why the fragment could not be read: `Syntax`, `Unsupported` or `Duplicate`
+        Each case carries its error sub-number: `Syntax(detail, near)` is 1,
+        `Unsupported(construct)` 2 and `Duplicate(name)` 3.
+    entry .communicable   renders a reason as a message
+        _`detail`, near `near`_; _the construct `construct` is outside the grammar this parser
+        accepts_; _the definition `name` appears twice_.
+    entry #reason   the `WebIdl.Error.Reason`
+  entry .Parser   a declaration parser for WebIDL fragments
+    detail
+        Reads a fragment, as the specifications and webref publish them, into
+        `WebIdl.Definition`s: interfaces, mixins, partials, callback interfaces, dictionaries,
+        namespaces, enums, typedefs, callback functions and `includes` statements, with their
+        attributes, constants, operations (including special `getter`/`setter`/`deleter`
+        operations and `static` members), constructors, intrinsic declarations and `[Exposed]`
+        scopes. Every other extended attribute is recognised structure and dropped. Types are
+        canonicalised exactly as `WebIdlDialect` canonicalises them — numerics to
+        width-explicit names, the string types to `string`, `T?` to a union with `null`,
+        `void` to `undefined` — so the two readers of one file agree about what a type is
+        called. A construct outside the vocabulary raises `WebIdl.Error` rather than being
+        skipped; a definition must end `};`.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        val source = t"interface Circle : Shape { readonly attribute double radius; };"
+        WebIdl.Parser.parse(source).map(_.named)   // List(t"Circle")
+        ```
+
+        The parser needs a `Tactic[WebIdl.Error]` in scope: `strategies.throwUnsafely`, or
+        `safely` to read an unreadable fragment as `Unset`.
+    entry .parse   the definitions of a WebIDL fragment, in order, raising `WebIdl.Error` if it cannot be read
+  entry #Grammar   `WebIdlDialect`, the grammar which flattens the declarations for navigation
+  entry #Emission   the materializer's name, `xenophile.JsInvoke`
+
+entry .WebIdlDialect   the WebIDL grammar for foreign navigation: interfaces flattened, aliases resolved
+  detail
+      The `Dialect` over `WebIdl.Parser`, and the `Grammar` of the `WebIdl` ecosystem.
+      `#parse` reads a fragment and projects it onto the flat form a `Foreign` navigation
+      reads: a `Map` from each type's name to its members' `Prototype`s. An `interface` (or a
+      `namespace`) becomes a navigable type whose members are its attributes, constants and
+      named operations; a `dictionary` a type whose members are its fields; an `enum` resolves
+      to `string`. Constructors, anonymous special operations and intrinsic declarations are
+      not navigable.
+
+      What the parser kept apart, the dialect merges, which is what makes the real DOM
+      navigable: inheritance is flattened, so each type's members include its whole base
+      chain's (`HTMLElement` offers `Node`'s `nodeName`) and those of every mixin applied with
+      `includes`, with the type's own members overriding inherited ones of the same name; a
+      `partial interface` body merges into the type it extends; and `typedef` and `enum`
+      aliases resolve transitively, so an attribute of a `typedef (DOMString or long)
+      Identifier` reads as the union `string | s32`.
+
+      ```scala
+      import soundness.*
+
+      val source = t"interface Shape { readonly attribute octet sides; };\ninterface Circle : Shape { readonly attribute double radius; };"
+      WebIdlDialect.parse(source).at(t"Circle").let(_.keys)   // sides and radius
+      ```
+
+      `parse` is total: a fragment that does not parse defines nothing (an empty `Map`)
+      rather than raising, and a navigation into it reports _the foreign type is not
+      defined_; `WebIdl.Parser.parse` is the call which reports why.
+  refer xenophile.WebIdl
+  refer xenophile.Dialect
+  entry .parse   every interface, namespace and dictionary of a fragment, by name, with inherited and mixed-in members
+      Total: an unreadable fragment gives an empty `Map`.
+
+entry .Wit   the WIT ecosystem: WebAssembly component interfaces read as the code compiles, and Scala types mapped to WIT's
+  detail
+      `Wit` is the `Ecosystem` whose definitions are WIT (WebAssembly Interface Types) files,
+      the Component Model's interface language. An `Interface in Wit at "/path.wit"` given
+      loads one from the classpath, and a `Foreign["api", Wit]` value navigates it: an
+      interface's functions are members of a type named after the interface, a `record`'s
+      fields are members of a type named after the record, and a `resource`'s methods are
+      members of the resource. Each application is checked against the declaration by
+      `WitDialect`, the `#Grammar`, and `invoke` materializes it through the Wasm backend
+      named by `#Emission` (`xenophile.WasmInvoke`, in the `xenophile.wasm` component) as a
+      call to the component's import, addressed by the interface's Component Model module id
+      (`wasi:random/random@0.2.0`). This is how the WASI backends of the filesystem, clock,
+      random, environment, stdio and HTTP libraries reach the host.
+
+      The dialect reads a WIT declaration into the vocabulary the backend marshals, and the
+      foreign type of each navigation follows:
+
+      ```scala fuel
+      frame
+        label A function over strings
+        code
+            given (Interface in Wit at "/xenophile/api.wit") = Interface[Wit](cp"/xenophile/api.wit")
+            val api: Foreign of "api" from Wit = Foreign["api", Wit]
+
+            // greet: func(name: string) -> string;
+            val greeting: Foreign of "string" from Wit = api.greet(t"hi")
+      frame
+        label A record's field keeps its sized type
+        code
+            given (Interface in Wit at "/xenophile/api.wit") = Interface[Wit](cp"/xenophile/api.wit")
+            val api: Foreign of "api" from Wit = Foreign["api", Wit]
+
+            // record point { x: u32, y: u32 }
+            val x: Foreign of "u32" from Wit = Foreign["point", Wit].x
+      frame
+        label An enum is the discriminant that holds its cases
+        code
+            given (Interface in Wit at "/xenophile/api.wit") = Interface[Wit](cp"/xenophile/api.wit")
+            val api: Foreign of "api" from Wit = Foreign["api", Wit]
+
+            // enum color { red, green, blue }    shade: func() -> color;
+            val shade: Foreign of "u8" from Wit = api.shade()
+      frame
+        label Flags are a bit-vector sized to their members
+        code
+            given (Interface in Wit at "/xenophile/api.wit") = Interface[Wit](cp"/xenophile/api.wit")
+            val api: Foreign of "api" from Wit = Foreign["api", Wit]
+
+            // flags permissions { read, write }    caps: func() -> permissions;
+            val caps: Foreign of "b8" from Wit = api.caps()
+      frame
+        label A list is an application, and an option a union with none
+        code
+            given (Interface in Wit at "/xenophile/api.wit") = Interface[Wit](cp"/xenophile/api.wit")
+            val api: Foreign of "api" from Wit = Foreign["api", Wit]
+
+            // tags: func() -> list<string>;    lookup: func(key: string) -> option<string>;
+            val tags: Foreign of ("list" over "string") from Wit = api.tags()
+            val found: Foreign of ("string" | "none") from Wit = api.lookup(t"k")
+      ##
+      ```
+
+      The companion holds the `Interoperable` givens by which a Scala value passes as an
+      argument and a result is read: WIT's sized integers and floats stand for Hypotenuse's
+      fixed-width numbers (`S8` to `S64`, `U8` to `U64`, `F32`, `F64`), `flags` for its
+      bit-vectors (`B8` to `B64`), `Boolean` for `bool`, `Char` for `char`, `Text` for
+      `string`, `Data` for `list<u8>`, a `List` for `list<T>` and an `Optional` for
+      `option<T>`. They are in the companion, so they are in implicit scope with no import.
+      A wrongly-typed argument is a compile error, _xenophile: add expects an argument of
+      foreign type s32_.
+
+      The companion also holds the declaration model and its parser: `Wit.Parser.parse`
+      reads a source into one `Wit.Document` per `package` section, each with its
+      `Wit.Interface`s (records, variants, enums, flags, resources, aliases, functions and
+      `use` clauses, as `Wit.Item`s) and `Wit.WorldModel`s, and raises `Wit.Error` for
+      anything outside its grammar. `WitDialect.worlds` reads a world's imports and exports
+      as Component Model ids, which is what a packager needs to describe a component from the
+      world it was linked against.
+  refer xenophile.WitDialect
+  refer xenophile.Foreign
+  refer xenophile.Interface
+  entry .s8   `S8` stands for `s8`
+  entry .s16   `S16` stands for `s16`
+  entry .s32   `S32` stands for `s32`
+  entry .s64   `S64` stands for `s64`
+  entry .u8   `U8` stands for `u8`
+  entry .u16   `U16` stands for `u16`
+  entry .u32   `U32` stands for `u32`
+  entry .u64   `U64` stands for `u64`
+  entry .f32   `F32` stands for `f32`
+  entry .f64   `F64` stands for `f64`
+  entry .b8   `B8` stands for `b8`: a `flags` type of up to 8 members
+      `WitDialect` resolves a `flags` type to the Hypotenuse bit-vector sized to hold its
+      members: `b8` for up to 8, `b16` for up to 16, `b32` for up to 32, and `b64` beyond.
+  entry .b16   `B16` stands for `b16`: a `flags` type of 9 to 16 members
+  entry .b32   `B32` stands for `b32`: a `flags` type of 17 to 32 members
+  entry .b64   `B64` stands for `b64`: a `flags` type of more than 32 members
+  entry .boolean   `Boolean` stands for `bool`
+  entry .char   `Char` stands for `char`
+  entry .string   `Text` stands for `string`
+  entry .data   `Data` stands for `list<u8>`: binary data as an immutable byte array
+  entry .list   a `List[T]` stands for `list<T>`
+      Derived from the element's own instance; the foreign type is `"list" over topic`. The
+      `List` is Soundness's own, which the Wasm backend marshals across the WIT boundary.
+  entry .none   `Unset` stands for `none`
+      An `option<T>` is read as the union `T | none`, so the absent `Optional` value
+      corresponds to the `none` alternative.
+  entry .optional   an `Optional[T]` stands for `option<T>`
+      Derived from `T`'s own instance. The `Mandatable` constraint identifies the mandatory
+      type, so the instance applies only to a genuine optional and never competes with the
+      instance for `T` itself.
+  entry .Function   a WIT function: its name, named parameters, optional result, and whether it is `static` or a `constructor`
+    entry #name   the function's name; `constructor` for a resource constructor
+    entry #parameters   the parameters, each a name and a foreign type, in order
+    entry #result   the result type, or `Unset` for a function returning nothing
+    entry #static   whether the function is a resource's `static` function
+    entry #constructor   whether the function is a resource's `constructor`
+  entry .Item   one item of a WIT interface
+    detail
+        An enum of the item vocabulary: `Alias` (a `type` declaration), `Record` (named
+        fields), `Variant` (cases, each with an optional payload type), `Enumeration` (its
+        case names), `Flags` (its member names), `Resource` (its methods, constructors and
+        static functions as `Wit.Function`s; empty for a bodyless `resource name;`),
+        `Function` (a free function) and `Use` (a `use` clause: the interface it draws from
+        and the (original, local) name pairs it introduces, which is load-bearing for
+        qualification even though references are encoded fully qualified).
+    entry #named   the item's name; for a `use` clause, the interface it draws from
+  entry .Interface   a WIT interface: its name and its items, in order
+    entry #name   the interface's name
+    entry #items   the interface's `Wit.Item`s, in declaration order
+  entry .WorldModel   a `world` declaration: its referenced imports and exports, and its inline items
+    detail
+        A world's `#imports` and `#exports` are the interface ids it references (as written,
+        `wasi:io/streams@0.2.0` or a bare same-package name); its inline items — `import
+        name: func(…)`, `export name: interface { … }` — define rather than reference, and are
+        carried separately as `#inlineImports` and `#inlineExports`, each a name paired with
+        its function, absent for an inline interface. `WitDialect.worlds` gives the qualified
+        form.
+    entry #name   the world's name
+    entry #imports   the referenced imported interfaces, in order, as written
+    entry #exports   the referenced exported interfaces, in order, as written
+    entry #inlineImports   the inline imports: each name with its function, or `Unset` for an inline interface
+    entry #inlineExports   the inline exports: each name with its function, or `Unset` for an inline interface
+  entry .Document   one `package` section of a WIT source: its package id, version, interfaces and worlds
+    detail
+        A curated `.wit` file may hold several packages (the WASI subsets the backends carry
+        do), so `Wit.Parser.parse` gives one document per `package` declaration; every
+        interface and world belongs to the package declared above it. A source with no
+        `package` has an absent `#packageName`.
+    entry #packageName   the package id without its version, `wasi:random`, or `Unset`
+    entry #version   the package version, `0.2.0`, or `Unset`
+    entry #interfaces   the package's interfaces, in order
+    entry #worlds   the package's worlds, in order
+  entry .Error   raised when a WIT source cannot be read
+    detail
+        Error 645: _the WIT could not be read because `reason`_, raised by `Wit.Parser.parse`
+        and `WitDialect.worlds`. The `#reason` is a `Wit.Error.Reason`: a `Syntax` error with
+        its detail and the tokens it was near; an `Unsupported` construct — an `@unstable`
+        item, an `async` function, a `stream` or `future` type, a world `include`, or any
+        keyword outside the vocabulary — which is deliberately an error and not a skip, since
+        a contract read partially is a smaller contract than the file declares, and an
+        unstable item in a published contract would be a stable claim about an unstable
+        surface; a `Duplicate` definition; or an `Unresolved` type name.
+    entry .Reason   why the source could not be read: `Syntax`, `Unsupported`, `Duplicate` or `Unresolved`
+        Each case carries its error sub-number: `Syntax(detail, near)` is 1,
+        `Unsupported(construct)` 2, `Duplicate(name)` 3 and `Unresolved(name)` 4.
+    entry .communicable   renders a reason as a message
+        _`detail`, near `near`_; _the construct `construct` is outside the grammar this parser
+        accepts_; _the definition `name` appears twice_; _the type `name` resolves to no
+        declaration_.
+    entry #reason   the `Wit.Error.Reason`
+  entry .Parser   a declaration parser for WIT sources
+    detail
+        Reads a WIT source into `Wit.Document`s, retaining the declared surface whole:
+        packages with their versions, interfaces with records, variants, enums, flags,
+        resources (with methods, `static` functions and constructors), `type` aliases,
+        functions and `use` clauses, and worlds with their imports and exports, referenced or
+        inline. Identifiers are kebab-case; `%` escapes a keyword and is stripped; a package
+        reference such as `wasi:io/streams@0.2.0` is one token. `@since(…)` gates are consumed,
+        since the lineage already records when an item arrived, while `@unstable` is refused.
+        A construct outside the vocabulary raises `Wit.Error` rather than being skipped.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        val source = t"package wasi:random@0.2.0; interface random { get-random-u64: func() -> u64; }"
+        Wit.Parser.parse(source).map(_.packageName)   // List(t"wasi:random")
+        ```
+
+        The parser needs a `Tactic[Wit.Error]` in scope: `strategies.throwUnsafely`, or
+        `safely` to read an unreadable source as `Unset`.
+    entry .parse   the documents of a WIT source, one per `package` section, raising `Wit.Error` if it cannot be read
+  entry #Grammar   `WitDialect`, the grammar which projects declarations onto the marshalling vocabulary
+  entry #Emission   the materializer's name, `xenophile.WasmInvoke`
+
+entry .WitDialect   the WIT grammar for foreign navigation: declarations projected onto the marshalling vocabulary, and worlds
+  detail
+      The `Dialect` over `Wit.Parser`, and the `Grammar` of the `Wit` ecosystem. `#parse`
+      reads a source and projects it onto the flat form the Wasm backend marshals against: a
+      `Map` from each type's name to its members' `Prototype`s. An interface's functions
+      become members of a type named after the interface, each qualified with the interface's
+      Component Model module id — package `wasi:random@0.2.0` and interface `random` give
+      `wasi:random/random@0.2.0` — which is how the backend addresses the component's import;
+      a `record`'s fields become the members of a type named after the record; a
+      `resource`'s methods become its members, recording the resource and whether each is
+      `static` or a constructor, so an invocation can thread the receiver's handle. An `enum`
+      collapses to the unsigned discriminant that holds its cases (`u8` up to 256, `u16` up
+      to 65536, `u32` beyond), `flags` to the bit-vector that holds its members (`b8`, `b16`,
+      `b32` or `b64`), `option<T>` to the union `T | none`, a `result` always carries exactly
+      two arms (missing ones padded with `_`), and `type` aliases resolve transitively. A
+      variant or bodyless resource has no navigable members but still records the module
+      which defines it, so a function elsewhere which mentions it resolves.
+
+      ```scala
+      import soundness.*
+
+      val wit = t"package wasi:random@0.2.0; interface random { get-random-u64: func() -> u64; }"
+      WitDialect.parse(wit).at(t"random").let(_.at(t"get-random-u64")).let(_.module)
+      // t"wasi:random/random@0.2.0"
+      ```
+
+      `parse` is total: a source that does not parse defines nothing (an empty `Map`) rather
+      than raising; `Wit.Parser.parse` is the call which reports why. `#worlds` is the other
+      reader: every `world` of a source, with its imports and exports as fully-qualified
+      Component Model ids, which is what a Wasm OCI Artifact's config records about a
+      component.
+  refer xenophile.Wit
+  refer xenophile.Dialect
+  entry .parse   every interface, record, resource and variant of a source, by name, with its members' prototypes
+      Total: an unreadable source gives an empty `Map`.
+  entry .worlds   every `world` of a source, by name, with its imports and exports as Component Model ids
+      A bare interface name (`import monotonic-clock;`, naming an interface of the same
+      package) is qualified with the package id, so every id in the result is a full
+      `namespace:package/interface@version`; an inline `import name: func(…)` or `export
+      name: interface { … }` references no interface and does not appear. Raises `Wit.Error`
+      if the source cannot be read, so a caller which tolerates an unparsable file writes
+      `safely(WitDialect.worlds(source))`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val source = t"""package test:demo@1.0.0;
+        world service {
+          import wasi:io/streams@0.2.0;
+          import helper;
+          export wasi:http/incoming-handler@0.2.0;
+        }"""
+
+      WitDialect.worlds(source).at(t"service").let(_.imports)
+      // List(t"wasi:io/streams@0.2.0", t"test:demo/helper@1.0.0")
+      ```
+  entry .World   a world's name, imports and exports, as Component Model interface ids
+    detail
+        What a world states: which host capabilities a component needs (`#imports`) and which
+        interfaces it offers (`#exports`), every id qualified. A packager can describe a
+        component from the world it was linked against without disassembling the component.
+    entry #name   the world's name
+    entry #imports   the imported interface ids, in declaration order
+    entry #exports   the exported interface ids, in declaration order

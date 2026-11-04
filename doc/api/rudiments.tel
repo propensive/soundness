@@ -1,0 +1,1775 @@
+tel 1.0
+
+base rudiments
+import soundness
+
+info   the foundation every Soundness library stands on: combinators, collection operations, proofs, builders and atomics
+detail
+    _Rudiments_ is the layer of general-purpose definitions which every other Soundness library
+    uses and which a program written with Soundness reaches for constantly without thinking of
+    them as belonging to any library at all. It has no central type; it has a vocabulary. A
+    reader new to Soundness meets its pieces in roughly this order:
+
+    - **Everyday combinators** on any value: `pipe`, `tap`, `also`, `when`, `give`, `twin`,
+      `yet`, `upon`, and the contextual accessors `state`, `next`, `prior` and `ordinal` which
+      the folding and iterating operations hand to their lambdas.
+    - **Collection operations**, written once over the typeclasses `Traversable`, `Countable`,
+      `Applicable`, `Segmentable` and their kin, so that `head`, `last`, `tail`, `keep`,
+      `skip`, `snip`, `before`, `after`, `sort`, `order`, `fuse`, `each`, `indexed`, `seek`,
+      `where`, `total`, `mean` and the rest mean the same thing on a `List`, a `Sequence`, a
+      `Set`, a `Map`, a frozen `Array`, a `Text` and every other type with an instance. The
+      typeclasses themselves live in `murmuration` (`Traversable`, `Reshapable`, `Mappable`,
+      `Convertible`, …) and `denominative` (`Countable`, `Applicable`, `Definable`, …) and are
+      re-exported here, so `import rudiments.*` presents one surface.
+    - **Proofs in types.** An operation which is only safe on some inputs is not made partial:
+      it is given a type which demands the proof. `head`, `last`, `lead`, `tail` and `reduce`
+      are total on a receiver typed `& Populated` (a non-empty literal, or the result of
+      `occupied`) and `Optional` otherwise; an ordinal which `confine`, `pick`, `iterate` or a
+      `Surveyor` has checked against a collection is typed `Ordinal in xs.type`, and `xs(i)`
+      with such an index reads the element bare, where any other index reads an `Optional`;
+      a frozen array whose length is a literal is typed `& Sized[n]`, and a literal ordinal
+      beyond `n` does not compile. The cost of a linked list's `size` or positional access is
+      likewise a proof — an import of `dysasymptotics.linearSize` or `linearAccess` — rather than
+      a silent walk.
+    - **Builders and scanners** for the hot loops of parsers and codecs: `Array.scribe` and
+      `Array.collect` lend a `Scribe` (a write handle whose every index is proven in range),
+      `survey` lends a `Surveyor` (a pacing cursor whose runs come back as branded intervals),
+      `lattice` addresses a two-dimensional plane, `pairs`/`triples`/`quads` walk a collection
+      in groups, and `Scroll` is an unboxed growable array.
+    - **Concurrency primitives**: `Atomic` cells over the JDK's atomics, read as `cell()`,
+      written as `cell() = v`, and transitioned with `ere` and `since`, which compile a lambda
+      literal such as `_ + 1` to the JDK intrinsic; `Mutex`; thread-bound `Scoped` values; and
+      `Loop`, a stoppable iteration for a background task.
+    - **Small values**: `Exit` and `Termination` (what a command returns), `Bytes` (a byte
+      count with `kib`/`mib`/`gib` literals), `Digit`, and the compile-time helpers `typeName`,
+      `reflectClass`, `probe` and `!!`.
+
+    ```scala
+    import soundness.*
+    import sortingAlgorithms.timsort
+    import dysasymptotics.linearSize
+
+    val numbers: List[Int] = List(3, 1, 2)
+    numbers.sort                       // List(1, 2, 3)
+    numbers.order(-_)                  // List(3, 2, 1)
+    numbers.fuse(0)(state + next)      // 6
+    numbers.keep(2)                    // List(3, 1)
+    List(3, 1, 2).head                 // 3: a literal is Populated, so head is bare
+    numbers.head                       // Optional[Int]: 3
+    numbers.where(_ == 1)              // Optional[Ordinal]: Sec
+
+    var labelled: List[Text] = Nil
+
+    numbers.each: n =>
+      labelled ::= t"$ordinal: $n"
+
+    val count = Atomic(0)
+    count.since(_ + 1)                 // 1, by getAndIncrement
+    ```
+
+    The package is declared by two libraries, and the split is about the build graph rather than
+    the namespace. `rudiments.core` holds the combinators, the collection operations, `Atomic`,
+    `Mutex`, `Scoped`, `Loop`, `Exit`, `Bytes` and the sorting operations, and depends on
+    `murmuration`, `denominative`, `vacuous`, `symbolism` and `anticipation`. The `concordance`
+    library, which sits directly on `denominative` so that libraries below rudiments can index
+    safely, declares the confined-indexing vocabulary — `apply`, `at`, `defines`, `confine`,
+    `pick`, `unsafeAttested`, `sized` — and `Populated`, `Segmentable`, `Appendable`,
+    `Prependable`, `Bijection`, `Scribe`, `Scroll`, `Surveyor`, `Lattice` and the grouping
+    combinators, all in `package rudiments`; each such entry says so. Both compile for the JVM,
+    Scala.js and Scala Native, with `Atomic` resting on `java.util.concurrent.atomic` wherever
+    the platform provides it.
+
+    Nearly everything is exported to the `soundness` umbrella. The exceptions, reached with a
+    by-name import such as `import rudiments.occupied`, are `occupied`, `find`, `Scribe` and
+    `Array.scribe`/`Array.collect` with `appendVarint` and `appendUtf8`, `Surveyor` and
+    `survey`, `Lattice` and `lattice`, `Scroll`, and the grouping combinators `pairs`,
+    `triples`, `quads`, `quints`, `octuples` and `adjacent` — the dependent-typed lenders are
+    kept out because synthesized export forwarders cannot carry their types. The sorting
+    algorithm is a given chosen by name from `sortingAlgorithms` (`import
+    sortingAlgorithms.timsort`), since `import soundness.*` imports no givens.
+
+refer rudiments.Atomic
+refer rudiments.Scribe
+refer rudiments.Surveyor
+refer rudiments.Populated
+refer rudiments.apply
+refer murmuration.Traversable
+refer denominative.Applicable
+
+entry .pipe   `value.pipe(f)`: applies a function to a value, written left to right
+    `value.pipe(lambda)` is `lambda(value)`, so a computation reads in the order it happens
+    rather than inside out. The receiver is by-name and the method inline, so nothing is
+    allocated and the value is evaluated exactly once.
+
+    ```scala
+    import soundness.*
+
+    t"hello".pipe(_.upper).pipe(_.length)   // 5
+    ```
+
+entry .tap   `value.tap(f)`: runs a side effect on a value and returns the value
+    `value.tap(block)` evaluates the value once, passes it to `block` for its effect — logging,
+    an assertion, a measurement — and yields the value unchanged, so a step can be observed in
+    the middle of a chain without binding it to a name.
+
+    ```scala
+    import soundness.*
+
+    var observed: Text = t""
+    List(1, 2, 3).map(_*2).tap { xs => observed = xs.show }.total   // 12, with observed set
+    ```
+
+entry .also   `value.also(block)`: evaluates a block after a value, and returns the value
+    As `tap`, but the block does not receive the value: `value.also(cleanup())` evaluates the
+    value, then the block, and yields the value.
+
+entry .when   `value.when(condition)(f)`: applies a function only if a condition holds
+    Two overloads: `value.when(predicate: Boolean)(lambda)` and
+    `value.when(predicate: value => Boolean)(lambda)`. Either yields `lambda(value)` when the
+    condition is true and `value` unchanged otherwise, which is the conditional step of a
+    pipeline without an `if`/`else` that repeats the value.
+
+    ```scala
+    import soundness.*
+
+    def normalize(text: Text, lower: Boolean): Text = text.when(lower)(_.lower)
+    ```
+
+entry .give   `value.give(block)`: makes a value available as a contextual value inside a block
+    `value.give { summon[Type] }` evaluates the block with `value` as a given of its type:
+    `block: value ?=> result`. It is how an explicit value is handed to code which expects a
+    contextual one, without declaring a `given` in the enclosing scope.
+
+entry .unit   discards a value, yielding `()`
+    `expression.unit` evaluates the expression for its effect and gives `Unit`, which is tidier
+    than `val _ = expression` or a trailing `()`.
+
+entry .waive   `value.waive`: the constant function which ignores its argument and returns the value
+    `value.waive` is `_ => value`, typed `Any => value`: for an API which takes a function but
+    the caller has only a value, such as `optional.lay(fallback.waive)(f)`.
+
+entry .twin   `value.twin`: the pair `(value, value)`
+    Pairs a value with itself, for an API which takes a pair.
+
+entry .triple   `value.triple`: the triple `(value, value, value)`
+
+entry .typed   `value.typed[Subtype]`: whether the value is an instance of a subtype of its static type
+    `value.typed[T]` is `value.isInstanceOf[T]`, with `T` bounded above by the value's own type
+    so that a test against an unrelated type is a compile error rather than a constant `false`.
+
+entry .unsafeMatchable   casts a value to `value & Matchable`, under an `Unsafe` token
+    Pattern matching on a value whose type is not `Matchable` — an opaque type, or an abstract
+    type parameter — is forbidden under strict matchability. `value.unsafeMatchable` adds
+    `Matchable` to the static type by a cast, and takes an erased `Unsafe` contextual parameter
+    so the site must be inside `unsafely` (or otherwise hold the token): the name says the
+    compiler's guarantee has been set aside, since matching on the representation of an opaque
+    type is precisely what opacity was meant to prevent. Transparent, so the result's type is
+    exactly `value & Matchable`.
+
+entry .yet   `statement yet block`: evaluates a statement, then a block, yielding the block's result
+    An infix sequencing operator on a `Unit` expression: `log() yet compute()` runs `log()` for
+    its effect and yields `compute()`. It reads well at the end of a one-line method whose first
+    action is an effect.
+
+entry .upon   `lambda.upon(value)`: applies a by-name function to a by-name argument
+    For a function typed `(=> input) => result`: `lambda.upon(expression)` passes the expression
+    unevaluated, so the function decides whether and when to evaluate it.
+
+entry .and   `lambda and input`: infix function application
+    `lambda and argument` is `lambda(argument)`, evaluated by name. It makes a function the
+    subject of a sentence in a chain of operations: `handler and event`.
+
+entry .context   `lambda.context`: a function as a context function
+    Converts an `input => result` to `input ?=> result`, so a plain function can be passed where
+    a context function is expected — a block which reads its argument with `summon` or through
+    an accessor such as `state`.
+
+entry .that   `that(block)`: an identity on a by-name block, for emphasis
+    `that { … }` evaluates its block and yields the result: it exists so a construction can be
+    named by what it asserts, `assert(that(x > 0))`, and to give an inline block a syntactic
+    anchor where one is needed.
+
+entry .state   the accumulator inside a `fuse` lambda, as a contextual value
+    A `fuse` lambda is a context function given two tagged values, the running state and the
+    next element. `state` reads the first: `xs.fuse(0)(state + next)`. The tag is the type
+    `value aka "state"`, which only a `fuse` supplies, so `state` outside one is a compile error
+    saying no given of that type was found.
+
+entry .next   the next element inside a `fuse` lambda, as a contextual value
+    The second tagged value a `fuse` lambda receives: `xs.fuse(t"")(state + next.show)`. See
+    `state` for the tagging.
+
+entry .prior   the previous value inside a lambda which is given one, as a contextual value
+    Reads a contextual `value aka "prior"`: the earlier of two elements in operations such as
+    the pairwise scans of other libraries which pass it.
+
+entry .ordinal   the position of the current element inside an `each` lambda, as a contextual value
+    An `each` lambda is given the element's `Ordinal` as a contextual `Ordinal aka "ordinal"`,
+    and `ordinal` reads it: `xs.each { x => labels ::= t"$ordinal: $x" }`. Positions start at
+    `Prim`.
+
+entry .repeat   `repeat(count)(action)`: runs an action a fixed number of times
+    `repeat(3) { step() }` evaluates the block three times, as a loop which needs no index. A
+    negative or zero count runs it not at all.
+
+entry .fixpoint   `fixpoint(initial)(recur ?=> …)`: a recursive computation from a knot-tying lambda
+    `fixpoint(initial)` applies a `Fixpoint` to an initial value: the lambda is given the
+    recursion itself as a contextual function `recur: value => value`, and calls it to recurse.
+    The knot is tied lazily, so `recur` re-enters the lambda only when it is applied, and the
+    lambda decides when the recursion stops.
+
+    ```scala
+    import soundness.*
+
+    val countdown: Int = fixpoint(5): recur ?=>
+      n => if n <= 0 then 0 else recur(n - 1)
+    ```
+
+entry .Fixpoint   the shape of a `fixpoint` lambda: given the recursion, a function on the value
+  detail
+      A SAM trait whose `apply` takes the recursion as a contextual `value ->{this} value` and
+      yields the step `value ->{recur} value`. A context-function literal `recur ?=> …`
+      converts to it at a `fixpoint` call; the trait exists because a context function cannot
+      name the function value inside its own type, and the retained capture of `recur` must
+      be stated for the recursion to pass capture checking.
+  refer rudiments.fixpoint
+  entry #apply   the step, given the recursion to call
+
+entry .probe   `probe[T]`: halts compilation, reporting what the type `T` is
+    A debugging aid for type-level code: `probe[SomeMatchType[X]]` fails to compile with
+    _the type is …_ showing the type as the compiler sees it, dealiased and widened, so a
+    reader can learn what a complicated type reduces to without guessing. It returns `Nothing`,
+    and never survives to run.
+
+entry .typeName   `typeName[T]`: the name of a type, as text, at compile time
+    `typeName[List[Int]]` is `t"List[Int]"`, rendered by the compiler's own printer when the
+    code compiles, with any capture-checking annotations stripped. Useful for messages and for
+    generic code which names the type it was instantiated at.
+
+entry .reflectClass   `reflectClass[T]`: the `Class[T]` of a type, by its full name
+    Looks the class up by the name of the type's symbol with `Class.forName` when the code runs,
+    typed as `Class[T]`. For a class loaded through a particular classloader, or a nested class,
+    `hellenism.ClassRef[T]` resolves the binary name correctly and is preferred.
+
+entry .!!   `!![T]`: an erased value of any type, for an erased proof or evidence parameter
+    Written `!![T]`, this is the compiler's erased-value summoner: it yields a `T` which exists
+    only at compile time and has no runtime representation, so it may be passed where an
+    `erased` parameter of that type is required — `lambda(using !![data is Dynamical])` is how
+    `dynamically` grants its permission — and nowhere else. A use whose value is ever evaluated
+    is a compile error.
+
+entry .each   visits every element, giving the lambda each element's position as the contextual `ordinal`
+    Two overloads, one for any `Traversable` receiver — the opaque collections, a `Text`, a
+    frozen array — and one for a stdlib `Iterable`. The lambda is a context function given the
+    element's `Ordinal` as `Ordinal aka "ordinal"`, read with `ordinal`, counted from `Prim`.
+    `each` is the house spelling of `foreach`, which remains only so `for` loops desugar.
+
+    ```scala
+    import soundness.*
+
+    var seen: List[Text] = Nil
+
+    List(t"a", t"b").each: letter =>
+      seen ::= t"$ordinal=$letter"
+
+    seen.reverse   // List(t"Prim=a", t"Sec=b")
+    ```
+
+entry .fuse   folds from the left, with the accumulator and next element as `state` and `next`
+    `xs.fuse(base)(lambda)` is a left fold whose lambda is a context function: it reads the
+    running accumulator as `state` and the element as `next`, so `xs.fuse(0)(state + next)`
+    sums. Overloaded for any `Traversable` and for a stdlib `Iterable`; inline, so the loop
+    is written in place.
+
+    ```scala
+    import soundness.*
+
+    List(1, 2, 3).fuse(0)(state + next)            // 6
+    List(t"a", t"b").fuse(t"")(state + next)       // t"ab"
+    ```
+
+entry .all   whether every element satisfies a predicate
+    `xs.all(_ > 0)` is the stdlib's `forall`; overloaded for a `Traversable` receiver and for an
+    `Iterable`. True of an empty receiver.
+
+entry .find   the first element satisfying a predicate, or `Unset`
+    `xs.find(predicate)` on any `Traversable`, yielding `Optional[element]` rather than an
+    `Option`; the same operation as `seek`, under the stdlib's name. Not exported to the
+    `soundness` umbrella: `import rudiments.find`, or use `seek`.
+
+entry .seek   the first element satisfying a predicate, or `Unset`
+    `xs.seek(_.startsWith(t"x"))` on any `Traversable` yields the element as an `Optional`.
+    There is no value-taking overload (`seek(value)`): with a path-dependent element type it
+    would be ambiguous with the predicate form for every lambda, so a specific element is
+    sought with `seek(_ == value)`, and its position with `where`.
+
+entry .reap   the first element a partial function accepts, transformed by it, or `Unset`
+    `xs.reap { case Some(x) => x }` is the total counterpart of the stdlib's `collectFirst`,
+    and the single-result sibling of `sweep`. A distinct name rather than a `seek` overload
+    because a case-literal closure matches both the predicate and the partial-function shapes.
+
+    ```scala
+    import soundness.*
+
+    List(t"a", t"12", t"b").reap { case Text(digits) if digits.all(_.isDigit) => digits.length }
+    ```
+
+entry .where   the position of the first element satisfying a predicate, as `Optional[Ordinal]`
+    `xs.where(_ == x)` replaces `indexOf`: the result is an `Ordinal`, not an `Int`, and the
+    absence of a match is `Unset` rather than `-1`. The element itself is found with `seek`.
+
+    ```scala
+    import soundness.*
+
+    List(t"a", t"b", t"c").where(_ == t"b")   // Sec
+    ```
+
+entry .indexed   each element paired with its `Ordinal`, in the receiver's own shape
+    `xs.indexed` is the total counterpart of `zipWithIndex`: a `List` gives a `List[(element,
+    Ordinal)]`, a `Sequence` a `Sequence` of pairs. It needs a `Reshapable.Stable` instance, so
+    an unordered `Set` or `Map` — whose elements have no positions — is not accepted. The
+    ordinal is zero-based at `Prim`; arithmetic on it goes through `n0` or ordinal addition.
+
+entry .sift   the elements which are instances of a type, as a collection of that type
+    `xs.sift[Subtype]` keeps the elements matching a type test and narrows the result:
+    `List(None, Some(1), None).sift[None.type]` is a `List[None.type]`, and a singleton or union
+    of singleton types works too (`List.range(0, 10).sift[5 | 7]` is `List(5, 7)`). Overloaded
+    for a `Traversable` (giving a `List`) and for an `Iterable`.
+
+entry .bi   each element paired with itself, shape-preservingly
+    `List(1, 2).bi` is `List((1, 1), (2, 2))`; a `Set` gives a `Set` of pairs. For a
+    `Traversable` it needs a `Reshapable` instance, and the `Iterable` overload maps directly.
+
+entry .tri   each element tripled with itself, shape-preservingly
+    `Set(1, 2).tri` is `Set((1, 1, 1), (2, 2, 2))`. See `bi`.
+
+entry .weave   interleaves two `Iterable`s element by element
+    `left.weave(right)` yields `left(0), right(0), left(1), right(1), …`, stopping when either
+    runs out. Defined on the stdlib `Iterable` only.
+
+entry .annex   pairs each element with a computed value, flattening a tuple element
+    `xs.annex(f)` maps each element `x` to `(x, f(x))`; where the element is already a tuple,
+    `f(x)` is appended to it as a further component rather than nested. On a stdlib `Iterable`,
+    yielding an `Iterable[Tuple]` whose precise type is refined at the call site.
+
+entry .intercalate   joins nested `Iterable`s with a separator between them
+    `parts.intercalate(List(0))` concatenates the inner collections with the separator between
+    each pair; the separator defaults to nothing, so `intercalate()` is a flatten. On a stdlib
+    `Iterable[Iterable[value]]`.
+
+entry .total   the sum of the elements, by their `Addable` instance
+    `xs.total` adds the elements. Its result type adapts: where the element type has a `Zeroic`
+    instance (every numeric type does) the sum starts at zero and the result is the bare
+    element type; otherwise it is `Optional`, `Unset` for an empty receiver. Overloaded for a
+    `Traversable` and for an `Iterable`, and transparent, so in an argument position with an
+    expected type the narrowing may not be available — `xs.total.or(0)` is the robust spelling
+    there, since `Int` conforms to `Optional[Int]`.
+
+    ```scala
+    import soundness.*
+
+    List(1, 2, 3).total             // 6
+    List[Int]().total               // 0
+    ```
+
+entry .product   the product of the elements, by their `Multiplicable` and `Unital` instances
+    `xs.product` multiplies the elements, starting from the type's `one`. Overloaded for a
+    `Traversable` and for an `Iterable`.
+
+entry .sumBy   the sum of a numeric projection of each element
+    `xs.sumBy(_.length)` on a stdlib `Iterable`, by a `Numeric` for the projected type.
+
+entry .mean   the arithmetic mean of the elements, or `Unset` for an empty receiver
+    `xs.mean` is `xs.total` divided by the count, for an element type which is `Addable` by
+    itself and `Divisible` by `Double` to itself — `Double`, or a quantity. Overloaded for a
+    `Traversable` and an `Iterable`.
+
+entry .mean2   the mean computed about an arbitrary pivot, for better numerical stability
+    `xs.mean2` subtracts the first element from every element, averages the differences, and
+    adds the pivot back, which loses less precision than `mean` when the values are large and
+    close together. On a stdlib `Iterable`, with the subtractable/addable/divisible instances
+    the arithmetic needs.
+
+entry .variance   the population variance of the elements, or `Unset` for an empty receiver
+    The mean of the squared deviations from `mean`. Overloaded for a `Traversable` and an
+    `Iterable`; the result type is that of a squared element divided by a `Double`.
+
+entry .std   the population standard deviation of the elements, or `Unset` for an empty receiver
+    Computed in units of the first element so that a dimensioned quantity's standard deviation
+    comes back in the quantity's own type. Overloaded for a `Traversable` and an `Iterable`.
+
+entry .indexBy   a map from a computed key to each element
+    `xs.indexBy(_.id)` builds a `Map[key, element]`; where two elements share a key, the later
+    one wins. On a stdlib `Iterable`.
+
+entry .longestTrain   the start and length of the longest run of elements satisfying a predicate
+    `xs.longestTrain(_ == 0)` is `(start, length)` of the longest consecutive run for which the
+    predicate holds, as zero-based `Int`s; `(0, 0)` when none does. Overloaded for a
+    `Traversable` and an `Iterable`.
+
+    ```scala
+    import soundness.*
+
+    List(1, 0, 0, 2, 0, 0, 0, 5).longestTrain(_ == 0)   // (4, 3)
+    ```
+
+entry .iterator   the one-shot traversal of a `Traversable`, for a consumer which pulls
+    `xs.iterator` is a murmuration `Iterator` over the elements, whose `next()` yields
+    `Iterator.Exhausted` at the end rather than throwing. For the loop which must pull elements
+    one at a time rather than being handed them by `each`.
+
+entry .to   converts a collection to a requested shape: `xs.to[List]`, `text.to[Set]`, `pairs.to[Map]`
+    `xs.to[Form]` goes through a `Convertible` instance from the receiver to the form, which may
+    be a proper type or an unapplied constructor; any `Traversable` has instances for the
+    collections, and a `Text` converts to a collection of `Char`. A second overload converts a
+    tuple to a case class: `(t"Ada", 36).to[Person]`, through `Mirror.ProductOf`. Transparent,
+    so the result is fully applied at the call site; where no expected type pins it, the bare
+    constructor may be left unapplied, and the parenthesised factory form `xs.to(List)` is the
+    fallback there.
+
+    ```scala
+    import soundness.*
+
+    t"hello".to[Set]                 // Set('h', 'e', 'l', 'o')
+    List(1 -> t"a").to[Map]          // Map(1 -> t"a")
+    ```
+
+entry .occupied   checks once that a value is non-empty, recording the proof as `& Populated`
+    `xs.occupied` is `Optional[xs.type & Populated]`: `Unset` for an empty receiver, and
+    otherwise the same value typed with the proof of non-emptiness, on which `head`, `last`,
+    `lead`, `tail` and `reduce` are total. One check, discharged in the type, rather than an
+    `Optional` on every read. Not exported to the `soundness` umbrella: `import
+    rudiments.occupied`.
+
+    ```scala
+    import soundness.*
+    import rudiments.occupied
+
+    val xs: List[Int] = List(3, 1, 2)
+    xs.occupied.let(_.head)          // Optional[Int]: 3, with head bare inside the lambda
+    ```
+
+entry .Populated   the proof, in a type, that a collection is non-empty
+    `Populated` is `proscenium.Populated` — the structural refinement `Any { type Occupied =
+    true }` — re-declared here under the name earlier code used, and shipping in the
+    `concordance` library. A value typed `List[Int] & Populated` is known to have an element,
+    so `head`, `last`, `lead`, `tail` and `reduce` are total on it. The proof is minted by the
+    collection companions' non-empty literal constructors (`List(1, 2, 3)` has it; `List()`
+    and `List(xs*)` do not), by `occupied`, and by APIs which return something known to be
+    non-empty, such as `Text#cut`. Being structural, it erases to nothing: a `Text & Populated`
+    is still a `String` at runtime, and `populatedEquality` lets the branded value compare with
+    its plain self.
+
+entry .head   the first element: bare on a `Populated` receiver, `Optional` otherwise
+    `xs.head` adapts to what the receiver's type proves. On a `List[Int] & Populated` — a
+    non-empty literal, or an `occupied` result — it is an `Int`; on a plain `List[Int]` it is
+    `Optional[Int]`, `Unset` when empty, having checked emptiness once. There is no partial
+    `head` which can throw: a program which wants the bare element on a collection of unknown
+    size binds `occupied` first, or `at(Prim)`. On a `List`, `head` is free; `at(Sec)` and
+    beyond walk the list and need `dysasymptotics.linearAccess`.
+
+    ```scala fuel
+    frame
+      label An unproven list: head is Optional
+      code
+          val xs: List[Int] = List(3, 1, 2)
+          xs.head                          // Optional[Int]
+    frame
+      label A literal proves itself: head is bare
+      code
+          List(3, 1, 2).head               // Int
+    frame
+      label A checked value carries the proof into a block
+      code
+          import rudiments.occupied
+          xs.occupied.let(_.head + 1)      // Optional[Int], the addition total inside
+    ##
+    ```
+
+    A trap: the receiver should be a named value or a literal; an expression such as
+    `(if c then xs else ys).head` may not carry the proof the compiler could otherwise see.
+
+entry .last   the final element: bare on a `Populated` receiver, `Optional` otherwise
+    `xs.last` goes through the receiver's `Terminable` instance, so each container answers at
+    its own cost: O(1) for a `Sequence` or array, a walk for a `List` (which therefore needs
+    `dysasymptotics.linearSize`), and a forcing of a `Chain` (`unboundedSize`). It adapts like
+    `head`: an element on a `Populated` receiver, `Optional` otherwise.
+
+entry .lead   everything before the last element: bare on a `Populated` receiver, `Optional` otherwise
+    `xs.lead` is the mirror of `tail`, through the receiver's `Truncable` instance; `lead` and
+    `last` together reconstitute the whole. The result is the plain collection type, never
+    branded: the lead of a one-element list is empty.
+
+entry .tail   everything after the first element: bare on a `Populated` receiver, `Optional` otherwise
+    `xs.tail` is `xs.skip(1)` for any receiver which is `Segmentable` and `Countable`, which
+    includes `Text` (`t"hello".tail` is `t"ello"`). It adapts like `head`, so on an unproven
+    receiver it is `Optional`, `Unset` for an empty one; the segment itself is never branded,
+    since the tail of a one-element value is empty.
+
+entry .reduce   combines the elements pairwise from the left, on a `Populated` receiver only
+    `xs.reduce(_ + _)` is defined only for a receiver typed `& Populated`, which is what makes
+    it total: there is no empty case. A collection of unknown size goes through `occupied`
+    first, or uses `fuse` with a base value.
+
+entry .populatedEquality   lets a `value & Populated` be compared with a plain `value`
+    A `CanEqual` given, in implicit scope, without which strict equality would reject
+    `List(1, 2) == xs` when the literal's type carries the proof and `xs` does not.
+
+entry .populatedEqualityReversed   the `CanEqual` for `value == (value & Populated)`, the other way round
+
+entry .sizedEquality   lets a `value & Sized[n]` be compared with a plain `value`
+    A `CanEqual` given, in implicit scope, so a literal-length array compares with an unbranded
+    one.
+
+entry .sizedEqualityReversed   the `CanEqual` for `value == (value & Sized[n])`, the other way round
+
+entry .segment   `value.segment(interval)`: the part of a value within an interval
+    `xs.segment(Sec thru Quat)` is the segment of any `Segmentable` value over an `Interval`
+    of ordinals, in the instance's `Segment` type: a `List` for a `List`, a `Text` for a
+    `Text`, a frozen array for a frozen array. The positional operations `before`, `upto`,
+    `from`, `after`, `keep`, `skip`, `snip` and `tail` are all written in terms of it, and an
+    interval beyond the value's extent is clamped.
+
+    ```scala
+    import soundness.*
+
+    t"Hello world".segment(Quin thru Sept)   // t"o w"
+    ```
+
+entry .before   everything before a position, or before the first element matching a predicate
+    `xs.before(Ter)` is the segment of the first two elements. The predicate overload,
+    `xs.before(_ == ' ')`, is everything strictly before the first matching element, and
+    everything before the last element when nothing matches. On any value which is
+    `Segmentable` and `Countable` (the ordinal form) or additionally `Traversable` (the
+    predicate form).
+
+entry .upto   everything up to and including a position, or the first element matching a predicate
+    `xs.upto(Ter)` is the first three elements; `xs.upto(_ == ':')` includes the matching
+    element, and reaches the last element when nothing matches.
+
+entry .from   everything from a position onwards
+    `xs.from(Ter)` is the segment from the third element to the end. The name is unambiguous
+    at the `soundness` umbrella, since no other library exports a `from` on a value.
+
+entry .after   everything after a position
+    `xs.after(Ter)` is the segment from the fourth element to the end.
+
+entry .keep   the first (or, with `Rtl`, the last) `count` elements, or the leading run matching a predicate
+    `xs.keep(3)` is the stdlib's `take`, and `xs.keep(3, Rtl)` its `takeRight`; `xs.keep(_ <
+    4)` is `takeWhile` and `xs.keep(predicate, Rtl)` its right-to-left twin. Every form is
+    shape-preserving through `Segmentable` — a `Text` keeps its type, a styled text its styling
+    — and clamps rather than failing when the count exceeds the extent. A `Chain` has no
+    `Segmentable` instance, since segmenting would force it; its companion holds lazy `keep`
+    and `skip` overloads of its own (without a `Bidi`), which overload resolution prefers for a
+    `Chain` receiver.
+
+    ```scala
+    import soundness.*
+
+    t"Hello".keep(1, Rtl)              // t"o"
+    t"HELLOworld".keep(_.isUpper)      // t"HELLO"
+    Chain.iterate(1)(_ + 1).keep(3)    // Chain(1, 2, 3), lazily
+    ```
+
+entry .skip   all but the first (or, with `Rtl`, the last) `count` elements, or all after the leading matching run
+    `xs.skip(2)` is the stdlib's `drop`, `xs.skip(2, Rtl)` its `dropRight`, and `xs.skip(_ ==
+    ' ')` its `dropWhile`. Shape-preserving and clamped, like `keep`; lazy on a `Chain`.
+
+entry .snip   splits a value at a position, or at the first element matching a predicate, into two segments
+    `t"Hello".snip(2)` is `(t"He", t"llo")`: the first `count` elements and the rest. The
+    predicate overload `xs.snip(predicate, start)` finds the first element at or after `start`
+    which matches, and yields the two sides with the matching element beginning the right one,
+    as an `Optional`, `Unset` when nothing matches.
+
+entry .define   a copy of a container with one position or key set: the write twin of `at`
+    `xs.define(Sec, 9)` on a `Sequence`, `map.define(key, value)` on a `Map`, through the
+    receiver's `Definable` instance. Total: an out-of-range ordinal returns the container
+    unchanged, and an absent key defines a new entry. On a `List`, positional definition walks
+    the list and needs `dysasymptotics.linearAccess`.
+
+entry .omit   a copy of a container without one key, or one position
+    `map.omit(key)` removes an entry (an absent key leaves the map as it was); a frozen array
+    `omit`s a position. Through the receiver's `Omissible` instance.
+
+entry .sort   the elements in their own order, by a `Comparable` for the element type and the algorithm in scope
+    `xs.sort` sorts a `Reshapable.Stable` receiver — a `List`, a `Sequence`, a `Chain`, a
+    frozen array; a `Map` sorts its pairs into a `Ledger` — by the element type's `Comparable`
+    (numbers have one; a `Text` needs a collation, such as
+    `collations.codepointCollation` with `collationComparable`) and by the `SortAlgorithm`
+    given in scope, chosen by name from `sortingAlgorithms`. A `Set` has no stable instance,
+    so it does not sort: that is an honest refusal rather than a silent dropping of order. The
+    second overload, `array.sort()`, sorts a mutable `Array^` in place and returns nothing. The
+    scratch array is sized from the receiver's `Countable` instance when the file has opened
+    the gate for it (`linearSize` for a `List`), and grown from an iterator otherwise.
+
+    ```scala
+    import soundness.*
+    import sortingAlgorithms.timsort
+
+    List(3, 1, 2).sort                  // List(1, 2, 3)
+    Sequence(t"b", t"a").sort           // does not compile: Text needs a collation
+    ```
+
+entry .order   the elements sorted by a key computed from each: `xs.order(_.age)`
+    `xs.order(lambda)` is the stdlib's `sortBy`, stable, so equal keys keep their order. The
+    key is computed once per element before sorting rather than twice per comparison. Needs a
+    `Comparable` for the key, a `SortAlgorithm` from `sortingAlgorithms`, and a
+    `Reshapable.Stable` receiver, as `sort` does. There is no comparator overload
+    (`sortWith`): a two-parameter lambda would break untupling on pair-element receivers such
+    as `map.order { (key, value) => key }`.
+
+    ```scala
+    import soundness.*
+    import sortingAlgorithms.timsort
+
+    List(t"ccc", t"a", t"bb").order(_.length)   // List(t"a", t"bb", t"ccc")
+    List(3, 1, 2).order(-_)                      // List(3, 2, 1)
+    ```
+
+entry .maximize   the element whose key is greatest, or `Unset` on an empty receiver
+    `xs.maximize(_.score)` finds in one pass the element `xs.order(_.score).last` would give:
+    the first of several equal-keyed elements wins. Over any `Comparable` key — a `Text`, an
+    `Ordinal`, a date — unlike hypotenuse's numeric `maximum`. A local `def maximize` in scope
+    shadows the extension.
+
+entry .minimize   the element whose key is least, or `Unset` on an empty receiver
+    The counterpart of `maximize`: `xs.minimize(_.length)`.
+
+entry .sortingAlgorithms   the sorting algorithms, each a `SortAlgorithm` given to import by name
+  detail
+      Which algorithm `sort`, `order` and `array.sort()` use is the `SortAlgorithm` given in
+      scope, and none is implicit: `import sortingAlgorithms.timsort` (or another) must appear
+      in the file. This package mirrors `murmuration.sortingAlgorithms` so that code reaching
+      the collections through `rudiments` can select one as `rudiments.sortingAlgorithms.x`;
+      the `soundness` umbrella merges both.
+
+      ```scala
+      import soundness.*
+      import sortingAlgorithms.powersort
+
+      List(3, 1, 2).sort
+      ```
+
+      Timsort and Powersort are stable and fast on partly-ordered data; quicksort and heapsort
+      use less memory; bubble sort and insertion sort suit tiny inputs.
+  entry .timsort   Timsort: stable, adaptive, the JDK's own object sort
+  entry .powersort   Powersort: stable, adaptive, with a provably better merge policy than Timsort
+  entry .quicksort   quicksort: in place, not stable
+  entry .heapsort   heapsort: in place, not stable, with a guaranteed bound
+  entry .bubbleSort   bubble sort: stable, quadratic, for tiny inputs
+  entry .insertionSort   insertion sort: stable, quadratic, fast on nearly-sorted tiny inputs
+
+entry .sorting   the plumbing between a collection and the array a sorting algorithm sorts
+  hidden
+  detail
+      Not for direct use: public only because `sort` and `order` are inline and may not reach
+      into a private. `Entry` pairs a key with its element for `order`; `extremum` is the one-pass
+      scan behind `maximize` and `minimize`; `comparator` turns a `Comparable` into the
+      `java.util.Comparator` the algorithms take; `sorted` and `ordered` drain an iterator into
+      a scratch array, sort it, and iterate it back.
+  entry .Entry   a sort key beside the element it came from
+    entry #key   the key `order`'s lambda computed, untyped
+    entry #element   the element the key was computed from, untyped
+  entry .extremum   the element with the greatest or least key, in one pass
+  entry .comparator   a `java.util.Comparator` from a `Comparable`
+  entry .sorted   an iterator's elements, sorted by their own order
+  entry .ordered   an iterator's elements, sorted by a projection
+
+entry .upsert   a map with one key set from a function of its current value, present or absent
+    `map.upsert(key, _.or(0) + 1)` passes the current value as an `Optional` and stores the
+    result: an insertion when the key was absent, an update otherwise.
+
+entry .collate   merges two maps, combining the values of keys present in both
+    `left.collate(right)(merge)` has every key of either map; where both define a key, the
+    value is `merge(leftValue, rightValue)`.
+
+    ```scala
+    import soundness.*
+
+    val a: Map[Int, List[Text]] = Map(1 -> List(t"one"), 2 -> List(t"two"))
+    val b: Map[Int, List[Text]] = Map(2 -> List(t"deux"))
+    a.collate(b)(_ + _)   // Map(1 -> List(t"one"), 2 -> List(t"two", t"deux"))
+    ```
+
+entry .establish   the value at a key of a mutable map, computing and storing it if absent
+    `map.establish(key)(compute)` on a `scala.collection.mutable.Map` is `getOrElseUpdate`: the
+    memoising idiom, under a name which says that the entry is established once.
+
+entry .plus   adds an element to the list at a key of a `Map[key, List[value]]`
+    `map.plus(key, value)` prepends `value` to the list under `key`, starting a new list when
+    the key is absent: a multimap's insertion.
+
+entry .unwind   reverses a list onto another: `reversed.unwind(tail)`
+    `list.unwind(tail)` is `list.reverse + tail`: the step which finishes an accumulator built
+    by prepending, when there is a remainder to append after it.
+
+entry .unique   the sole element of a one-element list, or `Unset`
+    `list.unique` is the element when the list has exactly one, and `Unset` for an empty or a
+    longer list — the check that a lookup found exactly one answer.
+
+entry .unused   `unused(base)(taken)`: the first of `base`, `base2`, `base3`, … which `taken` does not reject
+    For choosing a fresh name — a variable in generated code, a file beside others — without a
+    counter of one's own. The unadorned `base` is the first candidate and the suffixes start
+    at 2, so `base1` is never produced.
+
+    ```scala
+    import soundness.*
+
+    val names: Set[Text] = Set(t"x", t"x2")
+    unused(t"x")(names.has(_))   // t"x3"
+    ```
+
+entry .runs   splits a list into maximal runs of equal adjacent elements
+    `List(1, 2, 2, 1, 1, 1).runs` is `List(List(1), List(2, 2), List(1, 1, 1))`.
+
+entry .runsBy   splits a list into runs of adjacent elements with an equal projection
+    `List(1, 2, 2, 1, 1, 1, 4, 4).runsBy(_%3)` groups by the projection, so `1, 1, 1, 4, 4`
+    form one run.
+
+entry .snapshot   a frozen copy of a mutable `scala.Array`
+    `array.snapshot` copies a JVM array into a fresh frozen `Array[element]^{}` which later
+    writes to the original cannot affect. Needs a `ClassTag` for the element.
+
+entry .place   copies a frozen array into a mutable `scala.Array` at a position
+    `target.place(source, ordinal)` is `System.arraycopy` from a frozen array into a mutable
+    one, starting at `ordinal` (`Prim` by default). The confined form for a `Scribe` is
+    `Scribe#place`.
+
+entry .javaInputStream   a `Data` as a `java.io.InputStream`
+    For handing bytes to a Java API which reads a stream: a `ByteArrayInputStream` over the
+    array, without copying.
+
+entry .Bytes   a count of bytes, as a quantity: `4.kib`, `data.bytes`
+    `Bytes` is the opaque type `rudiments.internal.Bytes`, an opaque `Long`, exported here.
+    Arithmetic and comparison treat it as a quantity: two `Bytes` add and subtract, a `Bytes`
+    multiplies and divides by an `Int`, and one `Bytes` divided by another is a `Double`
+    ratio, all through givens in its companion, so no import is needed. Constructed with
+    `Bytes(long)` or the literal extensions `b`, `kib`, `mib`, `gib` and `tib` on an `Int` or
+    `Long` (binary units: `1.kib` is 1024 bytes), and from a `Data` with `bytes`; read back
+    with `long`, and shown as `1024 bytes`.
+
+    ```scala
+    import soundness.*
+
+    val limit: Bytes = 4.mib
+    limit/2.kib             // 2048.0
+    (limit + 1.kib).long    // 4195328
+    ```
+
+entry .b   `n.b`: a `Bytes` of `n` bytes, on an `Int` or `Long`
+entry .kib   `n.kib`: a `Bytes` of `n` kibibytes (×1024)
+entry .mib   `n.mib`: a `Bytes` of `n` mebibytes (×1024²)
+entry .gib   `n.gib`: a `Bytes` of `n` gibibytes (×1024³)
+entry .tib   `n.tib`: a `Bytes` of `n` tebibytes (×1024⁴)
+entry .bytes   `data.bytes`: the length of a `Data` as a `Bytes`
+
+entry .Digit   a decimal digit, `0` to `9`, as a type
+    `Digit` is the opaque type `rudiments.internal.Digit`, the union `0 | 1 | … | 9`,
+    exported here, so a value typed `Digit` is known to be a single decimal digit.
+    `Digit(char)` and `Digit(int)` make one as an `Optional`, `Unset` for anything else; the
+    extensions `int` and `char` read it back.
+
+    ```scala
+    import soundness.*
+
+    Digit('7').let(_.int)   // 7
+    Digit(12)               // Unset
+    ```
+
+entry .tuple   a case class as the tuple of its fields
+    `person.tuple` is `Tuple.fromProductTyped(person)`, typed as the product's
+    `MirroredElemTypes`; the inverse of the tuple `to[Product]` conversion.
+
+entry .contains   `tuple.contains[T]`: whether a tuple type has a component of a type, at compile time
+    An inline, erased extension on a `Tuple`: `(erasedValue[(Int, Text)]).contains[Text]` is
+    `true`, computed from the types. Not exported to the `soundness` umbrella.
+
+entry .indexOf   `tuple.indexOf[T]`: the position of a component type in a tuple type, or `-1`
+    Computed at compile time from the types; not exported to the umbrella.
+
+entry .subtypes   `tuple.subtypes[S]`: the components of a tuple type which are subtypes of a type, as a tuple type
+    A transparent inline type-level filter, used by derivation code; not exported to the
+    umbrella.
+
+entry .literal   reads a literal constant out of a `TypeRepr`, in a macro
+    `repr.literal[Int]` (or any primitive, `String`, `Unit` or `Null`) is the constant a
+    `ConstantType` holds, as an `Optional`, and `Unset` for any other type or a constant of
+    another kind. An extension on `quotes.reflect.TypeRepr` for macro authors; not exported to
+    the umbrella.
+
+entry .Atomic   atomic cells over the JDK's atomics: `Atomic.Int`, `Atomic.Long`, `Atomic.Bool`, `Atomic.Ref` and the arrays
+  detail
+      An `Atomic` cell is a value shared between threads whose reads and writes are atomic and
+      whose transitions are lock-free. Each is an opaque wrapper over the corresponding
+      `java.util.concurrent.atomic` class — `Atomic.Int` over `AtomicInteger`, `Atomic.Long`
+      over `AtomicLong`, `Atomic.Bool` over `AtomicBoolean`, `Atomic.Ref[value]` over
+      `AtomicReference`, and `Atomic.Ints`, `Atomic.Longs` and `Atomic.Refs` over the atomic
+      arrays — and every operation is inline, so the bytecode is the raw JDK call. The names
+      say what a cell holds rather than what it is for.
+
+      `Atomic[value]` is a match type which spells the right cell for a type: `Atomic[Int]` is
+      `Atomic.Int`, `Atomic[Boolean]` is `Atomic.Bool`, and any other type is `Atomic.Ref`. It
+      makes the unboxed cell the obvious spelling (`Atomic.Ref[Int]` is legal and boxes every
+      write). `Atomic(initial)` constructs by the argument's type, so `Atomic(0)` is an
+      `Atomic.Int`; `Atomic[Int](0)` would select the generic `Ref` arm and not conform, which
+      is a type error rather than a silent boxing. The match type does not reduce for an
+      opaque collection type or an abstract type parameter — `Atomic[List[x]]` — and such a
+      cell is written `Atomic.Ref[List[x]]`.
+
+      ```scala fuel
+      frame
+        label A shared counter as a var is a data race
+        code
+            var count = 0
+            def hit(): Unit = count += 1
+      frame
+        label An atomic cell reads as `cell()` and writes as `cell() = v`
+        code
+            val count = Atomic(0)
+            def hit(): Unit = count() = count() + 1    // still a lost update: read then write
+      frame
+        label A transition is one atomic step, compiled to the JDK intrinsic
+        code
+            val count = Atomic(0)
+            def hit(): Int = count.since(_ + 1)        // incrementAndGet
+      ##
+      ```
+
+      Every cell reads with `apply()`, writes with `update` (so `cell() = v`), publishes with
+      a release store, swaps with `swap`, and compares-and-sets with `replace`. The scalar
+      cells and `Ref` also transition with `ere` and `since`: the same transition, returning the
+      value displaced or the value installed. The reference cells never need `nn`: a
+      `Ref[Optional[x]]` holding `Unset` reads as `Unset`, where calling `nn` on the raw
+      `AtomicReference` would throw.
+  refer rudiments.Mutex
+  entry .apply   `Atomic(initial)`: the cell for the argument's type
+      Overloaded on `Int`, `Long`, `Boolean` and any other type, mirroring the match type's
+      arms: `Atomic(0)` is an `Atomic.Int`, `Atomic(t"x")` an `Atomic.Ref[Text]`. The argument
+      drives the choice; do not pass a type argument.
+  entry .Int   an atomic 32-bit integer, over `AtomicInteger`
+    detail
+        `Atomic.Int(initial)` (or `Atomic.Int()`, starting at zero) makes one. Reads are
+        `count()`, writes `count() = n`. The transitions `ere` and `since` recognise the lambda's
+        shape at compile time: `_ + 1` becomes `getAndIncrement`/`incrementAndGet`, `_ + n`
+        becomes `getAndAdd`/`addAndGet`, `_ - 1` and `_ - n` their decrementing twins, a constant
+        becomes `getAndSet`, and any other shape a compare-and-set retry loop with the
+        transition's body inlined into it. Nothing is allocated in any case.
+
+        ```scala
+        import soundness.*
+
+        val count = Atomic.Int(7)
+        count.since(_ + 1)     // 8, the value installed
+        count.ere(_ + 2)       // 8, the value displaced; the cell now holds 10
+        count.ere(99)          // 10; the cell now holds 99
+        count.replace(99, 0)   // true
+        ```
+    entry .apply   `Atomic.Int(initial)` makes a cell, starting at zero by default; `count()` reads one
+        Two overloads which share the name. On the companion, `Atomic.Int(initial)` (or
+        `Atomic.Int()`) makes a cell over a fresh `AtomicInteger`. As an extension on a cell,
+        `count()` is a volatile read, `get`.
+    entry .update   `count() = n`: a volatile store
+    entry .publish   `count.publish(n)`: a release store, ordered before later stores but cheaper than `update`
+        A `lazySet`: a single-producer ring can publish a slot write and know a reader which
+        sees the index published after it sees the write too. Not a substitute for `update`
+        where the store itself is the point of publication.
+    entry .swap   `count.swap(n)`: stores `n` and returns the value displaced
+    entry .replace   `count.replace(expected, updated)`: compare-and-set, true if it took
+    entry .ere   `count.ere(transition)` or `count.ere(n)`: applies a transition and returns the value it displaced
+        The transition is a lambda literal, inspected at compile time for its shape; `ere(n)`
+        with a value is `getAndSet`. There is no `since(n)`: it would return its own argument,
+        and setting without wanting the old value is `count() = n`.
+    entry .since   `count.since(transition)`: applies a transition and returns the value it installed
+        `_ + 1` compiles to `incrementAndGet`, `_ + n` to `addAndGet`, `_ - 1` and `_ - n` to
+        their decrementing twins, and any other shape to a compare-and-set loop.
+  entry .Long   an atomic 64-bit integer, over `AtomicLong`
+    detail
+        As `Atomic.Int`, for a `Long`: `Atomic.Long(initial)` or `Atomic.Long()`, with the
+        same operations and the same compile-time recognition of transition shapes (reaching
+        `AtomicLong`'s intrinsics).
+    entry .apply   `Atomic.Long(initial)` makes a cell, starting at zero by default; `tally()` reads one
+        Two overloads which share the name: the companion's constructor over a fresh
+        `AtomicLong`, and the extension `tally()`, a volatile read.
+    entry .update   `tally() = n`: a volatile store to an `Atomic.Long`
+    entry .publish   `tally.publish(n)`: a release store (`lazySet`) to an `Atomic.Long`
+    entry .swap   `tally.swap(n)`: stores a value in an `Atomic.Long` and returns the one displaced
+    entry .replace   `tally.replace(expected, updated)`: compare-and-set on an `Atomic.Long`, true if it took
+    entry .ere   applies a transition to an `Atomic.Long` (or stores a value) and returns the value displaced
+    entry .since   applies a transition to an `Atomic.Long` and returns the value installed
+  entry .Bool   an atomic flag, over `AtomicBoolean`
+    detail
+        `Atomic.Bool()` starts `false`. The one-shot idiom is `flag.ere(true)`: it returns
+        `false` exactly once, to the caller which raised the flag, and `true` to every later
+        caller, so "I am the call that closed it" is one expression. A transition such as
+        `since(!_)` negates through a compare-and-set loop.
+
+        ```scala
+        import soundness.*
+
+        val closed = Atomic.Bool()
+        def close(): Unit = if !closed.ere(true) then ()   // runs the body once
+        ```
+    entry .apply   `Atomic.Bool(initial)` makes a flag, `false` by default; `flag()` reads one
+        Two overloads which share the name: the companion's constructor over a fresh
+        `AtomicBoolean`, and the extension `flag()`, a volatile read.
+    entry .update   `flag() = state`: a volatile store to an `Atomic.Bool`
+    entry .publish   `flag.publish(state)`: a release store (`lazySet`) to an `Atomic.Bool`
+    entry .swap   `flag.swap(state)`: stores a state in an `Atomic.Bool` and returns the one displaced
+    entry .replace   `flag.replace(expected, updated)`: compare-and-set on an `Atomic.Bool`, true if it took
+    entry .ere   applies a transition to an `Atomic.Bool` (or stores a state) and returns the state displaced
+        `flag.ere(true)` is the one-shot idiom: it returns `false` exactly once, to the caller
+        which raised the flag.
+    entry .since   applies a transition to an `Atomic.Bool` and returns the state installed
+  entry .Ref   an atomic reference cell, over `AtomicReference`
+    detail
+        `Atomic.Ref(initial)` holds any value; `Atomic.Ref.vacant[value]` is an
+        `Atomic.Ref[Optional[value]]` which starts `Unset`. Reads never need `nn`, and a vacant
+        cell reads as `Unset` rather than throwing. The transitions `ere` and `since` take a
+        lambda literal, which may call a method on the value, construct from it, or match on it
+        and rebuild; a transition which is a function *value* rather than a literal goes
+        through `revise`. Where `value` is itself a function type, the value overload of `ere`
+        cannot be selected — the compiler commits to the transition overload — so store a
+        function with `cell() = f`.
+
+        ```scala
+        import soundness.*
+
+        val latest: Atomic.Ref[Optional[Text]] = Atomic.Ref.vacant[Text]
+        latest()                                // Unset
+        latest() = t"first"
+        latest.since { current => current.let(_ + t"!") }   // t"first!"
+        ```
+    entry .apply   `Atomic.Ref(initial)` makes a cell holding `initial`; `cell()` reads one
+        Two overloads which share the name: the companion's constructor over a fresh
+        `AtomicReference`, and the extension `cell()`, a volatile read which needs no `nn` and
+        does not throw on a cell holding `Unset`.
+    entry .vacant   `Atomic.Ref.vacant[value]`: an initially-absent `Ref[Optional[value]]`
+    entry .update   `cell() = value`: a volatile store to an `Atomic.Ref`
+    entry .publish   `cell.publish(value)`: a release store (`lazySet`) to an `Atomic.Ref`
+    entry .swap   `cell.swap(value)`: stores a value in an `Atomic.Ref` and returns the one displaced
+    entry .replace   `cell.replace(expected, updated)`: compare-and-set by reference equality, true if it took
+    entry .ere   applies a transition to an `Atomic.Ref` (or stores a value) and returns the value displaced
+    entry .since   applies a transition to an `Atomic.Ref` and returns the value installed
+    entry .revise   applies a transition which is a function value, not a literal, and returns the value installed
+        The escape hatch for a transition whose shape cannot be inspected — a function passed as
+        a parameter. It runs a compare-and-set loop, so the transition may be re-run under
+        contention and must be pure; a transition which returns the same reference settles
+        without writing.
+  entry .Ints   an atomic array of 32-bit integers, over `AtomicIntegerArray`, indexed by `Ordinal`
+    detail
+        `Atomic.Ints(size)` is all zeros, and a slot reads as a plain `Int` — a fresh zero is a
+        value, not an absence. Slots are addressed by `Ordinal`, as every Soundness index is;
+        the ordinal is not confined, since a masked ring index is in range by construction. No
+        per-slot `ere`/`since`: the arrays publish and read.
+    entry .apply   `Atomic.Ints(size)` makes a zeroed array; `ints(ordinal)` reads a slot
+        Two overloads which share the name: the companion's constructor over a fresh
+        `AtomicIntegerArray`, and the extension `ints(ordinal)`, a volatile read of a slot.
+    entry .countable   the size of an `Atomic.Ints`, for `size`
+    entry .update   `ints(ordinal) = n`: a volatile store to a slot of an `Atomic.Ints`
+    entry .publish   `ints.publish(ordinal, n)`: a release store to a slot of an `Atomic.Ints`
+    entry .swap   `ints.swap(ordinal, n)`: stores to a slot of an `Atomic.Ints` and returns the value displaced
+    entry .replace   `ints.replace(ordinal, expected, updated)`: compare-and-set on a slot of an `Atomic.Ints`
+  entry .Longs   an atomic array of 64-bit integers, over `AtomicLongArray`, indexed by `Ordinal`
+    detail
+        As `Atomic.Ints`, for `Long` slots.
+    entry .apply   `Atomic.Longs(size)` makes a zeroed array; `longs(ordinal)` reads a slot
+        Two overloads which share the name: the companion's constructor over a fresh
+        `AtomicLongArray`, and the extension `longs(ordinal)`, a volatile read of a slot.
+    entry .countable   the size of an `Atomic.Longs`, for `size`
+    entry .update   `longs(ordinal) = n`: a volatile store to a slot of an `Atomic.Longs`
+    entry .publish   `longs.publish(ordinal, n)`: a release store to a slot of an `Atomic.Longs`
+    entry .swap   `longs.swap(ordinal, n)`: stores to a slot of an `Atomic.Longs` and returns the value displaced
+    entry .replace   `longs.replace(ordinal, expected, updated)`: compare-and-set on a slot of an `Atomic.Longs`
+  entry .Refs   an atomic array of references, over `AtomicReferenceArray`, whose slots are `Optional`
+    detail
+        `Atomic.Refs[value](size)` starts with every slot null, which is an absence, so a slot
+        reads as `Optional[value]` — the honest difference from `Atomic.Ref`, which is
+        constructed with a value, and from `Atomic.Ints`, whose fresh slots hold a real zero.
+    entry .apply   `Atomic.Refs[value](size)` makes an array of `Unset` slots; `refs(ordinal)` reads one
+        Two overloads which share the name: the companion's constructor over a fresh
+        `AtomicReferenceArray`, and the extension `refs(ordinal)`, a volatile read of a slot as
+        an `Optional`.
+    entry .countable   the size of an `Atomic.Refs`, for `size`
+    entry .update   `refs(ordinal) = value`: a volatile store to a slot of an `Atomic.Refs`
+    entry .publish   `refs.publish(ordinal, value)`: a release store to a slot of an `Atomic.Refs`
+    entry .swap   `refs.swap(ordinal, value)`: stores to a slot of an `Atomic.Refs` and returns the value displaced
+    entry .replace   `refs.replace(ordinal, expected, updated)`: compare-and-set on a slot of an `Atomic.Refs`
+
+entry .atomicMacros   the macros behind `Atomic`'s `ere` and `since`
+  hidden
+  detail
+      Not for direct use. Each of `int`, `long`, `bool` and `ref` inspects the transition
+      lambda's tree and emits the JDK intrinsic for a recognised shape (`_ + 1`, `_ + n`, `_ -
+      n`, a constant) or a compare-and-set loop otherwise.
+  entry .int   the transition macro for `Atomic.Int`
+  entry .long   the transition macro for `Atomic.Long`
+  entry .bool   the transition macro for `Atomic.Bool`
+  entry .ref   the transition macro for `Atomic.Ref`
+
+entry .Mutex   a reentrant lock, applied to a block: `mutex { … }`
+  detail
+      `Mutex()` wraps a `ReentrantLock`, and `mutex(block)` (or `mutex { … }`) evaluates the
+      block while holding it, releasing in a `finally`. Inline, so the lock and unlock sit
+      around the block in the caller's own code. For a single shared value, an `Atomic` cell is
+      usually the better tool; a mutex guards a compound update of several.
+
+      ```scala
+      import soundness.*
+
+      val mutex = Mutex()
+      var balance = 0
+
+      def deposit(amount: Int): Int = mutex:
+        balance += amount
+        balance
+      ```
+  entry #apply   evaluates a block while holding the lock
+
+entry .Scoped   a value bound to the current thread for the extent of a block
+  detail
+      `Scoped[value]()` is a thread-local slot which reads as `Unset` until a block binds it:
+      `scoped(v) { … }` evaluates the block with `scoped()` reading `v` on that thread, restores
+      the previous binding afterwards (even when the block throws), and removes the entry
+      entirely when there was none, so a pooled thread retains nothing. Another thread sees
+      its own binding or `Unset`.
+
+      ```scala
+      import soundness.*
+
+      val depth = Scoped[Int]()
+      depth(1):
+        depth(2)(depth())     // 2
+        depth()               // 1
+      depth()                 // Unset
+      ```
+  entry .apply   `Scoped[value]()`: a new, unbound slot
+  entry #apply   `scoped()`: the current binding, or `Unset`; `scoped(v)(block)`: binds for a block
+
+entry .Loop   a stoppable iteration, run on one task and stopped from another
+  detail
+      A `Loop` runs its iteration repeatedly while its state is `Active`, and `stop()` from any
+      thread moves it to `Stopping`, so the current iteration finishes and no further one
+      begins; `run()` then marks it `Finished`. Built with `loop { … }` and handed to a task:
+      the accept loop of a socket server, the poll loop of a filesystem watcher. The iteration
+      may capture only shared capabilities, since it runs on a task and is stopped from
+      elsewhere.
+
+      ```scala
+      import soundness.*
+
+      val polling = loop:
+        poll()
+
+      val task = async(polling.run())
+      polling.stop()
+      ```
+  refer rudiments.loop
+  entry .State   the lifecycle of a loop: `Active`, `Stopping` or `Finished`
+      An enum of the three states a loop passes through, in order: it is `Active` until
+      `stop()` is called, `Stopping` until the iteration in progress completes, and `Finished`
+      once `run()` returns.
+  entry #stop   asks the loop to stop after the current iteration
+  entry #run   runs the iteration until the loop is stopped, then marks it finished
+
+entry .loop   `loop { … }`: a `Loop` whose iteration is the block
+    Constructs a `Loop` from a block of effects, with the loop's own fresh capability absorbed
+    at construction so that a loop over pure state is a pure value. The block may retain only
+    `Durable` (shared) capabilities.
+
+entry .Exit   a process exit status: `Exit.Ok` or `Exit.Fail(status)`
+  detail
+      The outcome a command-line program returns: `Exit.Ok` is status 0 and `Exit.Fail(n)` a
+      non-zero status. `Exit(n)` classifies an integer, and `exit()` reads the integer back.
+      An `Exit` is a `Termination`, so an application's body may return one, or a union of
+      `Exit` with a `Status` object of its own.
+
+      ```scala
+      import soundness.*
+
+      Exit(0)              // Exit.Ok
+      Exit(2)              // Exit.Fail(2)
+      Exit.Fail(2)()       // 2
+      ```
+  refer rudiments.Termination
+  entry .apply   `Exit(status)`: `Ok` for zero, `Fail(status)` otherwise
+  entry #exit   the exit itself, as its `Termination`
+  entry #apply   the status as an `Int`: 0 for `Ok`
+  entry #terminate   exits the JVM with this status, never returning
+
+entry .Termination   anything which can decide a process's exit status
+  detail
+      The trait an application's result implements: `exit` says which `Exit` it maps to. `Exit`
+      is the simplest `Termination`; a program with several named outcomes declares `Status`
+      objects which extend it, and returns a union of them, which the CLI machinery records so
+      that a help tree can list the statuses a command can end with. A termination is pure (it
+      extends `scala.caps.Pure`), so it may never hold a live capability.
+  entry #exit   the `Exit` this outcome maps to
+
+entry .Dynamical   the erased permission for `scala.Dynamic` field access on an untyped data value
+  detail
+      A format such as `Json`, `Yaml`, `Cbor` or `Tel` gates its dynamic member access (`json.
+      server.port`) on `(? >: Json) is Dynamical`, so the permission is granted for that format
+      alone (`Json is Dynamical`, which the format's `dynamicAccess` given provides), for a
+      union of formats, or for every format (`Any is Dynamical`). It is sealed and erased: no
+      value of it ever exists, and `dynamically` is the only way to mint one in a block.
+      Shipping in `rudiments.core`.
+  refer rudiments.dynamically
+  refer rudiments.Dynamically
+
+entry .Dynamically   the block form of the `Dynamical` permission: `Dynamically[data](block)`
+  detail
+      `Dynamically` is the object `Dynamically[Any]`, and `Dynamically[-data]` the contravariant
+      class whose `apply` evaluates a block with an erased `(? >: data) is Dynamical` in scope.
+      Contravariant so that the object is a `Dynamically[data]` for every `data`, and so that
+      `dynamically` with no type argument infers `Any`. Reached through `dynamically`.
+  refer rudiments.dynamically
+  entry #apply   evaluates a block with the permission in scope
+
+entry .dynamically   `dynamically[Json] { … }`: grants dynamic member access for a block
+    `dynamically[Json]` permits `json.field.subfield` inside the block, for JSON alone; a
+    union `dynamically[Json | Yaml]` covers several formats, and `dynamically` with no type
+    argument every format with dynamic access. The permission is erased, so the block costs
+    nothing.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    val config = t"""{"server": {"port": 8080}}""".read[Json]
+
+    dynamically[Json]:
+      config.server.port.as[Int]   // 8080
+    ```
+
+entry .Defaulting   evidence that a type parameter defaults to a type when nothing constrains it
+  detail
+      `topic is Defaulting to Text` is an erased given which is resolved when `topic` has been
+      inferred — as itself, through the companion's instance — or left unconstrained, in which
+      case the lower-priority `Defaulting2` instance resolves it to the default. A factory such
+      as `Flag[topic](name)` uses it so that `Flag(t"jobs")` with no type argument yields a
+      `Flag of Text` while `Flag[Int](t"jobs")` yields a `Flag of Int`. The trait is sealed and
+      has no values; both givens are erased.
+  refer rudiments.Defaulting2
+
+entry .Defaulting2   the fallback `Defaulting` instance which resolves an unconstrained parameter to the default
+  hidden
+  detail
+      Not for direct use: the lower-priority parent of `Defaulting`'s companion, holding the
+      `[value, anything] => value is Defaulting to anything` given which an unconstrained
+      parameter falls through to.
+
+entry .DecimalConverter   renders a `Double` as text: the policy behind showing numbers
+  detail
+      A `DecimalConverter` has one method, `decimalize(double): Text`, and is a `Findable`
+      contextual value, so the rendering of decimals is chosen by whichever converter is in
+      scope. Gossamer's `Decimalizer(significantFigures, decimalPlaces, …)` is the configurable
+      implementation, and the numeric `Showable` instances summon one.
+  entry #decimalize   a `Double`, as text
+
+entry .&   `case A(x) & B(y)`: matches one value against two extractors at once
+    An extractor object, exported from `rudiments.internal`, whose `unapply` yields the
+    scrutinee twice: `value match case AsInt(x) & AsLong(y) => …` binds `x` from the first
+    extractor and `y` from the second on the same value, which otherwise needs a nested
+    match or a guard.
+
+entry .internal   the home of `Bytes`, `Digit`, the `&` extractor and the macros behind `probe`, `typeName` and `reflectClass`
+  hidden
+  detail
+      Not for direct use: `Bytes`, `Digit` and `&` are exported from here to the `rudiments`
+      package, where their pages are; `probe`, `name` and `reflectClass` are the macro
+      implementations.
+  entry .Bytes   the opaque byte count, a `Long` treated as a quantity; see `rudiments.Bytes`
+    detail
+        The opaque type `Bytes = Long`, with its constructor, its arithmetic and comparison
+        givens and its accessors. Its page under the `rudiments` package has the full account;
+        every given here is in implicit scope for a `Bytes`.
+    entry .apply   `Bytes(long)`: a byte count from a `Long`
+    entry .comparable   orders byte counts numerically
+    entry .zeroic   zero bytes, so `total` over byte counts starts at zero and is bare
+    entry .communicable   renders a byte count in a message as `n bytes`
+    entry .addable   `Bytes + Bytes`
+    entry .subtractable   `Bytes - Bytes`
+    entry .multiplicable   `Bytes * Int`
+    entry .multiplicable2   `Int * Bytes`
+    entry .divisible   `Bytes / Int`
+    entry .divisible2   `Bytes / Bytes`, as a `Double` ratio
+    entry .long   `bytes.long`: the count as a `Long`
+    entry .text   `bytes.text`: the count as text, `1024 bytes`
+  entry .Digit   the opaque decimal digit, `0 | 1 | … | 9`; see `rudiments.Digit`
+    detail
+        The opaque type `Digit`, with its constructors. The accessors `int` and `char` are
+        extensions declared beside it in `internal`.
+    entry .apply   `Digit('7')` or `Digit(7)`: a digit from a character or an integer, or `Unset`
+  entry .int   `digit.int`: a `Digit` as an `Int`
+  entry .char   `digit.char`: a `Digit` as a `Char`, `'0'` to `'9'`
+  entry .&   the twin extractor; see `rudiments.&`
+    detail
+        The object whose `unapply` returns its scrutinee twice, so that `case A(x) & B(y)`
+        matches one value against two extractors.
+    entry .unapply   yields the scrutinee paired with itself, always matching
+  entry .probe   the macro behind `probe[T]`: halts with the type's name
+  entry .name   the macro behind `typeName[T]`
+  entry .reflectClass   the macro behind `reflectClass[T]`
+
+entry .Traversable   re-exported from `murmuration`: the typeclass of anything which can be traversed element by element
+    `import rudiments.*` presents the collection typeclasses as one surface, so `Traversable`,
+    `Reshapable`, `Mappable`, `Reversible`, `Inclusive`, `Convertible`, `Keyed`,
+    `Intersectable`, `Iterator` and `SortAlgorithm`, with the operations written over them,
+    are exported here from `murmuration`. Each has its full account on its `murmuration` page;
+    the operations which need `Ordinal` or `Optional` (`each`, `seek`, `where`, `head`, …) are
+    declared in `rudiments` itself.
+entry .Reshapable   re-exported from `murmuration`: rebuilds a collection in its own shape from transformed elements
+entry .Mappable   re-exported from `murmuration`: the value-mapping typeclass behind `map`
+entry .Reversible   re-exported from `murmuration`: the typeclass behind `reverse`
+entry .Inclusive   re-exported from `murmuration`: the membership typeclass behind `has`
+entry .Convertible   re-exported from `murmuration`: conversion to a requested shape, behind `to[Form]`
+entry .Keyed   re-exported from `murmuration`: a container with keys and values, behind `keys` and `values`
+entry .Intersectable   re-exported from `murmuration`: the set-algebra typeclass behind `intersect` and `except`
+entry .SortAlgorithm   re-exported from `murmuration`: a sorting algorithm, chosen from `sortingAlgorithms`
+entry .Iterator   re-exported from `murmuration`: the one-shot traversal whose `next()` yields `Iterator.Exhausted` at the end
+entry .reverse   re-exported from `murmuration`: the elements in reverse order
+entry .has   re-exported from `murmuration`: whether a collection contains a value (a `Map` its key)
+entry .map   re-exported from `murmuration`: transforms each element (a `Map`'s values), shape-preservingly
+entry .remap   re-exported from `murmuration`: transforms each element (a `Map`'s pairs) into a new shape
+entry .bind   re-exported from `murmuration`: the monadic bind, each element to a collection, flattened
+entry .flatMap   re-exported from `murmuration`: `bind` under the name `for`-comprehensions desugar to
+entry .filter   re-exported from `murmuration`: the elements satisfying a predicate; there is no `filterNot`
+entry .withFilter   re-exported from `murmuration`: the guard a `for`-comprehension desugars to
+entry .foreach   re-exported from `murmuration`: visits each element; `each` is the preferred spelling
+entry .exists   re-exported from `murmuration`: whether some element satisfies a predicate
+entry .fold   re-exported from `murmuration`: a left fold with a two-parameter lambda; `fuse` is the contextual form
+entry .flat   re-exported from `murmuration`: flattens one level of nesting
+entry .trace   re-exported from `murmuration`: a left fold keeping every intermediate state
+entry .excerpt   re-exported from `murmuration`: the elements between two zero-based positions
+entry .group   re-exported from `murmuration`: the elements grouped by a key into a `Map`
+entry .distinct   re-exported from `murmuration`: the elements with duplicates removed
+entry .deduplicate   re-exported from `murmuration`: the elements with duplicates by a key removed
+entry .zip   re-exported from `murmuration`: pairs the elements of two collections
+entry .batched   re-exported from `murmuration`: the elements in groups of a size
+entry .span   re-exported from `murmuration`: splits at the first element failing a predicate
+entry .partition   re-exported from `murmuration`: splits into the elements satisfying a predicate and the rest
+entry .sweep   re-exported from `murmuration`: the elements a partial function accepts, transformed; the stdlib's `collect`
+entry .keys   re-exported from `murmuration`: the keys of a keyed container
+entry .values   re-exported from `murmuration`: the values of a keyed container
+entry .count   re-exported from `murmuration`: how many elements satisfy a predicate; `count(_ == x)` counts a value
+entry .intersect   re-exported from `murmuration`: the elements two sets share
+entry .except   re-exported from `murmuration`: the elements of a set not in another
+
+entry .apply   `xs(index)`: reads an element bare with a confined index, or as an `Optional` with any other
+    The universal deindexing operation, shipping in the `concordance` library, for any value
+    with an `Applicable` instance — the collections by `Ordinal`, a `Map` by key, a `Text` by
+    `Ordinal`, a `Bijection` by key. It dispatches at compile time on the index's type: an
+    index typed `Operand in xs.type` — one that `confine`, `pick`, `iterate`, `within`, a
+    `Surveyor` or a `Lattice` has already checked against *this* value — reaches the element
+    directly and the result is the bare element; any other index is bounds-checked and the
+    result is `Optional`. There is no partial read which can throw.
+
+    ```scala fuel
+    frame
+      label An unchecked index reads an Optional
+      code
+          val xs = Sequence(10, 20, 30)
+          val index: Ordinal = Sec
+          xs(index)                                   // Optional[Int]
+    frame
+      label confine checks once and brands the index
+      code
+          xs.confine(index).let { i => xs(i) + 1 }    // Optional[Int], the read bare inside
+    frame
+      label pick fuses the check and the use
+      code
+          xs.pick(index) { i => xs(i) + 1 }           // Optional[Int]
+    frame
+      label iterate hands out indices already proven
+      code
+          xs.iterate { i => xs(i) }                   // every read bare
+    ##
+    ```
+
+    A frozen array typed `& Sized[n]` (a literal-length `Array.fill`, `Array.tabulate`,
+    `Data.fill`, or `sized[n]`) has a further overload: a *literal* ordinal — `Ter`, `7.z` — is
+    compared with `n` as the code compiles, so the read is bare and an out-of-range literal is
+    a compile error, _the ordinal 3 is beyond the array's proven length of 3_; a variable
+    ordinal takes the `Optional` route. On a `List`, any position beyond the head walks the
+    list and needs `dysasymptotics.linearAccess`. `rudiments.*` imported by wildcard shadows a
+    mutable `Array^`'s own `apply(Int)` with this one.
+
+entry .at   `xs.at(index)`: the same read as `xs(index)`, under its older name
+    Identical to `apply` — bare with a confined index, `Optional` otherwise — and kept as the
+    bridge for code which spells positional access `xs.at(Sec)` and keyed access
+    `map.at(key)`. Shipping in the `concordance` library.
+
+entry .defines   `xs.defines(index)`: whether an index or key is defined for a value
+    `map.defines(key)` and `xs.defines(ordinal)` through the `Applicable` instance, and
+    `map.defines(key)` on a stdlib `scala.collection.Map`. Shipping in the `concordance`
+    library.
+
+entry .confine   `xs.confine(index)`: checks an index against a value and returns it branded to that value
+    Yields `Optional[Operand in xs.type]`: `Unset` if the index is undefined, and otherwise the
+    index itself with the proof that it is in range for `xs`, so that a subsequent `xs(i)` is
+    bare and does no second check. It generalises denominative's `within` (for ordinals) to any
+    index type, including map keys. Sound for immutable receivers on stable paths. Shipping in
+    the `concordance` library.
+
+    ```scala
+    import soundness.*
+
+    val ages = Map(t"Ada" -> 36)
+    ages.confine(t"Ada").let(ages(_))   // Optional[Int]: 36
+    ```
+
+entry .pick   `xs.pick(index)(lambda)`: the fused form of `confine` and `let`
+    The checked index reaches the lambda already confined, so the body's reads of `xs` at it
+    are bare, and no intermediate `Optional[Operand]` is built; the result is `Optional[result]`,
+    `Unset` when the index is undefined. When the body only reads the element, `xs(index)`
+    already says it. Shipping in the `concordance` library.
+
+    ```scala
+    import soundness.*
+
+    val xs = Sequence(10, 20, 30)
+    xs.pick(2.z) { i => xs(i) + i.n0 }   // 32
+    ```
+
+entry .unsafeAttested   brands an index, or an interval, as valid for a value on the caller's word
+    `xs.unsafeAttested(index)` is `confine` without the check: it mints `Operand in xs.type`
+    directly, under an `Unsafe` token (so the site is inside `unsafely`), for the two places a
+    proof cannot follow the program — the quote boundary of a macro, and index arithmetic. The
+    block form `xs.unsafeAttested(index) { i => … }` scopes the attestation to a lambda, and
+    `interval.unsafeAttested(xs)` attests an `Interval` for bulk operations such as
+    `xs.iterate(range)`. Every call site carries a comment naming the construction which proves
+    the bound: the comment is the proof. Shipping in the `concordance` library.
+
+    ```scala
+    import soundness.*
+
+    val xs: Sequence[Int] = Sequence(1, 2, 4)
+
+    unsafely:
+      // In bounds by construction: the literal above has three elements.
+      xs.unsafeAttested(Sec) { i => xs(i) }   // 2
+    ```
+
+entry .sized   `xs.sized[n]`: checks a value's length once, recording it as `& Sized[n]`
+    `Array(1, 2, 3, 4).sized[4]` is `Optional[xs.type & Sized[4]]`: `Unset` when the length
+    differs, and otherwise the value with its length in its type, so a literal ordinal below
+    `n` reads bare and one at or beyond it does not compile. The counterpart of `occupied` for
+    length, for any `Countable` value; the literal constructors `Array.fill(n)`, `Array.tabulate
+    (n)` and `Data.fill(n)` brand their results the same way when `n` is a literal (a `val`
+    length does not). Shipping in the `concordance` library.
+
+    ```scala
+    import soundness.*
+
+    Array(1, 2, 3, 4).sized[4].let(_(Quat))   // Optional[Int]: 4
+    Array.fill(3)(1)(Quat)                     // does not compile
+    ```
+
+entry .bijection   `map.bijection`: a `Bijection` from a stdlib map
+    An extension on `scala.collection.Map`, building the inverse map alongside. Shipping in the
+    `concordance` library.
+
+entry .Bijection   a one-to-one map, readable in both directions
+  detail
+      `Bijection(map)` holds a stdlib immutable map and its transposition, so `flip` exchanges
+      keys and values in constant time, `get` looks up by key, and `-` removes a key together
+      with its transposed entry. It is a stdlib `Map` and `Iterable` of pairs, and `Applicable`
+      by key, so `bijection(key)`, `at` and `defines` work on it. Shipping in the
+      `concordance` library.
+
+      ```scala
+      import soundness.*
+
+      val names = Bijection(scala.collection.immutable.Map(1 -> t"one", 2 -> t"two"))
+      names.flip.get(t"one")       // Some(1)
+      names.flip.flip.get(1)       // Some(t"one")
+      names.defines(2)             // true
+      ```
+  entry .apply   `Bijection(map)`: a bijection from a map, computing its inverse
+  entry .indexable   the `Applicable` instance: a bijection indexes by key
+  entry #map   the forward map
+  entry #transposition   the inverse map, from values to keys
+  entry #iterator   the pairs, in the forward map's order
+  entry #-   removes a key and its transposed entry; overloaded for several keys
+  entry #get   the value at a key, as a stdlib `Option`
+  entry #flip   the inverse bijection, sharing both maps; flipping twice gives the original
+
+entry .Segmentable   the typeclass of values a contiguous part of which can be taken by `Interval`
+  detail
+      `value is Segmentable` has one method, `segment(value, interval)`, and a type member
+      `Segment` for the result: the plain collection type for the collections (a segment of a
+      non-empty list may be empty, so no `Populated` brand survives) and the value's own type
+      for the textual types, which `Textual` fixes so a styled text's segment keeps its styling.
+      Every positional operation — `segment`, `before`, `upto`, `from`, `after`, `keep`,
+      `skip`, `snip`, `tail` — is written over it. Instances for `List`, `Sequence`, a frozen
+      array, a stdlib `IndexedSeq` and `Text` are in the companion; `Chain` deliberately has
+      none, since segmenting would force it, and carries lazy `keep` and `skip` of its own.
+      Shipping in the `concordance` library.
+  entry .indexedSeq   a stdlib `IndexedSeq`, by `slice`
+  entry .frozenArray   a frozen array, copied with its `ClassTag` rather than through `slice`
+  entry .sequence   a `Sequence` (any subtype, so a branded literal qualifies), to a plain `Sequence`
+  entry .list   a `List` (any subtype), to a plain `List`
+  entry .text   a `Text`, by `substring`, clamped to the text's length
+  entry #Segment   the type of a segment: the plain collection, or the textual type itself
+  entry #segment   the part of a value within an interval
+
+entry .Appendable   the typeclass behind `xs :+ element`: single-element growth
+  detail
+      `self is Appendable by element` appends one element: at the end for the ordered shapes
+      (`List`, `Sequence`, `Chain`, a frozen array), and as membership addition for a `Set`,
+      which has no ends. Collection-with-collection concatenation is symbolism's
+      `Concatenable`, `xs + ys`. An instance whose append rebuilds the whole collection —
+      `List` and the frozen array, both O(n) — demands the `Dysasymptotic.LinearSize` marker,
+      so a file which appends to a list imports `dysasymptotics.linearSize` and says so; a
+      `Sequence`, `Chain` or `Set` appends ungated. Subtype-parametric in the receiver, so a
+      branded non-empty literal keeps its brand. Shipping in the `concordance` library.
+
+      ```scala
+      import soundness.*
+      import dysasymptotics.linearSize
+
+      Set(2, 3, 5) :+ 7            // Set(2, 3, 5, 7)
+      List(1, 2) :+ 3              // List(1, 2, 3), copying the list
+      Sequence(1, 2) :+ 3          // Sequence(1, 2, 3)
+      ```
+  entry .list   appends to a `List` by copying it: gated on `linearSize`
+  entry .sequence   appends to a `Sequence`
+  entry .chain   appends to a `Chain`, lazily
+  entry .set   adds an element to a `Set`
+  entry .frozenArray   appends to a frozen array by rebuilding it: gated on `linearSize`
+  entry #append   the collection with one element added
+
+entry .:+   `xs :+ element`: a collection with one element appended, through `Appendable`
+    Shipping in the `concordance` library. On a `List` or frozen array it needs
+    `dysasymptotics.linearSize` in scope, since the append is linear.
+
+entry .Prependable   the typeclass behind `element +: xs`: single-element growth at the front
+  detail
+      The prepending counterpart of `Appendable`. Prepending is O(1) for a `List` and a
+      `Chain`, so only the frozen array's rebuild is gated on `Dysasymptotic.LinearSize`; a
+      `Sequence` prepends ungated. Shipping in the `concordance` library.
+  entry .list   prepends to a `List`, as `::` does
+  entry .sequence   prepends to a `Sequence`
+  entry .chain   prepends to a `Chain`, lazily
+  entry .frozenArray   prepends to a frozen array by rebuilding it: gated on `linearSize`
+  entry #prepend   the collection with one element in front
+
+entry .+:   `element +: xs`: a collection with one element prepended, through `Prependable`
+    Right-associative, so the receiver is the element and the collection is the argument.
+    Shipping in the `concordance` library.
+
+entry .Scribe   a write handle over a fresh array, whose every index is proven in range
+  detail
+      A `Scribe[element]` is the write-side counterpart of confined reading: an opaque handle
+      over an array which `Array.scribe` or `Array.collect` has just allocated, granting writes
+      (and read-back) only through ordinals branded to the scribe itself — `scribe(i) = v` with
+      an `i: Ordinal in scribe.type` — and sequential `append`s at its own cursor, which clamp
+      at the end of an exact-size buffer and grow an unsized one. No position a caller can
+      reach is out of range, and because the lender retires the only writer when its lambda
+      returns, freezing the result needs no copy. A scribe is `Countable`, so the whole
+      confined-scan family (`iterate`, `spot`, `lead`, `pare`, `retrace`) and `lattice` apply
+      to it directly. Shipping in the `concordance` library, and not exported to the
+      `soundness` umbrella: `import rudiments.*` or `import rudiments.{Scribe, scribe}`.
+
+      ```scala fuel
+      frame
+        label Building bytes through a JDK stream
+        code
+            val out = java.io.ByteArrayOutputStream()
+            out.write(1)
+            out.write(2)
+            val bytes: Data = out.toByteArray.nn.asInstanceOf[Data]   // a copy
+      frame
+        label Building bytes through an unsized scribe
+        code
+            import rudiments.collect
+
+            val bytes: Data = Array.collect[Byte](): scribe =>
+              scribe.append(1.toByte)
+              scribe.append(2.toByte)
+            // exactly what was written, frozen without a copy when the buffer was filled
+      frame
+        label Filling a known size through branded indices
+        code
+            import rudiments.scribe
+
+            val squares: Array[Int]^{} = Array.scribe[Int](4): scribe =>
+              extent => scribe.iterate { i => scribe(i) = i.n0*i.n0 }
+      ##
+      ```
+
+      The byte scribe additionally has `appendVarint` and `appendUtf8`, which write a whole
+      value with one capacity check.
+  refer rudiments.scribe
+  refer rudiments.collect
+  refer rudiments.Scroll
+  entry .Core   the carrier behind a scribe: the buffer and its cursor
+    hidden
+    detail
+        Not for direct use: public only because the inline lender and accessors expand in
+        callers' packages and must name it. It holds the buffer untyped, the append cursor
+        `mark`, and whether the scribe grows.
+    entry #mark   the append cursor
+    entry #buffer   the untyped backing array
+    entry #growable   whether appends past the end grow the buffer
+  entry .countable   a scribe's size is its buffer's length, so the confined-scan family applies to it
+  entry .apply   `Scribe(buffer)` mints an exact-size scribe; `scribe(i)` reads back at a branded ordinal
+      Two overloads which share the name. On the companion, `Scribe(buffer)` wraps a mutable
+      JVM array as an exact-size scribe — the mint `Array.scribe` uses, which clamps rather
+      than grows. As an extension on a scribe, `scribe(i)` reads back the element at an
+      `i: Ordinal in scribe.type`, with no bounds check, since the brand proves the range.
+  entry .varintLength   how many bytes the LEB128 encoding of a `Long` takes, 1 to 10
+  entry .varintInto   writes a `Long` as LEB128 into a JVM byte array at a position, returning the position after
+  entry .utf8Length   the length of a string's UTF-8 encoding, without encoding it
+      A surrogate pair counts as one four-byte sequence and a lone surrogate as the one byte
+      of the `?` the JDK's encoder substitutes.
+  entry .utf8Into   encodes a string as UTF-8 into a JVM byte array at a position, returning the position after
+  entry .update   `scribe(i) = value`: writes at an ordinal branded to the scribe, with no bounds check
+  entry .append   writes at a scribe's cursor and advances it: one element, a whole frozen array, or a window of one
+      `append(value)` writes one element; `append(array)` copies a frozen array; `append(array,
+      from, count)` copies a window of one, for framing formats which append a slice of a larger
+      block. On an exact-size scribe a write past the end is dropped; an unsized scribe grows by
+      doubling.
+  entry .mark   `scribe.mark`: the number of elements appended to a scribe so far
+  entry .place   `scribe.place(array, at)`: copies a frozen array in at a branded position, returning how many fitted
+      The copy is clamped to the scribe's end, and does not move the append cursor.
+
+entry .appendVarint   `scribe.appendVarint(long)`: appends a LEB128 varint to a byte scribe
+    One to ten bytes, written with one capacity check; a value below 128 is appended as the
+    single byte it is. Shipping in the `concordance` library; not exported to the umbrella.
+
+entry .appendUtf8   `scribe.appendUtf8(string)`: appends a string's UTF-8 encoding to a byte scribe
+    Encoded straight into the buffer with no intermediate array, with an ASCII fast path; a
+    lone surrogate encodes as `?`. Shipping in the `concordance` library; not exported to the
+    umbrella.
+
+entry .scribe   `Array.scribe[element](size)(scribe => extent => …)`: allocate, lend a scribe, freeze
+    An extension on the `Array` companion, shipping in the `concordance` library. It allocates
+    an array of exactly `size` elements, lends a `Scribe` over it together with its extent as
+    an `Interval in scribe.type` — so `scribe.iterate(extent)` and `scribe(i) = v` are total —
+    and returns the frozen array once the lambda, the only writer, has returned. Writes past
+    the end through `append` are dropped, never grown: the result is always exactly `size`
+    long. Needs a `ClassTag` for the element. Not exported to the umbrella: `import
+    rudiments.scribe`.
+
+    ```scala
+    import soundness.*
+    import rudiments.scribe
+
+    val doubled: Array[Int]^{} = Array.scribe[Int](4): scribe =>
+      extent => scribe.iterate { i => scribe(i) = i.n0*2 }
+
+    doubled.to[List]   // List(0, 2, 4, 6)
+    ```
+
+entry .collect   `Array.collect[element](hint)(scribe => …)`: an array of exactly what a block appends
+    An extension on the `Array` companion, shipping in the `concordance` library: the growable
+    lender, for a result whose length is not known in advance — what
+    `java.io.ByteArrayOutputStream` was reached for everywhere, without its synchronisation,
+    its impossible `IOException`, or the copy `toByteArray` makes on every call. The scribe
+    starts at `hint` elements (at least 16), doubles as `append` demands, and the result is
+    frozen without a copy when the buffer was filled exactly. The lambda receives no branded
+    extent, since there is no fixed extent to brand: an unsized scribe is written through
+    `append` and `place`. Not exported to the umbrella: `import rudiments.collect`.
+
+    ```scala
+    import soundness.*
+    import rudiments.collect
+
+    val bytes: Data = Array.collect[Byte](): scribe =>
+      scribe.appendVarint(300)
+      scribe.appendUtf8("héllo")
+    ```
+
+entry .Scroll   a growable array of primitives (or anything), unboxed, indexed by `Int`
+  detail
+      `Scroll[Int]()` is the unboxed replacement for a stdlib `ArrayBuffer[Int]`, whose
+      backing store holds boxed references: a scroll of a concrete element type reads and
+      writes a primitive JVM array directly, so `scroll.append(1)` is an `iastore`. It is the
+      sibling of `Scribe` for the descriptor builders and style stacks which write at computed
+      positions and are reused across parses: publicly constructible, `clear`able, and indexed
+      by plain `Int`, checked against its `length` (an `IndexOutOfBoundsException` otherwise).
+      `freeze` yields the elements so far as an exact-size frozen array and leaves the scroll
+      usable. Shipping in the `concordance` library; not exported to the umbrella, so
+      `import rudiments.Scroll`.
+
+      ```scala
+      import soundness.*
+      import rudiments.Scroll
+
+      val offsets = Scroll[Int]()
+      offsets.append(0)
+      offsets.append(14)
+      offsets.last             // 14
+      offsets(1) = 15
+      offsets.freeze.to[List]  // List(0, 15)
+      offsets.clear()
+      ```
+  refer rudiments.Scribe
+  entry .Core   the carrier behind a scroll: the untyped buffer and its length
+    hidden
+    detail
+        Not for direct use: public because the inline accessors expand in callers' packages.
+    entry #buffer   the untyped backing array
+    entry #length   the number of elements held
+  entry .apply   `Scroll[element](capacity)` makes an empty scroll; `scroll(index)` reads an element
+      Two overloads which share the name. On the companion, `Scroll[element](capacity)` makes
+      an empty scroll with at least 16 slots, and needs a `ClassTag` for the element. As an
+      extension on a scroll, `scroll(index)` is the element at a zero-based `Int`, checked
+      against the length, throwing `IndexOutOfBoundsException` beyond it.
+  entry .length   `scroll.length`: how many elements a scroll holds
+  entry .isEmpty   `scroll.isEmpty`: whether a scroll holds no elements
+  entry .update   `scroll(index) = value`: replaces the element of a scroll at an index below its length
+  entry .last   `scroll.last`: the most recently appended element of a scroll; throws on an empty one
+  entry .append   appends to a scroll one element, every element of another scroll, or a window of a JVM array
+  entry .retract   `scroll.retract(count)`: forgets a scroll's last `count` elements, keeping the capacity
+  entry .clear   `scroll.clear()`: forgets every element of a scroll, keeping the capacity
+  entry .freeze   `scroll.freeze`: the elements so far, as an exact-size frozen array; the scroll is unchanged
+
+entry .Surveyor   a pacing cursor over an indexed collection, whose runs and positions come back branded
+  detail
+      A `Surveyor` is the confined parser cursor: a mutable position over a stable, indexable
+      collection, lent by `value.survey { surveyor => … }`, whose every product is branded to
+      the collection — runs as `Interval in value.type`, positions as `Ordinal in value.type` —
+      so they feed `apply`, `iterate` and `segment` with no bounds checks, and run lengths come
+      from interval sizes rather than index arithmetic. It is the shape the scanning parsers
+      converged on: `pace(_ == ' ')` skips whitespace and reports how much, `pace(_ != ':')`
+      scans to a delimiter, `peek` dispatches on the current element, `next` consumes one,
+      `matches` tests a marker, and `glimpse` lends a fixed lookahead. No read is offered at
+      the bare position, so nothing partial exists to call. Shipping in the `concordance`
+      library; not exported to the umbrella (`import rudiments.{Surveyor, survey}`).
+
+      ```scala
+      import soundness.*
+      import rudiments.survey
+
+      val line = t"key: value"
+
+      line.survey: surveyor =>
+        val key = surveyor.pace(_ != ':')     // Interval in line.type, 3 long
+        surveyor.advance()                    // over the ':'
+        surveyor.pace(_ == ' ')
+        val rest = surveyor.remainder
+        (line.segment(key), line.segment(rest))   // (t"key", t"value")
+      ```
+  refer rudiments.survey
+  entry #passed   the position, counted from the start of the collection
+  entry #more   whether at least one element remains
+  entry #advance   steps over one element; false at exhaustion
+  entry #peek   whether the current element satisfies a predicate, without advancing; false at exhaustion
+  entry #next   `next(otherwise)(lambda)`: consumes the current element into the lambda, or yields `otherwise` at exhaustion
+  entry #take   consumes up to `count` elements, returning the branded run actually traversed
+  entry #matches   whether the elements here match a pattern under an equality, without advancing
+      `surveyor.matches(t"bcd") { (left, right) => left == right }` compares element by element
+      against any `Countable` and `Applicable by Ordinal` pattern; false when fewer elements
+      remain than the pattern has.
+  entry #glimpse   the branded window of the next `count` elements, without advancing, or `Unset` if fewer remain
+  entry #point   the branded current position, or `Unset` at exhaustion
+  entry #remainder   everything not yet passed over, as a branded, possibly empty, interval
+  entry #pace   advances over the run of elements satisfying a predicate, returning it as a branded interval
+
+entry .survey   `value.survey { surveyor => … }`: lends a `Surveyor` over a collection, or over a branded sub-interval
+    An extension on any value which is `Applicable by Ordinal` and `Countable` — a `Text`, a
+    `Sequence`, a frozen array, a `Scribe` — shipping in the `concordance` library. The
+    one-argument form `value.survey(range)` confines the surveyor to an `Interval in
+    value.type` (such as `value.extent.capped(4)` or `value.extent.beyond(2)`): it begins at
+    the interval's start and is exhausted at its limit, so a scan bounded by anything other than
+    the collection's own length cannot overrun it. Not exported to the umbrella: `import
+    rudiments.survey`.
+
+entry .Lattice   two-dimensional addressing of a linear collection: rows and points as branded intervals and ordinals
+  detail
+      A `Lattice` brands nothing itself; it derives linear branded intervals and ordinals for a
+      collection from `(x, y)` coordinates, so every access flows through the confined machinery.
+      The arithmetic it replaces is `y*stride + x` with a stride other than the width — pixel
+      planes, interlaced rows, subsampled chroma. `row(y)` is a row as an `Interval in
+      value.type`, `point(x, y)` a position as an `Ordinal in value.type`, each `Unset` outside
+      the lattice, and `rows` visits every row with its index. The lender clamps the height to
+      the number of whole rows which fit, so `row` and `point` are total by construction, and a
+      partial trailing row lies outside the lattice. Shipping in the `concordance` library; not
+      exported to the umbrella (`import rudiments.lattice`).
+
+      ```scala
+      import soundness.*
+      import rudiments.lattice
+
+      val plane = Array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+      var sum = 0
+
+      plane.lattice(3, 4, 0): lattice =>      // rows of 3, spaced 4 apart: rows at 0 and 4
+        lattice.rows { (y, row) => plane.iterate(row) { i => sum += plane(i) } }
+        lattice.point(2, 1).let(plane(_))    // 6
+
+      sum   // 0+1+2 + 4+5+6
+      ```
+  refer rudiments.lattice
+  entry #width   the number of elements in a row
+  entry #height   the number of whole rows which fit in the collection
+  entry #row   row `y` as a branded interval, or `Unset` outside the lattice
+  entry #point   the linear position of `(x, y)` as a branded ordinal, or `Unset` outside the lattice
+  entry #rows   visits every row in order, as its index and branded interval
+
+entry .lattice   `value.lattice(width, stride, offset) { lattice => … }`: lends a `Lattice` over a `Countable` value
+    The stride is clamped to at least the width (overlapping rows would alias), a degenerate
+    geometry yields a zero-height lattice, and the height is the number of whole rows which
+    fit from `offset`. `value.lattice(width)` is a lattice of consecutive rows from the start.
+    Since a `Scribe` is `Countable`, a lattice over one addresses a write handle. Shipping in
+    the `concordance` library; not exported to the umbrella.
+
+entry .pairs   visits a collection in whole disjoint pairs, returning the trailing remainder as a branded interval
+    `xs.pairs { (a, b) => … }` on any `Countable`, `Applicable by Ordinal` value passes the
+    elements of each pair in order and returns the 0 or 1 trailing elements as an `Interval in
+    xs.type`, which `iterate` or `apply` then handle as the codec defines. For a `List`, both
+    `dysasymptotics.linearSize` and `linearAccess` are needed; a `Sequence`, `Text` or frozen
+    array needs neither. Shipping in the `concordance` library; not exported to the umbrella
+    (`import rudiments.pairs`).
+
+    ```scala
+    import soundness.*
+    import rudiments.pairs
+
+    val data = Array[Byte](1, 2, 3, 4, 5)
+    var sum = 0
+    val rest = data.pairs { (a, b) => sum += a + b }   // sum is 10; rest is the one trailing element
+    ```
+
+entry .triples   visits a collection in whole disjoint triples; the branded remainder holds 0 to 2 elements
+    As `pairs`, three at a time. Shipping in the `concordance` library; not exported to the
+    umbrella.
+
+entry .quads   visits a collection in whole disjoint groups of four; the branded remainder holds 0 to 3 elements
+    As `pairs`, four at a time. Shipping in the `concordance` library; not exported to the
+    umbrella.
+
+entry .quints   visits a collection in whole disjoint groups of five; the branded remainder holds 0 to 4 elements
+    As `pairs`, five at a time. Shipping in the `concordance` library; not exported to the
+    umbrella.
+
+entry .octuples   visits a collection in whole disjoint groups of eight; the branded remainder holds 0 to 7 elements
+    As `pairs`, eight at a time. Shipping in the `concordance` library; not exported to the
+    umbrella.
+
+entry .adjacent   visits every overlapping adjacent pair: the boundary-window shape
+    `xs.adjacent { (left, right) => … }` passes `(xs(0), xs(1))`, `(xs(1), xs(2))`, … in order;
+    four elements give three pairs where `pairs` gives two, and fewer than two elements yield
+    nothing. Shipping in the `concordance` library; not exported to the umbrella.
+
+    ```scala
+    import soundness.*
+    import rudiments.adjacent
+
+    var steps: List[Int] = Nil
+    List(1, 4, 9).adjacent { (a, b) => steps ::= b - a }
+    steps.reverse   // List(3, 5)
+    ```
+
+entry .sizedMacros   the macro behind the literal-ordinal read on a `Sized` array
+  hidden
+  detail
+      Not for direct use. `read` is expanded by the `apply` on an `Array[element] & Sized[n]`:
+      it recognises a literal ordinal — an `Int` literal through `z`, or one of the named
+      ordinals `Prim` to `Sept` — in the inlined tree, compares it with `n`, and emits a bare
+      read or the compile error _the ordinal i is beyond the array's proven length of n_; a
+      variable ordinal is emitted as a checked `Optional` read. Shipping in the `concordance`
+      library.
+  entry .read   the macro: a literal ordinal checked against the proven length as the code compiles

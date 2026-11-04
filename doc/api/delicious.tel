@@ -1,0 +1,368 @@
+tel 1.0
+
+base delicious
+import soundness
+
+info   the compiler's semantic diagnostics as trees, with their types reified and rendered as the user would write them
+detail
+    _Delicious_ reads the **semantic diagnostics** the proscala compiler emits under
+    `-Zsemantic-diagnostics` (anthology's `scalacOptions.semanticDiagnostics`): compiler
+    messages in which each type, symbol, name and code sample is marked up with
+    private-use-character markers, and each type additionally carries its TASTy pickled
+    form. A plain compiler message is text in which `List[Int]` is five characters; a
+    semantic one knows that `List[Int]` is a type, which type, and that `List` is
+    `scala.collection.immutable.List`.
+
+    `Markup.parse` turns the marked-up text into a tree of `Markup` nodes — `Textual`,
+    `Typed`, `Symbolic`, `Named`, `Code` and `Spanned` — and `SemanticMessage` wraps a
+    whole message. A `Reifier`, given a classpath, unpickles each `Typed` node's TASTy
+    payload back into a stenography `Syntax`, so the type can be rendered abbreviated
+    against a set of imports, exactly as the user would write it; `render` does this for a
+    whole message as text, and `teletype` as styled terminal output with every code sample
+    and type syntax-highlighted by harlequin.
+
+    ```scala
+    import soundness.*
+
+    val notice: Notice = ???   // from a Scalac process run with scalacOptions.semanticDiagnostics
+    val message: Optional[SemanticMessage] = notice.markup.let(SemanticMessage.parse(_))
+    message.let(_.plain)         // the message with every marker removed
+    message.let(_.types.size)    // how many types it mentions
+    ```
+
+    ```scala fuel
+    typecheck
+    ##
+    val classpath: LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
+    val reifier: Reifier = Reifier(classpath)
+    given Imports = Imports.empty
+
+    notice.markup.let(SemanticMessage.parse(_)).let(_.render(reifier))
+    // Found: scala.collection.immutable.List[scala.Double]
+    // Required: scala.collection.immutable.List[java.lang.String]
+    ```
+
+    Anything the compiler could not pickle — a local type, a skolem, a type variable, an
+    error type — was replaced by a `Placeholder` before pickling, and is substituted back
+    into the rendering by the name the compiler printed for it, so a diagnostic never
+    becomes a crash: a payload which cannot be unpickled falls back to the compiler's own
+    text. The library is split into three source sets:
+
+    - `delicious.core` — `Markup`, `SemanticMessage`, `Placeholder`, `PlaceholderKind` and
+      `Rendition`: pure parsing, depending on nothing but text, and available on every
+      platform.
+    - `delicious.scala` — `Reifier` and the `render` extension, which embed the Scala
+      compiler to unpickle TASTy, and so are JVM-only.
+    - `delicious.ansi` — the `teletype` extension, rendering a message with harlequin's
+      syntax highlighting; JVM-only.
+    - `delicious.compiler` — the `Shim` over the one compiler-internal constructor which
+      differs between the Scala 3.9 and 3.10 streams; not for direct use.
+
+    Everything is exported to the `soundness` umbrella except `teletype`, which clashes
+    there with escapade's `Teletypeable` rendering, and so is called as
+    `delicious.teletype(message)(reifier)`.
+
+refer delicious.SemanticMessage
+refer delicious.Markup
+refer delicious.Reifier
+refer delicious.render
+
+entry .SemanticMessage   a compiler message parsed into its markup tree
+  detail
+      A `SemanticMessage` is the `Markup` nodes of one marked-up compiler message, made by
+      `SemanticMessage.parse` from the text an anthology `Notice#markup` carries when the
+      compiler ran with `scalacOptions.semanticDiagnostics`. From it, `#plain` is the message
+      with its markers stripped (the same text as the notice's own `message`), `#types` the
+      `Markup.Typed` nodes it mentions, and `render` and `teletype` (with a `Reifier`) its
+      renderings with every type reified.
+
+      ```scala
+      import soundness.*
+
+      val notice: Notice = ???
+      notice.markup.let(SemanticMessage.parse(_)).let(_.types.map(_.plain))
+      // the compiler-printed text of each type the message mentions
+      ```
+  refer delicious.Markup
+  refer delicious.Reifier
+  refer delicious.render
+  entry .marked   whether a text contains semantic-diagnostic markers
+      True when any character of the private-use range the markers use is present, so a
+      message from a compiler without semantic diagnostics is cheaply told apart from one
+      with them. The same test as `Markup.marked`.
+  entry .parse   parses a marked-up message into a `SemanticMessage`
+      `Markup.parse` applied to the whole text: a message with no markers parses to a single
+      `Markup.Textual` node, so it is safe to call on any message.
+  entry #markup   the message's nodes, in order
+  entry #plain   the message with every marker removed, leaving only the visible text
+  entry #types   every `Markup.Typed` node in the message, outermost first, nested ones included
+      Found through `Named`, `Symbolic`, `Code` and `Spanned` nodes alike, and a `Typed`
+      node's own `Typed` children follow it.
+
+entry .Markup   one node of a semantic diagnostic: text, a type, a symbol, a name, code, or a span
+  detail
+      An enum of the node kinds a marked-up compiler message is made of, with `Markup.parse`
+      to read a tree from the compiler's text and `Markup.plain` to strip it. A node is one
+      of:
+
+      - `Textual(text)` — plain text between markers.
+      - `Typed(tasty, placeholders, rendition, children)` — a type: `tasty` is its TASTy
+        pickled form as Base64 text (`Unset` when the compiler supplied none), to be reified
+        by `Reifier#syntax`; `placeholders` are the `Placeholder`s standing in for the parts
+        of it which could not be pickled; and the `children` are the compiler's printed
+        rendering, the fallback.
+      - `Symbolic(name, full, rendition, children)` — a symbol reference, by its `name` and
+        `full`y qualified name.
+      - `Named(isType, rendition, children)` — a name, with whether it is a type name.
+      - `Code(rendition, children)` — a code sample, which `teletype` syntax-highlights.
+      - `Spanned(kind, rendition, children)` — a marker of a `kind` this library does not
+        know, kept with its children.
+
+      Every node but `Textual` has a `Rendition`, the form the compiler presented it in, and
+      `children`, the nodes inside it; `#plain` on any node is its visible text.
+
+      ```scala
+      import soundness.*
+
+      Markup.parse(t"type mismatch")   // List(Markup.Textual(t"type mismatch"))
+      SemanticMessage.parse(t"Found: …").markup.map:
+        case Markup.Typed(tasty, placeholders, _, children) => t"type"
+        case Markup.Code(_, _)                              => t"code"
+        case other                                          => other.plain
+      ```
+  refer delicious.SemanticMessage
+  refer delicious.Placeholder
+  refer delicious.Rendition
+  entry .marked   whether a text contains any of the markers `parse` reads
+      A character in the private-use range `U+E000` to `U+E003`.
+  entry .parse   parses marked-up text into a list of nodes, as the compiler's own parser would
+      Follows the compiler's `DiagnosticMarkup.parse` exactly: a marker opens with a start
+      character, its kind, an attributes separator, `key=value` attributes (percent-encoded
+      where a value holds a reserved character, decoded here) and a text separator, and
+      closes with an end character. Anything which does not form a complete marker is
+      dropped and the surrounding content kept as text — a stray start or end character
+      vanishes, a truncated header reads as plain text — and the children of a marker never
+      closed are spliced into its parent, so a message cut short still parses. The kind
+      decides the node: `type`, `sym`, `name` and `code` have their own cases, and any
+      other kind is `Spanned`.
+  entry .plain   the text with every marker removed, keeping only the visible content
+      Text with no markers is returned as it is, without parsing.
+  entry #plain   this node's visible text: its own text, or its children's joined
+
+entry .Placeholder   what stood in for a part of a type the compiler could not pickle
+  detail
+      The pickler which gives a `Markup.Typed` node its TASTy payload can only pickle what
+      resolves against the classpath alone; a local type or term, a skolem, a type variable
+      or an error type is replaced, as a whole maximal subtree, by a sentinel string-literal
+      type `⟨scala-diag:N⟩` and recorded as a `Placeholder` numbered `N`, with its `#kind`,
+      `#name`, `#arity`, where it was defined, and the text the compiler `#printed` for it.
+      `Reifier.substitute` puts the printed text back where each sentinel stands, so
+      `List[Bad.Local]` renders with `Bad.Local` even though `Local` is on no classpath.
+
+      ```scala
+      import soundness.*
+
+      Placeholder.decode(t"3|skolem|x|0|Test.scala:5|x.type")
+      // Placeholder(3, PlaceholderKind.Skolem, t"x", 0, t"Test.scala:5", t"x.type")
+      Placeholder.reference(t"⟨scala-diag:42⟩")          // 42
+      Placeholder.escaped(t"⟨scala-diag:esc:real text⟩")  // t"real text"
+      ```
+  refer delicious.PlaceholderKind
+  refer delicious.Reifier
+  entry .Prefix   the reserved prefix of a placeholder sentinel, `⟨scala-diag:`
+      A genuine string-literal type which happens to start with it is escaped by the
+      compiler with the `esc:` form, which `escaped` reads back.
+  entry .text   the sentinel text for a placeholder number: `⟨scala-diag:N⟩`
+  entry .reference   the placeholder number, if a text is a sentinel reference
+      `Unset` for any other text, including an escaped literal.
+  entry .escaped   the original literal, if a text is an escaped genuine string literal
+      `⟨scala-diag:esc:…⟩` gives back the `…`.
+  entry .decode   a placeholder from its six `|`-separated fields, or `Unset`
+      The fields are the number, the kind, the name, the arity, where it was defined (which
+      may be empty) and the printed text, each percent-encoded where it would otherwise
+      hold a `|`. A non-numeric number, or too few or too many fields, gives `Unset`;
+      an unknown kind is kept as `PlaceholderKind.Other`.
+  entry #id   the placeholder's number, as the sentinel refers to it
+  entry #kind   what was replaced: a local type or term, an error, a type variable or a skolem
+  entry #name   the name of what was replaced
+  entry #arity   the number of type parameters of what was replaced
+  entry #definedAt   where it was defined, as the compiler recorded it, or `Unset`
+  entry #printed   the text the compiler printed for it, used in its place when rendering
+
+entry .PlaceholderKind   the kind of thing a placeholder replaced
+  detail
+      `LocalType` and `LocalTerm` for a definition local to the compilation; `Error` for an
+      error type; `Typevar` for an uninstantiated type variable; `Skolem` for a skolem; and
+      `Other(kind)` for any kind this library does not know, keeping the compiler's text.
+      `PlaceholderKind(text)` reads the wire names `local-type`, `local-term`, `error`,
+      `typevar` and `skolem`, and anything else as `Other`.
+  entry .apply   a kind from its wire name, with an unknown name kept as `Other`
+
+entry .Rendition   the form a symbol reference is presented in: default, declaration, located or full
+  detail
+      Carried by every `Markup` node but `Textual`: `Declaration` is the symbol shown as its
+      declaration (`def foo: Int`), `Located` as its located name, `Full` as its full name,
+      and `Default` as it is normally printed. It is parsed from the marker's `style`
+      attribute, but it is not visual styling. `Rendition(text)` reads the wire names `dcl`,
+      `located` and `full`, and anything else — including `Unset` — as `Default`.
+  entry .apply   a rendition from an optional wire name, `Default` when absent or unknown
+
+entry .Reifier   unpickles the TASTy types in semantic diagnostics back into stenography `Syntax`
+  detail
+      A `Reifier(classpath)` holds a compiler context over a hellenism `LocalClasspath`,
+      made lazily on first use, against which the TASTy payload of each `Markup.Typed` node
+      is unpickled into a type and rendered as a stenography `Syntax`. The classpath should
+      be the one the diagnosed code was compiled against — the pickler guarantees a payload
+      resolves against the classpath alone, everything else having been replaced by a
+      `Placeholder`, which `Reifier.substitute` puts back by its printed text.
+
+      ```scala fuel
+      typecheck
+      ##
+      val classpath: LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
+      val reifier: Reifier = Reifier(classpath)
+      given Imports = Imports.empty
+
+      val message: SemanticMessage = ???
+      message.types.map(reifier.syntax(_).let(_.text))
+      ```
+
+      A reifier is a value to keep, not to make per message: its context loads the
+      classpath's symbol table once. `render` and `teletype` take one, and `#imports` builds
+      the `Imports` a rendering abbreviates against. In `delicious.scala`.
+  refer delicious.render
+  refer delicious.SemanticMessage
+  refer delicious.Placeholder
+  entry .substitute   rewrites the placeholder sentinels in a `Syntax` into their printed text
+      Walks a `Syntax`, replacing each primitive whose text is a quoted `⟨scala-diag:N⟩`
+      sentinel with `Syntax.Symbolic` of placeholder `N`'s printed text, and each escaped
+      genuine literal `⟨scala-diag:esc:…⟩` with the literal it stood for. Sound because the
+      pickler replaces whole maximal subtrees, so a sentinel is only ever a complete type,
+      never a constructor or a prefix. Any other primitive is left alone.
+
+      ```scala
+      import soundness.*
+
+      val placeholder = Placeholder(0, PlaceholderKind.LocalType, t"Local", 0, Unset, t"Bad.Local")
+      val list = Syntax.Simple(Designator(t"scala.collection.immutable.List"))
+      val syntax = Syntax.Application(list, List(Syntax.Primitive(t"\"⟨scala-diag:0⟩\"")), false)
+      Reifier.substitute(syntax, List(placeholder))
+      // Syntax.Application(list, List(Syntax.Symbolic(t"Bad.Local")), false)
+      ```
+  entry #imports   an `Imports` for rendering against this classpath, with `export`s resolved
+      `reifier.imports(designators, direct)` is `Imports.resolve` under the reifier's
+      context: an `Imports` whose wildcard scopes are `designators` and whose directly
+      imported names are `direct`, extended by the targets (type and companion) of every
+      `export` alias declared in each of `designators`. This is what makes a type reached
+      through a wildcard-imported prelude — `jacinta.Json` under `import soundness.*` —
+      render by its leaf name, `Json`, as the user would write it, where an `Imports` built
+      by hand renders it qualified. A scope which declares no exports, or which cannot be
+      resolved, adds nothing and does not throw. Both sets are stdlib
+      `scala.collection.immutable.Set[Designator]`s, as `Imports` itself holds them.
+
+      ```scala fuel
+      typecheck
+      ##
+      val reifier: Reifier = Reifier(LocalClasspath.of(Classloader[Option[Int]]))
+      val scope = scala.collection.immutable.Set(Designator(t"soundness"))
+      given Imports = reifier.imports(scope, scala.collection.immutable.Set())
+      Syntax.Simple(Designator(t"stenography#Syntax")).text   // t"Syntax"
+      ```
+  entry #syntax   the `Syntax` of a `Markup.Typed` node's payload, or `Unset` if it cannot be unpickled
+      Decodes the node's Base64 TASTy, unpickles it as a type tree under the reifier's
+      context, converts the type to a stenography `Syntax`, and applies
+      `Reifier.substitute` with the node's placeholders. A node with no payload, or one
+      whose payload cannot be unpickled (pickled by a different compiler version, or
+      against another classpath), gives `Unset` rather than an error, so a caller falls
+      back to the node's printed children.
+
+entry .render   a semantic message as text, with every type re-rendered through stenography
+    An extension on `SemanticMessage`, in `delicious.scala`:
+    `message.render(reifier)(using Imports)` joins the message's nodes, rendering each
+    `Markup.Typed` node as `Syntax#text` of `reifier.syntax(node)` — abbreviated according
+    to the `Imports` in scope, so `List[Int]` reads as `List[Int]` under an import of
+    `scala.*` and as `scala.collection.immutable.List[scala.Int]` under `Imports.empty` —
+    and every other node as its visible text. A type which cannot be reified falls back to
+    the compiler-printed text, so the result is never worse than `SemanticMessage#plain`.
+
+    ```scala fuel
+    frame
+      label The compiler's own text, markers stripped
+      code
+          val message = SemanticMessage.parse(markedText)
+          message.plain
+          // Found: List[Double]  Required: List[String]
+    frame
+      label Reified against the classpath, with no imports: fully qualified
+      code
+          val message = SemanticMessage.parse(markedText)
+          val reifier = Reifier(LocalClasspath.of(Classloader[Option[Int]]))
+          locally:
+            given Imports = Imports.empty
+            message.render(reifier)
+            // Found: scala.collection.immutable.List[scala.Double]  Required: scala.collection.immutable.List[java.lang.String]
+    frame
+      label Abbreviated against the user's imports
+      code
+          val message = SemanticMessage.parse(markedText)
+          val reifier = Reifier(LocalClasspath.of(Classloader[Option[Int]]))
+          locally:
+            given Imports = reifier.imports(scala.collection.immutable.Set(Designator(t"scala")), scala.collection.immutable.Set())
+            message.render(reifier)
+            // Found: List[Double]  Required: List[String]
+    ##
+    ```
+
+entry .teletype   a semantic message as styled terminal text, with code and types syntax-highlighted
+    An extension on `SemanticMessage`, in `delicious.ansi`, called as
+    `delicious.teletype(message)(reifier)` — it is not exported to the umbrella, where
+    `teletype` is escapade's `Teletypeable` rendering. It needs an `Imports`, a
+    `ScalaSyntaxPalette` and a `Highlight` in scope (`Highlight.default`, tokenized, is
+    found with no import). Each `Markup.Code` node is highlighted by harlequin as a Scala
+    term, and each `Markup.Typed` node is reified through the `Reifier`, rendered against
+    the `Imports`, and highlighted in type position; a type which cannot be reified is
+    highlighted from the compiler's printed text instead. Any ANSI styling the compiler
+    itself put in the text is stripped first, so the highlighting is from scratch.
+
+    ```scala fuel
+    typecheck
+    ##
+    given palette: ScalaSyntaxPalette = new Palette:
+      type Form = Srgb
+      def background: Color in Srgb       = WebColors.Black
+      def foreground: Color in Srgb       = WebColors.White
+      def scalaError: Color in Srgb       = WebColors.Red
+      def scalaNumber: Color in Srgb      = WebColors.Gold
+      def scalaString: Color in Srgb      = WebColors.LimeGreen
+      def scalaTerm: Color in Srgb        = WebColors.Silver
+      def scalaType: Color in Srgb        = WebColors.Turquoise
+      def scalaKeyword: Color in Srgb     = WebColors.Orange
+      def scalaSymbol: Color in Srgb      = WebColors.Gray
+      def scalaParenthesis: Color in Srgb = WebColors.Gray
+      def scalaModifier: Color in Srgb    = WebColors.Orchid
+      def scalaComment: Color in Srgb     = WebColors.DimGray
+      def subdued: Color in Srgb          = WebColors.DimGray
+      def accented: Color in Srgb         = WebColors.White
+      def margin: Color in Srgb           = WebColors.DimGray
+
+    val reifier = Reifier(LocalClasspath.of(Classloader[Option[Int]]))
+    given Imports = Imports.empty
+    val message: SemanticMessage = ???
+
+    val styled: Teletype = delicious.teletype(message)(reifier)
+    styled.plain   // the same text as message.render(reifier)
+    ```
+
+    No library ships a `ScalaSyntaxPalette`, since a palette is a choice of colours: a
+    program defines one as a given, as the sample does, with a colour for each accent.
+
+entry .Shim   the spelling of the compiler-internal API delicious wraps, per compiler stream
+  hidden
+  detail
+      Not for direct use. `delicious.compiler` holds one `Shim` for the Scala 3.9 stream and
+      one for 3.10, defining the same name against each stream's shapes, so that nothing
+      else in delicious knows which is in play.
+  entry .compilationUnitInfo   a `CompilationUnitInfo` over a virtual file and its `TastyInfo`
+      3.9 takes the `TastyInfo` by value and 3.10 as a lazy loader; the shim supplies it as
+      each stream expects, always present, since the tree unpickler reads it
+      unconditionally.

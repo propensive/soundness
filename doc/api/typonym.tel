@@ -1,0 +1,186 @@
+tel 1.0
+
+base typonym
+import soundness
+
+info   type-level lists, sets and maps of literal types, reified to runtime values at compile time
+detail
+    _Typonym_ carries static data in types and turns it back into values. A macro parameterized by
+    a list of names, a set of options or a mapping cannot take them as ordinary parameters, since
+    it must see them while the code compiles; a type can carry them, as literal singleton types
+    arranged in a `TypeList`, `TypeSet` or `TypeMap`, and `reify` converts that type into the
+    runtime value it describes.
+
+    ```scala
+    import soundness.*
+
+    reify[TypeList[("one", "two", "three")]]          // List("one", "two", "three")
+    reify[TypeSet["yes" | "no" | "maybe"]]            // List("yes", "no", "maybe")
+    reify[TypeMap[((1, "one"), (2, "two"))]]          // Map(1 -> "one", 2 -> "two")
+    reify[42]                                         // 42
+    ```
+
+    The literal kinds are `Int`, `Double`, `String` and `Boolean`; a `TypeList` is a tuple of
+    them, a `TypeSet` a union, and a `TypeMap` a tuple of pairs, and the three nest, so a map's
+    values may themselves be `TypeList`s. A type which is not one of these — `Int` rather than
+    `42`, say — is a compile error, because there is no value to reify.
+
+    `reify` is transparent, so its result has the precise type the macro builds; `reifyAs` fixes
+    the result type where inference needs the help, and the `Reifiable` typeclass lets a method
+    demand a reifiable type parameter as a contextual value. From inside a macro implementation,
+    where the type is held only as a `Type[T]`, the `reify(Type)` overload gives the reification
+    as an `Expr`.
+
+    The library has a single source set, `typonym.core`, which compiles for every platform, since
+    all of its work happens at compile time. Everything is exported to the `soundness` umbrella.
+
+refer typonym.reify
+refer typonym.TypeList
+refer typonym.TypeSet
+refer typonym.TypeMap
+refer typonym.Reifiable
+
+entry .TypeList   a phantom type carrying an ordered list of literal types as a tuple
+    `TypeList[("one", "two", "three")]` describes the list `List("one", "two", "three")`. The
+    type parameter is a tuple whose elements are literal types (`Int`, `Double`, `String` or
+    `Boolean` singletons) or nested `TypeList`, `TypeSet` or `TypeMap` types. The trait is sealed
+    and has no instances: it exists only to be written in a type and passed to `reify`.
+
+    ```scala
+    import soundness.*
+
+    reify[TypeList[(true, false, true)]]   // List(true, false, true)
+    reify[TypeList[(1.5, 2.5)]]            // List(1.5, 2.5)
+    ```
+
+    Each element is reified on its own, so the list's element type is not inferred from the
+    tuple: `reify` gives a `List` whose static element type is `Any`, and `reifyAs` at a narrower
+    element type such as `List[String]` fails its check. A `TypeSet` reifies at its element type,
+    which is why `Reifiable.listUnion` goes through one.
+
+entry .TypeSet   a phantom type carrying a set of literal types as a union
+    `TypeSet["one" | "two" | "three"]` describes the members of the union. It reifies to a `List`
+    of the members, in the order the union was written (as the compiler holds it), typed at the
+    union's element type, so `reifyAs[TypeSet["a" | "b"], List[String]]` checks.
+
+    ```scala
+    import soundness.*
+
+    reify[TypeSet["one" | "two" | "three" | "four"]]   // List("one", "two", "three", "four")
+    ```
+
+    Each member of the union must be a literal type; `TypeSet["one" | Int]` is a compile error.
+    The result is a `List` rather than a `Set`, so the order of the union is kept for code which
+    wants it.
+
+entry .TypeMap   a phantom type carrying a map of literal types as a tuple of pairs
+    `TypeMap[((1, "one"), (2, "two"))]` describes the map `Map(1 -> "one", 2 -> "two")`. Each
+    element of the tuple is a pair type whose key and value are each a literal type or a nested
+    `TypeList`, `TypeSet` or `TypeMap`, so a multimap is a `TypeMap` of `TypeList`s.
+
+    ```scala
+    import soundness.*
+
+    reify[TypeMap[((1, TypeList[("one", "un")]), (2, TypeList[("two", "deux")]))]]
+    // Map(1 -> List("one", "un"), 2 -> List("two", "deux"))
+    ```
+
+entry .TypeElement   a sealed phantom type wrapping a single type, for type-level structures
+    `TypeElement[T]` is a marker with no instances and no reification of its own: `reify` handles
+    `TypeList`, `TypeSet`, `TypeMap` and bare literal types, not `TypeElement`. It is available
+    for libraries which build their own type-level encodings on Typonym's vocabulary.
+
+entry .reify   turns a literal type, or a `TypeList`, `TypeSet` or `TypeMap` of them, into its value
+    `reify[T]` is a transparent inline macro: it reads `T` while the code compiles and splices the
+    value it describes, so the result's static type is the precise one the macro builds. A literal
+    type reifies to its value, a `TypeList` to a `List`, a `TypeSet` to a `List` of the union's
+    members, and a `TypeMap` to a `Map`, nesting as the type nests.
+
+    ```scala
+    import soundness.*
+
+    reify["solo"]                                  // "solo"
+    reify[3.5]                                     // 3.5
+    reify[TypeList[("one", "two", "three")]]       // List("one", "two", "three")
+    reify[TypeMap[((1, "one"), (2, "two"))]]       // Map(1 -> "one", 2 -> "two")
+    reify[Int]                                     // does not compile
+    ```
+
+    Only `Int`, `Double`, `String` and `Boolean` singletons are literal types to the macro; any
+    other type, at the top level or inside a collection, fails to expand.
+
+    The second overload, `reify(phantomType)`, takes a `Type[T]` and returns a `Macro[Any]` — an
+    `Expr` in a `Quotes` context — for use inside another macro's implementation, where the type
+    is known only abstractly:
+
+    ```scala
+    import scala.quoted.*
+    import soundness.*
+
+    def names[T: Type](using Quotes): Expr[Any] = reify(Type.of[T])
+    ```
+
+entry .reifyAs   reifies a type-level value, checking it against an explicitly stated result type
+    `reifyAs[T, R]` is `reify[T]` with its result typed as `R`: where `reify`'s transparent result
+    is too precise, or not precise enough, for the code around it, the caller names the type it
+    wants, and the macro's expansion is checked against it.
+
+    ```scala
+    import soundness.*
+
+    val options: List[String] = reifyAs[TypeSet["a" | "b"], List[String]]
+    reifyAs[TypeSet["a" | "b"], List[Int]]   // does not compile
+    ```
+
+    A `TypeList` reifies its elements independently, at `Any`, so `reifyAs` at a narrower list
+    type fails for one; state the elements as a `TypeSet` where the element type matters.
+
+entry .Reifiable   a typeclass for a type whose value can be recovered at compile time
+  detail
+      `T is Reifiable to R` is evidence that the type `T` describes a value of type `R`, which
+      `#reify` returns. It lets a method demand, as a contextual value, that its type parameter
+      carry static data:
+
+      ```scala
+      import soundness.*
+
+      def choices[T](using reifiable: T is Reifiable to List[String]): List[String] =
+        reifiable.reify
+
+      choices["yes" | "no" | "maybe"]   // List("yes", "no", "maybe")
+      ```
+
+      The companion's `.listUnion` provides the instance for a union of literal types, reified as
+      a list; other instances are made with `Reifiable(value)`.
+  refer typonym.reify
+  refer typonym.TypeSet
+  entry .listUnion   reifies a union of literal types as a `List` of its members
+      A transparent inline given, in implicit scope, providing `phantom is Reifiable to
+      List[value]` for any `phantom`: it expands `reifyAs[TypeSet[phantom], List[value]]`, so a
+      union `"yes" | "no"` becomes `List("yes", "no")`, and a type which is not a union of
+      literals fails to expand where the instance is demanded.
+  entry .apply   makes a `Reifiable` instance which returns a value already in hand
+      `Reifiable[T, R](value)` is the instance `T is Reifiable to R` whose `#reification` is
+      `value`. It is how a library supplies its own reifications, for types the macro does not
+      handle.
+
+      ```scala
+      import soundness.*
+
+      Reifiable[Any, List[String]](List("x", "y")).reify   // List("x", "y")
+      ```
+  entry #reification   computes the value the type describes
+      The abstract method an instance implements; `#reify` calls it.
+  entry #reify   the value the type describes, as `Result`
+      An alias for `#reification()`, for reading at a use site.
+
+entry .internal   the macro implementations behind `reify` and `reifyAs`
+  hidden
+  detail
+      Not for direct use: the object holds the macro bodies which `reify` and `reifyAs` splice.
+  entry .reify   the macro behind `reify`: a type to the expression of its value
+  entry .reifyAs   the macro behind `reifyAs`: `reify`, cast to the stated result type
+  entry .reflect   the inverse of `reify`: a value to the type which describes it
+      Turns a `String`, `Int`, `Double` or `Boolean` into its singleton `ConstantType`, and a
+      `List` of them into a `TypeList` of a tuple, for a macro which must hand a value back to
+      the type system.

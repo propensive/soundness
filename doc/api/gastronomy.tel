@@ -1,0 +1,982 @@
+tel 1.0
+
+base gastronomy
+import soundness
+
+info   hashing: digests of any value or stream, with the algorithm as a type and weak choices behind permits
+detail
+    _Gastronomy_ computes digests. The algorithm is a **type** — `Sha2[256]`, `Sha1`, `Md5`,
+    `Blake3`, `Murmur3`, or corpuscular's checksums `Crc32`, `Crc64` and `Adler32` — so a
+    `Digest in Sha2[256]` can never be mistaken for a `Digest in Md5`, and a typo in an
+    algorithm's name is a compile error rather than a `NoSuchAlgorithmException`. Any value
+    with a `Digestible` instance is hashed directly with `digest`: the primitives, `Text`,
+    `Data`, the collections, and every case class and enum, whose instances are derived from
+    their fields. A stream, a file or a directory is hashed as it flows with `checksum`,
+    through `Checksummable`, in bounded memory.
+
+    ```scala
+    import soundness.*
+    import providers.javaBaseProvider
+    import alphabets.hexLowerCase
+
+    t"Hello world".digest[Sha2[256]].serialize[Hex]
+    // t"64ec88ca00b268e5ba1a35678a1b5316d212f4f366b2477232534a8aeca37f3c"
+
+    case class Person(name: Text, age: Int)
+    Person(t"Alice", 30).digest[Sha2[256]]
+    ```
+
+    Three decisions are always explicit, each an import by name (`import soundness.*` brings
+    none of them in, since a wildcard import does not import givens):
+
+    - **The provider.** A `Hashing` provider supplies the implementation of each algorithm, and
+      is selected from the `providers` package: `providers.javaBaseProvider` is the JDK's
+      `MessageDigest` and `java.util.zip` (and, off the JVM, the same pure-Scala code the
+      Soundness provider uses, so the import reads identically on every platform);
+      `providers.soundnessProvider` is the pure-Scala `SoundnessHashing`, the only source of
+      `Blake3`, `Murmur3` and `Crc64`. Each algorithm's `Hash` given demands a provider with
+      that algorithm's method, structurally, so `digest[Blake3]` under the JDK provider alone is
+      a compile error naming the missing `Hash in Blake3`, not a runtime failure. Importing both
+      providers is fine; the lexically imported `SoundnessHashing` then serves every algorithm.
+    - **The permit.** MD5 and SHA-1 are broken, and the checksums and `Murmur3` are not
+      cryptographic at all, so `digest[Md5]` needs `cryptoPermits.permitDisallowedCrypto` (or
+      `permitDeprecatedCrypto` for SHA-1 alone) and `digest[Crc32]` needs
+      `cryptoPermits.permitNonCryptographicHashes`. The permits are erased `Permit` evidence,
+      resolved by `HashWeakness`; SHA-2 and BLAKE3 are `Concession.Acceptable` and need none.
+    - **The alphabet.** A `Digest` is bytes, rendered with monotonous's `serialize[Hex]` or
+      `serialize[Base64]` under an `alphabets` import; `show` renders it as Base64 under the
+      `Alphabet[Base64]` in scope, and `inspect` is always lowercase hexadecimal with a `ᴰ`
+      suffix.
+
+    The `Digest in algorithm` type is often all that needs to say the algorithm: a field declared
+    `Digest in Sha2[256]` fixes what `payload.digest` computes, with no type argument.
+
+    Beyond digests, the library holds the shared **crypto permit vocabulary** — `Concession`,
+    `Permit`, `ProcessingPermit` and the `cryptoPermits` package — which enigmatic (ciphers,
+    HMAC, signatures) and telekinesis (TLS) also gate with, so one import such as
+    `cryptoPermits.permitDisallowedCrypto` covers weak hashes and weak ciphers alike; the
+    `Signing` interface enigmatic's signing ciphers implement; `Hash#hmacName`, the JCE name
+    enigmatic's `hmac[Sha2[256]](key)` uses; `Feistel`, a Feistel network over 64-bit values;
+    and, in its `multihash` component, the self-describing `Multihash` envelope of the
+    multiformats specification, with `Multicodec` mapping each algorithm to its registered code.
+
+    The components:
+
+    - `gastronomy.core` — everything above but multihash. It compiles for the JVM, Scala.js and
+      Scala Native: BLAKE3, MurmurHash3, MD5, SHA-1 and SHA-2 are pure Scala, and the checksums
+      are corpuscular's accumulators. On the JVM `JavaBaseHashing` is backed by `MessageDigest`
+      and `java.util.zip`; on the other platforms the same object forwards to
+      `SoundnessHashing`, so provider selection is the same source everywhere.
+    - `gastronomy.multihash` — `Multihash` and `Multicodec`, for content-addressing callers.
+
+    Everything is exported to the `soundness` umbrella, and the `providers` and
+    `cryptoPermits` choice packages merge with the umbrella's own, so a user writes
+    `import soundness.*` and then imports a provider and any permits by name.
+
+refer gastronomy.digest
+refer gastronomy.Digest
+refer gastronomy.Digestible
+refer gastronomy.Hash
+refer gastronomy.Sha2
+refer gastronomy.providers
+refer gastronomy.cryptoPermits
+refer gastronomy.Multihash
+
+entry .digest   the digest of any `Digestible` value, in the algorithm named as a type
+  detail
+      `value.digest[Sha2[256]]` feeds the value's bytes, as its `Digestible` instance defines
+      them, into a fresh `Digestion` of the algorithm and returns the result as a `Digest in
+      Sha2[256]`. It needs a `Hash in algorithm` — which each algorithm's companion derives from
+      the `Hashing` provider in scope, so `import providers.javaBaseProvider` or
+      `providers.soundnessProvider` is required — and an erased `Permit[HashWeakness[algorithm]]`,
+      which is always available for SHA-2 and BLAKE3 and must be imported from `cryptoPermits`
+      for MD5, SHA-1, the checksums and MurmurHash3.
+
+      The type argument can be left to inference when the expected type names the algorithm,
+      which is the usual shape in a data model:
+
+      ```scala
+      import soundness.*
+      import providers.javaBaseProvider
+
+      case class Block(digest: Digest in Sha2[256], payload: Text)
+
+      val payload = t"""{"amount": 100}"""
+      Block(payload.digest, payload)
+      ```
+
+      The same bytes digested under successive algorithms, each with the import it needs:
+
+      ```scala fuel
+      frame
+        label SHA-256 needs only a provider
+        code
+            import providers.javaBaseProvider
+            import alphabets.hexLowerCase
+
+            t"Hello world".digest[Sha2[256]].serialize[Hex]
+            // t"64ec88ca00b268e5ba1a35678a1b5316d212f4f366b2477232534a8aeca37f3c"
+      frame
+        label SHA-1 is deprecated, so it needs a permit
+        code
+            import providers.javaBaseProvider
+            import alphabets.hexLowerCase
+            import cryptoPermits.permitDeprecatedCrypto
+
+            t"Hello world".digest[Sha1].serialize[Hex]
+            // t"7b502c3a1f48c8609ae212cdfb639dee39673f5e"
+      frame
+        label MD5 is disallowed, so it needs the wider permit
+        code
+            import providers.javaBaseProvider
+            import alphabets.hexLowerCase
+            import cryptoPermits.permitDisallowedCrypto
+
+            t"Hello world".digest[Md5].serialize[Hex]
+            // t"3e25960a79dbc69b674cd4ec67a72c62"
+      frame
+        label BLAKE3 needs the Soundness provider, which the JDK lacks
+        code
+            import providers.soundnessProvider
+            import alphabets.hexLowerCase
+
+            t"Hello world".digest[Blake3].serialize[Hex]
+      ##
+      ```
+
+      A value is digested whole; `checksum` digests what is *behind* a value (a stream's
+      chunks, a file's content) without holding it, and `Digester` digests several values into
+      one accumulator. Without a permit, the compile error reads _this operation uses a
+      sub-optimal algorithm, key length or mode — or a checksum in place of a hash; import the
+      matching permit …_; without a provider it names the missing `Hash in algorithm`.
+  refer gastronomy.Digestible
+  refer gastronomy.Digest
+  refer gastronomy.Hash
+  refer gastronomy.checksum
+  refer gastronomy.cryptoPermits
+
+entry .checksum   the digest of the content behind a value: a stream's bytes, a file, a directory
+  detail
+      `source.checksum[Sha2[256]]` digests whatever the source's `Checksummable` instance feeds
+      — for any `Streamable by Data over Credit` source, every chunk of its stream in order,
+      drained window by window so the digest is computed in bounded memory; for a galilei
+      `Path`, a file's bytes or a directory's regular files — and returns a `Digest in
+      Sha2[256]`. It needs the `Hash in algorithm` the provider in scope supplies and the
+      erased `Permit[HashWeakness[algorithm]]`, exactly as `digest` does. The result is the
+      same whatever sizes the chunks arrive in, including one byte at a time, since the
+      `Digestion` carries partial blocks across window boundaries.
+
+      ```scala
+      import soundness.*
+      import providers.javaBaseProvider
+      import alphabets.hexLowerCase
+
+      val chunks = Chain(t"Hello ".in[Data], t"wor".in[Data], t"ld".in[Data])
+      chunks.checksum[Sha2[256]].serialize[Hex]
+      // t"64ec88ca00b268e5ba1a35678a1b5316d212f4f366b2477232534a8aeca37f3c", as for the whole text
+      ```
+
+      A single `Data` value's checksum equals its `digest`, since its stream is itself. A
+      `Checksummable` which raises, such as galilei's path instance (`Io.Error`, and it takes
+      the `DereferenceSymlinks` policy in scope), carries its `Tactic` in its capture set, so
+      `path.checksum[Blake3]` must sit inside `safely`, `unsafely` or a handler.
+  refer gastronomy.Checksummable
+  refer gastronomy.digest
+
+entry .Checksummable   how a value's underlying content is fed into a digest, for `checksum`
+  detail
+      A typeclass with one method, `#checksum`, which appends the bytes *behind* a value — not
+      the value's own encoding, which is `Digestible`'s business — to an exclusive `Digestion`.
+      The companion's `.streamable` instance covers every source of bytes, and galilei adds one
+      for paths, so `checksum[algorithm]` works on a `Chain[Data]`, a stream, a file or a
+      directory. A `Checksummable` may capture a `Tactic` (galilei's does), which is why the
+      typeclass is not `Pure` and `checksum` takes it as a capturing parameter.
+  refer gastronomy.checksum
+  entry .streamable   any `Streamable by Data over Credit` source, checksummed by draining its stream
+      Drains the source's stream region by region and appends each window to the `Digestion`
+      with the windowed `append`, so a reusable buffer is hashed in place and never copied. The
+      instance captures the `Streamable` it is built from.
+  entry #checksum   appends the content behind a value to an exclusive `Digestion`
+
+entry .HashWeakness   the `Concession` an algorithm carries: what permit `digest[algorithm]` needs
+    A match type from an `Algorithm` to the concession a caller must hold a `Permit` for: `Md5`
+    to `Concession.Md5`, `Sha1` to `Concession.Sha1`, and `Crc32`, `Crc64`, `Adler32` and
+    `Murmur3` to `Concession.NonCryptographic`; every other algorithm — the SHA-2 family and
+    BLAKE3 — to `Concession.Acceptable`, whose permit `Permit.acceptable` is always in scope.
+    `digest`, `checksum` and enigmatic's `hmac` all require an erased
+    `Permit[HashWeakness[algorithm]]`, which is how a weak hash fails to compile until a
+    `cryptoPermits` given is imported by name.
+
+entry .Digest   the bytes a hash produced, typed by its algorithm as `Digest in Sha2[256]`
+  detail
+      A `Digest` holds the raw `#data` of a hash, and its `#Form` type member is the
+      `Algorithm` which produced it, written with prepositional's `in`: `Digest in Sha2[256]`.
+      Two digests are equal when their bytes are, so a digest is usable as a `Map` key, and the
+      algorithm is a phantom — it is not stored in the value, which is why a `Multihash`
+      exists for a digest which must describe itself across a boundary.
+
+      A digest renders through the base encodings, under an `alphabets` import, since it is
+      `Encodable in Data`:
+
+      ```scala fuel
+      frame
+        label Lowercase hexadecimal
+        code
+            import providers.javaBaseProvider
+            locally:
+              import alphabets.hexLowerCase
+              t"Hello world".digest[Sha2[256]].serialize[Hex]
+              // t"64ec88ca00b268e5ba1a35678a1b5316d212f4f366b2477232534a8aeca37f3c"
+      frame
+        label Uppercase hexadecimal
+        code
+            import providers.javaBaseProvider
+            locally:
+              import alphabets.hexUpperCase
+              t"Hello world".digest[Sha2[256]].serialize[Hex]
+              // t"64EC88CA00B268E5BA1A35678A1B5316D212F4F366B2477232534A8AECA37F3C"
+      frame
+        label Base64, which is also what `show` renders
+        code
+            import providers.javaBaseProvider
+            locally:
+              import alphabets.base64Standard
+              t"Hello world".digest[Sha2[256]].serialize[Base64]
+              // t"ZOyIygCyaOW6GjVnihtTFtIS9PNmskdyMlNKiuyjfzw="
+      ##
+      ```
+
+      A digest reads back from hexadecimal text with `.as[Digest in Sha2[256]]`, under a `Hex`
+      alphabet and a `Tactic[Serialization.Error]`; the text's length is not checked against
+      the algorithm, as the algorithm is a phantom. `Digest(data)` makes one from bytes already
+      in hand, and a digest is itself `Digestible`, so it can be folded into a larger value and
+      hashed again.
+  refer gastronomy.digest
+  refer gastronomy.Multihash
+  entry .apply   `Digest[Sha2[256]](data)`: a digest from bytes already computed
+      Wraps `data` as a `Digest in algorithm` with no check that its length suits the algorithm,
+      since the algorithm is a phantom type. `digest` and `checksum` build their results with
+      it; a caller uses it for a digest read from storage or received from elsewhere.
+  entry .showable   renders a digest as Base64 text, under the `Alphabet[Base64]` in scope
+      `digest.show` is `digest.data.serialize[Base64]`, so it needs a Base64 alphabet imported
+      by name — `alphabets.base64Standard` or `alphabets.base64Url` — and fails to compile
+      without one. The debug rendering `.inspectable` needs nothing.
+  entry .encodable   a digest as its bytes, `Encodable in Data`
+      The instance behind `digest.serialize[Hex]`, `serialize[Base64]` and every other
+      consumer of `Data`: it yields `#data`. It is also why a digest is `Digestible` through
+      `Digestible.encodable`.
+  entry .decodable   reads a digest from hexadecimal text, as `text.as[Digest in Sha2[256]]`
+      Deserializes the text as `Hex` under the hexadecimal alphabet in scope, which decides
+      which case is accepted, and wraps the bytes with `.apply`. It needs a `Deserializable in
+      Hex` and a `Tactic[Serialization.Error]`, raised for text which is not hexadecimal; the
+      length is not checked against the algorithm.
+
+      ```scala
+      import soundness.*
+      import providers.javaBaseProvider
+      import alphabets.hexLowerCase
+
+      unsafely:
+        t"64ec88ca00b268e5ba1a35678a1b5316d212f4f366b2477232534a8aeca37f3c".as[Digest in Sha2[256]]
+      ```
+  entry .inspectable   a debug rendering: every byte as lowercase hexadecimal, with a `ᴰ` suffix
+      Always available, with no alphabet in scope, so a digest can be inspected where `show`
+      cannot: `64ec88ca…7f3cᴰ`. The suffix marks the digits as a digest, as the algorithm
+      cannot be shown at runtime.
+  entry #data   the digest's bytes
+      The raw output of the hash, in the order the algorithm defines: 32 bytes for
+      `Sha2[256]`, 20 for `Sha1`, 16 for `Md5` and `Murmur3`, 4 for `Crc32` and `Adler32`, 8
+      for `Crc64`.
+  entry #Form   the algorithm which produced the digest, an `Algorithm` subtype
+      The type member prepositional's `in` names: `Digest in Sha2[256]` is `Digest { type Form
+      = Sha2[256] }`. It is a phantom, carried by the type alone.
+
+entry .Digestible   how a value's bytes are fed into a hash; derived for case classes and enums
+  detail
+      A `Digestible` value is one which can be appended to a `Digestion`: `#digest` writes the
+      value's bytes into the accumulator, and `digest[algorithm]` on any such value builds the
+      `Digest`. The companion supplies instances for the primitives (`Int` and `Long` big-endian,
+      `Double` and `Float` by their raw bits, `Boolean` as one byte, `Char` and `Short` as two),
+      `Text` (as UTF-8), `Data`, `Digest`, anything `Encodable in Data`, `Optional`, `List`,
+      `Set`, `Sequence`, frozen arrays, `Map` and `Chain`, and derives one for every product and
+      sum type, so a case class is hashed as its fields in order, with no serialization step:
+
+      ```scala
+      import soundness.*
+      import providers.javaBaseProvider
+
+      case class Person(name: Text, age: Int)
+      enum Shape:
+        case Circle(radius: Double)
+        case Square(side: Double)
+
+      Person(t"Alice", 30).digest[Sha2[256]]
+      Shape.Circle(1.0).digest[Sha2[256]]
+      ```
+
+      The derived encoding is a concatenation: fields contribute their bytes in declaration
+      order with no separators or lengths, and a sum type contributes the index of its case as
+      an `Int` before the case's fields. It is deterministic and portable across platforms, but
+      not injective — `(t"ab", t"c")` and `(t"a", t"bc")` digest alike — so it is a fingerprint
+      of a value, not a serialization. For an encoding with framing, digest the value's
+      `serialize`d form instead.
+
+      The typeclass is `Pure`: an instance may be handed any exclusive `Digestion^`, and holds
+      no capability of its own. `#contramap` builds an instance for another type from a
+      function into this one, as `Digestible.double` is built over `Digestible.long`.
+  refer gastronomy.digest
+  refer gastronomy.Digester
+  entry .conjunction   derives a product's instance: each field in order, through its own instance
+      Used by the derivation for any case class or tuple with a `ProductReflection`; every field
+      type needs a `Digestible` of its own, resolved lazily so recursive types derive.
+  entry .disjunction   derives a sum's instance: the case's index as an `Int`, then the case
+      Used by the derivation for enums and sealed traits with a `SumReflection`; the ordinal
+      distinguishes cases whose fields happen to encode identically.
+  entry .optional   an `Optional[value]`: the value's bytes if set, nothing if `Unset`
+      `Unset` contributes no bytes at all, so `Optional[Text]` of `Unset` and of `t""` digest
+      alike. Not applicable where the type is already `Unset.type`-inclusive.
+  entry .list   a `List[value]`: every element in order
+  entry .set   a `Set[value]`: every element, in the set's iteration order
+      A `Set` of the same elements built differently may iterate differently, so this is stable
+      only for a given set value.
+  entry .sequence   any `Sequence[value]`: every element in order
+  entry .frozenArray   a frozen `Array[value]^{}`: every element in order
+  entry .map   a `Map[key, value]`: each key followed by its value, in iteration order
+  entry .stream   a `Chain[value]`: every element in order, forced as it is digested
+  entry .int   an `Int`, as four big-endian bytes
+  entry .long   a `Long`, as eight big-endian bytes
+  entry .double   a `Double`, as the eight bytes of its IEEE 754 raw bit pattern
+  entry .float   a `Float`, as the four bytes of its IEEE 754 raw bit pattern
+  entry .boolean   a `Boolean`, as the single byte 1 or 0
+  entry .byte   a `Byte`, as itself
+  entry .short   a `Short`, as two big-endian bytes
+  entry .char   a `Char`, as two big-endian bytes of its UTF-16 code unit
+  entry .text   any `Text`, as its UTF-8 bytes
+      Always UTF-8, regardless of any `codepages` import in scope, so a text's digest is the
+      same everywhere.
+  entry .bytes   `Data`, appended as it is
+  entry .digest   a `Digest`, as its bytes, so a hash can be hashed again
+  entry .encodable   any value `Encodable in Data`, as its encoding
+      A catch-all over the `Encodable` typeclass: a type with an `Encodable in Data` instance —
+      an `Hmac`, a key, a `Multihash`-shaped value of a user's own — is digestible without
+      declaring anything more.
+  entry #digest   writes a value's bytes into an exclusive `Digestion`
+      `digest(digestion, value)` appends the value's bytes with `Digestion#append`; the
+      accumulator is `Digestion^`, exclusive to the caller, and the instance itself is pure.
+  entry #contramap   a `Digestible` for another type, through a pure function into this one
+      `textDigestible.contramap[Person](_.name)` digests a person by its name alone. The
+      function must be pure (`->`), so the instance built stays pure and usable in derivations.
+
+entry .Digester   a sequence of digest steps over one accumulator, run when an algorithm is chosen
+  detail
+      A `Digester` is a pure function from a fresh `Digestion^` to `Unit`, built up by
+      `#digest` one value at a time and run by `#apply[algorithm]`, which creates the
+      accumulator for the algorithm's `Hash` in scope, applies every step and returns the
+      `Digest`. It is how several values are digested into one hash without first concatenating
+      their bytes, and the algorithm is chosen last, so one digester can yield several digests:
+
+      ```scala
+      import soundness.*
+      import providers.soundnessProvider
+      import alphabets.hexLowerCase
+
+      val digester = Digester(_ => ()).digest(t"Hello ").digest(t"world")
+      digester.apply[Sha2[256]].serialize[Hex]
+      // t"64ec88ca00b268e5ba1a35678a1b5316d212f4f366b2477232534a8aeca37f3c", as for the whole text
+      digester.apply[Blake3]
+      ```
+
+      `digest[algorithm]` on a value is a one-step digester. The empty digester is
+      `Digester(_ => ())`.
+  refer gastronomy.digest
+  entry .apply   `Digester(run)`: a digester from a pure function over the accumulator
+  entry #run   the steps, as a pure function from a fresh `Digestion^` to `Unit`
+  entry #apply   runs the steps in a fresh accumulator for `algorithm` and returns the `Digest`
+      `digester.apply[Sha2[256]]` needs a `Hash in Sha2[256]` from
+      the provider in scope. Unlike `digest` on a value, it takes no permit: the gate is at the
+      value's `digest` and `checksum`, not here.
+  entry #digest   a new digester which runs these steps and then digests another value
+      `digester.digest(value)` appends a step for any `Digestible` value; the original digester
+      is unchanged.
+
+entry .Hash   an algorithm's implementation as a value, derived from the `Hashing` provider in scope
+  detail
+      A `Hash in algorithm` is what `digest`, `checksum` and `Digester#apply` resolve: it knows
+      the algorithm's JCE-style `#name` (`SHA-256`), its HMAC `#hmacName` (`HmacSHA256`, which
+      enigmatic's `hmac` uses), and `#initialize`, a fresh exclusive `Digestion` from the
+      provider's `Hashing.Function`. Each algorithm's companion derives its instance from
+      whichever `Hashing` is in scope *structurally*: `Sha2.hash` needs a `Hashing { def
+      sha2(bits: Int): Hashing.Function }`, `Blake3.hash` a `Hashing { def blake3:
+      Hashing.Function }`, so an algorithm the selected provider does not implement has no
+      `Hash` and fails to compile at the call. The corpuscular checksums' instances live here,
+      in `Hash`'s own companion (`.crc32`, `.crc64`, `.adler32`), since corpuscular cannot see
+      `Hashing`; resolution is the same.
+
+      ```scala
+      import soundness.*
+      import providers.javaBaseProvider
+
+      val sha256: Hash in Sha2[256] = summon[Hash in Sha2[256]]
+      sha256.name       // t"SHA-256"
+      sha256.hmacName   // t"HmacSHA256"
+      ```
+
+      `Hash(name, hmacName, function)` builds an instance for a provider of one's own.
+  refer gastronomy.Hashing
+  refer gastronomy.providers
+  refer gastronomy.digest
+  entry .crc32   `Hash in Crc32`, from a provider with `crc32`: both providers have it
+      Named `CRC32`, with the HMAC name `HMAC-CRC32`. Digesting with it needs
+      `cryptoPermits.permitNonCryptographicHashes`.
+  entry .crc64   `Hash in Crc64`, from a provider with `crc64`: the Soundness provider only
+      Named `CRC64` (CRC-64/ECMA). The JDK has no CRC-64, so `JavaBaseHashing` does not offer
+      it and `digest[Crc64]` resolves only under `providers.soundnessProvider`. It needs
+      `cryptoPermits.permitNonCryptographicHashes`.
+  entry .adler32   `Hash in Adler32`, from a provider with `adler32`: both providers have it
+      Named `ADLER32`. It needs `cryptoPermits.permitNonCryptographicHashes`.
+  entry .apply   `Hash[algorithm](name, hmacName, function)`: an instance over a provider's function
+      Builds a `Hash in algorithm` whose `initialize` calls `function.digestion()`. The
+      companions use it; a user needs it only to add an algorithm or a provider.
+  entry #Form   the algorithm this hash computes
+  entry #name   the algorithm's JCE-style name: `SHA-256`, `SHA1`, `MD5`, `BLAKE3`, `CRC32`
+  entry #hmacName   the algorithm's JCE HMAC name: `HmacSHA256`, `HmacSHA1`, `HmacMD5`
+      What enigmatic's `hmac[algorithm](key)` passes to the crypto provider, so an HMAC over
+      a gastronomy hash is available for every algorithm the crypto provider's MAC supports.
+      For BLAKE3, MurmurHash3 and the checksums the name is `HMAC-…`, which no JCE provider
+      implements.
+  entry #initialize   a fresh, exclusive `Digestion` for one computation
+      Each call starts a new accumulator: `append` bytes to it and `digest()` it once. It is
+      `Digestion^`, so it cannot be shared or stored.
+
+entry .Hashing   a hashing provider: a `Hashing.Function` for each algorithm it implements
+  detail
+      A `Hashing` provider supplies the implementation of each hash as a `Hashing.Function`, a
+      factory for fresh `Digestion`s. The trait itself has no members: each algorithm's `Hash`
+      given refines it structurally (`Hashing { def sha2(bits: Int): Hashing.Function }`), so
+      providers are *disjoint* rather than ranked — `JavaBaseHashing` has `md5`, `sha1`,
+      `sha2`, `crc32` and `adler32`; `SoundnessHashing` has all of those plus `blake3`,
+      `murmur3` and `crc64` — and a missing algorithm is a compile error at the digest.
+
+      A provider is selected by name from the `providers` package. `providers.soundnessProvider`
+      is the `SoundnessHashing` object itself; `providers.javaBaseProvider` is the marker
+      `Provider.JavaBase`, from which `.javaBaseHashing` derives `JavaBaseHashing` (and
+      enigmatic derives its JDK crypto), so one import enables both. A provider of one's own is
+      an object extending `Hashing` with the methods named above, bound as a given.
+  refer gastronomy.providers
+  refer gastronomy.JavaBaseHashing
+  refer gastronomy.SoundnessHashing
+  entry .Function   one algorithm's implementation: a factory for fresh `Digestion`s
+    detail
+        `function.digestion()` returns a new exclusive accumulator; a provider's method per
+        algorithm (`sha2(bits)`, `blake3`, `crc32`) returns one of these, and `Hash` wraps it.
+    entry #digestion   a fresh, exclusive `Digestion` for one computation
+  entry .javaBaseHashing   `JavaBaseHashing`, whenever `providers.javaBaseProvider` is imported
+      A given in `Hashing`'s implicit scope, derived from the `Provider.JavaBase.type` marker,
+      so importing the JDK provider by name enables hashing without a second import. On the JVM
+      it is `MessageDigest` and `java.util.zip`; elsewhere the same name forwards to the
+      pure-Scala `SoundnessHashing`.
+
+entry .Provider   the markers of multi-capability providers; `Provider.JavaBase` is the JDK's
+  detail
+      A provider which supplies more than one capability — the JDK supplies both hashing and
+      cryptography — is selected through a marker: `providers.javaBaseProvider` is
+      `Provider.JavaBase`, and `Hashing.javaBaseHashing` (here) and enigmatic's crypto given
+      each derive their implementation from it. Single-capability providers such as
+      `SoundnessHashing` have no marker; their `providers` given is the capability object
+      itself.
+  refer gastronomy.providers
+  entry .JavaBase   the JDK provider: `MessageDigest` and `java.util.zip` hashing, JCE cryptography
+      The marker `providers.javaBaseProvider` supplies. It has no members of its own.
+
+entry .JavaBaseHashing   the JDK-backed hashing provider: MD5, SHA-1, SHA-2, CRC-32 and Adler-32
+  detail
+      The default provider, reached by `import providers.javaBaseProvider`. It is the one object
+      declared by two components. On the JVM (`gastronomy.core` with its `core-jvm` sources) it
+      is backed by `java.security.MessageDigest` for `.md5`, `.sha1` and `.sha2`, and by
+      `java.util.zip.CRC32` and `Adler32` for `.crc32` and `.adler32`, all appending windows in
+      place; it is the single home of `java.security` in the library. On Scala.js and Scala
+      Native (`core-native`) the same five methods forward to `SoundnessHashing`'s pure-Scala
+      implementations, validated byte for byte against the JDK's, so code selecting the JDK
+      provider hashes identically on every platform with no source change.
+
+      Neither platform offers `blake3`, `murmur3` or `crc64`: the JDK has no implementation of
+      any, so a `Hash` for those algorithms resolves only under `providers.soundnessProvider`.
+  refer gastronomy.providers
+  refer gastronomy.SoundnessHashing
+  entry .md5   MD5, as `MessageDigest("MD5")` on the JVM and the pure port elsewhere
+  entry .sha1   SHA-1, as `MessageDigest("SHA1")` on the JVM and the pure port elsewhere
+  entry .sha2   SHA-224, SHA-256, SHA-384 or SHA-512 by bit count, as `MessageDigest("SHA-<bits>")`
+      `sha2(bits)` takes 224, 256, 384 or 512; `Sha2.hash` supplies the count from the type
+      `Sha2[bits]`.
+  entry .crc32   CRC-32, as `java.util.zip.CRC32` on the JVM and corpuscular's accumulator elsewhere
+      The 32-bit value is written big-endian, four bytes.
+  entry .adler32   Adler-32, as `java.util.zip.Adler32` on the JVM and corpuscular's elsewhere
+      The 32-bit value is written big-endian, four bytes.
+
+entry .SoundnessHashing   the pure-Scala provider: every algorithm, including BLAKE3, MurmurHash3 and CRC-64
+  detail
+      Selected by `import providers.soundnessProvider`. It implements MD5, SHA-1 and the SHA-2
+      family in Scala (following RFC 1321 and FIPS 180-4, cross-checked against the JDK at every
+      block-padding boundary), BLAKE3 (checked against the official vectors at every input
+      length), MurmurHash3 (byte-for-byte Guava's `murmur3_128()`), and reaches corpuscular's
+      CRC-32, CRC-64 and Adler-32 accumulators directly. It is the only provider with `.blake3`,
+      `.murmur3` and `.crc64`, so a program digesting with those imports it, alone or alongside
+      the JDK provider. When both are imported, this one, being lexically in scope, serves
+      every algorithm; the JDK's native `MessageDigest` is faster for SHA-2 on the JVM, so a
+      program which wants it there and BLAKE3 too should scope the imports.
+  refer gastronomy.providers
+  refer gastronomy.Blake3
+  refer gastronomy.Murmur3
+  entry .blake3   BLAKE3, 256-bit output, from `Blake3.digestion()`
+  entry .murmur3   MurmurHash3 x64 128-bit, seed 0, from `Murmur3.digestion()`
+  entry .md5   the pure-Scala MD5
+  entry .sha1   the pure-Scala SHA-1
+  entry .sha2   the pure-Scala SHA-224, SHA-256, SHA-384 or SHA-512, by bit count
+      `sha2(bits)` takes 224, 256, 384 or 512; any other count is treated as 512.
+  entry .crc32   CRC-32 (RFC 1952), corpuscular's accumulator
+  entry .crc64   CRC-64/ECMA, corpuscular's accumulator; no other provider has it
+  entry .adler32   Adler-32, corpuscular's accumulator
+
+entry .Sha2   the SHA-2 family as one type: `Sha2[224]`, `Sha2[256]`, `Sha2[384]` or `Sha2[512]`
+  detail
+      `Sha2[bits]` is the algorithm type for SHA-2 at a bit count of 224, 256, 384 or 512, each
+      a distinct type, so `Digest in Sha2[256]` and `Digest in Sha2[512]` do not mix. It needs
+      no permit, being `Concession.Acceptable`, and both providers implement it.
+
+      ```scala
+      import soundness.*
+      import providers.javaBaseProvider
+      import alphabets.base64Standard
+
+      t"Hello world".digest[Sha2[384]].serialize[Base64]
+      // t"kgOwxEOf0eauWHiGYze3xTKs1tkmAVDIAxjoq4wnzjMBifjflPuJDfHSmP82Bifh"
+      ```
+
+      SHA-256 is the usual choice; SHA-512 is faster on 64-bit hardware for long inputs, and
+      SHA-224 and SHA-384 are its truncations with distinct initial states. The multihash codes
+      are `0x12` (256), `0x13` (512), `0x20` (384) and `0x1013` (224).
+  refer gastronomy.digest
+  refer gastronomy.Hash
+  entry .hash   `Hash in Sha2[bits]`, from any provider with `sha2(bits: Int)`
+      Derived in implicit scope from the `Hashing` in scope, with the bit count taken from the
+      type; named `SHA-<bits>`, with the HMAC name `HmacSHA<bits>`.
+  entry #Bits   the output length in bits: the type's own parameter
+
+entry .Sha1   SHA-1, 160 bits: deprecated, and digested only under a permit
+  detail
+      SHA-1 is broken against collision attacks and remains for the formats which still need
+      it, such as Git object names. `digest[Sha1]` needs
+      `cryptoPermits.permitDeprecatedCrypto` (or any permit which contains it:
+      `permitDisallowedCrypto`, `permitCryptoThrough2030`) in scope, since `HashWeakness[Sha1]`
+      is `Concession.Sha1`. Both providers implement it; the multihash code is `0x11`.
+
+      ```scala
+      import soundness.*
+      import providers.javaBaseProvider
+      import cryptoPermits.permitDeprecatedCrypto
+      import alphabets.base64Url
+
+      t"Hello world".digest[Sha1].serialize[Base64]   // t"e1AsOh9IyGCa4hLN-2Od7jlnP14"
+      ```
+  refer gastronomy.cryptoPermits
+  entry .hash   `Hash in Sha1`, from any provider with `sha1`
+      Named `SHA1`, with the HMAC name `HmacSHA1`.
+  entry #Bits   160
+
+entry .Md5   MD5, 128 bits: disallowed, and digested only under a permit
+  detail
+      MD5 is thoroughly broken and remains for legacy checksums and compatibility. `digest[Md5]`
+      needs `cryptoPermits.permitDisallowedCrypto` (or `permitCryptoThrough2014` or later) in
+      scope, since `HashWeakness[Md5]` is `Concession.Md5`. Both providers implement it; the
+      multihash code is `0xd5`.
+
+      ```scala
+      import soundness.*
+      import providers.javaBaseProvider
+      import cryptoPermits.permitDisallowedCrypto
+      import alphabets.hexLowerCase
+
+      t"Hello world".digest[Md5].serialize[Hex]   // t"3e25960a79dbc69b674cd4ec67a72c62"
+      ```
+  refer gastronomy.cryptoPermits
+  entry .hash   `Hash in Md5`, from any provider with `md5`
+      Named `MD5`, with the HMAC name `HmacMD5`.
+  entry #Bits   128
+
+entry .Blake3   BLAKE3, 256 bits: a pure-Scala hash with keyed and key-derivation modes
+  detail
+      BLAKE3 is a modern tree hash, faster than SHA-2 in software and extendable to any output
+      length. The JDK has no implementation, so `digest[Blake3]` needs
+      `providers.soundnessProvider`; it needs no permit. The algorithm's three modes are all
+      here: the plain hash (through `digest`, or `.hashOf` for a chosen output length), the
+      keyed hash `.keyedHash` for message authentication with a 32-byte key, and `.deriveKey`
+      for deriving a key from a context string and key material. All three are checked against
+      the official test vectors at every input length they cover.
+
+      ```scala
+      import soundness.*
+      import providers.soundnessProvider
+      import alphabets.hexLowerCase
+
+      t"Hello world".digest[Blake3].serialize[Hex]
+      Blake3.hashOf(t"Hello world".in[Data], length = 64).serialize[Hex]   // 64 bytes of output
+      ```
+
+      The multihash code is `0x1e`.
+  refer gastronomy.SoundnessHashing
+  refer gastronomy.digest
+  entry .hash   `Hash in Blake3`, from a provider with `blake3`: the Soundness provider
+      Named `BLAKE3`, with the HMAC name `HMAC-BLAKE3`, which no JCE provider implements; a
+      keyed BLAKE3 is `.keyedHash`, not an HMAC.
+  entry .digestion   a fresh, exclusive BLAKE3 `Digestion`, 32-byte output
+      What `SoundnessHashing.blake3` supplies: append bytes in any windows and `digest()` once.
+  entry .hashOf   the BLAKE3 hash of a frozen byte array, at any output length
+      `Blake3.hashOf(input, length)`: the plain hash, 32 bytes unless `length` says otherwise.
+      BLAKE3's output is an extendable stream, so a longer length is a longer prefix of the
+      same stream, not a different hash.
+  entry .keyedHash   the keyed BLAKE3 hash of input under a 32-byte key, at any output length
+      `Blake3.keyedHash(key, input, length)`: message authentication, where the key replaces
+      the algorithm's initial state. The key must be exactly 32 bytes; any other length is a
+      panic, _BLAKE3 key must be 32 bytes_.
+  entry .deriveKey   derives key material from a context string and input, at any output length
+      `Blake3.deriveKey(context, material, length)`: the context — a unique, application-specific
+      text such as `t"myapp 2026-01-01 session key"` — is hashed in derive-key-context mode to
+      a key under which the material is then hashed, so keys derived for different purposes from
+      the same material are unrelated.
+  entry #Bits   256
+
+entry .Murmur3   MurmurHash3, x64 128-bit: a fast non-cryptographic hash, under a permit
+  detail
+      MurmurHash3 is the hash behind Guava's Bloom filters and hash-keyed structures: a few
+      operations per 16-byte block, for inputs which are not adversarial, where a cryptographic
+      digest's rounds would be several times the work for no benefit. It offers no collision
+      resistance against an attacker, so `digest[Murmur3]` needs
+      `cryptoPermits.permitNonCryptographicHashes` — the same permit as the checksums — and it
+      is implemented by the Soundness provider only. The output is the two 64-bit words `h₁`
+      then `h₂`, each little-endian, byte for byte what Guava's `murmur3_128()` produces.
+
+      ```scala
+      import soundness.*
+      import providers.soundnessProvider
+      import cryptoPermits.permitNonCryptographicHashes
+      import alphabets.hexLowerCase
+
+      t"hello".digest[Murmur3].serialize[Hex]   // t"029bbd41b3a7d8cb191dae486a901e5b"
+      ```
+
+      A seeded digestion is `.digestion(seed)`; the provider's is seed 0. ulysses's
+      `BloomFilter` digests through this type.
+  refer gastronomy.cryptoPermits
+  refer gastronomy.SoundnessHashing
+  entry .hash   `Hash in Murmur3`, from a provider with `murmur3`: the Soundness provider
+      Named `Murmur3-128`, with the HMAC name `HMAC-Murmur3-128`, which nothing implements.
+  entry .digestion   a fresh, exclusive MurmurHash3 `Digestion`, with an optional seed
+      `Murmur3.digestion(seed)` starts both state words at `seed` (0 by default), for a hash
+      table which wants a per-instance salt; the result is 16 bytes. Nothing is allocated
+      until `digest()`.
+  entry #Bits   128
+
+entry .Sha384   SHA-384 as its own algorithm type, with a multihash code but no `Hash` of its own
+    A 384-bit `Algorithm` whose `Multicodec` instance shares the code of `Sha2[384]`, `0x20`,
+    since they are the same function. Digesting is done through `Sha2[384]`: no `Hash in
+    Sha384` is derived, so `digest[Sha384]` does not compile; the type exists for a value
+    which names the algorithm without a bit-count parameter.
+
+entry .Sha512   SHA-512 as its own algorithm type, with a multihash code but no `Hash` of its own
+    A 512-bit `Algorithm` whose `Multicodec` instance shares the code of `Sha2[512]`, `0x13`.
+    Digesting is done through `Sha2[512]`: no `Hash in Sha512` is derived, so `digest[Sha512]`
+    does not compile.
+
+entry .Feistel   a Feistel network over a 64-bit value, from a list of subkeys and a round function
+    `Feistel(subkeys, round)(input)` runs one round per subkey: each round moves the low 32-bit
+    word of the value to the high word and sets the low word to the old high word XOR
+    `round(low, subkey)`. The round function may return any `Int`, negative included; the XOR
+    is masked to 32 bits, not sign-extended. With no subkeys the input is returned unchanged;
+    the rounds are reversible by running them backwards with the subkeys reversed, which is
+    what makes a Feistel network a bijection on 64-bit values — a format-preserving
+    permutation for obfuscating identifiers or sharding keys. It is not encryption unless the
+    round function is a cryptographic one.
+
+    ```scala
+    import soundness.*
+
+    def mix(value: Int, key: Int): Int = value*key + 0x9E3779B9
+
+    Feistel(List(3, 5, 7, 11), mix)(0x0123456789abcdefL)   // 0xa7e731b19c3aeda5L
+    Feistel(Nil, mix)(0x0123456789abcdefL)                 // unchanged
+    ```
+
+entry .Permit   erased evidence that a weak algorithm, key length or mode may be *applied*
+  detail
+      A `Permit[concession]` is the capability `digest`, `checksum`, enigmatic's `hmac`,
+      `encrypt` and `sign`, and telekinesis's TLS configuration require before using something
+      NIST SP 800-131A lists as deprecated or disallowed: `digest[Md5]` needs a
+      `Permit[Concession.Md5]`, `digest[Crc32]` a `Permit[Concession.NonCryptographic]`. It is
+      erased, so it costs nothing at runtime; it is a compile-time gate. A `Permit` is a
+      `ProcessingPermit` too, so it also covers verifying and decrypting.
+
+      `Permit.acceptable`, for `Concession.Acceptable`, is always in scope, which is why SHA-2
+      and BLAKE3 need no import. Every other permit is imported by name from the
+      `cryptoPermits` package, each an intersection of the fine-grained permits it grants:
+
+      ```scala
+      import soundness.*
+      import providers.javaBaseProvider
+      import cryptoPermits.permitDisallowedCrypto
+
+      t"Hello world".digest[Md5]
+      ```
+
+      Without one, the compile error reads _this operation uses a sub-optimal algorithm, key
+      length or mode — or a checksum in place of a hash; import the matching permit
+      (`cryptoPermits.permitNonCryptographicHashes` for CRC-32/CRC-64/Adler-32, or
+      `cryptoPermits.permitUnauthenticatedCrypto`, `cryptoPermits.permitDeprecatedCrypto` or
+      `cryptoPermits.permitDisallowedCrypto`) to allow it_.
+  refer gastronomy.cryptoPermits
+  refer gastronomy.Concession
+  refer gastronomy.ProcessingPermit
+  entry .acceptable   `Permit[Concession.Acceptable]`, always in scope: strong algorithms need no import
+
+entry .ProcessingPermit   erased evidence that already-protected data may be *processed* with a weak algorithm
+  detail
+      NIST SP 800-131A distinguishes *applying* protection (encrypt, sign, hash) from
+      *processing* data already protected (decrypt, verify), and allows the latter for longer:
+      "legacy use". A `ProcessingPermit[concession]` grants only processing; `Permit` extends
+      it and grants both. `cryptoPermits.permitLegacyCrypto` is the one purely processing
+      permit, for Triple-DES and DSA, used by enigmatic's `decrypt` and `verify`; gastronomy's
+      own operations all apply protection and need a full `Permit`.
+
+      Without one, the compile error reads _this operation uses an algorithm whose status is
+      "legacy use" or worse; import a permit (e.g. `cryptoPermits.permitLegacyCrypto` to
+      process existing data, or `cryptoPermits.permitDisallowedCrypto`) to allow it_.
+  refer gastronomy.Permit
+  refer gastronomy.cryptoPermits
+  entry .acceptable   `ProcessingPermit[Concession.Acceptable]`, always in scope
+
+entry .Concession   the weaknesses a caller may concede: one marker per algorithm, mode, key size or TLS relaxation
+  detail
+      A concession names one specific thing a program accepts by importing a permit: a broken
+      hash, a weak cipher, a short key, an unauthenticated mode, or a lenient TLS setting. The
+      markers are sealed traits with no members, used only as the type argument of `Permit` and
+      `ProcessingPermit`; all of them live here, in the lowest crypto library, so gastronomy's
+      hashes, enigmatic's ciphers and telekinesis's TLS share one vocabulary and one set of
+      `cryptoPermits` imports. `HashWeakness` maps each hash algorithm to its concession.
+
+      The hashing concessions are `Md5`, `Sha1` and `NonCryptographic` (the checksums and
+      MurmurHash3, which are not defective but offer no adversarial collision resistance), and
+      `Acceptable` is the absence of any weakness. The cipher concessions, used by enigmatic,
+      are `Des`, `TripleDes`, `Rc2`, `Blowfish`, `SmallRsa` (an RSA key under 2048 bits),
+      `Dsa`, `Ecb` and `Unauthenticated` (any non-AEAD block-cipher mode). The TLS concessions,
+      used by telekinesis, are `Tls10`, `Tls11`, `SmallDh` (ephemeral DH under 2048 bits),
+      `CbcCipher`, `ExpiredCertificate`, `SelfSignedCertificate`, `UnverifiedHostname` and
+      `UncheckedRevocation`.
+  refer gastronomy.cryptoPermits
+  refer gastronomy.Permit
+  refer gastronomy.HashWeakness
+  entry .Acceptable   no weakness at all: SHA-2, BLAKE3, AES-GCM; its permit is always in scope
+  entry .Md5   digesting with MD5; granted by `permitDisallowedCrypto` and `permitCryptoThrough2014` onward
+  entry .Sha1   digesting with SHA-1; granted by `permitDeprecatedCrypto`, `permitDisallowedCrypto`, `permitCryptoThrough2030`
+  entry .NonCryptographic   digesting with CRC-32, CRC-64, Adler-32 or MurmurHash3; granted by `permitNonCryptographicHashes`
+      Not a defect in the algorithm — a checksum does exactly what it claims — but a
+      concession that no adversary is in the threat model, since none of these resists a
+      deliberate collision.
+  entry .Tls10   accepting TLS 1.0; granted by `permitLegacyTls`
+  entry .Tls11   accepting TLS 1.1; granted by `permitLegacyTls`
+  entry .SmallDh   accepting ephemeral Diffie-Hellman shorter than 2048 bits; granted by `permitLegacyTls`
+  entry .CbcCipher   accepting CBC-mode TLS cipher suites; granted by `permitLegacyTls`
+  entry .ExpiredCertificate   accepting an expired peer certificate; granted by `permitUntrustedCertificates`
+  entry .SelfSignedCertificate   accepting a self-signed peer certificate; granted by `permitUntrustedCertificates`
+  entry .UnverifiedHostname   accepting a certificate whose name does not match the host; granted by `permitUntrustedCertificates`
+  entry .UncheckedRevocation   connecting without checking certificate revocation; granted by `permitUncheckedRevocation`
+  entry .Des   DES; granted by `permitDisallowedCrypto` and `permitCryptoThrough2014` onward
+  entry .TripleDes   Triple-DES; applied under `permitDeprecatedCrypto`, processed under `permitLegacyCrypto`
+  entry .Rc2   RC2; granted by `permitDisallowedCrypto` and `permitCryptoThrough2014` onward
+  entry .Blowfish   Blowfish; granted by `permitDisallowedCrypto` and `permitCryptoThrough2014` onward
+  entry .SmallRsa   RSA with a key shorter than 2048 bits; granted by `permitDisallowedCrypto`, `permitCryptoThrough2014` onward
+  entry .Dsa   DSA signatures; applied under `permitDisallowedCrypto`, processed under `permitLegacyCrypto`
+  entry .Ecb   ECB mode; granted by `permitDisallowedCrypto` only
+  entry .Unauthenticated   any unauthenticated (non-AEAD) cipher mode; granted by `permitUnauthenticatedCrypto`
+
+entry .Signing   what a signing algorithm does: sign bytes with a private key, verify with a public one
+  detail
+      The interface enigmatic's asymmetric ciphers (`Rsa`, `Ecdsa`) and its HMAC adapter
+      implement, declared here so that a library below enigmatic can take "something which
+      signs" as a value. Keys and signatures are raw `Data`; enigmatic's `PrivateKey#sign` and
+      `PublicKey#verify` are the typed, permit-gated front to it.
+  entry #sign   the signature of `data` under `privateKey`, as bytes
+  entry #verify   whether `signature` is `data`'s signature under `publicKey`
+
+entry .providers   the hashing providers, each a given to import by name
+  detail
+      Which implementation computes a digest is decided by the `Hashing` given in scope, and the
+      choice is never implicit: `import soundness.*` brings none of these in, and one or both
+      is imported by name. The same package, merged in the umbrella, holds enigmatic's
+      `opensslProvider`, and `javaBaseProvider` enables enigmatic's JDK cryptography as well as
+      hashing here.
+
+      ```scala
+      import soundness.*
+      import providers.javaBaseProvider, providers.soundnessProvider
+      ```
+
+      Each algorithm's `Hash` is derived from a provider which has that algorithm's method, so
+      the two are complementary rather than ranked: the JDK provider lacks `Blake3`, `Murmur3`
+      and `Crc64`, and nothing is lost by importing both. With both in scope the Soundness
+      provider, being lexically imported where the JDK one is derived in implicit scope,
+      serves every algorithm; to use the JDK's native SHA-2 and BLAKE3 side by side, scope the
+      imports with `locally`.
+  entry .javaBaseProvider   the JDK: `MessageDigest` and `java.util.zip` on the JVM, the pure port elsewhere
+      Supplies the marker `Provider.JavaBase`, from which `Hashing.javaBaseHashing` derives
+      `JavaBaseHashing` (and enigmatic its `JavaBaseCrypto`). MD5, SHA-1, SHA-2, CRC-32 and
+      Adler-32; not BLAKE3, MurmurHash3 or CRC-64.
+  entry .soundnessProvider   the pure-Scala `SoundnessHashing`: every algorithm, on every platform
+      Supplies `SoundnessHashing` directly. The only provider of `Blake3`, `Murmur3` and
+      `Crc64`.
+
+entry .cryptoPermits   the crypto permits, each a given to import by name: what weakness a program accepts
+  detail
+      Each given is an erased intersection of fine-grained `Permit`s (or `ProcessingPermit`s),
+      named after NIST SP 800-131A's algorithm statuses — *deprecated*, *legacy use*,
+      *disallowed* — or after a year, and covering hashes here and ciphers and TLS settings in
+      enigmatic and telekinesis alike. The levels nest by inclusion: `permitDisallowedCrypto`
+      contains every algorithm permit, and each `permitCryptoThrough<year>` contains the
+      earlier years'. Import the narrowest one that admits what the program needs, so the
+      concession stays visible:
+
+      ```scala
+      import soundness.*
+      import providers.javaBaseProvider
+      import cryptoPermits.permitNonCryptographicHashes
+
+      t"123456789".digest[Crc32]
+      ```
+
+      None is in scope by default; `import soundness.*` does not import givens, and a permit
+      imported into a block with `locally` is scoped to that block.
+  refer gastronomy.Permit
+  refer gastronomy.Concession
+  entry .permitNonCryptographicHashes   digesting with CRC-32, CRC-64, Adler-32 or MurmurHash3
+      `Permit[Concession.NonCryptographic]`: states that no adversary is in the threat model —
+      corruption detection, hash tables, Bloom filters — which is a different concession from a
+      broken hash, so it is not contained in `permitDisallowedCrypto`.
+  entry .permitDeprecatedCrypto   SHA-1 and Triple-DES: usable but transitional
+      `Permit[Concession.TripleDes] & Permit[Concession.Sha1]`: NIST's "deprecated" status.
+      The import for a program which must still compute SHA-1, as for Git object names.
+  entry .permitDisallowedCrypto   every broken or non-approved algorithm, key length and mode, MD5 and SHA-1 included
+      `Permit` for `Des`, `Rc2`, `Blowfish`, `TripleDes`, `Dsa`, `SmallRsa`, `Ecb`,
+      `Unauthenticated`, `Md5` and `Sha1`: NIST's "disallowed" status, which subsumes every
+      weaker algorithm permit. It does not include `NonCryptographic` or the TLS permits.
+  entry .permitLegacyCrypto   processing data already protected with Triple-DES or DSA: decrypt and verify only
+      `ProcessingPermit[Concession.TripleDes] & ProcessingPermit[Concession.Dsa]`: NIST's
+      "legacy use". It is not a `Permit`, so it allows no new encryption or signing, and no
+      gastronomy digest.
+  entry .permitUnauthenticatedCrypto   any unauthenticated (non-AEAD) block-cipher mode, for enigmatic
+      `Permit[Concession.Unauthenticated]`: every block-cipher mode but the AEAD ones, which
+      enigmatic gates.
+  entry .permitLegacyTls   TLS 1.0 and 1.1, small ephemeral DH and CBC suites, for telekinesis
+      `Permit` for `Tls10`, `Tls11`, `SmallDh` and `CbcCipher`. Re-enabling these in the JDK is
+      process-wide.
+  entry .permitUntrustedCertificates   expired or self-signed peer certificates and hostname mismatches, for telekinesis
+      `Permit` for `ExpiredCertificate`, `SelfSignedCertificate` and `UnverifiedHostname`.
+  entry .permitUncheckedRevocation   connecting without checking certificate revocation, for telekinesis
+      `Permit[Concession.UncheckedRevocation]`.
+  entry .permitCryptoThrough2014   every algorithm NIST disallowed by 2014: DES, MD5, RC2, Blowfish, small RSA
+      `Permit` for `Des`, `Md5`, `Rc2`, `Blowfish` and `SmallRsa`: the year-based alternative
+      to the named levels. It admits MD5 but not SHA-1 or Triple-DES.
+  entry .permitCryptoThrough2024   as 2014, plus Triple-DES and DSA
+      Adds `Permit[Concession.TripleDes]` and `Permit[Concession.Dsa]`, disallowed after 2023
+      and removed in FIPS 186-5.
+  entry .permitCryptoThrough2030   as 2024, plus SHA-1: NIST's planned phase-out
+      Adds `Permit[Concession.Sha1]`, so it admits every hash algorithm but the
+      non-cryptographic ones.
+
+entry .Multicodec   the multiformats code of a hash algorithm, for enveloping its digest as a `Multihash`
+  detail
+      A typeclass which *is* the mapping from an `Algorithm` to its registered code and name in
+      the multiformats table: `Sha1` is `0x11`, `Sha2[256]` is `0x12`, `Sha2[512]` is `0x13`,
+      `Sha2[384]` is `0x20`, `Sha2[224]` is `0x1013`, `Blake3` is `0x1e` and `Md5` is `0xd5`;
+      `Sha384` and `Sha512` share the codes of their `Sha2` forms. It is deliberately partial:
+      an algorithm with no instance cannot be enveloped, and `Multihash(digest)` does not
+      compile for it. The checksums have none — Adler-32 is unregistered, and CRC-32 and CRC-64
+      are registered as `hash`, not `multihash`, since the specification reserves multihash
+      for cryptographic functions suited to content addressing; a caller who wants a checksum
+      enveloped anyway can build the `Multihash(code, bytes)` directly from its code.
+
+      Lives in `gastronomy.multihash`. `.name(code)` gives the registered name of a code this
+      library knows, for describing a decoded envelope whose algorithm is not recoverable as a
+      type.
+  refer gastronomy.Multihash
+  entry .sha1   `0x11`, `sha1`
+  entry .sha2_256   `0x12`, `sha2-256`
+  entry .sha2_512   `0x13`, `sha2-512`
+  entry .sha2_384   `0x20`, `sha2-384`
+  entry .sha2_224   `0x1013`, `sha2-224`: a two-byte varint in the envelope
+  entry .sha384   `0x20`, `sha2-384`, for the `Sha384` type
+  entry .sha512   `0x13`, `sha2-512`, for the `Sha512` type
+  entry .blake3   `0x1e`, `blake3`: a draft entry in the table, but unambiguous and widely implemented
+  entry .md5   `0xd5`, `md5`: a draft entry in the table
+  entry .name   the registered name of a code this library knows, or `Unset`
+      `Multicodec.name(0x12)` is `t"sha2-256"`; `0x00` is `identity`. A code outside the set
+      above is legal and representable in a `Multihash` but has no name here.
+  entry .apply   `Multicodec[algorithm](code, name)`: an instance for an algorithm of one's own
+  entry #code   the algorithm's multicodec code, as registered in the multiformats table
+  entry #name   the algorithm's registered multicodec name, such as `sha2-256`
+
+entry .Multihash   a self-describing digest envelope: varint code, varint length, then the digest's bytes
+  detail
+      A `Multihash` is the multiformats envelope `<varint code><varint length><digest bytes>`,
+      in which a digest crosses a boundary without the parties agreeing on its algorithm out of
+      band — what content-addressed stores, IPFS, IPLD, libp2p and `did:key` exchange. One is
+      built from a typed digest with `.apply`, whose `Multicodec` supplies the code, so an
+      envelope can never claim an algorithm other than the one which computed its digest; and
+      read back from bytes with `.parse`.
+
+      ```scala
+      import soundness.*
+      import providers.javaBaseProvider
+      import strategies.throwUnsafely
+
+      val envelope: Multihash = Multihash(t"Hello world".digest[Sha2[256]])
+      val bytes: Data = envelope.serialize   // 0x12, 0x20, then the thirty-two bytes of the digest
+      Multihash.parse(bytes) == envelope
+      Multihash.parse(bytes).algorithm        // t"sha2-256"
+      ```
+
+      The `#code` is a plain `Int`, not a gastronomy `Algorithm`: a received envelope may name
+      a function this library cannot compute, and such a value is representable — comparable,
+      forwardable — rather than an error; `#algorithm` names it when the code is known. A
+      digest's length is explicit, so a truncated digest is a legal envelope. Two multihashes
+      are equal when their codes and bytes are. The varints are the specification's unsigned
+      LEB128, capped at nine groups. Lives in `gastronomy.multihash`.
+  refer gastronomy.Multicodec
+  refer gastronomy.Digest
+  entry .apply   `Multihash(digest)`: envelopes a typed digest under its algorithm's code; `Multihash(code, bytes)` is the raw form
+      `Multihash(digest)` needs the digest's algorithm to be a `Multicodec`, resolved from its
+      `Digest in algorithm` type, so an algorithm without a registered code — a checksum — does
+      not compile. The case-class constructor `Multihash(code, digest)` takes any code and any
+      bytes, for an algorithm this library does not know or a truncated digest.
+  entry .parse   reads an envelope from bytes, raising `Multihash.Error` for one that is malformed
+      Decodes the code and length varints and takes exactly `length` bytes after them. The
+      declared length must match the bytes that follow: fewer is `Reason.Truncated`, more is
+      `Reason.Trailing`, since either would compare equal to nothing while looking
+      well-formed; a varint running past nine groups is `Reason.Oversize`. It needs a
+      `Tactic[Multihash.Error]`.
+  entry .Reason   why an envelope could not be read: `Truncated`, `Trailing` or `Oversize`
+      `Truncated`: _the data end before the declared digest length_ (or before a varint is
+      complete); `Trailing`: _bytes remain after the declared digest length_; `Oversize`: _the
+      varint exceeds the nine groups the specification permits_. The enum is `Communicable`
+      with those messages, which `Multihash.Error` embeds.
+  entry .Error   raised by `Multihash.parse` for an envelope which cannot be read
+    detail
+        Error 41, with the `Reason`'s ordinal as its detail number: _the multihash could not be
+        read because `reason`_, where the reason is one of `Multihash.Reason`'s messages.
+    entry #reason   which of `Multihash.Reason` applies
+  entry #code   the algorithm's multicodec code, as an `Int`
+      Any code the varint can hold, known to this library or not; `#algorithm` names the known
+      ones.
+  entry #digest   the digest's bytes, of whatever length the envelope declared
+  entry #algorithm   the registered name of the code, such as `sha2-256`, or `Unset` if unknown
+      `Multicodec.name(code)`: a decoded envelope naming a function this library does not know
+      keeps its code and bytes and simply has no name.
+  entry #serialize   the envelope as bytes: varint code, varint length, digest
+      What is stored or sent; `Multihash.parse` reads it back, and the two round-trip.

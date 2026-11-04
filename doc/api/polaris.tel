@@ -1,0 +1,276 @@
+tel 1.0
+
+base polaris
+import soundness
+
+info   fixed-width binary layouts as case classes, read from bytes by a derived typeclass
+detail
+    _Polaris_ reads structured binary data — the fixed-width records of file headers, network
+    packets and device protocols — by mapping bytes onto Scala types. A case class whose fields
+    are sized numeric types (`B32`, `U16`, `S64`, …) *is* a binary layout: each field's type
+    states its width and its interpretation, and derivation composes them in declaration order,
+    computing every offset, so there is no index arithmetic to keep in step with a
+    specification.
+
+    ```scala
+    import soundness.*
+
+    case class Header(magic: B32, version: U16, flags: B16, length: U32)
+
+    object Header:
+      given Header is Debufferable = Debufferable.derived
+
+    val data = hex"cafebabe0001000000000010"
+
+    byteWidth[Header]                          // 12
+    data.unpackFrom[Header](0).length          // 16
+
+    data.sextant:
+      val magic = unpack[B32]
+      unpack[U16]                              // 1
+    ```
+
+    `Debufferable` is the reading typeclass, with instances for the sixteen sized and plain
+    numeric types and derivation for products; `Unpackable` sits above it and is what `unpack`
+    and `unpackFrom` resolve, covering a single value and a count-prefixed array of them. A
+    `Sextant` is the read position, a mutable capability introduced by the `sextant { … }`
+    block, so that successive `unpack`s advance through the bytes. `Bufferable` is the writing
+    typeclass, deriving over products in the same way.
+
+    All multi-byte numbers are read big-endian. Reads are not bounds-checked against a layout:
+    reading past the end of the bytes throws the platform's `ArrayIndexOutOfBoundsException`, so
+    check the length of untrusted input against `byteWidth` first.
+
+    The library has one source set, `polaris.core`, which compiles for every platform.
+    Everything is exported to the `soundness` umbrella.
+
+refer polaris.Debufferable
+refer polaris.Unpackable
+refer polaris.Sextant
+refer polaris.unpackFrom
+
+entry .Sextant   a read position in a byte array: the mutable capability successive `unpack`s advance
+  detail
+      A `Sextant` is a cursor over `Data`, named for the navigator's instrument that reads a
+      position. It is a *capability*: it holds a mutable offset, so unpacking through it is an
+      effect, and it is `caps.Mutable`, so only an exclusive reference (`Sextant^`) may advance
+      it. Two readers sharing one position would each consume bytes the other expected, and the
+      capture checker prevents a sextant from being aliased or from escaping the block which
+      introduced it.
+
+      The usual way to get one is the `sextant { … }` extension on `Data`, which makes a sextant
+      at offset 0 and passes it as a contextual value to the block, where `unpack` finds it:
+
+      ```scala
+      import soundness.*
+
+      val data = hex"cafebabe00010000"
+
+      data.sextant:
+        summon[Sextant].advance(4)      // skip the magic number
+        val version = unpack[U16]
+        summon[Sextant].offset          // 6
+      ```
+
+      `Sextant(bytes, initialPosition)` constructs one directly, starting at `initialPosition`
+      (default 0). It is `Findable`, so compile-time searches for capabilities in scope can see
+      it.
+  refer polaris.sextant
+  refer polaris.unpack
+  entry #offset   the current read position, as a byte index from the start of the data
+      Each `unpack` advances it by the width of the value read, so it says where the next read
+      will begin, for a format which records where a section starts.
+  entry #advance   moves the read position forward by a number of bytes, without reading them
+      An `update` method, so it needs an exclusive reference to the sextant: it skips padding,
+      or a field this reader does not need. The count is not checked against the length of the
+      data; a later read beyond the end throws.
+
+entry .sextant   runs a block with a `Sextant` over these bytes, starting at offset 0
+    An extension on `Data`: `data.sextant { … }` makes a `Sextant` at the start of the bytes and
+    passes it to the block as a contextual `Sextant^`, so each `unpack` inside reads the next
+    value and advances past it. The block's result is returned; the sextant does not escape it.
+
+    ```scala
+    import soundness.*
+
+    hex"00010002".sextant:
+      (unpack[Short], unpack[Short])   // (1, 2)
+    ```
+
+entry .unpack   reads the next value of a type from the `Sextant` in scope, and advances past it
+    `unpack[T]` resolves `T is Unpackable` and reads through the contextual `Sextant^`. For a
+    `Debufferable` type the result is the value, and the sextant moves on by its width; for a
+    frozen array `Array[T]^{}` the result is a function from a count to the array, which is read
+    when the count is known and does not move the caller's sextant.
+
+    ```scala
+    import soundness.*
+
+    case class Pair(left: U16, right: U16)
+
+    object Pair:
+      given Pair is Debufferable = Debufferable.derived
+
+    hex"00010002000300040005000600070008".sextant:
+      val pairs = unpack[Array[Pair]^{}](4)
+      pairs.length   // 4
+    ```
+
+    Reading past the end of the data throws `ArrayIndexOutOfBoundsException`.
+
+entry .unpackFrom   reads a value of a chosen type from bytes at an offset
+    An extension on `Data`: `bytes.unpackFrom[T](offset)` makes a `Sextant` at `offset` and
+    unpacks one `T` through it, for a single read where a `sextant { … }` block would be
+    ceremony. As with `unpack`, an array type gives a function from a count to the array.
+
+    ```scala
+    import soundness.*
+
+    hex"090900000100".unpackFrom[Int](2)                         // 256
+    hex"000000010000000200000003".unpackFrom[Array[Int]^{}](4)(2)    // the array 2, 3
+    ```
+
+    Numbers are read big-endian; reading past the end of the bytes throws
+    `ArrayIndexOutOfBoundsException`.
+
+entry .byteWidth   the number of bytes a `Debufferable` type occupies, without a value in hand
+    `byteWidth[T]` is `T`'s `Debufferable#width`: 1, 2, 4 or 8 for the numeric types, and the sum
+    of its fields' widths for a derived product, nested records included.
+
+    ```scala
+    import soundness.*
+
+    case class Header(magic: B32, version: U16, flags: B16, length: U32)
+
+    object Header:
+      given Header is Debufferable = Debufferable.derived
+
+    byteWidth[Header]   // 12
+    byteWidth[U16]      // 2
+    ```
+
+entry .Debufferable   a typeclass for a fixed-width type which can be read from bytes
+  detail
+      `T is Debufferable` states two things: `#width`, the number of bytes a `T` occupies, and
+      `#debuffer`, which reads one from a `Sextant` and advances it by that width. The companion
+      has instances for the sized bit types (`B8`–`B64`), the signed and unsigned integers
+      (`S8`–`S64`, `U8`–`U64`) and Scala's `Byte`, `Short`, `Int` and `Long`, all big-endian.
+
+      A case class derives its instance from its fields', which are read in declaration order;
+      a field whose type is itself a derived record contributes its whole width, so layouts
+      compose:
+
+      ```scala
+      import soundness.*
+
+      case class Header(magic: Int, version: Short, flags: Byte)
+
+      object Header:
+        given debufferable: Header is Debufferable = Debufferable.derived
+
+      Array[Byte](0, 0, 1, 0, 0, 3, 7).unpackFrom[Header](0)   // Header(256, 3, 7)
+      ```
+
+      A layout which is not a product of fixed-width fields — a packed colour, say, or a type
+      with its own interpretation of some bytes — defines an instance with `.apply`. Only
+      products derive: there is no derivation for sum types, since a binary layout has no
+      standard tag.
+  refer polaris.Unpackable
+  refer polaris.byteWidth
+  entry .apply   makes an instance from a byte width and a function of the bytes and an offset
+      `Debufferable(width)((bytes, offset) => …)` reads a value starting at `offset` in `bytes`,
+      and the instance advances the sextant by `width` afterwards. This is how the primitive
+      instances are written.
+
+      ```scala
+      import soundness.*
+
+      case class Rgb(red: Byte, green: Byte, blue: Byte)
+
+      object Rgb:
+        given Rgb is Debufferable =
+          Debufferable(3): (bytes, offset) =>
+            Rgb(bytes.readUnchecked(offset), bytes.readUnchecked(offset + 1), bytes.readUnchecked(offset + 2))
+      ```
+  entry .b8   reads one byte as a `B8`
+  entry .b16   reads two bytes, big-endian, as a `B16`
+  entry .b32   reads four bytes, big-endian, as a `B32`
+  entry .b64   reads eight bytes, big-endian, as a `B64`
+  entry .s8   reads one byte as a signed `S8`
+  entry .s16   reads two bytes, big-endian, as a signed `S16`
+  entry .s32   reads four bytes, big-endian, as a signed `S32`
+  entry .s64   reads eight bytes, big-endian, as a signed `S64`
+  entry .u8   reads one byte as an unsigned `U8`
+  entry .u16   reads two bytes, big-endian, as an unsigned `U16`
+  entry .u32   reads four bytes, big-endian, as an unsigned `U32`
+  entry .u64   reads eight bytes, big-endian, as an unsigned `U64`
+  entry .byte   reads one byte as a `Byte`
+  entry .short   reads two bytes, big-endian and signed, as a `Short`
+  entry .int   reads four bytes, big-endian and signed, as an `Int`
+  entry .long   reads eight bytes, big-endian and signed, as a `Long`
+  entry .Join   the instance derivation builds for a product: a total width and a reader
+    detail
+        Built by `.conjunction`, which `Debufferable.derived` calls for a case class: its width
+        is the sum of the fields' widths, and its reader reads each field in turn through the
+        same sextant and constructs the product. Not usually named by user code.
+    entry #width   the product's total width in bytes
+  entry .conjunction   derives an instance for a product from its fields' instances
+      The product half of the `ProductDerivable` derivation, which `Debufferable.derived` invokes;
+      user code writes `Debufferable.derived` rather than calling this.
+  entry #width   the number of bytes a value of this type occupies
+  entry #debuffer   reads one value from a `Sextant` and advances it by `#width`
+      Takes an exclusive `Sextant^`, since reading moves its position. A hand-written instance
+      must declare its parameter as `Sextant^`.
+
+entry .Unpackable   a typeclass for what `unpack` can read: a single value, or an array by count
+  detail
+      `unpack` and `unpackFrom` resolve `T is Unpackable`, whose `#Wrap` type says the shape of
+      the result: for any `Debufferable` type the result is the value itself (`.debufferable`),
+      and for a frozen array `Array[T]^{}` it is `Int -> Array[T]^{}`, a function from a count
+      to the array (`.frozenArray`). The second is how a count-prefixed section reads as one
+      call, with the count supplied once it is known:
+
+      ```scala
+      import soundness.*
+
+      val data = Array[Byte](0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 3)
+
+      data.sextant:
+        val read = unpack[Array[Int]^{}]
+        (read(1), read(2))   // the arrays 1 and 1, 2
+      ```
+  refer polaris.Debufferable
+  refer polaris.unpack
+  entry .frozenArray   reads a frozen array of `Debufferable` elements, as a function from a count
+      Provides `Array[T]^{} is Unpackable` for any `T` with a `Debufferable` and a `ClassTag`.
+      Its result records the data and the start offset and makes a fresh sextant each time it is
+      applied, so the function is pure, may be applied more than once, and never advances the
+      caller's sextant: a reader which continues after the array must `advance` past it.
+  entry .debufferable   reads a single value of any `Debufferable` type
+      Provides `T is Unpackable` for every `T is Debufferable`, with the value itself as the
+      result, advancing the sextant by the type's width.
+  entry #Wrap   the shape of the result: the value itself, or a function from a count
+  entry #Result   the result type `unpack` gives: `Wrap[Self]`
+  entry #unpack   reads from a `Sextant`, giving a `Wrap[Self]`
+
+entry .Bufferable   a typeclass for a fixed-width type which can be written to bytes
+  detail
+      The writing counterpart to `Debufferable`: `T is Bufferable` states the `#width` a `T`
+      occupies and `#sextant`, which writes one through a `Sextant`. Products derive their
+      instances from their fields' with `Bufferable.derived`, as `Debufferable` does, so a
+      layout is declared once for both directions.
+
+      The companion currently declares no instances for the numeric types, so a derived product
+      has no field instances to compose until they are supplied.
+  refer polaris.Debufferable
+  entry .Join   the instance derivation builds for a product: a total width and a writer
+    detail
+        Built by `.conjunction`, which `Bufferable.derived` calls for a case class: its width is
+        the sum of the fields' widths, and its writer writes each field in turn through the same
+        sextant. Not usually named by user code.
+    entry #width   the product's total width in bytes
+  entry .conjunction   derives an instance for a product from its fields' instances
+      The product half of the `ProductDerivable` derivation, which `Bufferable.derived` invokes.
+  entry #width   the number of bytes a value of this type occupies
+  entry #sextant   writes a value through a `Sextant`
+      Takes an exclusive `Sextant^`; a hand-written instance must declare its parameter so.

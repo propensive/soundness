@@ -1,0 +1,540 @@
+tel 1.0
+
+base perihelion
+import soundness
+
+info   WebSockets: an upgraded HTTP connection as a typed message loop, as server handler and as client
+detail
+    _Perihelion_ speaks the WebSocket protocol (RFC 6455) on both sides of a connection. On
+    the **server**, a scintillate handler returns `webSocket(initial)(handle)`: the request
+    is upgraded with a `101 Switching Protocols` handshake, and the connection becomes a
+    state machine — each inbound message is decoded to the handler's message type and
+    passed to `handle` with the current state, which answers with a `Control`: `Reply` to
+    send a message and continue, `Continue` to wait silently, `Conclude` to send a last
+    message and close, or `Terminate` to close at once. On the **client**, a
+    `Websocket.Url` (`ws://` or `wss://`) is a coaxial transport, so `url.react(initial)
+    { message => … }` connects, performs the handshake and runs the same loop in the other
+    direction, `url.exchange` lets the client speak first, and `url.session` lends the
+    live `Websocket.Connection` for free-form use.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import logging.silentLogging
+    import strategies.throwUnsafely
+    import threads.virtualThreads
+    import probates.awaitProbate
+    import webserverErrorPages.minimalErrorPage
+    import formatting.compactJsonFormatting
+    import codepages.utf8Codepage
+    import charsets.utf8Charset
+    import textSanitizers.skipSanitizer
+
+    case class Ping(value: Int)
+
+    def main(): Unit = supervise:
+      SocketServer(8080).handle:
+        webSocket(): (ping: Ping over Json) =>
+          Control.Reply(Ping(ping.value + 1).over[Json], ())
+    ```
+
+    Messages are typed. The raw `Message` (a `Text` or a `Binary` frame) is the untyped
+    form; any coaxial `Ingressive`/`Transmissible` type such as `Text` is carried directly;
+    and `value over Json` (or `over Tel`, or any format `Encodable in Text`) carries a
+    record as the format's text in a text frame, through `overIngressive` and
+    `overTransmissible`. The protocol's sharp edges — masking (clients mask, servers do
+    not, and each side rejects the other's mistake), fragmentation and reassembly,
+    `Ping`/`Pong`, incremental UTF-8 validation of text, close codes — are handled by the
+    shared `Reader` and `Channel`, never surface in a handler, and conform to the Autobahn
+    test suite. A violation is a `Websocket.Error` whose reason carries the close code the
+    peer is sent.
+
+    The library is one component, `perihelion.core` (JVM), over scintillate's server and
+    coaxial's sockets. `Masking`, `over`, `overIngressive`, `overTransmissible`,
+    `Websocket`, `webSocket` and `WsSessional` are exported to the `soundness` umbrella.
+    Three names are not: `Message`, because fulminate's `Message` already holds that name
+    in the umbrella (`import perihelion.Message`), and the client givens `wsClient` and
+    `wsSessional`, whose capture-annotated refinement types a synthesized export forwarder
+    would lose (`import perihelion.wsClient`, `import perihelion.wsSessional`). `Channel`
+    and `Reader` are public in the package but not exported.
+
+refer perihelion.webSocket
+refer perihelion.Websocket
+refer perihelion.Message
+refer perihelion.wsClient
+refer coaxial.Control
+
+entry .webSocket   upgrades the request being served to a WebSocket, handled as a stateful message loop
+    `webSocket(initial)(handle)` is called inside a scintillate handler, where an
+    `Http.Request` (the connection) is in context, and returns a `Websocket[message,
+    state]`, which is `Servable`: returning it from the handler sends the `101` handshake
+    and the connection becomes the loop. `initial` is the starting state (default `()`),
+    and `handle` is a context function `(state: state) ?=> message => Control[state]`:
+    each decoded message is passed with the state in context, and the `Control` returned
+    says what to send and what the next state is (`Unset` keeps the current one). The
+    message type is inferred from the handler's parameter, so it is annotated there; a
+    handler which reads its state names it with an explicit context parameter,
+    `(count: Int) ?=> (message: Message) => …`, since a context parameter inserted by
+    conversion has no name.
+
+    ```scala fuel
+    frame
+      label An echo of raw messages
+      code
+          import soundness.*
+          import perihelion.Message
+          import logging.silentLogging
+          import strategies.throwUnsafely
+          import threads.virtualThreads
+          import probates.awaitProbate
+          import webserverErrorPages.minimalErrorPage
+
+          def main(): Unit = supervise:
+            SocketServer(8080).handle:
+              webSocket(): (message: Message) =>
+                Control.Reply(message, ())
+    frame
+      label A count of messages, threaded as the state
+      code
+          import soundness.*
+          import perihelion.Message
+          import logging.silentLogging
+          import strategies.throwUnsafely
+          import threads.virtualThreads
+          import probates.awaitProbate
+          import webserverErrorPages.minimalErrorPage
+
+          def main(): Unit = supervise:
+            SocketServer(8080).handle:
+              webSocket(0): (count: Int) ?=> (message: Message) =>
+                Control.Reply(Message.Text(t"message ${count + 1}"), count + 1)
+    frame
+      label Typed messages over JSON, and a close after the tenth
+      code
+          import soundness.*
+          import logging.silentLogging
+          import strategies.throwUnsafely
+          import threads.virtualThreads
+          import probates.awaitProbate
+          import webserverErrorPages.minimalErrorPage
+          import formatting.compactJsonFormatting
+          import codepages.utf8Codepage
+          import charsets.utf8Charset
+          import textSanitizers.skipSanitizer
+
+          case class Ping(value: Int)
+
+          def main(): Unit = supervise:
+            SocketServer(8080).handle:
+              webSocket(0): (count: Int) ?=> (ping: Ping over Json) =>
+                if count < 10 then Control.Reply(Ping(ping.value + 1).over[Json], count + 1)
+                else Control.Conclude(Ping(0).over[Json], count)
+    ##
+    ```
+
+    The message type must be `Ingressive`: the raw `Message` (decoded by identity, so a
+    handler sees whether a frame was text or binary), `Text` or `Data` through coaxial's
+    own instances, or `value over format` through `overIngressive`, which needs the
+    format's `Decodable in Text` (a `Json`'s needs `formatting` and `textSanitizers`
+    givens), the value's `Decodable in format`, a `Charset` and a `Tactic[Hazard]` (such
+    as `strategies.throwUnsafely`). A `Reply` or `Conclude` takes any `Transmissible`
+    value, serialized to one complete frame. The handler runs on its own task under the
+    `Monitor` and `Probate` in scope; a `Websocket.Error` in the loop closes the connection
+    with the reason's close code, and the peer's `Close` ends it with the initial state's
+    type as the task's result.
+
+entry .Websocket   the server-side WebSocket: the handshake response, its channel and its handler task
+  detail
+      `Websocket[message, state]` is what `webSocket` returns: a `Servable` value whose
+      response is the `101 Switching Protocols` handshake — `Sec-WebSocket-Accept` computed
+      from the request's `Sec-WebSocket-Key` and `.magic`, `Connection: Upgrade`,
+      `Upgrade: websocket` — with the outgoing frame stream as its body, which scintillate
+      pumps to the socket for as long as the connection lasts. On construction it starts
+      `#task`, which reads the client's frames, reassembles them into messages, decodes each
+      to `message` and runs the handler loop. A handler may keep the value before returning
+      it, to push a message through `#channel` before the client has sent anything:
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import perihelion.Message
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import threads.virtualThreads
+      import probates.awaitProbate
+      import webserverErrorPages.minimalErrorPage
+
+      def main(): Unit = supervise:
+        SocketServer(8080).handle:
+          val websocket = webSocket(): (message: Message) => Control.Continue(())
+          websocket.channel.send(Message.Text(t"welcome"))
+          websocket
+      ```
+
+      The constructor takes the request, the initial state, a decoder from `Message` to
+      the handler's type, and the handler; `webSocket` builds the decoder and is the
+      intended way to make one. A request with no `Sec-WebSocket-Key` header is a panic:
+      the handler should only upgrade a request which asked to be. The companion holds the
+      protocol's other pieces: the client's `.Url` and `.Connection`, the wire-level
+      `.Frame`, and the `.Error` and `.Event` types.
+  refer perihelion.webSocket
+  refer perihelion.Channel
+  refer perihelion.Reader
+  refer coaxial.Control
+  entry .magic   the GUID RFC 6455 appends to the key, `258EAFA5-E914-47DA-95CA-C5AB0DC85B11`
+      `Sec-WebSocket-Accept` is the Base64 of the SHA-1 of the client's `Sec-WebSocket-Key`
+      followed by this text; the server computes it in `.servable` and the client checks it
+      in `wsClient`.
+  entry .servable   serves a `Websocket` as the `101` handshake whose body is the outgoing frame stream
+      The given which lets a handler return a `Websocket`. The body is `Flowing`, and its
+      source is the channel's single reader endpoint, materialized exactly once by the
+      server's response writer.
+  entry .Url   a `ws://` or `wss://` URL: `urticose.Url["ws" | "wss"]`
+      Decoded from text as any `Url` is (`t"ws://localhost:8080/".as[Websocket.Url]`),
+      with no bespoke scheme machinery; the port defaults to `80` for `ws` and `443` for
+      `wss` when the authority omits it. A `wss://` connection is opened over TLS through
+      coaxial's `SecureEndpoint`, configured by the `Tls` given in scope — the system trust
+      store with hostname verification by default, or `Tls(context, verify = false)` for a
+      self-signed test server. With `wsClient` in scope the URL is a `Duplexable` transport,
+      so `url.react`, `url.exchange` and (with `wsSessional`) `url.session` apply to it.
+  entry .Connection   a live client connection: reassembled inbound messages, `send` and `close`
+    detail
+        What `wsClient` connects to a `Websocket.Url` and what `url.session` lends: the
+        handshake is complete, a background daemon pumps every spooled frame to the socket,
+        and the inbound stream has been advanced past the `101`. coaxial's `react` and
+        `exchange` drive it as a state machine; a session scope uses `#messages`, `#send`
+        and `#close` directly.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import perihelion.{wsClient, wsSessional}
+        import internetAccess.online
+        import logging.silentLogging
+        import strategies.throwUnsafely
+        import threads.virtualThreads
+        import probates.awaitProbate
+
+        def main(): Unit = supervise:
+          t"ws://localhost:8080/".as[Websocket.Url].session: connection ?=>
+            connection.send(t"hello".in[Data].stream)
+            connection.messages.refill(Credit(4096))
+        ```
+    entry #messages   the inbound messages, one complete message per stream element, as bytes
+        Runs the shared `Reader` over the connection: `Ping`s are answered, `Pong`s dropped,
+        fragments reassembled, text validated as UTF-8 and the peer's `Close` ends the
+        stream. Each element is a message's payload — a text message's UTF-8 bytes, or a
+        binary message's bytes verbatim — and chunk boundaries frame messages. Needs a
+        `Tactic[Websocket.Error]` for a protocol violation.
+    entry #send   sends one message, as one complete frame, masked at the channel
+        The stream is consumed and memoized as the frame's bytes; a `Transmissible` value's
+        `serialize` produces exactly such a stream.
+    entry #close   sends a `1000` close frame, stops the pump and closes the socket
+        Waits for the pump to finish writing what was spooled. Needs a `Monitor`.
+  entry #key   the client's `Sec-WebSocket-Key`, from which the handshake's accept key is computed
+  entry #channel   the outgoing side: `send` pushes a message to the client, `close` ends the connection
+      The `Channel` the handler loop replies through. A handler may hold the `Websocket`
+      and call `channel.send(Message.Text(…))` before returning it, to greet a client which
+      has not yet spoken; the frame is spooled and written once the `101` has been sent.
+  entry #task   the handler loop, running from construction; its result is the final state
+      Completes with the state the handler last returned when the client closes or the
+      handler concludes or terminates, or with the initial state after a `Websocket.Error`
+      has closed the connection with the reason's close code.
+  entry .Error   raised when the peer violates the protocol, with the close code to send
+    detail
+        Error 368, with the reason's number as its detail: _the WebSocket protocol was
+        violated because `reason`_. Raised by `Websocket.Frame.parse` and the `Reader` when a
+        frame or message breaks RFC 6455, by `wsClient` when the handshake fails, and when
+        the connection is cut short. The server-side loop catches it, closes the connection
+        with `reason.closeCode`, and returns the initial state; a client sees it through its
+        `Tactic[Websocket.Error]`.
+    entry .Reason   why the protocol was violated, each with its RFC 6455 close code
+      detail
+          `Unmasked` (1, code 1002): a client sent an unmasked frame. `BadOpcode(code)` (2,
+          1002): a reserved opcode. `BadControl` (3, 1002): a control frame was fragmented
+          or exceeded 125 bytes. `BadFragmentation` (4, 1002): a data frame arrived while a
+          fragmented message was open, or a continuation had nothing to continue.
+          `TooLarge(size)` (5, 1009): a frame payload over 16 MiB. `InvalidText` (6, 1007):
+          a text frame or close reason held invalid UTF-8. `ReservedBits` (7, 1002): RSV1, 2
+          or 3 was set, and no extension was negotiated. `BadClose` (8, 1002): a one-byte
+          close payload or an invalid close code. `Masked` (9, 1002): a server sent a masked
+          frame. `Handshake(detail)` (10, 1002): the client's handshake failed — the URL had
+          no host, the server did not answer `101`, or its `Sec-WebSocket-Accept` was wrong.
+          `Truncated` (11, 1006): the connection's bytes ended mid-frame.
+      entry #number   the reason's number, which is the error's detail number
+      entry #closeCode   the RFC 6455 close code sent to the peer before closing
+    entry .communicable   renders each reason as a message
+    entry #reason   why the protocol was violated
+  entry .Event   what a connection logs: messages sent and received, and the close
+    detail
+        Every `Event` is tagged `Log.Network` and `Log.Protocol`. `Sent` is logged at `fine`
+        by `Channel#send` with the message's byte count, `Received` at `fine` by the
+        server's loop for each message handled, and `Closed` at `info` by `Channel#close`
+        with the close code. A `Websocket.Event is Loggable` must be in scope wherever
+        `Channel#send` or `Channel#close` is called; `logging.silentLogging` discards them.
+    entry .communicable   renders each event as a message
+    entry .Sent   a message was sent: _sent a `bytes`-byte websocket message_
+      entry #bytes   the message's length
+    entry .Received   a message was received: _received a `bytes`-byte websocket message_
+      entry #bytes   the message's length
+    entry .Closed   the connection was closed: _closed the websocket connection with code `code`_
+      entry #code   the close code sent
+  entry .Frame   one WebSocket frame: the wire format, parsed from a cursor and encoded to bytes
+    detail
+        The enum of frame types, each with its `#opcode` and `#payload`: `Continuation(last,
+        data)`, `Text(last, data)` and `Binary(last, data)` are the data frames, whose
+        `last` is the FIN bit; `Close(code, reason)` carries a two-byte code and a reason;
+        `Ping(data)` and `Pong(data)` are the control frames. `.parse` reads one off a
+        `Cursor`, enforcing the masking direction and every structural rule, and `#encode`
+        writes one unmasked; `Masking.Client#outbound` masks an encoded frame for sending
+        from a client. A program using `webSocket` or `wsClient` never handles frames; they
+        are for a protocol test or an extension.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        val frame = Websocket.Frame.Text(true, t"hello".in[Data])
+        frame.encode.length == 7
+
+        given Masking = Masking.Client()
+        Websocket.Frame.parse(Cursor[Data](Chain(frame.encode))) match
+          case Websocket.Frame.Text(last, data) => data.utf8
+          case _                                => t"?"
+        ```
+    entry .maxPayload   the largest frame payload accepted, 16 MiB; a larger one closes with `1009`
+    entry .maxControlPayload   the largest control-frame payload, 125 bytes
+    entry .closeData   a close frame's payload: the two-byte code followed by the reason
+    entry .validCloseCode   whether a close code may appear on the wire
+        `1000`–`1003`, `1007`–`1011` and the application range `3000`–`4999`. The codes
+        `1004`, `1005` and `1006` never travel, and `1012`–`2999` are unassigned, so a close
+        frame carrying one is `BadClose`.
+    entry .parse   decodes one frame off a cursor, or `Unset` at a clean end of stream
+        Consumes exactly the frame's bytes and unmasks the payload. The `Masking` given
+        fixes the direction: `Masking.Server` requires the frame to be masked (a client's),
+        `Masking.Client` requires it unmasked (a server's), and the wrong one raises
+        `Websocket.Error` with `Unmasked` or `Masked`. Also raised: `ReservedBits`,
+        `TooLarge`, `BadControl`, `BadOpcode` and `BadClose`. A close payload of no bytes
+        decodes with the sentinel code `1005`. The parser blocks only at the head of a
+        frame, never after a frame's final byte, so an empty `Ping` or `Pong` is returned
+        without waiting for the peer's next frame.
+    entry .unmask   XORs a payload with a four-byte mask key, or returns it unchanged for an empty key
+        Its own inverse: masking and unmasking are the same operation.
+    entry #opcode   the frame's opcode: `0x0` continuation, `0x1` text, `0x2` binary, `0x8` close, `0x9` ping, `0xa` pong
+    entry #payload   the frame's payload; for a `Close`, the code and reason as `closeData` lays them out
+    entry #fin   whether this frame completes its message; always `true` for a control frame
+    entry #encode   the frame as unmasked bytes: the header, the length in its short, 16- or 64-bit form, the payload
+
+entry .Message   a complete WebSocket message: `Text` reassembled and UTF-8-decoded, or `Binary` as bytes
+  detail
+      The enum of the two message kinds a handler sees when its message type is `Message`
+      itself: `Message.Text(text)` for a text message, fragments reassembled and decoded,
+      and `Message.Binary(data)` for a binary one. Control frames and fragmentation never
+      surface here. A `Message` is both `Ingressive` and `Transmissible`, so it can be
+      the handler's parameter type and a `Reply`'s argument, and a `Channel#send` takes
+      one. It is not exported to `soundness` — fulminate's `Message` holds that name in
+      the umbrella — so it is imported by name: `import perihelion.Message`.
+
+      ```scala
+      import soundness.*
+      import perihelion.Message
+
+      def describe(message: Message): Text = message match
+        case Message.Text(text)   => t"text: $text"
+        case Message.Binary(data) => t"${data.length} bytes"
+      ```
+  entry .ingressive   the formal `Message is Ingressive`, so `Message` satisfies `webSocket`'s message bound
+      The reader already produces a `Message`, so a `Message` channel is decoded by
+      identity and this instance is never applied; it exists so the raw type meets the
+      `Ingressive` requirement, and lives in the companion so no import is needed.
+  entry .transmissible   serializes a message to one complete, unmasked frame
+      A `Text` becomes a text frame of its UTF-8 bytes and a `Binary` a binary frame, so a
+      `Message` can be a `Reply` or `Conclude` argument and is written verbatim.
+
+entry .Channel   the outgoing side of a connection: a thread-safe queue of frames pumped to the socket
+  detail
+      A `Channel` is a bounded conduit of encoded frames. The reader (answering `Ping`s and
+      `Close`s), the handler loop (`Reply` and `Conclude`) and a program's own `#send` all
+      enqueue here, under a lock, and one pump — the server's response writer or the
+      client's daemon — drains it to the socket, so a full queue back-pressures every
+      producer. Each frame is masked once at this boundary by the `Masking` in scope:
+      passed through by `Masking.Server`, masked with a fresh key by `Masking.Client`. It
+      is constructed with a `Masking` and a `Buffering`; `Websocket#channel` and the client
+      connection hold the one for their connection, and a program reaches it through those.
+      Public in the package, not exported to `soundness`.
+  refer perihelion.Websocket
+  refer perihelion.Masking
+  entry #send   enqueues one message as one complete frame, logging `Websocket.Event.Sent`
+      Takes a `Message`; the frame is flushed at once, since an interactive protocol must
+      deliver each frame promptly rather than fill a block. Needs a `Websocket.Event is
+      Loggable`.
+  entry #stop   ends the outgoing stream, so the pump finishes and the connection's body ends
+  entry #close   enqueues a close frame with a code (default `1000`), logs `Websocket.Event.Closed`, and stops
+
+entry .Reader   reads a peer's frames into messages: reassembly, `Ping`/`Pong`, `Close`, UTF-8 validation
+  detail
+      `Reader(body, channel)` is the inbound half shared by the server and the client. Its
+      `#messages` is a lazy `Chain[Message]` over the frames parsed from `body` (a
+      `Spring[Data]`, re-lent each time the chain is forced): data frames are accumulated
+      until the one with FIN, a text message is validated as UTF-8 incrementally so bad
+      bytes fail the connection at once, a `Ping` is answered with a `Pong` through the
+      channel, a `Pong` is dropped, and a `Close` is echoed (with `1000` for an absent
+      code), the channel stopped and the chain ended. A violation raises
+      `Websocket.Error`, with `Truncated` for a body cut short. It needs a
+      `Tactic[Websocket.Error]` and the `Masking` of its side. The cursor over the body is
+      created only when the first message is forced, so a server can send its `101` and a
+      client its first frame before any read blocks. Public in the package, not exported
+      to `soundness`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      given Masking = Masking.Server
+      val frames = Chain(Masking.Client().outbound(Websocket.Frame.Text(true, t"hi".in[Data]).encode))
+      val spring: Spring[Data] = new Spring[Data]:
+        def apply()(using Tactic[Truncation.Error]): Stream[Data] over Credit = Stream(frames)
+
+      Reader(spring, Channel()).messages.to[List]
+      ```
+  refer perihelion.Channel
+  refer perihelion.Message
+  entry #messages   the reassembled messages, lazily, until the peer closes or the body ends
+
+entry .Masking   which side of the connection this is, and so whether frames are masked
+  detail
+      RFC 6455 has a client mask every frame it sends with a fresh 32-bit key, and a server
+      send unmasked; each side rejects a frame masked the wrong way. A `Masking` fixes the
+      side: `#outbound(frame)` masks (or passes through) a complete encoded frame on its
+      way out, and `#inbound` says whether frames read from the peer must be masked.
+      `Websocket` installs `.Server` and `wsClient` a `.Client()`; a direct use of
+      `Websocket.Frame.parse`, `Reader` or `Channel` needs one as a given.
+
+      ```scala
+      import soundness.*
+
+      val frame = Websocket.Frame.Text(true, t"hi".in[Data]).encode
+      Masking.Server.outbound(frame) == frame
+      Masking.Client().outbound(frame) != frame
+      ```
+  entry .Server   the server side: send unmasked, require inbound frames to be masked
+  entry .Client   the client side: mask each outgoing frame with a fresh key, reject a masked inbound frame
+      `Masking.Client()` keeps one `SecureRandom` per connection for the keys, so two
+      maskings of the same frame differ.
+  entry #outbound   masks a complete, unmasked frame for sending, or returns it unchanged on the server
+  entry #inbound   whether frames read from the peer must be masked
+
+entry .over   tags a value with the format it rides, `value.over[Json]`, so a reply serializes through it
+    `over` is a phantom type member, so `value.over[Json]` is a no-op cast to `value over
+    Json`, which selects `overTransmissible` for a `Reply` or `Conclude` and matches a
+    handler parameter typed `(ping: Ping over Json)`. Exported to `soundness`.
+
+    ```scala
+    import soundness.*
+
+    case class Ping(value: Int)
+    val tagged: Ping over Json = Ping(1).over[Json]
+    ```
+
+entry .overTransmissible   serializes `value over format` as one text frame of the format's text
+    The given which makes any `value over transport` `Transmissible` when `transport is
+    Encodable in Text` (as `Json` and `Tel` are) and `value is Encodable in transport`, with
+    a `Codepage` for the bytes. The value is encoded to the format, the format to text, and
+    the text wrapped in a single unmasked text frame, so a `Reply(Ping(1).over[Json], …)`
+    is one complete frame. Exported to `soundness`.
+
+entry .overIngressive   decodes a text frame's bytes as `value over format`
+    The given which makes any `value over transport` `Ingressive` when `transport is
+    Decodable in Text` and `value is Decodable in transport`. It needs a `Charset` to
+    decode the bytes and, because the format decoders are conditional on a tactic, a
+    `Tactic[Hazard]` directly — `strategies.throwUnsafely` satisfies it — so a malformed
+    payload throws rather than being reported through a narrower tactic. Exported to
+    `soundness`.
+
+entry .wsClient   makes a `Websocket.Url` a coaxial `Duplexable` transport: `url.react`, `url.exchange`
+    The given which connects a client. `connect` opens TCP (`ws`) or TLS (`wss`, through
+    `SecureEndpoint` and the `Tls` in scope) to the URL's host and port, sends the
+    handshake with a fresh 16-byte `Sec-WebSocket-Key`, reads exactly the response's
+    header block (never past it into a frame the server has not sent), checks for `101`
+    and the right `Sec-WebSocket-Accept`, and starts the daemon which pumps outgoing
+    frames; `receive` is the connection's `messages`; `transmit` masks and spools one
+    message as one frame; `close` sends `1000`. It is a `Duplexable`, not merely a
+    `Serviceable`, because its channel is safe to send on concurrently, which is what
+    lets `exchange` send proactively.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import perihelion.wsClient
+    import internetAccess.online
+    import logging.silentLogging
+    import strategies.throwUnsafely
+    import threads.virtualThreads
+    import probates.awaitProbate
+    import formatting.compactJsonFormatting
+    import codepages.utf8Codepage
+    import charsets.utf8Charset
+    import textSanitizers.skipSanitizer
+
+    case class Ping(value: Int)
+
+    def main(): Unit = supervise:
+      val url = t"ws://localhost:8080/".as[Websocket.Url]
+
+      val handle: (state: Int) ?=> (Ping over Json) => Control[Int] =
+        ping => Control.Conclude(Ping(0).over[Json], ping.value)
+
+      val last: Int = url.exchange(0)(handle)(_.send(Ping(7).over[Json]))
+    ```
+
+    `url.react(initial)(handle)` waits for the server to speak first; `url.exchange
+    (initial)(handle)(interact)` hands `interact` a `Transmitter` before the loop begins.
+    Both return the final state once the handler concludes or the server closes. The
+    given needs an `Online` (`internetAccess.online`), a `Monitor` and `Probate`, an
+    `Every[Socket.Option.Tcp]`, a `Tls`, and tactics for `Websocket.Error`,
+    `Http.Response.Error` and `Port.Error`, and it retains them, so it is a capability.
+    It is not exported to `soundness`, since a synthesized forwarder would lose its
+    refinement: `import perihelion.wsClient`.
+
+entry .WsSessional   lends a connected `Websocket.Connection` to a scope: `url.session { connection ?=> … }`
+  detail
+      The `Sessional` instance for `Websocket.Url`, behind the given `wsSessional`. `#session`
+      connects through `wsClient`, lends the `Websocket.Connection` — handshake done, pump
+      running — to the lambda, and closes it with a `1000` close frame when the lambda ends,
+      whether it returns or throws. The connection is a fresh capability, so neither it nor
+      a stream borrowed from it can leave the block. For state-machine consumption
+      `url.react` and `url.exchange` are the natural forms; a session serves an interaction
+      which does not fit a per-message handler.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import perihelion.{wsClient, wsSessional}
+      import internetAccess.online
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import threads.virtualThreads
+      import probates.awaitProbate
+
+      def main(): Unit = supervise:
+        t"ws://localhost:8080/".as[Websocket.Url].session: connection ?=>
+          connection.send(t"hello".in[Data].stream)
+      ```
+
+      It needs the `wsClient` given (as a capturing parameter), a `Monitor` and a
+      `Tactic[Socket.Error]` for the connection's failure.
+  refer perihelion.wsSessional
+  refer perihelion.wsClient
+  entry #session   connects to the URL, lends the connection to the lambda and closes it afterwards
+  entry #Result   the lent handle: a fresh `Websocket.Connection^`
+  entry #Self   the subject: `Websocket.Url`
+
+entry .wsSessional   the `WsSessional` given: imported by name, `import perihelion.wsSessional`
+    Built from the `wsClient` given, a `Monitor` and a `Tactic[Socket.Error]`, which it
+    retains. Not exported to `soundness`, since a synthesized forwarder would lose its
+    capture-annotated type.

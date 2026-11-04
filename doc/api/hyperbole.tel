@@ -1,0 +1,466 @@
+tel 1.0
+
+base hyperbole
+import soundness
+
+info   TASTy as data: introspecting trees and symbols, and resolving stack frames to the source definitions they came from
+detail
+    _Hyperbole_ reads what the Scala compiler knows about a program — its **TASTy** — and
+    makes it available as values, for two purposes.
+
+    The first is **introspection**. `Introspect.syntax` captures the typed tree of any
+    expression, as the compiler sees it after typing and inlining, as a `Tasty.Tree`; and
+    `Introspect.semantics` captures a symbol — a type's, a value's, or the enclosing
+    definition's — as a `Tasty.Symbol` with its flags, properties and members. Inside a
+    macro, the `syntax` and `semantics` extensions do the same for an `Expr` or a `Symbol`
+    in hand. Both render at a terminal, through a `TastyPalette`, as a tree diagram or a
+    table, which replaces `println`-archaeology when a macro author wants to see what an
+    expansion produced, or when anyone wants to see what the compiler made of a line of
+    ordinary code.
+
+    ```scala
+    import soundness.*
+
+    val tree: Tasty.Tree = Introspect.syntax(true):
+      println("hello world")
+
+    tree.name    // t"Apply"
+    tree.nodes.map(_.name)   // List(t"Ident", t"Literal")
+    ```
+
+    The second is **stack-frame resolution**. A JVM stack frame names a compiled class and
+    method, and demangling (`StackTrace.rewrite` in digression) can only tidy that name:
+    `$anonfun$3` becomes `λ₃`, which says a lambda ran but not which. The compiler records
+    the extent of every definition in the TASTy it writes beside each class file, so the
+    line a frame carries is enough to find the definition it belongs to. `StackResolver`
+    does that lookup, and importing `stackResolutions.tastyStackResolution` makes every
+    `StackTrace` captured in scope carry a `StackTrace.Frame.Source` naming the file, the
+    chain of enclosing definitions, the definition's source name and its `Kind`; `resolved`
+    does the same to a trace already in hand.
+
+    ```scala
+    import soundness.*
+    import stackResolutions.tastyStackResolution
+    import classloaders.threadContextClassloader
+    import workingDirectories.javaBaseWorkingDirectory
+
+    val trace: StackTrace = Exception("boom").stackTrace
+    trace.frames.head.let(_.displayClass)
+    trace.frames.head.let(_.source.let(_.kind))
+    ```
+
+    The library has three source sets, by what each platform can do:
+
+    - `hyperbole.tasty` — the `Tasty` data model (`Symbol`, `Tree`, `Definition`, `File`) and
+      `Tasty.parse`, which reads a `.tasty` file's definitions from raw bytes through
+      `tasty-core` alone: no compiler, no classpath, no filesystem. It compiles for the JVM,
+      Scala.js and Scala Native, so a debugger can parse TASTy fetched over a wire.
+    - `hyperbole.core` — `Introspect`, the `syntax` and `semantics` macros and extensions,
+      `TastyPalette` and the `Teletypeable` renderings. JVM-only, as it depends on the
+      compiler's syntax highlighting and on the staging compiler.
+    - `hyperbole.stacks` — `StackResolver`, the `stackResolutions` choice package and the
+      `resolved` extension. JVM-only: it reads TASTy and class files through the `Classloader`
+      given in scope, and source files from disk.
+
+    The resolver's givens are imported by name, since `import soundness.*` imports no givens:
+    a `Classloader` from `classloaders`, a `WorkingDirectory` from `workingDirectories`, and
+    `stackResolutions.tastyStackResolution` itself. Everything is exported to the `soundness`
+    umbrella, and `stackResolutions` merges with the umbrella's own package of that name.
+
+refer hyperbole.Introspect
+refer hyperbole.Tasty
+refer hyperbole.StackResolver
+refer hyperbole.stackResolutions
+
+entry .Introspect   captures the tree of an expression, or a symbol, as a value, from ordinary code
+  detail
+      Two macros which work from outside any macro, on any expression or type in ordinary
+      code. `Introspect.syntax` gives the typed tree of an expression as a `Tasty.Tree`,
+      with every node's tag, name, type and source; `Introspect.semantics` gives a symbol's
+      flags, properties and details as a `Tasty.Symbol`. Both produce plain values which can
+      be compared, traversed, or rendered as `Teletype` with a `TastyPalette` in scope.
+
+      ```scala
+      import soundness.*
+
+      val x = 5
+
+      Introspect.syntax(true):
+        1 + x
+      // an Apply of a Select over a Literal and an Ident
+
+      Introspect.semantics[Option[Int]]   // the symbol of `scala.Option`: flags, members, position
+      ```
+
+      Introspecting `1 + x` for a `val x = 5` shows the `Apply` of a `Select` over a `Literal`
+      and an `Ident`; the same for a `val y: 5 = 5` shows a single `Literal`, since the
+      singleton type let the compiler fold the addition away — which is how the macros answer
+      questions about the language itself.
+  refer hyperbole.Tasty
+  refer hyperbole.syntax
+  refer hyperbole.semantics
+  entry .syntax   the typed tree of an expression, as a `Tasty.Tree`, with or without its inlining
+      `Introspect.syntax(inlining)(expression)` is a transparent inline macro: the expression
+      is typed, and its tree is serialised into a `Tasty.Tree` whose nodes carry the tag, the
+      node's kind (`Apply`, `Ident`, `Literal`, …), its type, the source it came from and its
+      children. With `inlining = true` (the default is `false`) the tree is the one after
+      inline expansion, so the bodies of inline methods and macros appear in it; with `false`
+      the expression's own tree is shown and inlined calls stay as calls.
+
+      ```scala
+      import soundness.*
+
+      Introspect.syntax(true):
+        println("hello world")
+      ```
+
+      Here the root is an `Apply` of type `Unit` whose `expr` is
+      `scala.Predef.println("hello world")`, with an `Ident` (`println`) and a `Literal`
+      (tagged `a`, of type `"hello world"`) as its `nodes`.
+  entry .semantics   a symbol as a `Tasty.Symbol`: of a type, of a value, or of the enclosing definition
+      Three forms. `Introspect.semantics[T]` gives the symbol of the type `T`, dealiased;
+      `Introspect.semantics(value)` gives the symbol of the term the expression refers to; and
+      `Introspect.semantics()` gives the symbol of the definition the call is written in. Each
+      `Tasty.Symbol` records the symbol's full name split into `prefix` and `name`, every
+      compiler flag with whether it is set, the properties the symbol has, and details such as
+      its owner, position, members and annotations.
+
+entry .syntax   the tree of an `Expr`, inside a macro, as a `Tasty.Tree`
+    An extension on `Expr[T]`, needing a `Quotes`: `expr.syntax` is the macro-side
+    counterpart of `Introspect.syntax`, for a macro author inspecting an argument or the
+    tree an expansion produced. The tree is taken as it is, without re-inlining. Rendered
+    with `tastyTreeTeletypeable` and a `TastyPalette`, it reads as an indented diagram with
+    each node's type and source beside it.
+
+    ```scala
+    import soundness.*
+    import scala.quoted.*
+
+    def inspect(expr: Expr[Any])(using Quotes): Tasty.Tree = expr.syntax
+    ```
+
+entry .semantics   the `Tasty.Symbol` of a `quotes.reflect.Symbol`, inside a macro
+    An extension on `Symbol`, needing a `Quotes`: `symbol.semantics` is the macro-side
+    counterpart of `Introspect.semantics`, reducing a reflection symbol to a value with its
+    flags, properties and details, which a macro may inspect, compare or render.
+
+entry .TastyPalette   the colours TASTy trees and symbols are rendered with
+    A `Palette` in sRGB with, beyond the `background` and `foreground` every palette has:
+    `typeDefinition` and `termDefinition` for nodes which define a type or a term,
+    `typeReference` and `termReference` for nodes which refer to one, `flagOn`/`flagOff` and
+    `propertyOn`/`propertyOff` for a symbol's flags and properties, `outline` for types and
+    detail values, and `accented` for parameter names. A `TastyPalette` must be in scope to
+    render a `Tasty.Tree` or `Tasty.Symbol` as `Teletype`; the library supplies none.
+
+    ```scala
+    import soundness.*
+
+    given palette: TastyPalette = new Palette:
+      type Form = Srgb
+      def background: Color in Srgb     = WebColors.Black
+      def foreground: Color in Srgb     = WebColors.White
+      def typeDefinition: Color in Srgb = WebColors.Turquoise
+      def termDefinition: Color in Srgb = WebColors.Gold
+      def typeReference: Color in Srgb  = WebColors.Teal
+      def termReference: Color in Srgb  = WebColors.Silver
+      def flagOn: Color in Srgb         = WebColors.LimeGreen
+      def flagOff: Color in Srgb        = WebColors.Gray
+      def propertyOn: Color in Srgb     = WebColors.DeepSkyBlue
+      def propertyOff: Color in Srgb    = WebColors.Gray
+      def outline: Color in Srgb        = WebColors.Gray
+      def accented: Color in Srgb       = WebColors.Orange
+    ```
+
+entry .tastySymbolTeletypeable   renders a `Tasty.Symbol` as a two-column table of its properties
+    The `Teletypeable` given for `Tasty.Symbol`, needing a `TastyPalette`. The table has a
+    row for the name (prefix dimmed, name bold), a row of flags with the set ones highlighted
+    on the palette's `flagOff` colour, a row of properties with the set ones on
+    `propertyOn`, and one row per detail. It is a top-level given, so it resolves without
+    an import inside `hyperbole` and by name elsewhere:
+    `import soundness.tastySymbolTeletypeable`.
+
+entry .tastyTreeTeletypeable   renders a `Tasty.Tree` as an indented diagram with type and source columns
+    The `Teletypeable` given for `Tasty.Tree`, needing a `TastyPalette`. Each node is a row:
+    the tree lines, the node's tag in angle brackets (or `▪` for an untagged node), its name
+    coloured as a term or type definition or reference, and a parameter name in the
+    `accented` colour; then its type, demangled with `StackTrace.rewrite`; then the source
+    it came from, with the common indentation cropped. A top-level given, imported by name
+    outside `hyperbole`: `import soundness.tastyTreeTeletypeable`.
+
+entry .Tasty   the TASTy data model: trees, symbols, definitions and files, readable from raw bytes
+  detail
+      `Tasty` is an object holding the model types and the reader. `Tasty.Tree` and
+      `Tasty.Symbol` are what `Introspect` produces. `Tasty.File` and `Tasty.Definition` are
+      what `Tasty.parse` reads from the bytes of a `.tasty` file: the definitions the compiler
+      recorded for one top-level class, each with its name, its chain of owners, its `Kind`
+      and the lines it covers, and the path of the source file it was compiled from. Reading
+      needs only `tasty-core`, the format's constants and byte reader, so this component
+      runs on the JVM, Scala.js and Scala Native.
+
+      ```scala
+      import soundness.*
+      import classloaders.threadContextClassloader
+      import strategies.throwUnsafely
+
+      val file: Optional[Tasty.File] = Tasty.parse(cp"/scala/Option.tasty".read[Data])
+      file.let(_.path)
+      file.let(_.covering(100).map(_.name))
+      ```
+
+      TASTy is written once per top-level class, so a nested, anonymous or module class's
+      definitions are found in the file of the outermost class enclosing it, and top-level
+      definitions in `<file>$package.tasty`.
+  refer hyperbole.Introspect
+  refer hyperbole.StackResolver
+  entry .parse   reads the definitions of a `.tasty` file from its bytes, or `Unset` if it cannot
+      Anything unexpected — a TASTy version this reader does not understand, a truncated file,
+      an absent section — gives `Unset` rather than an error, since TASTy is only ever a
+      source of extra detail. The result is a `Tasty.File` with the source path the compiler
+      recorded (relative to its `-sourceroot`, if one was given) and every definition with
+      its extent. Names the compiler derived render as it spells them: `name$1`,
+      `method$default$2`, `super$name`.
+  entry .Symbol   a compiler symbol reduced to its name, flags, properties and details
+    detail
+        Produced by `Introspect.semantics` or the `semantics` extension. `#prefix` and
+        `#name` split the full name at the last segment; `#flags` lists every compiler flag
+        (`Abstract`, `Case`, `Given`, `Inline`, …) paired with whether it is set, and
+        `#properties` every property (whether the symbol is a class, a type, a term, a
+        package, …) likewise; `#details` is a list of named values — the owner, position,
+        members, annotations and the like — each a text or a list of texts. It renders with
+        `tastySymbolTeletypeable`.
+    entry #prefix   the full name up to the last segment, with its trailing `.`
+    entry #name   the symbol's own name
+    entry #flags   every compiler flag, paired with whether it is set on this symbol
+    entry #properties   every symbol property, paired with whether this symbol has it
+    entry #details   named details of the symbol: each a text or a list of texts
+  entry .Tree   one node of a typed tree, with its tag, kind, type, source and children
+    detail
+        Produced by `Introspect.syntax` or the `syntax` extension, and nested through
+        `#nodes`. `#name` is the node's kind as the compiler names it (`Apply`, `Select`,
+        `Ident`, `Literal`, `DefDef`, …); `#typeName` its type, where it has one; `#expr` the
+        node printed as code; `#source` the source line it was parsed from; `#tag` a
+        one-character marker for a child's role in its parent (`a` for an argument, `' '` for
+        none); `#param` the parameter name a child fills, if any; `#term` whether the node is
+        a term rather than a type; and `#definitional` whether it defines rather than refers.
+        Two trees are equal when every field is, which is how a test pins an expansion.
+
+        ```scala
+        import soundness.*
+
+        val tree = Introspect.syntax(true):
+          println("hello world")
+
+        tree == Tasty.Tree
+          ( ' ', t"Unit", t"Apply", t"scala.Predef.println(\"hello world\")",
+            t"println(\"hello world\")", tree.nodes, Unset, true, false )
+        ```
+    entry #tag   a one-character marker for the node's role in its parent; `' '` for none
+    entry #typeName   the node's type, as text; empty where the node has none
+    entry #name   the node's kind: `Apply`, `Ident`, `Literal`, `DefDef`, …
+    entry #expr   the node printed as code
+    entry #source   the source line the node came from, as written
+    entry #nodes   the node's children, in order
+    entry #param   the parameter name this node fills in its parent, if any
+    entry #term   whether the node is a term; `false` for a type
+    entry #definitional   whether the node defines something, rather than referring to it
+    entry #shortCode   the first line of `#expr`, with `...` if there were more
+    entry #typeNode   this node marked as a type (`term = false`)
+    entry #definition   this node marked as a definition (`definitional = true`)
+  entry .Definition   one definition the compiler recorded: its name, owners, kind and source extent
+    detail
+        What resolving a stack frame needs of a definition. `#name` is the source name
+        (`<init>` for a constructor); `#owners` the chain of enclosing definitions,
+        innermost first, including the package; `#kind` a `StackTrace.Frame.Kind` (`Method`,
+        `Lambda`, `Value`, `Class`, `Constructor`, …); `#start` and `#end` the character
+        offsets of its extent and `#firstLine` and `#lastLine` the lines. A definition the
+        compiler synthesised — an `object`'s constructor — has an empty extent at whatever
+        position was to hand.
+    entry #name   the definition's source name; `<init>` for a constructor
+    entry #owners   the enclosing definitions, innermost first, ending with the package
+    entry #kind   what the definition is, as a `StackTrace.Frame.Kind`
+    entry #start   the character offset where the definition begins
+    entry #end   the character offset where it ends
+    entry #firstLine   the first source line it covers
+    entry #lastLine   the last source line it covers
+    entry #span   the length of the extent, `end - start`: `0` for a synthesised definition
+    entry #covers   whether a line falls within `#firstLine` to `#lastLine`
+  entry .File   the definitions of one top-level class, and the source path they were compiled from
+    detail
+        What `Tasty.parse` returns. `#path` is the source path as the compiler recorded it —
+        the full path, or one relative to `-sourceroot` — or `Unset` if the file carries no
+        source attribute; `#definitions` is every definition in the file. `#covering` finds
+        the definitions around a line, innermost first, which is the lookup a stack frame's
+        line makes.
+    entry #path   the source path the compiler recorded, if any
+    entry #definitions   every definition the file records
+    entry #compiledFrom   whether this file was compiled from a given source path
+        True when the paths are equal or either is a trailing segment of the other, since a
+        build with `-sourceroot` records its paths relatively while an SMAP written in the
+        same compilation may name the same file absolutely.
+    entry #covering   every definition covering a line, innermost first
+        Nesting is measured by extent — a lambda's extent is smaller than its enclosing
+        method's, so it sorts first — and definitions with an empty extent sort last, to be
+        reached only when a frame really is one of them.
+
+entry .StackResolver   recovers the source definition behind each frame of a stack trace, from TASTy
+  detail
+      A `StackResolver` is a `StackTrace.Resolver` which, for each frame, finds the TASTy
+      file of the frame's top-level class through the `Classloader` in scope, looks up the
+      definitions covering the frame's line, picks the one the compiled name's kind agrees
+      with, and attaches a `StackTrace.Frame.Source` naming the file, the chain of enclosing
+      definitions, the definition's source name, its `Kind`, and the line of source itself
+      when the file can be read. A frame whose class has no TASTy, or whose file has no line
+      for it, is returned as it was.
+
+      ```scala fuel
+      frame
+        label A raw trace: the compiled names, demangled but anonymous
+        code
+            import soundness.*
+
+            object Fixture:
+              def run(): Unit = List(1).each: value =>
+                throw Exception("boom")
+
+            def capture(block: => Unit): StackTrace =
+              try
+                block
+                panic(m"the fixture did not throw")
+              catch case error: Throwable => error.stackTrace
+
+            val frame = capture(Fixture.run()).frames.seek(_.jvmClass.starts(t"Fixture"))
+            frame.let(_.displayMethod)   // t"λ₁": a lambda ran, but which?
+            frame.let(_.source)          // Unset
+      frame
+        label With the resolver imported, every trace captured in scope names its definitions
+        code
+            import soundness.*
+            import stackResolutions.tastyStackResolution
+            import classloaders.threadContextClassloader
+            import workingDirectories.javaBaseWorkingDirectory
+
+            object Fixture:
+              def run(): Unit = List(1).each: value =>
+                throw Exception("boom")
+
+            def capture(block: => Unit): StackTrace =
+              try
+                block
+                panic(m"the fixture did not throw")
+              catch case error: Throwable => error.stackTrace
+
+            val frame = capture(Fixture.run()).frames.seek(_.jvmClass.starts(t"Fixture"))
+            frame.let(_.displayClass)              // t"Fixture.run"
+            frame.let(_.displayMethod)             // t"λ"
+            frame.let(_.source.let(_.kind))        // Kind.Lambda
+            frame.let(_.source.let(_.code))        // t"throw Exception(\"boom\")"
+      frame
+        label A trace already in hand is resolved explicitly
+        code
+            import soundness.*
+            import classloaders.threadContextClassloader
+            import workingDirectories.javaBaseWorkingDirectory
+
+            object Fixture:
+              def run(): Unit = List(1).each: value =>
+                throw Exception("boom")
+
+            def capture(block: => Unit): StackTrace =
+              try
+                block
+                panic(m"the fixture did not throw")
+              catch case error: Throwable => error.stackTrace
+
+            val trace: StackTrace = capture(Fixture.run()).resolved
+            trace.frames.seek(_.jvmClass.starts(t"Fixture")).let(_.source.let(_.definition))
+            // t"Fixture.run.λ"
+      ##
+      ```
+
+      Construction needs a `Classloader`, through which `.tasty` and `.class` resources are
+      read, and a `WorkingDirectory`, against which a source path TASTy records relative to
+      `-sourceroot` is resolved: it must be the directory the code was compiled under, or the
+      frame keeps everything but its line of source. A frame whose line is a synthetic one
+      the compiler allocated for inlined code is first expanded through the class file's
+      SMAP (read with mandible's `Classfile#sourceDebugExtension`): the frame gets its real
+      call-site line, and its `inlined` list the levels of inlining beneath it, each resolved
+      against TASTy to name the inline method it falls inside.
+
+      TASTy and source files are read once per class and cached in the resolver, so one
+      resolver should serve many traces; `stackResolutions.tastyStackResolution` builds one
+      per scope. Resolution costs a file read per top-level class named in a trace, which is
+      why it is opt-in.
+  refer hyperbole.stackResolutions
+  refer hyperbole.resolved
+  refer hyperbole.Tasty
+  entry .hint   what kind of definition a compiled method name betrays, if any
+      `StackResolver.hint(method)` reads the markers the compiler mints after TASTy is
+      written: `<init>` is a `Constructor`; `<clinit>`, `$init$`, `lzyINIT` and `$lzy` an
+      `Initializer`; `$anonfun` a `Lambda` (and `$anonfun$adapted` or `$adapted` a `Bridge`);
+      `$extension` an `Extension`; `$default$` a `Default`; `$mc…$sp` a `Specialized`. A name
+      with no marker gives `Unset`, and the definition the frame resolves to speaks for
+      itself.
+  entry .matches   whether a definition is the one a frame's compiled name and kind hint describe
+      With a `Constructor` hint the definition must be `<init>`; with a `Lambda` hint its
+      kind must be `Lambda`; otherwise its source name must equal the compiled method name,
+      which a name that survived compilation unchanged does. This is how the resolver tells
+      a constructor from the first member declared beside it, and a lambda from its
+      enclosing method, when both cover the same line.
+  entry .display   a TASTy name as a frame shows it: module `$` dropped, derived names demangled
+      A module class's trailing `$` is removed, `<init>` becomes `ⲛ`, and a name with a `$`
+      in it — an anonymous function, a default getter, a package file — is passed through
+      `StackTrace.rewrite`, so a resolved frame reads in the same vocabulary as an unresolved
+      one.
+  entry #resolve   the frame with its `source` filled in, or unchanged if nothing can be found
+
+entry .stackResolutions   the stack-frame resolvers, each a given to import by name
+  detail
+      Which `StackTrace.Resolver` a captured trace uses is decided by the given in scope: the
+      default, in digression, does nothing, and `import soundness.*` brings in no other.
+      Importing one from this package by name makes every `StackTrace` captured in the
+      enclosing scope — every `error.stackTrace`, and every Soundness error's diagnostics —
+      carry its frames' source definitions.
+
+      ```scala
+      import soundness.*
+      import stackResolutions.tastyStackResolution
+      import classloaders.threadContextClassloader
+      import workingDirectories.javaBaseWorkingDirectory
+      ```
+
+      The given is a context function, so it must be imported where its own givens — a
+      `Classloader` and a `WorkingDirectory` — are also in scope; the umbrella's
+      `soundness.stackResolutions` re-exports it for that reason.
+  entry .tastyStackResolution   resolves frames against the TASTy beside the class files, through the classloader in scope
+      A `(Classloader, WorkingDirectory) => StackTrace.Resolver` which builds a
+      `StackResolver` over the two givens. Each trace captured in scope reads one TASTy file
+      per top-level class it names, cached within the resolver; a source path recorded
+      relative to `-sourceroot` is read from the `WorkingDirectory`, which should therefore
+      be the directory the code was compiled under.
+
+entry .resolved   a stack trace with every frame resolved against TASTy, including its causes
+    An extension on `StackTrace`, needing a `Classloader` and a `WorkingDirectory`: builds a
+    `StackResolver` and rebuilds the trace with `StackResolver#resolve` applied to each frame,
+    recursively through the `cause` chain. For callers which hold a trace already and would
+    rather ask explicitly than import `stackResolutions.tastyStackResolution` into the scope
+    which captures it.
+
+    ```scala
+    import soundness.*
+    import classloaders.threadContextClassloader
+    import workingDirectories.javaBaseWorkingDirectory
+
+    val trace: StackTrace = Exception("boom").stackTrace.resolved
+    trace.frames.head.let(_.displayClass)
+    ```
+
+entry .internal   the macro implementations behind `Introspect` and the `syntax` and `semantics` extensions
+  hidden
+  detail
+      Not for direct use: the object exists so that the macros have a stable home.
+  entry .introspection   the macro behind `Introspect.syntax`: builds a `Tasty.Tree` and splices it as a literal
+  entry .tastyTree   builds a `Tasty.Tree` from an `Expr` at macro-expansion time, optionally inlined
+  entry .semantics   the macros behind the three forms of `Introspect.semantics`
+  entry .introspect   a reflection `Symbol` to a spliced `Tasty.Symbol` expression
+  entry .tastySymbol   builds a `Tasty.Symbol` from a reflection `Symbol` at macro-expansion time
+  entry .serialize   splices a `Tasty.Symbol` value as an expression

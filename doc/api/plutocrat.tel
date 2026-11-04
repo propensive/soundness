@@ -1,0 +1,408 @@
+tel 1.0
+
+base plutocrat
+import soundness
+
+info   amounts of money with the currency in the type, prices with tax, and checked ISINs
+detail
+    _Plutocrat_ represents money as a fixed-point count of a currency's minor units, with
+    the currency in the type: a `Money in "EUR"` and a `Money in "GBP"` cannot be added,
+    because adding euros to pounds is a mistake rather than a sum. Within a currency,
+    amounts add, subtract, scale, divide, compare and split into shares which sum exactly to
+    the whole; a `Price` keeps a principal amount and its tax apart; and an amount renders
+    by the `Currency.Style` in scope, with the currency's symbol or its ISO code.
+
+    ```scala
+    import soundness.*
+    import currencies.{Eur, Gbp}
+    import currencyStyles.localCurrencyStyle
+
+    val total: Money in "EUR" = Eur(3.01) + Eur(0.02)
+    t"Received $total"          // t"Received €3.03"
+    Eur(3.01).share(3)          // List(Eur(1.01), Eur(1.00), Eur(1.00))
+    Gbp(2.30).tax(0.2).inclusive   // Gbp(2.76)
+    Eur(1.00) + Gbp(1.00)       // does not compile
+    ```
+
+    A currency is a given, `"EUR" is Currency of "Euro" in "€" over 100`, which records its
+    ISO code, name, symbol and the number of minor units in a major one; thirty-six of the
+    most traded are in the `currencies` package, and another is one line. There is no
+    exchange between currencies: a conversion has a rate, a time and a source, and is left
+    to the program.
+
+    The library also checks the identifiers of finance: an `Isin`, the international
+    identifier of a security, is validated with its check digit at compile time by
+    `isin"…"` or at runtime by `Isin(…)`, and `Luhn` computes and checks the Luhn digit used
+    by card numbers.
+
+    The library is a single source set, `plutocrat.core`, which is platform-neutral.
+    Everything is exported to the `soundness` umbrella. The currencies and the currency
+    styles are givens in the `currencies` and `currencyStyles` choice packages, imported by
+    name because `import currencies.*` does not import givens; both merge with the
+    umbrella's packages of the same names.
+
+refer plutocrat.Money
+refer plutocrat.Currency
+refer plutocrat.Price
+refer plutocrat.currencies
+refer plutocrat.currencyStyles
+
+entry .Money   an amount of money: a whole number of a currency's minor units, with the currency in its type
+    `Money` is the opaque type `plutocrat.internal.Money`, exported here, over a `Long`.
+    `Money in "EUR"` is an amount of euros; a bare `Money` is an amount of an unspecified
+    currency, which every `Money in c` widens to. An amount is made by applying a currency,
+    `Eur(3.01)`, which rounds to the nearest minor unit, or from a count of minor units
+    with `Money["EUR"](301L)`.
+
+    ```scala
+    import soundness.*
+    import currencies.Eur
+
+    Eur(3.01) + Eur(0.02)      // Eur(3.03)
+    Eur(3.01) - Eur(0.02)      // Eur(2.99)
+    Eur(3.01)*3.0              // Eur(9.03)
+    Eur(3.01)/3                // Eur(1.00)
+    Eur(3.01)/Eur(1.00)        // 3.01
+    -Eur(1.99)                 // Eur(-1.99)
+    Eur(1.01) >= Eur(1.01)     // true
+    ```
+
+    Operators take two amounts of the same currency, so mixing currencies is a compile
+    error. Division by a number truncates toward zero, to whole minor units; `share` is the
+    division which loses nothing.
+
+    The three-letter currency code is packed into the top fifteen bits of the `Long`, and
+    the amount, in minor units, into the lower forty-nine, so an amount is recoverable as
+    money even where its type has been widened (`money.currency` gives `t"EUR"`), and the
+    largest amount is about 2.8 × 10¹⁴ minor units. Since the representation is a `Long`,
+    `toString` gives the packed number: render an amount with `show`, under a
+    `Currency.Style`, or `inspect`, which gives `¤EUR301ₘ`.
+
+    The extensions on an amount, in `plutocrat.internal`, are `currency`, `value` (the
+    count of minor units), `tax` and `share`.
+
+entry .Isin   an International Securities Identification Number, validated and packed into a `Long`
+    `Isin` is the opaque type `plutocrat.internal.Isin`, exported here. An ISIN is twelve
+    characters: a two-letter country code, a nine-character national number of digits and
+    uppercase letters, and a check digit computed by the Luhn algorithm. A value of the type
+    has passed every check, and costs no more than a `Long` to hold or compare.
+
+    ```scala
+    import soundness.*
+
+    val apple: Isin = isin"US0378331005"
+    apple.countryCode    // t"US"
+    apple.nsin           // t"0378331005"
+    apple.isin           // t"US0378331005"
+    ```
+
+    `isin"…"` checks a literal at compile time; `Isin(text)` checks one at runtime,
+    raising `Isin.Error`. An `Isin` inspects as the interpolator which would produce it,
+    `isin"US0378331005"`.
+
+entry .isin   the `isin"…"` interpolator: an ISIN checked as the code compiles
+    `isin"GB00BH4HKS39"` validates its literal while the code compiles, with the same
+    checks as `Isin(…)`, and reports a failure as a compile error carrying the
+    `Isin.Error`'s message, such as _the ISIN number is not valid because its last digit
+    failed the Luhn check_. It takes no substitutions.
+
+    ```scala
+    import soundness.*
+
+    isin"GB00BH4HKS39"
+    isin"GB00BH4HKS3"   // does not compile
+    ```
+
+entry .Currency   a currency: its ISO code, name, symbol and number of minor units, as a given
+  detail
+      A currency is a given whose type carries all its facts as literal types, and which
+      constructs amounts:
+
+      ```scala
+      import soundness.*
+
+      given Isk: ("ISK" is Currency of "Icelandic Króna" in "kr" over 100) = Currency()
+
+      val fare: Money in "ISK" = Isk(4500.0)
+      ```
+
+      `Self` is the ISO 4217 code, `Topic` the name, `Form` the symbol and `Transport` the
+      number of minor units in one major unit. The code must be three uppercase ASCII
+      letters, since it is packed into each amount. The standard currencies are in the
+      `currencies` package, each imported by name; a `Currency` in scope is also what
+      `Money`'s `show` and its zero need.
+  refer plutocrat.currencies
+  refer plutocrat.Money
+  entry .apply   makes a currency from the literal types of its given's declared type: `= Currency()`
+      All four facts are read from the type the result is ascribed to, so a currency is
+      declared by its type alone.
+  entry .Style   how an amount is rendered: with the currency's symbol, or with its code
+    detail
+        A `Currency.Style` in scope is what `Money`'s `Showable` uses. The `currencyStyles`
+        package has two, imported by name:
+
+        ```scala fuel
+        frame
+          label The local style
+          code
+              import soundness.*
+              import currencies.Eur
+              import currencyStyles.localCurrencyStyle
+
+              t"Received ${Eur(3.01)}"   // t"Received €3.01"
+        frame
+          label The generic style
+          code
+              import soundness.*
+              import currencies.Eur
+              import currencyStyles.genericCurrencyStyle
+
+              t"Received ${Eur(3.01)}"   // t"Received 3.01 EUR"
+        ##
+        ```
+
+        A style of one's own is a lambda from the code, the symbol, the major units and the
+        two-digit minor units to text.
+    entry #format   renders an amount from the currency's code and symbol and its major and minor units
+  entry #Self   the currency's ISO 4217 code, as a literal type: `"EUR"`
+  entry #Topic   the currency's name, as a literal type: `"Euro"`
+  entry #Transport   the number of minor units in one major unit, as a literal type: `100`
+  entry #Form   the currency's symbol, as a literal type: `"€"`
+  entry #code   the currency's ISO 4217 code, `EUR`
+  entry #name   the currency's name, `Euro`
+  entry #symbol   the currency's symbol, `€`
+  entry #modulus   the number of minor units in one major unit, `100`
+  entry #apply   an amount of this currency, from a decimal number rounded to the nearest minor unit
+      `Eur(3.01)` is `Money in "EUR"` of 301 cents. The number is a `Double`, multiplied by
+      the modulus and rounded, so a literal with more decimal places than the currency has
+      is rounded rather than rejected.
+
+entry .Price   an amount with the tax on it kept separate: a principal and a tax
+  detail
+      A `Price in "GBP"` holds the amount excluding tax and the tax itself, so the seller's,
+      the buyer's and the tax authority's figures are each exact, rather than reconstructed
+      by division. It is usually made with `tax` on an amount.
+
+      ```scala
+      import soundness.*
+      import currencies.Gbp
+
+      val price = Gbp(2.94).tax(0.2)
+      price.tax                 // Gbp(0.59)
+      price.inclusive           // Gbp(3.53)
+      price.effectiveTaxRate    // about 0.2007
+      ```
+
+      The tax is the principal times the rate, rounded to the nearest minor unit (half up),
+      so twenty per cent of £2.94, £0.588, is £0.59. Prices of one currency add, subtract
+      and negate, component by component, and divide by a `Double` (an anonymous given in
+      the companion). A price has no `Showable`: whether to display the inclusive or the
+      exclusive amount is for the program to say, by showing `#inclusive` or `#principal`.
+  refer plutocrat.Money
+  entry .apply   a price from a principal and a tax in the same currency
+  entry .addable   adds two prices of one currency, principal to principal and tax to tax
+  entry .subtractable   subtracts one price from another of the same currency, component by component
+  entry .negatable   negates both the principal and the tax of a price
+  entry #Form   the currency, as its literal ISO code
+  entry #principal   the amount excluding tax
+  entry #tax   the tax on the principal
+  entry #effectiveTaxRate   the tax as a fraction of the principal
+  entry #inclusive   the amount including tax: principal plus tax
+
+entry .Luhn   the Luhn check digit, used by card numbers and ISINs
+  detail
+      The [Luhn algorithm](https://en.wikipedia.org/wiki/Luhn_algorithm) detects any single
+      mistyped digit and most transpositions of adjacent digits.
+
+      ```scala
+      import soundness.*
+
+      Luhn.check(17893729974L)   // true
+      Luhn.check(t"79927398713") // true
+      Luhn.digit(t"7992739871")  // 3
+      ```
+  entry .digit   the check digit to append to a string of decimal digits
+      The input must be decimal digits only; other characters give a meaningless result.
+  entry .check   whether a number's last digit is the correct Luhn check digit for the rest
+      Takes the number as `Text` or as a `Long`. Empty text is `false`.
+
+entry .currencyStyles   the provided currency styles, each a given to import by name
+  detail
+      A choice package, merged with the umbrella's `currencyStyles`. An amount needs a
+      `Currency.Style` in scope to be shown, and none is in implicit scope: one is imported
+      by name.
+
+      ```scala
+      import soundness.*
+      import currencies.Usd
+      import currencyStyles.localCurrencyStyle
+
+      Usd(12.50).show   // t"$12.50"
+      ```
+  entry .localCurrencyStyle   the currency's symbol before the amount: `€3.01`
+      Suits a context where the currency is understood, though several currencies share a
+      symbol (`$`, `kr`, `¥`).
+  entry .genericCurrencyStyle   the amount followed by the ISO code: `3.01 EUR`
+      Unambiguous, so it suits a context with more than one currency.
+
+entry .currencies   thirty-six of the most traded currencies, each a given to import by name
+  detail
+      A choice package, merged with the umbrella's `currencies`. Each member is the given
+      `Currency` for one currency, named for its ISO code in title case, and is imported by
+      name: it is both the evidence an amount's `show` needs and the value which makes
+      amounts.
+
+      ```scala
+      import soundness.*
+      import currencies.{Eur, Gbp, Usd}
+
+      val rent: Money in "GBP" = Gbp(1250.00)
+      ```
+
+      Every currency here has a modulus of 100, including those, such as the yen and the
+      won, which have no minor unit in practice. A currency which is not here is declared
+      with `Currency()`.
+  entry .Usd   the US Dollar, `USD`, shown with the symbol `$`
+  entry .Eur   the Euro, `EUR`, shown with the symbol `€`
+  entry .Jpy   the Japanese Yen, `JPY`, shown with the symbol `¥`
+  entry .Gbp   the Pounds Sterling, `GBP`, shown with the symbol `£`
+  entry .Cny   the Renminbi, `CNY`, shown with the symbol `¥`
+  entry .Aud   the Australian Dollar, `AUD`, shown with the symbol `A$`
+  entry .Cad   the Canadian Dollar, `CAD`, shown with the symbol `C$`
+  entry .Chf   the Swiss Franc, `CHF`, shown with the symbol `CHF`
+  entry .Hkd   the Hong Kong Dollar, `HKD`, shown with the symbol `HK$`
+  entry .Sgd   the Singapore Dollar, `SGD`, shown with the symbol `S$`
+  entry .Sek   the Swedish Krona, `SEK`, shown with the symbol `kr`
+  entry .Krw   the South Korean Won, `KRW`, shown with the symbol `₩`
+  entry .Nok   the Norwegian Krone, `NOK`, shown with the symbol `kr`
+  entry .Nzd   the New Zealand Dollar, `NZD`, shown with the symbol `NZ$`
+  entry .Inr   the Indian Rupee, `INR`, shown with the symbol `₹`
+  entry .Mxn   the Mexican Peso, `MXN`, shown with the symbol `$`
+  entry .Twd   the New Taiwan Dollar, `TWD`, shown with the symbol `NT$`
+  entry .Zar   the South African Rand, `ZAR`, shown with the symbol `R`
+  entry .Brl   the Brazilian Real, `BRL`, shown with the symbol `R$`
+  entry .Dkk   the Danish Krone, `DKK`, shown with the symbol `kr`
+  entry .Pln   the Polish Złoty, `PLN`, shown with the symbol `zł`
+  entry .Thb   the Thai Baht, `THB`, shown with the symbol `฿`
+  entry .Ils   the Israeli New Shekel, `ILS`, shown with the symbol `₪`
+  entry .Idr   the Indonesian Rupiah, `IDR`, shown with the symbol `Rp`
+  entry .Czk   the Czech Koruna, `CZK`, shown with the symbol `Kč`
+  entry .Aed   the United Arab Emirates Dirham, `AED`, shown with the symbol `AED`
+  entry .Try   the Turkish Lira, `TRY`, shown with the symbol `₺`
+  entry .Huf   the Hungarian Forint, `HUF`, shown with the symbol `Ft`
+  entry .Clp   the Chilean Peso, `CLP`, shown with the symbol `$`
+  entry .Sar   the Saudi Riyal, `SAR`, shown with the symbol `SR`
+  entry .Php   the Philippine Peso, `PHP`, shown with the symbol `₱`
+  entry .Myr   the Malaysian Ringgit, `MYR`, shown with the symbol `RM`
+  entry .Cop   the Colombian Peso, `COP`, shown with the symbol `$$`
+  entry .Rub   the Russian Ruble, `RUB`, shown with the symbol `₽`
+  entry .Ron   the Romanian Leu, `RON`, shown with the symbol `lei`
+  entry .Pen   the Peruvian Sol, `PEN`, shown with the symbol `S/`
+
+entry .internal   the opaque types `Money` and `Isin`, their companions and extensions, and the `isin"…"` macro
+  hidden
+  detail
+      The object exists so that `Money` and `Isin` can be opaque over `Long`: only here is
+      the representation visible. Both types are exported to the `plutocrat` package, whose
+      pages for `Money` and `Isin` have the full account; their extension methods are
+      members of this object, and are in implicit scope for any amount or ISIN.
+  entry .Money   an amount of money, opaque over a `Long`; see `plutocrat.Money`
+    detail
+        The currency's code and the count of minor units, packed into one `Long`. Its
+        companion holds the arithmetic, comparison and rendering givens for amounts of one
+        currency, so none needs importing; each takes two amounts of the same currency, which
+        is what makes mixing currencies a compile error.
+    entry .apply   an amount from a count of minor units, with the currency as a type argument
+        `Money["EUR"](301L)` is €3.01, whatever the `Currency`'s modulus; no `Currency` given
+        is needed.
+    entry .underlying   evidence that an amount's representation is a primitive number, for generic numeric code
+    entry .showable   shows an amount by the `Currency.Style` in scope, with its currency's symbol or code
+        Needs the amount's `Currency` given (from `currencies`, or declared) and a
+        `Currency.Style` (from `currencyStyles`). The minor units are always written with
+        two digits.
+
+        ```scala
+        import soundness.*
+        import currencies.Eur
+        import currencyStyles.localCurrencyStyle
+
+        Eur(3.01).show   // t"€3.01"
+        ```
+
+        A negative amount does not render correctly: its major and its minor units are
+        each written with a minus sign.
+    entry .inspectable   inspects an amount exactly, as its currency code and minor units: `¤EUR301ₘ`
+        Needs neither a `Currency` nor a style, since the code is packed into the value. The
+        `ₘ` marks the count as minor units, so €3.01 cannot be misread as three hundred and
+        one euros.
+    entry .addable   adds two amounts of the same currency
+    entry .subtractable   subtracts an amount from another of the same currency
+    entry .multiplicable   multiplies an amount by a `Double`, rounding to the nearest minor unit
+    entry .divisible   divides an amount by a `Double`, truncating to whole minor units
+    entry .divisible2   divides an amount by another of the same currency, giving their ratio as a `Double`
+    entry .divisible3   divides an amount by an `Int`, truncating to whole minor units
+        For an exact division into parts, use `share`.
+    entry .orderable   compares two amounts of the same currency with `<`, `<=`, `>` and `>=`
+    entry .zeroic   the zero amount of a currency, which needs the `Currency` given
+        Lets amounts be summed, as `List(…).total`, with zero as the sum of none.
+    entry .negatable   negates an amount: `-Eur(1.99)`
+  entry .Isin   an ISIN, opaque over a `Long`; see `plutocrat.Isin`
+    detail
+        The two-letter country code and the nine-character national number, packed into a
+        `Long`; the check digit is recomputed when the ISIN is rendered.
+    entry .apply   checks an ISIN in text, raising `Isin.Error` if it is invalid
+        Needs a `Tactic[Isin.Error]`. The checks are the length, the country code (two
+        uppercase letters), the characters of the national number (digits and uppercase
+        letters), and the Luhn check digit.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        Isin(t"GB00BH4HKS39").countryCode   // t"GB"
+        ```
+    entry .inspectable   inspects an ISIN as the interpolator which would produce it: `isin"US0378331005"`
+    entry .Error   raised when text is not a valid ISIN, saying which rule it broke
+      detail
+          Error 515: _the ISIN number is not valid because …_, with the reason: the wrong
+          length (_it had length 11, but it should be 12 characters long_), a bad country
+          code, a character which is not a digit or uppercase letter (with its position), or
+          a failed Luhn check on the last digit. Raised by `Isin(…)`, and reported as a
+          compile error by `isin"…"`.
+      entry .Reason   which rule an invalid ISIN broke
+        detail
+            An enumeration of `InvalidCharacter(index, char)`, `BadCountryCode(code)`,
+            `WrongLength(length)` and `LuhnCheck`, numbered 1 to 4 as the error's
+            subnumber (`SN-515.3` for the wrong length).
+        entry #number   the reason's number, the error's subnumber
+      entry .communicable   describes a reason as the clause which completes the error's message
+      entry .InvalidCharacter   the reason for a character which is not a digit or uppercase letter, at an index
+      entry .BadCountryCode   the reason for a country code which is not two uppercase letters
+      entry .WrongLength   the reason for text which is not twelve characters long
+      entry .LuhnCheck   the reason for a last digit which is not the Luhn check digit of the rest
+      entry #reason   which rule the text broke
+  entry .currency   the ISO code of an amount's currency, read from the amount itself: `t"EUR"`
+      An extension on `Money`, available even when the amount's type has been widened to a
+      bare `Money`.
+  entry .value   the amount as a count of minor units: 301 for €3.01
+      An extension on `Money`.
+  entry .tax   a `Price` of this amount and the tax on it at a rate: `Gbp(2.30).tax(0.2)`
+      An extension on `Money in c`. The tax is the amount times the rate, rounded to the
+      nearest minor unit.
+  entry .share   divides an amount into a number of shares which sum exactly to it
+      An extension on `Money in c`. The shares differ by at most one minor unit, and the
+      larger ones come first:
+
+      ```scala
+      import soundness.*
+      import currencies.Eur
+
+      Eur(3.01).share(3)   // List(Eur(1.01), Eur(1.00), Eur(1.00))
+      Eur(3.01).share(3).total == Eur(3.01)
+      ```
+
+      The number of shares must be at least one.
+  entry .countryCode   the two-letter country code of an ISIN: `t"US"`
+  entry .nsin   the national number of an ISIN with its check digit: the last ten characters
+  entry .isin   an ISIN as its twelve characters: `t"US0378331005"`
+  entry .interpolator   the macro behind `isin"…"`

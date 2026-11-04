@@ -1,0 +1,163 @@
+tel 1.0
+
+base frontier
+import soundness
+
+info   explains a missing given as a tree of the candidates tried and the classpath givens that would match
+detail
+    _Frontier_ replaces the compiler's terse _no given instance of type `T` was found_ with an
+    explanation of the search: which candidates were tried, which of their own contextual
+    parameters could not be found, and which givens elsewhere on the classpath — not imported,
+    or in a choice package — would supply the missing value, with the import that names each.
+
+    ```text
+    contextual value not found
+
+     ■ resolving DecimalConverter
+     └─ ▸ propose decimalConverters.javaDecimalConverter
+    ```
+
+    It works through a single catch-all given, `explainMissingContext`, of type `[any] => any`,
+    which is a candidate for every search. When it is tried, it re-runs the search itself and
+    either finds that the search succeeds without it, in which case it fails and lets the
+    compiler choose the instance with its type inference intact, or builds a `Diagnostic` tree
+    of what was missing and aborts with that tree rendered as the message. The catch-all never
+    contributes a term to a program: it is purely diagnostic.
+
+    It relies on the annotation `@scala.annotation.internal.diagnostic`, which exists in the
+    Proscala compiler that Soundness builds with. A given carrying it which aborts during an
+    implicit search fails as an ordinary candidate would, so `summonFrom`, default `using`
+    arguments and `NotGiven` behave as they do without it; but the compiler keeps its errors as
+    a `DiagnosticFailure`, and if the whole search fails, that message is reported verbatim in
+    place of the compiler's own (and of any `@implicitNotFound`). Under a compiler without the
+    annotation the catch-all is not usable.
+
+    The catch-all is brought into scope in either of two ways:
+
+    - `import soundness.*` brings in `soundness.explainMissingContext`, an old-style `implicit
+      def` rather than a `given` precisely so that a wildcard import includes it;
+    - `import frontier.context.explainMissingContext` brings in the `given` by name, for code
+      which does not import the umbrella.
+
+    ```scala
+    import soundness.*
+
+    summon[Char is Concatenable]   // does not compile
+    ```
+
+    In a chain of `using` clauses, the explanation shown is the one for the deepest missing
+    value — the innermost cause — since the catch-all expands there first. An explanation is
+    bounded: a chain of candidates deeper than six, or more than 256 implicit searches in one
+    explanation, is reported as missing rather than followed, and the rendered tree is cut at
+    100 lines.
+
+    The library is the single source set `frontier.core`. `Diagnostic` is deliberately not
+    exported to the `soundness` umbrella, where it would clash with `harlequin.Diagnostic`:
+    reach it as `frontier.Diagnostic`.
+
+refer frontier.context.explainMissingContext
+refer frontier.Diagnostic
+
+entry .context   the choice package holding the catch-all given `explainMissingContext`, imported by name
+  detail
+      A package whose single given is imported by name, since `import frontier.context.*`
+      does not import givens. Code which imports the `soundness` umbrella does not need it:
+      `import soundness.*` brings in the equivalent `soundness.explainMissingContext`.
+  refer soundness.explainMissingContext
+  entry .explainMissingContext   explains a failed implicit search as a tree of candidates and classpath proposals
+      A `transparent inline given` of type `[any] => any`, marked
+      `@scala.annotation.internal.diagnostic`, so it is a candidate in every implicit search.
+      When tried, it repeats the search without itself: if the search succeeds, the catch-all
+      fails, so that the compiler selects the instance itself with its type variables still
+      open; if the search fails, the catch-all aborts with a rendered `Diagnostic` tree, which
+      the compiler reports as the error if no other candidate succeeds. For a target
+      `NotGiven[X]` it succeeds trivially, so that the compiler's per-candidate negation turns
+      it into a failure and `NotGiven`'s own instances decide, and `NotGiven[X]` holds exactly
+      when there is no `X`.
+
+      ```scala
+      import frontier.context.explainMissingContext
+
+      trait A
+      trait B
+      given mkA(using B): A = new A {}
+
+      summon[A]   // does not compile
+      ```
+
+      The message reports the missing `B`, the innermost cause. A proposal for a polymorphic
+      given names its type-parameter bindings (`textual = Char`), and a `NotGiven[X]`
+      requirement of a candidate is shown as _prohibits X_, with the given that violates it.
+
+entry .Diagnostic   a pre-rendered tree describing a failed implicit search, and its renderer
+  detail
+      A format-neutral model of an explanation: each node has a kind, a `#name` already
+      rendered as `Text`, an optional `#label` and its `#children`. Because the names are
+      already rendered, the renderer has no compiler dependency, and the same model can be
+      built by any macro which needs to explain a failure — Wisteria's generic derivation
+      attaches a field or variant name to each node as its label.
+
+      The enum's six cases are its node kinds, each taking a name, an optional label and a
+      list of children:
+
+      - `Resolving` — the root: the type being resolved, rendered as _■ resolving T_;
+      - `Candidate` — a given in scope which was tried, _▪ candidate g_;
+      - `Requires` — a contextual parameter of a candidate which could not be found,
+        _✗ requires T_;
+      - `Propose` — a given on the classpath, not in scope, which would supply the value,
+        _▸ propose pkg.g_;
+      - `Prohibits` — a `NotGiven[X]` requirement, unwrapped to `X`, _⊘ prohibits X_, whose
+        child is the `Found` that violates it, or which has no child and the label `absent`
+        when it holds;
+      - `Found` — a value which was found, _✓ found T_.
+
+      ```scala
+      import soundness.*
+
+      val tree = frontier.Diagnostic.Resolving
+        ( t"Holder",
+          Unset,
+          List(frontier.Diagnostic.Requires(t"DecimalConverter", Unset, Nil)) )
+
+      frontier.Diagnostic.render(tree)
+      ```
+
+      `Diagnostic` is not exported to the `soundness` umbrella, where it would clash with
+      `harlequin.Diagnostic`.
+  refer frontier.context.explainMissingContext
+  entry .render   renders a diagnostic tree as ANSI-coloured text, under a headline, to at most a limit of lines
+      The root should be a `Resolving` node, which supplies the _■ resolving T_ line; any other
+      node is wrapped in one. `headline` defaults to _contextual value not found_, and `limit`
+      to 100: at most that many lines of the tree are written, followed by _… n more_ when
+      lines were omitted. A non-leaf subtree identical to one already written is written as
+      its first line alone, labelled _as above_, since an explanation in a large scope could
+      otherwise run to thousands of lines.
+
+      ```scala
+      import soundness.*
+
+      val shared = frontier.Diagnostic.Requires(t"Shared", Unset, Nil)
+      val first = frontier.Diagnostic.Candidate(t"First", Unset, List(shared))
+
+      frontier.Diagnostic.render(frontier.Diagnostic.Resolving(t"Root", Unset, List(first)))
+      ```
+  entry .treeStyle   the box-drawing style a diagnostic tree is drawn in
+  entry .expandable   makes a `Diagnostic` expandable into its children, for drawing as a tree
+  entry #name   the rendered name of the node's type or given
+  entry #label   an optional annotation shown after the name, such as a field name or `absent`
+  entry #children   the node's child nodes
+  entry #rebuild   the same kind of node with the same name, but a new label and children
+
+entry .internal   the macro behind `explainMissingContext`
+  hidden
+  detail
+      Not for direct use. Every step from the catch-all to its macro must be `transparent
+      inline`: only transparent inline calls are expanded during typing, so a non-transparent
+      step would leave the macro unexpanded while the catch-all is tried, and the search would
+      spuriously succeed.
+  entry .explanation   the transparent inline entry point of the explaining macro
+  entry .explain   the macro which re-runs a search and builds and renders its `Diagnostic`
+  entry .NoCandidates   matches an implicit search failure which had no candidates, giving its explanation
+    detail
+        An extractor over `quotes.reflect.ImplicitSearchFailure`, used by the macro.
+    entry .unapply   the explanation of a search failure with no candidates, if it is one

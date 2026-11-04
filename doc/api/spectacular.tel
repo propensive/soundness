@@ -1,0 +1,393 @@
+tel 1.0
+
+base spectacular
+import soundness
+
+info   two renderings of a value as text: `show` for the people using a program, `inspect` for its programmers
+detail
+    _Spectacular_ separates the two reasons a value becomes text. `show` renders it for a
+    **person** — the form that belongs in a message, a log line or on a screen — through a
+    `Showable` instance, and is a compile error for a type which has none, so a value that
+    should never reach a user simply has no instance. `inspect` renders it for a
+    **programmer** — an unambiguous, one-line, source-like form for debugging and test output —
+    through an `Inspectable` instance, and always succeeds, deriving a structural rendering
+    or, in the last resort, marking a borrowed one.
+
+    ```scala
+    import soundness.*
+    import affirmations.yesNoAffirmation
+
+    case class Person(name: Text, age: Int)
+
+    t"Simon".show                     // t"Simon"
+    t"Simon".inspect                  // t"t\"Simon\""
+    Person(t"Simon", 72).inspect      // t"Person(name:t\"Simon\" ╱ age:72)"
+    t"adult: ${true}"                 // t"adult: yes"
+    ```
+
+    The same `Showable` instances drive `t"…"` interpolation, so a substituted value is shown,
+    and a `Showable` is also `Communicable`, so it can be substituted into an `m"…"` message.
+
+    A `Boolean` has no single obvious rendering, so showing one needs an `Affirmation` in
+    scope, chosen by importing one of the `affirmations` package's givens by name: `import
+    soundness.*` does not import givens, and there is deliberately no default.
+
+    `Inspectable`'s renderings follow one notation across every Soundness type, so that two
+    types never render alike: `[a, b]` for a `List`, `{a, b}` for a `Set`, `{k → v}` for a
+    `Map`, `⟦k → v⟧` for a `Ledger`, `⟨ a b ⟩` for a `Sequence`, `Name(field:value ╱ …)` for a
+    product, `｢value｣` and `○` for a present and an absent `Optional`, `t"…"` and `'x'` for text
+    and characters, and superscript suffixes for sized numbers (`42ᵘ⁸`) and ordinals (`1ˢᵗ`).
+    A rendering which was *not* native carries a marker: `“…”` for a `toString`, `⸢…⸣` for a
+    borrowed `Showable` form and `⸤…⸥` for a borrowed `Encodable in Text` form, which
+    `Inspectable.fallbacks` finds.
+
+    The library has one source set, `spectacular.core`, which compiles for every platform.
+    Everything is exported to the `soundness` umbrella, and the `affirmations` choice package
+    merges with the umbrella's own.
+
+refer spectacular.Showable
+refer spectacular.Inspectable
+refer spectacular.show
+refer spectacular.inspect
+refer spectacular.Affirmation
+
+entry .show   renders a value as text for a person to read, through its `Showable` instance
+    An extension on any value whose type has a `Showable`: `value.show` is
+    `Showable.text(value)`. A type with no instance cannot be shown, and asking is a compile
+    error rather than a silent fallback to `toString`, so the absence of an instance is how a
+    type says it is not meant for display.
+
+    ```scala
+    import soundness.*
+
+    43.show                   // t"43"
+    List(1, 2, 3).show        // t"[1, 2, 3]"
+    ```
+
+    Interpolating a value into `t"…"` shows it in the same way. For a debugging form which
+    always succeeds, use `inspect`.
+
+entry .inspect   renders a value as unambiguous text for a programmer, through its `Inspectable`
+    An extension on any value: `value.inspect` is `Inspectable.text(value)`, and since
+    `Inspectable.derived` covers every type, it never fails to compile. The rendering is
+    compact, on one line, resembles valid source where that is cheap, and shows every piece
+    of state relevant at the value's *static* type.
+
+    ```scala
+    import soundness.*
+
+    t"Hello\nworld".inspect            // t"t\"Hello\\nworld\""
+    (5: Optional[Int]).inspect         // t"｢5｣"
+    Map(1 -> 2, 3 -> 4).inspect        // t"{1 → 2, 3 → 4}"
+    ```
+
+    The rendering depends on the static type: a value typed `Any` falls back to `toString`,
+    marked `“…”`. See `Inspectable` for the notation and the fallback chain.
+
+entry .Showable   the typeclass of values which may be displayed to a person, as `value is Showable`
+  detail
+      A single-method typeclass, `text(value: Self): Text`, so an instance is written as a
+      function from the value to its text. It extends `Communicable`, so a showable value can
+      also be substituted into a `m"…"` message, as a `Message` of its text.
+
+      ```scala
+      import soundness.*
+
+      case class Money(pence: Int)
+      given Money is Showable = money => t"£${money.pence/100}.${money.pence%100}"
+
+      Money(1099).show   // t"£10.99"
+      ```
+
+      `Showable` is deliberately demanding: there is no derivation and no fallback, so a type
+      shows only if someone has decided how it should look. The companion holds instances for
+      the primitive types, `Text`, `String`, `Message`, `Bytes`, every Scala `enum`, every
+      `Textualizable` type, and the Soundness collections. A `Double` needs a
+      `DecimalConverter` in scope and a `Boolean` an `Affirmation`, since neither has a single
+      context-free form.
+
+      An instance for a type which is refined (a branded list, a literal type) should be
+      written over the subtypes of its subject (`[self <: Foo] => self is Showable`), since
+      `Self` is invariant and an instance for `Foo` does not cover `Foo` with a refinement.
+  refer spectacular.show
+  refer spectacular.Inspectable
+  refer spectacular.Affirmation
+  entry #text   renders a value as text
+  entry #message   renders a value as a `Message`, for `m"…"` interpolation
+      `Message(text(value))`: the member which makes every `Showable` a `Communicable`.
+  entry .showable   shows any `Textualizable` value through its textualization
+  entry .text   shows `Text`, and any subtype of it, verbatim
+  entry .string   shows a `String` as its text
+  entry .char   shows a `Char` as a one-character text
+  entry .long   shows a `Long` in decimal, with no suffix
+  entry .int   shows an `Int` in decimal
+  entry .short   shows a `Short` in decimal
+  entry .byte   shows a `Byte` in decimal
+  entry .message   shows a `Message` as its text
+  entry .double   shows a `Double` through the `DecimalConverter` in scope
+      Needs a `DecimalConverter`, which decides the number of digits, the notation and the
+      rounding; without one, a `Double` does not show at all.
+  entry .boolean   shows a `Boolean` through the `Affirmation` in scope
+      Needs an `Affirmation`, imported by name from the `affirmations` package or defined
+      locally; without one, a `Boolean` does not show at all, since presuming `true` and
+      `false` would be presuming the context.
+
+      ```scala
+      import soundness.*
+      import affirmations.onOffAffirmation
+
+      true.show   // t"on"
+      ```
+  entry .option   shows a Scala `Option`: its value, or `none`
+  entry .bytes   shows a `Bytes` count through its own `text` rendering
+  entry .enumeration   shows a case of any Scala `enum` by its name
+      Every `reflect.Enum` shows as its `toString`, the case's name, so an enum needs no
+      instance of its own unless a different form is wanted; a parameterised case shows with
+      its arguments but without labels.
+  entry .set   shows a `Set` as `{a, b}`, each element shown
+  entry .list   shows a `List` as `[a, b]`, each element shown
+      Written over the subtypes of `List[element]`, so a branded list (a `List` known to be
+      populated) shows too.
+  entry .sequence   shows a `Sequence` as `[ a b ]`, each element shown
+  entry .none   shows `None` as `none`
+  entry .specializable   shows a `Specializable` marker by its lowercased name
+  entry .zerary   shows an `Ordinal` in its zero-based form, `3.₀`
+  entry .typeRepr   shows a macro's `TypeRepr` as its source name, inside a macro
+      Needs a `Quotes`; the name is rendered as stenography renders a type.
+  entry .meta   shows a macro's `Type[T]` as its source name, inside a macro
+
+entry .Inspectable   the typeclass of debug renderings, which every value has, as `value is Inspectable`
+  detail
+      A single-method typeclass, `text(value: Self): Text`, rendering a value for a
+      programmer to read in a debugger or in test output. Unlike `Showable` it is total: when
+      a type has no instance of its own, `derived` (inherited from `Inspectable2`) supplies
+      one, trying in turn
+
+      1. an `Encodable in Text`, borrowed and marked `⸤…⸥`;
+      2. a `Showable`, borrowed and marked `⸢…⸣`;
+      3. an `Optional` type (`Mandatable`), as `｢value｣` or `○`;
+      4. a structural rendering through `Derivation`, for any case class, enum or sealed
+         hierarchy;
+      5. the value's `toString`, marked `“…”`.
+
+      A native instance in the companion of the type, or here, takes precedence over all of
+      them. The marks are deliberate: a borrowed rendering is a wire form or a human form, not
+      a debug form, and a reader should see at a glance that a type lacks an instance.
+
+      ```scala
+      import soundness.*
+
+      enum Shape:
+        case Circle(radius: Int)
+        case Point
+
+      (Shape.Circle(5): Shape).inspect   // t"Circle(radius:5)"
+      (t"Simon", 72).inspect             // t"(t\"Simon\" ╱ 72)"
+      (name = t"Simon", age = 72).inspect   // t"(name:t\"Simon\" ╱ age:72)"
+      ```
+
+      Since a missing instance is never a compile error, coverage can regress silently: a
+      type gains a refinement and its rendering drops to `toString`. `.fallbacks` is what a
+      library's tests assert on to prevent that. An instance should be written over the
+      subtypes of its subject (`[self <: Port] => self is Inspectable`), because `Self` is
+      invariant and an instance for `Port` does not cover `Port over Tcp`; for a
+      parameterised subject, bind the parameter with a wildcard (`[self <: Cookie[?]]`)
+      rather than a second type parameter, which may silently fail to resolve. The opaque
+      collections `List`, `Set`, `Map` and `Chain` are the exceptions, and keep an exact
+      `Self`. An instance belongs in the subject's companion, not at top level, so that it
+      needs no import to be found.
+
+      The notation in use, by category:
+
+      - containers: `[a, b]` list, `{a, b}` set, `{k → v}` map, `⟦k → v⟧` ledger, `⟨ a b ⟩`
+        sequence, `⦋…⦌` array, `⁅…⁆` frozen array, `a ⋰ b ⋰ ..?` a lazy chain
+      - products: `Name(field:value ╱ field2:value)`, `(a ╱ b)` tuple, `(name:value ╱ …)`
+        named tuple
+      - optionality: `｢value｣` present, `○` absent
+      - text: `t"…"` with escapes, `'x'` a character
+      - numbers: `3`, `3L`, `3.1F`, `3.toByte`, `BigInt(42)`; `42ᵘ⁸`, `-7ˢ³²`, `2Fᵇ⁸`,
+        `3.14ᶠ⁶⁴` for the sized numbers
+      - positions: `1ˢᵗ` ordinal, `1ˢᵗ‥5ᵗʰ` interval, `⟪4:8+5⟫` span
+  refer spectacular.inspect
+  refer spectacular.Inspectable2
+  refer spectacular.Showable
+  entry #text   renders a value for a programmer to read
+  entry #contramap   an instance for another type, rendering it through a conversion to this one
+      `inspectable.contramap[Celsius](_.degrees)` renders a `Celsius` as its degrees would
+      render. The lambda must be pure.
+  entry .fallbacks   those of some renderings which were not native: carrying `“…”`, `⸢…⸣` or `⸤…⸥`
+      Returns the renderings, in order, which contain one of the three markers of a borrowed
+      or `toString` rendering. A library's tests assert that its own types all inspect
+      natively, and should pair that with a case asserting that an uncovered type *is*
+      reported, so the check cannot pass vacuously.
+
+      ```scala
+      import soundness.*
+
+      Inspectable.fallbacks(t"text".inspect, 'x'.inspect, Set(1, 2).inspect)   // Nil
+      ```
+  entry .marker   whether a character is one of the fallback markers `“`, `⸢` or `⸤`
+  entry .escape   escapes a character as it would be written in a Scala literal
+      Newlines, tabs, carriage returns, backslashes, quotes, apostrophes, backspaces and form
+      feeds take their backslash escapes; any other character outside printable ASCII becomes
+      `\uXXXX`. With the second parameter `true`, the escape character is written `\e`, as in a
+      `t"…"` literal.
+  entry .Derivation   the structural derivation of `Inspectable` for products and sums
+    detail
+        A wisteria `Derivable[Inspectable]`. A product renders as `Name(field:value ╱ …)`, with
+        each field rendered by the instance for its static type, and a case object with no
+        fields as its bare name; a tuple omits the name and labels. A sum renders the variant
+        the value is. `derived` reaches it for any type with a `Reflection`, and `Inspectable.enumeration`
+        for every Scala `enum`.
+    entry .conjunction   the rendering of a product: its name and labelled fields
+    entry .disjunction   the rendering of a sum: the rendering of its variant
+  entry .char   renders a `Char` as a quoted, escaped literal, `'x'`
+  entry .int   renders an `Int` in decimal
+  entry .long   renders a `Long` with its `L` suffix, `3L`
+  entry .byte   renders a `Byte` as `3.toByte`
+  entry .short   renders a `Short` as `3.toShort`
+  entry .string   renders a `String` as an escaped string literal, `"…"`
+  entry .text   renders a `Text` as an escaped `t"…"` literal
+      Every control character and quote is escaped as Scala would escape it, and the escape
+      character as `\e`, so a text containing a newline is distinguishable from one containing `\` and `n`
+      and the rendering could be pasted back into code.
+  entry .float   renders a `Float` with its `F` suffix, and its infinities and NaN by name
+  entry .double   renders a `Double`, and its infinities and NaN by name (`Double.NaN`)
+  entry .boolean   renders a `Boolean` as `true` or `false`, with no `Affirmation` needed
+  entry .unit   renders `()`
+  entry .bigInt   renders a `BigInt` as `BigInt(42)`
+  entry .bigDecimal   renders a `BigDecimal` as `BigDecimal(1.5)`
+  entry .unset   renders `Unset` as `○`
+  entry .reflectEnum   renders a value statically typed `reflect.Enum` by its `toString`
+      Only for a value typed as `reflect.Enum` itself, for which no reflection is available; a
+      value of a known enum type is rendered structurally by `.enumeration`.
+  entry .enumeration   derives the rendering of any Scala `enum`, with field labels: `Circle(radius:5)`
+      Takes priority over the borrowed `Showable` rendering every enum has (which would lose
+      the labels), while yielding to an enum which defines an instance of its own.
+  entry .tuple   renders a tuple as `(a ╱ b)`, each element by its static type's instance
+      Inline, since it walks the element types known at the summon site. A value typed as a
+      bare `Tuple`, whose elements are unknown, renders as its `toString`, marked `“…”`.
+  entry .namedTuple   renders a named tuple as `(name:a ╱ age:b)`
+      A named tuple is an opaque alias, which `Derivation` cannot see into, so it has this
+      instance of its own. An element with no native instance degrades on its own.
+  entry .u8   renders a `U8` with the suffix `ᵘ⁸`: `200ᵘ⁸`
+  entry .u16   renders a `U16` with the suffix `ᵘ¹⁶`
+  entry .u32   renders a `U32` with the suffix `ᵘ³²`
+  entry .u64   renders a `U64` with the suffix `ᵘ⁶⁴`
+  entry .s8   renders an `S8` with the suffix `ˢ⁸`
+  entry .s16   renders an `S16` with the suffix `ˢ¹⁶`
+  entry .s32   renders an `S32` with the suffix `ˢ³²`: `-7ˢ³²`
+  entry .s64   renders an `S64` with the suffix `ˢ⁶⁴`
+  entry .b8   renders a `B8` as two uppercase hexadecimal digits with the suffix `ᵇ⁸`: `2Fᵇ⁸`
+  entry .b16   renders a `B16` as four zero-padded hexadecimal digits with the suffix `ᵇ¹⁶`
+  entry .b32   renders a `B32` as eight zero-padded hexadecimal digits with the suffix `ᵇ³²`
+  entry .b64   renders a `B64` as sixteen hexadecimal digits with the suffix `ᵇ⁶⁴`
+  entry .f32   renders an `F32` with the suffix `ᶠ³²`, and its infinities as `∞` and `-∞`
+  entry .f64   renders an `F64` with the suffix `ᶠ⁶⁴`: `3.5ᶠ⁶⁴`
+  entry .q32   renders a `Q32` rational as a fraction with the suffix `ʳ³²`: `3/4ʳ³²`
+  entry .q64   renders a `Q64` rational as a fraction with the suffix `ʳ⁶⁴`
+  entry .bcd   renders a `Bcd` decimal with the suffix `ᵇᶜᵈ`
+  entry .decimal   renders a `Decimal` with the suffix `ᵈ`: `3.14ᵈ`
+  entry .ordinal   renders an `Ordinal` one-based, with its English suffix: `1ˢᵗ`, `3ʳᵈ`, `11ᵗʰ`
+      The one-based number is the one a programmer counts with; the zero-based form is an
+      implementation detail, and showing it would make every rendering off by one.
+  entry .interval   renders an `Interval` as `1ˢᵗ‥5ᵗʰ`, or `∅` when empty
+  entry .span   renders a `Span` by its shape: `⟪∅⟫`, `⟪@4+5⟫`, `⟪4:8+5⟫`, `⟪4‥8⟫` or `⟪4:8‥6:2⟫`
+      A `Span` packs one of five ranges into a `Long`: empty, an offset and length, a line,
+      column and length, a range of whole lines, or an area. The numbers are one-based.
+  entry .bytes   renders a `Bytes` count exactly, as `4194304B`, never rounded
+  entry .digit   renders a `Digit` with the suffix `ᵈᵍ`
+  entry .message   renders a `Message` as `m"…"`
+  entry .set   renders a `Set` as `{a, b}`
+  entry .map   renders a `Map` as `{k → v, …}`, whose entries have no significant order
+  entry .ledger   renders a `Ledger` as `⟦k → v, …⟧`, in insertion order
+      Bracketed differently from a `Map` because a `Ledger`'s order is significant and a
+      `Map`'s is not, and the rendering must say which a value is.
+  entry .sequence   renders a `Sequence` as `⟨ 1 2 3 ⟩`
+  entry .list   renders a `List` as `[a, b]`
+  entry .array   renders a Scala array as `⦋…⦌`, with its element kind and subscripted indices
+      The prefix names the JVM element type (`🅸` for `Int`, `🅻` for objects, …) and the
+      dimension, and each element is preceded by its index in subscript digits.
+  entry .arraySeq   renders a mutable `ArraySeq` as an array, closed with `⦌ₛ`
+  entry .stream   renders a `Chain` lazily: `1 ⋰ 2 ⋰ 3 ⋰ ..?`, never forcing it
+      Shows at most three forced elements; an unforced tail is `∿∿∿` and the end is `⯁`.
+  entry .frozenArray   renders a frozen `Array[element]^{}` as `⁅…⁆`, with subscripted indices
+  entry .option   renders a Scala `Option` as `Some(3)` or `None`
+  entry .none   renders `None`
+
+entry .Inspectable2   the lower-priority home of `Inspectable.derived`, the total fallback
+  detail
+      A trait which `Inspectable`'s companion extends, so that `derived` ranks below every
+      instance written in the companion. Not used directly; its `derived` is found through
+      the companion.
+  entry #derived   the instance for any type without one: borrowed, derived, or `toString`
+      Tries an `Encodable in Text` (marked `⸤…⸥`), a `Showable` (marked `⸢…⸣`), an `Optional`
+      type (`｢value｣` or `○`), a `Reflection` (structural, through `Inspectable.Derivation`),
+      and finally the value's `toString` (marked `“…”`). A type whose encoded form is escaped
+      or encoded must define its own instance, since the borrowed form would mislead.
+
+      ```scala
+      import soundness.*
+
+      given Exception is Showable = _ => t"<exception>"
+      Exception("error message").inspect   // t"⸢<exception>⸣"
+      ```
+
+entry .Affirmation   the pair of words a `Boolean` shows as: `yes`/`no`, `on`/`off`, …
+  detail
+      A case class of two texts, chosen as a contextual value: `Showable.boolean` needs one,
+      so a `Boolean` shows only once the context has said how. The `affirmations` package has
+      four, each imported by name; any other pair is a one-line given.
+
+      ```scala
+      import soundness.*
+
+      given Affirmation = Affirmation(t"+", t"-")
+      t"${true}${false}"   // t"+-"
+      ```
+  refer spectacular.affirmations
+  entry #yes   the text for `true`
+  entry #no   the text for `false`
+  entry #apply   the text for a boolean: `yes` if it is `true`, and `no` otherwise
+
+entry .affirmations   the standard ways to show a `Boolean`, each a given to import by name
+  detail
+      Showing a `Boolean` needs an `Affirmation`, and none is in scope by default:
+      `import soundness.*` brings none of these in, since `import pkg.*` does not import
+      givens, and one is imported by name.
+
+      ```scala fuel
+      frame
+        label Yes and no
+        code
+            import soundness.*
+            import affirmations.yesNoAffirmation
+
+            t"${true} ${false}"   // t"yes no"
+      frame
+        label On and off
+        code
+            import soundness.*
+            import affirmations.onOffAffirmation
+
+            t"${true} ${false}"   // t"on off"
+      frame
+        label True and false
+        code
+            import soundness.*
+            import affirmations.trueFalseAffirmation
+
+            t"${true} ${false}"   // t"true false"
+      frame
+        label One and zero
+        code
+            import soundness.*
+            import affirmations.oneZeroAffirmation
+
+            t"${true} ${false}"   // t"1 0"
+      ##
+      ```
+  entry .yesNoAffirmation   shows `true` as `yes` and `false` as `no`
+  entry .onOffAffirmation   shows `true` as `on` and `false` as `off`
+  entry .trueFalseAffirmation   shows `true` as `true` and `false` as `false`
+  entry .oneZeroAffirmation   shows `true` as `1` and `false` as `0`

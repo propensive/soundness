@@ -1,0 +1,238 @@
+tel 1.0
+
+base corpuscular
+import soundness
+
+info   the CRC-32, CRC-64 and Adler-32 checksums, and the incremental `Digestion` every hash is fed through
+detail
+    _Corpuscular_ holds the three non-cryptographic checksums the compression and container
+    formats need — `Crc32` (gzip, PNG, ZIP, XZ), `Crc64` (the ECMA-182 form XZ uses) and
+    `Adler32` (zlib) — and the `Digestion` interface through which every hash in Soundness,
+    cryptographic or not, is computed incrementally.
+
+    Each checksum is named twice. As a **type**, `Crc32` is an `Algorithm`, a marker which
+    names the checksum in a type position, so a value is checksummed with the same
+    `digest[Crc32]` as it is hashed with `digest[Sha2[256]]`, through gastronomy. As an
+    **object**, `Crc32` makes a running `Crc32.Accumulator`, a mutable `Digestion` for code
+    which feeds bytes as they stream past and reads the checksum as the integer a container
+    format writes into its trailer.
+
+    ```scala
+    import soundness.*
+    import alphabets.hexLowerCase
+    import cryptoPermits.permitNonCryptographicHashes
+    import providers.javaBaseProvider
+
+    t"123456789".digest[Crc32].serialize[Hex]   // t"cbf43926"
+
+    val crc = Crc32()
+    crc.append(t"1234".in[Data])
+    crc.append(t"56789".in[Data])
+    crc.value                                   // 0xcbf43926L
+    ```
+
+    A checksum detects accidental corruption and defends against nothing, so `digest` with
+    one is gated behind gastronomy's permit `cryptoPermits.permitNonCryptographicHashes`,
+    which concedes that no adversary is in the threat model. The JDK's provider,
+    `providers.javaBaseProvider`, offers CRC-32 and Adler-32; CRC-64 has no JDK
+    implementation, and is offered only by `providers.soundnessProvider`, which uses this
+    library's implementations of all three. The same input gives the published check value
+    under each:
+
+    ```scala fuel
+    frame
+      label CRC-32
+      code
+          locally:
+            import providers.soundnessProvider
+            t"123456789".digest[Crc32].serialize[Hex]     // t"cbf43926"
+    frame
+      label Adler-32
+      code
+          locally:
+            import providers.soundnessProvider
+            t"123456789".digest[Adler32].serialize[Hex]   // t"091e01de"
+    frame
+      label CRC-64
+      code
+          locally:
+            import providers.soundnessProvider
+            t"123456789".digest[Crc64].serialize[Hex]     // t"995dc9bbdf1939fa"
+    ##
+    ```
+
+    The library has one source set, `corpuscular.core`, written in portable Scala, so the
+    checksums compute the same values on the JVM, Scala.js, Scala Native and WebAssembly.
+    `Adler32`, `Algorithm`, `Crc32`, `Crc64` and `Digestion` are exported to the `soundness`
+    umbrella.
+
+refer corpuscular.Crc32
+refer corpuscular.Crc64
+refer corpuscular.Adler32
+refer corpuscular.Digestion
+refer gastronomy.Digest
+
+entry .Algorithm   the marker type of a hash or checksum algorithm, named in a type position as `digest[Crc32]`
+    A trait with no members. Every algorithm Soundness can digest with is a type extending it:
+    the checksums `Crc32`, `Crc64` and `Adler32` here, and gastronomy's `Sha2[256]`, `Sha1`,
+    `Md5`, `Blake3` and `Murmur3`. Algorithms are never instantiated; a `Digest in Crc32`
+    carries its algorithm in its type, so digests from different algorithms are never
+    confused.
+
+entry .Digestion   an incremental hash or checksum computation: append bytes, then read the digest
+  detail
+      A `Digestion` is the mutable state of one hash in progress. It is honestly mutable — a
+      `caps.Mutable`, whose `append` and `digest` are `update` methods — so a fresh one is an
+      exclusive `Digestion^`, and each computation needs its own. The checksums' accumulators
+      (`Crc32.Accumulator`, `Crc64.Accumulator`, `Adler32.Accumulator`) implement it directly,
+      and gastronomy's `Hashing` providers supply one for each cryptographic hash.
+
+      ```scala
+      import soundness.*
+
+      val digestion: Digestion^ = Crc32()
+      digestion.append(t"1234".in[Data])
+      digestion.append(t"56789".in[Data])
+      digestion.digest()   // the four big-endian bytes cb f4 39 26
+      ```
+
+      A streaming consumer which reads into a reusable window feeds it with the windowed
+      `#append` rather than snapshotting it: hashing consumes its input synchronously and never
+      retains it.
+  refer corpuscular.Algorithm
+  entry #append   feeds bytes to the computation: all of a `Data`, or a window of a mutable array
+      `append(bytes)` hashes the whole of an immutable `Data`. `append(array, start, count)`
+      hashes `count` bytes of a mutable array from `start`, which needs only read access to
+      it; the default implementation copies the window, and the checksums' accumulators
+      override it to read the array in place, with no allocation.
+  entry #digest   the result so far, as bytes
+      For the checksums, the checksum's value as big-endian bytes: four for `Crc32` and
+      `Adler32`, eight for `Crc64`. Whether further appends may follow depends on the
+      implementation; the checksums' accumulators allow it, and the result then covers every
+      byte appended.
+
+entry .Crc32   the standard CRC-32 checksum, as used by gzip, PNG, ZIP and XZ
+  detail
+      The reflected CRC-32 with polynomial `0xedb88320`, whose check value for `123456789` is
+      `0xcbf43926`. As a type it is an `Algorithm`, so `digest[Crc32]` checksums any digestible
+      value through gastronomy (behind `cryptoPermits.permitNonCryptographicHashes`). As an
+      object it offers the one-shot `.checksum` over several segments and the running
+      `.Accumulator`.
+
+      ```scala
+      import soundness.*
+
+      Crc32.checksum(t"1234".in[Data], t"56789".in[Data])   // 0xcbf43926, as an Int
+
+      val crc = Crc32()
+      crc.append(t"123456789".in[Data])
+      crc.value                                             // 0xcbf43926L
+      ```
+
+      `.checksum` returns the CRC as a signed `Int`, the bits the formats write;
+      `Accumulator#value` returns it as an unsigned `Long`.
+  refer corpuscular.Crc64
+  refer corpuscular.Adler32
+  entry .table   the 256-entry lookup table of the bytewise CRC-32 algorithm
+      A frozen `Array[Int]`, computed once, indexed by the low byte of the running CRC xor the
+      next input byte.
+  entry .checksum   the CRC-32 of a sequence of byte segments, taken as one stream, as an `Int`
+      As PNG chunks and ZIP entries need: `Crc32.checksum(a, b)` equals the checksum of `a`
+      followed by `b`. With no segments, or an empty one, the result is 0.
+  entry .apply   a fresh running CRC-32, a `Crc32.Accumulator`
+      Returns an exclusive `Accumulator^`; each checksum needs its own.
+  entry .Accumulator   the running state of a CRC-32, fed incrementally, as a `Digestion`
+    detail
+        A mutable `Digestion` whose `append`s, of a whole `Data` or of a window of a mutable
+        array, both run the native loop over the array in place, with no copy. `#update` is the
+        same loop over a raw `scala.Array[Byte]`, for code which already holds one. `#value`
+        reads the CRC as an unsigned number and `#digest` as four big-endian bytes; either may
+        be read at any point, and appending may continue afterwards.
+
+        ```scala
+        import soundness.*
+
+        val crc = Crc32()
+        crc.append(t"1234".in[Data])
+        crc.append(t"56789".in[Data])
+        crc.value   // 0xcbf43926L
+        crc.reset()
+        crc.value   // 0L
+        ```
+    entry #update   feeds `length` bytes of a raw `scala.Array[Byte]` from `index`
+        The primitive loop the `append` methods delegate to; it reads the array in place.
+    entry #reset    returns the accumulator to its initial state, the CRC of no bytes
+    entry #value    the CRC-32 so far, as an unsigned `Long` from 0 to 0xffffffff
+    entry #digest   the CRC-32 so far, as four big-endian bytes
+  entry #Bits   the width of the checksum: `32`
+
+entry .Crc64   the CRC-64 checksum in the ECMA-182 form XZ uses
+  detail
+      The reflected CRC-64 with polynomial `0xc96c5795d7870f42`, whose check value for
+      `123456789` is `0x995dc9bbdf1939fa`. As a type it is an `Algorithm`, so
+      `digest[Crc64]` checksums any digestible value — but only under
+      `providers.soundnessProvider`, since the JDK has no CRC-64 and
+      `providers.javaBaseProvider` does not offer one. As an object it makes the running
+      `.Accumulator`.
+
+      ```scala
+      import soundness.*
+
+      val crc = Crc64()
+      crc.append(t"123456789".in[Data])
+      crc.value   // 0x995dc9bbdf1939faL
+      ```
+
+      The accumulator uses slicing-by-eight, consuming eight bytes per step through eight
+      independent table lookups, which is three to four times faster than the bytewise loop
+      and as fast as xz-java's implementation.
+  refer corpuscular.Crc32
+  entry .table   the eight 256-entry slicing tables of CRC-64, flattened into one array
+      A frozen `Array[Long]` of 2048 entries: `table(n)` for `n` under 256 is the classic
+      bytewise table, and `table(k*256 + n)` folds a byte `k` positions further into an
+      eight-byte word.
+  entry .apply   a fresh running CRC-64, a `Crc64.Accumulator`
+      Returns an exclusive `Accumulator^`; each checksum needs its own.
+  entry .Accumulator   the running state of a CRC-64, fed incrementally, as a `Digestion`
+    detail
+        A mutable `Digestion` whose `append`s read their input in place, eight bytes at a
+        time with a bytewise tail, so a segmented input gives the same checksum as the whole
+        at every alignment. `#value` reads the CRC as a `Long` and `#digest` as eight
+        big-endian bytes; either may be read at any point, and appending may continue.
+    entry #update   feeds `length` bytes of a raw `scala.Array[Byte]` from `index`
+        The primitive loop the `append` methods delegate to; it reads the array in place.
+    entry #reset    returns the accumulator to its initial state, the CRC of no bytes
+    entry #value    the CRC-64 so far, as a `Long`: 0 for no bytes
+    entry #digest   the CRC-64 so far, as eight big-endian bytes
+  entry #Bits   the width of the checksum: `64`
+
+entry .Adler32   the Adler-32 checksum, as used by the zlib wrapper
+  detail
+      Adler-32: two running sums modulo 65521, the largest prime below 65536, combined as
+      `s2 << 16 | s1`. Its check value for `123456789` is `0x091e01de`, and the checksum of no
+      bytes is 1. As a type it is an `Algorithm`, so `digest[Adler32]` checksums any
+      digestible value through gastronomy (behind
+      `cryptoPermits.permitNonCryptographicHashes`). As an object it makes the running
+      `.Accumulator`.
+
+      ```scala
+      import soundness.*
+
+      val adler = Adler32()
+      adler.append(t"123456789".in[Data])
+      adler.value   // 0x091e01deL
+      ```
+  refer corpuscular.Crc32
+  entry .apply   a fresh running Adler-32, an `Adler32.Accumulator`
+      Returns an exclusive `Accumulator^`; each checksum needs its own.
+  entry .Accumulator   the running state of an Adler-32, fed incrementally, as a `Digestion`
+    detail
+        A mutable `Digestion` whose `append`s read their input in place. `#value` reads the
+        checksum as a `Long` and `#digest` as four big-endian bytes; either may be read at any
+        point, and appending may continue.
+    entry #update   feeds `length` bytes of a raw `scala.Array[Byte]` from `index`
+        The primitive loop the `append` methods delegate to; it reads the array in place.
+    entry #reset    returns the accumulator to its initial state, whose value is 1
+    entry #value    the Adler-32 so far, as a `Long`: 1 for no bytes
+    entry #digest   the Adler-32 so far, as four big-endian bytes
+  entry #Bits   the width of the checksum: `32`

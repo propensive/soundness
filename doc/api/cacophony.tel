@@ -1,0 +1,592 @@
+tel 1.0
+
+base cacophony
+import soundness
+
+info   audio as typed, immutable PCM values: read and write WAV, AIFF, AIFC, AU and SND; record from and play to devices
+detail
+    _Cacophony_ reads and writes audio as typed values, records from the machine's inputs,
+    and plays through its outputs. Reading a WAV, AIFF, AIFC, AU or SND file yields an
+    `Audio` — an immutable block of PCM samples which knows its sample rate (a genuine
+    quantity in hertz), its channel count, its bit depth and every sample it holds — and
+    the file format lives in the type: an `Audio in Wave` is distinct from an `Audio in
+    Aiff`, converting between them is `to[Aiff]`, and an audio value's encoded bytes are
+    read from it as `Data`, with the same `read` as any other source.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    // A complete WAV file: one channel, 16-bit signed samples at 8 kHz, four frames.
+    val wav = hex"""524946462c00000057415645666d74201000000001000100401f0000803e00000200100064
+                    617461080000006400c8002c019001"""
+
+    val audio: Audio in Wave = wav.read[Audio in Wave]
+    audio.channels        // 1
+    audio.frames          // 4
+    audio.bitsPerSample   // 16
+    audio.sampleRate      // 8000.0*Hertz
+    audio.duration        // 0.0005*Second
+    audio(0, 2)           // 300
+
+    val aiff: Data = audio.to[Aiff].read[Data]
+    aiff.read[Audio in Aiff](0, 2)   // 300
+    ```
+
+    Underneath, uncompressed audio is a grid of numbers played at a fixed rate, and the
+    formats differ in their headers more than their substance; Java's sound library exposes
+    it through mutable objects and untyped formats, where a wrong channel count surfaces as
+    noise. Here the format is an `Audible` typeclass instance (`Wave`, `Aiff`, `Aifc`, `Au`,
+    `Snd`), the channel layout an optional `ChannelLayout` carried in the type as `across
+    Stereo` or `across Surround[6]`, and audio which is not already PCM is converted to
+    16-bit signed PCM as it is read, so every `Audio` has the same internal form.
+
+    Watching one audio value move through the pipeline shows how the pieces connect:
+
+    ```scala fuel
+    frame
+      label Bytes become an audio value when the format is named
+      code
+          val audio = wav.read[Audio in Wave]
+    frame
+      label Re-expressed in another format, the samples are unchanged
+      code
+          val audio = wav.read[Audio in Wave]
+          val converted = audio.to[Aiff]
+          converted.frames   // 4
+    frame
+      label An audio value reads as its encoded bytes
+      code
+          val audio = wav.read[Audio in Wave]
+          val converted = audio.to[Aiff]
+          val bytes: Data = converted.read[Data]
+    frame
+      label And the bytes read back as audio in that format
+      code
+          val audio = wav.read[Audio in Wave]
+          val converted = audio.to[Aiff]
+          val bytes: Data = converted.read[Data]
+          bytes.read[Audio in Aiff](0, 2)   // 300
+    ##
+    ```
+
+    Devices are `Feed`s (inputs, listed by `Feed.list`) and `Outlet`s (outputs, listed by
+    `Outlet.list`), each a `Device` with a name, vendor, description and the
+    `configurations` it offers. `Feed#record` and `Outlet#play` hold a device for as long
+    as the program wants it, returning a `Recording` or a `Playback`; for a device held for
+    exactly one block, a line is *opened* as a file is, with the `Pcm` form —
+    `feed.open[Pcm across Stereo](Read, PcmFlag.Rate(48000))` and `outlet.open[Pcm](Write)`
+    — and released when the block ends, with playback gated on the `Write` grant so that
+    the compiler, not the driver, refuses to play to a capture line.
+
+    Reading raises `Audio.Error` through the `Tactic` in scope; recording raises
+    `Feed.Error` and playback `Outlet.Error`. The library is one source set,
+    `cacophony.core`, for the JVM, over `javax.sound.sampled`; on macOS the JVM must have
+    been granted microphone permission or no feeds are listed. Everything is exported to the
+    `soundness` umbrella except `Device`, the shared parent of `Feed` and `Outlet`, which is
+    reached as `cacophony.Device`.
+
+refer cacophony.Audio
+refer cacophony.Audible
+refer cacophony.Feed
+refer cacophony.Outlet
+refer cacophony.Pcm
+
+entry .Audio   an immutable block of PCM samples which knows its rate, channels, depth and every sample
+  detail
+      An `Audio` is pure and immutable: its samples are a frozen array, so a value may be
+      shared freely. Its `Form` type member is the file format it was read in or converted
+      to (`Audio in Wave`), and its `Domain` the channel layout, if one is known (`Audio
+      across Stereo`); a plain `Audio` has neither. It is made by reading bytes —
+      `data.read[Audio in Wave]` through `.aggregable`, or `data.read[Audio]` through
+      `.aggregable2` when the format is to be detected — or built from samples with
+      `Audio[Wave](format, samples)`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val wav = hex"""524946462c00000057415645666d74201000000001000100401f0000803e00000200100064
+                      617461080000006400c8002c019001"""
+
+      val audio = wav.read[Audio in Wave]
+      audio.sampleRate   // 8000.0*Hertz
+      audio.duration     // 0.0005*Second
+      audio(0, 0)        // 100
+      audio.to[Au].read[Data].read[Audio in Au].frames   // 4
+      ```
+
+      Audio which is not already signed or unsigned PCM (µ-law in an AU file, say) is
+      converted to 16-bit signed PCM as it is read, so `#apply` always indexes plain
+      samples. An `Audio in form` is `Streamable` (`.streamable`), so it reads as `Data` and
+      writes to a file handle directly, and `Abstractable` to an HTTP response body with
+      the format's media type (`.abstractable`). `#to` re-expresses it in another format.
+  refer cacophony.Audible
+  refer cacophony.Wave
+  refer cacophony.ChannelLayout
+  entry .apply   reads audio from any byte source with the format detected, or builds audio from a format and samples
+      `Audio(source)`, for any `Streamable by Data over Credit` source, lets
+      `javax.sound.sampled` detect the file format, converting to 16-bit signed PCM if the
+      encoding is not PCM, and returns a plain `Audio` with no `Form`; it raises
+      `Audio.Error(Unset)` if the bytes are not audio in any format the JVM knows.
+
+      `Audio[form](format: javax.sound.sampled.AudioFormat, data: Array[Byte]^{})` builds an
+      `Audio in form` from raw PCM samples and the Java format which describes them, for
+      audio generated in the program. The samples must be a frozen array: `Array.freeze` an
+      exclusive one, or build them with `Array.tabulate`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import javax.sound.sampled as jss
+
+      // One second of a 440 Hz sine: 16-bit signed little-endian, mono, 8 kHz.
+      val rate = 8000
+      val format = jss.AudioFormat(jss.AudioFormat.Encoding.PCM_SIGNED, rate, 16, 1, 2, rate, false)
+
+      val samples: Data = Array.tabulate[Byte](2*rate): index =>
+        val value = (Math.sin(2*Math.PI*440*(index/2)/rate)*32767).toInt
+        (if index%2 == 0 then value else value >> 8).toByte
+
+      val tone: Audio in Wave = Audio[Wave](format, samples)
+      tone.duration   // 1.0*Second
+      tone.read[Data].length   // the bytes of a WAV file
+      ```
+  entry .streamable   an `Audio in form` reads as its encoded bytes, and so writes to any destination
+      The `Streamable by Data over Credit` given for any `Audio` whose `Form` has an
+      `Audible`: `audio.read[Data]` is the complete file, headers and all, and
+      `handle.write(audio)` writes it. The encoding is done by the JVM's writer for the
+      format's name, so a format the JVM cannot write throws rather than raises.
+  entry .streamableAcross   as `.streamable`, for an `Audio in form across layout`
+      A separate given because the refined type with both members is not matched by the
+      one with `Form` alone.
+  entry .abstractable   an `Audio in form` as an HTTP response body, with its format's media type
+      `audio/x-wav`, `audio/x-aiff`, `audio/x-aifc` or `audio/basic`, and the encoded bytes
+      as the body, so an audio value can be served directly.
+  entry .aggregable   `data.read[Audio in form]`: bytes read as audio in a named format
+      The `Aggregable by Data` given for `Audio in form`, for any `form` with an `Audible`.
+      Needs a `Tactic[Audio.Error]`, raised with the format if the bytes are not audio of
+      that type: reading a WAV as `Audio in Aiff` fails, since the format is a claim about
+      the bytes, not a request to convert them.
+  entry .aggregable2   `data.read[Audio]`: bytes read as audio with the format detected
+      The `Aggregable by Data` given for a plain `Audio`, through `Audio.apply`; the error
+      names no format.
+  entry .Error   raised when bytes are not audio in the expected format
+    detail
+        _unable to read the audio in `format` format_, with `unspecified` when the format was
+        to be detected. Raised by `.aggregable` and `Audible#read` when the JVM cannot parse
+        the bytes, when it parses them as a different format from the one named, or when it
+        cannot convert their encoding to PCM.
+
+        ```scala
+        import soundness.*
+        import errorDiagnostics.stackTracesDiagnostics
+
+        val broken = hex"5249464600000000ffffffff"
+        capture[Audio.Error](broken.read[Audio in Wave])   // Audio.Error(Wave())
+        ```
+    entry #audible   the format expected, or `Unset` if the format was to be detected
+  entry #channels   the number of channels: 1 for mono, 2 for stereo
+  entry #bitsPerSample   the bit depth of each sample: 8, 16, 24 or 32
+  entry #frames   the number of frames, each holding one sample per channel
+  entry #sampleRate   the sample rate as a frequency: `8000.0*Hertz`
+      A `Quantity[Seconds[-1]]`, so it participates in arithmetic with other quantities
+      rather than being a bare number.
+  entry #duration   the length of the audio in seconds: frames divided by the sample rate
+      A `Quantity[Seconds[1]]`.
+  entry #apply   the sample at a channel and frame, as a signed integer
+      `audio(channel, frame)` decodes one sample from the bytes, honouring the format's
+      byte order and signedness, and sign-extends it, so a 16-bit sample is in −32768 to
+      32767. The indices are not checked against `#channels` and `#frames`.
+  entry #to   the same audio re-expressed in another format: `audio.to[Aiff]`
+      The samples are shared, not copied, and the channel layout is kept; only the `Form`
+      changes, and with it the bytes the value reads as and the media type it serves with.
+
+entry .Audible   a file format which audio can be read in and written in: its name and media type
+  detail
+      The typeclass behind `Audio in form`: `Wave`, `Aiff`, `Aifc`, `Au` and `Snd` each
+      have an instance in their companion. `#name` is the type name `javax.sound.sampled`
+      knows the format by (`WAVE`, `AIFF`, `AIFC`, `AU`, `SND`), which must match what the
+      JVM detects for a read to succeed, and `#mediaType` is what an audio value is served
+      as. `#read` is the reading itself, which `Audio.aggregable` delegates to.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      summon[Wave is Audible].name        // t"WAVE"
+      summon[Aiff is Audible].mediaType   // media"audio/x-aiff"
+      Wave().name                         // t"WAVE"
+      ```
+  refer cacophony.Audio
+  refer cacophony.Wave
+  entry #name   the format's type name as the JVM's audio system reports it
+  entry #mediaType   the format's media type, for serving audio over HTTP
+  entry #read   reads a byte source as `Audio in Self`, raising `Audio.Error` if it is not this format
+      Parses the file format, checks it is this one, converts a non-PCM encoding to 16-bit
+      signed PCM, and reads every sample into memory. Needs a `Tactic[Audio.Error]`.
+
+entry .Wave   the WAV (RIFF) format, as `Audio in Wave`
+    A sealed type with no values, used as a type argument; its companion holds the
+    `Audible` instance, `audibility`, with the name `WAVE` and the media type `audio/x-wav`.
+    `Wave()` returns that instance as an `Audible`, which is how `Audio.Error` names a
+    format.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    val wav = hex"""524946462c00000057415645666d74201000000001000100401f0000803e00000200100064
+                    617461080000006400c8002c019001"""
+    wav.read[Audio in Wave].frames   // 4
+    ```
+
+entry .Aiff   the AIFF format, as `Audio in Aiff`
+    A sealed type whose companion holds the `Audible` instance, `audibility`, with the name
+    `AIFF` and the media type `audio/x-aiff`; `Aiff()` returns it. An AIFF file is
+    big-endian, which `Audio#apply` honours when indexing a sample.
+
+entry .Aifc   the AIFF-C format, as `Audio in Aifc`
+    A sealed type whose companion holds the `Audible` instance, `audibility`, with the name
+    `AIFC` and the media type `audio/x-aifc`; `Aifc()` returns it.
+
+entry .Au   Sun's AU format, as `Audio in Au`
+    A sealed type whose companion holds the `Audible` instance, `audibility`, with the name
+    `AU` and the media type `audio/basic`; `Au()` returns it. An AU file holding µ-law or
+    A-law audio is converted to 16-bit signed PCM as it is read.
+
+entry .Snd   the NeXT SND format, as `Audio in Snd`
+    A sealed type whose companion holds the `Audible` instance, `audibility`, with the name
+    `SND` and the media type `audio/basic`; `Snd()` returns it.
+
+entry .ChannelLayout   a channel layout carried in the type: how many channels, known statically
+  detail
+      The typeclass behind `Audio across layout`, `Recording across layout` and
+      `Pcm across layout`: `Monaural` has one channel, `Stereo` two, and `Surround[n]` the
+      literal `n`. A feed records in a layout — `feed.record[Stereo](…)` — so the channel
+      count of what it produces is in the type, not a number to be checked.
+
+      ```scala
+      import soundness.*
+
+      summon[Monaural is ChannelLayout].channels      // 1
+      summon[Stereo is ChannelLayout].channels        // 2
+      summon[Surround[6] is ChannelLayout].channels   // 6
+      ```
+  refer cacophony.Stereo
+  refer cacophony.Surround
+  entry #channels   the number of channels in the layout
+
+entry .Monaural   the one-channel layout, as `Audio across Monaural`
+    A sealed type whose companion holds its `ChannelLayout` instance, `channelLayout`, with
+    one channel.
+
+entry .Stereo   the two-channel layout, as `Audio across Stereo`
+    A sealed type whose companion holds its `ChannelLayout` instance, `channelLayout`, with
+    two channels.
+
+entry .Surround   a surround layout of a literal number of channels, as `Audio across Surround[6]`
+    `Surround[N]` takes a literal `Int`, and its companion's `channelLayout` given yields
+    that number of channels for any `N` with a `ValueOf`, so `Surround[6]` and
+    `Surround[8]` are distinct layouts with no instance written for either.
+
+entry .Sonation   how samples are encoded: `PcmSigned` or `PcmUnsigned`
+    The encoding a device `Configuration` reports. Every `Audio` value is signed PCM after
+    reading, so `PcmUnsigned` appears only in what a device says it supports.
+
+entry .Configuration   a format a device's lines offer: channels, rate, bit depth, encoding and byte order
+  detail
+      Returned by `Device#configurations`, one per format the mixer's lines report. The
+      sample rate is `Unset` when the line accepts any rate (the JVM reports −1), which is
+      common.
+
+      ```scala
+      import soundness.*
+
+      Feed.list.map(_.configurations)
+      ```
+  refer cacophony.Device
+  entry #channels   the number of channels the format has
+  entry #sampleRate   the sample rate, or `Unset` if the line accepts any rate
+  entry #bitsPerSample   the bit depth: 8, 16, 24 or 32
+  entry #encoding   `Sonation.PcmSigned` or `Sonation.PcmUnsigned`
+  entry #bigEndian   whether multi-byte samples are big-endian
+
+entry .Device   what a `Feed` and an `Outlet` share: a mixer the system describes, and the lines it offers
+  detail
+      A `Device` wraps a `javax.sound.sampled.Mixer.Info`, giving its `#name`, `#vendor` and
+      `#description`, the `#configurations` its lines of the right kind (target lines for a
+      `Feed`, source lines for an `Outlet`) report, and `#supports` to ask about one before
+      committing to it. It is not exported to the `soundness` umbrella: a program names
+      `Feed` or `Outlet`, or `cacophony.Device` for code over both.
+
+      ```scala
+      import soundness.*
+
+      Feed.list.map(feed => t"${feed.name} (${feed.vendor}): ${feed.description}")
+      Outlet.list.head.let(_.supports[Stereo](44100.0*Hertz, 16))
+      ```
+  refer cacophony.Feed
+  refer cacophony.Outlet
+  entry #name   the device's name, as the system reports it
+  entry #vendor   the device's vendor
+  entry #description   the device's description
+  entry #configurations   every format the device's lines report, as `Configuration`s
+  entry #supports   whether the device can open a line in a layout at a rate and bit depth, as signed little-endian PCM
+      `device.supports[Stereo](44100.0*Hertz, 16)` asks the mixer whether such a line is
+      supported, without opening one; `record` and `play` raise `UnsupportedConfiguration`
+      where this is `false`.
+
+entry .Feed   an input device: records audio in a chosen layout, rate and bit depth
+  detail
+      The machine's feeds are `Feed.list`; a machine may have none, so the first is an
+      `Optional`. A feed is a `Device`, with a name, vendor, description and
+      `configurations`, and `supports` to ask about a format before recording. `#record`
+      opens a line and returns a `Recording` whose `stream` yields `Audio` chunks until it
+      is stopped; for a line held for exactly one block, `feed.open[Pcm across Stereo](Read,
+      PcmFlag.Rate(48000))` lends a `Pcm.PcmInput` instead (see `Pcm`).
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+
+      Feed.list.head.let: feed =>
+        if feed.supports[Stereo](44100.0*Hertz, 16) then
+          val recording = feed.record[Stereo](44100.0*Hertz, bits = 16)
+          val firstChunk: Optional[Audio across Stereo] = recording.stream.head
+          recording.stop()
+      ```
+
+      Recording from a feed which is unavailable or cannot honour the configuration raises
+      `Feed.Error`. On macOS the JVM must have been granted microphone permission, or
+      `Feed.list` is empty.
+  refer cacophony.Recording
+  refer cacophony.Pcm
+  refer cacophony.Device
+  entry .list   every mixer with a line to record from, as a `Feed`
+      Enumerates the JVM's mixers and keeps those offering a `TargetDataLine`. The list is
+      fresh on each call, so a device plugged in since is seen.
+  entry .Error   raised when a feed cannot record
+    detail
+        Error 440: _could not record from feed `name` because …_, with the reason's number
+        and message appended. Raised by `Feed#record` and by opening a feed as `Pcm`.
+    entry .Reason   `Unavailable`, `UnsupportedConfiguration` or `Closed`
+        `Unavailable` (1), _the audio line could not be opened_: another program holds it, or
+        the system refused; `UnsupportedConfiguration` (2), _the requested configuration is
+        not supported_, which `Device#supports` predicts; and `Closed` (3), _the recording
+        has already been stopped_.
+    entry #feed   the feed's name
+    entry #reason   why it could not record
+  entry #record   opens a line and records in a layout at a rate and bit depth, as a `Recording` of chunks
+      `feed.record[Stereo](44100.0*Hertz, 16, chunkBytes = 65536)`: a line is opened for
+      signed little-endian PCM in the layout's channels and started; the `Recording`'s
+      `stream` reads chunks of up to `chunkBytes` from it, each an `Audio across layout`,
+      until `stop` closes the line. Raises `Feed.Error` with `UnsupportedConfiguration` or
+      `Unavailable`. The line is held until `stop` is called.
+
+entry .Outlet   an output device: plays an audio value in the background, or synchronously within a scope
+  detail
+      The machine's outlets are `Outlet.list`. An outlet is a `Device`, with a name, vendor,
+      description, `configurations` and `supports`. `#play` opens a line for the audio's
+      own format and returns a `Playback` which runs on its own thread, to be awaited or
+      stopped; for a line held for exactly one block, `outlet.open[Pcm](Write)` lends a
+      `Pcm.PcmOutput` whose `play` is synchronous and needs the `Write` grant (see `Pcm`).
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val wav = hex"""524946462c00000057415645666d74201000000001000100401f0000803e00000200100064
+                      617461080000006400c8002c019001"""
+      val audio = wav.read[Audio in Wave]
+
+      Outlet.list.head.let: outlet =>
+        val playback = outlet.play(audio)
+        playback.await()
+
+      Outlet.list.head.let: outlet =>
+        outlet.open[Pcm](Write): out ?=>
+          out.play(audio)
+      ```
+
+      Playing to an outlet which is unavailable or cannot accept the audio's configuration
+      raises `Outlet.Error`.
+  refer cacophony.Playback
+  refer cacophony.Pcm
+  refer cacophony.Device
+  entry .list   every mixer with a line to play to, as an `Outlet`
+      Enumerates the JVM's mixers and keeps those offering a `SourceDataLine`.
+  entry .Error   raised when an outlet cannot play
+    detail
+        Error 374: _could not play to outlet `name` because …_, with the reason's number and
+        message appended. Raised by `Outlet#play` and by `Pcm.play` on an opened outlet.
+    entry .Reason   `Unavailable`, `UnsupportedConfiguration` or `Closed`
+        `Unavailable` (1), _the audio line could not be opened_; `UnsupportedConfiguration`
+        (2), _the requested configuration is not supported_: the audio's rate, depth or
+        channels are not something the outlet can play, which `Device#supports` predicts;
+        and `Closed` (3), _the playback has already been stopped_.
+    entry #outlet   the outlet's name
+    entry #reason   why it could not play
+  entry #play   plays an audio value on a virtual thread, as a `Playback` to await or stop
+      `outlet.play(audio, chunkBytes = 65536)` opens a line for the audio's format
+      (`UnsupportedConfiguration` or `Unavailable` otherwise), starts it, and writes the
+      samples in chunks from a background thread, draining the line and closing it when
+      the audio ends. `Playback#stop` is observed between chunks and closes the line at
+      once; `await` joins the thread. Any `Audio` plays, whatever its `Form`: the samples
+      are PCM already.
+
+entry .Recording   an open recording: a stream of audio chunks until it is stopped
+  detail
+      Returned by `Feed#record`. `#stream` is a lazy chain of `Audio across Domain` chunks,
+      each up to the chunk size the recording was started with, read from the line as the
+      chain is forced; it ends when `#stop` closes the line, or when the line delivers
+      nothing. The `Domain` type member is the layout recorded in.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+
+      Feed.list.head.let: feed =>
+        val recording = feed.record[Monaural](8000.0*Hertz, 16, chunkBytes = 1024)
+        val chunk: Optional[Audio across Monaural] = recording.stream.head
+        recording.stop()
+        chunk.let(_.channels)   // 1
+      ```
+  refer cacophony.Feed
+  entry #active   whether the recording has not yet been stopped
+  entry #stop   stops the line and closes it; the stream ends
+      Idempotent. The line is held until this is called, so a recording should always be
+      stopped; `Feed`'s scoped form, `open[Pcm across layout]`, does it at the end of the
+      block.
+  entry #stream   the chunks recorded so far and to come, as a lazy chain
+      Each force reads one chunk from the line, blocking until it is full, so the chain is
+      consumed at the rate the device produces samples.
+
+entry .Playback   audio playing in the background: await its end, or stop it early
+  detail
+      Returned by `Outlet#play`. The samples are written from a virtual thread; `#await`
+      blocks until the audio has been played to the end (or stopped), and `#stop` ends it
+      early, flushing what has not yet sounded. Whichever of `stop` and the end of the
+      audio comes first closes the line, exactly once.
+  refer cacophony.Outlet
+  entry #active   whether the audio is still playing
+  entry #stop   stops the playback at once, discarding what has not yet sounded, and closes the line
+      Idempotent, and safe to call from another thread than the one which started the
+      playback: the writer observes it between chunks.
+  entry #await   blocks until the playback has finished, by reaching the end or being stopped
+
+entry .Pcm   the form for scoped audio-line access: a feed opens as `Pcm across layout`, an outlet as `Pcm`
+  detail
+      Where `Feed#record` and `Outlet#play` hold a device for as long as the program wants
+      it, a line may instead be *opened* for exactly one block, as a file is: the OS line
+      lasts precisely as long as the scope and is released however it ends. `Pcm` is the
+      form named at the `open`: a `Feed` opens as `Pcm across layout` for capture, lending
+      a `.PcmInput` whose `stream` yields `Audio across layout` chunks; an `Outlet` opens as
+      plain `Pcm` for playback, lending a `.PcmOutput` whose `.play` plays each `Audio`
+      synchronously. The `Openable` instances, `.feedOpenable` and `.outletOpenable`, are
+      in the companion, so no import is needed.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val wav = hex"""524946462c00000057415645666d74201000000001000100401f0000803e00000200100064
+                      617461080000006400c8002c019001"""
+      val audio = wav.read[Audio in Wave]
+
+      Feed.list.head.let: feed =>
+        feed.open[Pcm across Stereo](Read, PcmFlag.Rate(48000), PcmFlag.Chunk(1024)): input ?=>
+          input.stream.head
+
+      Outlet.list.head.let: outlet =>
+        outlet.open[Pcm](Write): out ?=>
+          out.play(audio)
+      ```
+
+      The configuration is given as `PcmFlag`s: `PcmFlag.Rate(hertz)` (44100 by default),
+      `PcmFlag.Bits(bits)` (16) and `PcmFlag.Chunk(bytes)` (65536); an outlet reads only
+      `Chunk`, since each `play` opens a line for the audio's own format. Playing requires
+      the `Write` grant: `outlet.open[Pcm]()` with no grant lends a `PcmOutput` on which
+      `play` does not compile, so a line opened for capture cannot be played to, and the
+      compiler, not the audio driver, says so.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val outlet: Outlet = ???
+      val audio: Audio = ???
+
+      outlet.open[Pcm](): out ?=>
+        out.play(audio)   // does not compile
+      ```
+  refer cacophony.Feed
+  refer cacophony.Outlet
+  refer cacophony.PcmFlag
+  entry .PcmInput   the handle lent by opening a `Feed` as `Pcm across layout`: a stream of audio chunks
+    detail
+        An exclusive capability over an open, started line, valid for the block it is lent
+        to. `#stream` reads chunks as it is forced, each an `Audio across layout` of up to
+        the `PcmFlag.Chunk` size; the line is stopped and closed when the block ends.
+    entry #stream   the chunks captured, as a lazy chain, for as long as the scope lasts
+  entry .PcmOutput   the handle lent by opening an `Outlet` as `Pcm`: plays audio values, with the `Write` grant
+    detail
+        An exclusive capability over the outlet, valid for the block it is lent to. Each
+        `Pcm.play` (the grant-gated extension) or `#playAudio` opens a line for the audio's
+        own format, plays it to completion and closes it; the next may have a different
+        format.
+    entry #playAudio   opens a line for the audio's format, plays it to the end, and closes the line
+        Public so that the grant-gated `play` extension can reach it; use `play`, which
+        checks the `Write` grant, rather than this. Raises `Outlet.Error` with
+        `UnsupportedConfiguration` or `Unavailable`.
+  entry .play   `out.play(audio)` on a `PcmOutput` opened with the `Write` grant: synchronous playback
+      An extension on `PcmOutput & Granting[Grant.Write]`, so it is available only inside
+      `outlet.open[Pcm](Write)`. Blocks until the audio has sounded, and raises
+      `Outlet.Error` if the outlet cannot play it.
+  entry .FeedOpenable   the `Openable` which opens a `Feed` as `Pcm across layout`, lending a `PcmInput`
+    detail
+        A named class rather than an anonymous given, so that its type members are stable:
+        `Self = Feed`, `Form = Pcm across layout`, `Operand = PcmFlag`, `Result =
+        PcmInput[layout]`. Made by `.feedOpenable` from the `ChannelLayout` and the
+        `Tactic[Feed.Error]` in scope.
+    entry #open   opens a line for the flags' rate, bits and chunk size in the layout's channels, for the block
+        Signed little-endian PCM at `PcmFlag.Rate` (44100 by default) and `PcmFlag.Bits`
+        (16); the line is started before the block and stopped and closed after it. Raises
+        `Feed.Error` with `UnsupportedConfiguration` or `Unavailable`.
+  entry .OutletOpenable   the `Openable` which opens an `Outlet` as `Pcm`, lending a `PcmOutput`
+    detail
+        `Self = Outlet`, `Form = Pcm`, `Operand = PcmFlag`, `Result = PcmOutput`. Made by
+        `.outletOpenable` from the `Tactic[Outlet.Error]` in scope. Opening itself touches
+        no line: each `play` within the block opens one for its audio.
+    entry #open   lends a `PcmOutput` with the flags' chunk size to the block
+  entry .feedOpenable   the given which makes `feed.open[Pcm across layout](…)` available
+      Needs a `ChannelLayout` for the layout and a `Tactic[Feed.Error]`, which it captures.
+      In implicit scope through the companion.
+  entry .outletOpenable   the given which makes `outlet.open[Pcm](…)` available
+      Needs a `Tactic[Outlet.Error]`, which it captures. In implicit scope through the
+      companion.
+
+entry .PcmFlag   the options of a scoped line: `Rate(hertz)`, `Bits(bits)` and `Chunk(bytes)`
+    Passed to `open[Pcm …]` after the mode. `Rate(hertz)` is the sample rate in hertz
+    (44100 if absent), `Bits(bits)` the bit depth (16), and `Chunk(bytes)` the size of each
+    chunk read from a feed or written to an outlet (65536). A feed reads all three; an
+    outlet reads only `Chunk`, since its lines take the format of the audio played.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import strategies.throwUnsafely
+
+    Feed.list.head.let: feed =>
+      feed.open[Pcm across Monaural](Read, PcmFlag.Rate(8000), PcmFlag.Bits(16), PcmFlag.Chunk(1024)):
+        input ?=> input.stream.head.let(_.channels)   // 1
+    ```

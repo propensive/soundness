@@ -1,0 +1,1183 @@
+tel 1.0
+
+base iridescence
+import soundness
+
+info   colours in every model — sRGB, HSL, HSV, CIELAB, XYZ, CMY, CMYK — converted, mixed, adjusted and packed
+detail
+    _Iridescence_ represents a colour in whichever model suits the task — `Srgb` for a
+    screen, `Cielab` for perceptual distance, `Hsl` or `Hsv` for intuitive adjustment, `Cmy`
+    and `Cmyk` for print, `Xyz` as the device-independent hub — and converts between them
+    with one method, `to[Model]`. Each model is its own type, so the compiler knows which a
+    value is in, and a conversion which depends on viewing conditions cannot be written
+    without a `Colorimetry` in scope to say what the illuminant is.
+
+    ```scala
+    import soundness.*
+
+    given Colorimetry = colorimetry.daylightColorimetry
+
+    val red: Srgb = Srgb(0.8, 0.2, 0.2)
+    val lab: Cielab = red.to[Cielab]
+    val slate: Hsl = Hsl(208.8.deg, 0.3, 0.4)
+    slate.rotate(180.deg).lighten(0.2).to[Srgb]
+    WebColors.DeepPink.to[Cielab].delta(WebColors.Tomato.to[Cielab])
+    ```
+
+    Around it: the 141 named `WebColors`; `rgb"#abcdef"`, a hexadecimal literal checked as
+    the code compiles, which gives the whole-number `Chroma` a terminal expects and converts
+    to a `Color in Srgb` with `color`; mixing, pairwise with `mix` or by parts with `Daub`
+    arithmetic (`5*Red + 3*Yellow`) under a blend mode imported from `mixing`; `Theme` and
+    `Palette` for coordinated sets of colours, with Solarized built in and chosen by
+    `luminosity`; and `Pixel[layout]`, a colour packed into an integer in any channel layout,
+    with `Rgb12` and `Rgb32` for two fixed packings.
+
+    The library is one source set, `iridescence.core`, which depends on anticipation's
+    `Chroma`, `Chromatic` and `Channel` types, hypotenuse and geodesy's `Angle`, and compiles
+    for the JVM, Scala.js and Scala Native (`Palette#selectDynamic` uses reflection, which
+    Native lacks; the named roles are ordinary methods). Everything is exported to the
+    `soundness` umbrella, and the `colorimetry`, `luminosity`, `mixing` and `themes` choice
+    packages merge with the umbrella's own: their givens are imported by name, since
+    `import soundness.*` does not import givens, and each selects a policy — an illuminant,
+    a light or dark variant, a blend mode, a theme — which should never be implicit.
+
+refer iridescence.Color
+refer iridescence.Srgb
+refer iridescence.Cielab
+refer iridescence.Hsl
+refer iridescence.Daub
+refer iridescence.WebColors
+refer iridescence.Pixel
+refer iridescence.rgb
+
+entry .Color   a colour in some model, converted to another with `to[Model]`
+  detail
+      The trait every colour model extends. A `Color`'s type member `Form` is its own model,
+      and `to[Model]` converts it through the `Perceptual` instance from `Form` to `Model`,
+      found in the companions of the two models. The prepositional spelling `Color in Srgb`
+      names a colour whose `Form` is `Srgb`, and is the type `WebColors` entries and `Palette`
+      roles have; a concrete `Srgb` is one.
+
+      The instances declared are `Srgb` to and from each of `Xyz`,
+      `Cielab`, `Cmy`, `Cmyk`, `Hsl` and `Hsv`, `Xyz` to and from `Cielab`, and `Cmy` to and
+      from `Cmyk`. Every model reaches every other through `Srgb`, but the caller writes
+      the hop: `hsl.to[Xyz]` has no instance, where `hsl.to[Srgb].to[Xyz]` does.
+      The hops between `Srgb` and `Xyz` or `Cielab` need a `Colorimetry` in scope, since
+      those models are defined relative to a reference white.
+
+      ```scala fuel
+      frame
+        label A colour in sRGB
+        code
+            import soundness.*
+            import colorimetry.daylightColorimetry
+
+            val tomato: Srgb = WebColors.Tomato.to[Srgb]   // Srgb(1, 0.388, 0.278)
+      frame
+        label Into HSL, where hue is an angle
+        code
+            import soundness.*
+            import colorimetry.daylightColorimetry
+
+            val hsl: Hsl = WebColors.Tomato.to[Hsl]        // Hsl(9.1°, 1, 0.639)
+      frame
+        label Into XYZ, relative to the daylight reference white
+        code
+            import soundness.*
+            import colorimetry.daylightColorimetry
+
+            val xyz: Xyz = WebColors.Tomato.to[Hsl].to[Srgb].to[Xyz]   // back through Srgb, needing the Colorimetry
+      frame
+        label Into CIELAB, where distance is perceptual
+        code
+            import soundness.*
+            import colorimetry.daylightColorimetry
+
+            val lab: Cielab = WebColors.Tomato.to[Hsl].to[Srgb].to[Xyz].to[Cielab]
+            lab.delta(WebColors.OrangeRed.to[Cielab])      // small: the two look alike
+      frame
+        label And back to sRGB, within rounding
+        code
+            import soundness.*
+            import colorimetry.daylightColorimetry
+
+            WebColors.Tomato.to[Hsl].to[Srgb].to[Xyz].to[Cielab].to[Srgb]   // Srgb(1, 0.388, 0.278), near enough
+      ##
+      ```
+
+      A colour is `Pure`: it holds no capabilities, so it may be stored and shared freely.
+      Every colour is `Chromatic` (`.chromatic`), so it is accepted wherever a terminal or an
+      image wants a `Chroma`, and `n*color` lifts it to a `Daub` of `n` parts for mixing.
+  refer iridescence.Perceptual
+  refer iridescence.Colorimetry
+  refer iridescence.Daub
+  entry .chromatic   any colour with a conversion to `Srgb` is `Chromatic`: a 24-bit `Chroma` for terminals and images
+      Converts to `Srgb` and scales each channel to `0`–`255`, truncating (`0.5` is `127`).
+      This is what lets `e"${WebColors.Red}(text)"` colour terminal text, and
+      `Fg(WebColors.Red)` take a colour directly. `Pixel#chroma` rounds instead, so a colour
+      packed and unpacked may differ from this by one in a channel.
+  entry .multiplicable   `parts*color` for a `Double`: a `Daub` of that many parts of the colour
+      The `Multiplicable` instance lives here rather than in `Daub`'s companion because
+      `Daub` appears only in the result: the implicit scope of `0.5*WebColors.Red` is built
+      from `Double` and the colour's type. A `Color in Srgb` and a plain `Srgb` both lift to
+      the same `Daub[Srgb]`, so the two can be added to one another.
+  entry .wholeMultiplicable   `parts*color` for an `Int`: a `Daub` of that many parts of the colour
+      `5*WebColors.Red` is five parts red. The parts matter only when daubs are added.
+  entry #Form   the colour's own model: `Srgb` for an `Srgb`, and so on
+  entry #to   the colour converted to another model: `color.to[Cielab]`
+      Needs a `Form is Perceptual in Model` instance, which the companions supply for every
+      pair, and for `Srgb`, `Xyz` or `Cielab` as source or target (other than
+      `Xyz` to `Srgb`) a `Colorimetry` in scope. Converting a colour to its own model is the
+      identity. The result is the target's concrete type, so `to[Hsl].rotate(…)` chains.
+
+entry .Srgb   a colour as red, green and blue fractions of full intensity, the screen's model
+  detail
+      `Srgb(red, green, blue)`, each in `0`–`1`. The model everything else converts through:
+      the `Chromatic` instance renders a colour by converting here, `Palette` and `Spectrum`
+      compare colours here, and `WebColors` are defined here. Standard sRGB gamma is applied
+      on the way to `Xyz`, with the D65 primaries.
+
+      ```scala
+      import soundness.*
+
+      val mauve: Srgb = Srgb(0.878, 0.690, 1.0)
+      mauve.mix(WebColors.White.to[Srgb], 0.25)   // a quarter of the way to white
+      mauve.to[Hsl].hue.degrees                   // 276.4
+      rgb"#e0b0ff".color                          // the same colour, as Color in Srgb
+      ```
+  refer iridescence.Color
+  refer iridescence.WebColors
+  entry .xyz   `Srgb` to `Xyz`: linearises each channel and applies the sRGB matrix; needs a `Colorimetry`
+  entry .cielab   `Srgb` to `Cielab`, through `Xyz`; needs a `Colorimetry`
+  entry .cmy   `Srgb` to `Cmy`: each channel's complement
+  entry .cmyk   `Srgb` to `Cmyk`, through `Cmy`
+  entry .hsl   `Srgb` to `Hsl`: hue as an `Angle` on the colour circle, saturation and lightness
+      A grey (all channels equal) has hue `0` and saturation `0`.
+  entry .hsv   `Srgb` to `Hsv`: hue as an `Angle`, saturation and value (the brightest channel)
+  entry #red   the red channel, `0`–`1`
+  entry #green   the green channel, `0`–`1`
+  entry #blue   the blue channel, `0`–`1`
+  entry #mix   this colour and another, blended channel by channel in a ratio
+      `mix(that, ratio)` is `(1 - ratio)` of this and `ratio` of `that` in each channel, so
+      `mix(that)` (ratio `0.5`) is the average, `mix(that, 0)` this colour and `mix(that, 1)`
+      the other. A blend of screen values; `Cielab#mix` blends what the eye perceives.
+
+entry .Hsl   a colour as hue, saturation and lightness: the model for adjusting a colour
+  detail
+      `Hsl(hue, saturation, lightness)`, with the hue an `Angle` — a point on the colour
+      circle, so the unit is written (`208.8.deg`, `π.rad`) rather than assumed — and the
+      other two in `0`–`1`. Its methods are the adjustments a person reaches for: `rotate`
+      the hue, `saturate` or `desaturate`, `lighten` or `darken`, take the `complement`.
+      Convert into `Hsl`, adjust, convert back.
+
+      ```scala
+      import soundness.*
+
+      val tomato: Hsl = WebColors.Tomato.to[Hsl]
+      tomato.rotate(180.deg).to[Srgb]          // the complementary colour
+      tomato.lighten(0.2).to[Srgb]             // a fifth of the way toward white
+      tomato.desaturate.to[Srgb]               // the same lightness, no colour
+      tomato.rotate((-30).deg).hue.degrees     // 339.1: the hue wraps, never negative
+      ```
+
+      `Hsl` has no `Blendable` instance, so daubs of it cannot be added: averaging two hues
+      coordinatewise takes the long way round the circle whenever the pair straddles zero,
+      and two reds would mix to cyan. Mix in `Srgb` or `Cielab` instead.
+  refer iridescence.Hsv
+  refer iridescence.Srgb
+  entry .perceptual   `Hsl` to `Srgb`
+  entry #hue   the hue, as an `Angle` around the colour circle
+  entry #saturation   the saturation, `0` (grey) to `1` (pure)
+  entry #lightness   the lightness, `0` (black) to `1` (white)
+  entry #saturate   the same hue and lightness at full saturation
+  entry #desaturate   the same lightness with no saturation: a grey
+  entry #rotate   the hue turned by an angle, wrapped to its principal value
+      `rotate(360.deg)` leaves the hue alone, and a backward turn past zero wraps to the top
+      of the circle; a turn landing exactly on zero is `0`, not a full turn.
+  entry #complement   the hue turned half a circle: `rotate(180.deg)`
+  entry #pure   the hue at full saturation and middle lightness: the purest colour of that hue
+  entry #lighten   lightness moved a fraction of the way toward `1`
+      `lighten(0.5)` on a lightness of `0.4` gives `0.7`; `lighten(1)` is white.
+  entry #darken   lightness moved a fraction of the way toward `0`
+      `darken(0.5)` on a lightness of `0.4` gives `0.2`; `darken(1)` is black.
+
+entry .Hsv   a colour as hue, saturation and value, with tints, shades and tones
+  detail
+      `Hsv(hue, saturation, value)`: the hue an `Angle`, saturation in `0`–`1`, and value the
+      intensity of the brightest channel in `0`–`1`. It adjusts as `Hsl` does — `rotate`,
+      `saturate`, `desaturate`, `complement`, `pure` — and adds the painter's vocabulary:
+      `tint` mixes toward white, `shade` toward black and `tone` toward both.
+
+      ```scala
+      import soundness.*
+
+      val sky: Hsv = Hsv(200.deg, 0.8, 0.9)
+      sky.tint(0.3)      // less saturated: toward white
+      sky.shade(0.3)     // less value: toward black
+      sky.tone(0.2, 0.2) // both
+      ```
+
+      Like `Hsl`, `Hsv` has no `Blendable` instance, since hue is circular.
+  refer iridescence.Hsl
+  entry .perceptual   `Hsv` to `Srgb`
+  entry #hue   the hue, as an `Angle`
+  entry #saturation   the saturation, `0`–`1`
+  entry #value   the value: the intensity of the strongest channel, `0`–`1`
+  entry #saturate   the same hue and value at full saturation
+  entry #desaturate   the same value with no saturation
+  entry #rotate   the hue turned by an angle, wrapped to its principal value
+  entry #complement   the hue turned half a circle
+  entry #pure   the hue at full saturation and full value
+  entry #shade   the colour darkened: the value scaled by `1 - black`
+      `shade(0)` is the colour unchanged; `shade(1)` has value `0`.
+  entry #tint   the colour whitened: the saturation scaled by `1 - white`
+      `tint(0)` is the colour unchanged; `tint(1)` has saturation `0`.
+  entry #tone   `shade(black)` then `tint(white)`
+
+entry .Xyz   CIE 1931 XYZ: the device-independent model every perceptual conversion passes through
+  detail
+      `Xyz(x, y, z)`, the tristimulus values on the scale where the reference white has
+      `y = 100`. Nothing is adjusted here; it is the hub between `Srgb` and `Cielab`.
+      Converting to `Cielab` divides by the reference white of the `Colorimetry` in scope;
+      converting to `Srgb` applies the inverse sRGB matrix and gamma, and needs no
+      `Colorimetry`.
+  refer iridescence.Cielab
+  refer iridescence.Colorimetry
+  entry .cielab   `Xyz` to `Cielab`, relative to the `Colorimetry`'s 2° reference white
+  entry .srgb   `Xyz` to `Srgb`: the inverse sRGB matrix, then gamma
+  entry #x   the X tristimulus value
+  entry #y   the Y tristimulus value: luminance, `100` for the reference white
+  entry #z   the Z tristimulus value
+
+entry .Cielab   CIE L*a*b*: the model where distance between colours matches how different they look
+  detail
+      `Cielab(lightness, blueYellow, greenRed)`: L* from `0` (black) to `100` (white), and the
+      two opponent axes, a* (`greenRed`, negative toward green) and b* (`blueYellow`, negative
+      toward blue), each roughly `-128`–`127`. The space is built so that equal distances
+      correspond to equal perceived differences, which `#delta` measures: a small delta
+      means two colours are hard to tell apart. It is the right model for choosing a readable
+      foreground against a background, where raw RGB distances mislead, and `#mix` here
+      gives a more natural midpoint than mixing screen values.
+
+      ```scala
+      import soundness.*
+      import colorimetry.daylightColorimetry
+
+      val pink: Cielab = WebColors.DeepPink.to[Cielab]
+      pink.delta(WebColors.Tomato.to[Cielab])
+      WebColors.Ivory.to[Cielab].mix(pink)   // the perceptual midpoint
+      Cielab(0, 0, 0).delta(Cielab(3, 4, 12))   // 13.0: a Euclidean distance
+      ```
+
+      Its coordinates are not fractions of `0`–`1`, so it is not `Tonal`: daubs of it add
+      under `proportionalMixing` only, and `import mixing.multiplyMixing` with CIELAB does not
+      compile.
+  refer iridescence.Xyz
+  refer iridescence.Colorimetry
+  entry .xyz   `Cielab` to `Xyz`, relative to the `Colorimetry`'s 2° reference white
+  entry .srgb   `Cielab` to `Srgb`, through `Xyz`; needs a `Colorimetry`
+  entry #lightness   L*: `0` black to `100` white
+  entry #blueYellow   b*: negative toward blue, positive toward yellow
+  entry #greenRed   a*: negative toward green, positive toward red
+  entry #delta   the Euclidean distance to another colour on all three axes: ΔE*ab
+  entry #mix   this colour and another, blended on all three axes in a ratio
+      `mix(that)` is the midpoint; `mix(that, ratio)` is `ratio` of the way toward `that`.
+
+entry .Cmy   a colour as cyan, magenta and yellow: the subtractive complement of sRGB
+  detail
+      `Cmy(cyan, magenta, yellow)`, each in `0`–`1`, and each the complement of the
+      corresponding sRGB channel: `Srgb(1 - c, 1 - m, 1 - y)`. It is the step between `Srgb`
+      and `Cmyk`, and a `Tonal` space, so it mixes under any blend mode.
+  refer iridescence.Cmyk
+  entry .cmyk   `Cmy` to `Cmyk`: the common part of the three inks becomes the key (black)
+      The key is the least of the three (or `1`, giving pure black); the inks are what remains
+      after it, rescaled.
+  entry .srgb   `Cmy` to `Srgb`: each channel's complement
+  entry #cyan   the cyan ink, `0`–`1`
+  entry #magenta   the magenta ink, `0`–`1`
+  entry #yellow   the yellow ink, `0`–`1`
+
+entry .Cmyk   a colour as cyan, magenta, yellow and key (black): the printer's model
+  detail
+      `Cmyk(cyan, magenta, yellow, key)`, each in `0`–`1`. The key is the black ink which
+      replaces equal parts of the other three; `Cmyk(0, 0, 0, 1)` is black. A `Tonal` space,
+      so it mixes under any blend mode. `Cmyk8` is the 32-bit packed layout of the same
+      channels; this type is the `Double`-based model.
+  refer iridescence.Cmy
+  entry .cmy   `Cmyk` to `Cmy`: the key added back into each ink
+  entry .srgb   `Cmyk` to `Srgb`, through `Cmy`
+  entry #cyan   the cyan ink, `0`–`1`
+  entry #magenta   the magenta ink, `0`–`1`
+  entry #yellow   the yellow ink, `0`–`1`
+  entry #key   the black ink, `0`–`1`
+
+entry .Perceptual   the typeclass of conversions between colour models: `Form is Perceptual in Model`
+  detail
+      `color.to[Model]` summons a `color.Form is Perceptual in Model` and calls its
+      `#convert`. Instances are declared in the companions of the models they convert from
+      (`Srgb.hsl`, `Cielab.xyz`, …), so they resolve with no import; a new model joins the
+      library by extending `Color` with `type Form = NewModel` and declaring a `Perceptual`
+      to and from `Srgb` in its companion. The companion's `identity` instance makes a
+      conversion to a colour's own model free, and `Daub.perceptual` lets a daub convert as
+      the colour it holds.
+
+      ```scala
+      import soundness.*
+
+      case class Grey(level: Double) extends Color:
+        type Form = Grey
+
+      object Grey:
+        given srgb: Grey is Perceptual in Srgb = grey => Srgb(grey.level, grey.level, grey.level)
+
+      Grey(0.5).to[Srgb]
+      ```
+  refer iridescence.Color
+  entry .identity   any colour converts to its own model unchanged
+  entry #Self   the model converted from
+  entry #Form   the model converted to
+  entry #convert   the conversion, from a colour of `Self` to one of `Form`
+
+entry .Blendable   the typeclass of models whose colours combine coordinate by coordinate
+  detail
+      Blending works one coordinate at a time, so a model needs only to say how a pointwise
+      operation over its coordinates rebuilds a colour: `#zip(left, right, operation)`.
+      `Daub` addition needs it, together with a `Mixing` mode. `Srgb`, `Cmy`, `Cmyk`,
+      `Cielab` and `Xyz` have instances in the companion; `Hsl` and `Hsv` deliberately have
+      none, since their hue is an angle on a circle and averaging two hues coordinatewise
+      would take the long way round whenever the pair straddles zero — two reds would give
+      cyan.
+  refer iridescence.Daub
+  refer iridescence.Mixing
+  entry .srgb   `Srgb` blends on red, green and blue
+  entry .cmy   `Cmy` blends on cyan, magenta and yellow
+  entry .cmyk   `Cmyk` blends on cyan, magenta, yellow and key
+  entry .cielab   `Cielab` blends on L*, a* and b*
+  entry .xyz   `Xyz` blends on X, Y and Z
+  entry #Self   the model whose colours blend
+  entry #zip   two colours combined by a function applied to each pair of coordinates
+
+entry .Tonal   marks a model whose coordinates all run from `0` to `1`, so every blend mode applies to it
+  detail
+      `Srgb`, `Cmy` and `Cmyk` are `Tonal`. Every `Mixing` mode but `proportionalMixing`
+      reads coordinates as fractions of full intensity — `multiply` is a product of
+      coordinates, `screen` a product of their complements — and neither describes anything
+      where a coordinate can be `100` or negative, so the modes are offered only for `Tonal`
+      models: `import mixing.multiplyMixing` and `1*Cielab(0, 0, 0) + 1*Cielab(40, 20, 10)` is
+      a compile error rather than a silent proportional mix. `Cielab` and `Xyz` have no
+      instance.
+  refer iridescence.Mixing
+  entry .srgb   `Srgb` is `Tonal`
+  entry .cmy   `Cmy` is `Tonal`
+  entry .cmyk   `Cmyk` is `Tonal`
+  entry #Self   the model whose coordinates are all fractions
+
+entry .Mixing   the typeclass of blend modes: how a layer's coordinate combines with the backdrop under it
+  detail
+      `#blend(backdrop, layer)` is one of the separable blend modes of Photoshop and GIMP, in
+      the form the W3C compositing specification gives them. When daubs are added, the mode
+      is applied at full strength and the result mixed back in the added daub's share of the
+      total parts — exactly what a layer's opacity slider does — so only `proportionalMixing`
+      is commutative; under every other mode `5*Red + 3*Yellow` differs from
+      `3*Yellow + 5*Red`, as reordering two layers does.
+
+      There is deliberately no default instance in this companion: a mode reachable through
+      the implicit scope would be found whenever the imported one did not apply, so mixing
+      CIELAB under `import mixing.multiplyMixing` would quietly fall back to a proportional
+      mix rather than being rejected. The mode is always named by an import from `mixing`.
+  refer iridescence.mixing
+  refer iridescence.Daub
+  entry #Self   the model this blend mode applies to
+  entry #blend   the layer's coordinate laid over the backdrop's, under this mode
+
+entry .Daub   an amount of paint: a colour with the number of parts of it going into a mixture
+  detail
+      `5*WebColors.Red` is a `Daub[Srgb]` of five parts red (through `Color.wholeMultiplicable`,
+      or `Color.multiplicable` for a `Double`). A daub is itself a `Color` — five parts red is
+      still red — so an expression such as `5*Red + 3*Yellow` converts, renders and measures
+      like any colour, and `#parts` matters only when another daub is added to it. Adding
+      needs the model to be `Blendable` and a `Mixing` mode imported from `mixing`.
+
+      ```scala fuel
+      frame
+        label Five parts red
+        code
+            import soundness.*
+            import mixing.proportionalMixing
+
+            val paint = 5*WebColors.Red
+            paint.to[Srgb]                     // Srgb(1, 0, 0): still red
+      frame
+        label Add three parts yellow
+        code
+            import soundness.*
+            import mixing.proportionalMixing
+
+            val paint = 5*WebColors.Red + 3*WebColors.Yellow
+            paint.to[Srgb]                     // Srgb(1, 0.375, 0): an orange
+            paint.to[Hsl].hue.degrees          // 22.5
+      frame
+        label Add two parts white: weighted against the eight parts so far
+        code
+            import soundness.*
+            import mixing.proportionalMixing
+
+            val paint = 5*WebColors.Red + 3*WebColors.Yellow + 2*WebColors.White
+            paint.to[Srgb]                     // Srgb(1, 0.5, 0.2)
+      frame
+        label The same daubs under a different mode
+        code
+            import soundness.*
+            import mixing.multiplyMixing
+
+            val paint = 5*WebColors.Red + 3*WebColors.Yellow + 2*WebColors.White
+            paint.to[Srgb]                     // darker: each layer multiplies the one beneath
+      ##
+      ```
+
+      Parts are proportions, so `5*Red + 3*Yellow` and `50*Red + 30*Yellow` are the same
+      colour, and a third daub is weighted against the total so far rather than against its
+      neighbour: `1*Red + 1*Lime + 1*Blue` is an even third of each. A daub of zero parts
+      takes no part at all — `0*Red + 1*Blue` under `multiply` is blue, not darkened by red.
+      A `Color in Srgb` and a plain `Srgb` lift to the same `Daub[Srgb]`, so `WebColors`
+      entries and literals mix together.
+  refer iridescence.Mixing
+  refer iridescence.mixing
+  refer iridescence.Blendable
+  entry .addable   `left + right`: the right daub laid over the left in its share of the parts, under the `Mixing` in scope
+      Needs `topic is Blendable` and `topic is Mixing`. The result has the sum of the parts
+      and, coordinate by coordinate, `backdrop + (mode(backdrop, layer) - backdrop)*share`
+      where `share` is the right daub's fraction of the new total. A daub of no parts on
+      either side returns the other unchanged.
+  entry .perceptual   a daub converts to any model its colour converts to
+  entry #parts   how many parts of the colour: the weight it carries when another daub is added
+  entry #color   the colour itself, in its model
+
+entry .Colorimetry   the reference white a perceptual conversion assumes: an illuminant and observer
+  detail
+      `Colorimetry(x2, y2, z2, x10, y10, z10)` holds the XYZ tristimulus values of the
+      reference white for the CIE 1931 2° observer and the CIE 1964 10° observer. Conversions
+      between `Xyz` and `Cielab` (and so between `Srgb` and `Cielab`) divide by it, so the
+      same coordinates mean a different colour under daylight and under a tungsten bulb;
+      the conversions use the 2° values. One is chosen by importing a given from the
+      `colorimetry` package, or bound locally; there is no default, since presuming the
+      illuminant would be presuming the viewing conditions.
+
+      ```scala
+      import soundness.*
+
+      given Colorimetry = colorimetry.incandescentTungstenColorimetry
+
+      WebColors.Ivory.to[Cielab]   // computed for tungsten light
+      ```
+  refer iridescence.colorimetry
+  refer iridescence.Cielab
+  entry #x2   X of the reference white, 2° observer
+  entry #y2   Y of the reference white, 2° observer: `100`
+  entry #z2   Z of the reference white, 2° observer
+  entry #x10   X of the reference white, 10° observer
+  entry #y10   Y of the reference white, 10° observer: `100`
+  entry #z10   Z of the reference white, 10° observer
+
+entry .colorimetry   the standard illuminants, each a `Colorimetry` given to import by name
+  detail
+      The CIE standard illuminants and the common fluorescent lamps, by name:
+      `daylightColorimetry` is D65, the illuminant sRGB and most screen work assume, and
+      suits almost every program. The others model incandescent light (A), direct sunlight
+      (B), old daylight (C), the printing profile connection space (D50), mid-morning
+      daylight (D55), north-sky daylight (D75), the equal-energy illuminant (E), and the
+      fluorescent series F1 to F12. Several are aliases of another: `srgbColorimetry` and
+      `adobeRgbColorimetry` are D65; `d65SimulatorColorimetry` is F7; `d50SimulatorColorimetry`
+      is F8 (`sylvaniaF40Colorimetry`); `ultralume50Colorimetry`, `ultralume40Colorimetry` and
+      `ultralume30Colorimetry` are F10, F11 and F12.
+
+      ```scala
+      import soundness.*
+      import colorimetry.daylightColorimetry
+
+      WebColors.Ivory.to[Cielab]
+      ```
+  entry .incandescentTungstenColorimetry   illuminant A: incandescent tungsten, 2856 K
+  entry .oldDirectSunlightAtNoonColorimetry   illuminant B: direct sunlight at noon, obsolete
+  entry .oldDaylightColorimetry   illuminant C: average north-sky daylight, obsolete
+  entry .iccProfilePcsColorimetry   illuminant D50: horizon light, the ICC profile connection space
+  entry .midMorningDaylightColorimetry   illuminant D55: mid-morning or mid-afternoon daylight
+  entry .daylightColorimetry   illuminant D65: noon daylight, the sRGB reference white; the usual choice
+  entry .srgbColorimetry   the sRGB reference white: D65, the same as `daylightColorimetry`
+  entry .adobeRgbColorimetry   the Adobe RGB reference white: D65, the same as `daylightColorimetry`
+  entry .northSkyDaylightColorimetry   illuminant D75: north-sky daylight
+  entry .equalEnergyColorimetry   illuminant E: equal energy at every wavelength
+  entry .daylightFluorescentF1Colorimetry   illuminant F1: daylight fluorescent, 6430 K
+  entry .coolFluorescentColorimetry   illuminant F2: cool white fluorescent, 4230 K
+  entry .whiteFluorescentColorimetry   illuminant F3: white fluorescent, 3450 K
+  entry .warmWhiteFluorescentColorimetry   illuminant F4: warm white fluorescent, 2940 K
+  entry .daylightFluorescentF5Colorimetry   illuminant F5: daylight fluorescent, 6350 K
+  entry .liteWhiteFluorescentColorimetry   illuminant F6: light white fluorescent, 4150 K
+  entry .daylightFluorescentF7Colorimetry   illuminant F7: a D65 simulator, 6500 K
+  entry .d65SimulatorColorimetry   the D65 simulator: the same as `daylightFluorescentF7Colorimetry`
+  entry .sylvaniaF40Colorimetry   illuminant F8: Sylvania F40, a D50 simulator, 5000 K
+  entry .d50SimulatorColorimetry   the D50 simulator: the same as `sylvaniaF40Colorimetry`
+  entry .coolWhiteFluorescentColorimetry   illuminant F9: cool white deluxe fluorescent, 4150 K
+  entry .philipsTl85Colorimetry   illuminant F10: Philips TL85, 5000 K
+  entry .ultralume50Colorimetry   Ultralume 50: the same as `philipsTl85Colorimetry`
+  entry .philipsTl84Colorimetry   illuminant F11: Philips TL84, 4000 K
+  entry .ultralume40Colorimetry   Ultralume 40: the same as `philipsTl84Colorimetry`
+  entry .philipsTl83Colorimetry   illuminant F12: Philips TL83, 3000 K
+  entry .ultralume30Colorimetry   Ultralume 30: the same as `philipsTl83Colorimetry`
+
+entry .mixing   the blend modes, each a `Mixing` given to import by name before daubs are added
+  detail
+      `proportionalMixing` averages the colours by their parts, which is what pairwise
+      `mix` does and the only mode which means anything in a model whose coordinates are not
+      confined to `0`–`1`. The rest are the blend modes of Photoshop and GIMP, defined as the
+      W3C compositing specification defines them, and are offered only for `Tonal` models
+      (`Srgb`, `Cmy`, `Cmyk`): asking for one in `Cielab` does not compile. Exactly one is
+      imported where daubs are added; none is in scope by default.
+
+      ```scala
+      import soundness.*
+      import mixing.multiplyMixing
+
+      (1*WebColors.Yellow + 1*WebColors.Cyan).to[Srgb]   // Srgb(0.5, 1, 0): a green, as paint mixes
+      ```
+
+      A daub's share of the total parts acts as its opacity: the mode is applied at full
+      strength and the result mixed back in that proportion, so `3*White + 1*Black` under
+      `multiply` is `Srgb(0.75, 0.75, 0.75)` and `9*White + 1*Black` is `0.9` grey.
+  refer iridescence.Daub
+  refer iridescence.Mixing
+  refer iridescence.Tonal
+  entry .proportionalMixing   the layer replaces the backdrop: a weighted average by parts; any model
+  entry .multiplyMixing   `backdrop × layer`: always darker, as inks or filters combine
+  entry .screenMixing   `1 - (1 - backdrop)(1 - layer)`: always lighter, as projected lights combine
+  entry .darkenMixing   the lesser coordinate of the two
+  entry .lightenMixing   the greater coordinate of the two
+  entry .differenceMixing   the absolute difference of the two
+  entry .exclusionMixing   `backdrop + layer - 2·backdrop·layer`: like difference, with less contrast
+  entry .linearDodgeMixing   the sum, capped at `1`
+  entry .linearBurnMixing   the sum less `1`, floored at `0`
+  entry .hardLightMixing   multiply where the layer is dark, screen where it is light
+  entry .overlayMixing   multiply where the backdrop is dark, screen where it is light: hard light with the operands exchanged
+  entry .softLightMixing   a gentler hard light, by the W3C formula
+  entry .colorDodgeMixing   the backdrop brightened by the layer: `backdrop / (1 - layer)`, capped at `1`
+  entry .colorBurnMixing   the backdrop darkened by the layer: `1 - (1 - backdrop) / layer`, floored at `0`
+
+entry .Brightness   whether a theme is dark or light: the enum of `Dark` and `Light`
+    The variant of a `Theme` which offers both, and the value `dark` and `light` test. One
+    is chosen by importing `luminosity.darkBrightness` or `luminosity.lightBrightness`, so
+    terminal output styled through a theme adapts to the terminal's background.
+
+entry .luminosity   dark or light, each a `Brightness` given to import by name
+  detail
+      ```scala
+      import soundness.*
+      import luminosity.darkBrightness
+      import themes.solarizedTheme
+
+      summon[Theme].background   // Srgb(0, 0.169, 0.212): Solarized's dark base
+      ```
+  entry .darkBrightness   `Brightness.Dark`: the dark variant of a theme
+  entry .lightBrightness   `Brightness.Light`: the light variant of a theme
+
+entry .dark   whether the `Brightness` in scope is `Dark`
+    An inline test of the contextual `Brightness`, for a theme or a palette choosing between
+    its variants: `if dark then base03 else base3`.
+
+entry .light   whether the `Brightness` in scope is `Light`
+
+entry .Theme   a coordinated set of colours: a background, a foreground, accents and whether it is dark or light
+  detail
+      A `Theme` has a model (`#Form`, convertible to `Srgb`), a `#background` and
+      `#foreground` in it, a list of accent `#colors`, and its `#luminosity`. Its
+      `#spectrum` assigns the accents to the eight primary roles — red, yellow, green, blue,
+      cyan, magenta, black, white — by nearest colour, so a program which wants "the theme's
+      red" asks the spectrum. `Solarized` is the built-in theme, and `themes.solarizedTheme`
+      the given which selects it in the `Brightness` in scope.
+
+      ```scala
+      import soundness.*
+      import luminosity.lightBrightness
+      import themes.solarizedTheme
+
+      val theme: Theme = summon[Theme]
+      theme.luminosity          // Brightness.Light
+      theme.foreground          // Srgb(0, 0.169, 0.212)
+      theme.spectrum.red        // the accent nearest pure red
+      ```
+  refer iridescence.Solarized
+  refer iridescence.Spectrum
+  refer iridescence.Palette
+  entry #Form   the model the theme's colours are in
+  entry #luminosity   whether the theme is dark or light
+  entry #background   the background colour
+  entry #foreground   the foreground colour
+  entry #colors   the theme's accent colours, from which the spectrum is assigned
+  entry #spectrum   the accents assigned to the eight primary roles by nearest colour, once
+      A `lazy val`, computed on first use from `#colors` with `Spectrum.apply`.
+
+entry .Solarized   the Solarized theme's sixteen colours, as a `Theme` in `Srgb`
+  detail
+      Ethan Schoonover's palette: eight accents (`red`, `yellow`, `blue`, `green`, `orange`,
+      `cyan`, `magenta`, `violet`) and eight monotones from `base03`, the darkest, to `base3`,
+      the lightest. The trait leaves `luminosity`, `background` and `foreground` abstract;
+      `themes.solarizedTheme` completes it from the `Brightness` in scope, with `base03` on
+      `base3` for the dark variant and the reverse for the light one.
+  refer iridescence.themes
+  entry #red   `Srgb(0.863, 0.196, 0.184)`
+  entry #yellow   `Srgb(0.710, 0.537, 0)`
+  entry #blue   `Srgb(0.149, 0.545, 0.824)`
+  entry #green   `Srgb(0.522, 0.600, 0)`
+  entry #orange   `Srgb(0.796, 0.294, 0.086)`
+  entry #cyan   `Srgb(0.165, 0.631, 0.596)`
+  entry #magenta   `Srgb(0.827, 0.212, 0.510)`
+  entry #violet   `Srgb(0.424, 0.443, 0.769)`
+  entry #base03   the darkest monotone, `Srgb(0, 0.169, 0.212)`: the dark variant's background
+  entry #base02   `Srgb(0.027, 0.212, 0.259)`
+  entry #base01   `Srgb(0.345, 0.431, 0.459)`
+  entry #base00   `Srgb(0.396, 0.482, 0.514)`
+  entry #base0   `Srgb(0.514, 0.580, 0.588)`
+  entry #base1   `Srgb(0.576, 0.631, 0.631)`
+  entry #base2   `Srgb(0.933, 0.910, 0.835)`
+  entry #base3   the lightest monotone, `Srgb(0.992, 0.965, 0.890)`: the light variant's background
+  entry #colors   the eight accents, then `base3` and `base03`
+
+entry .themes   the built-in themes, each a `Theme` given to import by name
+  detail
+      ```scala
+      import soundness.*
+      import luminosity.darkBrightness
+      import themes.solarizedTheme
+
+      summon[Theme].background   // Srgb(0, 0.169, 0.212)
+      ```
+  entry .solarizedTheme   Solarized, in the dark or light variant the `Brightness` in scope selects
+      Needs a `Brightness` given — `luminosity.darkBrightness` or `luminosity.lightBrightness`
+      — and is a `Solarized`, so its sixteen colours are reachable by name.
+
+entry .Spectrum   a theme's accents assigned to the eight primary colour roles
+  detail
+      `Spectrum(colors)` takes a list of colours in any model convertible to `Srgb` and
+      assigns one to each of `black`, `white`, `red`, `green`, `blue`, `yellow`, `cyan` and
+      `magenta`, in that order, each the colour nearest (by sRGB distance) to the pure
+      primary among those not yet assigned; when the list runs out it is refilled, so a
+      short list serves every role. `Theme#spectrum` is one, computed from the theme's
+      accents.
+  refer iridescence.Theme
+  entry .apply   `Spectrum(colors)`: the roles assigned by nearest colour, without repetition until the list is exhausted
+      Panics only if the list is empty.
+  entry #Form   the model the colours are in
+  entry #red   the colour nearest pure red
+  entry #yellow   the colour nearest pure yellow
+  entry #green   the colour nearest pure green
+  entry #blue   the colour nearest pure blue
+  entry #cyan   the colour nearest pure cyan
+  entry #magenta   the colour nearest pure magenta
+  entry #black   the colour nearest black
+  entry #white   the colour nearest white
+
+entry .Palette   a set of colours by role, with `subdue` and `accent` to push one toward the background or away from it
+  detail
+      A `Palette` has a model (`#Form`), a `#background` and a `#foreground`, and whatever
+      roles the trait extending it declares (`palettes.Reporting` adds `success`, `error`,
+      `warning`; a library's own palette trait adds its own). `#subdue(color)` mixes a colour
+      halfway toward the background and `#accent(color)` toward the foreground, and `#mix`
+      blends any two roles, so a palette of a few roles yields many. The trait is `into`, so
+      a value is adapted to it where a `Palette` is expected, and `Selectable`, so a role may
+      be read by name with `selectDynamic` on the JVM.
+
+      ```scala
+      import soundness.*
+
+      object Report extends Palette with palettes.Reporting:
+        type Form = Srgb
+        val background = rgb"#1e1e2e".color
+        val foreground = rgb"#cdd6f4".color
+        val success = rgb"#a6e3a1".color
+        val error = rgb"#f38ba8".color
+        val warning = rgb"#f9e2af".color
+
+      Report.subdue(Report.error)        // the error colour, half faded into the background
+      Report.accent(Report.success, 0.2) // the success colour, a fifth of the way to the foreground
+      ```
+
+      A palette written from hex literals gives each role a `rgb"…".color`, since the roles
+      are `Color in Srgb`.
+  refer iridescence.palettes
+  refer iridescence.Theme
+  entry #Form   the model the roles are in, convertible to `Srgb`
+  entry #background   the background colour
+  entry #foreground   the foreground colour
+  entry #black   pure black, `Srgb(0, 0, 0)`
+  entry #white   pure white, `Srgb(1, 1, 1)`
+  entry #subdue   a colour mixed toward the background, halfway by default
+  entry #accent   a colour mixed toward the foreground, halfway by default
+  entry #mix   two colours blended channel by channel in sRGB, halfway by default
+  entry #selectDynamic   a role read by its name, through reflection: `palette.selectDynamic("error")`
+      JVM only: it calls the method of that name reflectively, so it is unavailable on
+      Scala Native, where the named roles remain ordinary calls.
+
+entry .palettes   role sets a `Palette` may declare: reporting outcomes, the terminal's sixteen colours, syntax
+  detail
+      Mix-in traits, each a self-type of `Palette`, which name the roles a kind of palette
+      must supply, so that code styling a report, a terminal or source code can ask for a
+      `Palette with palettes.Reporting` and address its roles by name.
+  entry .Reporting   the roles of a palette for outcomes: `success`, `error` and `warning`
+    detail
+        A self-typed mix-in for `Palette`.
+    entry #success   the colour of a success
+    entry #error   the colour of an error
+    entry #warning   the colour of a warning
+  entry .Terminal   the sixteen ANSI colours as roles: `black` to `white` and `brightBlack` to `brightWhite`
+    detail
+        A self-typed mix-in for `Palette`, for a palette which reproduces or replaces the
+        terminal's own sixteen-colour palette.
+    entry #black   ANSI colour 0
+    entry #red   ANSI colour 1
+    entry #green   ANSI colour 2
+    entry #yellow   ANSI colour 3
+    entry #blue   ANSI colour 4
+    entry #magenta   ANSI colour 5
+    entry #cyan   ANSI colour 6
+    entry #white   ANSI colour 7
+    entry #brightBlack   ANSI colour 8
+    entry #brightRed   ANSI colour 9
+    entry #brightGreen   ANSI colour 10
+    entry #brightYellow   ANSI colour 11
+    entry #brightBlue   ANSI colour 12
+    entry #brightMagenta   ANSI colour 13
+    entry #brightCyan   ANSI colour 14
+    entry #brightWhite   ANSI colour 15
+  entry .Syntax   the roles of a syntax-highlighting palette
+    detail
+        A self-typed mix-in for `Palette`: one role per token class a highlighter
+        distinguishes.
+    entry #error   an erroneous token
+    entry #number   a numeric literal
+    entry #modifier   a modifier keyword
+    entry #identifier   an identifier
+    entry #term   a term-level keyword
+    entry #meta   a meta token: annotations, directives
+    entry #string   a string literal
+    entry #parenthesis   brackets and parentheses
+    entry #symbol   an operator or symbol
+    entry #comment   a comment
+
+entry .WebColors   the 141 named colours of CSS, each a `Color in Srgb`
+  detail
+      The colours a web page may name, from `AliceBlue` to `YellowGreen`, as values of type
+      `Color in Srgb`, so each converts, mixes and renders like any other colour, and each is
+      `Chromatic`, so it styles terminal text directly. `.colors` lists them all, in
+      broadly alphabetical order.
+
+      ```scala
+      import soundness.*
+
+      WebColors.Tomato.to[Hsl].hue.degrees          // 9.1
+      WebColors.SteelBlue.to[Srgb].mix(WebColors.White.to[Srgb])
+      ```
+
+      The values are the CSS definitions rounded to three decimal places, so `WebColors.Tomato`
+      is `Srgb(1, 0.388, 0.278)` and its `Chroma` is `Chroma(255, 98, 70)`, within one of the
+      CSS `rgb(255, 99, 71)` in a channel, since the `Chromatic` conversion truncates.
+      `Gray` and the other grey names use the American spelling only.
+  refer iridescence.Srgb
+  refer iridescence.Color
+  entry .colors   every named colour, as a list in broadly alphabetical order
+  entry .AliceBlue   the CSS colour `aliceblue`: `Srgb(0.941, 0.973, 1)`
+  entry .AntiqueWhite   the CSS colour `antiquewhite`: `Srgb(0.98, 0.922, 0.843)`
+  entry .Aquamarine   the CSS colour `aquamarine`: `Srgb(0.498, 1, 0.831)`
+  entry .Aqua   the CSS colour `aqua`: `Srgb(0, 1, 1)`
+  entry .Azure   the CSS colour `azure`: `Srgb(0.941, 1, 1)`
+  entry .Beige   the CSS colour `beige`: `Srgb(0.961, 0.961, 0.863)`
+  entry .Bisque   the CSS colour `bisque`: `Srgb(1, 0.894, 0.769)`
+  entry .Black   the CSS colour `black`: `Srgb(0, 0, 0)`
+  entry .BlanchedAlmond   the CSS colour `blanchedalmond`: `Srgb(1, 0.922, 0.804)`
+  entry .Blue   the CSS colour `blue`: `Srgb(0, 0, 1)`
+  entry .BlueViolet   the CSS colour `blueviolet`: `Srgb(0.541, 0.169, 0.886)`
+  entry .Brown   the CSS colour `brown`: `Srgb(0.647, 0.165, 0.165)`
+  entry .BurlyWood   the CSS colour `burlywood`: `Srgb(0.871, 0.722, 0.529)`
+  entry .CadetBlue   the CSS colour `cadetblue`: `Srgb(0.373, 0.62, 0.627)`
+  entry .Chartreuse   the CSS colour `chartreuse`: `Srgb(0.498, 1, 0)`
+  entry .Chocolate   the CSS colour `chocolate`: `Srgb(0.824, 0.412, 0.118)`
+  entry .Coral   the CSS colour `coral`: `Srgb(1, 0.498, 0.314)`
+  entry .CornflowerBlue   the CSS colour `cornflowerblue`: `Srgb(0.392, 0.584, 0.929)`
+  entry .Cornsilk   the CSS colour `cornsilk`: `Srgb(1, 0.973, 0.863)`
+  entry .Crimson   the CSS colour `crimson`: `Srgb(0.863, 0.078, 0.235)`
+  entry .Cyan   the CSS colour `cyan`: `Srgb(0, 1, 1)`
+  entry .DarkBlue   the CSS colour `darkblue`: `Srgb(0, 0, 0.545)`
+  entry .DarkCyan   the CSS colour `darkcyan`: `Srgb(0, 0.545, 0.545)`
+  entry .DarkGoldenrod   the CSS colour `darkgoldenrod`: `Srgb(0.722, 0.525, 0.043)`
+  entry .DarkGray   the CSS colour `darkgray`: `Srgb(0.663, 0.663, 0.663)`
+  entry .DarkGreen   the CSS colour `darkgreen`: `Srgb(0, 0.392, 0)`
+  entry .DarkKhaki   the CSS colour `darkkhaki`: `Srgb(0.741, 0.718, 0.42)`
+  entry .DarkMagenta   the CSS colour `darkmagenta`: `Srgb(0.545, 0, 0.545)`
+  entry .DarkOliveGreen   the CSS colour `darkolivegreen`: `Srgb(0.333, 0.42, 0.184)`
+  entry .DarkOrange   the CSS colour `darkorange`: `Srgb(1, 0.549, 0)`
+  entry .DarkOrchid   the CSS colour `darkorchid`: `Srgb(0.6, 0.196, 0.8)`
+  entry .DarkRed   the CSS colour `darkred`: `Srgb(0.545, 0, 0)`
+  entry .DarkSalmon   the CSS colour `darksalmon`: `Srgb(0.914, 0.588, 0.478)`
+  entry .DarkSeaGreen   the CSS colour `darkseagreen`: `Srgb(0.561, 0.737, 0.545)`
+  entry .DarkSlateBlue   the CSS colour `darkslateblue`: `Srgb(0.282, 0.239, 0.545)`
+  entry .DarkSlateGray   the CSS colour `darkslategray`: `Srgb(0.184, 0.31, 0.31)`
+  entry .DarkTurquoise   the CSS colour `darkturquoise`: `Srgb(0, 0.808, 0.82)`
+  entry .DarkViolet   the CSS colour `darkviolet`: `Srgb(0.58, 0, 0.827)`
+  entry .DeepPink   the CSS colour `deeppink`: `Srgb(1, 0.078, 0.576)`
+  entry .DeepSkyBlue   the CSS colour `deepskyblue`: `Srgb(0, 0.749, 1)`
+  entry .DimGray   the CSS colour `dimgray`: `Srgb(0.412, 0.412, 0.412)`
+  entry .DodgerBlue   the CSS colour `dodgerblue`: `Srgb(0.118, 0.565, 1)`
+  entry .FireBrick   the CSS colour `firebrick`: `Srgb(0.698, 0.133, 0.133)`
+  entry .FloralWhite   the CSS colour `floralwhite`: `Srgb(1, 0.98, 0.941)`
+  entry .ForestGreen   the CSS colour `forestgreen`: `Srgb(0.133, 0.545, 0.133)`
+  entry .Fuchsia   the CSS colour `fuchsia`: `Srgb(1, 0, 1)`
+  entry .Gainsboro   the CSS colour `gainsboro`: `Srgb(0.863, 0.863, 0.863)`
+  entry .GhostWhite   the CSS colour `ghostwhite`: `Srgb(0.973, 0.973, 1)`
+  entry .Goldenrod   the CSS colour `goldenrod`: `Srgb(0.855, 0.647, 0.125)`
+  entry .Gold   the CSS colour `gold`: `Srgb(1, 0.843, 0)`
+  entry .Gray   the CSS colour `gray`: `Srgb(0.502, 0.502, 0.502)`
+  entry .Green   the CSS colour `green`: `Srgb(0, 0.502, 0)`
+  entry .GreenYellow   the CSS colour `greenyellow`: `Srgb(0.678, 1, 0.184)`
+  entry .HoneyDew   the CSS colour `honeydew`: `Srgb(0.941, 1, 0.941)`
+  entry .HotPink   the CSS colour `hotpink`: `Srgb(1, 0.412, 0.706)`
+  entry .IndianRed   the CSS colour `indianred`: `Srgb(0.804, 0.361, 0.361)`
+  entry .Indigo   the CSS colour `indigo`: `Srgb(0.294, 0, 0.51)`
+  entry .Ivory   the CSS colour `ivory`: `Srgb(1, 1, 0.941)`
+  entry .Khaki   the CSS colour `khaki`: `Srgb(0.941, 0.902, 0.549)`
+  entry .LavenderBlush   the CSS colour `lavenderblush`: `Srgb(1, 0.941, 0.961)`
+  entry .Lavender   the CSS colour `lavender`: `Srgb(0.902, 0.902, 0.98)`
+  entry .LawnGreen   the CSS colour `lawngreen`: `Srgb(0.486, 0.988, 0)`
+  entry .LemonChiffon   the CSS colour `lemonchiffon`: `Srgb(1, 0.98, 0.804)`
+  entry .LightBlue   the CSS colour `lightblue`: `Srgb(0.678, 0.847, 0.902)`
+  entry .LightCoral   the CSS colour `lightcoral`: `Srgb(0.941, 0.502, 0.502)`
+  entry .LightCyan   the CSS colour `lightcyan`: `Srgb(0.878, 1, 1)`
+  entry .LightGoldenrodYellow   the CSS colour `lightgoldenrodyellow`: `Srgb(0.98, 0.98, 0.824)`
+  entry .LightGray   the CSS colour `lightgray`: `Srgb(0.827, 0.827, 0.827)`
+  entry .LightGreen   the CSS colour `lightgreen`: `Srgb(0.565, 0.933, 0.565)`
+  entry .LightPink   the CSS colour `lightpink`: `Srgb(1, 0.714, 0.757)`
+  entry .LightSalmon   the CSS colour `lightsalmon`: `Srgb(1, 0.627, 0.478)`
+  entry .LightSeaGreen   the CSS colour `lightseagreen`: `Srgb(0.125, 0.698, 0.667)`
+  entry .LightSkyBlue   the CSS colour `lightskyblue`: `Srgb(0.529, 0.808, 0.98)`
+  entry .LightSlateGray   the CSS colour `lightslategray`: `Srgb(0.467, 0.533, 0.6)`
+  entry .LightSteelBlue   the CSS colour `lightsteelblue`: `Srgb(0.69, 0.769, 0.871)`
+  entry .LightYellow   the CSS colour `lightyellow`: `Srgb(1, 1, 0.878)`
+  entry .LimeGreen   the CSS colour `limegreen`: `Srgb(0.196, 0.804, 0.196)`
+  entry .Lime   the CSS colour `lime`: `Srgb(0, 1, 0)`
+  entry .Linen   the CSS colour `linen`: `Srgb(0.98, 0.941, 0.902)`
+  entry .Magenta   the CSS colour `magenta`: `Srgb(1, 0, 1)`
+  entry .Maroon   the CSS colour `maroon`: `Srgb(0.502, 0, 0)`
+  entry .MediumAquamarine   the CSS colour `mediumaquamarine`: `Srgb(0.4, 0.804, 0.667)`
+  entry .MediumBlue   the CSS colour `mediumblue`: `Srgb(0, 0, 0.804)`
+  entry .MediumOrchid   the CSS colour `mediumorchid`: `Srgb(0.729, 0.333, 0.827)`
+  entry .MediumPurple   the CSS colour `mediumpurple`: `Srgb(0.576, 0.439, 0.859)`
+  entry .MediumSeaGreen   the CSS colour `mediumseagreen`: `Srgb(0.235, 0.702, 0.443)`
+  entry .MediumSlateBlue   the CSS colour `mediumslateblue`: `Srgb(0.482, 0.408, 0.933)`
+  entry .MediumSpringGreen   the CSS colour `mediumspringgreen`: `Srgb(0, 0.98, 0.604)`
+  entry .MediumTurquoise   the CSS colour `mediumturquoise`: `Srgb(0.282, 0.82, 0.8)`
+  entry .MediumVioletRed   the CSS colour `mediumvioletred`: `Srgb(0.78, 0.082, 0.522)`
+  entry .MidnightBlue   the CSS colour `midnightblue`: `Srgb(0.098, 0.098, 0.439)`
+  entry .MintCream   the CSS colour `mintcream`: `Srgb(0.961, 1, 0.98)`
+  entry .MistyRose   the CSS colour `mistyrose`: `Srgb(1, 0.894, 0.882)`
+  entry .Moccasin   the CSS colour `moccasin`: `Srgb(1, 0.894, 0.71)`
+  entry .NavajoWhite   the CSS colour `navajowhite`: `Srgb(1, 0.871, 0.678)`
+  entry .Navy   the CSS colour `navy`: `Srgb(0, 0, 0.502)`
+  entry .OldLace   the CSS colour `oldlace`: `Srgb(0.992, 0.961, 0.902)`
+  entry .OliveDrab   the CSS colour `olivedrab`: `Srgb(0.42, 0.557, 0.137)`
+  entry .Olive   the CSS colour `olive`: `Srgb(0.502, 0.502, 0)`
+  entry .OrangeRed   the CSS colour `orangered`: `Srgb(1, 0.271, 0)`
+  entry .Orange   the CSS colour `orange`: `Srgb(1, 0.647, 0)`
+  entry .Orchid   the CSS colour `orchid`: `Srgb(0.855, 0.439, 0.839)`
+  entry .PaleGoldenrod   the CSS colour `palegoldenrod`: `Srgb(0.933, 0.91, 0.667)`
+  entry .PaleGreen   the CSS colour `palegreen`: `Srgb(0.596, 0.984, 0.596)`
+  entry .PaleTurquoise   the CSS colour `paleturquoise`: `Srgb(0.686, 0.933, 0.933)`
+  entry .PaleVioletRed   the CSS colour `palevioletred`: `Srgb(0.859, 0.439, 0.576)`
+  entry .PapayaWhip   the CSS colour `papayawhip`: `Srgb(1, 0.937, 0.835)`
+  entry .PeachPuff   the CSS colour `peachpuff`: `Srgb(1, 0.855, 0.725)`
+  entry .Peru   the CSS colour `peru`: `Srgb(0.804, 0.522, 0.247)`
+  entry .Pink   the CSS colour `pink`: `Srgb(1, 0.753, 0.796)`
+  entry .Plum   the CSS colour `plum`: `Srgb(0.867, 0.627, 0.867)`
+  entry .PowderBlue   the CSS colour `powderblue`: `Srgb(0.69, 0.878, 0.902)`
+  entry .Purple   the CSS colour `purple`: `Srgb(0.502, 0, 0.502)`
+  entry .RebeccaPurple   the CSS colour `rebeccapurple`: `Srgb(0.4, 0.2, 0.6)`
+  entry .Red   the CSS colour `red`: `Srgb(1, 0, 0)`
+  entry .RosyBrown   the CSS colour `rosybrown`: `Srgb(0.737, 0.561, 0.561)`
+  entry .RoyalBlue   the CSS colour `royalblue`: `Srgb(0.255, 0.412, 0.882)`
+  entry .SaddleBrown   the CSS colour `saddlebrown`: `Srgb(0.545, 0.271, 0.075)`
+  entry .Salmon   the CSS colour `salmon`: `Srgb(0.98, 0.502, 0.447)`
+  entry .SandyBrown   the CSS colour `sandybrown`: `Srgb(0.957, 0.643, 0.376)`
+  entry .SeaGreen   the CSS colour `seagreen`: `Srgb(0.18, 0.545, 0.341)`
+  entry .SeaShell   the CSS colour `seashell`: `Srgb(1, 0.961, 0.933)`
+  entry .Sienna   the CSS colour `sienna`: `Srgb(0.627, 0.322, 0.176)`
+  entry .Silver   the CSS colour `silver`: `Srgb(0.753, 0.753, 0.753)`
+  entry .SkyBlue   the CSS colour `skyblue`: `Srgb(0.529, 0.808, 0.922)`
+  entry .SlateBlue   the CSS colour `slateblue`: `Srgb(0.416, 0.353, 0.804)`
+  entry .SlateGray   the CSS colour `slategray`: `Srgb(0.439, 0.502, 0.565)`
+  entry .Snow   the CSS colour `snow`: `Srgb(1, 0.98, 0.98)`
+  entry .SpringGreen   the CSS colour `springgreen`: `Srgb(0, 1, 0.498)`
+  entry .SteelBlue   the CSS colour `steelblue`: `Srgb(0.275, 0.51, 0.706)`
+  entry .Tan   the CSS colour `tan`: `Srgb(0.824, 0.706, 0.549)`
+  entry .Teal   the CSS colour `teal`: `Srgb(0, 0.502, 0.502)`
+  entry .Thistle   the CSS colour `thistle`: `Srgb(0.847, 0.749, 0.847)`
+  entry .Tomato   the CSS colour `tomato`: `Srgb(1, 0.388, 0.278)`
+  entry .Turquoise   the CSS colour `turquoise`: `Srgb(0.251, 0.878, 0.816)`
+  entry .Violet   the CSS colour `violet`: `Srgb(0.933, 0.51, 0.933)`
+  entry .Wheat   the CSS colour `wheat`: `Srgb(0.961, 0.871, 0.702)`
+  entry .WhiteSmoke   the CSS colour `whitesmoke`: `Srgb(0.961, 0.961, 0.961)`
+  entry .White   the CSS colour `white`: `Srgb(1, 1, 1)`
+  entry .YellowGreen   the CSS colour `yellowgreen`: `Srgb(0.604, 0.804, 0.196)`
+  entry .Yellow   the CSS colour `yellow`: `Srgb(1, 1, 0)`
+
+entry .rgb   the `rgb"…"` interpolator: a hexadecimal colour as a `Chroma`, checked as the code compiles
+    `rgb"#rrggbb"` or `rgb"rrggbb"` reads six hexadecimal digits, in either case, as the
+    red, green and blue channels of a `Chroma`, the whole-number 24-bit colour which
+    terminals and images take. The macro parses the literal while the code compiles and
+    splices `Chroma(r, g, b)`, so a malformed literal is a compile error: _the color must be
+    in the form `rgb"#rrggbb"` or `rgb"rrggbb"` where rr, gg and bb are 2-digit hex values_.
+    The interpolator takes no substitutions, _an rgb literal cannot have substitutions_.
+
+    ```scala
+    import soundness.*
+
+    rgb"#abcdef"           // Chroma(171, 205, 239)
+    rgb"FFFFFF"            // Chroma(255, 255, 255)
+    rgb"#abcdef".color     // Srgb(0.671, 0.804, 0.937), as a Color in Srgb
+    rgb"#abcdef".packed    // the same colour as a Pixel[Rgb]
+    rgb"#abc"              // does not compile
+    ```
+
+    A `Chroma` is `Chromatic`, so the literal styles terminal text as it is
+    (`e"${rgb"#ff6347"}(tomato)"`); `color` is the step into the perceptual models,
+    `Palette` roles and `Daub` mixing, all of which take a `Color in Srgb`.
+
+entry .color   `chroma.color`: a `Chroma` as a `Color in Srgb`, each channel divided by `255`
+    An extension on anticipation's `Chroma`. A `Chroma` is already sRGB, only with
+    whole-number channels, so the conversion is one division per channel and loses nothing;
+    it is the one step from an `rgb"…"` literal, or any other `Chroma`, into the rest of the
+    library.
+
+    ```scala
+    import soundness.*
+    import colorimetry.daylightColorimetry
+
+    rgb"#ff6347".color.to[Cielab]
+    ```
+
+    The way back is the `Color.chromatic` given, which truncates each channel, so a colour
+    whose channels are not multiples of `1/255` may come back one lower.
+
+entry .packed   a `Chroma` as a `Pixel[Rgb]`, or an `Rgb32` as a 10/12/10 `Pixel`, with no change to the bits
+    Two extensions of one name. `chroma.packed` is the `Pixel[Rgb]` — eight bits per channel
+    — of a `Chroma`, and `rgb32.packed` is the `Pixel[(Red[10], Green[12], Blue[10])]` of an
+    `Rgb32`. Each type already packs its channels in exactly that layout, so the conversion
+    only retypes the bits. `rgb32` goes back from the 10/12/10 pixel.
+
+    ```scala
+    import soundness.*
+
+    val pixel: Pixel[Rgb] = rgb"#abcdef".packed
+    (pixel.red, pixel.green, pixel.blue)   // (171, 205, 239)
+    pixel.chroma                           // Chroma(171, 205, 239)
+
+    Rgb32(600, 3000, 200).packed.rgb32     // Rgb32(600, 3000, 200)
+    ```
+
+    The name was `pixel` in earlier releases; it was renamed because the umbrella also
+    exports a `pixel` from another library.
+
+entry .rgb32   a 10/12/10 `Pixel` as the `Rgb32` with the same bits
+    An extension on `Pixel[(Red[10], Green[12], Blue[10])]`, the inverse of `rgb32.packed`:
+    `Rgb32(600, 3000, 200).packed.rgb32` is `Rgb32(600, 3000, 200)`.
+
+entry .Rgb   the pixel layout of 24-bit colour: eight bits each of red, green and blue
+    `(Red[8], Green[8], Blue[8])`, the layout of a `Chroma` and of `chroma.packed`. Its
+    storage, `anticipation.Channel.Storage[Rgb]`, is `Int`.
+
+    ```scala
+    import soundness.*
+
+    Pixel[Rgb](WebColors.Tomato).red   // 255
+    ```
+
+entry .Rgba   the pixel layout of 32-bit colour with alpha: eight bits each of red, green, blue and alpha
+    `(Red[8], Green[8], Blue[8], Alpha[8])`. `Pixel[Rgba](color)` sets the alpha channel
+    fully opaque, since a `Color` has no transparency.
+
+entry .Cmyk8   the pixel layout of 32-bit CMYK: eight bits each of cyan, magenta, yellow and key
+    `(Cyan[8], Magenta[8], Yellow[8], Key[8])`. Named `Cmyk8` because `Cmyk` is the
+    `Double`-based colour model. `Pixel[Cmyk8](color)` separates the colour into inks as
+    `to[Cmyk]` does, and the pixel's `color` is a `Cmyk`.
+
+    ```scala
+    import soundness.*
+
+    val pixel = Pixel[Cmyk8](Srgb(1.0, 0.0, 0.0))
+    (pixel.cyan, pixel.magenta, pixel.yellow, pixel.key)   // (0, 255, 255, 0)
+    ```
+
+entry .Pixel   one colour packed into an integer in a channel layout: `Pixel[Rgb]`, `Pixel[Rgba]`, `Pixel[Cmyk8]`, …
+    `Pixel[layout]` is the opaque type `iridescence.PixelOpaque.Pixel`, exported here: a
+    `Long` holding the channels of `layout` — a tuple of anticipation's channel types such
+    as `(Red[5], Green[6], Blue[5])`, most significant first — in its low bits. The shift
+    and mask of every channel follow from the tuple while the code compiles, so reading a
+    channel is a single shift-and-mask with constant operands and no runtime dispatch, and
+    a channel the layout does not have is not there to read: `Pixel[Rgb]` has no `alpha`.
+
+    ```scala
+    import soundness.*
+
+    type Rgb565 = (Red[5], Green[6], Blue[5])
+
+    val pixel: Pixel[Rgb565] = Pixel[Rgb565](WebColors.Tomato)
+    (pixel.red, pixel.green, pixel.blue)   // five, six and five bits
+    pixel.chroma                           // rescaled to 24-bit colour, rounding
+    pixel.color                            // an Srgb, exact at this depth
+    Pixel[Rgb](WebColors.Tomato).alpha     // does not compile
+    ```
+
+    `Pixel[layout](color)` packs any `Color in Srgb` into whichever channels the layout
+    has: red, green and blue (with any alpha channel fully opaque), cyan, magenta, yellow
+    and key, or a single grey channel by Rec. 601 luma. Each proportion is scaled to the
+    channel's depth and rounded. `Pixel.make` wraps a raw `Long` already in the layout, and
+    `Pixel.value` unwraps one.
+
+    The channel accessors — `red`, `green`, `blue`, `alpha`, `cyan`, `magenta`, `yellow`,
+    `key`, `grey`, and `channel["label"]` and `proportion["label"]` for any label — return
+    the raw channel value or its fraction of full depth. `color` is the pixel in the natural
+    model of its layout (an `Srgb` for RGB and grey layouts, a `Cmyk` for CMYK ones), `srgb`
+    is always an `Srgb`, and `chroma` is the 24-bit `Chroma`, rounding as an `Rgb32`'s `chroma`
+    does. A pixel is `Chromatic`, so it styles terminal text directly.
+
+    The accessors are `inline`, so they need a concrete layout: code which is itself generic
+    in `layout` cannot call them, and should work with the runtime channel descriptions
+    instead. This is the representation hallucination's images use for typed pixel access.
+    The umbrella also exports a `Channel` of its own (the WebSocket channel), so the layout
+    machinery is reached as `anticipation.Channel`.
+
+entry .PixelOpaque   the home of the opaque `Pixel` type, its companion and its channel accessors
+  detail
+      An object which exists so that `Pixel` can be opaque; the type is exported to the
+      `iridescence` package as `Pixel`, whose page has the full account. The extension
+      methods declared here apply to any `Pixel[layout]` with no import, through the type's
+      implicit scope.
+  refer iridescence.Pixel
+  entry .Pixel   a colour packed into a `Long` in a channel layout; see `iridescence.Pixel`
+    detail
+        The opaque type `Pixel[layout <: Tuple] = Long` and its companion.
+    entry .underlying   the `Underlying` given which shows a `Pixel` is a `Long` underneath
+    entry .chromatic   a `Pixel` is `Chromatic`: its `chroma`, so it styles terminal text directly
+    entry .make   `Pixel.make[layout](value)`: a raw `Long` already packed in the layout, as a `Pixel`
+        `Pixel.make[(Red[10], Green[12], Blue[10])](1023L << 22 | 2048L << 10 | 512L).red`
+        is `1023`. No bits are checked or masked.
+    entry .value   the raw `Long` of a `Pixel`
+    entry .apply   `Pixel[layout](color)`: a `Color in Srgb` scaled into the layout's channels and packed
+        Converts the colour to `Srgb` and packs it into an RGB layout (any alpha channel set
+        to full opacity), a CMYK layout (the key the complement of the brightest channel,
+        the inks the rest), or a single grey channel (Rec. 601 luma, `0.299·red +
+        0.587·green + 0.114·blue`), each proportion scaled to the channel's depth and rounded.
+  entry .channel   `pixel.channel["label"]`: the raw value of a labelled channel, for a concrete layout
+      Compiles to one shift and one mask with constant operands. A label the layout does not
+      contain fails to compile, since the shift cannot be computed.
+  entry .red   the red channel's raw value, in a layout with one
+  entry .green   the green channel's raw value, in a layout with one
+  entry .blue   the blue channel's raw value, in a layout with one
+  entry .alpha   the alpha channel's raw value, in a layout with one
+  entry .cyan   the cyan channel's raw value, in a layout with one
+  entry .magenta   the magenta channel's raw value, in a layout with one
+  entry .yellow   the yellow channel's raw value, in a layout with one
+  entry .key   the key (black) channel's raw value, in a layout with one
+  entry .grey   the grey channel's raw value, in a layout with one
+  entry .proportion   `pixel.proportion["label"]`: a channel as a fraction of its full depth, `0`–`1`
+      `Pixel.make[(Red[16], Green[16], Blue[16])](65535L << 32).proportion["red"]` is `1.0`.
+  entry .color   the pixel in its layout's natural model: `Srgb` for RGB and grey, `Cmyk` for CMYK
+      A transparent inline method, so the result's static type is the model itself. Exact at
+      any channel depth.
+  entry .srgb   the pixel as an `Srgb`, whatever its layout's model
+      A CMYK pixel is converted through `Cmyk`; a grey one has equal channels.
+  entry .chroma   the pixel rescaled to a 24-bit `Chroma`, rounding to the nearest step
+      An RGB layout is rescaled channel by channel, rounding as an `Rgb32`'s `chroma` does; any other
+      layout goes through `srgb`. Where the `Color.chromatic` conversion truncates, this
+      rounds, so the two may differ by one in a channel.
+
+entry .Rgb12   a colour in twelve bits, four per channel: the `#rgb` of CSS shorthand
+    `Rgb12` is the opaque type `iridescence.Rgb12Opaque.Rgb12`, exported here: an `Int`
+    holding red, green and blue as four bits each. `Rgb12(red, green, blue)` takes each
+    channel in `0`–`15`, keeping only its low four bits, and the extensions `red`, `green`
+    and `blue` read them back. `color` gives the `Color in Srgb` (each channel over `15`),
+    and `chroma` the 24-bit `Chroma`, each channel times `17`, so `f` becomes `ff`.
+
+    ```scala
+    import soundness.*
+
+    val violet: Rgb12 = Rgb12(15, 0, 15)
+    violet.inspect   // t"#f0f"
+    violet.chroma    // Chroma(255, 0, 255)
+    violet.color     // Srgb(1, 0, 1)
+    ```
+
+    It is `Chromatic`, so it styles terminal text directly, and `Inspectable` as its
+    three-digit hexadecimal.
+
+entry .Rgb12Opaque   the home of the opaque `Rgb12` type, its companion and its channel accessors
+  detail
+      An object which exists so that `Rgb12` can be opaque; the type is exported to the
+      `iridescence` package, whose page for `Rgb12` has the full account. The extension
+      methods here apply to any `Rgb12` with no import.
+  refer iridescence.Rgb12
+  entry .Rgb12   a twelve-bit colour in an `Int`; see `iridescence.Rgb12`
+    detail
+        The opaque type `Rgb12 = Int` and its companion.
+    entry .underlying   the `Underlying` given which shows an `Rgb12` is an `Int` underneath
+    entry .inspectable   an `Rgb12` inspects as its three-digit hexadecimal, `#f0f`
+    entry .chromatic   an `Rgb12` is `Chromatic`, through its `chroma`
+    entry .apply   `Rgb12(red, green, blue)`: three four-bit channels, each masked to `0`–`15`
+  entry .red   the red channel, `0`–`15`
+  entry .green   the green channel, `0`–`15`
+  entry .blue   the blue channel, `0`–`15`
+  entry .color   the colour as a `Color in Srgb`, each channel divided by `15`
+  entry .chroma   the colour as a 24-bit `Chroma`, each channel multiplied by `17`
+
+entry .Rgb32   a colour in thirty-two bits: ten of red, twelve of green, ten of blue
+    `Rgb32` is the opaque type `iridescence.Rgb32Opaque.Rgb32`, exported here: an `Int`
+    holding red in `0`–`1023`, green in `0`–`4095` and blue in `0`–`1023`, the extra bits
+    of green matching the eye's greater sensitivity to it. `Rgb32(red, green, blue)` masks
+    each channel to its width, the extensions `red`, `green` and `blue` read them back,
+    `color` gives the `Color in Srgb`, and `chroma` the 24-bit `Chroma`, rounding to the
+    nearest step.
+
+    ```scala
+    import soundness.*
+
+    val colour: Rgb32 = Rgb32(1023, 4095, 0)
+    colour.inspect          // t"rgb32(1023, 4095, 0)"
+    colour.chroma           // Chroma(255, 255, 0)
+    colour.packed.rgb32     // the same Rgb32, through a 10/12/10 Pixel
+    ```
+
+    It is `Chromatic`, so it styles terminal text directly, and `Inspectable` as its three
+    channels. `packed` retypes it as a `Pixel[(Red[10], Green[12], Blue[10])]`, whose bits
+    are the same.
+
+entry .Rgb32Opaque   the home of the opaque `Rgb32` type, its companion and its channel accessors
+  detail
+      An object which exists so that `Rgb32` can be opaque; the type is exported to the
+      `iridescence` package, whose page for `Rgb32` has the full account. The extension
+      methods here apply to any `Rgb32` with no import.
+  refer iridescence.Rgb32
+  entry .Rgb32   a 10/12/10-bit colour in an `Int`; see `iridescence.Rgb32`
+    detail
+        The opaque type `Rgb32 = Int` and its companion.
+    entry .underlying   the `Underlying` given which shows an `Rgb32` is an `Int` underneath
+    entry .chromatic   an `Rgb32` is `Chromatic`, through its `chroma`
+    entry .inspectable   an `Rgb32` inspects as its three channels, `rgb32(1023, 4095, 0)`
+    entry .apply   `Rgb32(red, green, blue)`: channels of ten, twelve and ten bits, each masked to its width
+  entry .red   the red channel, `0`–`1023`
+  entry .green   the green channel, `0`–`4095`
+  entry .blue   the blue channel, `0`–`1023`
+  entry .color   the colour as a `Color in Srgb`, each channel divided by its maximum
+  entry .chroma   the colour as a 24-bit `Chroma`, each channel rescaled to `0`–`255` and rounded
+
+entry .internal   the macro behind `rgb"…"`
+  hidden
+  detail
+      Not for direct use: the object exists so that the macro has a stable home.
+  entry .rgbMacro   parses an `rgb"…"` literal as the code compiles and splices the `Chroma`
+      Accepts six hexadecimal digits with or without a leading `#`, and halts compilation
+      with a message otherwise, or if the literal has substitutions.

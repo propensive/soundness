@@ -1,0 +1,1661 @@
+tel 1.0
+
+base vivisection
+import soundness
+
+info   a JVM debugger over the wire: launch or attach, break, step, inspect and evaluate, with the protocol as typed values
+detail
+    _Vivisection_ debugs one JVM from another over the Java Debug Wire Protocol (JDWP), spoken
+    directly over a socket with no dependency on `com.sun.jdi`. A **debuggee** is either
+    launched under the JDWP agent (`Debuggee`) or attached to where it already listens
+    (`Debugger`); either one's `session` lends a `Debug` capability to a block, and inside that
+    block the program is suspended and resumed, its threads listed and named, breakpoints set by
+    source line or by class and method, threads stepped, frames and their variables read, and
+    expressions evaluated in the stopped program. The VM's own notifications arrive as typed
+    `Jdwp.Event`s on a stream rather than as callbacks.
+
+    The protocol underneath is modelled as values. Every identifier the VM hands out is a
+    `Jdwp.Ref` tagged by its kind — `ThreadId`, `FrameId`, `MethodId`, `ObjectId` and the rest —
+    so one can never be passed where another is wanted, yet all cost nothing at runtime. A stop
+    is a `Halt`: a capability lent to a breakpoint or step handler for exactly as long as the
+    thread stands suspended, which is the only time the identifiers it hands out are valid.
+    The session itself, `Debug`, is confined to its block by capture checking, so it cannot be
+    used after the debuggee has gone.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import errorDiagnostics.stackTracesDiagnostics
+    import environments.javaBaseEnvironment
+    import internetAccess.online
+    import logging.silentLogging
+    import probates.awaitProbate
+    import socketBackends.javaBaseSockets
+    import strategies.throwUnsafely
+    import systems.javaBaseSystem
+    import threads.virtualThreads
+    import workingDirectories.javaBaseWorkingDirectory
+
+    def names(classpath: Text): List[Text] = supervise:
+      val target: Debuggee = Debuggee(sh"java -classpath $classpath com.example.Main", port = 0)
+
+      target.session:
+        debug.threads().map(debug.name(_))
+    ```
+
+    The command is launched with the agent option inserted after the executable, the session
+    waits for the agent to listen, attaches, and tears everything down — socket closed, process
+    killed — when the block ends, whether it returns or fails. The `debug` accessor names the
+    lent session from context, as `monitor` does for a supervision scope.
+
+    A breakpoint takes a *handler*, run on the session's dispatcher task with a `Halt` lent for
+    the stop; the thread resumes when the handler returns unless the handler calls `remain()`.
+    Variables are recovered in the form the programmer wrote them — captured values un-flattened
+    from their synthetic fields, `var`s unboxed from their ref cells, lazy vals read but never
+    forced — and stepping is *logical*: a step over a line containing an inlined call passes
+    over the whole line, a step into it stops at the first line of the inlined body, and
+    bridges, forwarders, accessors and the JDK's own frames are never shown.
+
+    The library is three components, each exported to the `soundness` umbrella:
+
+    - `vivisection.core` — `Debuggee`, `Debugger`, `Debug`, `Halt`, `Variable`, `Breakpoint`,
+      `SourceBreakpoint`, the identifier aliases and the `Jdwp` protocol model. JVM only: it
+      debugs JVMs over TCP and launches them through guillotine.
+    - `vivisection.eval` — `Evaluator`, `Purview`, `Namer` and the `evaluator` extension on
+      `Halt`, which compile an expression against the debuggee's classpath in this JVM, inject
+      the classfiles over the wire and run them in the debuggee. Kept out of `core` so a caller
+      who only inspects variables does not depend on the Scala compiler.
+    - `vivisection.dap` — `Dap`, the Debug Adapter Protocol adapter: `Dap.listen` serves a
+      session to an editor over `Content-Length`-framed JSON on the standard streams, and the
+      `Dap` object holds the protocol's message types. The `demo` component's `DapServer` is a
+      runnable main class for pointing an editor at.
+
+    One name is deliberately *not* exported: `Variable`, since ambience already publishes a
+    `Variable` (an environment variable) into `soundness`. A debugger variable is reached as
+    `vivisection.Variable`, or by excluding the other with `import soundness.{Variable as _, *}`.
+
+    A session needs a `Monitor` (it runs its writer, reader and dispatcher as tasks, so it lives
+    inside `supervise`), a `Probate`, a `Tactic[Debugger.Error]`, `Diagnostics`, and the socket
+    and logging givens shown in the sample. A launch additionally needs an `Online`, a
+    `Socket.Backend`, a `WorkingDirectory` and an `Environment` for the forked process. None of
+    these are choice packages of this library; they are imported by name from their own.
+
+    When the debuggee is the program's own classes under a host such as a test runner, take the
+    classpath from the classloader of one of those classes
+    (`LocalClasspath.of(Classloader[Main.type])`) rather than the `java.class.path` property,
+    which names the host's jars: a debuggee launched on the wrong classpath never loads the
+    class a breakpoint waits for, and the session waits forever.
+
+refer vivisection.Debuggee
+refer vivisection.Debugger
+refer vivisection.Debug
+refer vivisection.Halt
+refer vivisection.Variable
+refer vivisection.Jdwp
+refer vivisection.Evaluator
+refer vivisection.Dap
+
+entry .Debuggee   a JVM to launch under the JDWP agent and debug: a command, a port and whether to suspend at start
+  detail
+      A `Debuggee` describes a program to run under the debug agent. `target.session { … }`
+      forks `command` with `-agentlib:jdwp=transport=dt_socket,server=y,…` inserted just after
+      the executable, drains the child's standard output and error from the moment of the fork
+      (so a chatty debuggee can never block against a full pipe), waits for the agent to listen,
+      attaches, negotiates identifier sizes and lends a `Debug` for the block. When the block
+      ends the process is killed, its drains and exit watcher awaited, and the socket closed.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import errorDiagnostics.stackTracesDiagnostics
+      import environments.javaBaseEnvironment
+      import internetAccess.online
+      import logging.silentLogging
+      import probates.awaitProbate
+      import socketBackends.javaBaseSockets
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+      import threads.virtualThreads
+      import workingDirectories.javaBaseWorkingDirectory
+
+      def version(classpath: Text): Jdwp.Version = supervise:
+        Debuggee(sh"java -classpath $classpath com.example.Main", port = 0).session:
+          debug.version()
+      ```
+
+      `port` is the TCP port the agent listens on, `5005` by default. A `port` of `0` lets the
+      agent bind a free port of its own choosing, which the session reads from the agent's
+      `Listening for transport dt_socket at address: N` line on the debuggee's standard output
+      before attaching, so no other process can take the port in between; this is what the DAP
+      adapter's `launch` uses. `suspended` (`true` by default) makes the VM wait before running
+      `main`, which is what a breakpoint in initialisation — or any breakpoint placed before the
+      program runs — needs: set the breakpoints, then `debug.resume()`.
+
+      The launch degrades to a `Debugger.Error` with reason `Disconnected` and a detail of
+      _could not launch_, _the port was invalid_ or _never listened_ (after about ten seconds
+      without the agent answering). A launched session has a `Debug.Console` at
+      `debug.console`, over the child's output and exit status; an attached one has none.
+  refer vivisection.Debugger
+  refer vivisection.Debug
+  entry #command   the command to launch, without the agent option, which is inserted at launch
+  entry #port   the TCP port the agent listens on, or `0` to let the agent choose a free one
+  entry #suspended   whether the VM waits at startup until the session resumes it; `true` by default
+  entry .Sessional   the `aperture.Sessional` which launches a debuggee and lends a `Debug`
+    detail
+        The instance behind `debuggee.session { … }`, with `Debuggee` as its `Self` and
+        `Debug^` as its `Result`. It takes its contextual values — `Online`, `Monitor`,
+        `Probate`, `Socket.Backend`, `Every[Socket.Option.Tcp]`, `Tactic[Async.Error]`,
+        `WorkingDirectory`, `Environment`, the `Socket.Event` and `Exec.Event` loggers,
+        `Tactic[Debugger.Error]` and `Diagnostics` — at construction, and `.sessional` builds
+        one from scope. The process is launched with the `Environment` given: the invocation's
+        own in a tool, or `environments.javaBaseEnvironment` for the JVM's.
+    entry #session   forks the debuggee, attaches, and runs the block with a `Debug` lent to it
+        Converts a launch failure (`Exec.Error`), a bad port (`Port.Error`) or a socket failure
+        into a `Debugger.Error` with reason `Disconnected`. The debuggee is killed in a
+        `finally`, so it never outlives the block.
+  entry .sessional   the given which makes `debuggee.session { … }` resolve, from the launch givens in scope
+      In the companion, so it is found without an import; it needs the same contextual values as
+      `Debuggee.Sessional` to be in scope at the call.
+
+entry .Debugger   an attach target: a JVM already listening for a JDWP connection, by its endpoint
+  detail
+      `Debugger(endpoint)` wraps anything `Connectable` and `Showable` — typically an
+      `Endpoint[Tcp.Port]` — and `target.session { … }` connects to it, exchanges the handshake,
+      negotiates identifier sizes and lends a `Debug` for the block, closing the connection
+      afterwards. The VM must already be listening (started with `-agentlib:jdwp=…,server=y`),
+      and whoever started it owns its standard streams: an attach session has no
+      `Debug.Console`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import errorDiagnostics.stackTracesDiagnostics
+      import internetAccess.online
+      import logging.silentLogging
+      import probates.awaitProbate
+      import socketBackends.javaBaseSockets
+      import strategies.throwUnsafely
+      import threads.virtualThreads
+
+      def attached(): List[ThreadId] = supervise:
+        Debugger(Endpoint(t"localhost", Port[Tcp](5005))).session:
+          debug.threads()
+      ```
+
+      The companion also holds `Debugger.Error`, the one error type every session operation
+      raises.
+  refer vivisection.Debuggee
+  refer vivisection.Debug
+  entry #endpoint   the connectable endpoint the session dials
+  entry .apply   `Debugger(endpoint)`: an attach target over any `Connectable` endpoint
+  entry .Sessional   the `aperture.Sessional` which attaches to an endpoint and lends a `Debug`
+    detail
+        Generic over the endpoint type, with the socket `Connectable` resolved at the call site
+        through the context bound. It takes a `Monitor`, a `Probate`, a `Tactic[Async.Error]`,
+        a `Tactic[Socket.Error]` (raised when the connection cannot be made), a
+        `Socket.Event is Loggable`, a `Tactic[Debugger.Error]` and `Diagnostics`.
+    entry #session   dials the endpoint, handshakes, and runs the block with a `Debug` lent to it
+  entry .sessional   the given which makes `debugger.session { … }` resolve, for any connectable endpoint
+      In the companion; needs the same contextual values as `Debugger.Sessional` at the call.
+  entry .Error   raised when a JDWP command fails, the connection is lost, or a launch does not come up
+    detail
+        Error 601, with the reason's own JDWP error number as its sub-number: _the JDWP action
+        failed because `reason`: `detail`_. Every operation on `Debug`, `Halt` and
+        `Jdwp.Connection` takes a `Tactic[Debugger.Error]`; the VM's error code in a reply is
+        decoded to a `Debugger.Error.Reason` and raised with the command's set and number as the
+        detail, and a lost connection fails every in-flight request with `Disconnected`.
+
+        ```scala
+        import soundness.*
+
+        def describe(error: Debugger.Error): Text = error.reason match
+          case Debugger.Error.Reason.Disconnected => t"the debuggee went away: ${error.detail}"
+          case Debugger.Error.Reason.VmDead       => t"the VM has exited"
+          case other                              => t"JDWP error ${other.number}"
+        ```
+
+        A handler runs on the dispatcher task, and the `Halt` it is lent carries the tactic the
+        dispatcher supplied, so a handler needs no error capability of its own; a failure inside
+        a handler is swallowed by the dispatcher rather than propagated to the session's thread.
+    entry #reason   why the action failed, as a `Debugger.Error.Reason`
+    entry #detail   which command or step failed, as text
+    entry .Reason   the JDWP error codes, by their published names, plus `Disconnected` and `Other`
+      detail
+          Each case carries its JDWP `number`: `InvalidThread` (10), `InvalidThreadGroup` (11),
+          `ThreadNotSuspended` (13), `ThreadSuspended` (14), `InvalidObject` (20),
+          `InvalidClass` (21), `ClassNotPrepared` (22), `InvalidMethod` (23),
+          `InvalidLocation` (24), `InvalidField` (25), `InvalidFrame` (30), `NoMoreFrames`
+          (31), `OpaqueFrame` (32), `TypeMismatch` (34), `InvalidSlot` (35), `NotFound` (41),
+          `NotImplemented` (99), `NullPointer` (100), `AbsentInformation` (101),
+          `InvalidEventType` (102), `IllegalArgument` (103), `VmDead` (112), `Internal` (113)
+          and `AlreadyInvoking` (502). `Disconnected` (−1) originates in this library, not the
+          VM, for a lost connection or a launch which never came up; `Other(code)` keeps any
+          number the VM sent which is not named here, so decoding never loses it.
+      entry #number   the JDWP error code, or −1 for `Disconnected`
+      entry .apply   `Reason(code)`: the reason for a JDWP error code, `Other(code)` for an unrecognised one
+    entry .communicable   renders each reason as a message, _the thread was not suspended_ and the like
+
+entry .Debug   a live debug session: the capability lent inside `target.session { … }`
+  detail
+      `Debug` is the programmer-facing surface over a `Jdwp.Connection`: it lists, names,
+      suspends and resumes threads, reads their frames, sets breakpoints and watchpoints,
+      requests steps, and exposes the VM's events as a stream. It is an
+      `ExclusiveCapability`, lent to the session block and confined there by capture checking,
+      and is reached from context with the `debug` accessor rather than named.
+
+      Every operation takes a `Tactic[Debugger.Error]`. The session runs its reader, writer and
+      dispatcher as tasks, so it lives inside `supervise`; the handler given to a breakpoint,
+      step, exception request or watchpoint runs on the dispatcher task with a `Halt` lent for
+      the stop, and the stopped thread resumes when the handler returns unless the handler
+      calls `remain()`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.{Variable as _, *}
+      import errorDiagnostics.stackTracesDiagnostics
+      import environments.javaBaseEnvironment
+      import internetAccess.online
+      import logging.silentLogging
+      import probates.awaitProbate
+      import socketBackends.javaBaseSockets
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+      import threads.virtualThreads
+      import workingDirectories.javaBaseWorkingDirectory
+
+      def classpath: Text = LocalClasspath.of(Classloader[Debug]).apply()
+      val target: Debuggee = Debuggee(sh"java -classpath $classpath com.example.Main", port = 0)
+      ```
+
+      A session, watched one stage at a time:
+
+      ```scala fuel
+      frame
+        label Launch the debuggee, suspended at startup
+        code
+            supervise:
+              target.session:
+                debug.threads().map(debug.name(_))
+      frame
+        label Set a breakpoint by source line before the class is even loaded
+        code
+            supervise:
+              target.session:
+                val stopped: Promise[ThreadId] = Promise()
+
+                debug.breakpoint(t"Main.scala", Ordinal.uniary(12)): stop ?=>
+                  stopped.offer(stop.thread)
+                  stop.remain()
+      frame
+        label Resume, and wait for the hit
+        code
+            supervise:
+              target.session:
+                val stopped: Promise[ThreadId] = Promise()
+
+                debug.breakpoint(t"Main.scala", Ordinal.uniary(12)): stop ?=>
+                  stopped.offer(stop.thread)
+                  stop.remain()
+
+                debug.resume()
+                val thread: ThreadId = stopped.await()
+      frame
+        label Read the stopped frame's variables inside the handler
+        code
+            supervise:
+              target.session:
+                val stopped: Promise[ThreadId] = Promise()
+                val seen: Promise[List[Text]] = Promise()
+
+                debug.breakpoint(t"Main.scala", Ordinal.uniary(12)): stop ?=>
+                  stopped.offer(stop.thread)
+                  seen.offer(stop.variables().map(_.inspect))
+                  stop.remain()
+
+                debug.resume()
+                val thread: ThreadId = stopped.await()
+                seen.await()   // List(t"total:42", t"tag:\"answer\"", …)
+      frame
+        label Step over the line, and see where the thread lands
+        code
+            supervise:
+              target.session:
+                val stopped: Promise[ThreadId] = Promise()
+                val seen: Promise[List[Text]] = Promise()
+                val landed: Promise[(Text, Int)] = Promise()
+
+                debug.breakpoint(t"Main.scala", Ordinal.uniary(12)): stop ?=>
+                  stopped.offer(stop.thread)
+                  seen.offer(stop.variables().map(_.inspect))
+                  stop.remain()
+
+                debug.resume()
+                val thread: ThreadId = stopped.await()
+                seen.await()
+
+                debug.step(thread, Jdwp.StepDepth.Over): step ?=>
+                  landed.offer(step.describe(step.location))
+                  step.remain()
+
+                debug.resume()
+                landed.await()   // (t"com.example.Main.run", 13)
+      ##
+      ```
+
+      The VM suspends once per *composite* of events, and the dispatcher resumes it exactly
+      once by the composite's suspend policy, after every handler for it has run — unless one
+      asked to `remain()`, or no handler claimed any of its events, in which case the composite
+      is handed to `#events` and its consumer owns the resumption. A thread held by `remain()`
+      is released with `#resume`.
+  refer vivisection.Halt
+  refer vivisection.Debuggee
+  refer vivisection.Debugger
+  refer vivisection.debug
+  entry #console   the launched debuggee's output and exit status, or `Unset` for an attached one
+      A `Debug.Console` is present only in a `Debuggee` session: an attached VM's streams
+      belong to whoever started it.
+  entry #capabilities   the VM's advertised capabilities, fetched once and memoized
+      `VirtualMachine.CapabilitiesNew`, as a `Jdwp.Capabilities`. A frontend forwards several
+      of its flags when announcing what it supports, and the session itself consults
+      `canUseSourceNameFilters`, `canPopFrames`, `canWatchFieldAccess`,
+      `canWatchFieldModification`, `canGetBytecodes` and `canGetConstantPool`.
+  entry #version   the VM's version, as a `Jdwp.Version`
+  entry #threads   every thread in the VM, as `ThreadId`s
+  entry #suspend   suspends every thread, or `suspend(thread)` one thread
+      JDWP counts suspensions: a thread suspended twice needs two resumes. The session's own
+      stops are settled by the dispatcher; `suspend` is for the caller's own pauses.
+  entry #resume   resumes every thread, or `resume(thread)` one thread
+      After a handler has called `remain()`, this is what lets the program continue; the DAP
+      adapter's `continue` is exactly `debug.resume()`.
+  entry #name   a thread's name, as the VM reports it
+  entry #frames   a thread's call stack, innermost first, as `(FrameId, Jdwp.Location)` pairs
+      The thread must be suspended: a running thread's frames are `InvalidThread` or
+      `ThreadNotSuspended`. A frame identifier is valid only until the thread resumes.
+  entry #events   the stream of composite events no registered handler claimed
+      The primitive beneath the handlers: every `Jdwp.Event.Composite` the VM sends which no
+      breakpoint, step, exception, watch or prepare handler claimed. A caller drains it and
+      reacts, or awaits a particular event, and owns any resumption the composite's suspend
+      policy calls for. Reading consumes the events as they arrive, and the stream ends when
+      the connection closes.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+
+      def trace()(using Debug^, Tactic[Debugger.Error]): Unit =
+        debug.events.each: composite =>
+          composite.events.each:
+            case Jdwp.Event.Breakpoint(request, thread, location) => debug.resume()
+            case Jdwp.Event.VmDeath(_)                            => ()
+            case other                                            => ()
+      ```
+  entry #breakpoint   sets a breakpoint: by resolved location, by source file and line, or by class and method
+    detail
+        Four forms, each returning what revokes the breakpoint — a request id or a handle:
+
+        - `breakpoint(location, policy)` sets a raw breakpoint at a `Jdwp.Location` with a
+          `Jdwp.SuspendPolicy` (`All` by default) and returns the request id, used with
+          `Debug#clear`. Each hit arrives on `Debug#events` as a `Jdwp.Event.Breakpoint`, suspending as
+          the policy says, and the caller resumes.
+        - `breakpoint(location)(handler)` sets one at a resolved location whose hits run
+          `handler` on the dispatcher, returning a `Breakpoint`.
+        - `breakpoint(source, line)(handler)` and `breakpoint(source, line, bound)(handler)`
+          set one by source file name and line: it binds now in every loaded class the
+          position resolves in, and later in each matching class as it is prepared, so it can be
+          placed before the class is loaded — the launch order a frontend uses. Binding on
+          prepare happens while the loading thread stands suspended, strictly before execution
+          can reach the line, and inlined copies of the position are found through the class's
+          SMAP, so a breakpoint on inlined code hits where the code was written. `bound` is
+          called at each successful binding, which is how a frontend learns that an unverified
+          breakpoint has become real. Returns a `SourceBreakpoint`.
+        - `breakpoint(className, method)(handler)` and the `bound` form set one at the entry of
+          every method of that name on the named *runtime* class (an `object`'s methods live on
+          its `$`-suffixed class), every overload included, binding now or on preparation as
+          the source form does. Methods with no executable line information (abstract, native)
+          are skipped.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.{Variable as _, *}
+
+        def watchpoints()(using Debug^, Tactic[Debugger.Error]): Unit =
+          val byLine: SourceBreakpoint^ = debug.breakpoint(t"Main.scala", Ordinal.uniary(42)): stop ?=>
+            stop.variables().each: variable =>
+              Out.println(variable.inspect)
+
+          val byMethod: SourceBreakpoint^ = debug.breakpoint(t"com.example.Ledger", t"deposit"): stop ?=>
+            stop.remain()
+
+          byLine.clear()
+        ```
+
+        A conditional breakpoint is simply a handler which tests its condition and does nothing
+        otherwise. The handler runs with the thread suspended under the `All` policy, and the
+        dispatcher resumes afterwards unless the handler calls `remain()`.
+  entry #classPrepare   asks to be told when a class matching a pattern is prepared
+      Sets a `ClassPrepare` request for the JDWP class-match `pattern` (an exact name, or one
+      bounded by a single `*`), returning its request id. Each match arrives on `Debug#events` as a
+      `Jdwp.Event.ClassPrepared`, suspending the loading thread, so a caller can resolve a
+      breakpoint in a class not yet loaded when the session began — with `Debug#locateIn` against
+      the reported type, never `Debug#locate`, since a whole-VM scan can deadlock against the lock
+      the suspended thread holds.
+  entry #step   requests a step on a suspended thread: a logical step with a handler, or a raw one
+    detail
+        `step(thread, depth)(handler)` requests a *logical* step whose completion runs
+        `handler` on the dispatcher exactly as a breakpoint hit does, suspending only the
+        stepped thread. The thread must be suspended when the step is requested — typically it
+        is the thread a handler was just lent, held with `remain()` — and the request is spent
+        on the resumption which follows:
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+
+        def over(thread: ThreadId)(using Debug^, Tactic[Debugger.Error]): Unit =
+          debug.step(thread, Jdwp.StepDepth.Over): stop ?=>
+            Out.println(stop.describe(stop.location)(0))
+
+          debug.resume()
+        ```
+
+        A logical step completes when the *source position* changes, read through the class's
+        SMAP: stepping over a line containing an inline call passes over the whole line, body
+        and all, where the bytecode would descend into the inlined body; stepping into one
+        stops at the first line of the inlined body, as if it were a call; and a landing in
+        plumbing — a bridge, a mixin or static forwarder, a field or lazy-val accessor, a
+        synthetic method other than a lambda body, or any class under `java.*`, `javax.*`,
+        `jdk.*`, `sun.*`, `com.sun.*` or `scala.runtime.*` — is never shown: the step continues
+        inward for `Into` and out otherwise, until it rests in code the programmer wrote.
+        Accessors and forwarders carry no flag, so they are recognised by their bytecode shape,
+        which needs the VM's `canGetBytecodes` and `canGetConstantPool`. A landing the SMAP
+        cannot read, or the 64-iteration safety cap, reports the stop as it is.
+
+        `step(thread, depth, size, excluding)` is the raw request: it sets a single-step
+        request with a `Jdwp.StepSize` (`Line` by default) and `ClassExclude` modifiers for
+        each pattern in `excluding`, returning the request id. The VM reports the landing as a
+        `Jdwp.Event.SingleStep` on `Debug#events`, wherever it is — inside the JDK, a forwarder or
+        an inlined body — and the caller resumes.
+  entry #pause   suspends a thread on the caller's initiative and hands back a `Halt` over its top frame
+      No event marks the stop, but the halt offers the same view of the thread — frames,
+      variables, assignment — as a breakpoint would, which is how a client-driven pause is
+      served. The caller owns the suspension: dropping the halt does not resume the thread;
+      `Debug#resume` does.
+  entry #clear   cancels an event request by its kind and request id
+      `clear(Jdwp.EventKind.Breakpoint, request)` removes the request a raw `Debug#breakpoint`,
+      `Debug#classPrepare` or raw `Debug#step` returned. A handler-bearing request is revoked through its
+      `Breakpoint` or `SourceBreakpoint` handle instead, which also unregisters the handler.
+  entry #exceptions   stops when an exception is thrown — uncaught, caught, or both — within matching classes
+      `exceptions(uncaught = true, caught = false, within = Unset)(handler)` sets an exception
+      request and runs `handler` at each throw with a `Halt` whose `cause` is
+      `Halt.Cause.Thrown`, so `exceptionInfo()` describes the exception in flight. `within`
+      restricts the request to exceptions thrown from classes matching a class pattern: a
+      caught-exception request without one stops inside the platform's own exception-driven
+      control flow, which starts long before any application class runs. Returns a
+      `Breakpoint` which revokes the request.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+
+      def uncaught()(using Debug^, Tactic[Debugger.Error]): Breakpoint^ =
+        debug.exceptions(uncaught = true, caught = true, within = t"com.example.*"): stop ?=>
+          stop.exceptionInfo().let: info =>
+            Out.println(t"${info.className}: ${info.message.or(t"")}")
+      ```
+  entry #watch   stops when a field of a loaded class is written, or with `access`, read
+      `watch(className, field, access = false)(handler)` finds the field on the named runtime
+      class — which must already be loaded, as it always is when the watch is placed from a
+      live variables view — and runs `handler` at each write with a `Halt` whose `cause` is
+      `Halt.Cause.Modification`, carrying the incoming value observed *before* the write lands
+      (or `Halt.Cause.Access` for a read). The result is `Unset` when the class or field cannot
+      be found, or the VM lacks `canWatchFieldModification` (or `canWatchFieldAccess`).
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+
+      def balance()(using Debug^, Tactic[Debugger.Error]): Optional[Breakpoint^] =
+        debug.watch(t"com.example.Ledger$$Account", t"balance"): stop ?=>
+          stop.cause match
+            case Halt.Cause.Modification(_, _, _, incoming) => Out.println(incoming.inspect)
+            case _                                          => ()
+      ```
+  entry #logpoint   a breakpoint which logs a message and immediately resumes
+      `logpoint(location)(message)` installs a breakpoint whose handler logs
+      `Debug.Event.Logpoint(message)` at `info` level and returns, so the program is never
+      paused beyond the handler itself. `message` is evaluated with the `Halt` in scope, so it
+      can read the stopped frame's variables. Needs a `Debug.Event is Loggable` in scope as well
+      as the tactic.
+  entry #locate   the executable locations a source line currently resolves to, across loaded classes
+      Every method of every loaded class compiled from `source` whose line table covers `line`,
+      inlined copies found through each class's SMAP included. Classes named after the file are
+      tried first, so the common case costs a handful of round trips; a sweep of the remaining
+      loaded classes — skipping array types and the platform's own — backstops it. Classes not
+      yet loaded are not found: the source form of `Debug#breakpoint` defers to their preparation.
+      Not safe while a thread is suspended at a `ClassPrepare` event: use `Debug#locateIn`.
+  entry #locateIn   the executable locations a source line resolves to within one reference type
+      As `Debug#locate`, for the one class `cls` (with its `Jdwp.TypeTag`): every method compiled
+      from `source` whose line table covers `line`, plus any inlined copies of the position its
+      SMAP records, de-duplicated by method and bytecode index. It never enumerates the VM's
+      classes, so it is safe to call from a `ClassPrepared` event's handler, where a whole-VM
+      scan can deadlock against the class-loading lock the suspended thread holds.
+  entry .Handler   the type of a breakpoint or step handler: `(halt: Halt^) ?=> Unit`
+      A context function over a lent `Halt`, run on the dispatcher task when a hit is claimed.
+      The halt carries the tactic the dispatcher supplied, so a handler needs no error
+      capability of its own; it is written `stop ?=> …`, since the natural name `halt` belongs
+      to fulminate.
+  entry .Console   a launched debuggee's standard output, standard error and exit status
+    detail
+        Present at `Debug#console` in a `Debuggee` session only. The child's output and error
+        pipes are drained from the moment of the fork into two windows a reader consumes as
+        streams, and its exit status settles a promise. The DAP adapter relays the streams as
+        `output` events and the exit as `exited` and `terminated`.
+    entry #stdout   the debuggee's standard output, as a stream of chunks
+    entry #stderr   the debuggee's standard error, as a stream of chunks
+    entry #exited   a promise of the debuggee's exit status, settled when the process ends
+  entry .Event   what a session logs on its own initiative: a logpoint's message
+    detail
+        One case, `Logpoint(message)`, tagged `Log.Runtime` and logged at `info` by
+        `Debug#logpoint`. A `Debug.Event is Loggable` must be in scope to install a logpoint;
+        `logging.silentLogging` discards them.
+    entry .communicable   renders a logpoint event as its message
+
+entry .debug   the ambient debug session, summoned from context inside a session block
+    `debug` names the `Debug` capability a `session` block was lent, without naming the
+    parameter: `target.session { debug.threads() }`, in the manner of `monitor` for a
+    supervision scope. It is a `transparent inline def` resolving to the contextual `Debug^`,
+    so it carries that capability's exact capture set. No matching accessor exists for `Halt`
+    — its natural name is taken by `fulminate.halt` — so handlers name their parameter,
+    conventionally `stop ?=>`.
+
+entry .Breakpoint   a revocable handle on an installed breakpoint, exception request or watchpoint
+  detail
+      Returned by `Debug#breakpoint(location)(handler)`, `Debug#exceptions` and
+      `Debug#watch`. It captures the session it belongs to, so it cannot outlive the session
+      block. `#clear` removes the request from the VM and unregisters its handler, after which
+      any hits already in flight are treated as unclaimed and reach `Debug#events`.
+  refer vivisection.SourceBreakpoint
+  entry #request   the JDWP request id of the installed event request
+  entry #clear   removes the request from the VM and unregisters its handler
+
+entry .SourceBreakpoint   a revocable handle on a breakpoint set by source position or by class and method
+  detail
+      Returned by the source-line and class-and-method forms of `Debug#breakpoint`. A
+      source breakpoint binds to an executable location in each matching class as it is loaded,
+      so its `#locations` grow over the session; a frontend reads an empty list as an
+      unverified breakpoint and a later binding as its verification (the `bound` callback
+      reports each). `#clear` removes every bound breakpoint and revokes the class-prepare
+      request which would bind more. The handle captures the session, so it cannot escape the
+      session block.
+  refer vivisection.Breakpoint
+  entry #locations   the executable locations this breakpoint has bound to so far
+      Empty while every class the position resolves in remains unloaded.
+  entry #bound   whether at least one location has been bound
+  entry #clear   removes every bound breakpoint and the prepare request which binds more
+
+entry .Halt   a stopped thread, as the capability lent to a handler while the thread stands suspended
+  detail
+      A `Halt` is the view a breakpoint, step, exception or watch handler is lent: the thread
+      which stopped, the location it stopped at, why (`#cause`), its frames and their logical
+      variables, the exception in flight if that is why it stopped, and the means to assign a
+      variable, pop a frame, or hold the thread suspended. It is an `ExclusiveCapability`, so
+      it cannot outlive the stop it describes: once the dispatcher resumes the thread, every
+      identifier the halt handed out — frames, objects, slots — may be stale.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.{Variable as _, *}
+
+      def inspect()(using Debug^, Tactic[Debugger.Error]): Unit =
+        debug.breakpoint(t"Main.scala", Ordinal.uniary(42)): stop ?=>
+          stop.frames().each: (frame, location) =>
+            val (name, line) = stop.describe(location)
+            Out.println(t"$name:$line")
+
+          stop.variables().each: variable =>
+            Out.println(t"${variable.name}: ${variable.erased} = ${variable.value.inspect}")
+
+          stop.remain()
+      ```
+
+      The halt carries the `Tactic[Debugger.Error]` the dispatcher supplied when it minted it,
+      so its operations take none: a handler runs on the dispatcher task, and the error channel
+      must unwind that stack, not the registration site's. Handlers are written `stop ?=> …`:
+      the accessor name `halt` belongs to fulminate.
+  refer vivisection.Debug
+  refer vivisection.Variable
+  refer vivisection.evaluator
+  entry #thread   the thread which stopped
+  entry #location   where it stopped: the class, method and bytecode index
+  entry #cause   why it stopped, as a `Halt.Cause`
+  entry #remain   asks the dispatcher not to resume the thread when the handlers for this stop return
+      The caller then owns the suspension and resumes it — or not — through `Debug#resume`.
+      Shared by every handler run for one composite, since JDWP suspends once per composite and
+      the dispatcher settles that suspension once.
+  entry #frames   the stopped thread's call stack, innermost first, as `(FrameId, Jdwp.Location)` pairs
+  entry #positions   the logical source positions a frame stands for, innermost first
+      One `Halt.Position` per inline origin recovered from the class's SMAP — the file and line
+      where the inlined code was written, marked `inlined` — followed by the physical frame
+      itself at its real, call-site line. A frame with no SMAP, one stopped at a real line, or a
+      VM without `canGetSourceDebugExtension` yields exactly the single position `Halt#describe`
+      reports. This is how a stack trace shows an inlined body as a frame of its own.
+  entry #describe   a readable name and line for a location: `pkg.Cls.method` and its source line
+      Resolved from the class's method and line tables; the line is `0` where no line
+      information exists. The name is demangled as a stack trace renders it: a module class's
+      trailing `$` dropped, inner-class `$`s read as dots.
+  entry #exceptionInfo   the exception in flight at an exception stop, or `Unset` at any other
+      A `Halt.ExceptionInfo` when `Halt#cause` is `Thrown`: the exception's class name, the detail
+      message it was constructed with (`Unset` when null), and whether the throw will be
+      caught. The message is read straight from `Throwable`'s `detailMessage` field, walking up
+      the hierarchy to the class which declares it, rather than by invoking `getMessage`, so no
+      debuggee code runs.
+  entry #thisObject   a frame's `this`, or `Unset` in a static or native frame
+  entry #variables   the logical variables visible at the top frame, or at a given frame
+      `variables()` reads the frame where the thread stopped; `variables(frame, location)` any
+      frame of its stack. The result is the live local slots at the location — a slot is live
+      only within its bytecode range — followed by the state captured on `this` and its
+      `$outer` chain, each recovered in the form the programmer wrote: a synthetic `name$3`
+      capture field surfaces as `name`, an outer accessor's `pkg$Owner$$seed` as `seed`, a
+      captured `var`'s ref cell is unboxed to its `elem` (and the variable marked mutable), and
+      a lazy val's backing field is read but never forced, so an unevaluated one is reported
+      `Unforced` with no value. Ordinary member fields appear against their owner. A method
+      compiled without a variable table degrades to the captured and field state alone.
+  entry #children   expands a snapshot one level: an object's instance fields, or an array's elements
+      For a `Variable.Snapshot.Obj`, the object's non-static fields as variables; for an
+      `Arr`, its first 256 elements, named by their zero-based index. Anything else expands to
+      nothing. This is the `variables` request behind a frontend's tree view.
+  entry #pop   discards a frame and every frame above it, so resuming re-executes the call which made it
+      A frontend's frame restart. Requires the VM's `canPopFrames` capability and no native
+      frame among those popped.
+  entry #assign   writes a value into a variable at the stopped frame, routed by its provenance
+      `assign(variable, value)` writes at the top frame; `assign(frame, variable, value)` at a
+      given one. The write goes where the variable's `Variable.Provenance` says its storage is:
+      a local slot in the frame, a captured or member field on its holder, an array element,
+      or — through a ref cell — the cell's `elem`, so assigning a captured `var` behaves as the
+      source suggests. The value must be of the variable's erased type (a `Jdwp.Value.OfInt`
+      for an `Int`); the identifiers a provenance carries are valid only while the thread
+      stands suspended, which is exactly when assignment is meaningful. `Evaluator#assign`
+      evaluates an expression at the variable's declared type and assigns the result.
+  entry .Cause   why a thread stopped: a plain stop, a thrown exception, or a field access or modification
+    detail
+        `Stopped` covers breakpoints, steps, pauses and method entry and exit, where the handler
+        already knows which request it registered. `Thrown(exception, catchLocation)` carries
+        the exception object and where it will be caught, `Unset` for an uncaught one.
+        `Access(cls, field, target)` and `Modification(cls, field, target, incoming)` carry the
+        class and field touched and the object touched (`Unset` for a static field); a
+        modification also carries the `incoming` value, observed before the write lands.
+  entry .ExceptionInfo   a summary of an exception in flight: its class, its message, and whether it is caught
+    entry #className   the exception's class, demangled as a stack trace renders it
+    entry #message   the detail message it was constructed with, or `Unset` when null
+    entry #caught   whether the throw will be caught
+  entry .Position   one logical source position a physical frame stands for
+    detail
+        For inlined code, the file and line where the code was written; for the frame itself,
+        its own source and its real line. `name` is the display name (the class or method);
+        `source` the file's recorded basename and `path` its fuller path, when known; `inlined`
+        whether this is an inline origin rather than the frame; and `cls` the raw
+        `ScalaClass`-stratum class name, for a caller holding the classpath to resolve the
+        definition through TASTy, as `Namer` does.
+    entry #name   the display name: a class and method, or the inline origin's class
+    entry #source   the source file's basename, if known
+    entry #path   the source file's fuller path, if the SMAP records one
+    entry #line   the source line
+    entry #inlined   whether this position is an inline origin rather than the physical frame
+    entry #cls   the raw class name the SMAP records for an inline origin, if any
+
+entry .Variable   a logical variable at a suspended frame, in the form the programmer wrote it
+  detail
+      A `Variable` is what `Halt#variables` recovers: its `name` as written (captures
+      un-flattened from their synthetic fields), its `erased` type from the JVM signature, its
+      `static` type when `Evaluator#variables` has recovered the declared one from TASTy, its
+      `value` as a `Variable.Snapshot` (absent for an unforced lazy val), the `provenance`
+      which says where its storage is so a write knows where to go, whether it is `mutable`
+      (a `var`, boxed in a ref cell), and its `state` — `Forced` or, for a lazy val not yet
+      evaluated, `Unforced`.
+
+      ```scala
+      import soundness.{Variable as _, *}
+
+      def render(variable: vivisection.Variable): Text =
+        variable.state match
+          case vivisection.Variable.State.Unforced => t"${variable.name}: ∿∿∿"
+          case vivisection.Variable.State.Forced   =>
+            t"${variable.name}: ${variable.static.or(variable.erased)} = ${variable.value.inspect}"
+      ```
+
+      `Variable` is not exported to `soundness`, which already has ambience's `Variable` (an
+      environment variable): write `vivisection.Variable`, or `import soundness.{Variable as _,
+      *}` and then `import vivisection.Variable`.
+  refer vivisection.Halt
+  refer vivisection.Evaluator
+  entry #name   the name as written in the source
+  entry #static   the declared Scala type, when recovered from TASTy by an `Evaluator`; `Unset` otherwise
+  entry #erased   the JVM type, demangled: `Int`, `Array[Int]`, `scala.collection.List`
+  entry #value   the value, as a `Variable.Snapshot`; `Unset` for an unforced lazy val
+  entry #provenance   where the storage is, so an assignment knows where to write
+  entry #mutable   whether the variable is a `var`: its storage is a `scala.runtime.*Ref` cell
+  entry #state   whether a lazy binding has been evaluated: `Forced`, or `Unforced`
+  entry .inspectable   renders a variable as `name:value`, with `∿∿∿` for an unforced lazy val and `○` for no value
+  entry .Snapshot   the debugger-side view of a remote value: a primitive, a string, an array prefix, an object, or null
+    detail
+        `Primitive(value)` holds a decoded `Jdwp.Value`; `Str(id, text)` a string, fetched
+        eagerly; `Arr(id, component, length, prefix)` an array's identity, component `Jdwp.Tag`,
+        length and the first ten elements, fetched eagerly; `Obj(id, cls)` any other object as
+        a summary — its identity and demangled class — for `Halt#children` to expand; and
+        `Null` the null reference.
+    entry .inspectable   renders a snapshot: literals as themselves, arrays as `⦋🅸₀1∣₁2∣…⦌＠id`, objects as `Cls＠id`
+        A remote identity renders as the class name (or the array's component letter) followed
+        by a fullwidth `＠` and the JDWP object identifier — close enough to Java's `Foo@1a2b`
+        to read as an identity, and distinct from any literal rendering. The given is
+        parameterised over the enumeration's case types, since `Inspectable` is invariant.
+  entry .Provenance   where a variable's storage was found, carrying whatever identity a write needs
+    detail
+        `Local(slot)` is a frame slot; `Captured(fieldPath, holder, field)` a capture field on
+        `this` or an `$outer` along `fieldPath`; `Field(owner, target, field)` a member field on
+        `target`, with its demangled `owner` class; `Element(array, index)` an array element;
+        and `Cell(cell, elem, inner)` the `elem` field of a `scala.runtime.*Ref` cell found at
+        `inner`. The identifiers are stable only while the halt's thread stands suspended.
+  entry .State   whether a lazy binding has been evaluated: `Forced` or `Unforced`
+      An unforced lazy val is *never* forced by the debugger — forcing would change the program
+      under observation — so its value is absent and it renders as `∿∿∿`.
+
+entry .ObjectId   a JDWP object identifier: `Jdwp.Ref[Jdwp.Ref.Object]`
+    Every identifier the VM hands out is a `Jdwp.Ref` tagged by a phantom kind, so the nine
+    aliases are distinct at compile time and free at runtime. `ThreadId`, `ThreadGroupId`,
+    `StringId` and `ClassLoaderId` widen to `ObjectId`, since in JDWP a thread, a thread group,
+    a string and a class loader all *are* objects; `ReferenceTypeId`, `MethodId`, `FieldId` and
+    `FrameId` do not. The null object is `Jdwp.Ref.empty`, tested with the `empty` extension.
+entry .ThreadId   a thread's identifier: `Jdwp.Ref[Jdwp.Ref.Thread]`, which widens to `ObjectId`
+entry .ThreadGroupId   a thread group's identifier: `Jdwp.Ref[Jdwp.Ref.Group]`, which widens to `ObjectId`
+entry .StringId   a string object's identifier: `Jdwp.Ref[Jdwp.Ref.Str]`, which widens to `ObjectId`
+entry .ClassLoaderId   a class loader's identifier: `Jdwp.Ref[Jdwp.Ref.Loader]`, which widens to `ObjectId`
+entry .ReferenceTypeId   a class, interface or array type's identifier: `Jdwp.Ref[Jdwp.Ref.Type]`
+entry .MethodId   a method's identifier, scoped to its reference type: `Jdwp.Ref[Jdwp.Ref.Method]`
+entry .FieldId   a field's identifier, scoped to its reference type: `Jdwp.Ref[Jdwp.Ref.Field]`
+entry .FrameId   a stack frame's identifier, valid while its thread is suspended: `Jdwp.Ref[Jdwp.Ref.Frame]`
+
+entry .Jdwp   the Java Debug Wire Protocol as values: identifiers, locations, values, events, codecs and a connection
+  detail
+      `Jdwp` models the protocol so that this library can be read against the specification:
+      command sets and commands keep their published numbers, event and error kinds their
+      published names, and identifiers the widths the VM negotiates. It is the layer beneath
+      `Debug`, for work the session does not expose: a raw event request with its own
+      `Jdwp.Modifier`s, a method invoked in the debuggee, a string interned there.
+
+      Its pieces are the opaque `Ref` (with the identifier aliases `ThreadId`, `FrameId` and
+      the rest built on it), the enumerations a request or reply carries (`TypeTag`,
+      `SuspendPolicy`, `EventKind`, `StepDepth`, `StepSize`, `Tag`), `Location`, the tagged
+      `Value`, the `Modifier`s which constrain an event request, the decoded reply structures
+      (`Version`, `ClassInfo`, `MethodInfo`, `FieldInfo`, `LineTable`, `VariableTable`,
+      `Capabilities`, …), the `Event`s a VM sends back, the hand-written big-endian codecs
+      `Reader` and `Writer`, the `Packet` framing, and `Connection`, the wire-level client which
+      frames and correlates packets over a duplex channel. Nothing but `Connection` touches a
+      socket.
+
+      ```scala
+      import soundness.*
+
+      val sizes: Jdwp.IdSizes = Jdwp.IdSizes(8, 8, 8, 8, 8)
+      val writer: Jdwp.Writer = Jdwp.Writer(sizes)
+      writer.byte(2).int(1).threadId(Jdwp.Ref(7L)).location(Jdwp.Location(Jdwp.TypeTag.Class, Jdwp.Ref(3L), Jdwp.Ref(4L), 0L))
+      val reader: Jdwp.Reader^ = Jdwp.Reader(writer.data, sizes)
+      reader.byte()
+      ```
+
+      Requests and replies are correlated by packet id, so many commands may be in flight at
+      once and an event arriving during one does not disturb it.
+  refer vivisection.Debug
+  refer vivisection.Halt
+  entry .Handshake   the fourteen ASCII bytes `JDWP-Handshake` each end sends, and expects back, before any packet
+  entry .Ref   one opaque `Long` tagged by a phantom kind: the type beneath every JDWP identifier
+    detail
+        `Ref[kind]` is a `Long` at runtime and a distinct type per `Ref.Kind` at compile time,
+        so a `ThreadId` can never be passed where a `FieldId` is wanted, while the covariance
+        in the kind lets a `ThreadId` widen to an `ObjectId`. `Ref(long)` makes one and
+        `Ref.empty` is the null object (identifier zero); the extensions `long` and `empty` read
+        one back. The wire width of each kind is negotiated per connection (`IdSizes`), which is
+        why `Reader` and `Writer` are built with the sizes.
+    entry .Kind   the root of the phantom kinds a reference may carry
+    entry .Object   the kind of any object reference; `Thread`, `Group`, `Str` and `Loader` extend it
+    entry .Thread   the kind of a thread reference
+    entry .Group   the kind of a thread-group reference
+    entry .Str   the kind of a string reference
+    entry .Loader   the kind of a class-loader reference
+    entry .Type   the kind of a reference-type (class, interface or array type) identifier
+    entry .Method   the kind of a method identifier
+    entry .Field   the kind of a field identifier
+    entry .Frame   the kind of a frame identifier
+    entry .apply   `Ref[kind](long)`: wraps an identifier the VM sent
+    entry .empty   the null object, identifier zero, at any kind
+    entry .showable   renders a reference as its decimal identifier
+    entry .equality   `CanEqual` between references of the same kind
+  entry .long   the identifier a reference wraps, as a `Long`; an extension on any `Ref`
+  entry .empty   whether a reference is the null object (identifier zero); an extension on any `Ref`
+  entry .IdSizes   the five negotiated identifier widths, in bytes, each 1 to 8
+    detail
+        `VirtualMachine.IDSizes`: `field`, `method`, `objectId` (which also sizes strings,
+        threads, thread groups, class loaders, class objects and arrays), `referenceType` and
+        `frame`. A `Reader` or `Writer` is built with the sizes the connection negotiated
+        (`Connection#sizes`); `IdSizes.bootstrap` is all-eights, used only to decode the
+        fixed-layout IDSizes reply itself and to frame packets, which carry no identifiers.
+    entry #field   the width of a field identifier
+    entry #method   the width of a method identifier
+    entry #objectId   the width of an object identifier, and of every kind which widens to one
+    entry #referenceType   the width of a reference-type identifier
+    entry #frame   the width of a frame identifier
+    entry .bootstrap   all-eights: the sizes used before negotiation, for the IDSizes reply and packet headers
+  entry .TypeTag   whether a reference type is a class (1), an interface (2) or an array (3)
+    entry .apply   `TypeTag(byte)`: the tag for a wire byte, `Class` for an unrecognised one
+    entry #id   the wire byte
+  entry .SuspendPolicy   how much of the VM to suspend when an event fires: `None`, `EventThread` or `All`
+    detail
+        `None` (0) suspends nothing, `EventThread` (1) only the thread which raised the event,
+        `All` (2) every thread. JDWP suspends once per composite, and the dispatcher resumes by
+        the composite's policy; a handler-bearing breakpoint uses `All`, a step or class-prepare
+        request `EventThread`.
+    entry .apply   `SuspendPolicy(byte)`: the policy for a wire byte, `None` for an unrecognised one
+    entry #id   the wire byte
+  entry .EventKind   the kinds of event a request may ask for and a composite may report, by their JDWP numbers
+    detail
+        `SingleStep` (1), `Breakpoint` (2), `FramePop` (3), `Exception` (4), `UserDefined` (5),
+        `ThreadStart` (6), `ThreadDeath` (7), `ClassPrepare` (8), `ClassUnload` (9),
+        `ClassLoad` (10), `FieldAccess` (20), `FieldModified` (21), `MethodEntry` (40),
+        `MethodExit` (41), `VmStart` (90), `VmDeath` (99), and `Other(id)` for any number not
+        named here. `Debug#clear` takes the kind of the request to cancel.
+    entry .apply   `EventKind(int)`: the kind for a wire number, `Other(id)` for an unrecognised one
+    entry #id   the wire number
+  entry .StepDepth   the direction of a step: `Into` (0), `Over` (1) or `Out` (2)
+    entry #id   the wire number
+  entry .StepSize   the grain of a step: `Min` (0), one bytecode instruction, or `Line` (1), one source line
+    entry #id   the wire number
+  entry .Tag   the tag byte identifying the runtime type of a value on the wire
+    detail
+        `ArrayTag` (`[`), `ByteTag` (`B`), `CharTag` (`C`), `ObjectTag` (`L`), `FloatTag`
+        (`F`), `DoubleTag` (`D`), `IntTag` (`I`), `LongTag` (`J`), `ShortTag` (`S`), `VoidTag`
+        (`V`), `BooleanTag` (`Z`), `StringTag` (`s`), `ThreadTag` (`t`), `GroupTag` (`g`),
+        `LoaderTag` (`l`) and `ClassTag0` (`c`, named so as not to shadow `scala.reflect.ClassTag`).
+        A value is requested with the tag of its declared type — the first character of a JVM
+        signature — and the reply carries the precise tag.
+    entry .apply   `Tag(char)`: the tag for a signature or wire character, `ObjectTag` for an unrecognised one
+    entry .isObject   whether a tag's wire payload is an object identifier rather than an inline primitive
+    entry #id   the wire character
+  entry .Location   an executable location: a reference type, one of its methods, and a bytecode index within it
+    entry #tag   whether the type is a class, interface or array
+    entry #cls   the reference type
+    entry #method   the method
+    entry #index   the bytecode index within the method; a line table maps it to a source line
+  entry .Value   a tagged value read from or written to a slot, field or array element
+    detail
+        Primitives are decoded eagerly as `OfByte`, `OfChar`, `OfDouble`, `OfFloat`, `OfInt`,
+        `OfLong`, `OfShort` and `OfBoolean`; `Void` is a void result; and `Reference(tag, id)`
+        stays an identifier with its runtime tag, for `Halt` and `Variable.Snapshot` to
+        interpret. `Halt#assign` takes a `Value` of the variable's erased type.
+    entry .inspectable   renders a primitive by its own notation, a reference as `tag＠id`, and null as `null`
+        Parameterised over the enumeration's case types, since `Inspectable` is invariant: an
+        instance for `Value` alone would not cover `OfInt` or `Reference`.
+  entry .Modifier   the constraints on an event request, each with its JDWP modkind
+    detail
+        `Count(count)` (1) fires the request that many times then expires it; `ThreadOnly`
+        (3), `ClassOnly` (4), `ClassMatch(pattern)` (5) and `ClassExclude(pattern)` (6)
+        restrict by thread or class, the patterns being an exact name or one bounded by a
+        single `*`; `LocationOnly(location)` (7) places a breakpoint; `ExceptionOnly(cls,
+        caught, uncaught)` (8) selects exceptions, the empty reference meaning any class;
+        `FieldOnly(cls, field)` (9) names a watched field; `Step(thread, size, depth)` (10)
+        describes a step; and `SourceNameMatch(pattern)` (12) restricts class-prepare events by
+        source file, where the VM supports it. JDWP applies a `Count` only to events which pass
+        the modifiers before it, so it goes last.
+  entry .Version   the VM's version reply: a description, the JDWP major and minor, and the VM's version and name
+    entry #description   the VM's own description text
+    entry #major   the JDWP major version
+    entry #minor   the JDWP minor version
+    entry #vmVersion   the VM's version string
+    entry #vmName   the VM's name
+  entry .ClassInfo   a loaded reference type: its tag, identifier, JNI signature and status
+    entry #tag   class, interface or array
+    entry #cls   the reference type
+    entry #signature   the JNI signature, `Lcom/example/Main;`
+    entry #status   the class's status bits: verified, prepared, initialised, error
+  entry .MethodInfo   a method of a reference type: its identifier, name, JNI signature and modifiers
+    entry #method   the method
+    entry #name   the method's name, `<init>` for a constructor
+    entry #signature   the JNI signature, `(I)Ljava/lang/String;`
+    entry #modifiers   the access flags; bit 0x40 marks a bridge, 0x1000 a synthetic method
+  entry .FieldInfo   a field of a reference type: its identifier, name, JNI signature and modifiers
+    entry #field   the field
+    entry #name   the field's name
+    entry #signature   the JNI signature
+    entry #modifiers   the access flags; bit 0x8 marks a static field
+  entry .LineEntry   one line-table row: a bytecode index and the source line which begins there
+    entry #index   the bytecode index
+    entry #line   the source line
+  entry .LineTable   a method's line table: its first and last bytecode indices and its rows
+    detail
+        `start` is −1 for a method with no executable code (abstract, native). The source line
+        of a location is the `line` of the last entry whose `index` is at most the location's.
+    entry #start   the lowest bytecode index, or −1 for a method with no code
+    entry #end   the highest bytecode index
+    entry #lines   the rows, in bytecode order
+  entry .SlotInfo   a local-variable table row: the slot's bytecode range, name, JNI signature and slot number
+    detail
+        A slot is live at a bytecode index within `[index, index + length)`; `Halt#variables`
+        filters by this.
+    entry #index   the bytecode index at which the slot becomes live
+    entry #name   the variable's name
+    entry #signature   the JNI signature
+    entry #length   the number of bytecode indices over which the slot is live
+    entry #slot   the slot number, as `Connection#slotValues` takes it
+  entry .VariableTable   a method's local-variable table: its argument count and slots
+    entry #argCount   the number of slots the method's parameters occupy
+    entry #slots   the slots, as `SlotInfo`s
+  entry .ThreadStatus   a thread's status: its run state and whether it is suspended
+    entry #threadStatus   zombie (0), running (1), sleeping (2), monitor (3) or wait (4)
+    entry #suspendStatus   1 when the thread is suspended
+  entry .Invocation   the outcome of a method invoked in the debuggee: its return value and the exception it threw
+    entry #result   the return value, `Void` for a void method
+    entry #exception   the exception thrown, or the null reference when the method returned normally
+  entry .Capabilities   the flags this library consults from `VirtualMachine.CapabilitiesNew`
+    detail
+        Decoded by `Connection#capabilitiesNew` and memoized by `Debug#capabilities`; a short
+        reply from an old VM leaves the missing flags false. The constructor order is
+        `canWatchFieldModification`, `canWatchFieldAccess`, `canGetBytecodes`,
+        `canGetSyntheticAttribute`, `canPopFrames`, `canGetSourceDebugExtension`,
+        `canUseSourceNameFilters`, `canGetConstantPool`.
+    entry #canWatchFieldModification   whether `Debug#watch` on a write is possible
+    entry #canWatchFieldAccess   whether `Debug#watch` on a read is possible
+    entry #canGetBytecodes   whether a method's bytecode can be read, which the step filter uses to recognise forwarders
+    entry #canGetSyntheticAttribute   whether the VM reports synthetic members
+    entry #canPopFrames   whether `Halt#pop` is possible
+    entry #canGetSourceDebugExtension   whether SMAPs can be read, which inline-aware positions and steps need
+    entry #canUseSourceNameFilters   whether a class-prepare request can be narrowed by source file
+    entry #canGetConstantPool   whether a class's constant pool can be read, which the step filter needs
+  entry .Reader   decodes a packet payload: big-endian, with identifier reads at the negotiated widths
+    detail
+        A `Reader(data, sizes)` walks a materialised `Data` payload from the start; every read
+        advances its position, so it is a `caps.Mutable` class held as `Reader^` and used by
+        one decoder at a time, in order. `Connection#request` returns one over a reply's
+        payload, and `Event.composite` decodes a composite from one.
+
+        ```scala
+        import soundness.*
+
+        val sizes: Jdwp.IdSizes = Jdwp.IdSizes(8, 8, 8, 8, 8)
+        val payload: Data = Jdwp.Writer(sizes).int(3).string(t"main").data
+        val reader: Jdwp.Reader^ = Jdwp.Reader(payload, sizes)
+        val count: Int = reader.int()
+        val name: Text = reader.string()
+        ```
+    entry #remaining   the bytes not yet read
+    entry #byte   reads one byte
+    entry #boolean   reads one byte as a boolean
+    entry #short   reads a big-endian 16-bit integer
+    entry #char   reads a big-endian 16-bit character
+    entry #int   reads a big-endian 32-bit integer
+    entry #long   reads a big-endian 64-bit integer
+    entry #float   reads a 32-bit IEEE float
+    entry #double   reads a 64-bit IEEE double
+    entry #id   reads an identifier of the given width in bytes
+    entry #objectId   reads an `ObjectId` at the negotiated object width
+    entry #threadId   reads a `ThreadId` at the negotiated object width
+    entry #threadGroupId   reads a `ThreadGroupId` at the negotiated object width
+    entry #stringId   reads a `StringId` at the negotiated object width
+    entry #classLoaderId   reads a `ClassLoaderId` at the negotiated object width
+    entry #referenceTypeId   reads a `ReferenceTypeId` at the negotiated reference-type width
+    entry #methodId   reads a `MethodId` at the negotiated method width
+    entry #fieldId   reads a `FieldId` at the negotiated field width
+    entry #frameId   reads a `FrameId` at the negotiated frame width
+    entry #string   reads a length-prefixed JDWP string, in JNI modified UTF-8
+        The null character arrives as `C0 80` and a character outside the basic multilingual
+        plane as two three-byte sequences, which pass through as the surrogate pair they
+        encode; a strict UTF-8 decoder would reject both.
+    entry #modifiedUtf8   reads a modified-UTF-8 run of a length already read, as a classfile constant pool stores one
+    entry #skip   advances past a number of bytes
+    entry #location   reads a `Location`: a type tag, reference type, method and index
+    entry #value   reads a tagged `Value`
+    entry #untaggedValue   reads a `Value` whose tag the caller already knows
+    entry #arrayRegion   reads an array region: one tag for the region, a count, then the elements
+        A primitive region packs untagged values of its one type; an object region carries
+        ordinarily tagged values, since the elements' runtime types may differ.
+  entry .Writer   marshals a packet payload: fluent, big-endian, identifiers at the negotiated widths
+    detail
+        A `Writer(sizes)` accumulates bytes; each write returns the writer, and `#data`
+        snapshots what has been written. `Connection#request` lends one to the caller's
+        `write` function.
+
+        ```scala
+        import soundness.*
+
+        val sizes: Jdwp.IdSizes = Jdwp.IdSizes(8, 8, 8, 8, 8)
+        val body: Data = Jdwp.Writer(sizes).byte(2).byte(2).int(1).modifier(Jdwp.Modifier.Count(1)).data
+        ```
+    entry #byte   writes one byte
+    entry #boolean   writes a boolean as one byte
+    entry #short   writes a big-endian 16-bit integer
+    entry #char   writes a big-endian 16-bit character
+    entry #int   writes a big-endian 32-bit integer
+    entry #long   writes a big-endian 64-bit integer
+    entry #float   writes a 32-bit IEEE float
+    entry #double   writes a 64-bit IEEE double
+    entry #id   writes an identifier at the given width in bytes
+    entry #objectId   writes an `ObjectId` at the negotiated object width
+    entry #threadId   writes a `ThreadId` at the negotiated object width
+    entry #threadGroupId   writes a `ThreadGroupId` at the negotiated object width
+    entry #stringId   writes a `StringId` at the negotiated object width
+    entry #classLoaderId   writes a `ClassLoaderId` at the negotiated object width
+    entry #referenceTypeId   writes a `ReferenceTypeId` at the negotiated reference-type width
+    entry #methodId   writes a `MethodId` at the negotiated method width
+    entry #fieldId   writes a `FieldId` at the negotiated field width
+    entry #frameId   writes a `FrameId` at the negotiated frame width
+    entry #string   writes a length-prefixed JDWP string, in JNI modified UTF-8
+    entry #location   writes a `Location`
+    entry #value   writes a `Value` with its tag byte
+    entry #untaggedValue   writes a `Value` with no tag, for a field write or a primitive array region
+    entry #modifier   writes a `Modifier`: its modkind byte then its payload
+    entry #bytes   appends raw bytes
+    entry #data   the bytes written so far, as `Data`
+  entry .Event   the events a VM sends back, decoded from a Composite command
+    detail
+        `VmStart(request, thread)`, `VmDeath(request)`, `ThreadStart` and `ThreadDeath`
+        (`request, thread`), `Breakpoint`, `SingleStep`, `MethodEntry` and `MethodExit`
+        (`request, thread, location`), `Thrown(request, thread, location, exception,
+        catchLocation)`, `FieldAccess(request, thread, location, tag, cls, field, obj)`,
+        `FieldModified(…, obj, incoming)`, `ClassPrepared(request, thread, tag, cls, signature,
+        status)` and `Unknown(kind, request)`. Only the kinds this debugger requests are
+        modelled in full: an unrecognised kind decodes as `Unknown` and ends the composite,
+        since its payload length is unknown and the stream cannot be resynced within the
+        packet (the next packet is unaffected, being length-framed). `request` is the id of the
+        event request which caused the event, `0` for an automatic one such as `VmStart`.
+    entry .Composite   one Composite command: a suspend policy and the events it carries
+      detail
+          JDWP suspends once per composite, by its `policy`, and the dispatcher resumes it
+          once; a composite no handler claims is handed to `Debug#events` whole.
+      entry #policy   how much of the VM the composite suspended
+      entry #events   the events, in the order the VM sent them
+    entry .composite   decodes a composite from a reader positioned at a Composite command's payload
+  entry .Packet   a complete JDWP packet: id, flags, error code, command set, command and body
+    detail
+        The 4-byte length prefix counts the whole packet, header included; the `flags` high bit
+        marks a reply, which carries a 2-byte error code where a command carries a 1-byte
+        command set and a 1-byte command. `Packet.command` frames a command, `Packet.reply` a
+        reply (as a fake VM in a test does), and `Packet.decode` reads one back.
+    entry #id   the packet id, which correlates a reply with its command
+    entry #flags   the flag byte; the high bit marks a reply
+    entry #code   a reply's error code, zero for success; zero for a command
+    entry #commandSet   a command's set number; zero for a reply
+    entry #command   a command's number within its set; zero for a reply
+    entry #body   the payload after the eleven-byte header
+    entry #reply   whether the packet is a reply
+    entry .headerLength   eleven: the bytes before the payload
+    entry .command   frames a command packet from an id, a set, a command number and a body
+    entry .reply   frames a reply packet from an id, an error code (non-zero for failure) and a body
+    entry .decode   decodes one complete packet, exactly its own length of bytes
+  entry .Connection   the wire-level client: frames and correlates packets over a duplex channel
+    detail
+        A `Connection` owns the pumps a session needs: a single writer task drains outgoing
+        packets so writes never interleave, a reader task reassembles length-framed packets and
+        fulfils the promise each reply settles or enqueues each composite, and a dispatcher task
+        runs the registered handlers — never the reader, so a handler's own command cannot wait
+        on the task which must deliver its reply. A handler which issues a command pumps the
+        composite queue re-entrantly while it waits, since an invoked method can raise an
+        event (a class prepare during linking) which suspends the very thread running the
+        invoke, and only the dispatcher can settle it.
+
+        It is a `SharedCapability`, driven by its three tasks and the session's thread at once,
+        with every piece of its state synchronised. `Debug` wraps one; it is reached directly
+        for the commands the session does not expose, as the `Evaluator` does to allocate an
+        array, intern a string and invoke `defineClass` in the debuggee. The command methods
+        are named for the specification's, grouped by command set, and each takes a
+        `Tactic[Debugger.Error]` through which a reply's error code is raised.
+    refer vivisection.Debug
+    entry #sizes   the identifier widths negotiated at the start of the session
+    entry #request   frames and issues a command, handing back a reader over the reply's payload
+        `request(set, command)(write)` lends a `Writer` to `write`, sends the packet, awaits
+        the reply and returns a `Reader^` positioned at its payload. A failed reply raises a
+        `Debugger.Error` with the VM's reason and the detail `command (set, command)`, and an
+        empty reader is returned so that decoding degrades rather than crashes.
+    entry #version   `VirtualMachine.Version` (1, 1): the VM's version
+    entry #allClasses   `VirtualMachine.AllClasses` (1, 3): every loaded reference type
+        Enumerates the whole VM, so it must not be called while a thread stands suspended
+        holding a class-loading lock (at a `ClassPrepare` event): use `Connection#classesBySignature`.
+    entry #classesBySignature   `VirtualMachine.ClassesBySignature` (1, 2): the loaded classes with exactly one JNI signature
+        One per defining loader. Safe at a `ClassPrepare` event, unlike `Connection#allClasses`.
+    entry #allThreads   `VirtualMachine.AllThreads` (1, 4): every thread
+    entry #suspendAll   `VirtualMachine.Suspend` (1, 8): suspends every thread
+    entry #resumeAll   `VirtualMachine.Resume` (1, 9): resumes every thread
+    entry #dispose   `VirtualMachine.Dispose` (1, 6): ends the debugging session, clearing every request
+    entry #createString   `VirtualMachine.CreateString` (1, 11): interns a string in the debuggee, for an invocation
+    entry #capabilitiesNew   `VirtualMachine.CapabilitiesNew` (1, 17): the flags named in `Capabilities`
+    entry #signature   `ReferenceType.Signature` (2, 1): a type's JNI signature
+    entry #sourceFile   `ReferenceType.SourceFile` (2, 7): the source file a type was compiled from, by basename
+    entry #classLoader   `ReferenceType.ClassLoader` (2, 2): the loader which defined a type, or the null reference for a bootstrap class
+    entry #smap   a class's parsed SMAP, memoized for the session, or `Unset` if it has none
+        Parsed by digression from `Connection#sourceDebugExtension`; the absence is memoized too, so a
+        class with no debug extension (or a VM without `canGetSourceDebugExtension`) costs one
+        round trip, ever. This is what makes positions and steps inline-aware.
+    entry #sourceDebugExtension   `ReferenceType.SourceDebugExtension` (2, 12): the raw SMAP text
+    entry #methods   `ReferenceType.Methods` (2, 5): a type's methods
+    entry #fields   `ReferenceType.Fields` (2, 4): a type's own fields, inherited ones excluded
+    entry #constantPool   `ReferenceType.ConstantPool` (2, 18): the names a class's method references carry, memoized
+        Returns the library's own parsed pool, which the step filter consults to recognise a
+        forwarder by its callee's name; it is package-private, so a caller outside the library
+        can only pass it along. Needs `canGetConstantPool`; without it the pool is empty.
+    entry #bytecodes   `Method.Bytecodes` (6, 3): a method's bytecode, as a reader at its first opcode
+        Needs `canGetBytecodes`.
+    entry #superclass   `ClassType.Superclass` (3, 1): the immediate superclass, or the empty reference for `Object`
+        Walking it reaches inherited fields, which `Connection#fields` omits; `Halt#exceptionInfo` walks
+        it to find `Throwable`'s `detailMessage`.
+    entry #invokeStatic   `ClassType.InvokeMethod` (3, 3): invokes a static method on a suspended thread
+        Single-threaded: every other thread stays suspended for the duration, so a method which
+        needs another thread would deadlock. Returns the `Invocation` with its result and any
+        exception.
+    entry #newInstance   `ClassType.NewInstance` (3, 4): constructs an object on a suspended thread
+    entry #newArray   `ArrayType.NewInstance` (4, 1): allocates an array of a given length in the debuggee
+    entry #lineTable   `Method.LineTable` (6, 1): a method's bytecode-to-line mapping
+    entry #variableTable   `Method.VariableTable` (6, 2): a method's local-variable table, or `Unset` without debug information
+        A class compiled without local-variable debug information makes the VM answer
+        `AbsentInformation` (101), decoded as `Unset` rather than raised, since callers degrade
+        to captured and field state.
+    entry #referenceType   `ObjectReference.ReferenceType` (9, 1): an object's runtime type, with its tag
+    entry #fieldValues   `ObjectReference.GetValues` (9, 2): the values of an object's fields
+    entry #setFieldValues   `ObjectReference.SetValues` (9, 3): writes an object's fields, untagged
+    entry #invokeMethod   `ObjectReference.InvokeMethod` (9, 6): invokes an instance method on a suspended thread
+        Single-threaded, as `Connection#invokeStatic`. JDWP invocation ignores access control, which is
+        how the `Evaluator` calls a class loader's protected `defineClass`.
+    entry #reflectedType   `ClassObjectReference.ReflectedType` (17, 1): the reference type a `java.lang.Class` object stands for
+    entry #stringValue   `StringReference.Value` (10, 1): a string object's text
+    entry #threadName   `ThreadReference.Name` (11, 1): a thread's name
+    entry #suspendThread   `ThreadReference.Suspend` (11, 2): suspends one thread
+    entry #resumeThread   `ThreadReference.Resume` (11, 3): resumes one thread
+    entry #threadStatus   `ThreadReference.Status` (11, 4): a thread's run and suspend status
+    entry #frameCount   `ThreadReference.FrameCount` (11, 7): the depth of a suspended thread's stack
+    entry #frames   `ThreadReference.Frames` (11, 6): a range of a suspended thread's frames, with their locations
+    entry #arrayLength   `ArrayReference.Length` (13, 1): an array's length
+    entry #arrayValues   `ArrayReference.GetValues` (13, 2): a range of an array's elements
+    entry #setArrayValues   `ArrayReference.SetValues` (13, 3): writes a range of an array's elements, untagged
+    entry #eventRequestSet   `EventRequest.Set` (15, 1): installs an event request, returning its id
+        Takes the `EventKind`, the `SuspendPolicy` and the `Modifier`s; the id is what
+        `Connection#eventRequestClear` and `Debug#clear` take.
+    entry #eventRequestClear   `EventRequest.Clear` (15, 2): cancels an event request by kind and id
+    entry #slotValues   `StackFrame.GetValues` (16, 1): the values of a frame's slots, each requested with its type's tag
+    entry #setSlotValues   `StackFrame.SetValues` (16, 2): writes a frame's slots
+    entry #thisObject   `StackFrame.ThisObject` (16, 3): a frame's `this`, the null object in a static or native frame
+    entry #popFrames   `StackFrame.PopFrames` (16, 4): discards frames up to and including one, so resuming re-executes the call
+        Needs `canPopFrames` and a thread suspended by an event.
+    entry .Reply   the outcome of a command: `Ok(data)` with the payload, or `Failed(code)` with the VM's error code
+        A dedicated type rather than an `Either`, so the reply channel carries no
+        `Nothing`-typed payload. `Failed(-1)` is a lost connection.
+    entry .Slot   holds a breakpoint handler, as `Halt => Unit`, in the connection's registry
+      hidden
+      detail
+          Not for direct use: a holder which keeps a session-capturing handler out of the
+          capture-tracked world, since the handler lives and dies with the session. Its `run`
+          is the handler.
+    entry .PrepareSlot   holds a class-prepare handler, as `Event.ClassPrepared => Unit`, in the registry
+      hidden
+      detail
+          Not for direct use: the class-prepare counterpart of `Slot`, receiving the raw event
+          since a prepared class has no stopped frame to inspect. Its `run` is the handler.
+
+entry .evaluator   opens a compiler session over the debuggee's classpath and lends an `Evaluator` at a stop
+    An extension on `Halt`, in `vivisection.eval`. `stop.evaluator(classpath) { eval ?=> … }`
+    starts a warm `Scalac[3.9]` session (with `-experimental`, since the debuggee's own types
+    and `Inspectable` use experimental features) over the `LocalClasspath` the debuggee was
+    launched with, builds a `Purview` over it, and lends an `Evaluator` for the block. The
+    session and the evaluator both die with the block, and neither can outlive the stop that
+    lent the halt. It needs a `Monitor`, a `System`, a `CompileEvent is Loggable`, and tactics
+    for `Async.Error`, `Compiler.Error` and `Debugger.Error`.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import logging.silentLogging
+    import strategies.throwUnsafely
+    import systems.javaBaseSystem
+
+    def total(classpath: LocalClasspath)(using Debug^, Monitor, Tactic[Debugger.Error]): Unit =
+      debug.breakpoint(t"Main.scala", Ordinal.uniary(42)): stop ?=>
+        stop.evaluator(classpath): eval ?=>
+          Out.println(eval.inspect(t"total"))
+          eval(t"total + 1")
+    ```
+
+    The classpath must be the one the debuggee's classes were compiled on, TASTy included: the
+    evaluator compiles against it, and `Purview` reads declared types from its TASTy. Under a
+    test host, that is `LocalClasspath.of(Classloader[Main.type])`, not the `java.class.path`
+    property.
+
+entry .Evaluator   evaluates Scala expressions at a suspended frame, by compiling and injecting a class
+  detail
+      An `Evaluator` mirrors the stopped frame's visible locals as the constructor parameters of
+      a freshly-named synthetic class in the frame's own package, compiles it against the
+      debuggee's classpath in the warm compiler session lent by `evaluator`, ships every
+      classfile into the debuggee as a `byte[]` handed to the frame's class loader's
+      `defineClass` (JDWP has no define-class command, and its invocation ignores access
+      control), instantiates the class with the locals' live values, and invokes its `run` on
+      the stopped thread. So `total + 1` in a handler means what it would mean at that line of
+      the source.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.{Variable as _, *}
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+
+      def evaluate(classpath: LocalClasspath)(using Debug^, Monitor, Tactic[Debugger.Error]): Unit =
+        debug.breakpoint(t"Main.scala", Ordinal.uniary(42)): stop ?=>
+          stop.evaluator(classpath): eval ?=>
+            eval(t"total + 1") match
+              case vivisection.Variable.Snapshot.Str(_, text) => Out.println(text)
+              case other                                      => Out.println(other.inspect)
+
+            eval.assign(t"total", t"total*2")
+      ```
+
+      Each local is typed at its *declared* type where `Purview` can recover it from TASTy —
+      an opaque `Port` rather than the `Int` it erases to — so `inspect` selects the
+      `Inspectable` instance the programmer's own code would, and `assign` lets the compiler
+      enforce assignability. Only a method's value parameters and its body's `val`s are
+      resolved this way; anything else keeps its erased type. An `Evaluator` is an
+      `ExclusiveCapability`, confined to the `evaluator` block. Every synthetic class is named
+      distinctly, since a compiler session's retained symbol table forbids redefining a name.
+  refer vivisection.evaluator
+  refer vivisection.Purview
+  refer vivisection.Halt
+  entry #apply   evaluates an expression and returns its `String.valueOf` form as a snapshot
+      `eval(expression)` compiles `String.valueOf((expression): Any)`, runs it, and returns a
+      `Variable.Snapshot.Str` with the text — one decode path for every result type — or a
+      `Primitive` if the invocation produced no string (a void or failed run).
+  entry #assign   evaluates an expression at a variable's declared type and writes the result into it
+      `assign(binding, expression)` finds the visible variable named `binding`, types the
+      synthetic `run` at its declared (or, failing that, erased) type so the compiler enforces
+      assignability and returns a primitive as a primitive, and writes the result through
+      `Halt#assign`, routed by the variable's provenance. A frontend's variable edit.
+  entry #completion   the synthetic source a completion host should typecheck, and the fragment's offset in it
+      `completion(fragment)` stages — without compiling — the same class `apply` would, with
+      the console fragment as the `run` body at `Any`, and returns the source with the offset at
+      which the fragment begins. No compiler runs here: the host typechecks the source at a
+      caret past the offset with a typechecking `Highlight` over the debuggee's classpath and
+      rebases the replacement span by the same offset, so completion on a local resolves
+      against its declared type, extension methods and givens included. `Unset` with no top
+      frame.
+  entry #elaborations   the call sites of the frame's method which the compiler elaborated, from the debuggee's TASTy
+      Each `prophesy.Elaboration` records what the typer inserted at a call — inferred type
+      arguments and synthesized `using` arguments — read from the unpickled tree, so it reflects
+      what actually runs. The raw material of a hover.
+  entry #variables   the frame's visible variables, each with its declared static type where TASTy supplies it
+      `Halt#variables` with `Variable#static` filled in through `Purview#rendered`: the
+      stenography rendering of each parameter's and body-local's declared type, capture sets
+      included. A binding whose type cannot be recovered keeps `Unset` there and its erased type
+      in `erased`.
+  entry #inspect   renders a visible binding through its `Inspectable` instance, resolved and run in the debuggee
+      `inspect(binding)` evaluates `(binding).inspect` with `spectacular` imported. Because the
+      synthetic class types the binding at its declared type, the summon is static — the
+      instance the programmer's own code would pick — so an opaque type renders through its
+      own notation rather than its representation's, and an array as `⦋…⦌` rather than its
+      `toString`.
+  entry .Injector   defines classfiles in a running debuggee over JDWP
+    detail
+        Built by the evaluator for one evaluation, over the connection, the stopped thread and
+        the target class loader. Each classfile is shipped as a `byte[]` allocated and filled
+        over the wire, then passed to the loader's protected `defineClass`; linking is lazy, so
+        order does not matter. Not constructed directly.
+    entry #define   defines one classfile by binary name, returning the reference type of the loaded class
+        Recovered from the `java.lang.Class` object `defineClass` hands back, so no lookup by
+        name is needed (the freshly-defined class may not yet appear in `allClasses`). `Unset`
+        when the define returned nothing.
+
+entry .Purview   recovers the declared Scala types of a frame's bindings from the debuggee's compiled TASTy
+  detail
+      A `Purview(classpath)` holds a standalone compiler context over the debuggee's
+      `LocalClasspath`, warmed once: the compiler's own symbol loader reads the classes' TASTy
+      off the classpath, and a binding's declared type is then read straight from its symbol —
+      a method's value parameters — or from its unpickled tree, for the `val`s in its body (a
+      later binding of a name shadows an earlier one, as at a stop). This is what lets a value
+      render through the instance its *declared* type selects: an opaque type through its own
+      `Inspectable` rather than its underlying representation's.
+
+      Every method degrades to an empty result on any failure — a class not on the classpath,
+      TASTy the compiler cannot read — since a debugger reads types opportunistically and must
+      never fail the frame. Types printed as `proscenium.Int` are normalised to the plain names
+      the synthetic evaluation class compiles under.
+  refer vivisection.Evaluator
+  entry #parameters   the compile-usable source type of each binding of a method, keyed by name
+      The compiler's own printed form, valid resolvable Scala, which the `Evaluator` uses to
+      type the synthetic class's parameters. `className` is the demangled runtime class
+      (`com.example.Main`) and `methodName` the method.
+  entry #elaborations   the call sites in a method's body the typer elaborated, as `prophesy.Elaboration`s
+      Inferred type arguments and synthesized `using` arguments, read from the unpickled tree
+      with its source positions, so written arguments are told from inferred ones.
+  entry #rendered   the human-facing rendering of each binding's declared type, through stenography
+      Capture-set-aware and source-accurate, keyed by name: what a debugger shows as
+      `Variable#static`.
+
+entry .Namer   names an inline position from the TASTy beside the debuggee's classfiles
+  detail
+      A `Namer(classpath)` answers, for a `ScalaClass`-stratum class name and an origin
+      position recorded in a class's SMAP, the definition the programmer wrote there — owner
+      and name, demangled as a stack trace renders them — so an inline frame can be named for
+      the method it came from rather than its class. A classloader over the launch classpath
+      fetches `.tasty` resources only; it never defines debuggee classes in the debugger's JVM.
+      Lookups are memoized per class, absences included; a miss walks outwards through
+      `$`-joined enclosing classes, since nested and module classes pickle under their
+      top-level class. The DAP adapter builds one at `launch`.
+  entry #define   the definition at a line of a class's source, as `owner.name`, or `Unset`
+      `define(cls, path, line)` takes the raw class name a `Halt.Position` carries in `cls`,
+      the source path, and the line. `Unset` when the class has no TASTy on the classpath, when
+      its TASTy was compiled from a different path than the SMAP records, or when no definition
+      covers the line.
+
+entry .Dap   the Debug Adapter Protocol: a stdio server over a session, and the protocol's message types
+  detail
+      `Dap.listen` serves a debug session to an editor — VS Code, or any other which speaks the
+      protocol — over `Content-Length`-framed JSON on the standard streams. The editor's
+      `launch` (by main class and classpath) or `attach` (by port) opens the session;
+      `setBreakpoints`, `setFunctionBreakpoints`, `setExceptionBreakpoints` and
+      `setDataBreakpoints` place breakpoints before the program runs; `configurationDone`
+      resumes it; `threads`, `stackTrace`, `scopes` and `variables` inspect a stop;
+      `continue`, `next`, `stepIn`, `stepOut` and `pause` drive threads; `evaluate`,
+      `setVariable`, `setExpression`, `completions` and `exceptionInfo` go through the
+      `Evaluator`; and `restartFrame` pops a frame. Inline-aware positions appear as `subtle`
+      frames named for the definition the programmer wrote, where the launch classpath's TASTy
+      can name them.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import environments.javaBaseEnvironment
+      import errorDiagnostics.stackTracesDiagnostics
+      import internetAccess.online
+      import logging.silentLogging
+      import probates.awaitProbate
+      import socketBackends.javaBaseSockets
+      import stdios.javaLangSystemStdio
+      import strategies.throwUnsafely
+      import systems.javaBaseSystem
+      import threads.virtualThreads
+      import workingDirectories.javaBaseWorkingDirectory
+
+      def serve(): Unit = supervise:
+        Dap.listen()
+      ```
+
+      The rest of the object is the protocol's message model, the subset this adapter speaks:
+      argument types are `Json.Decodable` (they arrive), body types `Json.Encodable` (they
+      leave), each with its given in its companion, and an `Unset` member is simply absent on
+      the wire. Field names mirror the specification's exactly, `camelCase` and the
+      reserved-word `type` included. They are of use to a program which drives or fakes a DAP
+      client, as the library's tests do; a program debugging a JVM uses `Debug` directly.
+  refer vivisection.Debug
+  refer vivisection.Debuggee
+  entry .listen   serves the protocol over the ambient standard streams until the input is exhausted
+      The canonical stdio transport a frontend launches. All outgoing traffic flows through one
+      writer task, so responses and events never interleave, and each request is handled in
+      arrival order on the calling thread. `observer` sees every message's raw text in both
+      directions (it runs on the writer task, so it may capture only shared capabilities). The
+      `Stdio` is consumed: the writer task owns the standard streams, and the caller may not use
+      them after calling `listen`. Needs the launch givens of `Debuggee.Sessional`, a `System`,
+      a `CompileEvent is Loggable`, and tactics for `Async.Error`, `Framing.Error` (a malformed
+      frame) and `Truncation.Error`. A client which drops the connection without a `disconnect`
+      still releases the debuggee when the input ends.
+  entry .Envelope   any DAP message, read only for the members which decide how it is handled
+    detail
+        `seq`, `type`, `command` and `event`, all optional, so every message decodes;
+        `Dap.envelope` reads one from any JSON, defaulting to an empty envelope.
+    entry #seq   the message's sequence number
+    entry #type   `request`, `response` or `event`
+    entry #command   a request's command name
+    entry #event   an event's name
+    entry .decodable   reads an envelope from JSON
+  entry .envelope   the envelope of any JSON message; an empty one if it does not decode
+  entry .response   builds a successful response to a request, with a sequence number and an optional body
+  entry .failure   builds a failed response to a request, with a sequence number and a message
+  entry .event   builds an event message by name, with a sequence number and an optional body
+  entry .ExceptionFilter   an exception breakpoint filter the adapter advertises: its id, label and default
+    entry #filter   the filter's id: `uncaught` or `caught`
+    entry #label   the label shown to the user
+    entry #default   whether the filter starts enabled
+    entry .encodable   writes a filter to JSON
+  entry .exceptionFilters   the two filters advertised: `uncaught` (on by default) and `caught`
+  entry .Capabilities   what the adapter advertises in its `initialize` response
+    detail
+        Configuration-done, function, data and exception breakpoints, `setVariable`,
+        `setExpression`, `exceptionInfo`, `restartFrame`, completions (triggered by `.`) and
+        evaluate-for-hovers, all `true` by default; an absent flag reads as false.
+    entry #supportsConfigurationDoneRequest   the client should send `configurationDone` after its breakpoints
+    entry #supportsFunctionBreakpoints   `setFunctionBreakpoints` is handled
+    entry #supportsDataBreakpoints   `dataBreakpointInfo` and `setDataBreakpoints` are handled
+    entry #supportsSetVariable   `setVariable` is handled
+    entry #supportsSetExpression   `setExpression` is handled
+    entry #supportsExceptionInfoRequest   `exceptionInfo` is handled
+    entry #supportsRestartFrame   `restartFrame` is handled
+    entry #supportsCompletionsRequest   `completions` is handled
+    entry #supportsEvaluateForHovers   `evaluate` with a `hover` context is handled
+    entry #completionTriggerCharacters   the characters which trigger completion: `.`
+    entry #exceptionBreakpointFilters   the filters offered: `Dap.exceptionFilters`
+    entry .encodable   writes the capabilities to JSON
+  entry .LaunchArguments   a `launch` request's arguments: a main class and a classpath, mirroring `Debuggee`
+    detail
+        Adapter-defined by the specification. The adapter launches `java -classpath
+        <classpath> <mainClass>` with the agent on a free port, suspended at startup.
+    entry #mainClass   the class whose `main` to run
+    entry #classpath   the classpath, as `java.class.path` text
+    entry .decodable   reads the arguments from JSON
+  entry .AttachArguments   an `attach` request's arguments: a port, and optionally a host name
+    entry #port   the port the VM's agent listens on
+    entry #hostName   the host, `localhost` by default
+    entry .decodable   reads the arguments from JSON
+  entry .Source   a source reference: a name and a path, either optional
+    entry #name   the file's basename
+    entry #path   the file's path
+    entry .decodable   reads a source from JSON
+    entry .encodable   writes a source to JSON
+  entry .SourceBreakpointSpec   one requested source breakpoint: its line
+    entry #line   the one-based line
+    entry .decodable   reads a spec from JSON
+  entry .SetBreakpointsArguments   a `setBreakpoints` request: the source and every breakpoint wanted in it
+    detail
+        The protocol's replace semantics: the request's breakpoints replace every breakpoint
+        previously set in that source.
+    entry #source   the source file
+    entry #breakpoints   the breakpoints wanted, as `SourceBreakpointSpec`s
+    entry .decodable   reads the arguments from JSON
+  entry .SetExceptionBreakpointsArguments   a `setExceptionBreakpoints` request: the enabled filter ids
+    entry #filters   `uncaught`, `caught`, both or neither
+    entry .decodable   reads the arguments from JSON
+  entry .FunctionBreakpointSpec   one requested function breakpoint: a `Class.method` name
+    entry #name   the runtime class and method, `com.example.Ledger.deposit`
+    entry .decodable   reads a spec from JSON
+  entry .SetFunctionBreakpointsArguments   a `setFunctionBreakpoints` request: every function breakpoint wanted
+    entry #breakpoints   the breakpoints wanted, as `FunctionBreakpointSpec`s
+    entry .decodable   reads the arguments from JSON
+  entry .DataBreakpointInfoArguments   a `dataBreakpointInfo` request: a variable name and its scope reference
+    detail
+        Answered with a `DataBreakpointInfoBody` whose `dataId` is `owner:field` for a member
+        field, the only kind of variable a data breakpoint supports.
+    entry #name   the variable's name
+    entry #variablesReference   the scope the variable is in
+    entry .decodable   reads the arguments from JSON
+  entry .DataBreakpointSpec   one requested data breakpoint: a `dataId` of the form `class:field`
+    entry #dataId   the id a `dataBreakpointInfo` response gave
+    entry .decodable   reads a spec from JSON
+  entry .SetDataBreakpointsArguments   a `setDataBreakpoints` request: every data breakpoint wanted
+    entry #breakpoints   the breakpoints wanted, as `DataBreakpointSpec`s
+    entry .decodable   reads the arguments from JSON
+  entry .ThreadArguments   a request naming a thread: `next`, `stepIn`, `stepOut`, `pause`, `exceptionInfo`
+    entry #threadId   the adapter's handle for the thread
+    entry .decodable   reads the arguments from JSON
+  entry .StackTraceArguments   a `stackTrace` request: the thread, and optionally a frame range
+    entry #threadId   the adapter's handle for the thread
+    entry #startFrame   the first frame wanted
+    entry #levels   how many frames are wanted
+    entry .decodable   reads the arguments from JSON
+  entry .FrameArguments   a request naming a frame: `scopes` and `restartFrame`
+    entry #frameId   the adapter's handle for the frame
+    entry .decodable   reads the arguments from JSON
+  entry .VariablesArguments   a `variables` request: the scope or structure to expand
+    entry #variablesReference   the handle a `scopes` or `variables` response gave
+    entry .decodable   reads the arguments from JSON
+  entry .SetVariableArguments   a `setVariable` request: the scope, the variable's name and its new value as text
+    detail
+        The value is parsed at the variable's erased type: the primitives, plus a fresh remote
+        string. Anything richer belongs to `setExpression`.
+    entry #variablesReference   the scope the variable is in
+    entry #name   the variable's name
+    entry #value   the new value, as text
+    entry .decodable   reads the arguments from JSON
+  entry .EvaluateArguments   an `evaluate` request: the expression, the frame, and the context it is asked in
+    detail
+        A `hover` context never runs debuggee code, since it fires on cursor movement: it
+        answers only with a visible local's value and static type, or the elaboration of a call
+        named in the stopped method. Every other context (`repl`, `watch`, absent) evaluates
+        through the `Evaluator`.
+    entry #expression   the expression
+    entry #frameId   the frame to evaluate against
+    entry #context   `hover`, `repl`, `watch`, or absent
+    entry .decodable   reads the arguments from JSON
+  entry .CompletionsArguments   a `completions` request: the console text, the caret column and the frame
+    detail
+        `column` is a one-based character position within `text`; `line` is accepted but
+        unused, since the adapter completes single-line console input.
+    entry #text   the console text so far
+    entry #column   the one-based caret position in `text`
+    entry #frameId   the frame whose locals are in scope
+    entry #line   accepted and unused
+    entry .decodable   reads the arguments from JSON
+  entry .SetExpressionArguments   a `setExpression` request: a binding, an expression for its new value, and the frame
+    entry #expression   the binding to assign to
+    entry #value   the expression whose value to assign
+    entry #frameId   the frame
+    entry .decodable   reads the arguments from JSON
+  entry .Breakpoint   a breakpoint as reported to the client: verified or not, with its id, line and message
+    entry #verified   whether the breakpoint has bound to a location
+    entry #id   the adapter's id for it
+    entry #line   its line
+    entry #message   why it is unverified, if given
+    entry .encodable   writes a breakpoint to JSON
+  entry .BreakpointsBody   the body of a `setBreakpoints`-family response: one `Breakpoint` per request
+    entry #breakpoints   the breakpoints, in the order requested
+    entry .encodable   writes the body to JSON
+  entry .DataBreakpointInfoBody   the body of a `dataBreakpointInfo` response: the data id, a description and the access types
+    entry #dataId   `owner:field`, or `Unset` when the variable supports no data breakpoint
+    entry #description   a description for the user, or the reason none is supported
+    entry #accessTypes   `write`, the only access type supported
+    entry .encodable   writes the body to JSON
+  entry .ThreadInfo   a thread as reported to the client: its handle and name
+    entry #id   the adapter's handle
+    entry #name   the thread's name
+    entry .encodable   writes the thread to JSON
+  entry .ThreadsBody   the body of a `threads` response
+    entry #threads   every thread
+    entry .encodable   writes the body to JSON
+  entry .StackFrame   a frame as reported to the client: handle, name, line, column, source and presentation hint
+    detail
+        One per *logical* position: a physical frame inside inlined code expands into its
+        inline origins, hinted `subtle`, followed by the frame itself at its real line.
+    entry #id   the adapter's handle
+    entry #name   the method, or the inlined definition the programmer wrote
+    entry #line   the source line
+    entry #column   the column, always `0`
+    entry #source   the source file, if known
+    entry #presentationHint   `subtle` for an inline origin
+    entry .encodable   writes the frame to JSON
+  entry .StackTraceBody   the body of a `stackTrace` response: the frames and their total
+    entry #stackFrames   the frames, innermost first
+    entry #totalFrames   the number of frames
+    entry .encodable   writes the body to JSON
+  entry .Scope   a variable scope: its name, its handle and whether expanding it is expensive
+    entry #name   `Locals`, the one scope offered
+    entry #variablesReference   the handle a `variables` request takes
+    entry #expensive   always `false`
+    entry .encodable   writes the scope to JSON
+  entry .ScopesBody   the body of a `scopes` response
+    entry #scopes   the scopes of the frame
+    entry .encodable   writes the body to JSON
+  entry .VariableInfo   a variable as reported to the client: name, rendered value, expansion handle and type
+    entry #name   the variable's name
+    entry #value   its rendered value
+    entry #variablesReference   a handle to expand it, or `0` for a leaf
+    entry #type   its static type where recovered, else its erased type
+    entry .encodable   writes the variable to JSON
+  entry .VariablesBody   the body of a `variables` response
+    entry #variables   the variables of the scope or structure
+    entry .encodable   writes the body to JSON
+  entry .SetVariableBody   the body of a `setVariable` or `setExpression` response: the value as written
+    entry #value   the new value, as text
+    entry .encodable   writes the body to JSON
+  entry .EvaluateBody   the body of an `evaluate` response: the result and an expansion handle
+    entry #result   the result, as text
+    entry #variablesReference   a handle to expand it, or `0`
+    entry .encodable   writes the body to JSON
+  entry .CompletionItem   one completion: its label, kind, and the span of the text it replaces
+    detail
+        `start` and `length` delimit the region of the request's `text` the completion
+        replaces, in the same one-based units as the request's `column`; when omitted, the
+        client inserts `label` at the requested column.
+    entry #label   the completion text
+    entry #type   `method`, `class`, `module`, `keyword` or `variable`
+    entry #start   where the replaced region begins, one-based
+    entry #length   how much is replaced
+    entry .encodable   writes the item to JSON
+  entry .CompletionsBody   the body of a `completions` response
+    entry #targets   the completions
+    entry .encodable   writes the body to JSON
+  entry .ExceptionInfoBody   the body of an `exceptionInfo` response: the exception's class, break mode and message
+    entry #exceptionId   the exception's class name
+    entry #breakMode   `always` for a caught exception, `unhandled` for an uncaught one
+    entry #description   the exception's message
+    entry .encodable   writes the body to JSON
+  entry .ContinueBody   the body of a `continue` response: whether every thread continued
+    entry #allThreadsContinued   always `true`
+    entry .encodable   writes the body to JSON
+  entry .StoppedBody   the body of a `stopped` event: the reason, the thread, and which breakpoints hit
+    detail
+        The reasons sent are `breakpoint`, `function breakpoint`, `data breakpoint`,
+        `exception`, `step`, `pause` and `restart`.
+    entry #reason   why the thread stopped
+    entry #threadId   the adapter's handle for the thread
+    entry #allThreadsStopped   whether every thread stopped; `false` for a step or pause
+    entry #hitBreakpointIds   the ids of the breakpoints hit
+    entry .encodable   writes the body to JSON
+  entry .ContinuedBody   the body of a `continued` event: the thread and whether every thread continued
+    entry #threadId   the adapter's handle for the thread
+    entry #allThreadsContinued   whether every thread continued
+    entry .encodable   writes the body to JSON
+  entry .OutputBody   the body of an `output` event: the debuggee's output and its category
+    entry #output   the text
+    entry #category   `stdout` or `stderr`
+    entry .encodable   writes the body to JSON
+  entry .ExitedBody   the body of an `exited` event: the debuggee's exit code
+    entry #exitCode   the exit code
+    entry .encodable   writes the body to JSON
+  entry .BreakpointEventBody   the body of a `breakpoint` event: a reason and the breakpoint's new state
+    detail
+        Sent with reason `changed` when a deferred source breakpoint binds, so the client marks
+        it verified.
+    entry #reason   `changed`
+    entry #breakpoint   the breakpoint's new state
+    entry .encodable   writes the body to JSON
+
+entry .DapServer   a runnable Debug Adapter Protocol server over stdio, for pointing an editor at
+  detail
+      The `demo` component's entry point, not part of the library surface: its `main` runs
+      `Dap.listen()` inside a `cli` and a supervision scope, with the JVM's own socket, system,
+      environment and working-directory givens, so an editor configured with a generic DAP
+      launch configuration can drive a vivisection session — launching a JVM by main class and
+      classpath, setting breakpoints, stepping, and inspecting variables rendered through their
+      `Inspectable` instances.
+  refer vivisection.Dap
+  entry .main   the JVM entry point: serves `Dap.listen()` on the standard streams until the input ends

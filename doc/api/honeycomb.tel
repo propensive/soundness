@@ -1,0 +1,2672 @@
+tel 1.0
+
+base honeycomb
+import soundness
+
+info   HTML as typed, immutable values: built from tags, parsed from text, matched, and rendered
+detail
+    _Honeycomb_ represents HTML as a tree of immutable values whose types carry what the HTML
+    specification says about them. An element is built by applying a tag to its attributes
+    and its children, and the construction is checked as the code compiles: a `<br>` given
+    children, a `<p>` given a `src` attribute, or an `<li>` placed in a `<div>` is a compile
+    error rather than malformed output. The same values are read back from text with
+    `read[Html]` and `load[Html]`, matched with the `h"…"` interpolator as a pattern, joined
+    and transformed with `+`, `^+`, `+^` and attribute assignment, and rendered with `show` or
+    streamed from a `Document[Html]`.
+
+    The central type is `Html`: a node or a sequence of nodes. Its companion holds the node
+    kinds — `Html.Element`, `Html.Text`, `Html.Comment`, `Html.Doctype`, and `Html.Fragment`
+    for a sequence — together with every given which parses, renders and converts HTML, the
+    parser's `Html.Issue` and `Html.Position`, and the `Html.Path` which locates an element in
+    a document loaded under `parsing.trackPositions`. A value's static type can say far more
+    than `Html`: `Html of "br"` records the tag, `Html of Flow` a content category, `Html.Element
+    of "ul" over "li"` what the element may contain, and `Html in Whatwg` which specification
+    it conforms to.
+
+    The vocabulary comes from a **DOM**, a `Dom` value chosen by importing one of the
+    `htmlDoms` givens by name. `Whatwg` is the WHATWG HTML Living Standard — roughly 110 tag
+    objects (`Div`, `P`, `Img`, …) in its companion, each typed with the children and
+    attributes it admits, the attribute types (`Whatwg.Url`, `Whatwg.PositiveInt`, …), the
+    content categories (`Flow`, `Phrasing`, `Metadata`, …) and the named character references
+    — and `Html4Transitional` is the HTML 4.01 Transitional dialect, with its deprecated
+    presentational tags and attributes. The `Tag` class is what every tag object is; `Attribute`,
+    `Attributive` and `Unattributive` type each attribute's value; `Renderable` lets a value of
+    any type stand where HTML is expected.
+
+    ```scala
+    import soundness.*
+    import htmlDoms.whatwg
+    import htmlDoms.whatwg.*
+    import strategies.throwUnsafely
+    import attributives.textAttributive
+
+    val page = Html(Head(Title("Hello")), Body(P("Hello world"), Img(src = t"dog.jpg")))
+    page.show                                   // t"<html><head>…</head><body>…</body></html>"
+    h"<ol><li>Alpha<li>Beta</ol>" == Ol(Li("Alpha"), Li("Beta"))
+    t"<p>Hello <em>world</em></p>".read[Html of "p"]
+    t"<html><body><p>Hi</p></body></html>".load[Html]
+    ```
+
+    Reading needs a `Dom` and, unless `recoveries.permissiveRecovery` is in scope, a
+    `Tactic[Parse.Error]`; a parse failure is `Parse.Error` (error 594), whose position is an
+    `Html.Position` and whose issue an `Html.Issue`. `strategies.throwUnsafely` throws it.
+
+    The library is one source set, `honeycomb.core`, with no platform-specific component. The
+    choice packages are imported by name, since `import soundness.*` does not import givens:
+
+    - `htmlDoms` — `whatwg` and `html4Transitional`, the vocabulary a parse and a tag
+      application use.
+    - `formatting` — `indentedHtmlFormatting` (the default) and `compactHtmlFormatting`, how
+      a `Document[Html]` is laid out when streamed.
+    - `attributives` — `textAttributive`, which makes a `Text` acceptable for every
+      attribute, whatever its declared type.
+    - `stylesheets` — `uncheckedClasses`, which lets `P.info(…)` name any CSS class.
+    - `recoveries` — `permissiveRecovery`, which selects the recovering parser.
+    - `construables` — `htmlConstruable`, which construes a `text/html` body as a
+      `Document[Html]`.
+
+    Everything is exported to the `soundness` umbrella, and each choice package merges with
+    the umbrella's package of the same name. The node types are reached as `Html.Element`,
+    `Html.Fragment` and so on: `import Html.*` is discouraged, since it would shadow
+    `anticipation.Text` with `Html.Text`.
+
+refer honeycomb.Html
+refer honeycomb.Whatwg
+refer honeycomb.Tag
+refer honeycomb.Renderable
+refer honeycomb.htmlDoms
+
+entry .Html   an HTML value: one node or a sequence of nodes, typed by tag, content and specification
+  detail
+      `Html` is the sealed trait every HTML value conforms to. A value is either an
+      `Html.Node` — exactly one `Html.Element`, `Html.Text`, `Html.Comment` or `Html.Doctype` —
+      or an `Html.Fragment`, a sequence of nodes with no single parent. Because HTML is a text
+      format, one node is rarely a necessary constraint, so `Html` admits sequences everywhere
+      and `Html.Node` marks the few places where a single node is required. A fragment is
+      unwrapped when supplied as children, and a fragment of one node equals that node.
+
+      Three type members refine a value: `Topic`, the tag name (`Html of "br"`), or a union of
+      names, or a content category such as `Flow` or `Phrasing` from the DOM in force;
+      `Transport`, what the value may contain (`Html.Element of "ul" over "li"`); and `Form`,
+      the `Dom` it conforms to (`Html in Whatwg`). The library uses this precision internally;
+      applications rarely need more than `Html of Flow`.
+
+      The object `Html` is itself the `<html>` tag — a `Tag.Container` admitting `head` and
+      `body` — so a whole page is `Html(Head(…), Body(…))`, and `Html.doctype` is the
+      `<!DOCTYPE html>` header. Its companion also holds every given which parses, renders
+      and converts HTML: text and strings convert to `Html.Text` children, a `Renderable`
+      value converts to the HTML it renders, and the `Aggregable`, `Loadable`, `Streamable`,
+      `Showable` and `Inspectable` instances are what `read[Html]`, `load[Html]`,
+      `document.stream[Text]`, `show` and `inspect` resolve.
+
+      ```scala fuel
+      frame
+        label A bare element
+        code
+            import soundness.*
+            import htmlDoms.whatwg
+            import htmlDoms.whatwg.*
+            import attributives.textAttributive
+
+            val image = Img(src = t"puppy.jpg")                 // Html.Element of "img"
+      frame
+        label An attribute assigned, giving a new value
+        code
+            val described = image.alt = t"A young dog"          // <img src="puppy.jpg" alt="A young dog">
+      frame
+        label Children applied to a container
+        code
+            val figure = Figure(described, Figcaption("Puppy"))
+      frame
+        label A child added at the start, and one at the end
+        code
+            val section = (Div(figure) ^+ H1("Gallery")) +^ P("More to come")
+      frame
+        label Two values joined into a fragment
+        code
+            val content = section + Hr                         // Html.Fragment of "div" | "hr"
+      frame
+        label The page, rendered
+        code
+            Html(Head(Title("Gallery")), Body(content)).show
+      ##
+      ```
+
+      Every node is immutable: `image` is unchanged by the assignment, and `described` is a
+      new element. Equality is structural: two elements are equal when their labels, their
+      attributes (in any order), their children and their foreignness are, and a comment, a
+      text or a doctype equals a fragment holding only it.
+
+      Reading HTML needs a `Dom` in scope (`htmlDoms.whatwg`) and a `Tactic[Parse.Error]`,
+      unless `recoveries.permissiveRecovery` selects the recovering parser, which needs no
+      tactic. `read[Html]` accepts a fragment of any nodes; `read[Html of "ul"]` accepts only
+      the tags its type names, which also guides the parser's inference of omitted tags; and
+      `load[Html]` reads a whole document with its doctype as a `Document[Html]`, whose
+      `metadata` is an `Html.Provenance`. `show` renders any node compactly against the
+      WHATWG DOM; a `Document[Html]` streams through its own DOM, laid out by the
+      `Html.Formatting` in scope.
+  refer honeycomb.Whatwg
+  refer honeycomb.Tag
+  refer honeycomb.Renderable
+  refer honeycomb.h
+  refer honeycomb.Attributes
+  entry .Formatting   how a streamed `Document[Html]` is laid out: indented one element per line, or compact
+    detail
+        `Html.Formatting` is honeycomb's `zephyrine.Formatting`, with one parameter:
+        `indented`. When it is `true` (the companion's `default`, and
+        `formatting.indentedHtmlFormatting`), elements whose DOM mode is `Html.Mode.Whitespace`
+        — `html`, `head`, `body`, `ul`, `table` and the like, where text between children is
+        insignificant — are written one per line, indented two spaces per level, to a depth
+        of 32; when `false` (`formatting.compactHtmlFormatting`), the whole document is one
+        line. It applies only to `Html.streamable`, the `Document[Html]` stream: `show` of a
+        bare node is always compact.
+
+        ```scala
+        import soundness.*
+
+        val compact: Html.Formatting = Html.Formatting(indented = false)
+        ```
+    entry .apply   a formatting with the given indentation setting
+    entry .default   the companion's given: indented
+        In implicit scope, so a `Document[Html]` streams indented unless
+        `formatting.compactHtmlFormatting` is imported, which, being lexically scoped,
+        outranks it.
+    entry #indented   whether whitespace-mode elements are laid out one per indented line
+  entry .Integral   a marker trait for an integer-valued attribute type
+      One of three marker traits in the companion (`Integral`, `Decimal`, `Id`), of the kind
+      `Whatwg` declares for its attribute value types; the WHATWG attributes use
+      `Whatwg.Integral`, `Whatwg.Decimal` and `Whatwg.Id` rather than these.
+  entry .Decimal   a marker trait for a decimal-valued attribute type
+      See `Html.Integral`; the WHATWG attributes use `Whatwg.Decimal`.
+  entry .Id   a marker trait for an identifier-valued attribute type
+      See `Html.Integral`; the WHATWG attributes use `Whatwg.Id`.
+  entry .media   a `Document[Html]` has the media type `text/html; charset=UTF-8`
+      The `Media` given which lets a `Document[Html]` be served as an HTTP response body, or
+      sent as a request body, with the right `Content-Type`. It is in implicit scope.
+  entry .doctype   the `<!DOCTYPE html>` header, as `Html.Doctype(t"html")`
+  entry .nodes   flattens a `List[Html]` to an `Array[Html.Node]`, unwrapping fragments
+      An extension on `List[Html]`: each `Html.Fragment` contributes its nodes and each node
+      itself, so the result is the flat sequence a parent's children array holds. The tags'
+      `apply` and `Html.Fragment.apply` use it, which is why a fragment supplied as a child is
+      never nested.
+  entry .interpolator   the given behind `h"…"`: parses the literal as the code compiles and splices nodes
+      The `Interpolable` instance the `h` interpolator resolves. Its `interpolate` is a
+      macro, `internal.interpolator`, which parses the parts against the WHATWG DOM, reports
+      any `Html.Issue` at the literal, and instantiates the nodes directly at runtime, so the
+      result costs no parsing. See `honeycomb.h`.
+  entry .extrapolator   the given behind `h"…"` as a pattern: matches a scrutinee against the literal
+      The `Extrapolable` instance which makes `case h"<li>$value</li>"` a pattern. Its
+      `extrapolate` is a macro, `internal.extractor`, which parses the pattern as real HTML
+      against the DOM — so a pattern written with closing tags matches input written without
+      — and binds each hole to the text, attribute value, attribute map, element or child
+      content at that position. See `honeycomb.h`.
+  entry .addable   `left + right`: two HTML values joined into a fragment, typed by both topics
+      The `Addable` given: `H1("title") + P("Hello")` is an `Html.Fragment of "h1" | "p" in
+      Whatwg`, holding the nodes of both sides, flattened. Both sides must be in the same
+      `Dom`.
+  entry .strictAggregable   `read[Html of content]`: parses text as the tags the type names, failing on any error
+      The `Aggregable` given for `read[Html of "ul"]`, `read[Html of "ul" | "ol"]`,
+      `read[Html of Flow]` and any other union of tag names: the parser accepts only the
+      named tags at the top level, which also guides its inference of omitted tags, so
+      `<p>Hello</p>` read as `Html of "html"` gains the missing `<html>` and `<body>`. The
+      result is a single `Html.Element`, `Html.Text` or `Html.Comment` when the source
+      yields one node, and otherwise an `Html.Fragment` (empty, for empty text).
+
+      It needs a `Dom` and a `Tactic[Parse.Error]` in scope, and resolves only when no
+      `Html.Recovery.Permissive` is in scope: `recoveries.permissiveRecovery` switches to
+      `Html.permissiveAggregable`. Every `Html.Issue` is raised through the tactic — the
+      parser recovers from some, such as an inadmissible tag, after `raise`, and aborts on
+      others.
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg
+      import htmlDoms.whatwg.*
+      import strategies.throwUnsafely
+
+      t"<ul><li>First<li>Second</ul>".read[Html of Flow] == Ul(Li("First"), Li("Second"))
+      t"<div>a</div><p>b</p>".read[Html of Flow] == Html.Fragment(Div("a"), P("b"))
+      ```
+  entry .strictAggregable2   `read[Html]`: parses text as any nodes the DOM defines, failing on any error
+      As `Html.strictAggregable`, with every element of the `Dom` admitted at the top level
+      and no doctype accepted. Needs a `Dom` and a `Tactic[Parse.Error]`, and yields to
+      `Html.permissiveAggregable2` when `Html.Recovery.Permissive` is in scope.
+  entry .strictLoadable   `load[Html]`: reads a whole document as a `Document[Html]`, failing on any error
+      The `Loadable` given: the source is parsed as a document — a doctype is accepted, the
+      root is `<html>`, and omitted `<html>`, `<head>` and `<body>` are inferred — and the
+      result is a `Document[Html]` whose `root` is the `<html>` element and whose `metadata`
+      is an `Html.Provenance` holding the `Dom`. A source with no single root raises
+      `Parse.Error` with `Html.Issue.BadDocument`.
+
+      It needs a `Dom`, a `Tactic[Parse.Error]` and a `PositionTracking` (the default is
+      `Off`; `import parsing.trackPositions` turns it on, and the document then records the
+      source position of every element and attribute, for `document.locate(path)` with an
+      `Html.Path`). It resolves only when no `Html.Recovery.Permissive` is in scope.
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg
+      import htmlDoms.whatwg.*
+      import strategies.throwUnsafely
+
+      val document: Document[Html] = t"<title>Hi</title><p>Hello</p>".load[Html]
+      document.root == Html(Head(Title("Hi")), Body(P("Hello")))
+      document.metadata.dom == whatwg
+      ```
+  entry .permissiveAggregable   `read[Html of content]` under `recoveries.permissiveRecovery`: recovers, never raises
+      The recovering counterpart of `Html.strictAggregable`, selected by bringing an
+      `Html.Recovery.Permissive` into scope (`import recoveries.permissiveRecovery`), which
+      also disables the strict given even when a `Tactic[Parse.Error]` is present. It needs
+      only a `Dom`. The parser recovers from a defined set of malformed inputs — unknown
+      attributes, unclosed tags, stray close tags, tags in the wrong place — its warnings are
+      discarded, and a condition it cannot recover from yields an empty `Html.Fragment`
+      rather than an error.
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg
+      import htmlDoms.whatwg.*
+      import recoveries.permissiveRecovery
+
+      t"<p>unclosed".read[Html of Flow] == P("unclosed")
+      t"""<div bogus="x"></div>""".read[Html of "div"]
+      ```
+  entry .permissiveAggregable2   `read[Html]` under `recoveries.permissiveRecovery`: recovers, never raises
+      As `Html.permissiveAggregable`, with every element of the `Dom` admitted at the top
+      level. Needs only a `Dom`.
+  entry .permissiveLoadable   `load[Html]` under `recoveries.permissiveRecovery`: recovers, never raises
+      As `Html.strictLoadable`, but needing no `Tactic[Parse.Error]`: recoverable faults are
+      repaired, a source with no single root is wrapped as it stands, and an unrecoverable one
+      gives a document with an empty fragment as its root. Position tracking works as for the
+      strict load.
+  entry .streamable   `document.stream[Text]`: a `Document[Html]` as a chunked stream of its HTML source
+      The `Streamable` given for `Document[Html]`. The doctype and the root are written
+      through the document's own `Dom` (`metadata.dom`), laid out by the `Html.Formatting` in
+      scope — indented by default, one line with `formatting.compactHtmlFormatting` — and
+      produced on a separate fiber, so it needs a `Monitor` and a `Probate`: an ambient
+      concurrency context such as `supervisors.globalSupervisor` with
+      `threads.virtualThreads` and `probates.cancelProbate`. The serializer is the one
+      `show` uses: void elements omit their close tag, `script` and `style` content is
+      written verbatim, and text is escaped.
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg
+      import htmlDoms.whatwg.*
+      import probates.cancelProbate
+      import supervisors.globalSupervisor
+      import threads.virtualThreads
+
+      val document = Document(Html(Head(Title("Hi")), Body(P("Hello"))), Html.Provenance(whatwg))
+      document.stream[Text]
+      ```
+  entry .showable   `html.show`: any node or fragment as compact HTML source, against the WHATWG DOM
+      The `Showable` given for every `Html` value, however refined its type. The rendering is
+      one line with no indentation, through the standard WHATWG DOM whatever DOM the value was
+      built in, so a bare node renders correctly — void elements unclosed, text escaped —
+      outside any `Document`. `toString` of every node is its `show`.
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg
+      import htmlDoms.whatwg.*
+
+      Ol(Li("Alpha"), Li("Beta")).show == t"<ol><li>Alpha</li><li>Beta</li></ol>"
+      Html.Comment("hello").show == t"<!--hello-->"
+      Br.show == t"<br>"
+      ```
+
+      Text content escapes `&`, `<` and `>`; a double-quoted attribute value escapes `&` and
+      `"`. The content of a raw-text element (`Html.Mode.Raw`: `script`, `style`) is written
+      as it is.
+  entry .inspectable   `html.inspect`: a node's compact source, escaped inside an `html"…"` literal
+      The `Inspectable` given for every `Html` value: the same markup `show` produces, with
+      its quotes and backslashes escaped, inside `html"…"`, so a `Div(style = t"bar")("hello")`
+      inspects as `html"<div style=\"bar\">hello</div>"` — distinguishable from a `Text`
+      holding the same markup, and from xylophone's `xml"…"`.
+  entry .Vacuiscible   the mixin on an element made from a container tag: `apply(children*)` adds its children
+    detail
+        A `Tag.Container` applied to attributes alone, as `Div(style = t"bar")`, yields an
+        `Html.Element & Html.Vacuiscible`, whose `apply` takes the children in a second
+        argument list: `Div(style = t"bar")("hello")`. Each child must be `Html` of the
+        element's `Transport` — what the tag admits — or `Unset`, which is dropped. The
+        result is an element of the same topic and form.
+    entry #apply   the element with the given children, each checked against what the tag admits
+  entry .Transparent   the mixin on an element made from a transparent tag: its children decide its topic
+    detail
+        A transparent element — `<a>`, `<ins>`, `<del>`, `<map>`, `<object>` and the like —
+        takes its content model from its parent, so `A(Li("x"))` cannot be placed in a `<div>`
+        where `<li>` could not. `Html.Transparent#apply` records the children's labels as the
+        result's `Topic`, so `A(Li("x"))` is an `Html.Element of "li"`, admitted
+        exactly where an `<li>` is.
+    entry #apply   the element with the given children, its topic becoming their labels
+  entry .name   the format's name, `HTML`, as `Parse.Error` reports it
+      `Html` is a `zephyrine.Format`, so a parse failure reads _the HTML was not valid at
+      line 1, column 23 because the content ended while the tag `<ul>` was left open_.
+  entry .text   converts a `Text` to an `Html of "#text"`, wherever text content is admitted
+      The `Conversion` which lets `P(t"Hello")` and `h"<p>$name</p>"` take a `Text` where a
+      child of a phrasing-content element is expected: the result is an `Html.Text` whose
+      topic `"#text"` is a member of `Phrasing`. A `<ul>`, whose content excludes `"#text"`,
+      rejects it.
+  entry .string   converts a `String` to an `Html of "#text"`, wherever text content is admitted
+      As `Html.text`, for string literals: `P("Hello world")`.
+  entry .conversion3   widens an `Html of label` to an `Html of content` when `content` includes the label
+      The `Conversion` which lets an `Html of "li"` stand where an `Html of "li" | "#text"`
+      or an `Html of Flow` is expected: the label must be a member of the wider union.
+  entry .comment   converts an `Html.Comment` to HTML of any content type
+      A comment may appear anywhere, so it converts to `Html of content` for every content
+      type.
+  entry .string2   converts a `String` to foreign text, `Html of "#foreign"`
+      Character data inside foreign content (SVG, MathML), as `Html.Element.foreign` builds
+      it: `Html.Element.foreign(t"mi", attributes, "π")`.
+  entry .renderable   converts any value `Renderable in content` to the HTML it renders
+      With a `List[Text] is Renderable in "li"` in scope, a `List[Text]` converts to an
+      `Html of "li"` wherever one is admitted — `Ul(items)`, `h"<ol>$items</ol>"` — and not
+      where it is not.
+  entry .sequences   lifts a conversion to HTML over a `List`: `List[nodal]` to `List[html]`
+      Given a `Conversion[nodal, html]`, converts each element of a `List[nodal]`, so a list
+      of text or of renderable values is a list of HTML where one is expected.
+  entry .Issue   what the parser found wrong: the reason inside a `Parse.Error` from HTML
+    detail
+        An enum of `zephyrine.Format.Issue`s, each with a `describe` message, carried in the
+        `Parse.Error(Html, position, issue)` a strict read raises, with an `Html.Position`.
+        The cases: `BadInsertion` (_a value cannot be inserted into HTML at this point_, an
+        `h"…"` substitution in a position no value fits); `ExpectedMore` (_the content ended
+        prematurely_); `UnexpectedDoctype`; `BadDocument` (_the document did not contain a
+        single root tag_, from `load[Html]`); `InvalidCdata` (_CDATA content is only
+        permitted in foreign namespaces_); `InvalidTag(name)` (_`<name>` is not a valid tag_);
+        `InvalidTagStart(prefix)`; `DuplicateAttribute(name)`; `InadmissibleTag(name,
+        parent)` (_`<name>` cannot be a child of `<parent>`_); `OnlyWhitespace(char)` (a
+        character where a whitespace-mode element admits only whitespace); `Unexpected(char)`;
+        `UnknownEntity(name)` (_the entity `&name` is not defined_); `ForbiddenUnquoted(char)`
+        (a character forbidden in an unquoted attribute value); `MismatchedTag(open, close)`;
+        `UnopenedTag(close)`; `Incomplete(tag)` (_the content ended while the tag `<tag>` was
+        left open_); `UnknownAttribute(name)`; `UnknownAttributeStart(name)`; and
+        `InvalidAttributeUse(attribute, element)` (_the attribute `name` cannot be used on the
+        tag `<tag>`_).
+
+        ```scala
+        import soundness.*
+        import htmlDoms.whatwg
+        import htmlDoms.whatwg.*
+        import errorDiagnostics.stackTracesDiagnostics
+
+        try
+          import strategies.throwUnsafely
+          t"<ul><li>First item</li>".read[Html of Flow]
+        catch
+          case Parse.Error(Html, Html.Position(line, column, _, _), Html.Issue.Incomplete(tag)) =>
+            tag == t"ul"
+        ```
+
+        An unknown attribute is `UnknownAttribute` when the parser read a whole name and
+        `UnknownAttributeStart` when no attribute begins that way; a match should handle both.
+        Under `recoveries.permissiveRecovery` the recoverable issues are repaired silently.
+    entry #describe   the issue as a `Message`
+  entry .Position   where in the source the parser was: line and column, with an offset and length
+    detail
+        The `zephyrine.Format.Position` of an HTML parse: `line` and `column` are `Ordinal`s
+        (so `line.n1` is the 1-based number), and `offset` and `length` — present on an error
+        with a known extent, and on every position `document.locate` returns — count chars
+        from the start of the source. Lines and columns count code points, so a non-ASCII
+        character is one column; lengths count chars. The column reported with an error is
+        that of the next character to be read.
+    entry #line   the line, as an `Ordinal`
+    entry #column   the column on the line, as an `Ordinal`, counting code points
+    entry #offset   the char offset from the start of the source, if known
+    entry #length   the extent in chars, if known
+    entry #describe   `line 2, column 8`, as `Parse.Error` reports it
+    entry #span   the position as a line-mode `Span`
+  entry .PositionIndex   the record of source positions a tracked `load[Html]` keeps on the document
+      An opaque type over a frozen array of descriptors, one per element and attribute, built
+      after the parse by walking the finished tree — HTML tree construction reorders nodes by
+      inferring ancestors, fostering misplaced table content and reconstructing formatting
+      elements, so positions cannot be emitted in source order. It is produced only under
+      `parsing.trackPositions`, held in `Html.Provenance#positionIndex`, and read by
+      `document.locate(path)` through `Html.positionable`; it has no public members of its
+      own. An element the parser inferred starts at the token which prompted it and carries
+      no attribute positions.
+  entry .Provenance   a `Document[Html]`'s metadata: the DOM it was parsed against, and its position index
+    detail
+        The `Metadata` type of every `Html` value, so `Document(root, Html.Provenance(dom))`
+        makes a document and `document.metadata.dom` is the `Dom` the streamed output is
+        serialized through. `positionIndex` is set only by a `load[Html]` under
+        `parsing.trackPositions`. The index is parse provenance, not identity: it takes no
+        part in equality or hashing, so a tracked and an untracked load of the same source
+        compare equal.
+
+        ```scala
+        import soundness.*
+        import htmlDoms.whatwg
+        import htmlDoms.whatwg.*
+
+        val document = Document(Html(Body(P("Hi"))), Html.Provenance(whatwg))
+        document.metadata.positionIndex == Unset
+        ```
+
+        It is named `Provenance` rather than `Metadata` because the object `Html` is itself an
+        element, whose `Metadata` type member a nested class of that name would clash with.
+    entry #dom   the `Dom` the document was parsed against, and is serialized through
+    entry #positionIndex   the `Html.PositionIndex`, or `Unset` for a document loaded without tracking
+  entry .Path   a root-first path to an element or attribute of a document, for `document.locate`
+    detail
+        A path is built by appending steps to `Html.Path()`: `element(label, ordinal)` names
+        a child element by its tag and its 1-based rank among the parent's child elements of
+        that label — text and comments are not counted — and `attribute(name)` names an
+        attribute of the last element. The first step names the document's root element
+        itself, so a path into an ordinary document begins `element(t"html")`.
+
+        ```scala
+        import soundness.*
+        import htmlDoms.whatwg
+        import strategies.throwUnsafely
+        import parsing.trackPositions
+
+        val source = t"<html>\n  <body>\n    <p class=\"x\">Hi</p>\n  </body>\n</html>"
+        val document = source.load[Html]
+        val paragraph = Html.Path().element(t"html").element(t"body").element(t"p")
+        document.locate(paragraph).let(_.line.n1)                        // 3
+        document.locate(paragraph.attribute(t"class")).let(_.column.n1)  // 8
+        document.locate(paragraph.element(t"missing"))                   // Unset
+        ```
+
+        A position spans the whole element, from its start tag to the end of its end tag; an
+        element closed by its parent's end tag ends there. A path which does not resolve —
+        a wrong root label, a missing child, an attribute the parser did not read — gives
+        `Unset`, as does any lookup on a document loaded without `parsing.trackPositions`.
+    entry .Step   one step of a path: a child element by label and rank, or an attribute by name
+        An enum: `Element(label, rank)`, the `rank`-th (1-based) child element with that label,
+        and `Attribute(name)`, which may only be the last step.
+    entry #steps   the steps, root first
+    entry #element   the path extended by a child element: `element(t"p")`, or `element(t"p", 2)` for the second
+    entry #attribute   the path extended by an attribute of its last element
+  entry .positionable   `document.locate(path)`: resolves an `Html.Path` to the `Html.Position` a tracked load recorded
+      The `Positionable` given for `Document[Html]`, in implicit scope. `locate` walks the
+      document's `Html.PositionIndex`; `locateKey` is always `Unset`, since HTML has no
+      distinct key positions. Both are `Unset` for a document loaded without
+      `parsing.trackPositions`.
+  entry .Mode   how an element's content is tokenized and laid out: raw, RCDATA, whitespace or normal
+      Every `Tag` carries a `Mode`, which the parser and the serializer look up in the DOM by
+      name. `Raw` content (`script`, `style`) has no tags and no entities, and is written
+      verbatim; `Rcdata` content (`textarea`, `title`) has entities but no tags; a
+      `Whitespace` element (`html`, `head`, `ul`, `table`, …) admits only whitespace as text
+      between its children — anything else is `Html.Issue.OnlyWhitespace` — and is laid out
+      one child per indented line when a document streams under
+      `formatting.indentedHtmlFormatting`; `Normal` is everything else.
+  entry .Recovery   the marker whose presence in scope selects the recovering parser
+    detail
+        `Html.Recovery.Permissive` is a class with no members: a given of it in scope
+        switches `read[Html]`, `read[Html of …]` and `load[Html]` from the strict givens,
+        which need a `Tactic[Parse.Error]` and raise every `Html.Issue`, to the permissive
+        ones, which need none and repair what they can. The given to import is
+        `recoveries.permissiveRecovery`; it wins even when a tactic is also in scope, since
+        the strict givens require that no `Permissive` be present.
+    entry .Permissive   the marker class; `recoveries.permissiveRecovery` is its given
+  entry .Hole   the kinds of position an `h"…"` substitution can occupy
+      An enum the `h` interpolator's macro uses to type each substitution by where it falls:
+      `Text` (character data), `Tagbody` (the attributes of a start tag, `h"<img $attributes>"`),
+      `Comment` (`h"<!--$text-->"`), `Element(tag)` (a whole element, `h"<$element>"`),
+      `Attribute(tag, attribute)` (an attribute's value, `h"<img src=$url>"`) and
+      `Node(parent)` (child content of the named parent). It is not needed in ordinary code.
+  entry .Node   exactly one node: an element, text, a comment or a doctype, but never a fragment
+    detail
+        The sealed trait of the single-node kinds — `Html.Element`, `Html.Text`,
+        `Html.Comment` and `Html.Doctype` — as opposed to `Html.Fragment`, a sequence. An
+        `Html` value is one or the other, so a match over both is exhaustive. `Html.Node`
+        marks the few places which genuinely need one node, such as the children array an
+        element holds and the result of `h"<$element>"`; where a sequence is as good, the
+        type is `Html`. Nodes are pure, immutable values.
+    entry #body   the node's children as a fragment: empty for a text, comment or doctype
+  entry .Comment   a comment node, `<!--text-->`
+    detail
+        `Html.Comment(t"note")` renders as `<!--note-->`, and reads back from a comment in
+        the source with its text as written, including surrounding spaces. A comment is
+        admitted in any content, through `Html.comment`, and equals a fragment holding only
+        it.
+    entry #text   the comment's text, between the delimiters
+  entry .Text   a text node: character data, with topic `"#text"`
+    detail
+        `Html.Text(t"Hello")` is what a `Text` or a string literal becomes as a child, through
+        `Html.text` and `Html.string`, and what the parser yields for character data, with
+        entities decoded: `t"to &amp; fro".read[Html of Flow] == Html.Text("to & fro")`. Its
+        topic is `"#text"`, a member of `Phrasing`, so text is admitted exactly where the DOM
+        admits it. It renders escaped (`&`, `<`, `>`), except inside a raw-text element; it
+        equals a fragment holding only it. In a pattern, `case Html.Text("one")` matches the
+        text of a captured body.
+
+        Inside a scope which imports `Html.*`, the bare name `Text` means this node rather
+        than `anticipation.Text`; write `Html.Text` instead.
+    entry .foreign   character data inside foreign content, as `Html of "#foreign"`
+        `Html.Text.foreign(t"π")` is a text node admitted inside an `Html.Element.foreign`
+        (SVG, MathML), whose content is typed `"#foreign"`.
+    entry #text   the character data
+    entry #Topic   `"#text"`
+  entry .Element   an element: its tag name, its attributes, its children and whether it is foreign
+    detail
+        `Html.Element(label, attributes, children, foreign)` is what every tag application
+        builds — `Div(id = t"x")("hi")` is `Html.Element("div", Attributes(t"id" -> t"x"),
+        Array(Html.Text("hi")), false)` — and what `case Html.Element(label, attributes,
+        children, _)` takes apart. Its static type usually says more: `Html.Element of "img"
+        in Whatwg`, or `Html.Element of "ul" over "li" in Whatwg`.
+
+        A value statically known to be an element has three transformations, each giving a
+        new element: `^+` adds a child at the start and `+^` at the end — the caret marks the
+        end, and the child must be of the element's `Transport` — and an attribute is set,
+        replaced or read by name, through `Dynamic`:
+
+        ```scala
+        import soundness.*
+        import htmlDoms.whatwg
+        import htmlDoms.whatwg.*
+
+        val image: Html.Element of "img" in Whatwg = Img(src = t"puppy.jpg")
+        val described = image.alt = t"A young dog"       // <img src="puppy.jpg" alt="A young dog">
+        described.alt                                    // t"A young dog"
+        Div(P("body")) ^+ H1("title")                    // <div><h1>title</h1><p>body</p></div>
+        Div(H1("title")) +^ (P("body") + P("more"))      // three children
+        ```
+
+        `/` selects child elements by tag: `table / Tbody / Tr / Th` is a fragment of every
+        `<th>` reached that way, which, holding one node, equals that node. Equality is
+        structural, with attributes compared in any order; an element equals a fragment of
+        only itself. `toString` is the element's `show`.
+    entry .foreign   an element of a foreign namespace — SVG, MathML — with its attributes and children
+        `Html.Element.foreign(label, attributes, children*)` builds an element the DOM does
+        not describe, typed `Html.Element of "#foreign"`, with `foreign = true`, from an
+        `Attributes` or a `Map[Text, Optional[Text]]`. Its children are `Html of
+        "#foreign"`: further foreign elements, or strings converted by `Html.string2`. The
+        parser builds these for the content of `<svg>` and `<math>`:
+        `t"<svg><circle r=\"1\"/></svg>".read[Html of Flow]` is
+        `Svg(Html.Element.foreign(t"circle", Map[Text, Optional[Text]](t"r" -> t"1")))`.
+    entry #label   the tag name, lowercase
+    entry #attributes   the attributes, in order, as an `Attributes`
+    entry #children   the child nodes, as a frozen `Array[Html.Node]`
+    entry #foreign   whether the element is in a foreign namespace (SVG, MathML)
+    entry #/   `element / tag`: the child elements with that tag, as a fragment typed by the tag
+        `Div(Ul(Li("one"), Li("two"))) / Ul / Li` is `Html.Fragment(Li("one"), Li("two"))`:
+        each step keeps the children whose label is the tag's and continues from them. The
+        result is an `Html.Fragment of tag.Topic in tag.Form`, so the next step can only be
+        a tag the previous admits.
+    entry #body   the element's children as a fragment of its own topic, transport and form
+    entry #^+   `element ^+ child`: the element with a child inserted first
+        The child, a node or a fragment of the element's `Transport`, is placed before the
+        existing children: `Div(P("body")) ^+ H1("title")` is `<div><h1>title</h1><p>body</p></div>`.
+    entry #+^   `element +^ child`: the element with a child appended last
+        The child, a node or a fragment of the element's `Transport`, is placed after the
+        existing children: `Div(H1("title")) +^ P("body")`.
+    entry #selectDynamic   `element.attribute`: reads an attribute, decoded by its `Unattributive`
+        `image.alt` resolves the name as an `Attribute` of the element's topic in its DOM
+        (or a global attribute), and decodes its text with the attribute type's
+        `Unattributive`; a name which is not an attribute of that element, or whose type has
+        no decoder, is a compile error.
+    entry #updateDynamic   `element.attribute = value`: a new element with the attribute set, or removed
+        `image.alt = t"…"` resolves the name as an `Attribute` of the element's topic in its
+        DOM, encodes the value through a `value is Attributive to` the attribute's type, and
+        gives a new element with the pair set, or with the attribute removed when the
+        `Attributive` yields `Unset` (a `false` for a presence attribute, an empty class
+        list). The original is unchanged. A `Text` satisfies every attribute type with
+        `attributives.textAttributive` in scope.
+  entry .Fragment   a sequence of nodes with no single parent
+    detail
+        `Html.Fragment(nodes*)` holds zero or more `Html.Node`s: the result of reading text
+        with several top-level nodes, of `+`, of `/`, and of a `Renderable` which produces
+        several elements. A fragment supplied as a child is unwrapped into its parent's
+        children, and a fragment of one node equals that node, so `Html.Fragment(P("x")) ==
+        P("x")`; an empty text reads as `Html.Fragment()`.
+
+        ```scala
+        import soundness.*
+        import htmlDoms.whatwg
+        import htmlDoms.whatwg.*
+
+        val items: Html.Fragment of "li" = Html.Fragment(Li("one"), Li("two"))
+        Ul(items) == Ul(Li("one"), Li("two"))
+        ```
+    entry .apply   `Html.Fragment[topic](nodes*)`: a fragment of the given nodes, typed by their topics
+        Each argument is any `Html` whose topic is within `topic`; fragments among them are
+        flattened. The companion's `apply` is what `Html.Fragment(Li("one"), Li("two"))`
+        calls; the case-class constructor takes `Html.Node`s alone.
+    entry #nodes   the nodes, in order
+    entry #/   `fragment / tag`: the child elements with that tag of every node, concatenated
+    entry #body   the fragment itself
+  entry .Doctype   a document type declaration, `<!DOCTYPE text>`
+    detail
+        `Html.Doctype(t"html")` is the HTML5 header, which `Html.doctype` and
+        `Whatwg#doctype` supply and a streamed `Document[Html]` writes first;
+        `Html4Transitional#doctype` is the HTML 4.01 Transitional one. A doctype in a source
+        is accepted by `load[Html]`, case-insensitively, and reported as
+        `Html.Issue.UnexpectedDoctype` by `read[Html]`.
+    entry #text   the declaration's text after `DOCTYPE`
+  entry #Topic   the value's tag name, union of names or content category, as a literal type
+      A `Label` subtype: `"br"` for a `<br>`, `"ul" | "ol"` for either list, `Flow` for any
+      flow content, `"#text"` for a text node and `"#foreign"` for foreign content.
+  entry #Transport   what the value may contain, as a union of tag names
+      `"li"` for a `<ul>`, `Phrasing` for a `<p>`, `"head" | "body"` for `<html>`.
+  entry #Form   the `Dom` the value conforms to: `Whatwg` or `Html4Transitional`
+  entry #Metadata   `Html.Provenance`, what a `Document[Html]` carries beside its root
+  entry #Chunks   `Text`: a document of HTML streams as text
+  entry #/   `html / tag`: the child elements with that tag, as a fragment typed by the tag
+      On an element, the children with the tag's label; on a fragment, those of every node;
+      on any other node, empty. The result is an `Html.Fragment of tag.Topic in tag.Form`.
+  entry #body   the value's children as a fragment of its own topic, transport and form
+      An element's children, a fragment itself, and an empty fragment for a text, comment or
+      doctype.
+
+entry .html   `value.html`: any `Renderable` value as the HTML it renders
+    An extension on every type with a `Renderable` instance: `message.html` is an `Html of
+    Phrasing` for a `Message`, `stackTrace.html` an `Html of Flow` for a `StackTrace`, and a
+    `Math` or `Mathml` renders through its own instance. The result type is the instance's
+    `Form`, so it is admitted exactly where that content is.
+
+    ```scala
+    import soundness.*
+    import htmlDoms.whatwg
+    import htmlDoms.whatwg.*
+
+    val message: Message = m"the file was not found"
+    P(message.html)
+    ```
+
+entry .h   the `h"…"` interpolator: an HTML literal parsed as the code compiles, and a pattern
+    `h"<ol><li>Alpha</li><li>Beta</li></ol>"` parses its markup against the WHATWG DOM while
+    the code compiles, reports any `Html.Issue` at the literal, and instantiates the nodes
+    directly at runtime, so there is no parsing cost and no loss of checking. The standard
+    parsing rules apply, so optional closing tags may be omitted:
+    `h"<ol><li>Alpha<li>Beta</ol>"` is the same value. The result is typed by its top-level
+    tags, in `Whatwg`.
+
+    A substitution is allowed wherever it fits the surrounding markup, and is checked in its
+    position: body content must be HTML admitted by the enclosing element (or convertible to
+    it, through `Html.text`, `Html.renderable` and the other conversions), an attribute value
+    must satisfy the attribute's type through an `Attributive`, and a comment's content must
+    be `Showable`.
+
+    ```scala
+    import soundness.*
+    import htmlDoms.whatwg
+    import htmlDoms.whatwg.*
+    import attributives.textAttributive
+
+    val content = t"important"
+    val location = t"https://example.com/dog.jpg"
+
+    h"<p>$content</p>"          // a body-content substitution
+    h"<img src=$location>"      // an attribute-value substitution
+    h"<!--$content-->"          // a comment substitution
+    ```
+
+    As a pattern, a literal matches an equal node, whether the scrutinee is that node or a
+    fragment holding only it, and is checked as HTML against the DOM rather than as text, so
+    a pattern written with closing tags matches input written without them. A hole binds
+    what it stands for: `h"<li>$value</li>"` binds the body as `Html`, `h"<img src=$source>"`
+    an attribute's value, `h"<img $attributes>"` the attribute map, and `h"<$element>"` any
+    element but no other kind of node.
+
+    ```scala
+    import soundness.*
+    import htmlDoms.whatwg
+    import htmlDoms.whatwg.*
+
+    h"<li>two</li>" match
+      case h"<li>one</li>" => 1
+      case h"<li>$value</li>" => value match
+        case Html.Text("two") => 2
+        case _                => 0
+      case _ => 0
+    ```
+
+    The interpolator is `transparent inline`, resolving `Html.interpolator` and
+    `Html.extrapolator`, whose macros live in `honeycomb.internal`.
+
+entry .Attributes   an element's attributes: an ordered, immutable map from name to optional value
+  detail
+      The attributes of an `Html.Element`, in document order, as an opaque type over a
+      frozen array of interleaved keys and values rather than a `Map`. A value is
+      `Optional[Text]`: a presence attribute such as `disabled` or `checked` has `Unset` as its
+      value and renders as the bare name. A parse builds one as it reads a start tag, every
+      tag application builds one from its presets and arguments, and every update (`updated`,
+      `removed`, `++`) returns a new value. It is declared in `honeycomb.internal` and
+      exported to the `honeycomb` package.
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg
+      import htmlDoms.whatwg.*
+
+      val attributes: Attributes = Attributes(t"class" -> t"a", t"hidden" -> Unset)
+      attributes(t"class")                 // t"a"
+      attributes(t"hidden")                // Unset: present, with no value
+      attributes.contains(t"hidden")       // true
+      attributes.updated(t"id", t"x").to[List]
+      Html.Element(t"div", attributes, Array(), false)
+      ```
+
+      Equality of two `Attributes` is order-insensitive (`equalsAttributes`), which is what
+      `Html.Element`'s own equality uses; iteration (`keys`, `iterator`, `each`, `to[List]`,
+      `toMap`) is in document order. It inspects as `html{class="a", hidden}`, as the
+      attributes would appear in a start tag.
+  refer honeycomb.Html
+
+entry .htmlDoms   the HTML specifications a parse and a tag application use, each a given to import by name
+  detail
+      Which tags exist, which children and attributes each admits, how its content is
+      tokenized and which named character references are defined all come from a `Dom`,
+      and the choice is never implicit: `import soundness.*` brings none in, and one is
+      imported by name. The tag objects themselves are members of the DOM's companion, so
+      the usual pair of imports is the given and then its vocabulary:
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg
+      import htmlDoms.whatwg.*
+
+      Div(P("Hello"))
+      ```
+
+      `Whatwg` is the HTML Living Standard, what "HTML" means today, and suits almost every
+      use; `Html4Transitional` is HTML 4.01 Transitional, for a program which must emit or
+      read that dialect's presentational tags and attributes. Reading (`read[Html]`,
+      `load[Html]`) needs a `Dom` in scope; rendering with `show` always uses the WHATWG one,
+      and a streamed `Document[Html]` uses the DOM recorded in its `Html.Provenance`.
+  refer honeycomb.Whatwg
+  refer honeycomb.Html4Transitional
+  entry .whatwg   the WHATWG HTML Living Standard, as a `Whatwg` instance
+      `import htmlDoms.whatwg` brings the `Dom` into scope, and `import htmlDoms.whatwg.*`
+      — or `import whatwg.*` after it — brings in the tag objects `A` to `Wbr` and the
+      content categories `Flow`, `Phrasing`, `Metadata`, `Heading`, `Sectioning`, `Embedded`
+      and `Interactive`.
+  entry .html4Transitional   HTML 4.01 Transitional, as an `Html4Transitional` instance
+      `import htmlDoms.html4Transitional` and then `import html4Transitional.*` for its tags,
+      which include `Font`, `Center` and the other presentational elements the
+      Living Standard dropped, and whose `doctype` is the HTML 4.01 Transitional one.
+
+entry .formatting   how a streamed `Document[Html]` is laid out, each an `Html.Formatting` given to import by name
+  detail
+      The `Html.Formatting` in scope decides whether `document.stream[Text]` writes the
+      elements whose DOM mode is `Html.Mode.Whitespace` — `html`, `head`, `body`, `ul`,
+      `ol`, `table`, `tr` and the rest, where whitespace between children is insignificant —
+      one per line, indented two spaces per level, or keeps the whole document on one line.
+      `Html.Formatting.default` is indented, so nothing need be imported for that; the compact
+      layout is chosen by importing `compactHtmlFormatting`, which, as a lexically-scoped
+      given, outranks the companion's default. Neither affects `show`, which is always compact.
+
+      ```scala fuel
+      frame
+        label The document
+        code
+            import soundness.*
+            import htmlDoms.whatwg
+            import htmlDoms.whatwg.*
+            import probates.cancelProbate
+            import supervisors.globalSupervisor
+            import threads.virtualThreads
+
+            val page = Html(Head(Title("Hi")), Body(Ul(Li("one"), Li("two"))))
+            val document = Document(page, Html.Provenance(whatwg))
+      frame
+        label Indented, the default
+        code
+            locally:
+              import formatting.indentedHtmlFormatting
+              document.stream[Text]
+              // <!DOCTYPE html>
+              // <html>
+              //   <head>
+              //     <title>Hi</title>
+              //   </head>
+              //   <body>
+              //     <ul>
+              //       <li>one</li>
+              //       <li>two</li>
+              //     </ul>
+              //   </body>
+              // </html>
+      frame
+        label Compact
+        code
+            locally:
+              import formatting.compactHtmlFormatting
+              document.stream[Text]
+              // <!DOCTYPE html><html><head><title>Hi</title></head><body><ul><li>one</li><li>two</li></ul></body></html>
+      ##
+      ```
+
+      A `<p>` or any other element whose text is significant is never broken across lines,
+      whatever the formatting, so indentation never changes what a browser shows. The
+      package merges with the umbrella's `formatting`, beside the other formats' layouts.
+  refer honeycomb.Html
+  entry .indentedHtmlFormatting   whitespace-mode elements one per indented line; the same as the default
+  entry .compactHtmlFormatting   the whole document on one line
+
+entry .attributives   `Attributive` givens which widen what an attribute accepts, to import by name
+  detail
+      An attribute's value is typed: `width` takes a positive integer, `src` a URL, `disabled`
+      a presence, so `Img(width = 64)` compiles and `Img(width = 1.5)` does not. The
+      `Attributive` instances in `Attributive`'s companion cover the common types; where an
+      attribute type has no instance for the value in hand, `textAttributive` makes a `Text`
+      acceptable for every attribute, so `Img(src = t"image.jpg")` stands where a URL is
+      expected. It is imported by name, since it deliberately bypasses the attribute's type.
+  refer honeycomb.Attributive
+  entry .textAttributive   a `Text` is acceptable as the value of any attribute, written as it is
+      `[target] => Text is Attributive to target`: the text becomes the attribute's value
+      unchanged, whatever the attribute's declared type. With it in scope, `src = t"x.jpg"`,
+      `width = t"64"` and `onclick = t"…"` all compile; without it, each needs a value of the
+      attribute's own type.
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg
+      import htmlDoms.whatwg.*
+      import attributives.textAttributive
+
+      Img(src = t"image.jpg", width = t"64")
+      ```
+
+entry .stylesheets   what the class-name syntax `P.info(…)` may name, as a given to import by name
+  detail
+      Because `class` is a Scala keyword, a class is named as a method on the tag:
+      `P.info("body text")` is `<p class="info">body text</p>` — one name per application,
+      which `applyDynamic` resolves through an
+      `Attribution of name`. `uncheckedClasses` supplies that evidence for any name; binding a
+      cataclysm stylesheet instead makes the names it defines the only legitimate ones, so a
+      mistyped class is a compile error, and a name the stylesheet declares as an id renders
+      as `id="…"`.
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg
+      import htmlDoms.whatwg.*
+      import stylesheets.uncheckedClasses
+
+      P.info("body text")      // <p class="info">body text</p>
+      ```
+  refer honeycomb.Attribution
+  entry .uncheckedClasses   any name used as `Tag.name(…)` is a CSS class, unchecked
+      An `Attribution of name` for every label but `apply` (which is the plain `Tag(…)`
+      call): the name populates the `class` attribute, appended after any class the tag's
+      presets already carry.
+
+entry .recoveries   the recovering HTML parser, as a given to import by name
+  detail
+      The strict parsers behind `read[Html]` and `load[Html]` need a `Tactic[Parse.Error]`
+      and raise every `Html.Issue`. Bringing `permissiveRecovery` into scope selects the
+      permissive givens (`Html.permissiveAggregable`, `Html.permissiveAggregable2`,
+      `Html.permissiveLoadable`) instead, which need no tactic, repair a defined set of
+      malformed inputs the way a browser would — an unknown attribute is kept, an unclosed
+      tag closed, a stray close tag dropped, a misplaced tag retried at an enclosing level —
+      and yield an empty fragment or document rather than fail on anything else.
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg
+      import htmlDoms.whatwg.*
+      import recoveries.permissiveRecovery
+
+      t"<p>unclosed".read[Html of Flow] == P("unclosed")
+      t"<html><body><p>a</b></p></body></html>".load[Html]
+      ```
+
+      The permissive given wins even when a tactic is also in scope, since the strict givens
+      require that no `Html.Recovery.Permissive` be present. Position tracking
+      (`parsing.trackPositions`) works under either parser.
+  refer honeycomb.Html
+  entry .permissiveRecovery   an `Html.Recovery.Permissive`: selects the recovering parser
+
+entry .construables   construes a `text/html` body as a `Document[Html]`, as a given to import by name
+  detail
+      A `Construable` binds a media type to the type its content is read as, so that a
+      body received with that `Content-Type` — an HTTP response, an OpenAPI media binding — is
+      decoded deliberately rather than by default. `htmlConstruable` binds `text/html` to
+      `Document[Html]`; it is imported by name, and the document is then parsed through the
+      `Dom` and `Html.Loadable` given in scope.
+  entry .htmlConstruable   `"text/html" is Construable to Document[Html]`
+
+entry .internal   the macros behind `h"…"`, tag application and `ClassList`, and the home of `Attributes`
+  hidden
+  detail
+      Not for direct use: the object exists so that the macros have a stable home.
+      `Attributes` is exported from here to the `honeycomb` package.
+  entry .classList   the macro behind `ClassList[name]()`: checks each label against CSS identifier rules
+      A label which is not a CSS identifier (`ClassList["1bad"]()`), or a type argument not
+      made of string literals, is a compile error at expansion.
+  entry .extractor   the macro behind `h"…"` as a pattern
+      Parses the pattern's parts against the WHATWG DOM, with a hole at each substitution,
+      and splices an extractor which matches the scrutinee structurally and binds each hole.
+  entry .interpolator   the macro behind `h"…"` as an expression
+      Parses the parts against the WHATWG DOM, checks each substitution against the
+      `Html.Hole` it falls in, and splices the construction of the nodes.
+  entry .attributes   the macro behind a tag's named-argument application, `Img(src = …)`
+      Resolves each `name = value` argument as an `Attribute` of the tag's topic in its DOM,
+      finds a `value is Attributive to` the attribute's type, and splices the element with
+      the resulting pairs; a name which is not an attribute of the tag, or a value with no
+      `Attributive`, is a compile error.
+  entry .Attributes   an element's attributes; see `honeycomb.Attributes`
+    detail
+        The opaque type over a frozen array of interleaved keys and optional values, with its
+        constructors, givens and extensions. Its page under the `honeycomb` package has the
+        full account.
+    entry .empty   no attributes
+    entry .inspectable   renders the attributes as `html{class="a", hidden}`
+    entry .traversable   the pairs in document order, so `attributes.to[List]` needs no conversion
+    entry .apply   `Attributes(pairs*)` builds from pairs; `attributes(key)` is the value, or `Unset`
+        The constructor keeps the pairs' order; a pair's value is `Unset` for a presence
+        attribute. The lookup gives `Unset` both for a key which is absent and for one present
+        with no value; `contains` tells them apart.
+    entry .from   builds from a `Map[Text, Optional[Text]]`, in the map's iteration order
+    entry .size   the number of attributes
+    entry .isEmpty   whether there are no attributes
+    entry .nonEmpty   whether there is at least one attribute
+    entry .nil   whether there are no attributes
+    entry .contains   whether a key is present, with or without a value
+    entry .keys   the keys, in document order, as an `Iterator`
+    entry .iterator   the `(key, value)` pairs, in document order, as an `Iterator`
+    entry .toMap   the attributes as a `Map[Text, Optional[Text]]` which still iterates in document order
+    entry .each   applies an action to each `(key, value)` pair, in order
+    entry .removed   the attributes without a key; the same value if the key is absent
+    entry .-   `attributes - key`, the same as `removed`
+    entry .--   the attributes without each of several keys
+    entry .updated   the attributes with a key set to a value, in place if present, appended if not
+        The value is `Optional`: `updated(t"disabled", Unset)` sets a presence attribute.
+    entry .++   the attributes merged with another `Attributes` or a `Map`, the right side winning
+        Keys of the left keep their positions, with the right's values where both have a key,
+        and the right's new keys follow in its order.
+    entry .equalsAttributes   whether two attribute sets hold the same pairs, in any order
+    entry .hashAttributes   an order-independent hash, consistent with `equalsAttributes`
+    entry .showAttributes   a debugging rendering, `Attributes(class -> a, hidden -> Unset)`, as a `String`
+
+entry .Whatwg   the WHATWG HTML Living Standard: its tags as a `Dom` value, and its attributes as givens
+  detail
+      `Whatwg` is the description of HTML which honeycomb uses unless another is chosen. It is
+      two things which share a name. The **object** is the attribute vocabulary: one marker
+      type for every kind of value an attribute may take (`Url`, `PositiveInt`, `Presence`,
+      `CssClassList`, …) and one `Attribute` given for every attribute of the specification,
+      each typed by its name, the elements it is valid on, and the marker of its value
+      (`"src" is Attribute on "img" | "video" | … of Url in Whatwg`). The **class** is the
+      `Dom`: a `val` for every tag (`Div`, `P`, `Img`, `Table`, …), the content categories as
+      type aliases (`#Flow`, `#Phrasing`, `#Metadata`, …), the `<!doctype html>` doctype, the
+      named character references, and the `#elements` and `#attributes` tables the parser
+      and serializer read.
+
+      A program takes the `Whatwg` instance as the `Dom` given, `htmlDoms.whatwg`, and
+      imports its tags from it:
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg
+      import htmlDoms.whatwg.*
+      import attributives.textAttributive
+
+      Div(id = t"main")(H1("Title"), P("Hello ", Em("world")))
+      Img(src = t"puppy.jpg", width = 320, alt = t"A puppy")
+      ```
+
+      Every tag is a `Tag` whose type records its name, what it may contain and that it belongs
+      to this dialect: `Div` is a `Tag.Container of "div" over Flow in Whatwg`, `Br` a
+      `Tag.Void of "br" in Whatwg`, `A` a `Tag.Transparent of "a" over "" in Whatwg`. The
+      attribute givens live in the companion, so they are in implicit scope without an import:
+      `Img(src = …)` finds `"src" is Attribute on (? >: "img") in Whatwg`, reads its `Topic`
+      (`Url`) and then summons a `value is Attributive to Url` for the value supplied — which
+      is why a `Text` is refused for `src` unless `attributives.textAttributive` is imported,
+      and why `Img(width = 1.5)` does not compile. An attribute which is not valid on the
+      element (`P(src = …)`) is a compile error, _the attribute `src` cannot be used on the
+      element `<p>`_.
+
+      Where the specification gives one attribute name different meanings on different
+      elements, there is a given per meaning, distinguished by a numeric suffix (`.href`,
+      `.href2`, `.href3`; `.type` to `.type6`; `.value` to `.value5`): the suffix is only a
+      name, since resolution is by attribute name and element.
+
+      ```scala fuel
+      frame
+        label A table's header
+        code
+            import soundness.*
+            import htmlDoms.whatwg
+            import htmlDoms.whatwg.*
+            import attributives.textAttributive
+
+            val header = Thead(Tr(Th("Name"), Th("Score")))
+            Table(header).show   // <table><thead><tr><th>Name</th><th>Score</th></tr></thead></table>
+      frame
+        label A body grown from data
+        code
+            val scores = List(t"Ada" -> 3, t"Bo" -> 1)
+            val body = Tbody(scores.map { (name, score) => Tr(Td(name), Td(score.show)) }*)
+            Table(header, body).show
+      frame
+        label A caption and a class
+        code
+            import stylesheets.uncheckedClasses
+
+            Table.results(Caption("Results"), header, body).show
+            // <table class="results"><caption>Results</caption><thead>…</thead><tbody>…</tbody></table>
+      ##
+      ```
+
+      Not every rule of the specification is a type: where a rule depends on more than nesting
+      (an `<audio>` whose children depend on its `src`, a `<button>` which may not contain
+      interactive content) the type is the more permissive side, so a construction the
+      specification allows is never rejected. The vocabulary follows the current Living
+      Standard, so it has `<search>`, `<selectedcontent>`, `commandfor`, `closedby`,
+      `popover` and `headingoffset`, and omits everything HTML 4 deprecated; the
+      `Html4Transitional` dialect has those.
+  refer honeycomb.Dom
+  refer honeycomb.Tag
+  refer honeycomb.Attribute
+  refer honeycomb.Attributive
+  refer honeycomb.Html4Transitional
+  entry .Attribute   `honeycomb.Attribute in Whatwg`: an attribute of this dialect
+      The alias every given in the companion is typed with, so an attribute given reads as
+      `"alt" is Attribute on "img" of Textual` and is an `honeycomb.Attribute` whose `Form`
+      is `Whatwg`. An attribute of the `Html4Transitional` dialect is a different type, so
+      the two vocabularies never mix.
+  entry .attribute   makes the given for an attribute valid on named elements
+      `attribute["src", "img" | "video", Url]()` builds a `"src" is Attribute on "img" |
+      "video" of Url in Whatwg`: the name from the first type argument, the element set from
+      the second (a union of string literals, reified to a `Set[Text]`), and the value marker
+      from the third. The companion's own givens are all made this way; a program extending
+      the vocabulary — a data attribute, or an attribute of a custom element — defines a
+      given of its own with it.
+
+      ```scala
+      import soundness.*
+
+      given dataRole: ("data-role" is Whatwg.Attribute on "div" | "span" of Whatwg.Textual) =
+        Whatwg.attribute()
+      ```
+  entry .globalAttribute   makes the given for an attribute valid on every element
+      `globalAttribute["title", Textual]()` builds a `"title" is Attribute of Textual in
+      Whatwg` with no element set and `global` true, so it `targets` every element. The
+      specification's global attributes (`id`, `class`, `style`, `title`, `lang`, `dir`,
+      `hidden`, `tabindex`, `accesskey`, and the rest) are all defined with it.
+  entry .AccessKeys   the value marker of `accesskey`: an ordered set of key labels
+  entry .Affirmation   the value marker of `translate`: `yes` or `no`
+  entry .Autocapitalization   the value marker of `autocapitalize`: `off`, `none`, `on`, `sentences`, `words` or `characters`
+  entry .ButtonType   the value marker of a `<button>`'s `type`: `submit`, `reset` or `button`
+  entry .Closedby   the value marker of a `<dialog>`'s `closedby`: `any`, `closerequest` or `none`
+  entry .Color   the value marker of a CSS colour, as `<link color>` takes
+  entry .Colorspace   the value marker of an `<input type="color">`'s `colorspace`
+  entry .Command   the value marker of a `<button>`'s `command`: a built-in command name or a custom `--name`
+  entry .ContentEditable   the value marker of `contenteditable`: `true`, `false`, `plaintext-only` or empty
+  entry .Coords   the value marker of an `<area>`'s `coords`: a comma-separated list of numbers
+  entry .Crossorigin   the value marker of `crossorigin`: `anonymous` or `use-credentials`
+      The marker only; the `honeycomb.Crossorigin` enum has the two values, but has no
+      `Attributive` of its own, so it is passed as `.show` with `attributives.textAttributive`
+      in scope.
+  entry .CustomElementName   the value marker of `is`: a custom element name, containing a hyphen
+  entry .Css   the value marker of `style`: inline CSS declarations
+      `Attributive.style` accepts a `Text` for it.
+  entry .CssClassList   the value marker of `class`: space-separated CSS class names
+      Accepts a `Name[CssClass]`, a `List[Name[CssClass]]` or a `ClassList`
+      (`Attributive.cssClass`, `.cssClassList` and `.classList`); an empty list omits the
+      attribute altogether.
+  entry .Datetime   the value marker of a `<del>` or `<ins>`'s `datetime`: a date, or a date and time
+  entry .Decimal   the value marker of a floating-point attribute: `step`, `min`, `max` and `value` of `<meter>`, `high`, `low`, `optimum`
+      `Attributive.double` accepts a `Double` for it.
+  entry .Decoding   the value marker of an `<img>`'s `decoding`: `sync`, `async` or `auto`
+  entry .Dir   the value marker of `dir`: `ltr`, `rtl` or `auto`
+      `HDir` is the enum of its values, and carries its own `Attributive`, so
+      `Body(dir = HDir.Rtl)` compiles with no further import.
+  entry .Enctype   the value marker of `enctype` and `formenctype`: a form-encoding MIME type
+  entry .EnterKeyHint   the value marker of `enterkeyhint`: `enter`, `done`, `go`, `next`, `previous`, `search` or `send`
+  entry .FetchPriority   the value marker of `fetchpriority`: `high`, `low` or `auto`
+  entry .HashName   the value marker of `usemap`: a `#`-prefixed reference to a `<map>`'s name
+  entry .Hidden   the value marker of `hidden`: present, or `until-found`
+  entry .HttpEquiv   the value marker of a `<meta>`'s `http-equiv`: a pragma directive name
+      The `honeycomb.HttpEquiv` enum has the four directives, passed as `.show`.
+  entry .Id   the value marker of `id`, and of attributes which name one element by its id
+      `for`, `form`, `list`, `commandfor` and `popovertarget` all take an `Id`.
+      `Attributive.domId` accepts a `Name[DomId]` for it.
+  entry .Ids   the value marker of a space-separated list of ids: `headers`, `itemref`, an `<output>`'s `for`
+      `Attributive.domIds` accepts a `List[Name[DomId]]`, omitting the attribute when the
+      list is empty.
+  entry .ImageSizes   the value marker of a `<link>`'s `imagesizes`: a source-size list for a preloaded image
+  entry .ImageSrcSet   the value marker of a `<link>`'s `imagesrcset`: a srcset for a preloaded image
+  entry .InputMode   the value marker of `inputmode`: `none`, `text`, `tel`, `url`, `email`, `numeric`, `decimal` or `search`
+  entry .InputType   the value marker of an `<input>`'s `type`
+      The `#Input` object offers each type as a preset tag (`Input.Email`, `Input.Checkbox`,
+      …) so the attribute is rarely written directly.
+  entry .InputValue   the value marker of an `<input>`'s `value`, whose form depends on the input's type
+  entry .Integral   the value marker of a signed integer attribute: `tabindex`, `start`, an `<li>`'s `value`
+      `Attributive.int` accepts an `Int` for it.
+  entry .ItemProp   the value marker of `itemprop`: microdata property names
+  entry .Kind   the value marker of a `<track>`'s `kind`: `subtitles`, `captions`, `descriptions`, `chapters` or `metadata`
+      The `#Track` object offers each kind as a preset tag; the `honeycomb.Kind` enum has the
+      values.
+  entry .Language   the value marker of `lang`, `hreflang` and `srclang`: a BCP 47 language tag
+  entry .Laziness   the value marker of `loading`: `lazy` or `eager`
+  entry .MediaQueryList   the value marker of `media`: a CSS media query list
+  entry .Method   the value marker of `method` and `formmethod`: `get`, `post` or `dialog`
+      The `honeycomb.Method` enum has the three values, passed as `.show`.
+  entry .Minmax   the value marker of an `<input>`'s `min` and `max`, whose form depends on the input's type
+  entry .MimeList   the value marker of `accept`: a comma-separated list of MIME types and extensions
+  entry .Mime   the value marker of a single MIME type: `type` on `<a>`, `<link>`, `<embed>`, `<object>` and `<source>`
+  entry .Name   the value marker of `name`: a form-control, form, map, meta or slot name
+  entry .OlType   the value marker of an `<ol>`'s `type`: `1`, `a`, `A`, `i` or `I`
+  entry .Openness   the value marker of a `<template>`'s `shadowrootmode`: `open` or `closed`
+  entry .PermissionsPolicy   the value marker of an `<iframe>`'s `allow`: a permissions policy
+  entry .Popover   the value marker of `popover`: `auto`, `manual` or `hint`
+  entry .PopoverAction   the value marker of `popovertargetaction`: `toggle`, `show` or `hide`
+  entry .PositiveInt   the value marker of a non-negative integer attribute: `width`, `height`, `rows`, `cols`, `colspan`, `span`, `size`, …
+      `Attributive.posInt` accepts an `Int` for it; the value is not checked for sign.
+  entry .Presence   the value marker of a boolean attribute: present or absent, with no value
+      `disabled`, `checked`, `hidden`'s plain form, `required`, `autofocus`, `controls`,
+      `open`, and every other attribute whose presence is its meaning. `Attributive.boolean`
+      accepts a `Boolean`: `true` writes the bare attribute (`<input disabled>`) and `false`
+      omits it.
+  entry .Preload   the value marker of `preload`: `none`, `metadata` or `auto`
+      The `honeycomb.Preload` enum has the values, passed as `.show`.
+  entry .ReferrerPolicy   the value marker of `referrerpolicy`: a referrer policy name
+  entry .Regex   the value marker of an `<input>`'s `pattern`: a JavaScript regular expression
+  entry .Sandbox   the value marker of an `<iframe>`'s `sandbox`: space-separated `allow-…` tokens
+      The `honeycomb.Sandbox` enum has the tokens, passed as `.show`.
+  entry .ScriptType   the value marker of a `<script>`'s `type`: `module`, `importmap`, a MIME type, or a data block type
+  entry .Scripting   the value marker of an event-handler attribute, which takes a script rather than text
+      No `Attributive` for `Text` exists for it, deliberately: a handler is supplied as a
+      typed scripting value, such as a querencia foreign DOM expression, for which the
+      scripting library provides the `Attributive to Whatwg.Scripting`. The WHATWG vocabulary
+      declares no `on…` attribute givens itself; `Html4Transitional` does.
+  entry .Shape   the value marker of an `<area>`'s `shape`: `circle`, `default`, `poly` or `rect`
+  entry .Sizes   the value marker of a `<link rel="icon">`'s `sizes`: `any` or `WxH` tokens
+  entry .Softness   the value marker of a `<textarea>`'s `wrap`: `soft` or `hard`
+      The `honeycomb.Wrap` enum has the two values, passed as `.show`.
+  entry .SourceSizeList   the value marker of an `<img>` or `<source>`'s `sizes`
+  entry .Srcdoc   the value marker of an `<iframe>`'s `srcdoc`: a whole HTML document, as text
+  entry .SrcSet   the value marker of `srcset`: candidate image sources with their descriptors
+  entry .Switch   the value marker of `autocomplete`: `on` or `off`
+      `Attributive.switch` accepts a `Boolean`, written as `on` or `off`; the
+      `honeycomb.Autocomplete` enum has the same two values.
+  entry .Target   the value marker of `target` and `formtarget`: a browsing-context name or keyword
+      The `honeycomb.Target` enum has `_self`, `_blank`, `_parent`, `_top` and a named
+      context, passed as `.show`.
+  entry .Temporal   the value marker of a `<time>`'s `datetime`: any of the specification's date, time and duration forms
+  entry .Textual   the value marker of an attribute which takes any text
+      `alt`, `title`, `placeholder`, `content`, `label`, `slot`, `nonce`, `integrity`, and
+      the rest. `Attributive.textTextual` and `.stringTextual` accept a `Text` or a `String`
+      for it, without any import; the `attributives.textAttributive` choice given extends the
+      same acceptance to every other marker.
+  entry .ThScope   the value marker of a `<th>`'s `scope`: `row`, `col`, `rowgroup` or `colgroup`
+  entry .Tokens   the value marker of a space-separated token list: `rel`, `blocking`
+      The `honeycomb.Rel` enum has the link types, passed as `.show`.
+  entry .Truth   the value marker of an attribute written `true` or `false`: `draggable`, `spellcheck`, `writingsuggestions`
+      `Attributive.truth` accepts a `Boolean`, written as the word `true` or `false`, unlike a
+      `Presence` attribute which is written or omitted.
+  entry .Upto8   the value marker of `headingoffset`: an integer from 0 to 8
+  entry .Url   the value marker of a URL-valued attribute: `href`, `src`, `action`, `cite`, `poster`, `data`, `itemid`, …
+      `Attributive.url` accepts any value which is `Abstractable across Urls to Text` — an
+      `HttpUrl`, or any typed URL — and a `Text` once `attributives.textAttributive` is in
+      scope.
+  entry .Urls   the value marker of a space-separated list of URLs: `ping`, `itemtype`
+  entry .Utf8   the value marker of `charset` and `accept-charset`, whose only valid value is `utf-8`
+  entry .abbr   `abbr` on `<th>`: an abbreviated header, as `Textual`
+  entry .accept   `accept` on `<input>`: the file types accepted, as `MimeList`
+  entry .acceptCharset   the form's accepted encoding, on `<form>`, as `Utf8`
+      The given is registered under the name `acceptCharset` rather than the
+      specification's `accept-charset`, so `Form(acceptCharset = …)` is how it is written and
+      `accept-charset` is what the parser would need to see; the HTML 4 dialect spells it
+      correctly.
+  entry .accesskey   `accesskey` on every element: keyboard shortcut labels, as `AccessKeys`
+  entry .action   `action` on `<form>`: the URL the form submits to, as `Url`
+  entry .allow   `allow` on `<iframe>`: the frame's permissions policy, as `PermissionsPolicy`
+  entry .allowfullscreen   `allowfullscreen` on `<iframe>`: a `Presence`
+  entry .alpha   `alpha` on `<input>`: whether a colour input has an alpha channel, as `Presence`
+  entry .alt   `alt` on `<area>`, `<img>` and `<input>`: replacement text, as `Textual`
+  entry .as   `as` on `<link>`: the destination type of a preload, as `Textual`
+  entry .async   `async` on `<script>`: a `Presence`
+  entry .autocapitalize   `autocapitalize` on every element, as `Autocapitalization`
+  entry .autocomplete   `autocomplete` on `<form>`: `on` or `off`, as `Switch`
+  entry .autocomplete2   `autocomplete` on `<input>`, `<select>` and `<textarea>`, as `Switch`
+  entry .autocorrect   `autocorrect` on every element, as `Textual`
+  entry .autofocus   `autofocus` on every element: a `Presence`
+  entry .autoplay   `autoplay` on `<audio>` and `<video>`: a `Presence`
+  entry .blocking   `blocking` on `<link>`, `<script>` and `<style>`: render-blocking tokens, as `Tokens`
+  entry .charset   `charset` on `<meta>`: the document encoding, as `Utf8`
+  entry .checked   `checked` on `<input>`: a `Presence`
+  entry .cite   `cite` on `<blockquote>`, `<del>`, `<ins>` and `<q>`: the source URL, as `Url`
+  entry .class   `class` on every element: CSS class names, as `CssClassList`
+      Written as `` `class` = … `` since `class` is a keyword; the usual way is the
+      `Tag.name(children)` form (`Div.panel(…)`), which an `Attribution` in scope permits.
+  entry .closedby   `closedby` on `<dialog>`, as `Closedby`
+  entry .color   `color` on `<link>`: a mask icon's colour, as `Color`
+  entry .colorspace   `colorspace` on `<input>`, as `Colorspace`
+  entry .cols   `cols` on `<textarea>`: the visible width in characters, as `PositiveInt`
+  entry .colspan   `colspan` on `<td>` and `<th>`, as `PositiveInt`
+  entry .command   `command` on `<button>`: the command to invoke, as `Command`
+  entry .commandfor   `commandfor` on `<button>`: the id of the target element, as `Id`
+  entry .content   `content` on `<meta>`: the metadata value, as `Textual`
+  entry .contenteditable   `contenteditable` on every element, as `ContentEditable`
+  entry .controls   `controls` on `<audio>` and `<video>`: a `Presence`
+  entry .coords   `coords` on `<area>`, as `Coords`
+  entry .crossorigin   `crossorigin` on `<audio>`, `<img>`, `<link>`, `<script>` and `<video>`, as `Crossorigin`
+  entry .data   `data` on `<object>`: the resource URL, as `Url`
+  entry .datetime   `datetime` on `<del>` and `<ins>`: when the change was made, as `Datetime`
+  entry .datetime2   `datetime` on `<time>`: the machine-readable form, as `Temporal`
+  entry .decoding   `decoding` on `<img>`, as `Decoding`
+  entry .default   `default` on `<track>`: a `Presence`
+  entry .defer   `defer` on `<script>`: a `Presence`
+  entry .dir   `dir` on every element: text direction, as `Dir`
+      `Body(dir = HDir.Rtl)` compiles without an import, through `HDir.attributive`.
+  entry .dirname   `dirname` on `<input>` and `<textarea>`: the field name for the direction, as `Textual`
+  entry .disabled   `disabled` on `<button>`, `<input>`, `<optgroup>`, `<option>`, `<select>` and `<textarea>`: a `Presence`
+  entry .disabled2   `disabled` on `<fieldset>`: a `Presence`
+  entry .disabled3   `disabled` on `<link>`: a `Presence`
+  entry .download4   `download` on `<a>` and `<area>`: the suggested filename, as `Textual`
+  entry .draggable   `draggable` on every element: `true` or `false`, as `Truth`
+  entry .enctype   `enctype` on `<form>`, as `Enctype`
+  entry .enterkeyhint   `enterkeyhint` on every element, as `EnterKeyHint`
+  entry .fetchpriority   `fetchpriority` on `<img>`, `<link>` and `<script>`, as `FetchPriority`
+  entry .for   `for` on `<label>`: the id of the labelled control, as `Id`
+      Written as `` `for` = … `` since `for` is a keyword.
+  entry .for2   `for` on `<output>`: the ids of the contributing controls, as `Ids`
+  entry .form   `form` on a form control: the id of the form it belongs to, as `Id`
+      On `<button>`, `<fieldset>`, `<input>`, `<object>`, `<output>`, `<select>` and
+      `<textarea>`.
+  entry .formaction   `formaction` on `<input>` and `<button>`, as `Url`
+  entry .formenctype   `formenctype` on `<input>` and `<button>`, as `Enctype`
+  entry .formmethod   `formmethod` on `<input>` and `<button>`, as `Method`
+  entry .formnovalidate   `formnovalidate` on `<input>` and `<button>`: a `Presence`
+  entry .formtarget   `formtarget` on `<input>` and `<button>`, as `Target`
+  entry .headers   `headers` on `<td>` and `<th>`: the ids of the cell's header cells, as `Ids`
+  entry .headingoffset   `headingoffset` on every element: 0 to 8, as `Upto8`
+  entry .headingreset   `headingreset` on every element, as `Presence`
+      The given is registered under the attribute name `headingoffset`, not `headingreset`,
+      so `headingreset = true` writes a bare `headingoffset`.
+  entry .height   `height` on `<canvas>`, `<embed>`, `<iframe>`, `<img>`, `<input>`, `<object>`, `<video>` and `<svg>`, as `PositiveInt`
+  entry .hidden   `hidden` on every element: present, or `until-found`, as `Hidden`
+      Its marker is `Hidden`, not `Presence`, so `hidden = true` needs a given from
+      `Boolean` to `Hidden`, which the library does not provide; with
+      `attributives.textAttributive` in scope, `hidden = t""` writes the bare attribute.
+  entry .high   `high` on `<meter>`, as `Decimal`
+  entry .href   `href` on `<a>` and `<area>`: the link target, as `Url`
+  entry .href2   `href` on `<base>`: the document base URL, as `Url`
+  entry .href3   `href` on `<link>`: the linked resource, as `Url`
+  entry .hreflang   `hreflang` on `<a>` and `<link>`, as `Language`
+  entry .httpEquiv   `http-equiv` on `<meta>`: a pragma directive, as `HttpEquiv`
+      Written `httpEquiv = …`; the attribute serializes as `http-equiv`.
+  entry .id   `id` on every element, as `Id`
+      Takes a `Name[DomId]` through `Attributive.domId`, or a `Text` with
+      `attributives.textAttributive`.
+  entry .imagesizes   `imagesizes` on `<link>`, as `ImageSizes`
+  entry .imagesrcset   `imagesrcset` on `<link>`, as `ImageSrcSet`
+  entry .inert   `inert` on every element: a `Presence`
+  entry .inputmode   `inputmode` on every element, as `InputMode`
+  entry .integrity   `integrity` on `<link>` and `<script>`: a subresource integrity hash, as `Textual`
+  entry .is   `is` on every element: the custom element name, as `CustomElementName`
+  entry .ismap   `ismap` on `<img>`: a `Presence`
+  entry .itemid   `itemid` on every element: a microdata item's global identifier, as `Url`
+  entry .itemprop   `itemprop` on every element, as `ItemProp`
+  entry .itemref   `itemref` on every element, as `Ids`
+  entry .itemscope   `itemscope` on every element: a `Presence`
+  entry .itemtype   `itemtype` on every element, as `Urls`
+  entry .kind   `kind` on `<track>`, as `Kind`
+  entry .label   `label` on `<optgroup>`, `<option>` and `<track>`: a user-visible label, as `Textual`
+      A given named `label` is also exported by other Soundness libraries, so in the
+      `soundness` umbrella the name is reached through `Whatwg.label` where a bare reference
+      would be ambiguous; attribute resolution itself never needs the name.
+  entry .lang   `lang` on every element, as `Language`
+  entry .list   `list` on `<input>`: the id of a `<datalist>`, as `Id`
+  entry .loading   `loading` on `<img>` and `<iframe>`: `lazy` or `eager`, as `Laziness`
+  entry .loop   `loop` on `<audio>` and `<video>`: a `Presence`
+  entry .low   `low` on `<meter>`, as `Decimal`
+  entry .max   `max` on `<input>`, as `Minmax`
+  entry .max2   `max` on `<meter>` and `<progress>`, as `Decimal`
+  entry .maxlength   `maxlength` on `<input>` and `<textarea>`, as `PositiveInt`
+  entry .media   `media` on `<a>`, `<area>`, `<link>`, `<source>` and `<style>`, as `MediaQueryList`
+  entry .method   `method` on `<form>`: `get`, `post` or `dialog`, as `Method`
+  entry .min   `min` on `<input>`, as `Minmax`
+  entry .min2   `min` on `<meter>`, as `Decimal`
+  entry .minlength   `minlength` on `<input>` and `<textarea>`, as `PositiveInt`
+  entry .multiple   `multiple` on `<input>` and `<select>`: a `Presence`
+  entry .muted   `muted` on `<audio>` and `<video>`: a `Presence`
+  entry .name   `name` on `<button>`, `<fieldset>`, `<input>`, `<output>`, `<select>` and `<textarea>`, as `Name`
+  entry .name2   `name` on `<details>`: the exclusive-accordion group, as `Name`
+  entry .name3   `name` on `<form>`, as `Name`
+  entry .name4   `name` on `<iframe>` and `<object>`: a browsing-context name, as `Target`
+  entry .name5   `name` on `<map>`, as `Name`
+  entry .name6   `name` on `<meta>`: the metadata name, as `Name`
+      The `#Meta` object offers the standard names as preset tags (`Meta.Viewport`,
+      `Meta.Description`, …).
+  entry .name7   `name` on `<slot>`, as `Name`
+  entry .nomodule   `nomodule` on `<script>`: a `Presence`
+  entry .nonce   `nonce` on every element: a cryptographic nonce, as `Textual`
+  entry .novalidate   `novalidate` on `<form>`: a `Presence`
+  entry .open   `open` on `<details>` and `<dialog>`: a `Presence`
+  entry .optimum   `optimum` on `<meter>`, as `Decimal`
+  entry .pattern   `pattern` on `<input>`, as `Regex`
+  entry .ping   `ping` on `<a>` and `<area>`: URLs to notify, as `Urls`
+  entry .placeholder   `placeholder` on `<input>` and `<textarea>`, as `Textual`
+  entry .playsinline   `playsinline` on `<video>`: a `Presence`
+  entry .popover   `popover` on every element, as `Popover`
+  entry .popovertarget   `popovertarget` on `<button>` and `<input>`: the popover's id, as `Id`
+  entry .pta   `popovertargetaction` on `<button>` and `<input>`, as `PopoverAction`
+  entry .poster   `poster` on `<video>`: the placeholder image, as `Url`
+  entry .preload   `preload` on `<audio>` and `<video>`, as `Preload`
+  entry .readonly   `readonly` on `<input>` and `<textarea>`: a `Presence`
+  entry .referrerpolicy   `referrerpolicy` on `<a>`, `<area>`, `<iframe>`, `<img>`, `<link>` and `<script>`, as `ReferrerPolicy`
+  entry .rel   `rel` on `<a>` and `<area>`: link types, as `Tokens`
+  entry .rel2   `rel` on `<link>`: link types, as `Tokens`
+      The `#Link` object offers each link type as a preset tag (`Link.Stylesheet`,
+      `Link.Icon`, …).
+  entry .required   `required` on `<input>`, `<select>` and `<textarea>`: a `Presence`
+  entry .reversed   `reversed` on `<ol>`: a `Presence`
+  entry .rows   `rows` on `<textarea>`, as `PositiveInt`
+  entry .rowspan   `rowspan` on `<td>` and `<th>`, as `PositiveInt`
+  entry .sandbox   `sandbox` on `<iframe>`, as `Sandbox`
+  entry .scope   `scope` on `<th>`, as `ThScope`
+  entry .selected   `selected` on `<option>`: a `Presence`
+  entry .shadowrootclonable   `shadowrootclonable` on `<template>`: a `Presence`
+  entry .srcer   `shadowrootcustomelementregistry` on `<template>`: a `Presence`
+  entry .srdf   `shadowrootdelegatesfocus` on `<template>`: a `Presence`
+  entry .shadowrootmode   `shadowrootmode` on `<template>`: `open` or `closed`, as `Openness`
+  entry .shadowrootserializable   `shadowrootserializable` on `<template>`: a `Presence`
+  entry .shape   `shape` on `<area>`, as `Shape`
+  entry .size   `size` on `<input>` and `<select>`, as `PositiveInt`
+  entry .sizes   `sizes` on `<img>` and `<source>`, as `SourceSizeList`
+  entry .sizes2   `sizes` on `<link>`: icon sizes, as `Sizes`
+  entry .slot   `slot` on every element: the shadow-tree slot name, as `Textual`
+  entry .span   `span` on `<col>` and `<colgroup>`, as `PositiveInt`
+  entry .spellcheck   `spellcheck` on every element: `true` or `false`, as `Truth`
+  entry .src   `src` on `<audio>`, `<embed>`, `<iframe>`, `<img>`, `<input>`, `<script>`, `<source>`, `<track>` and `<video>`, as `Url`
+  entry .srcdoc   `srcdoc` on `<iframe>`: an inline document, as `Srcdoc`
+  entry .srclang   `srclang` on `<track>`, as `Language`
+  entry .srcset   `srcset` on `<img>` and `<source>`, as `SrcSet`
+  entry .start   `start` on `<ol>`: the first item's number, as `Integral`
+  entry .step   `step` on `<input>`, as `Decimal`
+  entry .style   `style` on every element: inline CSS, as `Css`
+  entry .tabindex   `tabindex` on every element, as `Integral`
+  entry .target   `target` on `<a>` and `<area>`, as `Target`
+  entry .target2   `target` on `<base>`: the default browsing context, as `Target`
+  entry .target3   `target` on `<form>`, as `Target`
+  entry .title   `title` on every element: advisory text, as `Textual`
+  entry .translate   `translate` on every element: `yes` or `no`, as `Affirmation`
+  entry .type   `type` on `<a>` and `<link>`: the linked resource's MIME type, as `Mime`
+      Written as `` `type` = … `` since `type` is a keyword.
+  entry .type2   `type` on `<button>`: `submit`, `reset` or `button`, as `ButtonType`
+  entry .type3   `type` on `<embed>`, `<object>` and `<source>`, as `Mime`
+  entry .type4   `type` on `<input>`, as `InputType`
+      Rarely written: `#Input` has a preset tag per type (`Input.Email`, `Input.Range`, …).
+  entry .type5   `type` on `<ol>`: the numbering style, as `OlType`
+  entry .type6   `type` on `<script>`, as `ScriptType`
+  entry .usemap   the image-map reference on `<img>`, `<input>` and `<object>`, as `HashName`
+      The given is registered under the attribute name `usemaptype`, not the specification's
+      `usemap`, so what it writes is `usemaptype="#map"`.
+  entry .value   `value` on `<button>` and `<option>`, as `Textual`
+  entry .value2   `value` on `<data>`: the machine-readable value, as `Textual`
+  entry .value3   `value` on `<input>`, as `InputValue`
+  entry .value4   `value` on `<li>`: the item's ordinal, as `Integral`
+  entry .value5   `value` on `<meter>` and `<progress>`, as `Decimal`
+  entry .width   `width` on `<canvas>`, `<embed>`, `<iframe>`, `<img>`, `<input>`, `<object>`, `<video>` and `<svg>`, as `PositiveInt`
+  entry .wrap   `wrap` on `<textarea>`: `soft` or `hard`, as `Softness`
+  entry .writingsuggestions   `writingsuggestions` on every element: `true` or `false`, as `Truth`
+  entry #doctype   the `<!doctype html>` doctype a `Document[Html]` of this dialect carries
+  entry #Interactive   the interactive content category, as a union of tag names
+      `<a>`, `<audio>`, `<button>`, `<details>`, `<embed>`, `<iframe>`, `<img>`, `<input>`,
+      `<label>`, `<select>`, `<textarea>` and `<video>`. The categories are types, so an
+      `Html of Interactive` is any interactive element.
+  entry #Flow   the flow content category: everything that may go in a `<body>`, `<div>` or `<li>`
+      Every heading, every phrasing element, the sectioning elements, and the block-level
+      elements (`<address>`, `<blockquote>`, `<details>`, `<dialog>`, `<div>`, `<dl>`,
+      `<fieldset>`, `<figure>`, `<footer>`, `<form>`, `<header>`, `<hr>`, `<main>`, `<menu>`,
+      `<ol>`, `<p>`, `<pre>`, `<table>`, `<ul>`, `<search>`). `Html of Flow` is the type most
+      code wants for a piece of page content, and `List[Html of Flow]` for several.
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg
+      import htmlDoms.whatwg.*
+
+      val nodes: List[Html of Flow] = List(Hr, P("Hello"), Br)
+      ```
+  entry #Phrasing   the phrasing content category: the text of a document and the elements which mark it up
+      Includes `"#text"`, so text may appear wherever phrasing content may, and every
+      embedded and interactive-phrasing element besides the inline elements (`<abbr>`,
+      `<b>`, `<code>`, `<em>`, `<span>`, `<time>`, …). A `<p>` or a heading is
+      `over Phrasing`; a `Renderable in Phrasing` may be placed inside either.
+  entry #Embedded   the embedded content category: `<audio>`, `<canvas>`, `<embed>`, `<iframe>`, `<img>`, `<object>`, `<picture>`, `<video>`, `<math>` and `<svg>`
+  entry #Sectioning   the sectioning content category: `<article>`, `<aside>`, `<nav>` and `<section>`
+  entry #ScriptSupporting   `<script>` and `<template>`, which may appear wherever a list or table's own children may
+  entry #Metadata   the metadata content category: what a `<head>` may contain
+      `<base>`, `<link>`, `<meta>`, `<noscript>`, `<script>`, `<style>`, `<template>` and
+      `<title>`.
+  entry #Heading   `<h1>` to `<h6>` and `<hgroup>`
+  entry #insertable   the tags which the parser may insert unwritten between a tag and a child
+      `insertable(tag)` is the subset of `tag`'s admissible children which are marked
+      `insertable`: `<html>`'s `<head>` and `<body>`, `<table>`'s `<tbody>`, `<tbody>`'s
+      `<tr>`, `<colgroup>`. Used by `#infer`.
+  entry #infer   the tag to insert between a parent and a child the parent cannot hold directly
+      `infer(parent, child)` is the insertable child of `parent` through which `child` can be
+      reached, or `Unset`, which is how `<table><tr>` parses as `<table><tbody><tr>` and
+      `<p>Hello` read as a document gains its `<html>` and `<body>`. The `Dom` contract;
+      the parser calls it.
+  entry #elements   every tag of the dialect, by its name
+      A `Dictionary[Tag]` built from the `Tag` members of this instance; the parser looks a
+      start tag up here, and `Dom#generic` lists its keys.
+  entry #entities   the named character references of HTML, by name
+      The HTML 4 set and the Living Standard's additions, name to replacement text
+      (`amp` to `&`, `nbsp` to a no-break space, and over two thousand more). The parser
+      reads it; an unknown reference (`&foo;`) is left literally in the text.
+  entry #attributes   every attribute of the dialect, by its name
+      A `Dictionary[Attribute]` built from the attribute givens of the companion, with the
+      several givens for one name (`href`, `href2`, `href3`) merged into one `Attribute`
+      whose element set is the union. The parser consults it to reject an unknown attribute
+      on a known element (`Html.Issue.UnknownAttribute`).
+  entry #Html   the `<html>` root element, as `honeycomb.Html`
+      A lazy alias so that `import htmlDoms.whatwg.*` brings `Html` into scope as a tag
+      alongside the others: `Html(Head(Title("x")), Body(P("y")))` is the whole document
+      tree. The `Html` object itself is the companion of the `Html` type, and is a
+      `Tag.Container of "html" over "head" | "body"`.
+  entry #A   `<a>`: a hyperlink; transparent, so it holds whatever its parent may
+      `Tag.Transparent of "a" over "" in Whatwg`. It takes `href`, `target`, `download`,
+      `rel`, `hreflang`, `type`, `referrerpolicy` and `ping`. Being transparent, an
+      `A(…)` inside a `<p>` may hold phrasing content and one inside a `<div>` flow content;
+      the parser rejects a child the enclosing element could not hold
+      (`Html.Issue.InadmissibleTag`).
+  entry #Abbr   `<abbr>`: an abbreviation, over phrasing content; `title` gives the expansion
+  entry #Address   `<address>`: contact information, over flow content less headings, sectioning and nested addresses
+  entry #Area   `<area>`: a region of an image map; a void tag with preset shapes
+    detail
+        A `Tag.Void` whose `Topic` is `"area"`, taking `alt`, `coords`, `shape`, `href`,
+        `target`, `download`, `ping`, `rel` and `referrerpolicy`. Its four members preset
+        the `shape` attribute; note that in the current source they are built with the
+        label `input`, so `Area.Rect` serializes as `<input shape="rect">`.
+    entry .Default   a `shape="default"` area: the whole image
+    entry .Rect   a `shape="rect"` area, with `coords` as left, top, right, bottom
+    entry .Circle   a `shape="circle"` area, with `coords` as centre x, centre y, radius
+    entry .Poly   a `shape="poly"` area, with `coords` as a list of vertex pairs
+    entry .Topic   `"area"`
+    entry .Transport   `""`: no children
+    entry .Form   `Whatwg`
+  entry #Article   `<article>`: a self-contained composition, over flow content
+  entry #Aside   `<aside>`: tangential content, over flow content
+  entry #Audio   `<audio>`: a sound; transparent, plus `<source>` and `<track>` children
+      Takes `src`, `crossorigin`, `preload`, `autoplay`, `loop`, `muted` and `controls`.
+      The specification's rule that its children depend on whether `src` is present is not a
+      type: both forms compile.
+  entry #B   `<b>`: text drawn to attention without added importance, over phrasing content
+  entry #Base   `<base>`: the document base URL and default link target; void, in `<head>`
+      Takes `href` and `target`; the specification requires at least one, which is not
+      enforced.
+  entry #Bdi   `<bdi>`: text isolated for bidirectional formatting, over phrasing content
+  entry #Bdo   `<bdo>`: text with an explicit direction, over phrasing content; `dir` is required
+  entry #Blockquote   `<blockquote>`: a quoted section, over flow content; `cite` gives its source
+  entry #Body   `<body>`: the document's content, over flow content
+      Autoclosing and insertable: the parser supplies it around content read as a whole
+      document, and closes it at the end of input.
+  entry #Br   `<br>`: a line break; void
+  entry #Button   `<button>`: a button, over phrasing content
+      A boundary tag: the parser does not let a formatting element opened outside it
+      continue inside it. Takes `type`, `disabled`, `form`, `formaction`, `formenctype`,
+      `formmethod`, `formnovalidate`, `formtarget`, `name`, `value`, `command`, `commandfor`,
+      `popovertarget` and `popovertargetaction`.
+  entry #Canvas   `<canvas>`: a scriptable bitmap; transparent, so it holds fallback content
+      Takes `width` and `height`.
+  entry #Caption   `<caption>`: a table's title, over flow content; first child of `<table>`
+  entry #Cite   `<cite>`: the title of a work, over phrasing content
+  entry #Code   `<code>`: a fragment of computer code, over phrasing content
+  entry #Col   `<col>`: a table column; void, inside `<colgroup>`; `span` covers several
+  entry #Colgroup   `<colgroup>`: a group of columns, over `<col>` elements
+      Only whitespace may appear between its children (`Html.Mode.Whitespace`), and it is
+      insertable, so a `<col>` met directly in a `<table>` gets one.
+  entry #Data   `<data>`: content with a machine-readable `value`, over phrasing content
+  entry #Datalist   `<datalist>`: predefined options for an `<input list=…>`, over phrasing content and `<option>`s
+  entry #Dd   `<dd>`: a description in a `<dl>`, over flow content; autoclosing
+  entry #Del   `<del>`: removed text; transparent, with `cite` and `datetime`
+  entry #Details   `<details>`: a disclosure widget: a `<summary>` then flow content
+      Takes `open` and `name`, the latter grouping several into an exclusive accordion.
+  entry #Dfn   `<dfn>`: the defining instance of a term, over phrasing content
+  entry #Dialog   `<dialog>`: a dialog box, over flow content; takes `open` and `closedby`
+  entry #Div   `<div>`: a generic container, over flow content
+  entry #Dl   `<dl>`: a description list, over `<dt>`, `<dd>` and `<div>` groups
+      Only whitespace may appear between its children, and it autocloses.
+  entry #Dt   `<dt>`: a term in a `<dl>`, over flow content; autoclosing
+  entry #Em   `<em>`: stress emphasis, over phrasing content
+  entry #Embed   `<embed>`: an external application or interactive content; void
+      Takes `src`, `type`, `width` and `height`.
+  entry #Fieldset   `<fieldset>`: a group of form controls: an optional `<legend>` then flow content
+      Takes `disabled`, `form` and `name`.
+  entry #Figcaption   `<figcaption>`: a figure's caption, over flow content
+  entry #Figure   `<figure>`: self-contained content with an optional `<figcaption>`, over flow content
+  entry #Footer   `<footer>`: a footer for its nearest ancestor section, over flow content
+  entry #Form   `<form>`: a form, over flow content
+      Takes `action`, `method`, `enctype`, `accept-charset` (as `acceptCharset`),
+      `autocomplete`, `name`, `novalidate` and `target`.
+  entry #H1   `<h1>`: a heading of the first rank, over phrasing content
+  entry #H2   `<h2>`: a heading of the second rank, over phrasing content
+  entry #H3   `<h3>`: a heading of the third rank, over phrasing content
+  entry #H4   `<h4>`: a heading of the fourth rank, over phrasing content
+  entry #H5   `<h5>`: a heading of the fifth rank, over phrasing content
+  entry #H6   `<h6>`: a heading of the sixth rank, over phrasing content
+  entry #Head   `<head>`: the document's metadata, over `#Metadata` content
+      Only whitespace may appear between its children; it autocloses, and is insertable, so
+      a `<title>` met at the start of a document gets a `<head>` around it.
+  entry #Header   `<header>`: introductory content for its nearest ancestor section, over flow content; autoclosing
+  entry #Hgroup   `<hgroup>`: a heading with its subheadings, over `<p>` and `<h1>` to `<h6>`
+  entry #Hr   `<hr>`: a thematic break; void
+  entry #I   `<i>`: text in an alternate voice, over phrasing content
+  entry #Iframe   `<iframe>`: a nested browsing context; void in this vocabulary
+      Takes `src`, `srcdoc`, `name`, `sandbox`, `allow`, `allowfullscreen`, `width`,
+      `height`, `referrerpolicy` and `loading`. It is defined as a `Tag.Void`, so it takes
+      no children and serializes as `<iframe …>` with no end tag, where the specification
+      requires `</iframe>`.
+  entry #Img   `<img>`: an image; void
+      Takes `src`, `alt`, `srcset`, `sizes`, `crossorigin`, `usemap`, `ismap`, `width`,
+      `height`, `referrerpolicy`, `decoding`, `loading` and `fetchpriority`. `alt` is read
+      back with `img.alt` and `width` with `img.width` (an `Optional[Int]`), through
+      `Unattributive`.
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg
+      import htmlDoms.whatwg.*
+      import attributives.textAttributive
+
+      val image: Html.Element of "img" in Whatwg = Img(src = t"puppy.jpg", width = 50)
+      image.width                               // 50
+      (image.alt = t"A puppy").show             // <img src="puppy.jpg" width="50" alt="A puppy">
+      ```
+  entry #Input   `<input>`: a form control; a void tag with a preset for every `type`
+    detail
+        A `Tag.Void` whose `Topic` is `"input"`. `Input` alone is an input with no `type`
+        (a text field); each member presets `type`, so `Input.Email(name = t"email")` is
+        `<input type="email" name="email">`, and the parser reads `<input type="button">`
+        back as `Input.Button`. An input takes `name`, `value`, `disabled`, `readonly`,
+        `required`, `checked`, `placeholder`, `autocomplete`, `list`, `min`, `max`, `step`,
+        `pattern`, `size`, `maxlength`, `minlength`, `multiple`, `accept`, `alt`, `src`,
+        `width`, `height`, `form`, `formaction` and its siblings, `dirname`, `popovertarget`
+        and `popovertargetaction`.
+
+        ```scala
+        import soundness.*
+        import htmlDoms.whatwg
+        import htmlDoms.whatwg.*
+        import attributives.textAttributive
+
+        Form(action = t"/signup")
+          ( Input.Email(name = t"email", required = true),
+            Input.Password(name = t"password"),
+            Input.Checkbox(name = t"terms", checked = true),
+            Input.Submit(value = t"Sign up") )
+        ```
+    entry .Hidden   `<input type="hidden">`
+    entry .Text   `<input type="text">`
+    entry .Search   `<input type="search">`
+    entry .Tel   `<input type="tel">`
+    entry .Url   `<input type="url">`
+    entry .Email   `<input type="email">`
+    entry .Password   `<input type="password">`
+    entry .Date   `<input type="date">`
+    entry .Month   `<input type="month">`
+    entry .Week   `<input type="week">`
+    entry .Time   `<input type="time">`
+    entry .DatetimeLocal   `<input type="datetime-local">`
+    entry .Number   `<input type="number">`
+    entry .Range   `<input type="range">`
+    entry .Color   `<input type="color">`
+    entry .Checkbox   `<input type="checkbox">`
+    entry .Radio   `<input type="radio">`
+    entry .Submit   `<input type="submit">`
+    entry .Image   `<input type="image">`
+    entry .Reset   `<input type="reset">`
+    entry .Button   `<input type="button">`
+    entry .Topic   `"input"`
+    entry .Transport   `""`: no children
+    entry .Form   `Whatwg`
+  entry #Ins   `<ins>`: inserted text; transparent, with `cite` and `datetime`
+  entry #Kbd   `<kbd>`: user input, over phrasing content
+  entry #Label   `<label>`: a caption for a form control, over phrasing content; `for` names the control
+  entry #Legend   `<legend>`: a `<fieldset>`'s caption, over phrasing content and headings
+      In the current source the tag is built with the label `label`, so a `Legend(…)`
+      serializes as `<label>`; the parser's `<legend>` resolves through `#elements` by that
+      label too.
+  entry #Li   `<li>`: a list item, over flow content; autoclosing; `value` sets its ordinal in an `<ol>`
+  entry #Link   `<link>`: a link to an external resource; a void tag with a preset for every `rel`
+    detail
+        A `Tag.Void` whose `Topic` is `"link"`, taking `href`, `rel`, `type`, `media`,
+        `hreflang`, `sizes`, `as`, `crossorigin`, `integrity`, `referrerpolicy`, `blocking`,
+        `disabled`, `color`, `imagesizes`, `imagesrcset` and `fetchpriority`. Each member
+        presets `rel`, so `Link.Stylesheet(href = t"/style.css")` is
+        `<link rel="stylesheet" href="/style.css">`, and the parser reads
+        `<link rel="stylesheet">` back as `Link.Stylesheet`.
+    entry .Alternate   `<link rel="alternate">`
+    entry .Canonical   `<link rel="canonical">`
+    entry .Author   `<link rel="author">`
+    entry .DnsPrefetch   `<link rel="dns-prefetch">`
+    entry .Expect   `<link rel="expect">`
+    entry .Help   `<link rel="help">`
+    entry .Icon   `<link rel="icon">`
+    entry .Manifest   `<link rel="manifest">`
+    entry .Modulepreload   `<link rel="modulepreload">`
+    entry .License   `<link rel="license">`
+    entry .Next   `<link rel="next">`
+    entry .Pingback   `<link rel="pingback">`
+    entry .Preconnect   `<link rel="preconnect">`
+    entry .Prefetch   `<link rel="prefetch">`
+    entry .Preload   `<link rel="preload">`
+    entry .Prev   `<link rel="prev">`
+    entry .PrivacyPolicy   `<link rel="privacy-policy">`
+    entry .Search   `<link rel="search">`
+    entry .Stylesheet   `<link rel="stylesheet">`
+    entry .TermsOfService   `<link rel="terms-of-service">`
+    entry .Topic   `"link"`
+    entry .Transport   `""`: no children
+    entry .Form   `Whatwg`
+  entry #Main   `<main>`: the dominant content of the document, over flow content
+  entry #Map   `<map>`: an image map; transparent, plus `<area>` children; `name` is required
+  entry #Mark   `<mark>`: highlighted text, over phrasing content
+  entry #Math   `<math>`: MathML content, foreign to HTML
+      A foreign tag: its children are not HTML elements but `Html.Element.foreign` nodes,
+      which the parser builds for any tag inside it, keeping attribute case and accepting
+      `<![CDATA[…]]>`. The archimedes library renders a `Math` value into one.
+  entry #Menu   `<menu>`: a toolbar's commands, over `<li>` elements; whitespace only between them
+  entry #Meta   `<meta>`: document metadata; a void tag with a preset for every standard `name`
+    detail
+        Takes `name`, `content`, `charset` and `http-equiv` (as `httpEquiv`). Each member
+        presets `name`, so `Meta.Viewport(content = t"width=device-width")` is
+        `<meta name="viewport" content="width=device-width">`, and the parser reads
+        `<meta name="viewport">` back as `Meta.Viewport`. Unlike `#Area`, `#Input`,
+        `#Link` and `#Track`, this object does not fix its `Topic`, `Transport` and
+        `Form` type members.
+    entry .ApplicationName   `<meta name="application-name">`
+    entry .Author   `<meta name="author">`
+    entry .Description   `<meta name="description">`
+    entry .Generator   `<meta name="generator">`
+    entry .Keywords   `<meta name="keywords">`
+    entry .Referrer   `<meta name="referrer">`
+    entry .Viewport   `<meta name="viewport">`
+    entry .ThemeColor   `<meta name="theme-color">`
+    entry .ColorScheme   `<meta name="color-scheme">`
+  entry #Meter   `<meter>`: a scalar measurement in a known range, over phrasing content
+      Takes `value`, `min`, `max`, `low`, `high` and `optimum`, each a `Decimal`.
+  entry #Nav   `<nav>`: navigation links, over flow content
+  entry #Noscript   `<noscript>`: fallback for when scripting is off, over `<link>`, `<style>` and `<meta>`
+      The vocabulary gives it the `<head>` form; the specification's flow-content form in a
+      `<body>` is not typed.
+  entry #Object   `<object>`: an external resource; transparent, with `data`, `type`, `name`, `form`, `width` and `height`
+      A boundary tag for formatting elements.
+  entry #Ol   `<ol>`: an ordered list, over `<li>` elements; whitespace only between them
+      Takes `reversed`, `start` and `type`.
+  entry #Optgroup   `<optgroup>`: a group of `<option>`s with a `<legend>`; autoclosing, whitespace between
+      Takes `disabled` and `label`.
+  entry #Option   `<option>`: a choice in a `<select>` or `<datalist>`, over text; autoclosing
+      Takes `disabled`, `label`, `selected` and `value`. Shadows `scala.Option` within
+      `import htmlDoms.whatwg.*`, which is one more reason to prefer `Optional`.
+  entry #Output   `<output>`: the result of a calculation, over phrasing content; `for` names its inputs
+  entry #P   `<p>`: a paragraph, over phrasing content; autoclosing
+      Autoclosing is what lets `<p>one<p>two` parse as two paragraphs; `P(Div(…))` does not
+      compile, since a `<div>` is not phrasing content.
+  entry #Picture   `<picture>`: an image with alternative `<source>`s, over `<source>` and `<img>`; whitespace between
+  entry #Pre   `<pre>`: preformatted text, over phrasing content
+      Whitespace inside it is preserved by the serializer where elsewhere the indented
+      formatting may reflow it.
+  entry #Progress   `<progress>`: task completion, over phrasing content; `value` and `max`
+  entry #Q   `<q>`: an inline quotation, over phrasing content; `cite` gives its source
+  entry #Rp   `<rp>`: fallback parentheses for ruby annotations, over text; autoclosing
+  entry #Rt   `<rt>`: a ruby annotation, over phrasing content; autoclosing
+  entry #Ruby   `<ruby>`: ruby-annotated text, over phrasing content with `<rt>` and `<rp>`
+  entry #S   `<s>`: text no longer accurate, over phrasing content
+  entry #Samp   `<samp>`: sample output, over phrasing content
+  entry #Script   `<script>`: a script, over raw text
+      `Html.Mode.Raw`: the content is read to the first `</script>` without decoding
+      entities or recognising tags, and written as it is. Takes `src`, `type`, `async`,
+      `defer`, `nomodule`, `crossorigin`, `integrity`, `referrerpolicy`, `blocking` and
+      `fetchpriority`.
+  entry #Search   `<search>`: a search form or control group, over flow content
+  entry #Section   `<section>`: a generic section, over flow content
+  entry #Select   `<select>`: a drop-down control, over `<option>`, `<optgroup>`, `<hr>`, `<button>` and `<noscript>`
+      Whitespace only between children. Takes `name`, `multiple`, `size`, `disabled`,
+      `required`, `form` and `autocomplete`.
+  entry #Selectedcontent   `<selectedcontent>`: the mirrored content of a customisable `<select>`'s chosen option; void
+  entry #Slot   `<slot>`: a shadow-tree insertion point; transparent, with `name`
+  entry #Small   `<small>`: side comments and fine print, over phrasing content
+  entry #Source   `<source>`: a media or image source; void
+      Takes `src`, `type`, `srcset`, `sizes`, `media`, `width` and `height`.
+  entry #Span   `<span>`: a generic phrasing container
+  entry #Strong   `<strong>`: strong importance, over phrasing content
+  entry #Style   `<style>`: embedded CSS, over raw text
+      `Html.Mode.Raw`: `Style(".a { color: red }")` writes its text as it is, with no entity
+      encoding, and the parser decodes none. Takes `media` and `blocking`.
+  entry #Sub   `<sub>`: a subscript, over phrasing content
+  entry #Summary   `<summary>`: a `<details>`' caption, over phrasing content or one heading
+  entry #Sup   `<sup>`: a superscript, over phrasing content
+  entry #Svg   `<svg>`: SVG content, foreign to HTML
+      A foreign tag: its children are `Html.Element.foreign` nodes, built by the parser for
+      any tag inside it with attribute case kept and `<![CDATA[…]]>` accepted. Takes
+      `width` and `height`.
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg
+      import htmlDoms.whatwg.*
+      import strategies.throwUnsafely
+
+      t"""<svg><circle r="1"/></svg>""".read[Html of Flow]
+      // Svg(Html.Element.foreign("circle", Map(t"r" -> t"1")))
+      ```
+  entry #Table   `<table>`: a table, over `<caption>`, `<colgroup>`, `<thead>`, `<tbody>` and `<tfoot>`
+      Whitespace only between children, and a boundary for formatting elements. A `<tr>`
+      given directly to a `Table(…)` does not compile; the parser, by contrast, infers the
+      `<tbody>` (`#infer`), so `<table><tr>…` reads as `Table(Tbody(Tr(…)))`.
+  entry #Tbody   `<tbody>`: a table's body rows, over `<tr>`; autoclosing, insertable, whitespace between
+  entry #Td   `<td>`: a data cell, over flow content; autoclosing, and a boundary
+      Takes `colspan`, `rowspan` and `headers`.
+  entry #Template   `<template>`: an inert fragment, over flow and metadata content and every in-situ child
+      Since its contents are never rendered in place, it admits what is otherwise valid only
+      inside a list, table, row, ruby or `<select>`: `<li>`, `<tr>`, `<td>`, `<option>`,
+      `<source>`, and so on. Serialized as `<template></template>` when empty; parsed up to
+      a required `</template>`. Takes `shadowrootmode` and its `shadowroot…` siblings.
+  entry #Textarea   `<textarea>`: a multi-line text control, over text
+      `Html.Mode.Rcdata`: entities in its content are decoded but no tags recognised, so
+      `<textarea><div>x</div></textarea>` reads as the text `<div>x</div>`. Takes `name`,
+      `rows`, `cols`, `wrap`, `placeholder`, `maxlength`, `minlength`, `required`,
+      `readonly`, `disabled`, `dirname`, `form` and `autocomplete`.
+  entry #Tfoot   `<tfoot>`: a table's footer rows, over `<tr>`; autoclosing, whitespace between
+  entry #Th   `<th>`: a header cell, over flow content; autoclosing, and a boundary
+      Takes `colspan`, `rowspan`, `headers`, `scope` and `abbr`.
+  entry #Thead   `<thead>`: a table's header rows, over `<tr>`; autoclosing, whitespace between
+  entry #Time   `<time>`: a date or time, over phrasing content; `datetime` gives the machine form
+  entry #Title   `<title>`: the document's title, over text; in `<head>`
+      `Html.Mode.Rcdata`: `<title>a &amp; <b></title>` reads as the text `a & <b>`.
+  entry #Tr   `<tr>`: a table row, over `<td>` and `<th>`; autoclosing, insertable, whitespace between
+  entry #Track   `<track>`: a timed text track for `<audio>` or `<video>`; a void tag with a preset for every `kind`
+    detail
+        A `Tag.Void` whose `Topic` is `"track"`, taking `src`, `srclang`, `label`,
+        `default` and `kind`. Each member presets `kind`.
+    entry .Captions   `<track kind="captions">`
+    entry .Chapters   `<track kind="chapters">`
+    entry .Descriptions   `<track kind="descriptions">`
+    entry .Metadata   `<track kind="metadata">`
+    entry .Subtitles   `<track kind="subtitles">`
+    entry .Topic   `"track"`
+    entry .Transport   `""`: no children
+    entry .Form   `Whatwg`
+  entry #U   `<u>`: unarticulated annotation, over phrasing content
+  entry #Ul   `<ul>`: an unordered list, over `<li>` elements; whitespace only between them
+  entry #Var   `<var>`: a variable, over phrasing content
+  entry #Video   `<video>`: a video; transparent, plus `<source>` and `<track>` children
+      Takes `src`, `poster`, `crossorigin`, `preload`, `autoplay`, `playsinline`, `loop`,
+      `muted`, `controls`, `width` and `height`.
+  entry #Wbr   `<wbr>`: a line-break opportunity; void
+
+entry .Html4Transitional   the HTML 4.01 Transitional dialect: its tags as a `Dom`, and its attributes as givens
+  detail
+      The second description of HTML honeycomb ships, for documents which must be HTML 4.01
+      Transitional: legacy content, email templates, and markup which uses the
+      presentational elements and attributes the Living Standard dropped. Like `Whatwg`, it
+      is an **object** holding the attribute givens, and a **class** which is the `Dom`: the
+      tag vocabulary (`Font`, `Center`, `Applet`, `Strike`, `Isindex`, … as well as the
+      common tags), the HTML 4 content categories (`#Inline`, `#Block`, `#Flow`), the
+      `HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"` doctype, and the HTML 4
+      character references.
+
+      ```scala
+      import soundness.*
+      import htmlDoms.html4Transitional
+      import htmlDoms.html4Transitional.*
+      import attributives.textAttributive
+
+      Html(Head(Title("Legacy")), Body(bgcolor = t"#ffffff")(Center(Font(color = t"red")("Hi"))))
+      ```
+
+      Its attribute value markers are the `Whatwg` ones (`Textual`, `Url`, `Presence`,
+      `Color`, …), re-exported as aliases, so the same `Attributive` givens apply: a
+      `Boolean` for `checked`, an `Int` for `colspan`, a `Text` for anything with
+      `attributives.textAttributive`. The dialect's own markers (`Align`, `Charset`,
+      `Clear`, `Frame`, `Rules`, `Scope`, `Size`, `Valign`, `Valuetype`, `Wrap`) are
+      aliases of `Whatwg.Textual`. The intrinsic event attributes (`onclick`, `onload`, …)
+      are typed `of Script`, an alias of `Whatwg.Scripting`, so a handler must be a typed
+      scripting value rather than text.
+
+      An attribute of this dialect is an `Attribute in Html4Transitional`, distinct from
+      the WHATWG one, so a tag of one vocabulary never takes the other's attributes. The
+      parser recognises the HTML 4 doctype, and `Html.Provenance(htmlDoms.html4Transitional)`
+      is the metadata of a document loaded under it. Tags are `Tag.Container of "font" over
+      Inline in Html4Transitional` and the like.
+  refer honeycomb.Whatwg
+  refer honeycomb.Dom
+  refer honeycomb.Tag
+  entry .Attribute   `honeycomb.Attribute in Html4Transitional`: an attribute of this dialect
+  entry .attribute   makes the given for an attribute valid on named elements of this dialect
+      As `Whatwg.attribute`, but typed `in Html4Transitional`:
+      `attribute["bgcolor", "body" | "table", Color]()`.
+  entry .globalAttribute   makes the given for an attribute valid on every element of this dialect
+      As `Whatwg.globalAttribute`, but typed `in Html4Transitional`.
+  entry .Color   `Whatwg.Color`: a colour value, as `bgcolor`, `text`, `link` and `color` take
+  entry .Coords   `Whatwg.Coords`
+  entry .Css   `Whatwg.Css`
+  entry .CssClassList   `Whatwg.CssClassList`
+  entry .Datetime   `Whatwg.Datetime`
+  entry .Dir   `Whatwg.Dir`
+  entry .Enctype   `Whatwg.Enctype`
+  entry .HttpEquiv   `Whatwg.HttpEquiv`
+  entry .Id   `Whatwg.Id`
+  entry .Integral   `Whatwg.Integral`
+  entry .Language   `Whatwg.Language`
+  entry .MediaQueryList   `Whatwg.MediaQueryList`
+  entry .Method   `Whatwg.Method`
+  entry .MimeList   `Whatwg.MimeList`
+  entry .Mime   `Whatwg.Mime`
+  entry .Name   `Whatwg.Name`
+  entry .OlType   `Whatwg.OlType`
+  entry .Presence   `Whatwg.Presence`: a boolean attribute, present or absent
+  entry .PositiveInt   `Whatwg.PositiveInt`
+  entry .Regex   `Whatwg.Regex`
+  entry .Shape   `Whatwg.Shape`
+  entry .Target   `Whatwg.Target`
+  entry .Textual   `Whatwg.Textual`: any text
+  entry .Tokens   `Whatwg.Tokens`
+  entry .Url   `Whatwg.Url`
+  entry .Align   the value marker of `align`: `left`, `center`, `right` or `justify`; any text is accepted
+  entry .Charset   the value marker of `charset` and `accept-charset`: a character encoding name; any text is accepted
+  entry .Clear   the value marker of a `<br>`'s `clear`: `left`, `right`, `all` or `none`; any text is accepted
+  entry .Frame   the value marker of a `<table>`'s `frame`: which sides of the border to draw; any text is accepted
+  entry .Rules   the value marker of a `<table>`'s `rules`: which inner borders to draw; any text is accepted
+  entry .Scope   the value marker of a cell's `scope`: `row`, `col`, `rowgroup` or `colgroup`; any text is accepted
+  entry .Script   the value marker of an intrinsic event handler: `Whatwg.Scripting`, which plain text does not satisfy
+      `onclick = t"…"` does not compile, deliberately: a handler is a typed scripting value
+      for which a scripting library supplies the `Attributive to Whatwg.Scripting`.
+  entry .Size   the value marker of a `<font>`, `<basefont>` or `<hr>`'s `size`; any text is accepted
+  entry .Valign   the value marker of `valign`: `top`, `middle`, `bottom` or `baseline`; any text is accepted
+  entry .Valuetype   the value marker of a `<param>`'s `valuetype`: `data`, `ref` or `object`; any text is accepted
+  entry .Wrap   the value marker of a `<textarea>`'s `wrap`; any text is accepted
+  entry .id   `id` on every element, as `Id`
+  entry .class   `class` on every element, as `CssClassList`
+  entry .style   `style` on every element, as `Css`
+  entry .title   `title` on every element, as `Textual`
+  entry .lang   `lang` on every element, as `Language`
+  entry .dir   `dir` on every element, as `Dir`
+  entry .onclick   `onclick` on every element, as `Script`
+  entry .ondblclick   `ondblclick` on every element, as `Script`
+  entry .onmousedown   `onmousedown` on every element, as `Script`
+  entry .onmouseup   `onmouseup` on every element, as `Script`
+  entry .onmouseover   `onmouseover` on every element, as `Script`
+  entry .onmousemove   `onmousemove` on every element, as `Script`
+  entry .onmouseout   `onmouseout` on every element, as `Script`
+  entry .onkeypress   `onkeypress` on every element, as `Script`
+  entry .onkeydown   `onkeydown` on every element, as `Script`
+  entry .onkeyup   `onkeyup` on every element, as `Script`
+  entry .onload   `onload` on `<body>` and `<frameset>`, as `Script`
+  entry .onunload   `onunload` on `<body>` and `<frameset>`, as `Script`
+  entry .onfocus   `onfocus` on `<a>`, `<area>`, `<label>`, `<input>`, `<select>`, `<textarea>` and `<button>`, as `Script`
+  entry .onblur   `onblur` on `<a>`, `<area>`, `<label>`, `<input>`, `<select>`, `<textarea>` and `<button>`, as `Script`
+  entry .onsubmit   `onsubmit` on `<form>`, as `Script`
+  entry .onreset   `onreset` on `<form>`, as `Script`
+  entry .onchange   `onchange` on `<input>`, `<select>` and `<textarea>`, as `Script`
+  entry .onselect   `onselect` on `<input>` and `<textarea>`, as `Script`
+  entry .href   `href` on `<a>`, `<area>`, `<base>` and `<link>`, as `Url`
+  entry .src   `src` on `<img>`, `<input>`, `<script>` and `<iframe>`, as `Url`
+  entry .alt   `alt` on `<applet>`, `<area>`, `<img>` and `<input>`, as `Textual`
+  entry .type   `type` on `<a>`, `<link>`, `<object>`, `<param>`, `<script>`, `<style>`, `<input>` and `<button>`, as `Mime`
+      Written as `` `type` = … `` since `type` is a keyword; an `<input>`'s type is usually
+      chosen through `#Input`'s presets instead.
+  entry .typeOl   `type` on `<ol>`, `<ul>` and `<li>`: the list marker style, as `OlType`
+  entry .name   `name` on `<a>`, `<applet>`, `<button>`, `<form>`, `<iframe>`, `<img>`, `<input>`, `<map>`, `<meta>`, `<object>`, `<param>`, `<select>` and `<textarea>`
+      Of `Name`. An `<a name=…>` is the HTML 4 anchor, which the Living Standard replaced by
+      `id`.
+  entry .value   `value` on `<input>`, `<option>`, `<param>` and `<button>`, as `Textual`
+  entry .valueLi   `value` on `<li>`: the item's number, as `PositiveInt`
+  entry .rel   `rel` on `<a>` and `<link>`, as `Tokens`
+  entry .rev   `rev` on `<a>` and `<link>`: the reverse link type, as `Tokens`
+      The `honeycomb.Rev` enum has the HTML 4 link types, passed as `.show`.
+  entry .target   `target` on `<a>`, `<area>`, `<base>`, `<form>` and `<link>`, as `Target`
+  entry .action   `action` on `<form>`, as `Url`
+  entry .method   `method` on `<form>`, as `Method`
+  entry .enctype   `enctype` on `<form>`, as `Enctype`
+  entry .accept   `accept` on `<form>` and `<input>`, as `MimeList`
+  entry .acceptCharset   `accept-charset` on `<form>`, as `Charset`
+      Written `acceptCharset = …`; the attribute serializes as `accept-charset`.
+  entry .checked   `checked` on `<input>`: a `Presence`
+  entry .disabled   `disabled` on `<button>`, `<input>`, `<optgroup>`, `<option>`, `<select>` and `<textarea>`: a `Presence`
+  entry .readonly   `readonly` on `<input>` and `<textarea>`: a `Presence`
+  entry .multiple   `multiple` on `<select>`: a `Presence`
+  entry .selected   `selected` on `<option>`: a `Presence`
+  entry .maxlength   `maxlength` on `<input>`, as `PositiveInt`
+  entry .size   `size` on `<input>` and `<select>`, as `PositiveInt`
+  entry .sizeFont   `size` on `<basefont>`, `<font>` and `<hr>`: a font size (`1` to `7`, or `+1`) or a rule height, as `Size`
+  entry .rows   `rows` on `<textarea>`, as `PositiveInt`
+  entry .cols   `cols` on `<textarea>`, as `PositiveInt`
+  entry .wrap   `wrap` on `<textarea>`, as `Wrap`
+  entry .for   `for` on `<label>`: the id of the labelled control, as `Id`
+      Written as `` `for` = … `` since `for` is a keyword.
+  entry .usemap   `usemap` on `<img>`, `<input>` and `<object>`: the image map, as `Url`
+  entry .ismap   `ismap` on `<img>` and `<input>`: a `Presence`
+  entry .longdesc   `longdesc` on `<img>` and `<iframe>`: a long description's URL, as `Url`
+  entry .shape   `shape` on `<a>` and `<area>`, as `Shape`
+  entry .coords   `coords` on `<a>` and `<area>`, as `Coords`
+  entry .nohref   `nohref` on `<area>`: a `Presence`
+  entry .hreflang   `hreflang` on `<a>` and `<link>`, as `Language`
+  entry .charset   `charset` on `<a>`, `<link>`, `<script>` and `<meta>`, as `Charset`
+  entry .media   `media` on `<link>` and `<style>`, as `MediaQueryList`
+  entry .defer   `defer` on `<script>`: a `Presence`
+  entry .language   `language` on `<script>`: the scripting language's name, as `Textual`
+  entry .httpEquiv   `http-equiv` on `<meta>`, as `HttpEquiv`
+      Written `httpEquiv = …`; the attribute serializes as `http-equiv`.
+  entry .content   `content` on `<meta>`, as `Textual`
+  entry .scheme   `scheme` on `<meta>`: the scheme interpreting `content`, as `Textual`
+  entry .cite   `cite` on `<blockquote>`, `<del>`, `<ins>` and `<q>`, as `Url`
+  entry .datetime   `datetime` on `<del>` and `<ins>`, as `Datetime`
+  entry .accesskey   `accesskey` on `<a>`, `<area>`, `<button>`, `<input>`, `<label>`, `<legend>` and `<textarea>`, as `Textual`
+  entry .tabindex   `tabindex` on `<a>`, `<area>`, `<button>`, `<input>`, `<object>`, `<select>` and `<textarea>`, as `Integral`
+  entry .profile   `profile` on `<head>`: a metadata profile URL, as `Url`
+  entry .version   `version` on `<html>`: the DTD version, as `Textual`
+  entry .prompt   `prompt` on `<isindex>`: the prompt text, as `Textual`
+  entry .xmlns   `xmlns` on `<html>`: the XHTML namespace, as `Url`
+  entry .label   `label` on `<optgroup>` and `<option>`, as `Textual`
+  entry .standby   `standby` on `<object>`: text shown while loading, as `Textual`
+  entry .classid   `classid` on `<object>`: the implementation's URL, as `Url`
+  entry .codebase   `codebase` on `<applet>` and `<object>`: the base URL for `classid`, `data` and `archive`, as `Url`
+  entry .codetype   `codetype` on `<object>`: the implementation's MIME type, as `Mime`
+  entry .archive   `archive` on `<applet>` and `<object>`: archive URLs, as `Url`
+  entry .declare   `declare` on `<object>`: a `Presence`
+  entry .data   `data` on `<object>`: the resource URL, as `Url`
+  entry .code   `code` on `<applet>`: the applet class file, as `Textual`
+  entry .mayscript   `mayscript` on `<applet>`: a `Presence`
+  entry .object   `object` on `<applet>`: a serialized applet, as `Textual`
+      Written as `` `object` = … `` since `object` is a keyword.
+  entry .valuetype   `valuetype` on `<param>`, as `Valuetype`
+  entry .frameborder   `frameborder` on `<iframe>`: `0` or `1`, as `Integral`
+  entry .scrolling   `scrolling` on `<iframe>`: `yes`, `no` or `auto`, as `Textual`
+  entry .marginheight   `marginheight` on `<iframe>`, as `PositiveInt`
+  entry .marginwidth   `marginwidth` on `<iframe>`, as `PositiveInt`
+  entry .summary   `summary` on `<table>`: a description for non-visual rendering, as `Textual`
+  entry .border   `border` on `<img>`, `<object>` and `<table>`: the border width, as `PositiveInt`
+  entry .cellpadding   `cellpadding` on `<table>`, as `PositiveInt`
+  entry .cellspacing   `cellspacing` on `<table>`, as `PositiveInt`
+  entry .frameTable   `frame` on `<table>`: which outer borders to draw, as `Frame`
+  entry .rules   `rules` on `<table>`: which inner borders to draw, as `Rules`
+  entry .colspan   `colspan` on `<td>` and `<th>`, as `PositiveInt`
+  entry .rowspan   `rowspan` on `<td>` and `<th>`, as `PositiveInt`
+  entry .headers   `headers` on `<td>` and `<th>`: the ids of header cells, as `Tokens`
+  entry .abbr   `abbr` on `<td>` and `<th>`, as `Textual`
+  entry .axis   `axis` on `<td>` and `<th>`: the cell's categories, as `Textual`
+  entry .scope   `scope` on `<td>` and `<th>`, as `Scope`
+  entry .valign   `valign` on `<col>`, `<colgroup>`, `<tbody>`, `<td>`, `<tfoot>`, `<th>`, `<thead>` and `<tr>`, as `Valign`
+  entry .char   `char` on `<col>`, `<colgroup>`, `<tbody>`, `<td>`, `<tfoot>`, `<th>`, `<thead>` and `<tr>`: the alignment character, as `Textual`
+  entry .charoff   `charoff` on the same elements as `char`: the offset to the alignment character, as `Textual`
+  entry .span   `span` on `<col>` and `<colgroup>`, as `PositiveInt`
+  entry .start   `start` on `<ol>`, as `PositiveInt`
+  entry .compact   `compact` on `<dir>`, `<dl>`, `<menu>`, `<ol>` and `<ul>`: a `Presence`
+  entry .align   `align` on captions, columns, headings, `<div>`, `<p>`, `<hr>`, `<img>`, `<table>` and its parts, and more, as `Align`
+      On `<applet>`, `<caption>`, `<col>`, `<colgroup>`, `<div>`, `<h1>` to `<h6>`, `<hr>`,
+      `<iframe>`, `<img>`, `<input>`, `<legend>`, `<object>`, `<p>`, `<table>`, `<tbody>`,
+      `<td>`, `<tfoot>`, `<th>`, `<thead>` and `<tr>`.
+  entry .bgcolor   `bgcolor` on `<body>`, `<table>`, `<td>`, `<th>` and `<tr>`, as `Color`
+  entry .background   `background` on `<body>`: a background image, as `Url`
+  entry .text   `text` on `<body>`: the text colour, as `Color`
+  entry .link   `link` on `<body>`: the unvisited link colour, as `Color`
+  entry .vlink   `vlink` on `<body>`: the visited link colour, as `Color`
+  entry .alink   `alink` on `<body>`: the active link colour, as `Color`
+  entry .color   `color` on `<basefont>` and `<font>`, as `Color`
+  entry .face   `face` on `<basefont>` and `<font>`: a font family list, as `Textual`
+  entry .noshade   `noshade` on `<hr>`: a `Presence`
+  entry .clear   `clear` on `<br>`: which floats to move past, as `Clear`
+  entry .width   `width` on `<applet>`, `<col>`, `<colgroup>`, `<hr>`, `<iframe>`, `<img>`, `<object>`, `<pre>`, `<table>`, `<td>` and `<th>`, as `PositiveInt`
+  entry .height   `height` on `<applet>`, `<iframe>`, `<img>`, `<object>`, `<td>` and `<th>`, as `PositiveInt`
+  entry .hspace   `hspace` on `<applet>`, `<img>` and `<object>`: horizontal margin, as `PositiveInt`
+  entry .vspace   `vspace` on `<applet>`, `<img>` and `<object>`: vertical margin, as `PositiveInt`
+  entry .nowrap   `nowrap` on `<td>` and `<th>`: a `Presence`
+  entry #doctype   the HTML 4.01 Transitional doctype, with its public identifier and the loose DTD's URL
+      `<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+      "http://www.w3.org/TR/html4/loose.dtd">`, which a `Document[Html]` loaded or built
+      under this dialect carries.
+  entry #Heading   `<h1>` to `<h6>`
+  entry #Phrase   the HTML 4 phrase elements: `<em>`, `<strong>`, `<dfn>`, `<code>`, `<samp>`, `<kbd>`, `<var>`, `<cite>`, `<abbr>` and `<acronym>`
+  entry #FontStyle   the HTML 4 font-style elements: `<tt>`, `<i>`, `<b>`, `<u>`, `<s>`, `<strike>`, `<big>` and `<small>`
+  entry #Special   the HTML 4 special inline elements: links, images, objects, fonts, breaks, scripts, maps, quotes and the rest
+      `<a>`, `<img>`, `<applet>`, `<object>`, `<font>`, `<basefont>`, `<br>`, `<script>`, `<map>`,
+      `<q>`, `<sub>`, `<sup>`, `<span>`, `<bdo>` and `<iframe>`.
+  entry #FormCtrl   the HTML 4 form controls: `<input>`, `<select>`, `<textarea>`, `<label>` and `<button>`
+  entry #Inline   the inline content category: phrase, font-style, special and form-control elements, and text
+      The HTML 4 counterpart of WHATWG's `Phrasing`; includes `"#text"`.
+  entry #Lists   the list elements: `<ul>`, `<ol>`, `<dir>` and `<menu>`
+  entry #Block   the block-level content category
+      Headings, lists, `<p>`, `<pre>`, `<dl>`, `<div>`, `<noscript>`, `<blockquote>`,
+      `<form>`, `<hr>`, `<table>`, `<fieldset>`, `<address>`, `<center>`, `<isindex>` and
+      `<noframes>`.
+  entry #Flow   the flow content category: `#Block` or `#Inline`
+      The type for a piece of body content: `Html of Flow`.
+  entry #Metadata   what a `<head>` may contain: `<title>`, `<base>`, `<script>`, `<style>`, `<meta>`, `<link>` and `<object>`
+  entry #insertable   the tags which the parser may insert unwritten between a tag and a child
+      As `Whatwg#insertable`: `<head>`, `<body>`, `<tbody>`, `<tr>` and `<colgroup>`.
+  entry #infer   the tag to insert between a parent and a child the parent cannot hold directly
+      As `Whatwg#infer`; the `Dom` contract the parser calls.
+  entry #elements   every tag of the dialect, by its name
+  entry #entities   the HTML 4 named character references, by name
+      The 252 entities of the HTML 4 DTDs; the Living Standard's additions are not included.
+  entry #attributes   every attribute of the dialect, by its name, the several givens for one name merged
+  entry #Html   the `<html>` root element, as `honeycomb.Html`
+      A lazy alias so that `import htmlDoms.html4Transitional.*` brings `Html` into scope as
+      a tag: `Html(Head(Title("x")), Body(P("y")))`.
+  entry #A   `<a>`: a hyperlink or, with `name`, an anchor; transparent
+  entry #Abbr   `<abbr>`: an abbreviation, over inline content
+  entry #Acronym   `<acronym>`: an acronym, over inline content; not in the Living Standard
+  entry #Address   `<address>`: contact information, over inline content and `<p>`
+  entry #Applet   `<applet>`: a Java applet, over `<param>` and flow content; deprecated in HTML 4
+      Takes `code`, `codebase`, `archive`, `object`, `alt`, `name`, `width`, `height`,
+      `align`, `hspace`, `vspace` and `mayscript`.
+  entry #Area   `<area>`: a region of an image map; void
+  entry #B   `<b>`: bold text, over inline content
+  entry #Base   `<base>`: the document base URL; void
+  entry #Basefont   `<basefont>`: the base font size, colour and face; void, deprecated in HTML 4
+  entry #Bdo   `<bdo>`: text with an explicit direction, over inline content
+  entry #Big   `<big>`: larger text, over inline content; not in the Living Standard
+  entry #Blockquote   `<blockquote>`: a long quotation, over flow content
+  entry #Body   `<body>`: the document's content, over flow content; autoclosing and insertable
+      Takes the presentational `bgcolor`, `background`, `text`, `link`, `vlink` and `alink`,
+      and `onload` and `onunload`.
+  entry #Br   `<br>`: a line break; void; `clear` moves past floats
+  entry #Button   `<button>`: a button, over flow content; a boundary for formatting elements
+  entry #Caption   `<caption>`: a table's caption, over inline content; a boundary
+  entry #Center   `<center>`: centred flow content; deprecated in HTML 4, absent from the Living Standard
+  entry #Cite   `<cite>`: a citation, over inline content
+  entry #Code   `<code>`: computer code, over inline content
+  entry #Col   `<col>`: a table column; void
+  entry #Colgroup   `<colgroup>`: a group of columns, over `<col>`; whitespace between, insertable
+  entry #Dd   `<dd>`: a definition in a `<dl>`, over flow content; autoclosing
+  entry #Del   `<del>`: deleted text; transparent
+  entry #Dfn   `<dfn>`: a defining instance, over inline content
+  entry #Dir   `<dir>`: a directory list, over `<li>`; deprecated in HTML 4
+      Whitespace only between items. Not to be confused with the `dir` attribute or the
+      `HDir` enum.
+  entry #Div   `<div>`: a generic block container, over flow content; `align` is permitted
+  entry #Dl   `<dl>`: a definition list, over `<dt>` and `<dd>`; autoclosing, whitespace between
+  entry #Dt   `<dt>`: a term in a `<dl>`, over inline content; autoclosing
+  entry #Em   `<em>`: emphasis, over inline content
+  entry #Fieldset   `<fieldset>`: a group of controls: an optional `<legend>` then flow content
+  entry #Font   `<font>`: text with a `color`, `face` or `size`, over inline content; deprecated in HTML 4
+  entry #Form   `<form>`: a form, over flow content
+      Takes `action`, `method`, `enctype`, `accept`, `accept-charset` (as `acceptCharset`),
+      `name`, `target`, `onsubmit` and `onreset`.
+  entry #H1   `<h1>`: a heading of the first rank, over inline content
+  entry #H2   `<h2>`: a heading of the second rank, over inline content
+  entry #H3   `<h3>`: a heading of the third rank, over inline content
+  entry #H4   `<h4>`: a heading of the fourth rank, over inline content
+  entry #H5   `<h5>`: a heading of the fifth rank, over inline content
+  entry #H6   `<h6>`: a heading of the sixth rank, over inline content
+  entry #Head   `<head>`: the document's metadata, over `#Metadata`; autoclosing, insertable, whitespace between
+  entry #Hr   `<hr>`: a horizontal rule; void; takes `align`, `noshade`, `size` and `width`
+  entry #I   `<i>`: italic text, over inline content
+  entry #Iframe   `<iframe>`: an inline frame, over flow content as fallback
+      A container in this dialect, unlike `Whatwg#Iframe`. Takes `src`, `name`, `longdesc`,
+      `frameborder`, `scrolling`, `marginheight`, `marginwidth`, `width`, `height` and
+      `align`.
+  entry #Img   `<img>`: an image; void
+      Takes `src`, `alt`, `longdesc`, `name`, `usemap`, `ismap`, `width`, `height`,
+      `border`, `align`, `hspace` and `vspace`.
+  entry #Input   `<input>`: a form control; a void tag with a preset for every HTML 4 `type`
+    detail
+        A `Tag.Void` whose `Topic` is `"input"`. Each member presets `type`;
+        `Input.Checkbox(name = t"terms", checked = true)` is
+        `<input type="checkbox" name="terms" checked>`.
+    entry .Hidden   `<input type="hidden">`
+    entry .Text   `<input type="text">`
+    entry .Password   `<input type="password">`
+    entry .Checkbox   `<input type="checkbox">`
+    entry .Radio   `<input type="radio">`
+    entry .Submit   `<input type="submit">`
+    entry .Image   `<input type="image">`
+    entry .Reset   `<input type="reset">`
+    entry .Button   `<input type="button">`
+    entry .File   `<input type="file">`
+    entry .Topic   `"input"`
+    entry .Transport   `""`: no children
+    entry .Form   `Html4Transitional`
+  entry #Ins   `<ins>`: inserted text; transparent
+  entry #Isindex   `<isindex>`: a single-line search prompt; void, deprecated in HTML 4
+  entry #Kbd   `<kbd>`: keyboard input, over inline content
+  entry #Label   `<label>`: a control's caption, over inline content
+  entry #Legend   `<legend>`: a `<fieldset>`'s caption, over inline content
+  entry #Li   `<li>`: a list item, over flow content; autoclosing
+  entry #Link   `<link>`: a link to an external resource; void
+  entry #Map   `<map>`: an image map, over block content and `<area>`s
+  entry #Menu   `<menu>`: a menu list, over `<li>`; deprecated in HTML 4; whitespace between
+  entry #Meta   `<meta>`: document metadata; void
+  entry #Noframes   `<noframes>`: content for agents without frames, over flow content
+  entry #Noscript   `<noscript>`: content for agents without scripting, over flow content
+  entry #Object   `<object>`: an embedded object, over `<param>` and flow content; a boundary
+  entry #Ol   `<ol>`: an ordered list, over `<li>`; whitespace between; takes `start`, `type` and `compact`
+  entry #Optgroup   `<optgroup>`: a group of options, over `<option>`; autoclosing, whitespace between
+  entry #Option   `<option>`: a choice in a `<select>`, over text; autoclosing
+      Shadows `scala.Option` within `import htmlDoms.html4Transitional.*`.
+  entry #P   `<p>`: a paragraph, over inline content; autoclosing
+  entry #Param   `<param>`: a parameter for an `<object>` or `<applet>`; void
+  entry #Pre   `<pre>`: preformatted text, over inline content; `width` is permitted
+  entry #Q   `<q>`: a short quotation, over inline content
+  entry #S   `<s>`: struck-through text, over inline content; deprecated in HTML 4
+  entry #Samp   `<samp>`: sample output, over inline content
+  entry #Script   `<script>`: a script, over raw text
+      `Html.Mode.Raw`: read to `</script>` with no entity decoding. Takes `src`, `type`,
+      `language`, `charset` and `defer`.
+  entry #Select   `<select>`: a menu control, over `<option>` and `<optgroup>`; whitespace between
+  entry #Small   `<small>`: smaller text, over inline content
+  entry #Span   `<span>`: a generic inline container
+  entry #Strike   `<strike>`: struck-through text, over inline content; deprecated in HTML 4
+  entry #Strong   `<strong>`: strong emphasis, over inline content
+  entry #Style   `<style>`: embedded CSS, over raw text; takes `type` and `media`
+  entry #Sub   `<sub>`: a subscript, over inline content
+  entry #Sup   `<sup>`: a superscript, over inline content
+  entry #Table   `<table>`: a table, over `<caption>`, `<colgroup>`, `<thead>`, `<tbody>` and `<tfoot>`
+      Whitespace only between children, and a boundary. Takes `summary`, `border`,
+      `cellpadding`, `cellspacing`, `frame` (as `frameTable`), `rules`, `width`, `align` and
+      `bgcolor`.
+  entry #Tbody   `<tbody>`: body rows, over `<tr>`; autoclosing, insertable, whitespace between
+  entry #Td   `<td>`: a data cell, over flow content; autoclosing, a boundary
+      Takes `colspan`, `rowspan`, `headers`, `abbr`, `axis`, `scope`, `align`, `valign`,
+      `char`, `charoff`, `bgcolor`, `width`, `height` and `nowrap`.
+  entry #Textarea   `<textarea>`: a multi-line text control, over text (`Html.Mode.Rcdata`)
+      Takes `name`, `rows`, `cols`, `wrap`, `readonly`, `disabled`, `accesskey`, `tabindex`
+      and the `onfocus`, `onblur`, `onselect` and `onchange` handlers.
+  entry #Tfoot   `<tfoot>`: footer rows, over `<tr>`; autoclosing, whitespace between
+  entry #Th   `<th>`: a header cell, over flow content; autoclosing, a boundary; takes what `<td>` takes
+  entry #Thead   `<thead>`: header rows, over `<tr>`; autoclosing, whitespace between
+  entry #Title   `<title>`: the document's title, over text (`Html.Mode.Rcdata`)
+  entry #Tr   `<tr>`: a table row, over `<td>` and `<th>`; autoclosing, insertable, whitespace between
+  entry #Tt   `<tt>`: teletype text, over inline content; not in the Living Standard
+  entry #U   `<u>`: underlined text, over inline content; deprecated in HTML 4
+  entry #Ul   `<ul>`: an unordered list, over `<li>`; whitespace between; takes `type` and `compact`
+  entry #Var   `<var>`: a variable, over inline content
+
+entry .Tag   an HTML tag as a value: applied to attributes and children, it makes an element
+  detail
+      A `Tag` is the builder for one element name, and every `val` of a `Dom` such as
+      `Whatwg` — `Div`, `P`, `Img`, `Table` — is one. It is itself an `Html.Element` (the
+      empty element of its name, which is why `Br` alone is `<br>` and `Title` alone
+      `<title></title>`), and applying it makes a new element: named arguments are
+      attributes, positional arguments are children, and attributes come first.
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg
+      import htmlDoms.whatwg.*
+      import attributives.textAttributive
+
+      Br                                           // <br>
+      Img(src = t"image.jpg")                      // <img src="image.jpg">
+      Div(Hr, P("Hello world"))                    // <div><hr><p>Hello world</p></div>
+      Textarea(name = t"details", rows = 5)("Details go here")
+      ```
+
+      The checking is in the types. A tag's type is `Tag.Container of "ul" over "li" in
+      Whatwg`, `Tag.Void of "br" in Whatwg` or `Tag.Transparent of "a" over "" in Whatwg`:
+      its `Topic` is the element name, its `Transport` what it may contain, and its `Form` the
+      dialect. A child must be an `Html of (? <: Transport)` — a `Tag`, an element, a `Text`
+      or `String` (where text is admitted), an `Html.Fragment`, or any value with a
+      `Renderable` into an admitted label — so `Ul("hello")` and `P(Li)` do not compile. An
+      attribute is checked by name against the `Attribute` givens of the dialect's companion,
+      and its value against the attribute's marker through `Attributive`, so `Br(Hr)`,
+      `P(src = …)` and `Img(width = 1.5)` are all compile errors.
+
+      A tag is `Dynamic` in two ways. `Tag(…)` and `Tag(attribute = …)` go through
+      `#applyDynamicNamed`, where an `attributes` macro resolves each name. `Tag.name(…)`
+      — `Div.panel(P("x"))` — goes through `Tag.Container#applyDynamic`, and makes an
+      element whose `class` (or `id`) is `name`, provided an `Attribution of "panel"` is in
+      scope: `stylesheets.uncheckedClasses` allows any name, and a cataclysm stylesheet
+      allows only the names it declares. A preset class on the tag is kept and the new one
+      appended.
+
+      Besides the three subclasses, `Tag.root` makes the parser's synthetic root and
+      `Tag.foreign` a tag for non-HTML content (`Svg`, `Math`). The flags `autoclose`,
+      `mode`, `insertable`, `boundary`, `void` and `transparent` drive the parser and
+      serializer, and `admissible` is the runtime form of `Transport`.
+  refer honeycomb.Whatwg
+  refer honeycomb.Attribute
+  refer honeycomb.Attribution
+  refer honeycomb.Dom
+  entry .focusable   how a tag is named in a diagnostic: by its tag name
+      A `Focusable` given for every tag's singleton type (the typeclass's `Self` is
+      invariant, and each tag has a type of its own), used by a browser driver such as
+      tarantula to locate elements by tag name (`driver \ Div`).
+  entry .optical   an optic from an element to each of its children with this tag's name
+      `Tag is Optical from html onto Html.Node`: `element.focus(Div)` (through panopticon)
+      addresses every direct child whose label is the tag's, so a lens update maps over just
+      those children and rebuilds the element around them. Other children are left as they
+      are, and a non-element origin is returned unchanged.
+  entry .root   a synthetic root tag admitting the given labels; for the parser
+      `Tag.root(Set(t"html"))` is the invisible parent the parser reads into when the
+      caller asks for `Html of "html"`; `read[Html of "ul" | "ol"]` uses one admitting both.
+      Its `node` returns itself.
+  entry .void   a void tag of a given label, with optional preset attributes
+      `Tag.void["br", Whatwg]()` is a `Tag.Void of "br" in Whatwg`. `presets` are
+      attributes every element made from the tag carries, which is how `Input.Email` is an
+      `<input>` with `type="email"` fixed; `boundary` marks it a boundary for formatting
+      elements.
+  entry .foreign   a tag for non-HTML content, whose children are foreign elements
+      Two forms. `Tag.foreign["svg", Whatwg]()` makes a `Container of "svg" over "#foreign"`,
+      which `Svg` and `Math` are: inside it the parser builds `Html.Element.foreign` nodes
+      for any tag, keeping attribute case and accepting CDATA. `Tag.foreign[dom](label,
+      attributes)` makes a foreign tag of any label with attributes already set, typed
+      `Tag of "#foreign" over "#foreign"`, as the parser does for `<circle>` inside `<svg>`.
+  entry .container   a container tag of a given label over a union of child labels
+      `Tag.container["ul", "li" | ScriptSupporting, Whatwg](mode = Html.Mode.Whitespace)`
+      is a `Container of "ul" over "li" | "script" | "template" in Whatwg`. The children type
+      is reified to the `admissible` set. `autoclose` lets the parser close the element when
+      a sibling starts; `mode` is `Html.Mode.Normal`, `Whitespace` (only whitespace between
+      children), `Raw` (`<script>`) or `Rcdata` (`<textarea>`, `<title>`); `insertable` lets
+      the parser supply the element unwritten; `boundary` stops formatting elements
+      crossing it; `presets` fixes attributes.
+  entry .transparent   a transparent tag: holds what its parent may hold, plus named extras
+      `Tag.transparent["a", "", Whatwg]()` is a `Transparent of "a" over "" in Whatwg`: when
+      applied, its children are checked against the *enclosing* element's content model
+      rather than its own, which is what makes `A` usable in both a `<p>` and a `<div>`. The
+      children type names extras the tag itself admits besides what it inherits (`"source"
+      | "track"` for `Video`). A second overload takes the label and admissible set as
+      values.
+  entry .Container   a tag which holds children
+    detail
+        The class of every ordinary tag: a `Container of label over children in dom`,
+        whose `#Result` is an `Html.Element & Html.Vacuiscible` — an element to which
+        children may still be supplied in a second argument list, `Div(id = t"x")(P("y"))`.
+    entry #applyDynamic   `Tag.name(children*)`: an element with `name` as its class or id
+        Dispatches `Div.panel(P("x"))` to make `<div class="panel"><p>x</p></div>`. The
+        name is checked by the `Attribution of (? >: name)` in scope: `Attribution.empty`
+        covers the plain `Div(…)` form (`apply`), `stylesheets.uncheckedClasses` permits any
+        class name, and a stylesheet's own `Attribution` permits only its names, and makes
+        an id of a name it declares as one. A preset `class` on the tag is kept, the new name
+        appended after a space.
+    entry #node   the element for a set of attributes, with no children yet
+        The `Result` of applying attributes: an `Html.Element` of the tag's label, with its
+        presets followed by the attributes given, and a `Vacuiscible#apply` through which
+        children follow.
+    entry #Result   `Html.Element & Html.Vacuiscible of Topic over Transport in Form`
+  entry .Transparent   a tag which takes its content model from its parent
+    detail
+        The class of `A`, `Del`, `Ins`, `Canvas`, `Map`, `Object`, `Slot`, `Audio` and
+        `Video`: its `#Result` is an `Html.Element & Html.Transparent`, whose `apply` takes
+        children of any label union and records that union as the element's `Topic`, so the
+        enclosing element then checks them as if they were its own.
+    entry #applyDynamic   `Tag.name(children*)`: an element with `name` as its class or id
+        As `Tag.Container#applyDynamic`, but the children are checked against the tag's own
+        extras only; see `Tag.transparent`.
+    entry #node   the element for a set of attributes, with no children yet
+    entry #Result   `Html.Element & Html.Transparent of Topic over Transport in Form`
+  entry .Void   a tag which takes no children
+    detail
+        The class of `Br`, `Img`, `Input`, `Link`, `Meta` and the rest. Its `#Result` is a
+        plain `Html.Element of Topic in Form`, with no second argument list, so `Br(Hr)` does
+        not compile. The objects `Whatwg.Input`, `Whatwg.Link`, `Whatwg.Meta`, `Whatwg.Area`
+        and `Whatwg.Track` extend it directly in order to carry their preset variants.
+    entry #node   the element for a set of attributes
+    entry #Result   `Html.Element of Topic in Form`
+  entry #autoclose   whether the parser may close this element when a sibling or parent closes
+      `<li>`, `<p>`, `<dt>`, `<dd>`, `<option>`, `<tr>`, `<td>`, `<th>`, the table sections,
+      `<head>` and `<body>`: the elements whose end tags HTML lets a document omit.
+  entry #mode   how the element's content is read and written: `Html.Mode.Normal`, `Whitespace`, `Raw` or `Rcdata`
+      `Raw` (`<script>`, `<style>`) reads to the end tag without decoding; `Rcdata`
+      (`<textarea>`, `<title>`) decodes entities but no tags; `Whitespace` (lists, tables,
+      `<select>`, `<head>`) allows only whitespace text between children, and the parser
+      rejects other text with `Html.Issue.OnlyWhitespace`.
+  entry #presets   the attributes every element made from this tag carries
+      `type="email"` for `Input.Email`, `rel="stylesheet"` for `Link.Stylesheet`. Applying
+      the tag adds its attributes after them, and the parser matches a tag's presets against
+      a start tag's attributes to read `<input type="button">` back as `Input.Button`.
+  entry #admissible   the labels this tag may contain, as a set of text
+      The runtime form of `Transport`, used by the parser to reject a child
+      (`Html.Issue.InadmissibleTag`) and by `Dom#infer` to find an element to insert. Empty
+      for a void or purely transparent tag.
+  entry #insertable   whether the parser may supply this element unwritten
+      True for `<head>`, `<body>`, `<tbody>`, `<tr>` and `<colgroup>`.
+  entry #void   whether the tag is void: no children and no end tag
+  entry #transparent   whether the tag's content model is its parent's
+  entry #boundary   whether formatting elements opened outside may not continue inside
+      True for `<button>`, `<caption>`, `<object>`, `<table>`, `<td>`, `<th>` and
+      `<template>`: the adoption-agency algorithm does not reconstruct an open `<b>` or
+      `<i>` across one.
+  entry #tableLike   whether this is `<table>`, `<tbody>`, `<thead>`, `<tfoot>` or `<tr>`
+      Computed once when the tag is made, for the parser's foster-parenting checks.
+  entry #isTable   whether this is `<table>`
+  entry #Result   the type of element the tag makes: fixed by `Container`, `Transparent` and `Void`
+  entry #applyDynamicNamed   `Tag(attribute = value, …)`: an element with those attributes
+      The `Dynamic` entry point behind every application with named arguments. For the
+      plain `apply` it builds the element from the pairs; for `Tag.name(attribute = value)`
+      it also sets `name` as the class or id the `Attribution` in scope assigns. Each pair is
+      handed to `#element`, whose macro resolves the attribute and converts the value.
+  entry #element   the macro which checks each attribute and makes the element
+      For every `(name, value)` pair, finds the `name is Attribute on (? >: Topic) in Form`
+      given (or a global one), reads its `Topic` marker, and summons `value is Attributive
+      to marker`, halting at the argument's position with _`name` has attribute type `marker`, but
+      `value` cannot be attributed as a `marker` without a contextual instance of `value is
+      Attributive to marker`_, or _the attribute `name` cannot be used on the element
+      `<tag>`_ when no given admits the name on that element. A value whose `Attributive`
+      yields `Unset` (a `false` `Boolean`, an empty class list) omits the attribute.
+  entry #node   the element for a set of already-converted attributes; implemented by each subclass
+
+entry .Attribute   an attribute of a dialect: its name, the elements it is valid on, and its value type
+  detail
+      `Attribute(label, elements, global)` is what every attribute given of `Whatwg` and
+      `Html4Transitional` is an instance of. Its refinement does the typing: a given is a
+      `"src" is Attribute on "img" | "video" of Url in Whatwg`, where `Self` is the name as a
+      literal type, `Plane` the elements, `Topic` the value marker and `Form` the dialect.
+      `Tag#element` resolves an attribute by summoning on `Self`, `Plane` and `Form`;
+      `Html.Element#selectDynamic` does the same to read one back, through `Unattributive`.
+
+      A dialect's `attributes` dictionary holds one `Attribute` per name, with the several
+      givens for a name (`href` on `<a>`, on `<base>`, on `<link>`) merged by `#merge`.
+      A program defines its own with `Whatwg.attribute()` or `Whatwg.globalAttribute()`.
+  refer honeycomb.Whatwg
+  refer honeycomb.Attributive
+  entry #label   the attribute's name, as written in the markup
+  entry #elements   the element names the attribute is valid on; empty for a global attribute
+  entry #global   whether the attribute is valid on every element
+  entry #targets   whether the attribute is valid on a named element
+      `global || elements.has(tag)`; the parser's check for an unknown attribute.
+  entry #merge   this attribute and another of the same name as one, valid on the union of their elements
+  entry #Self   the attribute's name, as a string literal type
+  entry #Topic   the marker of the values the attribute takes: `Whatwg.Url`, `Whatwg.Presence`, …
+  entry #Plane   the element names the attribute is valid on, as a union of literal types
+
+entry .Attribution   evidence that a name used as a method on a tag is a valid class or id
+  detail
+      `Div.panel(…)` is permitted only if an `Attribution of "panel"` (or of a union
+      including it) is in scope; the attribution says which attribute the name populates,
+      `class` or `id`. The library provides `.empty` for the plain `apply` form, and
+      `stylesheets.uncheckedClasses` for any name; a cataclysm stylesheet brings its own,
+      listing the classes and ids it declares, so that a name it does not know is a compile
+      error. `.classes` makes one by hand for a known set of names.
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg
+      import htmlDoms.whatwg.*
+
+      given (Attribution of "test" | "foo") = Attribution.classes()
+      Table.test(Thead(Tr(Th("First")))).show   // <table class="test">…
+      ```
+  refer honeycomb.Tag
+  refer honeycomb.ClassList
+  entry .classes   an attribution of one or more names as classes
+      `Attribution.classes[topic]()`, with `topic` a literal type or a union of them, as the
+      `Topic`. The names are not checked against CSS identifier rules; `ClassList` is.
+  entry .empty   the attribution of the plain `Tag(children)` call
+      `Tag(…)` dispatches through `Dynamic` as `applyDynamic("apply")`, and this given, with
+      an empty `attribute`, is what makes that form add nothing. In implicit scope.
+  entry #attribute   the attribute the name populates: `class`, `id`, or empty for the plain call
+
+entry .Attributive   how a value becomes an attribute's text, for an attribute's value marker
+  detail
+      `value is Attributive to marker` converts a value for an attribute whose `Topic` is
+      `marker`: `Int is Attributive to Whatwg.PositiveInt` is why `Img(width = 50)`
+      compiles and `Img(width = 1.5)` does not. `#attribute` takes the attribute's name and
+      the value and returns the name with its text, the name alone (a bare attribute such as
+      `disabled`), or `Unset`, which omits the attribute.
+
+      The companion holds the givens for the standard pairs, all in implicit scope:
+      `Text`/`String` for `Textual`, `Boolean` for `Presence`, `Switch` and `Truth`, `Int`
+      for `Integral` and `PositiveInt`, `Double` for `Decimal`, `Name[DomId]` for `Id`,
+      `Name[CssClass]`, `List[Name[CssClass]]` and `ClassList` for `CssClassList`,
+      `List[Name[DomId]]` for `Ids`, any typed URL for `Url`, and `Text` for `Css`. Other
+      libraries add their own: graffiti's `urlText` lets a `Text` stand as a `Url`, and
+      querencia's `scripting` lets a foreign DOM expression stand as an event handler.
+
+      The set is not yet complete — many markers (`Target`, `Method`, `Sandbox`, `Rel`, …)
+      have no given of their own, so the enums which name their values are passed as
+      `.show` — and the choice given `attributives.textAttributive` makes `Text` acceptable
+      for every marker at once, which is the usual import while it is being filled.
+
+      ```scala fuel
+      frame
+        label A URL for `src`, an `Int` for `width`, a `Boolean` for `ismap`
+        code
+            import soundness.*
+            import htmlDoms.whatwg
+            import htmlDoms.whatwg.*
+
+            Img(src = url"https://example.com/a.png", width = 64, ismap = true).show
+            // <img src="https://example.com/a.png" width="64" ismap>
+      frame
+        label A `false` `Boolean` omits the attribute
+        code
+            Img(src = url"https://example.com/a.png", ismap = false).show
+            // <img src="https://example.com/a.png">
+      frame
+        label A `Text` where a URL is expected needs the choice given
+        code
+            Img(src = t"a.png")   // does not compile
+
+            locally:
+              import attributives.textAttributive
+              Img(src = t"a.png").show   // <img src="a.png">
+      ##
+      ```
+  refer honeycomb.Unattributive
+  refer honeycomb.Attribute
+  entry .textTextual   a `Text` as a `Whatwg.Textual` attribute value, as it is
+  entry .stringTextual   a `String` as a `Whatwg.Textual` attribute value, as it is
+  entry .boolean   a `Boolean` as a `Whatwg.Presence` attribute: present when true, omitted when false
+  entry .switch   a `Boolean` as a `Whatwg.Switch` attribute: `on` or `off`
+  entry .truth   a `Boolean` as a `Whatwg.Truth` attribute: `true` or `false`
+  entry .int   an `Int` as a `Whatwg.Integral` attribute
+  entry .posInt   an `Int` as a `Whatwg.PositiveInt` attribute; the sign is not checked
+  entry .double   a `Double` as a `Whatwg.Decimal` attribute
+  entry .domId   a `Name[DomId]` as a `Whatwg.Id` attribute
+  entry .cssClass   a `Name[CssClass]` as a `Whatwg.CssClassList` attribute
+  entry .classList   a `ClassList` as a `Whatwg.CssClassList` attribute, space-joined; empty omits it
+  entry .url   any value `Abstractable across Urls to Text` as a `Whatwg.Url` attribute
+      An `HttpUrl`, or any typed URL, written as its generic text. A plain `Text` is not
+      one; `attributives.textAttributive` or graffiti's `urlText` admits it.
+  entry .style   a `Text` as a `Whatwg.Css` attribute, as it is
+  entry .cssClassList   a `List[Name[CssClass]]` as a `Whatwg.CssClassList` attribute, space-joined; empty omits it
+  entry .domIds   a `List[Name[DomId]]` as a `Whatwg.Ids` attribute, space-joined; empty omits it
+  entry #attribute   the name and text of the attribute for a value, the name alone, or `Unset` to omit it
+
+entry .Unattributive   how an attribute's text is read back as a typed value, by its value marker
+  detail
+      The inverse of `Attributive`: `marker is Unattributive to result` converts the
+      `Optional[Text]` an element holds for an attribute into a value, and is what
+      `element.alt` or `element.width` on an `Html.Element` resolves through — the attribute
+      given's `Topic` chooses the instance, so `Img(width = 50).width` is an `Optional[Int]`
+      and `Img(alt = t"x").alt` a `Text`. Only four givens exist, so an attribute of any other
+      marker cannot be read back by name.
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg
+      import htmlDoms.whatwg.*
+      import attributives.textAttributive
+
+      Img(alt = t"hello world").alt   // t"hello world"
+      Img(width = 50).width           // 50
+      ```
+  refer honeycomb.Attributive
+  entry .textTextual   a `Whatwg.Textual` attribute as a `Text`, empty if absent
+  entry .int   a `Whatwg.Integral` attribute as an `Optional[Int]`; `Unset` if absent or not a number
+  entry .positiveInt   a `Whatwg.PositiveInt` attribute as an `Optional[Int]`; `Unset` if absent or not a number
+  entry .cssClassList   a `Whatwg.CssClassList` attribute as a `List[Text]`, split on spaces; `Nil` if absent
+  entry #unattribute   the value for an attribute's text, or for its absence
+
+entry .ClassList   a set of CSS class names, for an element's `class` attribute
+  detail
+      `ClassList["one" | "two"]()` is a set of class names checked as the code compiles:
+      each literal of the type argument must be a CSS identifier, so `ClassList["1bad"]()` is
+      a compile error, _`1bad` is not a valid CSS class name_, rather than a runtime
+      failure. The result has the refined type `ClassList of "one" | "two"`, and
+      `ClassList(set)` wraps names already checked as `Name[CssClass]`.
+
+      A class list is an attribute value through `Attributive.classList` — an empty one omits
+      the attribute — and lists combine with `+` and `-`.
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg
+      import htmlDoms.whatwg.*
+
+      val base = ClassList["card" | "shadow"]()
+      val active = base + ClassList["active"]()
+      Div(`class` = active)(P("x")).show      // <div class="card shadow active"><p>x</p></div>
+      Div(`class` = base - base)(P("x")).show // <div><p>x</p></div>
+      ```
+  refer honeycomb.Attribution
+  refer honeycomb.Attributive
+  entry .apply   `ClassList["a" | "b"]()`: a class list from literals, each checked as a CSS identifier
+      A macro: the type argument must be a string literal or a union of them, or the
+      expansion halts with _the class names should be string literals_; each literal is
+      checked against `CssClass`'s `Nominative` rules. The case-class `apply(classes)` takes
+      a `Set[Name[CssClass]]` already checked.
+  entry .focusable   how a class list is named in a diagnostic: as a CSS selector, `.a.b`
+      Given for every refined `ClassList of …` type, so a browser driver can locate elements
+      by their classes.
+  entry .addable   `list + other`: the union of two class lists
+  entry .subtractable   `list - other`: the classes of one not in the other
+  entry .empty   the empty class list, as the `Attribution` of the plain call
+      A `ClassList` is `Topical`, and this given with `Topic = "apply"` serves the same role
+      as `Attribution.empty` where a `ClassList` is the evidence.
+  entry #classes   the names, as a `Set[Name[CssClass]]`
+
+entry .Dom   a description of an HTML dialect: its tags, attributes, entities, doctype and inference rules
+  detail
+      The contract `Whatwg` and `Html4Transitional` implement, and the contextual value
+      the parser, serializer and `h"…"` interpolator need: a `Dom` given — imported by
+      name from `htmlDoms` (`htmlDoms.whatwg` or `htmlDoms.html4Transitional`), since
+      `import soundness.*` brings in neither — says which tags exist, which attributes each
+      admits, which named entities decode, what doctype a document gets, and which elements
+      the parser may insert unwritten. A `Document[Html]` records the dom it was read under
+      in its `Html.Provenance`.
+
+      Another dialect is a class extending `Dom` with a `val` per tag made by `Tag.void`,
+      `Tag.container` and `Tag.transparent`, and a companion of `Attribute` givens; the
+      `elements` and `attributes` tables can be built from the members by reflection, as the
+      two provided dialects do.
+  refer honeycomb.Whatwg
+  refer honeycomb.Html4Transitional
+  refer honeycomb.Tag
+  entry #elements   every tag of the dialect, by name
+  entry #attributes   every attribute of the dialect, by name
+  entry #entities   the named character references, name to replacement text
+  entry #doctype   the doctype a `Document[Html]` of this dialect carries
+  entry #infer   the tag to insert between a parent and a child it cannot hold directly, or `Unset`
+      How `<table><tr>` gains its `<tbody>` and a bare `<p>` its `<html>` and `<body>` when
+      read as a whole document.
+  entry #generic   a root tag admitting every element of the dialect
+      `Tag.root` over all of `#elements`' names: what `read[Html]` with no label parses
+      into, so that a fragment may begin with any element.
+
+entry .Renderable   how a value of any type becomes HTML, and what HTML it becomes
+  detail
+      A `value is Renderable in label` says that `value` renders to an `Html of label`, and
+      lets it stand wherever that label is admitted: as a child of a tag, substituted into
+      an `h"…"` literal, or converted with the `html` extension. The `Form` type member is the
+      label (or union), so the compiler knows a `List[Text] is Renderable in "li"` may go in
+      a `<ul>` and not in a `<div>`.
+
+      ```scala
+      import soundness.*
+      import htmlDoms.whatwg
+      import htmlDoms.whatwg.*
+
+      given (List[Text] is Renderable in "li") = list => Html.Fragment(list.map(Li(_))*)
+
+      val items = List(t"one", t"two", t"three")
+      Ul(items)                 // a <ul> of three <li>s
+      h"<ol>$items</ol>"
+      items.html
+      ```
+
+      Other libraries give their types a rendering: a `Message` and a `StackTrace` here;
+      punctuation's Markdown, archimedes's `Math`, legerdemain's form fields, and graffiti's
+      `Archetype` pages elsewhere, which is how a page is served as HTML with no glue.
+  refer honeycomb.html
+  refer honeycomb.Tag
+  entry .message   a `Message` as phrasing content: its text, with nested messages rendered in turn
+      `Form = Phrasing`, so a message may go in a `<p>` or a heading;
+      `H4(stackTrace.message.html)` is how the stack-trace rendering uses it.
+  entry .stackTrace   a `StackTrace` as flow content: a `<div class="stack">` with headings and a table of frames
+      The component, class name and message as `<h2>`, `<h3>` and `<h4>`, then a `<table>`
+      with a `<tr>` per frame, each cell classed `class`, `method`, `file`, `line` or `code`,
+      for a stylesheet to pick out.
+  entry #render   the HTML for a value, as an `Html of Form`
+
+entry .Autocomplete   the values of `autocomplete`: `On` or `Off`
+  detail
+      `Autocomplete.On.show` is `on`. The attribute itself is typed `Whatwg.Switch`, which a
+      `Boolean` satisfies directly through `Attributive.switch`; the enum has no
+      `Attributive` of its own.
+  entry .showable   renders a value as its lowercase name
+
+entry .Capture   the values of an `<input type="file">`'s `capture`: `Environment` or `User`
+  detail
+      Shown lowercase. No `capture` attribute given is declared in the WHATWG vocabulary,
+      so the enum is currently only a vocabulary of names.
+  entry .showable   renders a value as its lowercase name
+
+entry .Crossorigin   the values of `crossorigin`: `UseCredentials` or `Anonymous`
+  detail
+      Shown in kebab case, `use-credentials` and `anonymous`. The attribute is typed
+      `Whatwg.Crossorigin`, for which the enum has no `Attributive`, so it is passed as
+      `crossorigin = Crossorigin.Anonymous.show` with `attributives.textAttributive` in
+      scope.
+  entry .showable   renders a value as its kebab-cased name
+
+entry .HDir   the values of `dir`: `Ltr`, `Rtl` or `Auto`
+  detail
+      The one attribute enum with an `Attributive` of its own, so `Body(dir = HDir.Rtl)`
+      compiles with no import and writes `dir="rtl"`. Named `HDir` rather than `Dir` to
+      leave room for the HTML 4 `<dir>` tag and other libraries' `Dir`.
+  entry .showable   renders a value as its lowercase name
+  entry .attributive   an `HDir` as a `Whatwg.Dir` attribute value
+
+entry .HttpEquiv   the values of a `<meta>`'s `http-equiv`: `ContentSecurityPolicy`, `ContentType`, `DefaultStyle` or `Refresh`
+  detail
+      Shown in kebab case (`content-security-policy`). Passed as `.show` with
+      `attributives.textAttributive`, since the enum has no `Attributive`.
+  entry .showable   renders a value as its kebab-cased name
+
+entry .Kind   the values of a `<track>`'s `kind`: `Subtitles`, `Captions`, `Descriptions`, `Chapters` or `Metadata`
+  detail
+      Shown lowercase. `Whatwg.Track` offers each as a preset tag (`Track.Captions`), which
+      is the usual way to write one; the enum has no `Attributive`.
+  entry .showable   renders a value as its lowercase name
+
+entry .Method   the values of a `<form>`'s `method`: `Post`, `Get` or `Dialog`
+  detail
+      Shown lowercase. Passed as `method = Method.Post.show` with
+      `attributives.textAttributive`, since the enum has no `Attributive`.
+  entry .showable   renders a value as its lowercase name
+
+entry .Preload   the values of `preload`: `None`, `Metadata` or `Auto`
+  detail
+      Shown lowercase. Written in full, `Preload.None`, so as not to be confused with
+      `scala.None`. Passed as `.show`; the enum has no `Attributive`.
+  entry .showable   renders a value as its lowercase name
+
+entry .Rel   the link types of `rel`, from `Alternate` to `Tag`
+  detail
+      `Alternate`, `Author`, `Bookmark`, `Canonical`, `DnsPrefetch`, `External`, `Help`,
+      `Icon`, `License`, `Manifest`, `Modulepreload`, `Next`, `Nofollow`, `Noopener`,
+      `Noreferrer`, `Opener`, `Pingback`, `Preconnect`, `Prefetch`, `Preload`, `Prerender`,
+      `Prev`, `Search`, `Stylesheet` and `Tag`, shown in kebab case (`dns-prefetch`). For a
+      `<link>`, `Whatwg.Link` offers most as preset tags; on an `<a>`, pass `.show`.
+  entry .showable   renders a value as its kebab-cased name
+
+entry .Rev   the HTML 4 reverse link types of `rev`, from `Alternate` to `Bookmark`
+  detail
+      `Alternate`, `Stylesheet`, `Start`, `Next`, `Prev`, `Contents`, `Index`, `Glossary`,
+      `Copyright`, `Chapter`, `Section`, `Subsection`, `Appendix`, `Help` and `Bookmark`,
+      shown lowercase. `rev` exists only in `Html4Transitional`.
+  entry .showable   renders a value as its lowercase name
+
+entry .Sandbox   the tokens of an `<iframe>`'s `sandbox`
+  detail
+      `AllowForms`, `AllowPointerLock`, `AllowPopups`, `AllowPresentation`,
+      `AllowSameOrigin`, `AllowScripts` and `AllowTopNavigation`, shown in kebab case
+      (`allow-forms`). The attribute takes several, space-separated, as `Whatwg.Sandbox`;
+      the enum has no `Attributive`, so a list is joined and passed as text.
+  entry .showable   renders a value as its kebab-cased name
+
+entry .Shape   the values of an `<area>`'s `shape`: `Circle`, `Default`, `Poly` or `Rect`
+  detail
+      Shown lowercase. `Whatwg.Area` offers each as a preset tag; the enum has no
+      `Attributive`.
+  entry .showable   renders a value as its lowercase name
+
+entry .Target   the values of `target`: a named context, or `Self`, `Blank`, `Parent` or `Top`
+  detail
+      `Target.Browse(name)` is a named browsing context, shown as the name; the four
+      keywords show as `_self`, `_blank`, `_parent` and `_top`. The attribute is typed
+      `Whatwg.Target`, for which the enum has no `Attributive`, so it is passed as `.show`
+      with `attributives.textAttributive` in scope.
+  entry .showable   renders a value as its keyword or its context name
+
+entry .Wrap   the values of a `<textarea>`'s `wrap`: `Soft` or `Hard`
+  detail
+      Shown lowercase. The WHATWG attribute is typed `Whatwg.Softness` and the HTML 4 one
+      `Html4Transitional.Wrap` (any text); the enum has no `Attributive`, so it is passed
+      as `.show`.
+  entry .showable   renders a value as its lowercase name

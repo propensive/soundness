@@ -1,0 +1,351 @@
+tel 1.0
+
+base prophesy
+import soundness
+
+info   the vocabulary of code completion: candidates, keyword contexts and elaborated call sites
+detail
+    _Prophesy_ holds the types a code-completion engine and the libraries it serves share,
+    without either depending on the compiler. A completion engine such as Harlequin's
+    `Scala.highlight(…).completions` produces `Completions`; a `Dynamic` type offers the
+    members its `selectDynamic` would accept by giving its companion object the `Completable`
+    interface; and keyword completion is answered by `ScalaKeywords.pattern`, a curated trie
+    over the tokens leading back from the caret, abstracted as `Lexeme`s.
+
+    A `Dynamic` type whose valid member names are not symbols can still complete honestly:
+
+    ```scala
+    import soundness.*
+    import prophesy.*
+
+    trait Creature extends Dynamic:
+      def selectDynamic(name: String): Text = t""
+
+    object Creature extends Completable:
+      def completions(using quotes: scala.quoted.Quotes)
+        ( receiver: quotes.reflect.TypeRepr, prefix: Text )
+      :   List[Completion] =
+
+        import quotes.reflect.*
+
+        List(t"habitat", t"diet").map: name =>
+          Completion(name, Completion.Kind.Term, Syntax(TypeRepr.of[Text]))
+    ```
+
+    The pieces fit as follows:
+
+    - `Completion` and `Completions` are one candidate and one answer to a completion request.
+    - `Completable` is the interface a `Dynamic` type's companion implements to offer members.
+    - `Lexeme`, `KeywordPattern`, `Keywords` and `ScalaKeywords` answer which keywords may come
+      next at a caret, and what non-keyword content the grammar expects there.
+    - `Elaboration` records what the typer added to a call beyond its source text — inferred
+      type arguments and synthesized `using` arguments — for hover and inlay hints.
+
+    The library has one source set, `prophesy.core`. Only `Completable` is exported to the
+    `soundness` umbrella: `Completion` and `Completions` would clash there with
+    exoskeleton's command-line completions of the same names, so they are reached as
+    `prophesy.Completion` and `prophesy.Completions` (and Harlequin re-exports them in its own
+    package). The keyword and elaboration types are reached through `import prophesy.*`.
+
+refer prophesy.Completable
+refer prophesy.Completion
+refer prophesy.ScalaKeywords
+
+entry .Completable   the interface through which a `Dynamic` type's companion offers tab completions
+  detail
+      The compiler's interactive completion engine cannot enumerate the members a
+      `selectDynamic` or `applyDynamic` implementation would accept, but a refined receiver
+      type often determines them fully. A `Dynamic` type offers them by having its companion
+      object extend `Completable`. A completion engine (such as Harlequin's) finds the
+      companion from the receiver's type at the caret, loads it reflectively in its own JVM
+      and calls `#completions` with a live `Quotes` and the receiver's full, refined
+      `TypeRepr`.
+
+      ```scala
+      import soundness.*
+      import prophesy.*
+
+      trait Creature extends Dynamic:
+        def selectDynamic(name: String): Text = t""
+
+      object Creature extends Completable:
+        def completions(using quotes: scala.quoted.Quotes)
+          ( receiver: quotes.reflect.TypeRepr, prefix: Text )
+        :   List[Completion] =
+
+          import quotes.reflect.*
+
+          List(t"habitat", t"diet").map: name =>
+            Completion(name, Completion.Kind.Term, Syntax(TypeRepr.of[Text]))
+      ```
+
+      Because the companion is loaded reflectively from the classes on the engine's
+      classpath, it must be compiled and on that classpath, not merely in the source being
+      edited. This is how a xenophile `Foreign` value completes with the members its foreign
+      declarations name. `Completable` is exported to the `soundness` umbrella.
+  refer prophesy.Completion
+  entry #completions   the completions for a receiver type and the partial member name typed so far
+      Takes the receiver's `TypeRepr` and the `prefix` already typed at the caret (possibly
+      empty), and returns a `List[Completion]`. An implementation may filter by the prefix
+      but need not, since the engine filters by it regardless. It must be pure and total: any
+      exception it throws is caught by the engine and treated as no completions.
+
+entry .Completion   one completion candidate: the text to insert, its kind, its signature and documentation
+  detail
+      A case class of `#name`, `#kind`, `#signature` and an optional `#documentation`. A
+      completion engine returns a list of them inside `Completions`, and a `Completable`
+      companion builds them for the members of a `Dynamic` type.
+
+      ```scala
+      import soundness.*
+      import prophesy.*
+
+      def candidate(using quotes: scala.quoted.Quotes): Completion =
+        import quotes.reflect.*
+        Completion(t"habitat", Completion.Kind.Term, Syntax(TypeRepr.of[Text]), t"where it lives")
+      ```
+
+      `Completion` is not exported to the `soundness` umbrella, where exoskeleton's
+      command-line completions already use the name; write `prophesy.Completion`, or import
+      it from `prophesy`. Harlequin re-exports it as `harlequin.Completion`.
+  refer prophesy.Completions
+  refer prophesy.Completable
+  entry .Kind   what sort of member a completion candidate is
+      An enum with the cases `Term`, `Method`, `Given`, `Extension`, `Type`, `Module`,
+      `Package` and `Keyword`, which an editor uses to choose an icon and to decide, for
+      instance, whether to insert parentheses after a `Method`.
+  entry #name   the text to insert
+  entry #kind   the candidate's `Completion.Kind`: term, method, given, extension, type, module, package or keyword
+  entry #signature   the member's type as a stenography `Syntax`: a method's full signature, or a value's type
+  entry #documentation   the member's documentation, or `Unset` if it has none
+
+entry .Completions   the answer to a completion request: the region to replace and the candidates
+  detail
+      `#replace` is the source region the chosen completion replaces, as an `Offset`-mode
+      `Span` — the partial identifier at the caret — and `#items` the candidates.
+      Harlequin's `Scala.highlight(source, caret = …).completions` returns one, or `Unset`
+      when no caret was given.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+
+      given LocalClasspath = LocalClasspath.of(Classloader[Option[Int]])
+      import highlighting.typecheckedScala
+
+      val source = t"val xs = List(1, 2, 3)\nval y = xs.m"
+      Scala.highlight(source, caret = source.length.z).completions.lay(Nil)(_.items.map(_.name))
+      ```
+
+      Like `Completion`, it is reached as `prophesy.Completions` (or `harlequin.Completions`),
+      not through the `soundness` umbrella.
+  refer prophesy.Completion
+  entry #replace   the `Offset`-mode `Span` of source which a chosen completion replaces
+  entry #items   the completion candidates, as `Completion`s
+
+entry .Elaboration   one call site the typer elaborated beyond its source text, for hovers and inlay hints
+  detail
+      Records, for one call, what the compiler added that the programmer did not write: the
+      callee's simple name as `#method`, its token's source offsets as `#start` and `#end`,
+      the *inferred* type arguments as `#typeArguments` and the *synthesized* `using`
+      arguments as `#givenArguments`. Anything written in the source is never recorded, so an
+      editor can show exactly the elaboration that is otherwise invisible.
+
+      `.scan` finds every such call in a typed tree. Harlequin uses it to attach elaborations
+      to the tokens of highlighted source, keyed by their offsets.
+  refer prophesy.Elaboration.Instance
+  entry .Instance   the given the compiler supplied for one synthesized `using` argument
+    detail
+        `#name` is the qualified name of the given's head symbol — for a derived instance,
+        the derivation method's — and `#tpe` the argument's widened type, as a stenography
+        `Syntax`.
+    entry #name   the qualified name of the supplied given, or of the method which derived it
+    entry #tpe   the synthesized argument's widened type, as a `Syntax`
+  entry .scan   every elaborated call site in a typed tree, ordered by position
+      Takes a `Quotes` and a typed `Tree`, and returns a `List[Elaboration]` sorted by
+      `#start`, merging the type and given arguments of the several clauses of one call. The
+      scan works equally on a live typer run and on trees unpickled from TASTy: an inferred
+      type argument is recognised by spanning the whole function tree it was wrapped around,
+      and a synthesized `using` argument by being zero-extent at the end of its clause.
+
+      An `Inlined` node contributes its original call and is not descended into, since the
+      expansion's trees carry the inline definition's own positions. The scan never fails: a
+      node which cannot be read is skipped. A selection's token is approximated as its
+      trailing `name.length` characters, which misplaces backticked names; a misplaced key
+      attaches to no token, so the cost is only a missing hint.
+  entry #method   the callee's simple name
+  entry #start   the source offset at which the callee's token begins
+  entry #end   the source offset at which the callee's token ends
+  entry #typeArguments   the type arguments the typer inferred, as `Syntax`, omitting any written explicitly
+  entry #givenArguments   the `using` arguments the typer synthesized, as `Elaboration.Instance`s
+
+entry .Lexeme   a token abstracted for keyword completion: keywords and symbols kept, identifiers erased
+  detail
+      The alphabet a `KeywordPattern` matches against: an abstraction of a token stream in
+      which identifier text is irrelevant (any term identifier is just `Term`, any type
+      identifier `Typal`) but every keyword and every symbolic token is individually
+      significant. A tokenizer such as Harlequin's maps its tokens onto lexemes, and the
+      pattern is consulted with the sequence *reversed*, reading outwards from the caret.
+
+      The cases are `Keyword(word)`, covering hard keywords and soft modifiers alike,
+      identified by their exact text — near a caret a soft modifier is lexically
+      indistinguishable from an identifier, so the mapping is by text; `Symbol(glyph)` for a
+      symbolic token such as `=>` or `:`; `Open(bracket)` and `Close(bracket)`, with a
+      `Lexeme.Bracket`; `Term`, `Typal` and `Literal`; `Break`, a statement boundary (a line
+      break whose continuation is not more deeply indented, where a line break which merely
+      continues an expression contributes nothing); `Start`, the beginning of the input; and
+      `Error`, a token the tokenizer could not classify.
+
+      ```scala
+      import soundness.*
+      import prophesy.*
+
+      // the caret in `transparent inline |`, read outwards
+      val context: List[Lexeme] =
+        List(Lexeme.Keyword(t"inline"), Lexeme.Keyword(t"transparent"), Lexeme.Break)
+      ```
+  refer prophesy.KeywordPattern
+  entry .Bracket   the shape of a bracket lexeme: `Round`, `Square` or `Brace`
+
+entry .KeywordPattern   a trie over reversed lexeme contexts, answering which keywords may come next
+  detail
+      A node of the pattern tree. `#result`, when present, is the `Keywords` determined by the
+      context consumed so far; `#branches` refine it by looking one `Lexeme` further back from
+      the caret. Lookup, by `#apply`, descends the first branch whose element matches the next
+      lexeme and returns the deepest result encountered, so an interior result is the default
+      when no deeper pattern matches, and the tree looks back exactly as far as remains
+      relevant. Branch order is significance order: `Exact` branches should precede the
+      wildcard class branches.
+
+      ```scala
+      import soundness.*
+      import prophesy.*
+      import KeywordPattern.{Element, Expectation}
+
+      val definition = Keywords(Set(t"def", t"given"))
+
+      val tree = KeywordPattern
+        ( Unset,
+          List
+           ( Element.Exact(Lexeme.Keyword(t"inline")) -> KeywordPattern
+               ( Keywords(definition.keywords + t"if"),
+                 List(Element.Exact(Lexeme.Keyword(t"transparent")) -> KeywordPattern(definition)) ),
+             Element.Exact(Lexeme.Symbol(t".")) -> KeywordPattern(Keywords(Set(), Expectation.Nothing)) ) )
+
+      tree(List(Lexeme.Keyword(t"inline"), Lexeme.Keyword(t"transparent")))   // definition
+      tree(List(Lexeme.Keyword(t"inline"), Lexeme.Literal))   // the `inline` default, with `if`
+      tree(Nil)   // Keywords.empty
+      ```
+
+      `ScalaKeywords.pattern` is the curated tree for Scala itself.
+  refer prophesy.ScalaKeywords
+  refer prophesy.Lexeme
+  refer prophesy.Keywords
+  entry .Element   one step of a keyword pattern: an exact lexeme, or a class of lexemes
+    detail
+        The element a branch of a `KeywordPattern` matches against a single lexeme of the
+        reversed context. `Exact(lexeme)` matches one lexeme; the class elements are the
+        wildcard mechanism, letting a curated tree generalise without enumerating every
+        literal context: `AnyKeyword` matches any `Lexeme.Keyword`; `AnySymbol` any
+        `Lexeme.Symbol`, the open class of operators such as `+`, `::` and `++`; `ValueEnd`
+        any token which ends an expression (a closing bracket, a term identifier or a
+        literal); `TypeEnd` any token which ends a type (a type identifier or a closing `]`);
+        `AnyOf(lexemes)` any of a set; and `Any` every lexeme.
+    entry #matches   whether this element accepts a lexeme
+  entry .Expectation   what non-keyword content the grammar expects at the caret
+      An enum: `TermBinding`, where a fresh term name is being written (after `val`, `def`,
+      or at the head of a parameter), so member completions should be suppressed;
+      `TypeBinding`, where a fresh type name is (after `class`, `trait`, `type`);
+      `TypeIdentifier`, where only a type may follow (after `new`, `extends`, an ascription's
+      `:`), so offers are narrowed to types; and `Nothing`, where no keyword is possible but
+      member completions remain valid, as after `.`.
+  entry #result   the keywords determined by the context matched so far, or `Unset` to inherit the enclosing node's
+  entry #branches   the refinements of this node, each an `Element` and the subtree to descend when it matches
+  entry #apply   looks up the keywords for a reversed lexeme context, read outwards from the caret
+      Returns the deepest `Keywords` found along the first matching path, or `Keywords.empty`
+      if no node on it has a result. The context is consumed only as deep as the tree goes,
+      so passing the whole of a long line costs nothing more than passing its last tokens.
+
+entry .Keywords   the keywords plausible at a caret, and what other content the grammar expects there
+  detail
+      The result of consulting a `KeywordPattern`: the set of `#keywords` which may come next,
+      and optionally an `#expectation`, a `KeywordPattern.Expectation` saying whether a fresh
+      name, a type, or nothing but members is expected. A multi-word keyword such as
+      `case class` appears as a single element of the set.
+
+      ```scala
+      import soundness.*
+      import prophesy.*
+
+      val found: Keywords = ScalaKeywords.pattern(List(Lexeme.Keyword(t"def")))
+      found.expectation == KeywordPattern.Expectation.TermBinding
+      ```
+  entry .empty   no keywords and no expectation: the result of a lookup which matched nothing
+  entry #keywords   the keywords which may come next, as text; a multi-word keyword is one element
+  entry #expectation   what non-keyword content is expected, or `Unset` if the pattern does not say
+
+entry .ScalaKeywords   Scala 3's hard and soft keywords, and the curated keyword-completion tree for Scala
+  detail
+      `.hard` and `.soft` are Scala 3's alphanumeric keywords, and `.all` their union, the
+      one copy shared by Harlequin's highlighting and any host which must reject a keyword
+      as a fresh name. `.pattern` is the `KeywordPattern` for keyword completion in Scala
+      source.
+
+      The pattern is hand-written, derived from and checked against a corpus analysis of
+      about 445,000 keyword occurrences in real Scala, which reports the keywords observed
+      after every reversed caret context and how far back the context must be read before
+      it settles. Soft-modifier noise is pruned from the corpus's sets — `open` after `def` is
+      a method name, not a keyword — and grammar the corpus under-attests is added back, such
+      as `class` and `object` after `case`. `implicit` and Scala-2-style `with` after `:` are
+      never offered. Where one lexeme context covers two grammatical positions, such as an
+      indented template body after `:` and a same-line ascription, the union is offered,
+      since a keyword offered where it is not strictly valid is harmless but a missing one is
+      a failure.
+
+      Here is how the offer narrows as more of the context before the caret is read:
+
+      ```scala fuel
+      frame
+        label After `inline`, a definition or an inline conditional
+        code
+            import soundness.*
+            import prophesy.*
+
+            ScalaKeywords.pattern(List(Lexeme.Keyword(t"inline"))).keywords
+            // def, given, val, if, match, infix
+      frame
+        label After `transparent inline`, only a definition
+        code
+            import soundness.*
+            import prophesy.*
+
+            ScalaKeywords.pattern(List(Lexeme.Keyword(t"inline"), Lexeme.Keyword(t"transparent"))).keywords
+            // def, given
+      frame
+        label After `def`, a fresh name and no keywords
+        code
+            import soundness.*
+            import prophesy.*
+
+            ScalaKeywords.pattern(List(Lexeme.Keyword(t"def")))
+            // Keywords(Set(), TermBinding)
+      ##
+      ```
+  refer prophesy.KeywordPattern
+  refer prophesy.Lexeme
+  entry .hard   Scala 3's alphanumeric hard keywords, reserved everywhere and so never identifiers
+      From `abstract` to `yield`, including `implicit` and `macro`, as `Set[Text]`.
+  entry .soft   Scala 3's alphanumeric soft keywords, which are keywords only in particular positions
+      `as`, `derives`, `end`, `erased`, `extension`, `infix`, `inline`, `opaque`, `open`,
+      `throws`, `tracked`, `transparent` and `using`: identifiers the parser reads as
+      keywords where its lookahead says so, and which a lexer without that lookahead tags as
+      plain identifiers. A host deciding whether a word is a name needs them alongside
+      `.hard`.
+  entry .all   every Scala 3 keyword, hard and soft, as one set
+  entry .pattern   the curated `KeywordPattern` for Scala keyword completion
+      Consulted with the reversed `Lexeme`s before the caret. Statement boundaries offer
+      everything which can begin a statement; a member selection offers only postfix `match`,
+      singleton `.type` and import `.given`, with `Expectation.Nothing`; a definition head
+      expects a fresh binding and offers no keywords; and each modifier offers what may
+      follow it.

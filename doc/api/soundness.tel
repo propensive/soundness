@@ -1,0 +1,514 @@
+tel 1.0
+
+base soundness
+import soundness
+
+info   the umbrella package: one `import soundness.*` reaches every Soundness library
+detail
+    _Soundness_ is a family of well over a hundred libraries, each in a package of its own
+    (`gossamer` for text, `galilei` for the filesystem, `jacinta` for JSON, …), and
+    `soundness` is the package which gathers them. A program writes one wildcard import and
+    then names whatever it needs, from any library, without knowing which library it came
+    from:
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+    import systems.javaBaseSystem
+
+    val greeting: Text = t"Hello, world".upper
+    val xs: List[Int] = List(3, 1, 2)
+    val user: Text = System.properties.user.name()
+    ```
+
+    The package holds almost nothing of its own. Every library has, in each of its
+    components, a file named `soundness_<library>_<component>.scala` which `export`s that
+    component's public names into `package soundness`, so the umbrella grows with the
+    components on the classpath: a program that depends on `galilei.jvm` sees galilei's
+    filesystem backends in it, and one that does not, does not. These forwarders are
+    documented where they are defined, on each library's own page — `Classloader` on
+    hellenism's, `Json` on jacinta's — and not here. This page documents only what the
+    umbrella *declares* itself: a handful of hand-written forwarders which an `export`
+    cannot express, the collection aliases, two annotation types, the catch-all
+    `explainMissingContext`, and the `repackage` entry point.
+
+    **Choice packages.** A given which selects an implementation — an error-handling
+    strategy, a classloader, a codepage, a log format, a filesystem backend — lives in a
+    small package named for its role: `strategies`, `classloaders`, `codepages`,
+    `logFormats`, `filesystemBackends`. The umbrella mirrors each as a `package` of the same
+    name, and blocks of the same name from different libraries merge, so
+    `soundness.construables` holds the `Construable` givens of jacinta, xylophone,
+    honeycomb, caesura and a dozen others, and `soundness.wasiApis` those of every library
+    with a WASI backend. The path through the umbrella and the path through the library are
+    the same given: `import soundness.monthFormats.englishMonths` and `import
+    aviation.monthFormats.englishMonths` are interchangeable.
+
+    A choice-package given is always **imported by name**, because `import strategies.*`
+    does not import givens: Scala's wildcard selects only ordinary members, and a given
+    needs its own name or a `given` selector. And a given imported into the lexical scope
+    outranks any given in a companion object, which is what lets a choice package override
+    a library's default. `import soundness.*` itself therefore brings no choice into scope —
+    with one deliberate exception, `explainMissingContext`, which is an old-style `implicit
+    def` precisely so that the wildcard does include it.
+
+    **Names left out.** Types and terms live in separate namespaces, so a type `via` and a
+    method `via` coexist; but two libraries which export one *term* (or one *type*) into
+    `package soundness` do not overload — the compiler keeps one and silently drops the
+    other. Each such clash has been ruled on, and the loser is reached through its own
+    package, where it keeps its name:
+
+    | Name                          | In the umbrella        | Reach the other as                        |
+    |-------------------------------|------------------------|-------------------------------------------|
+    | `Channel`                     | perihelion's WebSocket | `anticipation.Channel` (pixel channels)   |
+    | `Completion`, `Completions`   | exoskeleton's          | `harlequin.Completion`, `prophesy.Completion` |
+    | `Fragment`                    | honeycomb's            | `harlequin.Fragment`                      |
+    | `Descriptor`                  | embarcadero's OCI      | `hallucination.Descriptor`                |
+    | `Diagnostic`                  | harlequin's            | `frontier.Diagnostic`                     |
+    | `Message`                     | fulminate's            | `perihelion.Message` (a WebSocket frame)  |
+    | `Tag`                         | honeycomb's HTML tag   | `probably.Tag`, `xylophone.Tag`           |
+    | `Attributive`, `Renderable`   | honeycomb's            | `xylophone.Attributive`, `xylophone.Renderable` |
+    | `Universe`, `Classfile`       | anthology's, mandible's | `degustation.Universe`, `degustation.Classfile` |
+    | `as`                          | distillate's decoding  | `scintillate.as` (a request body)         |
+    | `teletype`                    | escapade's rendering   | `delicious.teletype`                      |
+    | `Kelvin(…)` as an `apply`     | rudiments' deindexing `apply` | `import quantitative.*`            |
+
+    A few names are absent for a different reason: an `export` cannot forward them
+    faithfully. rudiments' `Scribe`/`scribe` and `Surveyor`/`survey`, and zephyrine's
+    `Region` and `Slate`, are reached from `rudiments` and `zephyrine` directly; perihelion's
+    `wsClient` and `wsSessional` are imported by name from `perihelion`. A definition
+    deliberately kept out of the umbrella carries the `unexported` annotation in its source,
+    and each library's page says which of its names are not exported. The MathML element
+    types sit inside `Mathml` rather than at the top level, so `import soundness.Mathml.*`
+    gives the bare element names where MathML is written by hand.
+
+    One shadowing is worth knowing: ambience's `System` is exported, so under `import
+    soundness.*` a bare `System` is the Soundness one, and the JDK's must be written
+    `java.lang.System` (for `System.nanoTime`, `System.arraycopy`, …).
+
+    **Why some forwarders are hand-written.** A synthesized `export` forwarder is a plain
+    method, and some definitions do not survive the trip, so the umbrella re-declares them,
+    each delegating to its library's original:
+
+    - an `export` of an *overloaded* extension forwards only one overload, so `thru`, `till`,
+      `tabulate` and the interval `each` are declared here, every overload in one
+      compilation unit;
+    - an extension whose typeclass evidence is a dependent leading `using` clause — the
+      deindexing group `apply`, `at`, `defines`, `confine`, `pick`, `unsafeAttested`, with
+      `define`, `omit`, `keep` and `skip` — needs that clause so that a failed summon
+      discards the candidate, and a forwarder cannot carry it;
+    - a forwarder loses a capture-annotated refinement, so zephyrine's `via` and `accepting`,
+      contingency's `throwUnsafely` and scintillate's four `httpServers` givens are written
+      out with their capture sets;
+    - an `export` of an object is a `def`, an unstable prefix through which an opaque type is
+      transparent, so the collection companions are forwarded as stable `val`s beside
+      parameterised type aliases (`List`, `Sequence`, `Set`, `Map`, `Chain`);
+    - an `export` of a case class brings its constructor proxy, a term, so `assign` and
+      `attribute` are type aliases alone, leaving the term names to anamnesis and galilei.
+
+    **How the documentation is organised.** Each package has its own page, named for it;
+    a name reached through `soundness` is documented on the page of the package which
+    defines it, and each library's page says which of its components contribute what,
+    which choice packages it mirrors into the umbrella, and which givens are imported by
+    name. This page has an entry for each declaration of the umbrella's own, and for the
+    two choice packages whose givens are declared here rather than exported.
+
+refer soundness.explainMissingContext
+refer soundness.strategies
+refer soundness.List
+refer proscenium.unexported
+
+entry .List   the opaque linked list `proscenium.List`, with its companion as a stable value
+    `type List[+element] = proscenium.List[element]` and `val List = proscenium.List`: the
+    Soundness list, documented on proscenium's page, as the umbrella names it. The type is
+    a parameterised alias, since a bare alias of an opaque constructor is not seen through
+    (`::`, `CanEqual` and the extension methods would treat it as a different `List`); and
+    the companion is a `val` rather than an `export`ed `def`, since a companion member
+    selected through a `def` prefix sees the opaque type's right-hand side and exposes the
+    standard library's whole API. `Nil`, `::` and `#::` are forwarded beside it.
+
+    ```scala
+    import soundness.*
+
+    val xs: List[Int] = List(1, 2, 3)
+    xs.map(_ + 1)
+    ```
+
+    A list built from a standard-library collection is `List.from(xs)`, not `xs.to[List]`,
+    which on a stdlib receiver reaches Scala's own `to` and fails for want of a factory.
+
+entry .Sequence   the opaque indexed sequence `proscenium.Sequence`, with its companion as a stable value
+    `type Sequence[+element] = proscenium.Sequence[element]` and `val Sequence =
+    proscenium.Sequence`: an immutable `Vector` behind an opaque type, as proscenium's page
+    describes it. Forwarded as a parameterised alias and a stable `val` for the reasons
+    `List` is.
+
+    ```scala
+    import soundness.*
+
+    val xs = Sequence(10, 20, 30)
+    xs.pick(Sec) { i => xs(i) + 1 }   // 21
+    ```
+
+entry .Set   the opaque hash set `proscenium.Set`, with its companion as a stable value
+    `type Set[element] = proscenium.Set[element]` and `val Set = proscenium.Set`, forwarded
+    as an alias and a stable `val` for the reasons `List` is. A `Set` is `Reshapable` but has
+    no stable order, so it does not `sort`.
+
+entry .Map   the opaque hash map `proscenium.Map`, with its companion as a stable value
+    `type Map[key, +value] = proscenium.Map[key, value]` and `val Map = proscenium.Map`,
+    forwarded as an alias and a stable `val` for the reasons `List` is. `map.confine(key)`,
+    `map(key)`, `map.define(key, value)` and `map.omit(key)` are the umbrella's deindexing
+    extensions.
+
+    ```scala
+    import soundness.*
+
+    val ages = Map(t"Ada" -> 36)
+    ages.confine(t"Ada").let(ages(_))   // 36
+    ```
+
+entry .Chain   the opaque lazy sequence `proscenium.Chain`, with its companion as a stable value
+    `type Chain[+element] = proscenium.Chain[element]` and `val Chain = proscenium.Chain`: a
+    `LazyList` behind an opaque type, forwarded as an alias and a stable `val` for the
+    reasons `List` is. Its lazy `keep` and `skip` live in its companion, and the umbrella's
+    own `keep` and `skip` are shaped so that a `Chain` receiver still reaches them.
+
+entry .infer   `infer[context]`: summons a contextual value at the inline expansion site
+    `transparent inline def infer[context]: context = summonInline[context]`, declared in
+    the umbrella so that code written against `import soundness.*` has the same spelling
+    as proscenium's. Inside an inline method, the search happens where the method is
+    expanded rather than where it is defined; `summon` is the non-inline form.
+
+entry .explainMissingContext   explains every failed implicit search, brought in by `import soundness.*`
+    The umbrella's form of frontier's catch-all `frontier.context.explainMissingContext`. It
+    is a candidate in every implicit search; when a search fails, the compiler reports a
+    rendered tree of the candidates tried, what each one required, and which instances on
+    the classpath would satisfy it, in place of its own terse message. When the search would
+    succeed without it, it steps aside and contributes nothing, so it never changes which
+    instance a program uses.
+
+    ```scala
+    import soundness.*
+
+    summon[Char is Concatenable]   // does not compile
+    ```
+
+    It is an old-style `transparent inline implicit def` rather than a `given`, because a
+    wildcard import excludes givens and this one must be in scope for anyone who writes
+    `import soundness.*`. It is annotated `@scala.annotation.internal.diagnostic`, which
+    the Proscala compiler honours; frontier's page explains its bounds and the shapes of the
+    tree.
+
+entry .repackage   the `@main` entry point of burdock's repackager: `java -cp app.jar soundness.repackage`
+    A command-line entry point, in the `soundness` package so that it can be launched by a
+    fully-qualified name which every Soundness application carries:
+
+    ```sh
+    java -cp app.jar:burdock.jar soundness.repackage --github owner/repo
+    ```
+
+    It passes its arguments, as a `List[Text]`, to `burdock.repackage`, which rewrites the
+    running application's JAR in place, externalizing its published dependencies; burdock's
+    page describes the arguments and the output.
+
+entry .assign   the `@assign(layer)` annotation of stratiform, forwarded as a type alone
+    `type assign = stratiform.assign`: a field annotation which places a case-class field in
+    a TEL schema layer, as stratiform's page describes it. It is a type alias rather than an
+    `export`, since exporting the class would also export its constructor proxy, a term
+    `assign`, which would hide anamnesis's `assign` method; the annotation `@assign(…)` reads
+    the same either way.
+
+    ```scala
+    import soundness.*
+
+    object withPhone extends Tel.Layer("with-phone")
+
+    case class Contact(name: Text, @assign(withPhone) phone: Optional[Text])
+    ```
+
+entry .attribute   the `@attribute` annotation of xylophone, as a type; the term is galilei's
+    `type attribute = xylophone.Xml.attribute`: the annotation which marks a case-class field
+    as an XML attribute rather than a child element. It is a type alias rather than an
+    `export`, because galilei and tarantula already export a *term* named `attribute` into
+    the umbrella (reading an extended attribute of a path, or an element's attribute), which
+    the case class's companion would collide with; an annotation needs only the type.
+
+    ```scala
+    import soundness.*
+
+    case class Book(@attribute isbn: Text, title: Text)
+    ```
+
+entry .thru   `start thru end`: the interval between two ordinals, end inclusive, confined if both ends are
+    `Ter thru Sen` is the interval of `Ter`, `Quat`, `Quin` and `Sen`. Two overloads, both
+    declared in the umbrella: over plain `Ordinal`s the result is a plain `Interval`, and over
+    two ordinals confined to the same value (`Ordinal in form`) it is an `Interval in form`,
+    whose every ordinal reads that value totally. They are declared here rather than
+    exported from denominative because an `export` forwards only one overload, and a plain
+    `Ordinal` receiver would then be offered the confined one and fail.
+
+    ```scala
+    import soundness.*
+
+    (Sec thru Ter).tabulate(_.n1)          // Sequence(2, 3)
+    ```
+
+entry .till   `start till end`: the interval between two ordinals, end exclusive, confined if both ends are
+    `Ter till Sen` is `Ter`, `Quat` and `Quin`; `Sec till Sec` is empty. As with `thru`, the
+    two overloads — plain and confined — are declared together in the umbrella, because an
+    `export` would forward only one.
+
+entry .tabulate   `xs.tabulate { i => … }`: a `Sequence` of one element per ordinal of a value or interval
+    The collecting counterpart of `each`: builds a `Sequence` with one element per position,
+    in order. Three overloads, declared together in the umbrella for the reason `thru` is:
+    over a `Countable` value the lambda receives `Ordinal in value.type`, so its reads of
+    the value are bare; over a plain `Interval` it receives a plain `Ordinal`; over an
+    `Interval in form`, an `Ordinal in form`. Each delegates to `denominative.tabulate`.
+
+    ```scala
+    import soundness.*
+
+    val xs = Sequence(10, 20, 30)
+    xs.tabulate { i => xs(i) + i.n0 }   // Sequence(10, 21, 32)
+    ```
+
+entry .each   `interval.each { i => … }`: visits every ordinal of an interval, in order
+    The umbrella declares the two interval overloads of `each` beside the collection `each`
+    it exports from rudiments: over a plain `Interval` the lambda receives an `Ordinal`, and
+    over a confined `Interval in form` it receives `Ordinal in form`, so a read inside is
+    total. All of them must share one scope — two top-level definitions of one name in
+    `package soundness` do not overload, and one is silently dropped — and the confined
+    overload must sit beside the plain one, or the plain one wins for a confined receiver
+    and strips its brand without an error. The collection form, `xs.each { x => … }`, is
+    documented on rudiments' page.
+
+    ```scala
+    import soundness.*
+
+    val xs = Sequence(1, 2, 3)
+    xs.extent.each { i => assert(xs(i) > 0) }
+    ```
+
+entry .apply   `xs(index)`: the element at an index, bare for a confined index and `Optional` otherwise
+    The universal deindexing read for any value with an `Applicable` instance — the
+    collections by `Ordinal`, a `Map` by key, a `Text` by `Ordinal` — re-declared here
+    rather than exported, since its evidence is a dependent leading `using` clause which a
+    forwarder cannot carry. It delegates inline to `rudiments.apply`, so an index typed
+    `Operand in xs.type` (from `confine`, `pick`, `each`, …) reads the element bare and any
+    other index is checked, giving an `Optional`. A second overload reads a frozen array typed
+    `& Sized[n]` with a literal ordinal, checked against `n` as the code compiles. Rudiments'
+    page has the full account.
+
+    ```scala
+    import soundness.*
+
+    val xs = Sequence(10, 20, 30)
+    xs(Sec)                             // Optional[Int]: 20
+    xs.confine(Sec).let { i => xs(i) }  // the read bare inside
+    ```
+
+entry .at   `xs.at(index)`: the same read as `xs(index)`, bare for a confined index and `Optional` otherwise
+    Identical to `apply`, re-declared in the umbrella with it and delegating to
+    `rudiments.at`; kept for code which spells positional access `xs.at(Sec)` and keyed
+    access `map.at(key)`.
+
+entry .defines   `xs.defines(index)`: whether an index or key is defined for a value
+    True when the value's `Applicable` instance contains the index: an ordinal within a
+    collection's extent, or a key present in a `Map`. Re-declared in the umbrella with the
+    rest of the deindexing group, with the one-line body duplicated rather than delegated.
+
+entry .confine   `xs.confine(index)`: checks an index against a value and returns it branded to that value
+    `Unset` if the index is not defined for the value, and otherwise the index itself typed
+    `Operand in xs.type`, so that a following `xs(i)` is bare and checks nothing again.
+    Works for keys as well as ordinals. Re-declared in the umbrella with the rest of the
+    deindexing group.
+
+    ```scala
+    import soundness.*
+
+    val ages = Map(t"Ada" -> 36)
+    ages.confine(t"Ada").let(ages(_))   // 36
+    ```
+
+entry .pick   `xs.pick(index) { i => … }`: checks an index and runs a lambda with it confined, or gives `Unset`
+    The fused form of `confine` and `let`: the lambda receives the index typed `Operand in
+    xs.type`, so its reads of `xs` are bare, and the result is `Optional`, `Unset` when the
+    index is not defined. Re-declared in the umbrella with the rest of the deindexing group.
+
+    ```scala
+    import soundness.*
+
+    val xs = Sequence(10, 20, 30)
+    xs.pick(Ter) { i => xs(i) + i.n0 }   // 32
+    ```
+
+entry .unsafeAttested   brands an index, or an interval, as valid for a value on the caller's word
+    `xs.unsafeAttested(index)` is `confine` without the check, minting `Operand in xs.type`
+    directly; `xs.unsafeAttested(index) { i => … }` scopes the attestation to a lambda; and
+    `interval.unsafeAttested(xs)` brands an `Interval` as `Interval in xs.type`. Every form
+    takes an erased `Unsafe` token, so the call sits inside `unsafely`, and every call carries
+    a comment naming the construction which proves the bound. Re-declared in the umbrella
+    with the rest of the deindexing group.
+
+    ```scala
+    import soundness.*
+
+    val xs: Sequence[Int] = Sequence(1, 2, 4)
+
+    unsafely:
+      // In bounds by construction: the literal above has three elements.
+      xs.unsafeAttested(Sec) { i => xs(i) }   // 2
+    ```
+
+entry .define   `xs.define(index, value)`: a copy of a container with one position or key set
+    Through the receiver's `Definable` instance: `xs.define(Sec, 9)` on a `Sequence`,
+    `map.define(key, value)` on a `Map`. Out-of-range ordinals leave the container
+    unchanged, and an absent key adds an entry. Re-declared in the umbrella because its
+    evidence is a dependent leading `using` clause.
+
+    ```scala
+    import soundness.*
+
+    Map(t"Ada" -> 36).define(t"Alan", 41)
+    ```
+
+entry .omit   `xs.omit(index)`: a copy of a container without one key or position
+    Through the receiver's `Omissible` instance: `map.omit(key)` removes an entry, and an
+    absent key leaves the map as it was. Re-declared in the umbrella because its evidence is
+    a dependent leading `using` clause.
+
+entry .keep   the first (or, with `Bidi.Rtl`, the last) `count` elements, or the leading run matching a predicate
+    `xs.keep(3)` takes three elements, `xs.keep(3, Bidi.Rtl)` the last three, and
+    `xs.keep(_ < 4)` the leading run that matches — a prefix, not a filter. Shape-preserving
+    through `Segmentable`, so a `Text` stays a `Text`. Re-declared in the umbrella rather
+    than exported so that a `Chain` receiver, which has no `Segmentable` instance, discards
+    this candidate and reaches the lazy `keep` in `Chain`'s companion; a forwarder would
+    claim the call and fail.
+
+    ```scala
+    import soundness.*
+
+    t"Hello".keep(1, Bidi.Rtl)         // t"o"
+    t"HELLOworld".keep(_.isUpper)      // t"HELLO"
+    ```
+
+entry .skip   all but the first (or, with `Bidi.Rtl`, the last) `count` elements, or all after the leading matching run
+    The complement of `keep`: `xs.skip(2)` drops two elements, `xs.skip(2, Bidi.Rtl)` the
+    last two, and `xs.skip(_ == ' ')` the leading run of spaces. Re-declared in the umbrella
+    for the reason `keep` is, so that a `Chain` reaches its companion's lazy `skip`.
+
+entry .via   `stream.via(stage)`: a stream pulled through a stage with a `Ductile` instance
+    The umbrella's hand-written forwarder for zephyrine's pull-composition: consumes the
+    stream and the stage, and gives a stream of the stage's `Result` type over its
+    `Transport`, needing a `Buffering`. A synthesized forwarder would lose the dependent
+    `ductile.Result` refinement under capture checking, so this one is written out and
+    delegates to `zephyrine.via`; it behaves identically. The *type* `via` (a value computed
+    in a locale) is cosmopolite's, in the type namespace, and does not clash.
+
+    ```scala
+    import soundness.*
+    import codepages.utf8Codepage
+    import charsets.utf8Charset
+
+    val bytes: Data = t"The quick brown fox".in[Data]
+    bytes.stream.via(summon[Charset]).memoize
+    ```
+
+entry .accepting   `intake.accepting(stage)`: an intake pushing through a stage with a `Ductile` instance
+    The umbrella's hand-written forwarder for zephyrine's push-composition: consumes the
+    intake and the stage, and gives an intake of the stage's `Operand` type over its
+    `Upstream`, needing a `Buffering`. Written out rather than exported for the reason `via`
+    is, and delegating to `zephyrine.accepting`.
+
+entry .dispose   `handle.dispose()`: releases a WIT resource handle, in Wasm-compiled code
+    An inline extension on `xenophile.Wasm.Handle`, in xenophile's `wasm` component only. It
+    expands to `WasmInvoke.dispose`, which emits the resource's `[resource-drop]` Component
+    Model import; like `invoke`, it is plain `inline` so the import materializes at the
+    Wasm-linked call site downstream. A program should dispose every handle it obtains when
+    it is done with it, typically in a `finally`.
+
+entry .threads   the threading models of parasite, each a `Threading` given to import by name
+    An object of forwarders to `parasite.threads`: `platformThreads`, `virtualThreads`,
+    `adaptiveThreads`, `pooledThreads` and `javascriptThreads`, documented on parasite's
+    page. It is an object, not a package, as parasite's own is: its givens are
+    capabilities, which must live in an object.
+
+    ```scala
+    import soundness.*
+    import threads.virtualThreads
+    ```
+
+entry .supervisors   parasite's global supervisor, as a given to import by name
+    An object forwarding `parasite.supervisors.globalSupervisor`, the `PlatformSupervisor`
+    as a `Supervisor` given, for code which needs a supervisor directly rather than a
+    `Threading`.
+
+entry .unsupervised   parasite's process-lifetime monitor, for blocking outside any `supervise` scope
+    An object forwarding `parasite.unsupervised.orphanMonitor`, a `Monitor` which parks the
+    calling platform thread and supervises nothing: a deliberate escape hatch for daemon
+    lifecycles and process-lifetime waits. Prefer `supervise` wherever the blocking region
+    is already scoped.
+
+entry .strategies   the error-handling strategies, merged from every library; `throwUnsafely` is declared here
+  detail
+      The umbrella's `strategies` choice package. Its givens are `Tactic`s, which decide
+      what happens when an error is raised, and each is imported by name, since `import
+      strategies.*` does not import givens. Most are forwarders to
+      `contingency.strategies` (`fatalErrors`, `mitigation`, `throwSafely`,
+      `uncheckedErrors`), documented on contingency's page; `throwUnsafely` alone is
+      declared here.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      t"42".as[Int]
+      ```
+  refer contingency.strategies
+  entry .throwUnsafely   throws every error as an ordinary exception, with no capability required
+      A pure `ThrowTactic[Hazard]^{}` delegating to `contingency.strategies.throwUnsafely`,
+      so by contravariance it satisfies every `Tactic[error]` at once. It is a delegating
+      given rather than an export forwarder: a forwarder is a method, and the umbrella name
+      of a value given would land in the capture set of every `^{tactic}` instance summoned
+      through it, where a method is not a legal capture reference. Suits scripts and the
+      outermost layer of a program; a library should state what it raises instead.
+
+entry .httpServers   the HTTP servers of scintillate, each a `Protocolic` given to import by name
+  detail
+      The umbrella's `httpServers` choice package: which server answers `tcp"8080".serve[Http]`
+      is chosen by importing one of these by name. All four are declared here as
+      hand-written forwarders to `scintillate.httpServers`, because a synthesized export
+      forwarder loses the givens' capture-annotated refinement types. Each is typed
+      `scintillate.httpServers.HttpdFor[port]` for a port of 80, 443, 8080 or 8000, captures
+      the `Tactic[Httpd.Error]` and `Monitor` it is given, and needs a `Probate`, an
+      `Httpd.Event is Loggable` and a `WebserverErrorPage` in scope.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import logging.silentLogging
+      import strategies.throwUnsafely
+      import threads.virtualThreads
+      import probates.awaitProbate
+      import webserverErrorPages.minimalErrorPage
+      import httpServers.soundnessHttpd
+
+      def main(): Unit = supervise:
+        tcp"8080".serve[Http](Http.Response(Http.Ok)(t"served"))
+      ```
+  refer scintillate.httpServers
+  refer scintillate.Httpd
+  refer scintillate.SocketServer
+  entry .jdkHttpserver   `Http` served by the JDK's `Httpd` on `localhost`
+      Forwards `scintillate.httpServers.jdkHttpserver`: the server built on the JDK's
+      `com.sun.net.httpserver`, bound to the loopback interface only.
+  entry .jdkHttpserverPublic   `Http` served by the JDK's `Httpd` on every interface
+      Forwards `scintillate.httpServers.jdkHttpserverPublic`: as `jdkHttpserver`, but bound
+      to every network interface, so reachable from other machines.
+  entry .soundnessHttpd   `Http` served by scintillate's own `SocketServer` on `localhost`
+      Forwards `scintillate.httpServers.soundnessHttpd`: Soundness's own server, which also
+      speaks HTTP/2 over TLS, bound to the loopback interface only.
+  entry .soundnessHttpdPublic   `Http` served by scintillate's own `SocketServer` on every interface
+      Forwards `scintillate.httpServers.soundnessHttpdPublic`: as `soundnessHttpd`, but bound
+      to every network interface.

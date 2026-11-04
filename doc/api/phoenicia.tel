@@ -1,0 +1,1289 @@
+tel 1.0
+
+base phoenicia
+import soundness
+
+info   TrueType and OpenType fonts as values, and typed typefaces, faces and provisions for setting text
+detail
+    _Phoenicia_ reads font files and types the way a document names and uses a font. It has
+    two layers which meet in the middle.
+
+    The lower layer is the **font file**. An `Sfnt` is the table container which TrueType and
+    OpenType share, read from any source of bytes; a `Truetype` is one whose outlines are
+    quadratic (`glyf` and `loca`), an `Opentype` one whose outlines are PostScript (`CFF `),
+    and `Sfnt(data)` tells them apart by the tables present. The tables parse lazily, each as
+    a value: `cmap` maps a character to its `Glyph`, `hmtx` gives the advance width and side
+    bearing, `head` the units per em and the bounding box, `name` the family and PostScript
+    names, `OS/2` the weight, width and embedding rights, `fvar` a variable font's axes, and
+    `GSUB`/`GPOS` the layout features it implements. `Sfnt#width` measures a text in ems, and
+    `Truetype#subset` builds a new font of only the glyphs some text needs.
+
+    The upper layer is the **typographic request**. A `Typeface` is a family by its name, which
+    is also its type (`Typeface["Inter"]` is a `Typeface of "Inter"`); a `Face` says how it is
+    to be set — a `Weight`, a `Slant`, a `Stretch`, positions on any further `Variation` axes,
+    and the `Face.Feature`s to enable or disable — and nothing about where the font comes from.
+    A `Typesettable` provision says how a `Medium` (the web, print, or any a renderer defines)
+    obtains the typeface and which faces it can then set, as a `Coverage`. A `Font` pairs a
+    face with the provision in scope for its typeface in a medium, and is the only form in
+    which a renderer accepts a font, so a document cannot name a typeface it does not carry,
+    nor ask a provision for a face it cannot set.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    trait Paper extends Medium
+
+    object fonts:
+      given inter: (Typeface of "Inter") is Typesettable in Medium =
+        Typesettable.embedded(Sfnt(cp"/fonts/Inter.ttf"))
+
+    import fonts.inter
+
+    val inter = Typeface["Inter"]
+    val heading: Font in Paper = Font.of[Paper](inter.bold.italic)
+    val figures = inter.face.enabling(Face.Feature.TabularNumerals)
+    ```
+
+    The request is checked twice. Always at runtime, when the font is made: a weight the
+    provision lacks, an italic it has not got, a feature its tables do not implement, or an
+    axis value outside the font's range raises `Font.Error`, naming the typeface and the
+    problem. And, where the provision was made from a classpath file (`Typesettable.embedded
+    (cp"/fonts/Inter.ttf")`, whose path becomes the provision's `Locus`) and the face's request
+    is recorded in its type (`inter.bold.italic` has `Weights = 700` and `Slanting =
+    "italic"`), the compiler reads the file and refuses the pairing while the code compiles,
+    with the same message.
+
+    The library is one source set, `phoenicia.core`, which compiles for the JVM, Scala.js and
+    Scala Native and depends on nothing platform-specific; `Sfnt(source)` reads from anything
+    `Streamable by Data`. The media and their provisions live with the renderers: cataclysm's
+    `Web` holds the CSS generic families and the `Web.linked`, `Web.imported` and `Web.local`
+    factories, and facsimile's `Print` holds PDF's standard fourteen fonts. Those givens sit in
+    the medium's companion, so they need no import. A project's own provisions are givens it
+    declares and imports by name, since `import pkg.*` does not import givens.
+
+    Everything is exported to the `soundness` umbrella: `Coverage`, `Face`, `Font`, `Glyph`,
+    `Medium`, `Opentype`, `Sfnt`, `Slant`, `Stretch`, `Truetype`, `Typeface`, `Typesettable`,
+    `Variation` and `Weight`.
+
+refer phoenicia.Sfnt
+refer phoenicia.Truetype
+refer phoenicia.Typeface
+refer phoenicia.Face
+refer phoenicia.Font
+refer phoenicia.Typesettable
+refer phoenicia.Coverage
+
+entry .Sfnt   a font file as a value: the sfnt table container TrueType and OpenType share
+  detail
+      An `Sfnt` is a font file, held as its `#data` and read lazily table by table. The name is
+      the format's own: an _sfnt_ is the container — a header, a directory of tagged tables,
+      and the tables — which TrueType and OpenType both use, differing only in how they store
+      outlines. Everything the two share is defined here: the character map, the horizontal
+      metrics, the header, the naming table, the OS/2 metrics, the PostScript metadata, a
+      variable font's axes and the layout features.
+
+      `Sfnt(source)` reads a font from anything `Streamable by Data` — a galilei path, a
+      classpath resource, a URL — and `Sfnt(data)` wraps bytes already in hand. Either returns
+      an `Opentype` if the directory has a `CFF ` table and a `Truetype` otherwise, so a match
+      can take the TrueType-only operations where they apply:
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val font: Sfnt = Sfnt(cp"/fonts/text.ttf")
+
+      font match
+        case truetype: Truetype => truetype.subset(t"Hello")
+        case opentype: Opentype => opentype
+      ```
+
+      Construction is total: wrapping bytes never fails, and an unreadable directory makes a
+      `Truetype`. Each table parses when it is first asked for, so a file which is not a font,
+      or which lacks a table an operation needs, raises `Font.Error` at that read, with
+      `Font.Error.Reason.MissingTable` naming the table, `MagicNumber` for a `head` table whose
+      check constant is wrong, `UnknownFormat` for a `cmap` subtable format the library does not
+      read, and `MissingEncoding` for a font with no usable character map. The accessors `#head`,
+      `#cmap`, `#hhea`, `#hmtx`, `#maxp`, `#post`, `#os2` and `#name` all take a
+      `Tactic[Font.Error]`; `#fontName`, `#familyName`, `#fvar` and `#features` absorb the
+      error and answer `Unset` or `Nil`.
+
+      The questions typography code asks most are answered directly: `#glyph` resolves a
+      character through the preferred character map, `#advanceWidth` and `#leftSideBearing`
+      give a character's metrics in design units, and `#width` measures a text in ems, a typed
+      quantity which multiplies by a point size to give a physical width.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      def measure(font: Sfnt): Quantity[Ems[1]] = font.width(t"Hello world")
+      def metrics(font: Sfnt): (Int, Int) = (font.advanceWidth('H'), font.leftSideBearing('H'))
+      ```
+
+      A font's tables are read through `#tables`, a `Map` from `Sfnt.Table.Tag` to the table's
+      `TableOffset`; tags the library does not name are dropped from it. `Sfnt.assemble` is the
+      inverse: it serialises a set of tables as a font file, which is how `Truetype#subset`
+      writes its result.
+  refer phoenicia.Truetype
+  refer phoenicia.Opentype
+  refer phoenicia.Font
+  refer phoenicia.Glyph
+  entry .apply   reads a font from bytes or from any streamable source, as a `Truetype` or an `Opentype`
+      `Sfnt(data)` wraps a `Data` value; `Sfnt(source)` reads any `Streamable by Data over
+      Credit` source whole and wraps the result. Both probe the table directory for a `CFF `
+      table — PostScript outlines — and return an `Opentype` if it is present, otherwise a
+      `Truetype`. The probe is wrapped in `safely`, so bytes with an unreadable directory
+      become a `Truetype` rather than failing: construction is always total, and the fault
+      surfaces as a `Font.Error` when a table is first read.
+  entry .PlatformId   the platform of a `cmap` or `name` record: Unicode, Macintosh, Windows or custom
+      An enum whose ordinals are the OpenType platform identifiers 0 to 3. The library reads
+      platform identifiers as plain `Int`s in `CmapTable.GlyphEncoding` and `NameTable.Record`,
+      ranking Windows and Unicode records above Macintosh ones; the enum names the values.
+  entry .EncodingId   the Unicode encoding identifiers of a `cmap` record
+      `Unicode1`, `Unicode1_1`, `IsoIec10646`, `Unicode2Bmp`, `Unicode2Full`,
+      `UnicodeVariation` and `UnicodeFull`, whose ordinals are the encoding identifiers 0 to 6
+      of the Unicode platform. `CmapTable#best` prefers the full-Unicode encodings (4 and 6)
+      to the BMP-only ones.
+  entry .NameId   the identifiers of the naming table's strings; each case's ordinal is its name id
+      `Copyright`, `Family`, `Subfamily`, `UniqueId`, `FullName`, `Version`,
+      `PostScriptName`, `Trademark`, `Manufacturer`, `Designer`, `Description`, `VendorUrl`,
+      `DesignerUrl`, `License`, `LicenseUrl`, `Reserved`, `TypographicFamily`,
+      `TypographicSubfamily`, `CompatibleFullName`, `SampleText`, `PostScriptCidName`,
+      `WwsFamily`, `WwsSubfamily`, `LightBackgroundPalette`, `DarkBackgroundPalette` and
+      `VariationsPostScriptNamePrefix`, in the order of the OpenType `name` table's ids 0 to
+      25. `NameTable#apply` takes one and gives the best record for it.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      def describe(font: Sfnt): Optional[Text] = font.name(Sfnt.NameId.FullName)
+      ```
+  entry .Table   the tags of the tables a font may carry, as `Ttf` (TrueType) and `Otf` (OpenType) enums
+    detail
+        A table's four-character tag identifies it in the directory. The tags are split into
+        the TrueType set (`Sfnt.Table.Ttf`: `cmap`, `head`, `hhea`, `hmtx`, `maxp`, `name`,
+        `post`, `glyf`, `loca`, `fvar`, …) and the OpenType set (`Sfnt.Table.Otf`: `CFF `,
+        `OS/2`, `GSUB`, `GPOS`, `GDEF`, `STAT`, …), both of which are `Sfnt.Table.Tag`s and the
+        keys of `Sfnt#tables`. Each companion is an extractor from the tag's text, so a
+        directory entry is classified by matching `Sfnt.Table.Otf(tag)` and `Sfnt.Table.Ttf
+        (tag)`; a tag neither names is dropped from the table map.
+    entry .Tag   the common type of `Ttf` and `Otf` tags
+      entry #text   the tag as it is spelled in the file: `cmap`, `OS/2`, `CFF `, `cvt `
+          Four characters, including the trailing space of `CFF ` and `cvt `. A TrueType tag is
+          lowercase and an OpenType tag uppercase, with `OS/2` and `CFF ` as the exceptions.
+    entry .Ttf   the TrueType tables: `avar`, `cmap`, `cvar`, `cvt `, `fpgm`, `fvar`, `gasp`, `glyf`, …
+      detail
+          `Avar`, `Cmap`, `Cvar`, `Cvt`, `Fpgm`, `Fvar`, `Gasp`, `Glyf`, `Gvar`, `Hdmx`, `Head`,
+          `Hhea`, `Hmtx`, `Kern`, `Loca`, `Maxp`, `Meta`, `Name`, `Post`, `Prep`, `Sbix`, `Vhea`
+          and `Vmtx`. The companion extracts a case from its text (`Sfnt.Table.Ttf(t"cmap")`),
+          with `cvt ` spelled with its trailing space.
+      entry .extract   the `Ttf` tag for a four-character text, or `Unset`
+    entry .Otf   the OpenType tables: `BASE`, `CFF `, `CFF2`, `COLR`, `GDEF`, `GPOS`, `GSUB`, `OS/2`, …
+      detail
+          `Base`, `Cbdt`, `Cblc`, `Cff`, `Cff2`, `Colr`, `Cpal`, `Dsig`, `Ebdt`, `Eblc`, `Ebsc`,
+          `Gdef`, `Gpos`, `Gsub`, `Hvar`, `Jstf`, `Ltsh`, `Math`, `Merg`, `Mvar`, `Os2`, `Pclt`,
+          `Stat`, `Svg`, `Vdmx`, `Vorg` and `Vvar`. The companion extracts a case from its text
+          (`Sfnt.Table.Otf(t"OS/2")`), with `OS/2` and `CFF ` spelled as the file spells them.
+      entry .extract   the `Otf` tag for a four-character text, or `Unset`
+  entry .assemble   serialises tagged tables as a complete sfnt file, with checksums
+      `Sfnt.assemble(version, tables)` takes the four-byte version (the first four bytes of a
+      font: `0x00010000` for TrueType) and a list of `(tag, bytes)` pairs, and writes the
+      header, a directory sorted by tag with the search fields the format requires, and the
+      tables four-byte aligned and zero-padded. Each directory entry carries its table's
+      checksum, and if a `head` table is among them its checksum adjustment is set so that the
+      whole file sums to the format's constant. The `head` table must be supplied with its
+      adjustment zeroed. `Truetype#subset` builds its result this way.
+  entry #data   the bytes of the font file
+  entry #TableOffset   a directory entry: a table's tag, checksum, offset and length
+    detail
+        The values of `#tables`. The offset and length locate the table within `#data`; the
+        checksum is the file's, which the library records but does not verify.
+    entry #id   the table's `Sfnt.Table.Tag`
+    entry #checksum   the checksum the directory records, as a `B32`
+    entry #offset   the table's offset from the start of the file
+    entry #length   the table's length in bytes
+  entry #numTables   the number of tables the directory declares
+  entry #searchRange   the directory's `searchRange` field: the largest power of two not above the count, times 16
+  entry #entrySelector   the directory's `entrySelector` field: the log of `searchRange` over 16
+  entry #rangeShift   the directory's `rangeShift` field: the count times 16, less `searchRange`
+  entry #tables   every table the library names, by tag, with its offset and length
+      A `Map[Sfnt.Table.Tag, TableOffset]` read from the directory. Tags which are neither a
+      `Ttf` nor an `Otf` case are dropped, so a font's private tables are not represented.
+      Reading the map is total; a malformed directory makes it empty, and every table accessor
+      then raises `Font.Error` with `MissingTable`.
+  entry #glyph   the glyph for a character, through the font's preferred character map
+      `cmap.glyph(char)`: the glyph is `Glyph[this.type]`, typed to this font, so a glyph of
+      one font cannot be used with another. A character the font does not map yields glyph 0,
+      the missing-glyph, rather than an error. Raises `Font.Error` with `MissingEncoding` if
+      the font has no usable `cmap` subtable, or `MissingTable` if it has no `cmap`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      def ids(font: Sfnt): List[Int] = List('A', 'B', 'C').map(font.glyph(_).id)
+      ```
+  entry #advanceWidth   a character's advance width in the font's design units
+      The horizontal advance of the character's glyph from `hmtx`, in units of `head.unitsPerEm`
+      to the em. A glyph beyond the table's metric count repeats the last advance, as the format
+      prescribes for a monospaced tail. Raises `Font.Error` if `cmap`, `hhea` or `hmtx` is
+      missing.
+  entry #width   the width of a text in this font, as a quantity in ems
+      The sum of the characters' advance widths, divided by the units per em, as a
+      `Quantity[Ems[1]]`. An em-width is a typed quantity, so it cannot be mistaken for a pixel
+      or point measure; scaling it by a font size is explicit arithmetic.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      def measure(font: Sfnt): Quantity[Ems[1]] = font.width(t"AB")
+      ```
+  entry #leftSideBearing   a character's left side bearing in the font's design units
+      The bearing of the character's glyph from `hmtx`, which continues in its own array for
+      glyphs beyond the metric count. Raises `Font.Error` if a needed table is missing.
+  entry #head   the `head` table: units per em, bounding box, creation dates and the `loca` format
+      Unpacked as a `HeadTable`; raises `Font.Error` with `MissingTable` if absent and with
+      `MagicNumber` if the table's check constant is not the format's `0x5f0f3cf5`.
+  entry #cmap   the `cmap` table: the character-to-glyph mappings
+      As a `CmapTable`, whose `best` subtable is chosen by Unicode preference and whose `glyph`
+      resolves a character. Raises `Font.Error` with `MissingTable` if absent.
+  entry #hhea   the `hhea` table: ascender, descender, line gap and the metric count
+      Unpacked as an `HheaTable`; raises `Font.Error` with `MissingTable` if absent.
+  entry #hmtx   the `hmtx` table: advance widths and left side bearings by glyph
+      As an `HmtxTable` sized by `hhea.numberOfHMetrics`; raises `Font.Error` if either table
+      is absent.
+  entry #maxp   the `maxp` table: the glyph count
+      As a `MaxpTable`; raises `Font.Error` with `MissingTable` if absent.
+  entry #post   the `post` table: italic angle, underline metrics and whether the font is monospaced
+      As a `PostTable`; raises `Font.Error` with `MissingTable` if absent.
+  entry #os2   the `OS/2` table: weight and width classes, typographic metrics, embedding rights
+      As an `Os2Table`; raises `Font.Error` with `MissingTable` if absent.
+  entry #name   the `name` table: the font's localised names, by `Sfnt.NameId`
+      As a `NameTable`; raises `Font.Error` with `MissingTable` if absent.
+  entry #fontName   the font's PostScript name, or `Unset`
+      `name(Sfnt.NameId.PostScriptName)`, with any `Font.Error` absorbed: the name by which
+      PDF and PostScript documents reference a font. `Unset` for a font which does not record
+      one or has no `name` table.
+  entry #familyName   the font's family name, or `Unset`
+      `name(Sfnt.NameId.Family)`, with any `Font.Error` absorbed.
+  entry #fvar   a variable font's `fvar` table, or `Unset` for a static font
+      The axes along which a variable font's outlines move, each with its range. `Coverage.of`
+      reads the weight and width ranges from here when the table is present.
+  entry #features   the layout features the font implements, by tag, from `GSUB` and `GPOS`
+      The feature lists of the two layout tables, as `Face.Feature`s, deduplicated. A font with
+      neither table implements none. These are what `Coverage.of` records, so a face which
+      enables a feature the font lacks is refused.
+
+      ```scala
+      import soundness.*
+
+      def tags(font: Sfnt): List[Text] = font.features.map(_.tag)
+      ```
+  entry #FvarTable   the font variations table of a variable font
+    detail
+        The axes of a variable font — `wght`, `wdth`, `ital`, `slnt`, `opsz`, or a font's own
+        — each with the minimum, default and maximum values it admits, as `Axis` records.
+        Reached through `Sfnt#fvar`.
+    entry #axisCount   the number of axes
+    entry #axisSize   the size in bytes of each axis record
+    entry #axes   the axes, each with its tag, range and name id
+    entry #Axis   one axis: its four-character tag, its minimum, default and maximum, and its `name` id
+      entry #tag   the axis tag, such as `wght`
+      entry #minimum   the smallest value the axis admits
+      entry #default   the axis's default value
+      entry #maximum   the largest value the axis admits
+      entry #nameId   the `name` table id of the axis's display name
+  entry #HeadTable   the font header: versions, check constants, units per em, bounding box, flags
+    detail
+        The `head` table, unpacked field by field in the format's own fixed-width types (`U16`,
+        `S16`, `B16`, `B32`, `S64`), so each field reads as the integer or bit pattern the
+        format defines. `unitsPerEm` is the scale which relates design units to ems; `xMin`,
+        `yMin`, `xMax` and `yMax` are the bounding box of every glyph; `indexToLocFormat` says
+        whether `loca` uses short or long offsets.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        def box(font: Sfnt): (Int, Int, Int, Int) =
+          (font.head.xMin.int, font.head.yMin.int, font.head.xMax.int, font.head.yMax.int)
+        ```
+    entry #majorVersion   the table's major version, 1
+    entry #minorVersion   the table's minor version, 0
+    entry #fontRevisionHigh   the integer part of the font's revision number
+    entry #fontRevisionLow   the fractional part of the font's revision number
+    entry #checksumAdjustment   the value which makes the whole file sum to the format's constant
+    entry #magicNumber   the check constant `0x5f0f3cf5`; `Sfnt#head` raises `MagicNumber` if it differs
+    entry #flags   the header's flag bits
+    entry #unitsPerEm   the design units in one em, by which advances are divided to give em widths
+    entry #created   the creation date, in seconds since 1904
+    entry #modified   the modification date, in seconds since 1904
+    entry #xMin   the left edge of the bounding box of all glyphs
+    entry #yMin   the bottom edge of the bounding box of all glyphs
+    entry #xMax   the right edge of the bounding box of all glyphs
+    entry #yMax   the top edge of the bounding box of all glyphs
+    entry #macStyle   the Macintosh style bits: bold, italic, underline, …
+    entry #lowestRecPpem   the smallest readable size in pixels per em
+    entry #fontDirectionHint   the deprecated direction hint
+    entry #indexToLocFormat   0 for short `loca` offsets (halved, 16-bit), 1 for long (32-bit)
+    entry #glyphDataFormat   the glyph data format, 0
+  entry #HheaTable   the horizontal header: ascender, descender, line gap, caret slope and the metric count
+    detail
+        The `hhea` table, unpacked field by field. `ascender`, `descender` and `lineGap` are
+        the vertical metrics a line layout needs, in design units; `numberOfHMetrics` is how
+        many full (advance, bearing) pairs `hmtx` holds before its monospaced tail.
+    entry #majorVersion   the table's major version
+    entry #minorVersion   the table's minor version
+    entry #ascender   the typographic ascender, in design units
+    entry #descender   the typographic descender, in design units, negative below the baseline
+    entry #lineGap   the typographic line gap
+    entry #advanceWidthMax   the largest advance width in `hmtx`
+    entry #minLeftSideBearing   the smallest left side bearing
+    entry #minRightSideBearing   the smallest right side bearing
+    entry #xMaxExtent   the largest horizontal extent of any glyph
+    entry #caretSlopeRise   the rise of the caret's slope; 1 for an upright caret
+    entry #caretSlopeRun   the run of the caret's slope; 0 for an upright caret
+    entry #caretOffset   the caret's horizontal offset
+    entry #reserved0   a reserved field
+    entry #reserved1   a reserved field
+    entry #reserved2   a reserved field
+    entry #reserved4   a reserved field
+    entry #metricDataFormat   the metric data format, 0
+    entry #numberOfHMetrics   the number of full metric pairs in `hmtx`
+  entry #HmtxTable   the horizontal metrics: an advance width and left side bearing per glyph
+    detail
+        One `HMetrics` pair per glyph up to the count `hhea` declares, after which the last
+        advance repeats — a monospaced tail — and the bearings continue in an array of their
+        own. `Sfnt#advanceWidth` and `Sfnt#leftSideBearing` look a character's glyph up here.
+    entry #offset   the table's offset within the file
+    entry #count   the number of full metric pairs, from `hhea`
+    entry #metrics   the full metric pairs, read once
+    entry #advanceWidth   the advance width of a glyph by id, repeating the last for the tail
+    entry #leftSideBearing   the left side bearing of a glyph by id, from the pairs or the bearing tail
+    entry #HMetrics   one glyph's advance width and left side bearing
+      entry #advanceWidth   the horizontal advance, in design units
+      entry #leftSideBearing   the left side bearing, in design units
+  entry #MaxpTable   the maximum profile; only the glyph count is read
+    detail
+        The `maxp` table. `glyphCount` sizes the `loca` table and bounds every glyph id.
+    entry #offset   the table's offset within the file
+    entry #glyphCount   the number of glyphs in the font
+  entry #PostTable   PostScript metadata: italic angle, underline position and thickness, fixed pitch
+    detail
+        The `post` table. The italic angle is a fixed-point number of degrees, negative for a
+        rightward lean, and is one of the signs `Coverage.of` reads to decide that a file is
+        italic.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        def leaning(font: Sfnt): Boolean = font.post.italicAngle != 0.0
+        ```
+    entry #offset   the table's offset within the file
+    entry #italicAngle   the italic angle in degrees, 0 for upright, decoded from 16.16 fixed point
+    entry #underlinePosition   the underline's position relative to the baseline
+    entry #underlineThickness   the underline's thickness
+    entry #monospaced   whether the font is fixed-pitch
+  entry #Os2Table   OS/2 and Windows metrics: weight and width classes, embedding rights, typographic metrics
+    detail
+        The `OS/2` table, read field by field at the offsets its version defines. The weight
+        class (1–1000, the scale `Weight` uses) and width class (1–9, which
+        `Stretch.widthClass` names) are what `Coverage.of` records for a static font; the
+        selection bits say whether the face is italic; the typographic ascender, descender and
+        line gap, the Windows ascent and descent, the x-height and the cap height are what a
+        PDF font descriptor needs. Fields which a table's version predates are `Unset`.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        def vertical(font: Sfnt): (Int, Int) = (font.os2.typoAscender, font.os2.typoDescender)
+        ```
+    entry #offset   the table's offset within the file
+    entry #version   the table's version, which decides which later fields are present
+    entry #weightClass   the weight on the 1–1000 scale; `Weight(weightClass)` is the `Weight`
+    entry #widthClass   the width class, 1 to 9; `Stretch.widthClass` names it
+    entry #fsType   the embedding-rights bits
+    entry #familyClass   the IBM font class and subclass
+    entry #selection   the `fsSelection` bits: italic, underscore, negative, outlined, strikeout, bold, …
+    entry #typoAscender   the typographic ascender
+    entry #typoDescender   the typographic descender
+    entry #typoLineGap   the typographic line gap
+    entry #winAscent   the Windows ascent: the top of the clipping region
+    entry #winDescent   the Windows descent: the bottom of the clipping region
+    entry #xHeight   the x-height, from version 2 of the table; `Unset` before
+    entry #capHeight   the cap height, from version 2 of the table; `Unset` before
+    entry #embeddable   whether the font may be embedded in a document
+        Installable embedding is 0, and of the restriction bits only `0x0002` forbids embedding
+        outright, so preview-and-print and editable fonts count as embeddable.
+    entry #italic   whether the selection bits mark the face as italic or oblique
+        Bit 0 of `fsSelection` marks an italic face and bit 9 an oblique one; either leans.
+  entry #NameTable   the naming table: localised, per-platform strings such as the family and PostScript names
+    detail
+        The `name` table's records, each a string for one name id on one platform, encoding and
+        language. `apply` chooses the best record for a `Sfnt.NameId`: Windows US English first,
+        then other Windows and Unicode records, then legacy Macintosh. Windows and Unicode
+        strings decode from UTF-16BE, Macintosh strings from MacRoman with ISO-8859-1 as the
+        fallback.
+    entry #offset   the table's offset within the file
+    entry #count   the number of name records
+    entry #records   every record, with its platform, encoding, language, name id and extent
+    entry #apply   the best string for a name id, or `Unset` if the font records none
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        def postScriptName(font: Sfnt): Optional[Text] = font.name(Sfnt.NameId.PostScriptName)
+        ```
+    entry #Record   one name record: platform, encoding, language, name id, and where its string lies
+      entry #platformId   the platform: 0 Unicode, 1 Macintosh, 3 Windows
+      entry #encodingId   the encoding within the platform
+      entry #languageId   the language; `0x409` is Windows US English
+      entry #nameId   the name id, matched against `Sfnt.NameId#ordinal`
+      entry #length   the string's length in bytes
+      entry #start   the string's offset within the file
+      entry #decode   the string, decoded by its platform's encoding
+  entry #CmapTable   the character-to-glyph mappings, as encoding subtables of several formats
+    detail
+        The `cmap` table holds one or more `GlyphEncoding` subtables, each for a platform and
+        encoding, and each in one of the formats the library reads: 0 (a byte-indexed array),
+        4 (segmented ranges over the Basic Multilingual Plane), 6 (a dense run) and 12 (groups
+        covering all of Unicode). `best` picks the preferred subtable — full Unicode before the
+        BMP, Unicode before Windows symbol and Macintosh — and `glyph` resolves a character
+        through it. A subtable in any other format raises `Font.Error` with `UnknownFormat`
+        when its `format` is first read.
+    entry #offset   the table's offset within the file
+    entry #version   the table's version
+    entry #numTables   the number of encoding subtables
+    entry #glyphEncodings   every encoding subtable, with its platform, encoding and offset
+    entry #best   the preferred subtable, or `Unset` if there are none
+        Ranked by (platform, encoding): Windows full Unicode (3, 10) first, then Unicode full
+        (0, 4) and (0, 6), Windows BMP (3, 1), Unicode BMP (0, 3), other Unicode, Windows symbol
+        (3, 0) and Macintosh Roman (1, 0) last.
+    entry #glyph   the glyph for a character through the best subtable
+        Raises `Font.Error` with `MissingEncoding` if there is no subtable, and `UnknownFormat`
+        if the best one is in a format the library does not read. An unmapped character is
+        glyph 0.
+    entry #GlyphEncoding   one encoding subtable: its platform, encoding, offset and parsed format
+      detail
+          The subtable's `format` is parsed once, on first use, into a `Format` whose `glyph`
+          does the lookup; the parse is memoised under a mutex so concurrent reads share it.
+      entry #platformId   the subtable's platform
+      entry #encodingId   the subtable's encoding
+      entry #offset   the subtable's offset within the file
+      entry #formatId   the subtable's format number, read eagerly
+      entry #format   the parsed subtable, raising `Font.Error` with `UnknownFormat` for a format not read
+      entry #Segment   a format-4 segment: a character range with its delta and range offset
+        entry #start   the first character of the segment
+        entry #end   the last character of the segment
+        entry #delta   added to a character to give its glyph, when the range offset is zero
+        entry #rangeOffset   nonzero when the segment indirects through the glyph id array
+      entry #Format   what every parsed subtable can do: map a character to a glyph of this font
+        entry #glyph   the glyph for a character, or glyph 0 if unmapped
+      entry #Format0   a byte-indexed array of glyph ids, for the first 256 character codes only
+        entry #start   the offset of the array
+        entry #glyph   the glyph for a character below 256, else glyph 0
+      entry #Format4   segmented ranges over the Basic Multilingual Plane, by delta or indirection
+        entry #idRangeOffsetsStart   the offset of the range-offset array, to which indirections are relative
+        entry #segments   the segments, in order of their end characters
+        entry #glyph   the glyph for a character: found by segment, then by delta or through the glyph id array
+      entry #Format6   a dense run of glyph ids for a contiguous range of character codes
+        entry #first   the first character code of the run
+        entry #count   the number of codes in the run
+        entry #start   the offset of the glyph id array
+        entry #glyph   the glyph for a character within the run, else glyph 0
+      entry #Format12   groups of sequential mappings covering all of Unicode, binary-searched
+        entry #groupCount   the number of groups
+        entry #start   the offset of the group array
+        entry #glyph   the glyph for a character, by binary search over the groups
+
+entry .Truetype   a TrueType font: an sfnt whose outlines are quadratic, in `glyf` and `loca`, which can be subset
+  detail
+      A `Truetype` is an `Sfnt` with the two outline tables — `loca`, the index of where each
+      glyph's data lies, and `glyf`, the data itself — and the operations which need them.
+      `Truetype(source)` reads one from any streamable source without probing the format;
+      `Sfnt(source)` is the usual way in, since it returns a `Truetype` for a font without a
+      `CFF ` table.
+
+      The operation that matters is `#subset`: a new font containing only the outlines some
+      characters need, for embedding in a document.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      def reduce(font: Truetype): Truetype = font.subset(t"Hello world")
+      ```
+
+      Subsetting keeps the original glyph numbering — unused glyphs keep their numbers with
+      empty outlines — so the character map, the metrics and every reference between glyphs
+      remain valid without being rewritten, and every other table is carried over unchanged.
+      Composite glyphs are followed: the retained set is the transitive closure under
+      composition (`#glyphClosure`), so an accented character keeps the components it is drawn
+      from. The result is a complete file, checksums included, with `head` switched to long
+      `loca` offsets.
+  refer phoenicia.Sfnt
+  refer phoenicia.Opentype
+  entry .apply   reads a TrueType font from any streamable source
+      `Truetype(source)` reads a `Streamable by Data over Credit` source whole; `Truetype(data)`
+      is the case-class constructor over bytes. Neither checks the outline format: `Sfnt(…)`
+      does, and is what to use when the file might be OpenType.
+  entry #data   the bytes of the font file
+  entry #loca   the `loca` table: each glyph's offset within `glyf`
+      Sized by `maxp.glyphCount` and read in the format `head.indexToLocFormat` names. Raises
+      `Font.Error` with `MissingTable` if `loca`, `maxp` or `head` is absent.
+  entry #glyf   the `glyf` table: the glyph outlines, indexed through `loca`
+      Raises `Font.Error` with `MissingTable` if `glyf` or `loca` is absent.
+  entry #subset   a new font of only the glyphs some characters need, numbering preserved
+      `subset(chars: Set[Char])` or `subset(text: Text)`. The retained glyphs are those the
+      characters map to, glyph 0, and the transitive closure under composite components. Every
+      other glyph keeps its number and loses its outline; `glyf` and `loca` are rebuilt (the
+      latter always in the long format, with `head` adjusted to say so), and every other table
+      is copied byte for byte. The whole file is reassembled with `Sfnt.assemble`, so its
+      checksums are valid. Raises `Font.Error` if a table the rebuild needs is missing.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      def embeddable(font: Truetype): Truetype = font.subset(Set('H', 'e', 'l', 'o'))
+      ```
+  entry #glyphClosure   the glyphs needed to render a set of glyphs, following composite components
+      The transitive closure of a set of glyph ids under `GlyphRecord#components`: a composite
+      glyph is drawn from others, which may themselves be composite. `#subset` uses this to
+      decide what to keep. Raises `Font.Error` if `glyf` or `loca` is missing.
+  entry #LocaTable   the glyph-location index: for each glyph, where its data starts within `glyf`
+    detail
+        One offset per glyph plus one more, so a glyph's extent is the difference between its
+        offset and the next. In the short format the offsets are stored halved in sixteen bits;
+        in the long format they are stored as they are.
+    entry #offset   the table's offset within the file
+    entry #glyphCount   the number of glyphs, from `maxp`
+    entry #longFormat   whether offsets are 32-bit (`true`) or halved 16-bit (`false`)
+    entry #offsets   the offsets, unhalved, read once
+  entry #GlyfTable   the glyph outlines, each reached by id as a `GlyphRecord`
+    detail
+        `glyf(id)` locates a glyph's data through `loca`. The record exposes the raw bytes, the
+        contour count, whether the glyph is composite and, if it is, the components it is
+        drawn from; outlines themselves are not decoded beyond this.
+    entry #offset   the table's offset within the file
+    entry #loca   the `loca` table the outlines are indexed through
+    entry #apply   the record for a glyph id
+    entry #GlyphRecord   one glyph's raw data: its extent, contour count and composite components
+      detail
+          A glyph with no outline — a space, or a glyph discarded by `#subset` — has zero
+          extent; a composite glyph has a negative contour count and lists the glyphs it is
+          assembled from.
+      entry #start   the glyph data's offset within the file
+      entry #length   the glyph data's length; 0 for a glyph without an outline
+      entry #empty   whether the glyph has no outline
+      entry #bytes   the glyph's raw data
+      entry #contourCount   the number of contours, or a negative value for a composite glyph
+      entry #composite   whether the glyph is assembled from other glyphs
+      entry #components   the ids of the glyphs a composite is drawn from; `Nil` for a simple glyph
+          Read once, walking the component records by their flags: word or byte arguments, and a
+          single scale, separate x and y scales, or a 2×2 transformation.
+
+entry .Opentype   an OpenType font: an sfnt whose outlines are PostScript, in a `CFF ` table
+  detail
+      An `Sfnt` whose glyph outlines are stored in `CFF `. Every shared table works —
+      character mapping, metrics, names, `OS/2`, `fvar`, layout features — but the outline
+      data is not yet parsed, so there is no equivalent of `Truetype#glyf` and no subsetting.
+      `Sfnt(source)` returns an `Opentype` when it finds the `CFF ` table; `Opentype(source)`
+      reads one without checking.
+  refer phoenicia.Sfnt
+  refer phoenicia.Truetype
+  entry .apply   reads an OpenType font from any streamable source
+  entry #data   the bytes of the font file
+
+entry .Glyph   a glyph of one particular font, by its id
+  detail
+      `Glyph[font.type]` is an opaque wrapper over a glyph id, typed to the font it was
+      resolved in, so a glyph of one font cannot be used to index another. `Sfnt#glyph(char)`
+      is the way to get one; `glyph.id`, an extension declared in `internal`, reads the id
+      back (0 is the missing-glyph). `Glyph(font, id)` wraps an id already known. The type is
+      `phoenicia.internal.Glyph`, exported here.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      def glyphId(font: Sfnt): Int = font.glyph('A').id
+      ```
+
+      Its companion's members are declared in `internal.Glyph`, from which the type is
+      exported, and documented there.
+  refer phoenicia.Sfnt
+
+entry .Typeface   a font family by its name, which is also its type: `Typeface["Inter"]` is a `Typeface of "Inter"`
+  detail
+      A `Typeface` names a family — the name a document writes where it refers to the
+      typeface, a CSS `font-family` or a PDF `/BaseFont` — and carries that name as its
+      `Topic`, so `Typeface["Inter"]` has the type `Typeface of "Inter"` and a provision for
+      one typeface is distinguishable from a provision for another as the code compiles. It
+      says nothing about where the font comes from: that is a `Typesettable` provision.
+
+      A typeface's faces are reached fluently. `#face` (or `#regular`) is its regular upright
+      face, and `#bold`, `#light`, `#italic` and the rest choose from there; every one is a
+      `Face of "Inter"`, which carries its request in its type for the compile-time check.
+
+      ```scala
+      import soundness.*
+
+      val inter = Typeface["Inter"]
+      val heading = inter.bold.italic
+      val figures = inter.face.enabling(Face.Feature.TabularNumerals)
+      val display = inter.face.varying(Variation.Axis.OpticalSize, 24.0)
+      ```
+
+      The CSS generic families — `.SansSerif`, `.Serif`, `.Monospace`, `.Cursive`,
+      `.Fantasy` and `.SystemUi` — are typefaces too; a browser sets each from whatever it
+      has, so cataclysm's `Web` companion provides them without anything being declared.
+      Two typefaces are equal when their names are, and a typeface shows as its name.
+  refer phoenicia.Face
+  refer phoenicia.Typesettable
+  refer phoenicia.Font
+  entry .apply   `Typeface["Inter"]`: the typeface of a family, from its name as a literal type
+      An inline method whose type argument is the family name, as a `Label`: the name is read
+      from the type with `constValue`, so it must be a literal. The result is `Typeface of
+      family`, with the name as both value and type.
+  entry .SansSerif   the CSS generic `sans-serif` family, a `Typeface of "sans-serif"`
+  entry .Serif   the CSS generic `serif` family, a `Typeface of "serif"`
+  entry .Monospace   the CSS generic `monospace` family, a `Typeface of "monospace"`
+  entry .Cursive   the CSS generic `cursive` family, a `Typeface of "cursive"`
+  entry .Fantasy   the CSS generic `fantasy` family, a `Typeface of "fantasy"`
+  entry .SystemUi   the CSS generic `system-ui` family, a `Typeface of "system-ui"`
+  entry .showable   shows a typeface as its family name
+  entry .inspectable   inspects a typeface as `Typeface["Inter"]`
+  entry #name   the family name, as text
+  entry #Topic   the family name as a literal type: `"Inter"` for `Typeface["Inter"]`
+  entry #face   the typeface's regular, upright face, from which the others are chosen
+      A `Face of Topic` at `Weight.Regular`, `Slant.Upright` and `Stretch.Normal`, with no
+      variations and no features, whose type records `Weights = 400`, `Slanting = "upright"`
+      and `Enabled = Nothing`. `#regular` is the same face.
+  entry #regular   the regular upright face; the same as `#face`
+  entry #light   the light (300) upright face
+  entry #medium   the medium (500) upright face
+  entry #semibold   the semibold (600) upright face
+  entry #bold   the bold (700) upright face
+  entry #black   the black (900) upright face
+  entry #italic   the regular italic face
+
+entry .Face   how a typeface is to be set: weight, slant, stretch, variation axes and layout features
+  detail
+      A `Face` describes a request: a `#typeface` at a `#weight`, a `#slant` and a
+      `#stretch`, with `#variations` on any further axes of a variable font and the
+      `#features` to enable or disable. It says nothing about where the font comes from;
+      pairing it with a `Typesettable` provision makes a `Font`. The typeface's family is the
+      face's `Topic`, so `Typeface["Inter"].bold` is a `Face of "Inter"`.
+
+      Faces are built fluently from a typeface's `face`, each method returning a new face
+      with one part changed and the type updated to match:
+
+      ```scala fuel
+      frame
+        label The regular face
+        code
+            val face = Typeface["Inter"].face
+            // Face.Shape["Inter", 400, "upright", Nothing]
+      frame
+        label Bold
+        code
+            val face = Typeface["Inter"].face.bold
+            // Face.Shape["Inter", 700, "upright", Nothing]
+      frame
+        label Bold italic
+        code
+            val face = Typeface["Inter"].face.bold.italic
+            // Face.Shape["Inter", 700, "italic", Nothing]
+      frame
+        label With oldstyle numerals
+        code
+            val face = Typeface["Inter"].face.bold.italic.enabling(Face.Feature.OldstyleNumerals)
+            // Face.Shape["Inter", 700, "italic", "onum"]
+      frame
+        label A weight decided at runtime
+        code
+            def weight: Weight = Weight(650)
+            val face = Typeface["Inter"].face.weighing(weight).italic.enabling(Face.Feature.OldstyleNumerals)
+            // Face.Shape["Inter", Face.Runtime, "italic", "onum"]
+      ##
+      ```
+
+      Three type members record what the code asked for, where it is known as the code
+      compiles: `#Weights` is the weight as a literal (`700`), `#Slanting` is `"upright"` or
+      `"italic"`, and `#Enabled` is the union of the enabled features' tags (`"onum" | "tnum"`,
+      or `Nothing` for none). A part decided at runtime — `#weighing` with a computed weight,
+      `#slanted`, `#featuring` with a feature by its tag — is recorded as `Face.Runtime`. When
+      a `Font` is made from a provision whose file is on the classpath, the recorded request
+      is checked against the file as the code compiles; the rest is checked when the font is
+      made. A face annotated as plain `Face of "Inter"` loses the record, and is checked at
+      runtime only.
+
+      `Face(typeface, weight, slant, …)` builds a face from runtime values, with every type
+      member `Runtime`. A face shows as `Inter 700 italic`.
+  refer phoenicia.Typeface
+  refer phoenicia.Font
+  refer phoenicia.Weight
+  refer phoenicia.Slant
+  refer phoenicia.Stretch
+  refer phoenicia.Variation
+  entry .Runtime   the marker type for a part of a request decided at runtime
+      A sealed trait used only as a type: `Weights = Face.Runtime` says the weight was computed
+      rather than chosen by name, so the compile-time check leaves it to the runtime check.
+  entry .Shape   `Face.Shape[family, weights, slanting, enabled]`: a face with its whole request in its type
+      The refinement `Face { type Topic = family; type Weights = weights; type Slanting =
+      slanting; type Enabled = enabled }`, which every fluent method returns.
+  entry .apply   a face from runtime values: `Face(typeface, weight, slant, stretch, variations, features)`
+      Every parameter after the typeface has a default — regular, upright, normal, none,
+      none — and the result is `Face.Shape[family, Runtime, Runtime, Runtime]`, so a font made
+      from it is checked at runtime only.
+  entry .showable   shows a face as its typeface, weight and slant: `Inter 700 italic`
+      The slant is omitted when upright: `Inter 400`.
+  entry .inspectable   inspects a face as `Face("Inter", Weight(700), Slant.Italic)`
+  entry .Feature   an OpenType layout feature by its four-character tag, which is also its type
+    detail
+        `Face.Feature.OldstyleNumerals` is a `Feature of "onum"`: the tag is the feature's
+        `Topic`, so a face which enables it records `"onum"` in its `Enabled` type. The common
+        registered features have names; stylistic sets and character variants are numbered
+        (`.stylisticSet(3)` is `ss03`); and `Face.Feature(t"…")` admits any other tag, known
+        only at runtime as a `Feature of Runtime`.
+
+        A feature becomes a `Setting` by `#enabled`, `#disabled` or `#set(value)`, and a face
+        takes settings through `Face#enabling`, `Face#disabling` and `Face#featuring`. Two
+        features are equal when their tags are; a feature shows as its tag.
+
+        ```scala
+        import soundness.*
+
+        val figures = Typeface["Inter"].face
+          . enabling(Face.Feature.TabularNumerals)
+          . disabling(Face.Feature.Ligatures)
+          . featuring(Face.Feature.stylisticSet(3).enabled)
+        ```
+    entry .apply   `Face.Feature(tag)`: a feature by any tag, known at runtime only
+        The result is a `Feature of Runtime`, so enabling it adds `Face.Runtime` to a face's
+        `Enabled` type rather than the tag, and the compile-time check skips it.
+    entry .Ligatures   standard ligatures, `liga`
+    entry .DiscretionaryLigatures   discretionary ligatures, `dlig`
+    entry .HistoricalLigatures   historical ligatures, `hlig`
+    entry .ContextualAlternates   contextual alternates, `calt`
+    entry .Kerning   kerning, `kern`
+    entry .OldstyleNumerals   oldstyle figures, `onum`
+    entry .LiningNumerals   lining figures, `lnum`
+    entry .TabularNumerals   tabular figures, `tnum`
+    entry .ProportionalNumerals   proportional figures, `pnum`
+    entry .SlashedZero   a slashed zero, `zero`
+    entry .Fractions   fractions, `frac`
+    entry .Ordinals   ordinal indicators, `ordn`
+    entry .SmallCapitals   small capitals from lowercase, `smcp`
+    entry .CapitalSmallCapitals   small capitals from capitals, `c2sc`
+    entry .Swashes   swash forms, `swsh`
+    entry .Superscript   superscript forms, `sups`
+    entry .Subscript   subscript forms, `subs`
+    entry .stylisticSet   stylistic set _n_, `ss01` to `ss20`, as a runtime feature
+        The number is zero-padded to two digits. The result is a `Feature of Runtime`, since
+        the tag is made at runtime.
+    entry .characterVariant   character variant _n_, `cv01` to `cv99`, as a runtime feature
+    entry .Setting   a feature with the value it is set to: 0 disables, 1 enables, higher selects an alternate
+      detail
+          What a face holds in its `features` list. Most features are on or off; character
+          variants and some others select among alternates by higher values.
+      entry #feature   the feature
+      entry #value   the value: 0 off, 1 on, or an alternate's number
+    entry .showable   shows a feature as its tag
+    entry .inspectable   inspects a feature as `Face.Feature("onum")`
+    entry #tag   the four-character tag
+    entry #enabled   the setting which turns the feature on, value 1
+    entry #disabled   the setting which turns the feature off, value 0
+    entry #set   the setting with a chosen value, for features which select among alternates
+  entry #typeface   the typeface the face is of
+  entry #weight   the weight, on the 1–1000 scale
+  entry #slant   upright, italic, or oblique at an angle
+  entry #stretch   the width as a percentage of normal
+  entry #variations   positions on further axes of a variable font
+  entry #features   the layout feature settings, in the order they were added
+  entry #Topic   the family name as a literal type
+  entry #Weights   the requested weight as a literal type (`700`), or `Face.Runtime`
+  entry #Slanting   the requested slant as `"upright"` or `"italic"`, or `Face.Runtime`
+  entry #Enabled   the tags of the enabled features as a union type, `Nothing` for none, or with `Face.Runtime`
+  entry #weighing   the face at any weight, decided at runtime
+      `Weights` becomes `Face.Runtime`, so the weight is checked only when the font is made.
+      The named weights (`#bold`, `#light`, …) record their literal instead.
+  entry #thin   the face at weight 100
+  entry #light   the face at weight 300
+  entry #regular   the face at weight 400
+  entry #medium   the face at weight 500
+  entry #semibold   the face at weight 600
+  entry #bold   the face at weight 700
+  entry #black   the face at weight 900
+  entry #slanted   the face at any slant, decided at runtime
+      `Slanting` becomes `Face.Runtime`. `#italic`, `#upright` and `#oblique` record the slant
+      instead.
+  entry #italic   the italic face; `Slanting` becomes `"italic"`
+  entry #upright   the upright face; `Slanting` becomes `"upright"`
+  entry #oblique   the face slanted at an angle in degrees, leaning right when positive
+      An oblique is a slanted upright rather than a separately drawn italic, but it is
+      recorded as `"italic"` for the coverage check, since a provision which offers an italic
+      face is what sets it.
+  entry #stretched   the face at any stretch
+      The stretch is not recorded in the type, so it is checked only when the font is made.
+  entry #condensed   the face at 75% of normal width
+  entry #expanded   the face at 125% of normal width
+  entry #varying   the face with a position on a further axis of a variable font
+      `varying(Variation.Axis.OpticalSize, 24.0)` adds a `Variation`. The registered weight,
+      width, italic and slant axes are set through the weight, stretch and slant instead, so a
+      static and a variable font are asked for alike; `varying` is for optical size and a
+      font's own axes. An axis the font lacks, or a value outside its range, is refused when
+      the font is made.
+  entry #featuring   the face with a feature setting made at runtime
+      Adds a `Face.Feature.Setting`. The setting may enable anything, so `Enabled` gains
+      `Face.Runtime`, and the compile-time check skips what it cannot see.
+  entry #enabling   the face with a feature enabled, its tag recorded in the type
+      `enabling(Face.Feature.OldstyleNumerals)` adds `"onum"` to `Enabled`, so a provision
+      whose file lacks the feature refuses the font as the code compiles.
+  entry #disabling   the face with a feature disabled
+      Disabling a feature the font lacks changes nothing, so it adds no requirement and the
+      type is unchanged.
+
+entry .Weight   a weight on the 1–1000 scale CSS and OpenType share, with the usual names
+  detail
+      An opaque `Int` (`phoenicia.internal.Weight`, exported here). `Weight(value)` brings a
+      value outside the scale to its nearer end rather than rejecting it. The nine named
+      weights are `.Thin` (100), `.ExtraLight` (200), `.Light` (300), `.Regular` (400),
+      `.Medium` (500), `.Semibold` (600), `.Bold` (700), `.ExtraBold` (800) and `.Black`
+      (900). A `.Range` is an inclusive span, as a variable font's `wght` axis or a
+      `@font-face` declaration offers, made with `lower to upper` or `weight.range`.
+
+      ```scala
+      import soundness.*
+
+      val offered: Weight.Range = Weight.Light to Weight.Bold
+      offered.contains(Weight(650))
+      ```
+
+      Its companion's members are declared in `internal.Weight`, from which the type is
+      exported, and documented there.
+  refer phoenicia.Face
+  refer phoenicia.Coverage
+
+entry .Slant   whether a face leans: upright, a true italic, or an oblique at an angle
+  detail
+      `Upright` and `Italic` are the two drawn faces; `Oblique(angle)` is a slanted upright at
+      an angle in degrees, leaning right when positive. For coverage, an oblique counts as
+      italic. A slant shows as `upright`, `italic` or `oblique 11.5°`.
+  entry .showable   shows a slant as `upright`, `italic` or `oblique 11.5°`
+  entry .inspectable   inspects a slant as `Slant.Upright`, `Slant.Italic` or `Slant.Oblique(11.5)`
+  entry #upright   whether the slant is `Upright`
+
+entry .Stretch   a face's width as a percentage of its normal width, from 50% to 200%
+  detail
+      An opaque `Double` (`phoenicia.internal.Stretch`, exported here), as CSS `font-stretch`
+      measures it. `Stretch(percentage)` clamps to 50–200. The nine named widths from
+      `.UltraCondensed` (50%) through `.Normal` (100%) to `.UltraExpanded` (200%) are the
+      ones the OS/2 table's `usWidthClass` numbers 1 to 9, which `.widthClass` maps. A
+      `.Range` is an inclusive span, as a variable font's `wdth` axis offers.
+
+      Its companion's members are declared in `internal.Stretch`, from which the type is
+      exported, and documented there.
+  refer phoenicia.Face
+
+entry .Variation   a position on one axis of a variable font
+  detail
+      `Variation(axis, value)` is what `Face#varying` adds to a face. The registered weight,
+      width, italic and slant axes are set through a face's `Weight`, `Stretch` and `Slant`,
+      so a `Variation` is for optical size and a font's own axes. A provision checks each
+      variation against the font's `fvar` ranges: an axis the font lacks is refused with
+      `Font.Error.Reason.UnknownAxis`, a value outside the range with `AxisOutOfRange`.
+
+      ```scala
+      import soundness.*
+
+      val display = Typeface["Inter"].face.varying(Variation.Axis.OpticalSize, 24.0)
+      ```
+  refer phoenicia.Face
+  refer phoenicia.Coverage
+  entry .Axis   a variation axis by its four-character tag
+    detail
+        An opaque `Text`. The five registered axes have names — `.Weight` (`wght`), `.Width`
+        (`wdth`), `.Italic` (`ital`), `.Slant` (`slnt`) and `.OpticalSize` (`opsz`) — and a
+        font's own axes are made from their tags with `Variation.Axis(tag)`.
+    entry .apply   an axis from its tag
+    entry .Weight   the `wght` axis
+    entry .Width   the `wdth` axis
+    entry .Italic   the `ital` axis
+    entry .Slant   the `slnt` axis
+    entry .OpticalSize   the `opsz` axis
+    entry .showable   shows an axis as its tag
+    entry .inspectable   inspects an axis as `Variation.Axis("opsz")`
+    entry .tag   the four-character tag
+  entry .Range   the values a font admits on one axis, from its `fvar` table
+    entry #axis   the axis
+    entry #lower   the smallest admitted value
+    entry #upper   the largest admitted value
+    entry #contains   whether a value lies within the range
+  entry #axis   the axis
+  entry #value   the position on it
+
+entry .Medium   a medium in which text is set: the web, print, or any a renderer defines
+  detail
+      An open trait. A `Typesettable` provision names the medium it serves as its `Form`,
+      and a `Font in Web` is a font for a browser, a `Font in Print` one for a PDF. A
+      provision `in Medium` itself — an embedded font file — serves every medium, since a
+      file can be carried anywhere, which is why a requester asks for a provision `in (? >:
+      medium)` rather than `in medium`.
+
+      Each renderer declares its own medium as a trait with a companion, and the companion is
+      where the provisions that medium can always honour live, in implicit scope: cataclysm's
+      `object Web` holds the CSS generic families, facsimile's `object Print` holds PDF's
+      standard fourteen fonts. A test or a renderer of its own declares one in a line:
+
+      ```scala
+      import soundness.*
+
+      trait Paper extends Medium
+      ```
+  refer phoenicia.Typesettable
+  refer phoenicia.Font
+
+entry .Typesettable   the provision of a typeface in a medium: where the font comes from, and which faces it sets
+  detail
+      A `Typeface of "Inter" is Typesettable in Web` says how the web obtains Inter — as its
+      `#sources`: the font file itself, a URL, a font the reader has installed, a stylesheet,
+      or nothing for a generic family — and which faces it can then set, as its `#coverage`.
+      The medium served is its `Form`, a type member inherited from `Formal`: `Medium` for
+      every medium, or one medium such as `Web`.
+      It is declared once, as a given, and a `Font` can be made only where one is in scope
+      for the typeface in the medium: that is what guarantees a document carries what its
+      medium needs for every typeface it names.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      object fonts:
+        val interFile: Sfnt = Sfnt(cp"/fonts/Inter-Variable.ttf")
+
+        given inter: (Typeface of "Inter") is Typesettable in Medium =
+          Typesettable.embedded(interFile)
+      ```
+
+      `.embedded` makes a provision from font files, which every medium can carry, so it is
+      `in Medium`; its coverage is read from the files, and several files — regular, bold,
+      italic — make one provision whose coverage is their union. Provisions belonging to one
+      medium are declared through that medium: `Web.linked` for a file at a URL,
+      `Web.imported` for a stylesheet, `Web.local` for an installed font, each with the
+      coverage it is declared to have, since there is no file to read; `Print`'s standard
+      fourteen need no declaration, nor do the generic families on the web.
+
+      A requester asks for a provision `in (? >: medium)`: an instance `in Medium` serves
+      every medium, while one `in Web` serves only the web, and `Font.of[Print](face)` with
+      only a `Web` provision in scope is a compile error. The `@missingContext` message says
+      so, and names the two ways to declare one.
+
+      A provision is `Locative`: made from a classpath resource (`Typesettable.embedded
+      (cp"/fonts/Inter.ttf")`) it keeps the path as its `Locus`, and a `Font` made from it is
+      checked against the file as the code compiles. The whole type is then parenthesised in
+      a named given, since an infix chain with a literal type is not admitted in the given's
+      type otherwise:
+
+      ```scala fuel
+      typecheck
+      ##
+      given inter: ((Typeface of "Inter") is Typesettable in Medium at "/fonts/Inter.ttf") =
+        Typesettable.embedded(cp"/fonts/Inter.ttf")
+      ```
+
+      Provisions are pure data and live where the medium lives: in the companion of `Web` or
+      `Print` for the ones a medium always has, and in an object a project imports by name for
+      its own — `import fonts.inter`, since `import fonts.*` does not import givens.
+  refer phoenicia.Typeface
+  refer phoenicia.Font
+  refer phoenicia.Coverage
+  refer phoenicia.Medium
+  entry .Source   how a medium obtains a typeface: embedded, linked, local, imported, or generic
+    detail
+        `Embedded(sfnt)` carries the font file itself inside the document; `Linked(url,
+        format)` names a file to fetch, with its `Format` if known; `Local(name)` names a font
+        the reader already has installed; `Imported(url)` names a stylesheet which declares the
+        typeface; and `Generic` is a family every medium can set. A document collects the
+        sources of its fonts and emits whatever its medium needs — `@font-face` rules, an
+        embedded program.
+    entry .Format   the format of a linked font file: `Ttf`, `Otf`, `Woff` or `Woff2`
+        What a `@font-face` `src` declares with `format(…)`, so a browser can skip a file it
+        cannot read.
+  entry .Embedding   the provision `.embedded` returns: files carried inside the document
+    detail
+        A named class, so the provision has a stable type. It is `in Medium`, its sources are
+        one `Source.Embedded` per file, and its coverage is `Coverage.combine` over the files'
+        `Coverage.of`.
+    entry #Self   the typeface provided
+    entry #Form   `Medium`: an embedded file serves every medium
+    entry #sources   one `Typesettable.Source.Embedded` per font file
+    entry #coverage   the union of the files' coverage, read from their tables
+  entry .embedded   a provision from font files, `in Medium`, with coverage read from the files
+      Two overloads. `Typesettable.embedded[family](sfnts*)` takes any number of `Sfnt`s
+      already in hand and makes a `Typeface of family is Typesettable in Medium`; the family is
+      given explicitly or inferred from the given's declared type. `Typesettable.embedded
+      (source)` takes one `Locative` streamable source — a `cp"…"` resource — reads it, and
+      keeps its path as the provision's `Locus`, so a `Font` made from the provision is checked
+      as the code compiles against the file at that path on the compiler's classpath. Where the
+      file is not on the compiler's classpath, the check is left to runtime.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      given inter: (Typeface of "Inter") is Typesettable in Medium =
+        Typesettable.embedded(Sfnt(cp"/fonts/Inter-Regular.ttf"), Sfnt(cp"/fonts/Inter-Bold.ttf"))
+      ```
+  entry #Self   the typeface provided, a `Typeface of family`
+  entry #sources   how the medium obtains the typeface, one `Typesettable.Source` per part
+  entry #coverage   the faces the provision can set
+
+entry .Coverage   which faces a provision can set: weights, slants, widths, axes and features
+  detail
+      A `Coverage` is either `Unknown` — nothing is known of the faces a source offers, so
+      every face is admitted — or `Entries(entries)`, a list of `Coverage.Entry`s, each one
+      face a provision offers or the range of faces a variable font offers. A `Font` is made
+      only for a face the coverage admits; `#complaint` gives the `Font.Error.Reason` why it
+      is not, or `Unset` if it is.
+
+      Coverage is matched as a browser matches a `@font-face` declaration: the entries which
+      span the weight are found first, then of those the ones with the slant, then the
+      stretch, and the face's variations and features are checked against what remains. The
+      first failing step names the refusal: `UncoveredWeight`, `UncoveredSlant`,
+      `UncoveredStretch`, `UnknownAxis`, `AxisOutOfRange` or `MissingFeature`.
+
+      `.of(sfnt)` reads a font file's coverage from its tables — the `fvar` axes of a
+      variable font, else the single weight and width the `OS/2` table records, the italic
+      bits of `OS/2` and `post`, and the features of `GSUB` and `GPOS` — and `.combine` unions
+      several files'. `Coverage(weights = …, italic = …)` declares the coverage of a source
+      whose file is not to hand, a URL or an installed font; only what is declared is admitted,
+      so a linked font declared at one weight rejects a request for another rather than
+      letting the browser synthesize it.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val file: Sfnt = Sfnt(cp"/fonts/Inter-BoldItalic.ttf")
+      Coverage.of(file).complaint(Typeface["Inter"].bold.italic)    // Unset
+      Coverage.of(file).complaint(Typeface["Inter"].light)          // UncoveredWeight("Inter", 300)
+
+      val declared: Coverage = Coverage(weights = Weight.Light to Weight.Bold, italic = true)
+      ```
+  refer phoenicia.Typesettable
+  refer phoenicia.Font
+  refer phoenicia.Face
+  entry .Entry   one face a provision offers, or the range a variable font offers
+    detail
+        The weights and widths spanned, whether the entry is upright, italic or both, the
+        further axes with their ranges, and the layout features implemented — or `Unset` for
+        the features of a face declared without a file, which then admits any feature.
+
+        ```scala
+        import soundness.*
+
+        val boldItalic = Coverage.Entry(Weight.Bold.range, false, true, Stretch.Normal.range, Nil, Nil)
+        ```
+    entry #weights   the span of weights
+    entry #upright   whether an upright face is offered
+    entry #italic   whether an italic face is offered
+    entry #stretches   the span of widths
+    entry #axes   the further variation axes, each with its range
+    entry #features   the features implemented, or `Unset` if unknown
+    entry #sets   whether the entry's weight, slant and stretch admit a face
+    entry #complaint   the first variation or feature setting the entry cannot give, or `Unset`
+        `complaint(name, variations, settings)` checks each variation's axis and value against
+        `axes` (`UnknownAxis`, `AxisOutOfRange`) and each setting's feature against `features`
+        (`MissingFeature`), naming the typeface in the reason. Unknown features admit anything.
+  entry .apply   a declared coverage, for a source whose file is not to hand
+      `Coverage(weights, upright, italic, stretches, axes)`, each with a default — regular,
+      upright only, normal width, no axes — making one `Entry` with unknown features. For a
+      URL or an installed font, whose faces are what the declaration says and nothing more.
+  entry .of   a font file's coverage, read from its tables
+      From a variable font's `fvar`: the `wght` axis as the weight span, `wdth` as the width
+      span, an `ital` or `slnt` axis as offering both postures, and every axis as a
+      `Variation.Range`. From a static font: the `OS/2` weight and width classes as single
+      weights and widths. The italic bits of `OS/2` and a nonzero `post` italic angle make the entry
+      italic. The features are `Sfnt#features`. A file whose tables cannot be read has
+      `Unknown` coverage, which admits everything, rather than refusing faces it may well
+      have.
+  entry .combine   the union of several coverages; any `Unknown` makes the whole `Unknown`
+  entry #complaint   why a face cannot be set from this coverage, or `Unset` if it can
+      Two overloads. `complaint(face)` checks a whole face. `complaint(name, weight, slant,
+      stretch, variations, features)` checks only what is given: a part passed as `Unset` is
+      not checked, which is the form the compile-time check uses when a face's weight or slant
+      is decided at runtime. `Unknown` coverage never complains.
+
+entry .Font   a face paired with the provision for its typeface in a medium: what a renderer accepts
+  detail
+      A `Font in Web` is a face together with the `Typesettable` provision that makes its
+      typeface available on the web; a `Font in Print` the same for a PDF. The medium is the
+      font's `Form`, a type member it inherits from `Formal`: `Web`, `Print`, or whatever the
+      font was made in. A renderer accepts fonts only in this form, so a document cannot name
+      a typeface it does not carry a provision for; the document then collects the provisions
+      of its fonts and emits whatever its medium needs.
+
+      A font is made in one of two ways. `Font(face)` infers the medium from the expected
+      type, which works for `Optional[Font in Web]` as well as `Font in Web`, so a field such
+      as `Lettering(…, font = Font(inter.bold))` needs no annotation. `Font.of[Web](face)`
+      names the medium, for where there is no expected type to infer it from. Both need a
+      `Typeface of family is Typesettable in (? >: medium)` in scope — a provision for the
+      typeface in that medium, or in every medium — and a `Tactic[Font.Error]`.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      trait Paper extends Medium
+
+      given inter: (Typeface of "Inter") is Typesettable in Medium =
+        Typesettable.embedded(Sfnt(cp"/fonts/Inter.ttf"))
+
+      val heading: Font in Paper = Font.of[Paper](Typeface["Inter"].bold.italic)
+      val caption: Optional[Font in Paper] = Font(Typeface["Inter"].light)
+      ```
+
+      A face the provision cannot set — a weight it lacks, an italic it has not got, a
+      feature its file does not implement, an axis value outside its range — is refused
+      rather than synthesized or silently ignored. The refusal is a `Font.Error` when the font
+      is made, naming the typeface and the problem. And where the provision's file is on the
+      classpath (its `Locus`, from `Typesettable.embedded(cp"…")`) and the face's request is
+      in its type, the refusal is a compile error with the same message, _phoenicia: the font
+      at /fonts/Inter.ttf cannot set this face: Inter is not provided at weight 300_. Only
+      what is known statically is checked statically; the runtime check always runs.
+
+      A font shows as its face: `Inter 700 italic`.
+  refer phoenicia.Face
+  refer phoenicia.Typesettable
+  refer phoenicia.Medium
+  refer phoenicia.Coverage
+  entry .Error   raised when a font cannot be read or a face cannot be set
+    detail
+        Error 564, _the font could not be used because …_, with a `Reason` whose number is the
+        error's subcode. The table-reading reasons are raised by `Sfnt`'s accessors; the
+        coverage reasons by `Font(…)`, `Font.of[…](…)` and `Font.paired` when the provision's
+        `Coverage` refuses the face.
+
+        ```scala
+        import soundness.*
+
+        def weightRefused(block: => Font in Medium): Boolean =
+          try { block; false } catch
+            case Font.Error(Font.Error.Reason.UncoveredWeight(_, _)) => true
+            case _: Font.Error                                        => false
+        ```
+    entry .Reason   why: a missing or unreadable table, or a face the provision cannot set
+      detail
+          `MissingTable(tag)` (1), _the table `name` was not found_; `UnknownFormat(format)`
+          (2), _the table contains data in unknown format n_, for a `cmap` subtable format
+          the library does not read; `MagicNumber` (3), _the font did not contain expected
+          check data_, for a `head` table with the wrong constant; `MissingEncoding` (4),
+          _the font contains no usable character encoding_. Then the coverage reasons, each
+          naming the typeface: `UncoveredWeight(typeface, weight)` (5), _Inter is not
+          provided at weight 300_; `UncoveredSlant(typeface, slant)` (6), _Inter is not
+          provided in an italic face_; `UncoveredStretch(typeface, stretch)` (7);
+          `UnknownAxis(typeface, axis)` (8), _Inter has no variation axis opsz_;
+          `AxisOutOfRange(typeface, axis, value)` (9); and `MissingFeature(typeface,
+          feature)` (10), _Inter does not implement the layout feature onum_.
+      entry #number   the reason's number, 1 to 10, which is the error's subcode
+    entry .communicable   renders each reason as its message
+    entry #reason   the reason
+  entry .apply   `Font(face)`: pairs a face with the provision in scope, in the medium the expected type names
+      An inline method whose medium is inferred from the expected type: `Font in Web`, or
+      `Optional[Font in Web]`, since `Form` is a type member and the expected type pins it.
+      Needs a `Typeface of family is Typesettable in (? >: medium)` and a `Tactic[Font.Error]`.
+      Where the provision carries a `Locus` the face's recorded request is checked at compile
+      time; the runtime check then runs regardless. Where there is no expected type, use `.of`.
+  entry .of   `Font.of[Web](face)`: the same pairing with the medium named
+      Returns an `.Of[medium]` whose `apply` takes the face, so that only the medium need be
+      written and the family is inferred from the face. Cataclysm's `Web.font(face)` is
+      `Font.of[Web](face)`.
+  entry .Of   the helper `.of` returns, whose `apply` takes the face
+    detail
+        `Font.of[medium]` is an `Of[medium]`; `Font.of[medium](face)` is its `apply`. The two
+        clauses are separate so the medium can be named without the family.
+    entry #apply   pairs a face with the provision in scope for its typeface, in the named medium
+  entry .paired   the runtime pairing the inline forms expand to: the coverage check, then the font
+      `Font.paired[family, medium](face)` checks `provision.coverage.complaint(face)`, raises
+      `Font.Error` with the reason if there is one, and otherwise makes the `Font in medium`.
+      The inline `.apply` and `.of` add the compile-time check in front of it; code which
+      needs no static check, or has a face whose request is not in its type, may call this
+      directly.
+  entry .showable   shows a font as its face: `Inter 700 italic`
+  entry .inspectable   inspects a font as `Font(Face("Inter", Weight(700), Slant.Italic))`
+  entry #face   the face
+  entry #provision   the provision which makes the typeface available in the medium
+  entry #typeface   the face's typeface
+
+entry .internal   the opaque types `Glyph`, `Weight` and `Stretch`, and the macro behind `Font(…)`
+  hidden
+  detail
+      Not for direct use. `Glyph`, `Weight` and `Stretch` are declared here as opaque types,
+      with their companions, and exported to the `phoenicia` package, where their pages are;
+      the object exists so that the opaque types and the `Font` macro have a stable home.
+  entry .Glyph   a glyph of one font; see `phoenicia.Glyph`
+    detail
+        The companion of the opaque type `Glyph`, exported with it to the `phoenicia` package.
+    entry .apply   `Glyph(font, id)`: wraps a glyph id as a glyph of that font
+  entry .Weight   a weight on the 1–1000 scale; see `phoenicia.Weight`
+    detail
+        The companion of the opaque type `Weight`, exported with it to the `phoenicia`
+        package.
+    entry .apply   a weight from an integer, clamped to 1–1000
+    entry .Thin   weight 100
+    entry .ExtraLight   weight 200
+    entry .Light   weight 300
+    entry .Regular   weight 400
+    entry .Medium   weight 500
+    entry .Semibold   weight 600
+    entry .Bold   weight 700
+    entry .ExtraBold   weight 800
+    entry .Black   weight 900
+    entry .Range   an inclusive span of weights
+      entry #lower   the lightest weight in the span
+      entry #upper   the heaviest weight in the span
+      entry #contains   whether a weight lies within the span
+    entry .showable   shows a weight as its number: `700`
+    entry .inspectable   inspects a weight as `Weight(700)`
+    entry .value   the weight as an integer
+    entry .to   `lower to upper`: the inclusive range between two weights
+    entry .range   the range of this weight alone
+  entry .Stretch   a width as a percentage; see `phoenicia.Stretch`
+    detail
+        The companion of the opaque type `Stretch`, exported with it to the `phoenicia`
+        package.
+    entry .apply   a stretch from a percentage, clamped to 50–200
+    entry .UltraCondensed   50%
+    entry .ExtraCondensed   62.5%
+    entry .Condensed   75%
+    entry .SemiCondensed   87.5%
+    entry .Normal   100%
+    entry .SemiExpanded   112.5%
+    entry .Expanded   125%
+    entry .ExtraExpanded   150%
+    entry .UltraExpanded   200%
+    entry .widthClass   the stretch an OS/2 width class 1 to 9 names; `Normal` for 5 or an unknown value
+    entry .Range   an inclusive span of stretches
+      entry #lower   the narrowest stretch in the span
+      entry #upper   the widest stretch in the span
+      entry #contains   whether a stretch lies within the span
+    entry .showable   shows a stretch as a percentage: `100.0%`
+    entry .inspectable   inspects a stretch as `Stretch(100.0)`
+    entry .percentage   the stretch as a percentage of normal width
+    entry .to   `lower to upper`: the inclusive range between two stretches
+    entry .range   the range of this stretch alone
+  entry .id   the glyph's id within its font; 0 is the missing-glyph
+  entry .font   the macro behind `Font(face)` and `Font.of[medium](face)`
+      Reads the provision's `Locus` from its type; if it is a string literal naming a resource
+      on the compiler's classpath, reads the font (once per path), derives its `Coverage` and
+      checks the face's `Weights`, `Slanting` and `Enabled` type members against it, halting
+      with _phoenicia: the font at `path` cannot set this face: …_ on refusal. Then expands to
+      `Font.paired`.

@@ -1,0 +1,590 @@
+tel 1.0
+
+base distillate
+import soundness
+
+info   typed conversions out of text and other forms: `as[T]`, the `As` extractor and their typeclasses
+detail
+    _Distillate_ turns loose values — command-line arguments, environment variables, regular
+    expression captures, a field of a parsed document — into typed ones, and makes the way each
+    conversion can fail visible in its type. It does so with three typeclasses, each with its
+    own failure mode:
+
+    - `Decodable` reads a value _out of_ a form (`Int is Decodable in Text`) and raises a typed
+      error, through a `Tactic`, when it cannot;
+    - `Extractable` converts _toward_ a result (`Text is Extractable to Int`) and yields `Unset`
+      when it declines, which is what a pattern match wants;
+    - `Irrefutable` converts where nothing can go wrong (`Byte is Irrefutable to Int`).
+
+    The everyday surface is two names: the `as` extension, which decodes, and the `As`
+    extractor, which extracts in a pattern.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+    import errorDiagnostics.stackTracesDiagnostics
+
+    t"123".as[Int]                    // 123
+    safely(t"hello".as[Int]).or(0)    // 0
+
+    t"12:13:14" match
+      case r"${As[Int](h)}(\d+):${As[Int](m)}(\d+):${As[Int](s)}(\d+)" => List(h, m, s)
+      case _                                                            => List()
+    ```
+
+    The library also carries the pieces every data format shares: `Enumerable`, the derived
+    description of an `enum` that every format's codecs use to name its cases; `Identifiable`,
+    a two-way mapping between naming conventions; `Parsable`, the streaming counterpart of
+    `Decodable` which reads a value straight from a format's token reader; the three
+    `Decodable.Absence`, `Decodable.Nullity` and `Decodable.Fault` policies an `Optional` field
+    consults; and `Codecs`, the contextual mode that selects between a format's derived and
+    direct (generated) codecs. The encoding direction, `Encodable` and `value.in[Format]`,
+    belongs to `anticipation`, beneath this library.
+
+    Two choice packages hold givens which must be imported by name, because `import pkg.*`
+    does not import givens: `truths`, whose `Truth` spellings are accepted by the `Boolean`
+    decoder beside `true`/`false`, and `codecs`, whose three modes select the codec path for
+    every format at once.
+
+    The library is a single source set, `distillate.core`, for every platform. Everything is
+    exported to the `soundness` umbrella, and the `truths` and `codecs` packages merge with the
+    umbrella's own.
+
+refer distillate.Decodable
+refer distillate.Extractable
+refer distillate.Irrefutable
+refer distillate.As
+refer distillate.as
+
+entry .as   decodes a value as `T` with the `T is Decodable in` its form, or converts it with a given `Irrefutable`
+    `value.as[T]` summons a `T is Decodable in F`, where `F` is the static type of `value`, and
+    applies it. A decoder built from a `Tactic` (the number decoders need a
+    `Tactic[Number.Error]`, the `Boolean` one a `Tactic[Truth.Error]`) raises through it, so the
+    strategy in scope decides whether a failed decode throws, yields `Unset` under `safely`, or
+    accrues. Nothing of the decoder is retained: the result is a plain value.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    t"123".as[Int]                          // 123
+    capture[Number.Error](t"300".as[Byte])  // Number.Error(..., Reason.OutOfRange)
+    ```
+
+    The second overload, `value.as[T](irrefutable)`, takes an `Irrefutable` explicitly, as an
+    ordinary argument rather than a contextual one, and applies it; it cannot fail.
+
+entry .As   the extractor `As[T]`, which matches a scrutinee that yields a `T` and binds it
+  detail
+      `As[T](binding)` in a pattern summons `scrutinee.type is Extractable to T` and matches
+      when it yields a value, falling through to the next case when it yields `Unset`. Because
+      it is an ordinary extractor it nests in any pattern: in the groups of an `r"…"` pattern,
+      inside a list pattern, or beside other extractors.
+
+      ```scala
+      import soundness.*
+
+      List(t"12", t"13", t"14") match
+        case As[Int](first) :: As[Int](second) :: As[Int](third) :: Nil => (first, second, third)
+        case _                                                          => (0, 0, 0)
+
+      300 match
+        case As[Byte](byte) => byte
+        case _              => -1      // 300 does not fit in a Byte
+      ```
+
+      Under capture checking, the explicit type argument of `As[T]` forces the scrutinee
+      through a singleton type which the checker cannot bind to the instance's `Self`; the
+      result-fixed extractors `As.Int` and `As.Boolean` take no type argument and are usable
+      from capture-checked code.
+  refer distillate.Extractable
+  entry .unapply   matches a scrutinee whose singleton type is `Extractable` to the result
+  entry .Int   an extractor fixed to `Int`, with no type argument, for capture-checked code
+    detail
+        `case As.Int(number) =>` matches any scrutinee with a `scrutinee is Extractable to Int`
+        in scope, inferring the scrutinee's type from the matched value rather than from a
+        singleton, so the instance resolves cleanly under capture checking.
+    entry .unapply   matches a scrutinee which is `Extractable to Int`
+  entry .Boolean   an extractor fixed to `Boolean`, with no type argument, for capture-checked code
+    detail
+        `case As.Boolean(flag) =>` matches any scrutinee with a `scrutinee is Extractable to
+        Boolean` in scope; for text that is exactly `true` or `false`.
+    entry .unapply   matches a scrutinee which is `Extractable to Boolean`
+
+entry .Decodable   a typeclass reading `Self` out of a `Form`, raising a typed error when it cannot
+  detail
+      `T is Decodable in F` is a single function `F => T`, `#decoded`. It is what `value.as[T]`
+      applies, and what every data format's codecs build on: `Person is Decodable in Json`,
+      `Int is Decodable in Text`. An instance which can fail takes a `Tactic` for its error as
+      a contextual parameter and raises through it, so the error is part of what the given
+      needs, and the strategy is chosen where `as` is called.
+
+      Writing an instance is writing the function; in a companion object it is found with no
+      import.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      enum Heading:
+        case N, S, E, W
+
+      object Heading:
+        given (Heading is Decodable in Text) =
+          case t"north" => N
+          case t"south" => S
+          case t"east"  => E
+          case t"west"  => W
+
+      t"north".as[Heading]   // Heading.N
+      ```
+
+      The companion holds the decoders out of `Text` for the primitive types and for any
+      `enum`, and the three policies an `Optional` field consults (`.Absence`, `.Nullity`,
+      `.Fault`). It extends `Decodable2`, whose lower-priority `generic` decodes any value in
+      its own form as itself.
+
+      A format's catch-all given (`[value] => value is Decodable in Json` and the like) ties
+      with any companion given over a bare type parameter, which is an ambiguity error; a given
+      whose type parameter is bounded (`[item <: Item]`) is more specific and wins.
+  refer distillate.as
+  refer distillate.Extractable
+  refer distillate.Parsable
+  refer anticipation.Encodable
+  entry .int   decodes an `Int` from decimal text, raising `Number.Error` if it is unparseable
+      Needs a `Tactic[Number.Error]`. Parses with `Integer.parseInt`, so the text must be an
+      optionally-signed decimal integer with no surrounding space; any failure, including
+      overflow, is `Number.Error.Reason.Unparseable`.
+  entry .byte   decodes a `Byte` from decimal text, distinguishing unparseable from out-of-range
+      Needs a `Tactic[Number.Error]`. Text which is not an integer raises `Number.Error` with
+      `Reason.Unparseable`; an integer outside −128 to 127 raises it with `Reason.OutOfRange`.
+  entry .short   decodes a `Short` from decimal text, distinguishing unparseable from out-of-range
+      Needs a `Tactic[Number.Error]`. Text which is not an integer raises `Number.Error` with
+      `Reason.Unparseable`; an integer outside the range of a `Short` raises it with
+      `Reason.OutOfRange`.
+  entry .long   decodes a `Long` from decimal text, raising `Number.Error` if it is unparseable
+      Needs a `Tactic[Number.Error]`; parses with `java.lang.Long.parseLong`.
+  entry .double   decodes a `Double` from text, raising `Number.Error` if it is unparseable
+      Needs a `Tactic[Number.Error]`; parses with `java.lang.Double.parseDouble`, so exponents,
+      `NaN` and `Infinity` are accepted as Java accepts them.
+  entry .float   decodes a `Float` from text, raising `Number.Error` if it is unparseable
+      Needs a `Tactic[Number.Error]`; parses with `java.lang.Float.parseFloat`.
+  entry .char   decodes a `Char` as the first character of the text
+      Needs no tactic. Any text beyond the first character is ignored, and empty text is not
+      checked for: prefer `As[Char]`, which matches only text of exactly one character.
+  entry .boolean   decodes a `Boolean` from any `Truth` spelling in scope, in any case, raising `Truth.Error`
+      Needs a `Tactic[Truth.Error]` and collects every `Truth` in scope (`Every[Truth]`). The
+      text is trimmed and lowercased, then offered to each spelling in turn; text which none
+      recognizes raises `Truth.Error`. `Truth.trueFalse`, in the `Truth` companion, is always
+      in scope, and each `truths` given imported adds a spelling beside it rather than
+      replacing it.
+
+      ```scala fuel
+      frame
+        label Only true and false
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            t" FALSE ".as[Boolean]           // false
+            safely(t"yes".as[Boolean])       // Unset: a Truth.Error was raised
+      frame
+        label Adding yes and no
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+            import truths.yesNoTruth
+
+            t"yes".as[Boolean]               // true
+            t"true".as[Boolean]              // true, still
+      frame
+        label Adding on/off and 1/0 as well
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+            import truths.{yesNoTruth, onOffTruth, oneZeroTruth}
+
+            List(t"on", t"OFF", t"1", t"no").map(_.as[Boolean])   // List(true, false, true, false)
+      ##
+      ```
+  entry .enumeration   decodes an `enum` case from its name, raising `Enumerable.Error` if it names none
+      For any `enum` with an `Enumerable` (derived automatically) and an `Identifiable` in
+      scope, and a `Tactic[Enumerable.Error]`. The text is first mapped through the
+      `Identifiable`'s `#decode`, so a naming convention (snake case in, camel case out) can sit
+      between the text and the case names; the error lists the valid names, encoded back
+      through the same `Identifiable`.
+  entry .Absence   the policy for a key the document omits: lenient yields `Unset`, strict raises
+    detail
+        A policy indexed by its format (`Decodable.Absence in Json`), consulted by every format
+        which decodes an `Optional` or `Option` field. The default, `.default`, is lenient for
+        every format: an omitted key reads as `Unset` (or `None`). A format's
+        `optionalityOptions` package offers a strict given named for the format
+        (`strictJsonAbsence`), imported by name, which outranks the default; one may also be
+        declared locally.
+
+        ```scala
+        import soundness.*
+
+        summon[Decodable.Absence in Text].strict   // false
+
+        locally:
+          given Decodable.Absence in Text = Decodable.Absence(true)
+          summon[Decodable.Absence in Text].strict // true
+        ```
+    entry .apply   an absence policy for a form, strict or lenient
+    entry .default   the companion default for every form: lenient
+    entry #strict   whether an omitted key is an error rather than `Unset`
+  entry .Nullity   the policy for a format's explicit null: lenient yields `Unset`, strict raises
+    detail
+        A policy indexed by its format (`Decodable.Nullity in Json`), consulted only by formats
+        which have a null literal. The default, `.default`, is lenient: a null reads as `Unset`
+        (or `None`). A format's `optionalityOptions` package offers a strict given named for the
+        format (`strictCborNulls`), imported by name, which outranks the default.
+    entry .apply   a nullity policy for a form, strict or lenient
+    entry .default   the companion default for every form: lenient
+    entry #strict   whether an explicit null is an error rather than `Unset`
+  entry .Fault   the policy for a present value the inner decoder rejects: strict raises, lenient yields `Unset`
+    detail
+        A policy indexed by its format (`Decodable.Fault in Json`). The default, `.default`, is
+        strict: the inner decoder's error passes through. A format's `optionalityOptions`
+        package offers a lenient given named for the format (`lenientYamlFaults`), imported by
+        name; under it a rejected value decodes under the ambient tactic's `tolerate`, so
+        nothing accrues under an accumulating tactic either, and reads as `Unset` (or `None`).
+    entry .apply   a fault policy for a form, strict or lenient
+    entry .default   the companion default for every form: strict
+    entry #strict   whether a rejected value raises its error rather than reading as `Unset`
+  entry #decodable   this instance, as a stable reference for use within a lambda
+  entry #decoded   decodes a value of the form as `Self`
+      The single abstract method: a lambda of type `Form => Self` is an instance. It may
+      raise through a tactic the instance captured when it was resolved.
+  entry #position   enriches a positional focus with what is known of the decoded form
+      Identity by default. A format whose decoders track where in a document a value was found
+      (Jacinta's `Json.Decodable`) overrides it to refine a focus with information derived
+      from the `Form` after decoding.
+  entry #map   a decoder in the same form for a new type, applying a function after decoding
+      `summon[Int is Decodable in Text].map(Percent(_))` decodes an `Int` and wraps it. The
+      result captures both this decoder and the function.
+
+entry .Decodable2   the lower-priority givens of the `Decodable` companion
+  detail
+      A trait the `Decodable` companion extends, so that its `generic` given ranks below every
+      given declared in the companion itself.
+  entry #generic   decodes any value in its own form as itself: `T is Decodable in T`
+      The identity decoder, so `json.as[Json]` or `text.as[Text]` needs no instance of its own.
+      Being in a parent of the companion, it ranks below the companion's specific givens.
+
+entry .Extractable   a typeclass converting `Self` toward a `Result`, yielding `Unset` when it declines
+  detail
+      `Text is Extractable to Int` is a single function `Text => Optional[Int]`, `#extract`; its
+      `#unapply` is what the `As[T]` extractor calls, so an instance is a pattern. It never
+      raises: input it cannot convert yields `Unset`, and the match falls through.
+
+      The companion holds conversions from text to each primitive type, every narrowing between
+      the numeric types (each declining when the value does not survive the round trip), the
+      conversion from text to an `enum` case by name and from an `Int` to one by ordinal, a
+      lift through `Optional`, and a bridge from any `Decodable in Text` which runs the decoder
+      under `safely`. That bridge is why `As[EmailAddress]` or `As[Uuid]` work for every type
+      that can be decoded from text.
+
+      An instance can borrow an existing one:
+
+      ```scala
+      import soundness.*
+
+      case class Percent(value: Int)
+
+      given (Text is Extractable to Int) => Text is Extractable to Percent =
+        case As[Int](number) if number >= 0 && number <= 100 => Percent(number)
+        case _                                               => Unset
+
+      t"42" match
+        case As[Percent](percent) => percent
+        case _                    => Percent(0)
+      ```
+  refer distillate.As
+  refer distillate.Decodable
+  refer distillate.Irrefutable
+  entry .decodable   extracts any type with a `Decodable in Text`, yielding `Unset` where the decoder raises
+      The bridge from `Decodable` to `Extractable`: the decoder is applied under `safely`, so
+      any error it raises becomes `Unset`. It makes every text-decodable type usable with
+      `As[T]`.
+  entry .optional   lifts an extractor through `Optional`: `Unset` stays `Unset`
+  entry .irrefutable   a `String` converts with the `Irrefutable` of `Text`, after conversion to `Text`
+  entry .textChar   extracts a `Char` from text of exactly one character
+  entry .textByte   extracts a `Byte` from text, declining text which is unparseable or out of range
+  entry .textShort   extracts a `Short` from text, declining text which is unparseable or out of range
+  entry .textInt   extracts an `Int` from text, declining text which is not a decimal integer that fits
+  entry .textLong   extracts a `Long` from text, declining text which is not a decimal integer that fits
+  entry .textFloat   extracts a `Float` from text, declining text which is not a number
+  entry .textDouble   extracts a `Double` from text, declining text which is not a number
+  entry .textBoolean   extracts a `Boolean` from exactly `true` or `false`, case-sensitively
+      Unlike the `Boolean` decoder, which trims, lowercases and consults every `Truth` in scope,
+      `As[Boolean]` matches only the two exact words.
+  entry .shortByte   narrows a `Short` to a `Byte`, declining a value which does not fit
+  entry .intByte   narrows an `Int` to a `Byte`, declining a value which does not fit
+  entry .intShort   narrows an `Int` to a `Short`, declining a value which does not fit
+  entry .intFloat   converts an `Int` to a `Float`, declining a value which a `Float` cannot hold exactly
+  entry .longByte   narrows a `Long` to a `Byte`, declining a value which does not fit
+  entry .longShort   narrows a `Long` to a `Short`, declining a value which does not fit
+  entry .longInt   narrows a `Long` to an `Int`, declining a value which does not fit
+  entry .longFloat   converts a `Long` to a `Float`, declining a value which a `Float` cannot hold exactly
+  entry .longDouble   converts a `Long` to a `Double`, declining a value which a `Double` cannot hold exactly
+  entry .floatByte   converts a `Float` to a `Byte`, declining a value which is not a whole number that fits
+  entry .floatShort   converts a `Float` to a `Short`, declining a value which is not a whole number that fits
+  entry .floatInt   converts a `Float` to an `Int`, declining a value which is not a whole number that fits
+  entry .floatLong   converts a `Float` to a `Long`, declining a value which is not a whole number that fits
+  entry .doubleByte   converts a `Double` to a `Byte`, declining a value which is not a whole number that fits
+  entry .doubleShort   converts a `Double` to a `Short`, declining a value which is not a whole number that fits
+  entry .doubleInt   converts a `Double` to an `Int`, declining a value which is not a whole number that fits
+  entry .doubleLong   converts a `Double` to a `Long`, declining a value which is not a whole number that fits
+  entry .doubleFloat   converts a `Double` to a `Float`, declining a value which a `Float` cannot hold exactly
+  entry .valueOf   extracts an `enum` case from text naming it exactly, through the enum's `valueOf`
+      Needs only the enum's `Mirror`, which the compiler provides: `As[Direction]` matches
+      `t"North"` with no instance written. The name must match the case's name exactly; a
+      parameterized case, which has no `valueOf`, never matches.
+  entry .fromOrdinal   extracts an `enum` case from an `Int`, by its ordinal
+      Declines an ordinal outside the enum's range.
+  entry #extract   converts a value, or yields `Unset` if it cannot
+  entry #unapply   converts a value as an `Option`, for use as an extractor
+
+entry .Irrefutable   a typeclass converting `Self` to a `Result` in a way that cannot fail
+  detail
+      `Byte is Irrefutable to Int` is a single function `Byte => Int`, `#unapply`; being an
+      `unapply` with no `Option`, an instance is an irrefutable pattern. The companion holds
+      the conversions between `String` and `Text`, the identity, and every widening between the
+      numeric types. It is a `Typeclass.Pure`: an instance captures nothing.
+
+      `value.as[T](irrefutable)` applies one explicitly.
+
+      ```scala
+      import soundness.*
+
+      val wide: Long = 42.toByte.as[Long](summon[Byte is Irrefutable to Long])
+      ```
+  refer distillate.Extractable
+  refer distillate.as
+  entry .stringText   converts a `String` to `Text`
+  entry .irrefutable   a `String` converts with the `Irrefutable` of `Text`, after conversion to `Text`
+  entry .textString   converts `Text` to a `String`
+  entry .ident   converts any value to itself
+  entry .byteShort   widens a `Byte` to a `Short`
+  entry .byteInt   widens a `Byte` to an `Int`
+  entry .byteLong   widens a `Byte` to a `Long`
+  entry .byteFloat   widens a `Byte` to a `Float`
+  entry .byteDouble   widens a `Byte` to a `Double`
+  entry .shortInt   widens a `Short` to an `Int`
+  entry .shortLong   widens a `Short` to a `Long`
+  entry .shortFloat   widens a `Short` to a `Float`
+  entry .shortDouble   widens a `Short` to a `Double`
+  entry .intLong   widens an `Int` to a `Long`
+  entry .intDoule   widens an `Int` to a `Double` (the name is misspelt in the source)
+  entry .floatDouble   widens a `Float` to a `Double`
+  entry #unapply   converts a value; it cannot fail
+  entry #contramap   an irrefutable conversion from a new type, applying a pure function first
+
+entry .Enumerable   the derived description of an `enum`: its name, its cases, and lookup by name and ordinal
+  detail
+      An `Enumerable` is derived for any `enum` whose cases are all singletons, with no
+      instance to write: `.derived` reads the cases from the companion's `values`. It gives the
+      enumeration's `#name`, its `#values` in declaration order, and lookup in both directions,
+      each returning `Optional` rather than raising, since neither a name nor an ordinal is
+      guaranteed to correspond to a case. Every format's derived codecs use it to name an
+      enum's cases, so they all agree.
+
+      ```scala
+      import soundness.*
+
+      enum Direction:
+        case North, South, East, West
+
+      val enumerable = summon[Direction is Enumerable]
+
+      enumerable.values                  // every case, in order
+      enumerable.value(t"North")         // Direction.North
+      enumerable.value(Prim)             // Direction.North, by ordinal
+      enumerable.name(Direction.South)   // t"South"
+      enumerable.index(Direction.East)   // 2
+      ```
+
+      Derivation halts with _enum `T` is not a simple choice_ for an enum with no `values`
+      method, which is one with a parameterized case.
+  refer distillate.Decodable.enumeration
+  refer distillate.Identifiable
+  entry .derived   derives an `Enumerable` for an `enum` of singleton cases, by macro
+  entry .Error   text decoded as an enum which names none of its cases
+    detail
+        Error 900: _the specified variant (`inputLabel`) is not one of the valid variants
+        (`validVariants`) of the enumeration `sum`_. Raised by the `Decodable.enumeration`
+        decoder.
+    entry #inputLabel   the text which named no case
+    entry #sum   the enumeration's name
+    entry #validVariants   the names of every case, as the decoder would accept them
+  entry #name   the enumeration's name, or the name of one of its cases
+      Without an argument, the name of the enumeration type as the compiler shows it; applied
+      to a case, that case's name.
+  entry #values   every case of the enumeration, in declaration order
+  entry #value   the case with a given name, or at a given `Ordinal`, if there is one
+      `value(t"North")` looks a case up by its exact name, and `value(Prim)` by its position;
+      each yields `Unset` where nothing corresponds.
+  entry #index   a case's zero-based ordinal, as an `Int`
+
+entry .Identifiable   a two-way mapping between a naming convention and the names of a type's members
+  detail
+      An `Identifiable` is a pair of text functions: `#encode` converts a Scala name into the
+      convention, and `#decode` converts back. The `Decodable.enumeration` decoder decodes
+      through it before looking up a case, and reports valid names encoded through it, so a
+      format can read `first_name` as `firstName`.
+
+      ```scala
+      import soundness.*
+
+      case class Column()
+
+      val snakeCase = Identifiable[Column](_.uncamel.snake, _.cut(t"_").camel)
+      ```
+
+      It is a `Typeclass.Pure`, so an instance captures nothing and may be shared freely.
+  entry .apply   an `Identifiable` from an encoding function and a decoding function
+  entry #encode   converts a Scala name into the convention
+  entry #decode   converts a name in the convention back into a Scala name
+
+entry .Parsable   the streaming counterpart of `Decodable`, reading `Self` directly from a format's token reader
+  detail
+      Where a `Decodable` receives an already-built syntax tree (a `Json`, an `Xml`), a
+      `Parsable` drives the format's token reader over the input, so a composite value is
+      built with no intermediate tree: no allocation of one, no boxing, no second traversal.
+      `Transport` names the format (`Person is Parsable over Json`), and each format's subtrait
+      fixes the `#Reader` (Jacinta's `Json.Parsable` sets it to `Json.Reader`).
+
+      The reader is an exclusive, stateful capability lent for the duration of `#parse`;
+      nothing of it may be retained in the result. Errors flow through the reader, which
+      carries its own tactic, or through a tactic the instance captured when it was resolved,
+      so `#parse` itself declares no error. Users rarely write one by hand: each format derives
+      them (`derives Json.Direct`), and the `codecs` package chooses when they are used.
+  refer distillate.Decodable
+  refer distillate.Codecs
+  entry #Reader   the format's token-reader capability, fixed by each format's subtrait
+  entry #parse   reads a value of `Self` from the reader
+
+entry .Number   the home of `Number.Error`, raised when text cannot be decoded as a number
+  detail
+      An object with no members but its error type.
+  entry .Error   text which could not be decoded as a number, or whose number was out of range
+    detail
+        Error 405, with a subcode for its `#reason`: _`text` is not a valid `specializable`
+        because `reason`_. Raised by the number decoders in the `Decodable` companion.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        capture[Number.Error](t"300".as[Byte]).reason   // Number.Error.Reason.OutOfRange
+        capture[Number.Error](t"abc".as[Byte]).reason   // Number.Error.Reason.Unparseable
+        ```
+    entry .Reason   why the number could not be decoded: `Unparseable` or `OutOfRange`
+      detail
+          An enum of two cases: `Unparseable` (subcode 1), for text which is not a number at
+          all, and `OutOfRange` (subcode 2), for a number the target type cannot represent.
+      entry #number   the subcode the reason contributes to the error's number
+    entry .communicable   renders a `Number.Error.Reason` as the clause of the error message
+    entry #text   the text which could not be decoded
+    entry #specializable   the numeric type the text was decoded as
+    entry #reason   why it could not be decoded, as a `Number.Error.Reason`
+
+entry .Truth   a spelling of truth and falsity, accepted by the `Boolean` decoder when in scope
+  detail
+      A `Truth` is a pair of words, `#affirmative` and `#negative`. The `Boolean` decoder
+      collects every `Truth` in scope and accepts any of their spellings, after trimming and
+      lowercasing the text, so several may be in scope together. `.trueFalse`, in this
+      companion, is always found; the `truths` package adds `yes`/`no`, `on`/`off` and `1`/`0`
+      by import, beside it rather than instead of it.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      given Truth = Truth(t"ja", t"nein")
+
+      t"Ja".as[Boolean]    // true
+      ```
+  refer distillate.truths
+  refer distillate.Decodable.boolean
+  entry .trueFalse   the spelling `true`/`false`, always in scope through the companion
+  entry .Error   text which no `Truth` in scope recognizes as a `Boolean`
+    detail
+        Error 406: _`text` is not a recognized Boolean_. Raised by the `Boolean` decoder.
+    entry #text   the text, as it was given
+  entry #affirmative   the word for `true`, in lower case
+  entry #negative   the word for `false`, in lower case
+  entry #apply   reads text as `true` or `false` if it is one of the two words, or yields `Unset`
+      Compares exactly: the `Boolean` decoder trims and lowercases before calling it.
+
+entry .truths   further spellings of a `Boolean`, each accepted beside `true`/`false` when imported
+  detail
+      A choice package whose givens are imported by name, since `import truths.*` does not
+      import givens. Unlike most choice packages, importing is additive: the `Boolean` decoder
+      collects every `Truth` in scope, so each import adds a spelling.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+      import truths.{onOffTruth, oneZeroTruth}
+
+      List(t"on", t"OFF", t"1", t"0").map(_.as[Boolean])   // List(true, false, true, false)
+      ```
+  refer distillate.Truth
+  entry .yesNoTruth   accepts `yes` and `no` as a `Boolean`
+  entry .onOffTruth   accepts `on` and `off` as a `Boolean`
+  entry .oneZeroTruth   accepts `1` and `0` as a `Boolean`
+
+entry .Codecs   the contextual mode which chooses between a format's derived and direct codecs
+  detail
+      Every format with generated ("direct") codecs offers two paths to a typed value: the
+      derived one, which builds the format's syntax tree and decodes it (or encodes to one),
+      and the direct one, which drives the format's token reader or printer straight into or
+      out of the value. A format's companion contributes givens conditional on one of these
+      modes, so a single import from the `codecs` package selects the path for every format at
+      once. With none in scope, a type takes the direct path exactly when it has a direct
+      instance of its own (an explicit given, or `derives`), and the derived path otherwise.
+
+      Results are the same on either path; only the speed and the positions in error
+      diagnostics differ.
+  refer distillate.codecs
+  refer distillate.Parsable
+  entry .Direct   the mode taking a generated codec wherever a type is inlinable
+  entry .Derived   the mode taking the derived codec, even over a direct instance
+  entry .Strict   the mode taking generated codecs, and a compile error where a type has none
+      A `Strict` is a `Direct`, so a format's generated instances apply under both; the
+      strictness is added at the entry points (`read[Foo in F]`, `in[Text over F]`, `in[Data
+      over F]`), which a format gates with `.strictFailure`.
+  entry .strictFailure   the compile error a format reports under `codecs.strict` for a type with no direct codec
+      A macro which halts compilation with _`format`: `T` has no direct codec, and
+      `codecs.strict` does not take the derived one_. It is raised from within a given after
+      that given has been selected, so it is the outcome of the search rather than a failed
+      candidate which the search could pass over. For format authors.
+
+entry .codecs   the three codec modes, each selecting a path for every format at once by import
+  detail
+      A choice package whose givens are imported by name, since `import codecs.*` does not
+      import givens. The modes are alternatives: importing two at once makes their givens
+      ambiguous wherever both would apply.
+
+      ```scala
+      import soundness.*
+      import codecs.direct     // generated codecs wherever a type is inlinable
+      ```
+
+      `import codecs.derived` takes the derived codecs even over a direct instance, and `import
+      codecs.strict` takes the generated codecs with a compile error, naming the type, wherever
+      the derived path would otherwise be taken silently.
+  refer distillate.Codecs
+  entry .direct   selects generated codecs wherever a type is inlinable, for every format
+  entry .derived   selects the derived codecs, even where a direct instance is in scope
+  entry .strict   selects generated codecs, and makes a type with none a compile error
+
+entry .internal   the macro implementations behind `Enumerable.derived` and `Codecs.strictFailure`
+  hidden
+  detail
+      Not for direct use.
+  entry .strictFailure   the macro behind `Codecs.strictFailure`
+  entry .enumerable   the macro behind `Enumerable.derived`

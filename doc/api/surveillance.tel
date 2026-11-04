@@ -1,0 +1,342 @@
+tel 1.0
+
+base surveillance
+import soundness
+
+info   watching directories and files for changes, as a scoped stream of typed events
+detail
+    _Surveillance_ watches the filesystem. A path, or a collection of paths, is *opened* as
+    `Watch`, and within the block a `Watch.Handle` yields the changes as they happen — a file
+    created, modified or deleted, a directory created — as a lazy `Chain` of `Watch.Event`s,
+    or debounced into `Watch.Batch`es once the tree has been quiet for a while. The
+    operating-system registration lasts exactly as long as the block, and capture checking
+    confines the handle and its streams to it.
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import filesystemBackends.javaBaseFilesystem
+    import stdios.javaLangSystemStdio
+    import strategies.throwUnsafely
+    import temporaryDirectories.systemTemporaryDirectory
+
+    val directory: Path on Local = temporaryDirectory[Path on Local] / "watched"
+
+    directory.open[Watch](): watcher ?=>
+      watcher.stream.each:
+        case NewFile(dir, file) => Out.println(t"created $file")
+        case Modify(dir, file)  => Out.println(t"modified $file")
+        case Delete(dir, file)  => Out.println(t"deleted $file")
+        case _                  => ()
+    ```
+
+    Change detection is delegated to a `Watcher` backend. With no import, `Watcher.default`
+    applies: `JavaBaseWatcher`, over the operating system's own notification service
+    (`java.nio.file.WatchService`). Where that is unavailable or unreliable — some network or
+    container filesystems — a `PollingWatcher`, made by `watchers.polling(interval)`, diffs
+    snapshots of each directory instead, and is chosen by binding it as a local given.
+
+    A watch covers a directory's immediate entries, not its whole subtree; a path naming a
+    file watches its parent directory, filtered to that one name. Several paths opened
+    together share one event stream.
+
+    The library has one source set, `surveillance.core`, for the JVM, built on parasite's
+    supervised tasks and turbulence's `Relay`. Everything is exported to the `soundness`
+    umbrella, with the `watchers` object mirrored as a package; its `javaBaseWatcher` given is
+    imported by name, since `import watchers.*` does not import givens.
+
+refer surveillance.Watch
+refer surveillance.Watcher
+refer surveillance.watchers
+refer aperture.open
+
+entry .Watch   a registration of watched paths, its events, and the `open[Watch]` form
+  detail
+      `Watch` is the form a path is opened as to watch it, and the type of a live
+      registration. The usual way in is `path.open[Watch]() { watcher ?=> … }`, through
+      `.openable` (or `.allOpenable` for a collection of paths), which registers the paths,
+      lends a `Watch.Handle` to the block, and unregisters when the block ends however it
+      ends.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import stdios.javaLangSystemStdio
+      import strategies.throwUnsafely
+      import temporaryDirectories.systemTemporaryDirectory
+
+      val sources: Path on Local = temporaryDirectory[Path on Local] / "src"
+      val tests: Path on Local = temporaryDirectory[Path on Local] / "test"
+
+      List(sources, tests).open[Watch](): watcher ?=>
+        watcher.stream.take(1).each(event => Out.println(event.path[Path on Local].encode))
+      ```
+
+      A `Watch` value may also be made directly with `Watch(paths)`, outside any scope; then
+      `#unregister` must be called to cancel the registration and terminate `#stream`, which
+      otherwise never ends. Watching is pure observation, so no handle operation is
+      grant-gated: the mode passed to `open` is irrelevant, and the default, `Read`,
+      describes it best. There are no flags.
+
+      Registration raises `Watch.Error` when a path does not exist, is not a directory, may
+      not be watched by this user, or would exceed the operating system's limit on watches.
+  refer surveillance.Watch.Handle
+  refer surveillance.Watch.Event
+  refer surveillance.Watcher
+  entry .apply   registers any collection of paths with the `Watcher` in scope, returning a live `Watch`
+      `Watch(paths)` takes any `Traversable` collection of path values which are `Abstractable
+      across Paths to Text` — a Soundness `List(…)` or a stdlib `Iterable` — and needs a
+      `Watcher` and a `Tactic[Watch.Error]`. Each directory is watched whole; each other path
+      watches its parent directory, filtered to its own name; and paths in the same directory
+      share one registration. The result captures the watcher, and must be unregistered
+      with `Watch#unregister`; `open[Watch]` does that itself.
+  entry .openable   opens a single path as `Watch`: `path.open[Watch]() { watcher ?=> … }`
+      The `Openable` given for any path type `Abstractable across Paths to Text`, in the
+      companion and so in implicit scope. It needs a `Watcher` (the default suffices) and a
+      `Tactic[Watch.Error]`, and lends the block a `Watch.Handle`, unregistering when the
+      block ends.
+  entry .allOpenable   opens a collection of paths as `Watch`, with one event stream for all of them
+      The `Openable` given for any `Iterable` of paths: `List(a, b).open[Watch]() { … }`. It is
+      parameterized over the concrete collection type, since an `Openable`'s `Self` is matched
+      invariantly. Needs a `Watcher` and a `Tactic[Watch.Error]`.
+  entry .Openable   the `Openable` instance behind `.openable`, as a named class
+      A `path is Openable in Watch` with no flags (`Operand` is `Nothing`) and a `Watch.Handle`
+      as its handle. Named rather than anonymous, since an anonymous instance freshens the
+      handle's capability type in its inferred `Result`.
+  entry .AllOpenable   the `Openable` instance behind `.allOpenable`, for a collection of paths
+      As `Watch.Openable`, with a collection of paths as its `Self`.
+  entry .Handle   the scoped capability an `open[Watch]` block receives, with the watch's streams
+    detail
+        The handle lent by `path.open[Watch]()`. It is an exclusive capability confined to
+        the block, so neither it nor a stream derived from it can outlive the registration.
+        Inside the block it is the contextual parameter, and the top-level `watch` gives it
+        by name.
+
+        ```scala fuel
+        typecheck
+        ##
+        import soundness.*
+        import filesystemBackends.javaBaseFilesystem
+        import stdios.javaLangSystemStdio
+        import strategies.throwUnsafely
+        import temporaryDirectories.systemTemporaryDirectory
+
+        val directory: Path on Local = temporaryDirectory[Path on Local] / "watched"
+
+        directory.open[Watch]():
+          watch.batches(0.2*Second).each: batch =>
+            batch.paths[Path on Local].each(path => Out.println(path.encode))
+        ```
+    entry #stream   every event, one at a time, as it arrives
+        A lazy `Chain` of `Watch.Event`s which blocks for the next event and ends when the
+        registration is cancelled. It is a single-owner drain of the event queue: two
+        traversals compete for the same events.
+    entry #batches   events coalesced into one `Watch.Batch` whenever the tree has been quiet for a while
+        `batches(quiet)` takes any duration value (`0.2*Second`) and yields a `Watch.Batch`
+        each time no event has arrived for that long, so a burst of saves from an editor is
+        reported once, after it has settled.
+  entry .Event   one change to a watched directory: a file created, modified or deleted, or a directory created
+    detail
+        Each event records the watched directory, `#dir`, as text, and the name of the entry
+        within it that changed; `#path` combines the two as a path type of the caller's
+        choosing. The four cases are also exported at the package level, so `case
+        NewFile(dir, file) =>` matches without the `Watch.Event` prefix.
+
+        ```scala
+        import soundness.*
+
+        val event: Watch.Event = Watch.Event.NewFile(t"/x", t"a.txt")
+
+        event match
+          case NewFile(dir, file)          => t"created $file in $dir"
+          case NewDirectory(dir, name)     => t"created directory $name"
+          case Modify(dir, file)           => t"modified $file"
+          case Delete(dir, file)           => t"deleted $file"
+        ```
+
+        The operating-system backend reports a modification however the platform does,
+        which may be several events for one save; the polling backend reports one
+        modification per changed size or modification time between scans, and cannot see a
+        change which leaves both alone. Neither reports a modification of a directory.
+    entry .NewFile   a file, or anything not a directory, was created in a watched directory
+      entry #dir    the watched directory, as text
+      entry #file   the new entry's name within the directory
+    entry .NewDirectory   a directory was created in a watched directory
+      entry #dir         the watched directory, as text
+      entry #directory   the new directory's name within the watched one
+    entry .Modify   a file in a watched directory was modified
+      entry #dir    the watched directory, as text
+      entry #file   the modified file's name within the directory
+    entry .Delete   an entry was deleted from a watched directory
+      entry #dir    the watched directory, as text
+      entry #file   the deleted entry's name within the directory
+    entry #dir   the watched directory in which the change happened, as text
+    entry #path   the changed entry's full path, as a path type of the caller's choosing
+        `event.path[Path on Local]` (or any `Instantiable across Paths from Text`) joins the
+        directory and the entry's name and normalizes the result.
+  entry .Batch   the events of one quiet period, oldest first, as `Watch.Handle#batches` yields them
+    detail
+        A burst of activity, ended by a period with no events. `#paths` lists the paths
+        touched, once each, which is what a rebuild-on-change loop usually wants.
+
+        ```scala
+        import soundness.*
+
+        val batch = Watch.Batch(List(NewFile(t"/x", t"a"), Modify(t"/x", t"a"), NewFile(t"/x", t"b")))
+        batch.paths[Path on Local]   // List(/x/a, /x/b)
+        ```
+    entry #events   the batch's events, oldest first
+    entry #paths   every path touched in the batch, once each, in order of first occurrence
+  entry .Error   raised when a path cannot be watched
+    detail
+        Error 545: _the path could not be watched because …_, with one of four reasons:
+        `LimitExceeded` (_the operating system's limit on watched paths has been exceeded_,
+        such as inotify's `max_user_watches`), `Nonexistent` (_the path does not exist_),
+        `NotDirectory` (_the path is not a directory_, as when a watched path's parent is a
+        regular file) and `PermissionDenied` (_the user does not have permission to watch the
+        path_). Raised by `Watch(paths)` and by `open[Watch]` as the registration is made.
+
+        ```scala
+        import soundness.*
+        import filesystemBackends.javaBaseFilesystem
+
+        val target = t"/nonexistent/child".as[Path on Local]
+        capture[Watch.Error](target.open[Watch]() { () }).reason   // Watch.Error.Reason.Nonexistent
+        ```
+    entry .Reason   why a path could not be watched: a limit, a missing path, a non-directory or a permission
+      detail
+          One of `LimitExceeded`, `Nonexistent`, `NotDirectory` and `PermissionDenied`, each with
+          its sub-number of error 545 as `#number`.
+      entry #number   the reason's sub-number of error 545
+    entry .communicable   renders each reason as the phrase completing _the path could not be watched because …_
+    entry #reason   why the path could not be watched
+  entry #stream   every event, one at a time, until the watch is unregistered
+      A lazy `Chain` of `Watch.Event`s which ends when `#unregister` is called. Traversing it
+      blocks for each next event.
+  entry #batches   events coalesced into a `Watch.Batch` after each quiet period of the length given
+  entry #unregister   cancels the registration and ends the event streams
+      Stops the backend delivering events for this watch's directories and terminates
+      `#stream` and `#batches`. `open[Watch]` calls it when its block ends.
+
+entry .Watcher   the backend which detects filesystem changes: the operating system's service, or polling
+  detail
+      A `Watcher` turns a set of directories into a `Watcher.Registration` which puts events
+      into a relay as they happen. It is a capability, since a backend runs supervised tasks
+      of its own. With no import, `.default` — `JavaBaseWatcher`, the operating system's
+      notification service — is used; a different backend is a local given:
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import filesystemBackends.javaBaseFilesystem
+      import strategies.throwUnsafely
+      import temporaryDirectories.systemTemporaryDirectory
+
+      given Watcher = watchers.polling(0.05*Second)
+
+      val directory: Path on Local = temporaryDirectory[Path on Local] / "watched"
+
+      directory.open[Watch](): watcher ?=>
+        watcher.stream.head
+      ```
+
+      Since the default given is a capability, code which reaches it captures it; a test body
+      that does so runs inline rather than deferred.
+  refer surveillance.JavaBaseWatcher
+  refer surveillance.PollingWatcher
+  refer surveillance.watchers
+  entry .default   `JavaBaseWatcher`, the backend used when no other `Watcher` is in scope
+      In the companion, so in implicit scope with no import; a local given or an imported
+      `watchers.javaBaseWatcher` takes precedence over it.
+  entry .Registration   one backend registration, which `#cancel` ends
+    detail
+        What `Watcher#watch` returns: cancelling it stops delivery of further events for the
+        directories registered in that call. `Watch#unregister` cancels it.
+    entry #cancel   stops delivering events for the registered directories
+  entry #watch   registers directories, each with a filter on entry names, delivering events to a relay
+      `watch(directories, spool)`: each directory is paired with a pure predicate on the names
+      of its entries, and events for matching names are put into the `Relay`. Raises
+      `Watch.Error` if a directory cannot be registered. `Watch(paths)` builds the filters and
+      calls it; a user rarely calls it directly.
+
+entry .JavaBaseWatcher   the `Watcher` over the operating system's notification service, the default
+    Wraps `java.nio.file.WatchService` (inotify on Linux, the platform's equivalent
+    elsewhere). One service and one polling task are shared by every registration in the
+    process, and the service is closed once nothing is being watched. A watched directory
+    which is deleted drops out of the registry. Registration failures map to `Watch.Error`:
+    a missing path to `Nonexistent`, a file to `NotDirectory`, a refused access to
+    `PermissionDenied`, and any other I/O failure — in practice, the platform's watch limit —
+    to `LimitExceeded`. It is `Watcher.default`, and `watchers.javaBaseWatcher` names it.
+
+entry .PollingWatcher   a `Watcher` which diffs snapshots of each directory at a fixed interval
+    `PollingWatcher(interval)`, usually made through `watchers.polling(interval)`, with any
+    duration value. Every interval it lists each watched directory, records each entry's kind,
+    modification time and size, and compares with the previous scan to report creations,
+    modifications and deletions. It needs no operating-system support, at the cost of latency
+    bounded by the interval and blindness to a change which leaves size and modification time
+    as they were. Each registration has its own background task, interrupted when it is
+    cancelled; registration raises `Watch.Error` with `Nonexistent` or `NotDirectory` when a
+    path is missing or is not a directory.
+
+entry .watch   the `Watch.Handle` in scope, inside an `open[Watch]` block
+    `watch` returns the contextual handle with its precise capturing type, so a block may
+    leave its handle parameter unnamed, in the manner of galilei's `file`:
+
+    ```scala fuel
+    typecheck
+    ##
+    import soundness.*
+    import filesystemBackends.javaBaseFilesystem
+    import strategies.throwUnsafely
+    import temporaryDirectories.systemTemporaryDirectory
+
+    val directory: Path on Local = temporaryDirectory[Path on Local] / "watched"
+
+    directory.open[Watch]():
+      watch.stream.head
+    ```
+
+entry .NewFile   `Watch.Event.NewFile`, exported for matching: a file was created in a watched directory
+    The event case, exported to the package so a match may write `case NewFile(dir, file)`.
+    `dir` is the watched directory and `file` the new entry's name within it.
+entry .NewDirectory   `Watch.Event.NewDirectory`, exported for matching: a directory was created
+    The event case, exported to the package so a match may write `case NewDirectory(dir,
+    name)`.
+entry .Modify   `Watch.Event.Modify`, exported for matching: a file in a watched directory was modified
+    The event case, exported to the package so a match may write `case Modify(dir, file)`.
+entry .Delete   `Watch.Event.Delete`, exported for matching: an entry was deleted from a watched directory
+    The event case, exported to the package so a match may write `case Delete(dir, file)`.
+
+entry .watchers   the `Watcher` backends, as a given to import by name or a value to bind as one
+  detail
+      Which backend detects changes is decided by the `Watcher` given in scope; with none,
+      `Watcher.default` applies. This object, mirrored as the `watchers` package in the
+      umbrella, holds the alternatives: `javaBaseWatcher`, to name the default explicitly,
+      and `polling`, a method which makes a polling backend for an interval.
+
+      ```scala fuel
+      frame
+        label The default: the operating system's notification service
+        code
+            directory.open[Watch]():
+              watch.stream.head
+      frame
+        label Polling every half second, for a filesystem without notifications
+        code
+            given Watcher = watchers.polling(0.5*Second)
+
+            directory.open[Watch]():
+              watch.stream.head
+      ##
+      ```
+
+      `javaBaseWatcher` is a given, so it must be imported by name: `import watchers.*` does
+      not import givens.
+  entry .javaBaseWatcher   the operating system's notification service, `JavaBaseWatcher`, as a given
+  entry .polling   makes a `PollingWatcher` which scans at the interval given
+      `watchers.polling(interval)` takes any duration value and returns a `Watcher`. It is a
+      method, not a given, so it is bound locally: `given Watcher = watchers.polling(0.05*Second)`.

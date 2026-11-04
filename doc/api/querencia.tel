@@ -1,0 +1,140 @@
+tel 1.0
+
+base querencia
+import soundness
+
+info   the browser DOM as a typed foreign interface, navigated in Scala and rendered to JavaScript
+detail
+    _Querencia_ lets a Scala program which generates a web page write the page's scripting —
+    find an element, give it focus, scroll the window — in Scala, checked member by member
+    against the browser's own WebIDL declarations of the DOM, and rendered to JavaScript for
+    the page to run. Nothing runs the DOM on the JVM: navigating `document` or `window` builds
+    a typed `Foreign.Expression`, which `Javascript.serialize` turns into source text, and
+    which an HTML event-handler attribute such as `onclick` accepts directly.
+
+    ```scala
+    import soundness.*
+    import htmlDoms.html4Transitional
+    import html4Transitional.*
+
+    val heading: Foreign of "HTMLElement" from Browser = document.getElementById(t"heading")
+
+    Javascript.serialize(heading.focus().expr)
+    // t"document.getElementById('heading').focus()"
+
+    Button(onclick = heading.focus()).show
+    // <button onclick="document.getElementById('heading').focus()"></button>
+    ```
+
+    A member the WebIDL interface does not declare, or an argument with no counterpart in the
+    foreign type system, is a compile error. The machinery is xenophile's general one for
+    foreign interfaces; querencia supplies the `Browser` ecosystem, its bundled DOM
+    definitions (`/querencia/dom.idl` on the classpath), the conversions of Scala values to
+    WebIDL types, the two globals and the JavaScript renderer. Every given lives in the
+    `Browser` companion, which is in implicit scope wherever a type mentions `Browser`, so
+    nothing need be imported to navigate the DOM or to use a handler.
+
+    The library has a single source set, `querencia.core`, for the JVM and Scala.js (not
+    Scala Native, since the HTML libraries it builds on load classpath resources at runtime).
+    Everything is exported to the `soundness` umbrella, where `document` and `window` are
+    exported as top-level names.
+
+refer querencia.Browser
+refer querencia.Javascript
+refer querencia.Browser.document
+refer querencia.Browser.window
+
+entry .Browser   the web browser as a foreign ecosystem, whose interfaces are the DOM's WebIDL
+  detail
+      `Browser` is a xenophile `Ecosystem` whose grammar is the `WebIdlDialect`, and whose
+      interface definitions are the DOM's, read from the bundled `/querencia/dom.idl`. A
+      value of type `Foreign of "HTMLElement" from Browser` is a reference to a DOM object
+      whose WebIDL interface is `HTMLElement`; selecting its members yields further foreign
+      values of the declared types, with inheritance flattened, so an `HTMLElement` also
+      offers what `Element` and `Node` declare.
+
+      ```scala
+      import soundness.*
+
+      val first: Foreign of "HTMLElement" from Browser = document.querySelectorAll(t".btn")(0)
+      window.document.getElementById(t"x").focus()
+      ```
+
+      It is distinct from xenophile's general `WebIdl` ecosystem so that it can own the DOM's
+      `Interface`, and so that only a `Foreign from Browser` — not one from TypeScript or
+      WIT — serves as an HTML event handler (`.scripting`).
+
+      A Scala value passes as an argument only where an `Interoperable in Browser` instance
+      gives its foreign type: the sized numbers `S8`–`S64`, `U8`–`U64`, `F32` and `F64` as the
+      WebIDL types of the same width (so a `long` parameter takes an `S32`, not an `Int`),
+      `Boolean`, `Text` as a string, a `List` as a `sequence`, and an `Optional` as a nullable
+      type, with `Unset` crossing as `null`.
+  refer querencia.Javascript
+  entry #Grammar   the ecosystem's grammar: xenophile's `WebIdlDialect`
+  entry .document   the page's `document` global, a foreign `Document`
+      `Foreign of "Document" from Browser`, rendering as the JavaScript identifier
+      `document`. It is exported to the `soundness` package as a top-level name.
+
+      ```scala
+      import soundness.*
+
+      Javascript.serialize(document.getElementById(t"foo").focus().expr)
+      // t"document.getElementById('foo').focus()"
+      ```
+  entry .window   the page's `window` global, a foreign `Window`
+      `Foreign of "Window" from Browser`, rendering as the JavaScript identifier `window`.
+      `Window` declares a `document` attribute, so `window.document` reaches the same page
+      as `document`. It is exported to the `soundness` package as a top-level name.
+
+      ```scala
+      import soundness.*
+
+      Javascript.serialize(window.alert(t"hi").expr)   // t"window.alert('hi')"
+      ```
+  entry .interface   the DOM's WebIDL definitions, read from `/querencia/dom.idl` on the classpath
+      The `Interface in Browser` which the navigation macro summons to find the members of
+      each foreign type. It is read through hellenism from querencia's own JAR.
+  entry .scripting   lets a `Foreign from Browser` be the value of an HTML scripting attribute
+      The `Attributive to Whatwg.Scripting` instance which makes a DOM expression a valid
+      value for `onclick`, `onchange` and the other event-handler attributes of honeycomb's
+      HTML elements, rendered with `Javascript.serialize` when the page is shown. Plain text
+      is not a script, so `Button(onclick = t"…")` does not compile.
+  entry .s8   passes an `S8` as the WebIDL type `s8` (`byte`)
+  entry .s16   passes an `S16` as the WebIDL type `s16` (`short`)
+  entry .s32   passes an `S32` as the WebIDL type `s32` (`long`)
+  entry .s64   passes an `S64` as the WebIDL type `s64` (`long long`)
+  entry .u8   passes a `U8` as the WebIDL type `u8` (`octet`)
+  entry .u16   passes a `U16` as the WebIDL type `u16` (`unsigned short`)
+  entry .u32   passes a `U32` as the WebIDL type `u32` (`unsigned long`)
+  entry .u64   passes a `U64` as the WebIDL type `u64` (`unsigned long long`)
+  entry .f32   passes an `F32` as the WebIDL type `f32` (`float`)
+  entry .f64   passes an `F64` as the WebIDL type `f64` (`double`)
+  entry .boolean   passes a `Boolean` as the WebIDL type `boolean`
+  entry .string   passes `Text` as a WebIDL string: `DOMString`, `USVString` or `ByteString`
+  entry .sequence   passes a `List` of interoperable values as a WebIDL `sequence`
+  entry .nullable   passes `Unset` as the WebIDL `null`
+  entry .optional   passes an `Optional` of an interoperable type as a nullable WebIDL type
+      `Optional[T]` corresponds to `T?`, with `Unset` crossing as `null`. The instance
+      applies only to types with a `Mandatable` form, so it never competes with the
+      instance for `T` itself.
+
+entry .Javascript   renders a foreign DOM expression to JavaScript source text
+  detail
+      The renderer behind querencia's event handlers, available for direct use.
+  refer querencia.Browser
+  entry .serialize   renders a `Foreign.Expression` as JavaScript source text
+      A `Reference` renders as its name, a `Select` as `target.member`, an `Apply` as
+      `target(arguments)`, an `Index` as `target[index]`, and a `Literal` as JavaScript:
+      text single-quoted, with backslashes, quotes and line breaks escaped, so that the
+      output nests inside an HTML attribute's double quotes; booleans as `true` and `false`;
+      numbers verbatim.
+
+      ```scala
+      import soundness.*
+
+      Javascript.serialize(document.querySelectorAll(t".btn")(0).click().expr)
+      // t"document.querySelectorAll('.btn')[0].click()"
+
+      Javascript.serialize(window.alert(t"it's done").expr)
+      // t"window.alert('it\\'s done')"
+      ```

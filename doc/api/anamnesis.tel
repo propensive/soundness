@@ -1,0 +1,320 @@
+tel 1.0
+
+base anamnesis
+import soundness
+
+info   an in-memory store of interned values and typed relations, whose schema is the database's type
+detail
+    _Anamnesis_ is an in-memory database for a program's working data. Values are stored
+    once and identified by typed references, and the relations the database supports are
+    declared in its type, as a tuple of `A -< B` pairs ("an `A` may have `B`s"), so that
+    relating two values the schema does not connect is a compile error rather than a silent
+    corruption.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    case class Cabinet(name: Text)
+    case class Shelf(name: Text)
+    case class Box(name: Text)
+
+    given db: Database of (Cabinet -< Shelf, Shelf -< Box) = Database()
+
+    val shelf = Shelf(t"top").store()
+    val box = Box(t"alpha").store()
+
+    shelf.assign(box)
+    shelf.lookup[Box].map(_())   // Set(Box(t"alpha"))
+    box.assign(shelf)            // does not compile: no Box -< Shelf relation
+    ```
+
+    A `Database` is usually a given, since the extension methods `store`, `reference`,
+    `assign`, `unassign` and `lookup` find it contextually. A stored value's reference is a
+    `Ref of Box in db.type`: typed by both the value and the database, so it cannot be
+    confused with a reference to another type, nor used against another database, and it
+    dereferences by application, `box()`. Storing is *interning*: an equal value stored twice
+    gives the same reference, so identity in the database is by value, and `reference()` finds
+    the reference of a value already stored, raising `Database.Error` if it is not.
+
+    A query is an ordinary Scala predicate over the references `lookup` returns, so it is
+    checked by the compiler like the rest of the program.
+
+    The library has one source set, `anamnesis.core`, which compiles for every platform.
+    `Database`, the relation operators `-<` and `>-`, `Entity`, `Listable`, `Referenceable`,
+    `enumerate` and the five extension methods are exported to the `soundness` umbrella; `Ref`
+    and `Reference` are exported to the `anamnesis` package from `anamnesis.internal`.
+
+refer anamnesis.Database
+refer anamnesis.Ref
+refer anamnesis.-<
+refer anamnesis.store
+refer anamnesis.assign
+refer anamnesis.lookup
+
+entry .Database   an in-memory store of interned values and the typed relations between them
+  detail
+      A `Database of relations` holds values and, for each `A -< B` in its `relations` tuple,
+      a one-to-many relation from `A`s to `B`s. The tuple is the database's `#Topic`, and
+      every relating operation demands evidence (`#Has`) that its relation is in it, so the
+      schema is checked as the code compiles.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      case class Shelf(name: Text)
+      case class Box(name: Text)
+      case class Pencil(name: Text)
+
+      given db: Database of (Shelf -< Box, Box -< Pencil, Text >- Box) = Database()
+
+      val alpha: Ref of Box in db.type = Box(t"alpha").store()
+      val red = Pencil(t"red").store()
+      alpha.assign(red)
+      alpha.lookup[Pencil]
+      ```
+
+      The database's methods take references typed `in this.type`, so they are most easily
+      called through the package's extension methods (`store`, `reference`, `assign`,
+      `unassign`, `lookup`) with the database as a given. A reference is only meaningful to the
+      database which allocated it.
+
+      `#store` is guarded by a mutex, so concurrent stores intern consistently; the relating
+      methods are not, and a database whose relations are changed from several threads needs
+      its own synchronisation.
+  refer anamnesis.-<
+  refer anamnesis.Ref
+  refer anamnesis.store
+  entry .Relation   the type of one relation, `left -< right`, as an element of a database's schema
+      A sealed marker trait, never instantiated: `Database.Relation[left, right]` is what both
+      `left -< right` and `right >- left` denote, and a database's `#Topic` is a tuple of them.
+  entry .apply   a new, empty database of the relations its expected type declares
+      `Database()` is transparent and takes the relations from the type it is ascribed:
+      `given db: Database of (Cabinet -< Shelf, Shelf -< Box) = Database()`. It allocates one
+      relation table for each element of the tuple.
+  entry .Error   raised when a value which has not been stored is asked for its reference
+    detail
+        Error 229: _the database operation failed because the value has not been stored in the
+        database_. Raised by `Database#ref` and the `reference` extension when the value has
+        never been passed to `store`; it needs a `Tactic[Database.Error]` in scope.
+
+        ```scala
+        import soundness.*
+
+        case class Box(name: Text)
+        given db: Database of Tuple1[Box -< Text] = Database()
+
+        safely(Box(t"missing").reference())   // Unset
+        ```
+    entry .Reason   why a database operation failed
+      detail
+          An enum with the single case `UnknownReference` (number 1): the value has not been
+          stored in the database.
+      entry #number   the reason's number, the second part of the error's code
+    entry .communicable   describes a `Database.Error.Reason` as a message
+    entry #reason   why the operation failed, as a `Database.Error.Reason`
+  entry #Topic   the database's relations, as a tuple of `Database.Relation`s
+      Fixed by the type the database is created as: in `Database of (A -< B, B -< C)` it is
+      `(A -< B, B -< C)`.
+  entry #AllRelations   the union of the database's relations, `Tuple.Union[Topic]`
+  entry #Has   evidence that a relation is in the database's schema: `relation <:< AllRelations`
+      The contextual evidence `db.Has[left -< right]` which `assign`, `unassign` and `lookup`
+      require; where it cannot be found, the relation is not in the schema and the call does
+      not compile.
+  entry #allocate   a fresh reference of a given type, not yet attached to any value
+      Increments the database's counter and returns the next reference, typed `Ref of ref in
+      this.type`. `#store` uses it; a reference allocated directly has no value to
+      dereference to.
+  entry #dereference   the value a reference names
+      `ref()` is the same, through the `Ref` extension, with the database as a given. A
+      reference which was allocated but never stored fails with an exception from the
+      underlying map.
+  entry #store   interns a value, returning its reference: a new one, or the one it already has
+      Equal values share one reference, so storing a value twice is harmless and identity is
+      by value. The `store()` extension calls this with the database in scope.
+  entry #ref   the reference of a value already stored, raising `Database.Error` if it was not
+      Needs a `Tactic[Database.Error]`. The `reference()` extension calls this with the
+      database in scope; it is how a value arriving from elsewhere is matched to what the
+      database already holds, rather than stored again.
+  entry #assign   relates two references by one of the schema's relations
+      `db.assign(left, right)` adds `right` to the set of `right`s related to `left` by
+      `left -< right`, which the database's `#Topic` must contain. The `assign` extension is
+      the usual spelling.
+  entry #unassign   removes a relation between two references
+      The inverse of `#assign`: `right` is removed from the set related to `left`, and the
+      relation's reverse index forgets it. Removing a relation which was never made leaves the
+      database as it was.
+  entry #lookup   every reference related to a reference by one relation, as a `Set`
+      `db.lookup[Shelf, Box](shelf)` is every `Box` assigned to `shelf`; a reference with none
+      gives the empty set. The `lookup` extension infers the left type from the reference.
+
+entry .-<   a relation of the schema: `left -< right` means a `left` may have `right`s
+    An infix alias of `Database.Relation[left, right]`. A database's type is a tuple of these:
+    `Database of (Cabinet -< Shelf, Shelf -< Box)` lets a cabinet have shelves and a shelf
+    have boxes, and nothing else, so `box.assign(shelf)` does not compile there.
+
+    ```scala
+    import soundness.*
+
+    case class Shelf(name: Text)
+    case class Box(name: Text)
+
+    given db: Database of (Shelf -< Box, Text >- Box) = Database()
+    ```
+
+entry .>-   a relation written right to left: `left >- right` means a `right` may have `left`s
+    An infix alias of `Database.Relation[right, left]`, the mirror of `-<`, for a schema which
+    reads better from the owned side: `Text >- Box` is the same relation as `Box -< Text`, so
+    a box may have text labels.
+
+entry .store   interns a value in the database in scope, returning its typed reference
+    An inline extension on any value, needing a `Database` given. It returns a `Ref of
+    value in db.type`; an equal value already stored gives the reference it already has.
+
+    ```scala
+    import soundness.*
+
+    case class Box(name: Text)
+    given db: Database of Tuple1[Box -< Text] = Database()
+
+    val box: Ref of Box in db.type = Box(t"alpha").store()
+    box()   // Box(t"alpha")
+    ```
+
+entry .reference   the reference of a value already stored in the database in scope
+    An inline extension on any value, needing a `Database` given and a
+    `Tactic[Database.Error]`, which is raised (`Database.Error.Reason.UnknownReference`) if
+    the value was never stored. Where `store()` would intern a new value, `reference()` only
+    finds an existing one.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    case class Box(name: Text)
+    given db: Database of Tuple1[Box -< Text] = Database()
+
+    Box(t"alpha").store()
+    Box(t"alpha").reference()
+    ```
+
+entry .assign   relates a reference to another, by a relation the database's type declares
+    An inline extension on a `Ref of left in db.type`, needing the `Database` given and
+    `db.Has[left -< right]`: `shelf.assign(box)` compiles only if `Shelf -< Box` is in the
+    schema. Assigning the same pair twice leaves one relation.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    case class Shelf(name: Text)
+    case class Box(name: Text)
+    given db: Database of Tuple1[Shelf -< Box] = Database()
+
+    val shelf = Shelf(t"top").store()
+    val box = Box(t"alpha").store()
+    shelf.assign(box)
+    box.assign(shelf)   // does not compile
+    ```
+
+entry .unassign   removes a relation between a reference and another
+    An inline extension on a `Ref of left in db.type`, needing the `Database` given and
+    `db.Has[left -< right]`; the inverse of `assign`. Other references related to `left` are
+    unaffected.
+
+entry .lookup   the references related to a reference by one relation, as a `Set`
+    An inline extension on a `Ref of left in db.type`, needing the `Database` given and
+    `db.Has[left -< right]`: `shelf.lookup[Box]` is every box assigned to the shelf. Each
+    result is a `Ref` which dereferences by application, so a query is a predicate over the
+    values:
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    case class Shelf(name: Text)
+    case class Box(name: Text)
+    given db: Database of Tuple1[Shelf -< Box] = Database()
+
+    val shelf = Shelf(t"top").store()
+    shelf.assign(Box(t"alpha").store())
+    shelf.lookup[Box].filter(_().name.starts(t"a"))
+    ```
+
+entry .enumerate   every reference to an entity type, as its `Listable` instance lists them
+    `enumerate[entity]` needs `entity` to be an `Entity` with a `Listable` instance, and is
+    that instance's `list` with a predicate which accepts everything.
+
+entry .Ref   a reference to a stored value, typed by the value and by the database which holds it
+    The opaque type `anamnesis.internal.Ref`, exported here. A reference from `store` has the
+    type `Ref of value in db.type`: the `of` names the value's type and the `in` its
+    database, so a reference to a `Box` cannot be passed where a reference to a `Shelf` is
+    wanted, nor dereferenced against another database. Underneath it is an `Int`, so a
+    reference is cheap to hold, compare and use as a key.
+
+    A reference dereferences by application, `ref()`, with its database as a given:
+
+    ```scala
+    import soundness.*
+
+    case class Box(name: Text)
+    given db: Database of Tuple1[Box -< Text] = Database()
+
+    val box = Box(t"alpha").store()
+    box()
+    ```
+
+entry .Reference   a reference to an `Entity`, by the entity's key
+    The opaque type `anamnesis.internal.Reference`, exported here. Where `Ref` is allocated
+    by a database, a `Reference[entity]` is the entity's own key (its `Operand`), typed by
+    what it refers to; an entity type which is `Referenceable` resolves a key back to its
+    entity, and a reference encodes and decodes as text through the key's own codecs.
+
+entry .Entity   a value with its own key, which can be referred to by `Reference`
+  detail
+      An `Entity` is `Operable`: its `Operand` type member is the type of its key, and `#ref`
+      the key itself. A companion `Referenceable` instance looks an entity up by its key, and
+      a `Listable` instance enumerates them, which `enumerate` uses.
+  refer anamnesis.Referenceable
+  refer anamnesis.Listable
+  entry #ref         the entity's key, of its `Operand` type
+  entry #reference   a `Reference` to this entity, by its key
+
+entry .Listable   a typeclass which lists the references to every entity of a type
+  detail
+      An instance for an `Entity` type enumerates the references to its entities which a
+      predicate accepts; `enumerate[entity]` lists them all.
+  entry #Self   the entity type the instance lists
+  entry #list   the references to the entities a predicate accepts
+
+entry .Referenceable   a typeclass which resolves an entity from its key
+  detail
+      An instance for an `Entity` type, whose `Operand` is the key type, finds the entity a
+      key names; applying a `Reference[entity]` with `()` resolves it through this instance.
+      It also gives `Reference` its text codecs, through the key type's own.
+  entry #Self     the entity type, whose `Operand` is the instance's key type
+  entry #lookup   the entity a key names
+
+entry .internal   the opaque types `Ref` and `Reference`, and their companions and extensions
+  hidden
+  detail
+      Not for direct use: the object holds the opaque definitions of `Ref` and `Reference`,
+      which are exported to the `anamnesis` package and documented there.
+  entry .Dereferenceable   the bound of `Ref`: a value whose `Form` is the database it belongs to
+    entry #Form   the database type a reference belongs to
+  entry .Ref   a reference to a stored value; see `anamnesis.Ref`
+    detail
+        The opaque type `Ref <: Dereferenceable`, an `Int` underneath.
+    entry .apply   allocates a fresh reference in a database, as `Database#allocate`
+  entry .Reference   a reference to an entity by its key; see `anamnesis.Reference`
+    detail
+        The opaque type `Reference[+entity <: Entity]`, the key underneath.
+    entry .apply        the reference to an entity, by its key
+    entry .encodable    encodes a reference as its key's text, for a `Referenceable` entity
+    entry .decodable    decodes a reference from its key's text, for a `Referenceable` entity
+  entry .expose   the key a `Reference` holds, as its `Referenceable` instance's `Operand`
+  entry .apply   dereferences a `Ref` against its database, or resolves a `Reference` to its entity
+      Two extensions sharing a name: `ref()` on a `Ref of value in database` gives the value,
+      with the database as a given; `reference()` on a `Reference[entity]` looks the entity up
+      through its `Referenceable` instance.

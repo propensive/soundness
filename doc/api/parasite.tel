@@ -1,0 +1,1477 @@
+tel 1.0
+
+base parasite
+import soundness
+
+info   structured concurrency: supervised tasks, promises, cancellation, retries and VM events
+detail
+    _Parasite_ gives concurrent work the shape of ordinary blocks. Every task is spawned inside
+    a **supervised scope** which owns it, and the scope does not complete until its tasks have
+    settled: a task cannot outlive the code that started it, a failure in a task reaches the
+    code that joins it, and cancelling a scope cancels everything beneath it. The structure of
+    a concurrent program is therefore visible in its nesting.
+
+    The central types are few. `supervise` opens a scope and introduces a `Monitor`, the
+    capability every suspension — awaiting, sleeping, yielding — demands. `async` spawns a
+    `Task` as a child of the monitor in scope; `task` is the same with a name, and `daemon`
+    spawns fire-and-forget work which the scope cancels when it ends. A task's `await` returns
+    its result, or delivers the error its body raised, still typed, through the caller's
+    `Tactic`; cancellation or a timeout arrives as an `Async.Error`. A `Promise` is a value
+    supplied later, perhaps from another thread, which one side awaits and the other fulfills.
+
+    ```scala
+    import soundness.*
+    import threads.virtualThreads
+    import probates.cancelProbate
+    import strategies.throwUnsafely
+
+    def expensiveComputation(): Int = (1 to 1000000).sum
+
+    supervise:
+      val task = async(expensiveComputation())
+      val other = async(t"ready")
+      (task.await(), other.await())
+    ```
+
+    Two choices are made by importing a given by name, and `import soundness.*` makes
+    neither for you, since `import pkg.*` never imports givens. The **threading model** is a
+    `Threading` from the `threads` object: `virtualThreads` runs each task on a JVM virtual
+    thread, `platformThreads` on a platform thread, `adaptiveThreads` on whichever the JVM
+    has, `pooledThreads` on reusable carrier threads for fine-grained fan-out, and
+    `javascriptThreads` eagerly on a single strand for the event loop. The **probate**, from
+    the `probates` package, decides the fate of a child still running when its parent's body
+    completes: `awaitProbate` waits for it, `cancelProbate` cancels it, `failProbate` raises
+    `Async.Error` at the parent's join, and `panicProbate` panics. Every suspension also needs
+    a `Tactic[Async.Error]` in scope, which `strategies.throwUnsafely` or a `safely` block
+    supplies.
+
+    **Cancellation** is cooperative. `task.cancel()` interrupts a task where it *pauses* —
+    a `snooze`, an `await`, an `attend` — and stops it where it *relents*: a `relent()` call
+    in a body which does not otherwise pause. `sleep` is the uninterruptible pause, which
+    waits out its whole deadline whatever happens; the cancelled task then stops at its next
+    `snooze` or `relent()`. A task which neither pauses nor relents runs to completion.
+
+    **Errors** travel in two directions. A task body raises through its own `Tactic`, and
+    the error arrives at `await` typed as the body declared it (`Task[Int] emits FooError`);
+    a daemon has no join, so its failure goes to the `Probate` in scope, is contained by an
+    enclosing `contain { … }.protect { … }` region, or escalates to the thread's
+    uncaught-exception handler, where `Vm.intercept[Fault]` sees it. Transient failures are
+    retried with `retry` under a `Tenacity` from the `retryTenacities` package.
+
+    **Shared state** between tasks is written with the atomic cells and `Mutex` of the
+    `rudiments` library (`Atomic[Int]`, `Atomic.Ref[T]`, `Mutex`), which are documented
+    there; parasite's own `Promise` and `Timeout` are built on them.
+
+    Underneath, a `Supervisor` forks and parks `Strand`s — threads on the JVM and Scala
+    Native, run-queue entries on an event loop — and is the whole platform seam; a
+    `Threading` given hands one out, and `supervise` roots a tree of `Monitor`s on it. The
+    library's source sets are:
+
+    - `parasite.core` — everything platform-neutral: `supervise`, `async`, `task`, `daemon`,
+      `Task`, `Promise`, `Monitor`, `Worker`, `Probate`, `Timeout`, `Tenacity`, `retry`, the
+      `threads`, `probates`, `retryTenacities`, `supervisors` and `unsupervised` givens, the
+      `PlatformSupervisor`, `JavascriptSupervisor` and abstract `PoolingSupervisor`, and the
+      `Vm` interceptions `Shutdown` and `Fault` (which need a JVM to fire).
+    - `parasite.core` on the JVM adds `VirtualSupervisor` (Loom virtual threads),
+      `AdaptiveSupervisor` (virtual where the JVM has them, platform otherwise) and
+      `PooledSupervisor` (a pool of virtual-thread carriers).
+    - `parasite.core` on Scala Native declares the same three names over platform threads,
+      since Native has no Loom: `VirtualSupervisor` and `AdaptiveSupervisor` fork platform
+      threads, and `PooledSupervisor` pools them, which is where pooling saves most.
+    - `parasite.jvm` — `GarbageCollection` (`Vm.intercept[GarbageCollection]`) and `Heap`,
+      over the JVM's management beans.
+
+    Everything is exported to the `soundness` umbrella except `Root`, `ThreadSupervisor` and
+    the `emits` type alias, which are reached as `parasite.Root`, `parasite.ThreadSupervisor`
+    and `parasite.emits`; the `threads`, `supervisors` and `unsupervised` objects and the
+    `probates` and `retryTenacities` packages merge with the umbrella's own, so a user writes
+    `import soundness.*` and then imports one threading and one probate by name. A public
+    class or object which reaches a global supervisor through one of these givens declares it
+    with a `uses` clause, `object Main uses parasite.threads`, since a supervisor is a
+    capability.
+
+refer parasite.supervise
+refer parasite.async
+refer parasite.Task
+refer parasite.Monitor
+refer parasite.Promise
+refer parasite.probates
+refer parasite.threads
+
+entry .supervise   opens a supervised scope: a root `Monitor` under which tasks are spawned and joined
+  detail
+      `supervise(block)` evaluates the block with a fresh `Monitor` in scope — a `Root` over the
+      supervisor the `Threading` given hands out — and returns the block's result. The monitor is
+      what `async`, `task`, `daemon`, `await`, `snooze` and every other suspension demand, so
+      every task ultimately stems from a `supervise`; the scope is the root of a tree whose
+      branches are the tasks spawned beneath it, each a child of the innermost monitor in scope.
+
+      It needs a `Threading` (imported by name from `threads`) and a `Codepoint`, and its result
+      is a `Tactic[Async.Error] ?=> result`, so a `Tactic[Async.Error]` must be in scope where it
+      is called, which `strategies.throwUnsafely` or a `safely` block supplies.
+
+      ```scala fuel
+      frame
+        label A scope with nothing in it
+        code
+            import soundness.*
+            import threads.virtualThreads
+            import probates.awaitProbate
+            import strategies.throwUnsafely
+
+            supervise:
+              ()
+      frame
+        label A task, joined
+        code
+            supervise:
+              val task = async(1 + 1)
+              task.await()   // 2
+      frame
+        label A child of a child
+        code
+            supervise:
+              val parent = async:
+                val child = async(1 + 1)
+                child.await() + 1
+              parent.await()   // 3
+      frame
+        label A child the parent forgets, which the probate joins
+        code
+            supervise:
+              val parent = async:
+                async:
+                  snooze(0.1*Second)
+                  t"finished"
+                t"returned"
+              parent.await()   // t"returned", only once the forgotten child has finished
+      ##
+      ```
+
+      A parent task does not complete until its children have, so the last frame's `await`
+      returns only after the inner task is done; under `probates.awaitProbate` the parent waits
+      for it, and under `probates.cancelProbate` it would cancel it instead. The root itself
+      performs no cleanup of its own: its children are tidied by the probate as each parent
+      completes, and `supervise` returns when the block does.
+  refer parasite.async
+  refer parasite.Monitor
+  refer parasite.Threading
+  refer parasite.threads
+
+entry .async   spawns a task as a child of the monitor in scope, and returns its handle
+  detail
+      `async(body)` starts the body on a new strand of the supervisor in scope — a virtual
+      thread under `threads.virtualThreads` — and returns a `Task[result]` at once. The body
+      is a context function given a `Worker` (the task's own monitor, so a nested `async`
+      becomes its child) and a `Tactic[error]`, where `error` is the union of the error types
+      the body raises, inferred exactly as for a synchronous `raises`. The handle's type carries
+      that union as `Task[result] emits (error | Async.Error)`, so `await` delivers a raised
+      error, still typed, through the caller's `Tactic`.
+
+      ```scala
+      import soundness.*
+      import threads.virtualThreads
+      import probates.cancelProbate
+      import strategies.throwUnsafely
+
+      case class FooError(n: Int)(using Diagnostics) extends Error(m"foo $n")
+
+      supervise:
+        val task = async:
+          if false then abort(FooError(1))
+          42
+
+        task.await()   // 42
+      ```
+
+      It needs a `Monitor`, a `SharedProbate` and a `Codepoint` in scope. The body may capture
+      the monitor, other task handles, plain values and any `Durable` capability (a logger, a
+      connection), but not an enclosing `Tactic` or `Emit`, which belongs to the stack that
+      installed it: raise through the body's own tactic, and the error arrives at `await`. An
+      exclusive resource — a `Producer`, a stateful parser, an open handle — cannot be captured
+      either; open it inside the body or hand it over with `transfer`. The body's tactic is an
+      `AsyncTactic`, which throws the pure error rather than breaking a stack-confined boundary
+      across threads; the worker records it as its failed outcome.
+
+      The body runs under the `Stdio` diversion of the thread which called `async`, so a host's
+      `Stdio.divert` around a guest covers every task the guest starts.
+  refer parasite.Task
+  refer parasite.task
+  refer parasite.daemon
+  refer parasite.transfer
+  refer parasite.supervise
+
+entry .task   `async` with a name: `task(n"worker")(body)`
+    As `async`, with a `Name[Async]` which becomes the task's `Monitor#name` and a segment of
+    its `Monitor#stack`. A name is checked as the code compiles against `Async.Rules`: it
+    begins with a letter and contains only letters, digits, `-` and `_`, so it can never carry
+    the separators (`:`, `/`, `@`, `.`) the stack path is built from. Named tasks make a running
+    program legible: a monitor dump shows `virtual://server//connection-4//reader` rather than
+    an anonymous thread number.
+
+    ```scala
+    import soundness.*
+    import threads.virtualThreads
+    import probates.cancelProbate
+    import strategies.throwUnsafely
+    import Async.nominative
+
+    supervise:
+      task(n"worker")(monitor.name).await()   // n"worker"
+    ```
+
+entry .daemon   spawns fire-and-forget work which the scope cancels when it ends
+  detail
+      `daemon(body)` starts a background task — a listener, a polling loop — which is never
+      joined: it runs until it finishes or until its parent completes, when the parent's
+      probate cancels it whatever policy the probate applies to ordinary children. The result
+      is a `Daemon` handle with `attend()` and `cancel()`.
+
+      ```scala
+      import soundness.*
+      import threads.virtualThreads
+      import probates.cancelProbate
+      import strategies.throwUnsafely
+
+      supervise:
+        val promise = Promise[Int]()
+        daemon(promise.fulfill(7))
+        promise.await()   // 7
+      ```
+
+      A daemon's body is *hygienic*: it is a pure context function (`?->{}`), so it may capture
+      plain values and open its own capabilities, but not any capability from an enclosing
+      scope — a `Tactic`, a `boundary.Label`, a file handle — whose lifetime could end before the
+      worker does. Since there is no join at which to deliver an error, a raised or thrown error
+      fails the worker and goes to the `Probate#trap` in scope: a `contain { … }.protect { … }`
+      region may accept it, and otherwise it escalates to the thread's uncaught-exception
+      handler, where `Vm.intercept[Fault]` observes it. Nothing is dropped silently.
+
+      It needs a `Monitor`, a `SharedProbate` and a `Codepoint` in scope.
+  refer parasite.Daemon
+  refer parasite.contain
+  refer parasite.Fault
+
+entry .transfer   spawns a task which owns an exclusive resource, handed over from the caller
+  detail
+      An extension on any `resource^`: `resource.transfer(body)` and
+      `resource.transfer(name)(body)`. A task body may capture only shared capabilities, so an
+      exclusive resource — a `Producer^` to feed, a `Stream^` to pump, a loop object to run —
+      cannot be closed over. It is *consumed* instead: the caller can no longer use it, and the
+      body receives it as its first context parameter, a `Task.Owned[resource]` carrier whose
+      `apply()` yields the resource as a fresh exclusive reference. The other two context
+      parameters are the `Worker` and the `Tactic[error]`, as for `async`.
+
+      ```scala
+      import soundness.*
+      import threads.virtualThreads
+      import probates.awaitProbate
+      import strategies.throwUnsafely
+
+      supervise:
+        val producer = Producer[Text]()
+        val output = producer.iterator
+
+        producer.transfer: (producer, _, _) ?=>
+          producer().put(t"hello")
+          producer().finish()
+
+        List.from(output)   // List(t"hello")
+      ```
+
+      Take the reader side (`producer.iterator`) *before* transferring the producer, since
+      nothing can be taken from it afterwards. The result type is the same as `async`'s,
+      `Task[result] emits (error | Async.Error)`.
+  refer parasite.async
+  refer parasite.Task
+
+entry .monitor   the `Monitor` in scope, as a value: `monitor.name`, `monitor.stack`, `monitor.cancel()`
+    A transparent inline summon of the innermost `Monitor^`: inside a task body it is the task's
+    own `Worker` (typed as a `Monitor`), and directly under `supervise` the `Root`. `monitor.name` is a named task's
+    name, `monitor.stack` its full path through its parents, and `monitor.cancel()` cancels the
+    current task.
+
+entry .relent   a cancellation point in a body which does not otherwise pause
+    `relent()` does nothing while the task runs normally; if the task has been cancelled it
+    throws an `InterruptedException` there, so the body stops without producing a value and
+    the handle's `await` raises `Async.Error(Cancelled)`. Work which never pauses — a long loop
+    over data — volunteers its cancellation points by calling it, typically once per iteration;
+    a body which neither relents nor pauses cannot be cancelled and runs to completion. It needs
+    a `Worker` in scope, so it is only callable inside a task body, and it also counts towards
+    `Worker#relentlessness`.
+
+    ```scala
+    import soundness.*
+    import threads.virtualThreads
+    import probates.cancelProbate
+    import strategies.throwUnsafely
+
+    supervise:
+      val task = async:
+        for i <- 0 to 10 do
+          relent()
+          i*i
+
+      task.await()
+    ```
+
+entry .cancel   cancels the monitor in scope
+    `cancel()` is `monitor.cancel()`: inside a task body it cancels the task itself, whose
+    `await` then raises `Async.Error(Cancelled)`; under a `Root` it does nothing. A task which
+    cancels itself stops at its next pause or `relent()`.
+
+entry .snooze   pauses for a duration or until an instant, waking at once if cancelled
+    A cancellation point: `snooze(2.0*Second)` pauses for two seconds and
+    `snooze(now() + 2.0*Second)` until two seconds from now, and a cancelled task wakes from
+    either at once with an `InterruptedException`, which makes its `await` raise
+    `Async.Error(Cancelled)`. The argument is any `Schedulable` — a `quantitative` time, an
+    `aviation.Timespan` or an `aviation.Instant` — and a duration's or instant's type says which
+    is meant. A bare `Long` is accepted only once a unit is chosen by name
+    (`abstractables.millisecondsAbstractable` or `epochMillisecondsAbstractable`); with both a
+    duration unit and the instant reading in scope it is rejected as ambiguous. It needs a
+    `Monitor` in scope.
+
+    ```scala
+    import soundness.*
+    import threads.virtualThreads
+    import probates.cancelProbate
+    import strategies.throwUnsafely
+
+    supervise:
+      snooze(0.01*Second)
+      snooze(now() + 0.01*Second)
+    ```
+
+    Under `JavascriptSupervisor` a snooze completes instantly, since delaying without blocking
+    the event loop is impossible. A *snooze* is the alarm clock's button, which a second alarm
+    can cut short; a `sleep` is slept through.
+
+entry .sleep   pauses for a duration or until an instant, and always waits out its whole deadline
+    Not a cancellation point: an early wakeup — spurious, or the interrupt a cancellation
+    delivers — re-parks for the time still remaining, consuming the interrupt so that the next
+    park is not cut short by it. The task's cancelled state persists, so it still stops at its
+    next `snooze` or `relent()`. The argument is any `Schedulable`, as for `snooze`, and it
+    needs a `Monitor` in scope.
+
+    ```scala
+    import soundness.*
+    import threads.virtualThreads
+    import probates.cancelProbate
+    import strategies.throwUnsafely
+
+    supervise:
+      sleep(0.01*Second)
+      sleep(now() + 0.01*Second)
+    ```
+
+    The two pauses differ in exactly one way — whether cancellation can end them early — and
+    their names are meant to be remembered rather than looked up.
+
+    ```scala fuel
+    frame
+      label Interrupted where it pauses
+      code
+          var written = 0
+
+          supervise:
+            val task = async:
+              snooze(10.0*Second)
+              written += 1
+            task.cancel()   // a task already snoozing wakes to its cancellation at once
+
+          written   // 0
+    frame
+      label Stopped where it relents
+      code
+          supervise:
+            val task = async:
+              for i <- 0 to 10 do
+                sleep(0.1*Second)
+                relent()
+                written += 1
+            task.cancel()   // a sleep already begun is waited out; the body then stops at relent()
+
+          written   // 0
+    ##
+    ```
+
+entry .concurrent   forces each cell of a `Chain` in its own task, so a blocking source does not block the consumer
+    An extension on `Chain[result]`: `stream.concurrent` is a chain with the same elements,
+    where the question "is there a next cell?" is asked inside a task and awaited, so that
+    forcing a cell which blocks on a live source happens on a strand of its own. The rest of
+    the chain is wrapped the same way, lazily. It needs a `Monitor` and a `SharedProbate`, and
+    raises `Async.Error` if the forcing task is cancelled.
+
+entry .concurrently   runs numbered jobs across a bounded number of tasks, and returns the results in job order
+  detail
+      `concurrently(count, parallelism)(job)` runs `job(0)` to `job(count - 1)` across at most
+      `parallelism` tasks, each taking the next index from a shared counter, and returns every
+      result as an `Array[result]` indexed by job once all have completed. This is the bounded
+      fan-out for a batch of small jobs: a task is a thread, whose start and join cost a few
+      microseconds, so the spawn cost is paid `parallelism` times rather than `count` times —
+      the form to prefer over one `async` per element whenever the elements outnumber the cores
+      and each is cheap.
+
+      ```scala
+      import soundness.*
+      import threads.virtualThreads
+      import probates.cancelProbate
+      import strategies.throwUnsafely
+
+      supervise:
+        concurrently(1000, 8)(i => i*i).length   // 1000: the squares of 0 to 999, in order
+      ```
+
+      No job runs before an earlier one has been claimed, so the load balances itself: a slow
+      job holds its task while the others continue through the rest. A job's exception fails
+      the task it ran on and surfaces at the join, as it would from an `await`. Zero jobs starts
+      no task; fewer jobs than `parallelism` starts only as many tasks as jobs. The job is
+      `Int ->{caps.any.only[Durable]} result`, so it may capture only what a task body may.
+      It needs a `Monitor`, a `SharedProbate`, a `Codepoint` and a `ClassTag[result]`.
+
+entry .retry   evaluates a block repeatedly under the `Tenacity` in scope, until it prevails or surrenders
+  detail
+      `retry(body)` runs the body, which is lent two operations: `persevere()` asks for another
+      attempt after the delay the `Tenacity` prescribes, and `surrender()` gives up at once.
+      Returning a value prevails. The schedule — how long to wait before each attempt and when
+      to stop — is a `Tenacity` given, imported by name from `retryTenacities` or built with
+      `Tenacity.exponential` or `Tenacity.fixed` and `limit`; running out of attempts raises
+      `Tenacity.Error` naming how many were made. It needs a `Monitor`, since the delay is a
+      `snooze`, and so a cancelled task gives up at its next delay.
+
+      ```scala
+      import soundness.*
+      import threads.virtualThreads
+      import probates.cancelProbate
+      import strategies.throwUnsafely
+      import retryTenacities.exponentialTenTimesTenacity
+
+      var attempts = 0
+
+      def fetchRemoteValue(): Optional[Text] =
+        attempts += 1
+        if attempts < 3 then Unset else t"payload"
+
+      supervise:
+        retry: (surrender, persevere) ?=>
+          fetchRemoteValue().or(persevere())
+      // t"payload", on the third attempt
+      ```
+
+      A body therefore distinguishes a failure worth retrying from one that never will be, and
+      the schedule decides the rest.
+  refer parasite.Tenacity
+  refer parasite.retryTenacities
+
+entry .contain   catches exceptions escaping fire-and-forget workers in a region: `contain { … }.protect { … }`
+  detail
+      `contain(handler)` builds a `Containment`, a `Probate` whose `protect(body)` installs it
+      for the body's extent: a `daemon` or an abandoned task spawned within routes an error
+      which escaped it to the handler, a partial function from `Error` to a `Remedy`. `Accept`
+      consumes the error, `Reject` passes it to the enclosing probate, and `Escalate(other)`
+      passes a substitute instead; an error the handler does not match goes outward too, so
+      containments compose as they nest, up to the root, where an unaccepted error reaches
+      the thread's uncaught-exception handler. The child-fate policy is the enclosing
+      probate's, unchanged.
+
+      ```scala
+      import soundness.*
+      import threads.virtualThreads
+      import probates.cancelProbate
+      import strategies.throwUnsafely
+
+      case class FooError(n: Int)(using Diagnostics) extends Error(m"foo $n")
+
+      supervise:
+        contain:
+          case FooError(n) => Remedy.Accept
+        . protect:
+            daemon(raise(FooError(5)))
+      ```
+
+      This is distinct from the typed `trap`/`handle` of `contingency`, which handle declared,
+      *emitted* errors on the calling stack: a daemon cannot deliver to those, and `contain`
+      is the catch-all for what it throws. It needs a `SharedProbate` in scope, which becomes
+      the outer link of the chain.
+  refer parasite.Containment
+  refer parasite.Remedy
+  refer parasite.Probate
+
+entry .intercept   registers an action for an event on its target: `Vm.intercept[Shutdown](…)`
+    An extension on any value with an `event is Interceptable onto target` given: the action
+    runs each time the event occurs, with the event as a context value, until the returned
+    `Hook` is cancelled. The targets and events parasite provides are `Vm.intercept[Shutdown]`,
+    `Vm.intercept[Fault]`, `Vm.intercept[GarbageCollection]` (in `parasite.jvm`) and
+    `value.intercept[Destruction]` for any reference.
+
+    ```scala
+    import soundness.*
+
+    val hook: Hook = Vm.intercept[Fault]:
+      println("a thread died")
+
+    hook.cancel()
+    ```
+
+entry .emits   `Task[result] emits error`: a task whose body may raise `error`
+    An infix type alias which reifies "can produce these errors as a side-channel". For a
+    `Task`, `Task[result] emits error` is the refinement `Task[result] { type Error <: error }`,
+    the type `async` returns; the bound keeps the error covariant, so a task failing only with
+    `Async.Error` is usable where `emits FooError` is expected. For anything else it is the
+    obligation `Emit[error] ?=> left`, the weaker sibling of `raises`. Not exported to the
+    `soundness` umbrella: write `parasite.emits`, or let `async`'s result type be inferred.
+
+entry .SharedProbate   a `Probate` which captures only `Durable` capabilities
+    `Probate^{caps.any.only[anticipation.Durable]}`: what a `Worker` retains must be shared,
+    since a worker is a shared `Monitor`, so every `(using Monitor^, SharedProbate)` signature
+    takes a probate of this type. The pure probates of `probates` conform trivially, and
+    `failProbate`, which closes over a `Tactic`, is the one which needs the capture; a probate
+    closing over an exclusive resource cannot be handed to a task.
+
+entry .Monitor   a node of the supervision tree: the capability every suspension demands
+  detail
+      A `Monitor` is a scope which owns tasks. `supervise` creates the `Root`, and every task
+      is a `Worker`, itself a monitor, so the monitors form a tree mirroring the nesting of the
+      code which spawned them. Awaiting, sleeping, yielding and spawning all take a `Monitor^`
+      as a contextual parameter, so a method which can block says so in its signature, as a
+      method which can fail says `raises`; `monitor` summons the innermost one.
+
+      A monitor is a `Durable` (shared) capability: every task spawned under it captures it,
+      and every join passes it again, so two uses of one monitor are never separated, but
+      neither a task handle nor the monitor itself can leave the `supervise` block. A task
+      body may capture only durable capabilities, which is why a `Tactic` from an enclosing
+      scope cannot be used inside one.
+
+      ```scala
+      import soundness.*
+      import threads.virtualThreads
+      import probates.cancelProbate
+      import strategies.throwUnsafely
+      import Async.nominative
+
+      supervise:
+        task(n"worker"):
+          (monitor.name, monitor.stack, monitor.daemon, monitor.ready)
+        . await()   // (n"worker", t"virtual://worker@…", false, false)
+      ```
+
+      Its `#promise` is settled when the scope completes, `#attend` waits for that, and
+      `#cancel` cancels it. It is `Findable` and `Resultant`: its `Result` type is what the
+      scope yields (`Unit` for a root).
+  refer parasite.Worker
+  refer parasite.Root
+  refer parasite.Supervisor
+  refer parasite.monitor
+  entry #promise   the promise settled with the scope's result when it completes
+  entry #name   the scope's name, if it has one: a `task`'s name, or the supervisor's for a root
+  entry #chain   the codepoints at which this scope and each of its ancestors were spawned, innermost first
+      Empty for a `Root`; a worker's chain is its own `Codepoint` followed by its parent's.
+  entry #stack   the scope's full path through its ancestors, as text
+      A root renders as `virtual:` (its supervisor's name); a worker as
+      `virtual://parent-name@file:line//child-name@file:line`, with each task's name (or just
+      its codepoint, when it is unnamed) joined by `//`. Computing it walks the whole parent
+      chain, and the default supervisors never evaluate it unless a thread name is wanted.
+  entry #daemon   whether this scope is fire-and-forget: `true` for a `Daemon` and for a `Root`
+      A probate's child-fate policy applies to the children for which this is `false`; a
+      daemon child is always cancelled when its parent completes.
+  entry #attend   waits until the scope has completed, with no result and no error
+      Parks the calling strand on `#promise`, under the `Monitor` in scope, and returns
+      whether the scope completed, failed or was cancelled. It throws `InterruptedException` if
+      the calling task is cancelled meanwhile.
+  entry #ready   whether the scope has completed, failed or been cancelled
+  entry #cancel   cancels the scope and everything beneath it
+      For a `Worker` this interrupts its strand where it pauses, marks it cancelled so that its
+      next `relent()` stops it, and waits for the strand to end; for a `Root` it does nothing.
+  entry #supervisor   the `Supervisor` whose strands this scope's tasks run on
+      Inherited from the root: every task of a `supervise` block runs on the supervisor its
+      `Threading` chose. Typed `Supervisor^{this}`, since a supervisor is a capability the
+      monitor retains.
+  entry #snooze   pauses the calling strand for a duration, in any `Abstractable across Durations` type
+      The method behind the package-level `snooze`; a `Worker` overrides it to throw
+      `InterruptedException` at once if the task is cancelled, before or after the pause.
+
+entry .Worker   a task as a monitor: the node of the tree a spawned body runs under
+  detail
+      Every `Task` and `Daemon` is a `Worker`: an abstract class which registers itself as a
+      child of its parent monitor on construction, forks a strand on the supervisor when first
+      needed, runs `#evaluate` on it, records the outcome as a `Fulfillment` and settles
+      `#promise` — strictly after its state is terminal and the probate's `cleanup` has run,
+      so an `attend` which returns guarantees everything a join would. Inside a task body,
+      `monitor` is the worker.
+
+      The failure path is careful by design. A body's failure is kept before anything else is
+      attempted; a probate whose `trap` throws cannot leave the worker in its parent's registry
+      or its promise unsettled; and an error no trap accepts is rethrown after settlement, so
+      it reaches the thread's uncaught-exception handler rather than vanishing. Every class
+      that path needs is loaded at the birth of the first worker, so that a classload which
+      fails late in a long-lived process — a jar replaced underneath a daemon, a strand
+      interrupted mid-read — cannot destroy the evidence of what went wrong.
+
+      Users spawn workers with `async`, `task` and `daemon` rather than constructing one; the
+      members below are what a body can do with its own worker and what a parent can observe
+      of a child.
+  refer parasite.Task
+  refer parasite.Daemon
+  refer parasite.Monitor
+  refer parasite.Fulfillment
+  entry #promise   the promise settled with the body's result when the worker ends
+  entry #chain   this worker's spawn site followed by its ancestors' codepoints
+  entry #evaluate   the body, run once on the worker's strand with the worker as its argument
+  entry #supervisor   the parent's supervisor, typed `Supervisor^{this}`
+  entry #apply   the result, or `Unset` if the worker has not completed
+      `worker()` reads `#promise` without waiting.
+  entry #relentlessness   milliseconds elapsed since the worker started, divided by the number of `relent()` calls
+      A rough gauge of how often a body volunteers a cancellation point: a long-running body
+      with a high relentlessness is one which cannot be cancelled promptly.
+  entry #delegate   applies a policy to each live non-daemon child, cancelling the daemon children
+      `worker.delegate(child => …)` is how a `Probate#cleanup` reaches the children a completed
+      parent left running: every daemon child is cancelled, and the lambda decides the fate of
+      each other one (`probates.awaitProbate` attends it, `probates.cancelProbate` cancels it).
+  entry #stack   the worker's path through its parents, as `supervisor://name@site//name@site`
+  entry #relent   a cancellation point: returns at once, or throws `InterruptedException` if the worker is cancelled
+      Counts towards `#relentlessness`; panics if called after the worker has completed or
+      failed, since no body should still be running then.
+  entry #snooze   pauses for a duration, throwing `InterruptedException` before or after it if the worker is cancelled
+  entry #map   a task which applies a function to this worker's result
+      `worker.map(f)` is `async(f(worker.join()))`: a new task, a child of the monitor in scope,
+      which joins this one and transforms its result. The function may capture only what a
+      task body may. Needs a `Monitor` and a `SharedProbate`.
+  entry #bind   a task which runs a task-producing function on this worker's result and joins it
+      `worker.bind(f)` is `async(f(worker.join()).join())`, the monadic bind over tasks; `Task.monad`
+      is the `mercator.Monad[Task]` built from it.
+  entry #cancel   cancels the worker: interrupts its strand, marks it cancelled and waits for the strand to end
+      A worker which has already completed or failed is unaffected, and cancelling a cancelled
+      worker simply waits for it. The cancellation effects fire exactly once, and only after
+      the cancelled state is visible, so a joiner woken by the cancellation never sees a stale
+      state. A worker cancelled before its body has started never runs it.
+  entry #result   the result if the worker has completed, without waiting
+      Raises `Async.Error(Incomplete)` if the body has not finished, `Async.Error(Cancelled)` if
+      it was cancelled, and rethrows the original exception if it failed. Needs a
+      `Tactic[Async.Error]`.
+  entry #join   the raw, untyped join: waits for the worker and returns its result, rethrowing a failure verbatim
+      `join()` waits without limit; `join(duration)` raises `Async.Error(Timeout)` if the
+      deadline passes first. A failed body's exception is rethrown as it was, so the static
+      error is only `Async.Error`; the typed join is `Task#await`, which goes through
+      `#deliver`. Needs a `Monitor` and a `Tactic[Async.Error]`.
+  entry #deliver   the typed join: the result, or the body's raised error through the caller's tactic
+      `deliver[error]()` and `deliver[error](duration)` wait for the worker and then return its
+      result, abort through the in-scope `Tactic[error | Async.Error]` with the error the body
+      raised (reconstructed as `error`, which is sound for anything raised through the body's
+      `AsyncTactic`), raise `Async.Error(Cancelled)` or `Async.Error(Timeout)`, or rethrow a
+      genuinely unchecked throwable. `Task#await` is this with the task's own `Error` type.
+
+entry .Root   the root of a supervision tree: the monitor `supervise` introduces
+  detail
+      `Root(supervisor)` is a `Monitor` with `Unit` as its `Result`, no parent, an empty
+      `chain`, a `stack` of the supervisor's name, and a `cancel()` which does nothing. Its
+      lifetime is the `supervise` block, so it is not a global capability; `unsupervised.orphanMonitor`
+      is the one process-lifetime root, for blocking outside any scope. Not exported to the
+      `soundness` umbrella: write `parasite.Root` to construct one directly.
+  refer parasite.supervise
+  refer parasite.Monitor
+  entry #shutdown   cancels every live child of the root
+
+entry .Supervisor   the execution strategy: how strands are forked, parked, slept and interrupted
+  detail
+      Every way a strand can *suspend* is routed through its supervisor, so a supervisor is the
+      whole platform seam: a backend for a different execution model — an event loop over
+      WASI waitable sets, say — is a `Supervisor` implementation selected by a `Threading`
+      given, and nothing else in parasite touches the platform. The implementations provided
+      are `PlatformSupervisor`, `VirtualSupervisor`, `AdaptiveSupervisor`, `PooledSupervisor`
+      and `JavascriptSupervisor`, each the value a `threads` given hands out.
+
+      A supervisor is a `Durable` capability: forking and parking are effects, and a pool
+      holds live threads. The global singletons are static capabilities, so a public class or
+      object which reaches one declares `uses parasite.threads` (or the supervisor by name).
+      A custom supervisor must allow spurious wakeups from `park`: every caller re-checks its
+      condition in a loop, as `LockSupport.park` demands.
+  refer parasite.Threading
+  refer parasite.Strand
+  refer parasite.threads
+  entry #name   the supervisor's name, the first segment of every `Monitor#stack` beneath it: `virtual`, `platform`, …
+  entry #fork   starts a block on a new strand, with a thunk which computes the strand's name if wanted
+      The name is a thunk because computing a worker's `stack` walks the whole parent chain,
+      and `VirtualSupervisor` never evaluates it; `PlatformSupervisor` sets it as the thread's
+      name.
+  entry #strand   the identity of the calling strand, as a waiter a later `Strand#unpark` can release
+  entry #park   suspends the calling strand until it is unparked, or until a deadline
+      `park(blocker)` waits for an `unpark`; `park(blocker, deadline)` also returns when the
+      deadline (on the `System.nanoTime` basis) passes. Either may return spuriously.
+  entry #sleep   suspends the calling strand for a number of nanoseconds, with no wakeup channel
+  entry #interrupted   checks and clears the calling strand's cancellation-interrupt status
+
+entry .ThreadSupervisor   the thread-backed suspension primitives shared by every JVM and Native supervisor
+    A `Supervisor` whose `strand()` is the current `Thread` wrapped as `Strand.Threaded`,
+    whose `park` is `LockSupport.park` and `parkNanos`, whose `interrupted()` is
+    `Thread.interrupted()`, and whose `sleep` parks repeatedly until its deadline — since
+    `parkNanos` may return early, spuriously or on a permit left by an earlier `unpark` — and
+    stops early only if the thread is interrupted. Only `name` and `fork` are left to a
+    subclass. Not exported to the `soundness` umbrella: a custom thread-based supervisor
+    extends `parasite.ThreadSupervisor`.
+
+entry .PlatformSupervisor   runs each task on a new platform thread
+    `PlatformSupervisor.fork` starts a `java.lang.Thread` per task, named from the worker's
+    stack. Named `platform`; selected by `threads.platformThreads`, and the supervisor behind
+    `supervisors.globalSupervisor` and `unsupervised.orphanMonitor`. On Scala Native it is
+    what `VirtualSupervisor` and `AdaptiveSupervisor` fork through too.
+
+entry .VirtualSupervisor   runs each task on a virtual thread (JVM) or a platform thread (Native)
+    On the JVM, `fork` is `Thread.ofVirtual().start(…)`: a Loom virtual thread, cheap enough
+    to spawn in great numbers, which needs Java 21 and fails at runtime with
+    `UnsupportedOperationException` on an older JVM. On Scala Native, where there is no Loom,
+    the object exists under the same name and forks a platform thread, so code written for
+    `threads.virtualThreads` is source-compatible: the request is for cheap concurrency, honoured
+    with the cheapest available. Named `virtual`.
+
+entry .AdaptiveSupervisor   virtual threads where the JVM has them, platform threads otherwise
+    On the JVM, probes once with a no-op virtual thread and thereafter forks through
+    `VirtualSupervisor` if that succeeded and `PlatformSupervisor` if it threw
+    `UnsupportedOperationException`; only that deterministic outcome is cached, so a transient
+    failure cannot pin the process to platform threads. What an application which cannot
+    dictate its JVM should use, through `threads.adaptiveThreads`. On Scala Native it forks
+    platform threads, exactly as a pre-Loom JVM would. Named `adaptive`.
+
+entry .PooledSupervisor   runs tasks on a pool of reusable carrier threads
+    The `PoolingSupervisor` instance, selected by `threads.pooledThreads`. On the JVM its
+    carriers are virtual threads, so a task which blocks its carrier costs nothing more than a
+    parked virtual thread; on Scala Native they are platform threads, where reusing a thread
+    across tasks is the only way a task can cost less than a thread start, so the saving is
+    larger still, and a task which blocks holds a platform thread until it continues. Named
+    `pooled`.
+
+entry .PoolingSupervisor   a supervisor which hands tasks to idle carrier threads instead of starting one per task
+  detail
+      `fork` hands the task to an idle carrier when one is waiting, and starts a fresh carrier
+      only when none is; a carrier which finishes a task parks itself on the idle list for the
+      next. The hand-off costs a few hundred nanoseconds where a thread start and join cost a
+      few microseconds, so fine-grained fan-out — one task per element, a spawn-and-join in a
+      loop — stops being dominated by thread creation.
+
+      The pool never starves: a task which blocks, by `park` or any other way (JDK I/O,
+      `Thread.sleep`, a `synchronized` block), keeps its carrier and the next `fork` starts
+      another, so the worst case is exactly a thread per task, with no fixed size, no queue
+      tasks wait in and no compensation logic. Idle carriers above `idleLimit` (256 by default)
+      retire, which bounds the pool's memory after a burst.
+
+      Cancellation is a handshake: each task entry runs a small state machine, so an interrupt
+      aimed at a task is delivered while it is mounted or deferred to its mount, and never
+      leaks to the task which runs next on the same carrier. The costs are that a task has no
+      thread of its own — thread-locals persist across the tasks a carrier runs, and a thread
+      dump shows carriers where `Monitor#stack` shows tasks — and that a thread-context
+      classloader set on one task may be seen by the next, so code which loads classes or
+      resources should start from a known classloader rather than the thread's. A task's
+      `Thread.currentThread` is stable for its duration.
+
+      Subclasses supply `spawn` (how a carrier thread is started) and may override
+      `idleLimit`; `PooledSupervisor` is the instance for each platform.
+  refer parasite.PooledSupervisor
+  refer parasite.threads
+  entry #active   the number of carriers currently running a task
+      A pool at rest has none; one which does not return to that state has a task that never
+      finished.
+  entry #idling   the number of carriers parked waiting for a task
+  entry #fork   hands the block to an idle carrier, or starts a new one
+  entry #strand   the calling carrier's strand if the caller is a carrier, else the current thread's
+  entry #park   spins briefly and then parks the calling carrier, honouring a permit left by an earlier unpark
+
+entry .JavascriptSupervisor   the single-threaded, eager model for JavaScript's event loop
+    Each forked task runs to completion at `fork` time, on the calling strand, so every
+    promise such a task settles is already complete before anyone can await it, and parking
+    is never needed. This is the model for an event loop, which has no block-and-resume
+    primitive, though it runs identically on any platform. Its ceiling is single-threaded
+    structured concurrency: no parallelism and no interleaving, so awaiting a promise no
+    completed task has settled — a wait which could never end — panics rather than
+    deadlocking, `sleep` and `snooze` complete instantly, and `interrupted()` is always
+    `false`. Named `javascript`; selected by `threads.javascriptThreads`.
+
+    ```scala
+    import soundness.*
+    import threads.javascriptThreads
+    import probates.cancelProbate
+    import strategies.throwUnsafely
+
+    supervise:
+      val a = async(1)
+      val b = async(2)
+      a.await() + b.await()   // 3, each task having run at its fork
+    ```
+
+entry .Threading   the choice of supervisor, as a capability given: `threads.virtualThreads`
+  detail
+      A `Threading` hands out the `Supervisor` a `supervise` block roots its tree on, and is
+      chosen by importing one of the `threads` givens by name. It is a `Durable` capability,
+      since it hands out one, and `Findable`, so it is summoned as `summon[Threading]`.
+  entry #supervisor   the supervisor to root a scope on
+
+entry .Strand   the handle on a unit of execution a supervisor forked: interrupt, join, unpark
+  detail
+      The minimal surface supervision (`Worker#cancel`) and wakeup (`Promise`) require. On the
+      JVM and Scala Native a strand wraps a `Thread` (`.Threaded`); an eager supervisor uses the
+      single `.Eager`; and the pooled supervisor's strands are its carriers and task entries.
+      `unpark` lives here rather than on `Supervisor` because the wake side of a `Promise`
+      runs with no `Monitor` in scope, possibly on a foreign strand: a strand must be
+      self-wakeable. `Promise` stores its waiters in a `Set[Strand]`, so two handles on the
+      same thread are equal.
+  refer parasite.Supervisor
+  entry .Eager   the strand of a task which ran to completion at its fork, under `JavascriptSupervisor`
+      Interrupting, joining and unparking it do nothing: by construction there is nothing
+      running to cancel, to wait for or to wake.
+  entry .Threaded   a strand over a `java.lang.Thread`
+    detail
+        `interrupt()` is `thread.interrupt()`, `join()` is `thread.join()`, and `unpark()` is
+        `LockSupport.unpark(thread)`. Two `Threaded` strands are equal when their threads are,
+        however they were obtained.
+    entry #thread   the underlying thread
+  entry #interrupt   requests cancellation of the strand
+  entry #join   blocks until the strand has terminated
+  entry #unpark   releases the strand from a `Supervisor#park`
+
+entry .Task   the handle on a spawned computation: awaited for its result, or cancelled
+  detail
+      A `Task[result]` is what `async` and `task` return: a `Worker` under the monitor in
+      scope, running its body on a strand of the supervisor. Its `Error` type member carries
+      the union of errors the body may raise, refined by the `emits` alias, so
+      `async(abort(FooError(1)))` is a `Task[Nothing] emits (FooError | Async.Error)`, and
+      `await` delivers a raised error through the caller's `Tactic[Error | Async.Error]`, still
+      typed. `Async.Error` is always possible — cancellation, a timeout, an incomplete child
+      under `probates.failProbate` — so it is added at the `await` site.
+
+      ```scala
+      import soundness.*
+      import threads.virtualThreads
+      import probates.cancelProbate
+      import strategies.throwUnsafely
+
+      supervise:
+        val task = async(21*2)
+        task.ready                               // false, or true if it has already finished
+        task.await()                             // 42
+        task.await()                             // 42: a task may be awaited any number of times
+        safely(async(snooze(10.0*Second)).await(0.1*Second))   // Unset: the deadline passed
+      ```
+
+      Tasks compose: `map` and `bind` derive one task from another, a `List[Task[result]]`'s
+      `sequence` is one task of all their results in order, a collection's `race()` is the first
+      result with the rest cancelled, and `Task.monad` makes `Task` a `mercator.Monad`. A task
+      handle is a shared capability which captures its monitor, so it cannot leave the
+      `supervise` block it was spawned in.
+  refer parasite.async
+  refer parasite.Worker
+  refer parasite.Async
+  refer parasite.Promise
+  entry .apply   constructs a task from a body and an optional name: what `async` and `task` call
+      `Task[result, error](body, name)` builds the worker under the `Monitor`, `Codepoint` and
+      `SharedProbate` in scope, with `Error = error`. The body is a function of the `Worker`
+      which may capture only `Durable` capabilities. `async` and `task` are the forms to use,
+      since they also supply the body's tactic.
+  entry .Owned   the carrier through which a `transfer`red resource reaches its task's body
+    detail
+        A pure value wrapping the exclusive resource the spawner consumed, received as the body's
+        first context parameter: `producer.transfer: (producer, _, _) ?=> producer().put(…)`.
+        It is constructed only by `transfer`.
+    entry #apply   the resource, as a fresh exclusive reference on each access
+  entry .monad   the `mercator.Monad[Task]`, so tasks compose with the generic monadic combinators
+      Needs a `Monitor` and a `SharedProbate` in scope when resolved: `point` is `async`, `bind`
+      is `Task#bind` and `apply` (map) is `Task#map`. The tasks it produces are bound and
+      awaited within the same monitor scope.
+  entry .sleep   a task which completes after a duration or at an instant: the monadic `snooze`
+      `Task.sleep(0.5*Second)` is `async(snooze(time))`, for composition with `bind`/`map`
+      without suspending the calling strand; any `Schedulable` is accepted. Needs a `Monitor`,
+      a `SharedProbate` and a `Codepoint`.
+  entry .sequence   one task of every result of a `List[Task[result]]`, in list order
+      An extension on `List[Task[result]]`: `tasks.sequence` is a task which joins each in
+      turn and yields a `List[result]` in the same order, so the ordering of results says
+      nothing about the order of completion; the tasks already run in parallel. A cancelled or
+      failed member raises at the sequence's `await`. Needs a `Monitor` and a `SharedProbate`.
+
+      ```scala
+      import soundness.*
+      import threads.virtualThreads
+      import probates.cancelProbate
+      import strategies.throwUnsafely
+
+      supervise:
+        List(async(1), async(2), async(3)).sequence.await()   // List(1, 2, 3)
+      ```
+  entry .race   the first result of a collection of tasks, cancelling the others
+      An extension on any collection `Traversable by Task[result]` — a `List`, a `Sequence`
+      — and on an `Iterable[Task[result]]`: `tasks.race()` awaits a promise each task offers
+      its result to, returns the first offered, and cancels every task in a `finally`, since
+      the other results were not wanted. A task already complete wins at once. Needs a
+      `Monitor`, a `SharedProbate` and a `Tactic[Async.Error]`.
+
+      ```scala
+      import soundness.*
+      import threads.virtualThreads
+      import probates.cancelProbate
+      import strategies.throwUnsafely
+
+      supervise:
+        List(async { snooze(1.0*Second); 1 }, async(2)).race()   // 2
+      ```
+  entry #Error   the errors the body may raise, delivered at `await`; `Hazard` at its widest
+  entry #ready   whether the task has completed, failed or been cancelled
+  entry #attend   waits for the task to settle, with no result and no error
+  entry #cancel   cancels the task: interrupts it where it pauses, stops it where it relents
+      A task which has finished is unaffected. The call waits for the task's strand to end, so
+      on return nothing of the body is still running; its `await` then raises
+      `Async.Error(Cancelled)`.
+  entry #await   waits for the result, delivering a raised error through the caller's tactic
+      `task.await()` waits without limit; `task.await(duration)` raises
+      `Async.Error(Timeout)` if the task has not settled when the deadline passes, and
+      abandons it at that point without cancelling it. Both need a `Monitor` and a
+      `Tactic[Error | Async.Error]`: an error the body raised arrives typed as the body's
+      `Error`, cancellation as `Async.Error(Cancelled)`, and a child the probate found
+      incomplete under `probates.failProbate` as `Async.Error(Incomplete)`. A task may be
+      awaited any number of times; later joins return the delivered value directly.
+
+      ```scala
+      import soundness.*
+      import threads.virtualThreads
+      import probates.cancelProbate
+      import strategies.throwUnsafely
+
+      case class FooError(n: Int)(using Diagnostics) extends Error(m"foo $n")
+
+      supervise:
+        val task = async(abort(FooError(1)))
+        capture[FooError](task.await())   // FooError(1)
+      ```
+  entry #bind   a task which applies a task-producing function to this one's result and joins it
+      `task.bind(n => async(n + 4))` is a new child of the monitor in scope; the function may
+      capture only what a task body may. Needs a `Monitor` and a `SharedProbate`.
+  entry #map   a task which applies a function to this one's result
+      `async(3).map(_ + 1).await()` is `4`. Needs a `Monitor` and a `SharedProbate`.
+
+entry .Promise   a value supplied later, perhaps from another thread: one side awaits, the other fulfills
+  detail
+      A `Promise[value]` starts incomplete; `fulfill` or `offer` settles it with a value exactly
+      once, `cancel` settles it with no value, and `await` parks the calling strand until it is
+      settled. Settlement wakes every waiter, and nothing is lost under contention: many
+      concurrent `fulfill`s see exactly one succeed, and a settled promise takes no
+      compare-and-set at all.
+
+      ```scala
+      import soundness.*
+      import threads.virtualThreads
+      import probates.cancelProbate
+      import strategies.throwUnsafely
+
+      supervise:
+        val promise = Promise[Int]()
+        promise.ready                        // false
+        daemon(promise.fulfill(7))
+        promise.await()                      // 7
+        promise()                            // 7
+        safely(Promise[Int]().await(0.1*Second))   // Unset: Async.Error(Timeout)
+      ```
+
+      A promise is meaningful only by identity (a waiter parks on it), so it is a plain class
+      with reference equality. The waiting side (`await`, `attend`) needs a `Monitor`, since it
+      suspends; the settling side (`fulfill`, `offer`, `cancel`) needs none, so a promise is
+      settled from anywhere — a callback, a foreign thread, a shutdown hook. A `Worker`'s
+      `promise` is how a task's completion is observed.
+  refer parasite.Task
+  refer parasite.Async
+  entry .State   the three states of a promise: incomplete with its waiters, complete with a value, or cancelled
+      `Incomplete(waiting)` holds the strands parked on the promise; `Complete(value)` and
+      `Cancelled` are terminal.
+  entry #cancelled   whether the promise was cancelled
+  entry #apply   the value, or `Unset` if the promise is not complete, without waiting
+  entry #ready   whether the promise is settled, by a value or by cancellation
+  entry #complete   whether the promise holds a value
+  entry #task   the promise's completion as a `Task`: the monadic `await`
+      `promise.task` is `async(promise.await())`, for composition with `bind`/`map` without
+      suspending the calling strand. Needs a `Monitor`, a `SharedProbate` and a `Codepoint`.
+  entry #fulfill   settles the promise with a value, raising `Async.Error` if it is already settled
+      Raises `Async.Error(AlreadyComplete)` if it holds a value and `Async.Error(Cancelled)` if
+      it was cancelled, through the `Tactic[Async.Error]` in scope; otherwise installs the value
+      and wakes every waiter. The by-name argument is evaluated exactly once.
+  entry #offer   settles the promise with a value if it is still incomplete, and otherwise does nothing
+      The forgiving form of `#fulfill`: the first of many concurrent offers wins and the rest
+      are ignored, a cancelled promise stays cancelled, and no error is raised. `race` uses it
+      for the tasks which lose.
+  entry #await   waits for the value, raising `Async.Error` on cancellation or a timeout
+      `promise.await()` parks the calling strand until the promise is settled, then returns the
+      value or raises `Async.Error(Cancelled)`; `promise.await(duration)` also raises
+      `Async.Error(Timeout)` when the deadline passes first. A settled promise returns at once.
+      Needs a `Monitor` and a `Tactic[Async.Error]`, and throws `InterruptedException` if the
+      calling task is cancelled while it waits, so a task awaiting a promise is cancellable.
+  entry #attend   waits for the promise to settle, by value or cancellation, without an error
+      `promise.attend()` returns once the promise is settled either way; `promise.attend(duration)`
+      returns silently when the deadline passes, so the caller checks `#ready`. Needs a
+      `Monitor`.
+  entry #cancel   settles the promise with no value, waking every waiter with `Async.Error(Cancelled)`
+      A promise already holding a value keeps it; cancelling twice is harmless.
+
+entry .Daemon   the handle on fire-and-forget work spawned by `daemon`
+  detail
+      A `Daemon` is a `Worker` whose `daemon` flag is `true`: it is never joined, so it yields
+      no result, and its parent's probate cancels it whatever policy it applies to ordinary
+      children. Its errors go to the `Probate#trap` in scope, and escalate to the
+      uncaught-exception handler (`Vm.intercept[Fault]`) if none accepts them.
+  refer parasite.daemon
+  refer parasite.Fault
+  entry .apply   constructs a daemon from a body under the `Monitor`, `Codepoint` and `SharedProbate` in scope
+      `daemon` is the form to use, since it also supplies the body's label-free tactic and
+      enforces that the body is hygienic.
+  entry #attend   waits for the daemon to finish, with no result and no error
+  entry #cancel   cancels the daemon and waits for its strand to end
+
+entry .Async   the naming plane for tasks, and the home of `Async.Error`
+  detail
+      `Async` is a sealed marker: a task's name is a `Name[Async]`, written `n"worker"` with
+      `import Async.nominative` in scope and checked against `.Rules` as the code compiles.
+      Its companion holds `Async.Error`, the one error every suspension can raise.
+
+      ```scala
+      import soundness.*
+      import Async.nominative
+
+      val name: Name[Async] = n"connection-4"
+      ```
+  refer parasite.task
+  entry .Rules   what a task name may be: a letter, then letters, digits, `-` and `_`
+      `MustMatch["[A-Za-z][A-Za-z0-9_-]*"]`: no separator the composed `Monitor#stack` relies
+      on (`:`, `/`, `@`, `.`), no whitespace and not empty, so a name can never corrupt the
+      stack or a thread name derived from it. `Name[Async](t"bad/name")` raises `Name.Error`,
+      _the name bad/name is not valid because it must match [A-Za-z][A-Za-z0-9_-]*_, and
+      `n"bad/name"` is a compile error.
+  entry .nominative   the given which holds `Name[Async]` to `.Rules`; import it by name for `n"…"`
+  entry .Error   raised when a wait does not end with a value: cancelled, incomplete, already complete, timed out
+    detail
+        Raised through the `Tactic[Async.Error]` every `await`, `fulfill` and `supervise` needs.
+        Its `#reason` says which: `Cancelled` from awaiting a cancelled task or promise, or
+        fulfilling a cancelled promise; `Incomplete` from a parent's `await` under
+        `probates.failProbate` when a child was still running, or `Worker#result` before the
+        body finished; `AlreadyComplete` from fulfilling a promise twice; and `Timeout` from
+        `await(duration)` when the deadline passed.
+
+        ```scala
+        import soundness.*
+        import threads.virtualThreads
+        import probates.cancelProbate
+        import strategies.throwUnsafely
+
+        supervise:
+          val promise = Promise[Int]()
+          capture[Async.Error](promise.await(0.05*Second)).reason   // Async.Error.Reason.Timeout
+        ```
+    entry #reason   why the wait failed, as an `Async.Error.Reason`
+    entry .Reason   the four reasons: `Cancelled`, `Incomplete`, `AlreadyComplete`, `Timeout`
+      detail
+          Rendered by `.communicable` as _the operation was cancelled_, _the task was not
+          completed_, _the promise was already completed_ and _the operation timed out_,
+          which is the error's message.
+      entry .communicable   renders each reason as the error's message
+
+entry .AsyncTactic   the `Tactic` a task body raises through: it throws the error instead of breaking a boundary
+  detail
+      Supplied by `async`, `task` and `daemon` as the body's `Tactic[error]`. Unlike the
+      boundary-based tactics of `contingency`, it never breaks a stack-confined label, which could
+      not cross to the worker's thread: `record` and `abort` both throw the pure error, the
+      worker's `try`/`catch` stores it as `Fulfillment.Failed`, and it is delivered, still typed,
+      at `Task#await` or to the `Probate#trap`. `certify()` does nothing and `diagnostics`
+      captures a stack trace. Users meet it only as the type of the body's tactic.
+  entry #diagnostics   captures the diagnostics for a raised error
+  entry #record   throws the error
+  entry #abort   throws the error
+  entry #certify   does nothing: there is no accumulated state to certify
+
+entry .Probate   the policy for a task's unfinished children and escaped errors
+  detail
+      A `Probate` has two parts. `cleanup(worker)` decides the fate of a child still running
+      when its parent's body completes, by what it does with `Worker#delegate`: the four of the
+      `probates` package await it, cancel it, raise `Async.Error(Incomplete)` or panic. `trap`
+      decides the fate of an error which escaped a fire-and-forget worker — a `daemon`, or a
+      task its parent abandoned — and by default escalates it, so that nothing is dropped;
+      `contain { … }.protect { … }` overrides it near where work is spawned.
+
+      A probate is an ordinary trait, not a capability, so a `given … : Probate` is pure and
+      importing one captures nothing; `SharedProbate` is the capture-typed form a worker
+      retains. One is chosen by name, since `import soundness.*` imports no givens:
+
+      ```scala
+      import soundness.*
+      import probates.cancelProbate
+      ```
+
+      Which to choose follows from what the children do: work that mutates state wants
+      `awaitProbate`, so every child runs to its end; pure work can take `cancelProbate`; and
+      code whose design is to await every task it spawns wants `failProbate` or `panicProbate`,
+      so a forgotten `await` is an error rather than a silent wait.
+  refer parasite.probates
+  refer parasite.Containment
+  refer parasite.Remedy
+  entry #cleanup   the fate of an unfinished child when its parent completes
+      Called on the completing worker's own strand, before its promise is settled, with the
+      worker whose children are to be tidied; `worker.delegate(child => …)` visits each live
+      non-daemon child, the daemons being cancelled unconditionally.
+  entry #trap   the fate of an error which escaped a fire-and-forget worker; `Remedy.Escalate(error)` by default
+      Called before the worker's promise is settled. `Accept` consumes the error, `Reject`
+      lets the original propagate outward, and `Escalate(other)` propagates a substitute; at
+      the end of the chain an unaccepted error is rethrown on the worker's strand, reaching
+      the uncaught-exception handler.
+
+entry .Containment   the `Probate` which `contain` builds: a region whose escaped exceptions are handled
+  detail
+      Delegates `cleanup` unchanged to the enclosing probate and overrides `trap` with the
+      handler: a matched error's `Remedy.Accept` stops propagation, `Reject` passes the
+      original to the enclosing probate's trap, `Escalate(other)` passes the substitute, and an
+      unmatched error goes to the enclosing trap too, so containments nest.
+  refer parasite.contain
+  entry #cleanup   the enclosing probate's child-fate policy
+  entry #trap   the handler's remedy for an error it matches, else the enclosing probate's
+  entry #protect   runs a block with this containment as the `SharedProbate` in scope
+      `contain { case … => … }.protect { daemon(…) }`: daemons and abandoned tasks spawned
+      within the block route their escaped exceptions here.
+
+entry .Remedy   what a trap decides for an escaped error: accept it, reject it, or escalate another
+    `Accept` consumes the error (handled as a side effect, logged, say) and stops propagation;
+    `Reject` passes the original error to the enclosing trap; `Escalate(error)` rejects but
+    substitutes a different, pure and thread-safe error to propagate in its place. A plain
+    `Probate#trap` escalates the error it was given, so an unhandled escape is never dropped.
+
+entry .Fulfillment   the lifecycle of a worker: initializing, active, completed, delivered, failed or cancelled
+    `Initializing` before the strand has started the body; `Active(startTime)` while it runs;
+    `Completed(duration, value)` once it has a result nobody has yet joined;
+    `Delivered(duration, value)` after the first join, so later joins skip the transition;
+    `Failed(error)` with the throwable the body raised or threw; and `Cancelled`. The durations
+    are milliseconds. Workers hold their state in one of these; it is not otherwise exposed.
+
+entry .Perseverance   the outcome of one `retry` attempt: persevere, surrender, or prevail with a value
+    `Persevere` asks for another attempt, `Surrender` gives up with `Tenacity.Error`, and
+    `Prevail(value)` is success. `retry` uses it internally to carry the body's choice out of
+    its boundary.
+
+entry .Observation   a value observed as `Fresh` or `Stale`
+    An enum of two cases, `Fresh(observation)` and `Stale(observation)`, for a reader which
+    wants to say whether what it returns is current. Nothing in parasite currently produces one.
+
+entry .Transgression   three dispositions for a breach: `Dispose`, `Escalate`, `Cancel`
+    An enum of three cases. Nothing in parasite currently consumes one.
+
+entry .Tenacity   a retry schedule: how long to wait before each attempt, and when to stop
+  detail
+      `retry` runs its block under the `Tenacity` in scope. `delay(attempt)` is the pause in
+      nanoseconds before the given attempt (`Prim` being the first, which never waits), or
+      raises `Tenacity.Error` to stop. `Tenacity.exponential` and `Tenacity.fixed` build the
+      two usual shapes, `limit` bounds the number of attempts, and the `retryTenacities`
+      package has six ready to import by name. A tenacity is pure: it holds no capabilities.
+
+      ```scala
+      import soundness.*
+
+      val schedule: Tenacity = Tenacity.exponential(0.1*Second, 2.0).limit(5)
+      ```
+  refer parasite.retry
+  refer parasite.retryTenacities
+  entry .exponential   a geometric backoff: no delay, then `initial`, then `initial*base`, `initial*base²`, …
+      `Tenacity.exponential(initial, base)` for any `Abstractable across Durations` initial
+      delay: the first attempt is immediate, the second waits `initial`, and each later one
+      `base` times the one before. Unbounded until `limit`ed.
+  entry .fixed   the same delay before every attempt after the first
+      `Tenacity.fixed(duration)`; `Tenacity.fixed(0L)` retries immediately, which the
+      `fixedNoDelay…` givens are.
+  entry .Error   raised when a `retry` runs out of attempts, or its body surrenders
+    detail
+        Error 552: _aborted repeated evaluation after `count` attempts_. Raised through the
+        `Tactic[Tenacity.Error]` `retry` needs, when `limit` has been reached or the body called
+        `surrender()`.
+    entry #count   how many attempts were made
+  entry #delay   the pause before an attempt, in nanoseconds, or a raised `Tenacity.Error` to stop
+  entry #limit   the same schedule, giving up after `n` attempts
+      `tenacity.limit(5)` raises `Tenacity.Error` on the sixth attempt.
+
+entry .Schedulable   the bound `snooze` and `sleep` share: a duration or an instant, as nanoseconds from now
+  detail
+      A typeclass whose `nanoseconds(value)` says how long a pause expressed as `Self` should
+      last. Its two companion givens cover any `Abstractable across Durations to Long` type
+      (`.duration`: the generic form is already a nanosecond count) and any `Abstractable
+      across Instants to Long` type (`.instant`: the epoch milliseconds at which to wake), so a
+      `quantitative` time, an `aviation.Timespan` and an `aviation.Instant` are accepted without
+      conversion.
+
+      A bare `Long` is neither until a unit is chosen by name —
+      `abstractables.millisecondsAbstractable`, `nanosecondsAbstractable` or
+      `microsecondsAbstractable` for a duration, `epochMillisecondsAbstractable` for an instant.
+      With both a duration unit and the instant reading in scope it satisfies both givens and
+      is rejected as ambiguous, which is the point: nothing at the call site could say which was
+      meant, and an unqualified `snooze(200L)` under the nanosecond reading would return almost
+      immediately.
+
+      ```scala
+      import soundness.*
+      import threads.virtualThreads
+      import probates.cancelProbate
+      import strategies.throwUnsafely
+      import abstractables.millisecondsAbstractable
+
+      supervise:
+        snooze(20L)   // 20 milliseconds
+      ```
+  entry .duration   any `Abstractable across Durations to Long` type is `Schedulable`, as a duration
+  entry .instant   any `Abstractable across Instants to Long` type is `Schedulable`, as a wake-up instant
+  entry #nanoseconds   how long, in nanoseconds from now, a pause of this value should last
+  entry #remaining   the extension `value.remaining`: its `nanoseconds`
+
+entry .Timeout   a watchdog which runs an action when a deadline passes, unless it is nudged first
+  detail
+      `Timeout(duration)(action)` starts a supervised watchdog task which snoozes until the
+      deadline and then runs the action, once. `nudge()` pushes the deadline back by the
+      duration from now, so a timeout nudged on every sign of activity — each request on a
+      connection, say — fires only after that long a silence; `alive` says whether it has yet
+      to fire, and `reset()` restarts a fired timeout. It is a `Durable` capability nudged from
+      whichever task sees activity, with an atomic deadline.
+
+      ```scala
+      import soundness.*
+      import threads.virtualThreads
+      import probates.cancelProbate
+      import strategies.throwUnsafely
+
+      supervise:
+        val fired = Promise[Unit]()
+        val timeout = Timeout(0.05*Second):
+          fired.offer(())
+
+        timeout.alive          // true
+        fired.await(1.0*Second)
+        timeout.alive          // false
+      ```
+
+      The action runs on the watchdog task, so, like any task body, it may capture only
+      `Durable` capabilities. Construction needs a `Monitor` and a `SharedProbate`; the
+      watchdog is a child of that monitor, named `timeout`.
+  entry .apply   starts a timeout of a duration, with the action to run when it fires
+  entry #alive   whether the timeout has yet to fire
+  entry #nudge   extends the deadline to the duration from now, if the timeout is still alive
+  entry #reset   restarts a timeout which has fired, with a fresh deadline and watchdog
+
+entry .Interceptable   the typeclass behind `intercept`: how an action is registered for an event on a target
+  detail
+      `event is Interceptable onto target` says how `target.intercept[event](action)` registers
+      the action and how it is later removed: `register` returns the deregistration function
+      which the resulting `Hook` calls. The instances are `Shutdown.interceptable`,
+      `Fault.interceptable` and `GarbageCollection.interceptable`, all onto `Vm`, and
+      `Destruction.interceptable`, onto any value.
+  refer parasite.intercept
+  refer parasite.Hook
+  entry #register   registers an action for the event on a target, returning the function which unregisters it
+
+entry .Hook   a registered interception, cancelled to stop it
+  detail
+      `intercept` returns a `Hook`; `hook.cancel()` deregisters the action, after which the event
+      no longer runs it. `Hook(unregister)` wraps any deregistration function.
+  entry #cancel   deregisters the action
+
+entry .Shutdown   the VM shutting down: `Vm.intercept[Shutdown](action)` runs the action once, at exit
+  detail
+      A JVM shutdown hook: the action runs on `System.exit`, when the last non-daemon thread
+      ends, or on `SIGINT`/`SIGTERM`, which is where a server removes the socket file it listened
+      on, so a stale one never greets the next process. Hooks run on threads of their own,
+      concurrently and in no defined order, and an exception thrown by the action is swallowed,
+      so one hook never prevents the others from running. `Hook#cancel` removes it.
+
+      ```scala
+      import soundness.*
+
+      val hook = Vm.intercept[Shutdown]:
+        println("exiting")
+
+      hook.cancel()
+      ```
+  entry .interceptable   `Shutdown is Interceptable onto Vm.type`: registers a JVM shutdown hook
+
+entry .Fault   an exception which escaped a thread nothing owns: a dead daemon, an escalated trap
+  detail
+      `Vm.intercept[Fault](action)` installs the action as the JVM's default uncaught-exception
+      handler (one shared handler, with a registry of actions), so it runs for every
+      exception which ends a thread: a `daemon` whose error no `Probate#trap` accepted, a task
+      abandoned by its parent, or any thread outside parasite. Where a daemon's error cannot
+      reach the handler of the code which spawned it — the spawning code has moved on — this is
+      where a program handles the unexpected.
+
+      ```scala
+      import soundness.*
+
+      val hook = Vm.intercept[Fault]:
+        val fault: Fault = summon[Fault]
+        println(t"a thread died: ${fault.error.message}")
+
+      hook.cancel()
+      ```
+  refer parasite.daemon
+  refer parasite.Probate
+  entry .interceptable   `Fault is Interceptable onto Vm.type`: adds the action to the uncaught-exception registry
+  entry #thread   the thread which died
+  entry #error   the exception, wrapped as a `fulminate.Error`
+
+entry .Destruction   a value becoming unreachable: `value.intercept[Destruction](action)` runs when the collector reclaims it
+  detail
+      Registers the action with a `java.lang.ref.Cleaner`, so it runs after the value has
+      become phantom-reachable, as a finalizer would but without resurrecting the value. The
+      action must not reference the value, or it is never collected. Cancelling the `Hook`
+      cleans up the registration without running the action.
+  entry .interceptable   `Destruction is Interceptable onto any value`: registers a cleaner action
+
+entry .GarbageCollection   one run of the JVM's collector: `Vm.intercept[GarbageCollection](action)` observes each
+  detail
+      In `parasite.jvm`. The action receives a `GarbageCollection` for every collection the
+      JVM's collector beans notify: which `Collector` ran, what `Cause` triggered it, and the
+      used bytes of every memory pool before and after.
+
+      ```scala
+      import soundness.*
+
+      val hook = Vm.intercept[GarbageCollection]:
+        val gc: GarbageCollection = summon[GarbageCollection]
+        println(t"${gc.collector} freed ${gc.reduction}")
+
+      hook.cancel()
+      ```
+  entry .interceptable   `GarbageCollection is Interceptable onto Vm.type`: listens on every collector bean
+  entry .Collector   the collector which ran: a G1, Parallel, CMS or Serial generation, or `Other(name)`
+    detail
+        `G1YoungGeneration`, `G1OldGeneration`, `G1Concurrent`, `PsScavenge`, `PsMarkSweep`,
+        `ParNew`, `ConcurrentMarkSweep`, `Copy`, `MarkSweepCompact`, and `Other(name)` for a
+        collector name the enum does not know.
+    entry .unapply   matches a collector by the JVM's name for it, `Other(name)` for an unknown one
+  entry .Cause   why the collection ran: allocation failure, `System.gc()`, ergonomics, …, or `Other(cause)`
+    detail
+        `AllocationFailure`, `SystemGc`, `GcLocker`, `Metadata`, `Ergonomics`, `CmsInitialMark`,
+        `CmsFinalRemark`, `FullGc`, `HeapInspection`, `NoGc`, `G1EvacuationPause`,
+        `G1HumongousAllocation`, and `Other(cause)` for a cause the enum does not know.
+    entry .unapply   matches a cause by the JVM's text for it, `Other(cause)` for an unknown one
+  entry #run   the collection's sequence number, as an `Ordinal`
+  entry #collector   which collector ran
+  entry #cause   what triggered the collection
+  entry #bytes   each memory pool's used bytes before and after, by the pool's name
+  entry #before   the used bytes of every pool before the collection, summed
+  entry #after   the used bytes of every pool after the collection, summed
+  entry #reduction   how many bytes the collection freed: `before - after`
+
+entry .Heap   the JVM heap, as the bytes in use
+  detail
+      In `parasite.jvm`. `Heap.used` sums the used bytes of every heap memory pool reported by
+      the JVM's management beans.
+  entry .used   the bytes currently in use across the heap's memory pools
+
+entry .threads   the threading models, each a `Threading` given to import by name
+  detail
+      Which supervisor a `supervise` block roots its tree on is decided by the `Threading`
+      given in scope, and the choice is never implicit: `import soundness.*` brings none of
+      these in, and one is imported by name. `threads` is an object rather than a package,
+      because its givens are capabilities, and a field of capability type must live in an
+      object that is one; a public class or object which reaches one of them declares
+      `uses parasite.threads`.
+
+      ```scala
+      import soundness.*
+      import threads.virtualThreads
+      ```
+
+      `virtualThreads` suits a JVM application which knows it has Java 21; `adaptiveThreads`
+      one which cannot dictate its JVM; `pooledThreads` fine-grained fan-out; `platformThreads`
+      code which needs a platform thread per task; and `javascriptThreads` the event loop.
+  refer parasite.Threading
+  refer parasite.Supervisor
+  entry .platformThreads   each task on a new platform thread: `PlatformSupervisor`
+  entry .virtualThreads   each task on a virtual thread: `VirtualSupervisor`
+      Needs Java 21 and fails at runtime on an older JVM; forks platform threads on Scala
+      Native, where there is no Loom.
+  entry .adaptiveThreads   virtual threads where the JVM has them, platform threads otherwise: `AdaptiveSupervisor`
+  entry .pooledThreads   tasks on reusable carrier threads: `PooledSupervisor`
+      For fine-grained fan-out, where a thread start per task would dominate; a task has no
+      thread of its own, so thread-locals persist across the tasks a carrier runs.
+  entry .javascriptThreads   tasks run eagerly at their fork, on one strand: `JavascriptSupervisor`
+      The model for Scala.js, with the limits of a single strand: no interleaving, instant
+      sleeps, and a panic on a wait which no completed task could ever end.
+
+entry .supervisors   the global supervisor, as a given
+  detail
+      An object holding `globalSupervisor`, a `Supervisor` given for code which needs a
+      supervisor value directly rather than a `Threading`. Its givens are capabilities, so a
+      public definition which reaches one declares `uses parasite.supervisors`.
+  entry .globalSupervisor   `PlatformSupervisor`, as a `Supervisor` given
+
+entry .unsupervised   a process-lifetime monitor for blocking outside any `supervise` scope
+  detail
+      A deliberate, explicitly-imported escape hatch for call sites — daemon lifecycles,
+      process-lifetime waits — where no supervision scope can exist: `orphanMonitor` is a
+      `Root` over `PlatformSupervisor` which parks the calling platform thread and supervises
+      nothing. Prefer `supervise` wherever the blocking region is already scoped.
+
+      ```scala
+      import soundness.*
+      import unsupervised.orphanMonitor
+      import strategies.throwUnsafely
+
+      val promise = Promise[Unit]()
+      promise.offer(())
+      promise.await()
+      ```
+  refer parasite.supervise
+  entry .orphanMonitor   a root `Monitor` with no scope, over `PlatformSupervisor`
+
+entry .probates   the four completion policies, each a `Probate` given to import by name
+  detail
+      A probate decides what a parent does with a child still running when the parent's body
+      completes, and one must be in scope for every `async`, `task` and `daemon`; `import
+      soundness.*` brings none in. A daemon child is cancelled under every policy; the
+      policies differ over ordinary children.
+
+      ```scala
+      import soundness.*
+      import threads.virtualThreads
+      import probates.awaitProbate
+      import strategies.throwUnsafely
+
+      var done = false
+
+      supervise:
+        val parent = async:
+          async:
+            snooze(0.05*Second)
+            done = true
+          t"returned"
+
+        parent.await()   // t"returned", once the child has finished under awaitProbate
+        done             // true
+      ```
+
+      Work that mutates state wants `awaitProbate`, so every child runs to its end; pure work
+      can take `cancelProbate` and stop wherever it happens to be; and code whose design is to
+      await every task it spawns wants `failProbate` or `panicProbate`, so a forgotten `await`
+      is an error — checked or unchecked — rather than a silent wait.
+  refer parasite.Probate
+  entry .awaitProbate   the parent waits for each unfinished child before completing
+      The child is attended on the completing worker's own strand; the parent's `await` returns
+      only once every child has settled.
+  entry .cancelProbate   the parent cancels each unfinished child
+      The child is interrupted where it pauses and stops where it relents; the parent's result
+      is unaffected.
+  entry .panicProbate   an unfinished child is a panic: _asynchronous child task did not complete_
+  entry .failProbate   an unfinished child raises `Async.Error(Incomplete)` through the `Tactic` in scope
+      The one probate which captures something — the ambient `Tactic[Async.Error]` — so it
+      needs one in scope where it is imported; the error surfaces at the parent's `await`.
+
+entry .retryTenacities   six retry schedules, each a `Tenacity` given to import by name
+  detail
+      `retry` needs a `Tenacity` in scope, and `import soundness.*` supplies none. The
+      exponential schedules start at ten milliseconds and grow by a factor of 1.2 per attempt;
+      the `fixedNoDelay` schedules retry immediately. Each comes unbounded (`…Forever`) or
+      limited to five or ten attempts, after which `retry` raises `Tenacity.Error`.
+
+      ```scala
+      import soundness.*
+      import retryTenacities.exponentialFiveTimesTenacity
+      ```
+  refer parasite.Tenacity
+  refer parasite.retry
+  entry .exponentialForeverTenacity   ten milliseconds, growing by 1.2 each attempt, without limit
+  entry .exponentialFiveTimesTenacity   ten milliseconds, growing by 1.2 each attempt, for at most five attempts
+  entry .exponentialTenTimesTenacity   ten milliseconds, growing by 1.2 each attempt, for at most ten attempts
+  entry .fixedNoDelayForeverTenacity   retries immediately, without limit
+  entry .fixedNoDelayFiveTimesTenacity   retries immediately, for at most five attempts
+  entry .fixedNoDelayTenTimesTenacity   retries immediately, for at most ten attempts

@@ -1,0 +1,432 @@
+tel 1.0
+
+base yossarian
+import soundness
+
+info   a headless terminal emulator: ANSI and xterm output in, an inspectable screen of styled cells out
+detail
+    _Yossarian_ is a terminal with no window. A `Pty` consumes the text a program writes to its
+    terminal — characters interleaved with ANSI and xterm escape sequences — and computes what a
+    real terminal would show: a grid of cells, each holding one grapheme with its `Style` and
+    any hyperlink, plus the cursor, the window title, the scroll region and the modes the
+    program has set. The state is an immutable value, so a test keeps intermediate states,
+    compares them, and asserts on what the screen *shows* rather than on the byte stream which
+    produced it.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    val esc = 0x1b.toChar
+    val pty = Pty(80, 24).consume(t"$esc[1;31mError$esc[0m: file not found")
+
+    pty.buffer.char(Prim, Prim)               // 'E'
+    pty.buffer.style(Prim, Prim).bold         // true
+    pty.buffer.style(Prim, Prim).foreground   // Chroma(222, 56, 43)
+    pty.cursor                                // the cell after the last character written
+    ```
+
+    The emulator implements the vocabulary real programs and shells use: cursor addressing and
+    movement, erasing, insertion and deletion of characters and lines, scroll regions, `SGR`
+    styling with the sixteen-colour palette, the 256-colour cube and 24-bit colour, the
+    alternate screen, cursor visibility, focus and bracketed-paste modes, window titles and
+    `OSC 8` hyperlinks, and the device reports a program may ask for. Unicode is handled by
+    grapheme cluster: a wide character occupies two cells, and a combining mark joins the cell
+    to its left. Sequences which affect nothing a screen shows — keypad modes, character-set
+    designations, keyboard-protocol negotiation, shell notifications — are accepted and
+    ignored; a sequence the emulator cannot make sense of raises a `Pty.Error`.
+
+    Output read from a terminal arrives in chunks which may end partway through an escape
+    sequence, so a `Pty` keeps an incomplete sequence and resumes it on the next `consume`:
+    the screen is the same however the input is divided.
+
+    There is no scrollback: a line scrolled off the top of the screen (or of the scroll region)
+    is gone, so a test which must see all of a long output should make the `Pty` tall enough to
+    hold it.
+
+    The library is one platform-neutral source set, `yossarian.core`. `Pty`, `Screen` and
+    `Style` are exported to the `soundness` umbrella; `Screen` and `Style` are declared in
+    `yossarian.internal`, where `Style` is an opaque type over a `Long`. The same `Screen`
+    buffer, with a different cell style, backs ultimatum's text user interfaces.
+
+refer yossarian.Pty
+refer yossarian.Screen
+refer yossarian.Style
+
+entry .Pty   a terminal's state as an immutable value: its screen, cursor, modes and pending replies
+  detail
+      A `Pty` is created at a size — width, then height, in cells — and transformed by
+      `#consume`, which interprets text and escape sequences and returns the new terminal. The
+      original is untouched: `#consume` copies the screen before writing, so earlier states
+      may be kept and compared.
+
+      ```scala fuel
+      frame
+        label A blank terminal
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            val esc = 0x1b.toChar
+            val pty = Pty(10, 3)
+            pty.buffer.render   // three lines of ten spaces
+      frame
+        label Some text, then a carriage return and a line feed
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            val esc = 0x1b.toChar
+            val pty = Pty(10, 3).consume(t"hello\r\nworld")
+            pty.buffer.render   // "hello     \nworld     \n          "
+      frame
+        label The cursor sent home, and a bold X written over the h
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            val esc = 0x1b.toChar
+            val pty = Pty(10, 3).consume(t"hello\r\nworld").consume(t"$esc[H$esc[1mX")
+            pty.buffer.render                   // "Xello     \nworld     \n          "
+            pty.buffer.style(Prim, Prim).bold   // true
+      frame
+        label The second line erased
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            val esc = 0x1b.toChar
+            val pty = Pty(10, 3).consume(t"hello\r\nworld").consume(t"$esc[H$esc[1mX$esc[2;1H$esc[2K")
+            pty.buffer.render   // "Xello     \n          \n          "
+            pty.cursor          // row two, column one: cell 10 of a ten-column screen
+      ##
+      ```
+
+      A line feed returns the cursor to the first column as well as moving down, as a terminal
+      in its usual newline mode does. Writing past the right-hand edge wraps lazily: the cursor
+      waits on the last column and the next printable character goes to the start of the next
+      line.
+
+      Some sequences make a terminal answer — a cursor position report (`CSI 6 n`), the primary
+      and secondary device attributes — and the answers are put on `#output`, read back as
+      `#stream`, so a program which interrogates its terminal can be tested against the replies
+      it would really receive.
+
+      Everything a program has set beyond the screen itself is in `#state`, a `Pty.State`.
+  refer yossarian.Screen
+  refer yossarian.Style
+  entry .apply   a blank terminal of the given width and height, with the default style
+      `Pty(width, height)` makes a terminal whose every cell is a space in the default `Style`
+      (white on black, both marked as the terminal's defaults), with the cursor at the top
+      left and the scroll region covering the whole screen.
+  entry .stream   every state a terminal passes through as it consumes a lazy stream of chunks
+      `Pty.stream(pty, chunks)` lazily consumes each `Text` of the `Chain` in turn, giving the
+      terminal after each one: a program's output read as a stream becomes a stream of
+      screens. An escape sequence split across two chunks is resumed, as with `Pty#consume`.
+      Raises `Pty.Error` as each chunk is consumed.
+  entry .Error   raised when an escape sequence cannot be interpreted
+    detail
+        Error 537: _an ANSI escape code could not be handled because `reason`_, where the
+        reason is a `Pty.Error.Reason`. Raised by `Pty#consume` (and `Pty.stream`) for an
+        escape sequence it does not recognise or whose parameters are invalid, so a test
+        discovers that a program emits broken sequences, rather than a real terminal quietly
+        mangling them. Most faults are raised and the walk continues, so under an accruing
+        strategy the rest of the input is still interpreted; an invalid `SGR` parameter, a
+        non-numeric parameter or a colour number out of range aborts.
+    entry .Reason   the fault in an escape sequence which a `Pty` could not interpret
+      detail
+          `BadSgrParameters(n)` (1): an `SGR` sequence with a parameter the emulator does not
+          know, given as the whole `;`-separated sequence. `BadCsiParameter(n, command)` (2): a
+          parameter out of range for a command such as `ED` or `EL`.
+          `NonintegerSgrParameter(text)` (3): a parameter which is not a number. `BadColor(n)`
+          (4): a 256-colour index outside 0 to 255. `BadOscParameter(parameter)` (5): an
+          operating-system command which is not a title, a hyperlink or one of the ignored
+          shell notifications. `BadCsiCommand(param, char)` (6): a control-sequence final
+          character the emulator does not implement. `BadCsiEscape(char)` (7): a byte which
+          may not appear inside a control sequence. `BadFeEscape(char)` (8): an `ESC` followed
+          by a character which begins no known sequence.
+
+          Each reason carries its number, the error's second code.
+      entry .communicable   renders each reason as a message, such as _x is not a valid Fe escape_
+      entry #number   the reason's number, the second part of the error's code
+    entry #reason   the `Pty.Error.Reason` naming the fault
+  entry .State   everything a terminal holds besides its screen: cursor, saved state, modes, title
+    detail
+        A case class of the terminal's settings, updated by `Pty#consume` alongside the
+        screen. Positions are `Ordinal` cell indices into the screen read row by row, so
+        `cursor` for column `x` and row `y` of a terminal `w` cells wide is `y*w + x`; the
+        scroll region's bounds are row ordinals.
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        val esc = 0x1b.toChar
+        val pty = Pty(20, 5).consume(t"$esc]0;Build$esc\\$esc[?25l$esc[2;4r")
+
+        pty.state.title        // t"Build"
+        pty.state.hideCursor   // true
+        pty.state.scrollTop    // Sec
+        ```
+
+        A fresh terminal's state has the cursor at `Prim`, the default `Style`, focus on, and
+        every mode off; `Pty.apply` sets `scrollBottom` to the last row.
+    entry #cursor               the cursor's position, as a cell index into the screen read row by row
+    entry #savedCursor          the position saved by `CSI s` or `ESC 7`, restored by `CSI u` or `ESC 8`
+    entry #savedStyle           the style saved with the cursor by `ESC 7` (`DECSC`), restored by `ESC 8`
+    entry #savedLink            the hyperlink saved with the cursor by `ESC 7` (`DECSC`), restored by `ESC 8`
+    entry #style                the style the next character written will take, as `SGR` sequences left it
+    entry #focusDetectionMode   whether the program asked to be told of focus changes, by `CSI ? 1004 h`
+    entry #focus                whether the terminal has focus, as last set by `CSI I` and `CSI O`
+    entry #bracketedPasteMode   whether bracketed paste is on, by `CSI ? 2004 h`
+    entry #hideCursor           whether the program hid the cursor, by `CSI ? 25 l` (`DECTCEM`)
+    entry #title                the window title, as last set by `OSC 0` or `OSC 2`
+    entry #link                 the hyperlink the next character written will carry, as set by `OSC 8`
+        Empty when no link is open: `OSC 8 ; ; url` opens one, and an `OSC 8` with no URL closes
+        it. Every cell written while it is open carries the URL, read with `Screen#link`.
+    entry #scrollTop            the first row of the scroll region, as set by `CSI r` (`DECSTBM`)
+    entry #scrollBottom         the last row of the scroll region, as set by `CSI r` (`DECSTBM`)
+    entry #pendingWrap          whether the cursor waits on the last column, to wrap at the next character
+    entry #mainScreen           the main screen, kept aside while the alternate screen is shown, or `Unset`
+        Entering the alternate screen (`CSI ? 1049 h`, `? 1047 h` or `? 47 h`) stores the main
+        screen here and blanks the display; leaving it restores the main screen as it was. Mode
+        1049 also saves and restores the cursor, in `#mainCursor`.
+    entry #mainCursor           the main screen's cursor, saved on entering the alternate screen by mode 1049
+    entry #pending              an incomplete escape sequence at the end of the last input, resumed next time
+        Output read from a terminal arrives in chunks which may end partway through an escape
+        sequence; `Pty#consume` keeps the unfinished part here and prefixes it to the next
+        input, so the screen is the same however the output is divided.
+  entry #buffer   the screen: a `Screen[Style]` of graphemes, styles and hyperlinks, cell by cell
+      Read a cell with `char`, `grapheme`, `style` and `link`, each taking the column and then
+      the row as `Ordinal`s, or the whole screen with `render`. The buffer is a mutable
+      `Screen`, shared with this `Pty`: read it, but do not `set` or `scroll` it, or the `Pty`
+      which holds it changes too.
+  entry #state    the terminal's settings beyond the screen: a `Pty.State`
+  entry #output   the relay on which the terminal puts its replies to device queries
+      A cursor position report (`CSI 6 n`) puts `ESC [ row ; column R`, the primary device
+      attributes query (`CSI c`) puts `ESC [ ? 1 ; 2 c`, and the secondary (`CSI > c`) puts
+      `ESC [ > 0 ; 0 ; 0 c`. The relay is shared by every state derived from one `Pty.apply`, so
+      it holds all the replies made so far. Read it as `#stream`, after `stop()`ping it if the
+      whole of it is wanted at once.
+  entry #stream   the terminal's replies to device queries, as a lazy stream of text
+      The view of `#output` as a `Chain[Text]`, which pulls replies as it is forced. To read
+      every reply so far, stop the relay first, or the chain waits for more:
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val esc = 0x1b.toChar
+      val queried = Pty(80, 24).consume(t"ab$esc[6n")
+      queried.output.stop()
+      queried.stream.to[List].join   // the report ESC[1;3R
+      ```
+  entry #title    the window title the program set, by `OSC 0` or `OSC 2`, or empty
+      Both terminators are accepted — the bell character and the string terminator `ESC \` —
+      since programs use both.
+  entry #cursor   the cursor's position, as a cell index into the screen read row by row
+      For a terminal `w` cells wide, the cursor at column `x` and row `y` is `y*w + x`, as an
+      `Ordinal`.
+  entry #cursorVisible   whether the cursor is shown: false after `CSI ? 25 l`, true again after `CSI ? 25 h`
+  entry #consume   interprets text and escape sequences, giving the terminal's next state
+      `pty.consume(text)` writes each grapheme at the cursor and performs each escape sequence,
+      returning a new `Pty`; the receiver is unchanged. It needs a `Tactic[Pty.Error]`, raised
+      for a sequence which cannot be interpreted.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val esc = 0x1b.toChar
+      val pty = Pty(10, 4)
+      val first = pty.consume(t"A$esc[3")    // ends partway through a sequence
+      val second = first.consume(t"1mB")     // the sequence completes: B is red
+      second.buffer.style(Sec, Prim).foreground   // Chroma(222, 56, 43)
+      ```
+
+      Control characters behave as on a terminal: backspace moves left without erasing, tab
+      advances to the next eight-column stop, carriage return goes to the first column, and
+      line feed and form feed move down a line, scrolling the region at its bottom. Other C0
+      controls are ignored. `ESC c` (`RIS`) resets the terminal to its initial state, so one
+      `Pty` value may begin a fresh scenario.
+
+entry .Screen   a grid of cells, each a grapheme with a style and a hyperlink, readable cell by cell
+  detail
+      A `Screen[styling]` is the buffer behind a `Pty` (as `Screen[Style]`) and behind
+      ultimatum's text user interfaces (with escapade's style words). `Screen` is declared in
+      `yossarian.internal` and exported here. Each cell holds one grapheme cluster: an ASCII
+      character, a combining sequence, an emoji, or the leading half of a wide character,
+      whose trailing cell holds the empty grapheme (`isWideTrailing`). Cells are addressed by
+      column and then row, both `Ordinal`s.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val esc = 0x1b.toChar
+      val screen = Pty(12, 2).consume(t"$esc]8;;https://example.com/${esc}\\link$esc]8;;$esc\\ 日本").buffer
+
+      screen.char(Prim, Prim)          // 'l'
+      screen.link(Prim, Prim)          // t"https://example.com/"
+      screen.isWideTrailing(6.z, Prim) // true: 日 takes two cells
+      screen.render                    // the two rows, joined by a newline
+      ```
+
+      Unlike a `Pty`, a `Screen` is mutable: `set` and `scroll` change it in place, and `copy`
+      makes an independent one.
+  refer yossarian.Pty
+  refer yossarian.Style
+
+entry .Style   a cell's appearance: eight attribute flags, two colours, and whether each colour is the default
+  detail
+      `Style` is an opaque type over a `Long`, declared in `yossarian.internal` and exported
+      here, read with extension methods: `bold`, `faint`, `italic`, `underline`, `blink`,
+      `reverse`, `conceal` and `strike` are the flags, `foreground` and `background` the
+      colours as `Chroma`s, and `defaultForeground` and `defaultBackground` say whether each
+      colour is the terminal's own default rather than one the output chose.
+
+      The distinction matters to a renderer. A fresh cell, and one written after `SGR 0`,
+      `SGR 39` or `SGR 49`, has the default colours: the `Chroma` is only what this emulator
+      shows for them (white on black), and a renderer drawing the screen in its own theme may
+      use its own. Any colour the output sets explicitly clears the flag, even one equal to
+      the default chroma.
+
+      ```scala fuel
+      frame
+        label A fresh cell: both colours are the defaults
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            val esc = 0x1b.toChar
+            val style = Pty(10, 1).consume(t"A").buffer.style(Prim, Prim)
+            (style.defaultForeground, style.defaultBackground)   // (true, true)
+      frame
+        label SGR 31 sets a red foreground: only the background is still the default
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            val esc = 0x1b.toChar
+            val style = Pty(10, 1).consume(t"$esc[31mA").buffer.style(Prim, Prim)
+            (style.defaultForeground, style.defaultBackground)   // (false, true)
+            style.foreground                                     // Chroma(222, 56, 43)
+      frame
+        label SGR 39 restores the default foreground
+        code
+            import soundness.*
+            import strategies.throwUnsafely
+
+            val esc = 0x1b.toChar
+            val style = Pty(10, 1).consume(t"$esc[31m$esc[39mA").buffer.style(Prim, Prim)
+            (style.defaultForeground, style.defaultBackground)   // (true, true)
+      ##
+      ```
+
+      `SGR 30`–`37` and `40`–`47` choose from the sixteen-colour palette, `90`–`97` and
+      `100`–`107` its bright half, `38;5;n` and `48;5;n` the 256-colour palette (the sixteen,
+      a 6×6×6 cube and a 24-step grey ramp), and `38;2;r;g;b` and `48;2;r;g;b` any 24-bit
+      colour. A style change affects the cells written afterwards, not those already on the
+      screen, as on a terminal.
+
+      A style inspects compactly as its flags (each name prefixed with `!` when off) and its two
+      colours, as `[Bo !F !I … DF DB … …]`.
+  refer yossarian.Pty
+  refer yossarian.Screen
+
+entry .internal   the declarations of `Screen` and `Style`, and the extensions which read a style
+  hidden
+  detail
+      Not for direct use as a prefix: `Screen` and `Style` are exported from here to the
+      `yossarian` package, and the style extensions (`bold`, `foreground`, …) apply to any
+      `Style` without an import.
+  entry .Style   a cell's appearance, as an opaque `Long`; see `yossarian.Style`
+    detail
+        The opaque type `Style = Long`. Its page under the `yossarian` package has the full
+        account; its members, which encode and decode the bits, are here.
+    entry .apply   the default style: white on black, with both colours marked as the defaults
+    entry .Bits   reads and writes one 24-bit colour field of a style
+      detail
+          A colour occupies 24 bits of the `Long` at an offset; `Foreground` and `Background`
+          are the two instances.
+      entry #apply    the colour stored in a style's field, as a `Chroma`
+      entry #update   a copy of a style with the field set to a colour: `Style.Foreground(style) = chroma`
+    entry .Foreground   the foreground colour's field of a style
+    entry .Background   the background colour's field of a style
+    entry .chromaInspectable   renders a `Chroma` by its packed integer, for a style's inspection
+    entry .inspectable   renders a style as its flags and colours: `[Bo !F … DF DB fg bg]`
+    entry .Bit   one flag of a style: an attribute, or whether a colour is the terminal's default
+      detail
+          The attribute flags `Bold`, `Faint`, `Italic`, `Strike`, `Blink`, `Underline`,
+          `Conceal` and `Reverse`, and `DefaultForeground` and `DefaultBackground`, which are set
+          while a colour is the terminal's default (at a reset, and after `SGR 39` or `49`) and
+          cleared by any colour the output sets. A flag reads a style with `Bit.Bold(style)` and
+          writes one with `Bit.Bold(style) = true`.
+      entry #bit      the flag's bit position in the style's `Long`
+      entry #apply    whether the flag is set in a style
+      entry #update   a copy of a style with the flag set or cleared
+  entry .Screen   a grid of styled cells; see `yossarian.Screen`
+    detail
+        The class `Screen[styling]`, generic in the style each cell holds. Its page under the
+        `yossarian` package has the full account; its members are here.
+    entry .apply   a blank screen of a width and height, with a given blank style, or the default `Style`
+        `Screen(width, height, blank)` fills every cell with a space in the style `blank`, which
+        is also the style a cell vacated by scrolling takes; it needs a `ClassTag` for the style
+        type. `Screen(width, height)` is the terminal emulator's screen, a `Screen[Style]`
+        blanked to the default `Style`.
+    entry #width     the number of columns
+    entry #capacity  the number of cells, width times height
+    entry #height    the number of rows
+    entry #offset    the index of a cell, by column and row, into the screen read row by row
+    entry #style     the style of the cell at a column and row
+    entry #link      the hyperlink of the cell at a column and row, or empty text if it has none
+    entry #grapheme  the grapheme in the cell at a column and row, empty for the trailing half of a wide one
+    entry #char      the first character of the cell at a column and row, or a space for a wide grapheme's trailing half
+        A convenience for asserting on narrow text: a cell holding a combining sequence or an
+        emoji gives only its first `Char`, so use `#grapheme` for those.
+    entry #isWideTrailing   whether the cell is the trailing half of a wide grapheme held in the cell to its left
+    entry #line      the whole screen as one row, sharing this screen's cells
+    entry #render    the screen's text, rows joined by newlines, with wide graphemes appearing once
+        Every row is rendered in full, trailing spaces included, so a ten-column row holding
+        `hi` renders as `hi` followed by eight spaces.
+    entry #find      the cells where a text first appears on the screen, as a one-row screen, or `Unset`
+        Searches the screen read as one line, so a match may run from the end of one row onto
+        the next. The result holds copies of the matched cells' styles and links, so a test can
+        find a word and check how it was drawn:
+
+        ```scala
+        import soundness.*
+        import strategies.throwUnsafely
+
+        val esc = 0x1b.toChar
+        val screen = Pty(20, 2).consume(t"ok $esc[1mFAILED$esc[0m").buffer
+        screen.find(t"FAILED").let(_.style(Prim, Prim).bold)   // true
+        ```
+    entry #styles    a frozen copy of every cell's style, read row by row
+    entry #scroll    moves the screen's rows, or a region's, up by a number of rows, or down if negative
+        `scroll(n)` scrolls the whole screen and `scroll(n, top, bottom)` the rows from `top` to
+        `bottom` inclusive; the rows uncovered are filled with blank cells. It changes the
+        screen in place. Rows scrolled out are discarded: there is no scrollback.
+    entry #set       writes a grapheme, style and hyperlink to a cell, in place
+        Addressed by column and row, or by a cell index; the screen is changed in place.
+    entry #copy      an independent copy of the screen, which later writes to either do not affect
+  entry .bold                whether a style is bold, set by `SGR 1` and cleared by `SGR 21` or `22`
+  entry .italic              whether a style is italic, set by `SGR 3` and cleared by `SGR 23`
+  entry .blink               whether a style blinks, set by `SGR 5` and cleared by `SGR 25`
+  entry .faint               whether a style is faint, set by `SGR 2` and cleared by `SGR 22`
+  entry .conceal             whether a style is concealed, set by `SGR 8` and cleared by `SGR 28`
+  entry .strike              whether a style is struck through, set by `SGR 9` and cleared by `SGR 29`
+  entry .underline           whether a style is underlined, set by `SGR 4` and cleared by `SGR 24`
+  entry .reverse             whether a style swaps its colours, set by `SGR 7` and cleared by `SGR 27`
+  entry .foreground          a style's foreground colour, as a `Chroma`
+      When `defaultForeground` is true, this is only the colour this emulator shows for the
+      terminal's default (white), and a renderer may substitute its own.
+  entry .background          a style's background colour, as a `Chroma`
+      When `defaultBackground` is true, this is only the colour this emulator shows for the
+      terminal's default (black), and a renderer may substitute its own.
+  entry .defaultForeground   whether a style's foreground is the terminal's default rather than a colour the output set
+      True for a fresh cell and after `SGR 0` or `SGR 39`; false after any foreground colour is
+      set, even one equal to the default's chroma.
+  entry .defaultBackground   whether a style's background is the terminal's default rather than a colour the output set
+      True for a fresh cell and after `SGR 0` or `SGR 49`; false after any background colour is
+      set, even one equal to the default's chroma.

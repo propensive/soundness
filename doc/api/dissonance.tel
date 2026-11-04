@@ -1,0 +1,569 @@
+tel 1.0
+
+base dissonance
+import soundness
+
+info   minimal edit scripts between sequences, as values to apply, invert, align, serialize and redraft
+detail
+    _Dissonance_ computes the difference between two sequences as an immutable value. `diff`
+    runs Myers' algorithm over any two `Sequence`s, with equality or a comparison of the
+    caller's choosing, and returns a `Diff`: an edit script of insertions (`Ins`), deletions
+    (`Del`) and unchanged elements (`Par`), each with its positions in the two sequences.
+
+    A `Diff` can be applied to the original as a patch, inverted with `flip`, grouped into
+    changed and unchanged runs, refined with `rdiff` into an `RDiff` which pairs deletions with
+    the insertions that replaced them as substitutions (`Sub`), serialized in the unix `diff`
+    format and read back from it. A `Redraft` is the forgiving form of a patch, which names only
+    the lines to remove and add and finds where they belong, and an `Evolution` follows each
+    element through many versions rather than two.
+
+    ```scala
+    import soundness.*
+    import strategies.throwUnsafely
+
+    val original = List(t"foo", t"bar", t"baz")
+    val changes = diff(Sequence(t"foo", t"bar", t"baz"), Sequence(t"foo", t"quux", t"baz"))
+
+    changes.patch(original)                      // t"foo", t"quux", t"baz"
+    changes.serialize.read[Diff[Text]].patch(original)
+    ```
+
+    A diff computed by `diff`, or resolved from a redraft, carries every element in its edits,
+    and says so in its type: it is a `Diff[element] & Retained`, on which `kept` reads an edit's
+    value without handling absence. A diff read from the unix format has no values for its
+    unchanged lines, so it is a plain `Diff`, and cannot be rendered as a redraft.
+
+    The library is the single source set `dissonance.core`, which compiles for the JVM, Scala.js
+    and Scala Native. Everything is exported to the `soundness` umbrella.
+
+refer dissonance.diff
+refer dissonance.Diff
+refer dissonance.RDiff
+refer dissonance.Redraft
+
+entry .diff   the minimal edit script turning one sequence into another, by Myers' algorithm
+    `diff(left, right)` compares two `Sequence`s and returns the fewest insertions and
+    deletions which turn `left` into `right`, interleaved with the unchanged elements, as a
+    `Diff`. A third argument replaces `==` with any comparison, such as a case-insensitive one;
+    an element of `right` paired with an equal one of `left` is reported as a `Par` holding the
+    element from `left`.
+
+    ```scala
+    import soundness.*
+
+    diff(Sequence('A', 'C'), Sequence('A', 'B', 'C'))
+    // Diff(Par(0, 0, 'A'), Ins(1, 'B'), Par(1, 2, 'C'))
+
+    diff(Sequence(t"Foo", t"bar"), Sequence(t"foo", t"bar"), _.lower == _.lower).size  // 0
+    ```
+
+    Every edit the algorithm makes holds its element, so the result is a `Diff[element] &
+    Retained`: it can be rendered as a `Redraft`, and `kept` reads its edits' values directly.
+    The elements may be of any type.
+
+entry .Diff   an edit script: the insertions, deletions and unchanged elements between two sequences
+  detail
+      A `Diff` is a sequence of `#edits`, each an `Ins`, a `Del` or a `Par`, in the order they
+      apply. Each carries its position in the left sequence, the right sequence, or both, and,
+      optionally, its element. It is usually made by `diff`, but may be built by hand or read
+      from the unix format.
+
+      ```scala
+      import soundness.*
+
+      val changes = diff(Sequence(t"A", t"B"), Sequence(t"B", t"C", t"D"))
+      // Diff(Del(0, t"A"), Par(1, 0, t"B"), Ins(1, t"C"), Ins(2, t"D"))
+
+      changes.size                           // 3
+      changes.patch(List(t"A", t"B"))         // t"B", t"C", t"D"
+      changes.flip.patch(List(t"B", t"C", t"D"))
+      ```
+
+      A diff of `Text` lines serializes to the unix `diff` format with `.serialize`, and that
+      format is read back with `read[Diff[Text]]`, through `.aggregable`. A retained diff of
+      `Text` renders as a `Redraft` with `.redraft`.
+  refer dissonance.diff
+  refer dissonance.RDiff
+  refer dissonance.Redraft
+  entry .aggregable   reads a `Diff[Text]` from the lines of a unix-format diff, as `read[Diff[Text]]`
+      The given which makes `Diff[Text]` readable from a stream of `Text` lines in the default
+      (`diff` with no options) format: command lines such as `2c2,3`, `3d2` and `0a1`, deleted
+      lines prefixed `< `, inserted lines prefixed `> `, and `---` between them. It needs a
+      `Tactic[Diff.Error]`, which is raised for a line it cannot read.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      Chain(t"2c2,3", t"< bar", t"---", t"> quux", t"> bop").read[Diff[Text]]
+      // Diff(Par(0, 0), Del(1, t"bar"), Ins(1, t"quux"), Ins(2, t"bop"))
+      ```
+
+      The format does not repeat the unchanged lines, so the `Par`s of a parsed diff carry no
+      values: it patches the original perfectly well, but is a plain `Diff`, not a `Retained`
+      one, and so cannot be rendered with `.redraft`.
+  entry .serialize   a diff of text as the lines of a unix-format diff
+      An extension on `Diff[Text]`, returning a `Chain[Text]`: for each changed region, a
+      command line (`<left>a<right>`, `<left>d<right>` or `<left>c<right>`, with ranges
+      written `start,end`), then each deleted line prefixed `< `, a `---` line if the region
+      both deletes and inserts, and each inserted line prefixed `> `. Unchanged lines are not
+      written. The lines read back with `read[Diff[Text]]`.
+
+      ```scala
+      import soundness.*
+
+      diff(Sequence(t"a", t"b", t"c", t"d"), Sequence(t"a", t"d")).serialize
+      // t"2,3d1", t"< b", t"< c"
+      ```
+  entry .redraft   renders a retained diff of text as a `Redraft`, with as much context as asked for
+      An extension on `Diff[Text] & Retained`, such as the result of `diff`. The context is a
+      `Redraft.Context`: `Minimal` (the default) keeps only the unchanged lines needed to place
+      each change unambiguously, `Full` keeps them all, and `Fixed(n)` keeps those within `n`
+      lines of a change. A redraft rendered from a diff always applies to the original to give
+      the diff's target.
+
+      ```scala fuel
+      frame
+        label Minimal context: only what is needed to place the change
+        code
+            val source = Sequence(t"a", t"b", t"c", t"d", t"e")
+            val target = Sequence(t"a", t"b", t"C", t"d", t"e")
+
+            diff(source, target).redraft().serialize
+            // t"- c", t"+ C"
+      frame
+        label Fixed context: one line either side of the change
+        code
+            val source = Sequence(t"a", t"b", t"c", t"d", t"e")
+            val target = Sequence(t"a", t"b", t"C", t"d", t"e")
+
+            diff(source, target).redraft(Redraft.Context.Fixed(1)).serialize
+            // t"b", t"- c", t"+ C", t"d"
+      frame
+        label Full context: every line of the original
+        code
+            val source = Sequence(t"a", t"b", t"c", t"d", t"e")
+            val target = Sequence(t"a", t"b", t"C", t"d", t"e")
+
+            diff(source, target).redraft(Redraft.Context.Full).serialize
+            // t"a", t"b", t"- c", t"+ C", t"d", t"e"
+      ##
+      ```
+
+      A parsed diff, whose unchanged lines have no values, is not `Retained` and so has no
+      `redraft`: the type rules out a rendering which could not reproduce the original.
+  entry .Error   raised when a line of a unix-format diff cannot be read
+    detail
+        Error 39: _could not read the diff at line `lineNo`: `line`_. Raised by
+        `Diff.aggregable` (`read[Diff[Text]]`) for a command line whose ranges are not numbers,
+        or which is not a command at all. A malformed range aborts the read; an unrecognised
+        command line is raised and then skipped, so under a tactic which recovers, the rest of
+        the diff is still read.
+    entry #lineNo   the line number, counting from 1, of the line which could not be read
+    entry #line     the text of the line which could not be read
+  entry #edits     the edits, in the order they apply
+  entry #size      the number of insertions and deletions, not counting unchanged elements
+      Zero exactly when the two sequences were equal.
+  entry #flip      the inverse diff, which turns the right sequence back into the left
+      Every `Ins` becomes a `Del` and every `Del` an `Ins`, and the positions of each `Par` are
+      swapped. The element type becomes `Optional[element]`, since an inverted insertion is a
+      deletion whose value is present but typed as optional.
+  entry #map       applies a function to the element of every edit
+      Positions are kept; an edit with no value stays without one. The result is a plain
+      `Diff`, not a `Retained` one: re-mark it with `retained` if every edit still carries its
+      value.
+  entry #patch     applies the diff to the original sequence, giving the target
+    detail
+        `diff.patch(original)` walks the edits over a `List` of the original elements:
+        insertions are taken from the diff, deletions skip an element, and unchanged elements
+        are kept. It returns a `Chain`. For a `Par` with a value, an optional second argument
+        `update(fromDiff, fromOriginal)` chooses what is emitted; by default it is the diff's
+        own value, and for a `Par` with no value, as in a parsed diff, it is the original's.
+
+        ```scala
+        import soundness.*
+
+        val changes = diff(Sequence(t"foo", t"bar", t"baz"), Sequence(t"foo", t"quux", t"baz"))
+        changes.patch(List(t"foo", t"bar", t"baz"))   // t"foo", t"quux", t"baz"
+        ```
+
+        A diff which deletes or keeps beyond the end of the sequence it is applied to panics:
+        it was computed against a different original.
+  entry #rdiff     pairs each deletion with a similar insertion as a substitution, giving an `RDiff`
+    detail
+        `diff.rdiff(similar)` looks at each changed region of the diff (each `Tract.Changed`)
+        and, where it both deletes and inserts, pairs deletions with insertions as `Sub`s.
+        Within a region, the pairing is itself a diff of the deleted elements against the
+        inserted ones, with `similar` as the comparison, so as many similar pairs as possible
+        are found, in order; those left over stay as plain `Del`s and `Ins`s.
+
+        ```scala
+        import soundness.*
+        import proximities.levenshteinProximity
+        import caseSensitivity.caseSensitive
+
+        val italian = Sequence(t"zero", t"uno", t"due", t"tre")
+        val spanish = Sequence(t"cero", t"uno", t"dos", t"tres")
+
+        diff(italian, spanish).rdiff(_.proximity(_) < 4)
+        // RDiff(Sub(0, 0, t"zero", t"cero"), Par(1, 1, t"uno"),
+        //       Sub(2, 2, t"due", t"dos"), Sub(3, 3, t"tre", t"tres"))
+        ```
+
+        The second parameter, `subSize` (default `1`), pairs a region outright, without
+        consulting `similar`, when it has equal numbers of deletions and insertions and no
+        more than `subSize` of each: at that size the correspondence is obvious even when the
+        values have nothing in common. An edit with no value, as in a parsed diff, is never
+        similar to anything.
+  entry #collate   the edits grouped into alternating runs of unchanged and changed elements
+      A `List` of `Tract`s: each maximal run of `Par`s is a `Tract.Unchanged`, and each run of
+      deletions and insertions between them a `Tract.Changed`, holding its deletions and its
+      insertions separately.
+  entry #chunks    the changed regions, each with its positions and its deletions and insertions
+      A `Chain` of `Chunk`s, one for each changed region, as the unix format writes them; the
+      unchanged elements between them are not represented. `Diff.serialize` is written over
+      this.
+
+entry .Edit   one step of a `Diff`: an insertion, a deletion or an unchanged element
+  detail
+      The sealed supertype of `Ins`, `Del` and `Par`, the three edits a `Diff` is made of. An
+      `Edit` is also a `Change`, the wider type of an `RDiff`'s steps, which adds `Sub`.
+
+      Every edit has a `#value`, which is `Optional`: an `Ins` always has one, but a `Del` or a
+      `Par` may not, as in a diff read from the unix format. On an edit whose type is
+      `Retained`, `kept` reads the value as a bare element.
+  refer dissonance.Change
+  refer dissonance.Retained
+  entry #value   the element the edit concerns, if it is carried
+  entry #map     applies a function to the edit's element, keeping its positions
+      The result is an `Edit` of the same kind; the `Retained` mark is not kept, and may be
+      re-established with `retained`.
+
+entry .Change   one step of an `RDiff`: an edit, or a substitution of one element for another
+  detail
+      The sealed supertype of `Edit` (so of `Ins`, `Del` and `Par`) and of `Sub`, the
+      substitution which `Diff#rdiff` makes from a similar deletion and insertion. A match over
+      an `RDiff`'s `#changes` has four cases.
+
+      ```scala
+      import soundness.*
+
+      def describe(change: Change[Text]): Text = change match
+        case Par(_, _, _)       => t"keep"
+        case Del(_, _)          => t"remove"
+        case Ins(_, value)      => t"add $value"
+        case Sub(_, _, _, _)    => t"change"
+      ```
+  refer dissonance.Edit
+  refer dissonance.RDiff
+  entry #map   applies a function to the element, or elements, of the change, keeping its positions
+
+entry .Ins   an insertion: an element of the right sequence which is not in the left
+  detail
+      `Ins(right, value)`: `value` is inserted at position `right` of the right sequence. An
+      insertion always carries its value, since a patch could not otherwise produce it.
+  entry #right   the inserted element's position in the right sequence, from zero
+  entry #value   the inserted element
+
+entry .Del   a deletion: an element of the left sequence which is not in the right
+  detail
+      `Del(left, value)`: the element at position `left` of the left sequence is removed. The
+      value is `Optional` and defaults to `Unset`, since a patch needs only the position; a
+      diff from `diff` always records it, and one read from the unix format does too.
+  entry #left    the deleted element's position in the left sequence, from zero
+  entry #value   the deleted element, if it is carried
+
+entry .Par   an unchanged element, present at a position in each sequence
+  detail
+      `Par(left, right, value)`: the element at position `left` of the left sequence is the
+      one at `right` of the right. The value defaults to `Unset`: a diff read from the unix
+      format, which does not repeat unchanged lines, has none.
+  entry #left    the element's position in the left sequence, from zero
+  entry #right   the element's position in the right sequence, from zero
+  entry #value   the element, if it is carried
+
+entry .Sub   a substitution: an element of the left sequence replaced by a similar one in the right
+  detail
+      Made only by `Diff#rdiff`, from a deletion and an insertion it judged to correspond.
+      `Sub(left, right, leftValue, rightValue)` says that the element at `left`, `leftValue`,
+      became the element at `right`, `rightValue`. Both values are `Optional`, as a parsed
+      diff's deletions may have none. `RDiff#flip` swaps the two sides.
+  entry #left         the replaced element's position in the left sequence
+  entry #right        the replacing element's position in the right sequence
+  entry #leftValue    the element which was replaced, if it is carried
+  entry #rightValue   the element which replaced it, if it is carried
+
+entry .RDiff   an aligned diff, in which a similar deletion and insertion are paired as a `Sub`
+  detail
+      The result of `Diff#rdiff`: the same steps as a `Diff`, except that where a deletion
+      and an insertion correspond, they are one `Sub`. It suits display — a changed line shown
+      as a modification of the old one, rather than as a removal and an unrelated addition —
+      and the comparison of structured records, where a modified record is the same record.
+
+      ```scala
+      import soundness.*
+
+      val aligned = diff(Sequence(t"a", t"b"), Sequence(t"a", t"c")).rdiff(_ == _)
+      // RDiff(Par(0, 0, t"a"), Sub(1, 1, t"b", t"c"))
+      ```
+  refer dissonance.Diff
+  refer dissonance.Change
+  entry #changes   the steps, in order: `Par`, `Del`, `Ins` and `Sub`
+  entry #flip      the inverse aligned diff, from the right sequence back to the left
+      Insertions and deletions exchange places, and each `Par` and `Sub` has its two positions
+      (and, for a `Sub`, its two values) swapped.
+  entry #map       applies a function to the element, or elements, of every step
+
+entry .Chunk   one changed region of a diff: where it is, what it deletes and what it inserts
+  detail
+      The unit of the unix `diff` format, given by `Diff#chunks`: the region's starting
+      positions in the left and right sequences, then its deletions and its insertions.
+  entry #position        the region's starting position in the left sequence
+  entry #rightPosition   the region's starting position in the right sequence
+  entry #dels            the region's deletions, in order
+  entry #inss            the region's insertions, in order
+
+entry .Tract   a run of a diff: either a changed region or a stretch of unchanged elements
+  detail
+      `Diff#collate` divides a diff into alternating `Tract`s. A `Changed` tract holds a
+      region's deletions and insertions separately, which is what `Diff#rdiff` pairs; an
+      `Unchanged` one holds the `Par`s between regions.
+
+      ```scala
+      import soundness.*
+
+      diff(Sequence(1, 2, 3), Sequence(1, 4, 3)).collate.map:
+        case Tract.Unchanged(pars)      => t"${pars.size} kept"
+        case Tract.Changed(dels, inss)  => t"${dels.size} for ${inss.size}"
+      ```
+  entry .Changed   a changed region: its deletions and its insertions
+    entry #deletions    the region's deletions, in order
+    entry #insertions   the region's insertions, in order
+  entry .Unchanged   a run of unchanged elements
+    entry #retentions   the `Par`s of the run, in order
+
+entry .Retained   the type-level proof that every edit of a diff carries its element
+    `Retained` is a refinement, `Any { type Retain = true }`, which marks an `Edit` or a
+    `Diff` whose values are known to be present. `diff` and `Redraft#resolve` return a
+    `Diff[element] & Retained`; a diff read from the unix format, or built by hand, does
+    not. Being a refinement rather than a trait, the mark costs nothing at runtime: an
+    `Edit[Text] & Retained` is an `Edit` like any other.
+
+    Two operations need the proof. `kept` reads an edit's value as a bare element instead of
+    an `Optional`, and `Diff.redraft` renders a diff as a `Redraft`, which must reproduce every
+    kept and deleted line.
+
+    ```scala
+    import soundness.*
+
+    val changes: Diff[Char] & Retained = diff(Sequence('a', 'b'), Sequence('b'))
+    changes.retentions.map(_.kept)   // 'a', 'b', each a Char
+    ```
+
+    `retained` marks a value as retained, for a diff or edit known by construction to carry
+    its values, and `retentions` gives a retained diff's edits with the mark.
+
+entry .retained   marks an edit or a diff as `Retained`, where every value is known to be present
+    An extension on `Edit` and on `Diff`, returning the receiver typed `& Retained`. It checks
+    nothing: it is the place where code which has just supplied every value records the fact,
+    as `diff` and `Redraft#resolve` do. Marking a diff whose edits lack values makes `kept`
+    return absent values as if they were elements, and a rendered redraft wrong.
+
+    ```scala
+    import soundness.*
+
+    val changes = Diff(Par(0, 0, t"a"), Ins(1, t"b")).retained
+    changes.redraft().serialize   // t"a", t"+ b": the context places the insertion
+    ```
+
+    `Edit#map` and `Diff#map` drop the mark, which must be re-applied with `retained` when the
+    mapped values are still all present.
+
+entry .kept   an edit's value: a bare element on a `Retained` edit, and `Optional` otherwise
+    An extension on any `Edit`. On an edit whose static type is `Retained`, it is a
+    `transparent inline` accessor which returns the element itself, so no absence need be
+    handled; on any other edit, or where the type is not known, it is `#value`, an
+    `Optional[element]`.
+
+    ```scala
+    import soundness.*
+
+    val edit = Del(0, t"gone").retained
+    val text: Text = edit.kept
+    ```
+
+entry .retentions   a retained diff's edits, each typed as `Retained`
+    An extension on `Diff[element] & Retained`, giving its `#edits` as a `List[Edit[element] &
+    Retained]`, so that `kept` can be applied to each to read a bare element.
+
+entry .Redraft   a forgiving patch of text lines: only the changes, located by searching the original
+  detail
+      The unix `diff` format states each change's position exactly, and does not apply to a
+      text which has moved. A `Redraft` states only the lines to remove and the lines to add,
+      with as few unchanged lines as are needed to place them, and finds where they belong by
+      searching the original. It is the form in which a person, or a language model, can
+      propose an edit to a text it has only read.
+
+      A redraft is a sequence of `Redraft.Directive`s, usually parsed from lines of text with
+      `Redraft.parse`:
+
+      - `- line` removes `line`, and `+ line` inserts `line`;
+      - `< line` and `> line` remove and insert unconditionally;
+      - any other line is context, which must match a line of the original;
+      - a line beginning `\` is context with the `\` removed, for a context line which itself
+        begins with a marker.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      val source = Sequence(t"line1", t"line2", t"line3")
+
+      Redraft.parse(Chain(t"- line2", t"+ new line 2a")).patch(source)
+      // t"line1", t"new line 2a", t"line3"
+      ```
+
+      Context and removed lines are matched in order, each against the first matching line
+      after the one before, so unchanged lines between them need not be written; an insertion
+      goes after the last line matched. A `- x` or `+ x` line is ambiguous when the original
+      also has the literal line `- x` or `+ x`, which it might be context for: the ambiguity is
+      reported, and the unconditional `<`/`>` spellings resolve it. A change which would also
+      match further down — `- a` against `a`, `b`, `a` — is under-anchored and reported, rather
+      than applied at a guess; one more context line anchors it.
+
+      `#patch` applies a redraft, `#resolve` turns it into the `Diff` it describes, and
+      `#verify` lists its problems without raising. `Diff.redraft` renders a diff as a redraft,
+      and `#serialize` writes one back as lines.
+  refer dissonance.Diff
+  refer dissonance.Redraft.Error
+  entry .parse   reads a redraft from lines of text
+      Each line becomes one `Redraft.Directive`: `+ ` and `- ` (or a bare `+` or `-`) a `Mark`
+      inserting or removing the rest of the line, `> ` and `< ` an unconditional `Add` or
+      `Cut`, a line beginning `\` a `Keep` of the rest, and any other line a `Keep` of itself.
+      Parsing never fails; whether the redraft applies is checked against an original by
+      `Redraft#resolve`, `Redraft#patch` or `Redraft#verify`.
+
+      ```scala
+      import soundness.*
+
+      Redraft.parse(Chain(t"< forced", t"> add", t"\\- escaped"))
+      // Redraft(Cut(t"forced"), Add(t"add"), Keep(t"- escaped"))
+      ```
+  entry .render   renders a retained diff of text as a redraft with the given context
+      The implementation of `Diff.redraft`, which is the usual way to call it. `Minimal`
+      context is found greedily: context lines are dropped, furthest from a change first, for
+      as long as the redraft still applies to the original without ambiguity and gives the
+      same result. An insertion or removal which would be ambiguous as `+` or `-` is written as
+      `>` or `<`.
+  entry .Directive   one line of a redraft: context, an insertion, a removal or an ambiguous mark
+    detail
+        What `Redraft.parse` makes of each line, and what `Redraft#serialize` writes back.
+        `Mark` is the ordinary `+`/`-` form, which is read as an insertion or removal unless
+        the original has the literal marked line as context; `Add` and `Cut` are the
+        unconditional `>`/`<` forms.
+    entry .Keep   a context line, which must match a line of the original
+      entry #line   the line's text
+    entry .Add    an unconditional insertion, written `> line`
+      entry #line   the line to insert
+    entry .Cut    an unconditional removal, written `< line`, of a line which must be in the original
+      entry #line   the line to remove
+    entry .Mark   an insertion or removal, written `+ line` or `- line`
+      entry #line     the line to insert or remove, without its marker
+      entry #insert   `true` for an insertion (`+`), `false` for a removal (`-`)
+  entry .Anomaly   a problem found in applying a redraft: where, what, and why
+      Returned by `Redraft#verify`, and the substance of a `Redraft.Error`. `line` is the
+      index, from zero, of the directive at fault, `text` the line it named, and `reason` a
+      `Redraft.Error.Reason`.
+
+      ```scala
+      import soundness.*
+
+      Redraft.parse(Chain(t"- a")).verify(Sequence(t"a", t"b", t"a"))
+      // List(Redraft.Anomaly(0, t"a", Redraft.Error.Reason.Unanchored))
+      ```
+  entry .Context   how much unchanged context a rendered redraft keeps
+    detail
+        Passed to `Diff.redraft`. `Minimal` keeps only the context lines without which the
+        redraft would be ambiguous or would apply elsewhere; `Full` keeps every unchanged
+        line; `Fixed(lines)` keeps those within `lines` of a change, as a unified diff does.
+    entry .Fixed   the unchanged lines within a fixed distance of a change
+      entry #lines   how many lines of context to keep either side of each change
+  entry .Error   raised when a redraft cannot be applied to the original
+    detail
+        Error 472: _the redraft could not be applied at line `line` (`text`) because `reason`_.
+        Raised by `Redraft#resolve` and `Redraft#patch`, for the first anomaly found; use
+        `Redraft#verify` to list them all.
+
+        ```scala
+        import soundness.*
+
+        val source = Sequence(t"line1", t"line2")
+        capture[Redraft.Error](Redraft.parse(Chain(t"absent", t"- line2")).patch(source))
+        . reason   // Redraft.Error.Reason.NoMatch
+        ```
+    entry .Reason   why a directive of a redraft could not be applied
+      detail
+          `NoMatch` (_no matching line could be found in the original_): a context or removed
+          line is not in the original after the lines matched before it. `Ambiguous` (_the
+          change could be interpreted in more than one way_): a `+`/`-` line could be either a
+          change or a context line for the literal marked line; write it with `>`/`<`, or
+          escape the context with `\`. `Unanchored` (_there is not enough context to locate the
+          change unambiguously_): the line would also match further on; add a context line.
+      entry .communicable   describes each reason as a message
+      entry #number   the reason's number, the second part of the error's code
+    entry #line     the index, from zero, of the directive which could not be applied
+    entry #text     the line of text the directive named
+    entry #reason   why it could not be applied, as a `Redraft.Error.Reason`
+  entry #directives   the redraft's directives, in order
+  entry #serialize    the redraft as lines of text, which `Redraft.parse` reads back
+      `Mark`s are written `+ ` and `- `, `Add` and `Cut` as `> ` and `< `, and a context line
+      which begins with a marker or a `\` is escaped with a `\`.
+  entry #resolve      the `Diff` the redraft describes against an original, or a `Redraft.Error`
+      Matches the redraft's directives against `original`, with `==` or the given comparison,
+      and returns a `Diff[Text] & Retained` over every line of the original. It raises a
+      `Redraft.Error` for the first anomaly, so needs a `Tactic[Redraft.Error]`.
+  entry #verify       every anomaly the redraft has against an original, without raising
+      An empty `List` means the redraft applies cleanly.
+  entry #patch        applies the redraft to an original, giving the edited lines
+      `#resolve` followed by `Diff#patch`: a `Chain[Text]`, or a `Redraft.Error`, raised
+      through the `Tactic[Redraft.Error]` in scope.
+
+      ```scala
+      import soundness.*
+      import strategies.throwUnsafely
+
+      Redraft.parse(Chain(t"b", t"- a")).patch(Sequence(t"a", t"b", t"a"))   // t"a", t"b"
+      ```
+
+entry .evolve   tracks elements through a series of versions, identifying each across them all
+    `evolve(versions)` diffs each version against the next and merges the results into one
+    `Evolution`: a single sequence of atoms, each an element with the set of versions it is
+    present in. An element which disappears and later returns is recognized as the same atom
+    where the diffs allow it. The optional `similar` comparison makes each step an aligned
+    diff (`Diff#rdiff`), so that a modified element continues its atom rather than starting a
+    new one. The element type needs a `ClassTag`.
+
+    ```scala
+    import soundness.*
+
+    val versions = List(List('d', 'o', 'g'), List('c', 'a', 't'), List('d', 'o', 'g'))
+    val evolution = evolve(versions)
+
+    evolution(Ter)   // List('d', 'o', 'g'): the third version
+    ```
+
+entry .Evolution   a history of many versions, as one sequence of elements tagged with their versions
+  detail
+      Made by `evolve`. Its `#sequence` interleaves every element of every version, in an
+      order consistent with each, and each `Evolution.Atom` records the versions, by
+      `Ordinal`, in which it appears. Applied to an ordinal, it reconstructs that version
+      exactly, which is the structure a document history, an undo stack or a series of drafts
+      wants.
+  refer dissonance.evolve
+  entry .Atom   one element of an evolution, with the versions it is present in
+    entry #value      the element
+    entry #presence   the ordinals of the versions in which the element appears
+    entry #add        the same atom, present also in another version
+    entry #has        whether the element is present in a version
+  entry #sequence   every element of every version, in order, each with its versions
+  entry #apply      reconstructs one version, by its ordinal (`Prim` for the first)

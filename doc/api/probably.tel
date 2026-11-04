@@ -1,0 +1,1444 @@
+tel 1.0
+
+base probably
+import soundness
+
+info   the test framework: suites of tests as values, assertions with structural contrasts, and a typed event stream for a host
+detail
+    _Probably_ is Soundness's test framework. A test is a **value**: `test(m"…")` names it,
+    the block beneath produces a result, and `assert`, `check` or `matches` states what must
+    hold of that result. A failed equality assertion is reported not as two `toString`s but as
+    a structural **contrast** of the expected and observed values (chiaroscuro's
+    `Juxtaposition`), and every result leaves the suite as a typed `TestEvent`, so a host
+    renders the run however it likes.
+
+    ```scala
+    import soundness.*
+
+    object Tests extends Suite("parser", m"Parser tests"):
+      def run(): Unit =
+        suite(m"Numbers"):
+          test(m"a decimal integer parses"):
+            safely(t"42".as[Int])
+          . assert(_ == 42)
+
+        aspirationally:
+          test(m"a hexadecimal integer parses"):
+            safely(t"0x2a".as[Int])
+          . assert(_ == 42)
+    ```
+
+    A `Suite` is **not a main class** and the tests have no `main`: the beneficence compiler
+    plugin lists every `Suite` object in `META-INF/services/probably.Suite`, and every test in
+    `META-INF/probably/tests`, and the `fume` runner discovers suites from those indexes on a
+    built classpath, drives each through `Suite#invoke` with an event sink, and renders the
+    `TestEvent`s. The `events` component carries them across a classloader boundary as
+    length-prefixed BinTEL frames (`Streamer`), or out of a separate JVM (`Standalone`). A
+    repository which wants a plain `java` entry point for CI writes `Suite.main(arguments,
+    Tests)`, which prints one line per completed test and exits with the suites' status.
+
+    The pieces, from the surface down:
+
+    - **Declaring**: `test`, `suite`, `impromptu` and `aspirationally` are package-level
+      functions; each needs a `Testable` in scope (a `Suite`'s own, a `suite` block's, or an
+      `impromptu` block's) and, to assert, a `Runner`. A test may carry a stable moniker
+      (`n"square"`) and tags (`n"slow"`), both `n"…"` literals checked at compile time
+      against the `Probing` and `Tagging` naming planes.
+    - **Asserting**: `Test#assert` and `Test#check` are macros which find the `Runner` and
+      the `Inclusion`s for its report type, run the body, and record a `Verdict`. `assert`
+      demands a **pure** body (one closing over no capability), which is what lets a queued
+      runner (`--workers=<n>`) run it on a worker thread; `check` takes any body, runs it
+      inline and returns the value. A failed `== expected` assertion is contrasted when the
+      `Autopsy` in scope says so (`Autopsy.contrastByDefault` does).
+    - **Spreading**: `Test.Id#over` runs one test once per value of an `Axis` (or per
+      combination of two), recording each verdict at that coordinate of a single named test.
+    - **Running**: a `Runner` is built from a `Selection` (parsed from command-line terms:
+      hashes, monikers, globs, `kind:`, `tag:`, `not:`, axis constraints, `--list`,
+      `--scale=`, `--workers=`) and a `Reporter`; `Reporter.report` accumulates a `Report`, a
+      tree of `Entry`s whose cells hold `Run`s of `Metric`s, and emits every datum as a
+      `TestEvent`.
+    - **Measuring**: `Benchmark`, `Strain` and `Hotspots` are the results of the three timed
+      kinds (benchmarks, stress tests, profiles, declared through the sedentary library), each
+      with an `Inclusion[Report, …]` which records it as metrics at a coordinate.
+
+    The library has three components. `probably.core` (JVM, Scala.js and Scala Native) holds
+    everything but `Suite` and the wire format; `probably.cli` adds `Suite`; and
+    `probably.events` adds `Streamer` and `Standalone`, the BinTEL framing of the event stream
+    for a host. Everything is exported to the `soundness` umbrella except `probably.Tag`, whose
+    name is honeycomb's HTML tag there: write `probably.Tag` when the type must be named (tags
+    are usually written as `n"…"` literals). The hypotenuse checking vocabulary — `===`,
+    `!==`, `+/-`, `±`, `Checkable` and `Tolerance` — is re-exported here so that `import
+    probably.*` still provides it. The choice packages `harnesses`, `autopsies` and
+    `decimalizers` hold givens which are imported by name, since `import probably.*` does not
+    import givens.
+
+    A listing (`--list`, which is how a host budgets a run before staging anything)
+    executes the whole of `run()`: `assert` bodies are skipped when
+    unselected, but every `check` body runs, as does every statement between tests, so a
+    `val` consumed only inside test bodies is best made `lazy`.
+
+refer probably.Suite
+refer probably.test
+refer probably.Test
+refer probably.Runner
+refer probably.Selection
+refer probably.TestEvent
+refer chiaroscuro.Juxtaposition
+
+entry .test   declares a test by its description, with optional moniker and tags
+  detail
+      `test(m"…")` makes a `Test.Id` from a description, the `Testable` in scope (which says
+      which suite the test belongs to) and the call's `Codepoint`; applying the id to a block
+      makes a `Test`, which `assert`, `check` or `matches` then runs. The description may
+      carry tags after it, `test(m"fetches", n"slow", n"network")`, by which a selection
+      admits or excludes the test; each is an `n"…"` literal checked against the `Tagging`
+      rule (identifier characters and `-`).
+
+      The second form names the test with a **moniker** first, `test(n"square", m"square a
+      number")`: a compile-time-checked Java identifier which addresses the test in selections
+      and charts stably, however its description is reworded.
+
+      ```scala
+      import soundness.*
+      import soundness.{nominative, taggingNominative}
+
+      given tutorial: (Testable of Impromptu) = Testable.detached
+      given runner: Runner[Report] = Runner()
+
+      test(m"square a number")(3*3).assert(_ == 9)
+      test(n"square", m"square a number", n"quick")(3*3).assert(_ == 9)
+      ```
+
+      A `test` with no `Testable` in scope is a compile error, _a test must be declared for a
+      Suite — in its body, or in a method taking `(using Testable of "<the suite's name>")` —
+      or inside an `impromptu` block_. A method which declares tests for a suite names it by
+      its id, `def numbers()(using Testable of "parser"): Unit`, or is generic in the topic,
+      `[topic <: Label](using Testable of topic)`.
+  refer probably.Test
+  refer probably.Testable
+  refer probably.suite
+
+entry .suite   groups tests under a name, as a nested suite of the one in scope
+  detail
+      `suite(m"Numbers") { … }` declares a group: the block runs with a new `Testable` of the
+      same topic as the enclosing one, so the tests within belong to the group, which belongs
+      to the suite, and their paths (`parser/Numbers/a decimal integer parses`) and ids
+      reflect it. It needs the enclosing `Testable`, a `Runner` (which enters the group and
+      reports its start and end) and a `Codepoint`. The second form gives the group a
+      moniker, `suite(n"numbers", m"Numbers")`.
+
+      A group is always entered, whatever the selection: its body is cheap, and pruning by
+      name would defeat selection by hash or moniker of the tests within it. With a queued
+      runner, the group's `SuiteEnded` event is held back until the last assertion queued
+      within it has completed.
+  refer probably.test
+  refer probably.Testable
+
+entry .impromptu   admits tests which no `Suite` declares statically
+  detail
+      Tests a program makes up as it runs — one per file of a conformance corpus — or tests
+      run on a `Runner` of the caller's own, outside any suite, are declared inside an
+      `impromptu` block. Within it `test`, `suite` and the rest work as usual, attributed to
+      the position of the surrounding `Testable` if there is one (`Testable.detached`
+      otherwise), but their `Testable`'s topic is `Impromptu`, so the beneficence plugin
+      leaves them out of the index of tests it writes, and a host learns of them only as they
+      run.
+
+      ```scala
+      import soundness.*
+
+      given tutorial: (Testable of Impromptu) = Testable.detached
+      given runner: Runner[Report] = Runner()
+
+      impromptu:
+        List(t"1", t"22", t"333").each: digits =>
+          test(m"$digits parses")(safely(digits.as[Int])).assert(_.present)
+      ```
+
+      The block's result is returned, so `impromptu(test(m"probe"))` is a `Test.Id`.
+  refer probably.Impromptu
+  refer probably.Testable
+
+entry .aspirationally   records every assertion in the block as an aspiration, neither failing nor forgotten
+  detail
+      A test which *should* pass but is known not to yet is written like any other, inside an
+      `aspirationally` block. Every verdict within is recorded as `Verdict.AspirePass` or
+      `Verdict.AspireFail` (and an exception as `AspireFail`), so the run does not fail on it,
+      and a host reports it distinctly once it starts to pass. The block sees a
+      `Runner.Aspirational` view of the contextual runner, which shares its state and report
+      and differs only in how verdicts are recorded; a pure aspiration is queued like any
+      other assertion under `--workers`.
+
+      ```scala
+      import soundness.*
+
+      given tutorial: (Testable of Impromptu) = Testable.detached
+      given runner: Runner[Report] = Runner()
+
+      aspirationally:
+        test(m"a hexadecimal integer parses"):
+          safely(t"0x2a".as[Int])
+        . assert(_ == 42)
+      ```
+  refer probably.Verdict
+  refer probably.Runner
+
+entry .Suite   a suite of tests: an object with a title, an id and a `run()` body, driven by a host through `invoke`
+  detail
+      A `Suite` is the unit a host runs. It is an `object` extending `Suite(id, title)` or
+      `Suite(title)` whose `#run` body declares tests, and it is **not a main class**: the
+      beneficence plugin records every `Suite` object in the jar's
+      `META-INF/services/probably.Suite` index, and the fume runner discovers suites there,
+      drives each through `#invoke` with an event sink, and renders the stream of `TestEvent`s.
+      The suite itself renders nothing.
+
+      ```scala fuel
+      typecheck
+      ##
+      object Tests extends Suite("parser", m"Parser tests"):   // `fume run parser`
+        def run(): Unit =
+          suite(m"Numbers"):
+            test(m"a decimal integer parses"):
+              safely(t"42".as[Int])
+            . assert(_ == 42)
+      ```
+
+      A suite has a **title** and an **id**. The id is what a selection and a path know it
+      by, and is either given as a string literal before the title, or derived from the title
+      by `.derive`: `Suite(m"Honeycomb Tests")` has the id `honeycomb-tests`. A given id is
+      also the suite's `Topic` type: within its body the contextual `Testable` is a `Testable
+      of "parser"`, each `suite` block passes the topic on, and a method which declares tests
+      for the suite says so with `(using Testable of "parser")`. A suite with a derived id has
+      the topic `Derived`, which no literal equals, so its tests are written in its body or in
+      a method generic in the topic.
+
+      A suite is a `Testable` (its name is the title, its `key` the id) and provides two
+      givens to its body: `#testable`, a pure view of itself, and `#runner`, the runner of
+      the current invocation. A host may invoke a suite any number of times through one
+      classloader: each `#invoke` installs a fresh runner, and `#runner` is `inline` so every
+      assertion reads the current one.
+
+      For CI, or a host too old to read the jar's event schema, `.main` and `.run` are a
+      plain entry point: a test object's own `main` is `Suite.main(arguments, Tests)`.
+  refer probably.Testable
+  refer probably.TestEvent
+  refer probably.Streamer
+  refer probably.Selection
+  entry .Derivation   the evidence that fixes a title-only suite's topic as `Derived`
+      `Suite(title)` has a type parameter nothing else constrains; the one instance of
+      `Derivation`, `.derivation`, is `Derivation[Derived]`, which is what gives such a suite
+      the topic `Derived`. Not something a user writes.
+  entry .derivation   the given `Derivation[Derived]`, in implicit scope
+  entry .derive   the id derived from a title: lower-case letters and digits, with `-` between runs
+      Each run of anything other than a letter or digit becomes one `-`, with none at either
+      end, and `suite` if that leaves nothing: `Suite.derive(t"Honeycomb Tests")` is
+      `honeycomb-tests`, and `Suite.derive(t"  y\"…\" interpolator (v2) ")` is
+      `y-interpolator-v2`.
+  entry .run   runs suites with a plain text report on the `Stdio` in scope, answering their status
+      `Suite.run(arguments, suites*)` invokes each suite with the arguments (selection terms,
+      space- or newline-separated; the empty text means all), printing `[pass] parser /
+      Numbers / a decimal integer parses` per completed test, a `DetailMessage` or the
+      `expected:`/`found:` of a `DetailCompare` beneath it, `suite threw: …` for a terminated
+      run, and finally `3 passed, 1 failed`. It returns the worst status: 0 passed, 1
+      failures, 2 a suite threw. It needs a `Stdio`, such as `stdios.javaLangSystemStdio`.
+
+      ```scala
+      import soundness.*
+      import stdios.javaLangSystemStdio, termcapDefinitions.basicTermcap
+
+      object Probe extends Suite(m"probe"):
+        def run(): Unit = test(m"one")(1).assert(_ == 1)
+
+      Suite.run(t"", Probe)
+      ```
+  entry .main   the `java` entry point for a test object: runs the suites, then exits with their status
+      `Suite.main(arguments, Tests)` is `.run` over the standard `Stdio`, followed by
+      `Exit(status).terminate()`. A test object which wants to be launched as `java -cp …
+      Tests` defines `def main(arguments: Array[String]): Unit = Suite.main(arguments, Tests)`;
+      a host such as fume never needs it.
+  entry #Topic   the suite's topic: its id as a literal type, or `Derived`
+  entry #workers   how many workers this suite's queued assertions may run on, when the host queues at all
+      With `--workers=<n>` the runner uses the larger of the host's count and this; the
+      default, 1, keeps declaration order. Override it in a suite whose pure assertions may
+      run beside one another. Only assertions the compiler has verified pure are queued, so
+      nothing scoped by the suite's blocks can be shared between workers, but effects the
+      checker does not track (raw JDK I/O, system properties, a thread-affine library)
+      remain the suite's own responsibility.
+
+      ```scala fuel
+      typecheck
+      ##
+      class Parallel extends Suite(m"parallel"):
+        override def workers: Int = 4
+        def run(): Unit = ()
+      ```
+  entry #runner0   the runner of the current invocation, replaced by every `invoke`
+      The per-run state. It is a public `var` only so that `#runner` can be an `inline given`
+      reading it; a suite's body reaches the runner through `#runner`, and a host through
+      `#invoke`.
+  entry #runner   the given `Runner[Report]` a suite's body asserts through
+      Inline, so every summons reads the *current* runner: a memoized alias would keep the
+      first runner a suite ever saw, which is wrong for a suite invoked more than once in one
+      classloader, by a host running several suites through one loader, or by another suite
+      which invokes it as a nested suite.
+  entry #testable   the given `Testable of Topic` the suite's body declares tests for
+      A pure `Testable` view of the suite rather than the suite itself, which captures its
+      runner and so is a capability. `Testable` equality is structural (name and parent), so
+      the view is interchangeable with the suite wherever tests are grouped or reported.
+  entry #run   the suite's body: where its tests are declared
+      Abstract; every statement in it runs on every invocation, including a `--list` one, so
+      a value consumed only inside test bodies is best declared `lazy`.
+  entry #apply   runs the suite's body as a nested suite of the runner in scope
+      `Tests()` within another suite's body enters this suite as a group of that one, on the
+      caller's runner, which becomes this suite's `#runner` for the duration.
+  entry #invoke   runs the suite with an event sink and returns its exit status
+      `invoke(arguments, sink)` parses the arguments as a `Selection` (terms separated by
+      newlines in one `Text`, the empty text meaning none), installs a fresh runner whose
+      report emits every datum as a `TestEvent` through `sink`, runs `#run`, drains any
+      queued assertions, and returns 0 (passed), 1 (failures) or 2 (the suite threw, after a
+      `RunTerminated` event). The stream ends with `RunCompleted`; a selection which admits
+      nothing emits `NothingMatched` first.
+
+      With `--list` among the arguments nothing runs: the traversal records what the
+      selection admits and emits one `TestScheduled` per admitted test, with its kind,
+      expected measuring time, tags and axes, which is how a host budgets a run before
+      staging anything.
+
+      ```scala
+      import soundness.*
+
+      object Probe extends Suite(m"probe"):
+        def run(): Unit =
+          test(m"one")(1).assert(_ == 1)
+          test(m"two")(2).assert(_ == 3)
+
+      val events: scala.collection.mutable.ListBuffer[TestEvent] = scala.collection.mutable.ListBuffer()
+      val status: Int = Probe.invoke(t"", event => events.append(event))
+      ```
+
+      The sink is a pure function (`TestEvent -> Unit`) and may be called from a worker
+      thread under `--workers`, so it must be safe to call concurrently.
+
+entry .Testable   what tests are attached to: a `Suite`, a `suite` group or an `impromptu` block
+  detail
+      Every `test` and `suite` declaration takes a `Testable` as a contextual parameter, which
+      says where the test belongs; its `#Topic` says so **statically**: the literal id of the
+      `Suite` the test is declared for (`Testable of "parser"`), which every `suite` group
+      within it passes on; `Derived` for a suite whose id is derived from its title; or
+      `Impromptu` for tests only known by running them. The compiler therefore refuses a test
+      which belongs nowhere, and the beneficence plugin, reading the topic from each
+      declaration it compiles, lists every suite's tests without running anything.
+
+      A `Testable` has a `#name` (a `Message`), an optional `#parent`, an optional `#moniker`
+      and, for a suite, a `#key` (its id). Equality is structural — the name and the parent —
+      so two values built on different lines for the same position in the hierarchy are
+      equal, and `Test.Id#id` is a function of the texts of the names alone.
+
+      ```scala
+      import soundness.*
+
+      val group: Testable of Impromptu = Testable.of[Impromptu](m"group", Testable.detached)
+      group.parent.let(_.name.text)
+      group.id.ids
+      ```
+  refer probably.Suite
+  refer probably.test
+  refer probably.Impromptu
+  refer probably.Derived
+  entry .orphan   the compile error for a `test` with no `Testable` in scope
+      The text of the `@missingContext` annotation on every declaration's parameter: _a test
+      must be declared for a Suite — in its body, or in a method taking `(using Testable of
+      "<the suite's name>")` — or inside an `impromptu` block_.
+  entry .of   makes a `Testable of topic` from a name, with an optional parent, moniker and key
+      `Testable.of[topic](name, parent, moniker, key)` needs a `Codepoint`, which marks where
+      it was declared. `suite` uses it to make each group's `Testable` from the enclosing one.
+  entry .impromptu   the same position in the hierarchy as a `Testable`, with the topic `Impromptu`
+      For tests not statically attributed to the given `Testable`: `impromptu` builds the
+      block's context this way, so an impromptu test is reported at the surrounding suite's
+      position but is absent from the index.
+  entry .detached   where `impromptu` tests go when no `Testable` surrounds the block
+      A root `Testable of Impromptu` named `impromptu`, and the value to bind as a given where
+      tests are run outside any suite, as a REPL or a tutorial does.
+  entry #Topic   the suite the tests belong to, as a type: a literal id, `Derived` or `Impromptu`
+  entry #name   the suite's or group's title
+  entry #moniker   the group's stable moniker, if it was given one
+  entry #key   a suite's id, as text; `Unset` for a group
+      Unlike a moniker, an id need not be a Java identifier (`html-5` is one), so it is plain
+      text, and a selection naming it may be parsed as a glob.
+  entry #parent   the group or suite this one is within, or `Unset` for a root
+  entry #id   the `Test.Id` of the suite or group itself: what a path and a report node know it by
+
+entry .Impromptu   the topic of a `Testable` whose tests are not attributed to a `Suite` at compile time
+    An opaque `Label` which no literal equals: tests declared under a `Testable of Impromptu`
+    (inside an `impromptu` block, or for a method taking `(using Testable of Impromptu)`) are
+    known only by running them, and no listing made without running the suite includes them.
+
+entry .Derived   the topic of a suite whose id is derived from its title
+    An opaque `Label` which no literal equals, like `Impromptu`, so the tests of
+    `Suite(m"Jacinta tests")` can only be declared where its own `Testable` is in scope — its
+    body — or in a method generic in the topic, `[topic <: Label](using Testable of topic)`.
+    A suite given an id has that id for its topic instead.
+
+entry .Test   a declared test with its body, ready to be asserted, checked or matched
+  detail
+      A `Test[result]` pairs a `Test.Id` with an `#action`, the body as a function of the
+      `Harness` which runs it, and is made by applying a `Test.Id` to a block:
+      `test(m"…")(body)`. The companion's extensions are the three ways to run one:
+
+      - `.assert(predicate)` runs the body, applies the predicate, records a `Verdict`, and
+        returns `Unit`. Its body must be **pure** — it may close over no capability (a
+        `Monitor` from an enclosing `supervise`, an `Online`, a started server) — since a
+        queued runner may run it on a worker after the block which scoped the capability has
+        exited. A body which needs one creates it inside itself, or the test becomes a
+        `check`. An unselected `assert` never runs at all.
+      - `.check(predicate)` accepts any body, runs it inline, records the verdict, and
+        **returns the value**, so later tests can build on it. An unselected `check` still
+        runs (its value flows onward) but records nothing.
+      - `.matches { case … }` asserts that the value fits a pattern.
+
+      ```scala fuel
+      frame
+        label A test is a named value
+        code
+            import soundness.*
+
+            given tutorial: (Testable of Impromptu) = Testable.detached
+            given runner: Runner[Report] = Runner()
+
+            case class Person(name: Text, age: Int)
+
+            val probe: Test[Person] = test(m"the oldest person")(Person(t"Jo", 49))
+      frame
+        label An assertion records a verdict and returns nothing
+        code
+            import soundness.*
+
+            given tutorial: (Testable of Impromptu) = Testable.detached
+            given runner: Runner[Report] = Runner()
+
+            case class Person(name: Text, age: Int)
+
+            test(m"the oldest person")(Person(t"Jo", 49)).assert(_.age > 40)
+      frame
+        label A check returns the value for a later test to build on
+        code
+            import soundness.*
+
+            given tutorial: (Testable of Impromptu) = Testable.detached
+            given runner: Runner[Report] = Runner()
+
+            case class Person(name: Text, age: Int)
+
+            val oldest: Person = test(m"the oldest person")(Person(t"Jo", 49)).check(_.age > 40)
+            test(m"the oldest person is named")(oldest.name).assert(_ == t"Jo")
+      frame
+        label A failed equality is reported as a contrast, field by field
+        code
+            import soundness.*
+
+            given tutorial: (Testable of Impromptu) = Testable.detached
+            given runner: Runner[Report] = Runner()
+
+            case class Person(name: Text, age: Int)
+
+            test(m"the oldest person")(Person(t"Jo", 49)).assert(_ == Person(t"Jo", 47))
+            // reported as Juxtaposition.Collation(t"Person", List(t"name" -> Same(t"Jo"), t"age" -> Different(t"47", t"49", t"+2")), …)
+      ##
+      ```
+
+      Both `assert` and `check` are macros which find the `Runner` in scope (a compile error,
+      _No `Runner` instance is available_, otherwise) and the `Inclusion[report, Verdict]`
+      and `Inclusion[report, Verdict.Detail]` for its report type. When the predicate has the
+      shape `_ == expected` (or `expected == _`) and the `Autopsy` in scope analyses
+      failures, the expected value is lifted out and, on failure, contrasted with the
+      observed one through a derived `Contrastable`, recorded as `Verdict.Detail.Compare`
+      and emitted as `TestEvent.DetailCompare`. A body which throws records
+      `Verdict.Throws`; a predicate which throws, `Verdict.CheckThrows`. Values captured
+      with `Harness#capture` during a failed test are recorded as `Verdict.Detail.Captures`.
+  refer probably.test
+  refer probably.Runner
+  refer probably.Verdict
+  refer probably.Autopsy
+  refer chiaroscuro.Contrastable
+  entry .assert   runs a pure test and records whether its predicate held; `assert()` records that it ran
+      An extension on `Test[test]`. `assert(predicate)` records `Pass` or `Fail` (or, inside
+      `aspirationally`, `AspirePass`/`AspireFail`); `assert()` with no predicate passes
+      whenever the body returns. The body must be pure: in a capture-checked unit, a `Test`
+      which captures a capability is rejected at the call site by the capture checker, since
+      the expansion passes it to a parameter typed as the pure `Test[test]`. Only an
+      assertion the compiler has verified pure is queued
+      under `--workers`; one from a unit compiled without capture checking runs inline, in
+      order.
+  entry .matches   asserts that the value fits a partial function's pattern
+      `test(m"…")(value).matches { case Some(_) => }` is `assert(pf.isDefinedAt(_))`.
+  entry .check   runs any test inline, records the verdict, and returns the value
+      An extension on `Test[test]^`, so the body may close over capabilities. The value is
+      returned for later tests to use; a body which throws rethrows after recording
+      `Verdict.Throws`, since there is no value to return. A `check` runs even when the
+      selection does not admit it, and under `--list`, so a long computation which is only
+      needed by later assertions costs every listing.
+  entry .Id   a test's identity: its name, its suite, where it was declared, and its moniker, tags and key
+    detail
+        A `Test.Id` is what `test(m"…")` returns before a body is given, and what every
+        report line, event and selection is keyed by. Its `#id` is six hex digits computed
+        from the **text** of the name and of the suites' names alone, so a host reading the
+        beneficence plugin's index arrives at the same id without constructing the test. It
+        is `Comparable` lexicographically on the path of ids from the root.
+
+        Applying an id to a block makes a `Test`; `#over` spreads it across one or two axes
+        instead.
+    refer probably.Test
+    refer probably.Axis
+    entry .comparable   orders ids by their path of hashes from the root suite
+    entry #name   the description, as a `Message`
+    entry #suite   the `Testable` the test was declared for, or `Unset` for a root
+    entry #codepoint   where the test was declared: source file and line
+    entry #moniker   the stable `n"…"` identifier, if one was given
+    entry #tags   the declared tags, in declaration order
+    entry #key   a suite's id; `Unset` for a test or group
+    entry #timestamp   when the id was constructed, in milliseconds since the epoch
+    entry #id   six hex digits: the low 24 bits of the names' hash
+        With `h(suite)` the sum of the `String#hashCode`s of the texts of the suite's name
+        and its ancestors' names, the id is the low 24 bits of `h(suite) ^ name.text.hashCode`
+        in hex, so `a quoted name` under `Probably Tests/group` has an id any reader of the
+        names can compute.
+    entry #ids   the ids from this entry up to the root, this one first
+    entry #label   what addresses this entry besides its hash and name: a moniker, or a suite's id
+    entry #apply   makes a `Test` from a body, which may use the `Harness` in scope
+        `test(m"…")(body)`: the body is a `Harness ?=> result`, so it may call `capture`.
+        The capture of any capability by the body lands on the returned `Test`
+        (`Test[result]^{body}`), not on `result`, so a test which asserts a pure value
+        computed through a capability does not stamp that capability on the value's type.
+    entry #over   spreads the test over one or two axes, one cell per value the body defines
+        `over(axis)(body)` is a `Spread`: the body runs once per value of the `Axis`, and each
+        verdict is recorded at that value's coordinate of this one named test. A partial body
+        (`{ case … }`) leaves gaps at the values it does not define. An enum's companion
+        object may stand in for an axis, `over(Codec)`, with the enum's cases as its values.
+        `over(first, second)` is a `Spread2` over the grid of two axes.
+
+        ```scala
+        import soundness.*
+
+        given tutorial: (Testable of Impromptu) = Testable.detached
+        given runner: Runner[Report] = Runner()
+
+        test(m"double every value").over(Axis(t"n")(1, 2, 3, 4)): n =>
+          n*2
+        . assert((n, result) => result == n*2)
+
+        test(m"biaxial spread with a gap").over(Axis(t"x")(1, 2, 3), Axis(t"y")(10, 20)):
+          case (x, y) if x + y != 23 => x*y
+        . assert((x, y, result) => result == x*y)
+        ```
+    entry #depth   how many levels down from the root this entry is
+  entry #id   the test's `Test.Id`
+  entry #action   the body, as a function of the `Harness` which runs it
+
+entry .Tag   a label on a test, orthogonal to its name: `slow`, `network`, `nightly`
+  detail
+      A tag is written as an `n"…"` literal after a test's description, `test(m"fetches",
+      n"slow", n"network")`, checked at compile time against the `Tagging` rule
+      (`[A-Za-z_][A-Za-z0-9_-]*`, so it can be typed unquoted on a command line and completed
+      by a shell). A selection admits by tag (`tag:slow,network`: any of) and excludes by tag
+      (`not:tag:slow`), and a host can enumerate the tags a classpath carries from the index.
+
+      `Tag` is its own type rather than `Text`, so a declaration cannot mistake a description
+      for a tag, and an `into` type, so a `Name[Tagging]` literal is accepted directly. It is
+      **not** exported to the `soundness` umbrella, where `Tag` is honeycomb's HTML tag: name
+      it as `probably.Tag` when the type must be written.
+  refer probably.Tagging
+  refer probably.Selection
+  entry .showable   renders a tag as its text
+  entry .inspectable   renders a tag as `Tag(slow)`
+  entry .conversion   the `Conversion[Name[Tagging], Tag]` which lets an `n"…"` literal be a tag
+      With `Probing`'s plane also in scope, a literal which is a valid Java identifier infers
+      to the intersection of the two planes and is a `Name[Tagging]` by covariance; one with
+      a `-` is a tag alone.
+  entry #name   the tag as a validated `Name[Tagging]`
+  entry #text   the tag's text
+
+entry .Tagging   the naming plane of tags: `Name[Tagging]`
+  detail
+      A sealed trait with no values of its own, used as the plane of nomenclature names for
+      tags. Its `.nominative` rule is `MustMatch["[A-Za-z_][A-Za-z0-9_-]*"]`, and is exported
+      at package level as `taggingNominative`, so `n"no-network"` is valid wherever
+      `probably` is imported.
+  entry .nominative   the rule a tag's name must match: identifier characters and `-`
+
+entry .Probing   the naming plane of monikers: `Name[Probing]`
+  detail
+      A sealed trait with no values of its own, used as the plane of stable test, suite and
+      axis identifiers. Its `.nominative` rule is `JavaIdentifier`, and is exported at package
+      level as `nominative`, so `n"square"` is valid wherever `probably` is imported; a
+      moniker addresses a test in selections, charts and historical comparisons
+      independently of its description.
+  entry .nominative   the rule a moniker must match: a valid Java identifier
+
+entry .nominative   `Probing.nominative`, exported so that `n"…"` monikers work with `import probably.*`
+    Both this and `taggingNominative` are in scope together, so a literal valid in both
+    planes (`n"slow"`) infers to their intersection and is usable as either a moniker or a
+    tag; one with a `-` is a tag alone. The `soundness` umbrella exports it under the same
+    name, so a suite using `n"…"` literals imports `soundness.nominative` by name.
+
+entry .taggingNominative   `Tagging.nominative`, exported so that `n"…"` tags work with `import probably.*`
+
+entry .Checkable   hypotenuse's `Checkable`, re-exported: how `===` compares a value against another
+    The checking vocabulary — `===`, `!==`, `+/-`, `±`, `Checkable` and `Tolerance` — lives in
+    `hypotenuse.check`, so that modules which only compare values need not depend on the test
+    framework, and is re-exported here so that `import probably.*` still provides it.
+    `left === right` needs a `left is Checkable against right`: equal frozen arrays, chains
+    element by element, any `Commensurable` value, or a value against a `Tolerance`.
+
+    ```scala
+    import soundness.*
+
+    given tutorial: (Testable of Impromptu) = Testable.detached
+    given runner: Runner[Report] = Runner()
+
+    test(m"the mean converges")(0.005).assert(_ === 0.0 +/- 0.02)
+    ```
+
+entry .Tolerance   hypotenuse's `Tolerance`, re-exported: a value with a margin, made by `+/-` or `±`
+    `base +/- tolerance` (or `base ± tolerance`) is a `Tolerance[value]` which `covers` any
+    value strictly within the margin, for `===` in a numeric assertion where exact equality is
+    wrong.
+
+entry .Harness   what a test body runs under: a place to capture named values for a failure report
+  detail
+      Every test body is a `Harness ?=> result`; the runner supplies a fresh `Harness` per
+      run, and `#capture` records a named value on it. When the test fails, the captured
+      values are recorded as `Verdict.Detail.Captures` and emitted as
+      `TestEvent.DetailCaptures`, so the report shows the intermediate values beside the
+      verdict. The `harnesses.threadLocalHarness` given captures through the runner's
+      current harness from code which has no `Harness` of its own.
+
+      ```scala
+      import soundness.*
+
+      given tutorial: (Testable of Impromptu) = Testable.detached
+      given runner: Runner[Report] = Runner()
+
+      test(m"a captured intermediate"):
+        val parsed: Optional[Int] = safely(t"42".as[Int])
+        summon[Harness].capture(t"parsed", parsed)
+        parsed.or(0)*2
+      . assert(_ == 84)
+      ```
+  entry #capture   records a named value, decomposed for the report, and returns it unchanged
+      Needs a `Decomposable` for the value's type (derived for case classes, collections and
+      anything `Inspectable`); the rendering is the decomposition's `inspect`.
+
+entry .Autopsy   whether a failed equality is analysed into a contrast
+  detail
+      The `assert`/`check` macros consult the `Autopsy` in scope: when its `#Analyse` type
+      is `true` and the predicate has the shape `_ == expected`, a failure records a
+      structural `Verdict.Detail.Compare` through chiaroscuro's `Contrastable`; when
+      `false`, only the verdict is recorded. The companion's `.contrastByDefault` analyses,
+      so a suite which wants plain failures imports `autopsies.noAutopsy`.
+  refer probably.autopsies
+  refer chiaroscuro.Contrastable
+  entry .contrastByDefault   the given in implicit scope: failures are contrasted
+  entry #Analyse   `true` to contrast a failed equality, `false` to record the verdict alone
+
+entry .autopsies   the two `Autopsy` policies, each a given to import by name
+  detail
+      `import probably.*` imports neither; the companion's `Autopsy.contrastByDefault`
+      applies unless one of these is imported, since a lexically-scoped given outranks a
+      companion one.
+
+      ```scala
+      import soundness.*
+      import autopsies.noAutopsy
+      ```
+  entry .contrastAutopsy   analyse a failed `_ == expected` into a `Juxtaposition`
+  entry .noAutopsy   record only the verdict of a failed assertion
+
+entry .harnesses   the `Harness` policies, each a given to import by name
+  detail
+      A `Harness` is normally the one a test body receives contextually. The one given here
+      serves code which has no harness in hand but runs within a test.
+  entry .threadLocalHarness   a `Harness` which captures through whichever test is running on this thread
+      `capture` delegates to the runner's current harness for the thread (`Runner.run`
+      installs one for the duration of each test body), and returns the value unchanged when
+      no test is running.
+
+entry .decimalizers   the default rendering of decimals in numeric comparisons, a given to import by name
+  detail
+      `Axable.double` labels an axis value with `show`, which needs a `Decimalizer`; this
+      package supplies the default rather than `import probably.*` silently doing so.
+  entry .fourDecimalPlaces   a `Decimalizer(4)`
+
+entry .Verdict   the outcome of one run of a check: pass, fail, throws, or an aspiration
+  detail
+      `Pass(duration)` and `Fail(duration)` are the predicate's answer; `Throws(exception,
+      duration)` means the body threw, and `CheckThrows(exception, duration)` the predicate;
+      `AspirePass` and `AspireFail` are the verdicts within an `aspirationally` block, where
+      an exception is also an `AspireFail`. Durations are in nanoseconds. A test with several
+      cells passes when its verdicts are uniformly `Pass`, uniformly `AspirePass` or
+      uniformly `AspireFail`; any failure, exception or mixture fails it. On the wire a
+      verdict is a `TestEvent.Outcome`, with the exception rendered as a `TestEvent.Trace`.
+  refer probably.Trial
+  refer probably.TestEvent
+  entry .Detail   a failure's supporting information: a stack trace, captures, a contrast or a message
+      `Throws(stack)` and `CheckThrows(stack)` carry the `StackTrace`; `Captures(values)` the
+      values captured with `Harness#capture`, by name; `Compare(expected, found,
+      juxtaposition)` the decomposed texts of both sides of a failed equality and their
+      `Juxtaposition`; and `Message(message)` free text. Each is recorded through
+      `Inclusion[Report, Verdict.Detail]` and emitted as the matching `TestEvent.Detail…`.
+  entry #timestamp   when the verdict was made, in milliseconds since the epoch
+  entry #duration   how long the body took, in nanoseconds
+
+entry .Trial   the raw result of running a test body: its value or its exception, timed, with its captures
+  detail
+      `Runner#run` returns a `Trial`: `Returns(result, duration, context)` or
+      `Throws(exception, duration, context)`, where `context` is the map of names to
+      captured values and the exception is a thunk which rethrows it. `assert` and `check`
+      turn a trial into a `Verdict`.
+  entry #get   the result, or rethrows the exception
+
+entry .Runner   runs tests under a selection, reporting through a `Reporter`
+  detail
+      A `Runner[report]` is what `assert`, `check`, `suite` and the measuring kinds summon
+      to record results: it holds the `Selection` which decides what runs, the `#report`
+      accumulated so far, and the queue of workers when the selection asked for them. A
+      `Suite` makes one per invocation and provides it as a given; outside a suite,
+      `Runner()` makes one over `Selection.all` with the `Reporter[Report]` in implicit
+      scope.
+
+      ```scala
+      import soundness.*
+      import soundness.{nominative, taggingNominative}
+
+      given tutorial: (Testable of Impromptu) = Testable.detached
+      given runner: Runner[Report] = Runner(Selection.parse(List(t"--list")))
+
+      impromptu:
+        test(m"spread", n"axial").over(Axis(t"n")(1, 2, 3)) { n => n }.assert(_ > 0)
+
+      runner.listed.map(_.id.name.text)
+      ```
+
+      **Queued execution.** With `--workers=<n>` (`Selection#workers`), a pure assertion is
+      not run where the traversal meets it: its thunk is queued, announced to the reporter,
+      and run by one of `n` virtual-thread workers while the traversal carries on, so the
+      suite's code between tests runs exactly once and the schedule is known as fast as the
+      bodies run. Only assertions the compiler has verified pure are queued, so a worker can
+      never reach a resource the traversal has released; `check`s and everything else run
+      inline. `#drain` waits for every worker before `#complete` decides whether the run
+      passed, and a `Throwable` which escapes a worker is rethrown on the traversal's thread.
+
+      **Listing.** With `--list` (`Selection#listOnly`), `#skip` records every admitted test
+      instead of running it, and `#listed` is the schedule: one row per test with its kind,
+      expected measuring time and axes.
+  refer probably.Selection
+  refer probably.Reporter
+  refer probably.Report
+  refer probably.Suite
+  entry .apply   a root runner over a selection, with an optional worker count, reporting to the `Reporter` in scope
+      `Runner(selection, workers)` is a `Runner.Root`. The worker count overrides the
+      selection's (a suite may ask for more than the host offered, never for queueing the
+      host did not ask for).
+  entry .Scheduled   one row of a listing: a test, its kind, its expected time and its axes
+    detail
+        What `--list` produces per admitted test. An axial spread's cells each call `#skip`,
+        but they are one test with coordinates, not many tests, so the row's `#expected` is
+        the sum over its admitted cells and its `#axes` carry the distinct values seen, in
+        first-appearance order, followed by any declared emergent axes.
+    entry #id   the test's id
+    entry #kind   check, bench, stress or profile
+    entry #expected   the nanoseconds the test will spend measuring, summed over its cells; absent for untimed kinds
+    entry #axes   the test's axes with the values, or declared bounds, of its admitted cells
+    entry #tags   the test's own tags
+  entry .Aspirational   the runner within an `aspirationally` block: the base runner, recording verdicts as aspirations
+      Shares the base runner's state and report; only `#aspirational` differs.
+  entry .Root   the runner `Runner.apply` makes: selection, listing, queue and report in one
+  entry #aspirational   whether verdicts are recorded as `AspirePass`/`AspireFail`; `false` except in `Runner.Aspirational`
+  entry #report   the report accumulated so far
+  entry #queued   whether pure assertions are queued for workers rather than run inline
+  entry #defer   queues the rest of an assertion for a worker, announcing it as scheduled
+      The workers start on the first deferral, so a run which queues nothing has no threads.
+  entry #drain   waits for every queued assertion, rethrowing any `Throwable` a worker let escape
+  entry #scale   the selection's duration multiplier, which the timed kinds apply to their targets
+  entry #skip   whether a test, or one cell of an axial test, is excluded by the selection
+      `skip(id, kind, coordinates, expected)` consults `Selection#admits` with the test's
+      tags; in listing mode every test is skipped, and an admitted one is noted for
+      `#listed` with `expected`, the caller's estimate in nanoseconds of how long it will
+      measure (declared metadata, not a promise; `Unset` for a plain check). The shorter
+      forms `skip(id)` and `skip(id, kind, coordinates)` pass `Check` and `Unset`.
+  entry #declare   announces, for a listing, an emergent axis of a test with the bounds its values will lie within
+      A stress sweep's `N` acquires its values only as the run produces them; declaring it
+      with `least` and `most` lets a host offer a range of it without iterating cells which
+      do not yet exist. A no-op outside listing mode, and reported only if the test itself is
+      listed.
+  entry #listed   the schedule a `--list` run produced: one `Runner.Scheduled` per admitted test, in first-appearance order
+  entry #admitted   how many tests or cells the selection admitted, for the `NothingMatched` event
+  entry #run   runs a test body under a fresh `Harness`, timing it, bracketed by the reporter's `started` and `ended`
+      Returns a `Trial`: the value, or the `Exception` the body threw, with the duration and
+      the captures. An `Error` is not caught, but the bracket still closes, so a termination
+      does not report the test as active.
+  entry #suite   enters a group: declares it, runs its block with its `Testable`, and ends it
+      A group is always entered, whatever the selection. With assertions still queued from
+      within the block, the group's end is reported when the last of them completes.
+  entry #terminate   abandons what is queued, waits for what is in flight, and reports the run as terminated
+      Called by `Suite#invoke` when `run()` throws: the reporter's `fail` receives the error
+      and the tests active at the time, and `complete` follows.
+  entry #complete   settles the run: `Report#passed` is decided here and `RunCompleted` emitted
+  entry #maybeRun   runs a test unless the selection skips it, returning the `Trial` or `Unset`
+
+entry .Reporter   how a runner declares, brackets and settles the results it records, for a report type
+  detail
+      A `Reporter[report]` makes the `#report` a `Runner` accumulates into and receives the
+      run's lifecycle: `#declare` for each group, `#started`/`#ended` around each test and
+      group, `#scheduled` for each queued assertion, `#fail` for a terminated run and
+      `#complete` at the end. Verdicts and measurements reach the report through
+      `Inclusion[report, …]` givens instead. `.report` is the standard reporter over `Report`;
+      a `Suite` installs one of its own whose report emits every datum as a `TestEvent`, and
+      a host which only wants a listing may report to `Unit`.
+
+      ```scala
+      import soundness.*
+
+      given reporter: Reporter[Unit] = new Reporter[Unit]:
+        def report(): Unit = ()
+        def fail(report: Unit, error: Throwable, active: Set[Test.Id]): Unit = ()
+        def declare(report: Unit, suite: Testable): Unit = ()
+        def complete(report: Unit): Unit = ()
+
+      val listing: Runner[Unit] = Runner(Selection.parse(List(t"--list")))
+      ```
+  refer probably.Runner
+  refer probably.Report
+  refer probably.Inclusion
+  entry .report   the given `Reporter[Report]`, in implicit scope: a fresh `Report` per run
+  entry #report   makes the report a run accumulates into
+  entry #fail   the run terminated with an error while the given tests were active
+  entry #declare   a group or suite was entered
+  entry #complete   the run is over; the report decides whether it passed
+  entry #started   a test (or, when `suite` is true, a group) has begun; defaulted to nothing
+  entry #ended   a test or group has ended; defaulted to nothing
+  entry #scheduled   a pure assertion was queued for a worker; it starts and ends later, in the worker's brackets
+
+entry .Report   the accumulated results of a run: a tree of suites whose leaves are `Entry`s of cells
+  detail
+      The report's intermediate representation. Suites are namespacing only; each leaf is an
+      `Entry` — one per named test of any kind — holding the test's axes and a sparse map of
+      cells, each a `Tally` of `Run`s. Rendering is the consumer's business: with a sink
+      installed (as `Suite#invoke` does), every recorded datum also leaves as a `TestEvent`,
+      and `#complete` emits `RunCompleted` instead of rendering anything.
+
+      Verdicts, details and measurements enter through the `Inclusion` givens in the
+      companion (`.verdict`, `.detail`, `.anchor`) and in `Benchmark`, `Strain` and
+      `Hotspots`, each of which records a `Run` at a coordinate and emits the matching event.
+
+      ```scala
+      import soundness.*
+
+      given tutorial: (Testable of Impromptu) = Testable.detached
+      given runner: Runner[Report] = Runner()
+
+      test(m"one")(1).assert(_ == 1)
+      runner.complete()
+      runner.report.passed
+      ```
+
+      A run in which nothing was counted has not passed: a check counts once it has a
+      verdict, and a measurement counts by having run at all.
+  refer probably.Entry
+  refer probably.Run
+  refer probably.Inclusion
+  refer probably.TestEvent
+  entry .verdict   the `Inclusion[Report, Verdict]`: records a verdict as a `Run` with its duration, and emits `TestCompleted`
+      A `Throws` or `CheckThrows` verdict also records its stack trace as a detail and emits
+      `DetailThrows`.
+  entry .anchor   the `Inclusion[Report, Anchor]`: sets a test's comparison anchor and emits `AnchorRecorded`
+  entry .detail   the `Inclusion[Report, Verdict.Detail]`: records a detail and emits the matching `Detail…` event
+  entry #passed   whether the run passed: no termination, something counted, and no failing entry
+      Decided by `#complete`; `false` before it.
+  entry #resolve   the `ReportLine.Suite` node of a `Testable`, from the root
+  entry #declare   records a suite or group, emitting `SuiteStarted`; a second declaration of the same id merges
+      Two distinct suites can share a `Test.Id` (identity is name and parent, and every
+      top-level suite of the same name has the same id), so declaring merges into the
+      existing node rather than replacing its subtree.
+  entry #fail   records a termination: the error, and the tests active when it happened; emits `RunTerminated`
+  entry #record   records one `Run` at one coordinate of one test, creating the entry on first sight
+      Repeated runs of the same coordinates accumulate in the cell; `headline`, when given,
+      designates the entry's headline metric.
+  entry #addDetail   appends a `Verdict.Detail` to a test's details
+  entry #anchor   sets the comparison anchor of a test's entry; a no-op if the test recorded no cells
+  entry #complete   settles the run: decides `#passed` and emits `RunCompleted`
+
+entry .ReportLine   a node of a `Report`: a suite with its children, or an item holding an `Entry`
+    `ReportLine.Suite(suite, tests)` is a namespace node whose `tests` is a `TestsMap` of
+    its children, keyed by `Test.Id`; `ReportLine.Item(entry)` is a leaf. The root is a
+    `Suite` with no `Testable`.
+
+entry .TestsMap   the insertion-ordered, mutex-guarded map of report lines within one suite node
+  entry #list   the lines in insertion order, with their ids
+  entry #apply   the line of a test id, or `Unset`
+  entry #update   sets the line of a test id
+  entry #getOrElseUpdate   the line of a test id, inserting the given one if absent
+
+entry .Inclusion   how a piece of test data is included in a report, at a test's coordinates
+  detail
+      `Inclusion[report, data]` is the typeclass the `assert`/`check` macros and the
+      measuring kinds summon to record a `Verdict`, a `Verdict.Detail`, a `Benchmark`, a
+      `Strain`, a `Hotspots` or an `Anchor` in a report of type `report`. `Report` has
+      givens for each; a report type of the caller's own supplies its own. Data recorded
+      without coordinates belongs to the test's single cell.
+
+      ```scala
+      import soundness.*
+
+      given verdicts: Inclusion[Unit, Verdict] = (_, _, _, _) => ()
+      given details: Inclusion[Unit, Verdict.Detail] = (_, _, _, _) => ()
+      ```
+  refer probably.Report
+  entry #include   records the datum at the given coordinates of the given test, returning the report
+      The three-argument form records at `Nil`, the single cell of a test with no axes.
+
+entry .Entry   one named test and its results: an ordered list of axes and a sparse map of cells
+  detail
+      A leaf of the `Report`. Its `#axes` may grow during the run, as emergent axes acquire
+      coordinates; its `#cells` are keyed by coordinates in axis space, positionally aligned
+      with the axes, each a `Tally` of the runs at that address. A test with no axes has
+      exactly one cell, at `Nil`; combinations of axis values without a cell are gaps,
+      rendered as empty positions in a grid.
+  refer probably.Report
+  refer probably.Axis
+  refer probably.Tally
+  entry .Kind   the four kinds of entry: `Check`, `Bench`, `Stress` and `Profile`
+      What `kind:test`, `kind:bench`, `kind:stress` and `kind:profile` select, and the
+      `kind` field of a `TestCompleted` event (`check`, `bench`, `stress`, `profile`).
+  entry #id   the test's id
+  entry #kind   the entry's kind
+  entry #headline   the metric a grid or comparison shows for this entry, if one was designated
+  entry #anchor   the comparison anchor, if `Report#anchor` set one
+  entry #axes   the axes seen so far, in first-appearance order
+  entry #cells   every cell with its coordinate values
+  entry #cell   the `Tally` at the given coordinates, created if absent
+      Appends any not-yet-seen axes and registers each axis's values in first-appearance
+      order.
+  entry #values   the coordinate values of one axis in presentation order
+      First-appearance order for a discrete axis, numeric order for an integral or decimal
+      one.
+
+entry .Run   one execution of one cell: a verdict, recorded metrics, failure details and any payload
+  detail
+      For a check, `#verdict` is present and `#metrics` holds `Metric.Duration`; for a
+      measurement the verdict is absent and the metrics carry the figures (insertion order is
+      presentation order). `#payload` holds structure a number cannot: a profile's hot
+      frames, or a benchmark's operation-size units. In a capacity search, `#sustained`
+      marks the winning run.
+  entry .Payload   structure a numeric metric cannot carry
+      `Frames(hotspots)` is a profile's `Hotspots`; `Sizing(operationSize, operationRate)` a
+      benchmark's preformatted units.
+  entry #verdict   the verdict, for a check
+  entry #metrics   the recorded metrics, in presentation order
+  entry #details   failure details attached to this run
+  entry #payload   the structural payload, if any
+  entry #sustained   whether this run is the winning row of a capacity search
+
+entry .Tally   the accumulated runs at one coordinate of a test
+  detail
+      Repeated executions of the same cell gather here, which generalises repeated-verdict
+      accumulation to every test kind. Mutex-guarded, since a queued runner's workers record
+      concurrently.
+  entry #record   appends a run
+  entry #runs   the runs so far
+
+entry .Axis   one input variable of a test: a labelled domain of values, each a coordinate of the test's cells
+  detail
+      Most tests have no axes. Given one, `Test.Id#over` runs the body once per value and
+      records each verdict at that value's coordinate of a single named test; a comparative
+      benchmark has a discrete axis of implementations, and input data of different sizes
+      forms a numeric axis. An axis is built from a label and values, `Axis(t"n")(1, 2, 3)`,
+      from a label and a range, `Axis(t"n")(1 to 64)`, or from an enum's companion object,
+      `Axis(Codec)`, whose label is the lower-cased enum name and whose values are its cases.
+      `Axis` is an `into` type, so an enum companion is accepted directly wherever a concrete
+      axis is expected (`.companion`).
+
+      ```scala
+      import soundness.*
+
+      enum Codec:
+        case Zip, Tar, Cpio
+
+      val sizes: Axis[Int] = Axis(t"n")(1, 2, 4, 8)
+      val codecs: Axis[Codec] = Axis(Codec)
+      sizes.coordinate(4)
+      codecs.spec
+      ```
+
+      The values' type needs an `Axable`, which gives each value a stable label and, for
+      numeric domains, a number, which makes the axis orderable and chartable.
+  refer probably.Axable
+  refer probably.Value
+  refer probably.Test
+  entry .Domain   the kind of an axis: `Discrete` labels in declaration order, or `Integral`/`Decimal` coordinates in numeric order
+  entry .Spec   the erased description of an axis as a report records it: its label, domain and whether it is emergent
+    detail
+        What selection, rendering and charting consume. An emergent axis acquires its
+        coordinate values from the run itself (a stress sweep's `N`) rather than from a
+        declared domain.
+    entry #label   the axis's label, which an axis constraint such as `N<32` names
+    entry #domain   discrete, integral or decimal
+    entry #emergent   whether the run, not a declaration, produces the values
+  entry .Schedule   what a listing knows of one axis of a test before anything runs
+    detail
+        The spec, the distinct values of the cells the selection admits in first-appearance
+        order (none for an emergent axis), and, for an emergent axis whose producer declared
+        them, the bounds its values will lie within. A host completes axis constraints from
+        these.
+    entry #spec   the axis
+    entry #values   the admitted cells' values; empty for an emergent axis
+    entry #least   the least value an emergent axis will produce, if declared
+    entry #most   the greatest value an emergent axis will produce, if declared
+  entry .apply   an axis from a label and values, a label and a `Range`, or an enum's companion object
+      `Axis(label)(values*)` needs an `Axable` for the values' type; `Axis(label)(range)` is
+      an `Axis[Int]`; `Axis(companion)` takes an enum's companion (anything with `valueOf`)
+      with an `Enumerable`, labelled with the enum's simple name in lower case.
+  entry .emergent   an axis with no declared values, which the run populates
+      `Axis.emergent[Int](t"N")`: the spec is marked emergent, and `Entry#cell` extends the
+      axis's values as coordinates arrive.
+  entry .companion   the `Conversion` which lets an enum's companion object stand for an axis
+      Generic positions such as `over` cannot drive this conversion, so they take explicit
+      companion overloads instead.
+  entry #label   the axis's label
+  entry #values   the declared values, in declaration order
+  entry #emergent   whether the values come from the run
+  entry #axable   the `Axable` for the values' type
+  entry #spec   the erased `Axis.Spec`
+  entry #point   one value as a `Value`
+  entry #coordinate   one value as the `(Axis.Spec, Value)` pair a cell is addressed by
+
+entry .Axable   how a domain value becomes a point on an axis: a stable label and, for numeric domains, a number
+  detail
+      The typeclass behind `Axis`. The companion covers `Int` and `Long` (integral),
+      `Double` (decimal, labelled with the `Decimalizer` in scope), `Text` (discrete) and
+      every `reflect.Enum` with an `Enumerable` (discrete, labelled by case name). A type of
+      the caller's own supplies `label`, and `domain`/`numeric` when it is numeric.
+  refer probably.Axis
+  refer probably.Value
+  entry .int   `Int` on an integral axis
+  entry .long   `Long` on an integral axis
+  entry .double   `Double` on a decimal axis
+  entry .text   `Text` on a discrete axis, labelled by itself
+  entry .enumerable   any enum with an `Enumerable`, on a discrete axis labelled by case name
+  entry #domain   the axis domain of the type; `Discrete` by default
+  entry #label   the stable text of a value, used in reports and matched by `axis=value` selections
+  entry #numeric   the value as a number, for numeric domains; `Unset` by default
+
+entry .Value   one coordinate on one axis: a discrete label, an integer or a decimal
+  detail
+      A cell of a test is addressed by a list of values positionally aligned with the test's
+      axes; a test with no axes has the single address `Nil`. `Value(x)` makes one through
+      the `Axable` in scope: `Discrete(label)` for a discrete domain, `Integral(number)` or
+      `Decimal(number)` for the numeric ones.
+  entry .apply   a value from a domain value, through its `Axable`
+  entry #text   the label a selection matches: the discrete label, or the number shown
+  entry #numeric   the number, or `Unset` for a discrete value
+
+entry .Anchor   the distinguished comparison point of a test: one value on one axis, with `Baseline` settings
+  detail
+      A comparative benchmark anchors one axis value, and every other cell along that axis
+      renders relative to it. Recorded through `Report.anchor` and emitted as
+      `TestEvent.AnchorRecorded`.
+  entry #axis   the axis the anchor is on
+  entry #value   the anchored value
+  entry #baseline   how the other cells compare to it
+
+entry .Baseline   how cells are compared to an anchor: which statistic, which metric, and which mean
+  detail
+      `Baseline(compare, metric, mode)` defaults to the `Mean` of the `Cadential` metric
+      under the `Geometric` mode. The three enums' cases are exported at package level, so
+      `Baseline(Min, Temporal, Arithmetic)` reads without qualification.
+  entry .Compare   which statistic of a cell is compared: `Min`, `Mean` or `Max`
+  entry .Metric   which figure is compared: `Cadential` (throughput) or `Temporal` (time)
+  entry .Mode   which mean summarises a comparison: `Geometric` or `Arithmetic`
+  entry #compare   the statistic
+  entry #metric   the figure
+  entry #mode   the mean
+
+entry .Min   `Baseline.Compare.Min`, exported at package level
+entry .Mean   `Baseline.Compare.Mean`, exported at package level
+entry .Max   `Baseline.Compare.Max`, exported at package level
+entry .Cadential   `Baseline.Metric.Cadential`, exported at package level
+entry .Temporal   `Baseline.Metric.Temporal`, exported at package level
+entry .Arithmetic   `Baseline.Mode.Arithmetic`, exported at package level
+entry .Geometric   `Baseline.Mode.Geometric`, exported at package level
+
+entry .Benchmark   the measured result of a benchmark: iterations, timings, confidence and allocation
+  detail
+      What the sedentary library's `Bench` produces for one cell and records through
+      `.inclusion`: `#nanoseconds` of measurement over `#iterations` in `#runs` batches, the
+      `#mean`, `#min`, `#max` and standard deviation `#sd` of the per-operation time in
+      nanoseconds, the `#confidence` percentile of the interval, and the optional
+      `#operationSize`, `#operationRate`, `#operationQuantity` and bytes of `#allocation` per
+      operation. Times are nanoseconds; the headline metric is `Throughput` when an operation
+      size was declared, `Mean` otherwise.
+  refer probably.Metric
+  refer probably.Strain
+  refer probably.Hotspots
+  entry .inclusion   the `Inclusion[Report, Benchmark]`: records the figures as metrics at a coordinate, and emits `BenchmarkRecorded`
+      The metrics are `Iterations`, `Mean`, `Least`, `Most`, `Deviation`, `Percentile`,
+      `Confidence` (the interval's half-width as a fraction of the mean), `Throughput` and,
+      when measured, `Allocation`; declared units travel as a `Run.Payload.Sizing`.
+  entry .Percentiles   the confidence levels a benchmark may report: `80 | 85 | 90 | 95 | 96 | 97 | 98 | 99`
+  entry #nanoseconds   the total measuring time
+  entry #iterations   how many operations were timed
+  entry #runs   how many independent measurement runs the statistics are over
+  entry #mean   the mean time per operation, in nanoseconds
+  entry #min   the fastest run's mean
+  entry #max   the slowest run's mean
+  entry #sd   the standard deviation of the runs' means
+  entry #confidence   the percentile of the confidence interval
+  entry #operationSize   the preformatted size of one operation, if declared
+  entry #operationRate   the preformatted rate unit, if declared
+  entry #operationQuantity   the size of one operation as a number, in the unit `operationSize` names
+      Not yet carried by `TestEvent.BenchmarkRecorded`, so a host does not see it.
+  entry #allocation   bytes allocated per operation, when the harness measured it
+  entry #tQuantile   the one-sided Student's t quantile for a percentile and degrees of freedom
+      Tabulated for df up to 29 (rounding an out-of-table df down, for a slightly wider
+      interval) and the normal quantile beyond.
+  entry #confidenceInterval   the half-width of the confidence interval, in nanoseconds
+  entry #throughput   operations per second, from the mean
+
+entry .Strain   the measured response to a stress test: throughput, memory and latency under concurrency
+  detail
+      The memory and scaling counterpart of `Benchmark`, produced by sedentary's `Stress`
+      for one cell: `#concurrency` workers ran a body repeatedly for a wall-clock window of
+      `#nanoseconds`, completing `#operations` in total; `#allocation` is the heap allocated
+      over the window, `#peakHeap` the high-water mark, `#retained` the live set after a
+      post-run collection (a bounded-memory design shows a flat, small value), and
+      `#gcCount`/`#gcTime` the collector deltas (time in milliseconds). The optional `#p50`,
+      `#p90`, `#p99` and `#p999` are per-operation latency percentiles in nanoseconds. In a
+      capacity search, `#compliance` is the fraction of operations within the latency
+      threshold and `#sustained` marks the winning row.
+  refer probably.Benchmark
+  refer probably.Metric
+  entry .inclusion   the `Inclusion[Report, Strain]`: records the figures as metrics on the emergent `N` axis, and emits `StrainRecorded`
+      Concurrency is a coordinate, not a metric: every strain lands on an emergent integral
+      axis `N` (unless the producer supplied one), so a sweep's steps accumulate as cells of
+      one entry. The headline metric is `Throughput`.
+  entry #concurrency   how many workers ran the body
+  entry #operations   how many operations completed
+  entry #nanoseconds   the window's length
+  entry #allocation   total heap allocation over the window, in bytes
+  entry #peakHeap   the high-water mark of the heap pools, in bytes
+  entry #retained   the live set after a post-run collection, in bytes
+  entry #gcCount   collections during the window
+  entry #gcTime   time in collection, in milliseconds
+  entry #p50   the median per-operation latency, in nanoseconds, if measured
+  entry #p90   the 90th-percentile latency, if measured
+  entry #p99   the 99th-percentile latency, if measured
+  entry #p999   the 99.9th-percentile latency, if measured
+  entry #compliance   the fraction of operations within the latency threshold, in a capacity search
+  entry #sustained   whether this is the winning row of a capacity search
+  entry #throughput   operations per second over the window
+  entry #allocationRate   bytes allocated per operation
+
+entry .Hotspots   the measured response to a profile: execution samples and the hottest methods
+  detail
+      Produced by sedentary's `Profile` from JFR execution samples: `#total` samples were
+      taken over the profiling window, and `#frames` are the hottest methods in descending
+      order of sample count, by self time. A host renders them as a histogram, coloured by
+      package.
+  refer probably.Benchmark
+  entry .inclusion   the `Inclusion[Report, Hotspots]`: records `Samples` as the metric with the frames as payload, and emits `HotspotsRecorded`
+  entry .Frame   one hot method: its demangled class and method names, and how many samples landed in it
+    entry #className   the class, demangled
+    entry #method   the method
+    entry #samples   samples whose top frame was this method
+  entry #total   how many samples were taken
+  entry #frames   the hottest methods, most samples first
+
+entry .Metric   the closed set of quantities a run can record, each with a dimension, a sense and a label
+  detail
+      Each cell of a test stores a map of these to values, and one of them (or, for a check,
+      the verdict) is the test's headline. Times are nanoseconds, memory bytes, rates
+      operations per second and fractions in the unit interval. The cases are `Duration`,
+      `Mean`, `Least`, `Most`, `Deviation`, `Percentile`, `Confidence`, `Iterations`,
+      `Throughput`, `Operations`, `Allocation`, `PeakHeap`, `Retained`, `GcCount`, `GcTime`,
+      `P50`, `P90`, `P99`, `P999`, `Compliance` and `Samples`. On the wire a metric is keyed
+      by its case name, which is stable where its label is not.
+  entry .Dimension   the physical interpretation of a value: `Time`, `Memory`, `Rate`, `Count` or `Fraction`
+  entry .Sense   whether smaller or larger is better: `LowerIsBetter`, `HigherIsBetter` or `Neutral`
+  entry #dimension   the metric's dimension, which chooses its formatting
+  entry #sense   which direction is an improvement, for comparisons and chart orientation
+  entry #label   the display label: `μ`, `σ`, `p99`, `Alloc·op¯¹`, …
+
+entry .Selection   which tests, and which of their cells, a run admits, parsed from command-line terms
+  detail
+      `Selection.parse(terms)` reads the terms a host passes to `Suite#invoke`. Identity
+      terms — six-hex-digit hashes, monikers and name globs — union with each other;
+      `kind:test|bench|stress|profile` terms, `tag:a,b` terms (any of the listed tags; a
+      second `tag:` term intersects) and axis constraints (`parser=jacinta`, `N<32`, `N>=4`,
+      `N=4..64`, `N=4..`, `N=..64`) intersect with that union; and `not:<term>` terms are
+      subtracted last, each removing whatever its term would admit. An unrecognised term is a
+      name glob. Globs follow kaleidoscope's rules: `*` matches within one `/`-joined link
+      of a path, so spanning a suite takes `**`, as in `jacinta/**` or `**/parseJson`; a
+      suite's id (which may hold a `-`) matches too. An empty selection admits everything.
+
+      ```scala
+      import soundness.*
+      import soundness.taggingNominative
+
+      given tutorial: (Testable of Impromptu) = Testable.detached
+
+      val selection: Selection = Selection.parse(List(t"**", t"not:tag:slow", t"N=4.."))
+      val slow: Test.Id = impromptu(test(m"slow one", n"slow"))
+      val quick: Test.Id = impromptu(test(m"quick one"))
+      selection.admits(slow, Entry.Kind.Check, Nil, slow.tags)    // false
+      selection.admits(quick, Entry.Kind.Check, Nil, quick.tags)  // true
+      ```
+
+      Three further terms are not selections but arrive on the same command line:
+      `--list` (enumerate, run nothing), `--scale=<factor>` (multiply every declared
+      measuring duration; a non-positive or unparseable factor is ignored) and
+      `--workers=<n>` (queue pure assertions on `n` workers; 0, the default, runs everything
+      inline).
+  refer probably.Runner
+  refer probably.Tag
+  refer probably.Axis
+  entry .Term   an identity term: an `Identifier` (a moniker or hash) or a `Glob` (matched against names and paths)
+  entry .Constraint   an axis constraint: `Membership`, `Least`, `Most` or `Interval`
+    detail
+        `Membership(axis, values)` is `N=4,8`; `Least(axis, limit, inclusive)` is `N>4` or
+        `N>=4` (and `N=4..`); `Most` the mirror; `Interval(axis, least, most)` is `N=4..64`,
+        inclusive at both ends. A constraint on an axis a cell does not have admits the cell,
+        but as a `not:` term removes nothing.
+    entry #axis   the axis label the constraint names
+  entry .all   the empty selection, which admits everything
+  entry .parse   a selection from command-line terms
+  entry #terms   the identity terms, unioned
+  entry #kinds   the admitted kinds; empty means all
+  entry #constraints   the axis constraints, intersected
+  entry #tags   each `tag:` term as a set of alternatives; the sets intersect
+  entry #exclusions   the `not:` terms, each a one-term selection, subtracted after admission
+  entry #listOnly   whether `--list` was given
+  entry #scale   the multiplier on every declared measuring duration; 1.0 by default
+      Geometric: 2.0 runs each measurement twice as long, 0.25 a quarter as long. Latency
+      thresholds are not scaled, being pass/fail criteria rather than durations.
+  entry #workers   how many workers execute queued assertions; 0 queues nothing
+  entry #trivial   whether the selection selects nothing in particular: no terms, kinds, constraints, tags or exclusions
+  entry #admits   whether a test, of a kind, at coordinates, with tags, is admitted
+
+entry .Spread   a test spread over the domain of one axis, awaiting its assertion
+  detail
+      `test(m"…").over(axis)(body)` is a `Spread[value, result]`. Its `.assert` runs the body
+      once per axis value the body defines and records each verdict at that value's
+      coordinate of the one named test; a value the partial body does not define is a gap.
+      The body is pure, as `Test.assert`'s is, and the assertion sees either the result
+      alone or the axis value and the result together.
+  refer probably.Axis
+  refer probably.Test
+  entry .assert   asserts every cell: with no predicate, with one over the result, or with one over the value and result
+      Needs a `Runner` and the `Inclusion`s for verdicts and details in scope, as `Test.assert`
+      does.
+  entry #id   the test's id
+  entry #axis   the axis
+  entry #action   the body: a partial function over the axis's values, per harness
+
+entry .Spread2   a test spread over the domains of two axes: one cell per combination the body defines
+  detail
+      `test(m"…").over(first, second)(body)` is a `Spread2[left, right, result]`, rendered as
+      a grid with gaps at undefined combinations. The predicate given to `.assert` may take
+      the result alone or both axis values and the result.
+  refer probably.Spread
+  entry .assert   asserts every defined cell of the grid
+  entry #id   the test's id
+  entry #first   the first axis
+  entry #second   the second axis
+  entry #action   the body: a partial function over pairs of values, per harness
+
+entry .TestEvent   the typed event stream a run produces, for a host which renders results itself
+  detail
+      The low-level counterpart of the `Report` accumulator: every datum a run records also
+      leaves, through the sink `Suite#invoke` installs, as one of these events, and a host
+      (fume, or `Suite.run`) renders them as a terminal display, HTML or anything else.
+      Events are rich but **wire-safe**: every payload is a flat case class of scalars,
+      `Optional`s, `List`s and `Map[Text, Text]`, so the whole enum derives a BinTEL schema
+      and codec with no hand-written instances, and `Streamer` carries it across a
+      classloader boundary. Recursive structures are flattened structurally: a stack trace
+      becomes its cause chain in order (`Trace`), a `Juxtaposition` becomes depth-indexed
+      rows (`CompareRow`) from which a renderer rebuilds the tree, and a metrics ledger a
+      list of labelled values (`MetricValue`). A `Message` is rendered to `Text` at this
+      boundary.
+
+      The cases, in the order a run emits them:
+
+      - `TestScheduled(test, kind, expected, tags, axes)` — the schedule: one per test a
+        `--list` selection admits, or per assertion a queued runner defers, before it runs.
+      - `SuiteStarted(suite, timestamp)` and `SuiteEnded(suite, timestamp)` — around a suite
+        or group; the end is held back until the group's last queued assertion completes.
+      - `TestStarted(test, timestamp)` and `TestEnded(test, timestamp)` — progress only,
+        bracketing a test's execution for a live display.
+      - `TestCompleted(test, kind, coordinates, outcome, metrics, timestamp)` — a check's
+        result, following `TestEnded`.
+      - `DetailCaptures(test, values)`, `DetailCompare(test, expected, found, rows)`,
+        `DetailMessage(test, message)` and `DetailThrows(test, check, stack)` — a failure's
+        supporting information (`check` is whether the predicate, rather than the body,
+        threw).
+      - `BenchmarkRecorded`, `StrainRecorded`, `HotspotsRecorded` — the measuring kinds'
+        figures at a coordinate, field for field as `Benchmark`, `Strain` and `Hotspots`.
+      - `AnchorRecorded(test, axis, discrete, integral, decimal, compare, metric, mode)` — a
+        comparison anchor.
+      - `NothingMatched(admitted)` — a non-trivial selection admitted nothing.
+      - `RunTerminated(error, active, timestamp)` — the suite threw, with the tests active.
+      - `RunCompleted(passed, timestamp)` — always last.
+
+      ```scala
+      import soundness.*
+
+      object Probe extends Suite(m"probe"):
+        def run(): Unit = test(m"one")(1).assert(_ == 2)
+
+      val failures: scala.collection.mutable.ListBuffer[Text] = scala.collection.mutable.ListBuffer()
+
+      Probe.invoke(t"", {
+        case TestEvent.TestCompleted(test, _, _, outcome, _, _) if outcome.outcome == t"fail" =>
+          failures.append(test.path.join(t"/"))
+        case _ => () })
+      ```
+
+      Any change to a case's fields changes the stream's layout and `Streamer.fingerprint`,
+      so a host built against another version reports the suite as incompatible rather than
+      misreading it.
+  refer probably.Streamer
+  refer probably.Suite
+  refer probably.Report
+  entry .Ref   a test's or suite's identity on the wire: hash, name, moniker, path and declaration site
+    detail
+        `path` is the full name-or-moniker path from the root suite to the entry, including
+        the entry itself, so a tree can be rebuilt from refs alone. For a suite, `name` is
+        its title and `moniker` its id.
+    entry .of   the ref of a `Test.Id`
+    entry #id   the six-hex-digit hash
+    entry #name   the display name
+    entry #moniker   the moniker, or a suite's id, if any
+    entry #path   the labels from the root suite to this entry
+    entry #file   the declaring source file
+    entry #line   the declaring line
+  entry .Frame   one stack frame: class, method, file and line
+    entry #className   the frame's class
+    entry #method   the method
+    entry #file   the source file
+    entry #line   the line, if known
+  entry .Hotspot   one hot method of a profile: class, method and samples
+    entry #className   the class, demangled
+    entry #method   the method
+    entry #samples   samples whose top frame was this method
+  entry .TraceComponent   one exception of a flattened cause chain: its class name, message and frames
+    entry #className   the exception's class name
+    entry #message   its rendered message
+    entry #frames   its stack frames
+  entry .Trace   a stack trace flattened to its cause chain, outermost first
+    entry .of   the trace of a `StackTrace`
+    entry #components   the chain, outermost exception first
+  entry .Outcome   a verdict without its live exception: `pass`, `fail`, `throws`, `check-throws`, `aspire-pass` or `aspire-fail`
+    detail
+        The two throwing outcomes carry the `stack`; `duration` is in nanoseconds.
+    entry .of   the outcome of a `Verdict`
+    entry #outcome   the outcome word
+    entry #duration   the body's duration
+    entry #stack   the trace, for the throwing outcomes
+  entry .CompareRow   one row of a flattened `Juxtaposition`, pre-order with depth
+    detail
+        `kind` is `same`, `different` or `collation`; a collation's type name travels in
+        `difference`, and its children follow at `depth + 1`, so a renderer can rebuild the
+        tree.
+    entry .flatten   the rows of a `Juxtaposition`
+    entry #depth   the row's depth in the tree
+    entry #label   the field name or sequence index
+    entry #kind   `same`, `different` or `collation`
+    entry #left   the expected side
+    entry #right   the observed side
+    entry #difference   the difference, or a collation's type name
+  entry .Coordinate   an axis coordinate on the wire: the spec's fields, and the value as one of three `Optional`s
+    detail
+        Exactly one of `discrete`, `integral` and `decimal` is present, according to
+        `domain`.
+    entry .of   a coordinate from a spec and value, or a list from coordinates
+    entry #axis   the axis label
+    entry #domain   `discrete`, `integral` or `decimal`
+    entry #emergent   whether the axis is emergent
+    entry #discrete   the label, for a discrete axis
+    entry #integral   the integer, for an integral axis
+    entry #decimal   the number, for a decimal axis
+  entry .MetricValue   one metric of a result, keyed by the `Metric` case's name
+    entry .of   the values of a metrics ledger
+    entry #metric   the case name, stable across versions where its label is not
+    entry #value   the value
+  entry .AxisSchedule   one axis of a scheduled test: its spec, the admitted values' labels, and declared bounds
+    entry .of   the wire form of an `Axis.Schedule`
+    entry #axis   the axis label
+    entry #domain   `discrete`, `integral` or `decimal`
+    entry #emergent   whether the axis is emergent
+    entry #values   the labels of the admitted cells' values; none for an emergent axis
+    entry #least   the least value an emergent axis will produce, if declared
+    entry #most   the greatest, if declared
+  entry .kindName   the wire name of an `Entry.Kind`: `check`, `bench`, `stress` or `profile`
+
+entry .internal   the macro implementations behind `Test.assert` and `Test.check`
+  hidden
+  detail
+      Not for direct use. The object exists so that the assertion macros have a stable home;
+      `assertion` is the runtime they both expand to, which `Spread` and `Spread2` call
+      directly.
+  entry .check   the macro behind `Test.check`: a `Trial` whose value is returned
+  entry .assert   the macro behind `Test.assert`: passes the test through `pure`, and records whether the unit was capture checked
+  entry .pure   an identity on `Test[test]` which the capture checker holds to its pure parameter type
+  entry .succeed   the predicate which always holds, for `assert()` and `check()`
+  entry .assertion   runs, judges and records one assertion, inline or queued
+      Skips an unselected `assert`, runs an unselected `check` without recording, queues a
+      selected pure `assert` when the runner has workers, and otherwise runs it inline;
+      records the verdict, the contrast of a failed equality when an expectation was lifted,
+      and the captures.
+
+entry .Streamer   writes a run's `TestEvent`s as length-prefixed BinTEL frames to a host's `OutputStream`
+  detail
+      The one JDK-typed surface of the `events` component, because the host (a test-running
+      tool such as fume) may call `.stream` reflectively from **another classloader world**,
+      whose Soundness classes are not this one's: it erases to `stream(String, String,
+      OutputStream): int`. The first frame is a schema **fingerprint**: both ends derive the
+      BinTEL schema from their own `TestEvent` and compare, so a version skew which changes
+      the wire layout is detected before any event is decoded. Each frame is a 4-byte
+      big-endian length then the payload, flushed as written.
+
+      ```scala fuel
+      typecheck
+      ##
+      val output: java.io.OutputStream = java.io.ByteArrayOutputStream()
+      val status: Int = Streamer.stream(t"parser.Tests", t"--list", output)
+      ```
+  refer probably.TestEvent
+  refer probably.Suite
+  refer probably.Standalone
+  entry .reentrant   `true`: suites on this classpath may be invoked repeatedly through one classloader
+      A host probes for this method reflectively; its absence means an older Probably whose
+      suites memoized their first runner and needed a fresh loader each time.
+  entry .queued   `true`: suites on this classpath understand `--workers=<n>`
+      Probed reflectively like `.reentrant`; to an older Probably the term is a name glob
+      which admits nothing, so a host must not pass it blindly.
+  entry .fingerprint   the BLAKE3 hash of the derived `TestEvent` schema's structure
+      A fingerprint of the wire layout: two versions whose `TestEvent`s differ in any field,
+      order or case produce different fingerprints.
+  entry .read   decodes one frame's payload back to a `TestEvent`
+      The decode inverse, for a host whose own modules are separation-checked and cannot
+      expand the derived decoder themselves. A decode failure throws; wrap calls in `safely`.
+  entry .stream   runs a named suite with selection terms, writing the fingerprint and then one frame per event
+      `stream(suite, arguments, output)` loads the `Suite` object named (`parser.Tests`,
+      from this classloader), invokes it with the newline-separated terms, writes every
+      event under a mutex, closes the stream, and returns the suite's status: 0 passed, 1
+      failures, 2 the suite or the machinery threw.
+
+entry .Standalone   the entry point for running one suite in a JVM of its own
+  detail
+      `java -cp <classpath> probably.Standalone <suite> <term>…` is what a host launches
+      when a suite must not share its process. The run is streamed exactly as
+      `Streamer.stream` streams it, on standard output, which is reserved for the frames:
+      whatever the suite itself prints to standard output is sent to standard error. The JVM
+      exits with the suite's status (0 passed, 1 failures, 2 threw; 2 also for no suite
+      named).
+  refer probably.Streamer
+  entry .main   runs the suite named by the first argument with the rest as terms, and exits with its status

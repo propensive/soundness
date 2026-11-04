@@ -1,0 +1,1187 @@
+tel 1.0
+
+base escapade
+import soundness
+
+info   styled terminal text as a value: the `e"…"` interpolator, `Teletype`, and ANSI rendering by capability
+detail
+    _Escapade_ makes styled terminal output a **value** rather than a stream of escape codes.
+    A `Teletype` is text which carries a style — colour, weight, underline, hyperlink — for
+    every character, built with the `e"…"` interpolator and rendered only at the moment of
+    output, to whatever the receiving terminal can show: 24-bit colour on a capable terminal,
+    the nearest of 256 colours on an older one, and plain text when the output is not a
+    terminal at all, so a log file never fills with escape sequences.
+
+    ```scala
+    import soundness.*
+    import stdios.javaLangSystemStdio
+    import termcapDefinitions.xtermTrueColorTermcap
+
+    val message: Teletype = e"$Bold(Warning): ${Fg(WebColors.Red)}(disk full)"
+    Out.println(message)
+    message.render(termcapDefinitions.basicTermcap)   // t"Warning: disk full"
+    ```
+
+    Inside `e"…"`, a substituted `Bold`, `Italic`, `Underline`, `Strike`, `Reverse`, `Conceal`,
+    `Faint`, `DoubleUnderline`, `BlinkSlow`, `BlinkFast` or `Overline` marker, an `Fg` or `Bg`
+    colour, any `Chromatic` colour, an `Escape` pair or a `Hyperlink`, followed by a bracketed
+    span — `(…)`, `[…]`, `{…}`, `<…>` or `«…»` — styles that span, and spans nest: each
+    substitution is a *transformation* of the prevailing `TextStyle` (a `Stylize` instance),
+    pushed on a stack and popped at the closing bracket, so an inner colour gives way to the
+    outer one again where it ends, which raw ANSI cannot express. Any other value is
+    substituted as text, through its `Teletypeable` or `Showable` instance, keeping its own
+    styling if it is already a `Teletype`. An unclosed bracket is a compile error.
+
+    A `Teletype` is `Textual`, so everything gossamer does with `Text` — `keep`, `skip`,
+    `pad`, `fit`, `cut`, `join`, `trim`, `upper`, `words`, `lines`, `reverse`, … — works on
+    it with the styling preserved, and it is `Printable`, so `Out.println` renders it
+    through the `Termcap` of the `Stdio` in scope.
+
+    The library is split into four source sets:
+
+    - `escapade.csi` — the `csi` object, which spells the cursor, erase and SGR control
+      sequences as `Text`, and `unstyled`, which strips every control sequence from text
+      that already contains them. It depends only on gossamer.
+    - `escapade.core` — `Teletype`, the `e"…"` interpolator and its `Ansi` machinery, the
+      style markers, `Fg`, `Bg`, `TextStyle`, `Stylize`, `Teletypeable`, `Colorable`,
+      `Imprintable`, `Ribbon`, `Hyperlink`, `Escape`, the raw `escapes` table and the
+      `displayableTypes` package.
+    - `escapade.io` — the `writables` package: streams of `Teletype` records written to
+      `Out` and `Err`.
+    - `escapade.graphics` — the `teletypeables` package: any `Graphical` image rendered as
+      half-block characters.
+
+    Everything is exported to the `soundness` umbrella, and the `displayableTypes`,
+    `writables` and `teletypeables` choice packages merge with the umbrella's own, so a user
+    writes `import soundness.*` and imports the givens of those packages by name, since
+    `import soundness.*` does not import givens. The five newer markers (`Faint`,
+    `DoubleUnderline`, `BlinkSlow`, `BlinkFast`, `Overline`) and `StyleWord` are not among
+    the umbrella's exports, and are reached through the `escapade` package itself.
+
+refer escapade.Teletype
+refer escapade.e
+refer escapade.Stylize
+refer escapade.Teletypeable
+refer escapade.Fg
+refer escapade.Bg
+
+entry .Teletype   text with a style for every character, rendered to a terminal's capabilities at output
+  detail
+      A `Teletype` is the value the `e"…"` interpolator makes: its `#plain` text, and for
+      every character a 64-bit `StyleWord` packing foreground, background and eleven
+      attribute flags, held either densely (one word per character) or as runs of equal
+      style (`#boundaries` marks where each run starts). Hyperlinks (OSC 8) and raw escape
+      insertions are kept beside the text by position, so the plain text is exactly what the
+      terminal will show and its length is the width it occupies.
+
+      Nothing is rendered until `#render` is called with a `Termcap`: a terminal without ANSI
+      support gets the plain text, one with 256 colours gets the nearest colour of the cube,
+      and a true-colour terminal gets 24-bit colour. The `Printable` given does this for
+      `Out.println`, through the `Termcap` the `Stdio` in scope reports.
+
+      ```scala fuel
+      frame
+        label Plain text
+        code
+            import soundness.*
+            import termcapDefinitions.xtermTrueColorTermcap
+
+            val line = e"disk full"
+            line.render(xtermTrueColorTermcap)   // t"disk full"
+      frame
+        label A span in bold
+        code
+            import soundness.*
+            import termcapDefinitions.xtermTrueColorTermcap
+
+            val line = e"$Bold(Warning): disk full"
+            line.render(xtermTrueColorTermcap)   // t"\e[1mWarning\e[22m: disk full"
+      frame
+        label A coloured span, nested inside it
+        code
+            import soundness.*
+            import termcapDefinitions.xtermTrueColorTermcap
+
+            val line = e"$Bold(Warning: ${Fg(WebColors.Red)}(disk full))"
+            line.render(xtermTrueColorTermcap)   // the red ends before the bold does
+      frame
+        label A hyperlink around the whole line
+        code
+            import soundness.*
+            import termcapDefinitions.xtermTrueColorTermcap
+
+            val line = e"${Hyperlink(t"https://example.com/disk")}[$Bold(Warning: ${Fg(WebColors.Red)}(disk full))]"
+            line.plain                             // t"Warning: disk full"
+            line.render(xtermTrueColorTermcap)     // OSC 8 link, bold and red
+            line.render(termcapDefinitions.basicTermcap)   // t"Warning: disk full"
+      ##
+      ```
+
+      A `Teletype` is `Textual` (`.textual`), so the gossamer vocabulary applies with styling
+      preserved: `keep`, `skip`, `pad`, `fit`, `center`, `trim`, `chomp`, `cut`, `words`,
+      `lines`, `upper`, `lower`, `reverse`, `contains`, `starts`, `offsetOf`, and the rest.
+      Two teletypes concatenate with `+` or `#append`, a `List[Teletype]` joins with `join`,
+      and `#dropChars` and `#takeChars` cut by character count from either end. Equality is
+      structural over every field; comparison (`.comparable`) is by plain text under a
+      `Collation`.
+
+      Construction: `Teletype(text)` for unstyled text, `Teletype.styled(value)(transform)`
+      for a uniformly styled value, the `e"…"` interpolator for anything with markup, and
+      `Teletype.Builder` to accumulate pieces. The case-class constructor takes the raw
+      arrays and is for code which has already computed them, such as `teletypeables`
+      givens.
+  refer escapade.e
+  refer escapade.TextStyle
+  refer escapade.StyleWord
+  refer escapade.Teletypeable
+  entry .SparseThreshold   the ratio at which a dense style array is compressed to runs: `2`
+      A teletype built by the interpolator or a `Builder` keeps one style word per character
+      unless the text is at least twice as long as its number of style runs, in which case
+      the runs are stored instead. The choice affects only memory and speed, never the
+      rendering.
+  entry .add   `left + right`: the two teletypes appended, where `Teletype` is not seen as `Textual`
+      The `Addable` given, guarded by `NotGiven[Teletype is Textual]` so that it yields to
+      gossamer's own `+` for textual values when `.textual` is in scope, and both spell
+      `#append`.
+  entry .concatenable   the `Concatenable` given: `concat(left, right)` is `left.append(right)`
+  entry .measurable   the display width of a teletype is the width of its plain text
+      Styling and hyperlinks occupy no cells, so under any `Text is Measurable` metric (such
+      as `textMetrics.uniformMetric`, or the East Asian width metric) a teletype measures as
+      its `#plain` does.
+  entry .reversible   `teletype.reverse`, with the styling of each character kept
+      Delegates to gossamer's `reversibleTextual`, placed here in the companion so that the
+      single `reverse` of `rudiments` finds it without an import.
+  entry .traversable   lets the predicate forms of `keep` and `skip` walk a teletype character by character
+      Delegates to gossamer's `traversableTextual`: `e"hello world".keep(_.isLetter)` finds
+      its boundary by traversal and rebuilds by `segment`, so styling survives.
+  entry .textual   the `Textual` given: a `Teletype` is text whose characters are `Char`s
+      Every gossamer extension on textual values applies to a teletype through this instance.
+      Its `Show` type member is `Teletypeable`, so a value substituted into a teletype by a
+      generic textual operation is shown through its `Teletypeable` rather than its
+      `Showable`. `map` over the characters keeps every style word in place, and `segment`
+      is `dropChars` then `takeChars`.
+  entry .empty   the empty teletype: no text, the default trailing style
+  entry .joinable   `parts.join`: many teletypes appended, in a balanced tree rather than a left fold
+      Each `append` copies both operands, so a left fold over `n` parts would copy the first
+      part `n` times and joining a long diagnostic was quadratic; the join splits the parts in
+      halves and copies each one only about `log n` times. `append` is associative and drops
+      empty parts, so the result is exactly the left fold's.
+  entry .printable   the `Printable` given: `Out.println(teletype)` renders it through the `Stdio`'s `Termcap`
+      `print(teletype, termcap)` is `teletype.render(termcap)`, so the escape sequences
+      emitted depend on the terminal the standard output actually is.
+  entry .cuttable   `teletype.cut(delimiter)`: split on text, each piece keeping its styles
+      The `Cuttable by Text` given behind gossamer's `cut`, with an optional limit on the
+      number of pieces. `e"a,b,c".cut(t",")` is three styled pieces, and `e"".cut(t",")` is a
+      list of one empty teletype.
+  entry .comparable   teletypes order by their plain text, under the `Collation` in scope
+  entry .apply   `Teletype(text)`: the text, with no styling
+  entry .styled   `Teletype.styled(value)(transform)`: a `Showable` value in one uniform style
+      Shows the value, then applies `transform` to the default `TextStyle` and gives every
+      character the resulting style, as `Teletype.styled(42.0)(_.copy(fg = Chroma(0xffd600)))`
+      does for the `Double` rendering.
+
+      ```scala
+      import soundness.*
+      import termcapDefinitions.xtermTrueColorTermcap
+
+      Teletype.styled(t"all bold")(_.copy(bold = true)).render(xtermTrueColorTermcap)
+      ```
+  entry .compressIfBeneficial   converts a dense style array to runs when the text is long enough to justify it
+      Returns the `(styles, boundaries)` pair for the text: the arrays unchanged with empty
+      boundaries if the runs would not save space (by `.SparseThreshold`), or the run styles
+      with their start positions otherwise. For code which builds a teletype from its own
+      style array and wants the representation the interpolator would have chosen.
+  entry .Builder   accumulates teletypes, texts and characters into one `Teletype`
+    detail
+        A `gossamer.Builder[Teletype]`, which is what `Teletype.textual.builder` returns and
+        what `Text.build`-style construction uses for teletypes: inside `Teletype.Builder().build`,
+        `append` adds a `Teletype`, a `Text` (unstyled) or a `Char`, and the result is
+        compressed to runs where that helps. Hyperlinks and insertions are shifted to their
+        new positions as pieces are appended.
+
+        ```scala
+        import soundness.*
+
+        val built: Teletype = Teletype.Builder().build:
+          append(e"$Bold(one) ")
+          append(t"two ")
+          append('3')
+
+        built.plain   // t"one two 3"
+        ```
+    entry #length   how many characters have been appended so far
+  entry #plain   the text, without any styling: exactly the characters a terminal shows
+  entry #styles   the style words: one per character plus a trailing one, or one per run
+      In the dense form, `styles` has `plain.length + 1` entries, the last being the
+      trailing style (the style in force after the final character); in the sparse form it
+      has one entry per run in `#boundaries` plus the trailing style. Read it through
+      `#styleAt` rather than by index.
+  entry #hyperlinks   the OSC 8 hyperlinks, by the character position where each opens
+      `e"hi ${Hyperlink(t"https://x.test")}[click]".hyperlinks(3)` is `t"https://x.test"`.
+      The `HyperlinkChange` flag in the style word of that position marks where the link
+      opens, and the closing one where it ends.
+  entry #insertions   raw escape sequences to emit before the character at each position
+      What an `Escape(on, off)` substitution leaves behind: the `on` sequence at the start of
+      its span and the `off` sequence at its end, each keyed by position and emitted verbatim
+      by `#render` on a terminal with ANSI support.
+  entry #boundaries   the start position of each style run, or empty for the dense form
+      `boundaries(0)` is always `0` when present; run `i` covers from `boundaries(i)` to the
+      next boundary or the end of the text. `#isDense` is whether this is empty.
+  entry #isDense   whether the styles are stored one per character rather than as runs
+  entry #styleAt   the style word of the character at a position, or the trailing style at the length
+      `styleAt(p)` for `0 ≤ p ≤ plain.length`: the packed `StyleWord` (as a `Long`) of the
+      character at `p`, found by a binary search of the runs in the sparse form, or the
+      trailing style when `p` is the text's length. `(teletype.styleAt(0) & StyleWord.Bold) != 0`
+      tests whether the first character is bold.
+  entry #trailingStyle   the style in force after the last character
+      What `#append` continues in, and what a join carries across a boundary. For
+      `e"$Bold(abc)def"` it is `0L`, the default, since the bold span closed.
+  entry #asSparseArrays   the styles as runs: the `(styles, boundaries)` pair of the sparse form
+      Constant time for an already-sparse teletype, and a scan of the characters for a dense
+      one. `#append` uses it to merge two teletypes of different forms.
+  entry #explicit   the true-colour rendering with every escape character written as `\e`, for inspection
+      `e"$Bold(x)".explicit` is `t"\e[1mx\e[22m"` as visible text: the rendering for a
+      true-colour xterm, with the control character replaced by the two characters `\` and
+      `e`, for tests and debugging output.
+  entry #append   this teletype followed by another, or by unstyled text
+      `append(that: Teletype)` concatenates both, shifting the second's hyperlinks and
+      insertions by the first's length and merging adjacent runs of equal style; `append(text:
+      Text)` adds the text in the `#trailingStyle`. Appending an empty operand returns the
+      receiver unchanged. `+` is the same, through `.add`.
+  entry #dropChars   the teletype without its first `n` characters, or its last with `Rtl`
+      `e"abcdef".dropChars(2)` is `e"cdef"`, and `dropChars(2, Rtl)` is `e"abcd"`, each with
+      the styles, hyperlinks and insertions of the kept characters moved to their new
+      positions. Dropping more than the length gives `Teletype.empty`; dropping a
+      non-positive count gives the receiver.
+  entry #takeChars   the first `n` characters of the teletype, or its last with `Rtl`
+      `e"abcdef".takeChars(3)` is `e"abc"`, and `takeChars(3, Rtl)` is `e"def"`. The trailing
+      style of the result is the default. Taking at least the length gives the receiver.
+  entry #render   the text with ANSI escape sequences for a terminal, as a `Termcap` describes it
+      With `termcap.ansi` false, the result is `#plain`. Otherwise the style words are
+      walked run by run and only the *differences* between consecutive styles are emitted,
+      as one SGR sequence each (`\e[1;38;2;255;0;0m`), with colours as 24-bit `38;2;r;g;b`
+      when `termcap.color` is `ColorDepth.TrueColor` and as the nearest of the 256-colour
+      cube (`38;5;n`) otherwise; hyperlinks become OSC 8 sequences and insertions are
+      emitted verbatim at their positions. The trailing style is emitted at the end, so a
+      teletype which ends inside a span still resets.
+
+      ```scala
+      import soundness.*
+
+      e"${Fg(WebColors.Red)}(x)".render(termcapDefinitions.xtermTrueColorTermcap).contains(t"38;2;255;0;0")
+      e"${Fg(WebColors.Red)}(x)".render(termcapDefinitions.xterm256Termcap).contains(t"38;5;")
+      e"$Bold(x)".render(termcapDefinitions.basicTermcap)   // t"x"
+      ```
+
+entry .e   the `e"…"` interpolator: styled text as a `Teletype`, with its brackets checked as the code compiles
+    `e"…"` builds a `Teletype` from literal text and substitutions. A substituted value is
+    one of two kinds, decided by the `Insertion[Ansi.Input, T]` given found for its type:
+
+    - a **markup** value — anything with a `Stylize` instance (`Bold`, `Italic`, `Fg(…)`,
+      `Bg(…)`, a `Chromatic` colour such as `WebColors.Red`, an `Escape`) or a `Hyperlink` —
+      which, when followed immediately by `(`, `[`, `{`, `<` or `«`, styles the span up to
+      the matching closing bracket, and otherwise applies to the rest of the enclosing span;
+    - a **text** value — a `Teletype`, which keeps its own styling, or any `Teletypeable` or
+      `Showable` value, shown as text. A bracket after a text value is ordinary text:
+      `e"${42}(text)"` is `42(text)`.
+
+    ```scala
+    import soundness.*
+    import WebColors.{Gold, Indigo, HotPink, White}
+
+    e"$Gold(gold, $Indigo(indigo, $HotPink(hot pink), indigo) $White(and) gold)"
+    e"$Bold[bold] and $Italic{italic} and $Underline<underlined> and ${Fg(Gold)}«gold»"
+    ```
+
+    Spans nest and restore: each markup substitution transforms the prevailing `TextStyle`
+    and the closing bracket restores the style that was in force before it, so the indigo
+    above gives way to gold again where it ends. A closing bracket of the wrong kind inside a
+    span is ordinary text (`e"$Bold(a]b)"` emboldens `a]b`). A span left unclosed is a compile
+    error, _the closing brace does not match an opening brace_; a value with neither a
+    `Stylize` nor a `Teletypeable` nor a `Showable` instance is the compile error _can't
+    substitute T into an e-interpolator_.
+
+    Two backslashes immediately before a markup substitution cancel it: in
+    `e"x\\${Bold}(text)"` the backslashes are consumed, the marker does nothing, and `(text)`
+    is literal. The usual text escapes (`\n`, `\t`, `\\`, `\u…`) and `$$` for a literal `$`
+    apply as in `t"…"`.
+
+    The interpolator is a macro: it runs the same `Ansi.Runtime` state machine over the
+    literal parts at compile time to find bracket errors, and emits a sequence of
+    `Ansi.Runtime.parse` and `insert` calls which build the `Teletype` at runtime.
+
+entry .Bold   the marker which emboldens a span: `e"$Bold(text)"` (SGR 1)
+    A case object whose `Stylize[Bold.type]` instance (`Ansi.bold`) sets `bold` in the
+    prevailing `TextStyle`. On a plain `Termcap` it renders as nothing.
+
+entry .Italic   the marker which italicises a span: `e"$Italic(text)"` (SGR 3)
+
+entry .Underline   the marker which underlines a span: `e"$Underline(text)"` (SGR 4)
+
+entry .Strike   the marker which strikes a span through: `e"$Strike(text)"` (SGR 9)
+
+entry .Reverse   the marker which swaps a span's foreground and background: `e"$Reverse(text)"` (SGR 7)
+
+entry .Conceal   the marker which hides a span's characters: `e"$Conceal(text)"` (SGR 8)
+    The characters are still in `Teletype#plain` and still occupy their cells; a terminal
+    which honours SGR 8 draws them invisibly.
+
+entry .Faint   the marker which dims a span: `e"$Faint(text)"` (SGR 2)
+    Reached as `escapade.Faint`: it is not among the umbrella's exports.
+
+entry .DoubleUnderline   the marker which double-underlines a span: `e"$DoubleUnderline(text)"` (SGR 21)
+    Reached as `escapade.DoubleUnderline`: it is not among the umbrella's exports.
+
+entry .BlinkSlow   the marker which makes a span blink slowly: `e"$BlinkSlow(text)"` (SGR 5)
+    Reached as `escapade.BlinkSlow`: it is not among the umbrella's exports.
+
+entry .BlinkFast   the marker which makes a span blink rapidly: `e"$BlinkFast(text)"` (SGR 6)
+    Reached as `escapade.BlinkFast`: it is not among the umbrella's exports.
+
+entry .Overline   the marker which overlines a span: `e"$Overline(text)"` (SGR 53)
+    Reached as `escapade.Overline`: it is not among the umbrella's exports.
+
+entry .Fg   a foreground colour, for `e"${Fg(color)}(text)"` and `Colorable`
+  detail
+      `Fg(color)` wraps a `Chroma` — a 24-bit colour — as a foreground. `Fg.apply` takes any
+      `Chromatic` value (an iridescence `Color in Srgb`, a `WebColors` entry, an `rgb"…"`
+      literal, a `Chroma`), so `Fg(WebColors.Red)` and `Fg(Chroma(255, 0, 0))` are the same.
+      Its `Stylize` instance (`Ansi.fg`) sets the foreground of the prevailing style for a
+      span; a bare `Chromatic` value substituted into `e"…"` does the same through
+      `Ansi.chromatic`, so `e"${WebColors.Red}(text)"` needs no `Fg` at all.
+
+      ```scala
+      import soundness.*
+
+      val warning: Fg = Fg(WebColors.Orange)
+      e"$warning(careful) and ${WebColors.Red}(stop)"
+      ```
+  refer escapade.Bg
+  refer escapade.Colorable
+  entry .apply   `Fg(color)` for any `Chromatic` colour
+  entry #color   the colour, as a `Chroma`
+  entry #bg   the same colour as a background
+  entry #ansi   the SGR sequence which sets this foreground, for a colour depth
+      `\e[38;2;r;g;bm` for `ColorDepth.TrueColor`, and `\e[38;5;nm` with the nearest entry
+      of the 256-colour cube (greys on the 24-step ramp, pure black `16` and white `231`)
+      for any other depth. `Teletype#render` emits the same codes.
+
+entry .Bg   a background colour, for `e"${Bg(color)}(text)"`
+  detail
+      `Bg(color)` wraps a `Chroma` as a background; `Bg.apply` takes any `Chromatic` value.
+      Its `Stylize` instance (`Ansi.bg`) sets the background of the prevailing style for a
+      span, and `#highContrast` picks the foreground — black or white — which reads best on
+      it, which is how `Ribbon` colours its labels.
+
+      ```scala
+      import soundness.*
+
+      val highlight: Bg = Bg(WebColors.Yellow)
+      e"$highlight(${highlight.highContrast}(marked))"
+      ```
+  refer escapade.Fg
+  refer escapade.Ribbon
+  entry .apply   `Bg(color)` for any `Chromatic` colour
+  entry #color   the colour, as a `Chroma`
+  entry #fg   the same colour as a foreground
+  entry #highContrast   black or white as a foreground, whichever contrasts more with this background
+      White (`Chroma(0xffffff)`) when the background's luma — `0.21·red + 0.72·green +
+      0.07·blue` — is at most 128, and black otherwise. `Bg(Chroma(0, 0, 0)).highContrast` is
+      white; `Bg(Chroma(255, 255, 255)).highContrast` is black.
+  entry #ansi   the SGR sequence which sets this background, for a colour depth
+      `\e[48;2;r;g;bm` in true colour, and `\e[48;5;nm` with the nearest 256-colour cube entry
+      otherwise.
+
+entry .TextStyle   the style of one character: its colours and eleven attribute flags, as a record
+  detail
+      The record a `Stylize` transformation edits. Every field has a default — `Unset`
+      colours and `false` flags — so a transformation is written with `copy`:
+      `Stylize(_.copy(bold = true, fg = Chroma(0xff0000)))`. The `e"…"` interpolator keeps a
+      stack of these as it parses, one pushed per opened span, and packs each into a
+      `StyleWord` (`#styleWord`) for the characters it covers.
+
+      ```scala
+      import soundness.*
+
+      val alert: TextStyle = TextStyle(fg = Chroma(0xffffff), bg = Chroma(0xcc0000), bold = true)
+      Teletype.styled(t"ALERT")(_ => alert)
+      ```
+  refer escapade.Stylize
+  refer escapade.StyleWord
+  entry .esc   the escape character, `'\u001b'`
+  entry #fg   the foreground colour, or `Unset` for the terminal's default
+  entry #bg   the background colour, or `Unset` for the terminal's default
+  entry #italic   whether the text is italic
+  entry #bold   whether the text is bold
+  entry #reverse   whether foreground and background are swapped
+  entry #underline   whether the text is underlined
+  entry #conceal   whether the text is hidden
+  entry #strike   whether the text is struck through
+  entry #faint   whether the text is dimmed
+  entry #doubleUnderline   whether the text is double-underlined
+  entry #blinkSlow   whether the text blinks slowly
+  entry #blinkFast   whether the text blinks rapidly
+  entry #overline   whether the text is overlined
+  entry #styleWord   the style packed into a `Long`, as `Teletype#styles` holds it
+      The foreground's 24 bits in the low bytes with the `FgSet` flag, the background's 24
+      bits above them with `BgSet`, and one bit per attribute: the layout `StyleWord`
+      documents. `TextStyle().styleWord` is `0L`, the default.
+  entry #addChanges   appends to a buffer the SGR sequence which turns this style into another
+      `addChanges(buffer, next, colorDepth)` emits only the differences between this style
+      and `next`, as `StyleWord.emitDiff` does; `Teletype#render` works the same way, run by
+      run.
+
+entry .Stylize   the typeclass which makes a type usable as markup in `e"…"`: a transformation of the prevailing style
+  detail
+      `Stylize[T]` is `Substitution[Ansi.Input, T, "esc"]`: an `Insertion` whose label `esc`
+      tells the interpolator that a `T` substituted before a bracket opens a styled span.
+      An instance is written with `Stylize(lambda)`, where the lambda maps the `TextStyle` in
+      force to the style of the span — a transformation rather than an absolute setting, so
+      a marker can depend on what it finds:
+
+      ```scala
+      import soundness.*
+
+      case object Toggle
+      given Stylize[Toggle.type] = _ => Stylize(style => style.copy(bold = !style.bold))
+
+      e"$Toggle(bold) $Bold($Toggle(not bold))"
+      ```
+
+      The given is written as a function from the value to the markup (`_ => Stylize(…)`), so a
+      value's fields can inform the style, as `Ansi.fg` reads the colour out of an `Fg`. The
+      instances for the eleven markers, `Fg`, `Bg`, every `Chromatic` colour and `Escape` live
+      in `Ansi`'s companion, and a `Hyperlink` is a substitution of the same label which opens
+      an OSC 8 link rather than a style.
+
+      `Stylize(lambda)` itself returns the `Ansi.Input.Markup` which the interpolator consumes.
+  refer escapade.TextStyle
+  refer escapade.Ansi
+  entry .apply   `Stylize(lambda)`: the markup which applies a `TextStyle -> TextStyle` transformation to a span
+      Wraps the lambda as an `Ansi.Input.Markup`, the value a `Stylize[T]` instance returns
+      for each substituted `T`. The lambda receives the style in force where the span opens,
+      and its result styles the span's characters.
+
+entry .Escape   a raw pair of escape sequences to wrap a span in: `Escape(on, off)`
+  detail
+      `Escape` is the type `Ansi.Input.Escape`, with `Escape(code, reset)` to build one: the
+      text after the escape character which switches something on, and the text which switches
+      it off again (empty by default). Substituted into `e"…"` before a bracket, the `on`
+      sequence is inserted where the span opens and the `off` sequence where it closes, both
+      emitted verbatim by `Teletype#render` on a terminal with ANSI support and dropped on a
+      plain one; without a bracket, only `on` is inserted. The `escapes` object has the
+      standard SGR pairs ready made.
+
+      ```scala
+      import soundness.*
+      import termcapDefinitions.xtermTrueColorTermcap
+
+      val bold: Escape = Escape(t"[1m", t"[22m")
+      e"a$bold(b)c".render(xtermTrueColorTermcap)   // t"a\e[1mb\e[22mc"
+      ```
+
+      Unlike a `Stylize` marker, an `Escape` is opaque to the style stack: it does not update
+      the `TextStyle`, so `Teletype#styleAt` does not know about it and a nested style span
+      does not restore it.
+  refer escapade.escapes
+  entry .apply   `Escape(code, reset)`: an escape pair from the text after each escape character
+      `code` is inserted where the span opens and `reset`, which defaults to `Unset` (no
+      sequence), where it closes; both are written without the leading escape character,
+      which the `e"…"` parser adds as it records the insertion.
+
+entry .Hyperlink   a URL to attach to a span, as an OSC 8 terminal hyperlink: `e"${Hyperlink(url)}[text]"`
+  detail
+      Substituted before a bracket, the span becomes a clickable link on terminals which
+      support OSC 8: `#render` emits `\e]8;;url\e\\` where it opens and `\e]8;;\e\\` where it
+      closes, and a plain `Termcap` shows just the text. The link's position is kept in
+      `Teletype#hyperlinks`, and a styled span inside a link keeps both.
+
+      ```scala
+      import soundness.*
+
+      val link = e"see ${Hyperlink(t"https://example.com")}[the documentation] for more"
+      link.plain   // t"see the documentation for more"
+      ```
+  entry #url   the link's target, as text
+
+entry .Ansi   the machinery behind `e"…"`: the `Stylize` instances, the parser state and its runtime
+  detail
+      `Ansi` holds everything the `e"…"` interpolator is built from. Its companion carries the
+      `Stylize` givens for the markers and colours (so they resolve with no import), the
+      `Input` a substitution becomes, the `State` the parser accumulates and the `Runtime`
+      which drives it, and `Ansi.Error`, the exception a malformed interpolation raises. A
+      program styling text through `e"…"` need not touch any of it; code which generates
+      teletypes without the interpolator may drive `Runtime` directly.
+
+      ```scala
+      import soundness.*
+
+      val state = Ansi.Runtime.parse(Ansi.Runtime.initial, t"plain ")
+      Ansi.Runtime.insert(state, Ansi.Input.Markup(_.copy(bold = true)))
+      Ansi.Runtime.parse(state, t"(bold) tail")
+      Ansi.Runtime.complete(state).plain   // t"plain bold tail"
+      ```
+
+      `Ansi.strip(text)` removes every ANSI escape sequence from text; `unstyled` (in
+      `escapade.csi`) is the stricter extension on `Text`, which matches only complete CSI
+      sequences.
+  refer escapade.e
+  refer escapade.Stylize
+  refer escapade.Teletype
+  entry .Transform   a `TextStyle -> TextStyle` function: what a `Stylize` instance produces
+  entry .strip   the text with every ANSI escape sequence removed
+      Matches `\e[` followed by parameters and a final byte in `@`–`~`, and deletes each
+      match, leaving the characters that would have been printed. The `unstyled` extension
+      is usually preferable: it matches only complete CSI sequences (`csi.pattern`).
+  entry .escape   the `Stylize` instance for `Escape`: the raw pair is inserted around the span
+  entry .chromatic   the `Stylize` instance for any `Chromatic` colour: the span's foreground
+      `e"${WebColors.Red}(text)"` colours the text red with no `Fg` wrapper; an `rgb"…"` literal
+      or a `Chroma` works the same way.
+  entry .bg   the `Stylize` instance for `Bg`: the span's background
+  entry .fg   the `Stylize` instance for `Fg`: the span's foreground
+  entry .bold   the `Stylize` instance for `Bold`
+  entry .italic   the `Stylize` instance for `Italic`
+  entry .underline   the `Stylize` instance for `Underline`
+  entry .strike   the `Stylize` instance for `Strike`
+  entry .conceal   the `Stylize` instance for `Conceal`
+  entry .reverse   the `Stylize` instance for `Reverse`
+  entry .faint   the `Stylize` instance for `Faint`
+  entry .doubleUnderline   the `Stylize` instance for `DoubleUnderline`
+  entry .blinkSlow   the `Stylize` instance for `BlinkSlow`
+  entry .blinkFast   the `Stylize` instance for `BlinkFast`
+  entry .overline   the `Stylize` instance for `Overline`
+  entry .hyperlink   the substitution for `Hyperlink`: the span becomes an OSC 8 link
+      Labelled `esc` like a `Stylize`, so a bracket after it opens a span, but the span is a
+      link frame rather than a style frame.
+  entry .Input   what a substitution into `e"…"` becomes: text, markup, a raw escape pair or a hyperlink
+      An enum of four cases. `TextInput(text: Teletype)` is a value shown as text, appended
+      with its styling combined under the prevailing style; `Markup(transform: Transform)` is
+      a `Stylize` value, pending until the next character decides whether it opens a span;
+      `Escape(on: Text, off: Text)` — the type the package alias `Escape` names — is a raw
+      pair; `Hyperlink(url: Text)` opens a link. `Runtime.insert` feeds one to a `State`.
+  entry .Pending   a markup, link or escape substitution waiting to see whether a bracket follows it
+      The parser's one-token lookahead, as an enum: `Style(transform)`, `Link(url)` or
+      `Escape(on, off)`. The next character resolves it — an opening bracket pushes a frame,
+      a backslash cancels it, and anything else applies it to the rest of the enclosing span.
+  entry .Frame   an open span on the parser's stack, with the bracket which will close it
+    detail
+        An enum: `Style(bracket)` for a styled span, `Link(bracket)` for a hyperlink and
+        `Escape(bracket, off)` for a raw escape pair, which remembers the `off` sequence to
+        insert when the span closes. Each knows the closing bracket it waits for, so a
+        closing bracket of another kind is ordinary text.
+    entry #bracket   the closing bracket which ends this span: `)`, `]`, `}`, `>` or `»`
+  entry .State   the mutable accumulator the interpolator fills: text, styles, links, insertions and the open spans
+    detail
+        One `State` is created per interpolation by `Runtime.initial`, fed by `Runtime.parse`
+        and `Runtime.insert`, and turned into a `Teletype` by `Runtime.complete`. It is
+        mutable and single-use: a program building teletypes by hand should prefer
+        `Teletype.Builder`, which is the same accumulator without the bracket parsing.
+    entry #plain   the characters so far
+    entry #styles   the style word of each character so far
+    entry #hyperlinks   the hyperlinks opened so far, by position
+    entry #insertions   the raw escape sequences so far, by position
+    entry #last   the substitution awaiting its bracket, if any
+    entry #stack   the open spans, innermost first
+    entry #styleStack   the styles in force outside each open style span, innermost first
+    entry #currentStyle   the style the next character will take
+    entry #linkArmed   whether the next character opens or closes a hyperlink
+    entry #appendChar   adds one character in the current style
+    entry #appendChars   adds text, every character in the current style
+    entry #appendTeletype   adds a teletype, each character's own style combined under the current one
+        An inner style wins where it sets a colour, and attribute flags from both are kept,
+        as `StyleWord.combine` defines; the teletype's hyperlinks and insertions are shifted
+        to their new positions.
+    entry #addInsertion   records a raw escape sequence to emit before the character at a position
+    entry #pushStyleFrame   opens a styled span: saves the current style and applies a transformation
+    entry #pushLinkFrame   opens a hyperlink span at the current position
+    entry #pushEscapeFrame   opens a raw escape span, inserting its `on` sequence
+    entry #popFrame   closes the innermost span, restoring the style or inserting the `off` sequence
+    entry #applyOnce   applies a transformation to the current style with no span to close it
+  entry .Runtime   the parser: feeds literal parts and substitutions to a `State`, and completes it
+    detail
+        The functions the `e"…"` macro emits calls to, and which it also runs at compile time
+        over the literal parts to find bracket errors. Each takes the `State`, mutates it and
+        returns it, so calls chain.
+
+        ```scala
+        import soundness.*
+
+        val state = Ansi.Runtime.initial
+        Ansi.Runtime.parse(state, t"a ")
+        Ansi.Runtime.insert(state, Ansi.Input.Hyperlink(t"https://x.test"))
+        Ansi.Runtime.parse(state, t"[link] b")
+        Ansi.Runtime.complete(state).hyperlinks(2)   // t"https://x.test"
+        ```
+    entry .initial   a fresh, empty `State`
+    entry .parse   feeds a literal part of the interpolation to the state
+        Resolves any pending substitution against the part's first character (an opening
+        bracket pushes a frame; a backslash cancels; anything else applies once), then scans
+        for the innermost frame's closing bracket, appending text up to it and popping the
+        frame, repeatedly, with the text escapes (`\n`, `\t`, `\u…`) decoded. A bad escape
+        raises `Ansi.Error`.
+    entry .insert   feeds a substitution to the state
+        A `TextInput` is appended at once; `Markup`, `Escape` and `Hyperlink` become the
+        pending substitution which the next `parse` resolves.
+    entry .skip   feeds an empty text input, which resolves nothing and appends nothing
+        What the macro emits for a substitution whose markup was cancelled by a preceding
+        `\\`.
+    entry .complete   the finished `Teletype`, or `Ansi.Error` if a span is still open
+        Raises `Ansi.Error`: _the closing brace does not match an opening brace_ when the
+        frame stack is not empty; otherwise appends the trailing style, compresses the styles
+        to runs where that helps, and returns the teletype.
+  entry .Error   the exception for a malformed interpolation: an unclosed span or a bad text escape
+    detail
+        An `Exception` whose message is `escapade: ` followed by `#detail`. The `e"…"` macro
+        runs the parser at compile time and reports the same detail as a compile error, so
+        at runtime it arises only from driving `Runtime` directly.
+    entry #detail   what was wrong, as a `Message`
+  entry .Escapes   how each style attribute is spelled as an escape sequence: the trait, and the `Standard` SGR spelling
+    detail
+        A `Findable` trait with one method per attribute, returning the sequence which switches
+        it on or off, and one each for a 24-bit foreground and background. `Escapes.Standard`
+        is the ordinary SGR spelling (`\e[1m` and `\e[22m` for bold, `\e[38;2;r;g;bm` for a
+        foreground). `Teletype2#render` takes one as a contextual value; `Teletype#render`
+        spells the sequences itself from the `Termcap`.
+    entry .Standard   the standard SGR sequences: `\e[1m`/`\e[22m`, `\e[3m`/`\e[23m`, and so on
+    entry #bold   the sequence which switches bold on or off
+    entry #italic   the sequence which switches italic on or off
+    entry #underline   the sequence which switches underline on or off
+    entry #reverse   the sequence which switches reverse video on or off
+    entry #conceal   the sequence which switches concealment on or off
+    entry #strike   the sequence which switches strikethrough on or off
+    entry #foreground   the sequence which sets a 24-bit foreground colour
+    entry #background   the sequence which sets a 24-bit background colour
+
+entry .Ansi2   the lower-priority parent of `Ansi`, holding the text-substitution given
+  hidden
+  detail
+      Not for direct use: `Ansi` extends it so that `Ansi.teletype`, the substitution which
+      admits any `Teletypeable` or `Showable` value as text, ranks below the markup
+      substitutions declared in `Ansi` itself. A value is shown through its `Teletypeable`
+      if it has one, and through its `Showable` otherwise.
+  entry #TeletypeSubstitution   a `Substitution` into `e"…"` of label `t`, from a function to `Teletype`
+    entry #embed   wraps a value as `Ansi.Input.TextInput` of its `Teletype` rendering
+  entry #teletype   admits any `Teletypeable`, else `Showable`, value into `e"…"` as text
+      Inherited by `Ansi`, so it resolves as `Ansi.teletype` from implicit scope with no
+      import, below every markup substitution.
+
+entry .Teletypeable   the typeclass of values which render as a `Teletype`: styled, where `Showable` is plain
+  detail
+      `value.teletype` renders a value as styled text, as `value.show` renders it as plain
+      text. The instances in the companion cover `Teletype` itself, `Text`, a `Message` (its
+      nested quotations in yellow italics), an `Option`, a `Double` (in yellow, through the
+      `Decimalizer` in scope), an `Error` (its message) and a `Throwable` (its simple class
+      name in red), and every `Showable` value falls back to its plain rendering; a type with
+      a `Colorable` instance renders in that colour.
+
+      A `Teletypeable` is what the `e"…"` interpolator and the `Teletype.textual` instance
+      use to show a substituted value, so giving a type an instance styles it wherever it
+      is interpolated:
+
+      ```scala
+      import soundness.*
+
+      case class Status(ok: Boolean, text: Text)
+
+      given Status is Teletypeable = status =>
+        if status.ok then e"${Fg(WebColors.Green)}(✓ ${status.text})"
+        else e"${Fg(WebColors.Red)}(✗ ${status.text})"
+
+      e"build: ${Status(true, t"passed")}"
+      ```
+
+      Other libraries add instances in `teletypeables` packages — a `Graphical` image here,
+      exceptions and stack traces in digression, URLs in urticose — imported by name.
+  refer escapade.teletype
+  refer escapade.Colorable
+  refer escapade.teletypeables
+  entry .teletype   a `Teletype` is its own rendering
+  entry .text   a `Text` renders unstyled
+  entry .message   a `Message` renders with its quoted parts in italic yellow, and nested quotes bold too
+      The message is folded level by level: plain text at level 0, level-1 quotations
+      (`m"the file $path"`'s `$path`) in italic `Chroma(0xefe68b)`, and deeper nesting in
+      bold italic `Chroma(0xffd600)`.
+  entry .option   an `Option` renders its value, or the text `empty`
+  entry .colorable   a value with both `Showable` and `Colorable` instances renders in its colour
+      One prioritised given rather than two peers: as two, a type with both upstream
+      instances matched both, ambiguously. This one prefers `Colorable`,
+      and `Teletypeable2#showable` (a lower-priority owner) is the plain fallback.
+  entry .error   an `Error` renders as its `Message`
+  entry .double   a `Double` renders in yellow, formatted by the `Decimalizer` in scope
+  entry .throwable   a `Throwable` renders as its simple class name, in red
+      The run of characters after the last `.` of the class's binary name, in
+      `Chroma(0xdc133b)`; digression's `teletypeables` has the full stack-trace rendering.
+  entry #teletype   the rendering of a value
+  entry #contramap   an instance for another type, by a function into this one
+      `summon[Text is Teletypeable].contramap[Int](_.show)` renders an `Int` through the
+      text instance.
+
+entry .Teletypeable2   the lower-priority owner of the plain `Showable` fallback for `Teletypeable`
+  hidden
+  detail
+      Not for direct use: `Teletypeable`'s companion extends it so that `#showable` ranks
+      below `Teletypeable.colorable`.
+  entry #showable   any `Showable` value renders unstyled, as `Teletype(value.show)`
+
+entry .teletype   `value.teletype`: a value rendered as a `Teletype` through its `Teletypeable` instance
+    An extension on any value with a `Teletypeable` instance. `42.teletype` renders through
+    the `Showable` fallback, `m"…".teletype` in the message style, and a value with a
+    `Colorable` instance in its colour.
+
+entry .Colorable   the typeclass which assigns a value a foreground colour, so it renders in it
+  detail
+      A type with a `Colorable` instance renders through `Teletypeable.colorable` as its
+      `show` text in the colour `#color` gives, with no `Teletypeable` of its own. The
+      colour may be fixed for the type or chosen per value:
+
+      ```scala
+      import soundness.*
+
+      case class Fruit(name: Text)
+      given Fruit is Showable = _.name
+      given Fruit is Colorable = Colorable(WebColors.Red)
+
+      Fruit(t"cherry").teletype   // cherry, in red
+
+      enum Level:
+        case Info, Warn
+      given Level is Showable = _.toString.tt
+
+      given Level is Colorable = Colorable[Level]: level => level match
+          case Level.Info => WebColors.SteelBlue
+          case Level.Warn => WebColors.Orange
+      ```
+  refer escapade.Teletypeable
+  refer escapade.Fg
+  entry .apply   an instance from a fixed `Chromatic` colour, or from a function choosing one per value
+      `Colorable[T](color)` colours every `T` the same; `Colorable[T](chooseColor)` takes a
+      `T -> color` for any `Chromatic` colour type. The type parameter is given explicitly in
+      the second form, since the function's parameter type does not infer from the result.
+  entry #color   the value's colour, as an `Fg`
+
+entry .Imprintable   the typeclass of content which decomposes into grapheme cells, each with a `StyleWord`
+  detail
+      A terminal surface places content cell by cell, and a cell holds a *grapheme* — a
+      wide CJK glyph or a ZWJ emoji is one cell, a combining mark adds none — not a `Char`.
+      `cells(content)(lambda)` calls `lambda` once per grapheme with the style word that
+      styles it: the default style for `Text`, `Ascii` and `Writing`, and for a `Teletype`
+      the style of the grapheme's first character, so colour survives decomposition. The
+      instances are in the companion, so any of these types imprints without an import.
+
+      ```scala
+      import soundness.*
+
+      var cells: List[(Grapheme, StyleWord)] = Nil
+
+      summon[Teletype is Imprintable].cells(e"a$Bold(b)c"): (grapheme, style) =>
+        cells = (grapheme, style) :: cells
+
+      cells.reverse.map(_(1).isBold)   // List(false, true, false)
+      ```
+  refer escapade.StyleWord
+  entry .text   `Text` imprints one cell per grapheme, in the default style
+  entry .writing   a hieroglyph `Writing` imprints its graphemes in the default style
+  entry .ascii   an `Ascii` text imprints one cell per character, in the default style
+  entry .teletype   a `Teletype` imprints each grapheme with the style of its first character
+  entry #cells   calls a function for each grapheme cell of the content, with its style word
+
+entry .Ribbon   a row of coloured labels with arrow-shaped joins, as a status line or breadcrumb
+  detail
+      `Ribbon(colors*)` takes background colours, and `#fill(parts*)` lays each part on the
+      corresponding background — in `Bg#highContrast` black or white — followed by the powerline arrow glyph (U+E0B0)
+      in that background's colour, so each segment appears to point into the next, in the
+      manner of a powerline prompt. The glyph needs a font with the powerline symbols. With
+      no colours, the parts are joined with a space.
+
+      ```scala
+      import soundness.*
+
+      val ribbon = Ribbon(WebColors.SteelBlue, WebColors.SeaGreen, WebColors.Goldenrod)
+      ribbon.fill(e"main", e"lib/escapade", e"3 changed")
+      ```
+  refer escapade.Bg
+  entry .apply   `Ribbon(colors*)` from any `Chromatic` colours, each wrapped as a `Bg`
+  entry #colors   the backgrounds, one per segment
+  entry #fill   the parts laid on the backgrounds in order, joined with arrow glyphs
+      Parts beyond the colours are dropped (the pairs are zipped), and the last segment's
+      arrow points into the terminal's default background.
+
+entry .escapes   the raw SGR sequences of the sixteen-colour terminal, as `Escape` pairs
+  detail
+      The classic terminal's colours and attributes, each an `Escape(on, off)` pair for a
+      span in `e"…"`, for a program which wants the terminal's *own* palette (`escapes.foreground.Red`
+      is whatever the user's theme makes red) rather than a `Chroma` it chooses itself. A
+      `Fg` or `Bg` with a 24-bit colour is the usual choice; these are for matching the
+      palette of the surrounding shell.
+
+      ```scala
+      import soundness.*
+
+      e"${escapes.foreground.Red}(error) ${escapes.styles.Bold}(bold) ${escapes.background.Blue}(on blue)"
+      ```
+  refer escapade.Escape
+  entry .foreground   the sixteen foreground colours, SGR 30–37 and 90–97, each reset by SGR 39
+    detail
+        `Black`, `Red`, `Green`, `Yellow`, `Blue`, `Magenta`, `Cyan` and `White` are SGR 30
+        to 37; the `Bright…` eight are SGR 90 to 97. Each closes with `[39m`, the default
+        foreground.
+    entry .Black   SGR 30
+    entry .Red   SGR 31
+    entry .Green   SGR 32
+    entry .Yellow   SGR 33
+    entry .Blue   SGR 34
+    entry .Magenta   SGR 35
+    entry .Cyan   SGR 36
+    entry .White   SGR 37
+    entry .BrightBlack   SGR 90
+    entry .BrightRed   SGR 91
+    entry .BrightGreen   SGR 92
+    entry .BrightYellow   SGR 93
+    entry .BrightBlue   SGR 94
+    entry .BrightMagenta   SGR 95
+    entry .BrightCyan   SGR 96
+    entry .BrightWhite   SGR 97, though its reset is `[49m` (the background default) rather than `[39m`
+  entry .background   the sixteen background colours, SGR 40–47 and 100–107, each reset by SGR 49
+    detail
+        `Black` to `White` are SGR 40 to 47; the `Bright…` eight are SGR 100 to 107. Each
+        closes with `[49m`, the default background.
+    entry .Black   SGR 40
+    entry .Red   SGR 41
+    entry .Green   SGR 42
+    entry .Yellow   SGR 43
+    entry .Blue   SGR 44
+    entry .Magenta   SGR 45
+    entry .Cyan   SGR 46
+    entry .White   SGR 47
+    entry .BrightBlack   SGR 100
+    entry .BrightRed   SGR 101
+    entry .BrightGreen   SGR 102
+    entry .BrightYellow   SGR 103
+    entry .BrightBlue   SGR 104
+    entry .BrightMagenta   SGR 105
+    entry .BrightCyan   SGR 106
+    entry .BrightWhite   SGR 107
+  entry .styles   the attribute pairs: bold, light, italic, underline, blink, reverse, conceal, strike
+    detail
+        Each is the SGR code which switches the attribute on, paired with the one which
+        switches it off: `Bold` is `[1m`/`[22m`, `Light` (faint) `[2m`/`[22m`, `Italic`
+        `[3m`/`[23m`, `Underline` `[4m`/`[24m`, `SlowBlink` `[5m`/`[25m`, `FastBlink`
+        `[6m`/`[25m`, `Reverse` `[7m`/`[27m`, `Conceal` `[8m`/`[28m` and `Strike` `[9m`/`[29m`.
+        The markers `Bold`, `Italic` and the rest do the same through the style stack, and
+        are the usual choice.
+    entry .Bold   SGR 1, reset by 22
+    entry .Light   SGR 2 (faint), reset by 22
+    entry .Italic   SGR 3, reset by 23
+    entry .Underline   SGR 4, reset by 24
+    entry .SlowBlink   SGR 5, reset by 25
+    entry .FastBlink   SGR 6, reset by 25
+    entry .Reverse   SGR 7, reset by 27
+    entry .Conceal   SGR 8, reset by 28
+    entry .Strike   SGR 9, reset by 29
+  entry .Reset   SGR 0: every attribute and colour back to the default
+  entry .EraseLine   `[0K`: clears from the cursor to the end of the line
+      The `off` sequence is `[0m`, so used as a span it also resets styling where it closes.
+  entry .title   the OSC 0 sequence which sets the terminal window's title
+      `escapes.title(t"build")` is an `Escape` with no reset, so it is substituted without a
+      bracket: `e"${escapes.title(t"build")}"`.
+  entry .link   text wrapped in an OSC 8 hyperlink, as raw `Text`
+      `escapes.link(url, text)` takes any URL type `Abstractable across Urls to Text` and
+      returns the text with the link sequences around it, already rendered. For a link inside
+      a `Teletype`, use `Hyperlink`, which stays a value until rendering.
+
+entry .csi   the ANSI control sequences — cursor movement, erasure, scrolling, SGR — spelled as `Text`
+  detail
+      `csi` is the Control Sequence Introducer, `\e[`, and this object spells each standard
+      sequence by its ECMA-48 mnemonic: `csi.cuu(3)` moves the cursor up three lines,
+      `csi.el()` erases the line, `csi.sgr(1, 31)` sets bold red. Each result is plain `Text`
+      containing the control characters, to be written to a terminal directly; a `Teletype`
+      renders its own styling and does not need these. The `escapade.csi` source set holds
+      this object alone (with `unstyled`), depending only on gossamer, so a library which
+      moves the cursor need not depend on the rest of escapade.
+
+      ```scala
+      import soundness.*
+
+      csi.cuu()          // t"\e[A"
+      csi.cup(2, 5)      // t"\e[2;5H"
+      csi.sgr(1, 31)     // t"\e[1;31m"
+      csi.dectcem(false) // t"\e[?25l": hide the cursor
+      ```
+
+      A count parameter is `Optional`: `Unset` (the default) omits it, which the terminal
+      reads as `1`.
+  refer escapade.unstyled
+  entry .esc   the escape character, as text: `\e`
+  entry .csi   the Control Sequence Introducer: `\e[`
+  entry .pattern   a regex matching one control sequence: `\e[`, parameters, and a final letter
+      Every CSI sequence, not only SGR, so cursor movement and erasure match too. `unstyled`
+      deletes its matches.
+  entry .cuu   cursor up `n` lines (CUU, final byte `A`)
+  entry .cud   cursor down `n` lines (CUD, `B`)
+  entry .cuf   cursor forward `n` columns (CUF, `C`)
+  entry .cub   cursor back `n` columns (CUB, `D`)
+  entry .cnl   cursor to the start of the line `n` lines down (CNL, `E`)
+  entry .cpl   cursor to the start of the line `n` lines up (CPL, `F`)
+  entry .cha   cursor to column `n` of the current line (CHA, `G`)
+  entry .cup   cursor to row `n`, column `m` (CUP, `H`); both default to `1`
+  entry .ed   erase in display (ED, `J`): `0` to the end, `1` to the start, `2` all, `3` scrollback too
+  entry .el   erase in line (EL, `K`): `0` to the end of the line, `1` to its start, `2` the whole line
+  entry .su   scroll the page up `n` lines (SU, `S`)
+  entry .sd   scroll the page down `n` lines (SD, `T`)
+  entry .hvp   horizontal and vertical position (HVP, `f`): the same as `cup`, with both arguments required
+  entry .dsr   device status report (DSR, `6n`): asks the terminal to report the cursor position
+  entry .scp   save the cursor position (SCP, `s`)
+  entry .rcp   restore the saved cursor position (RCP, `u`)
+  entry .sgr   select graphic rendition: `csi.sgr(1, 31)` is `\e[1;31m`
+  entry .dectcem   show (`true`) or hide (`false`, the default) the cursor: `\e[?25h` or `\e[?25l`
+
+entry .unstyled   `text.unstyled`: the text with every ANSI control sequence removed
+    An extension on `Text`, in `escapade.csi`, which deletes every match of `csi.pattern`,
+    leaving the characters that would have been printed had the escapes been honoured — all
+    CSI sequences, not just the SGR ones, so a cursor movement or an erase-line emitted into
+    a captured stream vanishes with the styling. It is the inverse direction to `Teletype`:
+    `Teletype#plain` reads the content of a teletype built structurally, where `unstyled`
+    starts from text in which the escapes are already characters, such as a subprocess's
+    output.
+
+    ```scala
+    import soundness.*
+
+    t"\e[1mbold\e[0m text".unstyled      // t"bold text"
+    t"a\e[2Kb\e[10;20Hc".unstyled         // t"abc"
+    t"xs[0m1]".unstyled                   // t"xs[0m1]": a bare bracket is not an escape
+    ```
+
+entry .displayableTypes   givens which let more types be printed to `Out` and `Err`, imported by name
+  detail
+      A choice package, merged with the umbrella's `displayableTypes`: `import
+      displayableTypes.ansiMessagePrintable` lets `Out.println(m"…")` print a `Message` with
+      its quotations styled.
+  entry .ansiMessagePrintable   a `Message` is `Printable`, rendered through `Teletypeable.message`
+      `Out.println(m"the file $path was not found")` styles the quoted part in italic yellow
+      on a terminal, and prints plainly where the `Termcap` has no ANSI.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import stdios.javaLangSystemStdio
+      import displayableTypes.ansiMessagePrintable
+
+      Out.println(m"the file ${t"build.mill"} was not found")
+      ```
+
+entry .writables   streams of `Teletype` records written to the standard output and error, imported by name
+  detail
+      A choice package in `escapade.io`, merged with the umbrella's `writables`. A stream of
+      teletypes travels on the boxed medium (windows of `Array[Teletype]`), and each record
+      prints through `Out.print` or `Err.print` as it arrives, rendered by the `Stdio`'s
+      `Termcap`.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import stdios.javaLangSystemStdio
+      import writables.outTeletypeWritable
+
+      val lines: Stream[Teletype] = Stream(e"$Bold(one)", e"two")
+      lines.writeTo(Out)
+      ```
+  entry .outTeletypeWritable   `Out` is `Writable` by teletype records, each printed as it arrives; needs a `Stdio`
+  entry .errTeletypeWritable   `Err` is `Writable` by teletype records, each printed as it arrives; needs a `Stdio`
+
+entry .teletypeables   `Teletypeable` instances for types from other libraries, imported by name
+  detail
+      A choice package, merged with the umbrella's `teletypeables`, which other libraries
+      extend with their own (`exceptionTeletype`, `urlTeletype`, `juxtapositionTeletype`).
+      Escapade's own member, in `escapade.graphics`, renders any image.
+  entry .graphicalTeletype   any `Graphical` value renders as a `Teletype` of half-block characters, two pixels per cell
+      Each terminal cell is an upper half-block `▀` whose foreground is the pixel of one row
+      and whose background is the pixel of the row below, so an image of height `h` takes
+      `h/2` lines of its width in cells, with a newline after each. The bottom row of an
+      odd-height image is dropped.
+
+      ```scala fuel
+      typecheck
+      ##
+      import soundness.*
+      import stdios.javaLangSystemStdio
+      import teletypeables.graphicalTeletype
+
+      def show[image: Graphical](image: image): Unit = Out.println(image.teletype)
+      ```
+
+entry .StyleWord   the style of one character packed into a `Long`: two 24-bit colours and twelve flag bits
+    `StyleWord` is the opaque type `escapade.internal.StyleWord`, exported here. The low 24
+    bits hold the foreground's RGB and bits 24 to 47 the background's; bit 48 (`FgSet`) and
+    bit 49 (`BgSet`) say whether each is set, and bits 50 to 61 are `Bold`, `Faint`,
+    `Italic`, `Underline`, `DoubleUnderline`, `BlinkSlow`, `BlinkFast`, `Reverse`, `Conceal`,
+    `Strike`, `Overline` and `HyperlinkChange`, each a `Long` constant on the companion for
+    masking. `StyleWord.Default` is `0L`, `StyleWord(raw)` wraps a `Long`, and
+    `TextStyle#styleWord` packs a record into one.
+
+    Because it erases to `Long`, an `Array[StyleWord]` is an unboxed `long[]`; the companion's
+    `classTag` given lets a cell grid allocate one. The extension methods read it: `raw`,
+    `fgRgb`, `bgRgb`, `hasFg`, `hasBg`, `isBold`, `isFaint`, `isItalic`, `isUnderline`,
+    `isDoubleUnderline`, `isBlinkSlow`, `isBlinkFast`, `isReverse`, `isConceal`, `isStrike`,
+    `isOverline` and `hasHyperlinkChange`; and edit it: `withFg(rgb)`, `withBg(rgb)`,
+    `clearFg`, `clearBg`, `withBit(bit)`, `withoutBit(bit)` and `applyTransform(mask, bits)`.
+    `StyleWord.combine(outer, inner)` is how a nested teletype's style merges under the
+    enclosing one — the inner colour wins where set, and the flags of both are kept — and
+    `StyleWord.emitDiff(buffer, prev, next, depth)` writes the SGR sequence which turns one
+    style into another, which is what `Teletype#render` emits between runs.
+
+    ```scala
+    import soundness.*
+
+    val word = e"$Bold(abc)def".styleAt(0)
+    (word & StyleWord.Bold) != 0          // true
+    StyleWord(word).isBold                // true
+    ```
+
+    Reached as `escapade.StyleWord`: it is not among the umbrella's exports.
+
+entry .CharSpan   a half-open range of character positions packed into a `Long`
+    `CharSpan` is the opaque type `escapade.internal.CharSpan`, exported here.
+    `CharSpan(start, end)` packs the two `Int`s into one `Long`, ordered so that spans
+    compare (`CharSpan.comparable`) by start first; `CharSpan.Nowhere` is the empty span at
+    `Int.MaxValue`. The extensions `start`, `end` and `nil` read it, and `trimLeft(n)`,
+    `takeLeft(n)` and `shift(n)` cut or move it, each returning `Nowhere` when nothing is
+    left. It is a building block for code which tracks styled regions by position; the
+    `Teletype` representation itself uses run boundaries instead.
+
+entry .internal   the `e"…"` macro and the packed representations behind `Teletype`
+  hidden
+  detail
+      Not for direct use: the object exists so that the macro and the opaque types have a
+      stable home. `CharSpan` and `StyleWord` are exported from here to the `escapade`
+      package, and their pages there have the full account.
+  entry .eMacro   the macro behind `e"…"`: checks the brackets at compile time and emits the runtime parse
+      Reads the literal parts, summons an `Insertion[Ansi.Input, T]` for each substitution's
+      type, runs `Ansi.Runtime` over the parts at compile time so that an unclosed span is a
+      compile error, and splices the equivalent chain of `parse` and `insert` calls ending in
+      `complete`. A `\\` before a markup substitution is consumed and the markup skipped.
+  entry .CharSpan   a half-open range of positions in a `Long`; see `escapade.CharSpan`
+    detail
+        `CharSpan(start, end)`, `CharSpan.Nowhere` and the `comparable` given.
+    entry .apply   `CharSpan(start, end)`
+    entry .comparable   spans order as their packed `Long`s: by start, then by the later end first
+    entry .Nowhere   the empty span at `Int.MaxValue`
+  entry .start   the first position of a `CharSpan`
+  entry .end   the position after the last of a `CharSpan`
+  entry .nil   whether a `CharSpan` is empty
+  entry .trimLeft   a `CharSpan` with `n` positions removed from the front of its frame
+  entry .takeLeft   a `CharSpan` cut to the first `n` positions of its frame
+  entry .shift   a `CharSpan` moved `n` positions to the right
+  entry .AnsiStyle   a style as a 64-bit set: for each attribute a *set* bit and a *value* bit, plus two 24-bit colours
+      The representation `Teletype2` uses, as a hypotenuse `B64`. Each of bold, italic,
+      underline, strike and concealed has a bit saying whether this style sets it and a bit
+      saying to what, so that `update(changes)` can apply only the attributes a change
+      mentions; `indexes` names the bit positions.
+  entry .indexes   the bit positions of an `AnsiStyle`'s flags and colour fields, as `Interval`s and masks
+    detail
+        Each attribute has a `Set…` position, saying whether a style mentions it, and the
+        position after it for its value; the colours are 24-bit `Interval`s, each preceded by
+        its `Set…` bit. The masks select groups of bits for `update`.
+    entry .SetBold   the bit which says a style sets bold
+    entry .Bold   the bit holding the bold value
+    entry .SetItalic   the bit which says a style sets italic
+    entry .Italic   the bit holding the italic value
+    entry .SetUnderline   the bit which says a style sets underline
+    entry .Underline   the bit holding the underline value
+    entry .SetStrike   the bit which says a style sets strikethrough
+    entry .Strike   the bit holding the strikethrough value
+    entry .SetConcealed   the bit which says a style sets concealment
+    entry .Concealed   the bit holding the concealment value
+    entry .SetForeground   the bit which says a style sets the foreground
+    entry .Foreground   the 24 bits of the foreground colour
+    entry .SetBackground   the bit which says a style sets the background
+    entry .Background   the 24 bits of the background colour
+    entry .Changes   every bit which says a style sets something
+    entry .FlagChanges   the `Set…` bits of the five attribute flags
+    entry .Mask   the value bits of the five attribute flags
+    entry .FgMask   the foreground colour's bits
+    entry .BgMask   the background colour's bits
+  entry .setBold   whether an `AnsiStyle` sets bold
+  entry .bold   the bold value an `AnsiStyle` sets
+  entry .setItalic   whether an `AnsiStyle` sets italic
+  entry .italic   the italic value an `AnsiStyle` sets
+  entry .setUnderline   whether an `AnsiStyle` sets underline
+  entry .underline   the underline value an `AnsiStyle` sets
+  entry .setStrike   whether an `AnsiStyle` sets strikethrough
+  entry .strike   the strikethrough value an `AnsiStyle` sets
+  entry .setConcealed   whether an `AnsiStyle` sets concealment
+  entry .concealed   the concealment value an `AnsiStyle` sets
+  entry .setForeground   whether an `AnsiStyle` sets the foreground
+  entry .foreground   the foreground an `AnsiStyle` sets, as a `Chroma`
+  entry .setBackground   whether an `AnsiStyle` sets the background
+  entry .background   the background an `AnsiStyle` sets, as a `Chroma`
+  entry .changed   whether an `AnsiStyle` sets anything at all
+  entry .update   an `AnsiStyle` with another's changes applied over it
+  entry .StyleWord   a character's style packed into a `Long`; see `escapade.StyleWord`
+    detail
+        The opaque type, its bit-mask constants, `Default`, the `classTag` given, `apply`,
+        `combine` and `emitDiff`, and the extension methods which read and edit a word.
+    entry .FgMask   the low 24 bits: the foreground's RGB
+    entry .BgMask   bits 24 to 47: the background's RGB
+    entry .FgSet   bit 48: a foreground is set
+    entry .BgSet   bit 49: a background is set
+    entry .Bold   bit 50
+    entry .Faint   bit 51
+    entry .Italic   bit 52
+    entry .Underline   bit 53
+    entry .DoubleUnderline   bit 54
+    entry .BlinkSlow   bit 55
+    entry .BlinkFast   bit 56
+    entry .Reverse   bit 57
+    entry .Conceal   bit 58
+    entry .Strike   bit 59
+    entry .Overline   bit 60
+    entry .HyperlinkChange   bit 61: a hyperlink opens or closes at this character
+    entry .FlagsMask   every flag bit, from `FgSet` to `HyperlinkChange`
+    entry .Default   `0L`: no colours, no attributes
+    entry .classTag   the `ClassTag` which lets an `Array[StyleWord]` be allocated unboxed, as a `long[]`
+    entry .apply   `StyleWord(raw)`: a `Long` as a style word
+    entry .combine   an inner style merged under an outer one: the inner colour where set, else the outer; flags of both
+    entry .emitDiff   appends to a buffer the one SGR sequence which turns a style into another, at a colour depth
+        Emits `39`/`49` for a colour that was cleared, `38;2;r;g;b` or `38;5;n` (and `48…`)
+        for one that changed, and the on/off code of each flag that flipped, joined with `;`
+        in one `\e[…m`. Nothing is written when the two are equal.
+    entry .raw   the word as a `Long`
+    entry .fgRgb   the foreground's 24-bit RGB
+    entry .bgRgb   the background's 24-bit RGB
+    entry .hasFg   whether a foreground is set
+    entry .hasBg   whether a background is set
+    entry .isBold   whether the bold flag is set
+    entry .isFaint   whether the faint flag is set
+    entry .isItalic   whether the italic flag is set
+    entry .isUnderline   whether the underline flag is set
+    entry .isDoubleUnderline   whether the double-underline flag is set
+    entry .isBlinkSlow   whether the slow-blink flag is set
+    entry .isBlinkFast   whether the fast-blink flag is set
+    entry .isReverse   whether the reverse flag is set
+    entry .isConceal   whether the conceal flag is set
+    entry .isStrike   whether the strike flag is set
+    entry .isOverline   whether the overline flag is set
+    entry .hasHyperlinkChange   whether a hyperlink opens or closes here
+    entry .withFg   the word with a foreground set to an RGB value
+    entry .withBg   the word with a background set to an RGB value
+    entry .clearFg   the word with no foreground
+    entry .clearBg   the word with no background
+    entry .withBit   the word with a flag bit set
+    entry .withoutBit   the word with a flag bit cleared
+    entry .applyTransform   the word with the bits under a mask replaced
+
+entry .Teletype2   an earlier styled-text representation: plain text and an `AnsiStyle` per character
+  hidden
+  detail
+      Not for direct use: a `Teletype` is the representation the library renders and the
+      interpolator builds. `Teletype2(plain, ansi)` pairs text with an array of
+      `internal.AnsiStyle` change-sets, adds with `+` (`.addable`), and renders through an
+      `Ansi.Escapes` in scope. It is a top-level member of the `escapade` package but is not
+      exported to the umbrella.
+  entry .addable   `left + right`: the texts and style arrays concatenated
+  entry #plain   the text
+  entry #ansi   the style change-set of each character
+  entry #render   the text with escape sequences, spelled by the `Ansi.Escapes` in scope
