@@ -241,7 +241,7 @@ lib/galilei/src/core/galilei_core.scala	0	6	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
 lib/galilei/src/jvm/galilei.Ram.scala	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
 lib/galilei/src/jvm/galilei_jvm.scala	0	0	0	0	0	2	0	0	0	0	0	0	0	0	0	0	0
 lib/galilei/src/native/galilei_native.scala	0	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
-lib/galilei/src/test/galilei_test.scala	0	22	0	0	1	2	0	0	1	1	0	0	0	0	0	0	0
+lib/galilei/src/test/galilei_test.scala	0	24	0	0	1	2	0	0	1	1	0	0	0	0	0	0	0
 lib/galilei/src/wasi/galilei_wasi.scala	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
 lib/gastronomy/src/core-jvm/gastronomy.JavaBaseHashing.scala	0	0	0	0	1	4	0	0	0	0	0	0	0	0	0	0	0
 lib/gastronomy/src/core/gastronomy.Blake3.scala	0	0	0	0	1	7	0	0	0	2	0	0	0	0	0	0	0

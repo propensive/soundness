@@ -154,11 +154,19 @@ target.create[File](): handle ?=>
   (dir / "inner.txt").overwrite(t"hello")
 ```
 
-A *scratch* directory is created and removed by its scope, whether the scope succeeds or fails:
+A *scratch* directory is created and removed by its scope, whether the scope succeeds or fails,
+and a scratch *file* likewise — a throwaway index, a fixture — whose handle also knows its
+`path`, for whatever must be told where the file is:
 
 ```scala
 directory.open[Scratch](Read & Write): scratch ?=>
   (scratch / "file.txt").overwrite(t"data")
+```
+
+```scala
+directory.open[Scratch.File](Read & Write): file ?=>
+  file.write(Chain(t"data".in[Data]))
+  file.path.read[Text]   // t"data", until the scope ends
 ```
 
 ### Creation masks
