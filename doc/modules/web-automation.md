@@ -22,10 +22,21 @@ A session confined to its block, and typed page scripts checked against the DOM'
 Soundness types both layers: element location goes through the same typed selectors and validated
 identifiers used by [CSS](css.md) and [HTML](html.md), and DOM scripting is checked against the
 actual interface definitions of the DOM, so only methods that exist, with arguments of the right
-types, can be written. Everything comes from the `soundness` package:
+types, can be written. Everything comes from the `soundness` package, with internet access, an
+HTTP client to speak to the driver, and concurrency for the driver's process in scope:
 
 ```scala
 import soundness.*
+
+import environments.javaBaseEnvironment
+import errorDiagnostics.stackTracesDiagnostics
+import httpBackends.javaNetHttp
+import internetAccess.online
+import logging.silentLogging
+import probates.awaitProbate
+import strategies.throwUnsafely
+import threads.virtualThreads
+import workingDirectories.javaBaseWorkingDirectory
 ```
 
 ### Driving a browser
@@ -36,9 +47,10 @@ whether it returns or throws. Within it, the session navigates and queries:
 ```scala fuel
 typecheck
 ##
-WebDriver.Chrome.headless.session:
-  browser.navigateTo(url"https://example.com/")
-  browser.title()
+supervise:
+  WebDriver.Chrome.headless.session:
+    browser.navigateTo(url"https://example.com/")
+    browser.title()
 ```
 
 `WebDriver.Firefox`, `WebDriver.Safari` and `WebDriver.Edge` work identically; each drives its
@@ -59,17 +71,18 @@ elements descend the tree:
 ```scala fuel
 typecheck
 ##
-WebDriver.Chrome.headless.session:
-  val heading = browser.element(H1)                    // by tag
-  val items = browser \ SelectorList.parse(t"nav li")  // by CSS selector
-  val field = browser.element(Name[DomId](t"query"))   // by id
-  val button = browser.element(Button)
+supervise:
+  WebDriver.Chrome.headless.session:
+    val heading = browser.element(H1)                    // by tag
+    val items = browser \ SelectorList.parse(t"nav li")  // by CSS selector
+    val field = browser.element(Name[DomId](t"query"))   // by id
+    val button = browser.element(Button)
 
-  heading.click()
-  heading.innerText()                        // the rendered text
-  field.value(t"search terms")               // type into an input
-  field.property(t"value")                   // the live DOM property, not the markup
-  button.screenshot()                        // a Raster in Png of the element
+    heading.click()
+    heading.innerText()                        // the rendered text
+    field.value(t"search terms")               // type into an input
+    field.property(t"value")                   // the live DOM property, not the markup
+    button.screenshot()                        // a Raster in Png of the element
 ```
 
 Anything a locator cannot express is reached with `execute`, which runs JavaScript in the page
@@ -85,7 +98,9 @@ it. WebDriver's *implicit* timeout covers find commands, and is set once for the
 ```scala fuel
 typecheck
 ##
-browser.timeouts(WebDriver.Session.Timeouts(`implicit` = 5000L))
+supervise:
+  WebDriver.Chrome.headless.session:
+    browser.timeouts(WebDriver.Session.Timeouts(`implicit` = 5000L))
 ```
 
 Nothing else has a server-side notion of waiting. For a button that becomes enabled, or a heading
@@ -97,8 +112,10 @@ typecheck
 ##
 import retryTenacities.exponentialTenTimesTenacity
 
-browser.awaitElement(Name[DomId](t"result"))
-browser.awaitUntil(browser.title() == t"Done")
+supervise:
+  WebDriver.Chrome.headless.session:
+    browser.awaitElement(Name[DomId](t"result"))
+    browser.awaitUntil(browser.title() == t"Done")
 ```
 
 The policy is a `Tenacity` — the same [retry schedules](concurrency.md#retrying) used elsewhere —

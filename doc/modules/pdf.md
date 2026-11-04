@@ -82,11 +82,14 @@ PdfFile(path).open(Read & Write): doc ?=>
 ```
 
 An encrypted document is opened by supplying its password, which is checked as the document is
-opened rather than when a string is first decrypted:
+opened rather than when a string is first decrypted. A password is a secret, so a
+[`Cloak`](cryptography.md) must be in scope to say where it is stored:
 
 ```scala fuel
 typecheck
 ##
+import cloaks.heapCloak
+
 PdfFile(path).open(Password(t"open sesame")):
   pdf.info.title
 ```

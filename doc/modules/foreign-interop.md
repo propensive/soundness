@@ -41,8 +41,8 @@ declarations, C headers, WebIDL, WIT — is a `Dialect` the ecosystem names:
 ```scala fuel
 typecheck
 ##
-given (Interface in Typescript at "/definitions.ts") =
-  Interface[Typescript](cp"/definitions.ts")
+given (Interface in Typescript at "/xenophile/definitions.ts") =
+  Interface[Typescript](cp"/xenophile/definitions.ts")
 ```
 
 ### Navigating foreign types

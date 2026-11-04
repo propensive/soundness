@@ -317,7 +317,6 @@ entry .Resource   a resource on the classpath, named by `cp"…"` and checked at
       at compile time.
   entry .source   reads a `Resource` as a stream metered by `Credit`
       As `.streamable`, with a `Buffering` in scope, for reading the resource lazily.
-  entry .nominable   a resource's name: the first segment of its path, or `/`
   entry #path   the resource's path on the classpath plane
 
 entry .cp   the `cp"…"` interpolator: a classpath resource, checked as the code compiles

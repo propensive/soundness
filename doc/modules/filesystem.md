@@ -47,6 +47,7 @@ import pathInterfaces.pathOnLinux
 import strategies.throwUnsafely
 import systems.javaBaseSystem
 import temporaryDirectories.javaBaseTemporaryDirectory
+import textSanitizers.strictSanitizer
 ```
 
 ### Files and directories
@@ -298,7 +299,7 @@ A `glob` selects children by pattern, with `*` matching within a name and a whol
 spanning directories:
 
 ```scala
-directory.glob(glob"*.txt").map(_.name)   // List(t"renamed.txt", …)
+directory.glob(Glob.parse(t"*.txt")).map(_.name)   // List(t"renamed.txt", …)
 ```
 
 Two paths can name one entry through symbolic links, or through `/tmp` and `/private/tmp` on

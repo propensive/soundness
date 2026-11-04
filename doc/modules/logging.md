@@ -193,12 +193,12 @@ applies its own threshold, so the file can keep `Fine` detail while the terminal
 
 ```scala
 import codepages.utf8Codepage
-import filesystemOptions.createNonexistentParents
+import filesystemBackends.javaBaseFilesystem
 import pathInterfaces.pathOnLinux
 import temporaryDirectories.javaBaseTemporaryDirectory
 
 val logFile = temporaryDirectory[Path on Linux] / "logging" / "app.log"
-logFile.create[File]()
+logFile.create[File](CreateFlag.Parents)
 
 supervise:
   given fileLog: Logger[Any, Message] = Logger(logFile, level = Level.Fine)
