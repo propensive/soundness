@@ -45,6 +45,7 @@ import contingency.*
 import fulminate.*
 import gossamer.*
 import kaleidoscope.*
+import prepositional.*
 import rudiments.*
 import spectacular.*
 import turbulence.*
@@ -62,6 +63,23 @@ sealed trait Executable:
   def fork[result]()(using working: WorkingDirectory, environment: Environment)
     ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
   :   Job[Exec, result]^
+
+  // Starts the process and leaves it to run beyond this one — a server of its own, say — holding
+  // nothing of it but its pid: its input is the null device, and its output and errors are
+  // discarded, or appended to `log`, whose parent directories are made. A `fork`ed child inherits
+  // pipes nobody drains, and a server writing to them eventually blocks; a detached one cannot.
+  // Its environment is the `Environment` in scope, so `environments.emptyEnvironment` with
+  // `variables(…)` gives it exactly the variables named and nothing of this process's.
+  def detach[path](log: path)
+    ( using abstractable: path is Abstractable across Paths to Text )
+    ( using working: WorkingDirectory, environment: Environment )
+    ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
+  :   Pid
+
+  // The same, with the output and errors discarded.
+  def detach()(using working: WorkingDirectory, environment: Environment)
+    ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
+  :   Pid
 
   // Real `using` clauses rather than the `raises`/`logs` sugar: a context-function result
   // would hide the `computable` parameter, which the separation checker rejects.
@@ -215,6 +233,23 @@ object Command:
   // JDK finds a command named without a directory on the JVM's own `PATH`, not the child's, such a
   // command is first looked up on the environment's `PATH`; one not found there is left to the
   // JDK.
+  // The null device, for a detached process's input: what a shell gives a background job.
+  private[guillotine] val nullDevice: ji.File =
+    ji.File(if ji.File.separatorChar == '\\' then "NUL" else "/dev/null")
+
+  // `builder`, reading from the null device and writing to `log` (appended; its parents made)
+  // or to nowhere.
+  private[guillotine] def detached(builder: ProcessBuilder, log: Optional[Text]): ProcessBuilder =
+    builder.redirectInput(ProcessBuilder.Redirect.from(nullDevice))
+
+    log.lay(builder.redirectOutput(ProcessBuilder.Redirect.to(nullDevice)).nn
+        .redirectError(ProcessBuilder.Redirect.to(nullDevice)).nn): log =>
+      val file: ji.File = ji.File(log.s)
+      val parent: ji.File | Null = file.getParentFile
+      if parent != null then parent.mkdirs()
+      builder.redirectOutput(ProcessBuilder.Redirect.appendTo(file)).nn
+      . redirectError(ProcessBuilder.Redirect.appendTo(file)).nn
+
   private[guillotine] def builder(arguments: List[Text])
     ( using working: WorkingDirectory, environment: Environment )
   :   ProcessBuilder =
@@ -253,6 +288,30 @@ object Command:
 
 case class Command(arguments: Text*) extends Executable:
   protected def failing: Command = this
+
+  def detach[path](log: path)
+    ( using abstractable: path is Abstractable across Paths to Text )
+    ( using working: WorkingDirectory, environment: Environment )
+    ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
+  :   Pid =
+    detached(Command.detached(Command.builder(arguments.to(List)), abstractable.genericize(log)))
+
+  def detach()(using working: WorkingDirectory, environment: Environment)
+    ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
+  :   Pid =
+    detached(Command.detached(Command.builder(arguments.to(List)), Unset))
+
+  private def detached(processBuilder: ProcessBuilder)
+    ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
+  :   Pid =
+
+    Log.info(Exec.Event.ProcessStart(this))
+
+    val process =
+      try processBuilder.start().nn
+      catch case error: ji.IOException => abort(Exec.Error(this))
+
+    Pid(process.pid)
 
   def fork[result]()(using working: WorkingDirectory, environment: Environment)
     ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
@@ -296,6 +355,36 @@ object Pipeline:
 
 case class Pipeline(commands: Command*) extends Executable:
   protected def failing: Command = commands.last
+
+  // The head reads the null device and the tail writes the log or nowhere; between them the
+  // pipeline's own pipes, which `Pipelines.start` wires, and every stage's errors go with the
+  // tail's.
+  def detach[path](log: path)
+    ( using abstractable: path is Abstractable across Paths to Text )
+    ( using working: WorkingDirectory, environment: Environment )
+    ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
+  :   Pid =
+    detached(abstractable.genericize(log))
+
+  def detach()(using working: WorkingDirectory, environment: Environment)
+    ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
+  :   Pid =
+    detached(Unset)
+
+  private def detached(log: Optional[Text])
+    ( using working: WorkingDirectory, environment: Environment )
+    ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )
+  :   Pid =
+
+    val processBuilders = commands.map(_.arguments.to(List)).map(Command.builder(_))
+
+    processBuilders.each: builder =>
+      Command.detached(builder, log).redirectInput(ProcessBuilder.Redirect.PIPE)
+
+    processBuilders.head.redirectInput(ProcessBuilder.Redirect.from(Command.nullDevice))
+    Log.info(Exec.Event.PipelineStart(commands.to(List)))
+    val pipeline = Pipelines.start(processBuilders)
+    Pid(pipeline.last.pid)
 
   def fork[result]()(using working: WorkingDirectory, environment: Environment)
     ( using Tactic[Exec.Error], (Exec.Event is Loggable)^ )

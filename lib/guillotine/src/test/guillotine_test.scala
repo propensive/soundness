@@ -600,6 +600,30 @@ object Tests extends Suite("shell", m"Guillotine tests"):
         bytes.utf8.s.trim
       . assert(_ == "err")
 
+    suite(m"Detached processes"):
+      import filesystemBackends.javaBaseFilesystem
+      import filesystemOptions.dereferenceSymlinks
+      import codepages.utf8Codepage, charsets.utf8Charset, textSanitizers.skipSanitizer
+
+      test(m"A detached command answers a pid"):
+        sh"true".detach().value > 0L
+      . assert(_ == true)
+
+      test(m"A detached command's output is appended to its log, whose parents are made"):
+        val leaf: Text = Uuid().show
+        val log: Path on Linux = unsafely((% / "tmp" / leaf / "nested" / "out.log").on[Linux])
+        sh"echo detached".detach(log)
+
+        def read(remaining: Int): Text =
+          val content: Optional[Text] = safely(log.read[Text])
+          if content.present || remaining == 0 then content.or(t"")
+          else
+            Thread.sleep(100)
+            read(remaining - 1)
+
+        read(30)
+      . assert(_ == t"detached\n")
+
     suite(m"Pid"):
       test(m"Pid show formats with arrow"):
         Pid(123L).show
