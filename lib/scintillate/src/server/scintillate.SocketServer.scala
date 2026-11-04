@@ -83,6 +83,7 @@ object SocketServer:
     var connectionKeepAlive: Boolean = false
     var connectionUpgrade: Boolean = false
     var upgradePresent: Boolean = false
+    var upgradeH2c: Boolean = false
     var expectContinue: Boolean = false
     var chunked: Boolean = false
     var contentLength: Optional[Int] = Unset
@@ -100,6 +101,7 @@ object SocketServer:
         if containsIgnoreCase(value, "upgrade") then facts.connectionUpgrade = true
       else if key.equalsIgnoreCase("upgrade") then
         facts.upgradePresent = true
+        if containsIgnoreCase(header.value.s, "h2c") then facts.upgradeH2c = true
       else if key.equalsIgnoreCase("expect") then
         if containsIgnoreCase(header.value.s, "100-continue") then facts.expectContinue = true
       else if key.equalsIgnoreCase("transfer-encoding") then
@@ -115,8 +117,12 @@ object SocketServer:
   // `Connection: Upgrade` together with an `Upgrade` header. Such a request's
   // body is the unbounded remainder of the connection, so a frame reader can
   // keep receiving bytes after the handshake.
+  //
+  // An `Upgrade: h2c` is not one: a client such as Java's `HttpClient` offers it on every
+  // cleartext request (RFC 7540 §3.2) and this server never performs it, so such a request is
+  // an ordinary HTTP/1.1 one, its body framed by its `Content-Length` or its chunking.
   private[scintillate] def isUpgrade(facts: HeadFacts^): Boolean =
-    facts.connectionUpgrade && facts.upgradePresent
+    facts.connectionUpgrade && facts.upgradePresent && !facts.upgradeH2c
 
   private[scintillate] def keepAlive(head: Http.Request.Head, facts: HeadFacts^): Boolean =
     head.version match

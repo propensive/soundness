@@ -78,6 +78,11 @@ private def buildJavaRequest
 
   val request: jnh.HttpRequest.Builder = jnh.HttpRequest.newBuilder().nn.uri(uri).nn
 
+  // On a cleartext origin the client's default, HTTP/2, offers an `h2c` upgrade on every
+  // request, which a server that does not perform it may take for a protocol switch; this
+  // client never uses h2c, so a plaintext request is HTTP/1.1. Over TLS, ALPN still chooses.
+  if uri.getScheme == "http" then request.version(jnh.HttpClient.Version.HTTP_1_1)
+
   // The publisher pulls a fresh pull endpoint each time it is subscribed (the
   // JDK may re-subscribe on retry), draining it lazily through an
   // `InputStream` so the body is never held whole in memory.

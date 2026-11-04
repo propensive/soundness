@@ -271,6 +271,38 @@ object Tests extends Suite("httpd", m"Scintillate tests"):
 
       . assert(_.contains(t"GET /foo/bar"))
 
+      // As a client leaves it: the connection stays open after the body, so a body framed as the
+      // connection's remainder is never complete, and the read of the response times out.
+      def openRequest(port: Int, request: Text): Text =
+        val socket = java.net.Socket("localhost", port)
+        socket.setSoTimeout(5000)
+        val out = socket.getOutputStream.nn
+        out.write(request.s.getBytes("US-ASCII").nn)
+        out.flush()
+        val buffer = new scala.Array[Byte](4096)
+
+        val length: Int =
+          try socket.getInputStream.nn.read(buffer)
+          catch case _: java.net.SocketTimeoutException => -1
+
+        socket.close()
+        if length <= 0 then t"" else String(buffer, 0, length, "US-ASCII").tt
+
+      test(m"An h2c upgrade offer does not change how a POST body is framed"):
+        supervise:
+          val server = SocketServer(0).handle:
+            Http.Response(Http.Ok)(request.body().memoize.utf8)
+
+          val port = server.port
+
+          val response = openRequest(port, t"POST / HTTP/1.1\r\nHost: x\r\n"+
+              t"Connection: Upgrade, HTTP2-Settings\r\nUpgrade: h2c\r\n"+
+              t"HTTP2-Settings: AAMAAABkAAQAAP__\r\nContent-Length: 5\r\n\r\nhello")
+
+          server.cancel()
+          response
+      . assert(_.contains(t"hello"))
+
       test(m"A POST body is available to the handler"):
         supervise:
           val server = SocketServer(0).handle:
