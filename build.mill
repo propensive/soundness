@@ -2759,7 +2759,7 @@ object parasite extends Library:
   // The virtual-thread (Loom) supervisors live in `core-jvm`; Scala Native compiles twins that
   // fork platform threads instead (`core-native`) — no Loom on native.
   object core extends Component(digression.core, mercator.core, anticipation.time,
-      nomenclature.core, ambience.core):
+      nomenclature.core, ambience.core, turbulence.stdio):
     override def sources = Task.Sources(moduleDir, moduleDir / os.up / "core-jvm")
     override def nativeSources = Task.Sources(moduleDir, moduleDir / os.up / "core-native")
     override def scalacOptions = Task:

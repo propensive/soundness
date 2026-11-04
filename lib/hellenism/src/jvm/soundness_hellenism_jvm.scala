@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export hellenism.{LocalClasspath, classpathSubstantiable}
+export hellenism.{classify, LocalClasspath, classpathSubstantiable}

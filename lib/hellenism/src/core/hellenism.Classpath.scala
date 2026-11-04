@@ -43,6 +43,7 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import turbulence.*
+import vacuous.*
 import zephyrine.*
 
 object Classpath extends Root(t""):
@@ -107,14 +108,18 @@ object Classpath extends Root(t""):
       def apply[file: Instantiable across Paths from Text](): file = file(path)
 
     case class Url(url: Text) extends Classpath.Entry:
+      def path: Optional[Text] = Unset
       def apply[instantiable: Instantiable across Urls from Text](): instantiable =
         instantiable(url)
 
-    case object JavaRuntime extends Classpath.Entry
+    case object JavaRuntime extends Classpath.Entry:
+      def path: Optional[Text] = Unset
 
   // The `java.net.URL` conversions (`Loaders.entry(url)`, `Entry#javaUrl`) live in `core-jvm`:
   // Scala Native's javalib has no `URL`.
-  sealed trait Entry
+  sealed trait Entry:
+    // The path of a `Directory` or a `Jar`; `Unset` for a `Url` or the `JavaRuntime`.
+    def path: Optional[Text]
 
   // ClasspathError → Classpath.Error
   case class Error(resource: Text)(using Diagnostics)

@@ -103,6 +103,15 @@ different shells over its lifetime, each with its own environment, and the JVM's
 belongs to whichever shell happened to start the daemon. Taking the environment as a capability
 is what lets each invocation be served against the environment it actually came from.
 
+One variable for one block is `variables`, which names it in camel case and sets it in the
+conventional upper-snake-case form — `gitIndexFile` is `GIT_INDEX_FILE` — on top of the
+`Environment` in scope, so a subprocess run within the block inherits it:
+
+```scala
+variables(gitIndexFile = t"/tmp/index"):
+  Environment.gitIndexFile   // t"/tmp/index"
+```
+
 ### Standard directories
 
 The [XDG base directory specification](https://specifications.freedesktop.org/basedir-spec/latest/)
