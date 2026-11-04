@@ -53,29 +53,7 @@ import java.nio.file as jnf
 object Tests extends Suite("ssh", m"Susurration tests"):
   // A plain entry point, so the suite can also run outside fume:
   // `java -cp out/susurration/test/assembly.dest/out.jar susurration.Tests`.
-  def main(args: scala.Array[String]): Unit =
-    val passed = java.util.concurrent.atomic.AtomicInteger(0)
-    val failed = java.util.concurrent.atomic.AtomicInteger(0)
-    val out = java.lang.System.out.nn
-
-    def handle(event: probably.TestEvent): Unit = event match
-      case probably.TestEvent.TestCompleted(test, _, _, outcome, _, _) =>
-        (if outcome.outcome == t"pass" then passed else failed).incrementAndGet()
-        out.println(t"[${outcome.outcome}] ${test.path.join(t" / ")}".s)
-
-      case probably.TestEvent.DetailMessage(_, message)          => out.println(t"    $message".s)
-      case probably.TestEvent.DetailCompare(_, expected, found, _) =>
-        out.println(t"    expected: $expected".s)
-        out.println(t"    found:    $found".s)
-
-      case probably.TestEvent.RunTerminated(error, _, _) =>
-        out.println(t"suite threw: ${error.components.map(_.message).join(t"; ")}".s)
-
-      case other => out.println(other.toString)
-
-    val status = Tests.invoke(t"", handle)
-    out.println(t"${passed.get} passed, ${failed.get} failed".s)
-    java.lang.System.exit(status)
+  def main(args: scala.Array[String]): Unit = Suite.main(args, Tests)
 
   val ed25519Blob: Data =
     t"AAAAC3NzaC1lZDI1NTE5AAAAIBGH6R8uL9Aww7+jnLISnQu3kiglJKYyOcKlvCJ7v+xS".deserialize[Base64]

@@ -204,6 +204,15 @@ object Tests extends Suite("testing", m"Probably Tests"):
         == String.format("%06x", Int.box(hash & 0xffffff)).nn.tt
       . assert(_ == true)
 
+    suite(m"The plain runner"):
+      test(m"A suite's tests are printed one per line, with a summary, and the status answered"):
+        val captured = Stdio.capture:
+          import stdios.javaLangSystemStdio, termcapDefinitions.basicTermcap
+          Suite.run(t"", Probe())
+
+        (captured.result, captured.out.contains(t"[pass] "), captured.out.contains(t" passed, "))
+      . assert(_ == (0, true, true))
+
     suite(m"Queued execution"):
       test(m"--workers parses, and defaults to none"):
         scala.List(t"--workers=2", t"--workers=0", t"--workers=-1", t"--workers=many", t"**")

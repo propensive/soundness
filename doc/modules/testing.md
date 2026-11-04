@@ -304,3 +304,16 @@ fume list                         # enumerate what matches, and run nothing
 
 Unselected assertions never execute, and unselected benchmark cells are skipped, so a selection
 costs only what it runs.
+
+A suite is not a main class, but a plain-`java` entry point — for CI, or for a host too old to
+read the jar's event schema — is one line: `Suite.main(arguments, Tests)` runs the suites named,
+printing a line per completed test, its details and a summary, and exits with their status: `0`
+passed, `1` failures, `2` a suite threw. `Suite.run` is the same without exiting, for a host of
+its own.
+
+<!-- doccheck: skip -->
+```scala
+object Tests extends Suite("parser", m"Parser tests"):
+  def main(arguments: Array[String]): Unit = Suite.main(arguments, Tests)
+  def run(): Unit = ()
+```
