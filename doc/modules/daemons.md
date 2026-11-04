@@ -70,7 +70,11 @@ prints reaches no user and, in the ordinary case, is simply lost. `Out` and `Err
 `Stdio` of the current invocation, which is the client's. When the reader of that stream goes
 away — `mytool | head -1`, once `head` has exited — the launcher says so, and the invocation's
 next write to it raises `Egress.Error`, ending the invocation with status 141 as `SIGPIPE`
-would end a process writing a pipe.
+would end a process writing a pipe. Code that
+cannot be changed — a library printing to `System.out` — is redirected with `Stdio.divert`, which
+is a *thread's* diversion, not the JVM's: it follows the thread it is made on, the threads
+started under it, and every task spawned within it, so a daemon may divert around several
+clients at once without their output crossing.
 
 Arguments and environment values arrive as text. A byte sequence that is not valid UTF-8 in
 either is delivered with U+FFFD in its place, which is the substitution the JVM itself makes

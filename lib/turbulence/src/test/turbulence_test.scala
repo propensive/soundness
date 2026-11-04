@@ -70,6 +70,35 @@ object Tests extends Suite("streams", m"Turbulence tests"):
         . out
       . assert(_ == t"routed")
 
+      test(m"two tasks' diversions keep their output apart"):
+        supervise:
+          val left = async:
+            Stdio.capture:
+              jl.System.out.nn.print("left")
+              Thread.sleep(50)
+              jl.System.out.nn.print("-one")
+
+          val right = async:
+            Stdio.capture:
+              Thread.sleep(20)
+              jl.System.out.nn.print("right")
+              Thread.sleep(50)
+              jl.System.out.nn.print("-two")
+
+          (left.await().out, right.await().out)
+      . assert(_ == (t"left-one", t"right-two"))
+
+      test(m"a diversion reaches a task spawned within it"):
+        Stdio.capture:
+          supervise:
+            async(jl.System.out.nn.print("child")).await()
+        . out
+      . assert(_ == t"child")
+
+      test(m"a thread with no diversion is not diverted"):
+        Stdio.capture(()) yet Stdio.diverted.absent
+      . assert(_ == true)
+
       test(m"the JVM's streams are restored after a diversion"):
         val before = jl.System.out
         Stdio.capture(jl.System.out.nn.print("gone"))
