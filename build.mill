@@ -54,7 +54,7 @@ object settings:
   // below like the tools, and resolved from its GitHub release by crux, which also forces every
   // `org.scala-lang` artifact to it: the flare plugin names the release it was built with, and
   // the fork stays TASTy-compatible across its patch releases.
-  val scalaVersion = "3.10.0-pro-1.0.5"
+  val scalaVersion = "3.10.0-pro-1.0.6"
 
   // The compiler *stream* — the major Scala version, without the patch level — which is what
   // decides the shape of the compiler-internal APIs a handful of modules wrap. Everything else
