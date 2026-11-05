@@ -773,16 +773,17 @@ entry .Hasse   the Hasse diagram of a partial order: each element's immediate co
       The counterpart of `#bottom`: `Any` among types. It becomes the sole maximum.
 
 entry .PartiallyOrdered   the typeclass of a type with a partial order: `compare(left, right)` is `left ≤ right`
-    `element is PartiallyOrdered` supplies `compare(left, right): Boolean`, read as `left ≤
-    right`, for `Poset`. The relation should be reflexive, antisymmetric and transitive; it
-    need not relate every pair. A given is written as a lambda:
+  detail
+      `element is PartiallyOrdered` supplies `compare(left, right): Boolean`, read as `left ≤
+      right`, for `Poset`. The relation should be reflexive, antisymmetric and transitive; it
+      need not relate every pair. A given is written as a lambda:
 
-    ```scala
-    import soundness.*
+      ```scala
+      import soundness.*
 
-    given Int is PartiallyOrdered = (a, b) => b%a == 0   // divisibility
-    Poset(1, 2, 3, 4, 6, 12).dag.successors(2)           // Set(4, 6)
-    ```
+      given Int is PartiallyOrdered = (a, b) => b%a == 0   // divisibility
+      Poset(1, 2, 3, 4, 6, 12).dag.successors(2)           // Set(4, 6)
+      ```
   refer acyclicity.Poset
 
 entry .Poset   a set of elements with a `PartiallyOrdered` instance, and the `Dag` of its covering relation

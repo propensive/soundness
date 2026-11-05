@@ -562,9 +562,6 @@ entry .filesystemBackends   the filesystem backends, each a given to import by n
       view (Windows) a requested mode is ignored. FIFOs are made through `mkfifo`, locks
       through `FileChannel.lock`, and extended attributes through the
       `UserDefinedFileAttributeView`, which is `Unsupported` where the volume lacks one.
-  entry .scalaNativeFilesystem   the Scala Native backend, in `galilei.native`
-      The same `java.nio`-based implementation as `javaBaseFilesystem`, compiled against Scala
-      Native's javalib.
   entry .wasiFilesystem   the `wasi:filesystem` backend for Wasm components, in `galilei.wasi`
       An `inline` given over the WASI preview-2 filesystem interface: the `call`s it makes
       expand at the site which summons it, so the component's imports materialize only in

@@ -1998,20 +1998,3 @@ entry .upstream   the proxy's session with the server upstream, for questions of
         then Lsp.Transit.Answer(upstream.execute(t"java.project.getClasspaths").or(Json()))
         else Lsp.Transit.Forward
     ```
-
-entry .DemoLspServer   a complete, minimal language server, in `exegesis.demo`
-    The `main` class of the `exegesis.demo` component: a resident daemon (ethereal's `cli`
-    and `execute`, with the `completionsExecutive`) which calls `Lsp.listen` with four
-    registrations — an `opened` handler publishing a warning over the whole document, a
-    `hover` showing the word under the cursor, a fixed `complete()` list, and a
-    `demo.reverse` command which reverses its text argument — and returns `Exit.Ok` when the
-    editor closes the pipe. Point an editor at it as a language server for any language to
-    see the protocol exercised end to end. Not exported to the `soundness` umbrella.
-
-entry .DemoLspProxy   a complete, minimal proxy, in `exegesis.demo`
-    A resident daemon which launches the language server named by its own arguments
-    (`demo-proxy rust-analyzer`), forwards everything an editor sends it, and amends two of
-    the answers on the way back: every hover is prefixed with _(proxied)_ and every
-    published diagnostic is labelled `[demo]`, with `rewrite.capabilities` claiming hover in
-    case the server did not. Everything else crosses unchanged, under the editor's own
-    request ids. Not exported to the `soundness` umbrella.

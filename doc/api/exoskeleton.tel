@@ -2022,10 +2022,11 @@ entry .pane   runs a shell on a pseudo-terminal with the tool under test configu
   refer exoskeleton.rig
 
 entry .tmux   runs a shell in a tmux session, configured exactly as `pane` does, and hands the pane to a block
-    An extension on `Shell`, with the same parameters and contextual needs as `pane`. The
-    session is created detached at the given size, named by a UUID, and killed when the
-    block ends. Requires tmux on the host; a missing binary surfaces as `Pane.Error` with
-    `ExecFailed`.
+  detail
+      An extension on `Shell`, with the same parameters and contextual needs as `pane`. The
+      session is created detached at the given size, named by a UUID, and killed when the
+      block ends. Requires tmux on the host; a missing binary surfaces as `Pane.Error` with
+      `ExecFailed`.
   refer exoskeleton.pane
   refer exoskeleton.Tmux
 

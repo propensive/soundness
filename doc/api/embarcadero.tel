@@ -33,12 +33,12 @@ detail
 
     def entry(name: Text, content: Text): Tar.Entry =
       Tar.Entry.File
-       ( path  = name.as[Relative on Tar],
-         mode  = UnixMode(),
-         user  = UnixUser(0),
-         group = UnixGroup(0),
-         mtime = 0.bits.u32,
-         data  = Archive.Body(content.in[Data]) )
+        ( path  = name.as[Relative on Tar],
+          mode  = UnixMode(),
+          user  = UnixUser(0),
+          group = UnixGroup(0),
+          mtime = 0.bits.u32,
+          data  = Archive.Body(content.in[Data]) )
 
     val layer: Layer = Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
     val image: Image = Image(List(layer), config = ContainerConfig(Cmd = List(t"/bin/sh")))
@@ -137,12 +137,12 @@ entry .Image   an OCI image or Wasm artifact assembled in memory: layers, config
 
             def entry(name: Text, content: Text): Tar.Entry =
               Tar.Entry.File
-               ( path  = name.as[Relative on Tar],
-                 mode  = UnixMode(),
-                 user  = UnixUser(0),
-                 group = UnixGroup(0),
-                 mtime = 0.bits.u32,
-                 data  = Archive.Body(content.in[Data]) )
+                ( path  = name.as[Relative on Tar],
+                  mode  = UnixMode(),
+                  user  = UnixUser(0),
+                  group = UnixGroup(0),
+                  mtime = 0.bits.u32,
+                  data  = Archive.Body(content.in[Data]) )
 
             val layer: Layer = Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
             layer.diffId   // sha256:… of the uncompressed tar
@@ -156,12 +156,12 @@ entry .Image   an OCI image or Wasm artifact assembled in memory: layers, config
 
             def entry(name: Text, content: Text): Tar.Entry =
               Tar.Entry.File
-               ( path  = name.as[Relative on Tar],
-                 mode  = UnixMode(),
-                 user  = UnixUser(0),
-                 group = UnixGroup(0),
-                 mtime = 0.bits.u32,
-                 data  = Archive.Body(content.in[Data]) )
+                ( path  = name.as[Relative on Tar],
+                  mode  = UnixMode(),
+                  user  = UnixUser(0),
+                  group = UnixGroup(0),
+                  mtime = 0.bits.u32,
+                  data  = Archive.Body(content.in[Data]) )
 
             val layer: Layer = Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
             val image: Image = Image(List(layer), config = ContainerConfig(Cmd = List(t"/bin/sh")))
@@ -176,12 +176,12 @@ entry .Image   an OCI image or Wasm artifact assembled in memory: layers, config
 
             def entry(name: Text, content: Text): Tar.Entry =
               Tar.Entry.File
-               ( path  = name.as[Relative on Tar],
-                 mode  = UnixMode(),
-                 user  = UnixUser(0),
-                 group = UnixGroup(0),
-                 mtime = 0.bits.u32,
-                 data  = Archive.Body(content.in[Data]) )
+                ( path  = name.as[Relative on Tar],
+                  mode  = UnixMode(),
+                  user  = UnixUser(0),
+                  group = UnixGroup(0),
+                  mtime = 0.bits.u32,
+                  data  = Archive.Body(content.in[Data]) )
 
             val layer: Layer = Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
             val image: Image = Image(List(layer), config = ContainerConfig(Cmd = List(t"/bin/sh")))
@@ -197,12 +197,12 @@ entry .Image   an OCI image or Wasm artifact assembled in memory: layers, config
 
             def entry(name: Text, content: Text): Tar.Entry =
               Tar.Entry.File
-               ( path  = name.as[Relative on Tar],
-                 mode  = UnixMode(),
-                 user  = UnixUser(0),
-                 group = UnixGroup(0),
-                 mtime = 0.bits.u32,
-                 data  = Archive.Body(content.in[Data]) )
+                ( path  = name.as[Relative on Tar],
+                  mode  = UnixMode(),
+                  user  = UnixUser(0),
+                  group = UnixGroup(0),
+                  mtime = 0.bits.u32,
+                  data  = Archive.Body(content.in[Data]) )
 
             val layer: Layer = Layer(Tarfile(List(entry(t"hello.txt", t"hello world\n"))))
             val image: Image = Image(List(layer), config = ContainerConfig(Cmd = List(t"/bin/sh")))
@@ -237,10 +237,10 @@ entry .Image   an OCI image or Wasm artifact assembled in memory: layers, config
 
       val image: Image =
         Image
-         ( List(layer),
-           config       = ContainerConfig(Cmd = List(t"/bin/sh"), WorkingDir = t"/app"),
-           architecture = t"arm64",
-           annotations  = Map(t"org.opencontainers.image.title" -> t"hello") )
+          ( List(layer),
+            config       = ContainerConfig(Cmd = List(t"/bin/sh"), WorkingDir = t"/app"),
+            architecture = t"arm64",
+            annotations  = Map(t"org.opencontainers.image.title" -> t"hello") )
 
       image.imageConfig.let(_.architecture)   // t"arm64"
       ```
@@ -264,10 +264,10 @@ entry .Image   an OCI image or Wasm artifact assembled in memory: layers, config
 
       val artifact: Image =
         Image.wasm
-         ( component,
-           exports = List(t"wasi:http/incoming-handler@0.2.0"),
-           imports = List(t"wasi:io/streams@0.2.0"),
-           target  = t"wasi:http/proxy@0.2.0" )
+          ( component,
+            exports = List(t"wasi:http/incoming-handler@0.2.0"),
+            imports = List(t"wasi:io/streams@0.2.0"),
+            target  = t"wasi:http/proxy@0.2.0" )
 
       artifact.wasmConfig.let(_.os)                   // t"wasip2"
       artifact.manifest.layers.map(_.mediaType)       // List(media"application/wasm")
@@ -588,11 +588,11 @@ entry .ContainerConfig   the execution parameters of an image: user, environment
 
       val config: ContainerConfig =
         ContainerConfig
-         ( Env        = List(t"PATH=/usr/bin:/bin"),
-           Entrypoint = List(t"/usr/bin/server"),
-           Cmd        = List(t"--port", t"8080"),
-           WorkingDir = t"/app",
-           Labels     = Map(t"org.opencontainers.image.title" -> t"server") )
+          ( Env        = List(t"PATH=/usr/bin:/bin"),
+            Entrypoint = List(t"/usr/bin/server"),
+            Cmd        = List(t"--port", t"8080"),
+            WorkingDir = t"/app",
+            Labels     = Map(t"org.opencontainers.image.title" -> t"server") )
       ```
   refer embarcadero.Image
   entry #User   the user (and optionally group) to run as, or `Unset`

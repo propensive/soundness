@@ -167,7 +167,7 @@ entry .Inspectable   the typeclass of debug renderings, which every value has, a
       2. a `Showable`, borrowed and marked `⸢…⸣`;
       3. an `Optional` type (`Mandatable`), as `｢value｣` or `○`;
       4. a structural rendering through `Derivation`, for any case class, enum or sealed
-         hierarchy;
+          hierarchy;
       5. the value's `toString`, marked `“…”`.
 
       A native instance in the companion of the type, or here, takes precedence over all of

@@ -1838,9 +1838,9 @@ entry .Facet   one horizontal part of a composite gauge row, with an order in wh
       def row(width: Int): Text =
         Facet.solve
           ( List
-             ( Facet.fixed(2, Teletype(t"compiling")),
-               Facet.flexible(4)(w => Teletype(t"="*w)),
-               Facet.fixed(1, Teletype(t"42%")) ),
+              ( Facet.fixed(2, Teletype(t"compiling")),
+                Facet.flexible(4)(w => Teletype(t"="*w)),
+                Facet.fixed(1, Teletype(t"42%")) ),
             width )
         . plain
 

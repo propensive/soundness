@@ -293,8 +293,8 @@ entry .exchange   a full-duplex conversation: `react`'s state machine plus a `Tr
       import Control.*
 
       def converse[endpoint: Showable](endpoint: endpoint)
-         (using (endpoint is Duplexable)^, Tactic[Socket.Error], Socket.Event is Loggable, Buffering)
-         (using Charset, Codepage)
+          (using (endpoint is Duplexable)^, Tactic[Socket.Error], Socket.Event is Loggable, Buffering)
+          (using Charset, Codepage)
       :   Int =
 
         endpoint.exchange(0)[Text] { count ?=> line =>
@@ -1251,13 +1251,6 @@ entry .socketBackends   the `Socket.Backend` of each platform, each a given to i
       behaviour is lost. Multicast sends go once through each joined interface. Bind and
       connect failures are classified into `Bind.Error` and `Socket.Error` reasons from the
       JDK's exceptions and messages.
-  entry .scalaNativeSockets   the Scala Native backend, over its javalib's `java.net` sockets; in `coaxial.native`
-      TCP, UDP and multicast. Scala Native's javalib has no `SocketChannel` or
-      `UnixDomainSocketAddress`, so `listenDomain`, `dialDomain` and `duplexDomain` raise
-      `Unsupported`; it declares but does not implement `DatagramSocket.setOption`, so
-      `ReusePort`, `MulticastLoop` and `MulticastHops` are not applied and a send to a group
-      goes once by the kernel's default multicast route. UDP binds use an explicit wildcard
-      address. TLS is a separate matter: `SecureEndpoint` on Native speaks to OpenSSL directly.
   entry .wasiSockets   the WASI backend, over `wasi:sockets`; in `coaxial.wasi`
       TCP only, and only to IPv4 literals (WASI offers no resolver here, so a hostname raises
       `Socket.Error(Dns)`). A listener binds the IPv4 wildcard; `start-connect`/`accept` are

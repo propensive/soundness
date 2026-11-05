@@ -26,7 +26,7 @@ detail
     import errorDiagnostics.stackTracesDiagnostics
 
     val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
-                     0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
+                      0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
 
     val image: Raster in Png = data.read[Raster in Png]
     image.width          // 2
@@ -158,7 +158,7 @@ entry .Raster   an immutable raster image: pixels in a known layout, with its fo
       import errorDiagnostics.stackTracesDiagnostics
 
       val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
-                       0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
+                        0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
 
       given Raster.Formats = Raster.Formats(Png(), Jpeg(), Gif())
       val raster: Raster = Raster(data)
@@ -210,7 +210,7 @@ entry .Raster   an immutable raster image: pixels in a known layout, with its fo
       import errorDiagnostics.stackTracesDiagnostics
 
       val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
-                       0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
+                        0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
 
       data.read[Raster in Png].height             // 1
       capture[Raster.Error](data.read[Raster in Jpeg]) == Raster.Error(Jpeg())   // true
@@ -508,7 +508,7 @@ entry .Canvas   the form a raster is opened as, for scoped pixel access: `raster
             import errorDiagnostics.stackTracesDiagnostics
 
             val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
-                             0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
+                              0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
 
             val image: Raster = data.read[Raster in Png]
       frame
@@ -520,7 +520,7 @@ entry .Canvas   the form a raster is opened as, for scoped pixel access: `raster
             import errorDiagnostics.stackTracesDiagnostics
 
             val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
-                             0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
+                              0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
 
             val image: Raster by Rgba = data.read[Raster in Png].crop(right = 1).repack[Rgba]
       frame
@@ -532,7 +532,7 @@ entry .Canvas   the form a raster is opened as, for scoped pixel access: `raster
             import errorDiagnostics.stackTracesDiagnostics
 
             val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
-                             0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
+                              0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
 
             val image: Raster by Rgba = data.read[Raster in Png].crop(right = 1).repack[Rgba]
 
@@ -547,7 +547,7 @@ entry .Canvas   the form a raster is opened as, for scoped pixel access: `raster
             import errorDiagnostics.stackTracesDiagnostics
 
             val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
-                             0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
+                              0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
 
             val image: Raster by Rgba = data.read[Raster in Png].crop(right = 1).repack[Rgba]
 
@@ -798,7 +798,7 @@ entry .allRasterFormats   a `Raster.Formats` of every format the library impleme
     import errorDiagnostics.stackTracesDiagnostics
 
     val data = hex"""89504e470d0a1a0a0000000d49484452000000020000000108020000007b40e8dd
-                     0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
+                      0000000d4944415478da63f8cf0004ff01070001ff3d7d8c490000000049454e44ae426082"""
 
     Raster(data).width          // 2
     data.read[Raster].height    // 1
