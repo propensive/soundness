@@ -44,14 +44,18 @@ import strategies.throwUnsafely
 
 `fetch` sends a GET request to a URL, and `receive` reads the response body as the type named:
 
-```scala
+```scala fuel
+typecheck
+##
 url"https://example.com/".fetch().receive[Text]
 ```
 
 The response also reports its status directly, and reading its body as bytes or as a stream is the
 same `receive` with a different type:
 
-```scala
+```scala fuel
+typecheck
+##
 url"https://example.com/".fetch().status   // Http.Ok
 ```
 
@@ -60,7 +64,9 @@ url"https://example.com/".fetch().status   // Http.Ok
 Headers are named arguments to the request, each checked against the header it names — `accept`
 takes a media type, so a value that is not one does not compile:
 
-```scala
+```scala fuel
+typecheck
+##
 url"https://example.com/".fetch(accept = media"application/json").receive[Text]
 ```
 
@@ -70,7 +76,9 @@ url"https://example.com/".fetch(accept = media"application/json").receive[Text]
 body is a typed value whose media type comes with it — text is `text/plain`, a `Query` is a form
 submission — so nothing has to be set by hand to match:
 
-```scala
+```scala fuel
+typecheck
+##
 url"https://example.com/submit".submit(Http.Post, accept = media"application/json")(t"Hello world")
 ```
 
@@ -87,11 +95,16 @@ right, so a program decides what a given status means rather than having it deci
 A single request opens a connection and closes it. Where several requests go to the same origin,
 a *session* opens one connection and lends it to a scope, so the requests within share it:
 
-```scala
+```scala fuel
+typecheck
+##
 import soundness.httpUrlSessional
 import socketBackends.javaBaseSockets
 
-val request = Http.Request(Http.Get, 1.1, t"example.com".as[Host], t"/", Nil, () => Http.emptyBody())
+val request = Http.Request(Http.Get, 1.1, t"example.com".as[Host], t"/", Nil,
+    new Spring[Data]:
+      def apply()(using Tactic[Truncation.Error]): Stream[Data] over Credit =
+        Http.emptyBody())
 
 url"https://example.com".session: session ?=>
   session.fetch(request).status
@@ -114,7 +127,9 @@ The transport is a given. `httpBackends.javaNetHttp` uses the JVM's own `java.ne
 `httpBackends.soundnessHttp` speaks Soundness's wire codecs directly over a socket, with no
 `java.net.http` involved:
 
-```scala
+```scala fuel
+typecheck
+##
 locally:
   import httpBackends.soundnessHttp
   url"https://example.com/".fetch().status   // Http.Ok
@@ -139,14 +154,18 @@ import httpRedirections.doNotFollowRedirects
 A response outside the success range raises an `Http.Error`, which carries the status and headers so
 the caller can react to what went wrong:
 
-```scala
+```scala fuel
+typecheck
+##
 capture[Http.Error](url"https://example.com/missing".fetch().receive[Text]).status   // Http.NotFound
 ```
 
 A request that cannot connect at all — an unresolvable host, a refused connection, a TLS failure —
 raises a `Connect.Error` naming the reason:
 
-```scala
+```scala fuel
+typecheck
+##
 capture[Connect.Error](url"http://no-such-host.invalid/".fetch()).reason
 ```
 

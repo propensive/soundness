@@ -77,7 +77,9 @@ type, and the same paths address the new entries:
 
 ```scala
 val widths: Catalog[Org, Int] = labels.map(_.length)
+```
 
+```scala
 widths(proxy ?=> proxy.cto.name)   // 3
 widths(proxy ?=> proxy.ceo.age)    // 2
 ```

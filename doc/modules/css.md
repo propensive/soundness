@@ -156,7 +156,7 @@ typecheck
 ##
 import classloaders.threadContextClassloader
 
-given (Styles at "/site.css") = Styles(cp"/site.css")
+given (Styles at "/cataclysm/test.css") = Styles(cp"/cataclysm/test.css")
 import cssBindings.checkedBinding
 ```
 

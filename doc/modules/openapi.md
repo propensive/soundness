@@ -27,6 +27,8 @@ with a few deliberate choices imported by name:
 import soundness.*
 import strategies.throwUnsafely
 import internetAccess.online
+import httpBackends.javaNetHttp
+import logging.silentLogging
 import construables.jsonConstruable
 import postables.jsonPostable
 ```
@@ -39,7 +41,7 @@ compiles, and the resulting value navigates by path:
 ```scala fuel
 typecheck
 ##
-val api = Api(cp"/apis/petstore.json")
+val api = Api(cp"/openapi/local/petstore.json")
 
 api.pets           // the /pets path
 api.pets(42)       // /pets/{petId}, the parameter typed by the spec
@@ -60,7 +62,7 @@ URL then extends:
 ```scala fuel
 typecheck
 ##
-val api = Api(cp"/apis/petstore3.json", base = url"https://petstore3.swagger.io")
+val petstore = Api(cp"/openapi/swagger/petstore3.json", base = url"https://petstore3.swagger.io")
 ```
 
 What is about to be sent is a value too: `request` on any navigated `Api` or `Api.Response` is an
@@ -76,19 +78,49 @@ for — which must conform to the response schema the specification declares:
 ```scala fuel
 typecheck
 ##
-case class Pet(id: Long, name: Text, tag: Optional[Text] = Unset)
+case class Pet(id: Int, name: Text, tag: Optional[Text] = Unset)
+case class NewPet(name: Text, tag: Optional[Text] = Unset)
 
 api.pets(42).get.call[Pet]()             // GET /pets/42, decoded per the schema
 api.pets.get(limit = 10).call[List[Pet]]()
-api.pets.post(newPet).call[Pet]()        // a typed request body
-api.sessions(token).delete.call()        // 204, no body: Unit
-api.pets(42).delete(api_key = t"…")      // a header parameter, sent as a header
+api.pets.post(NewPet(t"Rex")).call[Pet]() // a typed request body
+api.sessions(t"abc").delete.call()       // 204, no body: Unit
 ```
 
 Parameters declared on the path item apply to every operation on it, and one written as a
 `$ref` into the document's components is followed, as are `$ref` responses and request bodies.
 Where an operation declares several successful responses, `200` is preferred, then `201`, then
 the lowest. Asking for a type the response schema does not support is a compile error.
+
+### Security
+
+An API's specification names its security schemes — an API key in a header, query parameter or
+cookie; HTTP authentication; OAuth 2; OpenID Connect — and which of them each operation
+requires. The credentials come from [orthodoxy](oauth.md): a `Credential` is a contextual value
+named for the scheme, holding the value the scheme's kind calls for, and an operation which
+requires credentials nobody has provided does not compile, the error naming the givens which
+would satisfy each alternative:
+
+```scala fuel
+typecheck
+##
+val issuer = Issuer(url"https://issuer.example/token", t"client-1", t"s3cret")
+
+given apiKey: ("api_key" is Credential to Text) = Credential(t"…")
+given oauth: ("petstore_auth" is Credential to Authorization) =
+  Credential(issuer.clientCredentials(t"read:pets", t"write:pets"))
+
+petstore.pet(42L).get.call()             // `api_key: …` sent as the spec dictates
+petstore.pet(42L).delete(api_key = t"…") // a header parameter, sent as a header
+```
+
+An API key is a `Credential to Text`, sent in the header, query parameter or cookie the scheme
+names; HTTP authentication a `Credential to Auth`, sent in the `Authorization` header; an OAuth 2
+or OpenID Connect scheme a `Credential to Authorization` (or an `Auth`, for a token obtained
+elsewhere), sent as a `Bearer` authorization and checked, before the request goes, against the
+scopes the requirement names — a token lacking one raises `OAuth.Error`. Where an operation
+offers alternative requirements, the first every scheme of which has a credential in scope is
+used; an operation whose `security` is empty needs none. Mutual TLS is not supported.
 
 ### Errors
 
@@ -104,51 +136,27 @@ exactly the declared errors, and a `match` over it is checked for exhaustiveness
 ```scala fuel
 typecheck
 ##
-api.pet(42L).get.attempt[Pet]() match
+petstore.pet(42L).get.attempt[Pet]() match
   case Attempt.Success(pet)                        => pet.name
   case Attempt.Failure(Api.NotFound(()))           => t"no such pet"
   case Attempt.Failure(Api.BadRequest(()))         => t"bad id"
 
-api.v1.customers(id).get.attempt[Json]() match
+given basic: ("basicAuth" is Credential to Auth) = Credential(Auth.Basic(t"user", t"pass"))
+val stripe = Api(cp"/openapi/stripe/spec3.json")
+
+stripe.v1.customers(t"cus_1").get.attempt[Json]() match
   case Attempt.Success(customer)                       => customer
   case Attempt.Failure(Api.OtherError(status, problem)) => problem.error.message  // Stripe's `default`
 ```
 
-A case for a status the specification does not declare, such as `Api.Conflict` above, does not
-compile. `call()` itself raises the declared errors through contingency, one `Tactic` per declared
-type, which a `recover` or `mitigate` supplies case by case; a handler missing one is a compile
-error naming it.
+A case for a status the specification does not declare, such as `Api.Conflict` for these
+operations, does not compile. `call()` itself raises the declared errors through contingency, one
+`Tactic` per declared type, which a `recover` or `mitigate` supplies case by case; a handler
+missing one is a compile error naming it.
 
 Servers do not always keep to their specifications. A response with an undeclared status raises
 `Api.Violation`, carrying the status and the body's bytes, which every call may meet and which is
 handled apart from the declared errors: the contract's breach, not one of its cases.
-
-### Security
-
-An API's specification names its security schemes — an API key in a header, query parameter or
-cookie; HTTP authentication; OAuth 2; OpenID Connect — and which of them each operation
-requires. The credentials come from [orthodoxy](oauth.md): a `Credential` is a contextual value
-named for the scheme, holding the value the scheme's kind calls for, and an operation which
-requires credentials nobody has provided does not compile, the error naming the givens which
-would satisfy each alternative:
-
-```scala fuel
-typecheck
-##
-given apiKey: ("api_key" is Credential to Text) = Credential(t"…")
-given basic: ("basicAuth" is Credential to Auth) = Credential(Auth.Basic(t"user", t"pass"))
-given oauth: ("petstore_auth" is Credential to Authorization) = issuer.clientCredentials(t"read:pets")
-
-api.pet(42L).get.call()           // `api_key: …` sent as the spec dictates
-```
-
-An API key is a `Credential to Text`, sent in the header, query parameter or cookie the scheme
-names; HTTP authentication a `Credential to Auth`, sent in the `Authorization` header; an OAuth 2
-or OpenID Connect scheme a `Credential to Authorization` (or an `Auth`, for a token obtained
-elsewhere), sent as a `Bearer` authorization and checked, before the request goes, against the
-scopes the requirement names — a token lacking one raises `OAuth.Error`. Where an operation
-offers alternative requirements, the first every scheme of which has a credential in scope is
-used; an operation whose `security` is empty needs none. Mutual TLS is not supported.
 
 ### Media types and their carriers
 
@@ -162,10 +170,14 @@ choice:
 ```scala fuel
 typecheck
 ##
-import construables.{jsonConstruable, pngConstruable, plainTextConstruable}
+import construables.pngConstruable
 
-val ticket: Raster in Png = api.tickets(id).qr.get.call()
-val label: Text = api.items(7).label.get.call()
+given museumAuth: ("MuseumPlaceholderAuth" is Credential to Auth) =
+  Credential(Auth.Basic(t"curator", t"…"))
+
+val museum = Api(cp"/openapi/redocly/museum.yaml")
+val ticket: Raster in Png = museum.tickets(t"a1").qr.get.call()
+val inventory: Json = petstore.store.inventory.get.call()
 ```
 
 A `Construable` is provided for JSON, XML (`application/xml` and `text/xml`), YAML, HTML, CSS,
@@ -189,10 +201,10 @@ array of objects as a `List` of them.
 ```scala fuel
 typecheck
 ##
-val pet = api.pet(42L).get.record()
+val pet = petstore.pet(42L).get.record()
 pet.name                                // Text
 pet.photoUrls                           // List[Text]
-api.pet.findByStatus.get(status = t"sold").record().map(_.name)
+petstore.pet.findByStatus.get(status = t"sold").record().map(_.name)
 ```
 
 `tuple()` reads the same schema as a named tuple, eagerly. Both need a JSON response whose schema

@@ -28,6 +28,8 @@ cannot drift from the code, because the code's types *are* the schema's. Everyth
 
 ```scala
 import soundness.*
+import codepages.utf8Codepage
+import strategies.throwUnsafely
 ```
 
 A record typed by its schema at compiletime is [safety by construction](../philosophy/safety-by-construction.md) with no class written by hand.
@@ -55,13 +57,14 @@ object Catalogue extends Json.Provider(t"""{
       }
     }
   }
-}""".read[Json]):
+}""".read[Json])
+
+val input = t"""{"name": "Bicycle", "children": [{"weight": 9.5}]}""".read[Json]
 ```
 
 ```scala fuel
 typecheck
 ##
-val input = t"""{"name": "Bicycle", "children": [{"weight": 9.5}]}""".read[Json]
 val record = Catalogue.record(input)
 
 record.name                  // Text, because the schema says string
@@ -162,7 +165,7 @@ the type
 ```scala fuel
 typecheck
 ##
-Record { def age: Double; def name: Text; def employed: Boolean }
+type Person = Record { def age: Double; def name: Text; def employed: Boolean }
 ```
 
 — and only a transparent method lets that more precise type reach the call site.

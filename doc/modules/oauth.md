@@ -52,8 +52,11 @@ val flow = Issuer(url"https://issuer.example/token", t"client-1", Unset,
                   url"https://issuer.example/authorize", url"https://app.example/callback")
 
 val pkce = Pkce()
+val state = t"a7f3c9"
 flow.authorizationUrl(List(t"read"), state, pkce)   // send the user here
-flow.exchangeCode(code, pkce)                       // when they come back
+
+def callback(code: Text): Authorization =
+  flow.exchangeCode(code, pkce)                     // when they come back
 ```
 
 ### Credentials for a typed client
@@ -67,7 +70,8 @@ scheme an operation requires by its name, and presents it as the scheme dictates
 typecheck
 ##
 given key: ("api_key" is Credential to Text) = Credential(t"…")
-given token: ("petstore_auth" is Credential to Authorization) = issuer.clientCredentials()
+given token: ("petstore_auth" is Credential to Authorization) =
+  Credential(issuer.clientCredentials())
 ```
 
 ### In a web application
