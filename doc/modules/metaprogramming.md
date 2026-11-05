@@ -87,13 +87,14 @@ Two operations follow immediately, and are the reason it is worth having:
 ```scala
 def parseNumber(text: Text): Option[Int] = safely(text.as[Int]).let(Some(_)).or(None)
 
-List[Option[Int]](Some(1), Some(2), Some(3)).sequence   // Some(List(1, 2, 3))
-List(t"1", t"2", t"x").traverse(parseNumber)  // None: the failure, not a list of failures
+List[Option[Int]](Some(1), Some(2), Some(3)).stdlib.sequence   // Some(List(1, 2, 3))
+List(t"1", t"2", t"x").stdlib.traverse(parseNumber)  // None: the failure, not a list of failures
 ```
 
 `sequence` turns a collection of containers inside out, and `traverse` maps a fallible function
 over a collection and gathers the results in one container rather than a collection of them —
-which is the shape of "parse all of these, and fail if any of them fails".
+which is the shape of "parse all of these, and fail if any of them fails". Both range over the
+standard library's collections, so a Soundness `List` crosses to one with `stdlib` first.
 
 ### Types as source text
 
@@ -103,7 +104,7 @@ that, covering the language's full type grammar:
 
 ```scala
 Syntax.name[Int | String & Double]        // t"Int | String & Double"
-Syntax.name[(e: Enumeration) => e.Value]  // t"(e: Enumeration) => e.Value"
+Syntax.name[(text: Text) => text.type]   // t"(text: Text) => text.type"
 Syntax.name[Addable by Int to Double]     // the infix typeclass form
 ```
 
@@ -116,15 +117,17 @@ and types — as a value that renders as a navigable diagram, and `Introspect.se
 same for a symbol's flags and members:
 
 ```scala
+val x = 5
+
 Introspect.syntax(true):
-  println("hello world")
+  1 + x
 // the full TASTy tree of the expression, inspectable
 ```
 
 For a macro author, this replaces `println`-archaeology with a structured view of what an
 expansion actually produced. Both work from *outside* a macro too, on any expression in ordinary
 code, which makes them useful for answering questions about the language itself. Introspecting
-`1 + x` for a `val x = 5` shows the `Apply` of a `Select` over a `Literal` and an `Ident`; doing
+`1 + x`, as above, shows the `Apply` of a `Select` over a `Literal` and an `Ident`; doing
 the same for a `val y: 5 = 5` shows a single `Literal`, because the singleton type let the
 compiler fold the addition away. Inside a macro, where a `Quotes` is available, the `syntax` and
 `semantics` extension methods do the same for an `Expr` or a `Symbol`, and the result is colored

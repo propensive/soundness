@@ -31,7 +31,9 @@ import threads.platformThreads
 import probates.awaitProbate
 import logging.silentLogging
 import charsets.utf8Charset
+import codepages.utf8Codepage
 import textSanitizers.skipSanitizer
+import socketBackends.javaBaseSockets
 ```
 
 ### Serving
@@ -78,15 +80,15 @@ shape of a service announcing itself, as mDNS does. A handler answers to the gro
 sender, or not at all:
 
 ```scala fuel
-typecheck
+parse
 ##
 import socketOptions.multicastLoopSocketOption   // see our own announcements too
 
 supervise:
-  val group = Multicast(ip"224.0.0.251", udp"mdns")
+  val group: Multicast = Multicast(ip"224.0.0.251", udp"mdns")
 
   group.subscribe(packet => Multicast.Reply.Group(packet.data)):
-    summon[Multicast.Subscription].send(ascii(t"hello, group"))
+    summon[Multicast.Subscription].send(t"hello, group".in[Data])
 ```
 
 The group's port is bound with address and port reuse, so several programs on one host — ours
@@ -105,7 +107,7 @@ directly and returns the answering records:
 ```scala fuel
 typecheck
 ##
-import socketBackends.javaBaseSockets
+import coaxial.query
 
 val resolver = ip"9.9.9.9" on udp"domain"
 val addresses = resolver.query(dns"example.com").map(_.rdata)
@@ -122,7 +124,7 @@ anything *transmissible* — bytes, text, or any value that encodes to text:
 ```scala fuel
 typecheck
 ##
-val reply = DomainSocket(t"/run/service.sock").transmit(t"request")
+val reply: Stream[Data] over Credit = DomainSocket(t"/run/service.sock").transmit(t"request")
 ```
 
 `react` holds a conversation: each received message produces a `Control` — continue with new
@@ -148,10 +150,13 @@ can:
 ```scala fuel
 typecheck
 ##
-val endpoint = Endpoint(ip"127.0.0.1", Port[Tcp](8080))
+import internetAccess.online
 
-endpoint.session: connection ?=>
-  converse(connection)
+val endpoint = ip"127.0.0.1" on Port[Tcp](8080)
+
+val greeting: Data = endpoint.session: connection ?=>
+  connection.send(Stream(t"hello".in[Data]))
+  connection.source.memoize
 ```
 
 This is what an [HTTP session](http-client.md) is built on, and how concurrent requests multiplex
@@ -220,8 +225,8 @@ unchanged — and `Terminate` ends the conversation:
 ```scala fuel
 typecheck
 ##
-endpoint.react(initial)[Text]: state ?=> message =>
-  if done(message) then Control.Terminate else Control.Continue(next(state, message))
+val received: Int = endpoint.react(0)[Text]: state ?=> message =>
+  if message == t"bye" then Control.Terminate else Control.Continue(state + 1)
 ```
 
 Writing a protocol this way keeps its states explicit, rather than implied by where control

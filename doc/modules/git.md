@@ -138,6 +138,8 @@ and reports its progress through a `Git.Activity`: a shared tracker of atomic co
 objects arrive, which a user interface may poll from another thread with `report()`.
 
 ```scala
+import dysasymptotics.linearSize
+
 val target = directory / "clone"
 Git.clone(directory, target)
 

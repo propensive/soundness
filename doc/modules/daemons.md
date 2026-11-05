@@ -169,14 +169,14 @@ just changed the configuration" is expressed. The message type is the type argum
 every invocation of the daemon agrees on what can be sent:
 
 ```scala
-enum Message:
+enum Notice:
   case ConfigChanged
 
-def configure(): Unit = cli[Message]:
+def configure(): Unit = cli[Notice]:
   execute:
-    resident.broadcast(Message.ConfigChanged)
+    resident.broadcast(Notice.ConfigChanged)
     resident.bus.each:
-      case Message.ConfigChanged => Out.println(t"another invocation changed the configuration")
+      case Notice.ConfigChanged => Out.println(t"another invocation changed the configuration")
     Exit.Ok
 ```
 

@@ -74,21 +74,31 @@ and plain text when output is not a terminal at all, so logs never fill with esc
 ### Keyboard input
 
 `interactive` opens a raw-mode session, within which the terminal's events — keypresses, window
-resizes, focus changes, pastes — arrive as typed values:
+resizes, focus changes, pastes — arrive as typed values. The session runs under
+[supervision](concurrency.md) and takes the console and the environment from context; an
+application's `Cli` provides the console:
 
 ```scala fuel
 typecheck
 ##
+import environments.javaBaseEnvironment
+import probates.awaitProbate
+import strategies.throwUnsafely
+import threads.virtualThreads
+
+given Console = Console(summon[Stdio])
+
 def handle(char: Char): Unit = ()
 def finish(): Unit = ()
 def resize(rows: Int, cols: Int): Unit = ()
 
-interactive: terminal ?=>
-  terminal.eventIterator().each:
-    case Keypress.CharKey(char)  => handle(char)
-    case Keypress.Ctrl('C')      => finish()
-    case Terminal.Info.WindowSize(rows, cols) => resize(rows, cols)
-    case _                       => ()
+supervise:
+  interactive: terminal ?=>
+    terminal.eventIterator().each:
+      case Keypress.CharKey(char)  => handle(char)
+      case Keypress.Ctrl('C')      => finish()
+      case Terminal.Info.WindowSize(rows, cols) => resize(rows, cols)
+      case _                       => ()
 ```
 
 The decoding covers modifier combinations, function keys, the kitty keyboard protocol and
@@ -125,27 +135,31 @@ its result in one call:
 ```scala fuel
 typecheck
 ##
-interactive: terminal ?=>
-  LineEditor().ask: text =>
-    Out.println(t"You entered: $text")
+supervise:
+  interactive: terminal ?=>
+    LineEditor().ask: text =>
+      Out.println(t"You entered: $text")
 ```
 
 ### Layout
 
 Interfaces larger than a line compose from panes: `panel` for content, `editor` and `menu` for the
 interactive widgets, `strip` and `stack` to arrange them in columns and rows, and `border` to frame
-them. `form` runs the arrangement — full-screen on the alternate buffer, or *inline*, as a live
+them. `conduct` runs the arrangement — full-screen on the alternate buffer, or *inline*, as a live
 block at the cursor that leaves scrollback intact:
 
 ```scala fuel
 typecheck
 ##
-interactive: terminal ?=>
-  val pages = List(t"Home", t"Settings", t"About")
-  val sidebar = border(BorderStyle.rounded)(menu(pages, pages.head.or(t""), maxWidth = 20))
-  val body = border(BorderStyle.heavy)(editor(LineEditor()))
+import ultimatum.border
 
-  form(Occupancy.Inline)(strip(sidebar, body))
+supervise:
+  interactive: terminal ?=>
+    val pages = List(t"Home", t"Settings", t"About")
+    val sidebar = border(BorderStyle.rounded)(menu(pages, pages.head.or(t""), maxWidth = 20))
+    val body = border(BorderStyle.heavy)(editor(LineEditor()))
+
+    conduct(Occupancy.Inline)(strip(sidebar, body))
 ```
 
 Sizes solve as fractions with minima and maxima, and focus moves between widgets with Tab. Live

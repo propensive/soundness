@@ -83,7 +83,7 @@ bytes, or a stream of either, and the destination's `Writable` instance receives
 ```scala fuel
 typecheck
 ##
-val destination = t"/tmp/streams-tutorial.txt".decode[Path on Linux]
+val destination = t"/tmp/streams-tutorial.txt".as[Path on Linux]
 
 source.writeTo(destination)
 ```
@@ -122,23 +122,32 @@ queues, no intermediate collections. Each stage takes what the last one produced
 ```scala fuel
 typecheck
 ##
-file.stream.via(decompressor).via(decoder)
+import textSanitizers.skipSanitizer
+
+val compressed = t"The quick brown fox".in[Data].compress[Gzip]
+val decompressor = summon[Gzip is Compression].decompressor()
+val decoder = summon[Charset]
+
+compressed.stream.viaDuct(decompressor).via(decoder)
 ```
 
-The stage may be a `Duct` — the kernel's transformation type — or any descriptor value with a
-`Ductile` instance, which is how compression formats, cipher modes and character codings all
-present themselves as stages.
+A `Duct` — the kernel's transformation type, which is what a compression format's
+`decompressor()` returns — attaches with `viaDuct`; any other descriptor value with a `Ductile`
+instance, such as a character coding, attaches with `via`.
 
 A pipeline ends in a *terminal* operation, which drains the endpoint and closes it:
 
 ```scala fuel
 typecheck
 ##
-stream.memoize                                   // drain into one immutable value
-stream.sweep((storage, start, n) => count += n)  // drain, seeing each raw window
+var count = 0
+
+compressed.stream.memoize                         // drain into one immutable value
+compressed.stream.drain: region =>                // drain, seeing each raw window
+  window => count += (window: Interval).size
 ```
 
-`sweep` — and `gather`, its accumulating counterpart — expose the raw window rather than boxed
+`drain` — and `gather`, its accumulating counterpart — expose the raw window rather than boxed
 elements, so a byte-level reduction runs over the array with no per-element cost. `truncate` and
 `discard` bound a stream without draining it, releasing the remainder of the upstream unread; they
 count bytes or records, not collection elements, which is why they do not borrow the names `take`
@@ -150,7 +159,8 @@ data crosses from the pull side to the push side:
 ```scala fuel
 typecheck
 ##
-stream.pump(intake)
+def forward(stream: Stream[Data] over Credit, intake: Intake[Data] over Credit): Unit =
+  stream.pump(intake)
 ```
 
 ### Parsing with a cursor
@@ -194,7 +204,7 @@ and `records` iterates the parsed records of such a stream:
 ```scala
 import lineSeparation.adaptiveLinefeedLineSeparation
 
-t"1\n2\n3".source[Text].delineate.records.map(_.as[Int]).to(List)   // List(1, 2, 3)
+t"1\n2\n3".source[Text].delineate.records.map(_.as[Int]).to[List]   // List(1, 2, 3)
 ```
 
 Records are immutable values, so — unlike windows — they cross stage and thread boundaries by

@@ -13,6 +13,9 @@ import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 import providers.javaBaseProvider
 import alphabets.base64Standard
+import charsets.utf8Charset
+import codepages.utf8Codepage
+import textSanitizers.skipSanitizer
 ```
 
 ### Host keys
@@ -117,10 +120,12 @@ loaded keys, or everything an `ssh-agent` holds:
 typecheck
 ##
 import gitBackends.soundnessGit, gitTransports.soundnessSsh
+import pathInterfaces.pathOnLinux, temporaryDirectories.javaBaseTemporaryDirectory
 
 given Ssh.Credentials = Ssh.Credentials.agent(t"/tmp/ssh-agent.sock")
 given Ssh.HostKeys = Ssh.HostKeys.trustOnFirstUse(KnownHosts(t""))
 
+val directory = temporaryDirectory[Path on Linux] / "soundness"
 Git.clone(t"git@github.com:propensive/soundness.git", directory)
 ```
 
@@ -137,7 +142,11 @@ import cloaks.heapCloak
 
 val key = keyText.read[PrivateKey[Ed25519] in Pem]
 val agent = Ssh.Agent(t"/tmp/ssh-agent.sock")
-transport.authenticate(t"git", Ssh.Signer(key) :: agent.identities())
+
+Endpoint(t"github.com", Port[Tcp](22)).duplex: duplex =>
+  val transport = Ssh.Transport(duplex, t"github.com", 22)
+  transport.connect()
+  transport.authenticate(t"git", Ssh.Signer(key) :: agent.identities())
 ```
 
 ### The wire encoding

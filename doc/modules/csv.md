@@ -50,7 +50,7 @@ the rows one at a time, parsed by the same reader, so a quoted cell spanning chu
 boundaries is handled exactly as it is in a materialized sheet:
 
 ```scala
-t"name,age\nalpha,1\nbeta,2".source[Text].rows.map(_[Text](t"name").or(t"?")).to(List)
+t"name,age\nalpha,1\nbeta,2".source[Text].rows.map(_[Text](t"name").or(t"?")).to[List]
 // List(t"name", t"alpha", t"beta")
 ```
 
@@ -189,7 +189,7 @@ t"a,1\nb,2".read[List[Stat] in Dsv]     // both records
 A stream yields records the same way, through `rowsOf`:
 
 ```scala
-t"x,1\ny,2".source[Text].rowsOf[Stat].map(_.count).to(List)   // List(1, 2)
+t"x,1\ny,2".source[Text].rowsOf[Stat].map(_.count).to[List]   // List(1, 2)
 ```
 
 Fields are matched by header name where the format has a header and positionally where it does

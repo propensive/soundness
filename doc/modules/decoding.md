@@ -71,9 +71,10 @@ import truths.yesNoTruth
 
 t"yes".as[Boolean]    // true
 t"True".as[Boolean]   // true, still
-``` Other modules add their
-own, which is why the same `as` reads a date, a hostname or a URL once the
-relevant module is imported:
+```
+
+Other modules add their own, which is why the same `as` reads a date, a hostname or a URL once
+the relevant module is imported:
 
 ```scala
 t"2024-01-15".as[Date]
@@ -208,18 +209,17 @@ t"North" match
 ### Requiring a value
 
 Some types accept an empty input and some do not, and a form or a configuration
-often needs to know which before it asks for a value. A `Requirable` instance
-answers that: a type is _required_ when an empty input cannot produce one. The
-judgment follows from the type's decoder, so no separate declaration is needed —
-the decoder is simply run against the empty text, and whether it succeeds is the
-answer:
+often needs to know which before it asks for a value. A type is _required_ when an empty input
+cannot produce one. The judgment follows from the type's decoder, so no separate declaration is
+needed — the decoder is simply run against the empty text, and whether it succeeds is the answer:
 
 ```scala
-summon[Int is Requirable].required     // true: "" is not a number
+safely(t"".as[Int]).present    // false: "" is not a number, so an Int is required
+safely(t"".as[Text]).present   // true: the empty text is a Text
 ```
 
-This is what lets a [form](forms.md) mark its mandatory fields without a second
-declaration that could disagree with the decoder.
+A [form](forms.md) can mark its mandatory fields this way, without a second declaration that
+could disagree with the decoder.
 
 ### Enumerations by name and position
 

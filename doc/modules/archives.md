@@ -35,6 +35,7 @@ import charsets.utf8Charset
 import textSanitizers.skipSanitizer
 import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.createNonexistentParents
+import filesystemOptions.deleteRecursively
 import logging.silentLogging
 import pathInterfaces.pathOnLinux
 import strategies.throwUnsafely
@@ -159,7 +160,7 @@ the open handle:
 ```scala
 val tarPath = work / "hello.tar.gz"
 tarPath.create[File](): handle ?=>
-  handle.write(tarball.gzip)
+  handle.write(tarball.gzip.memoize)
 
 tarPath.open[Tar](Tar.Flag.Gzip):
   tar.entries.map(_.entryName)
@@ -168,7 +169,7 @@ tarPath.open[Tar](Tar.Flag.Gzip):
 A tarball unpacks onto the [filesystem](filesystem.md) with `extractTo`:
 
 ```scala
-val unpacked = work / "unpacked"
+val unpacked: Path on Linux = work / "unpacked"
 tarball.extractTo(unpacked)
 ```
 
@@ -231,7 +232,7 @@ Arfile.read(deb.source[Data]).map(_.name)    // List(t"control.tar.xz")
 
 val debPath = work / "hello.deb"
 debPath.create[File](): handle ?=>
-  handle.write(deb.source[Data])
+  handle.write(deb)
 
 debPath.open[Ar]():
   ar.entries.map(_.name)

@@ -119,9 +119,9 @@ frame
   code
       import formatting.compactJsonFormatting
 
-      given Person is Json.Printable = Inlinable.printable[Person]
-
-      Person(t"Bob", 40).in[Text over Json]   // t"""{"name":"Bob","age":40}""", written directly
+      val direct =
+        given Person is Json.Printable = Json.Direct.derived[Person].printable
+        Person(t"Bob", 40).in[Text over Json]   // t"""{"name":"Bob","age":40}""", written directly
 ##
 ```
 
@@ -417,6 +417,8 @@ encoded straight from the serializer — which is the shape for writing to a fil
 ```scala fuel
 typecheck
 ##
+val json = Person(t"Bob", 40).in[Json]
+
 Json.emit[Data](json, chunk => socket.write(chunk))
 ```
 
@@ -543,7 +545,7 @@ records at its line boundaries with `delineate`, and each record is read as `Jso
 ```scala
 import lineSeparation.adaptiveLinefeedLineSeparation
 
-t"1\n2\n3".source[Text].delineate.records.map(_.read[Json].as[Int]).to(List)
+t"1\n2\n3".source[Text].delineate.records.map(_.read[Json].as[Int]).to[List]
 // List(1, 2, 3)
 ```
 

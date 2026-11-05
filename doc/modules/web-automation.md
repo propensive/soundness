@@ -71,6 +71,9 @@ elements descend the tree:
 ```scala fuel
 typecheck
 ##
+import htmlDoms.whatwg
+import whatwg.*
+
 supervise:
   WebDriver.Chrome.headless.session:
     val heading = browser.element(H1)                    // by tag
