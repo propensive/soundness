@@ -68,7 +68,7 @@ block says so in its signature:
 ```scala fuel
 parse
 ##
-def fetchAll(urls: List[HttpUrl])(using Monitor): List[Text] = …
+def fetchAll(urls: List[HttpUrl])(using Monitor): List[Text] = ???
 ```
 
 This is the same discipline that [honest signatures](honest-signatures.md) apply to

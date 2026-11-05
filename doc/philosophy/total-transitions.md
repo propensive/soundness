@@ -96,7 +96,7 @@ accidental cases along with the deliberate one, so the assertion is marked inste
 parse
 ##
 expr.absolve match
-  case '{ $value: Int } => …
+  case '{ $value: Int } => ???
 ```
 
 `absolve` is Scala's `runtimeChecked` under a name that reads as what it means. It marks

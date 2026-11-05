@@ -13,26 +13,42 @@ named `Benchmarks`:
 
 ```scala
 object Benchmarks extends Suite("paths-bench", m"Serpentine benchmarks"):
-  def run(): Unit = ...
+  def run(): Unit = ???
 ```
 
 The suite's id is the id of the module's tests with `-bench` after it.
 
 ## 2. Structure
 
-A benchmark is a `test` block whose result is measured, with `.benchmark`
-applied to it in place of an assertion. Group related benchmarks with `suite`:
+A benchmark is declared with a `Bench` rig, which measures a body in place of the
+assertion a test would make. The rig needs a `BenchmarkDevice` to dispatch to, and,
+in scope where it is applied, a classloader, an environment, a system, a temporary
+directory to stage in, and an error strategy for a body that fails to compile or run. Group related benchmarks with `suite`:
 
-```scala
-suite(m"Show performance"):
-  test(m"render a quantity"):
-    (7.567*Metre).show
-  . benchmark(warmup = 30000L, duration = 30000L)
+```scala fuel
+typecheck
+##
+import classloaders.threadContextClassloader
+import environments.javaBaseEnvironment
+import strategies.throwUnsafely
+import systems.javaBaseSystem
+import temporaryDirectories.systemTemporaryDirectory
+
+object PathBenchmarks extends Suite("paths-bench", m"Serpentine benchmarks"):
+  given device: BenchmarkDevice = LocalhostDevice
+
+  def run(): Unit =
+    val bench = Bench()
+
+    suite(m"Conjunctions"):
+      bench(m"find the conjunction of two paths")(target = 500*Milli(Second)):
+        '{ (% / "foo" / "bar").conjunction(% / "foo" / "baz") }
 ```
 
-`warmup` and `duration` are durations in milliseconds: `warmup` lets the JIT reach
-a steady state before measurement, and `duration` is how long the measured phase
-runs. Choose values large enough for a stable figure.
+`target` is how long the measured phase runs. The rig first runs the body untimed so
+that the JIT can reach a steady state, then runs `warmups` calibration batches to settle
+how many operations fit in one batch, then times `iterations` batches which together
+last about `target`. Choose a target large enough for a stable figure.
 
 ## 3. Measure a result, not a side effect
 
@@ -41,26 +57,15 @@ prove the work unused and eliminate it, measuring nothing. Return the result of
 the operation under test rather than discarding it, and never benchmark a body
 whose value is thrown away.
 
-## 4. Compiletime benchmarks
+## 4. Staged benchmarks
 
-To measure compilation cost rather than runtime cost, wrap the body in
-`deferCompilation`, so the benchmark times the compiler resolving and elaborating
-the code:
+A benchmark's body is a quote, compiled again in the measuring JVM. Write the work
+being measured in full inside the quote, so that each body reads as a self-contained
+fragment, as Honeycomb's benchmarks do:
 
-```scala
-test(m"resolve a Show instance"):
-  deferCompilation:
-    Group(List(Person("Jack", 30))).show
-. benchmark(warmup = 30000L, duration = 30000L)
-```
-
-## 5. Staged benchmarks
-
-For benchmarks that run staged code through Sedentary's `Bench` rig, the benchmark
-body is a quote, compiled again in the measuring JVM. Write the work being measured
-in full inside the quote, so that each body reads as a self-contained fragment:
-
-```scala
+```scala fuel
+parse
+##
 bench(m"Parse with jsoup")(target = 1*Second, operationSize = size):
   '{ org.jsoup.Jsoup.parse(honeycomb.Benchmarks.htmlText1).nn }
 ```
@@ -83,7 +88,9 @@ as it expands (through `summonFrom` or `summonInline`) only does so when the sta
 tree is compiled, where none of the file's imports are in scope. An `import` written
 inside the quote travels with it, so import there whatever such a method needs:
 
-```scala
+```scala fuel
+parse
+##
 '{
     import htmlDoms.whatwg
     unsafely(honeycomb.Benchmarks.html1.load[Html])
@@ -97,7 +104,7 @@ be made in a method of the benchmark object, which the body then calls.
 The harness binds the body as a method of its own, so a body written inline is
 JIT-compiled exactly as one which delegates to a method.
 
-## 6. Keep benchmarks out of the test suite
+## 5. Keep benchmarks out of the test suite
 
 Benchmarks are not run as part of `make test` or the attested CI build; they are
 run deliberately when measuring performance. Keep them in `src/bench` so they do
