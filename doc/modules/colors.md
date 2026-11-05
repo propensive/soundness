@@ -248,8 +248,8 @@ as a tuple of channel types, most significant first, and the compiler works out 
 ```scala
 type Rgb565 = (Red[5], Green[6], Blue[5])
 
-compiletime.constValue[anticipation.Channel.TotalBits[Rgb]]      // 24
-summon[anticipation.Channel.Storage[Rgb565] =:= Short]           // the narrowest type that fits
+scala.compiletime.constValue[anticipation.Channel.TotalBits[Rgb]]   // 24
+summon[anticipation.Channel.Storage[Rgb565] =:= Short]   // the narrowest type that fits
 summon[anticipation.Channel.Storage[Tuple1[Grey[8]]] =:= Byte]
 ```
 

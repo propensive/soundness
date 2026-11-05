@@ -38,6 +38,8 @@ The syntax is Scala's own, and it is worth restating what it means. In a macro:
 ```scala fuel
 typecheck
 ##
+import scala.quoted.*
+
 def say(user: String)(using Quotes): Expr[Unit] =
   val name: Expr[String] = Expr(user)
   '{ Out.println("Hello "+${name}) }

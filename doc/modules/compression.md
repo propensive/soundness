@@ -53,7 +53,7 @@ compressed.decompress[Gzip].utf8   // t"the quick brown fox jumps over the lazy 
 The same names attach to a stream, where they become pipeline stages: the data is transformed as
 it flows, and nothing larger than the pipeline's buffers is held. Writing a compressed
 [file](filesystem.md) and reading it back is the compressor and decompressor placed on either
-side of the disk:
+side of the disk, with `pump` delivering the compressed stream into the file's intake:
 
 ```scala
 import filesystemBackends.javaBaseFilesystem
@@ -63,7 +63,7 @@ import temporaryDirectories.javaBaseTemporaryDirectory
 val archive = temporaryDirectory[Path on Linux] / "compression" / Uuid().show / "fox.txt.gz"
 
 archive.create[File](CreateFlag.Parents): handle ?=>
-  handle.write(payload.stream.compress[Gzip])
+  payload.stream.compress[Gzip].pump(handle.intake())
 
 archive.open[File]()(file.stream.decompress[Gzip].read[Text])
 // t"the quick brown fox jumps over the lazy dog"

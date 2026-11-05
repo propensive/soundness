@@ -46,9 +46,12 @@ Complex(1, 3)*Complex(2, 4)  // Complex(-10, 10)
 ```
 
 The components may be any type with the arithmetic the operation needs — including quantities, so a
-complex impedance keeps its units:
+complex impedance keeps its units. A quantity renders through a `Decimalizer`, which says how
+many significant figures to show:
 
 ```scala
+given Decimalizer = Decimalizer(3)
+
 val real = 1.0*Metre/Second
 val imaginary = 9.0*Metre/Second
 

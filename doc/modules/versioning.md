@@ -31,7 +31,9 @@ import strategies.throwUnsafely
 The `v"…"` interpolator writes a version, checked as the code compiles; text parses to the same
 type, raising a `Semver.Error` for a malformed version:
 
-```scala
+```scala fuel
+compile
+##
 val version = v"1.4.2"
 t"2.0.0-rc.1".as[Semver]
 

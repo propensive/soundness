@@ -139,7 +139,7 @@ sources and sinks maintained, and a bit matrix of reachability built on first us
 whether one node reaches another is a single bit:
 
 ```scala
-val frozen: Topology[Int]^{} = dag.freeze
+val frozen = dag.freeze    // a Topology[Int]^{}
 frozen.reaches(8, 2)      // true
 frozen.predecessors(2)    // Set(4, 6), with no acknowledgement needed
 frozen.snapshot           // back to a Dag
@@ -180,7 +180,7 @@ a cycle. It is a mutable value, exclusively owned, edited through methods rather
 producing new values:
 
 ```scala
-val topology: Topology[Text]^ = Topology()
+val topology = Topology[Text]()   // a Topology[Text]^
 topology.add(t"app", t"lib")
 topology.add(t"lib", t"core")
 topology.linearized          // List(core, lib, app)

@@ -111,9 +111,15 @@ holding the same files have the same checksum wherever they are, and an empty di
 too — the identity a build keys its caches by:
 
 ```scala
+import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.dereferenceSymlinks
+import pathInterfaces.pathOnLinux
+import temporaryDirectories.javaBaseTemporaryDirectory
 
-directory.checksum[Blake3]   // Digest in Blake3
+val directory = temporaryDirectory[Path on Linux] / "hashing"
+directory.create[Directory](CreateFlag.Replace)
+
+directory.checksum[Sha2[256]]   // Digest in Sha2[256]
 ```
 
 ### BLAKE3

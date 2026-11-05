@@ -142,7 +142,7 @@ typecheck
 case class AsciiError(char: Char)(using Diagnostics)
 extends Error(m"the character $char is not ASCII")
 
-erased given AsciiError is Unchecked
+erased given AsciiError is Unchecked = new Unchecked { type Self = AsciiError }
 ```
 
 An error declared `Fatal` ends the process, and says with what status. This suits failures during

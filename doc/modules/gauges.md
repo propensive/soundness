@@ -26,14 +26,17 @@ to know what the other decided. A bar handed six cells re-quantizes to six; hand
 a percentage; handed one it becomes a single shade. Everything comes from the `soundness` package,
 with a text metric in scope, since a gauge is laid out by the width of what it draws, a palette
 (without one, an adaptive palette is chosen from what the terminal reports, which needs the
-terminal's capabilities in scope), and standard output for the examples that print:
+terminal's capabilities in scope), standard output for the examples that print, and the
+concurrency context in which an animated gauge redraws itself:
 
 ```scala
 import soundness.*
 import textMetrics.uniformMetric
 import palettes.solarizedDarkGaugePalette
+import probates.awaitProbate
 import stdios.javaLangSystemStdio
 import termcapDefinitions.basicTermcap
+import threads.virtualThreads
 ```
 
 ### Statuses
@@ -146,6 +149,12 @@ the cell publishes the value and repaints, so a gauge driven from a background t
 ```scala fuel
 typecheck
 ##
+import dysasymptotics.linearSize
+import environments.javaBaseEnvironment
+import strategies.throwUnsafely
+
+given Console = Console(summon[Stdio])   // an application's `Cli` provides this
+
 val progress = Reading(Fraction(0.0))
 val work = List(1, 2, 3, 4, 5)
 
@@ -171,13 +180,14 @@ when nothing is animating.
 ### Standalone
 
 Outside a layout, `whilst` shows a gauge at the cursor for the duration of a block and erases it
-afterwards:
+afterwards. Its animation runs as a background task, so it is called under `supervise`:
 
 ```scala fuel
 typecheck
 ##
-whilst(Reading(Fraction.indeterminate)):
-  snooze(2.0*Second)
+supervise:
+  whilst(Reading(Fraction.indeterminate)):
+    snooze(2.0*Second)
 ```
 
 `gaugeLine` renders a single frame for a caller doing its own drawing — the shape to use when the
