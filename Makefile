@@ -86,7 +86,7 @@ doccheck:
 # the PATH, or FUEL names it. Exit status 4 means a fence did not do as its preamble said.
 FUEL ?= fuel
 fuelcheck:
-	./mill test.assembly + ambience.wasi.jar + aviation.wasi.jar + capricious.wasi.jar + galilei.wasi.jar + telekinesis.wasi.jar + turbulence.wasi.jar + telekinesis.forms.jar + breviloquence.http.jar + caesura.http.jar + locomotion.http.jar + eucalyptus.gcp.jar + caduceus.resend.jar + orthodoxy.server.jar
+	./mill test.assembly + ambience.wasi.jar + aviation.wasi.jar + capricious.wasi.jar + coaxial.wasi.jar + galilei.wasi.jar + telekinesis.wasi.jar + turbulence.wasi.jar + telekinesis.forms.jar + breviloquence.http.jar + caesura.http.jar + locomotion.http.jar + eucalyptus.gcp.jar + caduceus.resend.jar + orthodoxy.server.jar
 	$(FUEL) compile
 
 attest:

@@ -317,6 +317,7 @@ entry .logFormats   the standard log formats, each a given to import by name
       import logFormats.ansiTimestampedLogFormat
       import probates.awaitProbate
       import stdios.javaLangSystemStdio
+      import termcapDefinitions.xterm256Termcap
       import threads.virtualThreads
       import writables.outTeletypeWritable
 

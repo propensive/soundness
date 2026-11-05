@@ -20,6 +20,7 @@ classpath out/test/assembly.dest/out.jar
 classpath out/ambience/wasi/jar.dest/out.jar
 classpath out/aviation/wasi/jar.dest/out.jar
 classpath out/capricious/wasi/jar.dest/out.jar
+classpath out/coaxial/wasi/jar.dest/out.jar
 classpath out/galilei/wasi/jar.dest/out.jar
 classpath out/telekinesis/wasi/jar.dest/out.jar
 classpath out/turbulence/wasi/jar.dest/out.jar

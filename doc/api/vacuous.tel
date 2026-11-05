@@ -337,14 +337,15 @@ entry .per   applies a function to a value only if an optional second argument i
 
 entry .compact   the present elements of a collection or iterator of `Optional`s
     `iterable.compact` drops every `Unset` and yields the present values, as an
-    `Iterable[value]`; the overload on a `murmuration` `Iterator[Optional[value]]^`
+    `Iterable[value]` (a stdlib `Iterable`, so a Soundness `List` goes through
+    `List.stdlib`); the overload on a `murmuration` `Iterator[Optional[value]]^`
     consumes the iterator and yields an `Iterator[value]^` which drops absent elements as
     it advances. The result is typed as the element type with the optionality removed.
 
     ```scala
     import soundness.*
 
-    List[Optional[Text]](t"a", Unset, t"c").compact   // List(t"a", t"c")
+    List[Optional[Text]](t"a", Unset, t"c").stdlib.compact   // t"a", t"c" (see #2427)
     ```
 
 entry .entire   the whole collection if every element is present, or `Unset`
