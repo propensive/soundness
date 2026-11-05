@@ -75,17 +75,23 @@ the new dimensions:
 Adding quantities whose dimensions disagree is a compile error, and the message
 names the mismatch in plain words rather than in terms of types:
 
-```scala
-Metre + 2*Second   // does not compile: the left operand represents distance, but the right operand represents time; these are incompatible physical quantities
+```scala fuel
+compile
+errors show
+##
+Metre + 2*Second   // the left operand represents distance, but the right operand represents time; these are incompatible physical quantities
 ```
 
 The check is by dimension, not merely by unit, so a length cannot be added to an
 energy, and even two powers of the same dimension stay apart — a length is not an
 area:
 
-```scala
-2*Metre + 2*Joule    // does not compile: distance versus energy
-7*Metre >= 2*Metre*Metre   // does not compile: distance versus area
+```scala fuel
+compile
+errors show
+##
+2*Metre + 2*Joule   // distance versus energy
+7*Metre >= 2*Metre*Metre   // distance versus area
 ```
 
 ### Mixing units
@@ -307,7 +313,7 @@ value, `1.0/Second` is usable in arithmetic but says nothing about what it count
 Wrapping it as a `MetricUnit` at least makes the metric prefixes apply, so `Mega(Flop)` becomes
 writable — but the result is still just a number in units of inverse seconds. Giving it a
 dimension of its own makes it distinct from every frequency; the `power` parameter is required,
-and is bounded by `Nat` — an alias for `Int & Singleton`. With these, `Mega(Flop)*Minute` has
+and is bounded by `Nat` — an alias for `Int & Singleton`. With these, `Mega(Flop)*Second` has
 the type `Quantity[Flops[1] & Seconds[1]]`, and a `Designation` gives it a symbol for display:
 
 ```scala fuel
@@ -329,7 +335,7 @@ frame
 
       val Flop: MetricUnit[Flops[1]] = MetricUnit(1)
 
-      Mega(Flop)*Minute
+      Mega(Flop)*Second
 frame
   label With a symbol for display
   code
@@ -340,7 +346,7 @@ frame
 
       given Designation[Flops[1]] = () => t"FLOPS"
 
-      Mega(Flop)*Minute
+      Mega(Flop)*Second
 ##
 ```
 
