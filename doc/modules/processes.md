@@ -150,6 +150,10 @@ a detached one cannot. Its environment is the `Environment` in scope, so `emptyE
 with `variables(…)` gives it exactly the variables named:
 
 ```scala
+import pathInterfaces.pathOnLinux
+import filesystemBackends.javaBaseFilesystem
+
+val directory: Path on Linux = (% / "var" / "log").on[Linux]
 val pid: Pid = sh"server --port 8080".detach(log = directory / "server.log")
 ```
 

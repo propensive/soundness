@@ -329,6 +329,6 @@ its own.
 <!-- doccheck: skip -->
 ```scala
 object Tests extends Suite("parser", m"Parser tests"):
-  def main(arguments: Array[String]): Unit = Suite.main(arguments, Tests)
+  def main(arguments: scala.Array[String]): Unit = Suite.main(arguments, Tests)
   def run(): Unit = ()
 ```

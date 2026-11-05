@@ -95,13 +95,15 @@ classpath.entries.map:
 An entry is classified by what is on disk, not by its name: `Classpath.Entry.classify(path)` is a
 `Directory` for a directory (or a path that does not yet exist, which may become one), a `Jar`
 for a file that ends with a ZIP archive's trailer — which a launcher's shebang-prefixed
-executable does, though it has no `.jar` suffix — and raises an `Io.Error` for any other file.
+executable does, though it has no `*.jar` suffix — and raises an `Io.Error` for any other file.
 An entry's `path` is its directory's or its jar's, and `Unset` for a URL or the Java runtime.
 The classpath the running process was actually loaded from — a `URLClassLoader`'s entries,
 its parents', then `java.class.path`, in order and each once — is `LocalClasspath.running`,
 which a tool that compiles or loads code against itself needs:
 
 ```scala
+import filesystemOptions.dereferenceSymlinks
+
 val running = LocalClasspath.running()
 running.entries.map(_.path)
 ```
