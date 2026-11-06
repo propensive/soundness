@@ -113,8 +113,10 @@ rather than to the start of the expression. The media-type interpolator's instan
 hands both to a macro:
 
 ```scala fuel
-parse
+typecheck
 ##
+import gesticulate.internal
+
 inline given interpolable: MediaType is Interpolable:
   transparent inline def interpolate[parts <: Tuple, origins <: Tuple](inline insertions: Any*)
   :   MediaType =
