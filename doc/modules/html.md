@@ -5,8 +5,8 @@
 Soundness constructs, parses, transforms, and emits [HTML](https://en.wikipedia.org/wiki/HTML)
 through a representation that the compiler understands. An element is built by
 applying a tag to its attributes and children; the construction is checked against
-the HTML specification as the code compiles, so a `<br>` given children, or a `<p>`
-given a `src` attribute, is a compile error rather than malformed output.
+the HTML specification as the code compiles, so a `<br>` given children, or an `<li>`
+outside a list, is a compile error rather than malformed output.
 
 The same representation reads HTML back from text, files, or a URL, matches it with
 patterns, and serializes it — directly or as a stream. Above the level of individual
@@ -75,7 +75,6 @@ does not conform is usually a compile error:
 Br(Hr)                // does not compile: <br> takes no children
 P(Li)                 // does not compile: <li> belongs only in <ol> or <ul>
 Ul("hello")           // does not compile: <ul> may not contain text directly
-P(src = "image.gif")  // does not compile: <p> has no src attribute
 ```
 
 What an element may hold and which attributes it accepts follow from the static type

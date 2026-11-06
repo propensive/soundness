@@ -32,16 +32,30 @@ nothing — log calls can be written freely, without guards. When no logger is i
 the machinery compiles away to nothing.
 
 The names come from the `soundness` package. A logging program also needs a rendering format,
-somewhere to write, and the concurrency context a logger writes under:
+somewhere to write, and the concurrency context a logger writes under. A terminal is written in
+`Teletype`, and its capabilities are described by a `Termcap`, so a logger for standard output uses the ANSI format, `ansiTimestampedLogFormat`,
+which takes its colors from a `LogPalette`, and writes to `Out` through
+`writables.outTeletypeWritable`:
 
 ```scala
 import soundness.*
 
-import logFormats.timestampedLogFormat
+import logFormats.ansiTimestampedLogFormat
 import probates.awaitProbate
 import stdios.javaLangSystemStdio
 import strategies.throwUnsafely
+import termcapDefinitions.xterm256Termcap
 import threads.virtualThreads
+import writables.outTeletypeWritable
+
+given LogPalette = new Palette:
+  type Form = Srgb
+  def background: Color in Srgb  = WebColors.Black
+  def foreground: Color in Srgb  = WebColors.White
+  def error: Color in Srgb       = WebColors.Red
+  def warning: Color in Srgb     = WebColors.Orange
+  def informative: Color in Srgb = WebColors.SteelBlue
+  def subdued: Color in Srgb     = WebColors.DimGray
 ```
 
 ### Setting up a logger
@@ -64,9 +78,10 @@ events and nothing else, so the events of one library can be routed or silenced 
 the rest.
 
 `Logger` runs its writes on a background thread, so it needs the ambient concurrency context that
-`supervise` provides. The format in scope — here `timestampedLogFormat`, which prefixes each line
-with a timestamp and level — decides how an event renders to text; `untimestampedLogFormat`
-omits the timestamp, and `ansiTimestampedLogFormat` colors the level for a terminal.
+`supervise` provides. The format in scope — here `ansiTimestampedLogFormat`, which prefixes each
+line with a dimmed timestamp and the level on a colored ground — decides how an event renders.
+For a destination that takes plain text, such as a file, `timestampedLogFormat` writes the
+timestamp and level as text, and `untimestampedLogFormat` omits the timestamp.
 
 A threshold drops everything below a chosen level:
 
@@ -189,7 +204,8 @@ because the argument is by name.
 Because a logger is just a contextual value, more than one can be in scope, and an event reaches
 every one. Two loggers — one to a file, one to the terminal — both receive each event, and each
 applies its own threshold, so the file can keep `Fine` detail while the terminal shows only
-`Warn` and `Fail`:
+`Warn` and `Fail`. The file is written as text, so its logger imports the text format,
+which, being nearer, takes precedence over the terminal format imported above:
 
 ```scala
 import codepages.utf8Codepage
@@ -201,7 +217,10 @@ val logFile = temporaryDirectory[Path on Linux] / "logging" / "app.log"
 logFile.create[File](CreateFlag.Parents)
 
 supervise:
-  given fileLog: Logger[Any, Message] = Logger(logFile, level = Level.Fine)
+  given fileLog: Logger[Any, Message] =
+    import logFormats.timestampedLogFormat
+    Logger(logFile, level = Level.Fine)
+
   given terminalLog: Logger[Any, Message] = Logger(Out, level = Level.Warn)
   Log.fine(m"only the file sees this")
   Log.warn(m"both see this")

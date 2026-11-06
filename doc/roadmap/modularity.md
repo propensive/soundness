@@ -45,9 +45,9 @@ snapshots from that audit and must be re-verified at implementation time.
   JVM-only tail off a module may let the remainder *gain* platforms (e.g. facsimile.core can
   drop `scalaJs = false` once its filesystem layer splits out); such gains change the
   `soundness.js`/`soundness.native` aggregates and are made deliberately.
-- The `.wasi` components (turbulence.wasi, capricious.wasi, …) supply alternative backends;
+- The `*.wasi` components (turbulence.wasi, capricious.wasi, …) supply alternative backends;
   any restructure of Stdio or entropy must retarget them and keep `soundness.wasi` green.
-- `bench.model` depends on all six `.staged` modules, and benchmarks are invisible to
+- `bench.model` depends on all six `*.staged` modules, and benchmarks are invisible to
   `soundness.all`; run `make build` after every leg.
 - A given moved out of a companion object leaves implicit scope, requiring a downstream
   import sweep; a given moved *into* the subject type's companion re-enters implicit scope
@@ -236,7 +236,7 @@ Horizon: near–mid
   ASCII *byte* lookup table, and its comment states the invariant plainly ("Every alphabet
   character is ASCII, so decoding the output as Latin-1 yields identical text"), which is what
   lets it build the result from Latin-1 bytes with no per-character boxing. `Base256`'s alphabet
-  is emphatically not ASCII (`ḀḁЂЃĄą…`), so `.toByte` would truncate every character in it.
+  is emphatically not ASCII (`ḀḁЂЃĄą…`), so `char.toByte` would truncate every character in it.
   Integrating the codec therefore means changing monotonous's documented fast path, which is
   performance-sensitive and belongs with mod-5's codec work, gated on equivalence tests against
   the present `Base256.encode`/`decode` and on the benchmarks. It also moves 13 consumer files
@@ -593,7 +593,7 @@ Progress (2026-10-21): none. All six engines still define `macroClassloader`,
 `bintelInternal.scala` (which also keep `summonViaStaging`) — prescience's proto-copy makes a
 seventh, and `prescience.staged` does not exist.
 
-Done when: no `.staged` module contains its own copy of the expansion environment, and the
+Done when: no `*.staged` module contains its own copy of the expansion environment, and the
 benchmark corpus shows performance parity per format.
 
 ## mod-7: stretch goals
@@ -828,7 +828,7 @@ exists, a test pinning the resolved instance.
   it. This severs iridescence → geodesy.angle from the spine in one move.
 - **digression.core → spectacular.core** is one given (`showable`,
   digression.StackTrace.scala:111–133) plus one `.show` on an `Int` (line 128, trivially
-  `.toString.tt`). Movable to a `digression.show`, but rank it below the others: the given
+  `int.toString.tt`). Movable to a `digression.show`, but rank it below the others: the given
   sits in `StackTrace`'s companion, so moving it costs implicit-scope resolution for every
   downstream `stackTrace.show`, and spectacular's own closure (stenography, wisteria) is
   modules the spine keeps anyway.

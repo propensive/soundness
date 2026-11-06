@@ -5,12 +5,12 @@
 [Protocol Buffers](https://protobuf.dev/) is the wire format of gRPC and much of the service world:
 compact, schema-driven, and defined by Google's proto3 specification. Soundness encodes and decodes
 it directly from Scala types — a case class with numbered fields *is* the message definition, so
-there is no `.proto` file to write and no code generator to run, and the bytes produced match what
+there is no `*.proto` file to write and no code generator to run, and the bytes produced match what
 `protoc` would produce for the equivalent schema.
 
 ### On Protocol Buffers
 
-The conventional workflow puts the schema outside the language: messages are defined in `.proto`
+The conventional workflow puts the schema outside the language: messages are defined in `*.proto`
 files, a generator emits source code, and the build keeps the two in step. That indirection buys
 cross-language schemas, but for a Scala program talking to a Scala program — or one that simply
 must speak an existing proto3 protocol — it is machinery without benefit.

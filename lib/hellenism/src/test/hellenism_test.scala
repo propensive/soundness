@@ -65,6 +65,10 @@ object Tests extends Suite("classpath", m"Hellenism Tests"):
         t"/scala/Option.class".as[Path on Classpath]
     . assert(_ == Classpath / "scala" / "Option.class")
 
+    test(m"a classpath resource is named by its last path segment"):
+      Resource.nominable[Resource].name(cp"/scala/Option.class")
+    . assert(_ == t"Option.class")
+
     test(m"check that a classpath file is streamable"):
       unsafely(cp"/scala/Option.class".read[Data])
     . assert(_.length > 0)

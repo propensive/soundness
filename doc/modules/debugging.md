@@ -30,11 +30,17 @@ feature experimental.captureChecking
 ##
 import soundness.*
 
+import environments.javaBaseEnvironment
+import errorDiagnostics.stackTracesDiagnostics
+import internetAccess.online
+import logging.silentLogging
 import probates.awaitProbate
+import socketBackends.javaBaseSockets
 import strategies.throwUnsafely
 import stdios.javaLangSystemStdio
 import termcapDefinitions.basicTermcap
 import threads.virtualThreads
+import workingDirectories.javaBaseWorkingDirectory
 ```
 
 ### Opening a session
@@ -66,7 +72,7 @@ The VM's threads are listed, named, suspended and resumed individually or togeth
 suspended thread's call stack reads as frames paired with their locations:
 
 ```scala
-def stacks()(using Debug^): Unit =
+def stacks()(using Debug): Unit =
   debug.suspend()
   debug.threads().each: thread =>
     debug.frames(thread).each: (frame, location) =>
@@ -84,7 +90,7 @@ be stale. A handler that wants the thread left suspended says so with `remain()`
 thread resumes when the handler returns:
 
 ```scala
-def watch()(using Debug^): Unit =
+def watch()(using Debug): Unit =
   debug.breakpoint(t"Main.scala", Ordinal.uniary(42)): stop ?=>
     stop.variables().each: variable =>
       Out.println(t"${variable.name}: ${variable.erased}")
@@ -101,7 +107,7 @@ what later clears it, and the *suspend policy* decides how much of the VM stops 
 the whole VM, only the thread that hit it, or nothing at all:
 
 ```scala
-def once(location: Jdwp.Location)(using Debug^): Unit =
+def once(location: Jdwp.Location)(using Debug): Unit =
   val request = debug.breakpoint(location, Jdwp.SuspendPolicy.EventThread)
   debug.clear(Jdwp.EventKind.Breakpoint, request)
 ```
@@ -113,7 +119,7 @@ says whether to step into a call, over it, or out of the current frame. Inlined 
 source reads — into the inlined body, line by line — rather than as the bytecode was laid out:
 
 ```scala
-def stepOver(thread: ThreadId)(using Debug^): Unit =
+def stepOver(thread: ThreadId)(using Debug): Unit =
   debug.step(thread, Jdwp.StepDepth.Over): stop ?=>
     stop.frames().head.let: (frame, location) =>
       Out.println(stop.describe(location)(0))
@@ -132,7 +138,7 @@ Underneath the handlers, the VM reports what happened as composite events, and `
 stream of them, so a debugger's main loop can equally be an ordinary traversal:
 
 ```scala
-def trace()(using Debug^): Unit =
+def trace()(using Debug): Unit =
   debug.events.each: composite =>
     composite.events.each:
       case Jdwp.Event.Breakpoint(request, thread, location) => Out.println(t"stopped at ${location.index}")

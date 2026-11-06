@@ -76,10 +76,13 @@ understands. An impossible date does not compile. The thirtieth of February, the
 thirty-first of April, and the twenty-ninth of February in a common year are all
 rejected before the program runs:
 
-```scala
-2012-Feb-30   // does not compile
-2012-Apr-31   // does not compile
-2011-Feb-29   // does not compile
+```scala fuel
+compile
+errors show
+##
+2012-Feb-30
+2012-Apr-31
+2011-Feb-29
 2012-Feb-29   // compiles: 2012 is a leap year
 ```
 
@@ -145,9 +148,12 @@ meridiem attached. The minutes always take two digits:
 These literals are checked too. An hour above twelve, or minutes that do not fit
 in two digits, will not compile:
 
-```scala
-13.00.am   // does not compile
-7.88.am    // does not compile
+```scala fuel
+compile
+errors show
+##
+13.00.am
+7.88.am
 ```
 
 ### Timestamps
@@ -437,9 +443,12 @@ that the name exists in the
 [time-zone database](https://en.wikipedia.org/wiki/Tz_database) when the code
 compiles, so a misspelled zone never reaches a running program:
 
-```scala
+```scala fuel
+compile
+errors show
+##
 val london = tz"Europe/London"
-tz"NotARealZone"   // does not compile
+tz"NotARealZone"
 ```
 
 A `Moment` is a timestamp anchored to a zone — a wall-clock reading somewhere in
@@ -556,11 +565,14 @@ occurred. A `Regime` models such a cutover, applying the old calendar before the
 switch and the new one after, and rejecting dates that fall in the gap — at compile
 time when the date is a literal:
 
-```scala
+```scala fuel
+compile
+errors show
+##
 given Regime = calendars.papalCutover
 (1582-Oct-4).jdn    // last Julian day
 (1582-Oct-15).jdn   // first Gregorian day — the very next day
-1582-Oct-10         // does not compile: a date in the gap
+1582-Oct-10   // a date in the gap
 ```
 
 Dates also have an ordinal form — the day's number within its year — and an
@@ -606,7 +618,8 @@ Recurrence(2024-Jan-1, 1*Day, 5).encode   // R5/2024-01-01/P1D
 val monthly =
   import monthEnds.clampMonthEnd
 
-  rec"R3/2024-01-01/P1M".occurrences
+  val recurrence: Recurrence of Date by (Timespan of Month.type) = rec"R3/2024-01-01/P1M"
+  recurrence.occurrences
 // Chain(2024-Jan-1, 2024-Feb-1, 2024-Mar-1)
 ```
 
@@ -832,8 +845,11 @@ Because the timelines are distinct types, subtracting an instant on one from an
 instant on the other is a compile error. A whole class of off-by-leap-seconds bugs
 simply cannot be written:
 
-```scala
-Instant(0L).over[Tai] - Instant(0L)   // does not compile
+```scala fuel
+compile
+errors show
+##
+Instant(0L).over[Tai] - Instant(0L)
 ```
 
 By default, arithmetic on moments is lenient: it works in civil time and steps over

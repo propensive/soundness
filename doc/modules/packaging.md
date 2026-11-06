@@ -38,6 +38,8 @@ retrievable by hash on the build machine, and embeds the list of hashes as the r
 <!-- doccheck: skip -->
 ```scala
 import soundness.*
+import stdios.javaLangSystemStdio
+import termcapDefinitions.basicTermcap
 
 @main
 def myApp(): Unit = externalize:

@@ -206,4 +206,4 @@ val sized = t"""<svg width="48.5mm" height="20mm" viewBox="0 0 48.5 20"/>""".rea
 
 Because an `Svg` is an [XML](xml.md) value underneath, a drawing embeds directly into an
 [HTML](html.md) page with no serialization step between, and the same drawing serves as a
-standalone `.svg` file when wrapped in a `Document`.
+standalone `*.svg` file when wrapped in a `Document`.

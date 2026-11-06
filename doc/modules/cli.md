@@ -150,9 +150,11 @@ def tool2(args: List[Text]): Unit = application(args):
 read together through a `List` topic — `--tag a --tag b` as `List(t"a", t"b")`, each operand
 interpreted as the element type — and an `Optional` topic reads an operand that may be malformed
 as `Unset` rather than raising, which is what a flag read in the pure section, before `execute`,
-must do:
+must do. Counting a `List` walks it, so `size` asks for the `linearSize` acknowledgement:
 
 ```scala
+import dysasymptotics.linearSize
+
 def tool3(args: List[Text]): Unit = application(args):
   val tags: Optional[List[Text]] = Flag[List[Text]](t"tag", repeatable = true)()
   val port: Optional[Int] = Flag[Optional[Int]](t"port")()

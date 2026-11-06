@@ -231,8 +231,10 @@ retried automatically, honoring the delay the provider asks for, before it is ra
 typecheck
 ##
 recover:
-  case Llm.Error(Llm.Error.Reason.Unauthorized, detail) => Out.println(t"check the API key")
-  case Llm.Error(Llm.Error.Reason.TooLarge, detail)     => Out.println(t"shorten the conversation")
+  case error: Llm.Error => error.reason match
+    case Llm.Error.Reason.Unauthorized => Out.println(t"check the API key")
+    case Llm.Error.Reason.TooLarge     => Out.println(t"shorten the conversation")
+    case _                             => Out.println(error.detail)
 . protect:
     claude.session(llm.ask(t"Hello"))
 ```

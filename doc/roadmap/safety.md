@@ -153,7 +153,7 @@ The escape hatches this track burns down were counted by hand, from baselines th
 between measurements: `safety-4`'s 929 was measured in August 2026 and had drifted past 1400
 before anyone recompiled the grep. Two ratchets covered a slice of the surface properly, per
 file and enforced — `etc/check-while-count.py` for `while`, `readUnchecked` and `charAt`, and
-`etc/check-stdlib-count.sh` for the `.stdlib` bridge, as one aggregate number over core sources
+`etc/check-stdlib-count.sh` for the `xs.stdlib` bridge, as one aggregate number over core sources
 only — and the rest was unmeasured.
 
 The flare plugin (pinned in `etc/tools`, configured by `.pyrocosm/flare/config.tel`, enabled
@@ -177,12 +177,12 @@ hatches that carry no reason tag — with the same `--update`/`--totals` semanti
 vocabulary lives in the script. Seeded 2026-10-09 (assumePure 366, assumeSeparate 261,
 untracked 397, erasedValue 50; 1068 hatches untagged) and re-seeded 2026-10-21 (assumePure 280,
 assumeSeparate 218, untracked 381, erasedValue 35, unsafeFrozen 333, unsafeJvm 336,
-erasedEvidence 84, anyRefCast 362, captureCast 383; untagged 0). The `.stdlib` ratchet was
+erasedEvidence 84, anyRefCast 362, captureCast 383; untagged 0). The `xs.stdlib` ratchet was
 folded in on 2026-10-26: the bridge is counted per file over core and test sources alike (the
 old script excluded tests, where 1000 of the uses were, and missed the `. stdlib` continuation
 form), benchmarks excepted, with three shape columns that read the residue as a queue — the
-dysasymptotic gate bypasses (`stdlibGate`: `.stdlib.head`, `.stdlib(i)`, the size reads),
-the round trips (`stdlibRound`: `.stdlib.toList`, `Array.from(xs.stdlib)`) and
+dysasymptotic gate bypasses (`stdlibGate`: `xs.stdlib.head`, `.stdlib(i)`, the size reads),
+the round trips (`stdlibRound`: `xs.stdlib.toList`, `Array.from(xs.stdlib)`) and
 `stdlibIterator` — plus `collectionImport` for `core-3`'s direct `scala.collection` imports;
 `--stdlib` lists the residue by what follows the bridge. Seeded at stdlib 1859 (gate 464,
 round 310, iterator 62), collectionImport 340. What remains is folding the `while` ratchet in.

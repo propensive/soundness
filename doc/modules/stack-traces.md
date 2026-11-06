@@ -119,7 +119,9 @@ passing a location by hand.
 An `Fqcn` is a fully-qualified class name that satisfies the JVM's rules — validated segments, no
 keywords — checked at compiletime by the `fqcn"…"` interpolator and at runtime by parsing:
 
-```scala
+```scala fuel
+compile
+##
 fqcn"com.example.Main"     // a valid Fqcn
 fqcn"com.example.class"    // does not compile: a Java keyword
 ```

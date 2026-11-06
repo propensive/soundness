@@ -2,7 +2,7 @@
 
 Soundness converts by abstraction, not by hand. A value changes type or shape through a
 typeclass (`Showable`, `Encodable`, `Decodable`, `Convertible`), a bridge that names the boundary
-it crosses (`.tt`, `.s`, `.stdlib`, `Array.unsafeFrozen`), or a method on the type itself. A
+it crosses (`.tt`, `.s`, `List.stdlib`, `Array.unsafeFrozen`), or a method on the type itself. A
 *coercion helper* is a small `def` — private, or local to a method — whose whole job is to get one
 value into the type the next line wants. It is not a solution; it is evidence that an abstraction
 is missing, insufficient, or present but unused, and it is where a simplistic or wrong conversion
@@ -32,7 +32,7 @@ runs it; `flare assess plumbing --show HEAD` prints the ranking recorded for a c
 | `if x == sentinel then Unset else x` | `x.puncture(sentinel)` |
 | `Option` to `Optional` by hand | `.optional` |
 | `try … catch` to `Optional` | `safely` |
-| `asInstanceOf` to reach a stdlib collection | `.stdlib` |
+| `asInstanceOf` to reach a stdlib collection | `stdlib` on the collection, as `List.stdlib` |
 | shuffling between 0- and 1-based indices | `.z`, `.u`, `.n0`, `.n1` |
 | the same `tag(out, char) = out.append(char.toByte)` copied into six atomizers | one extension on `Scribe[Byte]` |
 | `given Conversion[Int, Expression] = int => Number(int.toDouble)` | an `Expression.apply(Int)` or a `Decodable` |
@@ -50,7 +50,7 @@ its argument. Four shapes are legitimate.
    is a `Decodable`/`Parsable` instance is doing the work the abstraction exists for.
 2. **Computation.** `toJulianDay`, `convertBitDepthsToSymbols`, a CRC, a bit-field extraction:
    arithmetic on the value, not re-wrapping of it.
-3. **A boundary crossed once.** A single `.tt`, `.s`, `.nn`, `.stdlib` or `Array.unsafeJvm`
+3. **A boundary crossed once.** A single `.tt`, `.s`, `.nn`, `List.stdlib` or `Array.unsafeJvm`
    where Soundness meets the JDK, WASI or Scala.js, inline at the call that needs it. A helper
    that exists only to *name* that crossing is the smell; the crossing itself is not.
 4. **A hoist with a proof.** A local `def` pulled out of a lambda to dodge a compiler crash
@@ -69,17 +69,20 @@ shown. Do not follow references, guess at code you cannot see, or invent APIs.
 
 For each candidate, answer every criterion below with `true` or `false`. Answer from the code
 alone; the point values are for your information and the driver sums them, so do not compute a
-total. The **adapter list** referred to by S2 and S3 is exactly:
+total. The **adapter list** referred to by S2 and S3 is exactly these, and any bare constructor
+call `Name(…)` / `new Name(…)`:
 
-`.tt` `.s` `.nn` `.toString` `.toInt` `.toLong` `.toDouble` `.toByte` `.toChar` `.toList`
-`.toMap` `.toSeq` `.toArray` `.getBytes` `.stdlib` `Text(…)` `Array.unsafeFrozen(…)`
-`Array.unsafeJvm(…)` `asInstanceOf[…]` and any bare constructor call `Name(…)` / `new Name(…)`.
+```
+.tt .s .nn .toString .toInt .toLong .toDouble .toByte .toChar .toList
+.toMap .toSeq .toArray .getBytes .stdlib Text(…) Array.unsafeFrozen(…)
+Array.unsafeJvm(…) asInstanceOf[…]
+```
 
 | id | criterion | answer `true` when | points |
 | --- | --- | --- | --- |
 | S1 | single expression | the body is one expression: no `val`, `if`, `match`, `{…}` block, loop or second statement | +2 |
 | S2 | adapters only | every call in the body is on the adapter list or is a field access, with no arithmetic and no literals other than a charset or algorithm name (`"UTF-8"`, `"SHA-256"`) | +3 |
-| S3 | round trip | one chain both leaves and re-enters a representation: `.s … .tt`, `.toString … .tt`, `.stdlib … .to[…]`, `Array.unsafeJvm … Array.unsafeFrozen`, `.nn.tt` after a Java call on `.s` | +3 |
+| S3 | round trip | one chain both leaves and re-enters a representation: `.s … .tt`, `.toString … .tt`, `.stdlib … .to[…]`, `Array.unsafeJvm … Array.unsafeFrozen`, `.s … .nn.tt` around a Java call | +3 |
 | S4 | coercion verb | the name starts with `to`, `from`, `as`, `make`, `mk`, `convert`, `lift`, `wrap` or `unwrap` followed by a capital letter, or is exactly `text`, `string`, `bytes`, `number`, `decimal`, `hex`, `key` or `node` | +1 |
 | S5 | synonym of an existing operation | the name is `toList`, `toMap`, `toSeq`, `toArray`, `text`, `show`, `render`, `str`, `string`, `bytes`, `optional`, `orNull`, or the return type's name in lower case | +2 |
 | S6 | pure forwarder | the body is a single call to one method or constructor passing the parameters through unchanged, in order, possibly with one adapter applied to one of them | +3 |
@@ -93,11 +96,15 @@ total. The **adapter list** referred to by S2 and S3 is exactly:
 | X4 | codec-family name | the name starts with `read`, `write`, `parse`, `decode`, `encode`, `serialize` or `deserialize` | −2 |
 
 Then choose one `replacement` from this vocabulary only — the abstraction the call site should
-use instead — or `none` if you cannot tell:
+use instead — or `none` if you cannot tell. Entries are separated by spaces, except that
+`inline at call site` is a single entry:
 
-`.tt` `.s` `.show` `.as[T]` `.in[Text]` `.in[Data]` `.to[List]` `.to[Map]` `.stdlib`
-`.puncture` `.optional` `safely` `Enumerable` `Extractable` `Conversion→method` `extension`
-`inline at call site` `none`
+```
+.tt .s .show .as[T] .in[Text] .in[Data] .to[List] .to[Map] .stdlib
+.puncture .optional safely Enumerable Extractable Conversion→method extension
+inline at call site
+none
+```
 
 Finally give a one-sentence `reason`, quoting the fragment of the body that decided it.
 

@@ -174,7 +174,7 @@ model; §6, §11 and §12 spelling erasure as the discipline defines it rather t
 compiler computes it"; §7 losing the `LazyRef` clause; §14's promise becoming checkable in
 fact, since two toolchains can no longer disagree about a model only one of them builds. The
 verification is differential: run the new atomizer and the compiler-driven one over every
-`.tasty` Soundness publishes and demand identical (key, class, value) listings — the existing
+`*.tasty` Soundness publishes and demand identical (key, class, value) listings — the existing
 "a real module's TASTy atomizes" tests are the seed of that corpus — before the compiler-driven
 one is retired.
 

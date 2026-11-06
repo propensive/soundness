@@ -19,7 +19,7 @@ interface language.
 
 Interoperation usually discards the foreign type system at the border: a JavaScript call from
 Scala is a string, a C function a hand-declared binding, and the authoritative declarations — the
-`.d.ts`, the header, the IDL — sit unread while the programmer transcribes them, imperfectly, by
+`*.d.ts`, the header, the IDL — sit unread while the programmer transcribes them, imperfectly, by
 hand. The mistakes are exactly the ones the foreign compiler would have caught.
 
 Checking a foreign call against the foreign world's own definitions as the code compiles is [safety by construction](../philosophy/safety-by-construction.md) across a language boundary.

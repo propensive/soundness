@@ -40,7 +40,7 @@ true:
 ```scala fuel
 parse
 ##
-given (Tactic[CryptoError]) => PrivateKey is Showable = …
+given (Tactic[CryptoError]) => PrivateKey is Showable = ???
 ```
 
 The consequence is that the effective requirements of generic code are decided by the

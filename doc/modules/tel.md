@@ -91,8 +91,14 @@ hands out the text through an iterator, and a `Tel` is `Streamable` by `Text` on
 ```scala fuel
 typecheck
 ##
+import probates.cancelProbate
+
+val document = Person(t"Alice", 30).in[Tel]
+
 Tel.emit[Data](document, chunk => socket.write(chunk))
-Tel.lend(document)(region => interval => …)   // each block lent, not copied
+
+Tel.lend(document): region =>   // each block lent, not copied
+  interval => region.visit(interval)(index => sink.put(region(index)))
 
 supervise:
   Tel.emit(document).each(chunk => out.write(chunk))
@@ -365,24 +371,11 @@ selects by narrowing, scalars by tightening — decided by `Tels.Subtyping.subty
 reporting the first premise that fails; `Tels.Projection` restricts a document to what a
 supertype can address.
 
-Where the formats are Scala types, the acceptance and its reading are derived. A tuple names the
-accepted types in order of preference, and what arrives decodes to their union:
-
-```scala fuel
-typecheck
-##
-val accepting = Tel.Acceptance[(Contact, ContactV1)]()
-send(accepting.acceptance.framed)
-
-accepting.read(reply) match
-  case contact: Contact   => …
-  case contact: ContactV1 => …
-```
-
-Each type's required fields form the base a reader requires; its optional fields are offered as
-atoms, so two types that agree on their required fields interoperate however their optional
-fields differ. A field can instead be offered as part of a named layer. A layer is declared once,
-as an object whose name is part of its type, and a field is assigned to it with `@assign`:
+Where the formats are Scala types, the acceptance and its reading are derived. Each type's
+required fields form the base a reader requires; its optional fields are offered as atoms, so two
+types that agree on their required fields interoperate however their optional fields differ. A
+field can instead be offered as part of a named layer. A layer is declared once, as an object whose
+name is part of its type, and a field is assigned to it with `@assign`:
 
 ```scala fuel
 typecheck
@@ -391,6 +384,19 @@ object withPhone extends Tel.Layer("with-phone")
 
 case class Contact(name: Text, email: Optional[Text], @assign(withPhone) phone: Optional[Text])
 case class ContactV1(name: Text, email: Optional[Text])
+```
+
+A tuple names the accepted types in order of preference, and what arrives decodes to their union:
+
+```scala fuel
+typecheck
+##
+val accepting = Tel.Acceptance[(Contact, ContactV1)]()
+send(accepting.acceptance.framed)
+
+accepting.read(reply) match
+  case contact: Contact   => contact.name
+  case contact: ContactV1 => contact.name
 ```
 
 A layer can never add a case to a sum, but it can take cases away. A case of an `enum`, or of a

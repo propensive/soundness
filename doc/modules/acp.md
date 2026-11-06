@@ -60,7 +60,7 @@ supervise:
       . lay(Acp.Cancelled): option => Acp.Selected(option.optionId)
 
   . apply:
-      val session = Acp.connection.newSession(workingDirectory[Text])
+      val session = Acp.connection.newSession(summon[WorkingDirectory].directory())
       Acp.connection.prompt(session.sessionId, t"Fix the failing test")
 ```
 
@@ -80,7 +80,7 @@ Every handler reads its payload through a contextual accessor — `Acp.update`, 
 protocol's `SessionUpdate` cases:
 
 ```scala
-def register(using Acp.Registry^): Unit = Acp.updated:
+def register(using Acp.Registry): Unit = Acp.updated:
   Acp.update match
     case Acp.AgentMessageChunk(Acp.TextContent(text, _)) => Out.print(text)
     case Acp.AgentThoughtChunk(Acp.TextContent(text, _)) => Out.print(t"(thinking) $text")
@@ -99,7 +99,7 @@ with `Acp.Selected`, or answers `Acp.Cancelled`. The option kinds are `AllowOnce
 `RejectOnce` and `RejectAlways`, so a policy is a filter over them:
 
 ```scala
-def allowAlways(using Acp.Registry^): Unit = Acp.permission:
+def allowAlways(using Acp.Registry): Unit = Acp.permission:
   Acp.options.filter(_.kind == Acp.PermissionOptionKind.AllowAlways).head
   . lay(Acp.Cancelled): option => Acp.Selected(option.optionId)
 ```
@@ -114,10 +114,11 @@ its requests to write one. A read handler sees the `path`, and optionally a star
 ```scala
 import codepages.utf8Codepage
 import charsets.utf8Charset
+import textSanitizers.skipSanitizer
 import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.createNonexistentParents
 
-def files(using Acp.Registry^): Unit =
+def files(using Acp.Registry): Unit =
   Acp.readFile:
     Acp.path.as[Path on Linux].open[File]()(file.read[Text])
 

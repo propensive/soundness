@@ -85,6 +85,9 @@ one returning a `Stream` a server-streaming call — with payloads as Protocol B
 typecheck
 ##
 import threads.platformThreads
+import internetAccess.online
+import socketBackends.javaBaseSockets
+import probates.awaitProbate
 
 supervise:
   val endpoint = Endpoint(t"localhost", Port[Tcp](50051))
@@ -146,8 +149,10 @@ val client: Framed from Reply to Request = near.framed[Reply, Request]
 val server: Framed from Request to Reply = far.framed[Request, Reply]
 
 client.send(Request(1, t"hello"))
-val request = server.messages.next()            // Request(1, "hello")
-server.send(Reply(request.id, request.text.length))
+server.messages.next() match
+  case request: Request   => server.send(Reply(request.id, request.text.length))
+  case Iterator.Exhausted => ()
+
 client.messages.next()                          // Reply(1, 5)
 ```
 
@@ -159,7 +164,7 @@ in one chunk, and a final message with no terminator are all handled, because th
 own position rather than assuming chunk boundaries mean anything:
 
 ```scala
-Chain(t"one\ntwo\nth", t"ree").iterator.frames[Linefeed].to(List)
+Chain(t"one\ntwo\nth", t"ree").iterator.frames[Linefeed].to[List]
 // List("one", "two", "three")
 ```
 

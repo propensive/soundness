@@ -59,9 +59,9 @@ not label-based: every material change records itself in the next release's
 ## dist-3: LIRA exists
 
 Horizon: near → mid
-Baseline: the LIRA format implementation (then reliquary) reads and assembles `.lira` files, with unit round-trips of trees, atoms, deltas and manifests; no whole-release round-trip exists (measured 2026-09-25)
+Baseline: the LIRA format implementation (then reliquary) reads and assembles `*.lira` files, with unit round-trips of trees, atoms, deltas and manifests; no whole-release round-trip exists (measured 2026-09-25)
 
-The specification gets its reference implementation: a reader and writer for `.lira` files
+The specification gets its reference implementation: a reader and writer for `*.lira` files
 carrying classfiles, TASTy, Scala.js IR and Native IR with a TEL manifest, round-tripping the
 current Soundness artifacts. The `lira` repository's format modules (`Lira`, `LiraAssembler`,
 and the disciplines over anthology, degustation, mandible and xenophile) are that
@@ -69,7 +69,7 @@ implementation; what the criterion still wants is the scripted test over a real 
 against it.
 
 Done when: the reference implementation round-trips a Soundness release — every published
-component packed into `.lira` files and unpacked byte-identically — in a scripted test.
+component packed into `*.lira` files and unpacked byte-identically — in a scripted test.
 
 ## dist-4: API-derived versioning
 
@@ -88,10 +88,10 @@ should.
 Horizon: mid
 Needs: tool-4
 
-Publishing is a build-tool concern: fury packs, signs and publishes `.lira` files as part of
+Publishing is a build-tool concern: fury packs, signs and publishes `*.lira` files as part of
 its ordinary release flow.
 
-Done when: `fury publish` produces and publishes signed `.lira` files for a real release.
+Done when: `fury publish` produces and publishes signed `*.lira` files for a real release.
 
 ## dist-6: the trust infrastructure
 
@@ -100,7 +100,7 @@ Horizon: mid → long
 The rest of the LIRA distribution design: quantum-safe signatures, DNS-verified namespaces,
 and a transparency log, at minimum-viable scale.
 
-Done when: a `.lira` file's signature, namespace and transparency-log inclusion are all
+Done when: a `*.lira` file's signature, namespace and transparency-log inclusion are all
 verified by a single command shipped with the tooling.
 
 ## dist-7: LIRA publishing, attested
@@ -108,7 +108,7 @@ verified by a single command shipped with the tooling.
 Horizon: mid
 Needs: dist-3
 
-Every release is published as `.lira` files, attested under the same git-note discipline as
+Every release is published as `*.lira` files, attested under the same git-note discipline as
 the build itself. This is the gate's requirement: the channel that replaces Maven Central,
 live and verifiable.
 

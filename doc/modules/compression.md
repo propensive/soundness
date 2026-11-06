@@ -53,7 +53,7 @@ compressed.decompress[Gzip].utf8   // t"the quick brown fox jumps over the lazy 
 The same names attach to a stream, where they become pipeline stages: the data is transformed as
 it flows, and nothing larger than the pipeline's buffers is held. Writing a compressed
 [file](filesystem.md) and reading it back is the compressor and decompressor placed on either
-side of the disk:
+side of the disk, with `pump` delivering the compressed stream into the file's intake:
 
 ```scala
 import filesystemBackends.javaBaseFilesystem
@@ -63,7 +63,7 @@ import temporaryDirectories.javaBaseTemporaryDirectory
 val archive = temporaryDirectory[Path on Linux] / "compression" / Uuid().show / "fox.txt.gz"
 
 archive.create[File](CreateFlag.Parents): handle ?=>
-  handle.write(payload.stream.compress[Gzip])
+  payload.stream.compress[Gzip].pump(handle.intake())
 
 archive.open[File]()(file.stream.decompress[Gzip].read[Text])
 // t"the quick brown fox jumps over the lazy dog"
@@ -75,7 +75,7 @@ through a stream, and a stream's output decompresses as a value.
 ### The formats
 
 `Deflate` is the raw algorithm; `Zlib` adds its two-byte header and checksum; `Gzip` adds the
-header, timestamp and CRC that `.gz` files carry. These are the formats of HTTP content
+header, timestamp and CRC that `*.gz` files carry. These are the formats of HTTP content
 encoding, ZIP entries and PNG chunks, and they are the fastest of the set.
 
 ```scala
@@ -108,7 +108,7 @@ Both take the window size as WBITS (10 to 24), and `prefix` the maximum uncompre
 meta-block length, defaulting to the largest the format allows, `Brotli.Window` and
 `Brotli.Block`; both sides must use the same values.
 
-`Xz` is the high-ratio codec: LZMA2 inside the `.xz` container, with a CRC-64 check, matching
+`Xz` is the high-ratio codec: LZMA2 inside the `*.xz` container, with a CRC-64 check, matching
 what the `xz` command-line tool produces. `Lzma2` is the same codec without the container
 framing, standing to `Xz` as `Deflate` stands to `Gzip`. Both default to preset 6; presets 0 to
 3 favor speed and 4 to 9 favor ratio, and an explicit preset is selected with

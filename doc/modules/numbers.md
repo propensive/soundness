@@ -294,7 +294,9 @@ iterates the first two positions and its ordinals remain total to read.
 A number can carry its permitted range in its type, written with `~`. A literal outside the
 range is a compile error, caught where it is written:
 
-```scala
+```scala fuel
+compile
+##
 val portion: 0.0 ~ 1.0 = 0.2
 val tooMuch: 0.0 ~ 1.0 = 2.0   // does not compile: outside [0.0, 1.0]
 ```

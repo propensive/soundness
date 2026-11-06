@@ -202,9 +202,9 @@ frame
 frame
   label Written directly, by a derived printer
   code
-      given Worker is Xml.Printable = Inlinable.printable[Worker]
-
-      Worker(t"Alice", 30).in[Text over Xml]
+      val direct =
+        given Worker is Xml.Printable = Xml.Direct.derived[Worker].printable
+        Worker(t"Alice", 30).in[Text over Xml]
       // t"<Worker><name>Alice</name><age>30</age></Worker>", written directly
 ##
 ```
@@ -322,14 +322,15 @@ it to a single block instead, as described in the JSON tutorial.
 
 An element is updated through a lens, which reaches through several levels and may carry optics such
 as `Each` to touch every matching element at once. Because XML values are immutable, an update
-returns a new document:
+returns a new document. The lens and its optics are givens imported by name from `optics`:
 
 ```scala
 import dynamicAccess.dynamicXml
+import optics.{xmlEachOptical, xmlLens}
 
-val document = t"<doc><x>1</x><x>2</x><x>3</x></doc>".read[Xml]
-document.lens(_.x = x"<x>9</x>").show   // the first <x> replaced
-document.lens(_(Each) = x"<x>0</x>").show   // every <x> replaced
+val numbers = t"<doc><x>1</x><x>2</x><x>3</x></doc>".read[Xml]
+numbers.lens(_.x = x"<x>9</x>").show   // the first <x> replaced
+numbers.lens(_(Each) = x"<x>0</x>").show   // every <x> replaced
 ```
 
 The value on the right of the `=` need not be XML already: anything encodable in XML — a case
@@ -386,6 +387,8 @@ through an iterator, and a `Document[Xml]` is `Streamable` by `Text` on the same
 ```scala fuel
 typecheck
 ##
+import probates.cancelProbate
+
 supervise:
   Xml.emit(document).each(chunk => out.write(chunk))
 ```
@@ -437,11 +440,17 @@ schema declares:
 ```scala fuel
 typecheck
 ##
+import charsets.utf8Charset
 import classloaders.threadContextClassloader
+import textSanitizers.skipSanitizer
 
 object PurchaseOrder extends Xml.Provider(cp"/xsd/po.xsd")
+```
 
-val order = PurchaseOrder.record(document)
+```scala fuel
+typecheck
+##
+val order = PurchaseOrder.record(cp"/xsd/po.xml".read[Xml])
 order.shipTo.city                          // Text
 order.items.item.map(_.quantity)           // List[Long], a restriction of xs:positiveInteger
 order.comment                              // Optional[Text], from minOccurs="0"

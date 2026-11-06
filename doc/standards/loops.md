@@ -137,7 +137,7 @@ returning a *collection* (`Traversable`), never an iterator.
 A `scala.collection.Iterator` is reached only at a boundary: `Iterator.from(javaIterator)`
 and `Iterator.from(stdlibIterator)` wrap one on the way in, and `iterator.stdlib` hands one
 out to a stdlib or JDK API that insists on it, tagged `[stdlib-boundary]` as every bridge is.
-Everything that reached for `.stdlib.iterator` before had a native form: a stream or cursor
+Everything that reached for `xs.stdlib.iterator` before had a native form: a stream or cursor
 over a `Chain` is `Stream(chain)`/`Cursor(chain)`; a framer over a `Chain` is
 `chain.frames[F]`; a live chain is drained with `each`; a lockstep walk is `zip(…).each` or
 `indexed.each`; a lazy first-match scan is `fuse` with a by-name `or`.

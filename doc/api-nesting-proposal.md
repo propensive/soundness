@@ -518,7 +518,7 @@ A third instance of "a name used as data", and the first one no compiler could c
 sweep rewrote `scalar("AtomClass", "atom-class")` and `Reference(t"AtomClass")` inside
 reliquary's hand-encoded LIRA schemas — *string literals* naming a scalar in the
 specification, not references to the Scala type. Everything compiled; one test out of 11,065
-failed, comparing the hand-encoded schema against the `.tel` resource that still said
+failed, comparing the hand-encoded schema against the `*.tel` resource that still said
 `AtomClass`. Only `make attest` found it.
 
 The check that generalises: after a sweep, look for literals whose entire content is a bare

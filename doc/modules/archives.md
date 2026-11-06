@@ -35,6 +35,7 @@ import charsets.utf8Charset
 import textSanitizers.skipSanitizer
 import filesystemBackends.javaBaseFilesystem
 import filesystemOptions.createNonexistentParents
+import filesystemOptions.deleteRecursively
 import logging.silentLogging
 import pathInterfaces.pathOnLinux
 import strategies.throwUnsafely
@@ -159,7 +160,7 @@ the open handle:
 ```scala
 val tarPath = work / "hello.tar.gz"
 tarPath.create[File](): handle ?=>
-  handle.write(tarball.gzip)
+  handle.write(tarball.gzip.memoize)
 
 tarPath.open[Tar](Tar.Flag.Gzip):
   tar.entries.map(_.entryName)
@@ -168,7 +169,7 @@ tarPath.open[Tar](Tar.Flag.Gzip):
 A tarball unpacks onto the [filesystem](filesystem.md) with `extractTo`:
 
 ```scala
-val unpacked = work / "unpacked"
+val unpacked: Path on Linux = work / "unpacked"
 tarball.extractTo(unpacked)
 ```
 
@@ -208,7 +209,7 @@ unpacked.archive[Zip](Zip.Compression.Stored)
 
 ### Ar
 
-`ar` is the container of every `.deb` package and every `.a` static library: an eight-byte magic,
+`ar` is the container of every `*.deb` package and every `*.a` static library: an eight-byte magic,
 then a flat run of members, each a sixty-byte header followed inline by its payload. It carries no
 entry types, no checksum and no end-of-archive marker, so a member is just a name, its Unix
 metadata and a body. `Ar.Entry` builds one; the `mode` is the raw octal field (`100644`), since
@@ -224,14 +225,14 @@ deb.source[Data]
 Reading mirrors `Tarfile.read`: entries parse lazily off a byte stream, single-pass and in
 order, with each member's body streamed in bounded chunks and memoized if the sequence advances
 past it. Opening as `Ar` scopes the source in the same way as `Tar`, with `ar` as the handle;
-there are no flags, because a `.deb` is plain `ar` and only its members are compressed:
+there are no flags, because a `*.deb` is plain `ar` and only its members are compressed:
 
 ```scala
 Arfile.read(deb.source[Data]).map(_.name)    // List(t"control.tar.xz")
 
 val debPath = work / "hello.deb"
 debPath.create[File](): handle ?=>
-  handle.write(deb.source[Data])
+  handle.write(deb)
 
 debPath.open[Ar]():
   ar.entries.map(_.name)

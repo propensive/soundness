@@ -178,8 +178,10 @@ dictionary around it; `addResource` names it on a page so content can select it:
 ```scala fuel
 typecheck
 ##
+import classloaders.threadContextClassloader
+
 PdfFile(path).open(Read & Write): doc ?=>
-  val font = doc.embedFont(Sfnt(cp"/fonts/text.ttf"), t"MyFont")
+  val font = doc.embedFont(Sfnt(Classpath / "fonts" / "text.ttf"), t"MyFont")
   doc.addResource(doc.page(Prim), t"Font", t"F1", font)
 ```
 
@@ -193,7 +195,7 @@ and TIFF predictors that often follow them. The payload arrives as a
 ```scala
 PdfFile(path).open():
   pdf(2, 0) match
-    case body: Cos.Body => pdf.spring(body)().read[Data].length
+    case body: Cos.Body => pdf.spring(body).read[Data].length
     case _              => 0
 ```
 

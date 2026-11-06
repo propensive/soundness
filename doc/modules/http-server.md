@@ -27,12 +27,14 @@ A Soundness handler is a block of code; everything else is values. Everything co
 ```scala
 import soundness.*
 
+import charsets.utf8Charset
 import codepages.utf8Codepage
 import errorDiagnostics.stackTracesDiagnostics
 import formatting.compactJsonFormatting
 import logging.silentLogging
 import probates.awaitProbate
 import strategies.throwUnsafely
+import textSanitizers.skipSanitizer
 import threads.virtualThreads
 import webserverErrorPages.minimalErrorPage
 ```

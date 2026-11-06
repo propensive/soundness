@@ -46,12 +46,16 @@ typecheck
 ##
 import socketBackends.javaBaseSockets
 import discoveryBackends.mdnsSockets
+import threads.virtualThreads
+import probates.awaitProbate
+import logging.silentLogging
 
 supervise:
   val description = Discovery.Description(t"Gondor", tcp"8443", txt)
 
   fury.advertise(description):
-    serve()   // the instance is `summon[Discovery.Advertisement].instance`
+    // advertised until the block ends, under the name it was claimed with
+    summon[Discovery.Advertisement].instance.dnsName
 ```
 
 ### Browsing and resolving
@@ -63,12 +67,16 @@ an instance yields its host name, port, TXT record and addresses, within a timeo
 ```scala fuel
 typecheck
 ##
+import abstractables.millisecondsAbstractable
+
+val found: Promise[List[Endpoint[Port]]] = Promise()
+
 supervise:
   fury.browse:
     summon[Discovery.Browser].events.each:
       case Discovery.Event.Found(instance) =>
         val resolution = instance.resolve(5000L)
-        if resolution.txt(t"fingerprint") == t"ab12" then connect(resolution.endpoints)
+        if resolution.txt(t"fingerprint") == t"ab12" then found.offer(resolution.endpoints)
 
       case Discovery.Event.Lost(instance) => ()
 ```

@@ -170,11 +170,11 @@ property text:
 
 ```scala
 val platform: Optional[Text] = (System.os, System.architecture) match
-  case (Os.Linux, Architecture.X86(64))   => t"linux-x64"
-  case (Os.Linux, Architecture.Arm(64))   => t"linux-arm64"
-  case (Os.MacOs, Architecture.Arm(64))   => t"macos-arm64"
-  case (Os.Windows, Architecture.X86(64)) => t"windows-x64"
-  case _                                  => Unset
+  case (Os.Linux, Architecture.X86(_: 64))   => t"linux-x64"
+  case (Os.Linux, Architecture.Arm(_: 64))   => t"linux-arm64"
+  case (Os.MacOs, Architecture.Arm(_: 64))   => t"macos-arm64"
+  case (Os.Windows, Architecture.X86(_: 64)) => t"windows-x64"
+  case _                                     => Unset
 ```
 
 The third facet of the platform is the virtual machine itself. `Vm` names it, and is where the

@@ -225,7 +225,7 @@ since neither records an entry point.
 
 ### WASI components
 
-A WASI component — a `Wasi(Wasi.Version.Wasip2)`, a component-model `.wasm` whose imports and
+A WASI component — a `Wasi(Wasi.Version.Wasip2)`, a component-model `*.wasm` whose imports and
 exports are described by WIT — has two prerequisites beyond the linker, both demanded by the edge
 provider, so an edge without them cannot be constructed: a `WasiToolchain`, evidence that the
 native tools the link shells out to (`wasm-tools` and the scala-wasm fork of `wit-bindgen`) are

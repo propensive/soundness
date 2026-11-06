@@ -38,7 +38,9 @@ PostScript outlines, so the font is an `Opentype`; otherwise it is a `Truetype`:
 ```scala fuel
 typecheck
 ##
-val font: Sfnt = Sfnt(cp"/fonts/text.ttf")
+import classloaders.threadContextClassloader
+
+val font: Sfnt = Sfnt(t"/fonts/text.ttf".as[Path on Classpath])
 
 font match
   case truetype: Truetype => truetype.subset(t"Hello")   // glyph outlines are TrueType
@@ -126,9 +128,10 @@ font and which faces it can then set, and it is declared once, as a given:
 typecheck
 ##
 object fonts:
-  val interFile: Sfnt = Sfnt(cp"/fonts/Inter-Variable.ttf")
+  val interFile: Sfnt = Sfnt(t"/fonts/Inter-Variable.ttf".as[Path on Classpath])
 
-  given inter: (Typeface of "Inter") is Typesettable in Medium = Typesettable.embedded(interFile)
+  given interProvision: (Typeface of "Inter") is Typesettable in Medium =
+    Typesettable.embedded(interFile)
 ```
 
 A font file can be carried in any document, so an embedded provision is `in Medium`, the medium
@@ -152,7 +155,7 @@ pairing rather than a synthesized or silently ignored rendering:
 ```scala fuel
 typecheck
 ##
-import fonts.inter
+import fonts.interProvision
 
 val label: Font in Web = Web.font(inter.bold)
 ```
@@ -170,7 +173,7 @@ classpath resource keeps the resource's path as its `Locus`:
 ```scala fuel
 typecheck
 ##
-given inter: ((Typeface of "Inter") is Typesettable in Medium at "/fonts/Inter.ttf") =
+given interResource: ((Typeface of "Inter") is Typesettable in Medium at "/fonts/Inter.ttf") =
   Typesettable.embedded(cp"/fonts/Inter.ttf")
 ```
 

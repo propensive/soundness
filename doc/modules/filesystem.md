@@ -365,6 +365,8 @@ the XDG data directories holds it, a configuration file in the first of several 
 the corresponding plane resolves with `search` to the first stem holding it, or `Unset`:
 
 ```scala
+import galilei.search
+
 given Searchpaths.Stems on Xdg.Data onto Linux = new Searchpaths.Stems:
   type Plane = Xdg.Data
   type Target = Linux

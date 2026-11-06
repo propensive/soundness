@@ -25,10 +25,12 @@ Derivation is what makes [small APIs](../philosophy/small-apis.md) possible: a t
 
 Soundness's engine — the successor to Magnolia — provides exactly that, as ordinary inheritance
 rather than macro-writing. Everything comes from the `soundness` package, with the complexity
-import that permits indexing the arrays of fields a derivation produces:
+import that permits indexing the arrays of fields a derivation produces, and an explicit import of
+the field's `label`, whose name the umbrella shares with a browser element's:
 
 ```scala
 import soundness.*
+import wisteria.label
 import dysasymptotics.linearAccess
 import strategies.throwUnsafely
 ```
@@ -88,11 +90,14 @@ object Presentation extends Derivation[Presentation]:
   given Presentation[Text] = identity(_)
   given Presentation[Int] = _.toString.tt
 
+  def assemble(name: Text, fields: Array[Text]): Text = fields.join(t"$name(", t", ", t")")
+
   inline def conjunction[derivation <: Product: ProductReflection]: Presentation[derivation] =
     value =>
-      fields(value):
+      val rendered = fields(value):
         [field] => field => t"$label=${contextual.present(field)}"
-      . join(t"${typeName[derivation]}(", t", ", t")")
+
+      assemble(typeName[derivation], rendered)
 
   inline def disjunction[derivation: SumReflection]: Presentation[derivation] =
     value =>
@@ -106,6 +111,10 @@ extension [value](value: value)
 `fields` folds over a product's fields, giving each one its `label`, its position, and the
 `contextual` instance of the typeclass for its type; `variant` dispatches on a coproduct's actual
 case. That is the whole cost of derivation for a typeclass.
+
+An operation that needs a typeclass instance of its own — `join`, here — goes in an ordinary method
+such as `assemble`, beside the inline ones, so that its instance is resolved once, where the method
+is defined, rather than afresh in the code of every expansion.
 
 The `[field] => field => …` syntax is a *polymorphic lambda*, and it is worth a moment because it
 is the one unfamiliar piece. It stands to a polymorphic method exactly as an ordinary lambda
@@ -154,10 +163,12 @@ object Labels extends ProductDerivation[Labels]:
   given Labels[Text] = new Labels[Text] { def labels: List[Text] = Nil }
   given Labels[Int] = new Labels[Int] { def labels: List[Text] = Nil }
 
+  def list(labels: Array[Text]): List[Text] = labels.to[List]
+
   inline def conjunction[derivation <: Product: ProductReflection]: Labels[derivation] =
-    val fieldLabels = contexts[derivation]() { [field] => context => label }
+    val fieldLabels = list(contexts[derivation]() { [field] => context => label })
     new Labels[derivation]:
-      def labels: List[Text] = fieldLabels.to[List]
+      def labels: List[Text] = fieldLabels
 
 case class Empty()
 
@@ -186,15 +197,18 @@ object Parsing extends ProductDerivation[Parsing]:
   given Parsing[Text] = identity(_)
   given Parsing[Int] = _.s.toInt
 
+  def column(text: Text, index: Int): Optional[Text] = text.cut(t",")(Ordinal.zerary(index))
+
   inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
     text =>
-      val columns = text.cut(t",")
       build[derivation]:
-        [field] => parsing => parsing.parse(columns(Ordinal.zerary(index)).or(t""))
+        [field] => parsing => parsing.parse(column(text, index).or(t""))
 
-t"Ada,36".read[Person]   // does not compile: Parsing is the typeclass, not Readable
 Parsing.derived[Person].parse(t"Ada,36")   // Person(t"Ada", 36)
 ```
+
+`Parsing` is a typeclass of its own, not the `Readable` that `read` looks for, so
+`t"Ada,36".read[Person]` does not compile: its instances are reached through `derived`.
 
 The sum counterpart is `delegate`, which takes the label of the variant to build and dispatches to
 that variant's instance. Unlike `variant`, which can read the answer off a value it was given,
@@ -203,12 +217,14 @@ a `Date:` or `DateTime:` prefix — and a label naming no variant raises a `Vari
 
 ```scala
 object ParsingSums extends Derivation[Parsing]:
+  def split(text: Text): List[Text] = text.cut(t":")
+
   inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
     Parsing.conjunction[derivation]
 
   inline def disjunction[derivation: SumReflection]: Parsing[derivation] =
     text =>
-      text.cut(t":") match
+      split(text) match
         case List(prefix: Text, rest: Text) =>
           delegate[derivation](prefix):
             [variant <: derivation] => parsing => parsing.parse(rest)
@@ -241,13 +257,15 @@ object Equivalence extends Derivation[Equivalence]:
   given Equivalence[Int] = _ == _
   given Equivalence[Text] = _.lower == _.lower
 
+  def every(results: Array[Boolean]): Boolean = results.all { boolean => boolean }
+
   inline def conjunction[derivation <: Product: ProductReflection]: Equivalence[derivation] =
     (left, right) =>
-      contexts[derivation]():
-        [field] => equivalence =>
-          val extract: derivation => field = dereference
-          equivalence.equal(extract(left), extract(right))
-      . all { boolean => boolean }
+      every:
+        contexts[derivation]():
+          [field] => equivalence =>
+            val extract: derivation => field = dereference
+            equivalence.equal(extract(left), extract(right))
 
   inline def disjunction[derivation: SumReflection]: Equivalence[derivation] =
     (left, right) =>
@@ -310,9 +328,8 @@ frame
 
         inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
           text =>
-            val columns = text.cut(t",")
             build[derivation]:
-              [field] => parsing => parsing.parse(columns(Ordinal.zerary(index)).or(t""))
+              [field] => parsing => parsing.parse(Parsing.column(text, index).or(t""))
 frame
   label A missing column takes the field's default
   code
@@ -322,11 +339,11 @@ frame
 
         inline def conjunction[derivation <: Product: ProductReflection]: Parsing[derivation] =
           text =>
-            val columns = text.cut(t",")
             build[derivation]:
               [field] => parsing =>
-                columns(Ordinal.zerary(index)).let(parsing.parse(_))
-                . or(default.or(panic(m"no column and no default for $label")))
+                val column = Parsing.column(text, index)
+                if column == Unset then default.or(panic(m"no column and no default for $label"))
+                else parsing.parse(column.or(t""))
 
       case class Settings(name: Text, retries: Int = 3)
 
@@ -425,15 +442,19 @@ Occasionally one field of one type needs a different instance from the default �
 for one column, an override for one path. `specifically` builds such an override map by naming the
 paths, checked against the type's actual structure:
 
-```scala fuel
-typecheck
-##
+```scala
 case class Org(cto: Person, ceo: Person)
 
-val custom: Org is Specific over (Codec in Json) =
+val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
+
+given (Org is Specific over Json.Encodable) =
   specifically:
-    case root.cto.name() => nameCodec
-    case root.ceo.age()  => ageCodec
+    case root.ceo.name() => shout
+
+import formatting.compactJsonFormatting
+
+Org(Person(t"Ada", 36), Person(t"Bob", 40)).in[Json].show
+// t"""{"cto":{"name":"Ada","age":36},"ceo":{"name":"BOB","age":40}}"""
 ```
 
 A misspelled path, or an instance of the wrong type for its field, is a compile error; a derivation

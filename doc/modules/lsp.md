@@ -47,6 +47,8 @@ import termcapDefinitions.basicTermcap
 import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 import threads.virtualThreads
+import workingDirectories.javaBaseWorkingDirectory
+import environments.javaBaseEnvironment
 ```
 
 ### Defining a server
@@ -116,14 +118,19 @@ a server pushes diagnostics — errors and warnings — rather than waiting to b
 ```scala fuel
 typecheck
 ##
-  opened:
-    client.publishDiagnostics
-      ( document.uri,
-        List
-          ( Diagnostic
-              ( range    = document.fullRange,
-                severity = DiagnosticSeverity.Warning,
-                message  = t"a diagnostic for the whole document" ) ) )
+object DiagnosingServer:
+  import Lsp.*
+
+  def serve(): Unit = supervise:
+    Lsp.listen(t"Diagnosing", t"0.1.0"):
+      opened:
+        client.publishDiagnostics
+          ( document.uri,
+            List
+              ( Diagnostic
+                  ( range    = document.fullRange,
+                    severity = DiagnosticSeverity.Warning,
+                    message  = t"a diagnostic for the whole document" ) ) )
 ```
 
 `client` also carries `showMessage` and `logMessage`, for notices shown to the user and
@@ -228,10 +235,15 @@ messages there are two more hooks — `rewrite.outbound` and `rewrite.inbound` �
 returning what should become of the message:
 
 ```scala fuel
-typecheck
+parse
 ##
-rewrite.outbound: (method, message) =>
-  if method == t"textDocument/inlineValue" then Transit.Drop else Transit.Forward
+object QuietProxy:
+  import Lsp.*
+
+  def serve(): Unit = supervise:
+    Lsp.proxy(Lsp.Server(sh"rust-analyzer")):
+      rewrite.outbound: (method, message) =>
+        if method == t"textDocument/inlineValue" then Transit.Drop else Transit.Forward
 ```
 
 `Transit.Forward` passes the message on, `Transit.Rewrite` passes on a different one,
@@ -244,17 +256,24 @@ own — typically for the project state only the server knows — and `rewrite.c
 once, on a task of its own, as soon as that session is open:
 
 ```scala fuel
-typecheck
+parse
 ##
-Lsp.proxy(Lsp.Server(sh"jdtls")):
-  val classpath: Promise[Json] = Promise()
+object ClasspathProxy:
+  import Lsp.*
+  import formatting.compactJsonFormatting
 
-  rewrite.connected:
-    classpath.offer(upstream.execute(t"java.project.getClasspaths", arguments).or(Json()))
+  def serve(): Unit = supervise:
+    Lsp.proxy(Lsp.Server(sh"jdtls")):
+      val classpath: Promise[Json] = Promise()
 
-  rewrite.inbound: (method, message) =>
-    if method == t"language/status" then async(refresh(classpath.await()))
-    Transit.Forward
+      rewrite.connected:
+        classpath.offer(upstream.execute(t"java.project.getClasspaths").or(List[Text]().in[Json]))
+
+      rewrite.inbound: (method, message) =>
+        if method == t"language/status"
+        then async(Err.println(t"classpath: ${classpath.await()}"))
+
+        Transit.Forward
 ```
 
 Answers come back to the caller that asked for them, and never reach the editor: a response
