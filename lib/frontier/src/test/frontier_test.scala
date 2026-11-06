@@ -75,6 +75,12 @@ object Tests extends Suite("givens", m"Frontier Tests"):
     object WithoutPolicy:
       val chosen: Choice = summon[Choice]
 
+  // An inline body whose `join` must resolve, at the test's own compilation
+  // under the umbrella's catch-all, to the companion instance with `result`
+  // inferred as `Text` (#2422).
+  object Inlined:
+    inline def joined(xs: List[Text]): Text = xs.join(t", ")
+
   def run(): Unit =
     suite(m"Rendering a diagnostic"):
       def found(name: Text): Diagnostic = Diagnostic.Found(name, Unset, Nil)
@@ -349,6 +355,32 @@ object Tests extends Suite("givens", m"Frontier Tests"):
         val y = List(t"a", t"b").map(_.upper).join
       . filter(_.error).map(_.message)
     . assert(_ == Nil)
+
+    // Inside an inline method's body no inline call is expanded, so the catch-all
+    // cannot run its macro while it is tried; it must then fail as a candidate
+    // instead of being accepted unexpanded ahead of the companion's instance,
+    // which would both shadow that instance and leave the call's type variables
+    // unconstrained until the enclosing method is inlined (#2422).
+
+    test(m"a join inside an inline def resolves its companion given"):
+      demilitarize:
+        import soundness.*
+        inline def joined(xs: List[Text]): Text = xs.join(t", ")
+        val y: Text = joined(List(t"a", t"b"))
+      . filter(_.error).map(_.message)
+    . assert(_ == Nil)
+
+    test(m"a join inside an inline def's lambda resolves its companion given"):
+      demilitarize:
+        import soundness.*
+        inline def render(xs: List[Text]): Text => Text = prefix => prefix+xs.join(t", ")
+        val y: Text = render(List(t"a", t"b"))(t"> ")
+      . filter(_.error).map(_.message)
+    . assert(_ == Nil)
+
+    test(m"a join inside an inline def infers its result from the companion given"):
+      Inlined.joined(List(t"a", t"b"))
+    . assert(_ == t"a, b")
 
     test(m"a bare join compiles with the frontier.context catch-all in scope"):
       demilitarize:
