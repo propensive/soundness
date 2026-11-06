@@ -13,8 +13,8 @@ detail
     ```text
     contextual value not found
 
-     ■ resolving DecimalConverter
-     └─ ▸ propose decimalConverters.javaDecimalConverter
+      ■ resolving DecimalConverter
+      └─ ▸ propose decimalConverters.javaDecimalConverter
     ```
 
     It works through a single catch-all given, `explainMissingContext`, of type `[any] => any`,

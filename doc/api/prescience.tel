@@ -160,25 +160,25 @@ entry .IntInlinable   a static `Int is Inlinable` which parses the trimmed field
   detail
       The generated code is `Integer.parseInt` of the trimmed text. Its `#readRuntime` throws an
       `AssertionError`, since it exists to prove that tier A evaluated it at expansion time.
-  entry #Self   `Int`
-  entry #read   the code which parses a trimmed `String` expression as an `Int`
-  entry #readRuntime   always throws: this instance is meant only to be inlined
+  entry .Self   `Int`
+  entry .read   the code which parses a trimmed `String` expression as an `Int`
+  entry .readRuntime   always throws: this instance is meant only to be inlined
 
 entry .StringInlinable   a static `String is Inlinable` whose generated code is the field text itself
   detail
       Its `#readRuntime` throws an `AssertionError`, since it exists to prove that tier A
       evaluated it at expansion time.
-  entry #Self   `String`
-  entry #read   the field's `String` expression, unchanged
-  entry #readRuntime   always throws: this instance is meant only to be inlined
+  entry .Self   `String`
+  entry .read   the field's `String` expression, unchanged
+  entry .readRuntime   always throws: this instance is meant only to be inlined
 
 entry .BooleanInlinable   a static `Boolean is Inlinable` which parses the trimmed field text as a Boolean
   detail
       The generated code is `java.lang.Boolean.parseBoolean` of the trimmed text, so anything but
       `true` (in any case) is `false`. Its `#readRuntime` throws an `AssertionError`.
-  entry #Self   `Boolean`
-  entry #read   the code which parses a trimmed `String` expression as a `Boolean`
-  entry #readRuntime   always throws: this instance is meant only to be inlined
+  entry .Self   `Boolean`
+  entry .read   the code which parses a trimmed `String` expression as a `Boolean`
+  entry .readRuntime   always throws: this instance is meant only to be inlined
 
 entry .Celsius   a sample type whose conditional companion given only the staging tier can evaluate
   detail

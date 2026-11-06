@@ -195,25 +195,25 @@ entry .Pdf   an open PDF document: the scoped capability every read and edit res
         The reasons, by number:
 
         1. `NotPdf` — _the file does not begin with a PDF header_: no `%PDF-` in the first
-           kibibyte.
+            kibibyte.
         2. `Truncated` — _the PDF file ended unexpectedly_: the parser ran off the end of the
-           file inside an object.
+            file inside an object.
         3. `MissingStartxref` — _no startxref keyword could be found at the end of the file_.
         4. `MalformedXref(offset)` — _the cross-reference section at offset `offset` could
-           not be interpreted_.
+            not be interpreted_.
         5. `Unparseable(offset, expected)` — _`expected` was expected at offset `offset`_:
-           a syntax error in an object, naming what the parser wanted (an object, a name
-           key, the keyword `endobj`, a stream dictionary).
+            a syntax error in an object, naming what the parser wanted (an object, a name
+            key, the keyword `endobj`, a stream dictionary).
         6. `MissingObject(objectNumber, generation)` — _the object `N` `G` was missing or
-           invalid_: an object the cross-reference stream says is compressed could not be
-           found in its container.
+            invalid_: an object the cross-reference stream says is compressed could not be
+            found in its container.
         7. `CircularReference(objectNumber)` — _resolving the object `N` returned to
-           itself_.
+            itself_.
         8. `MissingEntry(key)` — _the required dictionary entry `key` was absent_: no
-           `/Root`, no `/Pages`, a page with no `/MediaBox`, an attachment with no `/EF`.
+            `/Root`, no `/Pages`, a page with no `/MediaBox`, an attachment with no `/EF`.
         9. `TypeMismatch(key, expected)` — _the dictionary entry `key` was not `expected`_:
-           a `/Filter` which is neither a name nor an array of names, `/DecodeParms` which is
-           not a dictionary, a `/Pages` entry which is not a reference.
+            a `/Filter` which is neither a name nor an array of names, `/DecodeParms` which is
+            not a dictionary, a `/Pages` entry which is not a reference.
         10. `UnknownFilter(name)` — _the stream filter `name` is not recognized_.
         11. `CorruptStream(filter)` — _a stream could not be decoded with the `filter`
             filter_: the named codec (`FlateDecode`, `LZWDecode`, `ASCII85Decode`,

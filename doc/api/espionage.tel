@@ -1075,13 +1075,3 @@ entry .AcpClient   the client's whole interface, as the agent calls it: session,
     `Acp.connect` builds implements it, with one generated JSON-RPC dispatcher per part, so
     a program implements it itself only to serve the protocol by other means than
     `Acp.connect`.
-
-entry .DemoAcpClient   a complete, minimal ACP client, in `espionage.demo`
-    The `main` class of the `espionage.demo` component: a command-line program (ethereal's
-    `cli` and `execute`, with the `completionsExecutive`) which launches `claude-code-acp`
-    from the path, opens a session in the current working directory, sends its command-line
-    arguments as one prompt, prints the agent's answer as it streams, grants every
-    permission the agent asks for with the first `AllowOnce` option, and prints the turn's
-    `StopReason`. It writes `import Acp.*` inside its object, the recommended way to use the
-    handler vocabulary without colliding with other libraries' names. Not exported to the
-    `soundness` umbrella.

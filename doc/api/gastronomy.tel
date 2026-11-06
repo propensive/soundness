@@ -389,7 +389,6 @@ entry .Digester   a sequence of digest steps over one accumulator, run when an a
       `digest[algorithm]` on a value is a one-step digester. The empty digester is
       `Digester(_ => ())`.
   refer gastronomy.digest
-  entry .apply   `Digester(run)`: a digester from a pure function over the accumulator
   entry #run   the steps, as a pure function from a fresh `Digestion^` to `Unit`
   entry #apply   runs the steps in a fresh accumulator for `algorithm` and returns the `Digest`
       `digester.apply[Sha2[256]]` needs a `Hash in Sha2[256]` from

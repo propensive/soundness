@@ -1152,20 +1152,3 @@ entry .Transcoder   re-encodes a Windows console's input from its code page to U
     more of the client's input is taken from the connection than the invocation asked for.
     `cli` wraps the session's stdin in one when the code page calls for it; `available()`
     is the pending bytes of the last character, and `close()` closes the underlying reader.
-
-entry .run   the demo entry point: a daemon which prints _Hello world_
-    In `ethereal.example`: the `cli` application the tutorial begins with, in full — the
-    four named givens (`backstops.stackTraceBackstop`, `executives.completionsExecutive`,
-    `interpreters.posixInterpreter`, `threads.virtualThreads`) and a body which prints
-    `Hello world` and exits with `Exit.Ok`. Built with `xek build`, its first invocation
-    starts the daemon and every later one returns at once.
-
-entry .fixture   the test fixture entry point: a daemon whose first argument chooses what it exercises
-    In `ethereal.example`: the `cli` application the test suite builds into a launcher and
-    drives through a shell. Its first argument selects a behaviour — `args` and `lines`
-    echo the rest, `echo` and `stderr` write to a stream, `exit` fails with a status,
-    `sleep` waits, `env` prints a variable of the invocation's environment, `pid` the
-    daemon's pid, `pwd` the invocation's working directory, `cat` and `cooked` read a line
-    of stdin raw or in a cooked block, `version` the build id, and the `signal` and
-    `trap-…` forms install traps which report what reaches them — and anything else fails
-    with status 1. It is a working catalogue of the invocation-side API.

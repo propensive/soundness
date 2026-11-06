@@ -796,11 +796,6 @@ entry .ForeignLibrary   loads native libraries and resolves C symbols, on the JV
       `IllegalArgumentException` (JVM) or panics (Scala Native) naming the paths. A registered
       library is never unloaded. Register before the first call, from the provider's object
       initializer, so no concurrent call races the registration.
-  entry .resolve   a C symbol's address from the registered libraries, then the default lookup; panics if unbound
-      Scala Native only: what `NativeInvoke`'s emitted call looks each symbol up with. The
-      registered handles are searched newest first, then `dlopen(null)`; a symbol nowhere is
-      _xenophile: unresolved native symbol name (is its library registered?)_, rather than a
-      null function pointer.
   entry .downcall   a cached Panama `MethodHandle` for a symbol, found wherever it lives
       JVM only: what `PanamaInvoke`'s emitted call binds with. The symbol is searched in the
       default lookup and every registered library, bound to the given `FunctionDescriptor`,

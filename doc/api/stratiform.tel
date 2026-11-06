@@ -3696,16 +3696,16 @@ entry .SchemaResolver   resolves a pragma's schema identification to a composed,
 
       0. the embedded schema of a self-contained BinTEL container, when one is passed;
       1. the built-ins — the `tels` meta-schema and the `acceptance` schema — by their pinned
-         coordinates (`specification.tel/tels:2.0.0`, with or without the version pin) or by
-         their signatures, with no network access;
+          coordinates (`specification.tel/tels:2.0.0`, with or without the version pin) or by
+          their signatures, with no network access;
       2. every content-addressed `Tels.Resolution.Store` (a schema cache, a LIRA store), by
-         signature;
+          signature;
       3. the *library* of schema documents already in hand, by signature, using the layer
-         selections as decomposition hints;
+          selections as decomposition hints;
       4. a `Tels.Resolution.Delegate` (LIRA resolution), by signature or by selector, caching
-         what it returns in the first store;
+          what it returns in the first store;
       5. failure, as `Tels.Resolution.Error(Unresolved(step, identifier))` naming the deepest
-         step attempted.
+          step attempted.
 
       Every retrieved schema body is verified: its signature over the base plus the pragma's
       selected layers, recomputed with `SchemaSignature.verifySelection`, must match the

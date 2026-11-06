@@ -228,10 +228,10 @@ entry .KeywordPattern   a trie over reversed lexeme contexts, answering which ke
       val tree = KeywordPattern
         ( Unset,
           List
-           ( Element.Exact(Lexeme.Keyword(t"inline")) -> KeywordPattern
-               ( Keywords(definition.keywords + t"if"),
-                 List(Element.Exact(Lexeme.Keyword(t"transparent")) -> KeywordPattern(definition)) ),
-             Element.Exact(Lexeme.Symbol(t".")) -> KeywordPattern(Keywords(Set(), Expectation.Nothing)) ) )
+            ( Element.Exact(Lexeme.Keyword(t"inline")) -> KeywordPattern
+                ( Keywords(definition.keywords + t"if"),
+                  List(Element.Exact(Lexeme.Keyword(t"transparent")) -> KeywordPattern(definition)) ),
+              Element.Exact(Lexeme.Symbol(t".")) -> KeywordPattern(Keywords(Set(), Expectation.Nothing)) ) )
 
       tree(List(Lexeme.Keyword(t"inline"), Lexeme.Keyword(t"transparent")))   // definition
       tree(List(Lexeme.Keyword(t"inline"), Lexeme.Literal))   // the `inline` default, with `if`

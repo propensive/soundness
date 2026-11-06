@@ -1648,14 +1648,3 @@ entry .Dap   the Debug Adapter Protocol: a stdio server over a session, and the 
     entry #reason   `changed`
     entry #breakpoint   the breakpoint's new state
     entry .encodable   writes the body to JSON
-
-entry .DapServer   a runnable Debug Adapter Protocol server over stdio, for pointing an editor at
-  detail
-      The `demo` component's entry point, not part of the library surface: its `main` runs
-      `Dap.listen()` inside a `cli` and a supervision scope, with the JVM's own socket, system,
-      environment and working-directory givens, so an editor configured with a generic DAP
-      launch configuration can drive a vivisection session — launching a JVM by main class and
-      classpath, setting breakpoints, stepping, and inspecting variables rendered through their
-      `Inspectable` instances.
-  refer vivisection.Dap
-  entry .main   the JVM entry point: serves `Dap.listen()` on the standard streams until the input ends

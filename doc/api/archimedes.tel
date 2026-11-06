@@ -89,10 +89,6 @@ entry .Math   the `<math>` root element: a list of MathML nodes with a display m
   refer archimedes.Mathml
   refer archimedes.Ergo
   refer archimedes.Display
-  entry .apply   a `<math>` root over the given nodes, as `Math(nodes*)`
-      The varargs constructor from `Mathml.Container`: `Math(Mi(t"x"), Mo(t"+"), Mn(t"1"))`.
-      The case-class constructor, `Math(contents, display, attributes)`, takes the list
-      directly with an optional `Display` and extra attributes.
   entry .aggregable   reads `Math` from MathML text, as `text.read[Math]`
       Parses the text as XML through xylophone's own `Aggregable`, then decodes the `<math>`
       root with `Mathml.Parser.decodeMath`. It needs an `XmlSchema` in scope, and tactics for
@@ -263,98 +259,103 @@ entry .Mathml   the base type of every MathML node, and the home of all the elem
       `Mrow` of the contents. This is what the `mathml` extension and the `ergo"…"`
       interpolator use to embed an encoded value where a single operand is wanted.
   entry .Container   the varargs constructor shared by every element whose children are a list
-      A trait a companion extends as `object Mrow extends Container(new Mrow(_))`, giving it
-      `apply(children: Mathml*)`. `Math` extends it too, so `Math(nodes*)` builds a root.
+    detail
+        A trait a companion extends as `object Mrow extends Container(new Mrow(_))`, giving it
+        `apply(children: Mathml*)`. `Math` extends it too, so `Math(nodes*)` builds a root.
     entry #apply   builds the element over the given children, in order
   entry .Token   the leaf elements, whose content is character data: `Mi`, `Mn`, `Mo`, `Mtext`, `Ms`, `Mspace`, `Mglyph`
       A sealed trait with no `#contents`. `Mspace` and `Mglyph` carry no text either, being
       controlled entirely by their attributes.
   entry .Mi   `<mi>`: an identifier, such as a variable or a function name
-      `Mi(t"x")`. In Ergo a run of letters is one identifier, so `sin` is `<mi>sin</mi>` and
-      `x y` is two. A single-letter identifier is italicised by MathML's own rules; the
-      `mathvariant="normal"` attribute (Ergo's `⦱` directive) makes it upright.
+    detail
+        `Mi(t"x")`. In Ergo a run of letters is one identifier, so `sin` is `<mi>sin</mi>` and
+        `x y` is two. A single-letter identifier is italicised by MathML's own rules; the
+        `mathvariant="normal"` attribute (Ergo's `⦱` directive) makes it upright.
     entry #value   the identifier's text
     entry #attributes   the element's attributes, as name–value pairs
   entry .Mn   `<mn>`: a numeric literal
-      `Mn(t"2")`. The text is whatever the number should read as; the `Encodable in Math`
-      instances for numbers write their `show` or `toString` form here.
+    detail
+        `Mn(t"2")`. The text is whatever the number should read as; the `Encodable in Math`
+        instances for numbers write their `show` or `toString` form here.
     entry #value   the number's text
     entry #attributes   the element's attributes, as name–value pairs
   entry .Mo   `<mo>`: an operator, fence or separator
-      `Mo(t"+")`. Brackets, integrals and the big operators `∑` and `∏` are operators which
-      `Cell` stretches to the height of their operand when drawn; a stretchy fence in MathML
-      is an `Mo` with `stretchy="true"`.
+    detail
+        `Mo(t"+")`. Brackets, integrals and the big operators `∑` and `∏` are operators which
+        `Cell` stretches to the height of their operand when drawn; a stretchy fence in MathML
+        is an `Mo` with `stretchy="true"`.
     entry #value   the operator's text
     entry #attributes   the element's attributes, as name–value pairs
   entry .Mtext   `<mtext>`: literal text set within the formula
-      `Mtext(t"speed")`: words rather than mathematics. `Text` encodes to this through
-      `Math.text`. It has no Ergo form, so `Ergo.serialize` rejects it.
+    detail
+        `Mtext(t"speed")`: words rather than mathematics. `Text` encodes to this through
+        `Math.text`. It has no Ergo form, so `Ergo.serialize` rejects it.
     entry #value   the text
     entry #attributes   the element's attributes, as name–value pairs
   entry .Ms   `<ms>`: a string literal, shown in quotation marks
     entry #value   the string's text
     entry #attributes   the element's attributes, as name–value pairs
   entry .Mspace   `<mspace>`: blank space of a given width, height or depth
-      `Mspace(List(t"width" -> t"1em"))` renders as `<mspace width="1em"/>`. It has no text
-      and no children; `Cell` draws it as one blank column.
+    detail
+        `Mspace(List(t"width" -> t"1em"))` renders as `<mspace width="1em"/>`. It has no text
+        and no children; `Cell` draws it as one blank column.
     entry #attributes   the element's attributes, as name–value pairs
   entry .Mglyph   `<mglyph>`: a glyph from an image, by its attributes
     entry #attributes   the element's attributes, as name–value pairs
   entry .Layout   the general layout schemata: `Mrow`, `Mfrac`, `Msqrt`, `Mroot`, `Mstyle`, `Merror`, `Mpadded`, `Mphantom`, `Menclose`, `Mfenced`
       A sealed trait of elements with children and no text.
   entry .Mrow   `<mrow>`: a horizontal row of nodes, grouped as one unit
-      `Mrow(Mi(t"x"), Mo(t"+"), Mn(t"1"))`. The grouping element: an Ergo bracket group is an
-      `Mrow`, and `Mathml.atom` wraps several nodes in one. `Cell` draws a row by aligning the
-      baselines of its children and spacing binary operators.
-    entry .apply   an `<mrow>` over the given children, as `Mrow(children*)`
+    detail
+        `Mrow(Mi(t"x"), Mo(t"+"), Mn(t"1"))`. The grouping element: an Ergo bracket group is an
+        `Mrow`, and `Mathml.atom` wraps several nodes in one. `Cell` draws a row by aligning the
+        baselines of its children and spacing binary operators.
     entry #contents   the row's children, in order
     entry #attributes   the element's attributes, as name–value pairs
   entry .Mfrac   `<mfrac>`: a fraction, numerator over denominator
-      `Mfrac(Mn(t"1"), Mn(t"2"))`; Ergo's `a/b`. `linethickness="0"` (Ergo's `═(0)`) removes
-      the bar, for a binomial coefficient.
+    detail
+        `Mfrac(Mn(t"1"), Mn(t"2"))`; Ergo's `a/b`. `linethickness="0"` (Ergo's `═(0)`) removes
+        the bar, for a binomial coefficient.
     entry #numerator   the node above the bar
     entry #denominator   the node below the bar
     entry #attributes   the element's attributes, as name–value pairs
   entry .Msqrt   `<msqrt>`: a square root over its children
-      `Msqrt(Mi(t"x"))`; Ergo's `√x`. `Cell` draws a vinculum over the radicand.
-    entry .apply   an `<msqrt>` over the given children, as `Msqrt(children*)`
+    detail
+        `Msqrt(Mi(t"x"))`; Ergo's `√x`. `Cell` draws a vinculum over the radicand.
     entry #contents   the radicand, as a list of nodes
     entry #attributes   the element's attributes, as name–value pairs
   entry .Mroot   `<mroot>`: an nth root, with the index drawn above the sign
-      `Mroot(Mi(t"x"), Mn(t"3"))` is the cube root of `x`: the base first, then the index,
-      as MathML orders them. In Ergo an index atom written immediately before `√` gives one:
-      `3√x`.
+    detail
+        `Mroot(Mi(t"x"), Mn(t"3"))` is the cube root of `x`: the base first, then the index,
+        as MathML orders them. In Ergo an index atom written immediately before `√` gives one:
+        `3√x`.
     entry #base   the radicand
     entry #index   the degree of the root
     entry #attributes   the element's attributes, as name–value pairs
   entry .Mstyle   `<mstyle>`: a style change applied to its children
-    entry .apply   an `<mstyle>` over the given children
     entry #contents   the children
     entry #attributes   the element's attributes, as name–value pairs
   entry .Merror   `<merror>`: content marked as erroneous
-    entry .apply   an `<merror>` over the given children
     entry #contents   the children
     entry #attributes   the element's attributes, as name–value pairs
   entry .Mpadded   `<mpadded>`: children with adjusted size or position
-    entry .apply   an `<mpadded>` over the given children
     entry #contents   the children
     entry #attributes   the element's attributes, as name–value pairs
   entry .Mphantom   `<mphantom>`: children which take space but are not drawn
-      `Cell` draws it as a blank block of the children's size.
-    entry .apply   an `<mphantom>` over the given children
+    detail
+        `Cell` draws it as a blank block of the children's size.
     entry #contents   the children
     entry #attributes   the element's attributes, as name–value pairs
   entry .Menclose   `<menclose>`: children enclosed by a notation such as a box or strike
-      MathML 3 only: MathML Core dropped it, so it has no Ergo directive.
-    entry .apply   a `<menclose>` over the given children
+    detail
+        MathML 3 only: MathML Core dropped it, so it has no Ergo directive.
     entry #contents   the children
     entry #attributes   the element's attributes, as name–value pairs
   entry .Mfenced   `<mfenced>`: children between a pair of fences
-      `Cell` draws it with parentheses stretched to the height of the content, which is how
-      a tall expression is bracketed in text output; in MathML Core the equivalent is an
-      `Mrow` of stretchy `Mo` brackets, which is what the `Math.vector` and `Math.matrix`
-      encoders write.
-    entry .apply   an `<mfenced>` over the given children
+    detail
+        `Cell` draws it with parentheses stretched to the height of the content, which is how
+        a tall expression is bracketed in text output; in MathML Core the equivalent is an
+        `Mrow` of stretchy `Mo` brackets, which is what the `Math.vector` and `Math.matrix`
+        encoders write.
     entry #contents   the children
     entry #attributes   the element's attributes, as name–value pairs
   entry .Script   the script and limit schemata: `Msub`, `Msup`, `Msubsup`, `Munder`, `Mover`, `Munderover`, `Mmultiscripts`, `Mprescripts`, `Mnone`
@@ -362,47 +363,53 @@ entry .Mathml   the base type of every MathML node, and the home of all the elem
       is a container whose children interleave the base, its postscripts, an `Mprescripts`
       marker and its prescripts, with `Mnone` as an empty placeholder.
   entry .Msub   `<msub>`: a base with a subscript
-      `Msub(Mi(t"x"), Mi(t"i"))`; Ergo's `x↘i`. `Cell` sets a subscript on the base's own
-      line in Unicode subscript glyphs (`xᵢ`) when every character has one, and stacks it
-      below otherwise.
+    detail
+        `Msub(Mi(t"x"), Mi(t"i"))`; Ergo's `x↘i`. `Cell` sets a subscript on the base's own
+        line in Unicode subscript glyphs (`xᵢ`) when every character has one, and stacks it
+        below otherwise.
     entry #base   the node the script attaches to
     entry #subscript   the script, set below right
     entry #attributes   the element's attributes, as name–value pairs
   entry .Msup   `<msup>`: a base with a superscript
-      `Msup(Mi(t"x"), Mn(t"2"))`; Ergo's `x↗2`. `Cell` draws it as `x²` when the script is
-      spellable in Unicode superscript glyphs, and stacks it diagonally above otherwise.
+    detail
+        `Msup(Mi(t"x"), Mn(t"2"))`; Ergo's `x↗2`. `Cell` draws it as `x²` when the script is
+        spellable in Unicode superscript glyphs, and stacks it diagonally above otherwise.
     entry #base   the node the script attaches to
     entry #superscript   the script, set above right
     entry #attributes   the element's attributes, as name–value pairs
   entry .Msubsup   `<msubsup>`: a base with both a subscript and a superscript
-      Ergo's `x↘i↗2`: a base which takes one `↘` and one `↗` merges into this element.
+    detail
+        Ergo's `x↘i↗2`: a base which takes one `↘` and one `↗` merges into this element.
     entry #base   the node the scripts attach to
     entry #subscript   the lower script
     entry #superscript   the upper script
     entry #attributes   the element's attributes, as name–value pairs
   entry .Munder   `<munder>`: a base with an underscript or lower limit
-      Ergo's `x↓n`. When the underscript is a single `Mo`, the Ergo parser marks it
-      `accentunder="true"`, treating a bar or arrow as a tight accent rather than a limit.
+    detail
+        Ergo's `x↓n`. When the underscript is a single `Mo`, the Ergo parser marks it
+        `accentunder="true"`, treating a bar or arrow as a tight accent rather than a limit.
     entry #base   the node the script attaches to
     entry #underscript   the script, centred below
     entry #attributes   the element's attributes, as name–value pairs
   entry .Mover   `<mover>`: a base with an overscript or upper limit
-      Ergo's `x↑n`, or `x↑^` for a hat, which the parser marks `accent="true"` because the
-      overscript is a lone operator.
+    detail
+        Ergo's `x↑n`, or `x↑^` for a hat, which the parser marks `accent="true"` because the
+        overscript is a lone operator.
     entry #base   the node the script attaches to
     entry #overscript   the script, centred above
     entry #attributes   the element's attributes, as name–value pairs
   entry .Munderover   `<munderover>`: a base with limits both below and above
-      Ergo's `∑↓(i = 1)↑n`: the natural form for a large operator's limits. `Cell` draws
-      the limits centred above and below the base.
+    detail
+        Ergo's `∑↓(i = 1)↑n`: the natural form for a large operator's limits. `Cell` draws
+        the limits centred above and below the base.
     entry #base   the node the scripts attach to
     entry #underscript   the lower limit
     entry #overscript   the upper limit
     entry #attributes   the element's attributes, as name–value pairs
   entry .Mmultiscripts   `<mmultiscripts>`: a base with any number of pre- and postscripts
-      The children are the base, then subscript–superscript pairs after it, then an
-      `Mprescripts` marker and pairs before it; `Mnone` fills an empty position.
-    entry .apply   an `<mmultiscripts>` over the given children
+    detail
+        The children are the base, then subscript–superscript pairs after it, then an
+        `Mprescripts` marker and pairs before it; `Mnone` fills an empty position.
     entry #contents   the base, scripts and markers, in MathML's order
     entry #attributes   the element's attributes, as name–value pairs
   entry .Mprescripts   `<mprescripts/>`: the marker in `Mmultiscripts` after which the prescripts follow
@@ -413,22 +420,19 @@ entry .Mathml   the base type of every MathML node, and the home of all the elem
       A sealed trait. MathML Core keeps the table elements but none of their MathML 3
       attributes (`columnalign`, `rowspan`, `frame`, …), so those have no Ergo directives.
   entry .Mtable   `<mtable>`: a table or matrix of rows
-      `Mtable(Mtr(Mtd(Mn(t"1")), Mtd(Mn(t"2"))))`. Ergo's `⋱`, `⋯` and `⋮` introducers build
-      a matrix, a one-row table and a one-column table; the `Math.vector` and `Math.matrix`
-      encoders write one inside stretchy brackets.
-    entry .apply   an `<mtable>` over the given rows
+    detail
+        `Mtable(Mtr(Mtd(Mn(t"1")), Mtd(Mn(t"2"))))`. Ergo's `⋱`, `⋯` and `⋮` introducers build
+        a matrix, a one-row table and a one-column table; the `Math.vector` and `Math.matrix`
+        encoders write one inside stretchy brackets.
     entry #contents   the rows, each an `Mtr` or `Mlabeledtr`
     entry #attributes   the element's attributes, as name–value pairs
   entry .Mtr   `<mtr>`: a table row of cells
-    entry .apply   an `<mtr>` over the given cells
     entry #contents   the cells, each an `Mtd`
     entry #attributes   the element's attributes, as name–value pairs
   entry .Mlabeledtr   `<mlabeledtr>`: a table row whose first child is its label
-    entry .apply   an `<mlabeledtr>` over the given label and cells
     entry #contents   the label, then the cells
     entry #attributes   the element's attributes, as name–value pairs
   entry .Mtd   `<mtd>`: one cell of a table row
-    entry .apply   an `<mtd>` over the given children
     entry #contents   the cell's content
     entry #attributes   the element's attributes, as name–value pairs
   entry .Maligngroup   `<maligngroup/>`: an alignment group marker within a cell
@@ -439,27 +443,21 @@ entry .Mathml   the base type of every MathML node, and the home of all the elem
       A sealed trait of the MathML 3 elements for column arithmetic and long division, which
       MathML Core dropped; they parse and serialize, but have no Ergo form.
   entry .Mstack   `<mstack>`: a column-aligned stack of rows for elementary arithmetic
-    entry .apply   an `<mstack>` over the given rows
     entry #contents   the rows
     entry #attributes   the element's attributes, as name–value pairs
   entry .Mlongdiv   `<mlongdiv>`: a long division layout
-    entry .apply   an `<mlongdiv>` over the given children
     entry #contents   the divisor, result, dividend and the rows beneath
     entry #attributes   the element's attributes, as name–value pairs
   entry .Msgroup   `<msgroup>`: a group of rows within a stack, shifted together
-    entry .apply   an `<msgroup>` over the given rows
     entry #contents   the rows
     entry #attributes   the element's attributes, as name–value pairs
   entry .Msrow   `<msrow>`: one row of a stack
-    entry .apply   an `<msrow>` over the given children
     entry #contents   the row's digits and operators
     entry #attributes   the element's attributes, as name–value pairs
   entry .Mscarries   `<mscarries>`: a row of carries above the row that follows
-    entry .apply   an `<mscarries>` over the given carries
     entry #contents   the carries, each an `Mscarry` or a plain node
     entry #attributes   the element's attributes, as name–value pairs
   entry .Mscarry   `<mscarry>`: one carry within `Mscarries`
-    entry .apply   an `<mscarry>` over the given children
     entry #contents   the carry's content
     entry #attributes   the element's attributes, as name–value pairs
   entry .Msline   `<msline/>`: a horizontal rule within a stack
@@ -469,20 +467,18 @@ entry .Mathml   the base type of every MathML node, and the home of all the elem
       `Annotation` carries character data such as a TeX string, and an `AnnotationXml` a
       nested markup subtree.
   entry .Maction   `<maction>`: children bound to an action such as toggle or highlight
-      The `actiontype` attribute (Ergo's `⚙(type)`) names the action; it is legacy, and
-      undefined in MathML Core.
-    entry .apply   an `<maction>` over the given children
+    detail
+        The `actiontype` attribute (Ergo's `⚙(type)`) names the action; it is legacy, and
+        undefined in MathML Core.
     entry #contents   the children
     entry #attributes   the element's attributes, as name–value pairs
   entry .Semantics   `<semantics>`: a presentation subtree with one or more annotations
-    entry .apply   a `<semantics>` over the given children
     entry #contents   the presentation node, then its annotations
     entry #attributes   the element's attributes, as name–value pairs
   entry .Annotation   `<annotation>`: character data annotating a formula, such as its TeX source
     entry #value   the annotation's text
     entry #attributes   the element's attributes, as name–value pairs
   entry .AnnotationXml   `<annotation-xml>`: a markup subtree annotating a formula
-    entry .apply   an `<annotation-xml>` over the given children
     entry #contents   the annotation's nodes
     entry #attributes   the element's attributes, as name–value pairs
   entry .Error   raised when XML or HTML does not hold a MathML tree

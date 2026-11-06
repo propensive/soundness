@@ -1194,7 +1194,7 @@ entry .YamlPath   the address of a node in a document, written `#/a/0/b` with JS
           `ExpectedHash` (number 2): _a YAML path must begin with '#'_. `ExpectedSlash`
           (number 3): _a YAML path fragment must begin with '/'_. `BadEscape` (number 4): _a
           '~' in a YAML path must be followed by '0' or '1'_.
-      entry .communicable   renders a reason as its message
+    entry .communicable   renders a reason as its message
   entry #path   the underlying serpentine `Path on YamlPath`
   entry #apply   `path(t"key")` or `path(ordinal)`: the path extended by one segment
       The same as `/`, as a method: `YamlPath()(t"servers")(Prim)(t"port")`.

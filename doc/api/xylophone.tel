@@ -1674,8 +1674,8 @@ entry .InlinableStager   the in-macro staging compiler which evaluates an `Inlin
   entry .evaluate   summons the `Inlinable` for a field type in a staged compiler, or `None`
   entry .discriminantAttribute   the discriminator attribute of a sum whose `Discriminable in Xml` is an `Xml.DiscriminantAttribute`
   entry .Implementation   the `Inlinable.Stager` loaded by name
-    entry #summon   `InlinableStager.evaluate`
-    entry #discriminantAttribute   `InlinableStager.discriminantAttribute`
+    entry .summon   `InlinableStager.evaluate`
+    entry .discriminantAttribute   `InlinableStager.discriminantAttribute`
 
 entry .XPath   an XPath 1.0 expression as a value: parsed, built with typed constructors, evaluated against an `Xml`
   detail
@@ -1698,7 +1698,7 @@ entry .XPath   an XPath 1.0 expression as a value: parsed, built with typed cons
 
             val page: Xml =
               t"""<app><div id="main"><button data-test="submit">Submit</button>
-                 <ul><li n="1">one</li><li n="2">two</li><li n="3">three</li></ul></div></app>"""
+                  <ul><li n="1">one</li><li n="2">two</li><li n="3">three</li></ul></div></app>"""
               . read[Xml]
 
             page.evaluate(xp"count(//li)")   // XPath.Value.Numeric(3)

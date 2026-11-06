@@ -1223,7 +1223,7 @@ entry .InlinableStager   the in-macro staging compiler which evaluates a hand-wr
       info message, _locomotion: staged summon for `T` took `n`ms_.
   entry .evaluate   the staged summon: `Some(instance)` for an evaluable type, `None` otherwise
   entry .Implementation   the `Inlinable.Stager` that `Inlinable.Stager.summon` delegates to
-    entry #summon   calls `InlinableStager.evaluate` for the type
+    entry .summon   calls `InlinableStager.evaluate` for the type
 
 entry .postables   the given which posts a `Protobuf` message as an HTTP request body
   detail

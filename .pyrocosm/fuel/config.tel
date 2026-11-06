@@ -14,6 +14,24 @@ document doc/errors
 # Without it the fences are highlighted but not compiled.
 classpath out/test/assembly.dest/out.jar
 
+# Components the test assembly leaves out — the WASI backends, the HTTP media bindings and a few
+# optional sinks and front-ends — packaged as jars of their own, since fuel reads an API only from
+# jars (`make fuelcheck` builds them), so that the API overlays which document them are checked.
+classpath out/ambience/wasi/jar.dest/out.jar
+classpath out/aviation/wasi/jar.dest/out.jar
+classpath out/capricious/wasi/jar.dest/out.jar
+classpath out/coaxial/wasi/jar.dest/out.jar
+classpath out/galilei/wasi/jar.dest/out.jar
+classpath out/telekinesis/wasi/jar.dest/out.jar
+classpath out/turbulence/wasi/jar.dest/out.jar
+classpath out/telekinesis/forms/jar.dest/out.jar
+classpath out/breviloquence/http/jar.dest/out.jar
+classpath out/caesura/http/jar.dest/out.jar
+classpath out/locomotion/http/jar.dest/out.jar
+classpath out/eucalyptus/gcp/jar.dest/out.jar
+classpath out/caduceus/resend/jar.dest/out.jar
+classpath out/orthodoxy/server/jar.dest/out.jar
+
 # The options Soundness's own code compiles with (settings.scalaOptions in build.mill, less
 # the warnings and capture checking a tutorial need not satisfy, and less -Zdiagnostic-givens,
 # which renders every given in scope for each failed search and makes a failing fragment slow), with the proscenium predef
