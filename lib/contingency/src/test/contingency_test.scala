@@ -164,15 +164,87 @@ object Tests extends Suite("errors", m"Contingency"):
         . values
       . assert(_ == List(1, 2))
 
-      aspirationally:
-        test(m"recover compiles inside an `inline def` (see #534)"):
-          demilitarize:
-            inline def inlineRecover: String =
-              recover:
-                case ErrorA(n) => s"recovered:$n"
-              . protect(failA(7))
-            inlineRecover
-        . assert(_.nil)
+      // Inside an `inline def` a transparent call is not expanded while the body is typed, so
+      // the untyped `recover` is `Recovery[?]` there and `.protect`'s body cannot resolve its
+      // tactics (#534). The `defer…` forms name the error set instead, so the body's expected type
+      // is known at definition; one tactic of the union serves every raise.
+      test(m"the untyped recover still cannot be used inside an `inline def` (#534)"):
+        demilitarize:
+          inline def inlineRecover: String =
+            recover:
+              case ErrorA(n) => s"recovered:$n"
+            . protect(failA(7))
+          inlineRecover
+      . assert(!_.nil)
+
+      test(m"a deferRecover works inside an `inline def`"):
+        inline def inlineRecover: String =
+          deferRecover[ErrorA]:
+            case ErrorA(n) => s"recovered:$n"
+          . protect(failA(7))
+        inlineRecover
+      . assert(_ == "recovered:7")
+
+      test(m"a deferRecover over a union handles either member inside an `inline def`"):
+        inline def inlineRecover(inline which: Boolean): String =
+          deferRecover[ErrorA | ErrorB]:
+            case ErrorA(n) => s"a:$n"
+            case ErrorB(n) => s"b:$n"
+          . protect(if which then failA(1) else failB(2))
+        (inlineRecover(true), inlineRecover(false))
+      . assert(_ == ("a:1", "b:2"))
+
+      test(m"a deferRecover is also usable in a plain def"):
+        deferRecover[ErrorA]:
+          case ErrorA(n) => s"recovered:$n"
+        . protect(failA(3))
+      . assert(_ == "recovered:3")
+
+      test(m"a deferRecover rejects a handler missing a case for a named error"):
+        demilitarize:
+          inline def inlineRecover: String =
+            deferRecover[ErrorA | ErrorB]:
+              case ErrorA(n) => s"recovered:$n"
+            . protect(failA(8))
+          inlineRecover
+        . exists { error => error.message.contains("has no case for") && error.message.contains("ErrorB") }
+      . assert(_ == true)
+
+      test(m"a deferMitigate works inside an `inline def`"):
+        inline def inlineMitigate: Int =
+          deferMitigate[ErrorA]:
+            case ErrorA(n) => ErrorB(n + 100)
+          . protect:
+              raise(ErrorA(5))
+              0
+        recover:
+          case ErrorB(n) => n
+        . protect(inlineMitigate)
+      . assert(_ == 105)
+
+      test(m"a deferAccrue works inside an `inline def`"):
+        inline def inlineAccrue: Unit =
+          deferAccrue[Accumulated, ErrorA](Accumulated(Nil)) { (sum, ex) => ex match
+            case ErrorA(n) => Accumulated(sum.values :+ n)
+            case _         => sum
+          } { case ErrorA(_) => () }
+          . protect:
+              raise(ErrorA(1))
+              raise(ErrorA(2))
+              ()
+        capture[Accumulated](inlineAccrue).values
+      . assert(_ == List(1, 2))
+
+      test(m"a deferHandle works inside an `inline def`"):
+        var caught = 0
+        inline def inlineHandle: Unit =
+          deferHandle[ErrorA]:
+            case ErrorA(n) => caught = n
+          . protect:
+              raise(ErrorA(42))
+        inlineHandle
+        caught
+      . assert(_ == 42)
 
       test(m"recover works inside an `inline def` via a non-inline helper"):
         def helperRecover: String =

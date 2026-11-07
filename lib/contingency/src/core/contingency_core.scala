@@ -310,8 +310,25 @@ def guard[error <: Hazard](using tactic: Tactic[error]^)[result]
 transparent inline def recover(inline handler: PartialFunction[Exception, Any]): Recovery[?] =
   ${contingency.internal.recoverBuild('handler)}
 
+// The transparent forms take their error set from the handler's cases, but a transparent call is
+// not expanded while an `inline def`'s body is typed, so there `.protect`'s body sees no
+// context-function type and resolves its tactics eagerly (#534). The `defer…` forms name the
+// error set as a type argument instead: the body's expected type is then known at definition, and
+// one tactic of the union serves every raise, since `Tactic` is contravariant. The handler must
+// still cover each member of the union, which `.protect` checks when it expands. They are not
+// overloads of the transparent forms: with both applicable, `val r = recover { … }` is ambiguous.
+inline def deferRecover[errors <: Hazard](inline handler: PartialFunction[Exception, Any])
+:   Recovery[[result] =>> Tactic[errors] ?=> result] =
+
+  Recovery(handler)
+
 transparent inline def mitigate(inline handler: PartialFunction[Exception, Any]): Mitigation[?] =
   ${contingency.internal.mitigateBuild('handler)}
+
+inline def deferMitigate[errors <: Hazard](inline handler: PartialFunction[Exception, Any])
+:   Mitigation[[result] =>> Tactic[errors] ?=> result] =
+
+  Mitigation(handler)
 
 
 transparent inline def accrue[accrual <: Hazard](initial: accrual)
@@ -321,6 +338,18 @@ transparent inline def accrue[accrual <: Hazard](initial: accrual)
 
   ${contingency.internal.accrueBuild[accrual]('initial, 'combine, 'handler)}
 
+inline def deferAccrue[accrual <: Hazard, errors <: Hazard](initial: accrual)
+  ( combine: (accrual, Exception) -> accrual )
+  ( inline handler: PartialFunction[Exception, Any] )
+:   Accrual[accrual, [result] =>> Tactic[errors] ?=> result] =
+
+  Accrual(handler, initial, combine)
+
 
 transparent inline def handle(inline handler: PartialFunction[Exception, Unit]): Handler[?] =
   ${contingency.internal.handleBuild('handler)}
+
+inline def deferHandle[errors <: Hazard](inline handler: PartialFunction[Exception, Unit])
+:   Handler[[result] =>> Emit[errors] ?=> result] =
+
+  Handler(handler)
