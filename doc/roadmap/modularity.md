@@ -686,7 +686,7 @@ signature patterns (CRC tables, Huffman builders, varint loops).
 
 ## mod-6: the staged-derivation kernel
 
-Horizon: mid–far
+Horizon: mid–long
 
 The six staged-derivation engines (jacinta, breviloquence, locomotion, xylophone,
 stratiform.staged, stratiform.binaryStaged — ~7,400 lines) share a verbatim-identical
@@ -717,7 +717,7 @@ benchmark corpus shows performance parity per format.
 
 ## mod-7: stretch goals
 
-Horizon: far — each requires explicit approval before starting, because each crosses the
+Horizon: long — each requires explicit approval before starting, because each crosses the
 no-semantic-change line or carries real regression risk.
 
 - **Full staged-engine unification** (beyond the mod-6 kernel): requires unsealing
