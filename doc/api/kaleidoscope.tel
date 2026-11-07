@@ -378,11 +378,20 @@ entry .Regex   a parsed regular expression: its pattern, its groups, and matchin
     entry #serialize   the suffix: empty, `?` or `+`
   entry .Quantifier   how many times a group repeats: exactly, at least, or between two counts
     detail
-        `Exactly(n)` is `{n}` (and `Exactly(1)` an unquantified group), `AtLeast(n)` is
-        `{n,}` (so `AtLeast(0)` is `*` and `AtLeast(1)` is `+`), and `Between(n, m)` is `{n,m}`
-        (so `Between(0, 1)` is `?`). The quantifier decides a capture's type: `Exactly(1)`
-        binds a `Text` or `Char`, `Between(0, 1)` an `Optional` of it, and anything else a
-        `List`.
+        How each quantifier is written, and the type of a capture it quantifies:
+
+        ```tabular
+        column  Quantifier
+        column  Written
+        column  Capture type
+        row  `Exactly(1)`  nothing: an unquantified group  `Text` or `Char`
+        row  `Exactly(n)`  `{n}`  `List`
+        row  `AtLeast(0)`  `*`  `List`
+        row  `AtLeast(1)`  `+`  `List`
+        row  `AtLeast(n)`  `{n,}`  `List`
+        row  `Between(0, 1)`  `?`  an `Optional` of `Text` or `Char`
+        row  `Between(n, m)`  `{n,m}`  `List`
+        ```
     entry #serialize   the quantifier as written: empty for `Exactly(1)`, `*`, `+`, `?` or a `{…}` form
     entry #unitary   whether this is `Exactly(1)`, the quantifier of an unrepeated group
   entry .Group   one group of a pattern: its offsets, its quantifier, and whether it is captured
@@ -437,18 +446,25 @@ entry .Regex   a parsed regular expression: its pattern, its groups, and matchin
         ```
     entry .Reason   why a pattern was rejected, as one of eleven numbered cases
       detail
-          `UnclosedGroup` (1), _a capturing group was not closed_; `ExpectedGroup` (2), _a
-          capturing group was expected immediately following an extractor_, for a `$name`
-          with no group after it; `BadRepetition` (3), _the maximum number of repetitions is
-          less than the minimum_; `Uncapturable` (4), _a capturing group inside a repeating
-          group can not be extracted_; `UnexpectedChar` (5), _the repetition range contained
-          an unexpected character_; `NotInGroup` (6), _a closing parenthesis was found without
-          a corresponding opening parenthesis_; `IncompleteRepetition` (7), _the repetition
-          range was not closed_; `InvalidPattern` (8), _the pattern was invalid_, for anything
-          `java.util.regex` rejects that the parser did not; `UnclosedEscape` (9), _nothing
-          followed the escape character `\`_; `EmptyCharClass` (10), _the character class is
-          empty_; and `ZeroMaximum` (11), _the maximum number of repetitions must be greater
-          than zero_. Each case's `number` is the error's sub-number.
+          Each case's `number` is the error's sub-number:
+
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          column  Note
+          row  `UnclosedGroup`  1  _a capturing group was not closed_
+          row  `ExpectedGroup`  2  _a capturing group was expected immediately following an extractor_  a `$name` with no group after it
+          row  `BadRepetition`  3  _the maximum number of repetitions is less than the minimum_
+          row  `Uncapturable`  4  _a capturing group inside a repeating group can not be extracted_
+          row  `UnexpectedChar`  5  _the repetition range contained an unexpected character_
+          row  `NotInGroup`  6  _a closing parenthesis was found without a corresponding opening parenthesis_
+          row  `IncompleteRepetition`  7  _the repetition range was not closed_
+          row  `InvalidPattern`  8  _the pattern was invalid_  anything `java.util.regex` rejects that the parser did not
+          row  `UnclosedEscape`  9  _nothing followed the escape character `\`_
+          row  `EmptyCharClass`  10  _the character class is empty_
+          row  `ZeroMaximum`  11  _the maximum number of repetitions must be greater than zero_
+          ```
       entry .communicable   renders each reason as the message quoted on `Regex.Error.Reason`
       entry #number   the reason's number, 1 to 11, which is the sub-number of its `Regex.Error`
     entry #index   the offset in the pattern at which the error was found
@@ -624,14 +640,24 @@ entry .Glob   a glob — `*`, `**`, `?`, `[a-z]` wildcards — as tokens, transl
       configuration file like any other decodable value, with no error to handle.
   entry .Token   one element of a glob: a wildcard, a character class, or a literal character
     detail
-        `Star` is `*`, any run of characters within a segment; `Globstar` is `**`, any run
-        across segments; `OneChar` is `?`; `Exact(char)` is a literal character; `Range(start,
-        end, inverse)` is `[a-z]` or `[!a-z]`; and `Specific(chars, inverse)` is `[aeiou]` or
-        `[!aeiou]`. `#regex` is each token's translation.
+        Each token, the glob syntax it comes from, and its regular-expression translation, as
+        `#regex` gives it:
+
+        ```tabular
+        column  Token
+        column  Glob
+        column  Matches
+        column  Regex
+        row  `Star`  `*`  any run of characters within a segment  `[^/\\]*`
+        row  `Globstar`  `**`  any run of characters across segments  `.*`
+        row  `OneChar`  `?`  one character within a segment  `[^/\\]`
+        row  `Exact(char)`  any other character  that character  itself, preceded by `\` if it is a regular-expression metacharacter
+        row  `Range(start, end, inverse)`  `[a-z]` or `[!a-z]`  a character in the range, or not in it  `[a-z]` or `[^a-z]`
+        row  `Specific(chars, inverse)`  `[aeiou]` or `[!aeiou]`  a character in the set, or not in it  `[aeiou]` or `[^aeiou]`
+        ```
     entry #regex   the token as regular-expression text, with a literal escaped where it must be
-        `Star` is `[^/\\]*`, `Globstar` is `.*`, `OneChar` is `[^/\\]`, a range is `[a-z]` or
-        `[^a-z]`, a set is `[aeiou]` or `[^aeiou]`, and an `Exact` character is itself,
-        preceded by `\` if it is one of the regular-expression metacharacters.
+        The translations are tabulated on `Glob.Token`. The ends of a range and the members of a
+        set are escaped as an `Exact` character is.
   entry #tokens   the glob's tokens, in order
   entry #regex   the glob translated to a regular expression, as `Text`
   entry #matches   whether the whole text matches the glob, on the engine `regexBackends` selects

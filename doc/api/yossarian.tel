@@ -135,18 +135,22 @@ entry .Pty   a terminal's state as an immutable value: its screen, cursor, modes
         non-numeric parameter or a colour number out of range aborts.
     entry .Reason   the fault in an escape sequence which a `Pty` could not interpret
       detail
-          `BadSgrParameters(n)` (1): an `SGR` sequence with a parameter the emulator does not
-          know, given as the whole `;`-separated sequence. `BadCsiParameter(n, command)` (2): a
-          parameter out of range for a command such as `ED` or `EL`.
-          `NonintegerSgrParameter(text)` (3): a parameter which is not a number. `BadColor(n)`
-          (4): a 256-colour index outside 0 to 255. `BadOscParameter(parameter)` (5): an
-          operating-system command which is not a title, a hyperlink or one of the ignored
-          shell notifications. `BadCsiCommand(param, char)` (6): a control-sequence final
-          character the emulator does not implement. `BadCsiEscape(char)` (7): a byte which
-          may not appear inside a control sequence. `BadFeEscape(char)` (8): an `ESC` followed
-          by a character which begins no known sequence.
+          Each reason carries its number, the error's second code:
 
-          Each reason carries its number, the error's second code.
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          column  Note
+          row  `BadSgrParameters(n)`  1  _`n` is not a valid SGR parameter sequence_  a parameter the emulator does not know; `n` is the whole `;`-separated sequence
+          row  `BadCsiParameter(n, command)`  2  _`n` is not a valid CSI parameter for the `command` command_  out of range for a command such as `ED` or `EL`
+          row  `NonintegerSgrParameter(text)`  3  _`text` is not a numerical SGR parameter_
+          row  `BadColor(n)`  4  _`n` is not a valid color number_  a 256-colour index outside 0 to 255
+          row  `BadOscParameter(parameter)`  5  _`parameter` is not a recognized OSC parameter_  not a title, a hyperlink or one of the ignored shell notifications
+          row  `BadCsiCommand(param, char)`  6  _`char` (with parameter `param`) is not a valid CSI command_  a final character the emulator does not implement
+          row  `BadCsiEscape(char)`  7  _`char` is not valid in a CSI escape sequence_  a byte which may not appear inside a control sequence
+          row  `BadFeEscape(char)`  8  _`char` is not a valid Fe escape_  an `ESC` followed by a character which begins no known sequence
+          ```
       entry .communicable   renders each reason as a message, such as _x is not a valid Fe escape_
       entry #number   the reason's number, the second part of the error's code
     entry #reason   the `Pty.Error.Reason` naming the fault

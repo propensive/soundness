@@ -127,15 +127,18 @@ entry .Svg   the `<svg>` document element: a size, definitions and figures, writ
         safely(t"""<html/>""".read[Svg])   // Unset: Svg.Error(NotAnSvg(t"html"))
         ```
     entry .Reason   why the SVG could not be read, each with a number
-        `NotAnSvg(label)` (1): the root element was `<label>` instead of `<svg>`, or there
-        was no `<svg>` among a fragment's nodes. `MalformedPathData(data)` (2): a `d` attribute
-        with an unknown command or a non-number where a number was due. `MalformedColor(color)`
-        (3): a `stop-color` which is not `#rgb`, `#rrggbb`, `rgb(r, g, b)` or one of the
-        named colours red, green, blue, black, white, yellow, cyan and magenta.
-        `MalformedLength(length)` (4): a root `width` or `height` which is not a number with
-        an optional unit. `MismatchedUnits(width, height)` (5): a `width` and `height` with
-        different units. `MalformedViewBox(viewBox)` (6): a `viewBox` which is not four
-        numbers.
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `NotAnSvg(label)`  1  _the root element was `<label>` instead of `<svg>`_  also when there was no `<svg>` among a fragment's nodes
+        row  `MalformedPathData(data)`  2  _the path data `data` could not be parsed_  a `d` attribute with an unknown command, or a non-number where a number was due
+        row  `MalformedColor(color)`  3  _the color `color` could not be parsed_  a `stop-color` which is not `#rgb`, `#rrggbb`, `rgb(r, g, b)` or one of the named colours red, green, blue, black, white, yellow, cyan and magenta
+        row  `MalformedLength(length)`  4  _the length `length` is not a number with a unit_  a root `width` or `height`; the unit is optional
+        row  `MismatchedUnits(width, height)`  5  _the width `width` and height `height` have different units_
+        row  `MalformedViewBox(viewBox)`  6  _the viewBox `viewBox` is not four numbers_
+        ```
     entry .communicable   renders each reason as a message
     entry #reason   the `Svg.Error.Reason`
   entry .Units   the unit an `<svg>` element's `width` and `height` carry: `Em`, `Ex`, `Px`, `In`, `Cm`, `Mm`, `Pt`, `Pc` or `Percent`

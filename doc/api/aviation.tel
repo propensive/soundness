@@ -3258,14 +3258,22 @@ entry .Tzdb   a parser for the tz database's own source files: `Rule`, `Zone`, `
   entry .Error   raised when a line of the database cannot be parsed
     detail
         Error 385: _the timezone could not be parsed at line `line`: `reason`_, with the
-        reason's number as the sub-code. The `.Reason`s: `CouldNotParseTime(time)` (1),
-        _could not parse time_, for a malformed `AT`, `STDOFF` or `SAVE`; `UnexpectedRule`
-        (2), a `Rule` or `Leap` line with the wrong fields; `UnexpectedLink` (3);
-        `UnexpectedZoneInfo` (4), a continuation line with no `Zone` above it;
-        `UnparsableDate` (5), an `ON` field which is none of the known forms;
-        `BadZoneInfo(line)` (6); `BadName(name)` (7), a zone name with more than one `/`; and
-        `NoTzdbFile(name)` (8), _the zonefile `name` could not be found on the classpath_,
-        from `.parseFile`.
+        reason's number as the sub-code:
+
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `CouldNotParseTime(time)`  1  _could not parse time `time`_  a malformed `AT`, `STDOFF` or `SAVE`
+        row  `UnexpectedRule`  2  _unexpected rule_  a `Rule` or `Leap` line with the wrong fields
+        row  `UnexpectedLink`  3  _unexpected link_
+        row  `UnexpectedZoneInfo`  4  _unexpected zone info_  a continuation line with no `Zone` above it
+        row  `UnparsableDate`  5  _the date could not be parsed_  an `ON` field which is none of the known forms
+        row  `BadZoneInfo(line)`  6  _bad zone information: `line`_  the line's fields, in brackets
+        row  `BadName(name)`  7  _the name `name` is not valid_  a zone name with more than one `/`
+        row  `NoTzdbFile(name)`  8  _the zonefile `name` could not be found on the classpath_  from `.parseFile`
+        ```
     entry .communicable   renders each reason as its message
     entry .Reason   why a line failed, numbered 1 to 8
     entry #reason   the `Tzdb.Error.Reason`

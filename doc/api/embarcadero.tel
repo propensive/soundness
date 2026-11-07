@@ -519,10 +519,23 @@ entry .Oci   the namespace for OCI document types with generic names: `Oci.Manif
         Under `safely` any failure is `Unset`; `capture[Oci.Error]` keeps the error so that
         its `#reason` can be matched.
     entry .Reason   why an archive could not be read, as an enum with a number per case
-        The cases, numbered 1 to 9: `MissingLayout`, `UnsupportedLayout(version)`,
-        `MissingIndex`, `MissingBlob(digest)`, `DigestMismatch(expected, actual)`,
-        `InvalidBlob(digest, detail)`, `UnsupportedDigest(algorithm)`, `NoManifest` and
-        `WriteUnsupported`. The number is the error's sub-code.
+        The number is the error's sub-code:
+
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `MissingLayout`  1  _the archive does not contain an oci-layout marker_
+        row  `UnsupportedLayout(version)`  2  _the image layout version `version` is not supported_
+        row  `MissingIndex`  3  _the archive does not contain an index.json document_
+        row  `MissingBlob(digest)`  4  _the blob `digest` is not present in the archive_
+        row  `DigestMismatch(expected, actual)`  5  _the blob addressed as `expected` has the digest `actual`_
+        row  `InvalidBlob(digest, detail)`  6  _the blob `digest` could not be interpreted: `detail`_
+        row  `UnsupportedDigest(algorithm)`  7  _the digest algorithm `algorithm` is not supported_
+        row  `NoManifest`  8  _the image index lists no manifests_
+        row  `WriteUnsupported`  9  _OCI image archives cannot be opened for writing_
+        ```
     entry .communicable   renders each reason as a message, such as _the blob `digest` is not present in the archive_
     entry #reason   the `Oci.Error.Reason` which caused the failure
 

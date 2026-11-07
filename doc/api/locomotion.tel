@@ -609,17 +609,18 @@ entry .Protobuf   a Protocol Buffers wire value, and the home of every codec int
     entry #reason   why the data was rejected, and at what offset
     entry .Reason   the five faults a message can have
       detail
-          - `Truncated(offset)` — _the protobuf data ended unexpectedly at offset `offset`_:
-            a length prefix, fixed value or varint ran past the end of its window.
-          - `MalformedVarint(offset)` — _a varint was malformed at offset `offset`_: more
-            than ten continuation bytes.
-          - `UnexpectedWireType(found, offset)` — _an unexpected wire type, `found`, was
-            encountered at offset `offset`_: a tag's wire code was 3, 4 (the deprecated
-            groups), 6 or 7.
-          - `Overflow(offset)` — _a numeric value was too large for its type at offset
-            `offset`_: a tenth varint byte contributing more than bit 63.
-          - `MissingField(number)` — _the required field number `number` was missing_: a
-            `oneof` with no variant present. A decode-level fault, with no offset.
+          Each case renders as its message:
+
+          ```tabular
+          column  Case
+          column  Message
+          column  Note
+          row  `Truncated(offset)`  _the protobuf data ended unexpectedly at offset `offset`_  a length prefix, fixed value or varint ran past the end of its window
+          row  `MalformedVarint(offset)`  _a varint was malformed at offset `offset`_  more than ten continuation bytes
+          row  `UnexpectedWireType(found, offset)`  _an unexpected wire type, `found`, was encountered at offset `offset`_  a tag's wire code was 3, 4 (the deprecated groups), 6 or 7
+          row  `Overflow(offset)`  _a numeric value was too large for its type at offset `offset`_  a tenth varint byte contributing more than bit 63
+          row  `MissingField(number)`  _the required field number `number` was missing_  a `oneof` with no variant present; a decode-level fault, with no offset
+          ```
       entry .communicable   renders each reason as the message above
 
 entry .Protobuf2   the lowest codec layer: derived codecs, unpacked collections and the tree-reading path

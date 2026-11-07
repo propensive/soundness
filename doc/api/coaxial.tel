@@ -76,6 +76,23 @@ detail
     - `coaxial.dns` — `query` on an `Endpoint[Udp.Port]`: one DNS message to a nameserver and
       its answer, over the backend's one-shot datagram exchange.
 
+    What each platform's backend supports:
+
+    ```tabular
+    column  Feature
+    column  JVM
+    column  Scala Native
+    column  WASI
+    row  TCP  yes  yes  to IPv4 literals only
+    row  UDP  yes  yes  no
+    row  Multicast  yes  yes  no
+    row  Unix-domain sockets  yes  raises `Unsupported`  no
+    row  TLS client  yes  yes, over OpenSSL  no
+    row  ALPN  yes  no  no
+    row  TLS server  yes  no  no
+    row  `TlsAcceptance`, `Trust`  yes  no  no
+    ```
+
     Errors are two: binding fails with `Bind.Error` (port in use, permission denied, address
     unavailable, unsupported) and everything after with `Socket.Error`, whose reason says
     whether it was accepting, transmitting, closing, the TLS handshake, a timeout, connecting,
@@ -657,16 +674,23 @@ entry .Socket   the socket vocabulary: the platform backend, the options, the ev
         reason == Socket.Error.Reason.Connect
         ```
     entry .Reason   why a connection failed, numbered 1 to 9
-        `Accept` (1), _a new connection could not be accepted_; `Transmit` (2), _data could
-        not be transmitted to the connection_; `Close` (3), _the connection could not be
-        closed cleanly_; `Handshake` (4), _the TLS handshake with the peer failed_ — a
-        certificate the trust policy rejects, a hostname mismatch, or a listener's refusal of
-        a client certificate; `Timeout` (5), _no response arrived before the timeout_ — a
-        datagram receive under a `Socket.Option.Timeout`, or a connect which timed out;
-        `Connect` (6), _the connection could not be established_; `Refused` (7), _the peer
-        refused the connection_; `Dns` (8), _the host could not be resolved_; and
-        `Unsupported` (9), _the kind of socket is not supported on this platform_ — a
-        Unix-domain socket on Scala Native or WASI. Each is a `Clarification` with a `number`.
+        Each is a `Clarification` with a `number`:
+
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `Accept`  1  _a new connection could not be accepted_
+        row  `Transmit`  2  _data could not be transmitted to the connection_
+        row  `Close`  3  _the connection could not be closed cleanly_
+        row  `Handshake`  4  _the TLS handshake with the peer failed_  a certificate the trust policy rejects, a hostname mismatch, or a listener's refusal of a client certificate
+        row  `Timeout`  5  _no response arrived before the timeout_  a datagram receive under a `Socket.Option.Timeout`, or a connect which timed out
+        row  `Connect`  6  _the connection could not be established_
+        row  `Refused`  7  _the peer refused the connection_
+        row  `Dns`  8  _the host could not be resolved_
+        row  `Unsupported`  9  _the kind of socket is not supported on this platform_  a Unix-domain socket on Scala Native or WASI
+        ```
     entry .communicable   renders each reason as its message
     entry #reason   the reason
 
@@ -694,10 +718,16 @@ entry .Bind   the error raised when a socket cannot be bound
         // t"the socket could not be bound because another process is already bound to the port"
         ```
     entry .Reason   why a bind failed, numbered 1 to 4
-        `PortInUse` (1), _another process is already bound to the port_; `PermissionDenied`
-        (2), _the user does not have permission to bind the port_ — a port below 1024 without
-        privilege; `AddressUnavailable` (3), _the requested address is not available on this
-        host_; and `Unsupported` (4), _the kind of socket is not supported on this platform_.
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `PortInUse`  1  _another process is already bound to the port_
+        row  `PermissionDenied`  2  _the user does not have permission to bind the port_  a port below 1024 without privilege
+        row  `AddressUnavailable`  3  _the requested address is not available on this host_
+        row  `Unsupported`  4  _the kind of socket is not supported on this platform_
+        ```
     entry .communicable   renders each reason as its message
     entry #reason   the reason
 

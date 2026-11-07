@@ -167,11 +167,18 @@ entry .Framing   the act of delimiting messages in a stream, and the error when 
         absent or not a number; and `UnknownHeader`, reserved for a header the protocol
         rejects (`ContentLength` currently skips unrecognised headers rather than raising it).
     entry .Reason   why a frame could not be read
-        `ShortRead` (1), _the input ended before a complete frame could be read_;
-        `MissingLineFeed` (2), _a carriage return was not followed by a line feed_;
-        `MalformedLength` (3), _the content-length header value could not be parsed_;
-        `UnknownHeader` (4), _an unrecognized header was encountered_. The number is the
-        error's detail number.
+        The number is the error's detail number:
+
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `ShortRead`  1  _the input ended before a complete frame could be read_
+        row  `MissingLineFeed`  2  _a carriage return was not followed by a line feed_
+        row  `MalformedLength`  3  _the content-length header value could not be parsed_
+        row  `UnknownHeader`  4  _an unrecognized header was encountered_
+        ```
     entry .communicable   renders each `Framing.Error.Reason` as its message
     entry #reason   why the frame could not be read
 
@@ -498,13 +505,23 @@ entry .JsonRpc   JSON-RPC 2.0: a dispatcher and client stub derived from an `@rp
   entry .Failure   the `error` member of a JSON-RPC error response: a code, a message and optional data
     detail
         `Failure(code, message, data)` is the object a conformant peer puts in the `error`
-        member of a response in place of `result`. The codes are the specification's:
-        `-32700` for unparseable JSON, `-32600` for an invalid request, `-32601` for an
-        unknown method, `-32602` for invalid parameters, `-32603` for an internal error, and
-        a protocol's own codes beyond them. `JsonRpc.failure` builds the whole response document
-        around one; `JsonRpc.answer` reads one back from a response and hands it to
-        `JsonRpc.receiveFailure`, where `JsonRpc.outcome` turns it into a `JsonRpc.Error(Failed)` carrying
-        the code and message.
+        member of a response in place of `result`. The codes are the specification's, and a
+        protocol may define its own beyond them:
+
+        ```tabular
+        column  Code
+        column  Meaning
+        row  -32700  the JSON could not be parsed
+        row  -32600  an invalid request
+        row  -32601  an unknown method
+        row  -32602  invalid parameters
+        row  -32603  an internal error
+        ```
+
+        `JsonRpc.failure` builds the whole response document around one; `JsonRpc.answer`
+        reads one back from a response and hands it to `JsonRpc.receiveFailure`, where
+        `JsonRpc.outcome` turns it into a `JsonRpc.Error(Failed)` carrying the code and
+        message.
     entry .decodable   the `JsonRpc.Failure is Json.Decodable` given, in implicit scope
         A pure, throwing derivation anchor, as `JsonRpc.Request.decodable` is, so
         `safely(json.error.as[JsonRpc.Failure])` works at a use site.
@@ -733,11 +750,18 @@ entry .Sse   one server-sent event: its event name, data lines, id and retry int
         `Sse.Source#stream` when the requested replay reaches further back than the source's
         capacity (`CapacityExceeded`).
     entry .Reason   why the event, or the replay, was not valid
-        `MalformedField` (1), _a line did not contain the expected `field: value` separator_;
-        `UnknownField` (2), _the field name was not one of `event`, `data`, `id`, or `retry`_;
-        `BadRetryValue` (3), _the `retry` field value could not be parsed as an integer_;
-        `CapacityExceeded` (4), _the requested replay range exceeded the source buffer
-        capacity_. The number is the error's detail number.
+        The number is the error's detail number:
+
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `MalformedField`  1  _a line did not contain the expected `field: value` separator_
+        row  `UnknownField`  2  _the field name was not one of `event`, `data`, `id`, or `retry`_
+        row  `BadRetryValue`  3  _the `retry` field value could not be parsed as an integer_
+        row  `CapacityExceeded`  4  _the requested replay range exceeded the source buffer capacity_
+        ```
     entry .communicable   renders each `Sse.Error.Reason` as its message
     entry #reason   why the event, or the replay, was not valid
   entry .Source   a replayable buffer of events, numbered by id, for a client which reconnects

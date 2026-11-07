@@ -525,15 +525,19 @@ entry .SortAlgorithm   a sorting algorithm: puts a scratch array in order agains
       `sortingAlgorithms` by name. There is deliberately no default: with none in scope a
       `sort` does not compile, and with two it is ambiguous. The six are:
 
-      - `timsort` — the JDK's own `Arrays.sort` for objects: adaptive, stable, the algorithm
-        behind the standard library's `sorted`;
-      - `powersort` — Timsort's merge policy replaced by one which merges runs in the order of
-        a nearly-optimal binary merge tree (Munro and Wild, 2018), with galloping merges;
-        stable and adaptive, and the one to reach for on partly-ordered data;
-      - `quicksort` — median-of-three pivots with Hoare partitioning, insertion sort below
-        twelve elements, recursion bounded at log₂(n) frames; not stable, in place;
-      - `heapsort` — in place, not stable, with no quadratic worst case;
-      - `insertionSort` and `bubbleSort` — stable, and only worth it for tiny input.
+      ```tabular
+      column  Algorithm
+      column  Stable
+      column  In place
+      column  Adaptive
+      column  Notes
+      row  `timsort`  yes  no  yes  the JDK's own `Arrays.sort` for objects, behind the standard library's `sorted`
+      row  `powersort`  yes  no  yes  Timsort's merge policy replaced by a nearly-optimal binary merge tree (Munro and Wild, 2018), with galloping merges; the one for partly-ordered data
+      row  `quicksort`  no  yes  no  median-of-three pivots with Hoare partitioning, insertion sort below twelve elements, recursion bounded at log₂(n) frames
+      row  `heapsort`  no  yes  no  no quadratic worst case
+      row  `insertionSort`  yes  yes  yes  only worth it for tiny input
+      row  `bubbleSort`  yes  yes  yes  only worth it for tiny input; stops after a pass with no swap
+      ```
 
       Stability — whether equal elements keep their source order — is a property of the
       algorithm, not of the types: `pairs.order(_(0))` under `timsort` leaves tied pairs in

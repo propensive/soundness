@@ -593,16 +593,25 @@ entry .Llm   the provider-neutral vocabulary: messages, replies, sessions, strea
         code which matches no reason is kept under `Provider(code)`, so the wire's own error is
         never lost.
     entry .Reason   the fixed set of failure kinds, each the error's subcode
-        `Unreachable` (1), the provider could not be reached; `Unauthorized` (2), the API key
-        was missing, invalid or expired; `Invalid` (3), the provider rejected the request as
-        invalid — also an unknown tool, a malformed argument or a bad request identifier;
-        `NotFound` (4), the model or endpoint does not exist; `TooLarge` (5), the conversation
-        exceeds the context window; `RateLimited` (6); `Overloaded` (7); `Malformed` (8), the
-        reply, a stream frame or a structured answer could not be interpreted; `Interrupted`
-        (9), the stream ended before the message was complete; `ToolLoopExceeded` (10), the
-        tool loop reached its `iterations` bound; and `Provider(code)` (11), an error code the
-        provider reported which maps to none of the others. The numbers are frozen; a reason
-        added later appends.
+        The numbers are frozen; a reason added later appends:
+
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `Unreachable`  1  _the provider could not be reached_
+        row  `Unauthorized`  2  _the API key was missing, invalid or expired_
+        row  `Invalid`  3  _the provider rejected the request as invalid_  also an unknown tool, a malformed argument or a bad request identifier
+        row  `NotFound`  4  _the model or endpoint does not exist_
+        row  `TooLarge`  5  _the conversation exceeds the model's context window_
+        row  `RateLimited`  6  _the provider imposed a rate limit_
+        row  `Overloaded`  7  _the provider is temporarily overloaded_
+        row  `Malformed`  8  _the provider's reply could not be interpreted_  the reply, a stream frame or a structured answer
+        row  `Interrupted`  9  _the stream ended before the message was complete_
+        row  `ToolLoopExceeded`  10  _the tool-use loop exceeded its iteration limit_  its `iterations` bound
+        row  `Provider(code0)`  11  _the provider reported the error code `code0`_  a code which maps to none of the others
+        ```
     entry .communicable   renders each reason as the message the error carries
     entry #reason   which kind of failure it was
     entry #detail   the provider's message, or the library's account of a local failure

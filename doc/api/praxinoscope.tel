@@ -172,11 +172,20 @@ entry .Motif   a parsed RE2 regular expression: its pattern, its node tree, its 
         // Repeat(Group(Sequence(List(Literal('a'), Literal('b'))), 1), 1, Unset, false)
         ```
     entry .Anchor   the zero-width tests: `Start`, `End`, `WordBoundary`, `NonWordBoundary`, `LineStart`, `LineEnd`
-        `Start` is `^` or `\A` and `End` is `$` or `\z`, the ends of the whole input;
-        `WordBoundary` is `\b` and `NonWordBoundary` `\B`, where a word character (`\w`,
-        ASCII) meets a non-word one or not; `LineStart` and `LineEnd` are `^` and `$` under
-        the `m` flag, which also match beside a newline. The containment analyses cannot
-        model the last four and raise `Unverifiable` for a program containing one.
+        ```tabular
+        column  Anchor
+        column  Written
+        column  Matches
+        row  `Start`  `^` or `\A`  the start of the whole input
+        row  `End`  `$` or `\z`  the end of the whole input
+        row  `WordBoundary`  `\b`  where a word character (`\w`, ASCII) meets a non-word one
+        row  `NonWordBoundary`  `\B`  where it does not
+        row  `LineStart`  `^` under the `m` flag  the start of the input, or just after a newline
+        row  `LineEnd`  `$` under the `m` flag  the end of the input, or just before a newline
+        ```
+
+        The containment analyses cannot model the last four, and raise `Unverifiable` for a
+        program containing one.
   entry .Error   raised when a pattern is not RE2 syntax, or an analysis cannot answer
     detail
         Error 500: _the regular expression could not be compiled because `reason` at
@@ -194,19 +203,36 @@ entry .Motif   a parsed RE2 regular expression: its pattern, its node tree, its 
         ```
     entry .Reason   why a pattern was rejected, as one of twenty-one numbered cases
       detail
-          The structural faults: `UnclosedGroup` (1), `NotInGroup` (2) for a stray `)`,
-          `UnexpectedChar` (3) for a misplaced quantifier or a malformed repetition,
-          `BadRepetition` (4) for `{3,1}`, `IncompleteRepetition` (5), `EmptyCharClass` (6),
-          `UnclosedClass` (7), `UnclosedEscape` (8), `InvalidEscape` (9) for an escaped letter
-          with no meaning or a bad `\x` form, `InvertedRange` (10) for `[z-a]`,
-          `InvalidPosixClass` (20) and `UnknownUnicodeClass` (21). The constructs RE2 leaves
-          out: `Backreference` (11), `Lookaround` (12), `PossessiveQuantifier` (13),
-          `AtomicGroup` (14), `UnsupportedGroup` (15) for a `(?P` not followed by `<`, and
-          `Flag` (16) for a flag letter other than `i`, `m`, `s`, `U`. The limits:
-          `RepetitionTooLarge` (17) for a count over `Motif.maxRepetition` or a program over
-          `Program.maxOps`, `BudgetExceeded` (18) for a containment analysis past
-          `Subsumption.maxStates`, and `Unverifiable` (19) for a containment question about a
-          pattern with a word or line boundary. Each case's `number` is the error's sub-number.
+          Each case's `number` is the error's sub-number. Cases 11 to 16 are constructs RE2 leaves
+          out, and 17 to 19 are limits; the rest are structural faults:
+
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          column  Note
+          row  `UnclosedGroup`  1  _a group was not closed_
+          row  `NotInGroup`  2  _a closing parenthesis was found without a corresponding opening parenthesis_  a stray `)`
+          row  `UnexpectedChar`  3  _an unexpected character was found_  a misplaced quantifier or a malformed repetition
+          row  `BadRepetition`  4  _the maximum number of repetitions is less than the minimum_  `{3,1}`
+          row  `IncompleteRepetition`  5  _the repetition range was not closed_
+          row  `EmptyCharClass`  6  _the character class is empty_
+          row  `UnclosedClass`  7  _the character class was not closed_
+          row  `UnclosedEscape`  8  _nothing followed the escape character `\`_
+          row  `InvalidEscape`  9  _the escape sequence is not valid_  an escaped letter with no meaning, or a bad `\x` form
+          row  `InvertedRange`  10  _the end of the character range is less than its start_  `[z-a]`
+          row  `Backreference`  11  _backreferences are not part of RE2 syntax_
+          row  `Lookaround`  12  _lookahead and lookbehind are not part of RE2 syntax_
+          row  `PossessiveQuantifier`  13  _possessive quantifiers are not part of RE2 syntax_
+          row  `AtomicGroup`  14  _atomic groups are not part of RE2 syntax_
+          row  `UnsupportedGroup`  15  _the group syntax is not supported_  a `(?P` not followed by `<`
+          row  `Flag`  16  _inline flags are not supported_  a flag letter other than `i`, `m`, `s` or `U`
+          row  `RepetitionTooLarge`  17  _the number of repetitions exceeds the limit of 1000_  a count over `Motif.maxRepetition`, or a program over `Program.maxOps`
+          row  `BudgetExceeded`  18  _the analysis exceeded its computation budget_  a containment analysis past `Subsumption.maxStates`
+          row  `Unverifiable`  19  _the pattern contains constructs which the analysis cannot verify_  a containment question about a pattern with a word or line boundary
+          row  `InvalidPosixClass`  20  _the POSIX character class name is not recognised_
+          row  `UnknownUnicodeClass`  21  _the Unicode class name is not recognised_
+          ```
       entry .communicable   renders each reason as a message: _backreferences are not part of RE2 syntax_, …
       entry #number   the reason's number, 1 to 21, which is the sub-number of its `Motif.Error`
     entry #index   the offset in the pattern at which the fault was found; 0 for an analysis failure

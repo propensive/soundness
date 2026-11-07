@@ -371,17 +371,18 @@ entry .Discovery   the vocabulary of DNS-SD: services, instances, TXT records, a
         Error `SN-054`: _service discovery failed because `reason`_. The `#reason` is one of
         `Discovery.Error.Reason`'s cases, numbered 1 to 6:
 
-        - `Conflict(name)` — the name could not be claimed after repeated conflicts (a hundred
-          renamings);
-        - `Timeout(instance)` — the instance did not resolve before the timeout;
-        - `InvalidName(text)` — a label or name is not a valid DNS-SD name (empty, over 63
-          bytes, or over a DNS limit);
-        - `InvalidTxt(key)` — a TXT entry's key is empty, contains `=` or a non-printable
-          character, or its entry exceeds 255 bytes;
-        - `InvalidService(name)` — a service name is empty, over fifteen characters, or begins
-          with `_`;
-        - `Unavailable` — the transport could not be opened (the responder's own `Mdns.Error`
-          is the cause).
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `Conflict(name)`  1  _the name `name` could not be claimed after repeated conflicts_  after a hundred renamings
+        row  `Timeout(instance)`  2  _the instance `instance` did not resolve before the timeout_
+        row  `InvalidName(text)`  3  _the name `text` is not a valid DNS-SD name_  a label or name is empty, over 63 bytes, or over a DNS limit
+        row  `InvalidTxt(key)`  4  _the TXT entry `key` is not valid_  its key is empty, contains `=` or a non-printable character, or the entry exceeds 255 bytes
+        row  `InvalidService(name)`  5  _the service name `name` is not valid_  empty, over fifteen characters, or beginning with `_`
+        row  `Unavailable`  6  _no service discovery backend could be started_  the transport could not be opened; the responder's own `Mdns.Error` is the cause
+        ```
 
         ```scala
         import soundness.*

@@ -758,23 +758,21 @@ entry .Cos   the COS object model: the values a PDF file is made of
       hoped to be, giving `Unset` otherwise, so no read ever throws for a shape it did not
       expect.
 
-      - `Nil` — the `null` object. A dictionary entry whose value is `Nil` is equivalent to
-        an absent key, which `apply` honours.
-      - `Truth(value)` — a boolean.
-      - `Integral(value)` — an integer, as `Long`.
-      - `Real(value)` — a real number, as `Double`. `double` reads either numeric type; the
-        distinction is kept for writing.
-      - `Name(text)` — a name, such as `/Type`, without its slash.
-      - `Chars(bytes)` — a string, as its raw bytes: interpreting them (PDFDocEncoding,
-        UTF-16, dates) is deferred to `text` and to the typed layer.
-      - `Sequence(elements)` — an array.
-      - `Dictionary(entries)` — a dictionary.
-      - `Body(entries, start)` — a stream *locator*: its dictionary plus the file offset of
-        its raw payload, not the payload itself, which is read only through `Pdf#payload` or
-        `Pdf#spring`. A stream made by `newStream` has a negative `start` keying its bytes
-        in the write overlay.
-      - `Ref(number, generation)` — an indirect reference, resolved by `Pdf#apply` or
-        `Pdf#resolved`.
+      ```tabular
+      column  Case
+      column  PDF object
+      column  Notes
+      row  `Nil`  the `null` object  a dictionary entry whose value is `Nil` is equivalent to an absent key, which `apply` honours
+      row  `Truth(value)`  a boolean
+      row  `Integral(value)`  an integer  as `Long`
+      row  `Real(value)`  a real number  as `Double`; `double` reads either numeric type, and the distinction is kept for writing
+      row  `Name(text)`  a name, such as `/Type`  without its slash
+      row  `Chars(bytes)`  a string  as its raw bytes; interpreting them (PDFDocEncoding, UTF-16, dates) is deferred to `text` and to the typed layer
+      row  `Sequence(elements)`  an array
+      row  `Dictionary(entries)`  a dictionary
+      row  `Body(entries, start)`  a stream  a *locator*: its dictionary and the file offset of its raw payload, which is read only through `Pdf#payload` or `Pdf#spring`; a stream made by `newStream` has a negative `start`, keying its bytes in the write overlay
+      row  `Ref(number, generation)`  an indirect reference  resolved by `Pdf#apply` or `Pdf#resolved`
+      ```
 
       ```scala
       import soundness.*
@@ -818,14 +816,15 @@ entry .Annotation   a page annotation: a link, a note, a form widget, or any oth
       `Other`; every case carries its rectangle in points and its raw dictionary as an
       escape hatch.
 
-      - `Link(rect, destination, uri, dictionary)` — a `/Link`: its target is a
-        `Destination` (from `/Dest`, or the `/D` of a `/GoTo` action, named destinations
-        resolved), a `uri` (from a `/URI` action), or neither.
-      - `Note(rect, contents, open, dictionary)` — a `/Text` annotation, a sticky note, with
-        its `/Contents` and whether it is shown `/Open`.
-      - `Widget(rect, fieldName, dictionary)` — a `/Widget`, a form field's appearance, with
-        the field's `/T` name.
-      - `Other(subtype, rect, dictionary)` — any other `/Subtype`, by name.
+      ```tabular
+      column  Case
+      column  Subtype
+      column  Carries
+      row  `Link(rect, destination, uri, dictionary)`  `/Link`  its target: a `Destination` (from `/Dest`, or the `/D` of a `/GoTo` action, named destinations resolved), a `uri` (from a `/URI` action), or neither
+      row  `Note(rect, contents, open, dictionary)`  `/Text`, a sticky note  its `/Contents`, and whether it is shown `/Open`
+      row  `Widget(rect, fieldName, dictionary)`  `/Widget`, a form field's appearance  the field's `/T` name
+      row  `Other(subtype, rect, dictionary)`  any other `/Subtype`  the subtype, by name
+      ```
 
       ```scala
       import soundness.*
@@ -877,14 +876,19 @@ entry .Destination   where a link or bookmark lands: a page, and how the viewer 
       parameters, which the format allows to be omitted, as `Optional[Double]`s in user-space
       units:
 
-      - `Xyz(page, left, top, zoom)` — the position at the top-left corner, at a zoom.
-      - `Fit(page)` — the whole page.
-      - `FitWidth(page, top)` — the page's width, with `top` at the top of the window.
-      - `FitHeight(page, left)` — the page's height, with `left` at the left.
-      - `FitRect(page, rect)` — a rectangle of the page, as a `Pdf.Rect`.
-      - `FitBox(page)` — the page's bounding box.
-      - `FitBoxWidth(page, top)` — the bounding box's width.
-      - `FitBoxHeight(page, left)` — the bounding box's height.
+      ```tabular
+      column  Case
+      column  PDF
+      column  Shows
+      row  `Xyz(page, left, top, zoom)`  `/XYZ`  the position at the top-left corner, at a zoom
+      row  `Fit(page)`  `/Fit`  the whole page
+      row  `FitWidth(page, top)`  `/FitH`  the page's width, with `top` at the top of the window
+      row  `FitHeight(page, left)`  `/FitV`  the page's height, with `left` at the left
+      row  `FitRect(page, rect)`  `/FitR`  a rectangle of the page, as a `Pdf.Rect`
+      row  `FitBox(page)`  `/FitB`  the page's bounding box
+      row  `FitBoxWidth(page, top)`  `/FitBH`  the bounding box's width
+      row  `FitBoxHeight(page, left)`  `/FitBV`  the bounding box's height
+      ```
 
       A destination is read from an explicit array, a dictionary wrapping one at `/D`, or a
       name or string looked up among the document's named destinations (consulted once, so a

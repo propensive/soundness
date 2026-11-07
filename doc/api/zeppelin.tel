@@ -321,16 +321,25 @@ entry .Zip   the ZIP form and plane: entries, compression, errors and the scoped
         ```
     entry .Reason   what was wrong with a ZIP archive or operation, each with a stable number
       detail
-          `DuplicateEntry(path)` (1), two entries with one path, refused before any byte is
-          serialized; `NotFound(path)` (2), an entry which is not in the archive;
-          `InvalidName(name)` (3), an entry name which is not a valid `Path on Zip`;
-          `UnsupportedMethod(method)` (4), a compression method other than stored or deflate;
-          `MissingEocd` (5), no end-of-central-directory record, so the bytes are not a ZIP
-          archive; `TruncatedArchive` (6), an archive which ends too soon;
-          `BadSignature(expected)` (7), a record whose signature is not the one expected;
-          `Zip64Error` (8), ZIP64 metadata which cannot be interpreted; `WriteUnsupported` (9),
-          an archive opened in a mode with `Write`; `AlreadyExists` (10), an archive already at
-          the path; and `CannotWrite(detail)` (11), an archive which could not be written.
+          Each case has a stable number:
+
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          column  Note
+          row  `DuplicateEntry(path)`  1  _the path `path` is a duplicate entry_  refused before any byte is serialized
+          row  `NotFound(path)`  2  _path `path` was not found in the ZIP file_
+          row  `InvalidName(name)`  3  _the name `name` is not valid for a ZIP entry_  not a valid `Path on Zip`
+          row  `UnsupportedMethod(method)`  4  _the compression method `method` is not supported_  anything but stored or deflate
+          row  `MissingEocd`  5  _no end-of-central-directory record could be found_  so the bytes are not a ZIP archive
+          row  `TruncatedArchive`  6  _the ZIP archive ended unexpectedly_
+          row  `BadSignature(expected)`  7  _an expected record signature (`expected`) was absent_
+          row  `Zip64Error`  8  _the ZIP64 metadata could not be interpreted_
+          row  `WriteUnsupported`  9  _ZIP archives cannot yet be opened for writing_  an archive opened in a mode with `Write`
+          row  `AlreadyExists`  10  _an archive already exists at this path_
+          row  `CannotWrite(detail)`  11  _the archive could not be written: `detail`_
+          ```
       entry .DuplicateEntry   two entries in one archive share a path
         entry #path   the duplicated path
       entry .NotFound   the archive has no entry at the path asked for

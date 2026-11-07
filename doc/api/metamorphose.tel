@@ -98,17 +98,16 @@ entry .Permutation   a reversible rearrangement of a sequence, stored as its fac
         Error 427: _could not construct permutation because `reason`_, where the reason is one
         of the `Permutation.Error.Reason` cases:
 
-        - `BaseRange(value, base)` — _the value `value` is too large for its positional base
-          `base`_: a digit given to `Factoradic(List(…))` is not below its position's base.
-        - `DuplicateIndex(index, element)` — _the index `index` was duplicated at `element`_:
-          `Permutation(Sequence(…))` met an index for the second time; the second field is the
-          position at which it reappeared.
-        - `InvalidIndex(last, max)` — _the index `last` appears, but every index should be in
-          the range 0-`max`_: an index given to `Permutation(Sequence(…))` is negative or not
-          below the sequence's length.
-        - `TooShort(length, min)` — _the input, of size `length`, is too short for the
-          permutation of size `min`_: `Permutation#apply` was given a list shorter than the
-          permutation's Lehmer code.
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `BaseRange(value, base)`  1  _the value `value` is too large for its positional base `base`_  a digit given to `Factoradic(List(…))` is not below its position's base
+        row  `DuplicateIndex(index, element)`  2  _the index `index` was duplicated at `element`_  `Permutation(Sequence(…))` met an index for the second time; `element` is the position at which it reappeared
+        row  `InvalidIndex(last, max)`  3  _the index `last` appears, but every index should be in the range 0-`max`_  an index given to `Permutation(Sequence(…))` is negative or not below the sequence's length
+        row  `TooShort(length, min)`  4  _the input, of size `length`, is too short for the permutation of size `min`_  `Permutation#apply` was given a list shorter than the permutation's Lehmer code
+        ```
 
         ```scala
         import soundness.*

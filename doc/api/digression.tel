@@ -177,12 +177,16 @@ entry .Fqcn   a fully-qualified JVM class name: dot-separated segments, each val
       detail
           An enum of four numbered cases:
 
-          - `InvalidChar(char)` (1) — _a package name may not contain the character `char`_;
-          - `InvalidStart(char)` (2) — _a package name may not start with the character
-            `char`_, a digit;
-          - `EmptyName` (3) — _a package name cannot be empty_;
-          - `JavaKeyword(keyword)` (4) — _a package name cannot be the Java keyword,
-            `keyword`_.
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          column  Note
+          row  `InvalidChar(char)`  1  _a package name may not contain the character `char`_
+          row  `InvalidStart(char)`  2  _a package name may not start with the character `char`_  a digit
+          row  `EmptyName`  3  _a package name cannot be empty_
+          row  `JavaKeyword(keyword)`  4  _a package name cannot be the Java keyword, `keyword`_
+          ```
       entry #number   the reason's number, `1` to `4`
     entry .communicable   renders each `Fqcn.Error.Reason` as a message
     entry #name   the text which was not a valid class name

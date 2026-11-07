@@ -572,33 +572,27 @@ entry .Cbor   a CBOR document: an immutable tree, with its codecs, parser hooks 
     entry #reason   why the value could not be processed, as a `Cbor.Error.Reason`
     entry .Reason   the specific fault: where the input broke, or what mismatched
       detail
-          A `Clarification` enum, each case numbered. The parse faults carry an absolute
-          byte offset into the input, counted from its start whatever the chunking:
+          A `Clarification` enum, each case numbered. Cases 1 to 7 are parse faults, and carry
+          an absolute byte offset into the input, counted from its start whatever the chunking;
+          cases 8 to 11 are decoding faults, about the tree:
 
-          - `Truncated(offset)` (1): _the input was truncated at byte `offset`_ — the item
-            needed a byte which was not there.
-          - `Reserved(offset, byte)` (2): _a reserved CBOR head byte `byte` was found at
-            byte `offset`_ — additional information 28 to 30.
-          - `BadSimpleValue(offset, value)` (3): _an invalid simple value `value` was found
-            at byte `offset`_ — a two-byte simple value below 32.
-          - `InvalidUtf8(offset)` (4): _invalid UTF-8 was found at byte `offset`_ — in a
-            text string.
-          - `Overflow(offset)` (5): _an integer too large for Long was found at byte
-            `offset`_ — a 64-bit unsigned integer, or a negative one, beyond `Long`.
-          - `UnexpectedBreak(offset)` (6): _an unexpected break stop code was found at byte
-            `offset`_ — 0xFF outside an indefinite-length item.
-          - `Trailing(offset)` (7): _unexpected trailing bytes were found from byte
-            `offset`_ — the item ended but the input did not.
-
-          The decoding faults are about the tree:
-
-          - `OutOfRange` (8): _the array index was out of range_.
-          - `NotType(found, expected)` (9): _the CBOR value had type `found` instead of
-            `expected`_, each a `.Primitive`.
-          - `NonStringKey` (10): _the map key was not a string_ — decoding a `Map`.
-          - `Absent` (11): _the CBOR value was not present_ — a required field's key was
-            missing, a sealed hierarchy's discriminator was missing, or an `Optional` was
-            absent under `optionalityOptions.strictCborAbsence`.
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          column  Note
+          row  `Truncated(offset)`  1  _the input was truncated at byte `offset`_  the item needed a byte which was not there
+          row  `Reserved(offset, byte)`  2  _a reserved CBOR head byte `byte` was found at byte `offset`_  additional information 28 to 30
+          row  `BadSimpleValue(offset, value)`  3  _an invalid simple value `value` was found at byte `offset`_  a two-byte simple value below 32
+          row  `InvalidUtf8(offset)`  4  _invalid UTF-8 was found at byte `offset`_  in a text string
+          row  `Overflow(offset)`  5  _an integer too large for Long was found at byte `offset`_  a 64-bit unsigned integer, or a negative one, beyond `Long`
+          row  `UnexpectedBreak(offset)`  6  _an unexpected break stop code was found at byte `offset`_  0xFF outside an indefinite-length item
+          row  `Trailing(offset)`  7  _unexpected trailing bytes were found from byte `offset`_  the item ended but the input did not
+          row  `OutOfRange`  8  _the array index was out of range_
+          row  `NotType(found, expected)`  9  _the CBOR value had type `found` instead of `expected`_  each a `.Primitive`
+          row  `NonStringKey`  10  _the map key was not a string_  decoding a `Map`
+          row  `Absent`  11  _the CBOR value was not present_  a required field's key or a sealed hierarchy's discriminator was missing, or an `Optional` was absent under `optionalityOptions.strictCborAbsence`
+          ```
       entry #number   the reason's number, 1 to 11, which the error reports as its second component
       entry .communicable   renders each reason as its message
     entry .Primitive   the kinds of CBOR node an error names: what was found and what was expected

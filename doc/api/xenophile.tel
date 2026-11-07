@@ -1541,10 +1541,20 @@ entry .Typescript   the TypeScript ecosystem: a `.d.ts` file read as the code co
       ```
 
       The companion holds two things. First, the `Interoperable` givens by which a Scala value
-      passes as an argument: `Text` for `string`, `Int` for `number`, `Boolean`, a `List` for
-      `T[]`, a `Map` for `Map<K, V>`, and an `Optional` for `T?`, which the dialect reads as
-      the union `T | undefined`. They are in the companion, so they are in implicit scope with
-      no import. Second, the declaration model and its parser: `Typescript.Parser.parse` reads
+      passes as an argument, in implicit scope with no import:
+
+      ```tabular
+      column  Scala type
+      column  TypeScript type
+      row  `Text`  `string`
+      row  `Int`  `number`
+      row  `Boolean`  `boolean`
+      row  `List[T]`  `T[]`
+      row  `Map[K, V]`  `Map<K, V>`
+      row  `Optional[T]`  `T?`, read as the union `T | undefined`
+      ```
+
+      Second, the declaration model and its parser: `Typescript.Parser.parse` reads
       a `.d.ts` source into `Typescript.Declaration`s — interfaces, classes, aliases, enums,
       functions and variables, with their members and `Typescript.Type`s — faithfully enough
       for a compatibility discipline to hash, raising `Typescript.Error` for anything outside
@@ -1695,11 +1705,18 @@ entry .Typescript   the TypeScript ecosystem: a `.d.ts` file read as the code co
         // Typescript.Error.Reason.Unsupported(t"a conditional type")
         ```
     entry .Reason   why the source could not be read: `Syntax`, `Unsupported` or `Duplicate`
-        Each case carries its error sub-number: `Syntax(detail, near)` is 1, `Unsupported
-        (construct)` 2 and `Duplicate(name)` 3.
-    entry .communicable   renders a reason as a message
-        _`detail`, near `near`_; _the construct `construct` is outside the grammar this parser
-        accepts_; _the declaration `name` appears twice in the same scope_.
+        Each case carries its error sub-number:
+
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `Syntax(detail, near)`  1  _`detail`, near `near`_
+        row  `Unsupported(construct)`  2  _the construct `construct` is outside the grammar this parser accepts_
+        row  `Duplicate(name)`  3  _the declaration `name` appears twice in the same scope_
+        ```
+    entry .communicable   renders a reason as its message, as tabulated under `Reason`
     entry #reason   the `Typescript.Error.Reason`
   entry .Parser   a parser for TypeScript declaration files
     detail
@@ -1894,11 +1911,18 @@ entry .WebIdl   the WebIDL ecosystem: `.idl` interfaces read as the code compile
         error and not a skip, since a capability contract read partially understates what the
         file declares — or a `Duplicate` definition.
     entry .Reason   why the fragment could not be read: `Syntax`, `Unsupported` or `Duplicate`
-        Each case carries its error sub-number: `Syntax(detail, near)` is 1,
-        `Unsupported(construct)` 2 and `Duplicate(name)` 3.
-    entry .communicable   renders a reason as a message
-        _`detail`, near `near`_; _the construct `construct` is outside the grammar this parser
-        accepts_; _the definition `name` appears twice_.
+        Each case carries its error sub-number:
+
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `Syntax(detail, near)`  1  _`detail`, near `near`_
+        row  `Unsupported(construct)`  2  _the construct `construct` is outside the grammar this parser accepts_
+        row  `Duplicate(name)`  3  _the definition `name` appears twice_
+        ```
+    entry .communicable   renders a reason as its message, as tabulated under `Reason`
     entry #reason   the `WebIdl.Error.Reason`
   entry .Parser   a declaration parser for WebIDL fragments
     detail
@@ -2024,11 +2048,25 @@ entry .Wit   the WIT ecosystem: WebAssembly component interfaces read as the cod
       ```
 
       The companion holds the `Interoperable` givens by which a Scala value passes as an
-      argument and a result is read: WIT's sized integers and floats stand for Hypotenuse's
-      fixed-width numbers (`S8` to `S64`, `U8` to `U64`, `F32`, `F64`), `flags` for its
-      bit-vectors (`B8` to `B64`), `Boolean` for `bool`, `Char` for `char`, `Text` for
-      `string`, `Data` for `list<u8>`, a `List` for `list<T>` and an `Optional` for
-      `option<T>`. They are in the companion, so they are in implicit scope with no import.
+      argument and a result is read. They are in the companion, so they are in implicit scope
+      with no import:
+
+      ```tabular
+      column  Scala type
+      column  WIT type
+      row  `S8`, `S16`, `S32`, `S64`  `s8`, `s16`, `s32`, `s64`
+      row  `U8`, `U16`, `U32`, `U64`  `u8`, `u16`, `u32`, `u64`
+      row  `F32`, `F64`  `f32`, `f64`
+      row  `B8`, `B16`, `B32`, `B64`  `flags`, sized to hold its members
+      row  `Boolean`  `bool`
+      row  `Char`  `char`
+      row  `Text`  `string`
+      row  `Data`  `list<u8>`
+      row  `List[T]`  `list<T>`
+      row  `Optional[T]`  `option<T>`, read as `T | none`
+      ```
+
+      The numbers are Hypotenuse's fixed-width types.
       A wrongly-typed argument is a compile error, _xenophile: add expects an argument of
       foreign type s32_.
 
@@ -2125,12 +2163,19 @@ entry .Wit   the WIT ecosystem: WebAssembly component interfaces read as the cod
         unstable item in a published contract would be a stable claim about an unstable
         surface; a `Duplicate` definition; or an `Unresolved` type name.
     entry .Reason   why the source could not be read: `Syntax`, `Unsupported`, `Duplicate` or `Unresolved`
-        Each case carries its error sub-number: `Syntax(detail, near)` is 1,
-        `Unsupported(construct)` 2, `Duplicate(name)` 3 and `Unresolved(name)` 4.
-    entry .communicable   renders a reason as a message
-        _`detail`, near `near`_; _the construct `construct` is outside the grammar this parser
-        accepts_; _the definition `name` appears twice_; _the type `name` resolves to no
-        declaration_.
+        Each case carries its error sub-number:
+
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `Syntax(detail, near)`  1  _`detail`, near `near`_
+        row  `Unsupported(construct)`  2  _the construct `construct` is outside the grammar this parser accepts_
+        row  `Duplicate(name)`  3  _the definition `name` appears twice_
+        row  `Unresolved(name)`  4  _the type `name` resolves to no declaration_
+        ```
+    entry .communicable   renders a reason as its message, as tabulated under `Reason`
     entry #reason   the `Wit.Error.Reason`
   entry .Parser   a declaration parser for WIT sources
     detail

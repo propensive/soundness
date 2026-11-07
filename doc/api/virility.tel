@@ -112,15 +112,17 @@ entry .Roff   a Unix manual page: its `.TH` title line and a list of blocks, ser
     detail
         An enum of the block structures of the man macros:
 
-        - `Section(title, blocks)` — a `.SH` section, such as `Name`, `Synopsis` or `Options`.
-        - `Subsection(title, blocks)` — a `.SS` subsection.
-        - `Paragraph(prose)` — a `.P` paragraph of inline runs. As the first block of a
-          section or subsection, the redundant `.P` is omitted.
-        - `Tagged(tag, body)` — a `.TP` paragraph, the shape of an option's entry: the tag on
-          one line and its description indented beneath. An empty body emits only the tag.
-        - `Example(lines)` — a `.EX`/`.EE` block of literal lines, each escaped and
-          protected.
-        - `Indented(blocks)` — blocks indented between `.RS` and `.RE`.
+        ```tabular
+        column  Case
+        column  Macros
+        column  Block
+        row  `Section(title, blocks)`  `.SH`  a section, such as `Name`, `Synopsis` or `Options`
+        row  `Subsection(title, blocks)`  `.SS`  a subsection
+        row  `Paragraph(prose)`  `.P`  a paragraph of inline runs; as the first block of a section or subsection, the redundant `.P` is omitted
+        row  `Tagged(tag, body)`  `.TP`  the shape of an option's entry: the tag on one line and its description indented beneath; an empty body emits only the tag
+        row  `Example(lines)`  `.EX`, `.EE`  literal lines, each escaped and protected
+        row  `Indented(blocks)`  `.RS`, `.RE`  indented blocks
+        ```
 
         ```scala
         import soundness.*

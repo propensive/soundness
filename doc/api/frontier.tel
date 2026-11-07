@@ -100,16 +100,17 @@ entry .Diagnostic   a pre-rendered tree describing a failed implicit search, and
       The enum's six cases are its node kinds, each taking a name, an optional label and a
       list of children:
 
-      - `Resolving` — the root: the type being resolved, rendered as _■ resolving T_;
-      - `Candidate` — a given in scope which was tried, _▪ candidate g_;
-      - `Requires` — a contextual parameter of a candidate which could not be found,
-        _✗ requires T_;
-      - `Propose` — a given on the classpath, not in scope, which would supply the value,
-        _▸ propose pkg.g_;
-      - `Prohibits` — a `NotGiven[X]` requirement, unwrapped to `X`, _⊘ prohibits X_, whose
-        child is the `Found` that violates it, or which has no child and the label `absent`
-        when it holds;
-      - `Found` — a value which was found, _✓ found T_.
+      ```tabular
+      column  Case
+      column  Rendered as
+      column  Node
+      row  `Resolving`  _■ resolving T_  the root: the type being resolved
+      row  `Candidate`  _▪ candidate g_  a given in scope which was tried
+      row  `Requires`  _✗ requires T_  a contextual parameter of a candidate which could not be found
+      row  `Propose`  _▸ propose pkg.g_  a given on the classpath, not in scope, which would supply the value
+      row  `Prohibits`  _⊘ prohibits X_  a `NotGiven[X]` requirement, unwrapped to `X`; its child is the `Found` that violates it, or it has no child and the label `absent` when it holds
+      row  `Found`  _✓ found T_  a value which was found
+      ```
 
       ```scala
       import soundness.*

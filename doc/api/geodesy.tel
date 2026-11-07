@@ -419,20 +419,25 @@ entry .Geolocation   a location with optional altitude, uncertainty, reference s
         // Geolocation.Error.Reason.BadUncertainty
         ```
 
-        Each `Reason` is numbered as a sub-code of 420: `MissingEquals` (1), _the parameter
-        does not contain an `=`_; `MultipleEquals` (2), _the parameter contains more than one
-        `=`_; `BadScheme` (3), _the value does not begin with the `geo:` URI scheme_;
-        `ExpectedSemicolon` (4), _a `;` was expected after the altitude value_;
-        `UnexpectedSuffix` (5), _a `,` or `;` was expected_, for junk after the longitude or a
-        non-numeric altitude; `ExpectedCoordinates` (6), _latitude and longitude coordinates
-        were expected_; and `BadUncertainty` (7), _the `uncertainty` parameter was not a
-        valid number_.
+        Each `Reason` is numbered as a sub-code of 420; the cases and their messages are
+        tabulated under `Geolocation.Error.Reason`.
     entry .Reason   why a `geo:` URI failed to decode, numbered as a sub-code of error 420
       detail
-          An enumeration of `Clarification`s: `MissingEquals`, `MultipleEquals`, `BadScheme`,
-          `ExpectedSemicolon`, `UnexpectedSuffix`, `ExpectedCoordinates` and
-          `BadUncertainty`, numbered 1 to 7 in that order. See `Geolocation.Error` for each
-          message.
+          An enumeration of `Clarification`s, numbered as sub-codes of error 420:
+
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          column  Note
+          row  `MissingEquals`  1  _the parameter does not contain an `=`_
+          row  `MultipleEquals`  2  _the parameter contains more than one `=`_
+          row  `BadScheme`  3  _the value does not begin with the `geo:` URI scheme_
+          row  `ExpectedSemicolon`  4  _a `;` was expected after the altitude value_
+          row  `UnexpectedSuffix`  5  _a `,` or `;` was expected_  junk after the longitude, or a non-numeric altitude
+          row  `ExpectedCoordinates`  6  _latitude and longitude coordinates were expected_
+          row  `BadUncertainty`  7  _the `uncertainty` parameter was not a valid number_
+          ```
       entry #number   the reason's sub-code, 1 to 7
     entry .communicable   renders each `Geolocation.Error.Reason` as its message
     entry #reason   why the URI failed to decode, a `Geolocation.Error.Reason`

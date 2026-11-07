@@ -57,20 +57,23 @@ detail
     other. Each such clash has been ruled on, and the loser is reached through its own
     package, where it keeps its name:
 
-    | Name                          | In the umbrella        | Reach the other as                        |
-    |-------------------------------|------------------------|-------------------------------------------|
-    | `Channel`                     | perihelion's WebSocket | `anticipation.Channel` (pixel channels)   |
-    | `Completion`, `Completions`   | exoskeleton's          | `harlequin.Completion`, `prophesy.Completion` |
-    | `Fragment`                    | honeycomb's            | `harlequin.Fragment`                      |
-    | `Descriptor`                  | embarcadero's OCI      | `hallucination.Descriptor`                |
-    | `Diagnostic`                  | harlequin's            | `frontier.Diagnostic`                     |
-    | `Message`                     | fulminate's            | `perihelion.Message` (a WebSocket frame)  |
-    | `Tag`                         | honeycomb's HTML tag   | `probably.Tag`, `xylophone.Tag`           |
-    | `Attributive`, `Renderable`   | honeycomb's            | `xylophone.Attributive`, `xylophone.Renderable` |
-    | `Universe`, `Classfile`       | anthology's, mandible's | `degustation.Universe`, `degustation.Classfile` |
-    | `as`                          | distillate's decoding  | `scintillate.as` (a request body)         |
-    | `teletype`                    | escapade's rendering   | `delicious.teletype`                      |
-    | `Kelvin(…)` as an `apply`     | rudiments' deindexing `apply` | `import quantitative.*`            |
+    ```tabular
+    column  Name
+    column  In the umbrella
+    column  Reach the other as
+    row  `Channel`  perihelion's WebSocket  `anticipation.Channel` (pixel channels)
+    row  `Completion`, `Completions`  exoskeleton's  `harlequin.Completion`, `prophesy.Completion`
+    row  `Fragment`  honeycomb's  `harlequin.Fragment`
+    row  `Descriptor`  embarcadero's OCI  `hallucination.Descriptor`
+    row  `Diagnostic`  harlequin's  `frontier.Diagnostic`
+    row  `Message`  fulminate's  `perihelion.Message` (a WebSocket frame)
+    row  `Tag`  honeycomb's HTML tag  `probably.Tag`, `xylophone.Tag`
+    row  `Attributive`, `Renderable`  honeycomb's  `xylophone.Attributive`, `xylophone.Renderable`
+    row  `Universe`, `Classfile`  anthology's, mandible's  `degustation.Universe`, `degustation.Classfile`
+    row  `as`  distillate's decoding  `scintillate.as` (a request body)
+    row  `teletype`  escapade's rendering  `delicious.teletype`
+    row  `Kelvin(…)` as an `apply`  rudiments' deindexing `apply`  `import quantitative.*`
+    ```
 
     A few names are absent for a different reason: an `export` cannot forward them
     faithfully. rudiments' `Scribe`/`scribe` and `Surveyor`/`survey`, and zephyrine's

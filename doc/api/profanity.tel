@@ -223,19 +223,17 @@ entry .Terminal   a live raw-mode terminal session: its event stream, its size, 
     detail
         The events a terminal sends which are not keypresses, decoded by `Keyboard.Standard`:
 
-        - `WindowSize(rows, columns)` — the terminal's size, in reply to `Terminal.reportSize`
-          (at session start, after a resize, or for `terminalFeatures.terminalSizeFeature`);
-          the `Terminal` records it before passing it on.
-        - `CursorPosition(row, column)` — where the cursor is, in one-based screen
-          coordinates, in reply to `Terminal.anchorQuery` or as a `?`-prefixed DECXCPR report.
-        - `BgColor(red, green, blue)` — the background colour, with sixteen-bit components, in
-          reply to the query of `terminalFeatures.backgroundColorFeature`; the `Terminal`
-          updates its `#mode` from it.
-        - `LoseFocus` and `GainFocus` — with `terminalFeatures.focusReportingFeature`.
-        - `Paste(text)` — the whole of a bracketed paste, with
-          `terminalFeatures.bracketedPasteFeature`, rather than one keypress per character.
-        - `Redraw` — never sent by the terminal: an application puts it on the event stream
-          to wake its event loop and repaint, after a background task changes what is shown.
+        ```tabular
+        column  Case
+        column  Report
+        column  Sent
+        row  `WindowSize(rows, columns)`  the terminal's size; the `Terminal` records it before passing it on  in reply to `Terminal.reportSize`: at session start, after a resize, or for `terminalFeatures.terminalSizeFeature`
+        row  `CursorPosition(row, column)`  where the cursor is, in one-based screen coordinates  in reply to `Terminal.anchorQuery`, or as a `?`-prefixed DECXCPR report
+        row  `BgColor(red, green, blue)`  the background colour, with sixteen-bit components; the `Terminal` updates its `#mode` from it  in reply to the query of `terminalFeatures.backgroundColorFeature`
+        row  `LoseFocus`, `GainFocus`  a change of focus  with `terminalFeatures.focusReportingFeature`
+        row  `Paste(text)`  the whole of a bracketed paste, rather than one keypress per character  with `terminalFeatures.bracketedPasteFeature`
+        row  `Redraw`  a request to repaint  never by the terminal: an application puts it on the event stream to wake its event loop after a background task changes what is shown
+        ```
 
         ```scala fuel
         typecheck
@@ -351,11 +349,29 @@ entry .Keyboard   a decoder from the characters a terminal sends to the keypress
   entry .ctrlChar   the `Ctrl` keypress for a character, or the plain character if it has no control form
       Letters (of either case) and `@`, `[`, `\`, `]`, `^` and `_` have control forms.
   entry .navigation   the editing key the final letter of a cursor sequence names: `A` is `Up`, `H` is `Home`
-      `A`, `B`, `C` and `D` are the arrows, `F` is `End` and `H` is `Home`; any other
-      character is `Escape`.
+      ```tabular
+      column  Letter
+      column  Key
+      row  `A`  `Up`
+      row  `B`  `Down`
+      row  `C`  `Right`
+      row  `D`  `Left`
+      row  `F`  `End`
+      row  `H`  `Home`
+      row  any other  `Escape`
+      ```
   entry .vt   the editing key the digit of a VT sequence `\e[n~` names: `2` is `Insert`, `5` is `PageUp`
-      `1` and `7` are `Home`, `2` is `Insert`, `3` is `Delete`, `4` and `8` are `End`, `5` and
-      `6` are `PageUp` and `PageDown`; any other digit is `Escape`.
+      ```tabular
+      column  Digit
+      column  Key
+      row  `1`, `7`  `Home`
+      row  `2`  `Insert`
+      row  `3`  `Delete`
+      row  `4`, `8`  `End`
+      row  `5`  `PageUp`
+      row  `6`  `PageDown`
+      row  any other  `Escape`
+      ```
   entry .Lookahead   decides whether an escape character begins a sequence or is the `Escape` key
     detail
         The escape key and the start of an escape sequence are the same character; they are

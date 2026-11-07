@@ -925,17 +925,22 @@ entry .OpenApi   an OpenAPI 3.x document as a value: info, servers, paths, compo
   entry .Error   raised when a document is not valid OpenAPI 3, or a reference cannot be followed
     detail
         Error 846: _the OpenAPI document was not valid because `reason`_, with one of five
-        reasons. `Malformed` (846.1), _the OpenAPI document could not be parsed_: the text was
-        not JSON or YAML, or did not fit the model. `UnsupportedVersion(version)` (846.2),
-        _the OpenAPI version `version` is not supported; only 3.x is supported_: a Swagger 2
-        document, say. `UnresolvableRef(pointer)` (846.3), _the reference `pointer` could not
-        be resolved_: a `$ref` to a component the document does not have. `UnsupportedRef(pointer)`
-        (846.4), _the reference `pointer` is not supported; only #/components/schemas
-        references work_: a `$ref` outside the document's components, such as into `#/paths`
-        or another file. `BadParameterLocation(value)` (846.5), _`value` is not a valid
-        parameter location; expected one of path, query, header or cookie_. `read[OpenApi]`
-        raises the first two and the last; `referable()` and `schema()` raise the reference
-        ones. At `Api(…)` any of them is a compile error.
+        reasons, numbered as `846.1` to `846.5`:
+
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `Malformed`  1  _the OpenAPI document could not be parsed_  the text was not JSON or YAML, or did not fit the model
+        row  `UnsupportedVersion(version)`  2  _the OpenAPI version `version` is not supported; only 3.x is supported_  a Swagger 2 document, say
+        row  `UnresolvableRef(pointer)`  3  _the reference `pointer` could not be resolved_  a `$ref` to a component the document does not have
+        row  `UnsupportedRef(pointer)`  4  _the reference `pointer` is not supported; only #/components/schemas references work_  a `$ref` outside the document's components, such as into `#/paths` or another file
+        row  `BadParameterLocation(value)`  5  _`value` is not a valid parameter location; expected one of path, query, header or cookie_
+        ```
+
+        `read[OpenApi]` raises the first two and the last; `referable()` and `schema()` raise the
+        reference ones. At `Api(…)` any of them is a compile error.
     entry .Reason   why the document was rejected: `Malformed`, `UnsupportedVersion`, `UnresolvableRef`, `UnsupportedRef` or `BadParameterLocation`
         An enum, each case numbering its error and rendered by the anonymous `Communicable`
         given in its companion.

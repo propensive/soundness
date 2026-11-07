@@ -105,18 +105,16 @@ entry .Markup   one node of a semantic diagnostic: text, a type, a symbol, a nam
       to read a tree from the compiler's text and `Markup.plain` to strip it. A node is one
       of:
 
-      - `Textual(text)` — plain text between markers.
-      - `Typed(tasty, placeholders, rendition, children)` — a type: `tasty` is its TASTy
-        pickled form as Base64 text (`Unset` when the compiler supplied none), to be reified
-        by `Reifier#syntax`; `placeholders` are the `Placeholder`s standing in for the parts
-        of it which could not be pickled; and the `children` are the compiler's printed
-        rendering, the fallback.
-      - `Symbolic(name, full, rendition, children)` — a symbol reference, by its `name` and
-        `full`y qualified name.
-      - `Named(isType, rendition, children)` — a name, with whether it is a type name.
-      - `Code(rendition, children)` — a code sample, which `teletype` syntax-highlights.
-      - `Spanned(kind, rendition, children)` — a marker of a `kind` this library does not
-        know, kept with its children.
+      ```tabular
+      column  Case
+      column  Node
+      row  `Textual(text)`  plain text between markers
+      row  `Typed(tasty, placeholders, rendition, children)`  a type: `tasty` is its TASTy pickled form as Base64 text (`Unset` when the compiler supplied none), reified by `Reifier#syntax`; `placeholders` stand in for the parts which could not be pickled; `children` are the compiler's printed rendering, the fallback
+      row  `Symbolic(name, full, rendition, children)`  a symbol reference, by its `name` and `full`y qualified name
+      row  `Named(isType, rendition, children)`  a name, with whether it is a type name
+      row  `Code(rendition, children)`  a code sample, which `teletype` syntax-highlights
+      row  `Spanned(kind, rendition, children)`  a marker of a `kind` this library does not know, kept with its children
+      ```
 
       Every node but `Textual` has a `Rendition`, the form the compiler presented it in, and
       `children`, the nodes inside it; `#plain` on any node is its visible text.
@@ -191,20 +189,35 @@ entry .Placeholder   what stood in for a part of a type the compiler could not p
 
 entry .PlaceholderKind   the kind of thing a placeholder replaced
   detail
-      `LocalType` and `LocalTerm` for a definition local to the compilation; `Error` for an
-      error type; `Typevar` for an uninstantiated type variable; `Skolem` for a skolem; and
-      `Other(kind)` for any kind this library does not know, keeping the compiler's text.
-      `PlaceholderKind(text)` reads the wire names `local-type`, `local-term`, `error`,
-      `typevar` and `skolem`, and anything else as `Other`.
+      `PlaceholderKind(text)` reads a kind from its wire name:
+
+      ```tabular
+      column  Case
+      column  Wire name
+      column  Replaced
+      row  `LocalType`  `local-type`  a type definition local to the compilation
+      row  `LocalTerm`  `local-term`  a term definition local to the compilation
+      row  `Error`  `error`  an error type
+      row  `Typevar`  `typevar`  an uninstantiated type variable
+      row  `Skolem`  `skolem`  a skolem
+      row  `Other(kind)`  anything else  a kind this library does not know, keeping the compiler's text
+      ```
   entry .apply   a kind from its wire name, with an unknown name kept as `Other`
 
 entry .Rendition   the form a symbol reference is presented in: default, declaration, located or full
   detail
-      Carried by every `Markup` node but `Textual`: `Declaration` is the symbol shown as its
-      declaration (`def foo: Int`), `Located` as its located name, `Full` as its full name,
-      and `Default` as it is normally printed. It is parsed from the marker's `style`
-      attribute, but it is not visual styling. `Rendition(text)` reads the wire names `dcl`,
-      `located` and `full`, and anything else — including `Unset` — as `Default`.
+      Carried by every `Markup` node but `Textual`. It is parsed from the marker's `style`
+      attribute, but it is not visual styling; `Rendition(text)` reads it from its wire name:
+
+      ```tabular
+      column  Case
+      column  Wire name
+      column  The symbol is shown
+      row  `Declaration`  `dcl`  as its declaration: `def foo: Int`
+      row  `Located`  `located`  as its located name
+      row  `Full`  `full`  as its full name
+      row  `Default`  anything else, or `Unset`  as it is normally printed
+      ```
   entry .apply   a rendition from an optional wire name, `Default` when absent or unknown
 
 entry .Reifier   unpickles the TASTy types in semantic diagnostics back into stenography `Syntax`

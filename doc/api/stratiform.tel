@@ -894,12 +894,19 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
       entry #text   the prefix as a BASE-256 word
     entry .Error   raised when an acceptance, or a document answering one, is invalid
       detail
-          Error 612, sub-numbered by reason: _the acceptance is invalid because …_.
-          `MalformedSignature(length)` (1), a value which is not structurally a signature;
-          `ComponentLength(length)` (2), a component outside four to thirty-two bytes;
-          `WrongSchema(identifier)` (3), a document identifying a schema other than the
-          acceptance schema; `Malformed` (4), a semantic model without the shape of an
-          acceptance; and `Unread` (5), a reply no alternative's schema is a supertype of.
+          Error 612, sub-numbered by reason: _the acceptance is invalid because …_:
+
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          column  Note
+          row  `MalformedSignature(length)`  1  _a `length`-byte value is not structurally a schema signature_
+          row  `ComponentLength(length)`  2  _a component must be four to thirty-two bytes long, not `length`_
+          row  `WrongSchema(identifier)`  3  _the document identifies its schema as `identifier`, not the acceptance schema_
+          row  `Malformed`  4  _the semantic model does not have the shape of an acceptance_
+          row  `Unread`  5  _no alternative's schema is a supertype of the document's composed schema_  a reply
+          ```
       entry .Reason   the five reasons, each with its number and message
       entry #reason   why the acceptance is invalid
     entry #alternatives   the alternatives, in order of preference
@@ -1232,17 +1239,10 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
     detail
         Error 605, sub-numbered by the reason's TEL code: _the TEL document is invalid at line
         2, columns 5-8 because …_, or without the position when the span is empty. The
-        reasons are the specification's codes: E1xx for parse faults (`BomPresent` 101,
-        `OddIndentation` 107, `TrailingSpaces` 108, `UnmatchedDedent` 110, `UnclosedLiteral`
-        115, `BadPragmaPhrase` 121, …), each with a §19.5 `Recovery` the parser applies so
-        that it can continue; E2xx for schema validity (`DuplicateKeywordInStruct` 201,
-        `UnresolvedReference` 209, `DuplicateDefinition` 210, `ReferenceKindMismatch` 217,
-        `KeyOnNonScalar` 219, `PatternNotContained` 223, …); E3xx for a document against its
-        schema (`TooManyAtoms` 302, `UnknownKeyword` 306, `RequiredMemberAbsent` 307,
-        `NonRepeatableTooMany` 308, `ValidatorRejected(message)` 310, `EncodingRejected` 312,
-        `DuplicateKeyValue` 314, `PatternRejected` 315); E4xx for decoding into a Scala type
-        (`Absent` 401, `NotScalar(value, expected)` 402); and the implementation-reserved
-        `NestingLimitExceeded` 501.
+        reasons are the specification's codes, tabulated under `Tel.Error.Reason`: E1xx for
+        parse faults, each with a §19.5 `Recovery` the parser applies so that it can
+        continue; E2xx for schema validity; E3xx for a document against its schema; E4xx for
+        decoding into a Scala type; and the implementation-reserved E501.
 
         A parse error carries its `#span`; a validation or decode error leaves the span
         empty and carries its location on the accrued `Tel.Focus` instead, as a `Telp` and,
@@ -1286,6 +1286,79 @@ entry .Tel   a TEL document or compound, keeping its presentation; the home of t
           parser's §19.5 strategy for a parse or validation reason, and `Unset` for a decode
           reason (`Absent`, `NotScalar`) or `NestingLimitExceeded`, which have no parser-level
           recovery.
+
+          E1xx are parse faults, E2xx faults in a schema, E3xx faults of a document against its
+          schema, E4xx faults in decoding to a Scala type, and E501 is implementation-reserved:
+
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          row  `BomPresent`  101  _the document begins with a byte-order mark_
+          row  `PragmaNotFirst`  102  _the pragma is not the first non-blank line_
+          row  `PragmaTooLong`  103  _the pragma extends beyond the first 4096 bytes_
+          row  `BadVersion`  104  _the pragma version is not of the form x.y_
+          row  `BadSigil`  105  _the pragma sigil is not a permitted symbolic character_
+          row  `LessThanMargin`  106  _the line begins with fewer spaces than the document margin_
+          row  `OddIndentation`  107  _the relative indentation after the margin is odd_
+          row  `TrailingSpaces`  108  _the non-blank line has trailing spaces_
+          row  `CommentNotPreceded`  109  _the comment is not preceded by a blank line, comment, start, or lesser indent_
+          row  `UnmatchedDedent`  110  _the line indent does not match any open compound_
+          row  `OverIndentation`  111  _the line is indented more than one level deeper than the previous compound_
+          row  `ChildOfNonCompound`  112  _the line is indented as a child of a tabulated row_
+          row  `DuplicateSource`  113  _the compound already has a source or literal atom_
+          row  `DuplicateLiteral`  114  _the compound already has a source or literal atom_
+          row  `UnclosedLiteral`  115  _the literal atom reaches end of file before its closing delimiter_
+          row  `RowWrongIndent`  116  _the tabulated row has a different indent from its tabulation line_
+          row  `HardSpaceWrongPosition`  117  _a hard space or consecutive-space run does not end at a column boundary_
+          row  `ColumnValueTooWide`  118  _the column value or keyword portion overflows into the next column's separator_
+          row  `BadTabulationHeading`  119  _the tabulation line heading is malformed_
+          row  `BadLineEnding`  120  _line endings are inconsistent or a CR is not followed by an LF_
+          row  `BadPragmaPhrase`  121  _the pragma phrase matches no pragma form_
+          row  `MisplacedPragmaPhrase`  122  _the pragma phrase violates the pragma's phrase order or multiplicity_
+          row  `LayerOrderMismatch`  124  _the layer selections are not in the schema's declaration order_
+          row  `DuplicateKeywordInStruct`  201  _the same keyword appears more than once in a struct_
+          row  `EmptySelectVariants`  202  _the SelectDefinition has an empty variants list_
+          row  `DefaultOnOptional`  203  _a non-required member must not specify a default_
+          row  `DuplicateLayerName`  204  _two or more layers share the same name_
+          row  `LayerKeywordCollision`  205  _the layer introduces a keyword colliding with the base_
+          row  `LayerFieldTypeMismatch`  206  _a layer Field's declared type conflicts with the base_
+          row  `BadSchemaSigil`  207  _the schema sigil is not a permitted symbolic character_
+          row  `TelKeywordReserved`  208  _the keyword `tel` is reserved in user schemas_
+          row  `UnresolvedReference`  209  _a Reference or SelectRef names an undeclared TypeName_
+          row  `DuplicateDefinition`  210  _two or more Definitions share the same name_
+          row  `ExcludeMissingVariant`  211  _Exclude names a variant absent from the base_
+          row  `ExcludeEmptiesRequired`  212  _Exclude would empty a SelectDefinition that a required SelectRef references_
+          row  `LayerVariantAddition`  213  _a layer SelectDefinition introduces a variant absent from the base_
+          row  `LayerLoosenRequired`  214  _a layer cannot loosen the `required` axis_
+          row  `LayerLoosenRepeatable`  215  _a layer cannot loosen the `repeatable` axis_
+          row  `ExcludeOutsideSelect`  216  _Exclude appears outside a SelectDefinition body_
+          row  `ReferenceKindMismatch`  217  _a Reference / SelectRef resolves to a Definition of the wrong kind_
+          row  `EncodingConflict`  218  _a layer declares an encoding conflicting with the base ScalarDefinition's_
+          row  `KeyOnNonScalar`  219  _a key field's type does not resolve to a Scalar_
+          row  `KeyOnLooseMember`  220  _a key field must be effectively required and non-repeatable_
+          row  `MultipleKeyFields`  221  _more than one member of the Struct is key-flagged_
+          row  `InvalidPattern`  222  _a `pattern` value is not a valid RE2 pattern_
+          row  `PatternNotContained`  223  _a layer's patterns are not contained in the patterns they replace_
+          row  `NonStructCompound`  301  _the compound's type is not a Struct_
+          row  `TooManyAtoms`  302  _more atoms than assignable member positions_
+          row  `AtomAtNonAssignablePos`  303  _the atom is at a non-atom-assignable member position_
+          row  `AtomVariantUnmatched`  304  _the atom text matches no variant keyword of the SelectRef_
+          row  `AtomFlagKeywordMismatch`  305  _the atom text does not match the Flag member's keyword_
+          row  `UnknownKeyword`  306  _the compound keyword is not recognised for the parent_
+          row  `RequiredMemberAbsent`  307  _a required member is absent and has no default_
+          row  `NonRepeatableTooMany`  308  _a non-repeatable member is filled more than once_
+          row  `MembersNonContiguous`  309  _compound children of the same member are not contiguous_
+          row  `ValidatorRejected(message)`  310  _a scalar value or struct failed a named validator: `message`_
+          row  `FlagWithContent`  311  _the Flag-typed compound has atoms or compound children_
+          row  `EncodingRejected`  312  _a scalar value was rejected by its encoding's codec_
+          row  `EncodingUnresolved`  313  _a scalar's declared encoding is not bound to a codec_
+          row  `DuplicateKeyValue`  314  _two keyed children of the same parent have equal key values_
+          row  `PatternRejected`  315  _a scalar value does not match a declared pattern_
+          row  `Absent`  401  _a required value was absent_
+          row  `NotScalar(value, expected)`  402  _the value `value` could not be parsed as `expected`_
+          row  `NestingLimitExceeded`  501  _the document nesting exceeds the supported limit of 256_
+          ```
       entry .communicable   renders each reason as its message: _the line is indented more than one level deeper …_
       entry .recoveryOf   the `Recovery` a reason prescribes, or `Unset` for a decode reason
     entry #reason   the error code and its detail
@@ -3361,35 +3434,29 @@ entry .Bintel   the BinTEL binary form of a typed TEL document: framing, encodin
         `bintel` and `valueHash` extensions. `Bintel.Error.Reason` numbers its cases by the
         B-code of the BinTEL specification:
 
-        - `BadMagic` (1): the magic number is missing or matches neither `B2 C4 B5 BB` nor `B2 C4 B5 BC`.
-        - `VarintError` (2): a varint is truncated, wider than 64 bits or not minimal; a
-          `Varint.Error` from the lower layer is always reported as this.
-        - `BadSignatureLength` (3): the signature's byte length is not a valid palimpsest length
-          under any cadence; also raised by `SchemaSignature.encode` for an empty list or a
-          mis-sized hash.
-        - `BadSignature` (4): the signature does not decode against the library
-          (`SchemaSignature.decode`).
-        - `BadKeywordIndex` (5): a keyword index exceeds the parent's flat keyword count.
-        - `ValueTruncated` (6): a scalar's byte length runs past the end of the input.
-        - `BadUtf8` (7): a scalar's bytes are not valid UTF-8.
-        - `TrailingBytes` (8): a whole-document reader found bytes after the document.
-        - `UnexpectedEoi` (9): the decoder needed bytes beyond the end of the input.
-        - `ReferenceUnresolved` (10): a `Reference` or `SelectRef` in the schema resolves to no
-          definition of its kind.
-        - `EmbeddedSignatureMismatch` (11): a self-contained document's recomputed signature
-          differs from the one it carries.
-        - `EmbeddedSchemaUndecodable` (12): a self-contained document's schema body does not
-          decode as a TEL document under `tels`.
-        - `CodecUnresolved` (13): a scalar's declared encoding is not resolved by the codec
-          binding, or no binding was given.
-        - `CodecDecodeFailed` (14): the bound codec rejected an encoded scalar's bytes.
-        - `CodecNoncanonical` (15): under `checkCanonical`, the bytes are not the re-encoding
-          of their decoded text.
-        - `DeclaredLengthMismatch` (16): the declared document length disagrees with the
-          structural extent of the root.
-        - `NestingLimitExceeded` (17): structs nest more than 256 deep. Not a B-code: the
-          specification places a decoder's resource limits outside the taxonomy, since a
-          decoder with a larger limit would accept the same bytes.
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `BadMagic`  1  _the magic number is missing or matches neither B2 C4 B5 BB (external mode) nor B2 C4 B5 BC (self-contained mode)_
+        row  `VarintError`  2  _a variable-length integer in the stream is invalid_  truncated, wider than 64 bits or not minimal; a `Varint.Error` from the lower layer is always reported as this
+        row  `BadSignatureLength`  3  _the schema signature length is not a valid palimpsest length under any (H, k_i, k_r)_  also raised by `SchemaSignature.encode` for an empty list or a mis-sized hash
+        row  `BadSignature`  4  _the schema signature does not decode against the library_  from `SchemaSignature.decode`
+        row  `BadKeywordIndex`  5  _a keyword index exceeds the parent's flat-keyword count_
+        row  `ValueTruncated`  6  _a Scalar value's byte length extends beyond end of input_
+        row  `BadUtf8`  7  _a Scalar value's bytes are not valid UTF-8_
+        row  `TrailingBytes`  8  _a whole-document reader found bytes after the document_
+        row  `UnexpectedEoi`  9  _the decoder requested bytes beyond end of input_
+        row  `ReferenceUnresolved`  10  _a Reference or SelectRef in the schema does not resolve to a definition of its kind_
+        row  `EmbeddedSignatureMismatch`  11  _the signature recomputed from the embedded schema body does not equal the carried signature_  in a self-contained document
+        row  `EmbeddedSchemaUndecodable`  12  _the embedded schema body does not decode as a valid TEL document under tels_  in a self-contained document
+        row  `CodecUnresolved`  13  _a scalar's declared encoding is not resolved by the codec binding_  or no binding was given
+        row  `CodecDecodeFailed`  14  _an encoded scalar's value bytes are rejected by the bound codec_
+        row  `CodecNoncanonical`  15  _an encoded scalar's value bytes are not the re-encoding of their decoded text_  checked only under `checkCanonical`
+        row  `DeclaredLengthMismatch`  16  _the declared document length disagrees with the structural extent of the document_
+        row  `NestingLimitExceeded`  17  _the document nests Structs more deeply than the decoder's limit_  structs more than 256 deep; not a B-code, since the specification leaves a decoder's resource limits outside the taxonomy
+        ```
 
         The precedence between them is the specification's: truncation *inside* a varint is
         B02, not B09, so an empty input to `Bintel.decode` is `VarintError`.

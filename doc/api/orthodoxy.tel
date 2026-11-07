@@ -378,16 +378,21 @@ entry .OAuth   the home of `OAuth.Error`, raised whenever an OAuth exchange fail
         ```
     entry .Reason   why an OAuth exchange failed, numbered as the second part of error 840
       detail
-          The cases, with their numbers and messages: `Connection(url, reason)` (1), _could
-          not connect to the OAuth provider at `url` because `reason`_; `InvalidJsonResponse`
-          (2), _the token response was not valid JSON_; `UnexpectedHttpStatus(status)` (3),
-          _the provider returned an unexpected status_; `InsufficientPrivileges(scope)` (4),
-          _the user has not granted access to `scope`_; `Unauthorized` (5), _authorization was
-          not granted_, for a `400` or `401` from the token endpoint; `Other` (6), _an
-          unexpected error occurred_, which the server middleware raises for a malformed or
-          forged redirect; and `Misconfigured(detail)` (7), _the issuer is not configured for
-          this_, when an `Issuer` lacks an endpoint a flow needs. A `Reason is Communicable`
-          given in the companion renders them.
+          A `Reason is Communicable` given in the companion renders each case:
+
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          column  Note
+          row  `Connection(url, reason)`  1  _could not connect to the OAuth provider at `url` because `reason`_
+          row  `InvalidJsonResponse`  2  _the token response was not valid JSON_
+          row  `UnexpectedHttpStatus(status)`  3  _the provider returned an unexpected status: `status`_
+          row  `InsufficientPrivileges(scope)`  4  _the user has not granted access to `scope`_
+          row  `Unauthorized`  5  _authorization was not granted_  a `400` or `401` from the token endpoint
+          row  `Other`  6  _an unexpected error occurred_  raised by the server middleware for a malformed or forged redirect
+          row  `Misconfigured(detail)`  7  _the issuer is not configured for this: `detail`_  an `Issuer` lacks an endpoint a flow needs
+          ```
       entry #number   the reason's number, the second part of the error's code
     entry #reason   why the exchange failed, as an `OAuth.Error.Reason`
 

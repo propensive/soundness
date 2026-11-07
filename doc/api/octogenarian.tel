@@ -235,40 +235,48 @@ entry .Git   the namespace of Git's model and of the repository and worktree han
         reading found the ref elsewhere, and did nothing.
     entry .Reason   why an operation failed: one of thirty-four numbered cases
         A `Clarification` enum, so every case carries its number (`685.<n>`) and renders through
-        `.communicable`. The cases, in number order:
+        `.communicable` as its message. The cases, in number order:
 
-        - `CannotExecuteGit` (1): the `git` command could not be executed.
-        - `NoRepository(path)` (2): the path is not a Git repository; raised when opening.
-        - `NoWorktree` (3): the repository has no working tree, so it cannot be opened as a
-          `Git.Worktree`.
-        - `Moved(ref, expected, actual)` (4): a compare-and-swap failed — `ref` was `expected`
-          when read but is now `actual` (either may be `Unset` for no object). The ref is named
-          as the caller used it (`HEAD`), as git does.
-        - `NoSuchRef(ref)` (5), `NoSuchObject(hash)` (6), `RefExists(ref)` (7).
-        - `Unmerged(branch, tip)` (8): a branch is not fully merged, so `deleteBranch` refused
-          without `force`.
-        - `Conflict(paths)` (9): there are conflicts in the paths.
-        - `NothingToCommit` (10): the tree is unchanged and `allowEmpty` was not given.
-        - `Detached` (11): HEAD is detached, where a branch was needed (`pull`).
-        - `Dirty(paths)` (12): local changes would be overwritten.
-        - `NotFastForward` (13): the update is not a fast-forward.
-        - `OutsideWorktree(path)` (14), `Untracked(path)` (15).
-        - `NoOperationInProgress` (16), `OperationInProgress(operation)` (17): no merge, rebase,
-          cherry-pick or revert is in progress, or one already is.
-        - `NoSuchRemote(name)` (18), `RemoteExists(name)` (19), `Unauthorized(remote)` (20),
-          `Unreachable(remote)` (21), `RemoteRejected(ref, reason)` (22).
-        - `LeaseFailed(ref, expected, actual)` (23): a `Push.Force.Lease` expectation was wrong.
-        - `NoteNotFound` (24), `NoteExists(target)` (31).
-        - `NoSuchConfig(key)` (25): a configuration key is not set — the committer's
-          `user.name` or `user.email`, when a commit is made.
-        - `InvalidConfig(key, value)` (26).
-        - `BadSignature(detail)` (27), `SigningFailed(detail)` (28).
-        - `Unsupported(operation)` (29): the operation is not supported by this backend, or a
-          concurrent exclusive open was refused.
-        - `Unexpected` (30): git reported a failure the reason table does not know; the message
-          is kept as the error's `detail`.
-        - `NoSuchWorktree(path)` (32), `NoSuchStash` (33).
-        - `Locked(ref)` (34): the lock file for a ref is held by another process.
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `CannotExecuteGit`  1  _the `git` command could not be executed_
+        row  `NoRepository(path)`  2  _`path` is not a Git repository_  raised when opening
+        row  `NoWorktree`  3  _the repository has no working tree_  so it cannot be opened as a `Git.Worktree`
+        row  `Moved(ref, expected, actual)`  4  _`ref` was `expected` when read but is now `actual`_  a compare-and-swap failed; either hash may be `Unset`, rendered _nothing_; `ref` is named as the caller used it (`HEAD`), as git does
+        row  `NoSuchRef(ref)`  5  _the reference `ref` does not exist_
+        row  `NoSuchObject(hash)`  6  _the object `hash` does not exist_
+        row  `RefExists(ref)`  7  _the reference `ref` already exists_
+        row  `Unmerged(branch, tip)`  8  _the branch `branch` at `tip` is not fully merged_  `deleteBranch` refused without `force`
+        row  `Conflict(paths)`  9  _there are conflicts in `paths`_
+        row  `NothingToCommit`  10  _there is nothing to commit_  the tree is unchanged and `allowEmpty` was not given
+        row  `Detached`  11  _HEAD is detached_  where a branch was needed (`pull`)
+        row  `Dirty(paths)`  12  _local changes would be overwritten in `paths`_
+        row  `NotFastForward`  13  _the update is not a fast-forward_
+        row  `OutsideWorktree(path)`  14  _`path` is outside the working tree_
+        row  `Untracked(path)`  15  _`path` is not tracked_
+        row  `NoOperationInProgress`  16  _no merge, rebase, cherry-pick or revert is in progress_
+        row  `OperationInProgress(operation)`  17  _an operation is already in progress_
+        row  `NoSuchRemote(name)`  18  _the remote `name` does not exist_
+        row  `RemoteExists(name)`  19  _the remote `name` already exists_
+        row  `Unauthorized(remote)`  20  _authentication with `remote` failed_
+        row  `Unreachable(remote)`  21  _the remote `remote` could not be reached_
+        row  `RemoteRejected(ref, reason)`  22  _the remote rejected `ref`: `reason`_
+        row  `LeaseFailed(ref, expected, actual)`  23  _the remote's `ref` was expected to be `expected` but is `actual`_  a `Push.Force.Lease` expectation was wrong
+        row  `NoteNotFound`  24  _no note was attached to the given object_
+        row  `NoSuchConfig(key)`  25  _the configuration key `key` is not set_  the committer's `user.name` or `user.email`, when a commit is made
+        row  `InvalidConfig(key, value)`  26  _`value` is not a valid value for `key`_
+        row  `BadSignature(detail)`  27  _the signature could not be verified: `detail`_
+        row  `SigningFailed(detail)`  28  _the object could not be signed: `detail`_
+        row  `Unsupported(operation)`  29  _`operation` is not supported by this backend_  also a concurrent exclusive open which was refused
+        row  `Unexpected`  30  _git reported an unexpected failure_  a failure the reason table does not know; git's message is kept as the error's `detail`
+        row  `NoteExists(target)`  31  _a note is already attached to `target`_
+        row  `NoSuchWorktree(path)`  32  _`path` is not a linked working tree_
+        row  `NoSuchStash`  33  _the stash entry does not exist_
+        row  `Locked(ref)`  34  _the lock file for `ref` is held by another process_
+        ```
     entry .communicable   renders each reason as a message
     entry #reason   why the operation failed
     entry #detail   what git itself said, if the backend has it: its standard error, trimmed
@@ -288,12 +296,20 @@ entry .Git   the namespace of Git's model and of the repository and worktree han
         safely(Git.Hash(t"0123456789abcdef"))        // Unset: not forty hexadecimal digits
         ```
     entry .Reason   which rule the text broke
-        `LeadingOrTrailingDot` (1): a path segment starts or ends with `.`; `ReservedSuffix`
-        (2): a segment ends with `.lock`; `ReservedSequence` (3): the name contains `@{`;
-        `DoubleDot` (4): it contains `..`; `EmptySegment` (5): an empty path segment;
-        `InvalidCharacter` (6): a character git forbids (`*`, `[`, `\`, space, `^`, `~`, `:`,
-        `?`); `BadHash` (7): not a 40-character lowercase hexadecimal hash; `BadRefspec` (8):
-        not a valid refspec.
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `LeadingOrTrailingDot`  1  _a path segment starts or ends with `.`_
+        row  `ReservedSuffix`  2  _a path segment ends with the reserved suffix `.lock`_
+        row  `ReservedSequence`  3  _the name contains the reserved sequence `@{`_
+        row  `DoubleDot`  4  _the name contains `..`_
+        row  `EmptySegment`  5  _the name contains an empty path segment_
+        row  `InvalidCharacter`  6  _the name contains a character forbidden by Git_  `*`, `[`, `\`, space, `^`, `~`, `:` or `?`
+        row  `BadHash`  7  _the value is not a 40-character hexadecimal hash_  lowercase hexadecimal only
+        row  `BadRefspec`  8  _the value is not a valid refspec_
+        ```
     entry .communicable   renders each reason as a message
     entry #value   the text which was rejected
     entry #reason   the rule it broke

@@ -426,21 +426,26 @@ entry .Ssh   the protocol's constants, the client's decisions, and the umbrella'
         ```
     entry .communicable   renders each `Reason` as its message
     entry .Reason   the ways a connection fails, each with its number and message
-        `Malformed(detail)` (1), _the server sent a malformed message: detail_;
-        `Unexpected(message)` (2), _the server sent an unexpected message N_, including `3`
-        for `SSH_MSG_UNIMPLEMENTED`, which means the server did not understand something this
-        client sent; `NoCommonAlgorithm(kind)` (3), _the server offers no supported kind
-        algorithm_, for `key exchange`, `host key` or `cipher`; `HostKeyRejected(keyType)`
-        (4), the `Ssh.HostKeys` policy refused the key; `BadSignature` (5), the host key's
-        signature over the exchange hash failed to verify; `Disconnected(code, text)` (6),
-        the server sent `SSH_MSG_DISCONNECT`; `ClosedConnection` (7), the socket closed
-        mid-message; `Integrity` (8), a packet failed its AEAD check; `ServiceRefused(service)`
-        (9); `Unauthenticated(methods)` (10), no signer was accepted, with the methods the
-        server would allow (`publickey`, or `publickey,password`); `Agent(detail)` (11), the
-        `ssh-agent` could not be reached, did not list its keys or refused to sign;
-        `ChannelRefused(detail)` (12), the server would not open a session channel;
-        `RequestRefused(kind)` (13), it refused an `exec` request; and `Unreachable(reason)`
-        (14), the TCP connection could not be made, carrying the `Socket.Error.Reason`.
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `Malformed(detail)`  1  _the server sent a malformed message: `detail`_
+        row  `Unexpected(message)`  2  _the server sent an unexpected message `message`_  including `3` for `SSH_MSG_UNIMPLEMENTED`: the server did not understand something this client sent
+        row  `NoCommonAlgorithm(kind)`  3  _the server offers no supported `kind` algorithm_  `key exchange`, `host key` or `cipher`
+        row  `HostKeyRejected(keyType)`  4  _the server's `keyType` host key was not accepted_  the `Ssh.HostKeys` policy refused the key
+        row  `BadSignature`  5  _the server's signature over the exchange is wrong_  the host key's signature over the exchange hash failed to verify
+        row  `Disconnected(code, text)`  6  _the server disconnected with code `code`: `text`_  the server sent `SSH_MSG_DISCONNECT`
+        row  `ClosedConnection`  7  _the connection was closed_  the socket closed mid-message
+        row  `Integrity`  8  _a packet failed its integrity check_  its AEAD check
+        row  `ServiceRefused(service)`  9  _the server did not accept the service `service`_
+        row  `Unauthenticated(methods)`  10  _no identity was accepted; allowed: `methods`_  no signer was accepted; the methods are those the server would allow, `publickey` or `publickey,password`
+        row  `Agent(detail)`  11  _the SSH agent `detail`_  the `ssh-agent` could not be reached, did not list its keys or refused to sign
+        row  `ChannelRefused(detail)`  12  _the server refused to open a channel: `detail`_  a session channel
+        row  `RequestRefused(kind)`  13  _the server refused the `kind` request_  an `exec` request
+        row  `Unreachable(reason)`  14  _the server could not be reached: `reason`_  the TCP connection could not be made; carries the `Socket.Error.Reason`
+        ```
     entry #reason   why the connection failed
 
 entry .Transport   the SSH transport layer over a connected `Duplex`: key exchange, encrypted packets, authentication
@@ -1146,10 +1151,16 @@ entry .Wire   the SSH wire encoding of RFC 4251 §5: a `Reader` and a `Writer` o
         ```
     entry .communicable   renders each `Reason` as its message
     entry .Reason   `Truncated`, `Oversized(length)`, `Trailing(count)` or `Negative`
-        `Truncated` (1), _the message ended before the field did_; `Oversized(length)` (2),
-        _a field claimed a length of N bytes_, beyond `Wire.Limit`; `Trailing(count)` (3),
-        _N bytes followed the end of the message_, from `Reader#end`; and `Negative` (4), _a
-        negative integer was found where none is permitted_.
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `Truncated`  1  _the message ended before the field did_
+        row  `Oversized(length)`  2  _a field claimed a length of `length` bytes_  beyond `Wire.Limit`
+        row  `Trailing(count)`  3  _`count` bytes followed the end of the message_  from `Reader#end`
+        row  `Negative`  4  _a negative integer was found where none is permitted_
+        ```
     entry #reason   why the message could not be decoded
   entry .Reader   a cursor over a message, reading one field at a time with its bounds checked
     detail

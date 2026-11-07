@@ -597,24 +597,65 @@ entry .Ergo   the Ergo shorthand: a one-line notation which parses to MathML and
       run of digits with an interior `.` is one number, a space separates and renders as
       nothing, and any other character is an operator. The structural glyphs, tightest first:
 
-      - `√` prefix is a square root, `<msqrt>`; an index atom immediately before it, with no
-        space, makes an nth root, `<mroot>`: `3√x`.
-      - `↗` and `↘` are superscript and subscript, `<msup>` and `<msub>`; a base taking one
-        of each merges into `<msubsup>`.
-      - `↑` and `↓` are overscript and underscript, `<mover>` and `<munder>`, merging into
-        `<munderover>`; a script which is a lone operator is marked as an accent.
-      - `/` is a fraction, `<mfrac>`, binding looser than the scripts.
-      - Juxtaposition is a row.
-      - `⋱`, `⋯` and `⋮` introduce a matrix, a row vector and a column vector from the group
-        which follows: `⋱(((1)(2))((3)(4)))` is a 2×2 `<mtable>`.
+      ```tabular
+      column  Glyph
+      column  Role
+      column  Element
+      column  Example
+      row  `√`  square root  `<msqrt>`  `√x`
+      row  `√` after an index  nth root  `<mroot>`  `3√x`, the index with no space before it
+      row  `↗`  superscript  `<msup>`  `x↗2`
+      row  `↘`  subscript  `<msub>`  `x↘i`
+      row  `↘` and `↗`  both, on one base  `<msubsup>`  `x↘i↗2`
+      row  `↑`  overscript  `<mover>`
+      row  `↓`  underscript  `<munder>`
+      row  `↓` and `↑`  both, on one base  `<munderover>`  `∑↓(i = 1)↑n`
+      row  `/`  fraction, looser than the scripts  `<mfrac>`  `a/b`
+      row  juxtaposition  row  `<mrow>`  `x+1`
+      row  `⋱`  matrix, from the group which follows  `<mtable>`  `⋱(((1)(2))((3)(4)))` is 2×2
+      row  `⋯`  row vector  a single-row `<mtable>`
+      row  `⋮`  column vector  a single-column `<mtable>`
+      ```
 
       An operator glyph with a missing operand degrades to a literal operator, so `(↗)` is
       `<mo>↗</mo>` rather than an error. Each MathML Core presentation attribute has a
-      **postfix directive** glyph which binds to the atom or group to its left: a boolean or
-      enumerated attribute is a bare glyph (`⇿` for `stretchy="true"`, `↮` for false, `⊰`
-      for `form="prefix"`, `⦱` for `mathvariant="normal"`, `◆` for `largeop`), and an
-      open-valued one takes its value in the grouping bracket (`●(red)` for `mathcolor`,
-      `⟑(2em)` for `mathsize`, `═(0)` for `linethickness`, `⌄(1)` for `scriptlevel`).
+      **postfix directive** glyph which binds to the atom or group to its left. A boolean or
+      enumerated attribute has a bare glyph for each value, and an open-valued one (a length,
+      colour or integer) takes its value in the grouping bracket, read verbatim:
+
+      ```tabular
+      column  Glyphs
+      column  Attribute
+      column  Values
+      row  `⧆` / `⧄`  `displaystyle`  `true` / `false`
+      row  `⌄(…)`  `scriptlevel`  the bracketed value
+      row  `◻` / `▭`  `display`  `block` / `inline`
+      row  `●(…)`  `mathcolor`  the bracketed value
+      row  `▨(…)`  `mathbackground`  the bracketed value
+      row  `⟑(…)`  `mathsize`  the bracketed value
+      row  `⦱`  `mathvariant`  `normal`
+      row  `⊩` / `⫣`  `dir`  `ltr` / `rtl`
+      row  `⊰` / `⊹` / `⊱`  `form`  `prefix` / `infix` / `postfix`
+      row  `∥` / `∤`  `fence`  `true` / `false`
+      row  `▮` / `▯`  `separator`  `true` / `false`
+      row  `⇿` / `↮`  `stretchy`  `true` / `false`
+      row  `⋈` / `⋊`  `symmetric`  `true` / `false`
+      row  `◆` / `◇`  `largeop`  `true` / `false`
+      row  `⧳` / `⧯`  `movablelimits`  `true` / `false`
+      row  `⧔(…)`  `lspace`  the bracketed value
+      row  `⧕(…)`  `rspace`  the bracketed value
+      row  `⟰(…)`  `maxsize`  the bracketed value
+      row  `⟱(…)`  `minsize`  the bracketed value
+      row  `↔(…)`  `width`  the bracketed value
+      row  `⍏(…)`  `height`  the bracketed value
+      row  `⍖(…)`  `depth`  the bracketed value
+      row  `↕(…)`  `voffset`  the bracketed value
+      row  `═(…)`  `linethickness`  the bracketed value
+      row  `◠` / `⌢`  `accent`  `true` / `false`
+      row  `◡` / `⌣`  `accentunder`  `true` / `false`
+      row  `⚙(…)`  `actiontype`  the bracketed value
+      ```
+
       Grouping decides the scope: `(x↗2)●(red)` colours the whole power, `x↗2●(red)` only
       the `2`.
 
@@ -716,13 +757,20 @@ entry .Ergo   the Ergo shorthand: a one-line notation which parses to MathML and
         safely(Ergo.parse(t"x + y"))   // Unset: no opening bracket
         ```
     entry .Reason   which fault was found
-        `Empty` (1, _the expression was empty_); `BadOpener(char)` (2, _the expression must
-        start with a bracket, not `char`_): the first character is not `(`, `[`, `{` or `⟨`;
-        `Unclosed(expected)` (3, _a group was not closed with `expected`_); `UnexpectedEnd`
-        (4, _the expression ended unexpectedly_); `MissingBody(char)` (5, _the `char`
-        introducer must be followed by a group_): a `⋱`, `⋯` or `⋮` with no group after it;
-        `Unsupported(label)` (6, _the `<label>` element has no ergo representation_): from
-        `Ergo.serialize`. The `char` fields are `Char`s.
+        The cases, whose `char` fields are `Char`s:
+
+        ```tabular
+        column  Case
+        column  Code
+        column  Message
+        column  Note
+        row  `Empty`  1  _the expression was empty_
+        row  `BadOpener(char)`  2  _the expression must start with a bracket, not `char`_  the first character is not `(`, `[`, `{` or `⟨`
+        row  `Unclosed(expected)`  3  _a group was not closed with `expected`_
+        row  `UnexpectedEnd`  4  _the expression ended unexpectedly_
+        row  `MissingBody(char)`  5  _the `char` introducer must be followed by a group_  a `⋱`, `⋯` or `⋮` with no group after it
+        row  `Unsupported(label)`  6  _the `<label>` element has no ergo representation_  from `Ergo.serialize`
+        ```
     entry .communicable   renders each reason as its message
     entry #reason   which fault was found
     entry #offset   the character position at which parsing stopped, or `-1` from serialization

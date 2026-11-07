@@ -489,16 +489,19 @@ entry .Acp   the Agent Client Protocol: its message types, the handler registry,
         `Connection#loadSession`, replays from a resumed one — discriminated on the wire by
         the `sessionUpdate` member:
 
-        - `UserMessageChunk` (`user_message_chunk`) — a piece of the user's own message, in a
-          replayed session;
-        - `AgentMessageChunk` (`agent_message_chunk`) — a piece of the agent's answer;
-        - `AgentThoughtChunk` (`agent_thought_chunk`) — a piece of its reasoning;
-        - `ToolCall` (`tool_call`) and `ToolCallUpdate` (`tool_call_update`) — a tool call
-          reported, and a later change to it;
-        - `Plan` (`plan`) — the agent's plan, in full;
-        - `AvailableCommandsUpdate` (`available_commands_update`) — the slash commands now
-          offered;
-        - `CurrentModeUpdate` (`current_mode_update`) — the session's mode has changed.
+        ```tabular
+        column  Case
+        column  `sessionUpdate`
+        column  Update
+        row  `UserMessageChunk`  `user_message_chunk`  a piece of the user's own message, in a replayed session
+        row  `AgentMessageChunk`  `agent_message_chunk`  a piece of the agent's answer
+        row  `AgentThoughtChunk`  `agent_thought_chunk`  a piece of its reasoning
+        row  `ToolCall`  `tool_call`  a tool call reported
+        row  `ToolCallUpdate`  `tool_call_update`  a later change to a tool call
+        row  `Plan`  `plan`  the agent's plan, in full
+        row  `AvailableCommandsUpdate`  `available_commands_update`  the slash commands now offered
+        row  `CurrentModeUpdate`  `current_mode_update`  the session's mode has changed
+        ```
 
         Updates reach the handler registered with `Acp.updated` in the order the agent sent
         them: they are dispatched on the connection's reader task itself, not on spawned
@@ -918,13 +921,21 @@ entry .Acp   the Agent Client Protocol: its message types, the handler registry,
         Constructing one needs `Diagnostics` in scope, as every fulminate error does.
     entry .Reason   why the operation failed, each with its JSON-RPC wire `code` and its `number`
       detail
-          `Parse` (1, −32700): _the message could not be parsed as JSON_; `InvalidRequest` (2,
-          −32600): _the message was not a valid JSON-RPC request_; `MethodNotFound` (3,
-          −32601): _the method name was not recognised_; `InvalidParams` (4, −32602): _the
-          parameters were not valid for the requested method_; `Internal` (5, −32603): _an
-          internal error occurred_; `AuthRequired` (6, −32000): _the agent requires
-          authentication_; `Incompatible` (7, no wire code): _the agent does not support the
-          protocol version this client implements_.
+          Each case has a JSON-RPC wire code beside its `number`:
+
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          column  Note
+          row  `Parse`  1  _the message could not be parsed as JSON_  wire code −32700
+          row  `InvalidRequest`  2  _the message was not a valid JSON-RPC request_  wire code −32600
+          row  `MethodNotFound`  3  _the method name was not recognised_  wire code −32601
+          row  `InvalidParams`  4  _the parameters were not valid for the requested method_  wire code −32602
+          row  `Internal`  5  _an internal error occurred_  wire code −32603
+          row  `AuthRequired`  6  _the agent requires authentication_  wire code −32000
+          row  `Incompatible`  7  _the agent does not support the protocol version this client implements_  no wire code
+          ```
       entry #number   the sub-number of error 148
       entry #code   the JSON-RPC wire code, or `0` for `Incompatible`, which has none
     entry .reason   the reason a wire code names, or `Unset` for a code outside the standard set

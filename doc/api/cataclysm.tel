@@ -300,15 +300,23 @@ entry .Css   a stylesheet: a list of rules, declarations and at-rules, read, wri
     refer cataclysm.Css.Errors
     entry .Reason   why the CSS was invalid: the nine kinds of fault, each numbered
       detail
-          A `Reason` is a `Clarification` with a `#number`, which becomes the error's
-          subcode. The cases are `UnterminatedComment` (1, _a comment was not terminated_),
-          `UnterminatedString` (2), `UnexpectedEnd` (3, _the input ended before a rule was
-          closed_), `UnexpectedChar(char)` (4), `EmptySelector` (5, a rule with nothing
-          before its `{`), `UnknownProperty(name)` (6, _`name` is not a recognized CSS
-          property_), `BadValue(property, value)` (7, _`value` is not a valid value for the
-          `property` property_), `UnsupportedValue(property, types)` (8, the property's
-          grammar uses value types the matcher does not implement, which are listed) and
-          `InvalidName(name)` (9, a class or id which is not a valid CSS identifier).
+          A `Reason` is a `Clarification` with a `#number`, which becomes the error's subcode:
+
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          column  Note
+          row  `UnterminatedComment`  1  _a comment was not terminated_
+          row  `UnterminatedString`  2  _a string literal was not terminated_
+          row  `UnexpectedEnd`  3  _the input ended before a rule was closed_
+          row  `UnexpectedChar(char)`  4  _the character `char` was not expected here_
+          row  `EmptySelector`  5  _a selector was expected but none was found_  a rule with nothing before its `{`
+          row  `UnknownProperty(name)`  6  _`name` is not a recognized CSS property_
+          row  `BadValue(property, value)`  7  _`value` is not a valid value for the `property` property_
+          row  `UnsupportedValue(property, types)`  8  _the value of `property` uses an unsupported type_  the property's grammar uses value types the matcher does not implement, listed in `types`
+          row  `InvalidName(name)`  9  _`name` is not a valid CSS identifier_  a class or id
+          ```
       entry .communicable   renders each reason as its message
       entry #number   the reason's number, 1 to 9, which is the error's subcode
     entry #reason   what was wrong
@@ -769,14 +777,25 @@ entry .Outcome   the result of checking a value against a grammar: `Valid`, `Inv
 
 entry .ValueToken   one token of a property value: identifier, number, dimension, string, function, …
     The unit a property value is broken into before matching, following the CSS Syntax
-    Module Level 3 tokenizer for the tokens which appear in values. The cases are
-    `Whitespace`; `Ident(value)` for `auto`, `solid` or `--my-var`; `Function(name)` for an
-    identifier directly followed by `(`; `Hash(value)` for `#ff0000`, holding `ff0000`;
-    `Quoted(value)` for a string's contents without its quotes; `Url(value)` for an
-    unquoted `url(…)`; `Number(value, integer, raw)`; `Percentage(value, raw)`;
-    `Dimension(value, unit, raw)` for `10px`; `Comma`; `Open` and `Close` for parentheses;
-    and `Delim(char)` for any other single character such as `/` or `+`. `SyntaxMatcher`
-    consumes them; they are exposed so that a tool can inspect a value's lexical shape.
+    Module Level 3 tokenizer for the tokens which appear in values. `SyntaxMatcher` consumes
+    them; they are exposed so that a tool can inspect a value's lexical shape. The cases:
+
+    ```tabular
+    column  Case
+    column  Token
+    row  `Whitespace`  whitespace
+    row  `Ident(value)`  an identifier: `auto`, `solid` or `--my-var`
+    row  `Function(name)`  an identifier directly followed by `(`
+    row  `Hash(value)`  `#ff0000`, holding `ff0000`
+    row  `Quoted(value)`  a string's contents, without its quotes
+    row  `Url(value)`  an unquoted `url(…)`
+    row  `Number(value, integer, raw)`  a number
+    row  `Percentage(value, raw)`  a percentage
+    row  `Dimension(value, unit, raw)`  a number with a unit: `10px`
+    row  `Comma`  `,`
+    row  `Open`, `Close`  `(` and `)`
+    row  `Delim(char)`  any other single character, such as `/` or `+`
+    ```
 
 entry .Px   one CSS pixel, `Quantity[Pixels[1]]`: a length is `4.0*Px`
     The unit value which a number multiplies to make a length in pixels, rendered as `4px`

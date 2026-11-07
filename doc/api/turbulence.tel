@@ -183,14 +183,17 @@ entry .Readable   a source which can be read whole as a result type: the composi
       written by hand: `Readable`'s companion composes it from a `Streamable` instance for
       the source and an `Aggregable` instance for the result, bridging bytes and text through
       the `Charset` or `Codepage` in scope when the two disagree. The four pipelines are
-      ordinary prioritised givens, highest first:
+      ordinary prioritised givens: `dataToData` in `Readable` itself is highest, then
+      `textToText` in `Readable1`, `dataToText` in `Readable2` and `textToData` in `Readable3`.
+      By source and result:
 
-      - `dataToData` (in `Readable` itself): a byte source to a byte-aggregated result;
-      - `textToText` (in `Readable1`): a text source to a text-aggregated result;
-      - `dataToText` (in `Readable2`): a byte source decoded through a `Charset` (needs a
-        `Buffering`);
-      - `textToData` (in `Readable3`): a text source encoded through a `Codepage` (needs a
-        `Buffering`).
+      ```tabular
+      column  Source
+      column  To a byte-aggregated result
+      column  To a text-aggregated result
+      row  bytes  `dataToData`  `dataToText`, decoded through a `Charset`; needs a `Buffering`
+      row  text  `textToData`, encoded through a `Codepage`; needs a `Buffering`  `textToText`
+      ```
 
       So a type with only a `Streamable by Data` instance reads as `Text`, and one with only
       `Streamable by Text` reads as `Data`, given an encoding; a type with both prefers the

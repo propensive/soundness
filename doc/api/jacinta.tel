@@ -2181,13 +2181,25 @@ entry .JsonSchema   a JSON Schema as a value: derived from a Scala type, read fr
       lowercased `type` keyword (`"object"`, `"integer"`, …), read back capitalised to the
       case name. It is what makes `{"type": "integer"}` encode without a `kind` wrapper.
   entry .reify   a format-neutral `Morphology` as a `JsonSchema`
-      The bridge from a codec's declared shape to a schema: `Str` to `String()`, `Whole` to
-      `Integer()`, `Real` to `Number()`, `Bool` to `Boolean()`, `Empty` to `Null()`, `Any`
-      and `Dict` to `Object(additionalProperties = true)`, `Opt(inner)` to the inner schema
-      marked optional, `Arr(items)` to an `Array`, `Obj(fields, required)` to an `Object`
-      with those properties and `OneOf(variants)` to an `Object` whose `oneOf` lists them
-      with `kind` required. `verify` and `jsonSchematics` are built on it, which is how
-      `jacinta.core` stays free of any schema dependency.
+      The bridge from a codec's declared shape to a schema:
+
+      ```tabular
+      column  Morphology
+      column  JSON Schema
+      row  `Str`  `String()`
+      row  `Whole`  `Integer()`
+      row  `Real`  `Number()`
+      row  `Bool`  `Boolean()`
+      row  `Empty`  `Null()`
+      row  `Any`, `Dict`  `Object(additionalProperties = true)`
+      row  `Opt(inner)`  the inner schema, marked optional
+      row  `Arr(items)`  an `Array`
+      row  `Obj(fields, required)`  an `Object` with those properties
+      row  `OneOf(variants)`  an `Object` whose `oneOf` lists them, with `kind` required
+      ```
+
+      `verify` and `jsonSchematics` are built on it, which is how `jacinta.core` stays free of
+      any schema dependency.
   entry .optional   the same schema with its `optional` flag set
       Copies any case with `optional = true`; `.optionalSchematic` and the codecs for
       `Optional` and `Option` fields use it.

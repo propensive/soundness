@@ -260,17 +260,44 @@ entry .WebDriver   a browser to drive: a local driver program, or a driver alrea
     refer tarantula.WebDriver.Error.Reason
     entry .Reason   the W3C error code a driver reported, as an enumeration with stable numbers
       detail
-          One case for every error code the WebDriver specification defines, as the driver spells
-          it in the `error` field of its error object: `NoSuchElement` (1), `StaleElement` (2),
-          `NoSuchWindow` (3), `JavascriptError` (4), `ScriptTimeout` (5), `Timeout` (6),
-          `UnknownCommand` (7), `Other` (8), `ElementClickIntercepted` (9),
-          `ElementNotInteractable` (10), `InsecureCertificate` (11), `InvalidArgument` (12),
-          `InvalidCookieDomain` (13), `InvalidElementState` (14), `InvalidSelector` (15),
-          `InvalidSessionId` (16), `MoveTargetOutOfBounds` (17), `NoSuchAlert` (18),
-          `NoSuchCookie` (19), `NoSuchFrame` (20), `NoSuchShadowRoot` (21),
-          `DetachedShadowRoot` (22), `SessionNotCreated` (23), `UnableToSetCookie` (24),
-          `UnableToCaptureScreen` (25), `UnexpectedAlertOpen` (26), `UnknownError` (27),
-          `UnknownMethod` (28) and `UnsupportedOperation` (29).
+          One case for every error code the WebDriver specification defines, with the code as the
+          driver spells it in the `error` field of its error object:
+
+          ```tabular
+          column  Case
+          column  Code
+          column  Message
+          column  W3C code
+          row  `NoSuchElement`  1  _the requested element was not found_  `no such element`
+          row  `StaleElement`  2  _the element is no longer attached to the page_  `stale element reference`
+          row  `NoSuchWindow`  3  _the requested window was not found_  `no such window`
+          row  `JavascriptError`  4  _a JavaScript error occurred while evaluating it_  `javascript error`
+          row  `ScriptTimeout`  5  _the asynchronous script did not complete in time_  `script timeout`
+          row  `Timeout`  6  _the operation timed out_  `timeout`
+          row  `UnknownCommand`  7  _the WebDriver does not recognise the command_  `unknown command`
+          row  `Other(code)`  8  _the WebDriver reported the error code `code`_  any other, kept as `code`
+          row  `ElementClickIntercepted`  9  _the click was intercepted by another element_  `element click intercepted`
+          row  `ElementNotInteractable`  10  _the element cannot be interacted with_  `element not interactable`
+          row  `InsecureCertificate`  11  _the page was served with an untrusted certificate_  `insecure certificate`
+          row  `InvalidArgument`  12  _an argument to the command was not acceptable_  `invalid argument`
+          row  `InvalidCookieDomain`  13  _the cookie's domain does not match the current page_  `invalid cookie domain`
+          row  `InvalidElementState`  14  _the element is in a state which forbids the action_  `invalid element state`
+          row  `InvalidSelector`  15  _the selector was not a valid one_  `invalid selector`
+          row  `InvalidSessionId`  16  _the session is no longer active_  `invalid session id`
+          row  `MoveTargetOutOfBounds`  17  _the pointer target lies outside the viewport_  `move target out of bounds`
+          row  `NoSuchAlert`  18  _no alert is currently open_  `no such alert`
+          row  `NoSuchCookie`  19  _the requested cookie was not found_  `no such cookie`
+          row  `NoSuchFrame`  20  _the requested frame was not found_  `no such frame`
+          row  `NoSuchShadowRoot`  21  _the element has no shadow root_  `no such shadow root`
+          row  `DetachedShadowRoot`  22  _the shadow root is no longer attached to the page_  `detached shadow root`
+          row  `SessionNotCreated`  23  _a new session could not be created_  `session not created`
+          row  `UnableToSetCookie`  24  _the cookie could not be set_  `unable to set cookie`
+          row  `UnableToCaptureScreen`  25  _the screenshot could not be taken_  `unable to capture screen`
+          row  `UnexpectedAlertOpen`  26  _an unexpected alert is open_  `unexpected alert open`
+          row  `UnknownError`  27  _the WebDriver encountered an unknown error_  `unknown error`
+          row  `UnknownMethod`  28  _the command does not support the HTTP method used_  `unknown method`
+          row  `UnsupportedOperation`  29  _the WebDriver does not support the operation_  `unsupported operation`
+          ```
 
           The numbers are the error's subcode and are frozen: 1 to 8 keep the meanings they were
           first published with, which is why `Other` sits at 8 out of alphabetical order, and
