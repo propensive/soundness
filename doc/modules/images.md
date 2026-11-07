@@ -131,7 +131,19 @@ val jpegBytes = image.to[Jpeg].read[Data]
 val webpBytes = image.to[Webp].read[Data]
 ```
 
-The codecs — PNG with its filters, baseline and progressive JPEG, WebP in both its lossy VP8 and
-lossless forms, GIF with its LZW, and BMP — are written directly against the formats. A backend
-seam picks between them and the platform's own imaging library where one exists, so the same code
-converts an image on the JVM, in a browser, and inside a WebAssembly component.
+The codecs are written directly against the formats:
+
+```tabular
+column  Format
+column  Reads
+column  Writes
+column  On the JVM
+row  PNG  every color type, bit depths 1 to 16, all five filters, Adam7 interlacing  8-bit truecolor, with alpha when the layout has it  `javax.imageio`
+row  JPEG  baseline and progressive, grayscale, YCbCr and CMYK  baseline  `javax.imageio`
+row  WebP  lossy VP8, lossless VP8L and extended VP8X  lossless VP8L  the pure codec
+row  GIF  GIF87a and GIF89a, first frame only  one GIF89a frame of at most 256 colors  `javax.imageio`
+row  BMP  1- to 32-bit, `BI_RGB` or `BI_BITFIELDS`, no run-length encoding  24-bit `BI_RGB`  `javax.imageio`
+```
+
+A backend seam picks between each codec and the platform's own imaging library where one exists,
+so the same code converts an image on the JVM, in a browser, and inside a WebAssembly component.

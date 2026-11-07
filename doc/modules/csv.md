@@ -104,8 +104,19 @@ List(FullName(t"Ada", t"Lovelace")).dsv.show    // t"Ada,Lovelace"
 
 ### Formats
 
-The format in scope decides the delimiter and quoting. `csvFormat` and `tsvFormat` are the common
-choices, each with a header-bearing variant, and `ssvFormat` separates on spaces:
+The format in scope decides the delimiter and quoting. Each delimiter has a plain format and a
+header-bearing variant, in the `dsvFormats` package, and all of them quote with `"`:
+
+```tabular
+column  Format
+column  With a header
+column  Delimiter
+row  `csvFormat`  `csvWithHeaderFormat`  comma
+row  `tsvFormat`  `tsvWithHeaderFormat`  tab
+row  `ssvFormat`  `ssvWithHeaderFormat`  space
+```
+
+Importing another format in an inner scope changes the delimiter:
 
 ```scala
 locally:
@@ -144,10 +155,20 @@ t"hello,world".read[Greeting in Dsv]   // Greeting(t"hello", t"world")
 t"hello".read[Greeting in Dsv]         // Greeting(t"hello", Unset)
 ```
 
-Both answers can be changed through the `optionalityOptions` package, as
-[decoding](decoding.md) describes: `strictDsvAbsence` makes a short row an error
-(`Dsv.Error.Reason.Absent`), and `lenientDsvFaults` reads a cell the inner decoder rejects as
-`Unset` rather than raising. An empty cell is a present value, not a null:
+Reading an `Optional` field follows the policies [decoding](decoding.md) describes, each varied
+by a given in the `optionalityOptions` package; delimited text has no null:
+
+```tabular
+column  A field which is
+column  Reads as
+column  Unless
+row  in a column the row lacks  `Unset`  `strictDsvAbsence` makes it an error
+row  present but rejected by the inner decoder  an error  `lenientDsvFaults` reads it as `Unset`
+```
+
+A column the row lacks is one past the end of a short row, or a header column the row does not
+have, and the error it raises under `strictDsvAbsence` has the reason `Dsv.Error.Reason.Absent`.
+An empty cell is a present value, not a null:
 
 ```scala
 case class Tally(name: Text, count: Optional[Int])
@@ -167,9 +188,20 @@ named `targetPerson` with no per-field annotation:
 import dsvRedesignations.capitalizedWordsRedesignation
 ```
 
-`unchangedRedesignation` keeps the field name as it is; `lowerWordsRedesignation`,
-`lowerDottedRedesignation` and `lowerSlashedRedesignation` cover the other conventions files
-tend to use. A single field that does not follow the convention is renamed with `@name`.
+Each redesignation in the `dsvRedesignations` package gives a field named `targetPerson` this
+header:
+
+```tabular
+column  Redesignation
+column  Header
+row  `unchangedRedesignation`  `targetPerson`
+row  `capitalizedWordsRedesignation`  `Target Person`
+row  `lowerWordsRedesignation`  `target person`
+row  `lowerDottedRedesignation`  `target.person`
+row  `lowerSlashedRedesignation`  `target/person`
+```
+
+A single field that does not follow the convention is renamed with `@name`.
 
 ### Parsing directly to a type
 
@@ -196,10 +228,16 @@ Fields are matched by header name where the format has a header and positionally
 not, and an `Optional` field that the row does not reach is `Unset` rather than an error.
 
 The same `codecs` import that selects the path for every other format selects it for DSV:
-`import codecs.direct` parses every product type directly, with no instance declared (a type
-that is not a product keeps the row decoder); `import codecs.derived` takes the row decoder even
-where a `Dsv.Parsable` is in scope; and `import codecs.strict` parses directly, with a compile
-error naming the type wherever `read[Foo in Dsv]` would otherwise fall back to the row decoder.
+
+```tabular
+column  Import
+column  For a product
+column  For any other type
+row  `codecs.direct`  parsed directly, with no instance declared  the row decoder, unless it has a `Dsv.Parsable`
+row  `codecs.derived`  the row decoder, even where a `Dsv.Parsable` is in scope  the row decoder
+row  `codecs.strict`  parsed directly, with no instance declared  a compile error naming the type, unless it has a `Dsv.Parsable`
+```
+
 The modes are alternatives; import one at a time. A `List[Foo] in Dsv` read is direct in every
 mode, since the row decoder has no sheet-level counterpart. Each field of a directly-parsed
 product reads one cell through its `Decodable in Text` (or is a product of such fields), so a

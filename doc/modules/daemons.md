@@ -84,11 +84,20 @@ for its own argument vector, so an application sees what it would have seen if r
 
 The daemon holds a socket, not the client's process, so everything it knows about the
 invocation is what the launcher told it, and the invocation's `resident` (a `Resident`, its
-handle on the daemon) is where that knowledge is read.
-`resident.cliInput`, `cliOutput` and `cliError` say whether each standard stream is a terminal.
-`resident.invokedAs` is the name the executable was invoked by — `argv[0]` as the caller
-supplied it — so one executable installed under several names by symbolic links can dispatch
-on the name, while every alias shares one warm daemon:
+handle on the daemon) is where that knowledge is read:
+
+```tabular
+column  Member
+column  Is
+row  `resident.cliInput`, `cliOutput`, `cliError`  whether each standard stream is a `Terminus.Terminal` or a `Terminus.Pipe`
+row  `resident.invokedAs`  the name the executable was invoked by: `argv[0]` as the caller supplied it
+row  `resident.umask`  the invocation's file-creation mask
+row  `resident.windowSize`  the client terminal's size, measured when the invocation began and on every resize
+row  `resident.buildId`  the running build's identifier
+```
+
+One executable installed under several names by symbolic links can therefore dispatch on
+`invokedAs`, while every alias shares one warm daemon:
 
 ```scala
 import dysasymptotics.linearSize
@@ -101,11 +110,9 @@ def multicall(): Unit = cli:
     Exit.Ok
 ```
 
-`resident.umask` is the invocation's file-creation mask, which the [filesystem](filesystem.md)
-library applies to whatever the invocation creates; and `resident.windowSize` is the client
-terminal's size, measured by the launcher when the invocation began and again on every resize.
-The invocation's `Termcap` reads the same measurement, so tables and wrapped text fit the
-terminal as it is now.
+The [filesystem](filesystem.md) library applies `umask` to whatever the invocation creates, and
+the invocation's `Termcap` reads the same measurement as `windowSize`, so tables and wrapped text
+fit the terminal as it is now.
 
 ### Signals and shutdown
 
@@ -134,11 +141,19 @@ def watch(): Unit = cli:
     longRunningWork()
 ```
 
-The daemon retires itself after six idle hours, when its state files are removed, or on demand.
-The built-in `'{admin}'` subcommand reports the daemon's pid (`pid`), ends it at once (`kill`),
-or asks it to go gracefully (`shutdown`): no further invocation is served, those in flight
-finish, and then the process exits, so a warm JVM held for a command run rarely can be
-reclaimed without finding its pid. A rebuilt executable displaces its daemon the same way.
+The daemon retires itself after six idle hours, when its state files are removed, or on demand,
+through the built-in `'{admin}'` subcommand:
+
+```tabular
+column  Subcommand
+column  Effect
+row  `pid`  reports the daemon's pid
+row  `kill`  ends the daemon at once
+row  `shutdown`  serves no further invocation, lets those in flight finish, then exits
+```
+
+A warm JVM held for a command run rarely can therefore be reclaimed without finding its pid. A
+rebuilt executable displaces its daemon the same way as `shutdown`.
 
 ### Asking for a cooked terminal
 
@@ -194,7 +209,26 @@ xek build mytool.jar
 That writes `mytool`, for the platform `xek` runs on. `xek build -p linux-x64 -p
 windows-x64 mytool.jar` builds for other platforms, and `xek build --polyglot mytool.jar` builds one file for all
 of them, which runs in `sh` (and in PowerShell and `cmd.exe` once renamed) and unpacks the right
-launcher where it runs; `xek --help` lists the rest.
+launcher where it runs. The flags this page uses are:
+
+```tabular
+column  Command
+column  Flag
+column  Effect
+row  `xek build`  `-p` *platform*  builds for that platform; repeatable
+row  `xek build`  `--polyglot`  builds one file for every platform
+row  `xek build`  `--build-id` *n*  bakes in the build identifier, which must increase from release to release
+row  `xek build`  `--public-key` *file*  bakes in the release key
+row  `xek build`  `--recovery-key` *file*  bakes in the recovery key
+row  `xek build`  `--app-id` *id*  bakes in the application identifier
+row  `xek keygen`  `--out` *prefix*  writes `<prefix>.seed` and `<prefix>.pub`
+row  `xek sign`  `--key` *seed*  signs with that key
+row  `xek sign`  `--in` *file*, `--out` *file*  names the binary to sign and the signed result
+row  `xek sign`  `--allow-downgrade`  permits the candidate to replace a newer build
+row  `xek sign`  `--foreign-key`  permits signing with a key the binary does not carry
+```
+
+`xek --help` lists the rest.
 
 The launcher finds or fetches a suitable JVM, starts the daemon when none is running, and — where a
 public key was built in — accepts only signed binaries when the application
@@ -267,10 +301,22 @@ would refuse any candidate, and `resident.buildId` is the running build's identi
 with that of a release on offer.
 
 The launcher records what it did with a candidate, and `Upgrade.outcome` reads it back: the
-`result` (`Applied`, or why the candidate was refused — `Disabled`, `NoRecord`,
-`WrongApplication`, `BadSignature`, `NotNewer` or `SwapFailed`), the `candidate` and `previous`
-build identifiers, and `when` it happened. `Upgrade.acknowledge()` clears it, so that each
-outcome is reported once:
+`result`, the `candidate` and `previous` build identifiers, and `when` it happened. The result
+is one of:
+
+```tabular
+column  Result
+column  Meaning
+row  `Applied`  the upgrade was applied
+row  `Disabled`  the running executable does not accept upgrades
+row  `NoRecord`  the candidate is not an XEK executable
+row  `WrongApplication`  the candidate was built for another application
+row  `BadSignature`  the candidate's signature does not verify
+row  `NotNewer`  the candidate is not newer than the running executable
+row  `SwapFailed`  the candidate could not be swapped into place
+```
+
+`Upgrade.acknowledge()` clears the record, so that each outcome is reported once:
 
 ```scala
 import environments.javaBaseEnvironment
@@ -282,12 +328,20 @@ def report(): Optional[Message] =
     m"${outcome.result} (build ${outcome.candidate.show})"
 ```
 
-What the signature covers is chosen so that each part of it defeats a specific attack: the
-launcher's own code, the bundled JAR, the build identifier (so an older legitimately-signed
-release cannot be replayed), the application identifier (so another application's release cannot
-be installed in its place), the flag byte permitting a downgrade (so it cannot be turned on after
-the fact), and the keys themselves (so a different release key cannot be substituted into an
-otherwise-legitimate binary). A deliberate rollback — shipping 42 over a broken 43 — is signed
+What the signature covers is chosen so that each part of it defeats a specific attack:
+
+```tabular
+column  Signed part
+column  Prevents
+row  the launcher's own code  tampering with the launcher
+row  the bundled JAR  tampering with the application
+row  the build identifier  replaying an older, legitimately-signed release
+row  the application identifier  installing another application's release in its place
+row  the flag byte permitting a downgrade  turning it on after the fact
+row  the keys themselves  substituting a different release key into an otherwise-legitimate binary
+```
+
+A deliberate rollback — shipping 42 over a broken 43 — is signed
 with `--allow-downgrade`, which sets that flag inside the signed payload.
 
 The keys a candidate is checked against are always those of the *running* binary, so rotation

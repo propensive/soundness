@@ -55,12 +55,20 @@ an exception, an absent value, or a handled failure as the caller chooses.
 ### System properties
 
 The two sources are alike in carrying textual key/value data into a JVM, and differ in where they
-come from and how they are named. Environment variables are inherited from the shell that started
-the process and conventionally have upper-case names such as `PATH` or `XDG_CONFIG_HOME`. System
-properties are passed as `-D` arguments to `java` itself, and are named in dotted lower- or
-camel-case, such as `default.log.directory`. Both arrive as text whose format only the reading
-program knows, which is the argument for decoding them into structured types at the point of
-reading rather than passing strings inward.
+come from and how they are named:
+
+```tabular
+column  Source
+column  Comes from
+column  Named in
+column  For example
+column  When missing
+row  environment variables  the shell that started the process  upper case  `PATH`, `XDG_CONFIG_HOME`  `Environment.Error`
+row  system properties  `-D` arguments to `java` itself  dotted lower- or camel-case  `default.log.directory`  `Property.Error`
+```
+
+Both arrive as text whose format only the reading program knows, which is the argument for
+decoding them into structured types at the point of reading rather than passing strings inward.
 
 A JVM system property is read through `System.properties`, its dotted name written as a path of
 members ending in an application. Each property is decoded to its natural type:
@@ -135,7 +143,9 @@ The conventional layout of a Unix system is typed too. `Home` and `Base` are eac
 the filesystem root — `Home.Config`, `Home.Local.Share`, `Base.Var.Log`, `Base.Usr.Bin` — and
 applying one, with the path type as its type argument, resolves it against the `Environment`
 and `System` in scope. Each layout also knows whether it is meant to be written to: `readOnly`
-is `true` for `/usr` and everything beneath it, so a program can check before it tries.
+is `true` for `/usr` and everything beneath it, among others, so a program can check before it
+tries. The layouts are listed in full, with their `readOnly` values, under
+[standard directories](filesystem.md#standard-directories).
 
 ```scala
 Home.Config[Path on Linux]()        // ~/.config
@@ -155,10 +165,25 @@ in from `workingDirectory`, each resolved to the path type asked for.
 reporting into a typed value — `X86(64)`, `Arm(64)`, `Ppc(64, littleEndian = true)` and the rest —
 so code that must choose a native library or a code path by architecture matches on a value
 rather than on a string whose spelling varies by platform. `Os` does the same for the operating
-system — `Linux`, `MacOs`, `Windows`, `FreeBsd` and the other BSDs, `Solaris`, `Aix`, or
-`Other(name)` for one it does not know — decoded from the many spellings `os.name` takes
-(`Mac OS X`, `Windows Server 2022`, `SunOS`). Both are read from the `System` in scope, so a test
-can run the same code as if on another platform by handing it a fixed `System`:
+system, decoded from the many spellings `os.name` takes by matching the start of it, in any case:
+
+```tabular
+column  Case
+column  When `os.name` begins
+column  For example
+row  `Os.Linux`  `linux`  `Linux`
+row  `Os.MacOs`  `mac` or `darwin`  `Mac OS X`
+row  `Os.Windows`  `windows`  `Windows Server 2022`
+row  `Os.FreeBsd`  `freebsd`  `FreeBSD`
+row  `Os.OpenBsd`  `openbsd`  `OpenBSD`
+row  `Os.NetBsd`  `netbsd`  `NetBSD`
+row  `Os.Solaris`  `sunos` or `solaris`  `SunOS`
+row  `Os.Aix`  `aix`  `AIX`
+row  `Os.Other(name)`  anything else, kept as `name`
+```
+
+Both are read from the `System` in scope, so a test can run the same code as if on another
+platform by handing it a fixed `System`:
 
 ```scala
 System.os            // Os.MacOs

@@ -111,9 +111,21 @@ object Rgb:
 
 A format whose fields need more than fixed-width reads — a length-prefixed string, say — defines
 its own instance the same way, and composes into derived records like any primitive. The sized
-types also fix the *interpretation*, not merely the width: `B32` is four raw bytes, `U32` reads
-them as an unsigned integer, `S32` as a signed one, and the plain Scala `Int`, `Short`, `Long` and
-`Byte` have instances too, for layouts that are easier to state in them.
+types also fix the *interpretation*, not merely the width: a `B32` is four raw bytes, a `U32` reads
+them as an unsigned integer and an `S32` as a signed one, and the plain Scala types have instances
+too, for layouts that are easier to state in them:
+
+```tabular
+column  Width in bytes
+column  Raw bits
+column  Unsigned
+column  Signed
+column  Scala type
+row  1  `B8`  `U8`  `S8`  `Byte`
+row  2  `B16`  `U16`  `S16`  `Short`
+row  4  `B32`  `U32`  `S32`  `Int`
+row  8  `B64`  `U64`  `S64`  `Long`
+```
 
 `Bufferable` is the symmetric writing-side typeclass, deriving over products in the same way, so a
 layout is declared once and serves both directions.

@@ -78,10 +78,17 @@ events and nothing else, so the events of one library can be routed or silenced 
 the rest.
 
 `Logger` runs its writes on a background thread, so it needs the ambient concurrency context that
-`supervise` provides. The format in scope — here `ansiTimestampedLogFormat`, which prefixes each
-line with a dimmed timestamp and the level on a colored ground — decides how an event renders.
-For a destination that takes plain text, such as a file, `timestampedLogFormat` writes the
-timestamp and level as text, and `untimestampedLogFormat` omits the timestamp.
+`supervise` provides. The format in scope — here `ansiTimestampedLogFormat` — decides how an
+event renders. Each is imported from `logFormats`:
+
+```tabular
+column  Format
+column  Renders
+column  For
+row  `ansiTimestampedLogFormat`  a dimmed timestamp and the level on a colored ground  a terminal
+row  `timestampedLogFormat`  the timestamp and level as text  a plain-text destination, such as a file
+row  `untimestampedLogFormat`  the level as text, with no timestamp  a plain-text destination
+```
 
 A threshold drops everything below a chosen level:
 
@@ -114,16 +121,19 @@ default, so a method that logs only messages needs no declaration.
 
 ### Levels
 
-A level reflects frequency and severity together:
+A level reflects frequency and severity together. `Fine` is normally switched off, so it can be
+verbose; `Fail` is used sparingly.
 
-- **`Fine`** — high-frequency, per-unit detail useful only while debugging: each frame, each
-  packet, each file opened. Normally switched off, so it can be verbose.
-- **`Info`** — one line per significant operation or lifecycle milestone: a connection
-  established, a server now listening, a download finished.
-- **`Warn`** — a recoverable or unexpected-but-handled condition: a forced kill, a connection
-  reset, a fallback taken.
-- **`Fail`** — an operation that failed unrecoverably, emitted alongside the error being raised.
-  Used sparingly.
+```tabular
+column  Level
+column  Method
+column  For
+column  Such as
+row  `Fine`  `Log.fine`  high-frequency, per-unit detail useful only while debugging  each frame, each packet, each file opened
+row  `Info`  `Log.info`  one line per significant operation or lifecycle milestone  a connection established, a server now listening, a download finished
+row  `Warn`  `Log.warn`  a recoverable or unexpected-but-handled condition  a forced kill, a connection reset, a fallback taken
+row  `Fail`  `Log.fail`  an operation that failed unrecoverably, emitted alongside the error being raised
+```
 
 ### Event types
 

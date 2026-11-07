@@ -59,12 +59,19 @@ its handler was registered, so the declaration can never disagree with the imple
 Options a capability needs beyond mere presence — completion trigger characters, a
 semantic-tokens legend — are parameters of the registration.
 
-Inside a handler, the current document is ambient: `document` is a live view of the
-document the request concerns, with its text, line access, position/offset conversion and
-the word under a position; `workspace` reaches the other open documents and what the
-editor reported at initialization; and request payloads such as `position` are ambient
-too, so no URIs or parameters are threaded by hand. A whole server, with its `main` in the
-resident-daemon idiom described below:
+Inside a handler, the request's context is ambient, so no URIs or parameters are threaded by
+hand:
+
+```tabular
+column  Name
+column  Is
+row  `document`  a live view of the document the request concerns: its text, line access, position/offset conversion and the word under a position
+row  `workspace`  the other open documents, and what the editor reported at initialization
+row  `client`  the channel back to the editor
+row  `position`, `range`, `newName`, …  the request's payload
+```
+
+A whole server, with its `main` in the resident-daemon idiom described below:
 
 ```scala
 object DemoServer:
@@ -229,10 +236,29 @@ rewritten. The relay is asynchronous in both directions, so a proxy changes what
 says, not how it behaves.
 
 Each `rewrite` combinator decodes the payload into the same type the server side uses,
-applies the function and re-encodes it; `rewrite.result` and `rewrite.notification` take a
-method name and a `Json => Json` for anything without a combinator of its own. For whole
-messages there are two more hooks — `rewrite.outbound` and `rewrite.inbound` — each
-returning what should become of the message:
+applies the function and re-encodes it:
+
+```tabular
+column  Combinator
+column  Amends
+column  As
+row  `rewrite.capabilities`  the result of `initialize`  `ServerCapabilities`
+row  `rewrite.hover`  the result of `textDocument/hover`  `Hover`
+row  `rewrite.completions`  the result of `textDocument/completion`  `CompletionList`
+row  `rewrite.definitions`  the result of `textDocument/definition`  `List[Location]`
+row  `rewrite.symbols`  the result of `textDocument/documentSymbol`  `List[DocumentSymbol]`
+row  `rewrite.codeActions`  the result of `textDocument/codeAction`  `List[CodeAction]`
+row  `rewrite.codeLenses`  the result of `textDocument/codeLens`  `List[CodeLens]`
+row  `rewrite.inlayHints`  the result of `textDocument/inlayHint`  `List[InlayHint]`
+row  `rewrite.signatureHelp`  the result of `textDocument/signatureHelp`  `SignatureHelp`
+row  `rewrite.diagnostics`  the reports in `textDocument/publishDiagnostics`  `List[Diagnostic]`
+row  `rewrite.result`  the result of the named method  `Json`
+row  `rewrite.notification`  the parameters of the named notification from the server  `Json`
+```
+
+A result the server sent as `null`, having nothing to say, is passed on as it stands, so a
+rewriter never has to spell out the empty case. For whole messages there are two more hooks —
+`rewrite.outbound` and `rewrite.inbound` — each returning what should become of the message:
 
 ```scala fuel
 parse
@@ -246,9 +272,16 @@ object QuietProxy:
         if method == t"textDocument/inlineValue" then Transit.Drop else Transit.Forward
 ```
 
-`Transit.Forward` passes the message on, `Transit.Rewrite` passes on a different one,
-`Transit.Drop` swallows it, and `Transit.Answer` answers a request here, so that the server
-upstream never sees it.
+A hook answers with one of four `Transit` values:
+
+```tabular
+column  Transit
+column  Does
+row  `Transit.Forward`  passes the message on unchanged
+row  `Transit.Rewrite`  passes on a different message
+row  `Transit.Drop`  swallows it
+row  `Transit.Answer`  answers a request here, so that the server upstream never sees it
+```
 
 A proxy is not limited to what the editor asks. The session with the server upstream is in
 scope as `upstream` throughout the registration block, so a hook may ask a question of its
@@ -279,11 +312,17 @@ object ClasspathProxy:
 Answers come back to the caller that asked for them, and never reach the editor: a response
 to a request the proxy made itself is routed to whoever awaits it, rather than relayed.
 
-Mind which thread each hook runs on. `rewrite.inbound` runs on the task that reads the
-server's messages — the task that would deliver the answer — so a request awaited there
-would wait forever, and must be made in an `async` block, as above. `rewrite.outbound` runs
-on the loop that reads the editor, which is not that task, so awaiting there is safe, though
-the editor waits with it. `rewrite.connected` has a task of its own and may await freely.
+Mind which thread each hook runs on. A request awaited on the task that reads the server's
+messages — the task that would deliver the answer — would wait forever:
+
+```tabular
+column  Hook
+column  Runs on
+column  May await
+row  `rewrite.inbound`  the task that reads the server's messages  no; make the request in an `async` block, as above
+row  `rewrite.outbound`  the loop that reads the editor  yes, though the editor waits with it
+row  `rewrite.connected`  a task of its own  yes, freely
+```
 
 ### Running the server
 

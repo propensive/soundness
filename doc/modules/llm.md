@@ -52,10 +52,23 @@ val gemini = Gemini(t"gemini-2.5-pro", t"AIza…")
 val local = OpenAI.compatible(url"http://localhost:11434/v1", t"llama3")
 ```
 
-`prompted` sets the system prompt, `limit` the maximum output tokens, `warmth` the temperature,
-`sampling` the nucleus threshold, `stopping` the stop sequences, `iterating` the tool-loop limit,
-`primed` a history to start from, and `on` an alternative base URL. A knob left unset is omitted
-from the request rather than sent as a default, so the provider's own defaults apply. An
+Each method sets one knob:
+
+```tabular
+column  Method
+column  Sets
+row  `prompted`  the system prompt
+row  `limit`  the maximum output tokens
+row  `warmth`  the temperature
+row  `sampling`  the nucleus threshold
+row  `stopping`  the stop sequences
+row  `iterating`  the tool-loop limit
+row  `primed`  a history to start from
+row  `on`  an alternative base URL
+```
+
+A knob left unset is omitted from the request rather than sent as a default, so the provider's
+own defaults apply. An
 OpenAI-compatible server takes an optional key, and OpenAI's Responses API is reached from an
 `OpenAI` value with `responses`.
 
@@ -201,10 +214,23 @@ caching at the provider: `claude.caching` marks the system prompt as a cache bre
 ### Messages and content
 
 The vocabulary the dialects share is small. A `Llm.Message` has a `Role` — user or assistant —
-and a list of `Llm.Content`: text, an image or document from inline bytes or a URL, a tool call
-with its arguments, a tool result, the model's thinking where the provider exposes it, and an
-`Opaque` block preserving verbatim any content a provider sends that is not otherwise modeled,
-so nothing is lost in translation:
+and a list of `Llm.Content`, so nothing is lost in translation:
+
+```tabular
+column  Content
+column  Holds
+row  `Textual`  text
+row  `Graphic`  an image, from inline bytes or a URL
+row  `Document`  a document, from inline bytes or a URL
+row  `ToolUse`  a tool call, with its arguments
+row  `ToolResult`  a tool result
+row  `Thinking`  the model's thinking, where the provider exposes it
+row  `Redacted`  thinking the provider returns only in encrypted form
+row  `Opaque`  any content a provider sends that is not otherwise modeled, verbatim
+```
+
+An image or a document comes from a `Llm.Content.Source`, either `Inline` bytes with a media type
+or a `Remote` URL:
 
 ```scala
 val question = Llm.Message(Llm.Role.User, t"How many bones are in the human hand?")
@@ -221,11 +247,28 @@ sent.
 
 ### Errors and retries
 
-Every failure is a `Llm.Error` whose reason is one of a fixed set — `Unreachable`,
-`Unauthorized`, `Invalid`, `NotFound`, `TooLarge`, `RateLimited`, `Overloaded`, `Malformed`,
-`Interrupted`, `ToolLoopExceeded` — or `Provider`, carrying a code the provider reported that
-maps to none of them, so the wire's own error is never lost. A rate limit or an overload is
-retried automatically, honoring the delay the provider asks for, before it is raised:
+Every failure is a `Llm.Error` whose reason is one of a fixed set, or `Provider`, carrying a
+code the provider reported that maps to none of them, so the wire's own error is never lost. A
+rate limit or an overload is retried automatically, up to three times and honoring the delay the
+provider asks for, before it is raised:
+
+```tabular
+column  Reason
+column  Meaning
+row  `Unreachable`  the provider could not be reached
+row  `Unauthorized`  the API key was missing, invalid or expired
+row  `Invalid`  the provider rejected the request as invalid
+row  `NotFound`  the model or endpoint does not exist
+row  `TooLarge`  the conversation exceeds the model's context window
+row  `RateLimited`  the provider imposed a rate limit; retried first
+row  `Overloaded`  the provider is temporarily overloaded; retried first
+row  `Malformed`  the provider's reply could not be interpreted
+row  `Interrupted`  the stream ended before the message was complete
+row  `ToolLoopExceeded`  the tool-use loop exceeded its iteration limit
+row  `Provider`  a code the provider reported that maps to none of the others
+```
+
+A handler matches on the reason:
 
 ```scala fuel
 typecheck

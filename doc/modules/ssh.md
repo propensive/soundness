@@ -22,7 +22,7 @@ import textSanitizers.skipSanitizer
 
 A `known_hosts` file records the key each host has presented before. Reading it gives a
 `KnownHosts`, and `verify` answers, for a host and the key it now presents (as the blob OpenSSH
-writes after the key type), whether the key is `Known`, `Unknown`, `Changed` or `Revoked`:
+writes after the key type), with a `KnownHosts.Verdict`:
 
 ```scala
 val hosts = KnownHosts(t"""github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl""")
@@ -30,9 +30,30 @@ val key = t"AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
 hosts.verify(t"github.com", 22, t"ssh-ed25519", key)   // KnownHosts.Verdict.Known
 ```
 
-Patterns (`*.example.com`, `!excluded`), `[host]:port` entries for non-default ports, hashed
-`|1|…` entries and the `@revoked` and `@cert-authority` markers are all understood, and a line
-that is not a key is skipped as OpenSSH skips it.
+```tabular
+column  Verdict
+column  When
+row  `Revoked`  an entry for the host carries this key with the `@revoked` marker
+row  `Known`  otherwise, an entry for the host carries this key
+row  `Changed`  the host has unrevoked entries of this key's type, but not this key
+row  `Unknown`  the host has no unrevoked entries of this key's type
+```
+
+Entries with the `@cert-authority` marker take no part in the verdict. The file's syntax is
+understood as OpenSSH writes it:
+
+```tabular
+column  Syntax
+column  Means
+row  `*.example.com`, `?`  a hostname pattern, matched case-insensitively
+row  `!excluded`  a negated pattern
+row  `[host]:port`  an entry for a non-default port
+row  `|1|salt|hash`  a hashed entry: an HMAC-SHA1 of the hostname under the salt
+row  `@revoked`  a marker revoking the line's key
+row  `@cert-authority`  a marker for a certificate authority's key
+```
+
+A line that is not a key is skipped, as OpenSSH skips it.
 
 ### Client configuration
 

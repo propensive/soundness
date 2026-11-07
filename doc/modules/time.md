@@ -44,7 +44,27 @@ ground themselves against it; and the awkward cases — a 31st that some months
 lack, a 29th of February that most years lack, a clock reading that falls in a
 daylight-saving gap — are resolved by policies chosen in context rather than left
 to chance. The sections below begin with the everyday types and build toward the
-rare ones.
+rare ones:
+
+```tabular
+column  Type
+column  Represents
+row  `Date`  a day on a calendar
+row  `Clockface`  a time of day
+row  `Timestamp`  a date with a time of day
+row  `Month`  a month of the year, `Jan` to `Dec`
+row  `Year`  a calendar year
+row  `Monthstamp`  a month of a particular year
+row  `Anniversary`  a month and a day, recurring every year
+row  `Duration`  a physical quantity of seconds
+row  `Timespan`  a calendar quantity: years, months, weeks, days, hours, minutes
+row  `Period`  a half-open interval between two points
+row  `Instant`  a moment in physical time, on a timeline
+row  `Timezone`  a place's rules for civil time
+row  `Moment`  a timestamp anchored to a zone
+row  `Recurrence`  an event repeating at a fixed interval
+row  `Rrule`  an event repeating by a calendar pattern
+```
 
 Every name used here comes from the `soundness` package:
 
@@ -250,7 +270,17 @@ and always. A `Timespan` is a calendar quantity — years, months, weeks, days,
 hours, minutes — whose meaning depends on where it is anchored, because a month is
 not a fixed number of seconds and a calendar day is not always twenty-four hours.
 Keeping the two apart at the type level stops a count of months from ever being
-mistaken for a count of seconds.
+mistaken for a count of seconds:
+
+```tabular
+column  Aspect
+column  `Duration`
+column  `Timespan`
+row  Measures  seconds  years, months, weeks, days, hours and minutes
+row  Means  the same everywhere and always  what its anchor makes of it
+row  Written  `Duration(1000L)`, from milliseconds  `2*Year + 3*Month`
+row  As text  a compact form such as `1h 0m 5s`, with `compactDurationFormat`  an ISO 8601 duration such as `P1Y2M3DT4H5M6S`
+```
 
 A duration is a quantity of seconds. Constructed from milliseconds, it reports its
 length in seconds:
@@ -281,11 +311,24 @@ dur"P1Y2M3DT4H5M6S"                // checked at compiletime
 ```
 
 A tool reads a duration from a flag and shows one in a report, and both have a compact form.
-With `durationDecodables.compactDurationDecodable` in scope, text such as `30m`, `1.5h`,
-`250ms` or a bare `90` (seconds) decodes to a `Duration`, and anything else — a negative, a
-word — raises a `Duration.Error`; with `durationFormats.compactDurationFormat`, a duration
-shows as its coarsest unit followed by every unit down to seconds, so a column of them lines
-up, or as milliseconds alone below a second:
+With `durationDecodables.compactDurationDecodable` in scope, a number followed by a unit decodes
+to a `Duration`:
+
+```tabular
+column  Suffix
+column  Unit
+column  Example
+row  `ms`  milliseconds  `250ms`
+row  `s`  seconds  `30s`
+row  `m`  minutes  `30m`
+row  `h`  hours  `1.5h`
+row  `d`  days  `2d`
+row  none  seconds  `90`
+```
+
+Anything else — a negative, a word — raises a `Duration.Error`. With
+`durationFormats.compactDurationFormat`, a duration shows as its coarsest unit followed by every
+unit down to seconds, so a column of them lines up, or as milliseconds alone below a second:
 
 ```scala
 import durationDecodables.compactDurationDecodable
@@ -395,10 +438,19 @@ type. The `Unix` timeline — POSIX time — counts milliseconds from the
 val epoch = Instant(0L)   // 1970-01-01T00:00:00Z
 ```
 
-The current instant comes from a `Clock`. A program reads the wall clock through
-`now()`, the current date through `today()`, and a high-resolution elapsed-time
-counter through `monotonic()`. The clock is itself a given, so supplying a fixed
-one makes time deterministic, which is what tests want:
+The current instant comes from a clock in scope:
+
+```tabular
+column  Call
+column  Reads
+column  Needs
+row  `now()`  the wall clock, as an `Instant over Unix`  a `Clock`
+row  `today()`  the current date  a `Clock`, a calendar and a `Timezone`
+row  `monotonic()`  a high-resolution elapsed-time counter, as an `Instant over Monotonic`  a `MonotonicClock`
+```
+
+The clock is itself a given, so supplying a fixed one makes time deterministic,
+which is what tests want:
 
 ```scala
 given Clock = Clock.fixed(Instant(99999L))
@@ -474,9 +526,18 @@ summer.in(tz"Europe/London").time.hour   // 13
 ```
 
 Daylight-saving transitions make some wall-clock readings ambiguous and others
-impossible, and Soundness refuses to paper over either case. When the clocks
-spring forward, the skipped hour is a *gap*; a moment in the gap is resolved by a
-policy, pushing forward by default or backward or failing outright on request:
+impossible, and Soundness refuses to paper over either case:
+
+```tabular
+column  Transition
+column  A reading in it
+column  By default
+column  Otherwise
+row  clocks spring forward  falls in a *gap*, and never happens  is pushed forward  `gapPolicies.pushBackwardGapPolicy` pushes it backward; `gapPolicies.rejectGapPolicy` raises a `Moment.Error`
+row  clocks fall back  falls in an *overlap*, and names two instants  is the first occurrence  `Occurrence.Second` names the later one
+```
+
+A moment in the gap is pushed forward by default:
 
 ```scala
 val spring = Moment(2024-Mar-31, Clockface(1, 30, 0), tz"Europe/London")
@@ -494,9 +555,8 @@ val rejected =
 // a Moment.Error: the local time never happens
 ```
 
-When the clocks fall back, an hour repeats, and a reading in the overlap names two
-instants an hour apart. The two are distinguished as the first and second
-occurrence:
+When the clocks fall back, an hour repeats, and the two instants a reading in the
+overlap names are an hour apart:
 
 ```scala
 val clock = Clockface(1, 30, 0)
@@ -549,10 +609,27 @@ val date = { import calendars.gregorianCalendar; 2000-Jan-1 }
 // (1716, CopticMonth.Koiak, 22)
 ```
 
-Other calendars follow the same shape, including the Islamic, Ethiopian, Persian,
-Hebrew, Indian national and French Republican calendars, and year-offset calendars
-such as the Buddhist and Minguo. A calendar formats a date with its own month
-names:
+Other calendars follow the same shape. Each is a given in the `calendars` package:
+
+```tabular
+column  Calendar
+column  Given
+column  Months
+row  Gregorian  `gregorianCalendar`  `Jan` to `Dec`
+row  Julian  `julianCalendar`  `Jan` to `Dec`
+row  Coptic  `copticCalendar`  `CopticMonth`
+row  Ethiopian  `ethiopianCalendar`  `EthiopianMonth`
+row  Islamic  `islamicCalendar`  `IslamicMonth`
+row  Persian  `persianCalendar`  `PersianMonth`
+row  Hebrew  `hebrewCalendar`  `HebrewMonth`
+row  Indian national  `indianCalendar`  `IndianMonth`
+row  French Republican  `frenchRepublicanCalendar`  `FrenchRepublicanMonth`
+row  Buddhist  `buddhistCalendar`  Gregorian, with years offset by 543
+row  Minguo  `minguoCalendar`  Gregorian, with years offset by -1911
+row  Ordinal  `ordinalCalendar`  none: a year and a day of the year
+```
+
+A calendar formats a date with its own month names:
 
 ```scala
 import calendars.islamicCalendar
@@ -563,7 +640,9 @@ islamicCalendar.format(Date(Year(1445), IslamicMonth.Ramadan, Day(15)))
 When one calendar replaced another, the changeover left a gap of dates that never
 occurred. A `Regime` models such a cutover, applying the old calendar before the
 switch and the new one after, and rejecting dates that fall in the gap — at compile
-time when the date is a literal:
+time when the date is a literal. The `calendars` package provides the papal and the
+British cutovers from the Julian to the Gregorian calendar, as `papalCutover` and
+`britishCutover`:
 
 ```scala fuel
 compile
@@ -630,7 +709,27 @@ last Friday", "the fourth Thursday of November" — does not fit a fixed interva
 These are described by a recurrence rule, modeled on the
 [RFC 5545](https://datatracker.ietf.org/doc/html/rfc5545#section-3.3.10) `RRULE`
 from iCalendar. A rule has a start, a frequency, and optional fields that select
-within each period.
+within each period:
+
+```tabular
+column  Field
+column  Type
+column  Default
+column  Gives
+row  `start`  the point type  none  the first point, whose fields the occurrences take by default
+row  `frequency`  `Frequency`  none  `Secondly`, `Minutely`, `Hourly`, `Daily`, `Weekly`, `Monthly` or `Yearly`
+row  `interval`  `Int`  `1`  how many periods of the frequency each step spans
+row  `count`  `Optional[Int]`  `Unset`  how many occurrences there are
+row  `until`  `Optional` point  `Unset`  the point the occurrences end at
+row  `byMonth`  `List[Month]`  `Nil`  the months selected
+row  `byMonthDay`  `List[Int]`  `Nil`  the days of the month selected
+row  `byDay`  `List[WeekdayOrdinal]`  `Nil`  the weekdays selected, optionally by ordinal
+row  `byYearDay`  `List[Int]`  `Nil`  the days of the year selected
+row  `byWeekNo`  `List[Int]`  `Nil`  the weeks of the year selected
+row  `byHour`, `byMinute`, `bySecond`  `List[Int]`  `Nil`  the hours, minutes and seconds selected
+row  `bySetPos`  `List[Int]`  `Nil`  positions within each period's expansion
+row  `weekStart`  `Weekday`  `Mon`  the first day of the week
+```
 
 The simplest rule repeats at its frequency, taking the date from its start:
 

@@ -56,19 +56,34 @@ libraries.tabulation.grid(80).render.each(Out.println(_))
 Numeric columns right-align by default, text left-aligns, and the whole table is `Printable`, so
 printing it at the terminal's own width needs nothing more than `Out.println`.
 
-Three types are at work, and knowing which is which explains where each decision is made. A
-`Scaffold` says how a type is put into columns — their content, order and parameters — but holds
-no data. A `Tabulation` is data arranged by a scaffold: an array of textual values, one per row
-and column, no longer referring to the row type at all. A `Grid` is a tabulation fitted to a
-particular width, which is the point at which a column may shrink or vanish. `tabulation` above
+Three types are at work, and knowing which is which explains where each decision is made:
+
+```tabular
+column  Type
+column  Holds
+column  Made with
+row  `Scaffold`  how a type is put into columns — their content, order and parameters — but no data  `Scaffold[Row](columns…)`
+row  `Tabulation`  data arranged by a scaffold: textual values, one per row and column, no longer referring to the row type  `scaffold.tabulate(rows)`
+row  `Grid`  a tabulation fitted to a particular width, where a column may shrink or vanish  `tabulation.grid(width)`
+```
+
+`tabulation` above
 derived a scaffold for `Codebase` and applied it in one step; the sections below take the stages
 separately, which is what gives control over both the layout and the width.
 
 ### Explicit columns
 
-Columns defined by hand choose their titles, content, alignment and sizing. A `Paragraph` column
-wraps; a `Collapsible` column vanishes when the layout falls below its threshold; a `Fixed` or
-`Shortened` column truncates with an ellipsis:
+Columns defined by hand choose their titles, content, alignment and sizing. The sizings are in
+the `columnar` package:
+
+```tabular
+column  Sizing
+column  The column
+row  `Paragraph`  wraps, with hyphenation, but no narrower than its longest word
+row  `Collapsible(threshold)`  keeps its natural width, and vanishes when the slack falls below `threshold`
+row  `Fixed(width)`  is always `width` wide, truncating its content with an ellipsis
+row  `Shortened(width)`  shrinks from its natural width, truncating its content with an ellipsis
+```
 
 ```scala
 val table = Scaffold[Codebase]
@@ -92,8 +107,17 @@ of its columns'. So `table` above is a `Scaffold[Codebase, Text]`, and writing t
 style available in every cell.
 
 The `Collapsible` thresholds are meaningful only relative to each other. They are compared against
-the *slack* the layout is working at — the number the next section is about — so at a slack of
-`0.6` both `LoC` and `Year` show, at `0.4` only `LoC` does, and at `0.2` neither does.
+the *slack* the layout is working at — the number the next section is about:
+
+```tabular
+column  Slack
+column  Identifier (`0.9`)
+column  Year (`0.5`)
+column  LoC (`0.3`)
+row  `0.6`  hidden  shown  shown
+row  `0.4`  hidden  hidden  shown
+row  `0.2`  hidden  hidden  hidden
+```
 
 ### Renderings at different widths
 
@@ -284,15 +308,22 @@ highlighted or colored values lays out by its visible width, not the length of i
 
 ### Alignment
 
-Each column states how its content sits within the width it is given. `Left` pads on the right,
-`Right` pads on the left, and `Center` splits the padding, putting the odd column on the right
-where it cannot be split evenly. `Justify` spreads the spaces between words so that every line
-but the last reaches the full width — the newspaper setting, which suits a prose column and
-nothing else.
+Each column states how its content sits within the width it is given, as a `TextAlignment`:
+
+```tabular
+column  Alignment
+column  Pads
+row  `Left`  on the right
+row  `Right`  on the left
+row  `Center`  on both sides, putting the odd column on the right where it cannot be split evenly
+row  `Justify`  between words, so that every line but the last reaches the full width
+```
+
+`Justify` is the newspaper setting, which suits a prose column and nothing else.
 
 Vertical alignment matters as soon as one cell wraps: a wrapped cell makes its whole row taller,
 and the other cells in that row sit at the top, middle or bottom of the extra height according to
-their `VerticalAlignment`.
+their `VerticalAlignment`: `Top`, `Middle` or `Bottom`.
 
 ### Titles
 
@@ -342,15 +373,25 @@ apple  fig    kiwi  lime
 pear   plum
 ```
 
-The column count is the greatest at which every column's content fits, with `gap` cells (two by
-default) between neighbours. Columns of equal width — each as wide as the widest item — are
-preferred, but a layout with one more column is admitted when the items which fall into some
-column happen to be narrower, and that column can shrink. Whatever width is then spare is shared
-back out among the shrunk columns, towards equality, without any column growing beyond the
-widest item. Passing `uniform = true` forgoes the compromise and considers only equal-width
-layouts, and `downward = true` reads the items down each column rather than across each row.
-An `align` chooses how each cell is padded within its column; a left-aligned row carries no
-trailing padding after its last item.
+The column count is the greatest at which every column's content fits, with `gap` cells between
+neighbours. Columns of equal width — each as wide as the widest item — are preferred, but a layout
+with one more column is admitted when the items which fall into some column happen to be
+narrower, and that column can shrink. Whatever width is then spare is shared back out among the
+shrunk columns, towards equality, without any column growing beyond the widest item. The
+parameters of `columnate` are:
+
+```tabular
+column  Parameter
+column  Default
+column  Effect
+row  `width`  none  the width to fill
+row  `gap`  `2`  the cells between neighbouring columns
+row  `uniform`  `false`  when `true`, considers only equal-width layouts
+row  `downward`  `false`  when `true`, reads the items down each column rather than across each row
+row  `align`  `TextAlignment.Left`  how each cell is padded within its column
+```
+
+A left-aligned row carries no trailing padding after its last item.
 
 ### When the table does not fit
 

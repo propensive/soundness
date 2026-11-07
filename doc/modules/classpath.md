@@ -63,12 +63,21 @@ so a program can check for an optional resource rather than handle a failure.
 A resource reference names a path, not a thing: two classloaders may resolve the same path to
 different resources, or one to nothing at all, which is why the choice cannot be implicit in the
 reference and has to come from the context in which it is read. Which classloader resolves a
-resource is decided by the `given Classloader` in scope, chosen by import. The thread's context
-classloader suits most applications; the system, platform and Scala classloaders are the other
-standard choices:
+resource is decided by the `given Classloader` in scope, chosen by import:
 
 ```scala
 import classloaders.systemClassloader
+```
+
+The `classloaders` package holds the standard choices:
+
+```tabular
+column  Given
+column  Resolves through
+row  `threadContextClassloader`  the current thread's context classloader, which suits most applications
+row  `systemClassloader`  the JVM's system classloader
+row  `platformClassloader`  the JVM's platform classloader
+row  `scalaClassloader`  the classloader that loaded the Scala library
 ```
 
 ### Inspecting the classpath
@@ -81,9 +90,21 @@ the `System` in scope, imported above:
 val classpath = System.properties.java.`class`.path().as[LocalClasspath]
 ```
 
-Its `entries` are typed: a `Classpath.Entry` is a `Directory`, a `Jar`, a `Url`, or the
-`JavaRuntime` that supplies the JDK's own classes — and a *local* classpath's entries are
-statically known to exclude URLs, so a match over them need not handle that case:
+Its `entries` are typed, as one of four kinds of `Classpath.Entry`:
+
+```tabular
+column  Entry
+column  Represents
+column  Its `path`
+column  From `classify`
+row  `Directory(path)`  a directory of classes and resources  the directory  a directory, or a path that does not yet exist
+row  `Jar(path)`  an archive  the archive file  a file ending with a ZIP archive's trailer
+row  `Url(url)`  a remote location  `Unset`  never
+row  `JavaRuntime`  the JDK's own classes  `Unset`  never
+```
+
+A *local* classpath's entries are statically known to exclude URLs, so a match over them need
+not handle that case:
 
 ```scala
 classpath.entries.map:
@@ -92,12 +113,10 @@ classpath.entries.map:
   case Classpath.Entry.JavaRuntime     => t"the Java runtime"
 ```
 
-An entry is classified by what is on disk, not by its name: `Classpath.Entry.classify(path)` is a
-`Directory` for a directory (or a path that does not yet exist, which may become one), a `Jar`
-for a file that ends with a ZIP archive's trailer — which a launcher's shebang-prefixed
-executable does, though it has no `*.jar` suffix — and raises an `Io.Error` for any other file.
-An entry's `path` is its directory's or its jar's, and `Unset` for a URL or the Java runtime.
-The classpath the running process was actually loaded from — a `URLClassLoader`'s entries,
+An entry is classified by what is on disk, not by its name: `Classpath.Entry.classify(path)`
+makes a nonexistent path a `Directory`, since it may become one, and a file ending with a ZIP
+trailer a `Jar` — which a launcher's shebang-prefixed executable is, though it has no `*.jar`
+suffix — and raises an `Io.Error` for any other file. The classpath the running process was actually loaded from — a `URLClassLoader`'s entries,
 its parents', then `java.class.path`, in order and each once — is `LocalClasspath.running`,
 which a tool that compiles or loads code against itself needs:
 

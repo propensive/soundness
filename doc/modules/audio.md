@@ -34,7 +34,20 @@ import strategies.throwUnsafely
 
 ### Reading audio
 
-Any source of bytes reads as audio when the expected format is named. These bytes are a
+Any source of bytes reads as audio when the expected format is named, as one of these types:
+
+```tabular
+column  Format
+column  Type
+column  Media type
+row  WAV  `Wave`  `audio/x-wav`
+row  AIFF  `Aiff`  `audio/x-aiff`
+row  AIFC  `Aifc`  `audio/x-aifc`
+row  AU  `Au`  `audio/basic`
+row  SND  `Snd`  `audio/basic`
+```
+
+These bytes are a
 complete WAV file — one channel, 16-bit signed samples at 8 kHz, four frames holding the values
 100, 200, 300 and 400 — small enough to write down:
 
@@ -103,8 +116,16 @@ aiffPath.create[File](CreateFlag.Parents): handle ?=>
 ### Channel layouts
 
 A channel layout can be recorded in the type alongside the format, written with `across`:
-`Monaural` for one channel, `Stereo` for two, and `Surround[n]` for a surround
-configuration of `n` channels. The layout is a typeclass, so its channel count is known
+
+```tabular
+column  Layout
+column  Channels
+row  `Monaural`  1
+row  `Stereo`  2
+row  `Surround[n]`  `n`, in a surround configuration
+```
+
+The layout is a typeclass, so its channel count is known
 statically:
 
 ```scala
@@ -167,3 +188,16 @@ Outlet.list.head.let: outlet =>
 
 Playing requires the `Write` grant, so a line opened for capture cannot be played to, and the
 compiler — not the audio driver — says so.
+
+The two kinds of device side by side:
+
+```tabular
+column  Aspect
+column  `Feed`
+column  `Outlet`
+row  Direction  input  output
+row  Listed with  `Feed.list`  `Outlet.list`
+row  Open-ended use  `record`, giving a `Recording`  `play`, giving a `Playback`
+row  Scoped line  `open[Pcm](Read, …)`  `open[Pcm](Write, …)`
+row  Error  `Feed.Error`  `Outlet.Error`
+```

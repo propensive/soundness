@@ -76,22 +76,37 @@ before the root rather than discarded, so a stylesheet instruction survives a re
 ### The node types
 
 An `Xml` value is one of the node kinds the specification defines, and each is a distinct type,
-in the `Xml` companion, rather than a tagged string. `Xml.Element` holds a name, attributes and
-children; `Xml.Text` holds character data; and the rest carry what other libraries tend to flatten
-away:
+in the `Xml` companion, rather than a tagged string. Beyond elements and text, they carry what
+other libraries tend to flatten away:
 
-- `Xml.Cdata` keeps a `<![CDATA[…]]>` section as a section, so text that contains `<not a tag>`
-  survives a round trip without being escaped into something else.
-- `Xml.Comment` keeps `<!-- … -->`, wherever it appears.
-- `Xml.ProcessingInstruction` keeps a target and its data, including the empty-data case
-  `<?target?>`.
-- `Xml.Doctype` keeps a `<!DOCTYPE>` declaration, which serializes back verbatim.
-- `Xml.Fragment` holds a sequence of nodes with no single parent, which is what a prolog plus a
-  root amounts to.
+```tabular
+column  Type
+column  Holds
+row  `Xml.Element`  a name, attributes and children
+row  `Xml.Text`  character data
+row  `Xml.Cdata`  a `<![CDATA[…]]>` section, kept as a section
+row  `Xml.Comment`  a `<!-- … -->` comment, wherever it appears
+row  `Xml.ProcessingInstruction`  a target and its data, including the empty-data case `<?target?>`
+row  `Xml.Doctype`  a `<!DOCTYPE>` declaration, which serializes back verbatim
+row  `Xml.Fragment`  a sequence of nodes with no single parent, such as a prolog plus a root
+```
 
-The five predefined entities — `&amp;`, `&lt;`, `&gt;`, `&quot;` and `&apos;` — resolve on the way
-in and are re-escaped on the way out, as are numeric character references in both decimal and
-hexadecimal.
+Since a CDATA section stays a section, text that contains `<not a tag>` survives a round trip
+without being escaped into something else.
+
+The predefined entities resolve on the way in and are re-escaped on the way out, as are numeric
+character references in both decimal and hexadecimal:
+
+```tabular
+column  Entity
+column  Character
+row  `&amp;`  `&`
+row  `&lt;`  `<`
+row  `&gt;`  `>`
+row  `&quot;`  `"`
+row  `&apos;`  `'`
+row  `&#NNN;`, `&#xHHH;`  the character with that code point
+```
 
 ### Namespaces
 
@@ -185,9 +200,8 @@ t"<Worker><name>Alice</name><age>30</age></Worker>".read[Worker in Xml]
 ```
 
 `in[Text over Xml]` is the mirror of `read[Worker in Xml]`, encoding a value straight to its XML
-text:
-
-`in[Data over Xml]` writes the same text as bytes, encoded in the `Codepage` in scope. A record
+text, and `in[Data over Xml]` writes the same text as bytes, encoded in the `Codepage` in scope. A
+record
 with an `Xml.Printable` is written directly, with no tree built, wherever the formatting is
 compact; indented formatting still renders through the tree. The printer is derived at
 compiletime, for a record with no `@name` or `@attribute` annotations and no namespace, and
@@ -211,11 +225,19 @@ frame
 
 `Xml.Printable.emit` writes the text a block at a time, handing each to a function as it fills.
 A record can generate both instances once, into its companion, with `derives Xml.Direct`, and a
-single import selects the path for every such record in scope: `import codecs.direct` for a
-generated parser and printer, `import codecs.derived` for the derived codecs even where a
-direct instance exists, or `import codecs.strict` for the generated codecs with a compile error,
-naming the type, wherever `read[Foo in Xml]` or `in[Text over Xml]` would otherwise fall back to
-the tree. The modes are alternatives; import one at a time.
+single import selects the path for every record in scope:
+
+```tabular
+column  Import
+column  For a record
+column  For any other type
+row  `codecs.direct`  a generated parser and printer  the derived codecs, through the tree
+row  `codecs.derived`  the derived codecs, even where a direct instance is in scope  the derived codecs, through the tree
+row  `codecs.strict`  a generated parser and printer  a compile error naming the type
+```
+
+Under `codecs.strict`, the error arises wherever `read[Foo in Xml]` or `in[Text over Xml]` would
+otherwise fall back to the tree. The modes are alternatives; import one at a time.
 
 A field marked `@attribute` becomes an attribute rather than a child element, and round-trips as
 one:
@@ -256,6 +278,21 @@ Profile(t"Ann", Unset, Map(t"apple" -> 3)).in[Xml]
 // x"<Profile><name>Ann</name><stock><key>apple</key><value>3</value></stock></Profile>"
 ```
 
+In summary:
+
+```tabular
+column  Scala
+column  XML
+row  a case class  an element named for the type
+row  a field  a child element named for the field
+row  an `@attribute` field  an attribute
+row  an `@name` or `@name[Xml]` label  the element or attribute renamed
+row  a variant of a sum type  an element named for the variant
+row  an `Optional` field that is `Unset`  no element, or no attribute
+row  a collection field  one element per item, named for the field, in order
+row  a `Map` field  one element per entry, holding a `<key>` and a `<value>`
+```
+
 ### What decoding tolerates
 
 Real XML is untidy, and a decoder that insists on tidiness is of little use. Text, comments and
@@ -277,10 +314,18 @@ of sub-field errors into a single error at the point the value should have been,
 used to carry on — which is what a validation pass reporting to a human wants.
 
 An `Optional` field has two further policies, from the `optionalityOptions` package as
-[decoding](decoding.md) describes: `strictXmlAbsence` makes a missing element or attribute an
-error (`Xml.Error.Reason.Missing`) rather than `Unset`, and `lenientXmlFaults` reads a present
-element the inner decoder rejects as `Unset` rather than raising. XML has no null: an empty
-element is a present value, so there is no nullity policy.
+[decoding](decoding.md) describes:
+
+```tabular
+column  A field whose element or attribute is
+column  Reads as
+column  Unless
+row  omitted from the document  `Unset`  `strictXmlAbsence` makes it an error
+row  present but rejected by the inner decoder  an error  `lenientXmlFaults` reads it as `Unset`
+```
+
+Under `strictXmlAbsence`, a missing element or attribute is an `Xml.Error.Reason.Missing`. XML
+has no null: an empty element is a present value, so there is no nullity policy.
 
 ```scala
 case class Tally(name: Text, count: Optional[Int])
@@ -356,11 +401,24 @@ import formatting.indentedXmlFormatting
 Worker(t"Alice", 30).in[Xml].show   // indented across several lines
 ```
 
-`show` renders the whole node into one `Text`. A large document need not be held in memory
-before it is sent. The push form of `Xml.emit` serializes a `Document[Xml]`, with its header, on
-the caller's thread and hands each block to a function as it fills — as text with `emit[Text]`,
-or as UTF-8 bytes with `emit[Data]`, escaped and encoded straight from the serializer — which is
-the shape for writing to a file, a socket or an `OutputStream`:
+`show` renders the whole node into one `Text`, but a large document need not be held in memory
+before it is sent:
+
+```tabular
+column  Form
+column  Serializes on
+column  Hands out
+row  `show`  the caller's thread  one `Text`
+row  `Xml.emit[Text](document, f)`  the caller's thread  each block of text to `f`, as it fills
+row  `Xml.emit[Data](document, f)`  the caller's thread  each block as UTF-8 bytes to `f`, as it fills
+row  `Xml.lend(document)`  the caller's thread  each block lent to a function, not copied
+row  `Xml.emit(document)`  a fiber  the text, through an iterator
+row  `Streamable` by `Text`  a fiber  the text, as a stream
+```
+
+The push form of `Xml.emit` serializes a `Document[Xml]`, with its header, escaped and encoded
+straight from the serializer, which is the shape for writing to a file, a socket or an
+`OutputStream`:
 
 ```scala fuel
 typecheck
@@ -380,9 +438,8 @@ Xml.lend(document): region =>
   interval => region.visit(interval)(index => sink.put(region(index)))
 ```
 
-Where a consumer pulls instead, `Xml.emit(document)` serializes on a fiber and hands out the text
-through an iterator, and a `Document[Xml]` is `Streamable` by `Text` on the same terms, under a
-`supervise` block:
+Where a consumer pulls instead, `Xml.emit(document)` and a `Document[Xml]`'s `Streamable`
+instance serialize on a fiber, under a `supervise` block:
 
 ```scala fuel
 typecheck
@@ -411,9 +468,17 @@ large document names the element that caused it.
 ### Querying with XPath
 
 The same interpolator writes a full [XPath 1.0](https://www.w3.org/TR/xpath-10/) expression, and
-a document answers it. `select` returns the matching nodes as a fragment, `selectText` the text
-of the first match, and `evaluate` the value of any expression — a number, a boolean, a string or
-a node set — as an `XPath.Value`. Axes, predicates on attributes and text, and the core function
+a document answers it:
+
+```tabular
+column  Method
+column  Returns
+row  `select`  the matching nodes, as a fragment
+row  `selectText`  the text of the first match
+row  `evaluate`  the value of any expression — a number, a boolean, a string or a node set — as an `XPath.Value`
+```
+
+Axes, predicates on attributes and text, and the core function
 library are all supported, which is what a browser-automation locator or a configuration lookup
 needs:
 
@@ -461,23 +526,33 @@ The schema may be an `Xsd` value, an `Xml` document, the schema's text, or anyth
 text, such as a classpath resource. Where a schema declares several global elements the root is
 the one with complex content, or is chosen with `root = t"Envelope"`.
 
-Child elements and attributes become fields by local name. A field is `Optional` when its element
-has `minOccurs="0"` or is `nillable`, and a `List` when `maxOccurs` allows more than one; each
-alternative of a `choice` is `Optional`. An attribute that shares a name with a child element is
-reached as `` `@name` ``, and the text of an element with simple content and attributes as `text`
-(`` `#text` `` if an attribute is called `text`). An extension's base type contributes its fields
-first.
+Child elements and attributes become fields by local name, shaped by the schema:
 
-| XSD type | Scala type |
-|---|---|
-| `xs:string` and the token, name and identifier types, `xs:QName`, the binary types, `xs:gYear` and relatives | `Text` |
-| `xs:boolean` | `Boolean` |
-| `xs:int`, `xs:short`, `xs:byte` | `Int`, `Short`, `Byte` |
-| `xs:integer`, `xs:long` and the unsigned, positive and negative integer types | `Long`, with the implied bounds checked |
-| `xs:decimal`, `xs:double`, `xs:float` | `Double`, `Double`, `Float` |
-| `xs:dateTime`, `xs:date`, `xs:time`, `xs:duration`, `xs:anyURI` | the type an interface in scope instantiates, else `Text` |
-| `xs:NMTOKENS`, `xs:IDREFS` and any `xs:list` | `List[Text]` |
-| `xs:anyType`, `xs:any`, a recursive type, an unresolved reference | `Xml` |
+```tabular
+column  The schema has
+column  The field is
+row  an element with `minOccurs="0"`, or `nillable`  `Optional`
+row  an element whose `maxOccurs` allows more than one  a `List`
+row  an alternative of a `choice`  `Optional`
+row  an attribute sharing a name with a child element  reached as `` `@name` ``
+row  an element with simple content and attributes  its text reached as `text`, or `` `#text` `` if an attribute is called `text`
+row  an extension  preceded by its base type's fields
+```
+
+Each field reads at the Scala type of its XSD type:
+
+```tabular
+column  XSD type
+column  Scala type
+row  `xs:string` and the token, name and identifier types, `xs:QName`, the binary types, `xs:gYear` and relatives  `Text`
+row  `xs:boolean`  `Boolean`
+row  `xs:int`, `xs:short`, `xs:byte`  `Int`, `Short`, `Byte`
+row  `xs:integer`, `xs:long` and the unsigned, positive and negative integer types  `Long`, with the implied bounds checked
+row  `xs:decimal`, `xs:double`, `xs:float`  `Double`, `Double`, `Float`
+row  `xs:dateTime`, `xs:date`, `xs:time`, `xs:duration`, `xs:anyURI`  the type an interface in scope instantiates, else `Text`
+row  `xs:NMTOKENS`, `xs:IDREFS` and any `xs:list`  `List[Text]`
+row  `xs:anyType`, `xs:any`, a recursive type, an unresolved reference  `Xml`
+```
 
 A restriction's facets — `enumeration`, `pattern`, the inclusive and exclusive bounds, the length
 facets and the digit facets — are checked as the field is read, raising `Xml.Provider.Error` with

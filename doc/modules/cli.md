@@ -94,9 +94,15 @@ sequence of textual values the shell hands over; *parameters* are what they mean
 interpreted. The arguments of `grep -rA4 pattern` are `-rA4` and `pattern`; its parameters are
 "search recursively", "show four lines of trailing context" and "search for `pattern`". The
 interpreter in scope is what turns the first into the second, which is why it is chosen by
-import rather than fixed: `posixInterpreter` reads `--long` and `-s` flags, and
-`posixClusteringInterpreter` additionally reads `-rA4` as `-r -A 4`, with a cluster's last
-letter taking the value; `simpleInterpreter` treats every argument as an operand.
+import rather than fixed. The `interpreters` package has three:
+
+```tabular
+column  Interpreter
+column  Reads
+row  `posixInterpreter`  `--long` and `-s` flags
+row  `posixClusteringInterpreter`  `--long` and `-s` flags, and `-rA4` as `-r -A 4`, with a cluster's last letter taking the value
+row  `simpleInterpreter`  every argument as an operand, and no flags
+```
 
 ### Subcommands
 
@@ -145,8 +151,21 @@ def tool2(args: List[Text]): Unit = application(args):
       Exit.Fail(1)
 ```
 
-`aliases` gives short forms, so `--jobs 4`, `-j 4`, and `--jobs=4` are read alike.
-`repeatable = true` allows a flag to appear more than once. A repeatable flag's occurrences are
+A flag is declared with these parameters:
+
+```tabular
+column  Parameter
+column  Default
+column  Meaning
+row  `name`  required  the long form, as `--name`, or a `Char` for a short one
+row  `aliases`  `Nil`  other forms, such as a short `-j`
+row  `description`  `Unset`  the text shown in help and beside completions
+row  `repeatable`  `false`  whether the flag may appear more than once
+row  `secret`  `false`  whether to leave the flag out of completions and help
+```
+
+`aliases` gives short forms, so `--jobs 4`, `-j 4`, and `--jobs=4` are read alike. A repeatable
+flag's occurrences are
 read together through a `List` topic — `--tag a --tag b` as `List(t"a", t"b")`, each operand
 interpreted as the element type — and an `Optional` topic reads an operand that may be malformed
 as `Unset` rather than raising, which is what a flag read in the pure section, before `execute`,
@@ -183,11 +202,20 @@ val LogLevel = Setting[Text](t"logLevel", description = t"logging verbosity")
 val Home = Setting[Text](t"home", variable = t"MYAPP_HOME")
 ```
 
-Reading `LogLevel()` inside the CLI block consults, in order: the `--log-level`
-command-line flag, the `myapp.log.level` system property, and the `MYAPP_LOG_LEVEL`
-environment variable, returning `Optional` so a default is given the usual way,
-`LogLevel().or(t"info")`. A setting whose environment variable does not follow the
-convention names it with `variable`, consulted between the flag and the cascade. Reading a
+Reading `LogLevel()` inside the CLI block consults its sources in order, and the first that
+has a value wins:
+
+```tabular
+column  Source
+column  Named, for `logLevel`
+row  the command-line flag  `--log-level`
+row  the environment variable given as `variable`, if any  verbatim, as `MYAPP_HOME` for `Home`
+row  the system property  `myapp.log.level`
+row  the environment variable  `MYAPP_LOG_LEVEL`
+```
+
+The result is `Optional`, so a default is given the usual way, `LogLevel().or(t"info")`.
+`variable` is for a setting whose environment variable does not follow the convention. Reading a
 setting registers its flag for tab completion, exactly as reading the flag directly would.
 
 Each source is a `Configurator` — a single abstract method from a setting's canonical
@@ -207,10 +235,19 @@ given (Environment, System) => Configurator =
 
 The body returns an `Exit`: `Exit.Ok`, or `Exit.Fail(code)` for a failure. An error that
 escapes the body is caught by the *backstop* in scope, which turns it into an exit
-status rather than a stack trace — `genericErrorMessageBackstop` prints a short message
-and exits non-zero, `exceptionMessageBackstop` prints the exception's own message,
-`stackTraceBackstop` prints the full trace, and `silentBackstop` prints nothing. Choosing
-a backstop is a matter of which one is imported.
+status rather than a stack trace. Choosing a backstop is a matter of which one is imported
+from `backstops`:
+
+```tabular
+column  Backstop
+column  Prints
+row  `genericErrorMessageBackstop`  a short, fixed message: `An unexpected error occurred.`
+row  `exceptionMessageBackstop`  the exception's own message
+row  `stackTraceBackstop`  the full stack trace
+row  `silentBackstop`  nothing
+```
+
+Each exits with status 1 for an exception, and 2 for any more serious error.
 
 An exit code on its own says little to the user, so a failure that the program anticipates is
 better declared as a `Status`, an object carrying both the code and a description:
@@ -368,13 +405,34 @@ Inside `execute`, the same calls yield the value directly, raising `MissingFlagE
 `InvalidFlagError` immediately for the backstop to report. A required flag is also marked as
 required in the help text.
 
+Each way of reading a flag yields something different in the prelude and inside `execute`:
+
+```tabular
+column  Read
+column  In the prelude
+column  Inside `execute`
+row  `flag()`  a `Prospective`, whose `present` and `absent` answer at once  an `Optional` value
+row  `flag.require()`  a `Requisite`, checked before `execute` runs  the value, or a `MissingFlagError`
+row  `flag.validate()`  a `Requisite`, checked before `execute` runs  the value, or a `MissingFlagError` or `InvalidFlagError`
+row  `flag.present`  a `Boolean`  a `Boolean`
+row  `flag.value`  not available  an `Optional` value
+```
+
 ### The executive, and effectful methods
 
 The *executive* is what determines the return type of an entry point's body and the contextual
-values available inside it. `directExecutive` expects an `Exit` and supplies `Stdio` and, since
-it never runs the body speculatively, an `Effectful` too, so a flag read anywhere in the body is
-its value; `completionsExecutive` expects an `Execution` and withholds both until `execute`. Choosing
-one by import is what lets the entry-point API stay uniform while imposing genuinely different
+values available inside it:
+
+```tabular
+column  Executive
+column  Body returns
+column  `Stdio` and `Effectful`
+row  `directExecutive`  an `Exit`  throughout the body
+row  `completionsExecutive`  an `Execution`  only inside `execute`
+```
+
+Since `directExecutive` never runs the body speculatively, a flag read anywhere in its body is
+its value. Choosing one by import is what lets the entry-point API stay uniform while imposing genuinely different
 requirements on the code inside it.
 
 An `execute` block also supplies an erased `Effectful`. Nothing consumes it internally; its

@@ -20,12 +20,22 @@ can never fail. Treating these alike — returning `null`, throwing from a gette
 or quietly truncating — is where bugs begin.
 
 Soundness keeps them apart by giving each its own typeclass, so the way a
-conversion can fail is visible in the code that calls it. A `Decodable`
-conversion raises a typed error when it fails. An `Extractable` conversion yields
-no result rather than raising, which is exactly what pattern matching wants. An
-`Irrefutable` conversion cannot fail at all. The names read as English and state
-the direction of the conversion: a value `is Decodable in Text` reads _out of_
-text, and text `is Extractable to Int` reads _toward_ an integer.
+conversion can fail is visible in the code that calls it:
+
+```tabular
+column  Typeclass
+column  Written
+column  When the conversion fails
+row  `Decodable`  `Int is Decodable in Text`  raises a typed error
+row  `Extractable`  `Text is Extractable to Int`  yields `Unset`
+row  `Irrefutable`  `Byte is Irrefutable to Int`  cannot fail
+row  `Identifiable`  `Identifiable[Column]`  cannot fail; it maps a name both ways
+```
+
+An `Extractable` yields no result rather than raising, which is exactly what pattern matching
+wants. The names read as English and state the direction of the conversion: a value
+`is Decodable in Text` reads _out of_ text, and text `is Extractable to Int` reads _toward_ an
+integer.
 
 The everyday surface is small — the `as` method and the `As` extractor — and
 the sections below start there before turning to the typeclasses underneath and
@@ -62,9 +72,20 @@ capture[Number.Error](t"abc".as[Byte]).reason   // Number.Error.Reason.Unparseab
 Instances come built in for the primitive number types, for `Char`, and for types
 defined elsewhere in Soundness such as `Uuid` and `Fqcn`. A `Boolean` decodes from
 `true` or `false`, in any case and with space around it, and raises a `Truth.Error` for
-anything else; the other spellings a tool might accept — `yes`/`no`, `on`/`off`, `1`/`0` — are
-each a `Truth` in the `truths` package, and every one in scope is accepted beside the default,
-so importing is additive rather than a choice:
+anything else. The other spellings a tool might accept are each a `Truth` in the `truths`
+package:
+
+```tabular
+column  Given
+column  True
+column  False
+row  `yesNoTruth`  `yes`  `no`
+row  `onOffTruth`  `on`  `off`
+row  `oneZeroTruth`  `1`  `0`
+```
+
+Every one in scope is accepted beside the default, so importing is additive rather than a
+choice:
 
 ```scala
 import truths.yesNoTruth
@@ -92,10 +113,19 @@ safely(t"hello".as[Int]).or(0)   // 0
 ### Policies for optional fields
 
 Every data format that decodes an `Optional` field — JSON, CBOR, YAML, XML, TEL and delimited
-text — answers the same three questions, and answers them the same way by default: a key the
-document *omits* reads as `Unset`; the format's explicit *null*, where it has one, reads as
-`Unset`; and a value that is present but which the inner decoder *rejects* is an error. Each
-answer is a policy, indexed by the format, with a default in its companion:
+text — answers the same three questions, and answers them the same way by default. Taking JSON
+as the example:
+
+```tabular
+column  A field which is
+column  Reads as
+column  Unless
+row  omitted from the document  `Unset`  `strictJsonAbsence` makes it an error
+row  an explicit null  `Unset`  `strictJsonNulls` hands it to the inner decoder
+row  present but rejected by the inner decoder  an error  `lenientJsonFaults` reads it as `Unset`
+```
+
+Each answer is a policy, indexed by the format, with a default in its companion:
 
 ```scala
 summon[Decodable.Absence in Text].strict   // false
@@ -104,8 +134,34 @@ summon[Decodable.Fault in Text].strict     // true
 ```
 
 A format's `optionalityOptions` package offers the other answer to each question, named for the
-format — `strictJsonAbsence`, `lenientYamlFaults`, `strictCborNulls` — so one axis can be varied
-without touching the others, and JSON can be strict where, in the same scope, CSV stays lenient.
+format, so one axis can be varied without touching the others, and JSON can be strict where, in
+the same scope, CSV stays lenient. The givens which change a default are these; a format with no
+null has no null policy:
+
+```tabular
+column  Format
+column  Omitted is an error
+column  Null goes to the decoder
+column  Rejected is `Unset`
+row  JSON  `strictJsonAbsence`  `strictJsonNulls`  `lenientJsonFaults`
+row  YAML  `strictYamlAbsence`  `strictYamlNulls`  `lenientYamlFaults`
+row  CBOR  `strictCborAbsence`  `strictCborNulls`  `lenientCborFaults`
+row  TEL
+  cell  `strictTelAbsence`
+  cell
+  cell  `lenientTelFaults`
+row  XML
+  cell  `strictXmlAbsence`
+  cell
+  cell  `lenientXmlFaults`
+row  Delimited text
+  cell  `strictDsvAbsence`
+  cell
+  cell  `lenientDsvFaults`
+```
+
+Each package also names the default answer — `lenientJsonAbsence`, `strictJsonFaults` and so on —
+for a scope that must restore it.
 A lenient *fault* decodes the value under the ambient tactic's `tolerate`, so nothing accrues
 under an accumulating tactic either. `Option` fields follow the same policies, yielding `None`.
 The format tutorials show each in use.

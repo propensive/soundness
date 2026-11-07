@@ -50,14 +50,23 @@ Angle.degrees(355).canonical.show   // t"-5.0°"
 ### Compass points
 
 An angle resolves to the nearest point of a compass rose with the number of points chosen as a type
-argument — the four cardinal winds, eight with the intercardinals, or all sixteen:
+argument:
 
 ```scala
 Compass[8](Angle.degrees(315))   // Northwest
 ```
 
-The winds are ordinary enumerations — `CardinalWind`, `IntercardinalWind`, `HalfWind` — so a bearing
-can be matched, stored and shown like any other value.
+The winds are ordinary enumerations, so a bearing can be matched, stored and shown like any other
+value:
+
+```tabular
+column  Rose
+column  Resolves to
+column  Bearing given
+row  `Compass[4]`  `CardinalWind`: `North`, `East`, `South`, `West`  `compassBearings.fourPointCompassBearing`
+row  `Compass[8]`  `CardinalWind` or `IntercardinalWind`, adding `Northeast`, `Southeast`, `Southwest`, `Northwest`  `compassBearings.eightPointCompassBearing`
+row  `Compass[16]`  any of those or a `HalfWind`, adding `NorthNortheast`, `EastNortheast` and the other six  `compassBearings.sixteenPointCompassBearing`
+```
 
 The number of points is a type argument rather than a runtime parameter, so the *type* of a
 resolved bearing says which rose it came from: a `CardinalWind` cannot be passed where a

@@ -61,10 +61,34 @@ west, then the diagonals, then north and south. A label that may lie on one side
 just that side. `standoff` is the gap between the target and the label's near edge, for a
 label that sits beside a marker rather than on its centre.
 
+The rest of a caption's parameters are described in the sections that follow. All of them are:
+
+```tabular
+column  Parameter
+column  Default
+column  Meaning
+row  `width`, `height`  required  the label's measured size
+row  `x`, `y`  required  the target point
+row  `attachments`  east, west, the diagonals, north, south  the sides it may lie on, best first
+row  `standoff`  `0.0`  the gap between the target and the label's near edge
+row  `reach`  `0.0`  how far it may be moved from the target
+row  `padding`  `0.0`  clearance demanded beyond its own box
+row  `priority`  `0`  higher is placed first
+row  `fallback`  `Caption.Fallback.Overlap`  what to do when no position is clear
+```
+
 ### Obstacles
 
-Labels avoid each other, and they avoid whatever the body declares with `avoid`: boxes, line
-segments and discs, which cover a bar, a plotted line and a marker respectively.
+Labels avoid each other, and they avoid whatever the body declares with `avoid`:
+
+```tabular
+column  Obstacle
+column  Parameters
+column  Covers
+row  `Obstacle.Box`  `left`, `top`, `width`, `height`  a bar
+row  `Obstacle.Line`  `x1`, `y1`, `x2`, `y2`, and a `width` defaulting to `1.0`  a plotted line
+row  `Obstacle.Disc`  `x`, `y`, `radius`  a marker
+```
 
 ```scala
 val kept = arrange:
@@ -148,10 +172,24 @@ val annealed = arrange:
 ```
 
 Its random moves are drawn from a fixed seed, so the same input arranges the same way every
-time, and it stops after a set number of moves. Both arrangers are case classes whose
-parameters — the step between candidate positions, how many steps out to search, the
-displacement beyond which a leader is drawn, and for annealing the seed, temperature and
-iterations — can be given in place of the defaults:
+time, and it stops after a set number of moves. Both arrangers are case classes, `Arranger.Greedy`
+and `Arranger.Annealing`, whose parameters can be given in place of the defaults:
+
+```tabular
+column  Parameter
+column  Default
+column  Arranger
+column  Meaning
+row  `step`  `4.0`  both  the step between candidate positions
+row  `rings`  `8`  both  how many steps out to search
+row  `leaderThreshold`  `6.0`  both  the displacement beyond which a leader is drawn
+row  `leaderWidth`  `1.0`  both  the stroke width of a leader
+row  `seed`  `Seed(0L)`  annealing  the seed its random moves are drawn from
+row  `iterations`  `4000`  annealing  the number of moves
+row  `temperature`  `1.0`  annealing  the starting temperature
+row  `cooling`  `0.995`  annealing  the factor the temperature is multiplied by at each move
+row  `displacementWeight`  `0.05`  annealing  the cost of displacement against that of collision
+```
 
 ```scala
 given Arranger = Arranger.Greedy(step = 2.0, rings = 12)

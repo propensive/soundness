@@ -56,8 +56,37 @@ class Welcome extends Archetype, Mainstay, Masthead, Colophon, Headline(t"Welcom
 Welcome().html
 ```
 
-`Headline` sets the document title and puts an `<h1>` above the content; `Masthead` prepends a
-`<header>`, `Colophon` appends a `<footer>`, and `Mainstay` wraps the content in a `<main>` landmark.
+The features, and the slots they introduce, are:
+
+```tabular
+column  Feature
+column  Adds
+column  Slot
+row
+  cell  `Headline(title)`
+  cell  the document title, and an `<h1>` above the content
+  cell
+row  `Masthead`  a `<header>` before the content  `masthead`
+row  `Colophon`  a `<footer>` after the content  `colophon`
+row
+  cell  `Mainstay`
+  cell  a `<main>` landmark around the content
+  cell
+row
+  cell  `Breadcrumbs(path*)`
+  cell  a breadcrumb trail, as a `<nav>`
+  cell
+row  `TopMenu`  a `<nav>` bar of links, also available as `menu`  `menuItems`
+row  `Hero(headline)`  a banner headed by its parameter  `hero`
+row  `VersoPanel`  a side panel on the inline-start edge  `verso`
+row  `RectoPanel`  a side panel on the inline-end edge  `recto`
+row  `FoldableRectoPanel`  a recto panel that folds away  `recto`
+row
+  cell  `Logo`
+  cell  a `logo` mark, worded by `logoText`, for other features to place
+  cell
+```
+
 `html` is the whole document — a `<head>` carrying the title, the stylesheet and any metadata, and a
 `<body>` holding the framed content — and the types of the slots are the same types that govern
 every other HTML value, so a slot given something that does not belong there is a compile error.
@@ -101,9 +130,23 @@ another.
 ### Metadata
 
 Features that contribute to the `<head>` take their value as a trait parameter and add nothing to
-the body. `StandardMetadata` supplies the description and a responsive viewport that nearly every
-page wants, and `Author`, `Keywords`, `Favicon`, `Canonical` and `ThemeColor` each add one more
-element. `Hero` prepends a banner headed by its parameter, with any further material in the `hero`
+the body. `StandardMetadata` supplies what nearly every page wants, and the others each add one
+more element:
+
+```tabular
+column  Feature
+column  Adds to the head
+row  `StandardMetadata(description)`  a description and a responsive viewport
+row  `Description(text)`  `<meta name="description">`
+row  `Viewport`  `<meta name="viewport">`, from `viewport`
+row  `Author(name)`  `<meta name="author">`
+row  `Keywords(keywords*)`  `<meta name="keywords">`, the keywords separated by commas
+row  `Favicon(href)`  `<link rel="icon">`
+row  `Canonical(href)`  `<link rel="canonical">`
+row  `ThemeColor(color)`  `<meta name="theme-color">`
+```
+
+`Hero` prepends a banner headed by its parameter, with any further material in the `hero`
 slot, and the document title is `pageTitle`:
 
 ```scala

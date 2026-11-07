@@ -52,9 +52,8 @@ the JSON-RPC specification distinguishes.
 
 ### JSON-RPC
 
-`JsonRpc.serve` turns an implementation into a dispatcher — a function from a request document to
-an optional response — ready to sit behind any transport, typically an [HTTP](http-server.md)
-handler. On the calling side, `remote` manufactures a client from the same trait:
+`JsonRpc.serve` turns an implementation into a dispatcher, ready to sit behind any transport,
+typically an [HTTP](http-server.md) handler:
 
 ```scala
 object EchoService extends Echo:
@@ -115,8 +114,19 @@ source.stream(start = 1)   // the events from id 1 onward, then those that follo
 
 ### Framing
 
-Message boundaries in a raw stream are recovered with `frames`, naming the convention: a 4-byte
-length prefix, a `Content-Length` header as LSP uses, or line endings:
+Message boundaries in a raw stream are recovered with `frames`, naming the convention:
+
+```tabular
+column  Convention
+column  Frames
+column  Each message is
+row  `LengthPrefix`  `Data`  a four-byte big-endian length, then that many bytes
+row  `ContentLength`  `Data`  a `Content-Length` header block, as LSP uses, then that many bytes
+row  `CrLf`  `Text`  a line ending in CRLF
+row  `Linefeed`  `Text` or `Data`  a line ending in a bare linefeed
+row  `CarriageReturn`  `Text`  a line ending in CR alone
+row  `Grpc.Framing`  `Data`  a flag byte and a four-byte length, then that many bytes
+```
 
 ```scala
 val prefixed = Chain(Data(0, 0, 0, 2, 104, 105))
@@ -129,7 +139,7 @@ lines.iterator.frames[CrLf]                // CRLF-separated lines: "one", "two"
 lines.iterator.frames[Linefeed]            // or bare linefeeds, or CR alone
 ```
 
-gRPC's own framing — a flag byte and a four-byte length — is `Grpc.Framing`, used the same way.
+gRPC's own framing, `Grpc.Framing`, is used the same way.
 
 A `Duplex` carrying BinTEL messages — a daemon's protocol over TLS, or over a UNIX domain socket
 to a local tool — is `framed` by naming what it reads and what it sends. Each `send` writes one

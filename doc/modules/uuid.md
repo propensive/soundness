@@ -25,6 +25,21 @@ Everything comes from the `soundness` package:
 import soundness.*
 ```
 
+The operations, each covered below:
+
+```tabular
+column  Operation
+column  Gives
+row  `Uuid()`  a fresh random identifier
+row  `uuid"…"`  a literal identifier, checked as the code compiles
+row  `Uuid.parse(text)`  the identifier, or a raised `Uuid.Error`
+row  `Uuid.extract(text)`  an `Optional` identifier; `Uuid(id)` is the same as a pattern
+row  `id.text`  the canonical text
+row  `id.in[Data]`  the sixteen bytes, the most significant half first
+row  `id.msb`, `id.lsb`  the most and least significant 64 bits
+row  `a ^ b`, `~a`  the exclusive-or of two identifiers, and the inverse of one
+```
+
 ### Generating
 
 `Uuid()` produces a fresh random identifier:

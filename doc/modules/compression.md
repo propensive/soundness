@@ -74,6 +74,22 @@ through a stream, and a stream's output decompresses as a value.
 
 ### The formats
 
+Seven formats are provided, in four families:
+
+```tabular
+column  Format
+column  Algorithm
+column  Framing
+column  Carried by
+row  `Deflate`  DEFLATE  none  ZIP entries
+row  `Zlib`  DEFLATE  a two-byte header and a checksum  PNG chunks, HTTP `deflate` encoding
+row  `Gzip`  DEFLATE  a header, timestamp and CRC  `*.gz` files, HTTP content encoding
+row  `Brotli`  Brotli  the Brotli stream format  HTTP content encoding
+row  `Xz`  LZMA2  the `*.xz` container, with a CRC-64 check  `*.xz` files
+row  `Lzma2`  LZMA2  none
+row  `Lzw`  LZW  none  TIFF and PDF streams
+```
+
 `Deflate` is the raw algorithm; `Zlib` adds its two-byte header and checksum; `Gzip` adds the
 header, timestamp and CRC that `*.gz` files carry. These are the formats of HTTP content
 encoding, ZIP entries and PNG chunks, and they are the fastest of the set.

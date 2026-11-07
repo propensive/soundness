@@ -79,9 +79,36 @@ document.children.head match
 // (1, t"Title")
 ```
 
-`Layout` covers headings, paragraphs, block quotes, ordered and bullet lists, code blocks and
-thematic breaks; `Prose` covers emphasis, strong emphasis, code spans, links, images and line
-breaks.
+The block nodes are the cases of `Layout`, each carrying the line it starts on:
+
+```tabular
+column  Layout
+column  Is
+row  `Heading`  a heading, with its level from 1 to 6
+row  `Paragraph`  a paragraph
+row  `BlockQuote`  a block quote
+row  `OrderedList`  an ordered list
+row  `BulletList`  a bullet list
+row  `CodeBlock`  a code block, with its info string
+row  `ThematicBreak`  a thematic break
+row  `HtmlBlock`  a block of raw HTML
+```
+
+The inline nodes are the cases of `Prose`:
+
+```tabular
+column  Prose
+column  Is
+row  `Textual`  plain text
+row  `Emphasis`  emphasis
+row  `Strong`  strong emphasis
+row  `Code`  a code span
+row  `Link`  a link, with its destination and optional title
+row  `Image`  an image, with its destination and optional title
+row  `Softbreak`  a soft line break
+row  `Linebreak`  a hard line break
+row  `HtmlInline`  inline raw HTML
+```
 
 ### Writing Markdown back
 

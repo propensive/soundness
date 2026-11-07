@@ -51,10 +51,34 @@ Fields left unannotated number themselves in declaration order, and the numbers 
 
 ### Field types
 
-The Scala type decides the proto3 encoding. The sized [numeric types](numbers.md) map onto proto3's
-integer flavors precisely — an unsigned `U32` is a `uint32` varint, a signed `S32` uses zig-zag
-`sint32`, a `B32` is a `fixed32` — text is length-delimited, an `Optional` field may be absent, a
-`List` of numbers packs, and a `Map` becomes the standard repeated key–value entries:
+The Scala type decides the proto3 encoding. The sized [numeric types](numbers.md) map onto
+proto3's integer flavors precisely, so the choice of type is the choice of wire encoding:
+
+```tabular
+column  Scala type
+column  Proto3 type
+column  Wire encoding
+row  `Int`  `int32`  varint
+row  `Long`  `int64`  varint
+row  `Boolean`  `bool`  varint
+row  `U32`  `uint32`  varint
+row  `U64`  `uint64`  varint
+row  `S32`  `sint32`  zig-zag varint
+row  `S64`  `sint64`  zig-zag varint
+row  `B32`  `fixed32`  four bytes
+row  `B64`  `fixed64`  eight bytes
+row  `Float`  `float`  four bytes
+row  `Double`  `double`  eight bytes
+row  `Text`  `string`  length-delimited UTF-8
+row  `Data`  `bytes`  length-delimited
+row  a case class  a nested message  length-delimited
+row  an enumeration or sealed hierarchy  `oneof`  the variant, chosen by field number
+row  `Optional[T]`  `T`, with explicit presence  nothing when `Unset`
+row  `List[T]`  `repeated T`  packed, for a number or `Boolean`
+row  `Map[K, V]`  `map<K, V>`  repeated key–value entries
+```
+
+A message may mix them freely:
 
 ```scala
 case class Typed
@@ -62,9 +86,6 @@ case class Typed
      @field(2) signed:   S32,
      @field(3) fixed:    B32 )
 ```
-
-A nested case class is a nested message, and an enumeration or sealed hierarchy encodes as proto3's
-`oneof`, with the variant chosen by field number.
 
 A repeated field may also be a frozen array — `Array[Long]^{}`, `Array[Double]^{}`,
 `Array[Message]^{}` — with the same bytes as the `List` form. It is the representation to choose
@@ -179,14 +200,24 @@ import codecs.derived    // the derived codecs, even where a direct instance is 
 import codecs.strict     // generated codecs, and a compile error where there is none
 ```
 
-Under `codecs.direct`, a type that is neither a message nor a oneof — a generic case class, a
-collection — keeps the derived path, and a type that derives `Protobuf.Direct` uses the instances
-it generated once rather than generating them again at each use, which costs compile time. The
-results are the same on either path; only the speed, and the positions reported in errors,
-differ. `codecs.strict` is `codecs.direct` for code that must not fall back: a `read[Foo in
-Protobuf]`, `in[Data over Protobuf]` on a type with no direct codec is a compile error naming the
-type. (`in[Protobuf]` names the wire value itself, and is not gated.) The modes are alternatives;
-import one at a time.
+The modes are alternatives; import one at a time. A generic case class or a collection is neither
+a message nor a oneof:
+
+```tabular
+column  Import
+column  For a message or oneof
+column  For any other type
+row  `codecs.direct`  a generated parser and printer  the derived codecs
+row  `codecs.derived`  the derived codecs, even where a direct instance is in scope  the derived codecs
+row  `codecs.strict`  a generated parser and printer  a compile error
+```
+
+Under `codecs.direct`, a type that derives `Protobuf.Direct` uses the instances it generated once
+rather than generating them again at each use, which costs compile time. The results are the same
+on either path; only the speed, and the positions reported in errors, differ. `codecs.strict` is
+`codecs.direct` for code that must not fall back: a `read[Foo in Protobuf]` or an
+`in[Data over Protobuf]` on a type with no direct codec is a compile error naming the type.
+(`in[Protobuf]` names the wire value itself, and is not gated.)
 
 ### Compatibility
 
@@ -214,9 +245,20 @@ case class Unnumbered(value: Int, other: Int)   // fields 1 and 2
 
 ### Errors
 
-A malformed message raises a `Protobuf.Error` naming the problem and the byte offset — truncated
-input, a malformed varint, an unexpected wire type, a missing required field — so wire-level faults
-are debugged from the error rather than a hex dump.
+A malformed message raises a `Protobuf.Error` naming the problem and, for a fault in the bytes, its
+offset, so wire-level faults are debugged from the error rather than a hex dump:
+
+```tabular
+column  Reason
+column  Raised when
+row  `Truncated`  the data ends in the middle of a field
+row  `MalformedVarint`  a varint is malformed
+row  `UnexpectedWireType`  a field has a wire type its Scala type cannot read
+row  `Overflow`  a number is too large for its type
+row  `MissingField`  a required field is absent; it names the field number, not an offset
+```
+
+The offset is a position within the message, or the nested message, being parsed.
 
 ### Protocol Buffers over HTTP
 

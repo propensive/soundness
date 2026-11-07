@@ -101,10 +101,29 @@ def watch()(using Debug): Unit =
 
 Breakpoints on inlined code work by position: the file and line where the code was written
 rather than where the compiler placed it, recovered from the source maps the compiler records.
-A `logpoint` prints a message at a location without stopping; `watch` stops when a field is read
-or written; `exceptions` stops when one is thrown. The request identifier a breakpoint returns is
-what later clears it, and the *suspend policy* decides how much of the VM stops when it is hit —
-the whole VM, only the thread that hit it, or nothing at all:
+Each kind of request runs its handler on a different event:
+
+```tabular
+column  Request
+column  Runs when
+column  Event kind
+row  `breakpoint`  a thread reaches a source line, a method's entry or a location  `Breakpoint`
+row  `logpoint`  a thread reaches a location, printing a message and resuming at once  `Breakpoint`
+row  `watch`  a field is written, or with `access = true` read  `FieldModified`, `FieldAccess`
+row  `exceptions`  an exception is thrown  `Exception`
+row  `step`  a stepping thread lands  `SingleStep`
+```
+
+The request identifier a breakpoint returns is what later clears it, and the *suspend policy*
+decides how much of the VM stops when it is hit:
+
+```tabular
+column  Suspend policy
+column  Stops
+row  `Jdwp.SuspendPolicy.All`  the whole VM
+row  `Jdwp.SuspendPolicy.EventThread`  only the thread that hit it
+row  `Jdwp.SuspendPolicy.None`  nothing at all
+```
 
 ```scala
 def once(location: Jdwp.Location)(using Debug): Unit =
@@ -115,7 +134,8 @@ def once(location: Jdwp.Location)(using Debug): Unit =
 ### Stepping
 
 Stepping is a request against a suspended thread, with a handler for where it lands. The *depth*
-says whether to step into a call, over it, or out of the current frame. Inlined calls step as the
+says whether to step into a call (`Jdwp.StepDepth.Into`), over it (`Over`), or out of the
+current frame (`Out`). Inlined calls step as the
 source reads — into the inlined body, line by line — rather than as the bytecode was laid out:
 
 ```scala
@@ -159,9 +179,24 @@ to the editor.
 ### The protocol vocabulary
 
 `Jdwp` holds the model of the protocol itself, for work below the level the session exposes.
-The identifier types — `ObjectId`, `ThreadId`, `ThreadGroupId`, `StringId`, `ClassLoaderId`,
-`ReferenceTypeId`, `MethodId`, `FieldId`, `FrameId` — are tagged views of one opaque reference
-type, so they are free at runtime and not interchangeable at compiletime. Alongside them sit
+The identifier types are tagged views of one opaque reference type, so they are free at runtime
+and not interchangeable at compiletime:
+
+```tabular
+column  Type
+column  Identifies
+row  `ObjectId`  an object
+row  `ThreadId`  a thread
+row  `ThreadGroupId`  a thread group
+row  `StringId`  a string object
+row  `ClassLoaderId`  a class loader
+row  `ReferenceTypeId`  a class, interface or array type
+row  `MethodId`  a method
+row  `FieldId`  a field
+row  `FrameId`  a stack frame
+```
+
+Alongside them sit
 `Jdwp.Location`, the tagged `Jdwp.Value`s, the `Jdwp.Modifier`s that constrain an event request,
 and the `Jdwp.Event`s a suspended VM sends back.
 

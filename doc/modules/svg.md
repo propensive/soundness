@@ -29,6 +29,20 @@ Figures as typed values, with coordinates that are quantities, follow [impossibl
 
 ### Shapes
 
+Every figure renders as one SVG element:
+
+```tabular
+column  Figure
+column  Element
+row  `Rectangle`  `<rect>`
+row  `Circle`  `<circle>`
+row  `Ellipse`  `<ellipse>`, or `<circle>` when its radii are equal
+row  `Outline`  `<path>`
+row  `Polyline`  `<polyline>`, or `<polygon>` when it is `closed`
+row  `Group`  `<g>`
+row  `Lettering`  `<text>`
+```
+
 Rectangles, circles and ellipses are values, positioned by points — a pair of numbers converts
 where a point is expected — and rendered to XML with `in[Xml]`:
 
@@ -42,8 +56,32 @@ Circle((0, 0), 5).in[Xml].show
 
 ### Paths
 
-An `Outline` is a path built step by step — absolute steps suffixed `To`, relative ones without —
-with curves, quadratics and a `closed` end:
+An `Outline` is a path built step by step — absolute steps suffixed `To`, taking `Point`s,
+relative ones without, taking `Delta`s — with curves, quadratics and a `closed` end:
+
+```tabular
+column  Absolute
+column  Relative
+column  Path command
+row  `moveTo(point)`  `move(delta)`  `M`, `m`
+row  `lineTo(point)`  `line(delta)`  `L`, `l`
+row  `curveTo(control1, control2, point)`  `curve(control1, control2, delta)`  `C`, `c`
+row  `curveTo(control2, point)`  `curve(control2, delta)`  `S`, `s`
+row  `quadCurveTo(control, point)`  `quadCurve(control, delta)`  `Q`, `q`
+row  `quadCurveTo(point)`  `quadCurve(delta)`  `T`, `t`
+row
+  cell
+  cell  `lineUp(n)`, `lineDown(n)`, `lineLeft(n)`, `lineRight(n)`
+  cell  `l`
+row
+  cell
+  cell  `moveUp(n)`, `moveDown(n)`, `moveLeft(n)`, `moveRight(n)`
+  cell  `m`
+row
+  cell  `closed`
+  cell
+  cell  `Z`
+```
 
 ```scala
 Outline().moveTo((0, 0)).curveTo((1, 1), (2, 1), (3, 0)).in[Xml].show
@@ -57,9 +95,18 @@ val plus = Outline().moveTo((0, 0))
 
 ### Points and deltas
 
-Positions and displacements are different things, and different types: a `Point` plus a `Delta` is
-a `Point`, two points subtract to a `Delta`, and deltas scale and add. The named directions `Up`,
-`Down`, `Left` and `Right` make displacement arithmetic read plainly:
+Positions and displacements are different things, and different types:
+
+```tabular
+column  Expression
+column  Type
+row  `Point + Delta`, `Point - Delta`  `Point`
+row  `Point - Point`  `Delta`
+row  `Delta + Delta`, `Delta - Delta`, `-Delta`  `Delta`
+row  `Delta*n`, `n*Delta`  `Delta`
+```
+
+The named directions `Up`, `Down`, `Left` and `Right` make displacement arithmetic read plainly:
 
 ```scala
 val step: Delta = 7*Up + 3*Right   // Delta(3.0, -7.0) — SVG's y-axis points down

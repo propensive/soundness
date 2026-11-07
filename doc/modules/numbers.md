@@ -47,9 +47,21 @@ val signed: S32 = 42
 val widened: S32 = small.s32   // wider, and so always safe
 ```
 
-The name carries the meaning: `U*` is unsigned, `S*` is two's-complement signed, `F*` is
-floating-point, and the number is the bit width. An unsigned value and a signed one are
-different types, and mixing them is a deliberate conversion rather than an accident.
+The name carries the meaning, and the number is the bit width:
+
+```tabular
+column  Family
+column  Types
+column  Is
+column  Operators
+row  `U*`  `U8`, `U16`, `U32`, `U64`  unsigned  arithmetic
+row  `S*`  `S8`, `S16`, `S32`, `S64`  two's-complement signed  arithmetic
+row  `F*`  `F32`, `F64`  floating-point  arithmetic
+row  `B*`  `B8`, `B16`, `B32`, `B64`  a raw bit pattern  shifts, rotations and masks
+```
+
+An unsigned value and a signed one are different types, and mixing them is a deliberate
+conversion rather than an accident.
 
 The operators are the generic ones from `symbolism`, which `import soundness.*` provides:
 `+`, `-`, `*`, `/` and prefix `-` resolve through `Addable`, `Subtractable`, `Multiplicable`,
@@ -69,9 +81,20 @@ so an integer literal operand is written with its type: `count + (1: U64)`.
 
 ### Checked arithmetic
 
-Arithmetic on the integer types needs an overflow policy in scope. Importing
-`arithmeticOptions.uncheckedOverflow` gives the hardware's behavior, wrapping on overflow, while
-the checked given changes the result type of `+`, `-` and `*` to one that can raise
+Arithmetic on the integer types needs an overflow policy in scope, and division is checked the
+same way. Each policy is imported from `arithmeticOptions`:
+
+```tabular
+column  Import
+column  Governs
+column  Behavior
+row  `uncheckedOverflow`  `+`, `-` and `*`  the hardware's, wrapping on overflow
+row  `checkedOverflow`  `+`, `-` and `*`  raises `Arithmetic.Error` on overflow
+row  `uncheckedDivision`  `/`  the bare machine behavior
+row  `checkedDivision`  `/`  raises `Arithmetic.Error` on division by zero
+```
+
+The checked overflow given changes the result type of `+`, `-` and `*` to one that can raise
 `Arithmetic.Error`, so an overflow becomes a handled failure rather than a silent wrap:
 
 ```scala
@@ -81,10 +104,6 @@ import strategies.throwUnsafely
 val big: S32 = 2000000000
 safely(big + big)   // Unset: the sum overflows, raising Arithmetic.Error rather than wrapping negative
 ```
-
-Division by zero is checked the same way, by importing `arithmeticOptions.checkedDivision`,
-after which `/` may raise a `Arithmetic.Error`. The unchecked givens, `uncheckedOverflow` and
-`uncheckedDivision`, keep the bare machine behavior and cost nothing.
 
 The two checks are independent, so a program that must not wrap but is content to trust its
 divisors imports only the first. Each policy's instances are objects, so after inlining an
@@ -108,8 +127,22 @@ flags & 0x30.bits   // mask
 flags.hex           // t"000000f0"
 ```
 
-`<<<` and `>>>` rotate rather than shift, `~` inverts, and individual bits are read and
-written with `bit`, `set`, `clear` and `flip`. Bits are addressed by
+The operations on a bit pattern are:
+
+```tabular
+column  Operation
+column  Does
+row  `<<`, `>>`  shift left or right, filling with zeros
+row  `<<<`, `>>>`  rotate left or right
+row  `&`, `|`, `^`  and, or and exclusive or
+row  `~`  invert every bit
+row  `bit`  read one bit
+row  `set`, `clear`, `flip`  write one bit, or every bit of an interval
+row  `leadingZeros`, `trailingZeros`  count the zeros at either end
+row  `reverse`  reverse the order of the bits
+```
+
+Bits are addressed by
 [ordinal](https://en.wikipedia.org/wiki/Ordinal_number) — `Prim` is the first, `Sec` the second —
 so a bit index cannot be confused with the off-by-one convention of whichever specification is
 being implemented:
@@ -214,8 +247,23 @@ interesting cases: multiplying a length by a length yields an *area*, adding a d
 instant yields an instant, and dividing one quantity by another yields something whose type
 neither operand could have anticipated.
 
-The operators are therefore defined over `Addable`, `Subtractable`, `Multiplicable` and
-`Divisible`, each of which names both the operand and the result:
+The operators are therefore defined over typeclasses, each of which names both the operand and
+the result:
+
+```tabular
+column  Typeclass
+column  Supplies
+row  `Addable`  `+`
+row  `Subtractable`  `-`
+row  `Multiplicable`  `*`
+row  `Divisible`  `/`
+row  `Negatable`  prefix `-`
+row  `Rootable`  `sqrt` and `cbrt`
+row  `Zeroic`  `zero`, the additive identity
+row  `Unital`  `one`, the multiplicative identity
+```
+
+An instance reads as a sentence:
 
 ```scala
 given Double is Addable by Double to Double = Addable(_ + _)
@@ -226,9 +274,7 @@ result type is a member of the instance rather than a parameter of the operator,
 `length*length` can produce `Quantity[Metres[2]]` while `length*number` produces
 `Quantity[Metres[1]]`, and both are found by the same `*`.
 
-`Negatable` and `Rootable` do the same for unary negation and for square and cube roots, and
-`Zeroic` and `Unital` supply the additive and multiplicative identities where an algorithm needs
-to start from one. This is the machinery beneath [quantities](quantities.md), where dimensional
+The identities are for an algorithm that needs to start from one. This is the machinery beneath [quantities](quantities.md), where dimensional
 analysis is exactly the computation of the result type; beneath [complex numbers and
 matrices](mathematics.md), which are generic in an element type they only ever combine through
 these operators; and beneath the arithmetic that [derivation](derivation.md) can produce for a
@@ -238,9 +284,22 @@ case class field by field.
 
 Off-by-one errors come from a single ambiguity: whether "1" means the first element or the one
 after the first. `Ordinal` removes it by being a different type from `Int` altogether. There is,
-fundamentally, no zeroth ordinal — the first is `Prim`, then `Sec`, `Ter`, `Quat`, `Quin`, `Sen`
-and `Sept`, from "primary", "secondary", "tertiary" and so on — and an `Int` cannot be used where
-an `Ordinal` is expected, or the reverse. It is an opaque type over an `Int`, so it costs nothing.
+fundamentally, no zeroth ordinal. An `Int` cannot be used where an `Ordinal` is expected, or the
+reverse, and an `Ordinal` is an opaque type over an `Int`, so it costs nothing. The first seven
+are named:
+
+```tabular
+column  Ordinal
+column  Position
+column  From
+row  `Prim`  first  primary
+row  `Sec`  second  secondary
+row  `Ter`  third  tertiary
+row  `Quat`  fourth  quaternary
+row  `Quin`  fifth  quinary
+row  `Sen`  sixth  senary
+row  `Sept`  seventh  septenary
+```
 
 Crossing between the two is explicit, and says which convention is being crossed *from*: `z`
 reads a zero-indexed count as an ordinal, `u` a one-indexed one. So `0.z` and `1.u` are both

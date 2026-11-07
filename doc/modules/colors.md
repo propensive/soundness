@@ -53,12 +53,24 @@ val red = Srgb(0.8, 0.2, 0.2)
 val slate = Hsl(208.8.deg, 0.3, 0.4)
 ```
 
-`Srgb`, `Hsl`, `Hsv`, `Cielab`, `Xyz`, `Cmy` and `Cmyk` are the models available, and a
-value in any of them is a `Color`.
+Seven models are available, and a value in any of them is a `Color`:
+
+```tabular
+column  Model
+column  Coordinates
+column  Suits
+row  `Srgb`  `red`, `green`, `blue`  a screen
+row  `Hsl`  `hue`, `saturation`, `lightness`  intuitive adjustment
+row  `Hsv`  `hue`, `saturation`, `value`  intuitive adjustment, and tints and shades
+row  `Cielab`  `lightness`, `blueYellow`, `greenRed`  perceptual distance and mixing
+row  `Xyz`  `x`, `y`, `z`  a device-independent reference
+row  `Cmy`  `cyan`, `magenta`, `yellow`  print
+row  `Cmyk`  `cyan`, `magenta`, `yellow`, `key`  print, with a black ink
+```
 
 ### Converting between spaces
 
-The `in` method converts a color to another model:
+The `to` method converts a color to another model:
 
 ```scala
 val lab = red.to[Cielab]
@@ -126,10 +138,29 @@ and a third daub is weighted against the total so far rather than against its ne
 ### Mixing modes
 
 `proportionalMixing` averages the colors, which is what `mix` does. The other modes are the
-blend modes of Photoshop and GIMP — `multiplyMixing`, `screenMixing`, `overlayMixing`,
-`hardLightMixing`, `softLightMixing`, `darkenMixing`, `lightenMixing`, `colorDodgeMixing`,
-`colorBurnMixing`, `differenceMixing`, `exclusionMixing`, `linearDodgeMixing` and
-`linearBurnMixing` — and each is imported the same way from the `mixing` package:
+blend modes of Photoshop and GIMP, as the W3C compositing specification defines them. Each
+computes a channel from the backdrop, *b*, and the layer, *l*:
+
+```tabular
+column  Mode
+column  Each channel becomes
+row  `proportionalMixing`  *l*, so the result is a weighted average
+row  `multiplyMixing`  *b*·*l*
+row  `screenMixing`  *b* + *l* − *b*·*l*
+row  `overlayMixing`  2·*b*·*l* where *b* ≤ ½, otherwise 1 − 2·(1 − *b*)·(1 − *l*)
+row  `hardLightMixing`  as overlay, with *l* rather than *b* deciding
+row  `softLightMixing`  a gentler hard light, darkening where *l* ≤ ½ and lightening above
+row  `darkenMixing`  the lesser of *b* and *l*
+row  `lightenMixing`  the greater of *b* and *l*
+row  `colorDodgeMixing`  *b*/(1 − *l*), at most 1
+row  `colorBurnMixing`  1 − (1 − *b*)/*l*, at least 0
+row  `differenceMixing`  the absolute difference of *b* and *l*
+row  `exclusionMixing`  *b* + *l* − 2·*b*·*l*
+row  `linearDodgeMixing`  *b* + *l*, at most 1
+row  `linearBurnMixing`  *b* + *l* − 1, at least 0
+```
+
+Each is imported the same way, from the `mixing` package:
 
 ```scala
 import mixing.multiplyMixing
@@ -160,10 +191,24 @@ tomato.desaturate.to[Srgb]        // the same lightness, no color
 ```
 
 `rotate` turns the hue by an `Angle`, so the unit is written down rather than assumed:
-`180.deg` and `π.rad` are the same half-turn. `complement` is that half-turn.
-`saturate` and `desaturate` push saturation to its extremes, and `lighten` and `darken`
-move lightness by a fraction. On `Hsv`, `tint`, `shade` and `tone` mix toward white,
-toward black, or both.
+`180.deg` and `π.rad` are the same half-turn. The adjustments are:
+
+```tabular
+column  Operation
+column  On
+column  Gives
+row  `rotate(angle)`  `Hsl`, `Hsv`  the hue turned by an angle
+row  `complement`  `Hsl`, `Hsv`  the hue turned by a half-turn
+row  `saturate`, `desaturate`  `Hsl`, `Hsv`  full saturation, or none
+row  `pure`  `Hsl`, `Hsv`  the hue at full saturation and middle lightness, or full value
+row  `lighten(amount)`  `Hsl`  lightness moved that fraction of the way toward white
+row  `darken(amount)`  `Hsl`  lightness moved that fraction of the way toward black
+row  `tint(white)`  `Hsv`  saturation reduced by a fraction, toward white
+row  `shade(black)`  `Hsv`  value reduced by a fraction, toward black
+row  `tone(black, white)`  `Hsv`  both
+row  `mix(other, ratio)`  `Srgb`, `Cielab`  a blend of two colors, halfway by default
+row  `delta(other)`  `Cielab`  the perceptual distance between two colors
+```
 
 A hue is a point on a circle rather than a quantity, so a rotation always lands back in
 the range the eye reads as a color: turning past a full circle, or backwards past zero,
@@ -216,6 +261,35 @@ given Colorimetry = colorimetry.incandescentTungstenColorimetry
 WebColors.Ivory.to[Cielab]   // computed for tungsten light
 ```
 
+The `colorimetry` package names each profile after its CIE standard illuminant, or after a
+lamp that approximates one:
+
+```tabular
+column  Given
+column  Illuminant
+column  Also named
+row  `incandescentTungstenColorimetry`  A
+row  `oldDirectSunlightAtNoonColorimetry`  B
+row  `oldDaylightColorimetry`  C
+row  `iccProfilePcsColorimetry`  D50
+row  `midMorningDaylightColorimetry`  D55
+row  `daylightColorimetry`  D65  `srgbColorimetry`, `adobeRgbColorimetry`
+row  `northSkyDaylightColorimetry`  D75
+row  `equalEnergyColorimetry`  E
+row  `daylightFluorescentF1Colorimetry`  F1
+row  `coolFluorescentColorimetry`  F2
+row  `whiteFluorescentColorimetry`  F3
+row  `warmWhiteFluorescentColorimetry`  F4
+row  `daylightFluorescentF5Colorimetry`  F5
+row  `liteWhiteFluorescentColorimetry`  F6
+row  `daylightFluorescentF7Colorimetry`  F7  `d65SimulatorColorimetry`
+row  `sylvaniaF40Colorimetry`  F8  `d50SimulatorColorimetry`
+row  `coolWhiteFluorescentColorimetry`  F9
+row  `philipsTl85Colorimetry`  F10  `ultralume50Colorimetry`
+row  `philipsTl84Colorimetry`  F11  `ultralume40Colorimetry`
+row  `philipsTl83Colorimetry`  F12  `ultralume30Colorimetry`
+```
+
 ### Themes and palettes
 
 A `Theme` names a coordinated set of colors — a background, a foreground, a list of accents,
@@ -251,6 +325,17 @@ type Rgb565 = (Red[5], Green[6], Blue[5])
 scala.compiletime.constValue[anticipation.Channel.TotalBits[Rgb]]   // 24
 summon[anticipation.Channel.Storage[Rgb565] =:= Short]   // the narrowest type that fits
 summon[anticipation.Channel.Storage[Tuple1[Grey[8]]] =:= Byte]
+```
+
+Three layouts are predefined:
+
+```tabular
+column  Layout
+column  Channels
+column  Bits
+row  `Rgb`  `(Red[8], Green[8], Blue[8])`  24
+row  `Rgba`  `(Red[8], Green[8], Blue[8], Alpha[8])`  32
+row  `Cmyk8`  `(Cyan[8], Magenta[8], Yellow[8], Key[8])`  32
 ```
 
 `Channel` is reached through its library package here because the umbrella already exports a

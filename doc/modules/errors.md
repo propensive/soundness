@@ -100,12 +100,9 @@ implementation serves every strategy at once.
 ### Choosing a strategy
 
 At the point a fallible operation is used, a *strategy* in scope decides what a failure does.
-`throwUnsafely` raises an exception:
-
-With that strategy, `connect(80)` throws a `PortError` as an ordinary exception. `safely` runs a
-block and turns any failure into an absent result, so a failure becomes `Unset` rather than an
-exception; `unsafely` asserts that no failure will occur; and `capture` returns the error itself,
-for testing that the right failure is produced:
+The `throwUnsafely` strategy raises an exception, so with it in scope `connect(80)` throws a
+`PortError` as an ordinary exception. `safely` runs a block and turns any failure into `Unset`
+instead, and `capture` returns the error itself, for testing that the right failure is produced:
 
 ```scala fuel
 frame
@@ -124,6 +121,23 @@ frame
       safely(connect(80))                    // Unset
       capture[PortError](connect(80)).port   // 80
 ##
+```
+
+These are three of the ways to run fallible code; with the others, which the sections below
+describe, they compare as follows:
+
+```tabular
+column  Name
+column  Used as
+column  A failure
+row  `throwUnsafely`  a strategy, imported from `strategies`  is thrown, with no capability required
+row  `throwSafely`  a strategy, imported from `strategies`  is thrown, given a `CanThrow` capability
+row  `safely`  a block  becomes `Unset`
+row  `unsafely`  a block  is thrown, the block asserting that none will occur
+row  `capture`  a block  is returned; a success is an `Expectation.Error`
+row  `attempt`  a block  is returned in an `Attempt`, beside a success
+row  `amalgamate`  a block  is returned in place of the value, as a union
+row  `tolerate`  a method of the ambient tactic  becomes `Unset`, and what was recorded is rolled back
 ```
 
 *Tactic* and *strategy* are the same type, `Tactic`, distinguished only by the scope they are
@@ -153,6 +167,19 @@ case class InitError(reason: Text)(using Diagnostics)
 extends Error(m"initialization failed: $reason")
 
 given InitError is Fatal = error => Exit.Fail(127)
+```
+
+The four kinds of failure differ in whether they must be handled, and in what happens when one
+occurs:
+
+```tabular
+column  A failure which is
+column  Must be handled
+column  When it occurs
+row  an `Error`  yes, or declared with `raises`  the tactic in scope decides
+row  a `Panic`  no  it is not meant to be caught
+row  an `Error` with an `Unchecked` given  no  it is thrown, under `strategies.uncheckedErrors`
+row  an `Error` with a `Fatal` given  no  the process ends with the given's status, under `strategies.fatalErrors`
 ```
 
 ### Recovering
@@ -238,9 +265,10 @@ capture[Invalid]:
 . problems.size   // 2
 ```
 
-Each field is checked even if an earlier one failed, and the accumulated `Invalid` carries all
-the problems at once. The first block folds each raised error into the accumulation; the second
-says which errors the accrual handles.
+The two validators raise `PortError` only to keep the example to one error type; a real form
+would have an error of its own. Each field is checked even if an earlier one failed, and the
+accumulated `Invalid` carries all the problems at once. The first block folds each raised error
+into the accumulation; the second says which errors the accrual handles.
 
 The difference between the two is in their return types. `abort` returns `Nothing`: there is no
 value to give back, so it leaves. `raise` returns a value — an *ersatz* value, a stand-in — so
@@ -284,7 +312,7 @@ def decodePerson(json: Json): Person raises Json.Error =
 Forcing a venture with `name()` requires a *skip-scope* in context — an enclosing `venture` or
 `guard`, witnessed by a contextual `Guard` capability. Forcing a failed venture escapes to that
 scope without registering anything further, since its errors are already in the accrual: above,
-if `name` failed then the consistency check is skipped entirely, while `role`, evaluated eagerly
+if `name` failed then the consistency check is skipped entirely, while `age`, evaluated eagerly
 at its declaration, still contributed its errors. Forcing outside any skip-scope is a compile
 error, because there would be nowhere well-defined to skip to.
 
@@ -313,6 +341,19 @@ This is the lever a codec uses to decode an optional field leniently: the field'
 bound to the ambient tactic when it was resolved, so the tactic itself is the only place a fault
 in it can be intercepted.
 
+Together, the operations for reporting and containing a failure under an accruing tactic are:
+
+```tabular
+column  Operation
+column  Yields
+column  After an error
+row  `abort(error)`  `Nothing`  leaves the scope, or only the venture it is in
+row  `raise(error)`  an ersatz value  continues, with the error recorded
+row  `venture(…)`  a `Venture[Value]`, `Failed` if the block recorded anything  its siblings still run
+row  `guard(…)`  the block's value  the block is skipped if anything was recorded before it
+row  `tactic.tolerate(…)`  an `Optional` value, `Unset` on failure  what the block recorded is rolled back
+```
+
 ### Saying where a failure was
 
 An accumulated list of errors is only useful if each one says where it came from. A *focus* is the
@@ -324,10 +365,21 @@ was raised:
 Pointer(t"a")(t"b")(t"c").text   // t"a.b.c"
 ```
 
-The pointer type is chosen by the structure being traversed — a `JsonPointer` for
-[JSON](json.md), a path for [XML](xml.md), a column for [CSV](csv.md) — so the position is
-reported in the vocabulary of the data rather than as an index into something internal. This is
-the machinery beneath every "which field failed" report in the format modules.
+The pointer type is chosen by the structure being traversed, so the position is reported in the
+vocabulary of the data rather than as an index into something internal:
+
+```tabular
+column  Format
+column  Focus
+column  Locates by
+row  [JSON](json.md)  `Json.Focus`  a `JsonPointer`
+row  [XML](xml.md)  `Xml.Focus`  an `XPath`
+row  [YAML](yaml.md)  `Yaml.Focus`  a `YamlPath`
+row  [TEL](tel.md)  `Tel.Focus`  a `Telp`
+row  [CSV](csv.md)  `CellRef`  a row and a column name
+```
+
+This is the machinery beneath every "which field failed" report in the format modules.
 
 ### Inspecting a failure directly
 
@@ -348,7 +400,8 @@ or a failure carrying the error, for code that must branch on both:
 attempt[PortError](connect(80))   // Attempt.Success(…) or Attempt.Failure(…)
 ```
 
-`amalgamate` combines several fallible computations, gathering their errors into one.
+`amalgamate` returns either the block's value or the first error it raises, typed as the union
+of the two.
 
 ### Translating and escalating
 

@@ -113,8 +113,17 @@ enum Animal:
 ### The fallback chain
 
 `Inspectable` is total, but it is not indiscriminate. Asked to inspect a value, it tries in turn:
-the type's own `Inspectable` instance, then its `Showable`, then a structural rendering derived
-from its shape, and only then a last-resort rendering. A type that has said how it should look is
+
+```tabular
+column  Tried
+column  Rendering
+row  1  the type's own `Inspectable` instance
+row  2  its `Showable` instance
+row  3  a structural rendering derived from its shape
+row  4  a last-resort rendering
+```
+
+A type that has said how it should look is
 therefore shown that way in debugging output too, and a type that has said nothing still produces
 something useful rather than a hash code.
 
@@ -130,8 +139,19 @@ import affirmations.yesNoAffirmation
 t"the answer is ${true}"   // t"the answer is yes"
 ```
 
-`onOffAffirmation`, `trueFalseAffirmation` and `oneZeroAffirmation` are the other choices, and any
-other pair is one line:
+Four affirmations are provided:
+
+```tabular
+column  Import
+column  `true`
+column  `false`
+row  `affirmations.yesNoAffirmation`  `yes`  `no`
+row  `affirmations.onOffAffirmation`  `on`  `off`
+row  `affirmations.trueFalseAffirmation`  `true`  `false`
+row  `affirmations.oneZeroAffirmation`  `1`  `0`
+```
+
+Any other pair is one line:
 
 ```scala
 given Affirmation = Affirmation(t"+", t"-")

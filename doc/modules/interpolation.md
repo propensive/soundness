@@ -96,6 +96,18 @@ The same machinery runs in reverse. An `Extrapolable` instance lets an interpola
 as a pattern in a `match`, deconstructing a value and binding its holes — which is how `json"…"`
 and `html"…"` patterns work. One definition gives both the construction and the match.
 
+The four typeclasses, side by side:
+
+```tabular
+column  Typeclass
+column  Given for
+column  Says
+row  `Interpolable`  the result type  how the literal parts are parsed into a value
+row  `Insertion[input, value]`  a substitutable type  how a value enters the interpolator's input
+row  `Substitution[input, value, label]`  a substitutable type  the same, and which token the parser sees in its hole
+row  `Extrapolable`  the matched type  how a value is deconstructed by a literal pattern
+```
+
 ### Compiletime and runtime
 
 An interpolator's parsing logic is ordinary code, and it runs in both worlds: at compiletime for

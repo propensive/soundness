@@ -45,8 +45,7 @@ sh"ls -la"   // Command(t"ls", t"-la")
 
 ### Running a command
 
-`exec` runs the command and interprets its output as the type named. The whole output reads as
-`Text`, the lines as a `List[Text]` or a lazy `Stream[Text]`, and the exit status as an `Exit`:
+`exec` runs the command and interprets its output as the type named:
 
 ```scala
 sh"echo hello".exec[Text]().trim              // t"hello"
@@ -57,9 +56,21 @@ sh"false".exec[Exit]()                        // Exit.Fail(1)
 The type does more than name a conversion; it decides how the result is *interpreted*. Commands
 disagree about which stream carries the important output and about what a nonzero status means —
 for some it is a failure, for others one of several ordinary answers — and the choice of type
-settles both. It also decides *when* the call returns: `Text` waits for the process to finish and
-gives its whole output, while a `Chain[Text]` yields lines lazily, as they arrive. `Stderr` reads the
-other stream, `Data` the raw bytes, and `Unit` discards the output while still waiting.
+settles both. It also decides *when* the call returns:
+
+```tabular
+column  Type
+column  Gives
+column  Returns
+row  `Text`  the whole of standard output  when the process finishes
+row  `List[Text]`  the lines of standard output  when the process finishes
+row  `Chain[Text]`  the lines of standard output, lazily  at once, reading each line as it arrives
+row  `Stderr`  the whole of standard error  when the process finishes
+row  `Data`  the raw bytes of standard output  when the process finishes
+row  `Exit`  the exit status  when the process finishes
+row  `Unit`  nothing: the output is discarded  when the process finishes
+row  a path type  the trimmed output, read as a path  when the process finishes
+```
 
 A `Computable` instance defines each of these, so a type not covered gains one by saying how to
 interpret a finished or running process — often by mapping an existing instance, since
@@ -68,8 +79,16 @@ interpret a finished or running process — often by mapping an existing instanc
 ### Substitution and escaping
 
 A value substituted into a command is escaped for its position. Spliced where an argument is
-expected, it becomes exactly one argument no matter its contents; a list becomes one argument each;
-and a path is substituted as its text:
+expected:
+
+```tabular
+column  A substituted
+column  Becomes
+row  value  exactly one argument, no matter its contents
+row  list  one argument for each element
+row  path  one argument, its text
+row  command  one argument, escaped, as described below
+```
 
 ```scala
 val file = t"a file.txt"
@@ -155,6 +174,18 @@ import filesystemBackends.javaBaseFilesystem
 
 val directory: Path on Linux = (% / "var" / "log").on[Linux]
 val pid: Pid = sh"server --port 8080".detach(log = directory / "server.log")
+```
+
+So a command starts in one of three ways, or, through `pty`, on a terminal:
+
+```tabular
+column  Method
+column  Waits
+column  Answers
+row  `exec`  until the command finishes  its result, as the type named
+row  `fork`  only until it has started  a `Job`, to await, inspect or stop
+row  `detach`  only until it has started  its `Pid`, holding nothing else of it
+row  `pty`  not at all  a description of the command on a pseudo-terminal, to `exec` or open a `session` on
 ```
 
 ### On a terminal

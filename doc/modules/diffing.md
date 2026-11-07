@@ -78,6 +78,19 @@ diff(italian, spanish).rdiff(_.proximity(_) < 4)
 Similar elements — here, words within a small edit distance — pair as substitutions, and only the
 genuinely new or removed remain as insertions and deletions.
 
+Between them, `diff` and `rdiff` produce four kinds of edit:
+
+```tabular
+column  Edit
+column  Records
+column  Positions
+column  In
+row  `Ins`  an element of the right sequence only  right  `Diff`, `RDiff`
+row  `Del`  an element of the left sequence only  left  `Diff`, `RDiff`
+row  `Par`  an element common to both  left and right  `Diff`, `RDiff`
+row  `Sub`  a left element paired with its right replacement  left and right  `RDiff` only
+```
+
 The pairing is done per changed *region*, and only where a region contains at least one deletion
 and at least one insertion, since only there is a substitution possible. Within such a region the
 order in which deletions and insertions are applied does not affect the result, which is what

@@ -47,9 +47,19 @@ value crosses without preparation.
 
 ### The representation
 
-The encoding is deliberately transparent: a case class is an `Array[Object]` of its fields in
-declaration order, an enumeration case is a pair of its name and its payload, and primitives are
-their boxed forms:
+The encoding is deliberately transparent:
+
+```tabular
+column  Scala value
+column  Pojo form
+row  `Text` or `String`  a `String`
+row  `Int`, `Long`, `Float`, `Double`, `Char`, `Boolean` or `Byte`  its boxed `java.lang` form
+row  a collection: `List`, `Set`, `Sequence` or other `Iterable`  an `Array[Object]` of its elements
+row  a case class  an `Array[Object]` of its fields in declaration order
+row  an enumeration case  an `Array[Object]` pair of its name and its payload
+```
+
+For example:
 
 ```scala
 enum Light:

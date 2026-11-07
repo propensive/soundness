@@ -88,11 +88,19 @@ re-parse.
 ### Universes
 
 A compilation emits one intermediate representation, and that choice decides which library
-artifacts it can link against. `Universe.Classfile` is JVM classfiles, `Universe.Sjsir` is
-Scala.js IR, and `Universe.Nir` is Scala Native IR. The universe is a type parameter of the
-`Compilation`, so a Scala.js compilation is not interchangeable with a native one, and the
-compiler flags each universe needs — `-scalajs`, or the Scala Native plugin — follow from it
-rather than being supplied by hand.
+artifacts it can link against. The universe is a type parameter of the `Compilation`, so a
+Scala.js compilation is not interchangeable with a native one, and the compiler flags each
+universe needs follow from it rather than being supplied by hand:
+
+```tabular
+column  Universe
+column  Emits
+column  Compiler flag
+column  Runtime libraries on the classpath
+row  `Universe.Classfile`  JVM classfiles
+row  `Universe.Sjsir`  Scala.js IR  `-scalajs`  `scalajs-javalib`, `scalajs-library_2.13`, `scalajs-scalalib_2.13`, `scala3-library_sjs1`
+row  `Universe.Nir`  Scala Native IR  `-Xplugin:` with the `NirPlugin` jar  `scalalib`, `scala3lib`, `javalib`, `auxlib`, `clib`, `posixlib`, `nativelib`
+```
 
 The single-type-argument form targets the classfile universe, and `targeting` selects another
 explicitly:
@@ -101,13 +109,10 @@ explicitly:
 val forJs = compiler.targeting[Universe.Sjsir]
 ```
 
-Each universe beyond the JVM's has runtime prerequisites, supplied on the classpath like any
-other. `Universe.Sjsir` needs `scalajs-javalib`, `scalajs-library_2.13`, `scalajs-scalalib_2.13`
-and `scala3-library_sjs1`; their absence surfaces as ordinary compiler diagnostics rather than
-as a distinct kind of failure. `Universe.Nir` needs `scalalib`, `scala3lib`, `javalib`,
-`auxlib`, `clib`, `posixlib` and `nativelib`, and additionally a `NirPlugin` in scope — evidence
-of where the Scala Native compiler plugin lives, since NIR is emitted by a plugin rather than by
-a backend built into the compiler.
+The runtime libraries are supplied on the classpath like any other, and their absence surfaces
+as ordinary compiler diagnostics rather than as a distinct kind of failure. `Universe.Nir`
+additionally needs a `NirPlugin` in scope — evidence of where the Scala Native compiler plugin
+lives, since NIR is emitted by a plugin rather than by a backend built into the compiler.
 
 ### Producing artifacts
 
@@ -126,13 +131,25 @@ supervise:
       List(EntryPoint(fqcn"com.example.Main")) )
 ```
 
-From classfiles come an executable `Artifact.Jar`, a `Dex` archive of Dalvik bytecode, a complete,
-signed and aligned Android `Apk`, and an `Xeq` bundle runnable straight from a shell. From Scala.js IR
-come `Js` — as an ECMAScript module, a CommonJS module or a plain script, the module system being
-part of the node's identity — a `Wasm` module with JavaScript glue, a standalone `Wasi` component
-at a stated generation, and an `OciImage` wrapping that component as an OCI artifact. From Scala
-Native IR comes an `Artifact.Binary` per target triple. Every universe additionally produces a
-`Library`, packaging unlinked output for downstream assembly.
+Each universe reaches its own set of application formats:
+
+```tabular
+column  From
+column  Format
+column  Artifact
+row  any universe  `Library`  unlinked output, packaged for downstream assembly
+row  `Universe.Classfile`  `Artifact.Jar`  an executable JAR
+row  `Universe.Classfile`  `Dex`  an archive of Dalvik bytecode
+row  `Universe.Classfile`  `Apk`  a complete, signed and aligned Android package
+row  `Universe.Classfile`  `Xeq`  a bundle runnable straight from a shell
+row  `Universe.Sjsir`  `Js`  an ECMAScript module, a CommonJS module or a plain script
+row  `Universe.Sjsir`  `Wasm`  a WebAssembly module with JavaScript glue
+row  `Universe.Sjsir`  `Wasi`  a standalone component at a stated WASI generation
+row  `Universe.Sjsir`  `OciImage`  that component, wrapped as an OCI artifact
+row  `Universe.Nir`  `Artifact.Binary`  a native executable for one target triple
+```
+
+The module system of a `Js` node is part of its identity, as the target triple is of a binary's.
 
 Formats several edges apart need no special handling: an `Apk` runs dexing and then packaging, and
 an `OciImage` links the component and then wraps it, because those are the paths. A build that
@@ -167,9 +184,16 @@ A declared format is the same node as the built-in format of its kind and name, 
 ### Deliverables and paths
 
 The value flowing along a path is a `Deliverable`, and its case says where in the graph it
-belongs: `Sources` at a source node, an `Emission` — an output directory and the classpath it was
-compiled against — at an intermediate representation, and a `Product`, a linked or packaged file,
-at an application format.
+belongs:
+
+```tabular
+column  Case
+column  Holds
+column  Belongs at
+row  `Deliverable.Sources`  sources  a source node
+row  `Deliverable.Emission`  an output directory and the classpath it was compiled against  an intermediate representation
+row  `Deliverable.Product`  a linked or packaged file  an application format
+```
 
 The path itself can be asked for directly, which is how a tool reports what it is about to run:
 
@@ -213,15 +237,30 @@ on the path whose target it applies to; a setting matching no format on the path
 Addressing settings to formats is what lets one setting configure several stages. An Android API
 level is a property of the application, but it governs both how D8 desugars and what the manifest
 declares, so `apkOptions.minApi` applies to `Dex` and `Apk` alike, dispatching to each node's own
-configuration type. The Scala.js settings — `linkerOptions.checkIr`, `sourceMaps`, `esVersion.*`
-and `optimize.*` — apply to every format the Scala.js linker produces, and the native settings
-cover the garbage collector (`nativeOptions.gc.*`), build mode (`mode.*`) and link-time
-optimization (`lto.*`).
+configuration type. The other groups of settings are:
+
+```tabular
+column  Settings
+column  Configure
+column  Apply to
+row  `linkerOptions.checkIr`, `sourceMaps`, `esVersion.*`, `optimize.*`  the Scala.js linker  every format the Scala.js linker produces
+row  `nativeOptions.gc.*`  the garbage collector  native binaries
+row  `nativeOptions.mode.*`  the build mode  native binaries
+row  `nativeOptions.lto.*`  link-time optimization  native binaries
+```
 
 Entry points are ambient along the whole path in the same way, and each tool applies or ignores
-them as its format demands: an executable JAR takes at most one, as its `Main-Class`; a native
-binary and an APK require exactly one; a library JAR and a DEX archive ignore them entirely,
-since neither records an entry point.
+them as its format demands:
+
+```tabular
+column  Format
+column  Entry points
+row  `Artifact.Jar`  at most one, recorded as its `Main-Class`
+row  `Artifact.Binary`  exactly one
+row  `Apk`  exactly one
+row  `Js`, `Wasm`, `Wasi`  any number, each run as a module initializer
+row  `Library`, `Dex`  ignored, since neither records an entry point
+```
 
 ### WASI components
 
@@ -243,10 +282,19 @@ def component(witDirectory: Path on Linux, emission: Deliverable, destination: P
     . produce(emission, Universe.Sjsir, OciImage, destination)
 ```
 
-WASI generations are separate nodes because they determine an artifact's ABI: `Wasip1` is a flat,
-libc-style syscall interface on core modules, `Wasip2` is the component model, and `Wasip3` adds
-native asynchrony. Only `Wasip2` has an edge producing it, so asking for `Wasip3` raises `NoPath`
-rather than silently producing something else.
+WASI generations are separate nodes because they determine an artifact's ABI:
+
+```tabular
+column  Generation
+column  Interface
+column  Producible
+row  `Wasi.Version.Wasip1`  a flat, libc-style syscall interface on core modules  no
+row  `Wasi.Version.Wasip2`  the component model  yes
+row  `Wasi.Version.Wasip3`  the component model with native asynchrony  no
+```
+
+Asking for a generation with no edge producing it raises `NoPath` rather than silently producing
+something else.
 
 Wrapping a component as an OCI artifact is a further edge, `Wasi(Wasip2) → OciImage`, rather than
 anything the component link knows about; the path composes the two. `Js(module)` and `Wasm`

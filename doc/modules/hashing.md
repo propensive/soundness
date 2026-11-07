@@ -50,8 +50,26 @@ t"Hello world".digest[Sha2[256]].serialize[Hex]
 // t"64ec88ca00b268e5ba1a35678a1b5316d212f4f366b2477232534a8aeca37f3c"
 ```
 
-The provider in scope supplies the algorithms — `javaBaseProvider` for the SHA and MD5 family and
-CRC-32, and `soundnessProvider` for the pure-Scala BLAKE3.
+The provider in scope supplies the algorithms. Each algorithm, the permit it needs, and the
+providers that offer it on the JVM:
+
+```tabular
+column  Algorithm
+column  Kind
+column  Permit
+column  Providers
+column  Bits
+row  `Sha2[224]`, `Sha2[256]`, `Sha2[384]`, `Sha2[512]`  hash  none  `javaBaseProvider`, `soundnessProvider`  224–512
+row  `Blake3`  hash  none  `soundnessProvider`  256
+row  `Sha1`  weak hash  `permitDeprecatedCrypto`  `javaBaseProvider`, `soundnessProvider`  160
+row  `Md5`  weak hash  `permitDisallowedCrypto`  `javaBaseProvider`, `soundnessProvider`  128
+row  `Murmur3`  fast hash  `permitNonCryptographicHashes`  `soundnessProvider`  128
+row  `Crc32`  checksum  `permitNonCryptographicHashes`  `javaBaseProvider`, `soundnessProvider`  32
+row  `Crc64`  checksum  `permitNonCryptographicHashes`  `soundnessProvider`  64
+row  `Adler32`  checksum  `permitNonCryptographicHashes`  `javaBaseProvider`, `soundnessProvider`  32
+```
+
+The permits are imported from `cryptoPermits`.
 
 The algorithm need not be named where the expected type already says it. A digest carries its
 algorithm in its type — `Digest in Sha2[256]` — so a field declared that way fixes what `digest`
@@ -124,9 +142,18 @@ directory.checksum[Sha2[256]]   // Digest in Sha2[256]
 
 ### BLAKE3
 
-`Blake3` is the pure-Scala implementation, and it offers the algorithm's three modes: an ordinary
-hash, a *keyed* hash for message authentication, and key *derivation* from a context string. All
-three are checked against the official test vectors, at every input length the vectors cover, so
+`Blake3` is the pure-Scala implementation, and it offers the algorithm's three modes:
+
+```tabular
+column  Mode
+column  Input
+column  Use
+row  hash  the data  an ordinary digest
+row  keyed hash  a key and the data  message authentication
+row  key derivation  a context string and key material  deriving keys
+```
+
+All three are checked against the official test vectors, at every input length the vectors cover, so
 the implementation is verified rather than merely tested for self-consistency.
 
 Its output is extendable: a BLAKE3 digest may be taken at any length, not only at 256 bits, which

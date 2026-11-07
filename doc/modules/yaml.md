@@ -61,25 +61,34 @@ encoded to a `Yaml` and rendered. A record can instead carry a *direct* parser a
 once into its companion with `derives Yaml.Direct`, and a single import selects the path for every
 record in scope, as it does for the other formats:
 
-```scala
-import codecs.direct     // a direct parser and printer wherever a type is a record
-import codecs.derived    // the tree codecs, even where a direct instance is in scope
-import codecs.strict     // direct codecs, and a compile error where there is none
+```tabular
+column  Import
+column  For a record
+column  For any other type
+row  `codecs.direct`  a direct parser and printer  the tree codecs, unless it has a direct instance of its own
+row  `codecs.derived`  the tree codecs, even where a direct instance is in scope  the tree codecs
+row  `codecs.strict`  a direct parser and printer  a compile error naming the type, unless it has a direct instance of its own
 ```
 
 A direct printer writes the record's text straight from its fields, with no tree built; the text
 is the same as `show` renders. A direct parser reads the fields straight off the parsed
 document's nodes, with no `Yaml` built around any of them and no codec dispatched per field — but
 the document is still parsed whole first: YAML's anchors and aliases mean a node may refer back
-to any earlier one, so there is no reading a record before the document is held. Under
-`codecs.direct`, a type that is not a product — an enumeration, a sealed hierarchy — keeps the
-tree path unless it has an instance of its own; under `codecs.strict` it is a compile error naming
-the type. The modes are alternatives; import one at a time.
+to any earlier one, so there is no reading a record before the document is held. A type that is
+not a record is an enumeration or a sealed hierarchy, say. The modes are alternatives; import one
+at a time.
 
-An `Optional` field reads as `Unset` when the mapping omits it or gives `null`, and a value the
-inner decoder rejects is an error; the `optionalityOptions` package varies each answer —
-`strictYamlAbsence`, `strictYamlNulls`, `lenientYamlFaults` — as [decoding](decoding.md)
-describes:
+An `Optional` field has three policies, from the `optionalityOptions` package, as
+[decoding](decoding.md) describes:
+
+```tabular
+column  A key which is
+column  Reads as
+column  Unless
+row  omitted from the mapping  `Unset`  `strictYamlAbsence` makes it an error
+row  given an explicit `null`  `Unset`  `strictYamlNulls` hands it to the inner decoder
+row  present but rejected by the inner decoder  an error  `lenientYamlFaults` reads it as `Unset`
+```
 
 ```scala
 case class Member(name: Text, age: Optional[Int])
@@ -105,14 +114,32 @@ is still a document boundary.
 
 ### Scalars, quoting and block styles
 
-YAML's scalars are where most of its surprises live, and each style is handled as specified.
-Plain scalars resolve by their content — `true` is a boolean, `42` an integer, `~` and `null` a
-null — while quoted scalars are always text, so `"42"` stays a string. Single quotes take no
-escapes but double them to include one; double quotes take the full escape set.
+YAML's scalars are where most of its surprises live, and each style is handled as specified:
 
-Block scalars carry their own newline handling. `|` keeps line breaks and `>` folds them into
-spaces, and a chomping indicator says what to do with the trailing newline — `-` strips it, `+`
-keeps every one:
+```tabular
+column  Scalar
+column  Resolves as
+row  plain `true`  a boolean
+row  plain `42`  an integer
+row  plain `~` or `null`  a null
+row  `'…'`, single-quoted  text, taking no escapes; a quote is doubled to include one
+row  `"…"`, double-quoted  text, taking the full escape set
+```
+
+Quoted scalars are always text, so `"42"` stays a string.
+
+Block scalars carry their own newline handling, with a style indicator and an optional chomping
+indicator for the trailing newline:
+
+```tabular
+column  Indicator
+column  Effect
+row  `|`  keeps line breaks
+row  `>`  folds line breaks into spaces
+row  no chomping indicator  keeps one trailing newline
+row  `-`  strips the trailing newline
+row  `+`  keeps every trailing newline
+```
 
 ```scala
 t"text: |\n  line1\n  line2".read[Yaml].as[Map[Text, Text]]   // t"line1\nline2\n"
@@ -128,6 +155,18 @@ than as it happens to fall.
 
 A tag overrides the resolution a scalar's content would otherwise get, which is how YAML says
 "this number is a string" and the reverse:
+
+```tabular
+column  Tag
+column  Resolves a scalar as
+row  `!!str`, `!`, `!!`  text
+row  `!!int`  an integer
+row  `!!float`  a decimal
+row  `!!bool`  a boolean, from `true`, `True` or `TRUE`, and likewise `false`
+row  `!!null`  a null
+```
+
+For example:
 
 ```scala
 t"!!str 42".read[Yaml].as[Text]       // t"42"

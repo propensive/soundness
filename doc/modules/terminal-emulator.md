@@ -76,22 +76,41 @@ both.
 
 ### What is understood
 
-The emulator covers the vocabulary a real application uses. Text and cursor movement — including
-carriage return, line feed, backspace and tabs advancing to the next eight-column stop — and the
-positioning, erasing and scrolling sequences behave as a terminal's do: `ED 2` clears the screen,
-`EL 2` clears the line, and the cursor save and restore pair works as `DECSC` and `DECRC`.
+The emulator covers the vocabulary a real application uses:
 
-Styling comes through `SGR`: the attribute flags, the sixteen palette colors with their bright
+```tabular
+column  Sequence
+column  Effect
+row  CR, LF, BS, FF  carriage return, line feed, backspace and form feed, as a terminal's
+row  HT  advances to the next eight-column tab stop
+row  other C0 controls  ignored
+row  `CSI A` to `CSI G`, `CSI d`, `CSI H`, `CSI f`  move and position the cursor
+row  `ESC D`, `ESC E`, `ESC M`  index, next line and reverse index
+row  `CSI J`, `CSI K`, `CSI X`  erase the screen, the line, or characters; `ED 2` clears the screen and `EL 2` the line
+row  `CSI @`, `CSI P`, `CSI L`, `CSI M`, `CSI b`  insert and delete characters and lines, and repeat a character
+row  `CSI S`, `CSI T`, `CSI r`  scroll up and down, and set the scrolling region
+row  `ESC 7`, `ESC 8`, `CSI s`, `CSI u`  save and restore the cursor, as `DECSC` and `DECRC`
+row  `CSI m`  `SGR` styling
+row  `CSI ?25 h`, `CSI ?25 l`  show and hide the cursor
+row  `CSI ?1049`, `CSI ?1047`, `CSI ?47`  enter and leave the alternate screen
+row  `CSI ?1004`, `CSI ?2004`  focus detection and bracketed paste modes
+row  other DEC private modes, ANSI modes, `CSI t`  ignored
+row  `CSI 6n`, `CSI c`, `CSI >c`  answered with a report
+row  `OSC 0`, `OSC 2`  set the window title
+row  `OSC 8`  attaches a hyperlink to the cells written
+row  `DCS`, `APC`, `PM`, `SOS`  absorbed up to their terminator
+row  `ESC c`  `RIS`: resets the terminal to its initial state
+row  character set designations, `SS2`, `SS3`  ignored: only the default character set is supported
+```
+
+Styling through `SGR` covers the attribute flags, the sixteen palette colors with their bright
 variants as distinct entries, the 256-color palette, and 24-bit color. Resetting with `SGR 0`
 affects the cells written afterwards, not those already on screen, exactly as a terminal does.
 
-DEC private modes are honoured where they change what a test would observe — `?25` hiding and
-showing the cursor — and silently ignored where they do not, so an application that switches to
-the alternate screen buffer is not derailed by an emulator that refuses the sequence. Sequences
-carrying arbitrary payloads — `DCS`, `APC`, `PM`, `SOS` — are absorbed up to their terminator
-rather than interpreted, which is what a terminal that does not implement them does.
-
-`RIS` resets the terminal to its initial state, so a test can start a fresh scenario without
+DEC private modes are honoured where they change what a test would observe and silently ignored
+where they do not, so an application is not derailed by an emulator that refuses a sequence.
+Sequences carrying arbitrary payloads are absorbed rather than interpreted, which is what a
+terminal that does not implement them does. `RIS` lets a test start a fresh scenario without
 building a new emulator.
 
 ### Reports

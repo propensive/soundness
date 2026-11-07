@@ -36,6 +36,20 @@ import textSanitizers.skipSanitizer
 import socketBackends.javaBaseSockets
 ```
 
+The operations, each covered below:
+
+```tabular
+column  Operation
+column  Side
+column  Does
+row  `listen`  server  runs a handler for each connection or packet, for the duration of a block
+row  `subscribe`  server  joins a multicast group and runs a handler for each datagram
+row  `transmit`  client  sends a message and returns the reply stream
+row  `react`  client  holds a conversation as a state machine
+row  `duplex`  client  opens a persistent bidirectional connection
+row  `session`  client  lends a connection to a block and closes it when the block ends
+```
+
 ### Serving
 
 `listen` binds a socket and runs a handler for each arrival — a connection for TCP and domain
@@ -69,6 +83,17 @@ typecheck
 supervise:
   Port[Udp]().listen[Data](packet => UdpResponse.Reply(packet.data)):
     ()
+```
+
+So each transport is chosen by the socket value:
+
+```tabular
+column  Transport
+column  Socket value
+column  A handler receives
+row  TCP  a `Port[Tcp]`, or an `Endpoint` of one to connect to  a connection
+row  UDP  a `Port[Udp]`, or an `Endpoint` of one to send to  a `Packet`
+row  Unix domain  a `DomainSocket` path  a connection
 ```
 
 ### Multicast
@@ -174,19 +199,29 @@ one socket. Offering nothing preserves the plain-TLS handshake that `wss` peers 
 
 Nothing above names a platform API. The primitive operations each role needs — bind and accept,
 connect and converse, receive and reply, dispatch a datagram — are gathered into a
-`Socket.Backend`, and the loops that compose them stay platform-neutral. The
-`java.nio.channels` implementation is `socketBackends.javaBaseSockets`, and backends over
-`wasi:sockets` and over Scala Native's sockets supply the same operations, so the same protocol
-code runs on the JVM, inside a WebAssembly component, and in a native binary. An operation a
-backend cannot support — Unix-domain sockets or TLS on WASI — raises the appropriate error rather
-than approximating it. Narrowing the platform's surface to a seam this small is
+`Socket.Backend`, and the loops that compose them stay platform-neutral. Three backends supply
+the same operations, so the same protocol code runs on the JVM, inside a WebAssembly component,
+and in a native binary:
+
+```tabular
+column  Backend
+column  Platform
+column  Over
+column  Unsupported
+row  `socketBackends.javaBaseSockets`  JVM  `java.nio.channels`  nothing
+row  `socketBackends.wasiSockets`  WebAssembly  `wasi:sockets`  Unix-domain sockets, UDP, multicast, TLS
+row  `socketBackends.scalaNativeSockets`  Scala Native  Scala Native's sockets  Unix-domain sockets
+```
+
+An operation a backend cannot support raises the appropriate error rather than approximating it.
+Narrowing the platform's surface to a seam this small is
 [decoupling](../philosophy/decoupling.md) applied within a module.
 
 ### Socket options
 
 The socket options of the underlying platform — `SO_REUSEADDR`, keep-alive, buffer sizes, timeouts —
 are typed values collected from scope, each valid only for the transports that support it, so a
-TCP-only option cannot be applied to a UDP socket:
+TCP-only option cannot be applied to a UDP socket. A flag is a given imported by name:
 
 ```scala
 import socketOptions.reuseAddressSocketOption
@@ -194,12 +229,36 @@ import socketOptions.keepAliveSocketOption
 import socketOptions.broadcastSocketOption
 ```
 
+An option carrying a value is made by a method of the same package, and given at its own type,
+as in `given Socket.Option.ReceiveBuffer = socketOptions.receiveBuffer(65536)`:
+
+```tabular
+column  Option
+column  In scope with
+column  Transports
+column  For
+row  `SO_REUSEADDR`  `reuseAddressSocketOption`  TCP, UDP, domain  a server that must restart without waiting out `TIME_WAIT`
+row  `SO_REUSEPORT`  `reusePortSocketOption`  TCP, UDP  several sockets on one port (OS-dependent)
+row  `TCP_NODELAY`  `noDelaySocketOption`  TCP  a protocol that must not wait for Nagle's algorithm
+row  `SO_KEEPALIVE`  `keepAliveSocketOption`  TCP  keep-alive probes on an idle connection
+row  `SO_BROADCAST`  `broadcastSocketOption`  UDP  sending to a broadcast address
+row  `IP_MULTICAST_LOOP`  `multicastLoopSocketOption`  UDP  receiving our own multicast datagrams
+row  `SO_RCVBUF`  `receiveBuffer(bytes)`  TCP, UDP, domain  the receive buffer's size
+row  `SO_SNDBUF`  `sendBuffer(bytes)`  TCP, UDP, domain  the send buffer's size
+row  `SO_TIMEOUT`  `timeout(milliseconds)`  TCP, UDP, domain  bounding a blocking wait
+row  `SO_LINGER`  `linger(seconds)`  TCP, domain  how long a close waits for unsent data
+row  `IP_TOS`  `trafficClass(value)`  TCP, UDP  the traffic class
+row  `IP_MULTICAST_TTL`  `multicastHops(count)`  UDP  how many hops a multicast datagram travels
+row
+  cell
+  cell  `datagramSize(bytes)`
+  cell  UDP
+  cell  the largest datagram received whole: 1472 bytes unless set
+```
+
 Options are collected from scope as a set rather than passed at each call, so a program's socket
-policy is stated once. `SO_REUSEADDR` for a server that must restart without waiting out
-`TIME_WAIT`, `SO_BROADCAST` for a UDP socket that sends to a broadcast address, `TCP_NODELAY` for
-a protocol that must not wait for Nagle's algorithm, buffer sizes and timeouts — each is typed by
-the transports that accept it, and a backend silently skips an option its platform does not
-support rather than failing.
+policy is stated once, and a backend silently skips an option its platform does not support
+rather than failing.
 
 ### Messages and their conversions
 

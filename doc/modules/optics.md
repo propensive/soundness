@@ -54,8 +54,17 @@ company.lens
 
 ### Reaching into collections
 
-A step in parentheses traverses a collection: an ordinal picks one element, `Each` touches every
-element, a key indexes a `Map`, and `Filter` selects by a predicate:
+A path is a chain of steps, and a step in parentheses traverses a collection:
+
+```tabular
+column  Step
+column  Selects
+row  a field name, as in `_.ceo`  that field
+row  `(Prim)`, or any ordinal  one element
+row  `(Each)`  every element
+row  `(key)`  the value at a key, in a `Map`
+row  `(Filter[T](predicate))`  the elements matching a predicate
+```
 
 ```scala
 company.lens(_.ceo.roles(Prim).name = t"Founder")               // the first role
@@ -90,10 +99,22 @@ json.lens(_.ceo.roles(Each).name = t"member").show
 ```
 
 The `conversions` import lets a bare encodable value — a `Text`, an `Int`, a case class — stand in
-for the format's own value on the right of the `=`; each format exports its own
-(`encodableToJson`, `encodableToCbor`, `encodableToYaml`, `encodableToTel`, `encodableToProtobuf`).
-[XML](xml.md) is the exception: its coercion lives on the `Xml` companion, so an `Xml` lens
-assignment takes a bare encodable value with no import at all.
+for the format's own value on the right of the `=`. Each format exports its own, and its optics
+are either imported from `optics` or found in its companion with no import:
+
+```tabular
+column  Format
+column  Conversion
+column  Optics
+row  JSON  `conversions.encodableToJson`  `optics.jsonLens`, `jsonOrdinalOptical`, `jsonEachOptical`, `jsonFilterOptical`
+row  TEL  `conversions.encodableToTel`  `optics.telLens`, `telOrdinalOptical`, `telEachOptical`
+row  [XML](xml.md)  none: it lives on the `Xml` companion  `optics.xmlLens`, `xmlOrdinalOptical`, `xmlEachOptical`
+row  YAML  `conversions.encodableToYaml`  in the `Yaml` companion
+row  CBOR  `conversions.encodableToCbor`  in the `Cbor` companion
+row  Protobuf  `conversions.encodableToProtobuf`  in the `Protobuf` companion, by field number
+```
+
+So an `Xml` lens assignment takes a bare encodable value with no conversion import at all.
 
 ### Lenses as values
 

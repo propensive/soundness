@@ -30,6 +30,16 @@ identity and secret, and — for the authorization-code flow — its authorizati
 client's redirect URI. Each grant posts to the token endpoint and reads the `Authorization` it
 returns; a refusal raises `OAuth.Error`.
 
+```tabular
+column  Method
+column  Grant
+column  Gives
+row  `clientCredentials`  client credentials (RFC 6749 §4.4)  the client's own authorization, for the scopes named
+row  `refresh`  refresh (RFC 6749 §6)  a new authorization, from a refresh token or an `Authorization` carrying one
+row  `authorizationUrl`  authorization code, first step (RFC 6749 §4.1.1)  the URL a user is sent to
+row  `exchangeCode`  authorization code, second step (RFC 6749 §4.1.3)  the authorization, for the code the user brings back
+```
+
 ```scala fuel
 typecheck
 ##
@@ -62,9 +72,18 @@ def callback(code: Text): Authorization =
 ### Credentials for a typed client
 
 A `Credential` names a security scheme, as an API's specification names it, and holds the value
-the scheme calls for: a `Text` for an API key, an `Auth` for HTTP authentication, an
-`Authorization` for OAuth 2. The [OpenAPI client](openapi.md) finds the credential for each
-scheme an operation requires by its name, and presents it as the scheme dictates:
+the scheme calls for:
+
+```tabular
+column  Scheme
+column  Value
+row  an API key  `Text`
+row  HTTP authentication  `Auth`
+row  OAuth 2  `Authorization`
+```
+
+The [OpenAPI client](openapi.md) finds the credential for each scheme an operation requires by
+its name, and presents it as the scheme dictates:
 
 ```scala fuel
 typecheck

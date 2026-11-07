@@ -15,10 +15,18 @@ types alike.
 
 ### On text
 
-Java's `String` gathered its methods over decades, and they show it. `indexOf` returns `-1`
-for "not found", `substring` throws on a bad index, `split` takes a regular expression where
-a literal was meant, and `null` lurks behind a returned string. None of this is caught by
-the types; each mistake waits for runtime.
+Java's `String` gathered its methods over decades, and they show it, and none of its pitfalls
+is caught by the types; each mistake waits for runtime:
+
+```tabular
+column  In Java's `String`
+column  The pitfall
+column  With `Text`
+row  `indexOf`  returns `-1` for "not found"  `offsetOf` returns an `Optional` position
+row  `substring`  throws on a bad index  `keep`, `skip`, `snip` and `segment`, counting with ordinals
+row  `split`  takes a regular expression where a literal was meant  `cut` takes a `Text`, a `Char` or a regular expression, as typed
+row  any method returning a string  may return `null`  nothing returns `null`
+```
 
 `Text` presents the same underlying strings through a deliberately designed surface. Absence
 is an `Optional`, not a magic `-1`; a search returns a position that cannot be confused with
@@ -37,9 +45,10 @@ Text operations that require a collation, an encoding or a metric to be named ar
 
 ### Writing text
 
-The `t"…"` interpolator builds a `Text`, substituting any value that can be shown. The
-`txt"…"` interpolator additionally folds runs of whitespace — including newlines — into single
-spaces, for writing a long message across several lines of source:
+The `t"…"` interpolator builds a `Text`, substituting any value that can be shown. Prose in
+source code wants to be wrapped for the reader, and unwrapped for the output, so the `txt"…"`
+interpolator collapses a wrapped paragraph into a single line, joining its lines with single
+spaces, and strips the indentation the source needed:
 
 ```scala
 val name = t"Ada"
@@ -47,6 +56,17 @@ t"Hello, $name!"          // t"Hello, Ada!"
 
 txt"""This message is written
       across several lines."""   // t"This message is written across several lines."
+```
+
+A blank line in a `txt"…"` literal is a paragraph break, and becomes a single newline:
+
+```scala
+txt"""Hello
+      world"""      // t"Hello world"
+
+txt"""Hello
+
+      world"""      // t"Hello\nworld"
 ```
 
 ### Splitting and joining
@@ -131,8 +151,18 @@ t"apple" < t"banana"                    // true
 ### Case conventions
 
 Text splits into words and rejoins in a naming convention. `uncamel` breaks a camel-case or
-Pascal-case identifier into its words, and `kebab`, `snake`, `camel` and `pascal` join words
-in the corresponding style:
+Pascal-case identifier into its words, in lower case — `unkebab` and `unsnake` do the same for the
+other styles — and four methods join words in the corresponding style:
+
+```tabular
+column  Method
+column  Joins words
+column  For `t"oneTwoThree".uncamel`
+row  `kebab`  with hyphens  `t"one-two-three"`
+row  `snake`  with underscores  `t"one_two_three"`
+row  `camel`  capitalizing every word but the first  `t"oneTwoThree"`
+row  `pascal`  capitalizing every word  `t"OneTwoThree"`
+```
 
 ```scala
 t"oneTwoThree".uncamel.kebab   // t"one-two-three"
@@ -151,8 +181,17 @@ t"123".fit(5, Bidi.Rtl, '.')    // t"..123"
 
 ### Searching
 
-Membership and position are asked with `contains`, `starts`, `ends`, `count`, and `offsetOf`,
-the last returning an `Optional` position rather than a sentinel:
+Membership and position are asked with five methods:
+
+```tabular
+column  Method
+column  Answers
+row  `contains`  whether the text contains another
+row  `starts`  whether the text starts with another
+row  `ends`  whether the text ends with another
+row  `count`  how many characters satisfy a predicate
+row  `offsetOf`  where another text occurs, searching from the left by default, as an `Optional` position rather than a sentinel
+```
 
 ```scala
 t"hello world".contains(t"ello")   // true
@@ -249,21 +288,6 @@ Decimalizer(3).decimalize(-3.14159)   // t"-3.14"
 
 The same value therefore renders consistently everywhere in a program, and changing the precision
 is one given rather than a search for format strings.
-
-### Multi-line literals
-
-Prose in source code wants to be wrapped for the reader, and unwrapped for the output. The
-`txt"…"` interpolator collapses a wrapped paragraph into a single line, treats a blank line as a
-paragraph break, and strips the indentation the source needed:
-
-```scala
-txt"""Hello
-      world"""      // t"Hello world"
-
-txt"""Hello
-
-      world"""      // t"Hello\nworld"
-```
 
 ### Any textual type
 

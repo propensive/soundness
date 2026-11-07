@@ -44,9 +44,29 @@ rendered trace shows the frames that matter.
 ### Demangling
 
 Frame names are rewritten from the JVM's encoding toward Scala's: operator names become their
-symbols, and the compiler's synthetic markers become compact glyphs — `λ` for a lambda, `ⲛ` for a
-constructor, `Λ` for an adapted lambda — with a legend available for rendering alongside. The
-result is a trace that reads as the program was written, not as it was compiled.
+symbols (`$plus` becomes `+`), and the compiler's synthetic markers become compact glyphs, with a
+legend, `StackTrace.legend`, available for rendering alongside:
+
+```tabular
+column  Glyph
+column  JVM marker
+column  Meaning
+row  `λ`  `$anonfun`  lambda
+row  `Λ`  `$anonfun$adapted`  adapted lambda
+row  `α`  `$anon`  anonymous class
+row  `ⲛ`  `<init>`  constructor
+row  `ι`  `initial$`  initialization
+row  `ℓ`  `lzyINIT`  lazy initializer
+row  `↑`  `super$`  super reference
+row  `⊢`  `$extension`  extension method
+row  `∂`  `$direct`  direct
+row  `δ`  `$default`  default
+row  `⁅⁆`  `$package`  package file
+row  `Σ`  `$mc…$sp`  specialized method, with its signature
+```
+
+A number after a `$` becomes a subscript, so `$anonfun$3` reads `λ₃`. The result is a trace
+that reads as the program was written, not as it was compiled.
 
 Whether Soundness's own errors capture traces at all is the `Diagnostics` choice described in
 [error handling](errors.md) — traces for debugging, omitted where errors are expected and handled.
@@ -78,10 +98,25 @@ trace.frames.head.let: frame =>
   frame.source.let(_.kind)   // Kind.Method, Kind.Lambda, Kind.Constructor, …
 ```
 
-The `Kind` distinguishes a method from a lambda, a value, a constructor, an extension or a default
-argument — and, separately, marks the kinds that are pure plumbing: bridges, forwarders,
-initializers and specializations, which `plumbing` reports so that a renderer can dim or drop
-them.
+The `Kind` distinguishes the kinds of definition, and `plumbing` reports those that are pure
+plumbing the compiler synthesized, so that a renderer can dim or drop them:
+
+```tabular
+column  Kind
+column  Plumbing
+row  `Method`  no
+row  `Lambda`  no
+row  `Value`  no
+row  `Class`  no
+row  `Constructor`  no
+row  `Extension`  no
+row  `Default`  no
+row  `Bridge`  yes
+row  `Forwarder`  yes
+row  `Initializer`  yes
+row  `Specialized`  yes
+row  `Synthetic`  yes
+```
 
 Resolution costs one file read per top-level class named in the trace, so it is opt-in rather than
 automatic. A trace already in hand is resolved explicitly instead of by import, through whichever

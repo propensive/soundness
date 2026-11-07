@@ -163,16 +163,38 @@ def forward(stream: Stream[Data] over Credit, intake: Intake[Data] over Credit):
   stream.pump(intake)
 ```
 
+In summary:
+
+```tabular
+column  Operation
+column  Drains the stream
+column  Gives
+row  `memoize`  yes  one immutable value
+row  `drain`  yes  each raw window, to a function
+row  `gather`  yes  an accumulator threaded through each raw window
+row  `pump`  yes  every window, pushed into an `Intake`
+row  `truncate`  no  the first records or bytes, releasing the remainder unread
+row  `discard`  no  everything after the first records or bytes
+```
+
 ### Parsing with a cursor
 
 A parser does not consume a stream in bulk but one element at a time, looking at the next
 element before deciding what to do with it. A `Cursor` is that view: a position over a
 sequence of `Text` or `Data` blocks — built from an iterator, a `Chain` or a `Stream` — which
 refills from its source as the position advances, so the parser sees one contiguous run of
-characters or bytes however the source was chunked. `peek` shows the current element without
-consuming it, as a `Datum` that compares directly with a `Char` and is `Datum.End` once the
-source is exhausted; `advance()` moves past it; `next()` does the same and reports whether
-anything remains; and `position`, `line` and `column` say where the cursor has reached:
+characters or bytes however the source was chunked:
+
+```tabular
+column  Method
+column  Does
+row  `peek`  shows the current element without consuming it, as a `Datum`
+row  `advance()`  moves past the current element
+row  `next()`  moves past it, and reports whether anything remains
+row  `position`, `line`, `column`  say where the cursor has reached
+```
+
+A `Datum` compares directly with a `Char`, and is `Datum.End` once the source is exhausted:
 
 ```scala
 val cursor = Cursor(Iterator(t"hello", t"world"))
@@ -268,26 +290,39 @@ the slowest subscriber gates the source — the correct behavior for replication
 Every stage that allocates a buffer consults the `Buffering` policy in scope, so one given
 tunes a whole pipeline. Its members are:
 
- - `capacity(substrate)` — the staging block size: 4096 bytes, 2048 characters or 256 records
-   by default. Staging blocks want to stay cache-resident.
- - `transfer(substrate)` — the size of a block crossing an asynchronous boundary, sixteen
-   staging blocks by default. Every such block costs a synchronized hand-off, so boundary
-   blocks want to be much larger than staging blocks.
- - `depth` — the number of transfer blocks of headroom a `Conduit` holds between its writer and
-   reader, 16 by default. A conduit's in-flight data is bounded by `(depth + 1)` transfer
-   blocks; hand-off throughput collapses at very shallow depths (a depth of 2 reaches less than
-   a tenth of the default's throughput in the benchmark sweep) and plateaus around the default
-   for a producer and consumer in lockstep, but bursty pipelines still gain from a depth
-   covering their burst size in transfer blocks.
- - `recycle` — whether drained transfer blocks return to the writer for reuse (on by default);
-   a shared, size-capped pool amortizes block allocation across conduit instances.
+```tabular
+column  Member
+column  Meaning
+column  Default
+row  `capacity(substrate)`  the staging block size  4096 bytes, 2048 characters or 256 records
+row  `transfer(substrate)`  the size of a block crossing an asynchronous boundary  sixteen staging blocks
+row  `depth`  the transfer blocks of headroom a `Conduit` holds between writer and reader  16
+row  `recycle`  whether drained transfer blocks return to the writer for reuse  on
+```
 
-Backpressure applies wherever data crosses between threads: a `Conduit` writer parks on a full
-ring, `Divergence`'s pump parks on the slowest subscriber's ring (closing a subscriber's stream
-releases it), `Confluence`'s pumps park uniformly on the shared queue, and HTTP/2 applies
-credit-based flow control in both directions — the advertised receive window (1 MiB by default,
-tunable per connection) bounds how far a peer can run ahead of a consumer that has stopped
-reading, with the window replenished only as the body is actually drained.
+Staging blocks want to stay cache-resident. Every transfer block costs a synchronized hand-off,
+so boundary blocks want to be much larger than staging blocks. A conduit's in-flight data is
+bounded by `(depth + 1)` transfer blocks; hand-off throughput collapses at very shallow depths (a
+depth of 2 reaches less than a tenth of the default's throughput in the benchmark sweep) and
+plateaus around the default for a producer and consumer in lockstep, but bursty pipelines still
+gain from a depth covering their burst size in transfer blocks. Recycled blocks go to a shared,
+size-capped pool, which amortizes block allocation across conduit instances.
+
+Backpressure applies wherever data crosses between threads:
+
+```tabular
+column  Structure
+column  Carries
+column  Under backpressure
+row  `Conduit`  bytes or characters, from one writer to one reader  the writer parks on a full ring
+row  `Divergence`  one source, to several subscribers  the pump parks on the slowest subscriber's ring, until that stream is closed
+row  `Confluence`  several streams, merged into one  the pumps park uniformly on the shared queue
+row  HTTP/2  a body, in both directions  the peer waits for credit: the receive window, replenished only as the body is drained
+row  `Relay`  records, from many producers to one reader  producers never block
+```
+
+HTTP/2's advertised receive window is 1 MiB by default, tunable per connection, and bounds how far
+a peer can run ahead of a consumer that has stopped reading.
 
 One structure deliberately opts out: `Relay` is the many-producer record bus, and its contract
 is that producers never block. HTTP/2's outbound frame multiplexer depends on that — a blocking

@@ -102,6 +102,20 @@ summon[Annotated under Colored].subtypes
 // Map(t"Hsv" -> Set(number(3)), t"Rgb" -> Set(primary()))
 ```
 
+In summary, the forms of query and what each one yields:
+
+```tabular
+column  Query form
+column  Member
+column  Returns
+row  `T is Annotated`  `apply()`  the annotations on the type `T`
+row  `T is Annotated on "f"`  `apply()`  the annotations on the field `f`
+row  `T is Annotated by A on "f"`  `apply()`  the annotations of type `A` on the field `f`
+row  `T is Annotated by A`  `fields`  each field to its annotations of type `A`
+row  `T is Annotated by A`, one field matching  `field`, `lens`  the field's name, and a lens onto it
+row  `Annotated under T`  `subtypes`  each variant of `T` to its annotations
+```
+
 ### Parameterized annotations
 
 An annotation may take a type argument, and a query can filter by it. A bare `@marker(1)` infers
@@ -127,16 +141,27 @@ case class Record(@name[Json](t"first_name") firstName: Text, @name(t"yob") year
 
 A format's derivation reads these through `relabelling`, which maps each renamed field to its
 serialized name with the per-format rename overriding the bare default — which is why one
-annotation serves [JSON](json.md), [XML](xml.md), [YAML](yaml.md) and the rest identically.
-`variantRelabelling` does the same for the cases of a sum type:
+annotation serves [JSON](json.md), [XML](xml.md), [YAML](yaml.md) and the rest identically:
 
 ```scala
 relabelling[Record, Json]   // Map(t"firstName" -> t"first_name", t"year" -> t"yob")
 relabelling[Record, Xml]    // Map(t"year" -> t"yob")
 ```
 
-`fieldAnnotations[Record, name[Json]]` and `subtypeAnnotations` are the general forms behind
-these, returning only the fields or variants that carry the annotation in question.
+The four functions differ in what they read and what they return, and in each the map holds only
+the fields or variants that carry the annotation in question:
+
+```tabular
+column  Function
+column  Reads
+column  Returns
+row  `relabelling[T, F]`  `@name` on the fields of `T`  each renamed field to its name in `F`
+row  `variantRelabelling[T, F]`  `@name` on the variants of `T`  each renamed variant to its name in `F`
+row  `fieldAnnotations[T, A]`  annotations of type `A` on fields  each field to its set of `A`
+row  `subtypeAnnotations[T, A]`  annotations of type `A` on variants  each variant to its set of `A`
+```
+
+The last two are the general forms behind the first two.
 
 ### Reaching fields by name
 
@@ -180,6 +205,19 @@ numbers.lens(t"epsilon")                    // Unset: not a field
 val anything = summon[Employee is Dereferenceable to Any]
 anything.select(Employee(person, 7L), t"code")  // 7L
 anything.lens(t"code")                          // Unset: an `Any` cannot be put into a `Long`
+```
+
+The members of a `Dereferenceable`, for a record of type `T` dereferenced `to R`:
+
+```tabular
+column  Member
+column  Returns
+row  `names(record)`  the field names, in order
+row  `select(record, name)`  the named field's value, as an `R`
+row  `members(record)`  each field name to its value
+row  `lens(name)`  a lens onto the named field, or `Unset`
+row  `update(record, name, value)`  a new `T` with the field replaced, or `Unset`
+row  `modify(record, name)(lambda)`  a new `T` with the function applied to the field, or `Unset`
 ```
 
 Because the mapping is a compiled table of accessors, reaching a field costs a method call, and a

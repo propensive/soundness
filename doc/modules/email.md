@@ -11,9 +11,8 @@ scope.
 
 ### On email
 
-Assembling an email correctly means assembling MIME: a message with both text and HTML is
-`multipart/alternative`, one with attachments is `multipart/mixed`, inline images make it
-`multipart/related`, and these nest. APIs that expose this structure directly make the common case
+Assembling an email correctly means assembling MIME: alternative bodies, inline images and
+attachments each call for a different multipart type, and these nest. APIs that expose this structure directly make the common case
 — send some text, maybe with an attachment — bear all of that weight; APIs that hide it entirely
 make the structured cases impossible.
 
@@ -40,8 +39,20 @@ A message assembled from typed parts, with its addresses validated as the code c
 ### Sending
 
 Anything *sendable* — text, an [HTML](html.md) document, or a fully-composed `Email` — sends with
-`send`, giving the subject and recipients; `cc`, `bcc` and `replyTo` are optional, and each accepts
-one address or a list:
+`send`, which takes the envelope's fields as parameters:
+
+```tabular
+column  Parameter
+column  Takes
+column  If omitted
+row  `subject`  `Text`  required
+row  `to`  one `EmailAddress` or a list  required
+row  `cc`  one `EmailAddress` or a list  none
+row  `bcc`  one `EmailAddress` or a list  none
+row  `replyTo`  one `EmailAddress` or a list  none
+```
+
+A message to one recipient:
 
 ```scala
 def notify(): Resend.Receipt =
@@ -70,6 +81,18 @@ val message = Email(Map(), Email.Message(Email.Content(Email.Body(textVersion, h
 
 def distribute(recipients: List[EmailAddress]): Resend.Receipt =
   message.send(subject = t"Monthly report", to = recipients)
+```
+
+The message's content type follows from what it holds, each layer wrapping the one inside it:
+
+```tabular
+column  The message has
+column  Content type
+row  a text body only  `text/plain`
+row  an HTML body only  `text/html`
+row  both a text and an HTML body  `multipart/alternative`
+row  inline content  `multipart/related`, around the body
+row  attachments  `multipart/mixed`, around the rest
 ```
 
 Plain text is itself sendable, so `Email(t"hello")` is the one-line form, and an email reports

@@ -141,12 +141,13 @@ Named tasks make a running program legible: a stack trace, a monitor dump or a d
 
 A task is canceled with `cancel`, and a cancellable task cooperates by pausing at points where it
 can be interrupted. A `snooze` is such a point, so a task sleeping on one wakes to its cancellation
-rather than running on:
+rather than running on.
 
 Work that does not pause has to volunteer its own cancellation points. `relent()` is that
 point: while the task is running normally it does nothing, and if the task has been canceled it
 stops there, without producing a value. A task whose body never calls `relent()` and never pauses
-cannot be canceled at all, and must run to completion.
+cannot be canceled at all, and must run to completion. The two kinds of cancellation point at
+work:
 
 ```scala fuel
 frame
@@ -212,9 +213,18 @@ supervise:
   snooze(200L)  // 200 milliseconds
 ```
 
-The alternatives are `nanosecondsAbstractable` and `microsecondsAbstractable`; the three share a
-type, so exactly one may be imported into a file. Instants have a single reading,
-`epochMillisecondsAbstractable`, which takes a `Long` as milliseconds since the epoch. (The
+The `abstractables` package has four readings of a `Long`:
+
+```tabular
+column  Given
+column  Reads a `Long` as
+row  `nanosecondsAbstractable`  a duration in nanoseconds
+row  `microsecondsAbstractable`  a duration in microseconds
+row  `millisecondsAbstractable`  a duration in milliseconds
+row  `epochMillisecondsAbstractable`  an instant, in milliseconds since the epoch
+```
+
+The three duration readings share a type, so exactly one may be imported into a file. (The
 `instantiables` package mirrors all four for the opposite direction.)
 
 A duration reading and the instant reading may not both be in scope where a bare `Long` is
@@ -256,9 +266,20 @@ supervise:
 // t"payload", on the third attempt
 ```
 
-The provided schedules cover the usual choices — `exponentialForeverTenacity`,
-`exponentialFiveTimesTenacity` and `exponentialTenTimesTenacity` back off geometrically, while
-the `fixedNoDelay` variants retry immediately, forever or a bounded number of times — and
+The provided schedules, in the `retryTenacities` package, cover the usual choices:
+
+```tabular
+column  Given
+column  Delay before a retry
+column  Attempts
+row  `exponentialForeverTenacity`  10ms, growing by a factor of 1.2 each time  unlimited
+row  `exponentialFiveTimesTenacity`  10ms, growing by a factor of 1.2 each time  5
+row  `exponentialTenTimesTenacity`  10ms, growing by a factor of 1.2 each time  10
+row  `fixedNoDelayForeverTenacity`  none  unlimited
+row  `fixedNoDelayFiveTimesTenacity`  none  5
+row  `fixedNoDelayTenTimesTenacity`  none  10
+```
+
 `Tenacity.exponential` and `Tenacity.fixed`, with `limit`, build others. Running out of attempts
 raises a `Tenacity.Error` naming how many were made.
 
@@ -316,9 +337,16 @@ Vm.intercept[Shutdown]:
 ### Cancellation in both directions
 
 Cancelling a scope cancels its children, and the *probate* decides what happens to a child that is
-still running when its parent's body completes. Under `cancelProbate` the child is canceled;
-under `awaitProbate` the parent waits for it; under `failProbate` the parent's `await` raises a
-checked `Async.Error`; and under `panicProbate` it panics instead.
+still running when its parent's body completes:
+
+```tabular
+column  Probate
+column  An unfinished child
+row  `cancelProbate`  is canceled
+row  `awaitProbate`  is waited for
+row  `failProbate`  makes the parent's `await` raise a checked `Async.Error`
+row  `panicProbate`  makes the parent's `await` panic
+```
 
 Which to choose follows from what the children do. Work that mutates state — writing to disk,
 say, where a half-finished write leaves things inconsistent — wants `awaitProbate`, so every
@@ -334,20 +362,28 @@ than continuing to consume resources on behalf of a computation that has already
 
 ### Threads and completion
 
-The thread model is chosen by import: `virtualThreads` runs tasks on virtual threads, cheap enough
-to spawn in great numbers, while `platformThreads` uses platform threads. Virtual threads exist
-only from Java 21, so `virtualThreads` fails at runtime on an older JVM; `adaptiveThreads`
-takes virtual threads where they exist and falls back to platform threads where they do not, which
-is what an application that cannot dictate its JVM should import. On Scala.js, where there are no
-threads at all, `javascriptThreads` schedules tasks on the event loop, and the same `supervise`,
-`async` and `await` code runs unchanged. A separate choice, the
+The thread model is chosen by import from the `threads` package:
+
+```tabular
+column  Thread model
+column  Runs each task on
+row  `platformThreads`  a platform thread of its own
+row  `virtualThreads`  a virtual thread of its own; fails at runtime before Java 21
+row  `adaptiveThreads`  a virtual thread where they exist, and a platform thread where they do not
+row  `pooledThreads`  a reusable carrier thread: virtual on the JVM, platform on Scala Native
+row  `javascriptThreads`  the Scala.js event loop
+```
+
+Virtual threads are cheap enough to spawn in great numbers. `adaptiveThreads` is what an
+application that cannot dictate its JVM should import, and under `javascriptThreads`, where there
+are no threads at all, the same `supervise`, `async` and `await` code runs unchanged. A separate
+choice, the
 *probate*, decides what a scope does with a child that has not finished when the scope ends —
 `cancelProbate` cancels it, `awaitProbate` waits for it — so the policy for tidying up concurrent work
 is explicit rather than assumed.
 
-`pooledThreads` runs tasks on a pool of reusable carrier threads — virtual threads on the JVM,
-platform threads on Scala Native — handing each new task to an idle carrier where one is waiting
-and starting another only where none is. A hand-off costs a few hundred nanoseconds where a thread
+`pooledThreads` hands each new task to an idle carrier where one is waiting and starts another
+only where none is. A hand-off costs a few hundred nanoseconds where a thread
 start and join cost a few microseconds, so it suits fine-grained fan-out: a task per element, or a
 spawn and join inside a loop. A task that blocks keeps its carrier and the pool grows, so it can
 never starve, and cancellation is delivered to the task rather than to the carrier. The price is

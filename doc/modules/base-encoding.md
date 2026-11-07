@@ -78,7 +78,7 @@ frame
   code
       locally:
         import alphabets.base64Url
-        bytes.serialize[Base64]   // t"SGVsbG8=", with `-` and `_` where the standard has `+` and `/`
+        bytes.serialize[Base64]   // t"SGVsbG8", unpadded, with `-` and `_` where the standard has `+` and `/`
 frame
   label Hexadecimal
   code
@@ -92,16 +92,61 @@ A *strict* alphabet accepts only its own characters when decoding, while a toler
 recognized equivalents — upper- and lower-case hexadecimal, say — so the strictness of a decode is a
 choice between imports: `hexLowerCase` reads either case, `hexStrictLowerCase` only its own.
 
-The full set is in the `alphabets` package. For Base64 it holds the standard, unpadded, URL-safe,
-XML, IMAP, YUI, Radix-64, bcrypt, SASL and uuencoding variants; for Base32 the upper- and lower-case
-forms (strict and tolerant), the extended-hex forms, z-base-32 (padded and unpadded), Geohash,
-word-safe and Crockford; for hexadecimal the upper- and lower-case forms and the "bioctal" one; and
-one each for octal, quaternary (including the DNA nucleotide alphabet, `ATCG`) and binary.
+The full set is in the `alphabets` package:
+
+```tabular
+column  Base
+column  Given
+column  Variant
+column  Padded
+column  Also accepts
+row  `Base64`  `base64Standard`  standard  yes
+row  `Base64`  `base64Unpadded`  standard, unpadded  no
+row  `Base64`  `base64Url`  URL-safe, with `-` and `_`  no
+row  `Base64`  `base64Xml`  XML, with `+` and `-`, padded with `.`  yes
+row  `Base64`  `base64Imap`  IMAP, with `+` and `,`  no
+row  `Base64`  `base64Yui`  YUI, with `.` and `_`  no
+row  `Base64`  `base64Radix64`  Radix-64  yes
+row  `Base64`  `base64Bcrypt`  bcrypt, with `.` and `/` first  no
+row  `Base64`  `base64Sasl`  SASL, with `+` and `,`  no
+row  `Base64`  `base64Uuencoding`  uuencoding  no
+row  `Base32`  `base32StrictUpperCase`  standard, upper-case  yes
+row  `Base32`  `base32StrictLowerCase`  standard, lower-case  yes
+row  `Base32`  `base32UpperCase`  standard, upper-case  yes  lower case
+row  `Base32`  `base32LowerCase`  standard, lower-case  yes  upper case
+row  `Base32`  `base32ExtendedHexUpperCase`  extended hex, upper-case  yes  standard lower-case Base32
+row  `Base32`  `base32ExtendedHexLowerCase`  extended hex, lower-case  yes  standard upper-case Base32
+row  `Base32`  `base32ZBase32`  z-base-32  yes
+row  `Base32`  `base32ZBase32Unpadded`  z-base-32, unpadded  no
+row  `Base32`  `base32Geohash`  Geohash  no
+row  `Base32`  `base32WordSafe`  word-safe  no
+row  `Base32`  `base32Crockford`  Crockford  no  lower case; `o` and `O` as `0`; `i`, `I` and `L` as `1`
+row  `Hex`  `hexStrictUpperCase`  upper-case  no
+row  `Hex`  `hexStrictLowerCase`  lower-case  no
+row  `Hex`  `hexUpperCase`  upper-case  no  lower case
+row  `Hex`  `hexLowerCase`  lower-case  no  upper case
+row  `Hex`  `hexBioctal`  bioctal  no
+row  `Octal`  `octalStandard`  standard  no
+row  `Quaternary`  `quaternaryStandard`  `0123`  no
+row  `Quaternary`  `quaternaryDnaNucleotide`  DNA nucleotides, `ATCG`  no
+row  `Binary`  `binaryStandard`  `01`  no
+```
 
 ### Other bases
 
-The same `serialize` and `deserialize` handle hexadecimal, Base32, and the smaller octal, quaternary
-and binary encodings, each with its own alphabets:
+The same `serialize` and `deserialize` handle every base, each with its own alphabets. The base
+is the number of bits each character carries:
+
+```tabular
+column  Encoding
+column  Bits per character
+row  `Base64`  6
+row  `Base32`  5
+row  `Hex`  4
+row  `Octal`  3
+row  `Quaternary`  2
+row  `Binary`  1
+```
 
 ```scala
 import alphabets.hexLowerCase

@@ -37,11 +37,21 @@ import strategies.throwUnsafely
 
 ### The types
 
-A `List` is a linked list, cheap to prepend to and to traverse; a `Sequence` is indexed, cheap to
-read at any position; a `Set` holds each element once; a `Map` pairs keys with values; and a
-`Chain` is a lazy sequence whose elements are computed as they are demanded and remembered
-afterwards, which may therefore be infinite. Each is constructed by applying its companion, and
-`Nil` is the empty list:
+The five types differ in their structure and in what is cheap:
+
+```tabular
+column  Type
+column  Holds
+column  Cheap
+column  `size` needs
+row  `List`  a linked list  prepending, and traversing  `linearSize`
+row  `Sequence`  an indexed sequence  reading at any position  nothing
+row  `Set`  each element once, unordered  testing membership  nothing
+row  `Map`  values paired with keys  reading a value by key  nothing
+row  `Chain`  a lazy sequence, remembered once computed, and possibly infinite  forcing only the prefix demanded  `unboundedSize`
+```
+
+Each is constructed by applying its companion, and `Nil` is the empty list:
 
 ```scala
 val numbers: List[Int] = List(3, 1, 2)
@@ -69,9 +79,19 @@ numbers.head                  // 3
 ```
 
 Indexing a `List` by position is a walk from its head, so it, and the accessors that walk more
-than a few elements, are gated behind the *linear access* acknowledgment, `dysasymptotics.linearAccess`,
-in the same way that `size` is gated behind `linearSize`. A `Sequence` has neither cost and needs
-neither import. The imports are cheap to write and say something true, which is the point: a
+than a few elements, are gated behind an acknowledgment, in the same way that `size` is. Each is
+a given in `dysasymptotics`:
+
+```tabular
+column  Acknowledgment
+column  Gates
+column  Because
+row  `linearSize`  `size` and `last` of a `List`, and appending to one with `:+`  each walks the whole list
+row  `linearAccess`  reading a `List` at an ordinal beyond the first few  it walks from the head to the position
+row  `unboundedSize`  `size` and `last` of a `Chain`  each forces the whole chain, which may be infinite
+```
+
+A `Sequence` has neither cost and needs no import. The imports are cheap to write and say something true, which is the point: a
 program that indexes into a linked list in a loop has a quadratic algorithm, and should know it.
 
 ```scala
@@ -203,12 +223,73 @@ which is the compiler insisting that a choice has been made, since the algorithm
 whether equal elements keep their order and how the sort behaves on data that is nearly sorted
 already.
 
+The algorithms are the givens in `sortingAlgorithms`:
+
+```tabular
+column  Given
+column  Stable
+column  Suited to
+row  `timsort`  yes  partly-ordered data; the JDK's own sort
+row  `powersort`  yes  partly-ordered data
+row  `quicksort`  no  bounded memory
+row  `heapsort`  no  bounded memory
+row  `insertionSort`  yes  tiny inputs
+row  `bubbleSort`  yes  tiny inputs
+```
+
+### The operations at a glance
+
+The operations of the sections above, in one place:
+
+```tabular
+column  Operation
+column  Gives
+row  `each(f)`  nothing; visits every element, with its ordinal in context
+row  `map(f)`  each element transformed; a `Map`'s values, keeping its keys
+row  `remap(f)`  a `Map`'s entries transformed as pairs
+row  `filter(p)`  the elements matching a predicate
+row  `bind(f)`, `flatMap(f)`  the results of `f`, flattened
+row  `flat`  one level of nesting flattened
+row  `sweep(pf)`  the elements a partial function is defined at, mapped by it
+row  `has(x)`  whether an element is present
+row  `exists(p)`  whether any element matches
+row  `count(p)`  the number of matching elements
+row  `fold(z)(f)`  the final state of an accumulation
+row  `trace(z)(f)`  every state of an accumulation, initial first
+row  `minimum`, `maximum`  the least or greatest element, as an `Optional`
+row  `excerpt(from, to)`  a run by position, end-exclusive and clamped
+row  `zip(other)`  pairs by position, to the shorter side
+row  `group(f)`  a `Map` from each key to its elements
+row  `partition(p)`  the matching and other elements, in order
+row  `span(p)`  the prefix matching a predicate, and the rest
+row  `batched(n)`  runs of at most `n` elements
+row  `join`, `join(separator)`  the elements concatenated, or interleaved with a separator
+row  `distinct`  the first of each repeated element
+row  `deduplicate(f)`  the first element for each key
+row  `reverse`  the elements in reverse order
+row  `sort`  the elements in their own order
+row  `order(f)`  the elements in the order of a key
+```
+
 ### Sets and maps
 
-A `Set` supports the operations of set theory — `:+`, `except`, `intersect` and `concat` for
-union — and membership with `has`. A `Map` reads a value by key with `at`, as an `Optional`
-since the key may be absent, tests a key with `defines`, updates or adds with `define`, removes
-with `omit`, and exposes its `keys` and `values`:
+A `Set` and a `Map` add operations of their own:
+
+```tabular
+column  Operation
+column  On
+column  Gives
+row  `:+`  `Set`  the set with an element added
+row  `concat`  `Set`  the union of two sets
+row  `intersect`  `Set`  the elements in both sets
+row  `except`  `Set`  the elements not in the other set
+row  `has`  `Set`  whether an element is a member
+row  `at`  `Map`  the value for a key, as an `Optional`
+row  `defines`  `Map`  whether a key is present
+row  `define`  `Map`  the map with a key's value added or replaced
+row  `omit`  `Map`  the map without a key
+row  `keys`, `values`  `Map`  the keys, or the values
+```
 
 ```scala
 primes :+ 11                  // Set(2, 3, 5, 7, 11)
@@ -230,9 +311,18 @@ as [immutability](../philosophy/immutability.md) asks everywhere else.
 
 A `Chain` computes its elements on demand and remembers them, so it can describe an infinite
 sequence — every natural number, every line a process will print — as long as only a finite
-prefix is ever forced. `#::` prepends an element without forcing what follows, `Chain.iterate`
-and `Chain.unfold` generate from a seed, `Chain.continually` repeats a value, and `keep` and
-`skip` take and drop a prefix without forcing the rest:
+prefix is ever forced. These build and cut chains without forcing what they leave alone:
+
+```tabular
+column  Operation
+column  Gives
+row  `x #:: chain`  the chain with `x` prepended, without forcing what follows
+row  `Chain.iterate(seed)(f)`  `seed`, then `f` applied repeatedly
+row  `Chain.unfold(seed)(f)`  the elements `f` generates from a seed
+row  `Chain.continually(x)`  `x`, repeated
+row  `keep(n)`  the first `n` elements, without forcing the rest
+row  `skip(n)`  all but the first `n` elements, without forcing the rest
+```
 
 ```scala
 naturals.keep(5)                   // Chain(0, 1, 2, 3, 4)

@@ -100,9 +100,17 @@ a `Pdf.Error` naming the encryption it cannot use.
 ### Pages
 
 The page tree flattens into a sequence, indexed by [ordinal](numbers.md) — `Prim` is the first
-page — with each page's geometry resolved against the inheritance the format allows: a media box
-declared on the tree root applies to every page beneath it, a crop box defaults to the media box,
-and a trim box to the crop box:
+page — with each page's geometry resolved against the inheritance the format allows, so that a
+media box declared on the tree root applies to every page beneath it:
+
+```tabular
+column  Box
+column  Inherited
+column  Otherwise
+row  `mediaBox`  yes  a `Pdf.Error`, since a page must have one
+row  `cropBox`  yes  the media box
+row  `bleedBox`, `trimBox`, `artBox`  no  the crop box
+```
 
 ```scala
 PdfFile(path).open():
@@ -118,8 +126,15 @@ the dimensions read are the ones the page presents.
 ### Extracting text
 
 A page's `text` runs its content stream and reconstructs the reading order from the positions of
-the glyphs: a gap along a baseline becomes a space, a change of baseline becomes a newline, and
-adjacent shows run together:
+the glyphs:
+
+```tabular
+column  Between two shows of text
+column  Becomes
+row  a gap along a baseline  a space
+row  a change of baseline  a newline
+row  nothing: they are adjacent  nothing, so they run together
+```
 
 ```scala
 PdfFile(path).open():
@@ -144,6 +159,18 @@ PdfFile(path).open():
   pdf.page(Prim).annotations                // List[Annotation]
 ```
 
+Each is read from the open document:
+
+```tabular
+column  Accessor
+column  Gives
+row  `info`  the document information, as a `Pdf.Info`
+row  `destinations`  the named destinations, as a `Map[Text, Destination]`
+row  `bookmarks`  the outline, as a tree of `Bookmark`s
+row  `attachments`  the embedded files
+row  `annotations`, on a page  the page's annotations, as a `List[Annotation]`
+```
+
 An annotation is a typed case — `Annotation.Link` with its rectangle and URI, `Annotation.Note`
 with its contents — rather than a dictionary to be inspected by key.
 
@@ -166,10 +193,26 @@ PdfFile(path).open(Read & Write): doc ?=>
   doc.addLink(doc.page(Prim), a4, uri = t"https://soundness.dev/")
 ```
 
-`appendPage` and `removePage` change the page tree, `setBox` and `setRotation` change a page's
-geometry, and `setBookmarks` and `setAnnotations` replace those structures wholesale. Editing
-operations that need a new object use `allocate` and `newStream`, which take the next free
-object number.
+The editing operations, besides the fonts described below, are:
+
+```tabular
+column  Operation
+column  Does
+row  `setContents`  replaces a page's content with a list of operators
+row  `setRotation`  sets a page's rotation
+row  `setBox`  sets one of a page's boxes, such as `MediaBox` or `CropBox`
+row  `setPageEntry`  sets any entry of a page's dictionary
+row  `addLink`  adds a link annotation, to a URI or a destination
+row  `setAnnotations`  replaces a page's annotations wholesale
+row  `setInfo`  replaces the document information
+row  `setBookmarks`  replaces the bookmarks wholesale
+row  `appendPage`  adds a new page at the end of the page tree
+row  `removePage`  removes a page, though one nested below the first level is left in place
+row  `allocate`  adds a new object, under the next free object number
+row  `newStream`  makes a stream object, to be allocated or referenced
+row  `set`  replaces an object by reference
+row  `free`  deletes an object
+```
 
 A [TrueType font](fonts.md) — any `Sfnt`, loaded here from a classpath resource — is embedded
 with `embedFont`, which writes the program as a `FontFile2` and builds the simple WinAnsi font
@@ -187,10 +230,21 @@ PdfFile(path).open(Read & Write): doc ?=>
 
 ### Stream payloads
 
-A PDF stream's payload is read lazily, through whatever chain of filters the stream declares —
-`FlateDecode`, `LZWDecode`, `ASCII85Decode`, `ASCIIHexDecode`, `RunLengthDecode`, and the PNG
-and TIFF predictors that often follow them. The payload arrives as a
-[stream](streams.md) of bytes, so a large embedded file or image is never held whole:
+A PDF stream's payload is read lazily, through whatever chain of filters the stream declares,
+and the PNG and TIFF predictors that often follow them. The image filters are the end of the
+chain: decoding stops before them, and the still-encoded image arrives instead.
+
+```tabular
+column  Filter
+column  Read as
+row  `FlateDecode`, `LZWDecode`  the decompressed bytes
+row  `ASCII85Decode`, `ASCIIHexDecode`  the decoded bytes
+row  `RunLengthDecode`  the decoded bytes
+row  `DCTDecode`, `JPXDecode`, `CCITTFaxDecode`, `JBIG2Decode`  the encoded image, undecoded
+```
+
+The payload arrives as a [stream](streams.md) of bytes, so a large embedded file or image is
+never held whole:
 
 ```scala
 PdfFile(path).open():

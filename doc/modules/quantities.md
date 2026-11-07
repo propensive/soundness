@@ -159,6 +159,46 @@ ten, for quantities of information:
 10*Kibi(Metre)    // 10240 metres
 ```
 
+The full set, decimal and binary:
+
+```tabular
+column  Prefix
+column  Symbol
+column  Factor
+row  `Quetta`  Q  10³⁰
+row  `Ronna`  R  10²⁷
+row  `Yotta`  Y  10²⁴
+row  `Zetta`  Z  10²¹
+row  `Exa`  E  10¹⁸
+row  `Peta`  P  10¹⁵
+row  `Tera`  T  10¹²
+row  `Giga`  G  10⁹
+row  `Mega`  M  10⁶
+row  `Kilo`  k  10³
+row  `Hecto`  h  10²
+row  `Deka`  da  10¹
+row  `Deci`  d  10⁻¹
+row  `Centi`  c  10⁻²
+row  `Milli`  m  10⁻³
+row  `Micro`  µ  10⁻⁶
+row  `Nano`  n  10⁻⁹
+row  `Pico`  p  10⁻¹²
+row  `Femto`  f  10⁻¹⁵
+row  `Atto`  a  10⁻¹⁸
+row  `Zepto`  z  10⁻²¹
+row  `Yocto`  y  10⁻²⁴
+row  `Ronto`  r  10⁻²⁷
+row  `Quecto`  q  10⁻³⁰
+row  `Kibi`  Ki  2¹⁰
+row  `Mebi`  Mi  2²⁰
+row  `Gibi`  Gi  2³⁰
+row  `Tebi`  Ti  2⁴⁰
+row  `Pebi`  Pi  2⁵⁰
+row  `Exbi`  Ei  2⁶⁰
+row  `Zebi`  Zi  2⁷⁰
+row  `Yobi`  Yi  2⁸⁰
+```
+
 Mass is the one awkward case among the base units, because its SI base unit is
 itself a prefixed unit: the kilogram, not the gram. Soundness still names the unit
 `Gram`, for consistency with every other unit, and writes the base unit as the
@@ -220,24 +260,48 @@ Even an unusual combination resolves to its physical name:
 
 Seven base dimensions are defined, each with its units type and the value naming one of them:
 
-| Dimension           | Units       | Unit      |
-|---------------------|-------------|-----------|
-| `Distance`          | `Metres`    | `Metre`   |
-| `Mass`              | `Kilograms` | `Gram`    |
-| `Time`              | `Seconds`   | `Second`  |
-| `Current`           | `Amperes`   | `Ampere`  |
-| `Luminosity`        | `Candelas`  | `Candela` |
-| `AmountOfSubstance` | `Moles`     | `Mole`    |
-| `Heat`              | `Kelvins`   | `Kelvin`  |
+```tabular
+column  Dimension
+column  Units
+column  Unit
+row  `Distance`  `Metres`  `Metre`
+row  `Mass`  `Kilograms`  `Gram`
+row  `Time`  `Seconds`  `Second`
+row  `Current`  `Amperes`  `Ampere`
+row  `Luminosity`  `Candelas`  `Candela`
+row  `AmountOfSubstance`  `Moles`  `Mole`
+row  `Heat`  `Kelvins`  `Kelvin`
+```
 
 The named derived units are defined in terms of those, so each carries its full dimensions rather
-than being a distinct kind of thing: `Hertz` (one per second), `Newton` (meter-kilogram per second
-squared), `Pascal` (newton per square meter), `Joule` (newton-meter), `Watt` (joule per second),
-`Coulomb` (second-ampere), `Volt` (watt per ampere), `Farad` (coulomb per volt), `Ohm` (volt per
-ampere), `Siemens` (ampere per volt), `Weber` (volt-second), `Tesla` (weber per square meter),
-`Henry` (weber per ampere), `Lux` (candela per square meter), `Becquerel` (one per second), `Gray`
-and `Sievert` (joule per kilogram), and `Katal` (mole per second). The CGS and imperial systems are
-provided alongside them — `Dyne`, `Erg`, `Gauss`, `Poise`, `Foot`, `Furlong`, `Stone` and the rest.
+than being a distinct kind of thing. The last column is the name its `dimension` reports:
+
+```tabular
+column  Unit
+column  Definition
+column  Dimension
+row  `Hertz`  one per second  frequency
+row  `Newton`  meter-kilogram per second squared  force
+row  `Pascal`  newton per square meter  pressure
+row  `Joule`  newton-meter  energy
+row  `Watt`  joule per second  power
+row  `Coulomb`  second-ampere  electric charge
+row  `Volt`  watt per ampere  electric potential
+row  `Farad`  coulomb per volt  capacitance
+row  `Ohm`  volt per ampere  impedance
+row  `Siemens`  ampere per volt  electric conductance
+row  `Weber`  volt-second  magnetic flux
+row  `Tesla`  weber per square meter  magnetic flux density
+row  `Henry`  weber per ampere  inductance
+row  `Lux`  candela per square meter  illuminance
+row  `Becquerel`  one per second  frequency
+row  `Gray`  joule per kilogram  specific energy
+row  `Sievert`  joule per kilogram  specific energy
+row  `Katal`  mole per second
+```
+
+The CGS and imperial systems are provided alongside them — `Dyne`, `Erg`, `Gauss`, `Poise`,
+`Foot`, `Furlong`, `Stone` and the rest.
 
 ### Mixed and non-decimal bases
 
@@ -308,7 +372,7 @@ it actually denotes.
 
 A unit that measures something the SI does not have a dimension for needs both a dimension and a
 units type. Suppose FLOPS, a processor's floating-point instructions per second. Written as a bare
-value, `1.0/Second` is usable in arithmetic but says nothing about what it counts:
+value, `1.0/Second` is usable in arithmetic but says nothing about what it counts.
 
 Wrapping it as a `MetricUnit` at least makes the metric prefixes apply, so `Mega(Flop)` becomes
 writable — but the result is still just a number in units of inverse seconds. Giving it a
@@ -407,15 +471,25 @@ offset quantity — and keeps the offset scales distinct from the absolute Kelvi
 quantity used for differences.
 
 Four scales appear, and they fall into two kinds. Kelvin and Rankine measure from
-absolute zero, so they are ordinary quantities as well as scales: `Kelvin` is a
-unit, and a Rankine quantity is reached through its `Rankines` unit. Celsius and
+absolute zero, so they are ordinary quantities as well as scales. Celsius and
 Fahrenheit place their zero elsewhere — at the freezing point of water, and lower
-still — so a reading on either is meaningful only as a `Temperature`, created with
-`Celsius(…)` or `Fahrenheit(…)`. Multiplying or adding two such readings directly
-would be meaningless, and the types do not allow it.
+still — so a reading on either is meaningful only as a `Temperature`. Multiplying or
+adding two such readings directly would be meaningless, and the types do not allow it.
 
 A temperature is created on a named scale, and displayed on whichever scale is in
 scope:
+
+```tabular
+column  Scale
+column  Zero
+column  Reading
+column  As a quantity
+column  Display import
+row  Kelvin  absolute zero  `Kelvin(…)`  the unit `Kelvin`  `temperatureScales.kelvinScale`
+row  Rankine  absolute zero  `Rankine(…)`  the units `Rankines`  `temperatureScales.rankineScale`
+row  Celsius  freezing point of water  `Celsius(…)`  none  `temperatureScales.celsiusScale`
+row  Fahrenheit  below freezing  `Fahrenheit(…)`  none  `temperatureScales.fahrenheitScale`
+```
 
 ```scala
 import temperatureScales.celsiusScale
@@ -448,9 +522,20 @@ Fahrenheit(100).show   // t"37.8 °C"
 
 ### Aggregating
 
-A collection of quantities sharing a unit reduces to a quantity of that unit. The
-total, mean, variance and standard deviation are each unit-aware — the variance of
-a list of seconds is in seconds squared, and the standard deviation back in
+A collection of quantities sharing a unit reduces to a quantity, and each reduction is
+unit-aware:
+
+```tabular
+column  Method
+column  Result
+column  Of an empty collection
+row  `total`  the sum, in the same unit  zero
+row  `mean`  the mean, in the same unit  `Unset`
+row  `variance`  the variance, in the unit squared  `Unset`
+row  `std`  the standard deviation, in the same unit  `Unset`
+```
+
+So the variance of a list of seconds is in seconds squared, and the standard deviation back in
 seconds:
 
 ```scala
@@ -491,18 +576,6 @@ def displacement
   initial*time + 0.5*accel*time*time
 ```
 
-### What it costs at runtime
-
-None of this survives to the bytecode. A `Quantity` is an opaque type over a `Double`, its units
-exist only in the type, and every operation is `inline`, so a dimensional calculation compiles to
-the same arithmetic instructions the equivalent bare `Double` arithmetic would produce — no
-boxing, no wrapper objects, and no virtual dispatch to a typeclass.
-
-That is a property worth checking rather than asserting, and it is checked: the test suite
-inspects the compiled bytecode of representative calculations and fails if a typeclass dispatch
-appears where inlined arithmetic should be. A performance guarantee that is only claimed tends to
-stop being true.
-
 Both terms of the sum come out as a distance — a velocity times a time, and an
 acceleration times a time squared — so the addition type-checks and the result is a
 distance. Passing an argument in the wrong units, or returning the wrong dimension,
@@ -534,3 +607,15 @@ displacement(3*Metre/Second, 2*Second, 9.8*Metre/(Second*Second))   // 25.6 metr
 
 Those constraints are nothing more than the statement that the equation's dimensions
 line up, expressed in types; a call whose units cannot satisfy them does not compile.
+
+### What it costs at runtime
+
+None of this survives to the bytecode. A `Quantity` is an opaque type over a `Double`, its units
+exist only in the type, and every operation is `inline`, so a dimensional calculation compiles to
+the same arithmetic instructions the equivalent bare `Double` arithmetic would produce — no
+boxing, no wrapper objects, and no virtual dispatch to a typeclass.
+
+That is a property worth checking rather than asserting, and it is checked: the test suite
+inspects the compiled bytecode of representative calculations and fails if a typeclass dispatch
+appears where inlined arithmetic should be. A performance guarantee that is only claimed tends to
+stop being true.

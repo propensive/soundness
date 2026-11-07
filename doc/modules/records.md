@@ -81,7 +81,7 @@ guarantee a hand-written class would give, without the class.
 
 The same schema object can produce a [named
 tuple](https://docs.scala-lang.org/scala3/reference/other-new-features/named-tuples.html) instead
-of a record, through its `tuple` method, the twin of `record`:
+of a record, through its `tuple` method, the twin of `record`.
 
 For the schema above, `Catalogue.tuple(input)` has the type
 `(name: Text, age: Optional[Int], children: List[(weight: Double)])`: one element per field, named
@@ -119,39 +119,82 @@ Since every failure goes through the caller's `Tactic`, a reader can choose how 
 `attempt` or `recover` one field, or `validate` and `track` a whole record with a `venture` per
 field, which collects every problem in a document before reporting them together.
 
+In summary:
+
+```tabular
+column  Aspect
+column  Record
+column  Tuple
+row  Data is read  at each field access  once, when the tuple is built
+row  A malformed field fails  when it is accessed  the construction
+row  A field of schema type integer has type  `Record.Field[Int, Json.Provider.Error]`  `Int`
+row  The `Tactic` must be in scope  wherever a field is selected  where the tuple is built
+row  Destructures positionally  no  yes
+```
+
 ### Defining a specification
 
 A new source of schemas — a database's table definitions, an XML Schema, a proprietary format —
 plugs in by implementing `Specification`: a *provider*. It supplies the field names and types as
-an ordered list of `Member`s (a tuple's elements follow that order), and three primitives over
-the underlying data: `access`, fetching a named field's value from a value; `absent`, whether a
-fetched value stands for a missing field; and `repeated`, every value of a field which occurs
-many times — the elements of a JSON array, or every sibling with the field's keyword in a format
-which repeats the field. A `Member` is a `Value`, naming the scalar type the schema declared, a
-`Record` of further members, or a `Union` of alternatives each keyed by the *kind* of value
-which selects it, and each carries a `Multiplicity`: `One`, `Optional` (read as `Optional`,
-`Unset` where `absent`), `Many` (read as a `List`, through `repeated`) or `Keyed` (read as a
-`Map[Text, _]`, through `entries`). The provider says nothing further about optionality or
-repetition; the macro applies the multiplicity itself, and a union's alternative may carry its
-own, so a single-alternative union nests one multiplicity inside another. A format which has
-unions or dictionaries provides the further hooks `kind`, `elements`, `pairs` and `entries`;
-one which does not leaves their defaults.
+an ordered list of `Member`s (a tuple's elements follow that order), and primitives over the
+underlying data:
+
+```tabular
+column  Hook
+column  Default
+column  Supplies
+row  `access`  none: must be implemented  a named field's value, fetched from a value
+row  `absent`  none: must be implemented  whether a fetched value stands for a missing field
+row  `repeated`  none: must be implemented  every value of a field which occurs many times
+row  `required`  returns the value as it is  the value of a field read under `One`; overridden to fail when it is absent
+row  `entries`  fails  a keyed field's values by name
+row  `kind`  fails  the kind of a value, by which a union chooses its alternative
+row  `elements`  fails  the elements of a value which is itself a sequence
+row  `pairs`  fails  the named values of a value which is itself a dictionary
+row  `unoffered`  fails  the failure for a value of a kind no alternative of a union offers
+```
+
+The values of a repeated field are the elements of a JSON array, say, or every sibling with the
+field's keyword in a format which repeats the field. A format which has unions or dictionaries
+provides `entries`, `kind`, `elements` and `pairs`; one which does not leaves their defaults.
+
+A `Member` is a `Value`, naming the scalar type the schema declared, a `Record` of further
+members, or a `Union` of alternatives each keyed by the *kind* of value which selects it, and each
+carries a `Multiplicity`:
+
+```tabular
+column  Multiplicity
+column  Reads as
+column  Through
+row  `One`  the value  `access`, then `required`
+row  `Optional`  an `Optional`, `Unset` where `absent`  `access` and `absent`
+row  `Many`  a `List`  `repeated`
+row  `Keyed`  a `Map[Text, _]`  `entries`
+```
+
+The provider says nothing further about optionality or repetition; the macro applies the
+multiplicity itself, and a union's alternative may carry its own, so a single-alternative union
+nests one multiplicity inside another.
 
 A provider names the error its fields fail with as its `Failure` type, and the primitives which
-can fail — `access`, `repeated`, `entries`, `elements` and `pairs` — take the `Tactic` for it.
-A fourth primitive, `required`, has a default: it is applied to the value of a field read under
-`Multiplicity.One`, and a provider overrides it to fail when the value is absent. A fifth,
-`unoffered`, is applied to a value of a kind which no alternative of a union offers.
-One typeclass completes the picture: an `Intensional` instance for each scalar type name the
-schema can declare, saying what Scala type it becomes and how to read a single value of it.
-`Intensional(accessor)` makes one from a function; `Intensional.parametric` from a function
-which also takes the member's parameters, for a type such as a bounded integer. A reading which
-can fail — a value of the wrong kind, a value outside its bounds, a string not matching its
-pattern — is an `Intensional.Fallible`, whose `transform` takes the `Tactic` for its `Error`,
-and `Intensional.Reading` makes one from a function of the value, its parameters and that
-`Tactic`. Its `Error` must be the provider's `Failure` or a subtype of it, so that every field
-fails in one way; an instance which raises anything else is a compile error. The
-instances live in the provider's companion, so they are found without an import. A provider
+can fail — `access`, `repeated`, `required`, `entries`, `elements`, `pairs` and `unoffered` —
+take the `Tactic` for it. One typeclass completes the picture: an `Intensional` instance for each
+scalar type name the schema can declare, saying what Scala type it becomes and how to read a
+single value of it. There are three ways to make one:
+
+```tabular
+column  Constructor
+column  From
+row  `Intensional(accessor)`  a function of the value
+row  `Intensional.parametric`  a function of the value and the member's parameters, for a type such as a bounded integer
+row  `Intensional.Reading`  a function of the value, its parameters and a `Tactic`, for a reading which can fail
+```
+
+A reading which can fail — a value of the wrong kind, a value outside its bounds, a string not
+matching its pattern — is an `Intensional.Fallible`, whose `transform` takes the `Tactic` for its
+`Error`. Its `Error` must be the provider's `Failure` or a subtype of it, so that every field
+fails in one way; an instance which raises anything else is a compile error. The instances live
+in the provider's companion, so they are found without an import. A provider
 over XML, for instance, would fetch a child element by its label, find a field absent where no
 such child exists, and repeat over every child with the label.
 

@@ -72,9 +72,22 @@ each glyph carries its advance width and left side bearing, in the font's design
 def metrics(font: Sfnt): (Int, Int) = (font.advanceWidth('H'), font.leftSideBearing('H'))
 ```
 
-The font's `head` table exposes the scaling factor — units per em — that relates design units to
-em measurements, along with the glyph bounding box, and `hhea` the ascender and descender heights
-that vertical layout needs.
+Each table the font reads is a method of the same name, parsed on first use:
+
+```tabular
+column  Table
+column  Method
+column  Gives
+row  `head`  `head`  units per em, relating design units to ems; the glyph bounding box
+row  `hhea`  `hhea`  the ascender and descender heights that vertical layout needs
+row  `hmtx`  `hmtx`  each glyph's advance width and left side bearing
+row  `cmap`  `cmap`  the mapping from characters to glyphs
+row  `maxp`  `maxp`  the number of glyphs
+row  `name`  `name`  names and descriptions, as `fontName` and `familyName`
+row  `post`  `post`  italic angle, underline position and thickness, monospacing
+row  `OS/2`  `os2`  weight and width classes, typographic metrics, embedding rights
+row  `fvar`  `fvar`  a variable font's axes, or `Unset`
+```
 
 Character-to-glyph mapping covers the `cmap` subtable formats fonts actually use, and the best
 subtable is chosen by Unicode preference rather than by taking the first one present. A character
@@ -109,13 +122,46 @@ val figures = inter.face.enabling(Face.Feature.TabularNumerals).disabling(Face.F
 val display = inter.face.varying(Variation.Axis.OpticalSize, 24.0)
 ```
 
-Weights are on the 1–1000 scale that CSS and OpenType share, with the usual names from
-`Weight.Thin` to `Weight.Black`; a slant is `Upright`, `Italic` or `Oblique` at an angle; a
-stretch is a percentage of the normal width. The registered weight, width and italic axes of a
-variable font are set through these, so a static and a variable font are asked for alike; a
-`Variation` is for optical size and a font's own axes. Features are OpenType layout features by
-their tags — `Face.Feature.OldstyleNumerals` is `onum` — with stylistic sets and character
-variants numbered.
+A face has these attributes:
+
+```tabular
+column  Attribute
+column  Values
+column  Set with
+row  weight  1–1000, the scale CSS and OpenType share, `Weight.Thin` to `Weight.Black`  `thin` … `black`, `weighing(weight)`
+row  slant  `Upright`, `Italic`, or `Oblique` at an angle  `upright`, `italic`, `oblique(angle)`, `slanted(slant)`
+row  stretch  a percentage of the normal width  `condensed`, `expanded`, `stretched(stretch)`
+row  variation  a position on a variable font's axis  `varying(axis, value)`
+row  features  OpenType layout features, on or off  `enabling`, `disabling`, `featuring`
+```
+
+The registered weight, width and italic axes of a variable font are set through the first three,
+so a static and a variable font are asked for alike; a `Variation` is for optical size and a
+font's own axes. Features are named by their OpenType tags, with stylistic sets
+(`Face.Feature.stylisticSet(n)`) and character variants (`Face.Feature.characterVariant(n)`)
+numbered:
+
+```tabular
+column  Feature
+column  Tag
+row  `Ligatures`  `liga`
+row  `DiscretionaryLigatures`  `dlig`
+row  `HistoricalLigatures`  `hlig`
+row  `ContextualAlternates`  `calt`
+row  `Kerning`  `kern`
+row  `OldstyleNumerals`  `onum`
+row  `LiningNumerals`  `lnum`
+row  `TabularNumerals`  `tnum`
+row  `ProportionalNumerals`  `pnum`
+row  `SlashedZero`  `zero`
+row  `Fractions`  `frac`
+row  `Ordinals`  `ordn`
+row  `SmallCapitals`  `smcp`
+row  `CapitalSmallCapitals`  `c2sc`
+row  `Swashes`  `swsh`
+row  `Superscript`  `sups`
+row  `Subscript`  `subs`
+```
 
 ### Providing a typeface
 
@@ -138,10 +184,21 @@ A font file can be carried in any document, so an embedded provision is `in Medi
 of every medium. Its coverage — the weights, slants and widths it offers, the axes of a variable
 font and the features its `GSUB` and `GPOS` tables implement — is read from the file, and several
 files (regular, bold, italic) make one provision whose coverage is their union. Other kinds of
-provision belong to one medium and are declared through it: on the web, `Web.linked` names a font
-file at a URL, `Web.imported` a stylesheet that declares the typeface, and `Web.local` a font the
-reader has installed, each with the coverage it is declared to have, since there is no file to
-read. The CSS generic families need no declaration at all.
+provision belong to one medium and are declared through it, each with the coverage it is
+declared to have, since there is no file to read:
+
+```tabular
+column  Provision
+column  Medium
+column  The font comes from
+column  Coverage
+row  `Typesettable.embedded(files)`  `Medium`  the files, carried in the document  read from the files
+row  `Web.linked(url, coverage)`  `Web`  a font file at a URL  declared
+row  `Web.imported(url, coverage)`  `Web`  a stylesheet that declares the typeface  declared
+row  `Web.local(coverage)`  `Web`  a font the reader has installed  declared, or unknown
+row  the CSS generic families  `Web`  the browser, with no declaration  every face
+row  PDF's standard fourteen  `Print`  the viewer, with no declaration  the faces the standard defines
+```
 
 ### Fonts
 
@@ -161,9 +218,15 @@ val label: Font in Web = Web.font(inter.bold)
 ```
 
 Where the expected type already names the medium, as a figure's `font` field does, `Font(face)`
-suffices. The document then does the rest: an SVG collects the fonts of its lettering and writes
-their `@font-face` rules into its definitions, a stylesheet gains them through `Css.fontFace`, and
-a PDF embeds the file or names one of its standard fourteen fonts.
+suffices. The document then does the rest:
+
+```tabular
+column  Document
+column  What it does with its fonts
+row  SVG  writes `@font-face` rules for its lettering into its definitions
+row  stylesheet  gains the rules through `Css.fontFace`
+row  PDF  embeds the file, or names one of its standard fourteen fonts
+```
 
 ### Checking as the code compiles
 
@@ -185,10 +248,17 @@ refuses the pairing with the same message if the file cannot set the face — a 
 have, an italic it lacks, a feature its tables do not implement. The mistake is then a compile
 error, with the file and the request named, rather than a fallback in the browser.
 
-Only what is known statically is checked statically. A weight computed at runtime
-(`inter.weighing(weight)`), a feature made from a tag (`Face.Feature(t"ss03")`), a face annotated
-as plain `Face of "Inter"`, or a provision without a classpath file all leave the check to the
-pairing at runtime, which always runs.
+Only what is known statically is checked statically; anything else leaves the check to the
+pairing at runtime, which always runs:
+
+```tabular
+column  Checked as the code compiles
+column  Checked only at runtime
+row  a named weight, `inter.bold`  a computed weight, `inter.weighing(weight)`
+row  a named feature, `Face.Feature.OldstyleNumerals`  a feature from a tag, `Face.Feature(t"ss03")`
+row  a face whose type records its request  a face annotated as plain `Face of "Inter"`
+row  a provision from a classpath file  any other provision
+```
 
 ### Subsetting
 

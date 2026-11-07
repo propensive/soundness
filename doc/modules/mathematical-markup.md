@@ -28,9 +28,30 @@ import soundness.*
 
 ### The MathML tree
 
-The elements are values named after the tags: `Mi` for an identifier, `Mn` for a number, `Mo` for
-an operator, `Mrow` for a group, and `Msup`, `Msub`, `Mfrac`, `Msqrt` and the rest for the
-structures. `Math` is the root, and `in[Xml]` renders it:
+The elements are values named after the tags, and `Math` is the root. The ones Ergo writes are:
+
+```tabular
+column  Value
+column  Element
+column  Meaning
+row  `Mi`  `<mi>`  identifier
+row  `Mn`  `<mn>`  number
+row  `Mo`  `<mo>`  operator
+row  `Mrow`  `<mrow>`  group
+row  `Mfrac`  `<mfrac>`  fraction
+row  `Msqrt`  `<msqrt>`  square root
+row  `Mroot`  `<mroot>`  nth root
+row  `Msup`  `<msup>`  superscript
+row  `Msub`  `<msub>`  subscript
+row  `Msubsup`  `<msubsup>`  subscript and superscript
+row  `Mover`  `<mover>`  overscript
+row  `Munder`  `<munder>`  underscript
+row  `Munderover`  `<munderover>`  underscript and overscript
+row  `Mtable`, `Mtr`, `Mtd`  `<mtable>`, `<mtr>`, `<mtd>`  table, row, cell
+```
+
+The other elements — `Mtext`, `Mspace`, `Mstyle`, `Mpadded` and their kin — are modeled the same
+way. `in[Xml]` renders a `Math`:
 
 ```scala
 import Mathml.*
@@ -60,36 +81,44 @@ a grouped unit".
 Ergo.parse(t"(x = (-b ± √(b↗2 - 4 a c))/(2 a))")
 ```
 
-Tokens follow three rules: a run of letters is one identifier, so `sin` is `<mi>sin</mi>` and a
-space separates identifiers (`x y` means *x·y*); a run of digits, with an interior `.` allowed, is
-one number; and any other character is an operator. A space is a separator and renders as nothing.
+Tokens follow three rules, and a space is a separator which renders as nothing:
+
+```tabular
+column  A run of
+column  Becomes
+column  Example
+row  letters  one identifier, `<mi>`  `sin` is `<mi>sin</mi>`; `x y` means *x·y*
+row  digits, with an interior `.` allowed  one number, `<mn>`  `3.14`
+row  any other character  an operator, `<mo>`  `=`
+```
 
 ### Structural glyphs
 
-Scripts and limits attach to the atom on their left:
+Scripts and limits attach to the atom on their left, and a fraction binds looser than the
+scripts. An index atom immediately before `√`, with no space, makes an nth root. The three table
+introducers are each self-delimiting, their body one group whose children are the elements.
 
-- `↗` — superscript → `<msup>` — `x↗2` is *x²*
-- `↘` — subscript → `<msub>` — `x↘i` is *xᵢ*
-- `↑` — overscript or upper limit → `<mover>`
-- `↓` — underscript or lower limit → `<munder>`
+```tabular
+column  Glyph
+column  Role
+column  Element
+column  Example
+row  `↗`  superscript  `<msup>`  `x↗2` is *x²*
+row  `↘`  subscript  `<msub>`  `x↘i` is *xᵢ*
+row  `↘` and `↗`  both, on one base  `<msubsup>`  `x↘i↗2` is *xᵢ²*
+row  `↑`  overscript or upper limit  `<mover>`
+row  `↓`  underscript or lower limit  `<munder>`
+row  `↓` and `↑`  both, on one base  `<munderover>`  `∑↓(i = 1)↑n`
+row  `/`  fraction  `<mfrac>`  `a/b`
+row  `√`  square root  `<msqrt>`  `√x`
+row  `√` after an index  nth root  `<mroot>`  `3√x` is *∛x*
+row  `⋱`  matrix  `<mtable>`  `⋱(((1)(2))((3)(4)))` is a 2×2 matrix
+row  `⋯`  row vector  a single-row `<mtable>`
+row  `⋮`  column vector  a single-column `<mtable>`
+```
 
-A base absorbing one `↘` and one `↗` becomes `<msubsup>`; one `↓` and one `↑` becomes
-`<munderover>`. Large operators need no special syntax — `∑` is an ordinary operator, and
-`∑↓(i = 1)↑n` gives it limits below and above.
-
-Fractions and roots:
-
-- `/` — fraction → `<mfrac>` — `a/b`, binding looser than the scripts
-- `√` — square root → `<msqrt>` — `√x`
-- an index atom immediately before `√`, with no space, gives an nth root → `<mroot>` — `3√x` is
-  *∛x*
-
-Three introducers build tables, each self-delimiting, its body one group whose children are the
-elements:
-
-- `⋱` — matrix → `<mtable>` — `⋱(((1)(2))((3)(4)))` is a 2×2 matrix
-- `⋯` — row vector → a single-row `<mtable>`
-- `⋮` — column vector → a single-column `<mtable>`
+Large operators need no special syntax: `∑` is an ordinary operator, and `∑↓(i = 1)↑n` gives it
+limits below and above.
 
 An operator glyph with a missing operand degrades to a literal operator, so `(↗)` writes a literal
 ↗ rather than failing.
@@ -109,32 +138,35 @@ value in the active grouping bracket, read verbatim: under `(` grouping, `x●(r
 Grouping decides what a directive applies to: `(x↗2)●(red)` colors the whole superscript, while
 `x↗2●(red)` colors only the `2`.
 
-| Glyphs | Attribute | Meaning |
-|---|---|---|
-| `⧆` / `⧄` | `displaystyle` | display style, or inline/text style |
-| `⌄[±n]` | `scriptlevel` | relative script size; `+n` shrinks |
-| `◻` / `▭` | `display` | block or inline, on the root |
-| `●[colour]` | `mathcolor` | foreground color |
-| `▨[colour]` | `mathbackground` | background color |
-| `⟑[length]` | `mathsize` | font size |
-| `⦱` | `mathvariant` | upright, canceling automatic italicisation |
-| `⊩` / `⫣` | `dir` | left-to-right or right-to-left |
-| `⊰` / `⊹` / `⊱` | `form` | prefix, infix or postfix operator |
-| `∥` / `∤` | `fence` | mark as a fence |
-| `▮` / `▯` | `separator` | mark as a separator |
-| `⇿` / `↮` | `stretchy` | allow stretching to surrounding content |
-| `⋈` / `⋊` | `symmetric` | stretch symmetrically about the axis |
-| `◆` / `◇` | `largeop` | treat as a large operator in display style |
-| `⧳` / `⧯` | `movablelimits` | limits over/under in display, scripts inline |
-| `⧔[length]` / `⧕[length]` | `lspace` / `rspace` | space either side of an operator |
-| `⟰[length]` / `⟱[length]` | `maxsize` / `minsize` | stretch bounds |
-| `↔[length]` | `width` | advance width of a box |
-| `⍏[length]` / `⍖[length]` | `height` / `depth` | extent above and below the baseline |
-| `↕[length]` | `voffset` | vertical shift of padded content |
-| `═[length]` | `linethickness` | fraction bar thickness; `0` for none |
-| `◠` / `⌢` | `accent` | treat an overscript as a tight accent |
-| `◡` / `⌣` | `accentunder` | treat an underscript as a tight accent |
-| `⚙[type]` | `actiontype` | legacy; undefined in Core |
+```tabular
+column  Glyphs
+column  Attribute
+column  Meaning
+row  `⧆` / `⧄`  `displaystyle`  display style, or inline/text style
+row  `⌄[±n]`  `scriptlevel`  relative script size; `+n` shrinks
+row  `◻` / `▭`  `display`  block or inline, on the root
+row  `●[colour]`  `mathcolor`  foreground color
+row  `▨[colour]`  `mathbackground`  background color
+row  `⟑[length]`  `mathsize`  font size
+row  `⦱`  `mathvariant`  upright, canceling automatic italicisation
+row  `⊩` / `⫣`  `dir`  left-to-right or right-to-left
+row  `⊰` / `⊹` / `⊱`  `form`  prefix, infix or postfix operator
+row  `∥` / `∤`  `fence`  mark as a fence
+row  `▮` / `▯`  `separator`  mark as a separator
+row  `⇿` / `↮`  `stretchy`  allow stretching to surrounding content
+row  `⋈` / `⋊`  `symmetric`  stretch symmetrically about the axis
+row  `◆` / `◇`  `largeop`  treat as a large operator in display style
+row  `⧳` / `⧯`  `movablelimits`  limits over/under in display, scripts inline
+row  `⧔[length]` / `⧕[length]`  `lspace` / `rspace`  space either side of an operator
+row  `⟰[length]` / `⟱[length]`  `maxsize` / `minsize`  stretch bounds
+row  `↔[length]`  `width`  advance width of a box
+row  `⍏[length]` / `⍖[length]`  `height` / `depth`  extent above and below the baseline
+row  `↕[length]`  `voffset`  vertical shift of padded content
+row  `═[length]`  `linethickness`  fraction bar thickness; `0` for none
+row  `◠` / `⌢`  `accent`  treat an overscript as a tight accent
+row  `◡` / `⌣`  `accentunder`  treat an underscript as a tight accent
+row  `⚙[type]`  `actiontype`  legacy; undefined in Core
+```
 
 The scope is MathML Core, so the MathML 3 families it dropped have no glyphs: the table attributes
 (`columnalign`, `rowspan`, `frame` and their kin — Core keeps the table *elements* but defines
