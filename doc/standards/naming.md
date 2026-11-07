@@ -8,6 +8,23 @@ whole namespace — see [naming](../philosophy/naming.md) and
 
 ## Standard names
 
+Each name has one meaning; the sections below give each in full:
+
+```tabular
+column  Name
+column  Standing
+column  Meaning
+column  Examples
+row  `apply`  standard  the default factory, used whenever possible
+row  `build`  standard  assembly driven by a caller-provided callback  `Data.build`, `Text.build`, `Specification.build`
+row  `create`  standard  brings a resource into existence in an external system  directories, files, sockets, FIFOs
+row  `make`  standard  construction from dynamically-named inputs, beside an existing `apply`
+row  `initialize`  standard  a fresh context for one run of a repeatable operation  `Hash.initialize`, `Aes.initialize`
+row  `init`  non-standard  `Git.init` only, after the `git init` command  `Git.init`
+row  `construct`  non-standard  `wisteria.ProductDerivation.construct` only  `ProductDerivation.construct`
+row  `of`  non-standard  a private cast narrowing a type to `X of Y`
+```
+
 ### `apply`
 
 The standard Scala factory method. Used whenever possible. All other names in
@@ -92,10 +109,17 @@ the argument for why the gate is sound belongs in a comment beside them.
 
 The converse — an `unsafe`-prefixed method must be gated — is `S1.2`, and is
 advisory rather than strict for now. Eight definitions break it:
-`proscenium.Array.unsafeFrozen` and `unsafeJvm`, `vacuous.Optional.unsafeGet`,
-and the `unsafe` factories on `urticose.Port`, `Git.Revision`, `Git.Tag`,
-`Git.Branch` and `Git.Hash` (`archimedes.Ergo.unsafeInterpolate` is gated since
-the ambient-strategy drain).
+
+```tabular
+column  Component
+column  Definitions
+row  proscenium  `Array.unsafeFrozen`, `Array.unsafeJvm`
+row  vacuous  `Optional.unsafeGet` (private to the extension group)
+row  urticose  `Port.unsafe`
+row  octogenarian  `Git.Revision.unsafe`, `Git.Tag.unsafe`, `Git.Branch.unsafe`, `Git.Hash.unsafe`
+```
+
+(`archimedes.Ergo.unsafeInterpolate` is gated since the ambient-strategy drain.)
 
 Gating them is wanted and is tracked as a follow-up, not declined: a trial found
 the change reaches hundreds of call sites, a good share of which are colon-block

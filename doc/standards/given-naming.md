@@ -92,14 +92,17 @@ Numerals belong in a name only when they are part of the choice (`sha256Signatur
 When the choice is *which implementation*, the choice word names where the
 implementation comes from. One word per source, used the same way everywhere:
 
-| Source | Word | Examples |
-|---|---|---|
-| A Java module | the module's name | `javaBaseFilesystem`, `javaBaseSockets`, `javaNetHttp`, `jdkHttpserver` |
-| A WASI interface | `wasi` + the interface | `wasiFilesystem` (`wasi:filesystem`), `wasiHttp`, `wasiSockets` |
-| Scala Native, over libc/POSIX | `scalaNative` | `scalaNativeFilesystem`, `scalaNativeSockets` |
-| Scala.js | `javascript` | `javascriptThreads` |
-| Soundness's own pure-Scala code | `soundness` | `soundnessHttp`, `soundnessHttpd`, `soundnessProvider` |
-| A third party | its own name | `opensslProvider`, `re2`, `resendCourier` |
+```tabular
+column  Source
+column  Word
+column  Examples
+row  A Java module  the module's name  `javaBaseFilesystem`, `javaBaseSockets`, `javaNetHttp`, `jdkHttpserver`
+row  A WASI interface  `wasi` + the interface  `wasiFilesystem` (`wasi:filesystem`), `wasiHttp`, `wasiSockets`
+row  Scala Native, over libc/POSIX  `scalaNative`  `scalaNativeFilesystem`, `scalaNativeSockets`
+row  Scala.js  `javascript`  `javascriptThreads`
+row  Soundness's own pure-Scala code  `soundness`  `soundnessHttp`, `soundnessHttpd`, `soundnessProvider`
+row  A third party  its own name  `opensslProvider`, `re2`, `resendCourier`
+```
 
 Java modules are named because that is what a `requires` clause names: Soundness
 intends to declare, per module, which Java modules it depends on, and the given that
@@ -130,12 +133,27 @@ given cannot be imported selectively or disambiguated, and never a bare generic 
 ## Sanctioned without a suffix
 
 These pass rule 2 because the choice already names the role, and are listed so that
-nobody re-litigates them: `sortingAlgorithms.*`, `alphabets.*`,
-`blockCipherModes.{cbc, ctr, cfb, ofb}`, `blockCipherPaddings.{pkcs7, iso10126}`,
-`regexBackends.re2`, `internetAccess.{online, offline}`, `endianness.*`,
-`htmlDoms.{whatwg, html4Transitional}`, `currencies.Usd…` (ISO codes, used as terms),
-`strategies.*`, `calendars.*`, `highlighting.*`, `caseSensitivity.*`,
-`dysasymptotics.*`, and `context.explainMissingContext`.
+nobody re-litigates them:
+
+```tabular
+column  Family
+column  Sanctioned members
+row  `sortingAlgorithms`  all
+row  `alphabets`  all
+row  `blockCipherModes`  `cbc`, `ctr`, `cfb`, `ofb`
+row  `blockCipherPaddings`  `pkcs7`, `iso10126`
+row  `regexBackends`  `re2`
+row  `internetAccess`  `online`, `offline`
+row  `endianness`  all
+row  `htmlDoms`  `whatwg`, `html4Transitional`
+row  `currencies`  `Usd`… (ISO codes, used as terms)
+row  `strategies`  all
+row  `calendars`  all
+row  `highlighting`  all
+row  `caseSensitivity`  all
+row  `dysasymptotics`  all
+row  `context`  `explainMissingContext`
+```
 
 ## Checking
 

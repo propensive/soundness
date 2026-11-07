@@ -59,14 +59,21 @@ A message that aggregates others says how many, and lets the `List[Message]` ins
 
 ## 3. Vocabulary
 
-- *is not a valid X* for a value that fails to parse as X; *is not a known X* for a value
-  that parses but is not in the set.
-- *could not* + verb for an operation that failed in the environment (network, filesystem,
-  process); *cannot* + verb for a request the library refuses by construction (`Burdock can
-  only repackage a JAR file`).
-- *has no X* for a missing part; *already has X* for a conflicting one.
-- *must* only for a rule the reader can satisfy by changing their input: `a port number
-  must be specified after a colon`.
+Each recurring situation has one phrase:
+
+```tabular
+column  Phrase
+column  For
+column  Example
+row  *is not a valid X*  a value that fails to parse as X  `the value $value is not a valid ISO 8601 repeating interval`
+row  *is not a known X*  a value that parses but is not in the set
+row  *could not* + verb  an operation that failed in the environment (network, filesystem, process)  `could not list the releases of $repository`
+row  *cannot* + verb  a request the library refuses by construction  `a command cannot end with an escape character`
+row  *has no X*  a missing part  `the JAR has no manifest`
+row  *already has X*  a conflicting part
+row  *must*  only a rule the reader can satisfy by changing their input  `a port number must be specified after a colon`
+```
+
 - Prefer the singular, concrete noun (`the manifest`, `this JAR`, `the document`) to a
   category (`input`, `data`, `object`), and the definite article when there is one such
   thing in context.
@@ -75,16 +82,14 @@ A message that aggregates others says how many, and lets the `List[Message]` ins
 
 ## 4. What a message must not contain
 
-- **Secrets.** No token, password, key material, cookie or `Authorization` value, even
-  partially. Name the credential's *source* if it helps (`the GITHUB_TOKEN environment
-  variable`), never its value.
-- **Payloads.** No request or response body, no file contents, no serialized document.
-  Quote the offending *fragment* — a line, a token, a field — and the position.
-- **Stack traces or exception text.** A message that wraps a Java exception restates the
-  cause in the terms of §3; the original is attached as the error's cause, not pasted into
-  its text.
-- **Formatting.** No ANSI escapes, no Markdown, no alignment spaces: a `Message` is
-  structured, and the renderer decides how it looks.
+```tabular
+column  Never
+column  Instead
+row  a secret: token, password, key material, cookie or `Authorization` value, even partially  the credential's *source*, if it helps (`the GITHUB_TOKEN environment variable`)
+row  a payload: request or response body, file contents, serialized document  the offending *fragment* (a line, a token, a field) and its position
+row  a stack trace or exception text  the cause restated in the terms of §3, with the original attached as the error's cause
+row  formatting: ANSI escapes, Markdown, alignment spaces  nothing; a `Message` is structured, and the renderer decides how it looks
+```
 
 ## 5. Composition through `Communicable`
 

@@ -86,32 +86,25 @@ The rules that keep this document trustworthy:
 
 ## The tracks
 
-1. **[The standard-library drain](core.md)** (`core`) — no module reaches the Java or Scala
-   standard libraries except through proscenium's opaque boundary; nothing Java-shaped is
-   visible at development or debug time.
-2. **[Capabilities and effects](safety.md)** (`safety`) — the `caps.unsafe` escape hatches reach
-   zero; capture checking, separation checking and declared errors hold without exemption; the
-   compiler fork is sustainable.
-3. **[Platform parity](platforms.md)** (`plat`) — building for JavaScript, Native, WASI and
-   Android is no harder than for the JVM, with only inherent exclusions, verified in CI; the
-   browser is a first-class application target, with web APIs behind typed facades.
-4. **[API coherence](api.md)** (`api`) — one name means one thing; variations are parameters;
-   the exported surface is deliberate rather than accidental.
-5. **[Documentation and learnability](documentation.md)** (`doc`) — one documentation system,
-   complete coverage, published API docs, and a path from nothing to a working application that
-   an agent can follow.
-6. **[The toolchain](tooling.md)** (`tool`) — flame, fury, fume, fluence, the LSP server, the
-   debugger and the MCP server together replace every Maven-era tool, with coverage and
-   benchmarks tracked for every commit in git notes. The tools built elsewhere appear here only
-   as what Soundness owes them.
-7. **[Distribution and release](distribution.md)** (`dist`) — attested, changelogged releases;
-   the migration-instruction convention; LIRA from specification to sole channel, retiring
-   Maven Central.
-8. **[Standards breadth](breadth.md)** (`brd`) — the remaining standards a production team
-   expects: JOSE, TOML, WebAuthn, QUIC, IMAP.
-9. **[Module boundaries](modularity.md)** (`mod`) — every module contains only code serving
-   its stated purpose; duplicated algorithms have one implementation; hard dependencies are
-   severed with lightweight typeclass interfaces; the build is shallower and wider.
+Each track has a file, an item prefix and an end state:
+
+```tabular
+column  Track
+column  Prefix
+column  End state
+row  [The standard-library drain](core.md)  `core`  no module reaches the Java or Scala standard libraries except through proscenium's opaque boundary; nothing Java-shaped is visible at development or debug time
+row  [Capabilities and effects](safety.md)  `safety`  the `caps.unsafe` escape hatches reach zero; capture checking, separation checking and declared errors hold without exemption; the compiler fork is sustainable
+row  [Platform parity](platforms.md)  `plat`  JavaScript, Native, WASI and Android are no harder to build for than the JVM, with only inherent exclusions, verified in CI; the browser is a first-class application target
+row  [API coherence](api.md)  `api`  one name means one thing; variations are parameters; the exported surface is deliberate
+row  [Documentation and learnability](documentation.md)  `doc`  one documentation system, complete coverage, published API docs, and a path from nothing to a working application that an agent can follow
+row  [The toolchain](tooling.md)  `tool`  flame, fury, fume, fluence, the LSP server, the debugger and the MCP server replace every Maven-era tool, with coverage and benchmarks tracked per commit in git notes
+row  [Distribution and release](distribution.md)  `dist`  attested, changelogged releases; the migration-instruction convention; LIRA as the sole channel, retiring Maven Central
+row  [Standards breadth](breadth.md)  `brd`  the remaining standards a production team expects: JOSE, TOML, WebAuthn, QUIC, IMAP
+row  [Module boundaries](modularity.md)  `mod`  every module serves only its stated purpose; each algorithm has one implementation; hard dependencies become typeclass interfaces; the build is shallower and wider
+```
+
+The browser target is reached through web APIs behind typed facades. The tools built
+elsewhere appear in the toolchain track only as what Soundness owes them.
 
 ## Dependencies
 
@@ -121,23 +114,31 @@ duplicates only the cross-track edges, because those are the ones requiring coor
 this list ever grows much beyond a dozen edges, the tracks are wrongly factored, and
 refactoring them is the fix.
 
-- `api-6 ← dist-2` — surface changes flow through the migration convention once it exists
-- `doc-8 ← tool-2, tool-4` — the walkthrough uses fume and fury
-- `tool-7 ← doc-5` — fluence consumes the API-extraction pipeline
-- `dist-4 ← doc-5` — API-derived versioning needs the same extraction
-- `dist-5 ← tool-4` — fury must build before it can publish
+```tabular
+column  Item
+column  Needs
+column  Because
+row  `api-6`  `dist-2`  surface changes flow through the migration convention once it exists
+row  `doc-8`  `tool-2`, `tool-4`  the walkthrough uses fume and fury
+row  `tool-7`  `doc-5`  fluence consumes the API-extraction pipeline
+row  `dist-4`  `doc-5`  API-derived versioning needs the same extraction
+row  `dist-5`  `tool-4`  fury must build before it can publish
+```
 
 **External gates** — conditions that gate items but are not under this project's control. They
 are listed here and never appear as items, because no `Done when:` command of ours can close
-them:
+them.
 
-- WASI's standard interfaces mature far enough to express full HTTP and UDP (gates `plat-4`).
-- fury, developed in its own repository, becomes able to build this repository (gates `tool-4`,
-  and through it `dist-5` and `doc-8`). Its progress is not tracked here; the Soundness side of
-  the bootstrap is.
-- LIRA's implementation, now in the `lira` repository (`dist-10`), round-trips
-  and publishes a Soundness release (gates `dist-3`, `dist-6`, `dist-7`). As with fury, only
-  what Soundness owes it is tracked here.
+```tabular
+column  Condition
+column  Gates
+row  WASI's standard interfaces mature far enough to express full HTTP and UDP  `plat-4`
+row  fury, developed in its own repository, becomes able to build this repository  `tool-4`, and through it `dist-5` and `doc-8`
+row  LIRA's implementation, now in the `lira` repository (`dist-10`), round-trips and publishes a Soundness release  `dist-3`, `dist-6`, `dist-7`
+```
+
+The progress of fury and of LIRA is not tracked here; only what Soundness owes them is,
+including the Soundness side of fury's bootstrap.
 
 The compiler is deliberately *not* on this list: Soundness is built with Proscala, and the
 freedom to modify it — for capture-checking fixes, for the Wasm backend, for whatever safety
@@ -149,28 +150,27 @@ artifacts remain readable from mainline Scala (`safety-5`).
 Production-readiness is the conjunction of the following criteria. The gate defines nothing
 new: each entry cites a track item, and the item's `Done when:` command is the authority.
 
-1. `proscenium.compat` is empty (`core-2`).
-2. No file outside proscenium imports `scala.collection` (`core-3`).
-3. No `caps.unsafe` escape hatch remains in `lib/` (`safety-4`).
-4. The platform manifest is enforced in CI, its exclusions carry reasons, and an Android APK is
-   built and signed in CI (`plat-1`, `plat-2`, `plat-3`).
-5. `doc/api-reduction-candidates.md` no longer exists (`api-5`).
-6. Every error type has an `SN-` code and a documentation page, checked in CI (`doc-1`).
-7. Every published module is covered by a `doc/modules/` topic (`doc-4`).
-8. API documentation is generated and published for every component (`doc-5`).
-9. `fury build` builds Soundness itself, attestation-equal to the Mill build (`tool-4`).
-10. fume runs the full test suite, and no suite is disabled (`tool-2`).
-11. A scripted LSP editor session passes in CI (`tool-3`).
-12. Every breaking change in the last ten consecutive releases shipped with agent-executable
-    migration instructions (`dist-2`).
-13. Every release is published as attested LIRA files (`dist-7`).
-14. JOSE, TOML and WebAuthn are shipped (`brd-1`, `brd-2`, `brd-3`).
+```tabular
+column  Criterion
+column  Items
+row  `proscenium.compat` is empty  `core-2`
+row  No file outside proscenium imports `scala.collection`  `core-3`
+row  No `caps.unsafe` escape hatch remains in `lib/`  `safety-4`
+row  The platform manifest is enforced in CI, its exclusions carry reasons, and an Android APK is built and signed in CI  `plat-1`, `plat-2`, `plat-3`
+row  `doc/api-reduction-candidates.md` no longer exists  `api-5`
+row  Every error type has an `SN-` code and a documentation page, checked in CI  `doc-1`
+row  Every published module is covered by a `doc/modules/` topic  `doc-4`
+row  API documentation is generated and published for every component  `doc-5`
+row  `fury build` builds Soundness itself, attestation-equal to the Mill build  `tool-4`
+row  fume runs the full test suite, and no suite is disabled  `tool-2`
+row  A scripted LSP editor session passes in CI  `tool-3`
+row  Every breaking change in the last ten consecutive releases shipped with agent-executable migration instructions  `dist-2`
+row  Every release is published as attested LIRA files  `dist-7`
+row  JOSE, TOML and WebAuthn are shipped  `brd-1`, `brd-2`, `brd-3`
+row  An agent, following only the documentation in `doc/`, takes a new project from nothing to a tested, deployed JVM-and-JavaScript web application using only ecosystem tools, and this walkthrough is executed and recorded in CI  `doc-8`
+```
 
-And one integrative criterion, which is the point of the exercise:
-
-15. An agent, following only the documentation in `doc/`, takes a new project from nothing to a
-    tested, deployed JVM-and-JavaScript web application using only ecosystem tools — and this
-    walkthrough is executed and recorded in CI (`doc-8`).
+The last criterion is the integrative one, and the point of the exercise.
 
 ### Beyond the gate
 

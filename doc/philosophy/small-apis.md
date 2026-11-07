@@ -26,9 +26,24 @@ source.read[Person in Dsv]
 Adding a format adds instances, not methods. The vocabulary a reader must learn does not
 grow when the library does.
 
-The same holds throughout. `as` decodes, `show` renders for a person, `inspect` renders
-for a programmer, `in` encodes into a format, `stream` exposes a value as a stream,
-`digest` hashes, `serialize` renders bytes in a base encoding:
+The same holds throughout. Each verb is one method, whose meaning for a given type comes
+from one typeclass:
+
+```tabular
+column  Verb
+column  Does
+column  Typeclass
+row  `read`  reads a source as a value  `Readable`
+row  `as`  decodes  `Decodable`
+row  `show`  renders for a person  `Showable`
+row  `inspect`  renders for a programmer  `Inspectable`
+row  `in`  encodes into a format  `Encodable`
+row  `stream`  exposes a value as a stream  `Streamable`
+row  `digest`  hashes  `Digestible`
+row  `serialize`  renders bytes in a base encoding  `Serializable`
+```
+
+So decoding, encoding, hashing and serializing read alike, whatever the type:
 
 ```scala fuel
 parse

@@ -11,21 +11,8 @@ scope determines what happens, wherever the affected code runs.
 The power of the approach is that scope is a precise instrument. A given imported at the
 top of a file configures the file; one declared inside a block configures only that
 block, overriding any wider choice; and a `locally` block confines an exception to a few
-lines:
-
-```scala fuel
-parse
-##
-import formatting.compactJsonFormatting     // the file's default
-
-def debugDump(json: Json): Text =
-  given Json.Formatting = indentedJsonFormatting   // this function only
-  json.show
-
-locally:
-  import textSanitizers.strictSanitizer     // these lines reject bad input
-  decoder.decoded(untrustedBytes)
-```
+lines. [Delimited scopes](delimited-scopes.md#scope-is-a-precise-instrument) shows all three in one
+example.
 
 Configuration composes like the code it configures. A project defines its house choices
 once and shares them with `export`, so `import myproject.conventions.*` equips any file
@@ -47,19 +34,19 @@ The range is worth seeing at once, because the uniformity is the point. A single
 mechanism carries choices that other designs would spread across constructor arguments,
 global settings, builder methods and runtime flags:
 
-```scala fuel
-parse
-##
-import strategies.throwUnsafely            // what a failure does
-import codepages.utf8Codepage            // how text becomes bytes
-import formatting.compactJsonFormatting    // how JSON is rendered
-import dateFormats.iso8601DateFormat       // how dates are shown
-import affirmations.yesNoAffirmation       // how a boolean is shown
-import threads.virtualThreads          // what a task runs on
-import probates.cancelProbate              // what happens to unfinished tasks
-import httpBackends.soundnessHttp              // which HTTP transport is used
-import filesystemBackends.javaBaseFilesystem   // which filesystem implementation
-import calendars.gregorianCalendar         // which calendar a date literal means
+```tabular
+column  Choice
+column  Import
+row  what a failure does  `strategies.throwUnsafely`
+row  how text becomes bytes  `codepages.utf8Codepage`
+row  how JSON is rendered  `formatting.compactJsonFormatting`
+row  how dates are shown  `dateFormats.iso8601DateFormat`
+row  how a boolean is shown  `affirmations.yesNoAffirmation`
+row  what a task runs on  `threads.virtualThreads`
+row  what happens to unfinished tasks  `probates.cancelProbate`
+row  which HTTP transport is used  `httpBackends.soundnessHttp`
+row  which filesystem implementation  `filesystemBackends.javaBaseFilesystem`
+row  which calendar a date literal means  `calendars.gregorianCalendar`
 ```
 
 One idiom to learn, and the same reasoning — "what is in scope determines what happens" —

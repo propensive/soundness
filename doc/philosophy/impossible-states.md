@@ -36,6 +36,15 @@ connect(port)                  // nothing left to check
 
 ## Three ways a type rules a state out
 
+```tabular
+column  Way
+column  What the type carries
+column  Example
+row  refinement  the permitted range  `0.0 ~ 1.0`
+row  parameterization  a property that would otherwise be a field  `Eur` and `Gbp`
+row  construction  a literal already parsed against its grammar  `2012-Feb-30`
+```
+
 **By refinement.** A number carries its permitted range in its type, so the range is
 checked where the value is written and arithmetic works out the range of the result:
 

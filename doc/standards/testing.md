@@ -17,14 +17,20 @@ object Tests extends Suite("logging", m"Eucalyptus tests"):
 
 The suite's title is a `Message`, naming the module under test. Before it comes
 the suite's id, a string literal by which a selection addresses it: `fume run
-logging`. The id names what the module is for, not the module: `logging`, not
-`eucalyptus`; `html`, not `honeycomb`. Keep it short, and one word unless two are
-needed. A method outside `run()` which declares tests for the suite names it by
-the same id: `(using Testable of "logging")`. Where a module has several distinct
-areas, each may have its own file (`<module>.<Area>Tests.scala`) with its own
-`Suite`, whose id adds the area to the module's: `json-parser`, `json-records`.
-A suite declared by its title alone has an id derived from it
-(`eucalyptus-tests`), which is a fallback and not the convention.
+logging`. The id names what the module is for, not the module. Keep it short, and one word
+unless two are needed:
+
+```tabular
+column  Suite
+column  Id
+column  Example
+row  a module's suite  what the module is for  `logging`, not `eucalyptus`; `html`, not `honeycomb`
+row  an area's suite, in `<module>.<Area>Tests.scala`  the module's id and the area  `json-parser`, `json-records`
+row  a suite declared by its title alone  derived from the title; a fallback, not the convention  `eucalyptus-tests`
+```
+
+A method outside `run()` which declares tests for the suite names it by the same id:
+`(using Testable of "logging")`.
 
 ## 2. Structure
 

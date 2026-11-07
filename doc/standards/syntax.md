@@ -22,12 +22,14 @@ refer to a rule as `SN-nnn`, the equivalent Consequent rule has an identifier
 of the form `<principle><number>` — the letter naming the principle it derives
 from, then its number within that principle:
 
-| Was | Now |
-| --- | --- |
-| `SN-799` | `F1` — licence-header block comment |
-| `SN-230` | `F4` — line length |
-| `SN-302` | `L1` — top-level import rules |
-| `SN-742` | `L4` — umbrella re-exports |
+```tabular
+column  Was
+column  Now
+row  `SN-799`  `F1` — licence-header block comment
+row  `SN-230`  `F4` — line length
+row  `SN-302`  `L1` — top-level import rules
+row  `SN-742`  `L4` — umbrella re-exports
+```
 
 The full table is in the
 [rule reference](https://github.com/propensive/consequent/blob/main/doc/rules/README.md#migrating-from-the-sn--identifiers).

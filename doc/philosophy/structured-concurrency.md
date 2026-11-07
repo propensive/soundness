@@ -46,14 +46,17 @@ than an empirical one.
 A scope must decide what to do about a child still running when the parent's body
 finishes, and that decision is explicit rather than assumed. The *probate* names it:
 
-```scala fuel
-parse
-##
-import probates.cancelProbate   // unfinished children are cancelled
-import probates.awaitProbate    // the scope waits for them
+```tabular
+column  Import
+column  A child still running when the body finishes
+row  `probates.awaitProbate`  is waited for
+row  `probates.cancelProbate`  is cancelled
+row  `probates.panicProbate`  is a panic
+row  `probates.failProbate`  raises an `Async.Error`
 ```
 
-Both are defensible and neither is safe to guess at, which is why there is no default.
+Each is defensible somewhere and none is safe to guess at, which is why there is no
+default.
 
 A `daemon` is the deliberate exception: fire-and-forget work that the scope does not wait
 for and cancels when it ends. It still cannot outlive its scope — it is unstructured only

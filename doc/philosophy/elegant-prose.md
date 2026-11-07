@@ -65,16 +65,14 @@ Each reads as a statement about the domain rather than as an instruction to a ma
 Prose that reads well is not prose with nothing behind it. Each line above rests on
 several of the other principles at once, and the reader is meant to notice none of them:
 
-`path.open[Directory](Read & Exclusive)` involves a [scoped capability](delimited-scopes.md),
-a type-level grant set, and [capture checking](capture-checking.md) proving the handle
-does not escape. The reader sees a directory being opened for exclusive reading.
-
-`t"2011-12-13".as[Date]` involves a typeclass resolved by target type, a contextual error
-strategy, and a calendar. The reader sees text becoming a date.
-
-`5.25.pm on 2018-Aug-11` involves a compiletime-checked literal, an
-[infix](infix-types.md) constructor, and validation that rejects `13.00.am`. The reader
-sees a time on a date.
+```tabular
+column  Expression
+column  Rests on
+column  The reader sees
+row  `path.open[Directory](Read & Exclusive)`  a [scoped capability](delimited-scopes.md), a type-level grant set, and [capture checking](capture-checking.md) proving the handle does not escape  a directory being opened for exclusive reading
+row  `t"2011-12-13".as[Date]`  a typeclass resolved by target type, a contextual error strategy, and a calendar  text becoming a date
+row  `5.25.pm on 2018-Aug-11`  a compiletime-checked literal, an [infix](infix-types.md) constructor, and validation that rejects `13.00.am`  a time on a date
+```
 
 That is the aim: machinery that recedes. When the machinery *has* to be visible — when a
 capability must be named, or a type ascribed — it is because the reader genuinely needs

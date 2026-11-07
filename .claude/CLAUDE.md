@@ -20,7 +20,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   sources; `flare metrics` records the census in git notes, commit by commit. It reports only —
   nothing fails on a count.
 - The rule `S1.1` **is** strict: a method taking `(using Unsafe)` must be named `unsafe…`, or
-  the build fails. `S1.2` (an `unsafe…` name must take the token) is advisory; ten definitions
+  the build fails. `S1.2` (an `unsafe…` name must take the token) is advisory; eight definitions
   break it and are listed in `doc/standards/naming.md` with the follow-up that gates them.
   Read them from the census as `unsafe-ungated`, not from the build log: a `S1.2` **warning**
   is silently dropped when the compiler has already reported something at an enclosing

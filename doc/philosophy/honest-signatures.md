@@ -82,9 +82,16 @@ def install(target: Path on Linux): Unit logs InstallEvent
 def fetchAll(urls: List[HttpUrl])(using Monitor): List[Text]
 ```
 
-`Online` means it reaches the network. `raises` means it can fail, and how. `logs` means
-it emits events of that type — so a caller knows what to route where. `Monitor` means it
-can suspend the calling strand.
+Each clause makes one claim:
+
+```tabular
+column  Clause
+column  Means the method
+row  `using Online`  reaches the network
+row  `raises`  can fail, and says how
+row  `logs`  emits events of that type, so a caller knows what to route where
+row  `using Monitor`  can suspend the calling strand
+```
 
 A method with none of these does none of those things, which is a claim worth being able
 to make.

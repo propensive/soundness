@@ -17,23 +17,62 @@ outward: whatever Proscala does, the artifacts Soundness publishes must remain r
 mainline Scala compiler. The track ends when the grep for `caps.unsafe` returns nothing, and
 that readability guarantee is enforced rather than assumed.
 
-The residue is not one problem but seven, and they are not equally hard. Measured on
-2026-10-07 over `lib/` — 1485 visible hatches (505 `untrackedCaptures`, 511 `unsafeAssumePure`,
-419 `unsafeAssumeSeparate`, 50 `unsafeErasedValue`), with roughly as many again hidden behind
-the named wrappers (`Array.unsafeFrozen` 283, `Array.unsafeJvm` 205, `Array.frozen` 151,
-`unsafeMutable`/`unsafeImmutable` ~40, `!!` 30) — the clusters by root cause are:
+Measured on 2026-10-07 over `lib/`, there are 1485 visible hatches, and roughly as many again
+hidden behind the named wrappers:
 
-| Cluster | Count | Retired by |
-|---|---|---|
-| `@untrackedCaptures` on `var`/`val` fields (437 vars; ~270 of them primitive, `Optional` or immutable-collection typed) | 505 | `safety-1`'s recipe, module by module |
-| test-harness `unsafeAssumeSeparate` (tmux drivers, `await`, `recur`) | 236 | one loan-shaped helper per harness (`safety-9`) |
-| derivation anchors `unsafeAssumePure(Json.…Derivation.derived)` in the JSON-RPC bindings | 103 | the field-purity rule, once tactics are shared (`safety-8`) |
-| sealed codec givens whose SAM closes over a tactic | ~125 | the honest `^{tactic}` given form, unblocked by `safety-8` |
-| exclusive-tactic overlap `unsafeAssumeSeparate(json.as[…])` and the three seals in contingency itself | ~60 | `safety-8` |
-| self/callback/handle launders (`unsafeAssumePure(this)`, RPC proxies, stored callbacks) | ~60 | per-site design |
-| by-name element-codec thunks laundered to `() -> …` | ~46 | nameable by-name captures (`safety-10`) |
-| `unsafeErasedValue` for erased evidence | 50 | mechanical, if `compiletime.erasedValue` suffices |
-| staging, quotes and macros (the quote wall) | ~27 | compiler-side |
+```tabular
+column  Hatch
+column  Kind
+column  Count
+row  `untrackedCaptures`  visible  505
+row  `unsafeAssumePure`  visible  511
+row  `unsafeAssumeSeparate`  visible  419
+row  `unsafeErasedValue`  visible  50
+row  `Array.unsafeFrozen`  wrapper  283
+row  `Array.unsafeJvm`  wrapper  205
+row  `Array.frozen`  wrapper  151
+row  `unsafeMutable`/`unsafeImmutable`  wrapper  ~40
+row  `!!`  wrapper  30
+```
+
+The residue is not one problem but nine, and they are not equally hard. By root cause, the
+clusters are:
+
+```tabular
+column  Cluster
+column  Count
+column  Retired by
+row  `@untrackedCaptures` on `var`/`val` fields (437 vars; ~270 of them primitive, `Optional` or immutable-collection typed)  505  `safety-1`'s recipe, module by module
+row  test-harness `unsafeAssumeSeparate` (tmux drivers, `await`, `recur`)  236  one loan-shaped helper per harness (`safety-9`)
+row  derivation anchors `unsafeAssumePure(Json.…Derivation.derived)` in the JSON-RPC bindings  103  the field-purity rule, once tactics are shared (`safety-8`)
+row  sealed codec givens whose SAM closes over a tactic  ~125  the honest `^{tactic}` given form, unblocked by `safety-8`
+row  exclusive-tactic overlap `unsafeAssumeSeparate(json.as[…])` and the three seals in contingency itself  ~60  `safety-8`
+row  self/callback/handle launders (`unsafeAssumePure(this)`, RPC proxies, stored callbacks)  ~60  per-site design
+row  by-name element-codec thunks laundered to `() -> …`  ~46  nameable by-name captures (`safety-10`)
+row  `unsafeErasedValue` for erased evidence  50  mechanical, if `compiletime.erasedValue` suffices
+row  staging, quotes and macros (the quote wall)  ~27  compiler-side
+```
+
+The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
+
+```tabular
+column  Item
+column  Title
+column  Horizon
+column  Needs
+row  safety-1  retire `untrackedCaptures`  near
+row  safety-2  every remaining hatch names its reason  near
+row  safety-3  `rep/` runs on the pinned toolchain  near
+row  safety-4  zero escape hatches  mid → long  safety-8, safety-10
+row  safety-5  the fork is an asset, not a trap  long
+row  safety-6  separation checking without exemption  long
+row  safety-7  measure the whole escape surface, not one grep at a time  near
+row  safety-8  tactics are shared capabilities  near  safety-3
+row  safety-9  test harnesses do not seal  near → mid
+row  safety-10  by-name parameters can be named in capture sets  mid  safety-3
+row  safety-11  the 3.10 stream is evaluated for what it fixes  near → mid  safety-3
+row  safety-12  a capabilities standard  near
+```
 
 ## safety-1: retire `untrackedCaptures`
 
@@ -165,7 +204,7 @@ clauses), the partial reads, and the imperative constructs the streaming kernel 
 confine. `make unsafety` runs `flare metrics --dry-run` and prints it; `flare metrics` records
 it in git notes, commit by commit, so the trend lives in git rather than in a roadmap
 paragraph. One rule already gates: `S1.1`, a method taking `(using Unsafe)` must be named
-`unsafe…`, fails the build; its converse `S1.2` is advisory, with the ten definitions that
+`unsafe…`, fails the build; its converse `S1.2` is advisory, with the eight definitions that
 break it listed in `doc/standards/naming.md`.
 
 The gate exists: `etc/check-escape-count.py`, run by `make build` (and `make check-escapes`),
@@ -174,18 +213,57 @@ array wrappers that hide a capture (`Array.unsafeFrozen`, `Array.unsafeJvm`, `Ar
 the `!!` erased-evidence operator), the casts that move a capability past the checker, and the
 hatches that carry no reason tag — with the same `--update`/`--totals` semantics as
 `check-while-count.py`, plus `--tags` for the residue per reason tag (`safety-2`), whose closed
-vocabulary lives in the script. Seeded 2026-10-09 (assumePure 366, assumeSeparate 261,
-untracked 397, erasedValue 50; 1068 hatches untagged) and re-seeded 2026-10-21 (assumePure 280,
-assumeSeparate 218, untracked 381, erasedValue 35, unsafeFrozen 333, unsafeJvm 336,
-erasedEvidence 84, anyRefCast 362, captureCast 383; untagged 0). The `xs.stdlib` ratchet was
-folded in on 2026-10-26: the bridge is counted per file over core and test sources alike (the
-old script excluded tests, where 1000 of the uses were, and missed the `. stdlib` continuation
-form), benchmarks excepted, with three shape columns that read the residue as a queue — the
-dysasymptotic gate bypasses (`stdlibGate`: `xs.stdlib.head`, `.stdlib(i)`, the size reads),
-the round trips (`stdlibRound`: `xs.stdlib.toList`, `Array.from(xs.stdlib)`) and
-`stdlibIterator` — plus `collectionImport` for `core-3`'s direct `scala.collection` imports;
-`--stdlib` lists the residue by what follows the bridge. Seeded at stdlib 1859 (gate 464,
-round 310, iterator 62), collectionImport 340. What remains is folding the `while` ratchet in.
+vocabulary lives in the script. It was seeded on 2026-10-09 and re-seeded on 2026-10-21:
+
+```tabular
+column  Column
+column  2026-10-09
+column  2026-10-21
+row  `assumePure`  366  280
+row  `assumeSeparate`  261  218
+row  `untracked`  397  381
+row  `erasedValue`  50  35
+row
+  cell  `unsafeFrozen`
+  cell
+  cell  333
+row
+  cell  `unsafeJvm`
+  cell
+  cell  336
+row
+  cell  `erasedEvidence`
+  cell
+  cell  84
+row
+  cell  `anyRefCast`
+  cell
+  cell  362
+row
+  cell  `captureCast`
+  cell
+  cell  383
+row  `untagged`  1068  0
+```
+
+The `xs.stdlib` ratchet was folded in on 2026-10-26: the bridge is counted per file over core
+and test sources alike (the old script excluded tests, where 1000 of the uses were, and missed
+the `. stdlib` continuation form), benchmarks excepted. Three shape columns read the residue
+as a queue, and a fourth counts `core-3`'s imports; `--stdlib` lists the residue by what
+follows the bridge. The columns, with the counts they were seeded at:
+
+```tabular
+column  Column
+column  Counts
+column  Seed
+row  `stdlib`  every use of the bridge  1859
+row  `stdlibGate`  the dysasymptotic gate bypasses: `xs.stdlib.head`, `.stdlib(i)`, the size reads  464
+row  `stdlibRound`  the round trips: `xs.stdlib.toList`, `Array.from(xs.stdlib)`  310
+row  `stdlibIterator`  iterators taken through the bridge  62
+row  `collectionImport`  direct `scala.collection` imports  340
+```
+
+What remains is folding the `while` ratchet in.
 
 Done when: the census is recorded on every release, `safety-1`, `safety-2` and `safety-4` read
 their baselines from it rather than from a hand-run grep, and the per-file gate has replaced

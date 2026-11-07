@@ -6,12 +6,38 @@ devices. The promise is not that every module runs everywhere — a browser has 
 but that every exclusion is inherent, stated, and checked, and that building for any target is
 no harder than building for the JVM.
 
-Today the JVM is total, JavaScript and Native cover most modules, WASI is a narrow but real
-slice built on the WASM component model, and Android works end-to-end — D8 dexing and APK
-signing without the Android SDK — but outside the ordinary build. Parity means closing each of
-those qualifications, and the instrument for doing so is a manifest: the platform matrix as
+Where each target stands today:
+
+```tabular
+column  Target
+column  Today
+column  Closed by
+row  JVM  total
+row  JavaScript  most modules  plat-3
+row  Native  most modules  plat-3
+row  WASI  a narrow but real slice, built on the WASM component model  plat-4
+row  Android  end-to-end — D8 dexing and APK signing without the Android SDK — but outside the ordinary build  plat-2
+```
+
+Parity means closing each of those qualifications, and the instrument for doing so is a manifest: the platform matrix as
 checked-in data, where every "no" carries a reason, and CI fails when reality regresses from
 the manifest. When the only reasons left are inherent ones, the parity statement holds.
+
+The track's items, with their horizons and hard dependencies; [`status.tel`](status.tel) records where each one stands:
+
+```tabular
+column  Item
+column  Title
+column  Horizon
+column  Needs
+row  plat-1  the platform manifest is enforced  near
+row  plat-2  Android in the ordinary build  near → mid
+row  plat-3  JavaScript and Native at full non-excluded coverage  mid  plat-1
+row  plat-4  WASI beyond the first seven backends  mid → long
+row  plat-5  the parity statement holds  long  plat-4
+row  plat-6  the browser is a first-class application target  mid
+row  plat-7  degustation atomizes TASTy without the compiler  mid  plat-3
+```
 
 ## plat-1: the platform manifest is enforced
 
@@ -152,14 +178,9 @@ beyond the bytes. Scoped on 2026-10-23:
 
 Three ways to close it:
 
-1. **Own semantic layer over `tasty-core`** (recommended): a tree unpickler into plain data
-   (~2,000 lines; `hyperbole.tasty` contributes the header and name table), a lazy classpath
-   loader over directories and jars with a Java classfile reader for class kind, type
-   parameters and member descriptors (~1,200), Scala 3 erasure and signature spelling (~900,
-   after dotc's `TypeErasure` and `Signature`), member lookup along parents (~300), and the
-   atomizer re-expressed over the data model (~1,200, the encoding rules unchanged). Roughly
-   6,000 lines against `tasty-query`'s 19,000, because degustation needs none of its
-   subtyping, type maps or Scala 2 pickle reader.
+1. **Own semantic layer over `tasty-core`** (recommended): five components, listed below,
+   of roughly 6,000 lines against `tasty-query`'s 19,000, because degustation needs none of
+   its subtyping, type maps or Scala 2 pickle reader.
 2. **Depend on `tasty-query`**: ~1,000 lines changed, but a 19,000-line dependency published
    for the JVM and Scala.js only — Native would need a cross-build published by us, as
    Proscala now does for `tasty-core` — whose erasure and member resolution are its own
@@ -167,6 +188,19 @@ Three ways to close it:
 3. **Leave it on the compiler** and classify the exclusion as inherent: atomization runs at
    assembly and publish time, where a JVM is at hand. Honest today, but it rules out
    atomizing from a Native or Wasm build tool, which is the reason to want it.
+
+The first option's components and their estimated sizes:
+
+```tabular
+column  Component
+column  Lines
+column  Notes
+row  a tree unpickler into plain data  ~2,000  `hyperbole.tasty` contributes the header and name table
+row  a lazy classpath loader over directories and jars, with a Java classfile reader for class kind, type parameters and member descriptors  ~1,200
+row  Scala 3 erasure and signature spelling  ~900  after dotc's `TypeErasure` and `Signature`
+row  member lookup along parents  ~300
+row  the atomizer re-expressed over the data model  ~1,200  the encoding rules unchanged
+```
 
 Either of the first two is a new discipline, `tasty/2` (`tasty.md` §1: any change to the
 canonicalization is a new discipline): §4 extraction over raw TASTy instead of the compiler's

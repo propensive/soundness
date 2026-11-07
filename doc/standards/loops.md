@@ -12,36 +12,46 @@ a `readUnchecked` or a `.charAt(` beyond what `etc/while-baseline.tsv` records.
 
 ## What replaces what
 
-| shape | replacement |
-| --- | --- |
-| counter never used in the body | `repeat(n): …` |
-| `xs(i)` over a countable receiver | `xs.extent.each: i => … xs(i) …` |
-| building a collection from `xs(i)` | `xs.tabulate: i => … xs(i) …` (and `range.tabulate` over any branded sub-interval) |
-| `if i < xs.length then … xs(i) …` | `xs.pick(i): i => … xs(i) …`, or `xs.at(i)` when the element is all the body wants |
-| `xs(i)` and `ys(i)` over two same-length receivers | `xs.coextent(ys).let: shared => … ys(shared(i)) …`, or `shared.each: (i, j) => …` |
-| the same, over part of it | `xs.extent.capped(n).each`, or `start thru end` from confined endpoints |
-| the same, anchored on the collection | `xs.iterate: i => …`, and `xs.iterate(range)` |
-| descending | `xs.retrace: i => …` |
-| guarded scan whose caller resumes at `i` | `xs.prefix(p)` and `xs.prefix(after)(p)`; the stopping index alone is `xs.spot(p)` |
-| trailing trim | `xs.pare(floor)(p)` |
-| `iterator.hasNext` | `each` or `fuse` on the source |
-| byte-at-a-time cursor | `xs.survey: cursor => …` |
-| filling a fresh array | `Array.scribe(n): scribe => …` |
-| `y*stride + x` | `xs.lattice(width, stride, offset): lattice => …` |
-| fixed count of side effects | `repeat(n): …` |
+```tabular
+column  Shape
+column  Replacement
+row  counter never used in the body  `repeat(n): …`
+row  `xs(i)` over a countable receiver  `xs.extent.each: i => … xs(i) …`
+row  building a collection from `xs(i)`  `xs.tabulate: i => … xs(i) …` (and `range.tabulate` over any branded sub-interval)
+row  `if i < xs.length then … xs(i) …`  `xs.pick(i): i => … xs(i) …`, or `xs.at(i)` when the element is all the body wants
+row  `xs(i)` and `ys(i)` over two same-length receivers  `xs.coextent(ys).let: shared => … ys(shared(i)) …`, or `shared.each: (i, j) => …`
+row  the same, over part of it  `xs.extent.capped(n).each`, or `start thru end` from confined endpoints
+row  the same, anchored on the collection  `xs.iterate: i => …`, and `xs.iterate(range)`
+row  descending  `xs.retrace: i => …`
+row  guarded scan whose caller resumes at `i`  `xs.prefix(p)` and `xs.prefix(after)(p)`; the stopping index alone is `xs.spot(p)`
+row  trailing trim  `xs.pare(floor)(p)`
+row  `iterator.hasNext`  `each` or `fuse` on the source
+row  byte-at-a-time cursor  `xs.survey: cursor => …`
+row  filling a fresh array  `Array.scribe(n): scribe => …`
+row  `y*stride + x`  `xs.lattice(width, stride, offset): lattice => …`
+row  fixed count of side effects  `repeat(n): …`
+```
 
 ## Which receivers can be drained
 
 Only a receiver with a `Countable` instance has an `extent`, and only one with an
-`Applicable` instance can be read with an ordinal. In practice that means the frozen
-`Array[element]^{}` (and `Data`), `Sequence`, `Text`, `IndexedSeq`, `Map`, `Set`, and — behind
-a dysasymptotic acknowledgement — `List` and `Chain`.
+`Applicable` instance can be read with an ordinal. A loop over anything else has no confined
+form and is left alone. The receivers that come up:
 
-A loop over anything else has no confined form and is left alone. The receivers that come up
-and cannot be drained are the mutable `scala.Array`, a varargs `Seq`, and an
-`IndexedSeq` whose elements carry capabilities, since the `Countable` instance is capture-free
-and a capability cannot flow into it. A mutable buffer being filled is not an exception to
-find a way around: write it through `Array.scribe`, whose handle brands its own indices.
+```tabular
+column  Receiver
+column  Drainable
+column  Why not
+row  frozen `Array[element]^{}`, `Data`  yes
+row  `Sequence`, `Text`, `IndexedSeq`, `Map`, `Set`  yes
+row  `List`, `Chain`  behind a dysasymptotic acknowledgement
+row  mutable `scala.Array`  no  no `Countable` or `Applicable` instance
+row  varargs `Seq`  no  no `Countable` or `Applicable` instance
+row  `IndexedSeq` whose elements carry capabilities  no  the `Countable` instance is capture-free, and a capability cannot flow into it
+```
+
+A mutable buffer being filled is not an exception to find a way around: write it through
+`Array.scribe`, whose handle brands its own indices.
 
 ## Proven lengths
 
@@ -79,11 +89,18 @@ the layout is fixed: the byte-probe tests (`header(156.z)`) are exactly this cas
 ## Editing a frozen array
 
 A frozen array (`Array[e]^{}`) is never written through; an edit is a copy, and the copy's
-shape names the edit. One slot is `xs.define(i, v)`; one slot removed is `xs.omit(i)`; a
-segment replaced is `Array.concat(xs.before(i), replacement, xs.after(i))` (segments are
-`before`/`upto`/`from`/`after` around an ordinal, or `keep`/`skip` by count), which copies the
-three parts once; and several slots at once are `Array.thaw(xs)`, which
-yields an exclusive copy to write through with `copy(i) = v`, frozen again by `Array.freeze`.
+shape names the edit:
+
+```tabular
+column  Edit
+column  Copy
+row  one slot  `xs.define(i, v)`
+row  one slot removed  `xs.omit(i)`
+row  a segment replaced  `Array.concat(xs.before(i), replacement, xs.after(i))`, which copies the three parts once
+row  several slots at once  `Array.thaw(xs)`, an exclusive copy written with `copy(i) = v` and frozen again by `Array.freeze`
+```
+
+Segments are `before`/`upto`/`from`/`after` around an ordinal, or `keep`/`skip` by count.
 None of these goes through the stdlib view: `xs.stdlib.updated`, `take ++ … ++ drop` and an
 `ArrayBuffer.from(xs.stdlib)` are the shapes they replace.
 
@@ -137,10 +154,17 @@ returning a *collection* (`Traversable`), never an iterator.
 A `scala.collection.Iterator` is reached only at a boundary: `Iterator.from(javaIterator)`
 and `Iterator.from(stdlibIterator)` wrap one on the way in, and `iterator.stdlib` hands one
 out to a stdlib or JDK API that insists on it, tagged `[stdlib-boundary]` as every bridge is.
-Everything that reached for `xs.stdlib.iterator` before had a native form: a stream or cursor
-over a `Chain` is `Stream(chain)`/`Cursor(chain)`; a framer over a `Chain` is
-`chain.frames[F]`; a live chain is drained with `each`; a lockstep walk is `zip(…).each` or
-`indexed.each`; a lazy first-match scan is `fuse` with a by-name `or`.
+Everything that reached for `xs.stdlib.iterator` before had a native form:
+
+```tabular
+column  Use
+column  Native form
+row  a stream or cursor over a `Chain`  `Stream(chain)`, `Cursor(chain)`
+row  a framer over a `Chain`  `chain.frames[F]`
+row  a live chain  drained with `each`
+row  a lockstep walk  `zip(…).each` or `indexed.each`
+row  a lazy first-match scan  `fuse` with a by-name `or`
+```
 
 ## Proof comments
 

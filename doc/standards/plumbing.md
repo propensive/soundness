@@ -20,22 +20,24 @@ runs it; `flare assess plumbing --show HEAD` prints the ranking recorded for a c
 
 ## What replaces what
 
-| hand-rolled | use instead |
-| --- | --- |
-| `x.toString.tt`, a `render(x): Text` or `name(x): Text` helper | `x.show` (`Showable`), or `x.in[Text]` |
-| `private inline def kebab(s: String): Text = Text(s)` | `.tt` at the call site |
-| `text.s.replace(…).nn.tt`, any `.s … .tt` round trip | a `Text` operation from gossamer, or add one |
-| `Integer.parseInt(hex.s, 16)` | `hex.deserialize[Hex]`, or `text.as[Int]` (`Decodable`) |
-| `Array.unsafeFrozen(text.s.getBytes(UTF_8).nn)` | `text.in[Data]` with a `CharEncoder` in scope |
-| a hand-written `toList`/`toMap` on a container | a `Convertible` instance, then `.to[List]`/`.to[Map]` |
-| a `match` mapping each constructor of one enum to one of another | `Enumerable`/`Extractable`, or a method on the source type |
-| `if x == sentinel then Unset else x` | `x.puncture(sentinel)` |
-| `Option` to `Optional` by hand | `.optional` |
-| `try … catch` to `Optional` | `safely` |
-| `asInstanceOf` to reach a stdlib collection | `stdlib` on the collection, as `List.stdlib` |
-| shuffling between 0- and 1-based indices | `.z`, `.u`, `.n0`, `.n1` |
-| the same `tag(out, char) = out.append(char.toByte)` copied into six atomizers | one extension on `Scribe[Byte]` |
-| `given Conversion[Int, Expression] = int => Number(int.toDouble)` | an `Expression.apply(Int)` or a `Decodable` |
+```tabular
+column  Hand-rolled
+column  Use instead
+row  `x.toString.tt`, a `render(x): Text` or `name(x): Text` helper  `x.show` (`Showable`), or `x.in[Text]`
+row  `private inline def kebab(s: String): Text = Text(s)`  `.tt` at the call site
+row  `text.s.replace(…).nn.tt`, any `.s … .tt` round trip  a `Text` operation from gossamer, or add one
+row  `Integer.parseInt(hex.s, 16)`  `hex.deserialize[Hex]`, or `text.as[Int]` (`Decodable`)
+row  `Array.unsafeFrozen(text.s.getBytes(UTF_8).nn)`  `text.in[Data]` with a `CharEncoder` in scope
+row  a hand-written `toList`/`toMap` on a container  a `Convertible` instance, then `.to[List]`/`.to[Map]`
+row  a `match` mapping each constructor of one enum to one of another  `Enumerable`/`Extractable`, or a method on the source type
+row  `if x == sentinel then Unset else x`  `x.puncture(sentinel)`
+row  `Option` to `Optional` by hand  `.optional`
+row  `try … catch` to `Optional`  `safely`
+row  `asInstanceOf` to reach a stdlib collection  `stdlib` on the collection, as `List.stdlib`
+row  shuffling between 0- and 1-based indices  `.z`, `.u`, `.n0`, `.n1`
+row  the same `tag(out, char) = out.append(char.toByte)` copied into six atomizers  one extension on `Scribe[Byte]`
+row  `given Conversion[Int, Expression] = int => Number(int.toDouble)`  an `Expression.apply(Int)` or a `Decodable`
+```
 
 The fix is never to keep the helper and rename it. Either the abstraction exists and the call site
 uses it, or it does not and the library that owns the target type gains it — in the companion, so
@@ -78,22 +80,26 @@ call `Name(…)` / `new Name(…)`:
 Array.unsafeJvm(…) asInstanceOf[…]
 ```
 
-| id | criterion | answer `true` when | points |
-| --- | --- | --- | --- |
-| S1 | single expression | the body is one expression: no `val`, `if`, `match`, `{…}` block, loop or second statement | +2 |
-| S2 | adapters only | every call in the body is on the adapter list or is a field access, with no arithmetic and no literals other than a charset or algorithm name (`"UTF-8"`, `"SHA-256"`) | +3 |
-| S3 | round trip | one chain both leaves and re-enters a representation: `.s … .tt`, `.toString … .tt`, `.stdlib … .to[…]`, `Array.unsafeJvm … Array.unsafeFrozen`, `.s … .nn.tt` around a Java call | +3 |
-| S4 | coercion verb | the name starts with `to`, `from`, `as`, `make`, `mk`, `convert`, `lift`, `wrap` or `unwrap` followed by a capital letter, or is exactly `text`, `string`, `bytes`, `number`, `decimal`, `hex`, `key` or `node` | +1 |
-| S5 | synonym of an existing operation | the name is `toList`, `toMap`, `toSeq`, `toArray`, `text`, `show`, `render`, `str`, `string`, `bytes`, `optional`, `orNull`, or the return type's name in lower case | +2 |
-| S6 | pure forwarder | the body is a single call to one method or constructor passing the parameters through unchanged, in order, possibly with one adapter applied to one of them | +3 |
-| S7 | one-to-one ladder | the body is a `match` in which every case is `pattern => Constant` or `pattern => Wrap(binding)`, with no guards and no other logic | +2 |
-| S8 | shape-only return type | the declared return type is `Text`, `String`, `Data`, `Array[Byte]`, `List[…]`, `Map[…]`, `Seq[…]` or `Unit` | +1 |
-| S9 | one parameter | the method takes exactly one value parameter | +1 |
-| S10 | conversion given | the declaration is a `given … Conversion[A, B]` (answer S4, S5 and S6 `false` when this is `true`) | +3 |
-| X1 | handles failure | the body contains `raise`, `abort`, `mitigate`, `safely`, `lest`, `Optional`, `Unset`, `.or(`, `try`, `panic`, or a guarded case | −3 |
-| X2 | computes | the body does arithmetic on values, uses a numeric literal other than `0`, `1` or a radix, concatenates three or more parts, loops, or recurses | −3 |
-| X3 | justified by a comment | a comment on the definition or the line above it mentions `compiler`, `crash`, `macro`, `boundary`, `workaround`, `JVM` or `Java` | −2 |
-| X4 | codec-family name | the name starts with `read`, `write`, `parse`, `decode`, `encode`, `serialize` or `deserialize` | −2 |
+```tabular
+column  id
+column  criterion
+column  answer `true` when
+column  points
+row  S1  single expression  the body is one expression: no `val`, `if`, `match`, `{…}` block, loop or second statement  +2
+row  S2  adapters only  every call in the body is on the adapter list or is a field access, with no arithmetic and no literals other than a charset or algorithm name (`"UTF-8"`, `"SHA-256"`)  +3
+row  S3  round trip  one chain both leaves and re-enters a representation: `.s … .tt`, `.toString … .tt`, `.stdlib … .to[…]`, `Array.unsafeJvm … Array.unsafeFrozen`, `.s … .nn.tt` around a Java call  +3
+row  S4  coercion verb  the name starts with `to`, `from`, `as`, `make`, `mk`, `convert`, `lift`, `wrap` or `unwrap` followed by a capital letter, or is exactly `text`, `string`, `bytes`, `number`, `decimal`, `hex`, `key` or `node`  +1
+row  S5  synonym of an existing operation  the name is `toList`, `toMap`, `toSeq`, `toArray`, `text`, `show`, `render`, `str`, `string`, `bytes`, `optional`, `orNull`, or the return type's name in lower case  +2
+row  S6  pure forwarder  the body is a single call to one method or constructor passing the parameters through unchanged, in order, possibly with one adapter applied to one of them  +3
+row  S7  one-to-one ladder  the body is a `match` in which every case is `pattern => Constant` or `pattern => Wrap(binding)`, with no guards and no other logic  +2
+row  S8  shape-only return type  the declared return type is `Text`, `String`, `Data`, `Array[Byte]`, `List[…]`, `Map[…]`, `Seq[…]` or `Unit`  +1
+row  S9  one parameter  the method takes exactly one value parameter  +1
+row  S10  conversion given  the declaration is a `given … Conversion[A, B]` (answer S4, S5 and S6 `false` when this is `true`)  +3
+row  X1  handles failure  the body contains `raise`, `abort`, `mitigate`, `safely`, `lest`, `Optional`, `Unset`, `.or(`, `try`, `panic`, or a guarded case  −3
+row  X2  computes  the body does arithmetic on values, uses a numeric literal other than `0`, `1` or a radix, concatenates three or more parts, loops, or recurses  −3
+row  X3  justified by a comment  a comment on the definition or the line above it mentions `compiler`, `crash`, `macro`, `boundary`, `workaround`, `JVM` or `Java`  −2
+row  X4  codec-family name  the name starts with `read`, `write`, `parse`, `decode`, `encode`, `serialize` or `deserialize`  −2
+```
 
 Then choose one `replacement` from this vocabulary only — the abstraction the call site should
 use instead — or `none` if you cannot tell. Entries are separated by spaces, except that
@@ -124,26 +130,50 @@ Return a JSON array, one object per candidate, in the order given, and nothing e
 
 flare recomputes the score from the booleans (a small model's arithmetic is not trusted), adds
 its own signals, and validates `replacement` against the vocabulary, so a hallucinated API cannot
-enter the census. The signals are the rule's `signal` lines: local `def` +2, `private` +1; one
-call site in scope +2, two +1, four or more −1; a body duplicated verbatim (parameters renamed)
-in another definition +3; the whole definition on one line +1.
+enter the census. It adds the rule's `signal` lines:
 
-Bands on the total: **definite** at 10 or more, **likely** from 5 to 9, **weak** from 0 to 4,
-**legitimate** below 0. The census is worked from the top.
+```tabular
+column  Signal
+column  When
+column  Points
+row  `local`  a local `def`  +2
+row  `private`  a `private` definition  +1
+row  `calls 1`  one call site in scope  +2
+row  `calls 2`  two call sites in scope  +1
+row  `calls 4+`  four or more call sites in scope  −1
+row  `duplicate`  a body duplicated verbatim (parameters renamed) in another definition  +3
+row  `one-liner`  the whole definition on one line  +1
+```
+
+The census is worked from the top of the total, in bands:
+
+```tabular
+column  Band
+column  Total
+row  **definite**  10 or more
+row  **likely**  5 to 9
+row  **weak**  0 to 4
+row  **legitimate**  below 0
+```
 
 ## Worked examples
 
-| candidate | signs | model | driver | total |
-| --- | --- | --- | --- | --- |
-| local `def bytes(text: Text): Data = Array.unsafeFrozen(text.s.getBytes(UTF_8).nn)` | S1 S2 S3 S5 S8 S9 | 12 | local, one call, one line | 17 |
-| `private def tag(out: Scribe[Byte], char: Char): Unit = out.append(char.toByte)`, in six files | S1 S2 S6 S8 | 9 | private, duplicated, one line | 14 |
-| `private inline def kebab(s: String): Text = Text(s)` | S1 S2 S6 S8 S9 | 10 | private, two calls, one line | 13 |
-| `private def normalise(text: Text): Text = text.s.replace("proscenium.", "").nn.tt` | S1 S3 S8 S9 | 7 | private, one call, one line | 11 |
-| `def monthName(month: Mensual): Text = month.toString.tt` | S1 S2 S3 S8 S9 | 10 | public, one call | 12 |
-| `given Conversion[Int, Expression] = int => Expression.Number(int.toDouble)` | S1 S2 S9 S10 | 9 | — | 9 |
-| `private def typeKindToFrame(kind: jlc.TypeKind): Frame = kind match …` | S4 S7 S9 | 4 | private, one call | 7 |
-| `def toJulianDay(date: Date): Int = … arithmetic …` | S4 S9 X2 | −1 | three calls | −1 |
-| `def parseHeader(text: Text): Header raises ParseError = …` | excluded by name before scoring | — | — | — |
+```tabular
+column  Candidate
+column  Signs
+column  Model
+column  Driver
+column  Total
+row  local `def bytes(text: Text): Data = Array.unsafeFrozen(text.s.getBytes(UTF_8).nn)`  S1 S2 S3 S5 S8 S9  12  local, one call, one line  17
+row  `private def tag(out: Scribe[Byte], char: Char): Unit = out.append(char.toByte)`, in six files  S1 S2 S6 S8  9  private, duplicated, one line  14
+row  `private inline def kebab(s: String): Text = Text(s)`  S1 S2 S6 S8 S9  10  private, two calls, one line  13
+row  `private def normalise(text: Text): Text = text.s.replace("proscenium.", "").nn.tt`  S1 S3 S8 S9  7  private, one call, one line  11
+row  `def monthName(month: Mensual): Text = month.toString.tt`  S1 S2 S3 S8 S9  10  public, one call  12
+row  `given Conversion[Int, Expression] = int => Expression.Number(int.toDouble)`  S1 S2 S9 S10  9  —  9
+row  `private def typeKindToFrame(kind: jlc.TypeKind): Frame = kind match …`  S4 S7 S9  4  private, one call  7
+row  `def toJulianDay(date: Date): Int = … arithmetic …`  S4 S9 X2  −1  three calls  −1
+row  `def parseHeader(text: Text): Header raises ParseError = …`  excluded by name before scoring  —  —  —
+```
 
 The first five are the census's definite band: pure re-wrapping, each with a replacement that
 already exists. The ladder is likely, and a human decides whether the enum gains a method or an

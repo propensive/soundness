@@ -23,7 +23,16 @@ bug.
 ## Making an operation total
 
 An operation is partial when it has nothing to return for some of its inputs. There are
-three honest ways to make it total, and one dishonest one.
+three honest ways to make it total, and one dishonest one:
+
+```tabular
+column  Technique
+column  An undefined input becomes
+row  widen the return type to admit absence  an `Optional` that is `Unset`
+row  widen it to admit failure  a typed error, handled at the call site
+row  narrow the input type  impossible to pass
+row  return a plausible value (dishonest)  a wrong answer that propagates
+```
 
 **Widen the return type to admit absence.** A lookup that may find nothing returns an
 `Optional`, so "not found" is a value rather than an exception or a `null`:
