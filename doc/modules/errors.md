@@ -169,7 +169,23 @@ recover:
 ```
 
 A handler matching a union of error types registers for each member, so one `recover` can
-answer several kinds of failure. `mitigate` instead replaces one error with another, translating
+answer several kinds of failure. Inside the body of an `inline def`, though, `recover` cannot be
+used: no inline call is expanded while such a body is typed, so the handler's error types are not
+yet known where `protect`'s block needs them. There, `deferRecover` names them as a type argument
+instead, and is otherwise the same:
+
+```scala fuel
+typecheck
+##
+inline def fallback(inline port: Int): Connection =
+  deferRecover[PortError]:
+    case PortError(_) => Connection(8080)
+  . protect:
+      connect(port)
+```
+
+`deferMitigate`, `deferHandle` and `deferAccrue` do the same for `mitigate`, `handle` and
+`accrue`. `mitigate` instead replaces one error with another, translating
 a low-level failure into the error a caller expects before it propagates. Both compose: a
 `mitigate` inside a `recover` turns one error into another and then handles it:
 

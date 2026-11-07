@@ -48,8 +48,11 @@ object internal:
   def unwrap(using Quotes)(term: quotes.reflect.Term): quotes.reflect.Term =
     import quotes.reflect.*
 
+    // A typed `recover[…]`/`mitigate[…]`/… expands to the same constructor call as the transparent
+    // form, under a `Typed` ascription from its declared result type.
     term match
       case Inlined(_, _, ast)                                          => unwrap(ast)
+      case Typed(ast, _)                                               => unwrap(ast)
       case Block(List(DefDef(_, _, _, Some(Inlined(_, _, block)))), _) => unwrap(block)
       case ast                                                         => ast
 
@@ -363,6 +366,50 @@ object internal:
       case '[type typeLambda[_]; typeLambda] =>
         '{Handler[typeLambda]($handler)}
 
+  // The error types a `.protect` body's context function takes, one per `Tactic[…]`/`Emit[…]`
+  // parameter of `context[result]`'s `apply`: the transparent forms give one parameter per handler
+  // case, the `defer…` forms a single parameter over the union named in the type argument.
+  private def contextErrors[context[_]: Type, result: Type](using Quotes)
+  :   List[quotes.reflect.TypeRepr] =
+
+    import quotes.reflect.*
+
+    val contextTypeRepr = TypeRepr.of[context[result]]
+    val method = contextTypeRepr.typeSymbol.declaredMethod("apply").head
+
+    contextTypeRepr.memberType(method).absolve match
+      case MethodType(_, paramTypes, _) => paramTypes.map:
+        _.dealias.absolve match
+          case AppliedType(_, List(error)) => error
+
+  // Every member of each context parameter's error set must be matched by a case of the handler,
+  // or the partial function would fail at runtime on an error the type argument admitted. For the
+  // transparent forms the parameters *are* the case types, so this holds by construction.
+  private def checkCoverage(using Quotes)
+    ( name:   Text,
+      cases:  sci.Map[quotes.reflect.Symbol, quotes.reflect.Symbol],
+      errors: List[quotes.reflect.TypeRepr] )
+  :   Unit =
+
+    for
+      error  <- errors
+      member <- unpack(error)
+    do
+      if !cases.keys.exists { covered => member <:< covered.typeRef } then
+        halt
+          ( 827,
+            m"the `$name` handler has no case for ${member.show}, which its type argument names" )
+
+  // Select `apply` on a `.protect` body and pass it one tactic per context parameter.
+  private def applyTactics[context[_]: Type, result: Type](using Quotes)
+    ( body: Expr[context[result]], tactics: List[quotes.reflect.Term] )
+  :   Expr[result] =
+
+    import quotes.reflect.*
+
+    val method = TypeRepr.of[context[result]].typeSymbol.declaredMethod("apply").head
+    body.asTerm.select(method).appliedToArgs(tactics).asExprOf[result]
+
 
   def protectBody[context[_]: Type, result: Type]
     ( handler: Expr[Handler[context]], body: Expr[context[result]], diagnostics: Expr[Diagnostics] )
@@ -374,9 +421,11 @@ object internal:
     val emits = unwrap(handler.asTerm) match
       case Apply(_, List(Inlined(_, _, matches))) =>
         val partialFunction = matches.asExprOf[PartialFunction[Exception, Unit]]
+        val errors = contextErrors[context, result]
+        checkCoverage("handle".tt, mapping[Exception](matches), errors)
 
-        mapping[Exception](matches).keys.map: errorType =>
-          errorType.typeRef.asType.absolve match
+        errors.map: errorType =>
+          errorType.asType.absolve match
             case '[type errorType <: Hazard; errorType] =>
               val handler = '{(error: errorType) => $partialFunction(error)}
               '{Emit($handler)(using $diagnostics)}.asTerm
@@ -384,8 +433,7 @@ object internal:
       case _ =>
         halt(648, m"argument to `handle` should be a partial function implemented as match cases")
 
-    val method = TypeRepr.of[context[result]].typeSymbol.declaredMethod("apply").head
-    body.asTerm.select(method).appliedToArgs(emits.to(List)).asExprOf[result]
+    applyTactics[context, result](body, emits)
 
 
   def mitigateBody[context[_]: Type, result: Type]
@@ -398,9 +446,19 @@ object internal:
     val tactics = unwrap(w.asTerm) match
       case Apply(_, List(Inlined(_, _, matches))) =>
         val partialFunction = matches.asExprOf[PartialFunction[Exception, Any]]
+        val cases = mapping[Exception](matches)
+        val errors = contextErrors[context, result]
+        checkCoverage("mitigate".tt, cases, errors)
 
-        mapping[Exception](matches).values.map: errorType =>
-          errorType.typeRef.asType.absolve match
+        // Each context parameter's tactic is the outer tactic for what its cases map *to*: the
+        // transparent form pairs each parameter with its own case; the typed form's single
+        // parameter takes the outer tactic for the union of every case's result type.
+        errors.map: error =>
+          val outer =
+            unpack(error).map(_.typeSymbol).flatMap(cases.get).map[TypeRepr](_.typeRef)
+            . reduceOption(OrType(_, _)).getOrElse(TypeRepr.of[Nothing])
+
+          outer.asType.absolve match
             case '[type errorType <: Hazard; errorType] =>
               Expr.summon[Tactic[errorType]] match
                 case Some(errorTactic) =>
@@ -414,16 +472,13 @@ object internal:
       case _ =>
         halt(648, m"argument to `mitigate` should be a partial function written as match cases")
 
-    val method = TypeRepr.of[context[result]].typeSymbol.declaredMethod("apply").head
-    body.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[result]
+    applyTactics[context, result](body, tactics)
 
 
   def recoverBody[context[_]: Type, result: Type]
     ( w: Expr[Any], body: Expr[context[result]] )
     ( using Quotes )
   :   Expr[result] =
-
-    type ContextResult = context[result]
 
     ' {
         scala.util.boundary[result]: label ?=>
@@ -444,8 +499,10 @@ object internal:
                       """ )
 
               val pfExpr = partialFunction.asExprOf[PartialFunction[Exception, Any]]
+              val errors = contextErrors[context, result]
+              checkCoverage("recover".tt, mapping[Exception](partialFunction), errors)
 
-              val tactics = mapping[Exception](partialFunction).map: (_, _) =>
+              val tactics = errors.map: _ =>
                 ' {
                     tactic.contramap: error =>
                       Recovery.Escape[result]($pfExpr(error).asInstanceOf[result])
@@ -453,8 +510,7 @@ object internal:
 
                 . asTerm
 
-              val method = TypeRepr.of[ContextResult].typeSymbol.declaredMethod("apply").head
-              body.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[result]
+              applyTactics[context, result](body, tactics)
             }
       }
 
@@ -466,7 +522,7 @@ object internal:
       body:        Expr[context[result]],
       outer:       Expr[Tactic[accrual]],
       diagnostics: Expr[Diagnostics] )
-    ( using Quotes )
+    ( using quotes: Quotes )
   :   Expr[result] =
 
     import quotes.reflect.*
@@ -478,6 +534,9 @@ object internal:
       case _ =>
         halt(114, m"argument to `accrue` should be a partial function implemented as match cases")
 
+    val errors = contextErrors[context, result]
+    checkCoverage("accrue".tt, cases, errors)
+
     ' {
         val acc: Accrual.AccrueTactic[Hazard, accrual] =
           Accrual.AccrueTactic[Hazard, accrual]($initial, $combine)(using $diagnostics)
@@ -485,12 +544,10 @@ object internal:
         val outcome: Either[accrual, result] =
           try Right:
             $ {
-                val tactics =
-                  cases.map: (_, _) => '{acc}.asTerm
-
-                val contextTypeRepr = TypeRepr.of[context[result]]
-                val method = contextTypeRepr.typeSymbol.declaredMethod("apply").head
-                body.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[result]
+                // The splice is typed against the quote's own `Quotes`; the tactics are terms of
+                // the outer one, so the application is made with it explicitly.
+                applyTactics[context, result](using quotes)
+                  ( body, errors.map { _ => '{acc}.asTerm } )
               }
           catch case _: Exception => Left(acc.accumulated)
 
